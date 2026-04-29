@@ -88,26 +88,38 @@ impl<'a> Iterator for ObjectPositions<'a> {
             return None;
         }
 
-        let previous = self.pos;
-        let i = self.finder.find(&self.input.as_bytes()[self.pos..])?;
-        let p = self.pos + i;
+        while self.pos < self.input.len() {
+            let previous = self.pos;
+            let i = self.finder.find(&self.input.as_bytes()[self.pos..])?;
+            let p = self.pos + i;
 
-        self.pos = p + 1;
+            self.pos = p + 1;
 
-        debug_assert!(
-            previous < self.pos && self.pos <= self.input.s.len(),
-            "{} < {} < {}",
-            previous,
-            self.pos,
-            self.input.s.len()
-        );
+            debug_assert!(
+                previous < self.pos && self.pos <= self.input.s.len(),
+                "{} < {} < {}",
+                previous,
+                self.pos,
+                self.input.s.len()
+            );
 
-        // a valid object requires at least two characters
-        if self.input.s.len() - p < 2 {
-            return None;
+            // a valid object requires at least two characters
+            if self.input.s.len() - p < 2 {
+                return None;
+            }
+
+            let bytes = &self.input.as_bytes()[p..];
+            if bytes[0] == b'c' && !bytes.starts_with(b"call_") {
+                continue;
+            }
+            if bytes[0] == b's' && !bytes.starts_with(b"src_") {
+                continue;
+            }
+
+            return Some(self.input.take_split(p));
         }
 
-        Some(self.input.take_split(p))
+        None
     }
 }
 
@@ -280,14 +292,22 @@ fn positions() {
     assert_eq!(vec[0].0.s, "{3}");
 
     let vec = ObjectPositions::standard(("*{()}//s\nc<<", &config).into()).collect::<Vec<_>>();
-    assert_eq!(vec.len(), 7);
+    assert_eq!(vec.len(), 5);
     assert_eq!(vec[0].0.s, "*{()}//s\nc<<");
     assert_eq!(vec[1].0.s, "{()}//s\nc<<");
     assert_eq!(vec[2].0.s, "//s\nc<<");
     assert_eq!(vec[3].0.s, "/s\nc<<");
-    assert_eq!(vec[4].0.s, "s\nc<<");
-    assert_eq!(vec[5].0.s, "c<<");
-    assert_eq!(vec[6].0.s, "<<");
+    assert_eq!(vec[4].0.s, "<<");
+
+    let vec =
+        ObjectPositions::standard(("call_square(4) and src_rust{let x = 1;}", &config).into())
+            .collect::<Vec<_>>();
+    assert!(vec
+        .iter()
+        .any(|(input, _)| input.s == "call_square(4) and src_rust{let x = 1;}"));
+    assert!(vec
+        .iter()
+        .any(|(input, _)| input.s == "src_rust{let x = 1;}"));
 }
 
 #[test]
