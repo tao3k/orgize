@@ -3,7 +3,7 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, take_while1},
     combinator::opt,
-    IResult, InputTake,
+    IResult, Parser,
 };
 
 use crate::{
@@ -30,7 +30,7 @@ pub fn superscript_node(input: Input) -> IResult<Input, GreenElement, ()> {
         return Ok((input, node(SyntaxKind::SUPERSCRIPT, children)));
     }
 
-    let (input, rest) = alt((template0, template1, template2))(input)?;
+    let (input, rest) = alt((template0, template1, template2)).parse(input)?;
     children.extend(rest);
 
     Ok((input, node(SyntaxKind::SUPERSCRIPT, children)))
@@ -47,14 +47,14 @@ pub fn subscript_node(input: Input) -> IResult<Input, GreenElement, ()> {
         return Ok((input, node(SyntaxKind::SUBSCRIPT, children)));
     }
 
-    let (input, rest) = alt((template0, template1, template2))(input)?;
+    let (input, rest) = alt((template0, template1, template2)).parse(input)?;
     children.extend(rest);
 
     Ok((input, node(SyntaxKind::SUBSCRIPT, children)))
 }
 
 fn template0(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
-    let (input, star) = tag("*")(input)?;
+    let (input, star) = tag("*").parse(input)?;
     Ok((input, vec![star.text_token()]))
 }
 
@@ -70,10 +70,11 @@ fn template1(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
 }
 
 fn template2(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
-    let (input, sign) = opt(alt((tag("+"), tag("-"))))(input)?;
+    let (input, sign) = opt(alt((tag("+"), tag("-")))).parse(input)?;
 
     let (input, contents) =
-        take_while1(|c: char| c.is_alphanumeric() || c == ',' || c == '\\' || c == '.')(input)?;
+        take_while1(|c: char| c.is_alphanumeric() || c == ',' || c == '\\' || c == '.')
+            .parse(input)?;
 
     if contents.s.ends_with(|c: char| !c.is_alphanumeric()) {
         return Err(nom::Err::Error(()));

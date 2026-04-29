@@ -1,5 +1,5 @@
 use memchr::{memchr2, memchr2_iter, Memchr2};
-use nom::{bytes::complete::tag, IResult, InputTake, Slice};
+use nom::{bytes::complete::tag, IResult, Parser};
 use rowan::{GreenNode, GreenToken, Language, NodeOrToken};
 use std::iter::once;
 
@@ -27,7 +27,7 @@ macro_rules! token_parser {
         #[doc = $token]
         #[doc = "` and returns GreenToken"]
         pub fn $name(input: Input) -> IResult<Input, GreenElement, ()> {
-            let (i, o) = tag($token)(input)?;
+            let (i, o) = tag($token).parse(input)?;
             Ok((i, token($kind, o.as_str())))
         }
     };
@@ -77,7 +77,7 @@ token_parser!(double_arrow_token, "=>", DOUBLE_ARROW);
 macro_rules! lossless_parser {
     ($parser:expr, $input:expr) => {{
         let i_ = $input;
-        let (i, o) = $parser($input)?;
+        let (i, o) = nom::Parser::parse(&mut $parser, $input)?;
         cfg_if::cfg_if! {
             if #[cfg(feature = "tracing")] {
                 tracing::trace!(consumed = o.to_string());

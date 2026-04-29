@@ -1,7 +1,6 @@
 use nom::{
     bytes::complete::{tag, take_till, take_while1},
     combinator::{map, opt},
-    sequence::tuple,
     IResult,
 };
 
@@ -19,18 +18,18 @@ use super::{
 )]
 pub fn inline_src_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             tag("src_"),
             take_while1(|c: char| !c.is_ascii_whitespace() && c != '[' && c != '{'),
-            opt(tuple((
+            opt((
                 l_bracket_token,
                 take_till(|c| c == '\n' || c == ']'),
                 r_bracket_token,
-            ))),
+            )),
             l_curly_token,
             take_till(|c| c == '\n' || c == '}'),
             r_curly_token,
-        )),
+        ),
         |(src, lang, options, l_curly, body, r_curly)| {
             let mut children = vec![src.text_token(), lang.text_token()];
             if let Some((l_bracket, options, r_bracket)) = options {

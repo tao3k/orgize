@@ -1,7 +1,6 @@
 use nom::{
     bytes::complete::take_while,
     combinator::{map, verify},
-    sequence::tuple,
     IResult,
 };
 
@@ -17,7 +16,7 @@ use super::{
 )]
 pub fn target_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             l_angle2_token,
             verify(
                 take_while(|c: char| c != '<' && c != '\n' && c != '>'),
@@ -26,7 +25,7 @@ pub fn target_node(input: Input) -> IResult<Input, GreenElement, ()> {
                 },
             ),
             r_angle2_token,
-        )),
+        ),
         |(l_angle2, target, r_angle2)| node(TARGET, [l_angle2, target.text_token(), r_angle2]),
     );
     crate::lossless_parser!(parser, input)

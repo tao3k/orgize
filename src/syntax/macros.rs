@@ -1,7 +1,6 @@
 use nom::{
     bytes::complete::{take_until, take_while1},
     combinator::{map, opt, verify},
-    sequence::tuple,
     IResult,
 };
 
@@ -19,15 +18,15 @@ use super::{
 )]
 pub fn macros_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             l_curly3_token,
             verify(
                 take_while1(|c: char| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
                 |s: &Input| s.as_bytes()[0].is_ascii_alphabetic(),
             ),
-            opt(tuple((l_parens_token, take_until(")}}}"), r_parens_token))),
+            opt((l_parens_token, take_until(")}}}"), r_parens_token)),
             r_curly3_token,
-        )),
+        ),
         |(l_curly3, name, argument, r_curly3)| {
             let mut children = vec![];
             children.push(l_curly3);

@@ -1,4 +1,4 @@
-use nom::{bytes::complete::take_until, combinator::opt, sequence::tuple, IResult, InputTake};
+use nom::{bytes::complete::take_until, combinator::opt, IResult, Parser};
 
 use crate::syntax::{
     combinator::{at_token, l_curly2_token, l_curly_token, r_curly_token},
@@ -45,9 +45,9 @@ fn cloze_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
     let (input, r_curly) = r_curly_token(input)?;
 
-    let (input, hint) = opt(tuple((l_curly_token, take_until("}"), r_curly_token)))(input)?;
+    let (input, hint) = opt((l_curly_token, take_until("}"), r_curly_token)).parse(input)?;
 
-    let (input, id) = opt(tuple((at_token, take_until("}"))))(input)?;
+    let (input, id) = opt((at_token, take_until("}"))).parse(input)?;
 
     let (input, r_curly_) = r_curly_token(input)?;
 

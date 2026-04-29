@@ -1,7 +1,6 @@
 use nom::{
     bytes::complete::{tag, take_till},
     combinator::{map, opt},
-    sequence::tuple,
     IResult,
 };
 
@@ -19,23 +18,23 @@ use super::{
 )]
 pub fn inline_call_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             tag("call_"),
             take_till(|c| c == '[' || c == '\n' || c == '(' || c == ')'),
-            opt(tuple((
+            opt((
                 l_bracket_token,
                 take_till(|c| c == ']' || c == '\n'),
                 r_bracket_token,
-            ))),
+            )),
             l_parens_token,
             take_till(|c| c == ')' || c == '\n'),
             r_parens_token,
-            opt(tuple((
+            opt((
                 l_bracket_token,
                 take_till(|c| c == ']' || c == '\n'),
                 r_bracket_token,
-            ))),
-        )),
+            )),
+        ),
         |(call, name, inside_header, l_paren, arguments, r_paren, end_header)| {
             let mut children = vec![call.text_token()];
             children.push(name.text_token());

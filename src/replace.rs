@@ -64,7 +64,7 @@ impl ReplaceWithShape {
                 continue;
             }
 
-            if !matches!(text[start..].as_bytes().get(level), Some(b' ')) {
+            if !matches!(text.as_bytes()[start..].get(level), Some(b' ')) {
                 continue;
             }
 
@@ -133,7 +133,7 @@ impl Org {
             ) if level <= new_level
             // non-last headline must ends with a newline
                 && (headline.end() == self.document().end()
-                    || replace_with.ends_with(&['\n', '\r'])) =>
+                    || replace_with.ends_with(['\n', '\r'])) =>
             {
                 self.replace_headline(headline, range, replace_with)
             }

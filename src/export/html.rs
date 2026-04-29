@@ -299,11 +299,10 @@ impl Traverser for HtmlExport {
 
             Event::LineBreak(_) => self.output += "<br/>",
 
-            Event::Snippet(snippet) => {
-                if snippet.backend().eq_ignore_ascii_case("html") {
-                    self.output += &snippet.value();
-                }
+            Event::Snippet(snippet) if snippet.backend().eq_ignore_ascii_case("html") => {
+                self.output += &snippet.value();
             }
+            Event::Snippet(_) => {}
 
             Event::Rule(_) => self.output += "<hr/>",
 

@@ -1,7 +1,6 @@
 use nom::{
     bytes::complete::take_while,
     combinator::{map, verify},
-    sequence::tuple,
     IResult,
 };
 
@@ -14,7 +13,7 @@ use super::{
 
 pub fn radio_target_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             l_angle3_token,
             verify(
                 take_while(|c: char| c != '<' && c != '\n' && c != '>'),
@@ -23,7 +22,7 @@ pub fn radio_target_node(input: Input) -> IResult<Input, GreenElement, ()> {
                 },
             ),
             r_angle3_token,
-        )),
+        ),
         |(l_angle3, contents, r_angle3)| {
             let mut children = vec![l_angle3];
             children.extend(minimal_object_nodes(contents));

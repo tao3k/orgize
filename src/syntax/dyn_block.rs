@@ -1,8 +1,7 @@
 use nom::{
     bytes::complete::tag_no_case,
     character::complete::{alpha1, space0, space1},
-    sequence::tuple,
-    IResult, InputTake,
+    IResult, Parser,
 };
 
 use super::{
@@ -34,13 +33,14 @@ fn dyn_block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 }
 
 fn dyn_block_begin_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    let (input, (ws, begin, ws_, name, (args, ws__, nl))) = tuple((
+    let (input, (ws, begin, ws_, name, (args, ws__, nl))) = (
         space0,
         tag_no_case("#+BEGIN:"),
         space1,
         alpha1,
         trim_line_end,
-    ))(input)?;
+    )
+        .parse(input)?;
 
     let mut b = NodeBuilder::new();
     b.ws(ws);
@@ -56,7 +56,7 @@ fn dyn_block_begin_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 fn dyn_block_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let (input, (ws, end, ws_, nl)) =
-        tuple((space0, tag_no_case("#+END:"), space0, eol_or_eof))(input)?;
+        (space0, tag_no_case("#+END:"), space0, eol_or_eof).parse(input)?;
 
     let mut b = NodeBuilder::new();
     b.ws(ws);

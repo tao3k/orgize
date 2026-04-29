@@ -1,6 +1,5 @@
 use nom::{
-    branch::alt, bytes::complete::tag, character::complete::space0, combinator::iterator,
-    sequence::tuple, IResult,
+    branch::alt, bytes::complete::tag, character::complete::space0, combinator::iterator, IResult,
 };
 
 use super::{
@@ -20,17 +19,17 @@ fn planning_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
     let mut it = iterator(
         input,
-        tuple((
+        (
             space0,
             alt((tag("DEADLINE:"), tag("SCHEDULED:"), tag("CLOSED:"))),
             space0,
             alt((timestamp_active_node, timestamp_inactive_node)),
-        )),
+        ),
     );
 
     let start_len = b.len();
 
-    it.for_each(|(ws, text, ws_, timestamp)| {
+    it.by_ref().for_each(|(ws, text, ws_, timestamp)| {
         let mut b_ = NodeBuilder::new();
         b_.ws(ws);
         b_.text(text);

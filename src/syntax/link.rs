@@ -1,7 +1,6 @@
 use nom::{
     bytes::complete::take_while,
     combinator::{map, opt},
-    sequence::tuple,
     IResult,
 };
 
@@ -20,16 +19,16 @@ use super::{
 )]
 pub fn link_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             l_bracket2_token,
             take_while(|c: char| c != '<' && c != '>' && c != '\n' && c != ']'),
-            opt(tuple((
+            opt((
                 r_bracket_token,
                 l_bracket_token,
                 take_while(|c: char| c != '[' && c != ']'),
-            ))),
+            )),
             r_bracket2_token,
-        )),
+        ),
         |(l_bracket2, path, desc, r_bracket2)| {
             let mut children = vec![l_bracket2, path.token(LINK_PATH)];
 

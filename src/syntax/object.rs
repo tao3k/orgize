@@ -1,4 +1,4 @@
-use nom::{IResult, InputTake};
+use nom::IResult;
 
 use super::{
     combinator::GreenElement,

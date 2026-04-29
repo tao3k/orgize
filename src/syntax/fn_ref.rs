@@ -2,8 +2,7 @@ use memchr::memchr2_iter;
 use nom::{
     bytes::complete::{tag, take_while},
     combinator::opt,
-    sequence::tuple,
-    Err, IResult, InputTake,
+    Err, IResult, Parser,
 };
 
 use super::{
@@ -22,14 +21,15 @@ pub fn fn_ref_node(input: Input) -> IResult<Input, GreenElement, ()> {
 }
 
 fn fn_ref_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
-    let (input, (l_bracket, fn_, colon, label, definition, r_bracket)) = tuple((
+    let (input, (l_bracket, fn_, colon, label, definition, r_bracket)) = (
         l_bracket_token,
         tag("fn"),
         colon_token,
         take_while(|c: char| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
-        opt(tuple((colon_token, balanced_brackets))),
+        opt((colon_token, balanced_brackets)),
         r_bracket_token,
-    ))(input)?;
+    )
+        .parse(input)?;
 
     let mut children = vec![l_bracket, fn_.text_token(), colon, label.text_token()];
     if let Some((colon, definition)) = definition {

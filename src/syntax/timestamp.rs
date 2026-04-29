@@ -3,8 +3,7 @@ use nom::{
     bytes::complete::{tag, take_till, take_while1, take_while_m_n},
     character::complete::{digit1, space0, space1},
     combinator::{iterator, map, opt},
-    sequence::tuple,
-    IResult,
+    IResult, Parser,
 };
 
 use super::{
@@ -23,14 +22,14 @@ use super::{
 )]
 pub fn timestamp_diary_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             l_angle_token,
             percent2_token,
             l_parens_token,
             take_till(|c| c == ')' || c == '>' || c == '\n'),
             r_parens_token,
             r_angle_token,
-        )),
+        ),
         |(l_angle, percent2, l_paren, value, r_paren, r_angle)| {
             node(
                 TIMESTAMP_DIARY,
@@ -50,13 +49,13 @@ pub fn timestamp_diary_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 fn date(i: Input) -> IResult<Input, [GreenElement; 5], ()> {
     map(
-        tuple((
+        (
             take_while_m_n(4, 4, |c: char| c.is_ascii_digit()),
             minus_token,
             take_while_m_n(2, 2, |c: char| c.is_ascii_digit()),
             minus_token,
             take_while_m_n(2, 2, |c: char| c.is_ascii_digit()),
-        )),
+        ),
         |(year, minus, month, minus_, day)| {
             [
                 year.token(TIMESTAMP_YEAR),
@@ -66,7 +65,8 @@ fn date(i: Input) -> IResult<Input, [GreenElement; 5], ()> {
                 day.token(TIMESTAMP_DAY),
             ]
         },
-    )(i)
+    )
+    .parse(i)
 }
 
 fn dayname(i: Input) -> IResult<Input, GreenElement, ()> {
@@ -81,16 +81,17 @@ fn dayname(i: Input) -> IResult<Input, GreenElement, ()> {
                 && c != '.'
         }),
         |i: Input| i.token(TIMESTAMP_DAYNAME),
-    )(i)
+    )
+    .parse(i)
 }
 
 fn time(i: Input) -> IResult<Input, [GreenElement; 3], ()> {
     map(
-        tuple((
+        (
             take_while_m_n(2, 2, |c: char| c.is_ascii_digit()),
             colon_token,
             take_while_m_n(2, 2, |c: char| c.is_ascii_digit()),
-        )),
+        ),
         |(hour, colon, minute)| {
             [
                 hour.token(TIMESTAMP_HOUR),
@@ -98,7 +99,8 @@ fn time(i: Input) -> IResult<Input, [GreenElement; 3], ()> {
                 minute.token(TIMESTAMP_MINUTE),
             ]
         },
-    )(i)
+    )
+    .parse(i)
 }
 
 fn repeater_or_delay(
@@ -111,9 +113,10 @@ fn repeater_or_delay(
         map(alt((tag("--"), tag("-"))), |i: Input| {
             i.token(TIMESTAMP_DELAY_MARK)
         }),
-    ))(input)?;
+    ))
+    .parse(input)?;
     let (input, value) = digit1(input)?;
-    let (input, unit) = alt((tag("h"), tag("d"), tag("w"), tag("m"), tag("y")))(input)?;
+    let (input, unit) = alt((tag("h"), tag("d"), tag("w"), tag("m"), tag("y"))).parse(input)?;
 
     Ok((
         input,
@@ -132,8 +135,8 @@ fn timestamp_node_base(
 ) -> IResult<Input, Vec<GreenElement>, ()> {
     let (input, l_angle) = l_parser(input)?;
     let (input, start_date) = date(input)?;
-    let (input, start_dayname) = opt(tuple((space1, dayname)))(input)?;
-    let (input, start_time) = opt(tuple((space1, time)))(input)?;
+    let (input, start_dayname) = opt((space1, dayname)).parse(input)?;
+    let (input, start_time) = opt((space1, time)).parse(input)?;
 
     let mut b = NodeBuilder::new();
     b.push(l_angle);
@@ -158,7 +161,7 @@ fn timestamp_node_base(
         b.push(minus);
         b.children.extend(end_time);
 
-        let mut iter = iterator(input, tuple((space1, repeater_or_delay)));
+        let mut iter = iterator(input, (space1, repeater_or_delay));
         for (ws, (mark, value, unit)) in &mut iter {
             b.children.extend([ws.ws_token(), mark, value, unit]);
         }
@@ -178,7 +181,7 @@ fn timestamp_node_base(
         b.children.extend(start_time);
     }
 
-    let mut iter = iterator(input, tuple((space1, repeater_or_delay)));
+    let mut iter = iterator(input, (space1, repeater_or_delay));
     for (ws, (mark, value, unit)) in &mut iter {
         b.children.extend([ws.ws_token(), mark, value, unit]);
     }
@@ -194,8 +197,8 @@ fn timestamp_node_base(
         let (input, minus2) = minus2_token(input)?;
         let (input, l_angle) = l_parser(input)?;
         let (input, end_date) = date(input)?;
-        let (input, end_dayname) = opt(tuple((space1, dayname)))(input)?;
-        let (input, end_time) = opt(tuple((space1, time)))(input)?;
+        let (input, end_dayname) = opt((space1, dayname)).parse(input)?;
+        let (input, end_time) = opt((space1, time)).parse(input)?;
 
         b.children.extend([minus2, l_angle]);
         b.children.extend(end_date);
@@ -207,7 +210,7 @@ fn timestamp_node_base(
             b.ws(ws);
             b.children.extend(end_time);
         }
-        let mut iter = iterator(input, tuple((space1, repeater_or_delay)));
+        let mut iter = iterator(input, (space1, repeater_or_delay));
         for (ws, (mark, value, unit)) in &mut iter {
             b.children.extend([ws.ws_token(), mark, value, unit]);
         }

@@ -2,7 +2,6 @@ use nom::{
     bytes::complete::{tag, take_while},
     character::complete::{space0, space1},
     combinator::{iterator, opt},
-    sequence::tuple,
     IResult,
 };
 
@@ -21,15 +20,15 @@ fn fixed_width_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
     let mut iter = iterator(
         input,
-        opt(tuple((
+        opt((
             space0,
             tag(":"),
-            opt(tuple((space1, take_while(|c| c != '\r' && c != '\n')))),
+            opt((space1, take_while(|c| c != '\r' && c != '\n'))),
             eol_or_eof,
-        ))),
+        )),
     );
 
-    for (idx, option) in iter.enumerate() {
+    for (idx, option) in iter.by_ref().enumerate() {
         match option {
             Some((ws, common, content, eol)) => {
                 b.ws(ws);

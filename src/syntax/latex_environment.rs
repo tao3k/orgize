@@ -1,8 +1,7 @@
 use nom::{
     bytes::complete::{tag, take_while1},
     character::complete::space0,
-    sequence::tuple,
-    IResult, InputTake,
+    IResult, Parser,
 };
 
 use crate::SyntaxKind;
@@ -21,16 +20,17 @@ pub fn latex_environment_node(input: Input) -> IResult<Input, GreenElement, ()> 
 }
 
 fn latex_environment_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
-    let (input, (ws1, begin, l1, name1, r1)) = tuple((
+    let (input, (ws1, begin, l1, name1, r1)) = (
         space0,
         tag("\\begin"),
         l_curly_token,
         take_while1(|c: char| c.is_ascii_alphanumeric() || c == '*'),
         r_curly_token,
-    ))(input)?;
+    )
+        .parse(input)?;
 
     for (input, contents) in line_starts_iter(input.s).map(|i| input.take_split(i)) {
-        if let Ok((input, (ws2, end, l2, name2, r2, ws3, nl))) = tuple((
+        if let Ok((input, (ws2, end, l2, name2, r2, ws3, nl))) = (
             space0,
             tag("\\end"),
             l_curly_token,
@@ -38,7 +38,8 @@ fn latex_environment_node_base(input: Input) -> IResult<Input, GreenElement, ()>
             r_curly_token,
             space0,
             eol_or_eof,
-        ))(input)
+        )
+            .parse(input)
         {
             return Ok((
                 input,

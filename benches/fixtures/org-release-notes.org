@@ -1,0 +1,15 @@
+#+TITLE: Release Notes Fixture
+
+* 0.10.0
+** Added
+- Parser coverage for modern dependency checks.
+- Tracked benchmark fixtures for CI.
+
+** Fixed
+CLOCK: [2024-01-01 Mon 10:00]--[2024-01-01 Mon 10:30] => 0:30
+
+** Changed
+#+BEGIN_QUOTE
+Small fixtures are enough to enforce bench compilation without carrying large
+upstream documents in the crate.
+#+END_QUOTE

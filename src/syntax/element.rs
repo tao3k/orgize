@@ -1,7 +1,7 @@
 use std::iter::once;
 
 use memchr::memchr2_iter;
-use nom::{IResult, InputTake};
+use nom::IResult;
 
 use super::{
     block::block_node,
