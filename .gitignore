@@ -1,6 +1,7 @@
 /target
 **/*.rs.bk
 Cargo.lock
+/.devenv
 
 .vscode
 .gdb_history

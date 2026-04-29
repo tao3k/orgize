@@ -1,0 +1,15 @@
+#+TITLE: Org Hacks Fixture
+
+* Tables
+| Name  | Value |
+|-------+-------|
+| alpha |     1 |
+| beta  |     2 |
+#+TBLFM: @2$2=1
+
+* Drawers
+:PROPERTIES:
+:CUSTOM_ID: hacks
+:END:
+
+Paragraph after a drawer with a target <<target>> and radio target <<<Radio Target>>>.

@@ -1,10 +1,6 @@
-use nom::{
-    error::{ErrorKind, ParseError},
-    Compare, CompareResult, Err, FindSubstring, IResult, InputIter, InputLength, InputTake,
-    InputTakeAtPosition, Needed, Offset, Slice,
-};
+use nom::{Compare, CompareResult, FindSubstring, Input as NomInput, Needed, Offset};
 use std::{
-    ops::{Deref, Range, RangeFrom, RangeFull, RangeTo},
+    ops::{Bound, Deref, RangeBounds},
     str::{CharIndices, Chars},
 };
 
@@ -32,6 +28,40 @@ impl<'a> Input<'a> {
     #[inline]
     pub fn as_str(&self) -> &'a str {
         self.s
+    }
+
+    #[inline]
+    pub(crate) fn slice<R>(&self, range: R) -> Input<'a>
+    where
+        R: RangeBounds<usize>,
+    {
+        let start = match range.start_bound() {
+            Bound::Included(start) => *start,
+            Bound::Excluded(start) => start + 1,
+            Bound::Unbounded => 0,
+        };
+        let end = match range.end_bound() {
+            Bound::Included(end) => end + 1,
+            Bound::Excluded(end) => *end,
+            Bound::Unbounded => self.s.len(),
+        };
+        self.of(&self.s[start..end])
+    }
+
+    #[inline]
+    pub(crate) fn take(&self, index: usize) -> Input<'a> {
+        self.of(&self.s[..index])
+    }
+
+    #[inline]
+    pub(crate) fn take_from(&self, index: usize) -> Input<'a> {
+        self.of(&self.s[index..])
+    }
+
+    #[inline]
+    pub(crate) fn take_split(&self, index: usize) -> (Input<'a>, Input<'a>) {
+        let (prefix, suffix) = self.s.split_at(index);
+        (self.of(suffix), self.of(prefix))
     }
 
     #[inline]
@@ -73,30 +103,6 @@ impl<'a> From<(&'a str, &'a ParseConfig)> for Input<'a> {
     }
 }
 
-impl<'a> Slice<Range<usize>> for Input<'a> {
-    fn slice(&self, range: Range<usize>) -> Self {
-        self.of(self.s.slice(range))
-    }
-}
-
-impl<'a> Slice<RangeTo<usize>> for Input<'a> {
-    fn slice(&self, range: RangeTo<usize>) -> Self {
-        self.of(self.s.slice(range))
-    }
-}
-
-impl<'a> Slice<RangeFrom<usize>> for Input<'a> {
-    fn slice(&self, range: RangeFrom<usize>) -> Self {
-        self.of(self.s.slice(range))
-    }
-}
-
-impl<'a> Slice<RangeFull> for Input<'a> {
-    fn slice(&self, range: RangeFull) -> Self {
-        self.of(self.s.slice(range))
-    }
-}
-
 impl<'a, 'b> FindSubstring<&'b str> for Input<'a> {
     fn find_substring(&self, substr: &str) -> Option<usize> {
         self.s.find(substr)
@@ -115,123 +121,61 @@ impl<'a, 'b> Compare<&'b str> for Input<'a> {
     }
 }
 
-impl<'a> InputLength for Input<'a> {
+impl<'a> NomInput for Input<'a> {
+    type Item = char;
+    type Iter = Chars<'a>;
+    type IterIndices = CharIndices<'a>;
+
     #[inline]
     fn input_len(&self) -> usize {
         self.len()
     }
-}
 
-impl<'a> InputIter for Input<'a> {
-    type Item = char;
-    type Iter = CharIndices<'a>;
-    type IterElem = Chars<'a>;
     #[inline]
-    fn iter_indices(&self) -> Self::Iter {
-        self.s.char_indices()
+    fn take(&self, index: usize) -> Self {
+        self.take(index)
     }
+
     #[inline]
-    fn iter_elements(&self) -> Self::IterElem {
-        self.s.chars()
+    fn take_from(&self, index: usize) -> Self {
+        self.take_from(index)
     }
+
+    #[inline]
+    fn take_split(&self, index: usize) -> (Self, Self) {
+        self.take_split(index)
+    }
+
     fn position<P>(&self, predicate: P) -> Option<usize>
     where
         P: Fn(Self::Item) -> bool,
     {
-        self.s.position(predicate)
+        self.s.find(predicate)
     }
+
+    #[inline]
+    fn iter_elements(&self) -> Self::Iter {
+        self.s.chars()
+    }
+
+    #[inline]
+    fn iter_indices(&self) -> Self::IterIndices {
+        self.s.char_indices()
+    }
+
     #[inline]
     fn slice_index(&self, count: usize) -> Result<usize, Needed> {
-        self.s.slice_index(count)
-    }
-}
-
-impl<'a> InputTake for Input<'a> {
-    #[inline]
-    fn take(&self, count: usize) -> Self {
-        let s = self.s.take(count);
-        self.of(s)
-    }
-    #[inline]
-    fn take_split(&self, count: usize) -> (Self, Self) {
-        let (l, r) = self.s.take_split(count);
-        (self.of(l), self.of(r))
-    }
-}
-
-impl<'a> InputTakeAtPosition for Input<'a> {
-    type Item = char;
-
-    #[inline]
-    fn split_at_position<P, E: ParseError<Self>>(&self, predicate: P) -> IResult<Self, Self, E>
-    where
-        P: Fn(Self::Item) -> bool,
-    {
-        match self.s.split_at_position::<_, (&str, ErrorKind)>(predicate) {
-            Ok((l, r)) => Ok((self.of(l), self.of(r))),
-            Err(Err::Error((i, kind))) => Err(Err::Error(E::from_error_kind(self.of(i), kind))),
-            Err(Err::Failure((i, kind))) => Err(Err::Failure(E::from_error_kind(self.of(i), kind))),
-            Err(Err::Incomplete(x)) => Err(Err::Incomplete(x)),
+        let mut cnt = 0;
+        for (index, _) in self.s.char_indices() {
+            if cnt == count {
+                return Ok(index);
+            }
+            cnt += 1;
         }
-    }
-
-    #[inline]
-    fn split_at_position1<P, E: ParseError<Self>>(
-        &self,
-        predicate: P,
-        e: ErrorKind,
-    ) -> IResult<Self, Self, E>
-    where
-        P: Fn(Self::Item) -> bool,
-    {
-        match self
-            .s
-            .split_at_position1::<_, (&str, ErrorKind)>(predicate, e)
-        {
-            Ok((l, r)) => Ok((self.of(l), self.of(r))),
-            Err(Err::Error((i, kind))) => Err(Err::Error(E::from_error_kind(self.of(i), kind))),
-            Err(Err::Failure((i, kind))) => Err(Err::Failure(E::from_error_kind(self.of(i), kind))),
-            Err(Err::Incomplete(x)) => Err(Err::Incomplete(x)),
+        if cnt == count {
+            return Ok(self.s.len());
         }
-    }
-
-    #[inline]
-    fn split_at_position_complete<P, E: ParseError<Self>>(
-        &self,
-        predicate: P,
-    ) -> IResult<Self, Self, E>
-    where
-        P: Fn(Self::Item) -> bool,
-    {
-        match self
-            .s
-            .split_at_position_complete::<_, (&str, ErrorKind)>(predicate)
-        {
-            Ok((l, r)) => Ok((self.of(l), self.of(r))),
-            Err(Err::Error((i, kind))) => Err(Err::Error(E::from_error_kind(self.of(i), kind))),
-            Err(Err::Failure((i, kind))) => Err(Err::Failure(E::from_error_kind(self.of(i), kind))),
-            Err(Err::Incomplete(x)) => Err(Err::Incomplete(x)),
-        }
-    }
-
-    #[inline]
-    fn split_at_position1_complete<P, E: ParseError<Self>>(
-        &self,
-        predicate: P,
-        e: ErrorKind,
-    ) -> IResult<Self, Self, E>
-    where
-        P: Fn(Self::Item) -> bool,
-    {
-        match self
-            .s
-            .split_at_position1_complete::<_, (&str, ErrorKind)>(predicate, e)
-        {
-            Ok((l, r)) => Ok((self.of(l), self.of(r))),
-            Err(Err::Error((i, kind))) => Err(Err::Error(E::from_error_kind(self.of(i), kind))),
-            Err(Err::Failure((i, kind))) => Err(Err::Failure(E::from_error_kind(self.of(i), kind))),
-            Err(Err::Incomplete(x)) => Err(Err::Incomplete(x)),
-        }
+        Err(Needed::Unknown)
     }
 }
 

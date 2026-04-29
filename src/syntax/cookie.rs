@@ -3,7 +3,7 @@ use nom::{
     bytes::complete::tag,
     character::complete::digit0,
     combinator::map,
-    sequence::{pair, separated_pair, tuple},
+    sequence::{pair, separated_pair},
     IResult,
 };
 
@@ -19,14 +19,14 @@ use super::{
 )]
 pub fn cookie_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             l_bracket_token,
             alt((
                 separated_pair(digit0, tag("/"), digit0),
                 pair(digit0, tag("%")),
             )),
             r_bracket_token,
-        )),
+        ),
         |(l_bracket, value, r_bracket)| {
             let mut children = vec![l_bracket];
 

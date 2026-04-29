@@ -1,0 +1,16 @@
+#+TITLE: Syntax Fixture
+
+* Blocks
+#+BEGIN_EXAMPLE
+literal <text> & markers
+#+END_EXAMPLE
+
+#+BEGIN_EXPORT html
+<span>html snippet</span>
+#+END_EXPORT
+
+* Inline Objects
+This line has _underline_, +strike+, =verbatim=, src_rust{let answer = 42;},
+call_square(4), a footnote [fn:bench], and LaTeX \(a^2+b^2=c^2\).
+
+[fn:bench] Footnote definition used by the benchmark fixture.

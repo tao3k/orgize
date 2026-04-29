@@ -1,7 +1,6 @@
 use nom::{
     bytes::complete::{take_until, take_while1},
     combinator::map,
-    sequence::tuple,
     IResult,
 };
 
@@ -13,13 +12,13 @@ use super::{
 
 pub fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             at2_token,
             take_while1(|c: char| c.is_ascii_alphanumeric() || c == '-'),
             colon_token,
             take_until("@@"),
             at2_token,
-        )),
+        ),
         |(at2, name, colon, value, at2_)| {
             node(
                 SNIPPET,

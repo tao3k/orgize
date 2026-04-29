@@ -1,7 +1,6 @@
 use nom::{
     bytes::complete::{tag, take_while1},
     combinator::map,
-    sequence::tuple,
     IResult,
 };
 
@@ -21,7 +20,7 @@ use super::{
 )]
 pub fn fn_def_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             affiliated_keyword_nodes,
             l_bracket_token,
             tag("fn"),
@@ -30,7 +29,7 @@ pub fn fn_def_node(input: Input) -> IResult<Input, GreenElement, ()> {
             r_bracket_token,
             trim_line_end,
             blank_lines,
-        )),
+        ),
         |(
             affiliated_keywords,
             l_bracket,

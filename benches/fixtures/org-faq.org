@@ -1,0 +1,13 @@
+#+TITLE: Org FAQ Fixture
+
+* Frequently Asked Questions
+** What is orgize?
+orgize is a Rust library for parsing Org documents into a lossless syntax tree.
+
+** Can it export HTML?
+Yes. Links like [[https://example.com][example]] and inline code ~let x = 1~ are useful
+coverage for exporter benchmarks.
+
+** Does it preserve whitespace?
+  : Fixed-width lines should remain fixed.
+  : They are intentionally simple here.

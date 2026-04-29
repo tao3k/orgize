@@ -3,8 +3,7 @@ use nom::{
     bytes::complete::take_while1,
     character::complete::{anychar, space0},
     combinator::{map, opt},
-    sequence::tuple,
-    IResult, InputTake, Slice,
+    IResult, Parser,
 };
 
 use super::{
@@ -39,14 +38,14 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     let (input, ws) = space0(input)?;
     b.ws(ws);
 
-    let (input, headline_keyword) = opt(headline_keyword_token)(input)?;
+    let (input, headline_keyword) = opt(headline_keyword_token).parse(input)?;
 
     if let Some((headline_keyword, ws)) = headline_keyword {
         b.push(headline_keyword);
         b.ws(ws);
     }
 
-    let (input, headline_priority) = opt(headline_priority_node)(input)?;
+    let (input, headline_priority) = opt(headline_priority_node).parse(input)?;
 
     if let Some((headline_priority, ws)) = headline_priority {
         b.push(headline_priority);
@@ -54,7 +53,7 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     }
 
     let (input, (title_and_tags, ws_, nl)) = trim_line_end(input)?;
-    let (title, tags) = opt(headline_tags_node)(title_and_tags)?;
+    let (title, tags) = opt(headline_tags_node).parse(title_and_tags)?;
 
     if !title.is_empty() {
         b.push(node(HEADLINE_TITLE, standard_object_nodes(title)));
@@ -67,21 +66,21 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         return Ok((input, b.finish(HEADLINE)));
     }
 
-    let (input, planning) = opt(planning_node)(input)?;
+    let (input, planning) = opt(planning_node).parse(input)?;
     b.push_opt(planning);
 
     if input.is_empty() {
         return Ok((input, b.finish(HEADLINE)));
     }
 
-    let (input, property_drawer) = opt(property_drawer_node)(input)?;
+    let (input, property_drawer) = opt(property_drawer_node).parse(input)?;
     b.push_opt(property_drawer);
 
     if input.is_empty() {
         return Ok((input, b.finish(HEADLINE)));
     }
 
-    let (input, section) = opt(section_node)(input)?;
+    let (input, section) = opt(section_node).parse(input)?;
     b.push_opt(section);
 
     let mut i = input;
@@ -207,7 +206,7 @@ fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
 }
 
 fn headline_keyword_token(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
-    let (input, word) = take_while1(|c: char| !c.is_ascii_whitespace())(input)?;
+    let (input, word) = take_while1(|c: char| !c.is_ascii_whitespace()).parse(input)?;
     let (input, ws) = space0(input)?;
     if input.c.todo_keywords.0.iter().any(|k| k == word.s) {
         Ok((input, (word.token(HEADLINE_KEYWORD_TODO), ws)))
@@ -220,14 +219,15 @@ fn headline_keyword_token(input: Input) -> IResult<Input, (GreenElement, Input),
 
 fn headline_priority_node(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     let (input, node) = map(
-        tuple((l_bracket_token, hash_token, anychar, r_bracket_token)),
+        (l_bracket_token, hash_token, anychar, r_bracket_token),
         |(l_bracket, hash, char, r_bracket)| {
             node(
                 HEADLINE_PRIORITY,
                 [l_bracket, hash, token(TEXT, &char.to_string()), r_bracket],
             )
         },
-    )(input)?;
+    )
+    .parse(input)?;
 
     let (input, ws) = space0(input)?;
 

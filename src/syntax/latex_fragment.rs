@@ -2,8 +2,7 @@ use nom::{
     branch::alt,
     bytes::complete::{take_until1, take_while1},
     character::complete::alpha1,
-    sequence::tuple,
-    IResult, InputTake,
+    IResult, Parser,
 };
 
 use crate::SyntaxKind;
@@ -28,19 +27,20 @@ pub fn latex_fragment_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 // \NAME[CONTENTS1] \NAME{CONTENTS1}
 fn template1(input: Input) -> IResult<Input, GreenElement, ()> {
-    let (input, (backslash, name)) = tuple((backslash_token, alpha1))(input)?;
+    let (input, (backslash, name)) = (backslash_token, alpha1).parse(input)?;
     let (input, (l, content, r)) = alt((
-        tuple((
+        (
             l_bracket_token,
             take_while1(|c| c != '{' && c != '}' && c != '[' && c != ']' && c != '\r' && c != '\n'),
             r_bracket_token,
-        )),
-        tuple((
+        ),
+        (
             l_curly_token,
             take_while1(|c| c != '{' && c != '}' && c != '\r' && c != '\n'),
             r_curly_token,
-        )),
-    ))(input)?;
+        ),
+    ))
+    .parse(input)?;
     Ok((
         input,
         node(
@@ -52,10 +52,10 @@ fn template1(input: Input) -> IResult<Input, GreenElement, ()> {
 
 // \(CONTENTS\)
 fn template2(input: Input) -> IResult<Input, GreenElement, ()> {
-    let (input, (backslash1, l)) = tuple((backslash_token, l_parens_token))(input)?;
+    let (input, (backslash1, l)) = (backslash_token, l_parens_token).parse(input)?;
     if let Some(i) = jetscii::Substring::new("\\)").find(input.s) {
         let (input, content) = input.take_split(i);
-        let (input, (backslash2, r)) = tuple((backslash_token, r_parens_token))(input)?;
+        let (input, (backslash2, r)) = (backslash_token, r_parens_token).parse(input)?;
         Ok((
             input,
             node(
@@ -70,10 +70,10 @@ fn template2(input: Input) -> IResult<Input, GreenElement, ()> {
 
 // \[CONTENTS\]
 fn template3(input: Input) -> IResult<Input, GreenElement, ()> {
-    let (input, (backslash1, l)) = tuple((backslash_token, l_bracket_token))(input)?;
+    let (input, (backslash1, l)) = (backslash_token, l_bracket_token).parse(input)?;
     if let Some(i) = jetscii::Substring::new("\\]").find(input.s) {
         let (input, content) = input.take_split(i);
-        let (input, (backslash2, r)) = tuple((backslash_token, r_bracket_token))(input)?;
+        let (input, (backslash2, r)) = (backslash_token, r_bracket_token).parse(input)?;
         Ok((
             input,
             node(
@@ -89,7 +89,7 @@ fn template3(input: Input) -> IResult<Input, GreenElement, ()> {
 // $$CONTENTS$$
 fn template4(input: Input) -> IResult<Input, GreenElement, ()> {
     let (input, l) = dollar2_token(input)?;
-    let (input, content) = take_until1("$$")(input)?;
+    let (input, content) = take_until1("$$").parse(input)?;
     let (input, r) = dollar2_token(input)?;
     Ok((
         input,
@@ -100,7 +100,7 @@ fn template4(input: Input) -> IResult<Input, GreenElement, ()> {
 // $CONTENTS$
 fn template5(input: Input) -> IResult<Input, GreenElement, ()> {
     let (input, l) = dollar_token(input)?;
-    let (input, content) = take_until1("$")(input)?;
+    let (input, content) = take_until1("$").parse(input)?;
     let (input, r) = dollar_token(input)?;
 
     let b = content.as_bytes()[0];

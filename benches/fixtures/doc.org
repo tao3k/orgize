@@ -1,0 +1,19 @@
+#+TITLE: Benchmark Document
+#+AUTHOR: orgize
+
+* Overview
+This fixture keeps benchmark targets compileable in clean checkouts.
+It includes paragraphs, /emphasis/, *bold text*, links, and timestamps.
+
+** Tasks
+SCHEDULED: <2024-01-01 Mon>
+- [ ] Parse headings
+- [X] Parse lists
+- [@a] Parse counters :: with descriptions
+
+** Source
+#+BEGIN_SRC rust
+fn main() {
+    println!("orgize");
+}
+#+END_SRC

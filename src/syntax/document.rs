@@ -1,4 +1,4 @@
-use nom::{combinator::opt, IResult};
+use nom::{combinator::opt, IResult, Parser};
 
 use super::{
     combinator::{blank_lines, node, GreenElement},
@@ -23,7 +23,7 @@ fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
     let mut children = vec![];
 
-    let (input, property_drawer) = opt(property_drawer_node)(input)?;
+    let (input, property_drawer) = opt(property_drawer_node).parse(input)?;
     if let Some(property_drawer) = property_drawer {
         children.push(property_drawer);
     }
@@ -36,7 +36,7 @@ fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         return Ok((input, node(DOCUMENT, children)));
     }
 
-    let (input, section) = opt(section_node)(input)?;
+    let (input, section) = opt(section_node).parse(input)?;
     if let Some(section) = section {
         children.push(section);
     }

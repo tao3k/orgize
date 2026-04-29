@@ -3,14 +3,14 @@ use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use orgize::Org;
 
 const INPUT: &[(&str, &str)] = &[
-    ("doc.org", include_str!("./doc.org")),
-    ("org-faq.org", include_str!("./org-faq.org")),
-    ("org-hacks.org", include_str!("./org-hacks.org")),
+    ("doc.org", include_str!("./fixtures/doc.org")),
+    ("org-faq.org", include_str!("./fixtures/org-faq.org")),
+    ("org-hacks.org", include_str!("./fixtures/org-hacks.org")),
     (
         "org-release-notes.org",
-        include_str!("./org-release-notes.org"),
+        include_str!("./fixtures/org-release-notes.org"),
     ),
-    ("org-syntax.org", include_str!("./org-syntax.org")),
+    ("org-syntax.org", include_str!("./fixtures/org-syntax.org")),
 ];
 
 pub fn bench_parse(c: &mut Criterion) {

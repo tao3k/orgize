@@ -1,6 +1,6 @@
 use bytecount::count;
 use memchr::memchr_iter;
-use nom::{combinator::map, IResult, Slice};
+use nom::{combinator::map, IResult};
 
 use super::{
     combinator::{node, token, GreenElement},

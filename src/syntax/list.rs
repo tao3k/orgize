@@ -4,8 +4,8 @@ use nom::{
     bytes::complete::{tag, take},
     character::complete::{alphanumeric1, digit1, space0, space1},
     combinator::{cond, map, opt, recognize, verify},
-    sequence::{preceded, tuple},
-    IResult, InputTake,
+    sequence::preceded,
+    IResult, Parser,
 };
 
 use super::{
@@ -80,7 +80,7 @@ fn list_item_node<'a>(
     indent: Input<'a>,
     input: Input<'a>,
 ) -> IResult<Input<'a>, (bool, GreenElement), ()> {
-    let (input, bullet) = recognize(tuple((
+    let (input, bullet) = recognize((
         alt((
             tag("+"),
             tag("*"),
@@ -89,7 +89,8 @@ fn list_item_node<'a>(
             preceded(digit1, tag(")")),
         )),
         alt((space1, eol_or_eof)),
-    )))(input)?;
+    ))
+    .parse(input)?;
 
     // list item cannot have an asterisk at the beginning of line
     if indent.is_empty() && bullet.s.starts_with('*') {
@@ -113,12 +114,12 @@ fn list_item_node<'a>(
     }
 
     let is_ordered = bullet.s.starts_with(|c: char| c.is_ascii_digit());
-    let (input, counter) = opt(list_item_counter)(input)?;
-    let (input, checkbox) = opt(list_item_checkbox)(input)?;
-    let (input, tag) = cond(!is_ordered, opt(list_item_tag))(input)?;
+    let (input, counter) = opt(list_item_counter).parse(input)?;
+    let (input, checkbox) = opt(list_item_checkbox).parse(input)?;
+    let (input, tag) = cond(!is_ordered, opt(list_item_tag)).parse(input)?;
     let (input, (ends_with_empty_blank_lines, content)) =
         list_item_content_node(input, indent.len())?;
-    let (input, post_blank) = cond(!ends_with_empty_blank_lines, blank_lines)(input)?;
+    let (input, post_blank) = cond(!ends_with_empty_blank_lines, blank_lines).parse(input)?;
 
     let mut children = vec![
         indent.token(LIST_ITEM_INDENT),
@@ -152,14 +153,15 @@ fn list_item_node<'a>(
 )]
 fn list_item_counter(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     let (input, node) = map(
-        tuple((l_bracket_token, at_token, alphanumeric1, r_bracket_token)),
+        (l_bracket_token, at_token, alphanumeric1, r_bracket_token),
         |(l_bracket, at, char, r_bracket)| {
             node(
                 LIST_ITEM_COUNTER,
                 [l_bracket, at, char.text_token(), r_bracket],
             )
         },
-    )(input)?;
+    )
+    .parse(input)?;
 
     let (input, ws) = space0(input)?;
 
@@ -172,20 +174,21 @@ fn list_item_counter(input: Input) -> IResult<Input, (GreenElement, Input), ()> 
 )]
 fn list_item_checkbox(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     let (input, node) = map(
-        tuple((
+        (
             l_bracket_token,
             verify(take(1usize), |input: &Input| {
                 input.s == " " || input.s == "X" || input.s == "-"
             }),
             r_bracket_token,
-        )),
+        ),
         |(l_bracket, char, r_bracket)| {
             node(
                 LIST_ITEM_CHECK_BOX,
                 [l_bracket, char.text_token(), r_bracket],
             )
         },
-    )(input)?;
+    )
+    .parse(input)?;
 
     let (input, ws) = space0(input)?;
 

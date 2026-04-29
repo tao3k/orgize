@@ -2,8 +2,7 @@ use nom::{
     bytes::complete::{tag_no_case, take_while1},
     character::complete::{space0, space1},
     combinator::{iterator, map, verify},
-    sequence::tuple,
-    IResult, InputTake,
+    IResult, Parser,
 };
 
 use super::{
@@ -16,17 +15,18 @@ use super::{
     SyntaxKind::*,
 };
 
-fn drawer_begin_node(input: Input) -> IResult<Input, (GreenElement, &str), ()> {
+fn drawer_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str), ()> {
     let mut b = NodeBuilder::new();
 
-    let (input, (ws, colon, name, colon_, ws_, nl)) = tuple((
+    let (input, (ws, colon, name, colon_, ws_, nl)) = (
         space0,
         colon_token,
         take_while1(|c: char| c.is_ascii_alphabetic() || c == '-' || c == '_'),
         colon_token,
         space0,
         eol_or_eof,
-    ))(input)?;
+    )
+        .parse(input)?;
 
     b.ws(ws);
     b.push(colon);
@@ -39,14 +39,15 @@ fn drawer_begin_node(input: Input) -> IResult<Input, (GreenElement, &str), ()> {
 }
 
 fn drawer_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    let (input, (ws, colon, end, colon_, ws_, nl)) = tuple((
+    let (input, (ws, colon, end, colon_, ws_, nl)) = (
         space0,
         colon_token,
         tag_no_case("END"),
         colon_token,
         space0,
         eol_or_eof,
-    ))(input)?;
+    )
+        .parse(input)?;
 
     let mut b = NodeBuilder::new();
     b.ws(ws);
@@ -114,7 +115,8 @@ fn node_property_node(input: Input) -> IResult<Input, GreenElement, ()> {
             |i: &Input| i.ends_with(':'),
         ),
         |input: Input| input.take_split(input.len() - 1),
-    )(input)?;
+    )
+    .parse(input)?;
     let (input, ws2) = space1(input)?;
     let (input, (value, ws3, nl)) = trim_line_end(input)?;
 

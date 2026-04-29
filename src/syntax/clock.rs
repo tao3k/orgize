@@ -3,7 +3,6 @@ use nom::{
     bytes::complete::tag,
     character::complete::{digit1, space0},
     combinator::{map, opt, recognize},
-    sequence::tuple,
     IResult,
 };
 
@@ -22,21 +21,21 @@ use super::{
 )]
 pub fn clock_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             space0,
             tag("CLOCK:"),
             space0,
             alt((timestamp_inactive_node, timestamp_active_node)),
-            opt(tuple((
+            opt((
                 space0,
                 double_arrow_token,
                 space0,
-                recognize(tuple((digit1, colon_token, digit1))),
-            ))),
+                recognize((digit1, colon_token, digit1)),
+            )),
             space0,
             eol_or_eof,
             blank_lines,
-        )),
+        ),
         |(ws, clock, ws_, timestamp, duration, ws__, nl, post_blank)| {
             let mut b = NodeBuilder::new();
 

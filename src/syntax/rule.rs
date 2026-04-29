@@ -1,7 +1,4 @@
-use nom::{
-    bytes::complete::take_while_m_n, character::complete::space0, combinator::map, sequence::tuple,
-    IResult,
-};
+use nom::{bytes::complete::take_while_m_n, character::complete::space0, combinator::map, IResult};
 
 use super::{
     combinator::{blank_lines, eol_or_eof, GreenElement, NodeBuilder},
@@ -11,13 +8,13 @@ use super::{
 
 pub fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
-        tuple((
+        (
             space0,
             take_while_m_n(5, usize::MAX, |c| c == '-'),
             space0,
             eol_or_eof,
             blank_lines,
-        )),
+        ),
         |(ws, dashes, ws_, nl, post_blank)| {
             let mut b = NodeBuilder::new();
             b.ws(ws);
