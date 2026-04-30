@@ -11,7 +11,8 @@ Live Demo: <https://tao3k.github.io/orgize/>
 
 ## Parse
 
-To parse a org-mode string, simply invoking the `Org::parse` function:
+To parse an org-mode string, call `Org::parse` and then project the owned
+semantic AST with `Org::document()`:
 
 ```rust
 use orgize::{ast::ElementData, Org};
@@ -26,7 +27,8 @@ assert!(document.sections[0].children.iter().all(|element| {
 }));
 ```
 
-use `ParseConfig::parse` to specific a custom parse config
+Use `ParseConfig::parse` to specify a custom parse config. Low-level typed
+syntax wrappers live under `orgize::syntax_ast`:
 
 ```rust
 use orgize::{syntax_ast::Headline, Org, ParseConfig};
@@ -39,6 +41,21 @@ let config = ParseConfig {
 let org = config.parse("* TASK Title 1");
 let hdl = org.first_node::<Headline>().unwrap();
 assert_eq!(hdl.todo_keyword().unwrap(), "TASK");
+```
+
+`Org::document()` returns `ast::ParsedAst`, an owned semantic tree with source
+annotations and projection diagnostics. Use `document.to_bare()` when tests,
+snapshots, or serialization do not need source ranges.
+
+Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
+
+```rust
+use orgize::{rowan::ast::AstNode, syntax_ast::Headline, Org};
+
+let org = Org::parse("* Title");
+let syntax_doc = org.syntax_document();
+let headline = syntax_doc.syntax().children().find_map(Headline::cast).unwrap();
+assert_eq!(headline.title_raw(), "Title");
 ```
 
 ## Traverse
@@ -103,9 +120,29 @@ Checkout `examples/html-slugify.rs` on how to customizing html export process.
 
 ## API compatibility
 
+Parser v2 makes a breaking API boundary explicit:
+
+- `orgize::ast` is the owned semantic AST. Its primary public types are
+  `Document<A>`, `Section<A>`, `Element<A>`, `Object<A>`, `ParsedAnnotation`,
+  and `Diagnostic`.
+- `ast::ParsedAst` is `Document<ParsedAnnotation>`.
+- `ast::BareAst` is `Document<()>`.
+- `Org::document()` returns `ast::ParsedAst`.
+- `Org::syntax_document()` and `orgize::syntax_ast::*` expose the old typed
+  wrappers around the lossless rowan syntax tree.
+
+Code that previously imported rowan-backed wrappers from `orgize::ast::*`
+should import them from `orgize::syntax_ast::*` instead.
+
 `Org::syntax_document()` and the `syntax_ast` module expose access to the internal syntax tree,
-along with some rowan low-level APIs. This can be useful for intricate tasks.
+along with rowan low-level APIs. This can be useful for intricate tasks or for
+HTML/export integrations that need byte-for-byte source preservation.
 
 However, the structure of the internal syntax tree can change between different versions of the library.
 Because of this, the result of `element.syntax()` doesn't follow semantic versioning,
 which means updates might break your code if it relies on this method.
+
+Semantic AST traversal is exposed through Rust-style APIs on `Document<A>`:
+`visit`, `visit_mut`, `fold`, `map_ann`, and `try_map_ann`. The semantic layer is
+projected from the rowan substrate; it does not replace rowan as the lossless
+parser representation.
