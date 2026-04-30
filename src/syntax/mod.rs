@@ -243,7 +243,7 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
 impl SyntaxKind {
     /// whether this node is [object](https://orgmode.org/worg/org-syntax.html#Objects)
     pub fn is_object(&self) -> bool {
-        matches!(
+        let is_standard_object = matches!(
             self,
             SyntaxKind::ENTITY
                 | SyntaxKind::LATEX_FRAGMENT
@@ -268,7 +268,16 @@ impl SyntaxKind {
                 | SyntaxKind::VERBATIM
                 | SyntaxKind::CODE
                 | SyntaxKind::STRIKE
-        )
+        );
+
+        #[cfg(feature = "syntax-org-fc")]
+        {
+            is_standard_object || matches!(self, SyntaxKind::CLOZE)
+        }
+        #[cfg(not(feature = "syntax-org-fc"))]
+        {
+            is_standard_object
+        }
     }
 
     /// whether this node is [element](https://orgmode.org/worg/org-syntax.html#Elements)

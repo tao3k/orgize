@@ -119,6 +119,7 @@ pub enum ElementData<A = ()> {
     PropertyDrawer(Vec<Property<A>>),
     List(List<A>),
     Table(Table<A>),
+    TableEl { raw: String },
     Block(Block<A>),
     FootnoteDef(FootnoteDef<A>),
     Comment(String),
@@ -248,6 +249,13 @@ pub enum ObjectData<A = ()> {
         definition: Vec<Object<A>>,
     },
     Citation(Citation<A>),
+    Cloze {
+        text: Vec<Object<A>>,
+        raw_text: String,
+        hint: Option<String>,
+        id: Option<String>,
+        raw: String,
+    },
     InlineCall {
         name: String,
         arguments: String,
@@ -781,6 +789,7 @@ impl<A> ElementData<A> {
             }
             ElementData::List(list) => ElementData::List(list.map_ann_with(f)),
             ElementData::Table(table) => ElementData::Table(table.map_ann_with(f)),
+            ElementData::TableEl { raw } => ElementData::TableEl { raw: raw.clone() },
             ElementData::Block(block) => ElementData::Block(block.map_ann_with(f)),
             ElementData::FootnoteDef(def) => ElementData::FootnoteDef(FootnoteDef {
                 label: def.label.clone(),
@@ -828,6 +837,7 @@ impl<A> ElementData<A> {
             ),
             ElementData::List(list) => ElementData::List(list.try_map_ann_with(f)?),
             ElementData::Table(table) => ElementData::Table(table.try_map_ann_with(f)?),
+            ElementData::TableEl { raw } => ElementData::TableEl { raw: raw.clone() },
             ElementData::Block(block) => ElementData::Block(block.try_map_ann_with(f)?),
             ElementData::FootnoteDef(def) => ElementData::FootnoteDef(FootnoteDef {
                 label: def.label.clone(),
@@ -1363,6 +1373,19 @@ impl<A> ObjectData<A> {
                 definition: definition.iter().map(|x| x.map_ann_with(f)).collect(),
             },
             ObjectData::Citation(citation) => ObjectData::Citation(citation.map_ann_with(f)),
+            ObjectData::Cloze {
+                text,
+                raw_text,
+                hint,
+                id,
+                raw,
+            } => ObjectData::Cloze {
+                text: text.iter().map(|x| x.map_ann_with(f)).collect(),
+                raw_text: raw_text.clone(),
+                hint: hint.clone(),
+                id: id.clone(),
+                raw: raw.clone(),
+            },
             ObjectData::InlineCall {
                 name,
                 arguments,
@@ -1441,6 +1464,22 @@ impl<A> ObjectData<A> {
                     .collect::<Result<_, _>>()?,
             },
             ObjectData::Citation(citation) => ObjectData::Citation(citation.try_map_ann_with(f)?),
+            ObjectData::Cloze {
+                text,
+                raw_text,
+                hint,
+                id,
+                raw,
+            } => ObjectData::Cloze {
+                text: text
+                    .iter()
+                    .map(|x| x.try_map_ann_with(f))
+                    .collect::<Result<_, _>>()?,
+                raw_text: raw_text.clone(),
+                hint: hint.clone(),
+                id: id.clone(),
+                raw: raw.clone(),
+            },
             ObjectData::InlineCall {
                 name,
                 arguments,
@@ -1510,6 +1549,11 @@ impl<A> ObjectData<A> {
                 }
             }
             ObjectData::Citation(citation) => citation.visit_with(f),
+            ObjectData::Cloze { text, .. } => {
+                for child in text {
+                    child.visit_with(f);
+                }
+            }
             _ => {}
         }
     }
@@ -1533,6 +1577,11 @@ impl<A> ObjectData<A> {
                 }
             }
             ObjectData::Citation(citation) => citation.visit_mut_with(f),
+            ObjectData::Cloze { text, .. } => {
+                for child in text {
+                    child.visit_mut_with(f);
+                }
+            }
             _ => {}
         }
     }
@@ -1557,6 +1606,11 @@ impl<A> ObjectData<A> {
             }
             ObjectData::Citation(citation) => {
                 acc = citation.fold_with(acc, f);
+            }
+            ObjectData::Cloze { text, .. } => {
+                for child in text {
+                    acc = child.fold_with(acc, f);
+                }
             }
             _ => {}
         }
@@ -1802,6 +1856,9 @@ impl<'a> Converter<'a> {
             SyntaxKind::PROPERTY_DRAWER => ElementData::PropertyDrawer(self.properties(node)),
             SyntaxKind::LIST => ElementData::List(self.list(node)),
             SyntaxKind::ORG_TABLE => ElementData::Table(self.table(node)),
+            SyntaxKind::TABLE_EL => ElementData::TableEl {
+                raw: self.table_el(node),
+            },
             SyntaxKind::SOURCE_BLOCK
             | SyntaxKind::EXAMPLE_BLOCK
             | SyntaxKind::EXPORT_BLOCK
@@ -2006,6 +2063,12 @@ impl<'a> Converter<'a> {
         Table { rows }
     }
 
+    fn table_el(&self, node: &SyntaxNode) -> String {
+        syntax_ast::TableEl::cast(node.clone())
+            .map(|table| table.raw())
+            .unwrap_or_else(|| node.to_string())
+    }
+
     fn block(&mut self, node: &SyntaxNode) -> Block<ParsedAnnotation> {
         let kind = match node.kind() {
             SyntaxKind::SOURCE_BLOCK => BlockKind::Source,
@@ -2163,6 +2226,8 @@ impl<'a> Converter<'a> {
             SyntaxKind::LATEX_FRAGMENT => ObjectData::LatexFragment(node.to_string()),
             SyntaxKind::SNIPPET => self.export_snippet(&node),
             SyntaxKind::FN_REF => self.footnote_ref(&node),
+            #[cfg(feature = "syntax-org-fc")]
+            SyntaxKind::CLOZE => self.cloze(&node),
             SyntaxKind::INLINE_CALL => self.inline_call(&node),
             SyntaxKind::INLINE_SRC => self.inline_src(&node),
             SyntaxKind::LINK => self.link(&node),
@@ -2267,6 +2332,19 @@ impl<'a> Converter<'a> {
         }
     }
 
+    #[cfg(feature = "syntax-org-fc")]
+    fn cloze(&mut self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
+        let legacy = syntax_ast::Cloze::cast(node.clone()).expect("cloze node");
+        let text = legacy.text().collect::<Vec<_>>();
+        ObjectData::Cloze {
+            text: self.objects_from_elements(text),
+            raw_text: legacy.text_raw(),
+            hint: legacy.hint().map(|token| token.to_string()),
+            id: legacy.id().map(|token| token.to_string()),
+            raw: legacy.raw(),
+        }
+    }
+
     fn inline_call(&self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
         let legacy = syntax_ast::InlineCall::cast(node.clone()).expect("inline call node");
         let raw = node.to_string();
@@ -2319,12 +2397,7 @@ impl<'a> Converter<'a> {
             .map(|(name, args)| {
                 (
                     name,
-                    args.strip_suffix(')')
-                        .unwrap_or(args)
-                        .split(',')
-                        .map(|arg| arg.trim().to_string())
-                        .filter(|arg| !arg.is_empty())
-                        .collect(),
+                    split_macro_args(args.strip_suffix(')').unwrap_or(args)),
                 )
             })
             .unwrap_or((inner.as_str(), Vec::new()));
@@ -2441,6 +2514,43 @@ fn strip_pair(value: &str) -> &str {
                 .map(|(end, _)| &value[start..end])
         })
         .unwrap_or_default()
+}
+
+fn split_macro_args(args: &str) -> Vec<String> {
+    let mut values = Vec::new();
+    let mut current = String::new();
+    let mut escaped = false;
+
+    for ch in args.chars() {
+        if escaped {
+            if ch != ',' && ch != '\\' {
+                current.push('\\');
+            }
+            current.push(ch);
+            escaped = false;
+        } else if ch == '\\' {
+            escaped = true;
+        } else if ch == ',' {
+            let value = current.trim();
+            if !value.is_empty() {
+                values.push(value.to_string());
+            }
+            current.clear();
+        } else {
+            current.push(ch);
+        }
+    }
+
+    if escaped {
+        current.push('\\');
+    }
+
+    let value = current.trim();
+    if !value.is_empty() {
+        values.push(value.to_string());
+    }
+
+    values
 }
 
 fn strip_wrapping(value: &str, prefix: &str, suffix: &str) -> String {

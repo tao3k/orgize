@@ -1,7 +1,37 @@
 use orgize::{
-    ast::{AstMut, AstRef, ElementData, MarkupKind, ObjectData, TodoState},
+    ast::{AstMut, AstRef, ElementData, MarkupKind, ObjectData, ParsedAst, TodoState},
     Org,
 };
+
+fn assert_clean_projection(doc: &ParsedAst) {
+    assert!(
+        doc.diagnostics.is_empty(),
+        "unexpected diagnostics: {:#?}",
+        doc.diagnostics
+    );
+
+    let unknowns = doc.fold(Vec::new(), |mut unknowns, node| {
+        match node {
+            AstRef::Element(element) => {
+                if let ElementData::Unknown { kind, .. } = &element.data {
+                    unknowns.push(format!("element:{kind}"));
+                }
+            }
+            AstRef::Object(object) => {
+                if let ObjectData::Unknown { kind, .. } = &object.data {
+                    unknowns.push(format!("object:{kind}"));
+                }
+            }
+            _ => {}
+        }
+        unknowns
+    });
+
+    assert!(
+        unknowns.is_empty(),
+        "unexpected semantic unknowns: {unknowns:#?}"
+    );
+}
 
 #[test]
 fn semantic_ast_projection_and_bare_snapshot() {
@@ -24,7 +54,7 @@ fn main() {}
     )
     .document();
 
-    assert!(doc.diagnostics.is_empty());
+    assert_clean_projection(&doc);
     assert_eq!(doc.children.len(), 1);
     assert_eq!(doc.sections.len(), 1);
 
@@ -56,6 +86,112 @@ fn main() {}
         .any(|object| matches!(object.data, ObjectData::Link { .. })));
 
     insta::assert_debug_snapshot!("semantic_bare_ast", doc.to_bare());
+}
+
+#[test]
+fn semantic_ast_covers_current_lossless_projection_surface() {
+    let fixtures = [
+        "#+TITLE: Demo\n",
+        r#"* TODO Heading :tag:
+DEADLINE: <2026-05-01 Fri> SCHEDULED: <2026-04-30 Thu> CLOSED: [2026-04-29 Wed]
+:PROPERTIES:
+:CUSTOM_ID: id
+:END:
+Body.
+"#,
+        r#"Paragraph with *bold* /italic/ _underline_ +strike+ ~code~ =verbatim= H_2 x^2 <2026-04-30 Thu> [2026-04-30 Thu] <%%(diary-date 4 30)> @@html:<span>@@ \alpha $x$ <<target>> <<<radio>>> {{{macro(1\,a, two)}}} [fn:note:See /inner/] src_rust[:exports code]{let x = 1;} call_square(4) [50%]\\
+Next.
+"#,
+        r#"#+ATTR_HTML: :class compact
+| A | B |
+|---+---|
+| 1 | 2 |
+#+TBLFM: $1=$2
+"#,
+        r#"#+begin_quote
+quoted
+#+end_quote
+
+#+begin_src rust
+fn main() {}
+#+end_src
+
+#+begin_export html
+<b>x</b>
+#+end_export
+"#,
+        r#":DRAWER:
+inside
+:END:
+
+[fn:note] Footnote body
+
+# comment
+: fixed
+-----
+\begin{equation}
+x
+\end{equation}
+"#,
+        "- [X] item\n- term :: description\n",
+        "  +---+\n  | a |\n  +---+\n",
+    ];
+
+    for fixture in fixtures {
+        let doc = Org::parse(fixture).document();
+        assert_clean_projection(&doc);
+    }
+}
+
+#[test]
+fn semantic_ast_projects_table_el() {
+    let doc = Org::parse("  +---+\n  | a |\n  +---+\n").document();
+
+    assert_clean_projection(&doc);
+    match &doc.children[0].data {
+        ElementData::TableEl { raw } => {
+            assert!(raw.contains("| a |"));
+            assert!(raw.starts_with("  +---+"));
+        }
+        other => panic!("expected table.el element, got {other:#?}"),
+    }
+}
+
+#[cfg(feature = "syntax-org-fc")]
+#[test]
+fn semantic_ast_projects_cloze_objects_with_metadata() {
+    let doc = Org::parse("{{*text*}{hint}@card-id}").document();
+
+    assert_clean_projection(&doc);
+    let paragraph = match &doc.children[0].data {
+        ElementData::Paragraph(objects) => objects,
+        other => panic!("expected paragraph, got {other:#?}"),
+    };
+    let cloze = paragraph
+        .iter()
+        .find_map(|object| match &object.data {
+            ObjectData::Cloze {
+                text,
+                raw_text,
+                hint,
+                id,
+                raw,
+            } => Some((text, raw_text, hint, id, raw)),
+            _ => None,
+        })
+        .expect("cloze object");
+
+    assert_eq!(cloze.1, "*text*");
+    assert_eq!(cloze.2.as_deref(), Some("hint"));
+    assert_eq!(cloze.3.as_deref(), Some("card-id"));
+    assert_eq!(cloze.4, "{{*text*}{hint}@card-id}");
+    assert!(cloze.0.iter().any(|object| matches!(
+        object.data,
+        ObjectData::Markup {
+            kind: MarkupKind::Bold,
+            ..
+        }
+    )));
 }
 
 #[test]
