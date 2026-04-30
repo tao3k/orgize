@@ -1674,19 +1674,14 @@ impl<'a> Converter<'a> {
     }
 
     fn clock(&self, node: &SyntaxNode) -> Clock {
+        let legacy = syntax_ast::Clock::cast(node.clone()).expect("clock node");
         let value = node
             .children()
             .find_map(|child| self.timestamp_node(&child));
-        let duration = node
-            .children_with_tokens()
-            .skip_while(|child| child.kind() != SyntaxKind::DOUBLE_ARROW)
-            .filter_map(|child| child.into_token())
-            .map(|token| token.text().to_string())
-            .collect::<String>();
 
         Clock {
             value,
-            duration: (!duration.is_empty()).then_some(duration),
+            duration: legacy.duration().map(|token| token.to_string()),
             raw: node.to_string(),
         }
     }
@@ -1921,6 +1916,7 @@ impl<'a> Converter<'a> {
 
     fn object_node(&mut self, node: SyntaxNode) -> Option<Object<ParsedAnnotation>> {
         let data = match node.kind() {
+            SyntaxKind::AFFILIATED_KEYWORD => return None,
             SyntaxKind::BOLD => self.markup(&node, MarkupKind::Bold),
             SyntaxKind::ITALIC => self.markup(&node, MarkupKind::Italic),
             SyntaxKind::UNDERLINE => self.markup(&node, MarkupKind::Underline),

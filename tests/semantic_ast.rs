@@ -172,6 +172,43 @@ fn semantic_ast_projects_footnote_definition_label_and_body() {
 }
 
 #[test]
+fn semantic_ast_keeps_affiliated_keywords_out_of_paragraph_objects() {
+    let doc = Org::parse("#+ATTR_HTML: :width 300px\n[[./img/a.jpg]]").document();
+
+    assert!(doc.diagnostics.is_empty());
+    let paragraph = &doc.children[0];
+    assert_eq!(paragraph.affiliated_keywords.len(), 1);
+    assert_eq!(paragraph.affiliated_keywords[0].key, "ATTR_HTML");
+    assert_eq!(paragraph.affiliated_keywords[0].value, " :width 300px");
+
+    let objects = match &paragraph.data {
+        ElementData::Paragraph(objects) => objects,
+        _ => panic!("expected paragraph"),
+    };
+    assert_eq!(objects.len(), 1);
+    assert!(matches!(objects[0].data, ObjectData::Link { .. }));
+}
+
+#[test]
+fn semantic_ast_projects_clean_clock_duration() {
+    let doc = Org::parse("* Work\nCLOCK: [2003-09-16 Tue 09:39] =>  1:00\n").document();
+
+    assert!(doc.diagnostics.is_empty());
+    let clock = doc.sections[0]
+        .children
+        .iter()
+        .find_map(|element| match &element.data {
+            ElementData::Clock(clock) => Some(clock),
+            _ => None,
+        })
+        .expect("clock element");
+
+    assert!(clock.value.is_some());
+    assert_eq!(clock.duration.as_deref(), Some("1:00"));
+    assert!(clock.raw.contains("=>  1:00"));
+}
+
+#[test]
 fn existing_html_traversal_still_uses_the_lossless_substrate() {
     let html = Org::parse(
         r#"* title
