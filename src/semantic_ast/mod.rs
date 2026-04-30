@@ -329,14 +329,24 @@ pub struct CiteReference<A = ()> {
 pub enum AstRef<'a, A> {
     Document(&'a Document<A>),
     Section(&'a Section<A>),
+    Property(&'a Property<A>),
+    Keyword(&'a Keyword<A>),
     Element(&'a Element<A>),
+    ListItem(&'a ListItem<A>),
+    TableRow(&'a TableRow<A>),
+    TableCell(&'a TableCell<A>),
     Object(&'a Object<A>),
 }
 
 pub enum AstMut<'a, A> {
     Document(&'a mut Document<A>),
     Section(&'a mut Section<A>),
+    Property(&'a mut Property<A>),
+    Keyword(&'a mut Keyword<A>),
     Element(&'a mut Element<A>),
+    ListItem(&'a mut ListItem<A>),
+    TableRow(&'a mut TableRow<A>),
+    TableCell(&'a mut TableCell<A>),
     Object(&'a mut Object<A>),
 }
 
@@ -429,6 +439,9 @@ impl<A> Document<A> {
         F: FnMut(AstRef<'_, A>),
     {
         f(AstRef::Document(self));
+        for property in &self.properties {
+            property.visit_with(f);
+        }
         for child in &self.children {
             child.visit_with(f);
         }
@@ -442,6 +455,9 @@ impl<A> Document<A> {
         F: FnMut(AstMut<'_, A>),
     {
         f(AstMut::Document(self));
+        for property in &mut self.properties {
+            property.visit_mut_with(f);
+        }
         for child in &mut self.children {
             child.visit_mut_with(f);
         }
@@ -455,6 +471,9 @@ impl<A> Document<A> {
         F: FnMut(T, AstRef<'_, A>) -> T,
     {
         let mut acc = f(init, AstRef::Document(self));
+        for property in &self.properties {
+            acc = property.fold_with(acc, f);
+        }
         for child in &self.children {
             acc = child.fold_with(acc, f);
         }
@@ -529,6 +548,9 @@ impl<A> Section<A> {
         F: FnMut(AstRef<'_, A>),
     {
         f(AstRef::Section(self));
+        for property in &self.properties {
+            property.visit_with(f);
+        }
         for object in &self.title {
             object.visit_with(f);
         }
@@ -545,6 +567,9 @@ impl<A> Section<A> {
         F: FnMut(AstMut<'_, A>),
     {
         f(AstMut::Section(self));
+        for property in &mut self.properties {
+            property.visit_mut_with(f);
+        }
         for object in &mut self.title {
             object.visit_mut_with(f);
         }
@@ -561,6 +586,9 @@ impl<A> Section<A> {
         F: FnMut(T, AstRef<'_, A>) -> T,
     {
         let mut acc = f(init, AstRef::Section(self));
+        for property in &self.properties {
+            acc = property.fold_with(acc, f);
+        }
         for object in &self.title {
             acc = object.fold_with(acc, f);
         }
@@ -596,6 +624,27 @@ impl<A> Property<A> {
             value: self.value.clone(),
         })
     }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::Property(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::Property(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::Property(self))
+    }
 }
 
 impl<A> Keyword<A> {
@@ -621,6 +670,27 @@ impl<A> Keyword<A> {
             optional: self.optional.clone(),
             value: self.value.clone(),
         })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::Keyword(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::Keyword(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::Keyword(self))
     }
 }
 
@@ -660,6 +730,9 @@ impl<A> Element<A> {
         F: FnMut(AstRef<'_, A>),
     {
         f(AstRef::Element(self));
+        for keyword in &self.affiliated_keywords {
+            keyword.visit_with(f);
+        }
         self.data.visit_with(f);
     }
 
@@ -668,6 +741,9 @@ impl<A> Element<A> {
         F: FnMut(AstMut<'_, A>),
     {
         f(AstMut::Element(self));
+        for keyword in &mut self.affiliated_keywords {
+            keyword.visit_mut_with(f);
+        }
         self.data.visit_mut_with(f);
     }
 
@@ -675,7 +751,10 @@ impl<A> Element<A> {
     where
         F: FnMut(T, AstRef<'_, A>) -> T,
     {
-        let acc = f(init, AstRef::Element(self));
+        let mut acc = f(init, AstRef::Element(self));
+        for keyword in &self.affiliated_keywords {
+            acc = keyword.fold_with(acc, f);
+        }
         self.data.fold_with(acc, f)
     }
 }
@@ -779,29 +858,24 @@ impl<A> ElementData<A> {
                     object.visit_with(f);
                 }
             }
+            ElementData::Keyword(keyword) | ElementData::BabelCall(keyword) => {
+                keyword.visit_with(f);
+            }
             ElementData::Drawer(drawer) => {
                 for child in &drawer.children {
                     child.visit_with(f);
                 }
             }
-            ElementData::List(list) => {
-                for item in &list.items {
-                    for object in &item.tag {
-                        object.visit_with(f);
-                    }
-                    for child in &item.children {
-                        child.visit_with(f);
-                    }
+            ElementData::PropertyDrawer(properties) => {
+                for property in properties {
+                    property.visit_with(f);
                 }
             }
+            ElementData::List(list) => {
+                list.visit_with(f);
+            }
             ElementData::Table(table) => {
-                for row in &table.rows {
-                    for cell in &row.cells {
-                        for object in &cell.objects {
-                            object.visit_with(f);
-                        }
-                    }
-                }
+                table.visit_with(f);
             }
             ElementData::Block(block) => {
                 for child in &block.children {
@@ -827,29 +901,24 @@ impl<A> ElementData<A> {
                     object.visit_mut_with(f);
                 }
             }
+            ElementData::Keyword(keyword) | ElementData::BabelCall(keyword) => {
+                keyword.visit_mut_with(f);
+            }
             ElementData::Drawer(drawer) => {
                 for child in &mut drawer.children {
                     child.visit_mut_with(f);
                 }
             }
-            ElementData::List(list) => {
-                for item in &mut list.items {
-                    for object in &mut item.tag {
-                        object.visit_mut_with(f);
-                    }
-                    for child in &mut item.children {
-                        child.visit_mut_with(f);
-                    }
+            ElementData::PropertyDrawer(properties) => {
+                for property in properties {
+                    property.visit_mut_with(f);
                 }
             }
+            ElementData::List(list) => {
+                list.visit_mut_with(f);
+            }
             ElementData::Table(table) => {
-                for row in &mut table.rows {
-                    for cell in &mut row.cells {
-                        for object in &mut cell.objects {
-                            object.visit_mut_with(f);
-                        }
-                    }
-                }
+                table.visit_mut_with(f);
             }
             ElementData::Block(block) => {
                 for child in &mut block.children {
@@ -875,29 +944,24 @@ impl<A> ElementData<A> {
                     acc = object.fold_with(acc, f);
                 }
             }
+            ElementData::Keyword(keyword) | ElementData::BabelCall(keyword) => {
+                acc = keyword.fold_with(acc, f);
+            }
             ElementData::Drawer(drawer) => {
                 for child in &drawer.children {
                     acc = child.fold_with(acc, f);
                 }
             }
-            ElementData::List(list) => {
-                for item in &list.items {
-                    for object in &item.tag {
-                        acc = object.fold_with(acc, f);
-                    }
-                    for child in &item.children {
-                        acc = child.fold_with(acc, f);
-                    }
+            ElementData::PropertyDrawer(properties) => {
+                for property in properties {
+                    acc = property.fold_with(acc, f);
                 }
             }
+            ElementData::List(list) => {
+                acc = list.fold_with(acc, f);
+            }
             ElementData::Table(table) => {
-                for row in &table.rows {
-                    for cell in &row.cells {
-                        for object in &cell.objects {
-                            acc = object.fold_with(acc, f);
-                        }
-                    }
-                }
+                acc = table.fold_with(acc, f);
             }
             ElementData::Block(block) => {
                 for child in &block.children {
@@ -967,6 +1031,76 @@ impl<A> List<A> {
                 .collect::<Result<_, E>>()?,
         })
     }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        for item in &self.items {
+            item.visit_with(f);
+        }
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        for item in &mut self.items {
+            item.visit_mut_with(f);
+        }
+    }
+
+    fn fold_with<T, F>(&self, mut acc: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        for item in &self.items {
+            acc = item.fold_with(acc, f);
+        }
+        acc
+    }
+}
+
+impl<A> ListItem<A> {
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::ListItem(self));
+        for object in &self.tag {
+            object.visit_with(f);
+        }
+        for child in &self.children {
+            child.visit_with(f);
+        }
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::ListItem(self));
+        for object in &mut self.tag {
+            object.visit_mut_with(f);
+        }
+        for child in &mut self.children {
+            child.visit_mut_with(f);
+        }
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        let mut acc = f(init, AstRef::ListItem(self));
+        for object in &self.tag {
+            acc = object.fold_with(acc, f);
+        }
+        for child in &self.children {
+            acc = child.fold_with(acc, f);
+        }
+        acc
+    }
 }
 
 impl<A> Table<A> {
@@ -1024,6 +1158,100 @@ impl<A> Table<A> {
                 })
                 .collect::<Result<_, E>>()?,
         })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        for row in &self.rows {
+            row.visit_with(f);
+        }
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        for row in &mut self.rows {
+            row.visit_mut_with(f);
+        }
+    }
+
+    fn fold_with<T, F>(&self, mut acc: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        for row in &self.rows {
+            acc = row.fold_with(acc, f);
+        }
+        acc
+    }
+}
+
+impl<A> TableRow<A> {
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::TableRow(self));
+        for cell in &self.cells {
+            cell.visit_with(f);
+        }
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::TableRow(self));
+        for cell in &mut self.cells {
+            cell.visit_mut_with(f);
+        }
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        let mut acc = f(init, AstRef::TableRow(self));
+        for cell in &self.cells {
+            acc = cell.fold_with(acc, f);
+        }
+        acc
+    }
+}
+
+impl<A> TableCell<A> {
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::TableCell(self));
+        for object in &self.objects {
+            object.visit_with(f);
+        }
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::TableCell(self));
+        for object in &mut self.objects {
+            object.visit_mut_with(f);
+        }
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        let mut acc = f(init, AstRef::TableCell(self));
+        for object in &self.objects {
+            acc = object.fold_with(acc, f);
+        }
+        acc
     }
 }
 
