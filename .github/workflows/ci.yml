@@ -87,7 +87,7 @@ jobs:
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://tao3k.github.io/orgize/
 
     steps:
       - name: Checkout

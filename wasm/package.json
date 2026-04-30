@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/PoiScript/orgize"
+    "url": "https://github.com/tao3k/orgize"
   },
   "module": "./dist/orgize.js",
   "typings": "./dist/orgize.d.ts",
