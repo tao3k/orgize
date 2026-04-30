@@ -45,6 +45,16 @@ pub fn keyword_node(input: Input) -> IResult<Input, GreenElement, ()> {
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
 pub fn affiliated_keyword_nodes(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
+    if !starts_with_keyword_prefix(input) {
+        return Ok((input, Vec::new()));
+    }
+
+    if let Some(key) = peek_keyword_key(input) {
+        if input.c.affiliated_keywords.iter().all(|w| w != key) && !key.starts_with("ATTR_") {
+            return Ok((input, Vec::new()));
+        }
+    }
+
     let mut children = vec![];
     let mut i = input;
 
@@ -73,6 +83,14 @@ pub fn affiliated_keyword_nodes(input: Input) -> IResult<Input, Vec<GreenElement
 }
 
 pub fn tblfm_keyword_nodes(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
+    if !starts_with_keyword_prefix(input) {
+        return Ok((input, Vec::new()));
+    }
+
+    if peek_keyword_key(input).is_some_and(|key| !key.eq_ignore_ascii_case("TBLFM")) {
+        return Ok((input, Vec::new()));
+    }
+
     let mut children = vec![];
     let mut i = input;
 
@@ -94,6 +112,10 @@ pub fn tblfm_keyword_nodes(input: Input) -> IResult<Input, Vec<GreenElement>, ()
 }
 
 fn keyword_node_base(input: Input<'_>) -> IResult<Input<'_>, (&str, Vec<GreenElement>), ()> {
+    if !starts_with_keyword_prefix(input) {
+        return Err(nom::Err::Error(()));
+    }
+
     let (input, (ws, hash_plus)) = (space0, hash_plus_token).parse(input)?;
 
     let (input, (key, optional, colon)) = alt((key_with_optional, key)).parse(input)?;
@@ -121,6 +143,48 @@ fn keyword_node_base(input: Input<'_>) -> IResult<Input<'_>, (&str, Vec<GreenEle
     }
 
     Ok((input, (key.s, children)))
+}
+
+#[inline]
+fn starts_with_keyword_prefix(input: Input<'_>) -> bool {
+    let bytes = input.as_bytes();
+    let mut i = 0;
+
+    while matches!(bytes.get(i), Some(b' ' | b'\t')) {
+        i += 1;
+    }
+
+    bytes.get(i..i + 2) == Some(b"#+")
+}
+
+#[inline]
+fn peek_keyword_key(input: Input<'_>) -> Option<&str> {
+    let bytes = input.as_bytes();
+    let mut start = 0;
+
+    while matches!(bytes.get(start), Some(b' ' | b'\t')) {
+        start += 1;
+    }
+
+    if bytes.get(start..start + 2) != Some(b"#+") {
+        return None;
+    }
+
+    start += 2;
+    let key_start = start;
+
+    while let Some(byte) = bytes.get(start) {
+        if byte.is_ascii_whitespace() || matches!(byte, b':' | b'[') {
+            break;
+        }
+        start += 1;
+    }
+
+    if start == key_start {
+        None
+    } else {
+        Some(&input.as_str()[key_start..start])
+    }
 }
 
 fn key(input: Input) -> IResult<Input, (Input, Option<(Input, Input, Input)>, Input), ()> {
@@ -288,4 +352,33 @@ fn parse() {
 
     assert!(keyword_node(("#+KE Y: VALUE", config).into()).is_err());
     assert!(keyword_node(("#+ KEY: VALUE", config).into()).is_err());
+}
+
+#[test]
+fn keyword_prefix_detection() {
+    let config = &crate::ParseConfig::default();
+
+    assert!(starts_with_keyword_prefix(("#+KEY: value", config).into()));
+    assert!(starts_with_keyword_prefix(
+        ("  \t#+KEY: value", config).into()
+    ));
+    assert_eq!(
+        peek_keyword_key(("#+KEY: value", config).into()),
+        Some("KEY")
+    );
+    assert_eq!(
+        peek_keyword_key(("#+CAPTION[short]: value", config).into()),
+        Some("CAPTION")
+    );
+    assert_eq!(
+        peek_keyword_key(("#+ATTR_HTML: value", config).into()),
+        Some("ATTR_HTML")
+    );
+    assert!(!starts_with_keyword_prefix(
+        ("regular paragraph", config).into()
+    ));
+    assert!(!starts_with_keyword_prefix(
+        ("  # not an org keyword", config).into()
+    ));
+    assert!(!starts_with_keyword_prefix(("", config).into()));
 }
