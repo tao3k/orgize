@@ -6,3 +6,9 @@ Cargo.lock
 .vscode
 .gdb_history
 perf.data*
+/.pre-commit-config.yaml
+.config/*
+.run/
+.cache/
+.data/
+.bin/
