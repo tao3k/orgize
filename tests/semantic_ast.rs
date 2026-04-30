@@ -1,6 +1,7 @@
 use orgize::{
     ast::{AstMut, AstRef, ElementData, MarkupKind, ObjectData, ParsedAst, TodoState},
-    Org,
+    config::UseSubSuperscript,
+    Org, ParseConfig,
 };
 
 fn assert_clean_projection(doc: &ParsedAst) {
@@ -193,7 +194,7 @@ fn semantic_ast_projects_object_gap_repairs() {
 #[test]
 fn semantic_ast_projects_citations() {
     let doc = Org::parse(
-        "See [cite/text:global prefix ; see @doe2020 p. 42; cf. @roe2021; global suffix] and [cite/noauthor/bare:@smith].",
+        "See [cite/text:global *prefix* ; see /also/ @doe2020 p. *42*; cf. @roe2021; global suffix] and [cite/noauthor/bare:@smith].",
     )
     .document();
 
@@ -215,17 +216,44 @@ fn semantic_ast_projects_citations() {
     assert_eq!(citations[0].variant, "");
     assert!(matches!(
         &citations[0].prefix[0].data,
-        ObjectData::Plain(value) if value == "global prefix"
+        ObjectData::Plain(value) if value == "global "
     ));
+    assert!(citations[0].prefix.iter().any(|object| matches!(
+        object.data,
+        ObjectData::Markup {
+            kind: MarkupKind::Bold,
+            ..
+        }
+    )));
     assert_eq!(citations[0].references[0].id, "doe2020");
     assert!(matches!(
         &citations[0].references[0].prefix[0].data,
-        ObjectData::Plain(value) if value == "see"
+        ObjectData::Plain(value) if value == "see "
     ));
+    assert!(citations[0].references[0]
+        .prefix
+        .iter()
+        .any(|object| matches!(
+            object.data,
+            ObjectData::Markup {
+                kind: MarkupKind::Italic,
+                ..
+            }
+        )));
     assert!(matches!(
         &citations[0].references[0].suffix[0].data,
-        ObjectData::Plain(value) if value == "p. 42"
+        ObjectData::Plain(value) if value == "p. "
     ));
+    assert!(citations[0].references[0]
+        .suffix
+        .iter()
+        .any(|object| matches!(
+            object.data,
+            ObjectData::Markup {
+                kind: MarkupKind::Bold,
+                ..
+            }
+        )));
     assert_eq!(citations[0].references[1].id, "roe2021");
     assert!(matches!(
         &citations[0].suffix[0].data,
@@ -235,6 +263,35 @@ fn semantic_ast_projects_citations() {
     assert_eq!(citations[1].style, "noauthor");
     assert_eq!(citations[1].variant, "bare");
     assert_eq!(citations[1].references[0].id, "smith");
+}
+
+#[test]
+fn semantic_citation_affixes_respect_parse_config() {
+    let config = ParseConfig {
+        use_sub_superscript: UseSubSuperscript::Nil,
+        ..Default::default()
+    };
+    let doc = config.parse("See [cite:@doe x_1].").document();
+
+    assert_clean_projection(&doc);
+    let paragraph = match &doc.children[0].data {
+        ElementData::Paragraph(objects) => objects,
+        other => panic!("expected paragraph, got {other:#?}"),
+    };
+    let citation = paragraph
+        .iter()
+        .find_map(|object| match &object.data {
+            ObjectData::Citation(citation) => Some(citation),
+            _ => None,
+        })
+        .expect("citation object");
+
+    assert_eq!(citation.references[0].id, "doe");
+    assert_eq!(citation.references[0].suffix.len(), 1);
+    assert!(matches!(
+        &citation.references[0].suffix[0].data,
+        ObjectData::Plain(value) if value == "x_1"
+    ));
 }
 
 #[test]

@@ -31,7 +31,11 @@ impl Org {
     /// Returns the owned semantic document.
     pub fn document(&self) -> ParsedAst {
         let source = self.green.to_string();
-        ParsedAst::from_syntax_tree(&SyntaxNode::new_root(self.green.clone()), &source)
+        ParsedAst::from_syntax_tree_with_config(
+            &SyntaxNode::new_root(self.green.clone()),
+            &source,
+            &self.config,
+        )
     }
 
     /// Returns the lossless syntax-tree document.

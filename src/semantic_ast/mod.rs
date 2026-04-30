@@ -6,7 +6,11 @@
 use rowan::{NodeOrToken, TextRange, TextSize};
 
 use crate::{
-    syntax::{SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken},
+    config::ParseConfig,
+    syntax::{
+        combinator::node, object::standard_object_nodes, SyntaxElement, SyntaxKind, SyntaxNode,
+        SyntaxToken,
+    },
     syntax_ast,
 };
 use rowan::ast::AstNode;
@@ -361,7 +365,16 @@ pub enum AstMut<'a, A> {
 
 impl ParsedAst {
     pub fn from_syntax_tree(root: &SyntaxNode, source: &str) -> Self {
-        Converter::new(source).document(root)
+        let config = ParseConfig::default();
+        Self::from_syntax_tree_with_config(root, source, &config)
+    }
+
+    pub fn from_syntax_tree_with_config(
+        root: &SyntaxNode,
+        source: &str,
+        config: &ParseConfig,
+    ) -> Self {
+        Converter::new(source, config).document(root)
     }
 }
 
@@ -1763,14 +1776,16 @@ impl<A> Citation<A> {
 
 struct Converter<'a> {
     source: &'a str,
+    config: &'a ParseConfig,
     lines: LineIndex,
     diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> Converter<'a> {
-    fn new(source: &'a str) -> Self {
+    fn new(source: &'a str, config: &'a ParseConfig) -> Self {
         Self {
             source,
+            config,
             lines: LineIndex::new(source),
             diagnostics: Vec::new(),
         }
@@ -2393,14 +2408,13 @@ impl<'a> Converter<'a> {
                 saw_reference = true;
                 references.push(CiteReference {
                     id: segment[key_start..key_end].to_string(),
-                    prefix: self.plain_objects_from_raw(&segment[..key_start - 1], absolute_start),
-                    suffix: self
-                        .plain_objects_from_raw(&segment[key_end..], absolute_start + key_end),
+                    prefix: self.objects_from_raw(&segment[..key_start - 1], absolute_start),
+                    suffix: self.objects_from_raw(&segment[key_end..], absolute_start + key_end),
                 });
             } else if saw_reference {
-                suffix.extend(self.plain_objects_from_raw(segment, absolute_start));
+                suffix.extend(self.objects_from_raw(segment, absolute_start));
             } else {
-                prefix.extend(self.plain_objects_from_raw(segment, absolute_start));
+                prefix.extend(self.objects_from_raw(segment, absolute_start));
             }
         }
 
@@ -2522,23 +2536,40 @@ impl<'a> Converter<'a> {
         self.source.get(start..end).unwrap_or_default()
     }
 
-    fn plain_objects_from_raw(
-        &self,
+    fn objects_from_raw(
+        &mut self,
         value: &str,
         absolute_start: usize,
     ) -> Vec<Object<ParsedAnnotation>> {
         let Some((start, end)) = trimmed_range(value) else {
             return Vec::new();
         };
-        let range = TextRange::new(
-            ((absolute_start + start) as u32).into(),
-            ((absolute_start + end) as u32).into(),
+        let raw = &value[start..end];
+        let base = absolute_start + start;
+        let children = standard_object_nodes((raw, self.config).into());
+        let root = SyntaxNode::new_root(
+            node(SyntaxKind::PARAGRAPH, children)
+                .into_node()
+                .expect("paragraph node"),
         );
+        let mut converter = Converter::new(raw, self.config);
+        let objects = converter.objects_from_elements(root.children_with_tokens());
+        self.diagnostics.extend(
+            converter
+                .diagnostics
+                .into_iter()
+                .map(|diagnostic| Diagnostic {
+                    range: offset_range(diagnostic.range, base),
+                    kind: diagnostic.kind,
+                    message: diagnostic.message,
+                }),
+        );
+        let mut map_ann = |ann: &ParsedAnnotation| self.ann(offset_range(ann.range, base));
 
-        vec![Object {
-            ann: self.ann(range),
-            data: ObjectData::Plain(value[start..end].to_string()),
-        }]
+        objects
+            .iter()
+            .map(|object| object.map_ann_with(&mut map_ann))
+            .collect()
     }
 
     fn diagnostic(&mut self, range: TextRange, kind: DiagnosticKind, message: String) {
@@ -2680,6 +2711,13 @@ fn citation_key_range(reference: &str) -> Option<(usize, usize)> {
         .unwrap_or(reference.len());
 
     (start < end).then_some((start, end))
+}
+
+fn offset_range(range: TextRange, base: usize) -> TextRange {
+    TextRange::new(
+        ((usize::from(range.start()) + base) as u32).into(),
+        ((usize::from(range.end()) + base) as u32).into(),
+    )
 }
 
 fn trimmed_range(value: &str) -> Option<(usize, usize)> {
