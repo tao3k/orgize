@@ -8,17 +8,18 @@ use nom::{
 use super::{
     combinator::{blank_lines, line_ends_iter, node, pipe_token, GreenElement, NodeBuilder},
     input::Input,
-    keyword::tblfm_keyword_nodes,
+    keyword::{affiliated_keyword_nodes, tblfm_keyword_nodes},
     object::standard_object_nodes,
     SyntaxKind::*,
 };
 
 fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
-    let mut children = vec![];
+    let (table_input, affiliated_keywords) = affiliated_keyword_nodes(input)?;
+    let mut children = affiliated_keywords;
 
     let mut start = 0;
-    for i in line_ends_iter(input.as_str()) {
-        let line = input.slice(start..i);
+    for i in line_ends_iter(table_input.as_str()) {
+        let line = table_input.slice(start..i);
         let trimmed = line.as_str().trim_start_matches([' ', '\t']);
 
         // Org tables end at the first line not starting with a vertical bar.
@@ -39,7 +40,7 @@ fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         return Err(nom::Err::Error(()));
     }
 
-    let input = input.slice(start..);
+    let input = table_input.slice(start..);
 
     let (input, tblfm) = tblfm_keyword_nodes(input)?;
 
@@ -153,6 +154,12 @@ fn parse_org_table() {
         PIPE@0..1 "|"
     "###
     );
+
+    let table = to_org_table("#+ATTR_HTML: :class compact\n| a |\n");
+    let mut children = table.syntax.children();
+    assert_eq!(children.next().unwrap().kind(), AFFILIATED_KEYWORD);
+    assert_eq!(children.next().unwrap().kind(), ORG_TABLE_STANDARD_ROW);
+    assert!(children.next().is_none());
 
     insta::assert_debug_snapshot!(
         to_org_table(
