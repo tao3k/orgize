@@ -1834,15 +1834,56 @@ impl<'a> Converter<'a> {
     }
 
     fn footnote_def(&mut self, node: &SyntaxNode) -> FootnoteDef<ParsedAnnotation> {
-        let label = node
-            .children_with_tokens()
-            .filter_map(|child| child.into_token())
-            .find(|token| token.kind() == SyntaxKind::TEXT)
-            .map(|token| token.text().to_string())
-            .unwrap_or_default();
-        let children = self.elements_from_container(node);
+        let mut saw_fn_prefix = false;
+        let mut saw_label_colon = false;
+        let mut after_marker = false;
+        let mut label = String::new();
+        let mut content = Vec::new();
+
+        for element in node.children_with_tokens() {
+            match element.kind() {
+                SyntaxKind::AFFILIATED_KEYWORD | SyntaxKind::L_BRACKET => {}
+                SyntaxKind::TEXT if !saw_fn_prefix => {
+                    saw_fn_prefix = true;
+                }
+                SyntaxKind::COLON if saw_fn_prefix && !saw_label_colon => {
+                    saw_label_colon = true;
+                }
+                SyntaxKind::R_BRACKET if saw_label_colon => {
+                    after_marker = true;
+                }
+                _ if after_marker => content.push(element),
+                SyntaxKind::TEXT if saw_label_colon => {
+                    label.push_str(
+                        element
+                            .as_token()
+                            .map(|token| token.text())
+                            .unwrap_or_default(),
+                    );
+                }
+                _ => {}
+            }
+        }
+        let children = self
+            .paragraph_from_elements(content)
+            .into_iter()
+            .collect::<Vec<_>>();
 
         FootnoteDef { label, children }
+    }
+
+    fn paragraph_from_elements(
+        &mut self,
+        elements: Vec<SyntaxElement>,
+    ) -> Option<Element<ParsedAnnotation>> {
+        let range = range_from_elements(&elements)?;
+        let objects = self.objects_from_elements(elements);
+
+        Some(Element {
+            ann: self.ann(range),
+            affiliated_keywords: Vec::new(),
+            data: ElementData::Paragraph(objects),
+        })
     }
 
     fn objects_from_elements(
@@ -2157,6 +2198,12 @@ fn semantic_block_name(node: &SyntaxNode) -> Option<String> {
         SyntaxKind::SPECIAL_BLOCK => block_name(node),
         _ => None,
     }
+}
+
+fn range_from_elements(elements: &[SyntaxElement]) -> Option<TextRange> {
+    let start = elements.first()?.text_range().start();
+    let end = elements.last()?.text_range().end();
+    Some(TextRange::new(start, end))
 }
 
 fn strip_pair(value: &str) -> &str {
