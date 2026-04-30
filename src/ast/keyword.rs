@@ -5,7 +5,7 @@ use super::{filter_token, Keyword, Token};
 impl Keyword {
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Keyword};
+    /// use orgize::{Org, syntax_ast::Keyword};
     ///
     /// let keyword = Org::parse("#+KEY: VALUE\nabc").first_node::<Keyword>().unwrap();
     /// assert_eq!(keyword.key(), "KEY");
@@ -19,7 +19,7 @@ impl Keyword {
 
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Keyword};
+    /// use orgize::{Org, syntax_ast::Keyword};
     ///
     /// let keyword = Org::parse("#+KEY: VALUE\nabc").first_node::<Keyword>().unwrap();
     /// assert_eq!(keyword.value(), " VALUE");

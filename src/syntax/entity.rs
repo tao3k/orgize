@@ -72,7 +72,7 @@ fn template2(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Entity, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Entity, tests::to_ast, ParseConfig};
 
     let to_entity = to_ast::<Entity>(entity_node);
 

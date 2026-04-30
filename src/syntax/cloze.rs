@@ -75,8 +75,8 @@ fn cloze_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::ast::Cloze;
     use crate::config::ParseConfig;
+    use crate::syntax_ast::Cloze;
     use crate::tests::to_ast;
 
     let to_cloze = to_ast::<Cloze>(cloze_node);

@@ -142,7 +142,7 @@ pub fn verify_pre(input: &str) -> bool {
 
 #[test]
 fn parse() {
-    use crate::{ast::Bold, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Bold, tests::to_ast, ParseConfig};
 
     let to_bold = to_ast::<Bold>(bold_node);
 

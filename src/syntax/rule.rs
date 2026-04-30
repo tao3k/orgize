@@ -30,7 +30,7 @@ pub fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Rule, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Rule, tests::to_ast, ParseConfig};
 
     let to_rule = to_ast::<Rule>(rule_node);
 

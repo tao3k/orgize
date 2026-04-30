@@ -14,7 +14,7 @@ impl Headline {
     /// Return level of this headline
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let hdl = Org::parse("* ").first_node::<Headline>().unwrap();
     /// assert_eq!(hdl.level(), 1);
@@ -35,7 +35,7 @@ impl Headline {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let hdl = Org::parse("* TODO a").first_node::<Headline>().unwrap();
     /// assert_eq!(hdl.todo_keyword().unwrap(), "TODO");
@@ -55,7 +55,7 @@ impl Headline {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::{Headline, TodoType}};
+    /// use orgize::{Org, syntax_ast::{Headline, TodoType}};
     ///
     /// let hdl = Org::parse("* TODO a").first_node::<Headline>().unwrap();
     /// assert_eq!(hdl.todo_type().unwrap(), TodoType::Todo);
@@ -77,7 +77,7 @@ impl Headline {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let hdl = Org::parse("* TODO a").first_node::<Headline>().unwrap();
     /// assert!(hdl.is_todo());
@@ -89,7 +89,7 @@ impl Headline {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let hdl = Org::parse("* DONE a").first_node::<Headline>().unwrap();
     /// assert!(hdl.is_done());
@@ -103,7 +103,7 @@ impl Headline {
     /// Returns parsed title
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Headline, SyntaxKind};
+    /// use orgize::{Org, syntax_ast::Headline, SyntaxKind};
     ///
     /// let hdl = Org::parse("*** abc *abc* /abc/ :tag:").first_node::<Headline>().unwrap();
     /// let title = hdl.title().collect::<Vec<_>>();
@@ -123,7 +123,7 @@ impl Headline {
     /// Returns title raw string
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let hdl = Org::parse("*** abc *abc* /abc/ :tag:").first_node::<Headline>().unwrap();
     /// let title = hdl.title_raw();
@@ -140,7 +140,7 @@ impl Headline {
     /// Return `true` if this headline contains a COMMENT keyword
     ///      
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let hdl = Org::parse("* COMMENT").first_node::<Headline>().unwrap();
     /// assert!(hdl.is_commented());
@@ -168,7 +168,7 @@ impl Headline {
     /// Return `true` if this headline contains an archive tag
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let hdl = Org::parse("* hello :ARCHIVE:").first_node::<Headline>().unwrap();
     /// assert!(hdl.is_archived());
@@ -197,7 +197,7 @@ impl Headline {
     /// Returns an iterator of text token in this tags
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let tags_vec = |input: &str| {
     ///     let hdl = Org::parse(input).first_node::<Headline>().unwrap();
@@ -222,7 +222,7 @@ impl Headline {
     /// Returns priority text
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let hdl = Org::parse("* [#A]").first_node::<Headline>().unwrap();
     /// assert_eq!(hdl.priority().unwrap(), "A");
@@ -244,7 +244,7 @@ impl Headline {
     /// Returns an iterator of clock element affiliated with this headline
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let org = Org::parse(r#"* TODO
     /// foo

@@ -54,7 +54,7 @@ fn paragraph_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Paragraph, tests::to_ast};
+    use crate::{syntax_ast::Paragraph, tests::to_ast};
 
     let to_paragraph = to_ast::<Paragraph>(paragraph_node);
 

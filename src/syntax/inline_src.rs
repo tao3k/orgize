@@ -48,7 +48,7 @@ pub fn inline_src_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::InlineSrc, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::InlineSrc, tests::to_ast, ParseConfig};
 
     let to_inline_src = to_ast::<InlineSrc>(inline_src_node);
 

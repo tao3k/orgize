@@ -63,7 +63,7 @@ pub fn fixed_width_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::FixedWidth, tests::to_ast};
+    use crate::{syntax_ast::FixedWidth, tests::to_ast};
 
     let to_fixed_width = to_ast::<FixedWidth>(fixed_width_node);
 

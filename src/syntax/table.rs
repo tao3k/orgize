@@ -141,7 +141,7 @@ pub fn table_el_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse_org_table() {
-    use crate::{ast::OrgTable, tests::to_ast};
+    use crate::{syntax_ast::OrgTable, tests::to_ast};
 
     let to_org_table = to_ast::<OrgTable>(org_table_node);
 
@@ -237,7 +237,7 @@ r#"|
 
 #[test]
 fn parse_table_el() {
-    use crate::{ast::TableEl, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::TableEl, tests::to_ast, ParseConfig};
 
     let to_table_el = to_ast::<TableEl>(table_el_node);
 

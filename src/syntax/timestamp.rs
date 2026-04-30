@@ -254,7 +254,7 @@ pub fn timestamp_inactive_node(input: Input) -> IResult<Input, GreenElement, ()>
 
 #[test]
 fn parse() {
-    use crate::{ast::Timestamp, tests::to_ast};
+    use crate::{syntax_ast::Timestamp, tests::to_ast};
 
     let to_timestamp = to_ast::<Timestamp>(timestamp_inactive_node);
 

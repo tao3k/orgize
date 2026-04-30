@@ -6,7 +6,7 @@ impl InlineSrc {
     /// Language of the code
     ///
     /// ```rust
-    /// use orgize::{Org, ast::InlineSrc};
+    /// use orgize::{Org, syntax_ast::InlineSrc};
     ///
     /// let s = Org::parse("src_C{int a = 0;}").first_node::<InlineSrc>().unwrap();
     /// assert_eq!(s.language(), "C");
@@ -24,7 +24,7 @@ impl InlineSrc {
     /// Optional header arguments
     ///
     /// ```rust
-    /// use orgize::{Org, ast::InlineSrc};
+    /// use orgize::{Org, syntax_ast::InlineSrc};
     ///
     /// let s = Org::parse("src_C{int a = 0;}").first_node::<InlineSrc>().unwrap();
     /// assert!(s.parameters().is_none());
@@ -45,7 +45,7 @@ impl InlineSrc {
     /// Source code
     ///
     /// ```rust
-    /// use orgize::{Org, ast::InlineSrc};
+    /// use orgize::{Org, syntax_ast::InlineSrc};
     ///
     /// let s = Org::parse("src_C{int a = 0;}").first_node::<InlineSrc>().unwrap();
     /// assert_eq!(s.value(), "int a = 0;");

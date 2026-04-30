@@ -53,7 +53,7 @@ impl Cloze {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Cloze};
+    /// use orgize::{Org, syntax_ast::Cloze};
     ///
     /// let cloze = Org::parse("{{text}}").first_node::<Cloze>().unwrap();
     /// assert_eq!(cloze.text_raw(), "text");
@@ -68,7 +68,7 @@ impl Cloze {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Cloze};
+    /// use orgize::{Org, syntax_ast::Cloze};
     ///
     /// let cloze = Org::parse("{{text}}").first_node::<Cloze>().unwrap();
     /// assert!(cloze.hint().is_none());
@@ -89,7 +89,7 @@ impl Cloze {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Cloze};
+    /// use orgize::{Org, syntax_ast::Cloze};
     ///
     /// let cloze = Org::parse("{{text}}").first_node::<Cloze>().unwrap();
     /// assert!(cloze.id().is_none());

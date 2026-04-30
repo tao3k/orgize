@@ -162,7 +162,7 @@ pub fn drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
 #[test]
 fn parse() {
     use crate::{
-        ast::{Drawer, PropertyDrawer},
+        syntax_ast::{Drawer, PropertyDrawer},
         tests::to_ast,
         ParseConfig,
     };

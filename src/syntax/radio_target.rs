@@ -35,7 +35,7 @@ pub fn radio_target_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::RadioTarget, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::RadioTarget, tests::to_ast, ParseConfig};
 
     let to_radio_target = to_ast::<RadioTarget>(radio_target_node);
 

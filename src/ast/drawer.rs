@@ -5,7 +5,7 @@ use super::{filter_token, Drawer, PropertyDrawer, SyntaxKind, Token};
 
 impl PropertyDrawer {
     /// ```rust
-    /// use orgize::{Org, ast::PropertyDrawer};
+    /// use orgize::{Org, syntax_ast::PropertyDrawer};
     ///
     /// let org = Org::parse("* Heading\n:PROPERTIES:\n:CUSTOM_ID: someid\n:ID: id\n:END:");
     /// let drawer = org.first_node::<PropertyDrawer>().unwrap();
@@ -23,7 +23,7 @@ impl PropertyDrawer {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::PropertyDrawer};
+    /// use orgize::{Org, syntax_ast::PropertyDrawer};
     ///
     /// let org = Org::parse("* Heading\n:PROPERTIES:\n:CUSTOM_ID: someid\n:ID: id\n:END:");
     /// let drawer = org.first_node::<PropertyDrawer>().unwrap();
@@ -35,7 +35,7 @@ impl PropertyDrawer {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::PropertyDrawer};
+    /// use orgize::{Org, syntax_ast::PropertyDrawer};
     ///
     /// let org = Org::parse("* Heading\n:PROPERTIES:\n:CUSTOM_ID: someid\n:CUSTOM_ID: id\n:END:");
     /// let drawer = org.first_node::<PropertyDrawer>().unwrap();
@@ -49,7 +49,7 @@ impl PropertyDrawer {
 
     #[cfg(feature = "indexmap")]
     /// ```rust
-    /// use orgize::{Org, ast::PropertyDrawer};
+    /// use orgize::{Org, syntax_ast::PropertyDrawer};
     ///
     /// let org = Org::parse("* Heading\n:PROPERTIES:\n:CUSTOM_ID: someid\n:ID: id\n:END:");
     /// let drawer = org.first_node::<PropertyDrawer>().unwrap();
@@ -89,7 +89,7 @@ impl PropertyDrawer {
 
 impl Drawer {
     /// ```rust
-    /// use orgize::{Org, ast::Drawer};
+    /// use orgize::{Org, syntax_ast::Drawer};
     ///
     /// let org = Org::parse("* Heading\n:LOGBOOK:\n:END:");
     /// let drawer = org.first_node::<Drawer>().unwrap();

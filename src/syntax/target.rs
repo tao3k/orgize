@@ -33,7 +33,7 @@ pub fn target_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Target, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Target, tests::to_ast, ParseConfig};
 
     let to_target = to_ast::<Target>(target_node);
 

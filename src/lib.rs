@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+#[path = "semantic_ast/mod.rs"]
 pub mod ast;
 pub mod config;
 mod entities;
@@ -7,6 +8,12 @@ pub mod export;
 mod org;
 mod replace;
 mod syntax;
+#[path = "ast/mod.rs"]
+mod syntax_ast_impl;
+#[doc(hidden)]
+pub mod syntax_ast {
+    pub use crate::syntax_ast_impl::*;
+}
 #[cfg(test)]
 mod tests;
 

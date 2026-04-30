@@ -128,7 +128,7 @@ fn template5(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::LatexFragment, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::LatexFragment, tests::to_ast, ParseConfig};
 
     let to_fragment = to_ast::<LatexFragment>(latex_fragment_node);
 

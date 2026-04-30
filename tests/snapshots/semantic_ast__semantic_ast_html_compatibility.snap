@@ -1,0 +1,9 @@
+---
+source: tests/semantic_ast.rs
+expression: html
+---
+<main><h1>title</h1><section><p>paragraph with <a href="https://example.com">link</a>
+</p><ul><li><p>one
+</p></li><li><p>two
+</p></li></ul><blockquote><p>quoted
+</p></blockquote></section></main>

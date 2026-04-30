@@ -7,7 +7,7 @@ impl Link {
     /// Returns link destination
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Link};
+    /// use orgize::{Org, syntax_ast::Link};
     ///
     /// let link = Org::parse("[[#id]]").first_node::<Link>().unwrap();
     /// assert_eq!(link.path(), "#id");
@@ -23,7 +23,7 @@ impl Link {
     /// Returns `true` if link contains description
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Link};
+    /// use orgize::{Org, syntax_ast::Link};
     ///
     /// let link = Org::parse("[[https://google.com]]").first_node::<Link>().unwrap();
     /// assert!(!link.has_description());
@@ -43,7 +43,7 @@ impl Link {
     /// Returns empty iterator if this link doesn't contain description
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Link, SyntaxKind};
+    /// use orgize::{Org, syntax_ast::Link, SyntaxKind};
     ///
     /// let link = Org::parse("[[https://google.com]]").first_node::<Link>().unwrap();
     /// assert_eq!(link.description().count(), 0);
@@ -70,7 +70,7 @@ impl Link {
     /// Returns empty string if this link doesn't contain description
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Link};
+    /// use orgize::{Org, syntax_ast::Link};
     ///
     /// let link = Org::parse("[[https://google.com]]").first_node::<Link>().unwrap();
     /// assert_eq!(link.description_raw(), "");
@@ -87,7 +87,7 @@ impl Link {
     /// Returns `true` if link is an image link
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Link};
+    /// use orgize::{Org, syntax_ast::Link};
     ///
     /// let link = Org::parse("[[https://google.com]]").first_node::<Link>().unwrap();
     /// assert!(!link.is_image());
@@ -109,7 +109,7 @@ impl Link {
     /// Returns caption keyword in this link
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Link};
+    /// use orgize::{Org, syntax_ast::Link};
     ///
     /// let link = Org::parse("#+CAPTION: image link\n[[file:/home/dominik/images/jupiter.jpg]]").first_node::<Link>().unwrap();
     /// assert_eq!(link.caption().unwrap().value().unwrap(), " image link");

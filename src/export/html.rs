@@ -77,7 +77,7 @@ impl HtmlExport {
     /// Render syntax node to html string
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Bold, export::HtmlExport, rowan::ast::AstNode};
+    /// use orgize::{Org, export::HtmlExport, rowan::ast::AstNode, syntax_ast::Bold};
     ///
     /// let org = Org::parse("* /hello/ *world*");
     /// let bold = org.first_node::<Bold>().unwrap();

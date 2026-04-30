@@ -217,7 +217,7 @@ fn key_with_optional(
 #[test]
 fn parse() {
     use crate::{
-        ast::{BabelCall, Keyword},
+        syntax_ast::{BabelCall, Keyword},
         tests::to_ast,
         ParseConfig,
     };

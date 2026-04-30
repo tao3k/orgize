@@ -59,7 +59,7 @@ fn planning_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn prase() {
-    use crate::{ast::Planning, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Planning, tests::to_ast, ParseConfig};
 
     let to_planning = to_ast::<Planning>(planning_node);
 

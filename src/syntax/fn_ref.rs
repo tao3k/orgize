@@ -58,7 +58,7 @@ fn balanced_brackets(input: Input) -> IResult<Input, Input, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::FnRef, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::FnRef, tests::to_ast, ParseConfig};
 
     let to_fn_ref = to_ast::<FnRef>(fn_ref_node);
 

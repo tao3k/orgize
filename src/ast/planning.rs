@@ -8,7 +8,7 @@ impl Planning {
     ///
     ///
     /// ```rust
-    /// use orgize::{ast::Planning, Org};
+    /// use orgize::{syntax_ast::Planning, Org};
     ///
     /// let s = Org::parse("* a\nDEADLINE: <2019-04-08 Mon>")
     ///     .first_node::<Planning>()
@@ -28,7 +28,7 @@ impl Planning {
     /// Returns scheduled timestamp
     ///
     /// ```rust
-    /// use orgize::{ast::Planning, Org};
+    /// use orgize::{syntax_ast::Planning, Org};
     ///
     /// let s = Org::parse("* a\nSCHEDULED: <2019-04-08 Mon>")
     ///     .first_node::<Planning>()
@@ -48,7 +48,7 @@ impl Planning {
     /// Returns closed timestamp
     ///
     /// ```rust
-    /// use orgize::{ast::Planning, Org};
+    /// use orgize::{syntax_ast::Planning, Org};
     ///
     /// let s = Org::parse("* a\nCLOSED: <2019-04-08 Mon>")
     ///     .first_node::<Planning>()

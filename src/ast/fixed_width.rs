@@ -6,7 +6,7 @@ impl FixedWidth {
     /// Contents without colons prefix
     ///
     /// ```rust
-    /// use orgize::{ast::FixedWidth, Org};
+    /// use orgize::{syntax_ast::FixedWidth, Org};
     ///
     /// let fixed = Org::parse(": A\n:\n: B\n: C").first_node::<FixedWidth>().unwrap();
     /// assert_eq!(fixed.value(), "A\n\nB\nC");

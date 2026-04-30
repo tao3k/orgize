@@ -1,6 +1,8 @@
 use rowan::ast::support;
 
-use crate::{ast::Token, SyntaxKind};
+use crate::SyntaxKind;
+
+use super::Token;
 
 use super::{Clock, Timestamp};
 
@@ -10,7 +12,7 @@ impl Clock {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Clock};
+    /// use orgize::{Org, syntax_ast::Clock};
     ///
     /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39]").first_node::<Clock>().unwrap();
     /// assert!(clock.duration().is_none());
@@ -31,7 +33,7 @@ impl Clock {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Clock};
+    /// use orgize::{Org, syntax_ast::Clock};
     ///
     /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39]").first_node::<Clock>().unwrap();
     /// assert!(!clock.is_closed());
@@ -45,7 +47,7 @@ impl Clock {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Clock};
+    /// use orgize::{Org, syntax_ast::Clock};
     ///
     /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39]").first_node::<Clock>().unwrap();
     /// assert!(clock.is_running());

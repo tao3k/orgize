@@ -6,7 +6,7 @@ impl Comment {
     /// Contents without pound signs
     ///
     /// ```rust
-    /// use orgize::{ast::Comment, Org};
+    /// use orgize::{syntax_ast::Comment, Org};
     ///
     /// let fixed = Org::parse("# A\n#\n# B\n# C").first_node::<Comment>().unwrap();
     /// assert_eq!(fixed.value(), "A\n\nB\nC");

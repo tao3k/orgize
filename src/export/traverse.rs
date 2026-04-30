@@ -1,5 +1,5 @@
-use crate::ast::*;
 use crate::syntax::{SyntaxElement, SyntaxKind};
+use crate::syntax_ast::*;
 use rowan::ast::AstNode;
 use SyntaxKind::*;
 

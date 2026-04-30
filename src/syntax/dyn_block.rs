@@ -77,7 +77,7 @@ pub fn dyn_block_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::DynBlock, tests::to_ast};
+    use crate::{syntax_ast::DynBlock, tests::to_ast};
 
     let to_dyn_block = to_ast::<DynBlock>(dyn_block_node);
 

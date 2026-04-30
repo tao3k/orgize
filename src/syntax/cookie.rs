@@ -50,7 +50,7 @@ pub fn cookie_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::ast::Cookie;
+    use crate::syntax_ast::Cookie;
     use crate::tests::to_ast;
     use crate::ParseConfig;
 

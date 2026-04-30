@@ -22,7 +22,7 @@ impl MarkdownExport {
     /// Render syntax node to markdown string
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Bold, export::MarkdownExport, rowan::ast::AstNode};
+    /// use orgize::{Org, export::MarkdownExport, rowan::ast::AstNode, syntax_ast::Bold};
     ///
     /// let org = Org::parse("* /hello/ *world*");
     /// let bold = org.first_node::<Bold>().unwrap();

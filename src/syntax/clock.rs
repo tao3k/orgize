@@ -60,7 +60,7 @@ pub fn clock_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::ast::Clock;
+    use crate::syntax_ast::Clock;
     use crate::tests::to_ast;
 
     let to_clock = to_ast::<Clock>(clock_node);

@@ -14,30 +14,22 @@ Live Demo: <https://tao3k.github.io/orgize/>
 To parse a org-mode string, simply invoking the `Org::parse` function:
 
 ```rust
-use orgize::{Org, rowan::ast::AstNode};
+use orgize::{ast::ElementData, Org};
 
 let org = Org::parse("* DONE Title :tag:");
-assert_eq!(
-    format!("{:#?}", org.document().syntax()),
-    r#"DOCUMENT@0..18
-  HEADLINE@0..18
-    HEADLINE_STARS@0..1 "*"
-    WHITESPACE@1..2 " "
-    HEADLINE_KEYWORD_DONE@2..6 "DONE"
-    WHITESPACE@6..7 " "
-    HEADLINE_TITLE@7..13
-      TEXT@7..13 "Title "
-    HEADLINE_TAGS@13..18
-      COLON@13..14 ":"
-      TEXT@14..17 "tag"
-      COLON@17..18 ":"
-"#);
+let document = org.document();
+assert_eq!(document.sections[0].level, 1);
+assert_eq!(document.sections[0].raw_title, "Title ");
+assert_eq!(document.sections[0].tags, ["tag"]);
+assert!(document.sections[0].children.iter().all(|element| {
+    !matches!(element.data, ElementData::Unknown { .. })
+}));
 ```
 
 use `ParseConfig::parse` to specific a custom parse config
 
 ```rust
-use orgize::{Org, ParseConfig, ast::Headline};
+use orgize::{syntax_ast::Headline, Org, ParseConfig};
 
 let config = ParseConfig {
     // custom todo keywords
@@ -74,7 +66,7 @@ assert_eq!(hdl_count, 3);
 Use `org.replace_range(TextRange::new(start, end), "new_text")` to modify the syntax tree:
 
 ```rust
-use orgize::{Org, ParseConfig, ast::Headline, TextRange};
+use orgize::{syntax_ast::Headline, Org, TextRange};
 
 let mut org = Org::parse("hello\n* world");
 
@@ -111,8 +103,8 @@ Checkout `examples/html-slugify.rs` on how to customizing html export process.
 
 ## API compatibility
 
-`element.syntax()` exposes access to the internal syntax tree, along with some rowan low-level APIs.
-This can be useful for intricate tasks.
+`Org::syntax_document()` and the `syntax_ast` module expose access to the internal syntax tree,
+along with some rowan low-level APIs. This can be useful for intricate tasks.
 
 However, the structure of the internal syntax tree can change between different versions of the library.
 Because of this, the result of `element.syntax()` doesn't follow semantic versioning,

@@ -5,7 +5,7 @@ use super::{filter_token, InlineCall, Token};
 impl InlineCall {
     ///
     /// ```rust
-    /// use orgize::{Org, ast::InlineCall};
+    /// use orgize::{Org, syntax_ast::InlineCall};
     ///
     /// let call = Org::parse("call_square(4)").first_node::<InlineCall>().unwrap();
     /// assert_eq!(call.call(), "square");
@@ -20,7 +20,7 @@ impl InlineCall {
 
     ///
     /// ```rust
-    /// use orgize::{Org, ast::InlineCall};
+    /// use orgize::{Org, syntax_ast::InlineCall};
     ///
     /// let call = Org::parse("call_square[:results output](4)").first_node::<InlineCall>().unwrap();
     /// assert_eq!(call.inside_header().unwrap(), ":results output");
@@ -42,7 +42,7 @@ impl InlineCall {
 
     ///
     /// ```rust
-    /// use orgize::{Org, ast::InlineCall};
+    /// use orgize::{Org, syntax_ast::InlineCall};
     ///
     /// let call = Org::parse("call_square(4)").first_node::<InlineCall>().unwrap();
     /// assert_eq!(call.arguments(), "4");
@@ -57,7 +57,7 @@ impl InlineCall {
 
     ///
     /// ```rust
-    /// use orgize::{Org, ast::InlineCall};
+    /// use orgize::{Org, syntax_ast::InlineCall};
     ///
     /// let call = Org::parse("call_square[:results output](4)[:results html]").first_node::<InlineCall>().unwrap();
     /// assert_eq!(call.end_header().unwrap(), ":results html");

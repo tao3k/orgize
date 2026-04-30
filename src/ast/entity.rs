@@ -15,7 +15,7 @@ impl Entity {
     /// Entity name
     ///
     /// ```rust
-    /// use orgize::{ast::Entity, Org};
+    /// use orgize::{syntax_ast::Entity, Org};
     ///
     /// let e = Org::parse("\\alpha{}").first_node::<Entity>().unwrap();
     /// assert_eq!(e.name(), "alpha");
@@ -35,7 +35,7 @@ impl Entity {
     /// Entity LaTeX representation
     ///
     /// ```rust
-    /// use orgize::{ast::Entity, Org};
+    /// use orgize::{syntax_ast::Entity, Org};
     ///
     /// let e = Org::parse("\\middot").first_node::<Entity>().unwrap();
     /// assert_eq!(e.latex(), "\\textperiodcentered{}");
@@ -53,7 +53,7 @@ impl Entity {
     /// Whether entity needs to be in math mode
     ///
     /// ```rust
-    /// use orgize::{ast::Entity, Org};
+    /// use orgize::{syntax_ast::Entity, Org};
     ///
     /// let e = Org::parse("\\middot").first_node::<Entity>().unwrap();
     /// assert!(!e.is_latex_math());
@@ -73,7 +73,7 @@ impl Entity {
     /// Entity HTML representation
     ///
     /// ```rust
-    /// use orgize::{ast::Entity, Org};
+    /// use orgize::{syntax_ast::Entity, Org};
     ///
     /// let e = Org::parse("\\S").first_node::<Entity>().unwrap();
     /// assert_eq!(e.html(), "&sect;");
@@ -91,7 +91,7 @@ impl Entity {
     /// Entity ASCII representation
     ///
     /// ```rust
-    /// use orgize::{ast::Entity, Org};
+    /// use orgize::{syntax_ast::Entity, Org};
     ///
     /// let e = Org::parse("\\S").first_node::<Entity>().unwrap();
     /// assert_eq!(e.ascii(), "section");
@@ -109,7 +109,7 @@ impl Entity {
     /// Entity Latin1 encoding representation
     ///
     /// ```rust
-    /// use orgize::{ast::Entity, Org};
+    /// use orgize::{syntax_ast::Entity, Org};
     ///
     /// let e = Org::parse("\\S").first_node::<Entity>().unwrap();
     /// assert_eq!(e.latin1(), "§");
@@ -129,7 +129,7 @@ impl Entity {
     /// Entity UTF-8 encoding representation
     ///
     /// ```rust
-    /// use orgize::{ast::Entity, Org};
+    /// use orgize::{syntax_ast::Entity, Org};
     ///
     /// let e = Org::parse("\\S").first_node::<Entity>().unwrap();
     /// assert_eq!(e.utf8(), "§");
@@ -149,7 +149,7 @@ impl Entity {
     /// Entity contains optional brackets
     ///
     /// ```rust
-    /// use orgize::{ast::Entity, Org};
+    /// use orgize::{syntax_ast::Entity, Org};
     ///
     /// let e = Org::parse("\\beta").first_node::<Entity>().unwrap();
     /// assert!(!e.is_use_brackets());

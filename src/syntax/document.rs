@@ -54,7 +54,7 @@ fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::ast::Document;
+    use crate::syntax_ast::Document;
     use crate::tests::to_ast;
 
     let to_document = to_ast::<Document>(document_node);

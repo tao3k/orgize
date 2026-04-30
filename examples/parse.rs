@@ -3,7 +3,6 @@
 //! ```
 
 use orgize::Org;
-use rowan::ast::AstNode;
 use std::env::args;
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -25,6 +24,6 @@ fn main() {
     } else {
         let s = &args[1].replace(r"\n", "\n").replace(r"\r", "\r");
         let org = Org::parse(s);
-        println!("{:#?}", org.document().syntax());
+        println!("{:#?}", org.document());
     }
 }

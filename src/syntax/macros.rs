@@ -43,7 +43,7 @@ pub fn macros_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn test() {
-    use crate::{ast::Macros, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Macros, tests::to_ast, ParseConfig};
 
     let to_macros = to_ast::<Macros>(macros_node);
 

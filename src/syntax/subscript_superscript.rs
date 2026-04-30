@@ -120,8 +120,8 @@ pub fn verify_pre(i: &Input) -> bool {
 
 #[test]
 fn parse() {
-    use crate::ast::Subscript;
     use crate::config::{ParseConfig, UseSubSuperscript};
+    use crate::syntax_ast::Subscript;
     use crate::tests::to_ast;
 
     let to_subscript = to_ast::<Subscript>(subscript_node);

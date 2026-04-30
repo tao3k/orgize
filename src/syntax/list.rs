@@ -297,7 +297,7 @@ fn get_line_indent(input: &str) -> Option<usize> {
 
 #[test]
 fn parse() {
-    use crate::{ast::List, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::List, tests::to_ast, ParseConfig};
 
     let to_list = to_ast::<List>(list_node);
 

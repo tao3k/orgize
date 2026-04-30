@@ -23,7 +23,7 @@ pub fn line_break_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::ast::LineBreak;
+    use crate::syntax_ast::LineBreak;
     use crate::tests::to_ast;
 
     let to_line_break = to_ast::<LineBreak>(line_break_node);

@@ -236,7 +236,7 @@ fn headline_priority_node(input: Input) -> IResult<Input, (GreenElement, Input),
 
 #[test]
 fn parse() {
-    use crate::{ast::Headline, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Headline, tests::to_ast, ParseConfig};
 
     let to_headline = to_ast::<Headline>(headline_node);
 
@@ -325,7 +325,7 @@ fn parse() {
 
 #[test]
 fn issue_15_16() {
-    use crate::{ast::Headline, tests::to_ast};
+    use crate::{syntax_ast::Headline, tests::to_ast};
 
     let to_headline = to_ast::<Headline>(headline_node);
 

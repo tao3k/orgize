@@ -9,7 +9,7 @@ impl OrgTable {
     /// A table has a header when it contains at least two row groups.
     ///
     /// ```rust
-    /// use orgize::{Org, ast::OrgTable};
+    /// use orgize::{Org, syntax_ast::OrgTable};
     ///
     /// let org = Org::parse(r#"
     /// | a | b |
@@ -52,7 +52,7 @@ impl OrgTable {
     /// Formulas associated to the table
     ///
     /// ```rust
-    /// use orgize::{Org, ast::OrgTable};
+    /// use orgize::{Org, syntax_ast::OrgTable};
     ///
     /// let table = Org::parse("| a |").first_node::<OrgTable>().unwrap();
     /// assert_eq!(table.tblfm().count(), 0);
@@ -85,7 +85,7 @@ impl OrgTableRow {
     /// Returns `true` if this row is a rule
     ///
     /// ```rust
-    /// use orgize::{Org, ast::OrgTableRow};
+    /// use orgize::{Org, syntax_ast::OrgTableRow};
     ///
     /// let org = Org::parse("|----|----|\n|Foo |Bar |");
     /// let row = org.first_node::<OrgTableRow>().unwrap();
@@ -98,7 +98,7 @@ impl OrgTableRow {
     /// Returns `true` if this row is a standard row
     ///
     /// ```rust
-    /// use orgize::{Org, ast::OrgTableRow};
+    /// use orgize::{Org, syntax_ast::OrgTableRow};
     ///
     /// let org = Org::parse("|Foo |Bar |\n|----|----|");
     /// let row = org.first_node::<OrgTableRow>().unwrap();

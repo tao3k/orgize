@@ -47,7 +47,7 @@ pub fn link_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Link, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Link, tests::to_ast, ParseConfig};
 
     let to_link = to_ast::<Link>(link_node);
 

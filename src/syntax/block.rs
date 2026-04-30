@@ -201,7 +201,7 @@ pub fn block_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn test_parse() {
-    use crate::ast::{ExampleBlock, SourceBlock};
+    use crate::syntax_ast::{ExampleBlock, SourceBlock};
     use crate::tests::to_ast;
 
     let to_src_block = to_ast::<SourceBlock>(block_node);

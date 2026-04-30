@@ -1,10 +1,11 @@
 use rowan::ast::AstNode;
 use rowan::{GreenNode, TextSize};
 
-use crate::ast::Document;
+use crate::ast::ParsedAst;
 use crate::config::ParseConfig;
 use crate::export::{HtmlExport, TraversalContext, Traverser};
 use crate::syntax::{OrgLanguage, SyntaxNode};
+use crate::syntax_ast;
 use crate::SyntaxElement;
 
 #[derive(Debug)]
@@ -27,9 +28,15 @@ impl Org {
         &self.config
     }
 
-    /// Returns the document
-    pub fn document(&self) -> Document {
-        Document {
+    /// Returns the owned semantic document.
+    pub fn document(&self) -> ParsedAst {
+        let source = self.green.to_string();
+        ParsedAst::from_syntax_tree(&SyntaxNode::new_root(self.green.clone()), &source)
+    }
+
+    /// Returns the lossless syntax-tree document.
+    pub fn syntax_document(&self) -> syntax_ast::Document {
+        syntax_ast::Document {
             syntax: SyntaxNode::new_root(self.green.clone()),
         }
     }
@@ -70,7 +77,7 @@ impl Org {
     /// Returns node in given offset
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Headline};
+    /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let org = Org::parse("\n\n* foo\n* bar");
     ///

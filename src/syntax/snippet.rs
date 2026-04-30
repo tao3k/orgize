@@ -31,7 +31,7 @@ pub fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Snippet, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Snippet, tests::to_ast, ParseConfig};
 
     let to_snippet = to_ast::<Snippet>(snippet_node);
 

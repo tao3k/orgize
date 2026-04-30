@@ -30,7 +30,7 @@ impl Org {
     }
 
     pub fn syntax(&self) -> String {
-        format!("{:#?}", self.inner.document().syntax())
+        format!("{:#?}", self.inner.syntax_document().syntax())
     }
 
     pub fn update(&mut self, s: &str) {

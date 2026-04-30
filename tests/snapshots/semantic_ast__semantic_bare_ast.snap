@@ -1,0 +1,238 @@
+---
+source: tests/semantic_ast.rs
+expression: doc.to_bare()
+---
+Document {
+    ann: (),
+    properties: [],
+    children: [
+        Element {
+            ann: (),
+            affiliated_keywords: [],
+            data: Keyword(
+                Keyword {
+                    ann: (),
+                    key: "TITLE",
+                    optional: None,
+                    value: " Demo",
+                },
+            ),
+        },
+    ],
+    sections: [
+        Section {
+            ann: (),
+            level: 1,
+            properties: [
+                Property {
+                    ann: (),
+                    key: "CUSTOM_ID",
+                    value: "heading-id",
+                },
+            ],
+            todo: Some(
+                TodoKeyword {
+                    state: Todo,
+                    name: "TODO",
+                },
+            ),
+            is_comment: false,
+            priority: None,
+            title: [
+                Object {
+                    ann: (),
+                    data: Plain(
+                        "Heading ",
+                    ),
+                },
+            ],
+            raw_title: "Heading ",
+            anchor: Some(
+                "heading-id",
+            ),
+            tags: [
+                "work",
+            ],
+            planning: Planning {
+                deadline: None,
+                scheduled: Some(
+                    Timestamp {
+                        kind: Active,
+                        raw: "<2026-04-30 Thu>",
+                        is_range: false,
+                    },
+                ),
+                closed: None,
+            },
+            children: [
+                Element {
+                    ann: (),
+                    affiliated_keywords: [],
+                    data: Paragraph(
+                        [
+                            Object {
+                                ann: (),
+                                data: Plain(
+                                    "Paragraph with ",
+                                ),
+                            },
+                            Object {
+                                ann: (),
+                                data: Markup {
+                                    kind: Bold,
+                                    children: [
+                                        Object {
+                                            ann: (),
+                                            data: Plain(
+                                                "bold",
+                                            ),
+                                        },
+                                    ],
+                                },
+                            },
+                            Object {
+                                ann: (),
+                                data: Plain(
+                                    ", ",
+                                ),
+                            },
+                            Object {
+                                ann: (),
+                                data: Link {
+                                    target: Uri {
+                                        protocol: "https",
+                                        path: "//example.com",
+                                    },
+                                    description: [
+                                        Object {
+                                            ann: (),
+                                            data: Plain(
+                                                "a link",
+                                            ),
+                                        },
+                                    ],
+                                    raw_description: "a link",
+                                },
+                            },
+                            Object {
+                                ann: (),
+                                data: Plain(
+                                    ", and ",
+                                ),
+                            },
+                            Object {
+                                ann: (),
+                                data: Timestamp(
+                                    Timestamp {
+                                        kind: Active,
+                                        raw: "<2026-04-30 Thu>",
+                                        is_range: false,
+                                    },
+                                ),
+                            },
+                            Object {
+                                ann: (),
+                                data: Plain(
+                                    ".\n",
+                                ),
+                            },
+                            Object {
+                                ann: (),
+                                data: Plain(
+                                    "\n",
+                                ),
+                            },
+                        ],
+                    ),
+                },
+                Element {
+                    ann: (),
+                    affiliated_keywords: [],
+                    data: List(
+                        List {
+                            list_type: Descriptive,
+                            items: [
+                                ListItem {
+                                    ann: (),
+                                    bullet: "- ",
+                                    counter: None,
+                                    checkbox: Some(
+                                        On,
+                                    ),
+                                    tag: [],
+                                    children: [
+                                        Element {
+                                            ann: (),
+                                            affiliated_keywords: [],
+                                            data: Paragraph(
+                                                [
+                                                    Object {
+                                                        ann: (),
+                                                        data: Plain(
+                                                            "item one\n",
+                                                        ),
+                                                    },
+                                                ],
+                                            ),
+                                        },
+                                    ],
+                                },
+                                ListItem {
+                                    ann: (),
+                                    bullet: "- ",
+                                    counter: None,
+                                    checkbox: None,
+                                    tag: [
+                                        Object {
+                                            ann: (),
+                                            data: Plain(
+                                                "tag ",
+                                            ),
+                                        },
+                                    ],
+                                    children: [
+                                        Element {
+                                            ann: (),
+                                            affiliated_keywords: [],
+                                            data: Paragraph(
+                                                [
+                                                    Object {
+                                                        ann: (),
+                                                        data: Plain(
+                                                            " item two\n",
+                                                        ),
+                                                    },
+                                                ],
+                                            ),
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ),
+                },
+                Element {
+                    ann: (),
+                    affiliated_keywords: [],
+                    data: Block(
+                        Block {
+                            kind: Source,
+                            name: Some(
+                                "src",
+                            ),
+                            language: Some(
+                                "rust",
+                            ),
+                            switches: None,
+                            parameters: None,
+                            value: "fn main() {}\n",
+                            children: [],
+                        },
+                    ),
+                },
+            ],
+            subsections: [],
+        },
+    ],
+    diagnostics: [],
+}

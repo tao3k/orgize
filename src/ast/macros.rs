@@ -4,7 +4,7 @@ use super::{filter_token, Macros, Token};
 
 impl Macros {
     /// ```rust
-    /// use orgize::{Org, ast::Macros};
+    /// use orgize::{Org, syntax_ast::Macros};
     ///
     /// let m = Org::parse("{{{title}}}").first_node::<Macros>().unwrap();
     /// assert_eq!(m.key(), "title");
@@ -19,7 +19,7 @@ impl Macros {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Macros};
+    /// use orgize::{Org, syntax_ast::Macros};
     ///
     /// let m = Org::parse("{{{title}}}").first_node::<Macros>().unwrap();
     /// assert!(m.args().is_none());

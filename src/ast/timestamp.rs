@@ -25,7 +25,7 @@ pub enum DelayType {
 
 impl Timestamp {
     /// ```rust
-    /// use orgize::{Org, ast::Timestamp};
+    /// use orgize::{Org, syntax_ast::Timestamp};
     ///
     /// let ts = Org::parse("<2003-09-16 Tue 09:39-10:39>").first_node::<Timestamp>().unwrap();
     /// assert!(ts.is_active());
@@ -39,7 +39,7 @@ impl Timestamp {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Timestamp};
+    /// use orgize::{Org, syntax_ast::Timestamp};
     ///
     /// let ts = Org::parse("[2003-09-16 Tue 09:39-10:39]").first_node::<Timestamp>().unwrap();
     /// assert!(ts.is_inactive());
@@ -53,7 +53,7 @@ impl Timestamp {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Timestamp};
+    /// use orgize::{Org, syntax_ast::Timestamp};
     ///
     /// let ts = Org::parse("<%%(org-calendar-holiday)>").first_node::<Timestamp>().unwrap();
     /// assert!(ts.is_diary());
@@ -65,7 +65,7 @@ impl Timestamp {
     /// Returns `true` if this timestamp has a range
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Timestamp};
+    /// use orgize::{Org, syntax_ast::Timestamp};
     ///
     /// let ts = Org::parse("[2003-09-16 Tue 09:39-10:39]").first_node::<Timestamp>().unwrap();
     /// assert!(ts.is_range());
@@ -85,7 +85,7 @@ impl Timestamp {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::{Timestamp, RepeaterType}};
+    /// use orgize::{Org, syntax_ast::{Timestamp, RepeaterType}};
     ///
     /// let t = Org::parse("[2000-01-01 +1w]").first_node::<Timestamp>().unwrap();
     /// assert_eq!(t.repeater_type(), Some(RepeaterType::Cumulate));
@@ -99,7 +99,7 @@ impl Timestamp {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Timestamp};
+    /// use orgize::{Org, syntax_ast::Timestamp};
     ///
     /// let t = Org::parse("[2000-01-01 +1w]").first_node::<Timestamp>().unwrap();
     /// assert_eq!(t.repeater_value(), Some(1));
@@ -113,7 +113,7 @@ impl Timestamp {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::{Timestamp, TimeUnit}};
+    /// use orgize::{Org, syntax_ast::{Timestamp, TimeUnit}};
     ///
     /// let t = Org::parse("[2000-01-01 +1w]").first_node::<Timestamp>().unwrap();
     /// assert_eq!(t.repeater_unit(), Some(TimeUnit::Week));
@@ -127,7 +127,7 @@ impl Timestamp {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::{Timestamp, DelayType}};
+    /// use orgize::{Org, syntax_ast::{Timestamp, DelayType}};
     ///
     /// let t = Org::parse("[2000-01-01 -3y]").first_node::<Timestamp>().unwrap();
     /// assert_eq!(t.warning_type(), Some(DelayType::All));
@@ -141,7 +141,7 @@ impl Timestamp {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Timestamp};
+    /// use orgize::{Org, syntax_ast::Timestamp};
     ///
     /// let t = Org::parse("[2000-01-01 -3y]").first_node::<Timestamp>().unwrap();
     /// assert_eq!(t.warning_value(), Some(3));
@@ -155,7 +155,7 @@ impl Timestamp {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::{Timestamp, TimeUnit}};
+    /// use orgize::{Org, syntax_ast::{Timestamp, TimeUnit}};
     ///
     /// let t = Org::parse("[2000-01-01 -3y]").first_node::<Timestamp>().unwrap();
     /// assert_eq!(t.warning_unit(), Some(TimeUnit::Year));
@@ -236,7 +236,7 @@ impl Timestamp {
     /// Converts timestamp start to chrono NaiveDateTime
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Timestamp};
+    /// use orgize::{Org, syntax_ast::Timestamp};
     /// use chrono::NaiveDateTime;
     ///
     /// let ts = Org::parse("[2003-09-16 Tue 09:39-10:39]").first_node::<Timestamp>().unwrap();
@@ -264,7 +264,7 @@ impl Timestamp {
     /// Converts timestamp end to chrono NaiveDateTime
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Timestamp};
+    /// use orgize::{Org, syntax_ast::Timestamp};
     /// use chrono::NaiveDateTime;
     ///
     /// let ts = Org::parse("[2003-09-16 Tue 09:39-10:39]").first_node::<Timestamp>().unwrap();
@@ -289,7 +289,7 @@ impl Timestamp {
     /// Returns chrono::TimeDelta between timestamp start and end
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Timestamp};
+    /// use orgize::{Org, syntax_ast::Timestamp};
     ///
     /// let ts = Org::parse("[2003-09-16 Tue 09:39-10:39]").first_node::<Timestamp>().unwrap();
     /// assert_eq!(ts.time_delta().unwrap().num_hours(), 1);

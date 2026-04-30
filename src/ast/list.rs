@@ -5,7 +5,7 @@ impl List {
     /// Returns `true` if this list is an ordered link
     ///
     /// ```rust
-    /// use orgize::{Org, ast::List};
+    /// use orgize::{Org, syntax_ast::List};
     ///
     /// let list = Org::parse("+ 1").first_node::<List>().unwrap();
     /// assert!(!list.is_ordered());
@@ -29,7 +29,7 @@ impl List {
     /// Returns `true` if this list contains a TAG
     ///
     /// ```rust
-    /// use orgize::{Org, ast::List};
+    /// use orgize::{Org, syntax_ast::List};
     ///
     /// let list = Org::parse("- some tag :: item 2.1").first_node::<List>().unwrap();
     /// assert!(list.is_descriptive());
@@ -53,7 +53,7 @@ impl List {
 
 impl ListItem {
     /// ```rust
-    /// use orgize::{Org, ast::ListItem};
+    /// use orgize::{Org, syntax_ast::ListItem};
     ///
     /// let item = Org::parse("- 1").first_node::<ListItem>().unwrap();
     /// assert_eq!(item.indent(), 0);
@@ -74,7 +74,7 @@ impl ListItem {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::ListItem};
+    /// use orgize::{Org, syntax_ast::ListItem};
     ///
     /// let item = Org::parse("- some tag").first_node::<ListItem>().unwrap();
     /// assert_eq!(item.bullet(), "- ");
@@ -89,7 +89,7 @@ impl ListItem {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::ListItem};
+    /// use orgize::{Org, syntax_ast::ListItem};
     ///
     /// let item = Org::parse("- [-] item 1").first_node::<ListItem>().unwrap();
     /// assert_eq!(item.checkbox().unwrap(), "-");
@@ -119,7 +119,7 @@ impl ListItem {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::ListItem};
+    /// use orgize::{Org, syntax_ast::ListItem};
     ///
     /// let item = Org::parse("+ this is *TAG* :: item1").first_node::<ListItem>().unwrap();
     /// let tag = item.tag().map(|n| n.to_string()).collect::<String>();
