@@ -275,11 +275,7 @@ pub enum ObjectData<A = ()> {
         value: String,
         raw: String,
     },
-    Link {
-        target: LinkTarget,
-        description: Vec<Object<A>>,
-        raw_description: String,
-    },
+    Link(Link<A>),
     Target(String),
     RadioTarget(String),
     Macro {
@@ -372,6 +368,17 @@ pub enum LinkTarget {
     Uri { protocol: String, path: String },
     Internal(String),
     Unresolved(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Link<A = ()> {
+    pub path: String,
+    pub target: LinkTarget,
+    pub description: Vec<Object<A>>,
+    pub raw_description: String,
+    pub has_description: bool,
+    pub is_image: bool,
+    pub caption: Option<Keyword<A>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1494,15 +1501,7 @@ impl<A> ObjectData<A> {
                 value: value.clone(),
                 raw: raw.clone(),
             },
-            ObjectData::Link {
-                target,
-                description,
-                raw_description,
-            } => ObjectData::Link {
-                target: target.clone(),
-                description: description.iter().map(|x| x.map_ann_with(f)).collect(),
-                raw_description: raw_description.clone(),
-            },
+            ObjectData::Link(link) => ObjectData::Link(link.map_ann_with(f)),
             ObjectData::Target(value) => ObjectData::Target(value.clone()),
             ObjectData::RadioTarget(value) => ObjectData::RadioTarget(value.clone()),
             ObjectData::Macro { name, arguments } => ObjectData::Macro {
@@ -1588,18 +1587,7 @@ impl<A> ObjectData<A> {
                 value: value.clone(),
                 raw: raw.clone(),
             },
-            ObjectData::Link {
-                target,
-                description,
-                raw_description,
-            } => ObjectData::Link {
-                target: target.clone(),
-                description: description
-                    .iter()
-                    .map(|x| x.try_map_ann_with(f))
-                    .collect::<Result<_, _>>()?,
-                raw_description: raw_description.clone(),
-            },
+            ObjectData::Link(link) => ObjectData::Link(link.try_map_ann_with(f)?),
             ObjectData::Target(value) => ObjectData::Target(value.clone()),
             ObjectData::RadioTarget(value) => ObjectData::RadioTarget(value.clone()),
             ObjectData::Macro { name, arguments } => ObjectData::Macro {
@@ -1623,15 +1611,12 @@ impl<A> ObjectData<A> {
             | ObjectData::FootnoteRef {
                 definition: children,
                 ..
-            }
-            | ObjectData::Link {
-                description: children,
-                ..
             } => {
                 for child in children {
                     child.visit_with(f);
                 }
             }
+            ObjectData::Link(link) => link.visit_with(f),
             ObjectData::Citation(citation) => citation.visit_with(f),
             ObjectData::Cloze { text, .. } => {
                 for child in text {
@@ -1651,15 +1636,12 @@ impl<A> ObjectData<A> {
             | ObjectData::FootnoteRef {
                 definition: children,
                 ..
-            }
-            | ObjectData::Link {
-                description: children,
-                ..
             } => {
                 for child in children {
                     child.visit_mut_with(f);
                 }
             }
+            ObjectData::Link(link) => link.visit_mut_with(f),
             ObjectData::Citation(citation) => citation.visit_mut_with(f),
             ObjectData::Cloze { text, .. } => {
                 for child in text {
@@ -1679,14 +1661,13 @@ impl<A> ObjectData<A> {
             | ObjectData::FootnoteRef {
                 definition: children,
                 ..
-            }
-            | ObjectData::Link {
-                description: children,
-                ..
             } => {
                 for child in children {
                     acc = child.fold_with(acc, f);
                 }
+            }
+            ObjectData::Link(link) => {
+                acc = link.fold_with(acc, f);
             }
             ObjectData::Citation(citation) => {
                 acc = citation.fold_with(acc, f);
@@ -1697,6 +1678,84 @@ impl<A> ObjectData<A> {
                 }
             }
             _ => {}
+        }
+        acc
+    }
+}
+
+impl<A> Link<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> Link<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        Link {
+            path: self.path.clone(),
+            target: self.target.clone(),
+            description: self.description.iter().map(|x| x.map_ann_with(f)).collect(),
+            raw_description: self.raw_description.clone(),
+            has_description: self.has_description,
+            is_image: self.is_image,
+            caption: self.caption.as_ref().map(|caption| caption.map_ann_with(f)),
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<Link<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(Link {
+            path: self.path.clone(),
+            target: self.target.clone(),
+            description: self
+                .description
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            raw_description: self.raw_description.clone(),
+            has_description: self.has_description,
+            is_image: self.is_image,
+            caption: self
+                .caption
+                .as_ref()
+                .map(|caption| caption.try_map_ann_with(f))
+                .transpose()?,
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        if let Some(caption) = &self.caption {
+            caption.visit_with(f);
+        }
+        for object in &self.description {
+            object.visit_with(f);
+        }
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        if let Some(caption) = &mut self.caption {
+            caption.visit_mut_with(f);
+        }
+        for object in &mut self.description {
+            object.visit_mut_with(f);
+        }
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        let mut acc = init;
+        if let Some(caption) = &self.caption {
+            acc = caption.fold_with(acc, f);
+        }
+        for object in &self.description {
+            acc = object.fold_with(acc, f);
         }
         acc
     }
@@ -2542,11 +2601,19 @@ impl<'a> Converter<'a> {
             LinkTarget::Unresolved(path)
         };
         let description = legacy.description().collect::<Vec<_>>();
-        ObjectData::Link {
+        let caption = legacy
+            .caption()
+            .map(|caption| self.keyword(&caption.syntax, true));
+
+        ObjectData::Link(Link {
+            path: legacy.path().to_string(),
             target,
             raw_description: legacy.description_raw(),
+            has_description: legacy.has_description(),
+            is_image: legacy.is_image(),
+            caption,
             description: self.objects_from_elements(description),
-        }
+        })
     }
 
     fn macro_object(&self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {

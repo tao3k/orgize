@@ -49,6 +49,8 @@ snapshots, or serialization do not need source ranges.
 
 Semantic timestamps include parsed metadata for date/time start, range end,
 repeater, and warning cookies, while retaining the original raw timestamp text.
+Semantic links include owned path/target data, parsed description objects,
+caption metadata, and image-link detection.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 

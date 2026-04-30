@@ -113,21 +113,27 @@ Document {
                             },
                             Object {
                                 ann: (),
-                                data: Link {
-                                    target: Uri {
-                                        protocol: "https",
-                                        path: "//example.com",
-                                    },
-                                    description: [
-                                        Object {
-                                            ann: (),
-                                            data: Plain(
-                                                "a link",
-                                            ),
+                                data: Link(
+                                    Link {
+                                        path: "https://example.com",
+                                        target: Uri {
+                                            protocol: "https",
+                                            path: "//example.com",
                                         },
-                                    ],
-                                    raw_description: "a link",
-                                },
+                                        description: [
+                                            Object {
+                                                ann: (),
+                                                data: Plain(
+                                                    "a link",
+                                                ),
+                                            },
+                                        ],
+                                        raw_description: "a link",
+                                        has_description: true,
+                                        is_image: false,
+                                        caption: None,
+                                    },
+                                ),
                             },
                             Object {
                                 ann: (),
