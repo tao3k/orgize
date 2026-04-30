@@ -1,6 +1,7 @@
 use nom::IResult;
 
 use super::{
+    citation::citation_node,
     combinator::GreenElement,
     cookie::cookie_node,
     emphasis::{
@@ -165,8 +166,6 @@ pub fn minimal_object_nodes(input: Input) -> Vec<GreenElement> {
 /// - Line Breaks
 /// - Subscript and Superscript
 /// - Cloze (if `syntax-org-fc` is enabled)
-///
-/// // todo:
 /// - Citations
 pub fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
     object_nodes(
@@ -193,6 +192,7 @@ pub fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
                 .or_else(|_| timestamp_diary_node(i))
                 .or_else(|_| timestamp_active_node(i)),
             b'[' => cookie_node(i)
+                .or_else(|_| citation_node(i))
                 .or_else(|_| link_node(i))
                 .or_else(|_| fn_ref_node(i))
                 .or_else(|_| timestamp_inactive_node(i)),

@@ -2226,6 +2226,7 @@ impl<'a> Converter<'a> {
             SyntaxKind::LATEX_FRAGMENT => ObjectData::LatexFragment(node.to_string()),
             SyntaxKind::SNIPPET => self.export_snippet(&node),
             SyntaxKind::FN_REF => self.footnote_ref(&node),
+            SyntaxKind::CITATION => self.citation(&node),
             #[cfg(feature = "syntax-org-fc")]
             SyntaxKind::CLOZE => self.cloze(&node),
             SyntaxKind::INLINE_CALL => self.inline_call(&node),
@@ -2332,6 +2333,69 @@ impl<'a> Converter<'a> {
         }
     }
 
+    fn citation(&mut self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
+        let raw = node.to_string();
+        let Some((head, body)) = raw
+            .strip_prefix('[')
+            .and_then(|raw| raw.strip_suffix(']'))
+            .and_then(|inner| inner.split_once(':'))
+        else {
+            self.diagnostic(
+                node.text_range(),
+                DiagnosticKind::Conversion,
+                "citation syntax node could not be split into head and body".into(),
+            );
+            return ObjectData::Unknown {
+                kind: "CITATION".into(),
+                raw,
+            };
+        };
+
+        let (style, variant) = citation_style(head);
+        let node_start = usize::from(node.text_range().start());
+        let body_start = node_start + 1 + head.len() + 1;
+        let mut prefix = Vec::new();
+        let mut suffix = Vec::new();
+        let mut references = Vec::new();
+        let mut saw_reference = false;
+        let mut segment_start = 0;
+
+        for segment in body.split(';') {
+            let absolute_start = body_start + segment_start;
+            segment_start += segment.len() + 1;
+
+            if let Some((key_start, key_end)) = citation_key_range(segment) {
+                saw_reference = true;
+                references.push(CiteReference {
+                    id: segment[key_start..key_end].to_string(),
+                    prefix: self.plain_objects_from_raw(&segment[..key_start - 1], absolute_start),
+                    suffix: self
+                        .plain_objects_from_raw(&segment[key_end..], absolute_start + key_end),
+                });
+            } else if saw_reference {
+                suffix.extend(self.plain_objects_from_raw(segment, absolute_start));
+            } else {
+                prefix.extend(self.plain_objects_from_raw(segment, absolute_start));
+            }
+        }
+
+        if references.is_empty() {
+            self.diagnostic(
+                node.text_range(),
+                DiagnosticKind::Conversion,
+                "citation syntax node did not contain a citation reference".into(),
+            );
+        }
+
+        ObjectData::Citation(Citation {
+            style,
+            variant,
+            prefix,
+            suffix,
+            references,
+        })
+    }
+
     #[cfg(feature = "syntax-org-fc")]
     fn cloze(&mut self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
         let legacy = syntax_ast::Cloze::cast(node.clone()).expect("cloze node");
@@ -2431,6 +2495,25 @@ impl<'a> Converter<'a> {
         let start: usize = range.start().into();
         let end: usize = range.end().into();
         self.source.get(start..end).unwrap_or_default()
+    }
+
+    fn plain_objects_from_raw(
+        &self,
+        value: &str,
+        absolute_start: usize,
+    ) -> Vec<Object<ParsedAnnotation>> {
+        let Some((start, end)) = trimmed_range(value) else {
+            return Vec::new();
+        };
+        let range = TextRange::new(
+            ((absolute_start + start) as u32).into(),
+            ((absolute_start + end) as u32).into(),
+        );
+
+        vec![Object {
+            ann: self.ann(range),
+            data: ObjectData::Plain(value[start..end].to_string()),
+        }]
     }
 
     fn diagnostic(&mut self, range: TextRange, kind: DiagnosticKind, message: String) {
@@ -2551,6 +2634,39 @@ fn split_macro_args(args: &str) -> Vec<String> {
     }
 
     values
+}
+
+fn citation_style(head: &str) -> (String, String) {
+    let Some(rest) = head.strip_prefix("cite/") else {
+        return ("nil".into(), String::new());
+    };
+    let mut parts = rest.split('/');
+    let style = parts.next().unwrap_or("nil").to_string();
+    let variant = parts.collect::<Vec<_>>().join("/");
+    (style, variant)
+}
+
+fn citation_key_range(reference: &str) -> Option<(usize, usize)> {
+    let at = reference.find('@')?;
+    let start = at + 1;
+    let end = reference[start..]
+        .find(char::is_whitespace)
+        .map(|offset| start + offset)
+        .unwrap_or(reference.len());
+
+    (start < end).then_some((start, end))
+}
+
+fn trimmed_range(value: &str) -> Option<(usize, usize)> {
+    let start = value
+        .char_indices()
+        .find_map(|(idx, ch)| (!ch.is_whitespace()).then_some(idx))?;
+    let end = value
+        .char_indices()
+        .rfind(|(_, ch)| !ch.is_whitespace())
+        .map(|(idx, ch)| idx + ch.len_utf8())?;
+
+    (start < end).then_some((start, end))
 }
 
 fn strip_wrapping(value: &str, prefix: &str, suffix: &str) -> String {

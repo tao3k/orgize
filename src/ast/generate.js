@@ -174,6 +174,10 @@ const nodes = [
     kind: ["INLINE_SRC"],
   },
   {
+    struct: "Citation",
+    kind: ["CITATION"],
+  },
+  {
     struct: "Link",
     kind: ["LINK"],
   },

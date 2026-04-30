@@ -1,6 +1,7 @@
 //! Org-mode elements
 
 pub mod block;
+pub mod citation;
 pub mod clock;
 #[cfg(feature = "syntax-org-fc")]
 pub mod cloze;
@@ -193,6 +194,7 @@ pub enum SyntaxKind {
     //
     INLINE_CALL,
     INLINE_SRC,
+    CITATION,
     LINK,
     LINK_PATH,
     LINE_BREAK,
@@ -246,6 +248,7 @@ impl SyntaxKind {
         let is_standard_object = matches!(
             self,
             SyntaxKind::ENTITY
+                | SyntaxKind::CITATION
                 | SyntaxKind::LATEX_FRAGMENT
                 | SyntaxKind::SNIPPET
                 | SyntaxKind::FN_REF

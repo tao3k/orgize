@@ -1543,6 +1543,41 @@ impl InlineSrc {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Citation {
+    pub(crate) syntax: SyntaxNode,
+}
+impl AstNode for Citation {
+    type Language = OrgLanguage;
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == CITATION
+    }
+    fn cast(node: SyntaxNode) -> Option<Citation> {
+        Self::can_cast(node.kind()).then(|| Citation { syntax: node })
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+impl Citation {
+    /// Beginning position of this element
+    pub fn start(&self) -> TextSize {
+        self.syntax.text_range().start()
+    }
+    /// Ending position of this element
+    pub fn end(&self) -> TextSize {
+        self.syntax.text_range().end()
+    }
+    /// Range of this element
+    pub fn text_range(&self) -> TextRange {
+        self.syntax.text_range()
+    }
+    /// Raw text of this element
+    pub fn raw(&self) -> String {
+        self.syntax.to_string()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Link {
     pub(crate) syntax: SyntaxNode,
 }

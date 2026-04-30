@@ -176,6 +176,7 @@ pub trait Traverser {
                     BABEL_CALL => walk!(BabelCall),
                     CLOCK => walk!(@Clock),
                     COOKIE => walk!(@Cookie),
+                    CITATION => walk!(@Citation),
                     RADIO_TARGET => walk!(RadioTarget),
                     DRAWER => walk!(Drawer),
                     DYN_BLOCK => walk!(DynBlock),

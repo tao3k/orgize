@@ -304,6 +304,10 @@ impl Traverser for HtmlExport {
             }
             Event::Snippet(_) => {}
 
+            Event::Citation(citation) => {
+                let _ = write!(&mut self.output, "{}", HtmlEscape(citation.raw()));
+            }
+
             Event::Rule(_) => self.output += "<hr/>",
 
             Event::Timestamp(timestamp) => {

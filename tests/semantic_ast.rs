@@ -99,7 +99,7 @@ DEADLINE: <2026-05-01 Fri> SCHEDULED: <2026-04-30 Thu> CLOSED: [2026-04-29 Wed]
 :END:
 Body.
 "#,
-        r#"Paragraph with *bold* /italic/ _underline_ +strike+ ~code~ =verbatim= H_2 x^2 <2026-04-30 Thu> [2026-04-30 Thu] <%%(diary-date 4 30)> @@html:<span>@@ \alpha $x$ <<target>> <<<radio>>> {{{macro(1\,a, two)}}} [fn:note:See /inner/] src_rust[:exports code]{let x = 1;} call_square(4) [50%]\\
+        r#"Paragraph with *bold* /italic/ _underline_ +strike+ ~code~ =verbatim= H_2 x^2 <2026-04-30 Thu> [2026-04-30 Thu] <%%(diary-date 4 30)> @@html:<span>@@ \alpha $x$ <<target>> <<<radio>>> {{{macro(1\,a, two)}}} [fn:note:See /inner/] [cite:@doe2020] src_rust[:exports code]{let x = 1;} call_square(4) [50%]\\
 Next.
 "#,
         r#"#+ATTR_HTML: :class compact
@@ -141,6 +141,110 @@ x
         let doc = Org::parse(fixture).document();
         assert_clean_projection(&doc);
     }
+}
+
+#[test]
+fn semantic_ast_projects_object_gap_repairs() {
+    let doc = Org::parse(
+        r#"[[https://example.com][*bold* description]] [2003-09-16 Tue 09:39]--[2003-09-16 Tue 10:39] {{{macro(1\,a, two)}}}"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let paragraph = match &doc.children[0].data {
+        ElementData::Paragraph(objects) => objects,
+        other => panic!("expected paragraph, got {other:#?}"),
+    };
+
+    let link_description = paragraph
+        .iter()
+        .find_map(|object| match &object.data {
+            ObjectData::Link { description, .. } => Some(description),
+            _ => None,
+        })
+        .expect("link object");
+    assert!(link_description.iter().any(|object| matches!(
+        object.data,
+        ObjectData::Markup {
+            kind: MarkupKind::Bold,
+            ..
+        }
+    )));
+
+    let timestamp = paragraph
+        .iter()
+        .find_map(|object| match &object.data {
+            ObjectData::Timestamp(timestamp) => Some(timestamp),
+            _ => None,
+        })
+        .expect("timestamp object");
+    assert!(timestamp.is_range);
+
+    let macro_arguments = paragraph
+        .iter()
+        .find_map(|object| match &object.data {
+            ObjectData::Macro { name, arguments } if name == "macro" => Some(arguments),
+            _ => None,
+        })
+        .expect("macro object");
+    assert_eq!(macro_arguments, &["1,a".to_string(), "two".to_string()]);
+}
+
+#[test]
+fn semantic_ast_projects_citations() {
+    let doc = Org::parse(
+        "See [cite/text:global prefix ; see @doe2020 p. 42; cf. @roe2021; global suffix] and [cite/noauthor/bare:@smith].",
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let paragraph = match &doc.children[0].data {
+        ElementData::Paragraph(objects) => objects,
+        other => panic!("expected paragraph, got {other:#?}"),
+    };
+    let citations = paragraph
+        .iter()
+        .filter_map(|object| match &object.data {
+            ObjectData::Citation(citation) => Some(citation),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(citations.len(), 2);
+    assert_eq!(citations[0].style, "text");
+    assert_eq!(citations[0].variant, "");
+    assert!(matches!(
+        &citations[0].prefix[0].data,
+        ObjectData::Plain(value) if value == "global prefix"
+    ));
+    assert_eq!(citations[0].references[0].id, "doe2020");
+    assert!(matches!(
+        &citations[0].references[0].prefix[0].data,
+        ObjectData::Plain(value) if value == "see"
+    ));
+    assert!(matches!(
+        &citations[0].references[0].suffix[0].data,
+        ObjectData::Plain(value) if value == "p. 42"
+    ));
+    assert_eq!(citations[0].references[1].id, "roe2021");
+    assert!(matches!(
+        &citations[0].suffix[0].data,
+        ObjectData::Plain(value) if value == "global suffix"
+    ));
+
+    assert_eq!(citations[1].style, "noauthor");
+    assert_eq!(citations[1].variant, "bare");
+    assert_eq!(citations[1].references[0].id, "smith");
+}
+
+#[test]
+fn html_export_preserves_citation_raw_text() {
+    let html = Org::parse("See [cite:@doe2020].").to_html();
+
+    assert_eq!(
+        html,
+        "<main><section><p>See [cite:@doe2020].</p></section></main>"
+    );
 }
 
 #[test]

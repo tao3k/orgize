@@ -167,6 +167,8 @@ impl Traverser for MarkdownExport {
 
             Event::Snippet(_snippet) => {}
 
+            Event::Citation(citation) => self.output += &citation.raw(),
+
             Event::Rule(_) => self.output += "\n-----\n",
 
             Event::Timestamp(_timestamp) => {}
