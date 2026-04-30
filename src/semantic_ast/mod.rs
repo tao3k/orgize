@@ -1950,74 +1950,77 @@ impl<'a> Converter<'a> {
     }
 
     fn export_snippet(&self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
-        let raw = node.to_string();
-        let inner = strip_wrapping(&raw, "@@", "@@");
-        if let Some((backend, value)) = inner.split_once(':') {
+        if let Some(snippet) = syntax_ast::Snippet::cast(node.clone()) {
             ObjectData::ExportSnippet {
-                backend: backend.to_string(),
-                value: value.to_string(),
+                backend: snippet.backend().to_string(),
+                value: snippet.value().to_string(),
             }
         } else {
             ObjectData::Unknown {
                 kind: "SNIPPET".into(),
-                raw,
+                raw: node.to_string(),
             }
         }
     }
 
     fn footnote_ref(&mut self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
-        let raw = node.to_string();
-        let inner = raw
-            .strip_prefix("[fn:")
-            .and_then(|s| s.strip_suffix(']'))
-            .unwrap_or(raw.as_str());
-        if let Some((label, def)) = inner.split_once("::") {
-            ObjectData::FootnoteRef {
-                label: (!label.is_empty()).then_some(label.to_string()),
-                definition: vec![Object {
-                    ann: self.node_ann(node),
-                    data: ObjectData::Plain(def.to_string()),
-                }],
+        let mut saw_fn_prefix = false;
+        let mut saw_label_colon = false;
+        let mut in_definition = false;
+        let mut label = String::new();
+        let mut definition = Vec::new();
+
+        for element in node.children_with_tokens() {
+            match element.kind() {
+                SyntaxKind::L_BRACKET => {}
+                SyntaxKind::TEXT if !saw_fn_prefix => {
+                    saw_fn_prefix = true;
+                }
+                SyntaxKind::COLON if saw_fn_prefix && !saw_label_colon => {
+                    saw_label_colon = true;
+                }
+                SyntaxKind::COLON if saw_label_colon && !in_definition => {
+                    in_definition = true;
+                }
+                SyntaxKind::R_BRACKET => break,
+                _ if in_definition => definition.push(element),
+                SyntaxKind::TEXT if saw_label_colon => {
+                    label.push_str(
+                        element
+                            .as_token()
+                            .map(|token| token.text())
+                            .unwrap_or_default(),
+                    );
+                }
+                _ => {}
             }
-        } else {
-            ObjectData::FootnoteRef {
-                label: (!inner.is_empty()).then_some(inner.to_string()),
-                definition: Vec::new(),
-            }
+        }
+
+        ObjectData::FootnoteRef {
+            label: (!label.is_empty()).then_some(label),
+            definition: self.objects_from_elements(definition),
         }
     }
 
     fn inline_call(&self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
+        let legacy = syntax_ast::InlineCall::cast(node.clone()).expect("inline call node");
         let raw = node.to_string();
         ObjectData::InlineCall {
-            name: raw
-                .strip_prefix("call_")
-                .and_then(|s| s.split(['(', '[']).next())
-                .unwrap_or_default()
-                .to_string(),
-            arguments: raw
-                .split_once('(')
-                .and_then(|(_, rest)| rest.rsplit_once(')').map(|(args, _)| args))
-                .unwrap_or_default()
-                .to_string(),
-            header: None,
-            end_header: None,
+            name: legacy.call().to_string(),
+            arguments: legacy.arguments().to_string(),
+            header: legacy.inside_header().map(|token| token.to_string()),
+            end_header: legacy.end_header().map(|token| token.to_string()),
             raw,
         }
     }
 
     fn inline_src(&self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
+        let legacy = syntax_ast::InlineSrc::cast(node.clone()).expect("inline src node");
         let raw = node.to_string();
-        let body = raw.strip_prefix("src_").unwrap_or(raw.as_str());
-        let language = body.split(['[', '{']).next().unwrap_or_default();
-        let value = body
-            .split_once('{')
-            .and_then(|(_, rest)| rest.rsplit_once('}').map(|(value, _)| value))
-            .unwrap_or_default();
         ObjectData::InlineSrc {
-            language: language.to_string(),
-            parameters: None,
-            value: value.to_string(),
+            language: legacy.language().to_string(),
+            parameters: legacy.parameters().map(|token| token.to_string()),
+            value: legacy.value().to_string(),
             raw,
         }
     }
