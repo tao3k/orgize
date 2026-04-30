@@ -8,8 +8,9 @@ use rowan::{NodeOrToken, TextRange, TextSize};
 use crate::{
     config::ParseConfig,
     syntax::{
-        combinator::node, object::standard_object_nodes, SyntaxElement, SyntaxKind, SyntaxNode,
-        SyntaxToken,
+        combinator::{line_starts_iter, node},
+        object::standard_object_nodes,
+        SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken,
     },
     syntax_ast,
 };
@@ -1777,7 +1778,7 @@ impl<A> Citation<A> {
 struct Converter<'a> {
     source: &'a str,
     config: &'a ParseConfig,
-    lines: LineIndex,
+    lines: LineIndex<'a>,
     diagnostics: Vec<Diagnostic>,
 }
 
@@ -2581,30 +2582,29 @@ impl<'a> Converter<'a> {
     }
 }
 
-struct LineIndex {
+struct LineIndex<'a> {
+    source: &'a str,
     starts: Vec<usize>,
 }
 
-impl LineIndex {
-    fn new(source: &str) -> Self {
-        let mut starts = vec![0];
-        for (idx, byte) in source.bytes().enumerate() {
-            if byte == b'\n' {
-                starts.push(idx + 1);
-            }
+impl<'a> LineIndex<'a> {
+    fn new(source: &'a str) -> Self {
+        Self {
+            source,
+            starts: line_starts_iter(source).collect(),
         }
-        Self { starts }
     }
 
     fn position(&self, offset: TextSize) -> SourcePosition {
-        let offset = usize::from(offset);
+        let offset = usize::from(offset).min(self.source.len());
         let line = match self.starts.binary_search(&offset) {
             Ok(idx) => idx,
             Err(idx) => idx.saturating_sub(1),
         };
+        let line_start = self.starts[line];
         SourcePosition {
             line: line + 1,
-            column: offset.saturating_sub(self.starts[line]) + 1,
+            column: self.source[line_start..offset].chars().count() + 1,
         }
     }
 }
