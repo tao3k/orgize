@@ -47,6 +47,9 @@ assert_eq!(hdl.todo_keyword().unwrap(), "TASK");
 annotations and projection diagnostics. Use `document.to_bare()` when tests,
 snapshots, or serialization do not need source ranges.
 
+Semantic timestamps include parsed metadata for date/time start, range end,
+repeater, and warning cookies, while retaining the original raw timestamp text.
+
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 
 ```rust

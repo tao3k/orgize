@@ -1,6 +1,7 @@
 use orgize::{
     ast::{
-        AstMut, AstRef, ElementData, MarkupKind, ObjectData, ParsedAst, SourcePosition, TodoState,
+        AstMut, AstRef, ElementData, MarkupKind, ObjectData, ParsedAst, RepeaterKind,
+        SourcePosition, TimeUnit, TodoState, WarningKind,
     },
     config::UseSubSuperscript,
     Org, ParseConfig,
@@ -67,7 +68,14 @@ fn main() {}
     assert_eq!(section.raw_title, "Heading ");
     assert_eq!(section.tags, ["work"]);
     assert_eq!(section.anchor.as_deref(), Some("heading-id"));
-    assert!(section.planning.scheduled.is_some());
+    let scheduled = section.planning.scheduled.as_ref().unwrap();
+    assert_eq!(scheduled.start.as_ref().unwrap().year, 2026);
+    assert_eq!(scheduled.start.as_ref().unwrap().month, 4);
+    assert_eq!(scheduled.start.as_ref().unwrap().day, 30);
+    assert_eq!(
+        scheduled.start.as_ref().unwrap().day_name.as_deref(),
+        Some("Thu")
+    );
 
     let paragraph = section
         .children
@@ -182,6 +190,10 @@ fn semantic_ast_projects_object_gap_repairs() {
         })
         .expect("timestamp object");
     assert!(timestamp.is_range);
+    assert_eq!(timestamp.start.as_ref().unwrap().hour, Some(9));
+    assert_eq!(timestamp.start.as_ref().unwrap().minute, Some(39));
+    assert_eq!(timestamp.end.as_ref().unwrap().hour, Some(10));
+    assert_eq!(timestamp.end.as_ref().unwrap().minute, Some(39));
 
     let macro_arguments = paragraph
         .iter()
@@ -191,6 +203,49 @@ fn semantic_ast_projects_object_gap_repairs() {
         })
         .expect("macro object");
     assert_eq!(macro_arguments, &["1,a".to_string(), "two".to_string()]);
+}
+
+#[test]
+fn semantic_ast_projects_timestamp_metadata() {
+    let doc = Org::parse("SCHEDULED: <2003-09-16 Tue 09:39-10:39 +1w --2d>\n").document();
+
+    assert_clean_projection(&doc);
+    let timestamp = match &doc.children[0].data {
+        ElementData::Paragraph(objects) => objects
+            .iter()
+            .find_map(|object| match &object.data {
+                ObjectData::Timestamp(timestamp) => Some(timestamp),
+                _ => None,
+            })
+            .expect("timestamp object"),
+        other => panic!("expected paragraph, got {other:#?}"),
+    };
+
+    let start = timestamp.start.as_ref().expect("timestamp start");
+    assert_eq!(start.year, 2003);
+    assert_eq!(start.month, 9);
+    assert_eq!(start.day, 16);
+    assert_eq!(start.day_name.as_deref(), Some("Tue"));
+    assert_eq!(start.hour, Some(9));
+    assert_eq!(start.minute, Some(39));
+
+    let end = timestamp.end.as_ref().expect("timestamp range end");
+    assert_eq!(end.year, 2003);
+    assert_eq!(end.month, 9);
+    assert_eq!(end.day, 16);
+    assert_eq!(end.day_name.as_deref(), Some("Tue"));
+    assert_eq!(end.hour, Some(10));
+    assert_eq!(end.minute, Some(39));
+
+    let repeater = timestamp.repeater.as_ref().expect("timestamp repeater");
+    assert_eq!(repeater.kind, RepeaterKind::Cumulate);
+    assert_eq!(repeater.value, 1);
+    assert_eq!(repeater.unit, TimeUnit::Week);
+
+    let warning = timestamp.warning.as_ref().expect("timestamp warning");
+    assert_eq!(warning.kind, WarningKind::First);
+    assert_eq!(warning.value, 2);
+    assert_eq!(warning.unit, TimeUnit::Day);
 }
 
 #[test]
@@ -701,6 +756,9 @@ fn semantic_ast_projects_clean_clock_duration() {
         .expect("clock element");
 
     assert!(clock.value.is_some());
+    let timestamp = clock.value.as_ref().unwrap();
+    assert_eq!(timestamp.start.as_ref().unwrap().hour, Some(9));
+    assert_eq!(timestamp.start.as_ref().unwrap().minute, Some(39));
     assert_eq!(clock.duration.as_deref(), Some("1:00"));
     assert!(clock.raw.contains("=>  1:00"));
 }

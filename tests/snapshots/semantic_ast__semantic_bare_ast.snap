@@ -60,6 +60,21 @@ Document {
                         kind: Active,
                         raw: "<2026-04-30 Thu>",
                         is_range: false,
+                        start: Some(
+                            TimestampMoment {
+                                year: 2026,
+                                month: 4,
+                                day: 30,
+                                day_name: Some(
+                                    "Thu",
+                                ),
+                                hour: None,
+                                minute: None,
+                            },
+                        ),
+                        end: None,
+                        repeater: None,
+                        warning: None,
                     },
                 ),
                 closed: None,
@@ -127,6 +142,21 @@ Document {
                                         kind: Active,
                                         raw: "<2026-04-30 Thu>",
                                         is_range: false,
+                                        start: Some(
+                                            TimestampMoment {
+                                                year: 2026,
+                                                month: 4,
+                                                day: 30,
+                                                day_name: Some(
+                                                    "Thu",
+                                                ),
+                                                hour: None,
+                                                minute: None,
+                                            },
+                                        ),
+                                        end: None,
+                                        repeater: None,
+                                        warning: None,
                                     },
                                 ),
                             },

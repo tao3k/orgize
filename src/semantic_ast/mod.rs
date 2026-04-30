@@ -308,6 +308,10 @@ pub struct Timestamp {
     pub kind: TimestampKind,
     pub raw: String,
     pub is_range: bool,
+    pub start: Option<TimestampMoment>,
+    pub end: Option<TimestampMoment>,
+    pub repeater: Option<TimestampRepeater>,
+    pub warning: Option<TimestampWarning>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -315,6 +319,52 @@ pub enum TimestampKind {
     Active,
     Inactive,
     Diary,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TimestampMoment {
+    pub year: u16,
+    pub month: u8,
+    pub day: u8,
+    pub day_name: Option<String>,
+    pub hour: Option<u8>,
+    pub minute: Option<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TimestampRepeater {
+    pub kind: RepeaterKind,
+    pub value: u32,
+    pub unit: TimeUnit,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TimestampWarning {
+    pub kind: WarningKind,
+    pub value: u32,
+    pub unit: TimeUnit,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RepeaterKind {
+    Cumulate,
+    CatchUp,
+    Restart,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WarningKind {
+    All,
+    First,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TimeUnit {
+    Hour,
+    Day,
+    Week,
+    Month,
+    Year,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -2314,10 +2364,16 @@ impl<'a> Converter<'a> {
             _ => return None,
         };
         let legacy = syntax_ast::Timestamp::cast(node.clone()).expect("timestamp node");
+        let is_range = legacy.is_range();
+        let (start, end) = timestamp_moment_range(node, is_range);
         Some(Timestamp {
             kind,
             raw: node.to_string(),
-            is_range: legacy.is_range(),
+            is_range,
+            start,
+            end,
+            repeater: timestamp_repeater(&legacy),
+            warning: timestamp_warning(&legacy),
         })
     }
 
@@ -2634,6 +2690,142 @@ fn semantic_block_name(node: &SyntaxNode) -> Option<String> {
         SyntaxKind::SPECIAL_BLOCK => block_name(node),
         _ => None,
     }
+}
+
+#[derive(Default)]
+struct TimestampMomentBuilder {
+    year: Option<u16>,
+    month: Option<u8>,
+    day: Option<u8>,
+    day_name: Option<String>,
+    times: Vec<(u8, u8)>,
+    pending_hour: Option<u8>,
+}
+
+impl TimestampMomentBuilder {
+    fn is_empty(&self) -> bool {
+        self.year.is_none()
+            && self.month.is_none()
+            && self.day.is_none()
+            && self.day_name.is_none()
+            && self.times.is_empty()
+            && self.pending_hour.is_none()
+    }
+
+    fn to_moment(&self, time_index: usize) -> Option<TimestampMoment> {
+        let (hour, minute) = self
+            .times
+            .get(time_index)
+            .copied()
+            .map(|(hour, minute)| (Some(hour), Some(minute)))
+            .unwrap_or((None, None));
+
+        Some(TimestampMoment {
+            year: self.year?,
+            month: self.month?,
+            day: self.day?,
+            day_name: self.day_name.clone(),
+            hour,
+            minute,
+        })
+    }
+}
+
+fn timestamp_moment_range(
+    node: &SyntaxNode,
+    is_range: bool,
+) -> (Option<TimestampMoment>, Option<TimestampMoment>) {
+    let moments = timestamp_moment_builders(node);
+    let start = moments.first().and_then(|moment| moment.to_moment(0));
+    let end = if is_range {
+        if moments.len() > 1 {
+            moments.last().and_then(|moment| moment.to_moment(0))
+        } else {
+            moments.first().and_then(|moment| moment.to_moment(1))
+        }
+    } else {
+        None
+    };
+
+    (start, end)
+}
+
+fn timestamp_moment_builders(node: &SyntaxNode) -> Vec<TimestampMomentBuilder> {
+    let mut moments = Vec::new();
+    let mut current = TimestampMomentBuilder::default();
+
+    for token in node
+        .children_with_tokens()
+        .filter_map(|element| element.into_token())
+    {
+        match token.kind() {
+            SyntaxKind::TIMESTAMP_YEAR => {
+                if !current.is_empty() {
+                    moments.push(current);
+                    current = TimestampMomentBuilder::default();
+                }
+                current.year = parse_token(token.text());
+            }
+            SyntaxKind::TIMESTAMP_MONTH => current.month = parse_token(token.text()),
+            SyntaxKind::TIMESTAMP_DAY => current.day = parse_token(token.text()),
+            SyntaxKind::TIMESTAMP_DAYNAME => current.day_name = Some(token.text().to_string()),
+            SyntaxKind::TIMESTAMP_HOUR => current.pending_hour = parse_token(token.text()),
+            SyntaxKind::TIMESTAMP_MINUTE => {
+                if let (Some(hour), Some(minute)) =
+                    (current.pending_hour.take(), parse_token(token.text()))
+                {
+                    current.times.push((hour, minute));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    if !current.is_empty() {
+        moments.push(current);
+    }
+
+    moments
+}
+
+fn timestamp_repeater(timestamp: &syntax_ast::Timestamp) -> Option<TimestampRepeater> {
+    Some(TimestampRepeater {
+        kind: match timestamp.repeater_type()? {
+            syntax_ast::RepeaterType::Cumulate => RepeaterKind::Cumulate,
+            syntax_ast::RepeaterType::CatchUp => RepeaterKind::CatchUp,
+            syntax_ast::RepeaterType::Restart => RepeaterKind::Restart,
+        },
+        value: timestamp.repeater_value()?,
+        unit: timestamp_time_unit(timestamp.repeater_unit()?),
+    })
+}
+
+fn timestamp_warning(timestamp: &syntax_ast::Timestamp) -> Option<TimestampWarning> {
+    Some(TimestampWarning {
+        kind: match timestamp.warning_type()? {
+            syntax_ast::DelayType::All => WarningKind::All,
+            syntax_ast::DelayType::First => WarningKind::First,
+        },
+        value: timestamp.warning_value()?,
+        unit: timestamp_time_unit(timestamp.warning_unit()?),
+    })
+}
+
+fn timestamp_time_unit(unit: syntax_ast::TimeUnit) -> TimeUnit {
+    match unit {
+        syntax_ast::TimeUnit::Hour => TimeUnit::Hour,
+        syntax_ast::TimeUnit::Day => TimeUnit::Day,
+        syntax_ast::TimeUnit::Week => TimeUnit::Week,
+        syntax_ast::TimeUnit::Month => TimeUnit::Month,
+        syntax_ast::TimeUnit::Year => TimeUnit::Year,
+    }
+}
+
+fn parse_token<T>(value: &str) -> Option<T>
+where
+    T: std::str::FromStr,
+{
+    value.parse().ok()
 }
 
 fn range_from_elements(elements: &[SyntaxElement]) -> Option<TextRange> {
