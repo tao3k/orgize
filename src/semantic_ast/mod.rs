@@ -176,6 +176,7 @@ pub enum Checkbox {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Table<A = ()> {
     pub rows: Vec<TableRow<A>>,
+    pub formulas: Vec<Keyword<A>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1135,6 +1136,11 @@ impl<A> Table<A> {
                         .collect(),
                 })
                 .collect(),
+            formulas: self
+                .formulas
+                .iter()
+                .map(|formula| formula.map_ann_with(f))
+                .collect(),
         }
     }
 
@@ -1167,6 +1173,11 @@ impl<A> Table<A> {
                     })
                 })
                 .collect::<Result<_, E>>()?,
+            formulas: self
+                .formulas
+                .iter()
+                .map(|formula| formula.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
         })
     }
 
@@ -1177,6 +1188,9 @@ impl<A> Table<A> {
         for row in &self.rows {
             row.visit_with(f);
         }
+        for formula in &self.formulas {
+            formula.visit_with(f);
+        }
     }
 
     fn visit_mut_with<F>(&mut self, f: &mut F)
@@ -1186,6 +1200,9 @@ impl<A> Table<A> {
         for row in &mut self.rows {
             row.visit_mut_with(f);
         }
+        for formula in &mut self.formulas {
+            formula.visit_mut_with(f);
+        }
     }
 
     fn fold_with<T, F>(&self, mut acc: T, f: &mut F) -> T
@@ -1194,6 +1211,9 @@ impl<A> Table<A> {
     {
         for row in &self.rows {
             acc = row.fold_with(acc, f);
+        }
+        for formula in &self.formulas {
+            acc = formula.fold_with(acc, f);
         }
         acc
     }
@@ -2059,8 +2079,13 @@ impl<'a> Converter<'a> {
                     .collect(),
             })
             .collect();
+        let formulas = node
+            .children()
+            .filter(|child| child.kind() == SyntaxKind::KEYWORD)
+            .map(|child| self.keyword(&child, false))
+            .collect();
 
-        Table { rows }
+        Table { rows, formulas }
     }
 
     fn table_el(&self, node: &SyntaxNode) -> String {
