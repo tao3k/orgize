@@ -1,7 +1,16 @@
 use crate::syntax::{SyntaxElement, SyntaxKind};
-use crate::syntax_ast::*;
+use crate::syntax_ast::{
+    BabelCall, Bold, CenterBlock, Citation, Clock, Code, Comment, CommentBlock, Cookie, Document,
+    Drawer, DynBlock, Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef, FnRef, Headline,
+    InlineCall, InlineSrc, Italic, Keyword, LatexEnvironment, LatexFragment, LineBreak, Link, List,
+    ListItem, Macros, OrgTable, OrgTableCell, OrgTableRow, Paragraph, PropertyDrawer, QuoteBlock,
+    RadioTarget, Rule, Section, Snippet, SourceBlock, SpecialBlock, Strike, Subscript, Superscript,
+    Target, Timestamp, Token, Underline, Verbatim, VerseBlock,
+};
+
+#[cfg(feature = "syntax-org-fc")]
+use crate::syntax_ast::Cloze;
 use rowan::ast::AstNode;
-use SyntaxKind::*;
 
 use super::event::{Container, Event};
 
@@ -150,59 +159,63 @@ pub trait Traverser {
                 }
 
                 match node.kind() {
-                    DOCUMENT => walk!(Document),
-                    HEADLINE => walk!(Headline),
-                    SECTION => walk!(Section),
-                    PARAGRAPH => walk!(Paragraph),
-                    BOLD => walk!(Bold),
-                    ITALIC => walk!(Italic),
-                    STRIKE => walk!(Strike),
-                    UNDERLINE => walk!(Underline),
-                    LIST => walk!(List),
-                    LIST_ITEM => walk!(ListItem),
-                    CODE => walk!(Code),
-                    INLINE_CALL => walk!(@InlineCall),
-                    INLINE_SRC => walk!(@InlineSrc),
-                    RULE => walk!(@Rule),
-                    VERBATIM => walk!(Verbatim),
-                    SPECIAL_BLOCK => walk!(SpecialBlock),
-                    QUOTE_BLOCK => walk!(QuoteBlock),
-                    CENTER_BLOCK => walk!(CenterBlock),
-                    VERSE_BLOCK => walk!(VerseBlock),
-                    COMMENT_BLOCK => walk!(CommentBlock),
-                    EXAMPLE_BLOCK => walk!(ExampleBlock),
-                    EXPORT_BLOCK => walk!(ExportBlock),
-                    SOURCE_BLOCK => walk!(SourceBlock),
-                    BABEL_CALL => walk!(BabelCall),
-                    CLOCK => walk!(@Clock),
-                    COOKIE => walk!(@Cookie),
-                    CITATION => walk!(@Citation),
-                    RADIO_TARGET => walk!(RadioTarget),
-                    DRAWER => walk!(Drawer),
-                    DYN_BLOCK => walk!(DynBlock),
-                    FN_DEF => walk!(FnDef),
-                    FN_REF => walk!(FnRef),
-                    MACROS => walk!(@Macros),
-                    SNIPPET => walk!(@Snippet),
-                    TIMESTAMP_ACTIVE | TIMESTAMP_INACTIVE | TIMESTAMP_DIARY => walk!(@Timestamp),
-                    TARGET => walk!(Target),
-                    COMMENT => walk!(Comment),
-                    FIXED_WIDTH => walk!(FixedWidth),
-                    ORG_TABLE => walk!(OrgTable),
-                    ORG_TABLE_RULE_ROW | ORG_TABLE_STANDARD_ROW => walk!(OrgTableRow),
-                    ORG_TABLE_CELL => walk!(OrgTableCell),
-                    LINK => walk!(Link),
-                    LATEX_FRAGMENT => walk!(@LatexFragment),
-                    LATEX_ENVIRONMENT => walk!(@LatexEnvironment),
-                    ENTITY => walk!(@Entity),
-                    LINE_BREAK => walk!(@LineBreak),
-                    SUPERSCRIPT => walk!(Superscript),
-                    SUBSCRIPT => walk!(Subscript),
-                    KEYWORD => walk!(Keyword),
-                    PROPERTY_DRAWER => walk!(PropertyDrawer),
+                    SyntaxKind::DOCUMENT => walk!(Document),
+                    SyntaxKind::HEADLINE => walk!(Headline),
+                    SyntaxKind::SECTION => walk!(Section),
+                    SyntaxKind::PARAGRAPH => walk!(Paragraph),
+                    SyntaxKind::BOLD => walk!(Bold),
+                    SyntaxKind::ITALIC => walk!(Italic),
+                    SyntaxKind::STRIKE => walk!(Strike),
+                    SyntaxKind::UNDERLINE => walk!(Underline),
+                    SyntaxKind::LIST => walk!(List),
+                    SyntaxKind::LIST_ITEM => walk!(ListItem),
+                    SyntaxKind::CODE => walk!(Code),
+                    SyntaxKind::INLINE_CALL => walk!(@InlineCall),
+                    SyntaxKind::INLINE_SRC => walk!(@InlineSrc),
+                    SyntaxKind::RULE => walk!(@Rule),
+                    SyntaxKind::VERBATIM => walk!(Verbatim),
+                    SyntaxKind::SPECIAL_BLOCK => walk!(SpecialBlock),
+                    SyntaxKind::QUOTE_BLOCK => walk!(QuoteBlock),
+                    SyntaxKind::CENTER_BLOCK => walk!(CenterBlock),
+                    SyntaxKind::VERSE_BLOCK => walk!(VerseBlock),
+                    SyntaxKind::COMMENT_BLOCK => walk!(CommentBlock),
+                    SyntaxKind::EXAMPLE_BLOCK => walk!(ExampleBlock),
+                    SyntaxKind::EXPORT_BLOCK => walk!(ExportBlock),
+                    SyntaxKind::SOURCE_BLOCK => walk!(SourceBlock),
+                    SyntaxKind::BABEL_CALL => walk!(BabelCall),
+                    SyntaxKind::CLOCK => walk!(@Clock),
+                    SyntaxKind::COOKIE => walk!(@Cookie),
+                    SyntaxKind::CITATION => walk!(@Citation),
+                    SyntaxKind::RADIO_TARGET => walk!(RadioTarget),
+                    SyntaxKind::DRAWER => walk!(Drawer),
+                    SyntaxKind::DYN_BLOCK => walk!(DynBlock),
+                    SyntaxKind::FN_DEF => walk!(FnDef),
+                    SyntaxKind::FN_REF => walk!(FnRef),
+                    SyntaxKind::MACROS => walk!(@Macros),
+                    SyntaxKind::SNIPPET => walk!(@Snippet),
+                    SyntaxKind::TIMESTAMP_ACTIVE
+                    | SyntaxKind::TIMESTAMP_INACTIVE
+                    | SyntaxKind::TIMESTAMP_DIARY => walk!(@Timestamp),
+                    SyntaxKind::TARGET => walk!(Target),
+                    SyntaxKind::COMMENT => walk!(Comment),
+                    SyntaxKind::FIXED_WIDTH => walk!(FixedWidth),
+                    SyntaxKind::ORG_TABLE => walk!(OrgTable),
+                    SyntaxKind::ORG_TABLE_RULE_ROW | SyntaxKind::ORG_TABLE_STANDARD_ROW => {
+                        walk!(OrgTableRow)
+                    }
+                    SyntaxKind::ORG_TABLE_CELL => walk!(OrgTableCell),
+                    SyntaxKind::LINK => walk!(Link),
+                    SyntaxKind::LATEX_FRAGMENT => walk!(@LatexFragment),
+                    SyntaxKind::LATEX_ENVIRONMENT => walk!(@LatexEnvironment),
+                    SyntaxKind::ENTITY => walk!(@Entity),
+                    SyntaxKind::LINE_BREAK => walk!(@LineBreak),
+                    SyntaxKind::SUPERSCRIPT => walk!(Superscript),
+                    SyntaxKind::SUBSCRIPT => walk!(Subscript),
+                    SyntaxKind::KEYWORD => walk!(Keyword),
+                    SyntaxKind::PROPERTY_DRAWER => walk!(PropertyDrawer),
                     #[cfg(feature = "syntax-org-fc")]
-                    CLOZE => walk!(@Cloze),
-                    BLOCK_CONTENT | LIST_ITEM_CONTENT => {
+                    SyntaxKind::CLOZE => walk!(@Cloze),
+                    SyntaxKind::BLOCK_CONTENT | SyntaxKind::LIST_ITEM_CONTENT => {
                         for child in node.children_with_tokens() {
                             self.element(child, ctx);
                             take_control!();
@@ -212,7 +225,7 @@ pub trait Traverser {
                 }
             }
             SyntaxElement::Token(token) => {
-                if token.kind() == TEXT {
+                if token.kind() == SyntaxKind::TEXT {
                     self.event(Event::Text(Token(token)), ctx);
                     take_control!();
                 }

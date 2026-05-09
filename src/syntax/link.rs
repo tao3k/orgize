@@ -10,7 +10,7 @@ use super::{
     },
     input::Input,
     object::link_description_object_nodes,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -30,7 +30,7 @@ pub fn link_node(input: Input) -> IResult<Input, GreenElement, ()> {
             r_bracket2_token,
         ),
         |(l_bracket2, path, desc, r_bracket2)| {
-            let mut children = vec![l_bracket2, path.token(LINK_PATH)];
+            let mut children = vec![l_bracket2, path.token(SyntaxKind::LINK_PATH)];
 
             if let Some((r_bracket, l_bracket, desc)) = desc {
                 children.extend([r_bracket, l_bracket]);
@@ -39,7 +39,7 @@ pub fn link_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
             children.push(r_bracket2);
 
-            node(LINK, children)
+            node(SyntaxKind::LINK, children)
         },
     );
     crate::lossless_parser!(parser, input)

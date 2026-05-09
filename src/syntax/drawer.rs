@@ -12,7 +12,7 @@ use super::{
     },
     element::element_nodes,
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 fn drawer_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str), ()> {
@@ -35,7 +35,7 @@ fn drawer_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str
     b.ws(ws_);
     b.nl(nl);
 
-    Ok((input, (b.finish(DRAWER_BEGIN), name.as_str())))
+    Ok((input, (b.finish(SyntaxKind::DRAWER_BEGIN), name.as_str())))
 }
 
 fn drawer_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -57,7 +57,7 @@ fn drawer_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
     b.ws(ws_);
     b.nl(nl);
 
-    Ok((input, b.finish(DRAWER_END)))
+    Ok((input, b.finish(SyntaxKind::DRAWER_END)))
 }
 
 fn drawer_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -71,14 +71,14 @@ fn drawer_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
             let mut children = vec![begin];
             children.extend(pre_blank);
             if !contents.is_empty() {
-                children.push(node(DRAWER_CONTENT, element_nodes(contents)?));
+                children.push(node(SyntaxKind::DRAWER_CONTENT, element_nodes(contents)?));
             } else {
-                children.push(node(DRAWER_CONTENT, []));
+                children.push(node(SyntaxKind::DRAWER_CONTENT, []));
             }
             children.push(end);
             children.extend(post_blank);
 
-            return Ok((input, node(DRAWER, children)));
+            return Ok((input, node(SyntaxKind::DRAWER, children)));
         }
     }
 
@@ -103,7 +103,7 @@ fn property_drawer_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     children.push(end);
     children.extend(post_blank);
 
-    Ok((input, node(PROPERTY_DRAWER, children)))
+    Ok((input, node(SyntaxKind::PROPERTY_DRAWER, children)))
 }
 
 fn node_property_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -128,18 +128,18 @@ fn node_property_node(input: Input) -> IResult<Input, GreenElement, ()> {
     if name.ends_with('+') {
         let (plus, name) = name.take_split(name.len() - 1);
         b.text(name);
-        b.token(PLUS, plus);
+        b.token(SyntaxKind::PLUS, plus);
     } else {
         b.text(name);
     }
 
-    b.token(COLON, colon2);
+    b.token(SyntaxKind::COLON, colon2);
     b.ws(ws2);
     b.text(value);
     b.ws(ws3);
     b.nl(nl);
 
-    Ok((input, b.finish(NODE_PROPERTY)))
+    Ok((input, b.finish(SyntaxKind::NODE_PROPERTY)))
 }
 
 #[cfg_attr(

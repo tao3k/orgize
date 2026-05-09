@@ -127,11 +127,12 @@ Checkout `examples/html-slugify.rs` on how to customizing html export process.
 
 Parser v2 tests mount `rust-lang-project-harness` as a dev-only cargo-test
 gate from `src/lib.rs`. The gate uses the current standalone harness repository
-instead of the retired monorepo-local `xiuxian-testing` crate. Existing
-modularity findings from this old parser codebase are kept advisory for this PR;
-project test layout findings stay blocking. New tests should still use explicit
-imports: `RUST-MOD-R010` reports parent-scope globs such as `use super::*`, even
-while legacy modularity debt remains non-blocking during the v2 parser split.
+instead of the retired monorepo-local `xiuxian-testing` crate. No rule pack or
+rule severity is downgraded in the gate: `RUST-MOD-*` and project layout
+findings stay blocking. `AGENT-*` `info` findings remain visible as repair
+advice while this legacy crate burns them down separately. New tests should
+still use explicit imports: `RUST-MOD-R010` reports parent-scope globs such as
+`use super::*`.
 
 ## API compatibility
 

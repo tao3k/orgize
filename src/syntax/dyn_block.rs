@@ -9,7 +9,7 @@ use super::{
         blank_lines, eol_or_eof, line_starts_iter, node, trim_line_end, GreenElement, NodeBuilder,
     },
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 fn dyn_block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -25,7 +25,7 @@ fn dyn_block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
             children.push(end);
             children.extend(post_blank);
 
-            return Ok((input, node(DYN_BLOCK, children)));
+            return Ok((input, node(SyntaxKind::DYN_BLOCK, children)));
         }
     }
 
@@ -51,7 +51,7 @@ fn dyn_block_begin_node(input: Input) -> IResult<Input, GreenElement, ()> {
     b.ws(ws__);
     b.nl(nl);
 
-    Ok((input, b.finish(DYN_BLOCK_BEGIN)))
+    Ok((input, b.finish(SyntaxKind::DYN_BLOCK_BEGIN)))
 }
 
 fn dyn_block_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -64,7 +64,7 @@ fn dyn_block_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
     b.ws(ws_);
     b.nl(nl);
 
-    Ok((input, b.finish(DYN_BLOCK_END)))
+    Ok((input, b.finish(SyntaxKind::DYN_BLOCK_END)))
 }
 
 #[cfg_attr(

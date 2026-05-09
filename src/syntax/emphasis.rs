@@ -6,7 +6,7 @@ use super::{
     combinator::{node, token, GreenElement},
     input::Input,
     object::standard_object_nodes,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -15,10 +15,10 @@ use super::{
 )]
 pub fn bold_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'*'), |contents| {
-        let mut children = vec![token(STAR, "*")];
+        let mut children = vec![token(SyntaxKind::STAR, "*")];
         children.extend(standard_object_nodes(contents));
-        children.push(token(STAR, "*"));
-        node(BOLD, children)
+        children.push(token(SyntaxKind::STAR, "*"));
+        node(SyntaxKind::BOLD, children)
     });
     crate::lossless_parser!(parser, input)
 }
@@ -30,8 +30,12 @@ pub fn bold_node(input: Input) -> IResult<Input, GreenElement, ()> {
 pub fn code_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'~'), |contents| {
         node(
-            CODE,
-            [token(TILDE, "~"), contents.text_token(), token(TILDE, "~")],
+            SyntaxKind::CODE,
+            [
+                token(SyntaxKind::TILDE, "~"),
+                contents.text_token(),
+                token(SyntaxKind::TILDE, "~"),
+            ],
         )
     });
     crate::lossless_parser!(parser, input)
@@ -43,10 +47,10 @@ pub fn code_node(input: Input) -> IResult<Input, GreenElement, ()> {
 )]
 pub fn strike_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'+'), |contents| {
-        let mut children = vec![token(PLUS, "+")];
+        let mut children = vec![token(SyntaxKind::PLUS, "+")];
         children.extend(standard_object_nodes(contents));
-        children.push(token(PLUS, "+"));
-        node(STRIKE, children)
+        children.push(token(SyntaxKind::PLUS, "+"));
+        node(SyntaxKind::STRIKE, children)
     });
     crate::lossless_parser!(parser, input)
 }
@@ -58,8 +62,12 @@ pub fn strike_node(input: Input) -> IResult<Input, GreenElement, ()> {
 pub fn verbatim_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'='), |contents| {
         node(
-            VERBATIM,
-            [token(EQUAL, "="), contents.text_token(), token(EQUAL, "=")],
+            SyntaxKind::VERBATIM,
+            [
+                token(SyntaxKind::EQUAL, "="),
+                contents.text_token(),
+                token(SyntaxKind::EQUAL, "="),
+            ],
         )
     });
     crate::lossless_parser!(parser, input)
@@ -71,10 +79,10 @@ pub fn verbatim_node(input: Input) -> IResult<Input, GreenElement, ()> {
 )]
 pub fn underline_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'_'), |contents| {
-        let mut children = vec![token(UNDERSCORE, "_")];
+        let mut children = vec![token(SyntaxKind::UNDERSCORE, "_")];
         children.extend(standard_object_nodes(contents));
-        children.push(token(UNDERSCORE, "_"));
-        node(UNDERLINE, children)
+        children.push(token(SyntaxKind::UNDERSCORE, "_"));
+        node(SyntaxKind::UNDERLINE, children)
     });
     crate::lossless_parser!(parser, input)
 }
@@ -85,10 +93,10 @@ pub fn underline_node(input: Input) -> IResult<Input, GreenElement, ()> {
 )]
 pub fn italic_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'/'), |contents| {
-        let mut children = vec![token(SLASH, "/")];
+        let mut children = vec![token(SyntaxKind::SLASH, "/")];
         children.extend(standard_object_nodes(contents));
-        children.push(token(SLASH, "/"));
-        node(ITALIC, children)
+        children.push(token(SyntaxKind::SLASH, "/"));
+        node(SyntaxKind::ITALIC, children)
     });
     crate::lossless_parser!(parser, input)
 }

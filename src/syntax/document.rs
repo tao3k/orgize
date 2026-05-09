@@ -5,7 +5,7 @@ use super::{
     drawer::property_drawer_node,
     headline::{headline_node, section_node},
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -18,7 +18,7 @@ pub fn document_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     if input.is_empty() {
-        return Ok((input, node(DOCUMENT, [])));
+        return Ok((input, node(SyntaxKind::DOCUMENT, [])));
     }
 
     let mut children = vec![];
@@ -33,7 +33,7 @@ fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     children.extend(pre_blank);
 
     if input.is_empty() {
-        return Ok((input, node(DOCUMENT, children)));
+        return Ok((input, node(SyntaxKind::DOCUMENT, children)));
     }
 
     let (input, section) = opt(section_node).parse(input)?;
@@ -49,7 +49,7 @@ fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         children.push(headline);
     }
 
-    Ok((i, node(DOCUMENT, children)))
+    Ok((i, node(SyntaxKind::DOCUMENT, children)))
 }
 
 #[test]

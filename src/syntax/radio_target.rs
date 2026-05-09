@@ -8,7 +8,7 @@ use super::{
     combinator::{l_angle3_token, node, r_angle3_token, GreenElement},
     input::Input,
     object::minimal_object_nodes,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 pub fn radio_target_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -27,7 +27,7 @@ pub fn radio_target_node(input: Input) -> IResult<Input, GreenElement, ()> {
             let mut children = vec![l_angle3];
             children.extend(minimal_object_nodes(contents));
             children.push(r_angle3);
-            node(RADIO_TARGET, children)
+            node(SyntaxKind::RADIO_TARGET, children)
         },
     );
     crate::lossless_parser!(parser, input)

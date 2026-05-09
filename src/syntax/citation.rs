@@ -3,7 +3,7 @@ use nom::{Err, IResult};
 use super::{
     combinator::{l_bracket_token, node, r_bracket_token, GreenElement},
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -30,7 +30,10 @@ fn citation_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
     Ok((
         input,
-        node(CITATION, [l_bracket, body.text_token(), r_bracket]),
+        node(
+            SyntaxKind::CITATION,
+            [l_bracket, body.text_token(), r_bracket],
+        ),
     ))
 }
 

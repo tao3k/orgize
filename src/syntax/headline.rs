@@ -16,7 +16,7 @@ use super::{
     input::Input,
     object::standard_object_nodes,
     planning::planning_node,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -33,7 +33,7 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
     let mut b = NodeBuilder::new();
 
-    b.token(HEADLINE_STARS, stars);
+    b.token(SyntaxKind::HEADLINE_STARS, stars);
 
     let (input, ws) = space0(input)?;
     b.ws(ws);
@@ -56,28 +56,31 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     let (title, tags) = opt(headline_tags_node).parse(title_and_tags)?;
 
     if !title.is_empty() {
-        b.push(node(HEADLINE_TITLE, standard_object_nodes(title)));
+        b.push(node(
+            SyntaxKind::HEADLINE_TITLE,
+            standard_object_nodes(title),
+        ));
     }
     b.push_opt(tags);
     b.ws(ws_);
     b.nl(nl);
 
     if input.is_empty() {
-        return Ok((input, b.finish(HEADLINE)));
+        return Ok((input, b.finish(SyntaxKind::HEADLINE)));
     }
 
     let (input, planning) = opt(planning_node).parse(input)?;
     b.push_opt(planning);
 
     if input.is_empty() {
-        return Ok((input, b.finish(HEADLINE)));
+        return Ok((input, b.finish(SyntaxKind::HEADLINE)));
     }
 
     let (input, property_drawer) = opt(property_drawer_node).parse(input)?;
     b.push_opt(property_drawer);
 
     if input.is_empty() {
-        return Ok((input, b.finish(HEADLINE)));
+        return Ok((input, b.finish(SyntaxKind::HEADLINE)));
     }
 
     let (input, section) = opt(section_node).parse(input)?;
@@ -98,7 +101,7 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         i = input;
     }
 
-    Ok((i, b.finish(HEADLINE)))
+    Ok((i, b.finish(SyntaxKind::HEADLINE)))
 }
 
 #[cfg_attr(
@@ -108,7 +111,7 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 pub fn section_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
     let (input, section) = section_text(input)?;
-    Ok((input, node(SECTION, element_nodes(section)?)))
+    Ok((input, node(SyntaxKind::SECTION, element_nodes(section)?)))
 }
 
 fn section_text(input: Input) -> IResult<Input, Input, ()> {
@@ -159,13 +162,13 @@ fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
     // second last character
     let mut i = input.len() - 1;
     let mut can_not_be_ws = true;
-    let mut children = vec![token(COLON, ":")];
+    let mut children = vec![token(SyntaxKind::COLON, ":")];
 
     for ii in memrchr_iter(b':', bytes).skip(1) {
         let item = &bytes[ii + 1..i];
 
         if item.is_empty() {
-            children.push(token(COLON, ":"));
+            children.push(token(SyntaxKind::COLON, ":"));
             can_not_be_ws = false;
             debug_assert!(i > ii, "{} > {}", i, ii);
             i = ii;
@@ -175,13 +178,13 @@ fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
             .all(|c| c.is_alphanumeric() || c == '_' || c == '@' || c == '#' || c == '%')
         {
             children.push(input.slice(ii + 1..i).text_token());
-            children.push(token(COLON, ":"));
+            children.push(token(SyntaxKind::COLON, ":"));
             can_not_be_ws = false;
             debug_assert!(i > ii, "{} > {}", i, ii);
             i = ii;
         } else if item.iter().all(|&c| c == b' ' || c == b'\t') && !can_not_be_ws {
             children.push(input.slice(ii + 1..i).ws_token());
-            children.push(token(COLON, ":"));
+            children.push(token(SyntaxKind::COLON, ":"));
             can_not_be_ws = true;
             debug_assert!(i > ii, "{} > {}", i, ii);
             i = ii;
@@ -202,16 +205,16 @@ fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
     // so we need to reverse the result after it finishes
     children.reverse();
 
-    Ok((input.slice(0..i), node(HEADLINE_TAGS, children)))
+    Ok((input.slice(0..i), node(SyntaxKind::HEADLINE_TAGS, children)))
 }
 
 fn headline_keyword_token(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     let (input, word) = take_while1(|c: char| !c.is_ascii_whitespace()).parse(input)?;
     let (input, ws) = space0(input)?;
     if input.c.todo_keywords.0.iter().any(|k| k == word.s) {
-        Ok((input, (word.token(HEADLINE_KEYWORD_TODO), ws)))
+        Ok((input, (word.token(SyntaxKind::HEADLINE_KEYWORD_TODO), ws)))
     } else if input.c.todo_keywords.1.iter().any(|k| k == word.s) {
-        Ok((input, (word.token(HEADLINE_KEYWORD_DONE), ws)))
+        Ok((input, (word.token(SyntaxKind::HEADLINE_KEYWORD_DONE), ws)))
     } else {
         Err(nom::Err::Error(()))
     }
@@ -222,8 +225,13 @@ fn headline_priority_node(input: Input) -> IResult<Input, (GreenElement, Input),
         (l_bracket_token, hash_token, anychar, r_bracket_token),
         |(l_bracket, hash, char, r_bracket)| {
             node(
-                HEADLINE_PRIORITY,
-                [l_bracket, hash, token(TEXT, &char.to_string()), r_bracket],
+                SyntaxKind::HEADLINE_PRIORITY,
+                [
+                    l_bracket,
+                    hash,
+                    token(SyntaxKind::TEXT, &char.to_string()),
+                    r_bracket,
+                ],
             )
         },
     )

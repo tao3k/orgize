@@ -9,7 +9,7 @@ use super::{
     combinator::{colon_token, l_bracket_token, node, r_bracket_token, GreenElement},
     input::Input,
     object::standard_object_nodes,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -38,7 +38,7 @@ fn fn_ref_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     }
     children.push(r_bracket);
 
-    Ok((input, node(FN_REF, children)))
+    Ok((input, node(SyntaxKind::FN_REF, children)))
 }
 
 fn balanced_brackets(input: Input) -> IResult<Input, Input, ()> {

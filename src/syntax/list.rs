@@ -18,7 +18,7 @@ use super::{
     keyword::affiliated_keyword_nodes,
     object::standard_object_nodes,
     paragraph::paragraph_nodes,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -69,7 +69,7 @@ fn list_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
     children.extend(post_blank);
 
-    Ok((input, node(LIST, children)))
+    Ok((input, node(SyntaxKind::LIST, children)))
 }
 
 #[cfg_attr(
@@ -103,10 +103,10 @@ fn list_item_node<'a>(
             (
                 false,
                 node(
-                    LIST_ITEM,
+                    SyntaxKind::LIST_ITEM,
                     [
-                        indent.token(LIST_ITEM_INDENT),
-                        bullet.token(LIST_ITEM_BULLET),
+                        indent.token(SyntaxKind::LIST_ITEM_INDENT),
+                        bullet.token(SyntaxKind::LIST_ITEM_BULLET),
                     ],
                 ),
             ),
@@ -122,8 +122,8 @@ fn list_item_node<'a>(
     let (input, post_blank) = cond(!ends_with_empty_blank_lines, blank_lines).parse(input)?;
 
     let mut children = vec![
-        indent.token(LIST_ITEM_INDENT),
-        bullet.token(LIST_ITEM_BULLET),
+        indent.token(SyntaxKind::LIST_ITEM_INDENT),
+        bullet.token(SyntaxKind::LIST_ITEM_BULLET),
     ];
 
     if let Some((counter, ws)) = counter {
@@ -143,7 +143,10 @@ fn list_item_node<'a>(
 
     Ok((
         input,
-        (ends_with_empty_blank_lines, node(LIST_ITEM, children)),
+        (
+            ends_with_empty_blank_lines,
+            node(SyntaxKind::LIST_ITEM, children),
+        ),
     ))
 }
 
@@ -156,7 +159,7 @@ fn list_item_counter(input: Input) -> IResult<Input, (GreenElement, Input), ()> 
         (l_bracket_token, at_token, alphanumeric1, r_bracket_token),
         |(l_bracket, at, char, r_bracket)| {
             node(
-                LIST_ITEM_COUNTER,
+                SyntaxKind::LIST_ITEM_COUNTER,
                 [l_bracket, at, char.text_token(), r_bracket],
             )
         },
@@ -183,7 +186,7 @@ fn list_item_checkbox(input: Input) -> IResult<Input, (GreenElement, Input), ()>
         ),
         |(l_bracket, char, r_bracket)| {
             node(
-                LIST_ITEM_CHECK_BOX,
+                SyntaxKind::LIST_ITEM_CHECK_BOX,
                 [l_bracket, char.text_token(), r_bracket],
             )
         },
@@ -212,7 +215,7 @@ fn list_item_tag(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     let mut children = standard_object_nodes(tag);
     children.push(colon2);
 
-    Ok((input, (node(LIST_ITEM_TAG, children), ws)))
+    Ok((input, (node(SyntaxKind::LIST_ITEM_TAG, children), ws)))
 }
 
 #[cfg_attr(
@@ -226,8 +229,8 @@ fn list_item_content_node(input: Input, indent: usize) -> IResult<Input, (bool, 
             (
                 false,
                 node(
-                    LIST_ITEM_CONTENT,
-                    [node(PARAGRAPH, standard_object_nodes(input))],
+                    SyntaxKind::LIST_ITEM_CONTENT,
+                    [node(SyntaxKind::PARAGRAPH, standard_object_nodes(input))],
                 ),
             ),
         ));
@@ -251,7 +254,10 @@ fn list_item_content_node(input: Input, indent: usize) -> IResult<Input, (bool, 
                         if !head.is_empty() {
                             children.extend(paragraph_nodes(head)?);
                         }
-                        return Ok((input, (false, node(LIST_ITEM_CONTENT, children))));
+                        return Ok((
+                            input,
+                            (false, node(SyntaxKind::LIST_ITEM_CONTENT, children)),
+                        ));
                     }
 
                     previous_blank_line = None;
@@ -274,7 +280,7 @@ fn list_item_content_node(input: Input, indent: usize) -> IResult<Input, (bool, 
                             children.extend(paragraph_nodes(head)?);
                         }
 
-                        return Ok((input, (true, node(LIST_ITEM_CONTENT, children))));
+                        return Ok((input, (true, node(SyntaxKind::LIST_ITEM_CONTENT, children))));
                     } else {
                         previous_blank_line = Some((input, head))
                     }
@@ -285,7 +291,10 @@ fn list_item_content_node(input: Input, indent: usize) -> IResult<Input, (bool, 
         break;
     }
 
-    Ok((input.of(""), (false, node(LIST_ITEM_CONTENT, children))))
+    Ok((
+        input.of(""),
+        (false, node(SyntaxKind::LIST_ITEM_CONTENT, children)),
+    ))
 }
 
 fn get_line_indent(input: &str) -> Option<usize> {

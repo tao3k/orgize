@@ -13,7 +13,7 @@ use super::{
         NodeBuilder,
     },
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -32,7 +32,7 @@ pub fn timestamp_diary_node(input: Input) -> IResult<Input, GreenElement, ()> {
         ),
         |(l_angle, percent2, l_paren, value, r_paren, r_angle)| {
             node(
-                TIMESTAMP_DIARY,
+                SyntaxKind::TIMESTAMP_DIARY,
                 [
                     l_angle,
                     percent2,
@@ -58,11 +58,11 @@ fn date(i: Input) -> IResult<Input, [GreenElement; 5], ()> {
         ),
         |(year, minus, month, minus_, day)| {
             [
-                year.token(TIMESTAMP_YEAR),
+                year.token(SyntaxKind::TIMESTAMP_YEAR),
                 minus,
-                month.token(TIMESTAMP_MONTH),
+                month.token(SyntaxKind::TIMESTAMP_MONTH),
                 minus_,
-                day.token(TIMESTAMP_DAY),
+                day.token(SyntaxKind::TIMESTAMP_DAY),
             ]
         },
     )
@@ -80,7 +80,7 @@ fn dayname(i: Input) -> IResult<Input, GreenElement, ()> {
                 && c != '>'
                 && c != '.'
         }),
-        |i: Input| i.token(TIMESTAMP_DAYNAME),
+        |i: Input| i.token(SyntaxKind::TIMESTAMP_DAYNAME),
     )
     .parse(i)
 }
@@ -94,9 +94,9 @@ fn time(i: Input) -> IResult<Input, [GreenElement; 3], ()> {
         ),
         |(hour, colon, minute)| {
             [
-                hour.token(TIMESTAMP_HOUR),
+                hour.token(SyntaxKind::TIMESTAMP_HOUR),
                 colon,
-                minute.token(TIMESTAMP_MINUTE),
+                minute.token(SyntaxKind::TIMESTAMP_MINUTE),
             ]
         },
     )
@@ -108,10 +108,10 @@ fn repeater_or_delay(
 ) -> IResult<Input, (GreenElement, GreenElement, GreenElement), ()> {
     let (input, mark) = alt((
         map(alt((tag("++"), tag("+"), tag(".+"))), |i: Input| {
-            i.token(TIMESTAMP_REPEATER_MARK)
+            i.token(SyntaxKind::TIMESTAMP_REPEATER_MARK)
         }),
         map(alt((tag("--"), tag("-"))), |i: Input| {
-            i.token(TIMESTAMP_DELAY_MARK)
+            i.token(SyntaxKind::TIMESTAMP_DELAY_MARK)
         }),
     ))
     .parse(input)?;
@@ -122,8 +122,8 @@ fn repeater_or_delay(
         input,
         (
             mark,
-            value.token(TIMESTAMP_VALUE),
-            unit.token(TIMESTAMP_UNIT),
+            value.token(SyntaxKind::TIMESTAMP_VALUE),
+            unit.token(SyntaxKind::TIMESTAMP_UNIT),
         ),
     ))
 }
@@ -235,7 +235,7 @@ fn timestamp_node_base(
 pub fn timestamp_active_node(input: Input) -> IResult<Input, GreenElement, ()> {
     fn parser(input: Input) -> IResult<Input, GreenElement, ()> {
         let (input, children) = timestamp_node_base(input, l_angle_token, r_angle_token)?;
-        Ok((input, node(TIMESTAMP_ACTIVE, children)))
+        Ok((input, node(SyntaxKind::TIMESTAMP_ACTIVE, children)))
     }
     crate::lossless_parser!(parser, input)
 }
@@ -247,7 +247,7 @@ pub fn timestamp_active_node(input: Input) -> IResult<Input, GreenElement, ()> {
 pub fn timestamp_inactive_node(input: Input) -> IResult<Input, GreenElement, ()> {
     fn parser(input: Input) -> IResult<Input, GreenElement, ()> {
         let (input, children) = timestamp_node_base(input, l_bracket_token, r_bracket_token)?;
-        Ok((input, node(TIMESTAMP_INACTIVE, children)))
+        Ok((input, node(SyntaxKind::TIMESTAMP_INACTIVE, children)))
     }
     crate::lossless_parser!(parser, input)
 }

@@ -15,7 +15,7 @@ use super::{
     element::element_nodes,
     input::Input,
     keyword::affiliated_keyword_nodes,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 fn block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -24,14 +24,14 @@ fn block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     let (input, pre_blank) = blank_lines(input)?;
 
     let kind = match name {
-        s if s.eq_ignore_ascii_case("COMMENT") => COMMENT_BLOCK,
-        s if s.eq_ignore_ascii_case("EXAMPLE") => EXAMPLE_BLOCK,
-        s if s.eq_ignore_ascii_case("EXPORT") => EXPORT_BLOCK,
-        s if s.eq_ignore_ascii_case("SRC") => SOURCE_BLOCK,
-        s if s.eq_ignore_ascii_case("CENTER") => CENTER_BLOCK,
-        s if s.eq_ignore_ascii_case("QUOTE") => QUOTE_BLOCK,
-        s if s.eq_ignore_ascii_case("VERSE") => VERSE_BLOCK,
-        _ => SPECIAL_BLOCK,
+        s if s.eq_ignore_ascii_case("COMMENT") => SyntaxKind::COMMENT_BLOCK,
+        s if s.eq_ignore_ascii_case("EXAMPLE") => SyntaxKind::EXAMPLE_BLOCK,
+        s if s.eq_ignore_ascii_case("EXPORT") => SyntaxKind::EXPORT_BLOCK,
+        s if s.eq_ignore_ascii_case("SRC") => SyntaxKind::SOURCE_BLOCK,
+        s if s.eq_ignore_ascii_case("CENTER") => SyntaxKind::CENTER_BLOCK,
+        s if s.eq_ignore_ascii_case("QUOTE") => SyntaxKind::QUOTE_BLOCK,
+        s if s.eq_ignore_ascii_case("VERSE") => SyntaxKind::VERSE_BLOCK,
+        _ => SyntaxKind::SPECIAL_BLOCK,
     };
 
     for (input, contents) in line_starts_iter(&input).map(|i| input.take_split(i)) {
@@ -43,9 +43,12 @@ fn block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
             children.push(block_begin);
             children.extend(pre_blank);
             if kind.is_greater_element() {
-                children.push(node(BLOCK_CONTENT, element_nodes(contents)?));
+                children.push(node(SyntaxKind::BLOCK_CONTENT, element_nodes(contents)?));
             } else {
-                children.push(node(BLOCK_CONTENT, comma_quoted_text_nodes(contents)));
+                children.push(node(
+                    SyntaxKind::BLOCK_CONTENT,
+                    comma_quoted_text_nodes(contents),
+                ));
             }
             children.push(block_end);
             children.extend(post_blank);
@@ -76,19 +79,19 @@ fn block_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str)
 
         if let Some((ws, language)) = language {
             b.ws(ws);
-            b.token(SRC_BLOCK_LANGUAGE, language);
+            b.token(SyntaxKind::SRC_BLOCK_LANGUAGE, language);
         }
         if let Some((ws, switches)) = switches {
             b.ws(ws);
-            b.token(SRC_BLOCK_SWITCHES, switches);
+            b.token(SyntaxKind::SRC_BLOCK_SWITCHES, switches);
         }
         b.ws(ws1);
         if !parameters.is_empty() {
-            b.token(SRC_BLOCK_PARAMETERS, parameters);
+            b.token(SyntaxKind::SRC_BLOCK_PARAMETERS, parameters);
         }
         b.ws(ws2);
         b.nl(nl);
-        Ok((input, (b.finish(BLOCK_BEGIN), name.as_str())))
+        Ok((input, (b.finish(SyntaxKind::BLOCK_BEGIN), name.as_str())))
     } else if name.eq_ignore_ascii_case("EXPORT") {
         let (input, ty) = opt((
             space1,
@@ -100,18 +103,18 @@ fn block_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str)
 
         if let Some((ws, ty)) = ty {
             b.ws(ws);
-            b.token(EXPORT_BLOCK_TYPE, ty);
+            b.token(SyntaxKind::EXPORT_BLOCK_TYPE, ty);
         }
         b.text(data);
         b.nl(nl);
-        Ok((input, (b.finish(BLOCK_BEGIN), name.as_str())))
+        Ok((input, (b.finish(SyntaxKind::BLOCK_BEGIN), name.as_str())))
     } else {
         let (input, data) = take_while(|c: char| c != '\n' && c != '\r').parse(input)?;
         let (input, nl) = eol_or_eof(input)?;
 
         b.text(data);
         b.nl(nl);
-        Ok((input, (b.finish(BLOCK_BEGIN), name.as_str())))
+        Ok((input, (b.finish(SyntaxKind::BLOCK_BEGIN), name.as_str())))
     }
 }
 
@@ -160,7 +163,7 @@ fn block_end_node<'a>(input: Input<'a>, name: &str) -> IResult<Input<'a>, GreenE
     b.ws(ws_);
     b.nl(nl);
 
-    Ok((input, b.finish(BLOCK_END)))
+    Ok((input, b.finish(SyntaxKind::BLOCK_END)))
 }
 
 fn comma_quoted_text_nodes(input: Input) -> Vec<GreenElement> {
@@ -177,15 +180,15 @@ fn comma_quoted_text_nodes(input: Input) -> Vec<GreenElement> {
 
         let text = &s[start..i];
         if !text.is_empty() {
-            nodes.push(token(TEXT, text));
+            nodes.push(token(SyntaxKind::TEXT, text));
         }
 
-        nodes.push(token(COMMA, ","));
+        nodes.push(token(SyntaxKind::COMMA, ","));
         start = i + 1;
     }
 
     if !s[start..].is_empty() {
-        nodes.push(token(TEXT, &s[start..]));
+        nodes.push(token(SyntaxKind::TEXT, &s[start..]));
     }
 
     nodes

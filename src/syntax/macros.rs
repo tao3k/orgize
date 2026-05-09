@@ -9,7 +9,7 @@ use super::{
         l_curly3_token, l_parens_token, node, r_curly3_token, r_parens_token, GreenElement,
     },
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -35,7 +35,7 @@ pub fn macros_node(input: Input) -> IResult<Input, GreenElement, ()> {
                 children.extend([l_parens, argument.text_token(), r_parens]);
             }
             children.push(r_curly3);
-            node(MACROS, children)
+            node(SyntaxKind::MACROS, children)
         },
     );
     crate::lossless_parser!(parser, input)

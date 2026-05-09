@@ -8,12 +8,10 @@ pub mod export;
 mod org;
 mod replace;
 mod syntax;
+#[doc(hidden)]
+pub mod syntax_ast;
 #[path = "ast/mod.rs"]
 mod syntax_ast_impl;
-#[doc(hidden)]
-pub mod syntax_ast {
-    pub use crate::syntax_ast_impl::*;
-}
 #[cfg(test)]
 #[path = "../tests/unit/lib.rs"]
 mod tests;
@@ -22,14 +20,6 @@ rust_lang_project_harness::rust_project_harness_cargo_test_gate!(
     advice = allow,
     config = {
         rust_lang_project_harness::default_rust_harness_config()
-            .with_rule_pack_severity(
-                rust_lang_project_harness::RustRulePack::Modularity,
-                rust_lang_project_harness::RustDiagnosticSeverity::Info,
-            )
-            .with_rule_severity(
-                "RUST-PROJ-R007",
-                rust_lang_project_harness::RustDiagnosticSeverity::Info,
-            )
             .with_verification_profile_hint(
                 rust_lang_project_harness::RustVerificationProfileHint::new(
                     "src/lib.rs",

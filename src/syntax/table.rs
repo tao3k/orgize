@@ -10,7 +10,7 @@ use super::{
     input::Input,
     keyword::{affiliated_keyword_nodes, tblfm_keyword_nodes},
     object::standard_object_nodes,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -28,7 +28,7 @@ fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         }
 
         if trimmed.starts_with("|-") {
-            children.push(node(ORG_TABLE_RULE_ROW, [line.text_token()]));
+            children.push(node(SyntaxKind::ORG_TABLE_RULE_ROW, [line.text_token()]));
         } else {
             children.push(table_standard_row_node(line)?);
         }
@@ -49,7 +49,7 @@ fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     children.extend(tblfm);
     children.extend(post_blank);
 
-    Ok((input, node(ORG_TABLE, children)))
+    Ok((input, node(SyntaxKind::ORG_TABLE, children)))
 }
 
 fn table_standard_row_node(input: Input) -> Result<GreenElement, nom::Err<()>> {
@@ -79,18 +79,24 @@ fn table_standard_row_node(input: Input) -> Result<GreenElement, nom::Err<()>> {
         {
             Some(idx) => {
                 let (ws, cell) = input.take_split(idx + 1);
-                b.push(node(ORG_TABLE_CELL, standard_object_nodes(cell)));
+                b.push(node(
+                    SyntaxKind::ORG_TABLE_CELL,
+                    standard_object_nodes(cell),
+                ));
                 b.ws(ws);
             }
             _ => {
-                b.push(node(ORG_TABLE_CELL, standard_object_nodes(input)));
+                b.push(node(
+                    SyntaxKind::ORG_TABLE_CELL,
+                    standard_object_nodes(input),
+                ));
             }
         }
     });
     let (input, _) = it.finish()?;
     debug_assert!(input.is_empty());
 
-    Ok(b.finish(ORG_TABLE_STANDARD_ROW))
+    Ok(b.finish(SyntaxKind::ORG_TABLE_STANDARD_ROW))
 }
 
 fn table_el_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -121,7 +127,7 @@ fn table_el_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     children.push(contents.text_token());
     children.extend(post_blank);
 
-    Ok((input, node(TABLE_EL, children)))
+    Ok((input, node(SyntaxKind::TABLE_EL, children)))
 }
 
 #[cfg_attr(
@@ -157,8 +163,14 @@ fn parse_org_table() {
 
     let table = to_org_table("#+ATTR_HTML: :class compact\n| a |\n");
     let mut children = table.syntax.children();
-    assert_eq!(children.next().unwrap().kind(), AFFILIATED_KEYWORD);
-    assert_eq!(children.next().unwrap().kind(), ORG_TABLE_STANDARD_ROW);
+    assert_eq!(
+        children.next().unwrap().kind(),
+        SyntaxKind::AFFILIATED_KEYWORD
+    );
+    assert_eq!(
+        children.next().unwrap().kind(),
+        SyntaxKind::ORG_TABLE_STANDARD_ROW
+    );
     assert!(children.next().is_none());
 
     insta::assert_debug_snapshot!(

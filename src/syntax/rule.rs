@@ -3,7 +3,7 @@ use nom::{bytes::complete::take_while_m_n, character::complete::space0, combinat
 use super::{
     combinator::{blank_lines, eol_or_eof, GreenElement, NodeBuilder},
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 pub fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -22,7 +22,7 @@ pub fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
             b.ws(ws_);
             b.nl(nl);
             b.children.extend(post_blank);
-            b.finish(RULE)
+            b.finish(SyntaxKind::RULE)
         },
     );
     crate::lossless_parser!(parser, input)

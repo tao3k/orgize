@@ -6,7 +6,7 @@ use super::{
     combinator::{eol_or_eof, GreenElement, NodeBuilder},
     input::Input,
     timestamp::{timestamp_active_node, timestamp_inactive_node},
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 pub fn planning_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -36,9 +36,9 @@ fn planning_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         b_.ws(ws_);
         b_.push(timestamp);
         b.push(b_.finish(match text.as_str() {
-            "DEADLINE:" => PLANNING_DEADLINE,
-            "SCHEDULED:" => PLANNING_SCHEDULED,
-            "CLOSED:" => PLANNING_CLOSED,
+            "DEADLINE:" => SyntaxKind::PLANNING_DEADLINE,
+            "SCHEDULED:" => SyntaxKind::PLANNING_SCHEDULED,
+            "CLOSED:" => SyntaxKind::PLANNING_CLOSED,
             _ => unreachable!(),
         }));
     });
@@ -54,7 +54,7 @@ fn planning_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     b.ws(ws);
     b.nl(nl);
 
-    Ok((input, b.finish(PLANNING)))
+    Ok((input, b.finish(SyntaxKind::PLANNING)))
 }
 
 #[test]

@@ -3,7 +3,7 @@ use nom::{bytes::complete::tag, IResult, Parser};
 use rowan::{GreenNode, GreenToken, Language, NodeOrToken};
 use std::iter::once;
 
-use super::{input::Input, OrgLanguage, SyntaxKind, SyntaxKind::*};
+use super::{input::Input, OrgLanguage, SyntaxKind};
 
 pub type GreenElement = NodeOrToken<GreenNode, GreenToken>;
 
@@ -22,7 +22,7 @@ where
 }
 
 macro_rules! token_parser {
-    ($name:ident, $token:literal, $kind:ident) => {
+    ($name:ident, $token:literal, $kind:path) => {
         #[doc = "Recognizes `"]
         #[doc = $token]
         #[doc = "` and returns GreenToken"]
@@ -33,46 +33,46 @@ macro_rules! token_parser {
     };
 }
 
-token_parser!(l_bracket_token, "[", L_BRACKET);
-token_parser!(r_bracket_token, "]", R_BRACKET);
-token_parser!(l_bracket2_token, "[[", L_BRACKET2);
-token_parser!(r_bracket2_token, "]]", R_BRACKET2);
-token_parser!(l_parens_token, "(", L_PARENS);
-token_parser!(r_parens_token, ")", R_PARENS);
-token_parser!(l_angle_token, "<", L_ANGLE);
-token_parser!(r_angle_token, ">", R_ANGLE);
-token_parser!(l_curly_token, "{", L_CURLY);
+token_parser!(l_bracket_token, "[", SyntaxKind::L_BRACKET);
+token_parser!(r_bracket_token, "]", SyntaxKind::R_BRACKET);
+token_parser!(l_bracket2_token, "[[", SyntaxKind::L_BRACKET2);
+token_parser!(r_bracket2_token, "]]", SyntaxKind::R_BRACKET2);
+token_parser!(l_parens_token, "(", SyntaxKind::L_PARENS);
+token_parser!(r_parens_token, ")", SyntaxKind::R_PARENS);
+token_parser!(l_angle_token, "<", SyntaxKind::L_ANGLE);
+token_parser!(r_angle_token, ">", SyntaxKind::R_ANGLE);
+token_parser!(l_curly_token, "{", SyntaxKind::L_CURLY);
 #[cfg(feature = "syntax-org-fc")]
-token_parser!(l_curly2_token, "{{", L_CURLY2);
-token_parser!(r_curly_token, "}", R_CURLY);
-token_parser!(l_curly3_token, "{{{", L_CURLY3);
-token_parser!(r_curly3_token, "}}}", R_CURLY3);
-token_parser!(l_angle2_token, "<<", L_ANGLE2);
-token_parser!(r_angle2_token, ">>", R_ANGLE2);
-token_parser!(l_angle3_token, "<<<", L_ANGLE3);
-token_parser!(r_angle3_token, ">>>", R_ANGLE3);
-token_parser!(at_token, "@", AT);
-token_parser!(at2_token, "@@", AT2);
-token_parser!(minus2_token, "--", MINUS2);
+token_parser!(l_curly2_token, "{{", SyntaxKind::L_CURLY2);
+token_parser!(r_curly_token, "}", SyntaxKind::R_CURLY);
+token_parser!(l_curly3_token, "{{{", SyntaxKind::L_CURLY3);
+token_parser!(r_curly3_token, "}}}", SyntaxKind::R_CURLY3);
+token_parser!(l_angle2_token, "<<", SyntaxKind::L_ANGLE2);
+token_parser!(r_angle2_token, ">>", SyntaxKind::R_ANGLE2);
+token_parser!(l_angle3_token, "<<<", SyntaxKind::L_ANGLE3);
+token_parser!(r_angle3_token, ">>>", SyntaxKind::R_ANGLE3);
+token_parser!(at_token, "@", SyntaxKind::AT);
+token_parser!(at2_token, "@@", SyntaxKind::AT2);
+token_parser!(minus2_token, "--", SyntaxKind::MINUS2);
 // token_parser!(percent_token, "%", PERCENT);
-token_parser!(percent2_token, "%%", PERCENT2);
+token_parser!(percent2_token, "%%", SyntaxKind::PERCENT2);
 // token_parser!(slash_token, "/", SLASH);
-token_parser!(backslash_token, "\\", BACKSLASH);
-token_parser!(underscore_token, "_", UNDERSCORE);
+token_parser!(backslash_token, "\\", SyntaxKind::BACKSLASH);
+token_parser!(underscore_token, "_", SyntaxKind::UNDERSCORE);
 // token_parser!(star_token, "*", STAR);
 // token_parser!(plus_token, "+", PLUS);
-token_parser!(minus_token, "-", MINUS);
-token_parser!(colon_token, ":", COLON);
-token_parser!(colon2_token, "::", COLON2);
-token_parser!(pipe_token, "|", PIPE);
-token_parser!(dollar_token, "$", DOLLAR);
-token_parser!(dollar2_token, "$$", DOLLAR2);
+token_parser!(minus_token, "-", SyntaxKind::MINUS);
+token_parser!(colon_token, ":", SyntaxKind::COLON);
+token_parser!(colon2_token, "::", SyntaxKind::COLON2);
+token_parser!(pipe_token, "|", SyntaxKind::PIPE);
+token_parser!(dollar_token, "$", SyntaxKind::DOLLAR);
+token_parser!(dollar2_token, "$$", SyntaxKind::DOLLAR2);
 // token_parser!(equal_token, "=", EQUAL);
 // token_parser!(tilde_token, "~", TILDE);
-token_parser!(hash_plus_token, "#+", HASH_PLUS);
-token_parser!(caret_token, "^", CARET);
-token_parser!(hash_token, "#", HASH);
-token_parser!(double_arrow_token, "=>", DOUBLE_ARROW);
+token_parser!(hash_plus_token, "#+", SyntaxKind::HASH_PLUS);
+token_parser!(caret_token, "^", SyntaxKind::CARET);
+token_parser!(hash_token, "#", SyntaxKind::HASH);
+token_parser!(double_arrow_token, "=>", SyntaxKind::DOUBLE_ARROW);
 
 macro_rules! lossless_parser {
     ($parser:expr, $input:expr) => {{
@@ -106,7 +106,7 @@ pub fn blank_lines(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
 
     for index in line_ends_iter(input.as_str()) {
         if start != index && bytes[start..index].iter().all(|b| b.is_ascii_whitespace()) {
-            lines.push(token(BLANK_LINE, &input.as_str()[start..index]));
+            lines.push(token(SyntaxKind::BLANK_LINE, &input.as_str()[start..index]));
             start = index;
         } else {
             break;

@@ -1,4 +1,15 @@
-use crate::syntax_ast::*;
+use crate::syntax_ast::{
+    AffiliatedKeyword, BabelCall, Bold, CenterBlock, Citation, Clock, Code, Comment, CommentBlock,
+    Cookie, Document, Drawer, DynBlock, Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef,
+    FnRef, Headline, InlineCall, InlineSrc, Italic, Keyword, LatexEnvironment, LatexFragment,
+    LineBreak, Link, List, ListItem, Macros, OrgTable, OrgTableCell, OrgTableRow, Paragraph,
+    PropertyDrawer, QuoteBlock, RadioTarget, Rule, Section, Snippet, SourceBlock, SpecialBlock,
+    Strike, Subscript, Superscript, TableEl, Target, Timestamp, Token, Underline, Verbatim,
+    VerseBlock,
+};
+
+#[cfg(feature = "syntax-org-fc")]
+use crate::syntax_ast::Cloze;
 
 #[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug)]
