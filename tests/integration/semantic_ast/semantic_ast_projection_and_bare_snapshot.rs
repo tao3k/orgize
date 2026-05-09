@@ -1,4 +1,8 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::{
+    ast::{ElementData, MarkupKind, ObjectData, TodoState},
+    Org,
+};
 
 #[test]
 fn semantic_ast_projection_and_bare_snapshot() {

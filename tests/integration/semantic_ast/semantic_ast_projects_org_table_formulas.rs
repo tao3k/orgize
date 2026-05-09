@@ -1,4 +1,8 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::{
+    ast::{AstRef, ElementData},
+    Org,
+};
 
 #[test]
 fn semantic_ast_projects_org_table_formulas() {

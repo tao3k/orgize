@@ -1,4 +1,8 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::{
+    ast::{ElementData, MarkupKind, ObjectData},
+    Org,
+};
 
 #[cfg(feature = "syntax-org-fc")]
 #[test]

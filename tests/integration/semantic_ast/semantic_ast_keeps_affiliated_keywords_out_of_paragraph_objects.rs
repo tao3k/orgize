@@ -1,4 +1,7 @@
-use super::*;
+use orgize::{
+    ast::{ElementData, ObjectData},
+    Org,
+};
 
 #[test]
 fn semantic_ast_keeps_affiliated_keywords_out_of_paragraph_objects() {

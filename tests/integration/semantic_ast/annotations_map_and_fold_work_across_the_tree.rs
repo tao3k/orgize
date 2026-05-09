@@ -1,4 +1,4 @@
-use super::*;
+use orgize::{ast::AstRef, Org};
 
 #[test]
 fn annotations_map_and_fold_work_across_the_tree() {

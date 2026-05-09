@@ -1,4 +1,7 @@
-use super::*;
+use orgize::{
+    ast::{ElementData, ObjectData},
+    Org,
+};
 
 #[test]
 fn semantic_ast_projects_footnote_definition_label_and_body() {

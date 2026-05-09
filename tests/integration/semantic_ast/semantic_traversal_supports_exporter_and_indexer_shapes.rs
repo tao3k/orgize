@@ -1,4 +1,8 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::{
+    ast::{AstRef, ElementData, ObjectData},
+    Org,
+};
 
 #[test]
 fn semantic_traversal_supports_exporter_and_indexer_shapes() {

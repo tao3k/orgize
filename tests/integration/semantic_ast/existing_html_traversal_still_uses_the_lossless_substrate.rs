@@ -1,4 +1,4 @@
-use super::*;
+use orgize::Org;
 
 #[test]
 fn existing_html_traversal_still_uses_the_lossless_substrate() {

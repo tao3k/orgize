@@ -1,4 +1,9 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::{
+    ast::{ElementData, ObjectData},
+    config::UseSubSuperscript,
+    ParseConfig,
+};
 
 #[test]
 fn semantic_citation_affixes_respect_parse_config() {

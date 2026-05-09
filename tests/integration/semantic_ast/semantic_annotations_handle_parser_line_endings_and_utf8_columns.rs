@@ -1,4 +1,8 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::{
+    ast::{ElementData, MarkupKind, ObjectData, SourcePosition},
+    Org,
+};
 
 #[test]
 fn semantic_annotations_handle_parser_line_endings_and_utf8_columns() {

@@ -1,4 +1,5 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::Org;
 
 #[test]
 fn semantic_ast_covers_current_lossless_projection_surface() {

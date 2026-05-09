@@ -1,4 +1,5 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::{ast::ElementData, Org};
 
 #[test]
 fn semantic_ast_projects_table_el() {

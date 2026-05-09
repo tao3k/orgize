@@ -1,4 +1,4 @@
-use super::*;
+use orgize::Org;
 
 #[test]
 fn html_export_preserves_citation_raw_text() {

@@ -1,4 +1,8 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::{
+    ast::{ElementData, LinkTarget, MarkupKind, ObjectData},
+    Org,
+};
 
 #[test]
 fn semantic_ast_projects_link_metadata() {

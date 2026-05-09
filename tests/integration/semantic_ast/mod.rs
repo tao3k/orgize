@@ -1,42 +1,3 @@
-use orgize::{
-    ast::{
-        AstMut, AstRef, ElementData, LinkTarget, MarkupKind, ObjectData, ParsedAst, RepeaterKind,
-        SourcePosition, TimeUnit, TodoState, WarningKind,
-    },
-    config::UseSubSuperscript,
-    Org, ParseConfig,
-};
-
-fn assert_clean_projection(doc: &ParsedAst) {
-    assert!(
-        doc.diagnostics.is_empty(),
-        "unexpected diagnostics: {:#?}",
-        doc.diagnostics
-    );
-
-    let unknowns = doc.fold(Vec::new(), |mut unknowns, node| {
-        match node {
-            AstRef::Element(element) => {
-                if let ElementData::Unknown { kind, .. } = &element.data {
-                    unknowns.push(format!("element:{kind}"));
-                }
-            }
-            AstRef::Object(object) => {
-                if let ObjectData::Unknown { kind, .. } = &object.data {
-                    unknowns.push(format!("object:{kind}"));
-                }
-            }
-            _ => {}
-        }
-        unknowns
-    });
-
-    assert!(
-        unknowns.is_empty(),
-        "unexpected semantic unknowns: {unknowns:#?}"
-    );
-}
-
 mod annotations_map_and_fold_work_across_the_tree;
 mod existing_html_traversal_still_uses_the_lossless_substrate;
 mod html_export_preserves_citation_raw_text;
@@ -56,4 +17,5 @@ mod semantic_ast_projects_table_el;
 mod semantic_ast_projects_timestamp_metadata;
 mod semantic_citation_affixes_respect_parse_config;
 mod semantic_traversal_supports_exporter_and_indexer_shapes;
+pub(crate) mod support;
 mod traversal_visits_annotation_bearing_metadata_nodes;

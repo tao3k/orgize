@@ -1,4 +1,7 @@
-use super::*;
+use orgize::{
+    ast::{ElementData, MarkupKind, ObjectData},
+    Org,
+};
 
 #[test]
 fn semantic_ast_projects_inline_babel_and_footnote_details() {

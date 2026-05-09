@@ -1,4 +1,8 @@
-use super::*;
+use crate::semantic_ast::support::assert_clean_projection;
+use orgize::{
+    ast::{ElementData, ObjectData, RepeaterKind, TimeUnit, WarningKind},
+    Org,
+};
 
 #[test]
 fn semantic_ast_projects_timestamp_metadata() {

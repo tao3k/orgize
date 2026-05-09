@@ -1,4 +1,7 @@
-use super::*;
+use orgize::{
+    ast::{AstMut, AstRef, ElementData},
+    Org,
+};
 
 #[test]
 fn traversal_visits_annotation_bearing_metadata_nodes() {
