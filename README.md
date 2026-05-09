@@ -123,6 +123,14 @@ Checkout `examples/html-slugify.rs` on how to customizing html export process.
 
 - **`indexmap`**: adds the ability to convert `PropertyDrawer` properties into `IndexMap`, disabled by default.
 
+## Development
+
+Parser v2 tests mount `rust-lang-project-harness` as a dev-only cargo-test
+gate from `src/lib.rs`. The gate uses the current standalone harness repository
+instead of the retired monorepo-local `xiuxian-testing` crate. Existing
+modularity findings from this old parser codebase are kept advisory for this PR;
+project test layout findings stay blocking.
+
 ## API compatibility
 
 Parser v2 makes a breaking API boundary explicit:
