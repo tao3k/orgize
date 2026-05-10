@@ -243,6 +243,7 @@ pub struct Block<A = ()> {
     pub language: Option<String>,
     pub switches: Option<String>,
     pub line_numbering: Option<BlockLineNumbering>,
+    pub code_refs: Vec<BlockCodeRef>,
     pub parameters: Option<String>,
     pub value: String,
     pub children: Vec<Element<A>>,
@@ -262,6 +263,17 @@ pub enum BlockLineNumberMode {
     New,
     /// Continue from the previous numbered listing with `+n`.
     Continued,
+}
+
+/// Code reference cookie found inside a source or example block line.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BlockCodeRef {
+    /// One-based line number inside the block value.
+    pub line: usize,
+    /// Reference name extracted from the active label format.
+    pub name: String,
+    /// Raw reference cookie as it appears in the block line.
+    pub raw: String,
 }
 
 /// Semantic category for an Org block.

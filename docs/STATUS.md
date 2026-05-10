@@ -88,10 +88,10 @@ this repository.
 - [ ] Inlinetasks
   - [ ] Parse inlinetask headlines and bodies.
   - [ ] Parse objects inside inlinetask titles.
-- [ ] Source/example block coderefs
-  - [ ] Preserve per-line coderef cookies such as `(ref:name)`.
-  - [ ] Respect custom `-l` coderef label formats.
-  - [ ] Expose coderef metadata in semantic block lines without losing raw
+- [x] Source/example block coderefs
+  - [x] Preserve per-line coderef cookies such as `(ref:name)`.
+  - [x] Respect custom `-l` coderef label formats.
+  - [x] Expose coderef metadata in semantic block lines without losing raw
         block text.
 - [ ] Source/example block indentation semantics
   - [ ] Model `-i` preserve-indentation behavior separately from raw source

@@ -8,10 +8,11 @@ mod model;
 mod traversal;
 
 pub use model::{
-    AstMut, AstRef, BareAst, Block, BlockKind, BlockLineNumberMode, BlockLineNumbering, Checkbox,
-    Citation, CiteReference, Clock, Diagnostic, DiagnosticKind, Document, Drawer, Element,
-    ElementData, FootnoteDef, Keyword, Link, LinkTarget, List, ListItem, ListType, MarkupKind,
-    Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, RepeaterKind, Section,
-    SourcePosition, Table, TableCell, TableRow, TimeUnit, Timestamp, TimestampKind,
-    TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState, WarningKind,
+    AstMut, AstRef, BareAst, Block, BlockCodeRef, BlockKind, BlockLineNumberMode,
+    BlockLineNumbering, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
+    Document, Drawer, Element, ElementData, FootnoteDef, Keyword, Link, LinkTarget, List, ListItem,
+    ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property,
+    RepeaterKind, Section, SourcePosition, Table, TableCell, TableRow, TimeUnit, Timestamp,
+    TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState,
+    WarningKind,
 };

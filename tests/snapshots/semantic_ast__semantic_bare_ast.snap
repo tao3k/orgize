@@ -261,6 +261,7 @@ Document {
                             ),
                             switches: None,
                             line_numbering: None,
+                            code_refs: [],
                             parameters: None,
                             value: "fn main() {}\n",
                             children: [],

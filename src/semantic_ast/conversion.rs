@@ -14,12 +14,12 @@ use crate::{
 };
 
 use super::{
-    Block, BlockKind, BlockLineNumberMode, BlockLineNumbering, Checkbox, Citation, CiteReference,
-    Clock, Diagnostic, DiagnosticKind, Document, Drawer, Element, ElementData, FootnoteDef,
-    Keyword, Link, LinkTarget, List, ListItem, ListType, MarkupKind, Object, ObjectData,
-    ParsedAnnotation, ParsedAst, Planning, Property, RepeaterKind, Section, SourcePosition, Table,
-    TableCell, TableRow, TimeUnit, Timestamp, TimestampKind, TimestampMoment, TimestampRepeater,
-    TimestampWarning, TodoKeyword, TodoState, WarningKind,
+    Block, BlockCodeRef, BlockKind, BlockLineNumberMode, BlockLineNumbering, Checkbox, Citation,
+    CiteReference, Clock, Diagnostic, DiagnosticKind, Document, Drawer, Element, ElementData,
+    FootnoteDef, Keyword, Link, LinkTarget, List, ListItem, ListType, MarkupKind, Object,
+    ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, RepeaterKind, Section,
+    SourcePosition, Table, TableCell, TableRow, TimeUnit, Timestamp, TimestampKind,
+    TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState, WarningKind,
 };
 
 impl ParsedAst {
@@ -405,6 +405,17 @@ impl<'a> Converter<'a> {
             .map(|child| self.elements_from_container(&child))
             .unwrap_or_default();
 
+        let value = source
+            .as_ref()
+            .map(|block| block.value())
+            .or_else(|| export.as_ref().map(|block| block.value()))
+            .unwrap_or(value);
+        let code_refs = if matches!(kind, BlockKind::Source | BlockKind::Example) {
+            parse_block_code_refs(&value, switches.as_deref())
+        } else {
+            Vec::new()
+        };
+
         Block {
             kind,
             name: semantic_block_name(node),
@@ -412,15 +423,12 @@ impl<'a> Converter<'a> {
                 .as_ref()
                 .and_then(|block| block.language().map(|x| x.to_string())),
             line_numbering: switches.as_deref().and_then(parse_block_line_numbering),
+            code_refs,
             switches,
             parameters: source
                 .as_ref()
                 .and_then(|block| block.parameters().map(|x| x.to_string())),
-            value: source
-                .as_ref()
-                .map(|block| block.value())
-                .or_else(|| export.as_ref().map(|block| block.value()))
-                .unwrap_or(value),
+            value,
             children,
         }
     }
@@ -999,11 +1007,11 @@ fn semantic_block_switches(node: &SyntaxNode) -> Option<String> {
 }
 
 fn parse_block_line_numbering(switches: &str) -> Option<BlockLineNumbering> {
-    let mut tokens = switches.split_whitespace().peekable();
+    let mut tokens = split_block_switches(switches).into_iter().peekable();
     let mut numbering = None;
 
     while let Some(token) = tokens.next() {
-        let mode = match token {
+        let mode = match token.as_str() {
             "-n" => BlockLineNumberMode::New,
             "+n" => BlockLineNumberMode::Continued,
             _ => continue,
@@ -1016,6 +1024,128 @@ fn parse_block_line_numbering(switches: &str) -> Option<BlockLineNumbering> {
     }
 
     numbering
+}
+
+fn parse_block_code_refs(value: &str, switches: Option<&str>) -> Vec<BlockCodeRef> {
+    let label = switches
+        .and_then(block_code_ref_label)
+        .unwrap_or_else(default_code_ref_label);
+
+    value
+        .lines()
+        .enumerate()
+        .filter_map(|(index, line)| {
+            code_ref_in_line(line, &label).map(|(name, raw)| BlockCodeRef {
+                line: index + 1,
+                name,
+                raw,
+            })
+        })
+        .collect()
+}
+
+fn block_code_ref_label(switches: &str) -> Option<CodeRefLabel> {
+    let mut tokens = split_block_switches(switches).into_iter();
+
+    while let Some(token) = tokens.next() {
+        if token == "-l" {
+            return tokens.next().and_then(CodeRefLabel::from_pattern);
+        }
+    }
+
+    None
+}
+
+fn split_block_switches(switches: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut current = String::new();
+    let mut chars = switches.chars().peekable();
+    let mut in_quote = false;
+
+    while let Some(ch) = chars.next() {
+        match ch {
+            '"' => {
+                in_quote = !in_quote;
+            }
+            '\\' if in_quote => {
+                if let Some(next) = chars.next() {
+                    current.push(next);
+                } else {
+                    current.push(ch);
+                }
+            }
+            ch if ch.is_whitespace() && !in_quote => {
+                if !current.is_empty() {
+                    tokens.push(std::mem::take(&mut current));
+                }
+            }
+            _ => current.push(ch),
+        }
+    }
+
+    if !current.is_empty() {
+        tokens.push(current);
+    }
+
+    tokens
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct CodeRefLabel {
+    prefix: String,
+    suffix: String,
+}
+
+impl CodeRefLabel {
+    fn from_pattern(pattern: String) -> Option<Self> {
+        let (prefix, suffix) = pattern.split_once("%s")?;
+        Some(Self {
+            prefix: prefix.to_string(),
+            suffix: suffix.to_string(),
+        })
+    }
+}
+
+fn default_code_ref_label() -> CodeRefLabel {
+    CodeRefLabel {
+        prefix: "(ref:".into(),
+        suffix: ")".into(),
+    }
+}
+
+fn code_ref_in_line(line: &str, label: &CodeRefLabel) -> Option<(String, String)> {
+    line.match_indices(&label.prefix)
+        .filter_map(|(start, _)| code_ref_at(line, start, label))
+        .last()
+}
+
+fn code_ref_at(line: &str, start: usize, label: &CodeRefLabel) -> Option<(String, String)> {
+    if start > 0 && !line[..start].chars().next_back()?.is_whitespace() {
+        return None;
+    }
+
+    let name_start = start + label.prefix.len();
+    let suffix_start = if label.suffix.is_empty() {
+        name_start
+            + line[name_start..]
+                .char_indices()
+                .find_map(|(offset, ch)| (!is_code_ref_name_char(ch)).then_some(offset))
+                .unwrap_or(line.len() - name_start)
+    } else {
+        name_start + line[name_start..].find(&label.suffix)?
+    };
+    let name = &line[name_start..suffix_start];
+
+    if name.is_empty() || !name.chars().all(is_code_ref_name_char) {
+        return None;
+    }
+
+    let end = suffix_start + label.suffix.len();
+    Some((name.to_string(), line[start..end].to_string()))
+}
+
+fn is_code_ref_name_char(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == ' '
 }
 
 #[derive(Default)]

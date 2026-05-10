@@ -1,4 +1,6 @@
+#[cfg(feature = "syntax-org-fc")]
 use crate::semantic_ast::support::assert_clean_projection;
+#[cfg(feature = "syntax-org-fc")]
 use orgize::{
     ast::{ElementData, MarkupKind, ObjectData},
     Org,

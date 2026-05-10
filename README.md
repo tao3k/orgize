@@ -52,7 +52,8 @@ repeater, and warning cookies, while retaining the original raw timestamp text.
 Semantic links include owned path/target data, parsed description objects,
 caption metadata, and image-link detection.
 Semantic source/example blocks include parsed line-numbering metadata for
-`-n` and `+n` switches, including optional starting offsets.
+`-n` and `+n` switches, optional starting offsets, and code-reference
+cookies from the default `(ref:name)` format or custom `-l` label formats.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 
