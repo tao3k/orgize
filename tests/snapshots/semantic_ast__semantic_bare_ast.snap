@@ -1,5 +1,5 @@
 ---
-source: tests/semantic_ast.rs
+source: tests/integration/semantic_ast/semantic_ast_projection_and_bare_snapshot.rs
 expression: doc.to_bare()
 ---
 Document {
@@ -7,6 +7,22 @@ Document {
     properties: [],
     includes: [],
     macro_definitions: [],
+    targets: [
+        TargetDefinition {
+            ann: (),
+            kind: Headline,
+            key: "Heading",
+            value: "Heading",
+            raw: "Heading",
+        },
+        TargetDefinition {
+            ann: (),
+            kind: CustomId,
+            key: "#heading-id",
+            value: "heading-id",
+            raw: "heading-id",
+        },
+    ],
     children: [
         Element {
             ann: (),

@@ -50,6 +50,7 @@ pub struct Document<A = ()> {
     pub properties: Vec<Property<A>>,
     pub includes: Vec<IncludeDirective<A>>,
     pub macro_definitions: Vec<MacroDefinition<A>>,
+    pub targets: Vec<TargetDefinition<A>>,
     pub children: Vec<Element<A>>,
     pub sections: Vec<Section<A>>,
     pub diagnostics: Vec<Diagnostic>,
@@ -81,6 +82,33 @@ pub struct MacroDefinition<A = ()> {
     pub name: String,
     pub template: String,
     pub raw_value: String,
+}
+
+/// Document-local target that can satisfy an internal link.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TargetDefinition<A = ()> {
+    pub ann: A,
+    pub kind: TargetKind,
+    pub key: String,
+    pub value: String,
+    pub raw: String,
+}
+
+/// Source category for a document-local target.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TargetKind {
+    /// Headline title fuzzy target.
+    Headline,
+    /// `CUSTOM_ID` property target.
+    CustomId,
+    /// Explicit `<<target>>` object.
+    Target,
+    /// Explicit `<<<radio target>>>` object.
+    RadioTarget,
+    /// Footnote definition label.
+    FootnoteDefinition,
+    /// Source/example code reference.
+    CodeRef,
 }
 
 /// Semantic section rooted by a headline.
@@ -590,6 +618,8 @@ pub enum AstRef<'a, A> {
     IncludeDirective(&'a IncludeDirective<A>),
     /// Macro definition preprocessing directive.
     MacroDefinition(&'a MacroDefinition<A>),
+    /// Document-local internal link target.
+    TargetDefinition(&'a TargetDefinition<A>),
     /// Section node.
     Section(&'a Section<A>),
     /// Property node.
@@ -616,6 +646,8 @@ pub enum AstMut<'a, A> {
     IncludeDirective(&'a mut IncludeDirective<A>),
     /// Macro definition preprocessing directive.
     MacroDefinition(&'a mut MacroDefinition<A>),
+    /// Document-local internal link target.
+    TargetDefinition(&'a mut TargetDefinition<A>),
     /// Section node.
     Section(&'a mut Section<A>),
     /// Property node.

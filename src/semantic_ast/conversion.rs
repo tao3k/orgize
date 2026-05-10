@@ -17,6 +17,9 @@ use super::block_metadata::{
     parse_block_code_refs, parse_block_header_args, parse_block_line_numbering,
     parse_block_preserve_indentation,
 };
+use super::targets::{
+    collect_target_index, is_strict_internal_link_path, TargetIndex, TargetLookup,
+};
 use super::{
     Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
     Document, Drawer, Element, ElementData, FootnoteDef, IncludeDirective, IncludeOption, Keyword,
@@ -47,6 +50,7 @@ struct Converter<'a> {
     lines: LineIndex<'a>,
     diagnostics: Vec<Diagnostic>,
     radio_targets: Vec<String>,
+    target_index: TargetIndex,
 }
 
 impl<'a> Converter<'a> {
@@ -57,11 +61,17 @@ impl<'a> Converter<'a> {
             lines: LineIndex::new(source),
             diagnostics: Vec::new(),
             radio_targets: Vec::new(),
+            target_index: TargetIndex::default(),
         }
     }
 
     fn document(mut self, root: &SyntaxNode) -> ParsedAst {
         self.radio_targets = collect_radio_targets(root);
+        self.target_index = collect_target_index(
+            root,
+            |node| self.node_ann(node),
+            |token| self.token_ann(token),
+        );
         let ann = self.node_ann(root);
         let mut children = Vec::new();
         let mut sections = Vec::new();
@@ -83,12 +93,14 @@ impl<'a> Converter<'a> {
             }
         }
         let (includes, macro_definitions) = self.preprocessing_directives(root);
+        let targets = self.target_index.definitions.clone();
 
         Document {
             ann,
             properties,
             includes,
             macro_definitions,
+            targets,
             children,
             sections,
             diagnostics: self.diagnostics,
@@ -882,16 +894,7 @@ impl<'a> Converter<'a> {
     fn link(&mut self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
         let legacy = syntax_ast::Link::cast(node.clone()).expect("link node");
         let path = legacy.path().to_string();
-        let target = if let Some((protocol, path)) = path.split_once(':') {
-            LinkTarget::Uri {
-                protocol: protocol.to_string(),
-                path: path.to_string(),
-            }
-        } else if path.starts_with('#') {
-            LinkTarget::Internal(path)
-        } else {
-            LinkTarget::Unresolved(path)
-        };
+        let target = self.link_target(&path, node.text_range());
         let description = legacy.description().collect::<Vec<_>>();
         let caption = legacy
             .caption()
@@ -906,6 +909,42 @@ impl<'a> Converter<'a> {
             caption,
             description: self.objects_from_elements(description),
         })
+    }
+
+    fn link_target(&mut self, path: &str, range: TextRange) -> LinkTarget {
+        match self.target_index.resolve(path) {
+            TargetLookup::Found { key } => {
+                return LinkTarget::Internal(key);
+            }
+            TargetLookup::Ambiguous { key, count } => {
+                self.diagnostic(
+                    range,
+                    DiagnosticKind::Conversion,
+                    format!("internal link target `{key}` is ambiguous across {count} definitions"),
+                );
+                return LinkTarget::Unresolved(path.to_string());
+            }
+            TargetLookup::Missing { key } if is_strict_internal_link_path(path) => {
+                self.diagnostic(
+                    range,
+                    DiagnosticKind::Conversion,
+                    format!("internal link target `{key}` was not found"),
+                );
+                return LinkTarget::Unresolved(path.to_string());
+            }
+            TargetLookup::Missing { .. } => {}
+        }
+
+        if let Some((protocol, path)) = path.split_once(':') {
+            LinkTarget::Uri {
+                protocol: protocol.to_string(),
+                path: path.to_string(),
+            }
+        } else if path.starts_with('#') {
+            LinkTarget::Internal(path.to_string())
+        } else {
+            LinkTarget::Unresolved(path.to_string())
+        }
     }
 
     fn macro_object(&self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {

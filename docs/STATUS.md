@@ -125,12 +125,12 @@ this repository.
   - [x] Collect `#+MACRO:` definitions.
   - [x] Keep macro calls parsed even when substitution is disabled.
   - [ ] Add opt-in expansion semantics without changing the lossless tree.
-- [ ] Internal link resolution
-  - [ ] Build a document-local target table for headlines, custom IDs, targets,
+- [x] Internal link resolution
+  - [x] Build a document-local target table for headlines, custom IDs, targets,
         footnotes, radio targets, and coderefs.
-  - [ ] Resolve `LinkTarget::Unresolved` where possible while keeping the
+  - [x] Resolve `LinkTarget::Unresolved` where possible while keeping the
         original link path.
-  - [ ] Preserve diagnostics for ambiguous or missing targets.
+  - [x] Preserve diagnostics for ambiguous or missing targets.
 - [ ] Full radio-link conformance
   - [ ] Current semantic projection links plain text against collected radio
         targets.

@@ -6,6 +6,7 @@
 mod block_metadata;
 mod conversion;
 mod model;
+mod targets;
 mod traversal;
 
 pub use model::{
@@ -14,6 +15,7 @@ pub use model::{
     Document, Drawer, Element, ElementData, FootnoteDef, IncludeDirective, IncludeOption, Keyword,
     Link, LinkTarget, List, ListItem, ListType, MacroDefinition, MarkupKind, Object, ObjectData,
     ParsedAnnotation, ParsedAst, Planning, Property, RepeaterKind, Section, SourcePosition, Table,
-    TableCell, TableColumnAlignment, TableRow, TimeUnit, Timestamp, TimestampKind, TimestampMoment,
-    TimestampRepeater, TimestampWarning, TodoKeyword, TodoState, WarningKind,
+    TableCell, TableColumnAlignment, TableRow, TargetDefinition, TargetKind, TimeUnit, Timestamp,
+    TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState,
+    WarningKind,
 };

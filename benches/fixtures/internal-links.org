@@ -1,0 +1,14 @@
+* Anchor Heading
+:PROPERTIES:
+:CUSTOM_ID: heading-id
+:END:
+See [[*Anchor Heading][headline]], [[#heading-id][custom id]],
+[[target-one][target]], [[fn:note][footnote]], and [[coderef:init][code]].
+
+Paragraph with <<target-one>> and <<<radio-one>>>.
+
+#+begin_src rust -l "ref:%s"
+let x = 1; ref:init
+#+end_src
+
+[fn:note] Footnote body

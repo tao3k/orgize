@@ -22,6 +22,7 @@ mod semantic_ast_projects_radio_links;
 mod semantic_ast_projects_table_column_metadata;
 mod semantic_ast_projects_table_el;
 mod semantic_ast_projects_timestamp_metadata;
+mod semantic_ast_resolves_internal_links;
 mod semantic_citation_affixes_respect_parse_config;
 mod semantic_traversal_supports_exporter_and_indexer_shapes;
 pub(crate) mod support;

@@ -66,6 +66,11 @@ Preprocessing directives stay explicit in parser v2. `#+INCLUDE:` and
 semantic document also collects include directives and macro definitions into
 document-level side tables. Macro calls are parsed as objects without expanding
 their templates.
+Document-local link targets are collected into `document.targets`, covering
+headlines, `CUSTOM_ID` properties, explicit targets, radio targets, footnote
+definitions, and source/example block coderefs. Link projection resolves these
+targets into `LinkTarget::Internal` while keeping the original `link.path`, and
+reports diagnostics for ambiguous or missing strict internal links.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 

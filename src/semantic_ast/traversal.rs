@@ -3,7 +3,7 @@
 use super::{
     AstMut, AstRef, BareAst, Block, Citation, CiteReference, Document, Drawer, Element,
     ElementData, FootnoteDef, IncludeDirective, Keyword, Link, List, ListItem, MacroDefinition,
-    Object, ObjectData, Property, Section, Table, TableCell, TableRow,
+    Object, ObjectData, Property, Section, Table, TableCell, TableRow, TargetDefinition,
 };
 
 impl<A> Document<A> {
@@ -59,6 +59,7 @@ impl<A> Document<A> {
                 .iter()
                 .map(|x| x.map_ann_with(f))
                 .collect(),
+            targets: self.targets.iter().map(|x| x.map_ann_with(f)).collect(),
             children: self.children.iter().map(|x| x.map_ann_with(f)).collect(),
             sections: self.sections.iter().map(|x| x.map_ann_with(f)).collect(),
             diagnostics: self.diagnostics.clone(),
@@ -83,6 +84,11 @@ impl<A> Document<A> {
                 .collect::<Result<_, _>>()?,
             macro_definitions: self
                 .macro_definitions
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            targets: self
+                .targets
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
@@ -114,6 +120,9 @@ impl<A> Document<A> {
         for definition in &self.macro_definitions {
             definition.visit_with(f);
         }
+        for target in &self.targets {
+            target.visit_with(f);
+        }
         for child in &self.children {
             child.visit_with(f);
         }
@@ -136,6 +145,9 @@ impl<A> Document<A> {
         for definition in &mut self.macro_definitions {
             definition.visit_mut_with(f);
         }
+        for target in &mut self.targets {
+            target.visit_mut_with(f);
+        }
         for child in &mut self.children {
             child.visit_mut_with(f);
         }
@@ -157,6 +169,9 @@ impl<A> Document<A> {
         }
         for definition in &self.macro_definitions {
             acc = definition.fold_with(acc, f);
+        }
+        for target in &self.targets {
+            acc = target.fold_with(acc, f);
         }
         for child in &self.children {
             acc = child.fold_with(acc, f);
@@ -263,6 +278,55 @@ impl<A> MacroDefinition<A> {
         F: FnMut(T, AstRef<'_, A>) -> T,
     {
         f(init, AstRef::MacroDefinition(self))
+    }
+}
+
+impl<A> TargetDefinition<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> TargetDefinition<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        TargetDefinition {
+            ann: f(&self.ann),
+            kind: self.kind,
+            key: self.key.clone(),
+            value: self.value.clone(),
+            raw: self.raw.clone(),
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<TargetDefinition<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(TargetDefinition {
+            ann: f(&self.ann)?,
+            kind: self.kind,
+            key: self.key.clone(),
+            value: self.value.clone(),
+            raw: self.raw.clone(),
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::TargetDefinition(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::TargetDefinition(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::TargetDefinition(self))
     }
 }
 
