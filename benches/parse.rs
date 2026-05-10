@@ -153,6 +153,37 @@ Body.
     group.finish();
 }
 
+pub fn bench_dense_target_projection(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::document/dense-target-projection");
+    let org = dense_target_projection_fixture();
+    let parsed = Org::parse(&org);
+
+    group.throughput(Throughput::Bytes(org.len() as u64));
+    group.bench_with_input("many-targets-and-radio-links.org", &parsed, |b, i| {
+        b.iter(|| black_box(i.document()))
+    });
+
+    group.finish();
+}
+
+fn dense_target_projection_fixture() -> String {
+    let mut org = String::new();
+
+    for idx in 0..128 {
+        org.push_str(&format!("<<<Radio Target {idx}>>> Radio Target {idx}\n"));
+    }
+
+    org.push('\n');
+
+    for idx in 0..128 {
+        org.push_str(&format!(
+            "* Heading {idx}\n:PROPERTIES:\n:CUSTOM_ID: heading-{idx}\n:END:\n[[*Heading {idx}][headline]] [[#heading-{idx}][custom]] [[Radio Target {idx}][radio]] Radio Target {idx}\n"
+        ));
+    }
+
+    org
+}
+
 criterion_group!(
     benches,
     bench_parse,
@@ -160,6 +191,7 @@ criterion_group!(
     bench_to_html,
     bench_macro_expansions,
     bench_semantic_radio_links,
-    bench_inlinetask_document
+    bench_inlinetask_document,
+    bench_dense_target_projection
 );
 criterion_main!(benches);

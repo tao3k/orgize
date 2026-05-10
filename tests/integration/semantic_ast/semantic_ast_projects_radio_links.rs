@@ -1,6 +1,6 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{ElementData, LinkTarget, MarkupKind, ObjectData},
+    ast::{ElementData, LinkTarget, MarkupKind, ObjectData, TargetKind},
     config::RadioLinkProjection,
     Org, ParseConfig,
 };
@@ -99,4 +99,38 @@ fn semantic_ast_projects_opt_in_radio_links_across_parsed_objects() {
             ObjectData::Plain(value) if value.contains("not Radio")
         )
     }));
+}
+
+#[test]
+fn semantic_ast_deduplicates_radio_targets_for_projection() {
+    let doc = Org::parse("<<<Alpha>>> <<<Alpha>>>\nAlpha Alphabet Alpha").document();
+
+    assert_clean_projection(&doc);
+    assert_eq!(
+        doc.targets
+            .iter()
+            .filter(|target| target.kind == TargetKind::RadioTarget)
+            .count(),
+        2
+    );
+
+    let links = doc
+        .children
+        .iter()
+        .filter_map(|element| match &element.data {
+            ElementData::Paragraph(objects) => Some(objects),
+            _ => None,
+        })
+        .flatten()
+        .filter_map(|object| match &object.data {
+            ObjectData::Link(link) => Some(link),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(links.len(), 2);
+    assert!(links.iter().all(|link| matches!(
+        &link.target,
+        LinkTarget::Internal(target) if target == "Alpha"
+    )));
 }

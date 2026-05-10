@@ -16,6 +16,7 @@ use super::{ParsedAnnotation, TargetDefinition, TargetKind};
 pub(super) struct TargetIndex {
     pub(super) definitions: Vec<TargetDefinition<ParsedAnnotation>>,
     keys: BTreeMap<String, Vec<usize>>,
+    radio_targets: Vec<String>,
 }
 
 impl TargetIndex {
@@ -24,12 +25,23 @@ impl TargetIndex {
             return;
         }
 
+        if definition.kind == TargetKind::RadioTarget {
+            self.radio_targets.push(definition.value.clone());
+        }
+
         let index = self.definitions.len();
         self.keys
             .entry(definition.key.clone())
             .or_default()
             .push(index);
         self.definitions.push(definition);
+    }
+
+    pub(super) fn radio_targets(&self) -> Vec<String> {
+        let mut targets = self.radio_targets.clone();
+        targets.sort_by(|left, right| right.len().cmp(&left.len()).then_with(|| left.cmp(right)));
+        targets.dedup();
+        targets
     }
 
     pub(super) fn resolve(&self, path: &str) -> TargetLookup {

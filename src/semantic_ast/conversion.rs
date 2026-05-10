@@ -72,12 +72,13 @@ impl<'a> Converter<'a> {
     }
 
     fn document(mut self, root: &SyntaxNode) -> ParsedAst {
-        self.radio_targets = collect_radio_targets(root);
-        self.target_index = collect_target_index(
+        let target_index = collect_target_index(
             root,
             |node| self.node_ann(node),
             |token| self.token_ann(token),
         );
+        self.radio_targets = target_index.radio_targets();
+        self.target_index = target_index;
         let ann = self.node_ann(root);
         let mut children = Vec::new();
         let mut sections = Vec::new();
@@ -1516,26 +1517,6 @@ fn citation_key_range(reference: &str) -> Option<(usize, usize)> {
         .unwrap_or(reference.len());
 
     (start < end).then_some((start, end))
-}
-
-fn collect_radio_targets(root: &SyntaxNode) -> Vec<String> {
-    fn collect(node: &SyntaxNode, targets: &mut Vec<String>) {
-        for child in node.children() {
-            if child.kind() == SyntaxKind::RADIO_TARGET {
-                let target = strip_wrapping(&child.to_string(), "<<<", ">>>");
-                if !target.is_empty() {
-                    targets.push(target);
-                }
-            }
-            collect(&child, targets);
-        }
-    }
-
-    let mut targets = Vec::new();
-    collect(root, &mut targets);
-    targets.sort_by(|left, right| right.len().cmp(&left.len()).then_with(|| left.cmp(right)));
-    targets.dedup();
-    targets
 }
 
 fn text_range(start: usize, end: usize) -> TextRange {

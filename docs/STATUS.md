@@ -150,3 +150,9 @@ this repository.
 - [x] Document intentional gaps and deferred exporter work.
 - [x] Document the full local validation gate.
 - [x] Document the no-Haskell-dependency research boundary.
+
+### M6 Semantic Projection Performance
+
+- [x] Reuse the document-local target index as the radio-link projection source.
+- [x] Avoid a second semantic pre-scan for radio target collection.
+- [x] Add a dense target/radio-link projection benchmark.
