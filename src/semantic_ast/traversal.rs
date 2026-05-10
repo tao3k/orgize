@@ -937,8 +937,10 @@ impl<A> Block<A> {
             language: self.language.clone(),
             switches: self.switches.clone(),
             line_numbering: self.line_numbering.clone(),
+            preserve_indentation: self.preserve_indentation,
             code_refs: self.code_refs.clone(),
             parameters: self.parameters.clone(),
+            header_args: self.header_args.clone(),
             value: self.value.clone(),
             children: self.children.iter().map(|x| x.map_ann_with(f)).collect(),
         }
@@ -954,8 +956,10 @@ impl<A> Block<A> {
             language: self.language.clone(),
             switches: self.switches.clone(),
             line_numbering: self.line_numbering.clone(),
+            preserve_indentation: self.preserve_indentation,
             code_refs: self.code_refs.clone(),
             parameters: self.parameters.clone(),
+            header_args: self.header_args.clone(),
             value: self.value.clone(),
             children: self
                 .children

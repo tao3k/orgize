@@ -93,15 +93,15 @@ this repository.
   - [x] Respect custom `-l` coderef label formats.
   - [x] Expose coderef metadata in semantic block lines without losing raw
         block text.
-- [ ] Source/example block indentation semantics
-  - [ ] Model `-i` preserve-indentation behavior separately from raw source
+- [x] Source/example block indentation semantics
+  - [x] Model `-i` preserve-indentation behavior separately from raw source
         retention.
-  - [ ] Keep tab-width-sensitive normalization as an explicit exporter/indexer
+  - [x] Keep tab-width-sensitive normalization as an explicit exporter/indexer
         choice.
-- [ ] Source block header arguments
-  - [ ] Project raw `:key value` parameters into structured semantic header
+- [x] Source block header arguments
+  - [x] Project raw `:key value` parameters into structured semantic header
         args.
-  - [ ] Keep raw parameter text for round-trip and compatibility.
+  - [x] Keep raw parameter text for round-trip and compatibility.
 - [ ] Table column metadata
   - [ ] Detect column property rows such as `<l>`, `<c>`, and `<r>`.
   - [ ] Expose semantic column alignment metadata while preserving current

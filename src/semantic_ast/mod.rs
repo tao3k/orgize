@@ -3,12 +3,13 @@
 //! The parser still builds the lossless rowan syntax tree. This module is the
 //! semantic, org-element-like layer projected from that syntax tree.
 
+mod block_metadata;
 mod conversion;
 mod model;
 mod traversal;
 
 pub use model::{
-    AstMut, AstRef, BareAst, Block, BlockCodeRef, BlockKind, BlockLineNumberMode,
+    AstMut, AstRef, BareAst, Block, BlockCodeRef, BlockHeaderArg, BlockKind, BlockLineNumberMode,
     BlockLineNumbering, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
     Document, Drawer, Element, ElementData, FootnoteDef, Keyword, Link, LinkTarget, List, ListItem,
     ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property,

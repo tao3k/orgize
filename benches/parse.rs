@@ -29,6 +29,10 @@ const INPUT: &[(&str, &str)] = &[
         "block-code-refs.org",
         include_str!("./fixtures/block-code-refs.org"),
     ),
+    (
+        "block-header-args.org",
+        include_str!("./fixtures/block-header-args.org"),
+    ),
 ];
 
 pub fn bench_parse(c: &mut Criterion) {

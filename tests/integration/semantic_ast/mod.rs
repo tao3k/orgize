@@ -6,6 +6,7 @@ mod semantic_ast_covers_current_lossless_projection_surface;
 mod semantic_ast_keeps_affiliated_keywords_out_of_paragraph_objects;
 mod semantic_ast_projection_and_bare_snapshot;
 mod semantic_ast_projects_block_code_refs;
+mod semantic_ast_projects_block_header_args;
 mod semantic_ast_projects_block_line_numbering;
 mod semantic_ast_projects_citations;
 mod semantic_ast_projects_clean_clock_duration;

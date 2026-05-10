@@ -243,8 +243,10 @@ pub struct Block<A = ()> {
     pub language: Option<String>,
     pub switches: Option<String>,
     pub line_numbering: Option<BlockLineNumbering>,
+    pub preserve_indentation: bool,
     pub code_refs: Vec<BlockCodeRef>,
     pub parameters: Option<String>,
+    pub header_args: Vec<BlockHeaderArg>,
     pub value: String,
     pub children: Vec<Element<A>>,
 }
@@ -273,6 +275,17 @@ pub struct BlockCodeRef {
     /// Reference name extracted from the active label format.
     pub name: String,
     /// Raw reference cookie as it appears in the block line.
+    pub raw: String,
+}
+
+/// Header argument parsed from a source block parameter string.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BlockHeaderArg {
+    /// Header argument key without the leading colon.
+    pub key: String,
+    /// Header argument value, if present, preserving inner spacing.
+    pub value: Option<String>,
+    /// Raw header argument fragment as it appears in the begin line.
     pub raw: String,
 }
 
