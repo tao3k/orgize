@@ -124,12 +124,38 @@ Paragraph with *Radio Target* and \alpha but not Radio Targets.
     group.finish();
 }
 
+pub fn bench_inlinetask_document(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::document/inlinetasks");
+    let org = r#"Intro.
+
+*************** TODO [#A] *Inline* task :bench:
+SCHEDULED: <2026-05-10 Sun>
+:PROPERTIES:
+:CUSTOM_ID: bench-inline
+:END:
+Body with [[https://example.com][link]].
+*************** END
+
+* Outline
+Body.
+"#;
+    let parsed = Org::parse(org);
+
+    group.throughput(Throughput::Bytes(org.len() as u64));
+    group.bench_with_input("closed-inlinetask.org", &parsed, |b, i| {
+        b.iter(|| black_box(i.document()))
+    });
+
+    group.finish();
+}
+
 criterion_group!(
     benches,
     bench_parse,
     bench_document,
     bench_to_html,
     bench_macro_expansions,
-    bench_semantic_radio_links
+    bench_semantic_radio_links,
+    bench_inlinetask_document
 );
 criterion_main!(benches);

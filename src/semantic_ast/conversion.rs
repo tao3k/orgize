@@ -17,16 +17,22 @@ use super::block_metadata::{
     parse_block_code_refs, parse_block_header_args, parse_block_line_numbering,
     parse_block_preserve_indentation,
 };
+use super::headline_metadata::{
+    headline_level, headline_priority, headline_raw_title, headline_tags, headline_todo,
+};
+use super::preprocessing::{include_directive, macro_definition, split_macro_args};
+use super::radio_links::{is_semantic_radio_link_candidate, next_char_boundary, next_radio_link};
 use super::targets::{
     collect_target_index, is_strict_internal_link_path, TargetIndex, TargetLookup,
 };
 use super::{
     Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
-    Document, Drawer, Element, ElementData, FootnoteDef, IncludeDirective, IncludeOption, Keyword,
-    Link, LinkTarget, List, ListItem, ListType, MacroDefinition, MarkupKind, Object, ObjectData,
-    ParsedAnnotation, ParsedAst, Planning, Property, RepeaterKind, Section, SourcePosition, Table,
-    TableCell, TableColumnAlignment, TableRow, TimeUnit, Timestamp, TimestampKind, TimestampMoment,
-    TimestampRepeater, TimestampWarning, TodoKeyword, TodoState, WarningKind,
+    Document, Drawer, Element, ElementData, FootnoteDef, IncludeDirective, Inlinetask,
+    InlinetaskEnd, Keyword, Link, LinkTarget, List, ListItem, ListType, MacroDefinition,
+    MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, RepeaterKind,
+    Section, SourcePosition, Table, TableCell, TableColumnAlignment, TableRow, TimeUnit, Timestamp,
+    TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState,
+    WarningKind,
 };
 
 impl ParsedAst {
@@ -191,6 +197,50 @@ impl<'a> Converter<'a> {
         }
     }
 
+    fn inlinetask(&mut self, node: &SyntaxNode) -> Inlinetask<ParsedAnnotation> {
+        let title = node
+            .children()
+            .find(|child| child.kind() == SyntaxKind::HEADLINE_TITLE)
+            .map(|title| self.objects_from_elements(title.children_with_tokens()))
+            .unwrap_or_default();
+        let planning = node
+            .children()
+            .find(|child| child.kind() == SyntaxKind::PLANNING)
+            .map(|planning| self.planning(&planning))
+            .unwrap_or_default();
+        let properties = node
+            .children()
+            .find(|child| child.kind() == SyntaxKind::PROPERTY_DRAWER)
+            .map(|drawer| self.properties(&drawer))
+            .unwrap_or_default();
+        let children = node
+            .children()
+            .find(|child| child.kind() == SyntaxKind::SECTION)
+            .map(|section| self.elements_from_container(&section))
+            .unwrap_or_default();
+        let end = node
+            .children()
+            .find(|child| child.kind() == SyntaxKind::INLINETASK_END)
+            .map(|end| InlinetaskEnd {
+                ann: self.node_ann(&end),
+                level: headline_level(&end),
+                raw: end.to_string(),
+            });
+
+        Inlinetask {
+            level: headline_level(node),
+            todo: headline_todo(node),
+            priority: headline_priority(node),
+            title,
+            raw_title: headline_raw_title(node),
+            tags: headline_tags(node),
+            planning,
+            properties,
+            children,
+            end,
+        }
+    }
+
     fn elements_from_container(&mut self, node: &SyntaxNode) -> Vec<Element<ParsedAnnotation>> {
         node.children()
             .filter_map(|child| self.element(&child))
@@ -224,6 +274,7 @@ impl<'a> Converter<'a> {
             | SyntaxKind::SPECIAL_BLOCK
             | SyntaxKind::DYN_BLOCK => ElementData::Block(self.block(node)),
             SyntaxKind::FN_DEF => ElementData::FootnoteDef(self.footnote_def(node)),
+            SyntaxKind::INLINETASK => ElementData::Inlinetask(Box::new(self.inlinetask(node))),
             SyntaxKind::COMMENT => ElementData::Comment(node.to_string()),
             SyntaxKind::FIXED_WIDTH => ElementData::FixedWidth(node.to_string()),
             SyntaxKind::RULE => ElementData::Rule,
@@ -1446,193 +1497,6 @@ fn strip_pair(value: &str) -> &str {
         .unwrap_or_default()
 }
 
-fn include_directive(
-    keyword: Keyword<ParsedAnnotation>,
-) -> Result<IncludeDirective<ParsedAnnotation>, (TextRange, String)> {
-    let range = keyword.ann.range;
-    let raw_value = keyword.value.clone();
-    let tokens = preprocessing_value_tokens(raw_value.trim());
-    let Some(path) = tokens.first() else {
-        return Err((range, "INCLUDE keyword is missing an include path".into()));
-    };
-
-    let mut arguments = Vec::new();
-    let mut options = Vec::new();
-    let mut index = 1;
-    while index < tokens.len() {
-        let token = &tokens[index];
-        if let Some(key) = token.value.strip_prefix(':').filter(|key| !key.is_empty()) {
-            let mut raw = token.raw.clone();
-            let mut value = None;
-            if tokens
-                .get(index + 1)
-                .is_some_and(|next| !next.value.starts_with(':'))
-            {
-                let next = &tokens[index + 1];
-                raw.push(' ');
-                raw.push_str(&next.raw);
-                value = Some(next.value.clone());
-                index += 1;
-            }
-            options.push(IncludeOption {
-                key: key.to_string(),
-                value,
-                raw,
-            });
-        } else {
-            arguments.push(token.value.clone());
-        }
-        index += 1;
-    }
-
-    Ok(IncludeDirective {
-        ann: keyword.ann,
-        path: path.value.clone(),
-        raw_path: path.raw.clone(),
-        arguments,
-        options,
-        raw_value,
-    })
-}
-
-fn macro_definition(
-    keyword: Keyword<ParsedAnnotation>,
-) -> Result<MacroDefinition<ParsedAnnotation>, (TextRange, String)> {
-    let range = keyword.ann.range;
-    let raw_value = keyword.value.clone();
-    let value = raw_value.trim_start();
-    let name_end = value.find(char::is_whitespace).unwrap_or(value.len());
-    let name = &value[..name_end];
-
-    if !is_valid_macro_name(name) {
-        return Err((range, "MACRO keyword is missing a valid macro name".into()));
-    }
-
-    Ok(MacroDefinition {
-        ann: keyword.ann,
-        name: name.to_string(),
-        template: value[name_end..].trim_start().to_string(),
-        raw_value,
-    })
-}
-
-#[derive(Debug)]
-struct PreprocessingValueToken {
-    raw: String,
-    value: String,
-}
-
-fn preprocessing_value_tokens(value: &str) -> Vec<PreprocessingValueToken> {
-    let mut tokens = Vec::new();
-    let mut cursor = 0;
-
-    while cursor < value.len() {
-        while let Some(ch) = value[cursor..].chars().next() {
-            if !ch.is_whitespace() {
-                break;
-            }
-            cursor += ch.len_utf8();
-        }
-        if cursor >= value.len() {
-            break;
-        }
-
-        let start = cursor;
-        let Some(first) = value[cursor..].chars().next() else {
-            break;
-        };
-        if matches!(first, '"' | '\'') {
-            let quote = first;
-            cursor += quote.len_utf8();
-            let mut token_value = String::new();
-            let mut escaped = false;
-            while cursor < value.len() {
-                let Some(ch) = value[cursor..].chars().next() else {
-                    break;
-                };
-                cursor += ch.len_utf8();
-                if escaped {
-                    token_value.push(ch);
-                    escaped = false;
-                } else if ch == '\\' {
-                    escaped = true;
-                } else if ch == quote {
-                    break;
-                } else {
-                    token_value.push(ch);
-                }
-            }
-            if escaped {
-                token_value.push('\\');
-            }
-            tokens.push(PreprocessingValueToken {
-                raw: value[start..cursor].to_string(),
-                value: token_value,
-            });
-        } else {
-            while cursor < value.len() {
-                let Some(ch) = value[cursor..].chars().next() else {
-                    break;
-                };
-                if ch.is_whitespace() {
-                    break;
-                }
-                cursor += ch.len_utf8();
-            }
-            let raw = &value[start..cursor];
-            tokens.push(PreprocessingValueToken {
-                raw: raw.to_string(),
-                value: raw.to_string(),
-            });
-        }
-    }
-
-    tokens
-}
-
-fn is_valid_macro_name(name: &str) -> bool {
-    let mut bytes = name.bytes();
-    matches!(bytes.next(), Some(byte) if byte.is_ascii_alphabetic())
-        && bytes.all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
-}
-
-fn split_macro_args(args: &str) -> Vec<String> {
-    let mut values = Vec::new();
-    let mut current = String::new();
-    let mut escaped = false;
-
-    for ch in args.chars() {
-        if escaped {
-            if ch != ',' && ch != '\\' {
-                current.push('\\');
-            }
-            current.push(ch);
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if ch == ',' {
-            let value = current.trim();
-            if !value.is_empty() {
-                values.push(value.to_string());
-            }
-            current.clear();
-        } else {
-            current.push(ch);
-        }
-    }
-
-    if escaped {
-        current.push('\\');
-    }
-
-    let value = current.trim();
-    if !value.is_empty() {
-        values.push(value.to_string());
-    }
-
-    values
-}
-
 fn citation_style(head: &str) -> (String, String) {
     let Some(rest) = head.strip_prefix("cite/") else {
         return ("nil".into(), String::new());
@@ -1672,64 +1536,6 @@ fn collect_radio_targets(root: &SyntaxNode) -> Vec<String> {
     targets.sort_by(|left, right| right.len().cmp(&left.len()).then_with(|| left.cmp(right)));
     targets.dedup();
     targets
-}
-
-fn next_radio_link<'a>(
-    value: &str,
-    cursor: usize,
-    targets: &'a [String],
-) -> Option<(usize, usize, &'a str)> {
-    let mut best: Option<(usize, usize, &'a str)> = None;
-
-    for target in targets {
-        for (relative_start, _) in value[cursor..].match_indices(target) {
-            let start = cursor + relative_start;
-            let end = start + target.len();
-            if !is_radio_link_boundary(value, start, end) {
-                continue;
-            }
-
-            let candidate = (start, end, target.as_str());
-            if best.as_ref().is_none_or(|(best_start, best_end, _)| {
-                start < *best_start || (start == *best_start && end > *best_end)
-            }) {
-                best = Some(candidate);
-            }
-            break;
-        }
-    }
-
-    best
-}
-
-fn is_semantic_radio_link_candidate(data: &ObjectData<ParsedAnnotation>) -> bool {
-    matches!(
-        data,
-        ObjectData::Plain(_)
-            | ObjectData::Markup { .. }
-            | ObjectData::Code(_)
-            | ObjectData::Verbatim(_)
-            | ObjectData::Entity(_)
-            | ObjectData::LatexFragment(_)
-    )
-}
-
-fn is_radio_link_boundary(value: &str, start: usize, end: usize) -> bool {
-    let before = value[..start].chars().next_back();
-    let after = value[end..].chars().next();
-    !before.is_some_and(is_radio_link_word_char) && !after.is_some_and(is_radio_link_word_char)
-}
-
-fn is_radio_link_word_char(ch: char) -> bool {
-    ch.is_alphanumeric() || ch == '_' || ch == '-'
-}
-
-fn next_char_boundary(value: &str, index: usize) -> usize {
-    value[index..]
-        .chars()
-        .next()
-        .map(|ch| index + ch.len_utf8())
-        .unwrap_or(value.len())
 }
 
 fn text_range(start: usize, end: usize) -> TextRange {

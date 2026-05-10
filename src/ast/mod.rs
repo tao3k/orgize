@@ -30,11 +30,11 @@ pub use cloze::Cloze;
 pub use generated::{
     AffiliatedKeyword, BabelCall, Bold, CenterBlock, Citation, Clock, Code, Comment, CommentBlock,
     Cookie, Document, Drawer, DynBlock, Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef,
-    FnRef, Headline, InlineCall, InlineSrc, Italic, Keyword, LatexEnvironment, LatexFragment,
-    LineBreak, Link, List, ListItem, Macros, NodeProperty, OrgTable, OrgTableCell, OrgTableRow,
-    Paragraph, Planning, PropertyDrawer, QuoteBlock, RadioTarget, Rule, Section, Snippet,
-    SourceBlock, SpecialBlock, Strike, Subscript, Superscript, TableEl, Target, Timestamp,
-    Underline, Verbatim, VerseBlock,
+    FnRef, Headline, InlineCall, InlineSrc, Inlinetask, InlinetaskEnd, Italic, Keyword,
+    LatexEnvironment, LatexFragment, LineBreak, Link, List, ListItem, Macros, NodeProperty,
+    OrgTable, OrgTableCell, OrgTableRow, Paragraph, Planning, PropertyDrawer, QuoteBlock,
+    RadioTarget, Rule, Section, Snippet, SourceBlock, SpecialBlock, Strike, Subscript, Superscript,
+    TableEl, Target, Timestamp, Underline, Verbatim, VerseBlock,
 };
 pub use headline::TodoType;
 pub use support::Token;

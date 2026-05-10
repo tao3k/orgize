@@ -11,8 +11,8 @@ Check out https://orgmode.org/worg/dev/org-syntax.html for more information.
 - [X] Drawers and Property Drawers
 - [x] Dynamic Blocks
 - [x] Footnote Definitions
-- [ ] Inlinetasks
-  - [ ] Objects insides inlinetask title
+- [x] Inlinetasks
+  - [x] Objects inside inlinetask title
 - [x] Plain Lists and Items
   - [x] Nested List
   - [x] Nested List Indentation
@@ -85,9 +85,9 @@ this repository.
 
 ### M3 Parser Gaps
 
-- [ ] Inlinetasks
-  - [ ] Parse inlinetask headlines and bodies.
-  - [ ] Parse objects inside inlinetask titles.
+- [x] Inlinetasks
+  - [x] Parse inlinetask headlines and bodies.
+  - [x] Parse objects inside inlinetask titles.
 - [x] Source/example block coderefs
   - [x] Preserve per-line coderef cookies such as `(ref:name)`.
   - [x] Respect custom `-l` coderef label formats.

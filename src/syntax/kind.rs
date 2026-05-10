@@ -138,6 +138,9 @@ pub enum SyntaxKind {
     DYN_BLOCK,
     DYN_BLOCK_BEGIN,
     DYN_BLOCK_END,
+    /* inlinetask */
+    INLINETASK,
+    INLINETASK_END,
     /* block */
     SPECIAL_BLOCK,
     QUOTE_BLOCK,
@@ -290,6 +293,7 @@ impl SyntaxKind {
             SyntaxKind::CENTER_BLOCK
                 | SyntaxKind::QUOTE_BLOCK
                 | SyntaxKind::SPECIAL_BLOCK
+                | SyntaxKind::INLINETASK
                 | SyntaxKind::DRAWER
                 | SyntaxKind::DYN_BLOCK
                 | SyntaxKind::FN_DEF

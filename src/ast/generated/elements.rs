@@ -63,6 +63,79 @@ impl DynBlock {
         })
     }
 }
+/// Typed syntax wrapper for `Inlinetask` nodes.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Inlinetask {
+    pub(crate) syntax: SyntaxNode,
+}
+impl AstNode for Inlinetask {
+    type Language = OrgLanguage;
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == SyntaxKind::INLINETASK
+    }
+    fn cast(node: SyntaxNode) -> Option<Inlinetask> {
+        Self::can_cast(node.kind()).then(|| Inlinetask { syntax: node })
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+impl Inlinetask {
+    /// Beginning position of this element
+    pub fn start(&self) -> TextSize {
+        self.syntax.text_range().start()
+    }
+    /// Ending position of this element
+    pub fn end(&self) -> TextSize {
+        self.syntax.text_range().end()
+    }
+    /// Range of this element
+    pub fn text_range(&self) -> TextRange {
+        self.syntax.text_range()
+    }
+    /// Raw text of this element
+    pub fn raw(&self) -> String {
+        self.syntax.to_string()
+    }
+    pub fn post_blank(&self) -> usize {
+        super::blank_lines(&self.syntax)
+    }
+}
+/// Typed syntax wrapper for `InlinetaskEnd` nodes.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct InlinetaskEnd {
+    pub(crate) syntax: SyntaxNode,
+}
+impl AstNode for InlinetaskEnd {
+    type Language = OrgLanguage;
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == SyntaxKind::INLINETASK_END
+    }
+    fn cast(node: SyntaxNode) -> Option<InlinetaskEnd> {
+        Self::can_cast(node.kind()).then(|| InlinetaskEnd { syntax: node })
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+impl InlinetaskEnd {
+    /// Beginning position of this element
+    pub fn start(&self) -> TextSize {
+        self.syntax.text_range().start()
+    }
+    /// Ending position of this element
+    pub fn end(&self) -> TextSize {
+        self.syntax.text_range().end()
+    }
+    /// Range of this element
+    pub fn text_range(&self) -> TextRange {
+        self.syntax.text_range()
+    }
+    /// Raw text of this element
+    pub fn raw(&self) -> String {
+        self.syntax.to_string()
+    }
+}
 /// Typed syntax wrapper for `Keyword` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyword {

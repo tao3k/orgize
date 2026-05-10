@@ -12,6 +12,7 @@ use super::{
     dyn_block::dyn_block_node,
     fixed_width::fixed_width_node,
     fn_def::fn_def_node,
+    inlinetask::inlinetask_node,
     input::Input,
     keyword::{affiliated_keyword_nodes, keyword_node},
     latex_environment::latex_environment_node,
@@ -87,7 +88,8 @@ pub(crate) fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
     let result = match byte {
         Some(b'[') => fn_def_node(input),
-        Some(b'0'..=b'9') | Some(b'*') => list_node(input),
+        Some(b'0'..=b'9') => list_node(input),
+        Some(b'*') => inlinetask_node(input).or_else(|_| list_node(input)),
         // clock doesn't have affiliated keywords
         Some(b'C') if !has_affiliated_keyword => clock_node(input),
         Some(b'-') => rule_node(input).or_else(|_| list_node(input)),

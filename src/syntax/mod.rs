@@ -20,6 +20,7 @@ pub(crate) mod fn_ref;
 pub(crate) mod headline;
 pub(crate) mod inline_call;
 pub(crate) mod inline_src;
+pub(crate) mod inlinetask;
 pub(crate) mod input;
 pub(crate) mod keyword;
 mod kind;

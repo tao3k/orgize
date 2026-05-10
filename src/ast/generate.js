@@ -79,6 +79,15 @@ const nodes = [
     affiliated_keywords: true,
   },
   {
+    struct: "Inlinetask",
+    kind: ["INLINETASK"],
+    post_blank: true,
+  },
+  {
+    struct: "InlinetaskEnd",
+    kind: ["INLINETASK_END"],
+  },
+  {
     struct: "Keyword",
     kind: ["KEYWORD"],
   },

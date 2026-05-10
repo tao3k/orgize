@@ -149,6 +149,29 @@ pub struct Section<A = ()> {
     pub subsections: Vec<Section<A>>,
 }
 
+/// Semantic inlinetask element.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Inlinetask<A = ()> {
+    pub level: usize,
+    pub todo: Option<TodoKeyword>,
+    pub priority: Option<String>,
+    pub title: Vec<Object<A>>,
+    pub raw_title: String,
+    pub tags: Vec<String>,
+    pub planning: Planning,
+    pub properties: Vec<Property<A>>,
+    pub children: Vec<Element<A>>,
+    pub end: Option<InlinetaskEnd<A>>,
+}
+
+/// Closing `END` marker for an inlinetask that contains elements.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InlinetaskEnd<A = ()> {
+    pub ann: A,
+    pub level: usize,
+    pub raw: String,
+}
+
 /// TODO keyword plus its configured state class.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TodoKeyword {
@@ -223,6 +246,8 @@ pub enum ElementData<A = ()> {
     Block(Block<A>),
     /// Footnote definition.
     FootnoteDef(FootnoteDef<A>),
+    /// Inlinetask.
+    Inlinetask(Box<Inlinetask<A>>),
     /// Comment element raw text.
     Comment(String),
     /// Fixed-width area raw text.
@@ -648,6 +673,10 @@ pub enum AstRef<'a, A> {
     Keyword(&'a Keyword<A>),
     /// Element node.
     Element(&'a Element<A>),
+    /// Inlinetask node.
+    Inlinetask(&'a Inlinetask<A>),
+    /// Inlinetask closing marker.
+    InlinetaskEnd(&'a InlinetaskEnd<A>),
     /// List item node.
     ListItem(&'a ListItem<A>),
     /// Table row node.
@@ -676,6 +705,10 @@ pub enum AstMut<'a, A> {
     Keyword(&'a mut Keyword<A>),
     /// Element node.
     Element(&'a mut Element<A>),
+    /// Inlinetask node.
+    Inlinetask(&'a mut Inlinetask<A>),
+    /// Inlinetask closing marker.
+    InlinetaskEnd(&'a mut InlinetaskEnd<A>),
     /// List item node.
     ListItem(&'a mut ListItem<A>),
     /// Table row node.

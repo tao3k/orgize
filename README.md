@@ -65,6 +65,9 @@ property cookies while preserving the original row and cell contents.
 Per-file TODO declarations from `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`
 are applied before parsing headlines, so custom TODO/DONE states are projected
 into semantic headline metadata for that document.
+Inlinetasks use `ParseConfig::inlinetask_min_level`, defaulting to Org's level
+15 convention, and project as semantic elements with parsed title objects,
+planning, properties, optional `END` markers, and body elements.
 Preprocessing directives stay explicit in parser v2. `#+INCLUDE:` and
 `#+MACRO:` remain normal keyword elements in the lossless tree, and the
 semantic document also collects include directives and macro definitions into
@@ -159,7 +162,7 @@ standalone harness repository instead of the retired monorepo-local
 `RUST-MOD-*` and project layout findings stay blocking. `AGENT-*` `info`
 findings remain visible as repair advice while this legacy crate burns them down
 separately. New tests should still use explicit imports: `RUST-MOD-R010`
-reports parent-scope globs such as `use super::*`.
+reports parent-scope glob imports.
 The build-time gate ignores generated environment/data roots such as `.devenv/`
 and `.data/` so research checkouts stay outside Cargo, CI, and published
 package boundaries.

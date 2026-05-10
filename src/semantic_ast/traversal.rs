@@ -2,8 +2,9 @@
 
 use super::{
     AstMut, AstRef, BareAst, Block, Citation, CiteReference, Document, Drawer, Element,
-    ElementData, FootnoteDef, IncludeDirective, Keyword, Link, List, ListItem, MacroDefinition,
-    Object, ObjectData, Property, Section, Table, TableCell, TableRow, TargetDefinition,
+    ElementData, FootnoteDef, IncludeDirective, Inlinetask, InlinetaskEnd, Keyword, Link, List,
+    ListItem, MacroDefinition, Object, ObjectData, Property, Section, Table, TableCell, TableRow,
+    TargetDefinition,
 };
 
 impl<A> Document<A> {
@@ -448,6 +449,163 @@ impl<A> Section<A> {
     }
 }
 
+impl<A> Inlinetask<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> Inlinetask<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        Inlinetask {
+            level: self.level,
+            todo: self.todo.clone(),
+            priority: self.priority.clone(),
+            title: self.title.iter().map(|x| x.map_ann_with(f)).collect(),
+            raw_title: self.raw_title.clone(),
+            tags: self.tags.clone(),
+            planning: self.planning.clone(),
+            properties: self.properties.iter().map(|x| x.map_ann_with(f)).collect(),
+            children: self.children.iter().map(|x| x.map_ann_with(f)).collect(),
+            end: self.end.as_ref().map(|x| x.map_ann_with(f)),
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<Inlinetask<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(Inlinetask {
+            level: self.level,
+            todo: self.todo.clone(),
+            priority: self.priority.clone(),
+            title: self
+                .title
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            raw_title: self.raw_title.clone(),
+            tags: self.tags.clone(),
+            planning: self.planning.clone(),
+            properties: self
+                .properties
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            children: self
+                .children
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            end: self
+                .end
+                .as_ref()
+                .map(|x| x.try_map_ann_with(f))
+                .transpose()?,
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::Inlinetask(self));
+        for object in &self.title {
+            object.visit_with(f);
+        }
+        for property in &self.properties {
+            property.visit_with(f);
+        }
+        for child in &self.children {
+            child.visit_with(f);
+        }
+        if let Some(end) = &self.end {
+            end.visit_with(f);
+        }
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::Inlinetask(self));
+        for object in &mut self.title {
+            object.visit_mut_with(f);
+        }
+        for property in &mut self.properties {
+            property.visit_mut_with(f);
+        }
+        for child in &mut self.children {
+            child.visit_mut_with(f);
+        }
+        if let Some(end) = &mut self.end {
+            end.visit_mut_with(f);
+        }
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        let mut acc = f(init, AstRef::Inlinetask(self));
+        for object in &self.title {
+            acc = object.fold_with(acc, f);
+        }
+        for property in &self.properties {
+            acc = property.fold_with(acc, f);
+        }
+        for child in &self.children {
+            acc = child.fold_with(acc, f);
+        }
+        if let Some(end) = &self.end {
+            acc = end.fold_with(acc, f);
+        }
+        acc
+    }
+}
+
+impl<A> InlinetaskEnd<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> InlinetaskEnd<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        InlinetaskEnd {
+            ann: f(&self.ann),
+            level: self.level,
+            raw: self.raw.clone(),
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<InlinetaskEnd<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(InlinetaskEnd {
+            ann: f(&self.ann)?,
+            level: self.level,
+            raw: self.raw.clone(),
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::InlinetaskEnd(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::InlinetaskEnd(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::InlinetaskEnd(self))
+    }
+}
+
 impl<A> Property<A> {
     fn map_ann_with<B, F>(&self, f: &mut F) -> Property<B>
     where
@@ -633,6 +791,9 @@ impl<A> ElementData<A> {
                 label: def.label.clone(),
                 children: def.children.iter().map(|x| x.map_ann_with(f)).collect(),
             }),
+            ElementData::Inlinetask(inlinetask) => {
+                ElementData::Inlinetask(Box::new(inlinetask.map_ann_with(f)))
+            }
             ElementData::Comment(value) => ElementData::Comment(value.clone()),
             ElementData::FixedWidth(value) => ElementData::FixedWidth(value.clone()),
             ElementData::Rule => ElementData::Rule,
@@ -685,6 +846,9 @@ impl<A> ElementData<A> {
                     .map(|x| x.try_map_ann_with(f))
                     .collect::<Result<_, _>>()?,
             }),
+            ElementData::Inlinetask(inlinetask) => {
+                ElementData::Inlinetask(Box::new(inlinetask.try_map_ann_with(f)?))
+            }
             ElementData::Comment(value) => ElementData::Comment(value.clone()),
             ElementData::FixedWidth(value) => ElementData::FixedWidth(value.clone()),
             ElementData::Rule => ElementData::Rule,
@@ -735,6 +899,9 @@ impl<A> ElementData<A> {
                     child.visit_with(f);
                 }
             }
+            ElementData::Inlinetask(inlinetask) => {
+                inlinetask.visit_with(f);
+            }
             _ => {}
         }
     }
@@ -778,6 +945,9 @@ impl<A> ElementData<A> {
                     child.visit_mut_with(f);
                 }
             }
+            ElementData::Inlinetask(inlinetask) => {
+                inlinetask.visit_mut_with(f);
+            }
             _ => {}
         }
     }
@@ -820,6 +990,9 @@ impl<A> ElementData<A> {
                 for child in &def.children {
                     acc = child.fold_with(acc, f);
                 }
+            }
+            ElementData::Inlinetask(inlinetask) => {
+                acc = inlinetask.fold_with(acc, f);
             }
             _ => {}
         }

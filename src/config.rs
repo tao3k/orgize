@@ -69,6 +69,11 @@ pub struct ParseConfig {
     /// radio targets containing markup or entities can be linked without
     /// changing the lossless syntax tree.
     pub radio_link_projection: RadioLinkProjection,
+
+    /// Minimum headline level parsed as an inlinetask.
+    ///
+    /// This mirrors `org-inlinetask-min-level`; Org's default is 15.
+    pub inlinetask_min_level: usize,
 }
 
 impl ParseConfig {
@@ -91,6 +96,10 @@ impl ParseConfig {
             self.todo_keywords = todo_keywords;
         }
         self
+    }
+
+    pub(crate) fn effective_inlinetask_min_level(&self) -> usize {
+        self.inlinetask_min_level.max(1)
     }
 }
 
@@ -199,6 +208,7 @@ impl Default for ParseConfig {
                 "TBLNAME".into(),
             ],
             radio_link_projection: RadioLinkProjection::PlainText,
+            inlinetask_min_level: 15,
         }
     }
 }

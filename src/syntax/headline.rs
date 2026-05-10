@@ -13,6 +13,7 @@ use super::{
     },
     drawer::property_drawer_node,
     element::element_nodes,
+    inlinetask::is_inlinetask_start,
     input::Input,
     object::standard_object_nodes,
     planning::planning_node,
@@ -116,7 +117,7 @@ pub(crate) fn section_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 fn section_text(input: Input) -> IResult<Input, Input, ()> {
     for (input, section) in line_starts_iter(input.as_str()).map(|i| input.take_split(i)) {
-        if headline_stars(input).is_ok() {
+        if headline_stars(input).is_ok() && !is_inlinetask_start(input) {
             if section.is_empty() {
                 return Err(nom::Err::Error(()));
             }
@@ -132,7 +133,7 @@ fn section_text(input: Input) -> IResult<Input, Input, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-fn headline_stars(input: Input) -> IResult<Input, Input, ()> {
+pub(super) fn headline_stars(input: Input) -> IResult<Input, Input, ()> {
     let bytes = input.as_bytes();
     let level = bytes.iter().take_while(|&&c| c == b'*').count();
 
@@ -151,7 +152,7 @@ fn headline_stars(input: Input) -> IResult<Input, Input, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(super) fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
     if !input.s.ends_with(':') {
         return Err(nom::Err::Error(()));
     };
@@ -208,7 +209,7 @@ fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
     Ok((input.slice(0..i), node(SyntaxKind::HEADLINE_TAGS, children)))
 }
 
-fn headline_keyword_token(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
+pub(super) fn headline_keyword_token(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     let (input, word) = take_while1(|c: char| !c.is_ascii_whitespace()).parse(input)?;
     let (input, ws) = space0(input)?;
     if input.c.todo_keywords.0.iter().any(|k| k == word.s) {
@@ -220,7 +221,7 @@ fn headline_keyword_token(input: Input) -> IResult<Input, (GreenElement, Input),
     }
 }
 
-fn headline_priority_node(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
+pub(super) fn headline_priority_node(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     let (input, node) = map(
         (l_bracket_token, hash_token, anychar, r_bracket_token),
         |(l_bracket, hash, char, r_bracket)| {

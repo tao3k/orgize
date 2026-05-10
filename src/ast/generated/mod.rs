@@ -17,8 +17,8 @@ pub use blocks::{
     VerseBlock,
 };
 pub use elements::{
-    AffiliatedKeyword, BabelCall, Clock, Comment, DynBlock, FixedWidth, FnDef, Keyword, Rule,
-    TableEl,
+    AffiliatedKeyword, BabelCall, Clock, Comment, DynBlock, FixedWidth, FnDef, Inlinetask,
+    InlinetaskEnd, Keyword, Rule, TableEl,
 };
 pub use object_core::{
     Citation, Cookie, FnRef, InlineCall, InlineSrc, Link, Macros, RadioTarget, Snippet, Target,
