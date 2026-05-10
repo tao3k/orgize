@@ -157,4 +157,6 @@ this repository.
 - [x] Avoid a second semantic pre-scan for radio target collection.
 - [x] Merge target indexing and preprocessing directive collection into one
       semantic pre-scan.
+- [x] Scan each radio-link object run once and prefer the longest target at a
+      shared start offset.
 - [x] Add a dense target/radio-link projection benchmark.

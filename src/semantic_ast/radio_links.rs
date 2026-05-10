@@ -7,27 +7,30 @@ pub(super) fn next_radio_link<'a>(
     cursor: usize,
     targets: &'a [String],
 ) -> Option<(usize, usize, &'a str)> {
-    let mut best: Option<(usize, usize, &'a str)> = None;
+    for (relative_start, _) in value[cursor..].char_indices() {
+        let start = cursor + relative_start;
+        if !is_radio_link_start_boundary(value, start) {
+            continue;
+        }
 
-    for target in targets {
-        for (relative_start, _) in value[cursor..].match_indices(target) {
-            let start = cursor + relative_start;
+        let mut best: Option<(usize, &'a str)> = None;
+        for target in targets {
             let end = start + target.len();
-            if !is_radio_link_boundary(value, start, end) {
+            if !value[start..].starts_with(target) || !is_radio_link_end_boundary(value, end) {
                 continue;
             }
 
-            let candidate = (start, end, target.as_str());
-            if best.as_ref().is_none_or(|(best_start, best_end, _)| {
-                start < *best_start || (start == *best_start && end > *best_end)
-            }) {
-                best = Some(candidate);
+            if best.is_none_or(|(best_end, _)| end > best_end) {
+                best = Some((end, target.as_str()));
             }
-            break;
+        }
+
+        if let Some((end, target)) = best {
+            return Some((start, end, target));
         }
     }
 
-    best
+    None
 }
 
 pub(super) fn is_semantic_radio_link_candidate(data: &ObjectData<ParsedAnnotation>) -> bool {
@@ -50,10 +53,14 @@ pub(super) fn next_char_boundary(value: &str, index: usize) -> usize {
         .unwrap_or(value.len())
 }
 
-fn is_radio_link_boundary(value: &str, start: usize, end: usize) -> bool {
+fn is_radio_link_start_boundary(value: &str, start: usize) -> bool {
     let before = value[..start].chars().next_back();
+    !before.is_some_and(is_radio_link_word_char)
+}
+
+fn is_radio_link_end_boundary(value: &str, end: usize) -> bool {
     let after = value[end..].chars().next();
-    !before.is_some_and(is_radio_link_word_char) && !after.is_some_and(is_radio_link_word_char)
+    !after.is_some_and(is_radio_link_word_char)
 }
 
 fn is_radio_link_word_char(ch: char) -> bool {

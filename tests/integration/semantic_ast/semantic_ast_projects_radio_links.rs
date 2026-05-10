@@ -134,3 +134,33 @@ fn semantic_ast_deduplicates_radio_targets_for_projection() {
         LinkTarget::Internal(target) if target == "Alpha"
     )));
 }
+
+#[test]
+fn semantic_ast_prefers_longest_radio_target_at_same_position() {
+    let doc = Org::parse("<<<Alpha>>> <<<Alpha Beta>>>\nAlpha Beta Alpha").document();
+
+    assert_clean_projection(&doc);
+    let links = doc
+        .children
+        .iter()
+        .filter_map(|element| match &element.data {
+            ElementData::Paragraph(objects) => Some(objects),
+            _ => None,
+        })
+        .flatten()
+        .filter_map(|object| match &object.data {
+            ObjectData::Link(link) => Some(link),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(links.len(), 2);
+    assert!(matches!(
+        &links[0].target,
+        LinkTarget::Internal(target) if target == "Alpha Beta"
+    ));
+    assert!(matches!(
+        &links[1].target,
+        LinkTarget::Internal(target) if target == "Alpha"
+    ));
+}
