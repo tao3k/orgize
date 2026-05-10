@@ -136,3 +136,10 @@ this repository.
         targets.
   - [x] Add opt-in two-pass behavior for edge cases that require preprocessing
         before object parsing.
+
+### M4 Traversal/Export Compatibility
+
+- [x] Keep the current HTML/export pipeline on the lossless syntax substrate.
+- [x] Cover semantic traversal shapes for exporter/indexer consumers.
+- [x] Verify `visit`, `visit_mut`, and `fold` reach all annotation-bearing
+      semantic node categories, including preprocessing and metadata nodes.
