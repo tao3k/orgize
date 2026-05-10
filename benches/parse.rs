@@ -33,6 +33,10 @@ const INPUT: &[(&str, &str)] = &[
         "block-header-args.org",
         include_str!("./fixtures/block-header-args.org"),
     ),
+    (
+        "table-column-metadata.org",
+        include_str!("./fixtures/table-column-metadata.org"),
+    ),
 ];
 
 pub fn bench_parse(c: &mut Criterion) {

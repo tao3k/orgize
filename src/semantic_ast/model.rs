@@ -217,7 +217,19 @@ pub enum Checkbox {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Table<A = ()> {
     pub rows: Vec<TableRow<A>>,
+    pub column_alignments: Vec<Option<TableColumnAlignment>>,
     pub formulas: Vec<Keyword<A>>,
+}
+
+/// Alignment cookie parsed from an Org table column metadata row.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TableColumnAlignment {
+    /// Left alignment, represented by `<l>`.
+    Left,
+    /// Center alignment, represented by `<c>`.
+    Center,
+    /// Right alignment, represented by `<r>`.
+    Right,
 }
 
 /// Row inside an Org table.

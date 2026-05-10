@@ -13,7 +13,7 @@ pub use model::{
     BlockLineNumbering, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
     Document, Drawer, Element, ElementData, FootnoteDef, Keyword, Link, LinkTarget, List, ListItem,
     ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property,
-    RepeaterKind, Section, SourcePosition, Table, TableCell, TableRow, TimeUnit, Timestamp,
-    TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState,
-    WarningKind,
+    RepeaterKind, Section, SourcePosition, Table, TableCell, TableColumnAlignment, TableRow,
+    TimeUnit, Timestamp, TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning,
+    TodoKeyword, TodoState, WarningKind,
 };

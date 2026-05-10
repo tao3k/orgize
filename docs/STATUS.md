@@ -102,9 +102,9 @@ this repository.
   - [x] Project raw `:key value` parameters into structured semantic header
         args.
   - [x] Keep raw parameter text for round-trip and compatibility.
-- [ ] Table column metadata
-  - [ ] Detect column property rows such as `<l>`, `<c>`, and `<r>`.
-  - [ ] Expose semantic column alignment metadata while preserving current
+- [x] Table column metadata
+  - [x] Detect column property rows such as `<l>`, `<c>`, and `<r>`.
+  - [x] Expose semantic column alignment metadata while preserving current
         row/cell text.
 - [ ] Quoted objects
   - [ ] Decide whether single/double quoted objects belong in core Org syntax

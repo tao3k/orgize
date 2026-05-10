@@ -777,6 +777,7 @@ impl<A> Table<A> {
                         .collect(),
                 })
                 .collect(),
+            column_alignments: self.column_alignments.clone(),
             formulas: self
                 .formulas
                 .iter()
@@ -814,6 +815,7 @@ impl<A> Table<A> {
                     })
                 })
                 .collect::<Result<_, E>>()?,
+            column_alignments: self.column_alignments.clone(),
             formulas: self
                 .formulas
                 .iter()

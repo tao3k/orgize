@@ -56,6 +56,8 @@ Semantic source/example blocks include parsed line-numbering metadata for
 metadata for `-i`, code-reference cookies from the default `(ref:name)` format
 or custom `-l` label formats, and structured source block header arguments
 while retaining the raw parameter text.
+Semantic tables expose column alignment metadata from `<l>`, `<c>`, and `<r>`
+property cookies while preserving the original row and cell contents.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 

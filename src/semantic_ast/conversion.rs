@@ -21,9 +21,9 @@ use super::{
     Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
     Document, Drawer, Element, ElementData, FootnoteDef, Keyword, Link, LinkTarget, List, ListItem,
     ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property,
-    RepeaterKind, Section, SourcePosition, Table, TableCell, TableRow, TimeUnit, Timestamp,
-    TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState,
-    WarningKind,
+    RepeaterKind, Section, SourcePosition, Table, TableCell, TableColumnAlignment, TableRow,
+    TimeUnit, Timestamp, TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning,
+    TodoKeyword, TodoState, WarningKind,
 };
 
 impl ParsedAst {
@@ -343,7 +343,7 @@ impl<'a> Converter<'a> {
     }
 
     fn table(&mut self, node: &SyntaxNode) -> Table<ParsedAnnotation> {
-        let rows = node
+        let row_nodes = node
             .children()
             .filter(|child| {
                 matches!(
@@ -351,8 +351,12 @@ impl<'a> Converter<'a> {
                     SyntaxKind::ORG_TABLE_RULE_ROW | SyntaxKind::ORG_TABLE_STANDARD_ROW
                 )
             })
+            .collect::<Vec<_>>();
+        let column_alignments = table_column_alignments(&row_nodes);
+        let rows = row_nodes
+            .iter()
             .map(|child| TableRow {
-                ann: self.node_ann(&child),
+                ann: self.node_ann(child),
                 is_rule: child.kind() == SyntaxKind::ORG_TABLE_RULE_ROW,
                 cells: child
                     .children()
@@ -370,7 +374,11 @@ impl<'a> Converter<'a> {
             .map(|child| self.keyword(&child, false))
             .collect();
 
-        Table { rows, formulas }
+        Table {
+            rows,
+            column_alignments,
+            formulas,
+        }
     }
 
     fn table_el(&self, node: &SyntaxNode) -> String {
@@ -976,6 +984,48 @@ impl<'a> LineIndex<'a> {
             column: self.source[line_start..offset].chars().count() + 1,
         }
     }
+}
+
+fn table_column_alignments(rows: &[SyntaxNode]) -> Vec<Option<TableColumnAlignment>> {
+    rows.iter()
+        .find_map(table_column_alignment_row)
+        .unwrap_or_default()
+}
+
+fn table_column_alignment_row(row: &SyntaxNode) -> Option<Vec<Option<TableColumnAlignment>>> {
+    if row.kind() != SyntaxKind::ORG_TABLE_STANDARD_ROW {
+        return None;
+    }
+
+    let cells = row
+        .children()
+        .filter(|cell| cell.kind() == SyntaxKind::ORG_TABLE_CELL)
+        .map(|cell| table_column_cookie_alignment(&cell.to_string()))
+        .collect::<Option<Vec<_>>>()?;
+
+    cells.iter().any(Option::is_some).then_some(cells)
+}
+
+fn table_column_cookie_alignment(cell: &str) -> Option<Option<TableColumnAlignment>> {
+    let trimmed = cell.trim();
+    let inner = trimmed.strip_prefix('<')?.strip_suffix('>')?.trim();
+    if inner.is_empty() {
+        return None;
+    }
+
+    let alignment = match inner.chars().next()? {
+        'l' if inner[1..].chars().all(|ch| ch.is_ascii_digit()) => Some(TableColumnAlignment::Left),
+        'c' if inner[1..].chars().all(|ch| ch.is_ascii_digit()) => {
+            Some(TableColumnAlignment::Center)
+        }
+        'r' if inner[1..].chars().all(|ch| ch.is_ascii_digit()) => {
+            Some(TableColumnAlignment::Right)
+        }
+        _ if inner.chars().all(|ch| ch.is_ascii_digit()) => None,
+        _ => return None,
+    };
+
+    Some(alignment)
 }
 
 fn block_name(node: &SyntaxNode) -> Option<String> {
