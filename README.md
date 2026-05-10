@@ -58,6 +58,9 @@ or custom `-l` label formats, and structured source block header arguments
 while retaining the raw parameter text.
 Semantic tables expose column alignment metadata from `<l>`, `<c>`, and `<r>`
 property cookies while preserving the original row and cell contents.
+Per-file TODO declarations from `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`
+are applied before parsing headlines, so custom TODO/DONE states are projected
+into semantic headline metadata for that document.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 

@@ -37,6 +37,10 @@ const INPUT: &[(&str, &str)] = &[
         "table-column-metadata.org",
         include_str!("./fixtures/table-column-metadata.org"),
     ),
+    (
+        "file-todo-keywords.org",
+        include_str!("./fixtures/file-todo-keywords.org"),
+    ),
 ];
 
 pub fn bench_parse(c: &mut Criterion) {

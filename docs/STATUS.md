@@ -117,9 +117,9 @@ this repository.
   - [ ] Parse `#+INCLUDE:` as a normal keyword without expansion.
   - [ ] Add an explicit expansion hook or side-table design before resolving
         external files.
-- [ ] Per-file TODO keyword declarations
-  - [ ] Parse `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:` declarations.
-  - [ ] Apply declarations before headline semantic projection, or expose a
+- [x] Per-file TODO keyword declarations
+  - [x] Parse `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:` declarations.
+  - [x] Apply declarations before headline semantic projection, or expose a
         two-pass projection API.
 - [ ] Macro definitions and substitution
   - [ ] Collect `#+MACRO:` definitions.

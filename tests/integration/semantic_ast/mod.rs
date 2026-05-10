@@ -11,6 +11,7 @@ mod semantic_ast_projects_block_line_numbering;
 mod semantic_ast_projects_citations;
 mod semantic_ast_projects_clean_clock_duration;
 mod semantic_ast_projects_cloze_objects_with_metadata;
+mod semantic_ast_projects_file_todo_keywords;
 mod semantic_ast_projects_footnote_definition_label_and_body;
 mod semantic_ast_projects_inline_babel_and_footnote_details;
 mod semantic_ast_projects_link_metadata;

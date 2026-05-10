@@ -1,0 +1,18 @@
+#+title: File TODO keywords benchmark
+#+TODO: NEXT(n) WAIT(w@/!) | DONE (d) CANCELED(c)
+#+SEQ_TODO: REVIEW(r) | MERGED(m)
+#+typ_todo: BUG(b) | FIXED(f)
+
+#+begin_example
+#+TODO: BAD | WORSE
+#+end_example
+
+* NEXT Prepare
+* WAIT Blocked
+* DONE Finished
+* CANCELED Dropped
+* REVIEW Pull request
+* MERGED Pull request
+* BUG Regression
+* FIXED Regression
+* TODO Default keyword is title text
