@@ -22,6 +22,11 @@ fn link() {
         Org::parse("Visit <https://example.com/path>.").to_html(),
         @r###"<main><section><p>Visit <a href="https://example.com/path">https://example.com/path</a>.</p></section></main>"###
     );
+
+    insta::assert_snapshot!(
+        Org::parse("Visit https://example.com/path.").to_html(),
+        @r###"<main><section><p>Visit <a href="https://example.com/path">https://example.com/path</a>.</p></section></main>"###
+    );
 }
 
 #[test]

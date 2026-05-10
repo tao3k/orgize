@@ -1,0 +1,7 @@
+* Plain links
+
+Orgize should keep plain URL detection cheap while still projecting semantic links.
+
+Visit https://orgmode.org/manual and mailto:dev@example.com for references.
+Keep timestamps such as <2026-04-30 Thu 10:00> on the timestamp path.
+Leave note:todo and clock-like 10:00 text untouched.

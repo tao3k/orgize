@@ -14,7 +14,7 @@ use super::{
     input::Input,
     latex_fragment::latex_fragment_node,
     line_break::line_break_node,
-    link::{angle_link_node, link_node},
+    link::{angle_link_node, link_node, plain_link_node, plain_link_start_before_colon},
     macros::macros_node,
     radio_target::radio_target_node,
     snippet::snippet_node,
@@ -35,16 +35,16 @@ impl ObjectPositions<'_> {
             input,
             pos: 0,
             finder: jetscii::bytes!(
-                b'*', b'+', b'/', b'_', b'=', b'~', /* text markup */
+                b'*', b'+', b'/', b'_', b'=', b'~', /* text markup, subscript */
                 b'@', /* snippet */
                 b'<', /* timestamp, target, radio target, angle link */
+                b':', /* plain link scheme separator */
                 b'[', /* link, cookie, fn_ref, timestamp */
                 b'c', /* inline call */
                 b's', /* inline source */
                 b'\\', b'$', /* latex & entity */
                 b'{', /* macros */
-                b'^', /* superscript */
-                b'_'  /* subscript */
+                b'^'  /* superscript */
             ),
         }
     }
@@ -110,6 +110,12 @@ impl<'a> Iterator for ObjectPositions<'a> {
             }
 
             let bytes = &self.input.as_bytes()[p..];
+            if bytes[0] == b':' {
+                if let Some(start) = plain_link_start_before_colon(self.input.as_str(), p) {
+                    return Some(self.input.take_split(start));
+                }
+                continue;
+            }
             if bytes[0] == b'c' && !bytes.starts_with(b"call_") {
                 continue;
             }
@@ -197,6 +203,7 @@ pub(crate) fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
                 .or_else(|_| link_node(i))
                 .or_else(|_| fn_ref_node(i))
                 .or_else(|_| timestamp_inactive_node(i)),
+            b'f' | b'h' | b'm' | b'n' => plain_link_node(i),
             // NOTE: although not specified in document, inline call and inline src follows the
             // same pre tokens rule as text markup
             b'c' if emphasis::verify_pre(pre.s) => inline_call_node(i),

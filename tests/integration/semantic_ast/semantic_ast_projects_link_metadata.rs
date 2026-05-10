@@ -94,4 +94,27 @@ fn semantic_ast_projects_link_metadata() {
     assert!(!angle_link.has_description);
     assert_eq!(angle_link.raw_description, "");
     assert!(!angle_link.is_image);
+
+    let plain_doc = Org::parse("Plain https://orgmode.org/manual link.").document();
+
+    assert_clean_projection(&plain_doc);
+    let plain_link = match &plain_doc.children[0].data {
+        ElementData::Paragraph(objects) => objects
+            .iter()
+            .find_map(|object| match &object.data {
+                ObjectData::Link(link) => Some(link),
+                _ => None,
+            })
+            .expect("plain link"),
+        other => panic!("expected paragraph, got {other:#?}"),
+    };
+    assert_eq!(plain_link.path, "https://orgmode.org/manual");
+    assert!(matches!(
+        &plain_link.target,
+        LinkTarget::Uri { protocol, path }
+            if protocol == "https" && path == "//orgmode.org/manual"
+    ));
+    assert!(!plain_link.has_description);
+    assert_eq!(plain_link.raw_description, "");
+    assert!(!plain_link.is_image);
 }

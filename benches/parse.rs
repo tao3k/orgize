@@ -13,6 +13,10 @@ const INPUT: &[(&str, &str)] = &[
         include_str!("./fixtures/org-release-notes.org"),
     ),
     ("org-syntax.org", include_str!("./fixtures/org-syntax.org")),
+    (
+        "plain-links.org",
+        include_str!("./fixtures/plain-links.org"),
+    ),
 ];
 
 pub fn bench_parse(c: &mut Criterion) {
