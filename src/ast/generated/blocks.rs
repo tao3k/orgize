@@ -8,6 +8,7 @@ use rowan::{
 
 use super::{affiliated_keyword, AffiliatedKeyword};
 
+/// Typed syntax wrapper for `SpecialBlock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SpecialBlock {
     pub(crate) syntax: SyntaxNode,
@@ -62,6 +63,7 @@ impl SpecialBlock {
         })
     }
 }
+/// Typed syntax wrapper for `QuoteBlock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QuoteBlock {
     pub(crate) syntax: SyntaxNode,
@@ -117,6 +119,7 @@ impl QuoteBlock {
     }
 }
 
+/// Typed syntax wrapper for `CenterBlock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CenterBlock {
     pub(crate) syntax: SyntaxNode,
@@ -172,6 +175,7 @@ impl CenterBlock {
     }
 }
 
+/// Typed syntax wrapper for `VerseBlock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VerseBlock {
     pub(crate) syntax: SyntaxNode,
@@ -227,6 +231,7 @@ impl VerseBlock {
     }
 }
 
+/// Typed syntax wrapper for `CommentBlock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CommentBlock {
     pub(crate) syntax: SyntaxNode,
@@ -282,6 +287,7 @@ impl CommentBlock {
     }
 }
 
+/// Typed syntax wrapper for `ExampleBlock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExampleBlock {
     pub(crate) syntax: SyntaxNode,
@@ -337,6 +343,7 @@ impl ExampleBlock {
     }
 }
 
+/// Typed syntax wrapper for `ExportBlock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExportBlock {
     pub(crate) syntax: SyntaxNode,
@@ -392,6 +399,7 @@ impl ExportBlock {
     }
 }
 
+/// Typed syntax wrapper for `SourceBlock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SourceBlock {
     pub(crate) syntax: SyntaxNode,

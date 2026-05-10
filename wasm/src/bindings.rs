@@ -1,3 +1,5 @@
+//! `wasm-bindgen` facade for parsing and rendering Org documents.
+
 use orgize::{
     export::{from_fn, Container, Event},
     rowan::ast::AstNode,
@@ -8,6 +10,7 @@ use std::fmt::Write;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[wasm_bindgen]
+/// WebAssembly wrapper around [`orgize::Org`].
 pub struct Org {
     inner: Inner,
 }

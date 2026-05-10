@@ -5,6 +5,7 @@ use rowan::{
     ast::{support, AstChildren, AstNode},
     TextRange, TextSize,
 };
+/// Typed syntax wrapper for `InlineCall` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineCall {
     pub(crate) syntax: SyntaxNode,
@@ -40,6 +41,7 @@ impl InlineCall {
     }
 }
 
+/// Typed syntax wrapper for `InlineSrc` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InlineSrc {
     pub(crate) syntax: SyntaxNode,
@@ -75,6 +77,7 @@ impl InlineSrc {
     }
 }
 
+/// Typed syntax wrapper for `Citation` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Citation {
     pub(crate) syntax: SyntaxNode,
@@ -110,6 +113,7 @@ impl Citation {
     }
 }
 
+/// Typed syntax wrapper for `Link` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Link {
     pub(crate) syntax: SyntaxNode,
@@ -145,6 +149,7 @@ impl Link {
     }
 }
 
+/// Typed syntax wrapper for `Cookie` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Cookie {
     pub(crate) syntax: SyntaxNode,
@@ -180,6 +185,7 @@ impl Cookie {
     }
 }
 
+/// Typed syntax wrapper for `RadioTarget` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RadioTarget {
     pub(crate) syntax: SyntaxNode,
@@ -215,6 +221,7 @@ impl RadioTarget {
     }
 }
 
+/// Typed syntax wrapper for `FnRef` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FnRef {
     pub(crate) syntax: SyntaxNode,
@@ -250,6 +257,7 @@ impl FnRef {
     }
 }
 
+/// Typed syntax wrapper for `Macros` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Macros {
     pub(crate) syntax: SyntaxNode,
@@ -285,6 +293,7 @@ impl Macros {
     }
 }
 
+/// Typed syntax wrapper for `Snippet` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Snippet {
     pub(crate) syntax: SyntaxNode,
@@ -320,6 +329,7 @@ impl Snippet {
     }
 }
 
+/// Typed syntax wrapper for `Target` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Target {
     pub(crate) syntax: SyntaxNode,

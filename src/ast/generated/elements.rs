@@ -8,6 +8,7 @@ use rowan::{
 
 use super::affiliated_keyword;
 
+/// Typed syntax wrapper for `DynBlock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DynBlock {
     pub(crate) syntax: SyntaxNode,
@@ -62,6 +63,7 @@ impl DynBlock {
         })
     }
 }
+/// Typed syntax wrapper for `Keyword` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Keyword {
     pub(crate) syntax: SyntaxNode,
@@ -97,6 +99,7 @@ impl Keyword {
     }
 }
 
+/// Typed syntax wrapper for `BabelCall` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BabelCall {
     pub(crate) syntax: SyntaxNode,
@@ -132,6 +135,7 @@ impl BabelCall {
     }
 }
 
+/// Typed syntax wrapper for `AffiliatedKeyword` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AffiliatedKeyword {
     pub(crate) syntax: SyntaxNode,
@@ -167,6 +171,7 @@ impl AffiliatedKeyword {
     }
 }
 
+/// Typed syntax wrapper for `TableEl` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TableEl {
     pub(crate) syntax: SyntaxNode,
@@ -205,6 +210,7 @@ impl TableEl {
     }
 }
 
+/// Typed syntax wrapper for `Clock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Clock {
     pub(crate) syntax: SyntaxNode,
@@ -243,6 +249,7 @@ impl Clock {
     }
 }
 
+/// Typed syntax wrapper for `FnDef` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FnDef {
     pub(crate) syntax: SyntaxNode,
@@ -301,6 +308,7 @@ impl FnDef {
     }
 }
 
+/// Typed syntax wrapper for `Comment` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Comment {
     pub(crate) syntax: SyntaxNode,
@@ -362,6 +370,7 @@ impl Comment {
     }
 }
 
+/// Typed syntax wrapper for `Rule` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Rule {
     pub(crate) syntax: SyntaxNode,
@@ -400,6 +409,7 @@ impl Rule {
     }
 }
 
+/// Typed syntax wrapper for `FixedWidth` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FixedWidth {
     pub(crate) syntax: SyntaxNode,

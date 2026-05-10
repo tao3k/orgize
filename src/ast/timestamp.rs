@@ -1,25 +1,40 @@
+//! Typed syntax wrapper helpers for Org timestamps.
+
 use super::{filter_token, Timestamp};
 use crate::syntax::SyntaxKind;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+/// Unit used by timestamp repeater and delay cookies.
 pub enum TimeUnit {
+    /// Hour unit.
     Hour,
+    /// Day unit.
     Day,
+    /// Week unit.
     Week,
+    /// Month unit.
     Month,
+    /// Year unit.
     Year,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+/// Repeater mode for an Org timestamp.
 pub enum RepeaterType {
+    /// Cumulate repeater.
     Cumulate,
+    /// Catch-up repeater.
     CatchUp,
+    /// Restart repeater.
     Restart,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+/// Warning delay mode for an Org timestamp.
 pub enum DelayType {
+    /// Warn for all matching occurrences.
     All,
+    /// Warn only for the first occurrence.
     First,
 }
 

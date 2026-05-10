@@ -12,7 +12,7 @@ use super::{
   feature = "tracing",
   tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn document_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn document_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(document_node_base, input)
 }
 

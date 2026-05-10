@@ -1,3 +1,5 @@
+//! Markdown exporter for the lossless syntax traversal API.
+
 use std::cmp::min;
 use std::fmt::Write as _;
 
@@ -8,6 +10,7 @@ use super::TraversalContext;
 use super::Traverser;
 
 #[derive(Default)]
+/// Traverser that renders Org syntax events to Markdown.
 pub struct MarkdownExport {
     output: String,
 

@@ -1,9 +1,12 @@
+//! Typed syntax wrapper helpers for `org-fc` cloze objects.
+
 use crate::{syntax::OrgLanguage, SyntaxElement, SyntaxKind, SyntaxNode};
 use rowan::{ast::AstNode, TextRange, TextSize};
 
 use super::Token;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Typed syntax wrapper for an `org-fc` cloze object.
 pub struct Cloze {
     pub(crate) syntax: SyntaxNode,
 }

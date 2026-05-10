@@ -28,7 +28,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn element_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<()>> {
+pub(crate) fn element_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<()>> {
     debug_assert!(!input.is_empty());
     // TODO:
     // debug_assert!(
@@ -70,7 +70,7 @@ pub fn element_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<()>> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
     // skip affiliated keyword first
     let (i, nodes) = affiliated_keyword_nodes(input)?;
 

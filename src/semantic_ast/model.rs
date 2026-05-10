@@ -2,9 +2,13 @@
 
 use rowan::TextRange;
 
+/// Parsed semantic document with source annotations on every semantic node.
 pub type ParsedAst = Document<ParsedAnnotation>;
+
+/// Semantic document without source annotations, useful for snapshots and equality checks.
 pub type BareAst = Document<()>;
 
+/// Source-backed annotation attached to semantic nodes projected from the syntax tree.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ParsedAnnotation {
     pub range: TextRange,
@@ -13,12 +17,14 @@ pub struct ParsedAnnotation {
     pub raw: String,
 }
 
+/// One-based line and column position in the original Org source.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SourcePosition {
     pub line: usize,
     pub column: usize,
 }
 
+/// Diagnostic emitted when syntax cannot be projected cleanly into semantic AST.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Diagnostic {
     pub range: TextRange,
@@ -26,13 +32,18 @@ pub struct Diagnostic {
     pub message: String,
 }
 
+/// Category for a semantic projection diagnostic.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DiagnosticKind {
+    /// A syntax element has no semantic element mapping yet.
     UnsupportedElement,
+    /// A syntax object has no semantic object mapping yet.
     UnsupportedObject,
+    /// A modeled syntax node was present, but its semantic fields could not be derived.
     Conversion,
 }
 
+/// Root semantic representation of an Org document.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Document<A = ()> {
     pub ann: A,
@@ -42,6 +53,7 @@ pub struct Document<A = ()> {
     pub diagnostics: Vec<Diagnostic>,
 }
 
+/// Semantic section rooted by a headline.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Section<A = ()> {
     pub ann: A,
@@ -59,18 +71,23 @@ pub struct Section<A = ()> {
     pub subsections: Vec<Section<A>>,
 }
 
+/// TODO keyword plus its configured state class.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TodoKeyword {
     pub state: TodoState,
     pub name: String,
 }
 
+/// State class for a TODO keyword.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TodoState {
+    /// Keyword belongs to the configured TODO set.
     Todo,
+    /// Keyword belongs to the configured DONE set.
     Done,
 }
 
+/// Planning timestamps attached to a headline.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Planning {
     pub deadline: Option<Timestamp>,
@@ -78,6 +95,7 @@ pub struct Planning {
     pub closed: Option<Timestamp>,
 }
 
+/// Node property from a property drawer.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Property<A = ()> {
     pub ann: A,
@@ -85,6 +103,7 @@ pub struct Property<A = ()> {
     pub value: String,
 }
 
+/// Keyword or affiliated keyword with optional bracket metadata.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Keyword<A = ()> {
     pub ann: A,
@@ -93,6 +112,7 @@ pub struct Keyword<A = ()> {
     pub value: String,
 }
 
+/// Semantic element in a document, section, drawer, list item, or block.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Element<A = ()> {
     pub ann: A,
@@ -100,26 +120,44 @@ pub struct Element<A = ()> {
     pub data: ElementData<A>,
 }
 
+/// Element-specific semantic payload.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ElementData<A = ()> {
+    /// Paragraph objects in source order.
     Paragraph(Vec<Object<A>>),
+    /// Standalone `#+KEY: value` keyword.
     Keyword(Keyword<A>),
+    /// Inline Babel call represented with keyword-like fields.
     BabelCall(Keyword<A>),
+    /// Clock element.
     Clock(Clock),
+    /// Named drawer with parsed child elements.
     Drawer(Drawer<A>),
+    /// Property drawer projected as owned properties.
     PropertyDrawer(Vec<Property<A>>),
+    /// Plain list.
     List(List<A>),
+    /// Org table with rows, cells, and formulas.
     Table(Table<A>),
+    /// Table.el table kept as raw text for now.
     TableEl { raw: String },
+    /// Greater or lesser block.
     Block(Block<A>),
+    /// Footnote definition.
     FootnoteDef(FootnoteDef<A>),
+    /// Comment element raw text.
     Comment(String),
+    /// Fixed-width area raw text.
     FixedWidth(String),
+    /// Horizontal rule.
     Rule,
+    /// LaTeX environment raw text.
     LatexEnvironment(String),
+    /// Intentionally unsupported syntax element with kind and raw source.
     Unknown { kind: String, raw: String },
 }
 
+/// Clock value and optional duration.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Clock {
     pub value: Option<Timestamp>,
@@ -127,6 +165,7 @@ pub struct Clock {
     pub raw: String,
 }
 
+/// Named drawer projected with semantic child elements.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Drawer<A = ()> {
     pub name: String,
@@ -134,19 +173,25 @@ pub struct Drawer<A = ()> {
     pub raw: String,
 }
 
+/// Plain list with normalized list type and items.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct List<A = ()> {
     pub list_type: ListType,
     pub items: Vec<ListItem<A>>,
 }
 
+/// Normalized Org list category.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ListType {
+    /// Ordered list.
     Ordered,
+    /// Unordered list.
     Unordered,
+    /// Description list containing tags.
     Descriptive,
 }
 
+/// Item inside an Org plain list.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ListItem<A = ()> {
     pub ann: A,
@@ -157,19 +202,25 @@ pub struct ListItem<A = ()> {
     pub children: Vec<Element<A>>,
 }
 
+/// Checkbox state for a list item.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Checkbox {
+    /// Checked state `[X]`.
     On,
+    /// Unchecked state `[ ]`.
     Off,
+    /// Transitional state `[-]`.
     Trans,
 }
 
+/// Org table with semantic rows and trailing formula keywords.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Table<A = ()> {
     pub rows: Vec<TableRow<A>>,
     pub formulas: Vec<Keyword<A>>,
 }
 
+/// Row inside an Org table.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TableRow<A = ()> {
     pub ann: A,
@@ -177,12 +228,14 @@ pub struct TableRow<A = ()> {
     pub cells: Vec<TableCell<A>>,
 }
 
+/// Cell inside an Org table row.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TableCell<A = ()> {
     pub ann: A,
     pub objects: Vec<Object<A>>,
 }
 
+/// Block element with normalized kind and block metadata.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Block<A = ()> {
     pub kind: BlockKind,
@@ -194,53 +247,75 @@ pub struct Block<A = ()> {
     pub children: Vec<Element<A>>,
 }
 
+/// Semantic category for an Org block.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BlockKind {
+    /// Source block.
     Source,
+    /// Example block.
     Example,
+    /// Export block.
     Export,
+    /// Quote block.
     Quote,
+    /// Verse block.
     Verse,
+    /// Center block.
     Center,
+    /// Comment block.
     Comment,
+    /// Dynamic block.
     Dynamic,
+    /// Named special block.
     Special(String),
 }
 
+/// Footnote definition with label and parsed body elements.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FootnoteDef<A = ()> {
     pub label: String,
     pub children: Vec<Element<A>>,
 }
 
+/// Semantic object inside paragraph-like content.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Object<A = ()> {
     pub ann: A,
     pub data: ObjectData<A>,
 }
 
+/// Object-specific semantic payload.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ObjectData<A = ()> {
+    /// Plain text segment.
     Plain(String),
+    /// Explicit line break object.
     LineBreak,
+    /// Markup object with parsed child objects.
     Markup {
         kind: MarkupKind,
         children: Vec<Object<A>>,
     },
+    /// Inline code contents without delimiters.
     Code(String),
+    /// Verbatim contents without delimiters.
     Verbatim(String),
+    /// Timestamp object.
     Timestamp(Timestamp),
+    /// Entity raw text.
     Entity(String),
+    /// LaTeX fragment raw text.
     LatexFragment(String),
-    ExportSnippet {
-        backend: String,
-        value: String,
-    },
+    /// Export snippet with backend and value.
+    ExportSnippet { backend: String, value: String },
+    /// Footnote reference, optionally with inline definition objects.
     FootnoteRef {
         label: Option<String>,
         definition: Vec<Object<A>>,
     },
+    /// Citation object with parsed references and affixes.
     Citation(Citation<A>),
+    /// Org-fc cloze object.
     Cloze {
         text: Vec<Object<A>>,
         raw_text: String,
@@ -248,6 +323,7 @@ pub enum ObjectData<A = ()> {
         id: Option<String>,
         raw: String,
     },
+    /// Inline Babel call.
     InlineCall {
         name: String,
         arguments: String,
@@ -255,36 +331,48 @@ pub enum ObjectData<A = ()> {
         end_header: Option<String>,
         raw: String,
     },
+    /// Inline source block.
     InlineSrc {
         language: String,
         parameters: Option<String>,
         value: String,
         raw: String,
     },
+    /// Link object with parsed target and description metadata.
     Link(Link<A>),
+    /// Target object without angle delimiters.
     Target(String),
+    /// Radio target object without angle delimiters.
     RadioTarget(String),
+    /// Macro call with name and parsed arguments.
     Macro {
         name: String,
         arguments: Vec<String>,
     },
+    /// Statistics cookie raw text.
     StatisticCookie(String),
-    Unknown {
-        kind: String,
-        raw: String,
-    },
+    /// Intentionally unsupported syntax object with kind and raw source.
+    Unknown { kind: String, raw: String },
 }
 
+/// Semantic markup kind.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MarkupKind {
+    /// Bold markup.
     Bold,
+    /// Italic markup.
     Italic,
+    /// Underline markup.
     Underline,
+    /// Strike-through markup.
     Strike,
+    /// Superscript markup.
     Superscript,
+    /// Subscript markup.
     Subscript,
 }
 
+/// Timestamp metadata projected from Org timestamp syntax.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Timestamp {
     pub kind: TimestampKind,
@@ -296,13 +384,18 @@ pub struct Timestamp {
     pub warning: Option<TimestampWarning>,
 }
 
+/// Org timestamp delimiter category.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TimestampKind {
+    /// Active timestamp, for example `<2026-05-01 Fri>`.
     Active,
+    /// Inactive timestamp, for example `[2026-05-01 Fri]`.
     Inactive,
+    /// Diary sexp timestamp, for example `<%%(diary-date 5 1)>`.
     Diary,
 }
 
+/// Parsed date and optional time within a timestamp.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TimestampMoment {
     pub year: u16,
@@ -313,6 +406,7 @@ pub struct TimestampMoment {
     pub minute: Option<u8>,
 }
 
+/// Repeater cookie attached to a timestamp.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TimestampRepeater {
     pub kind: RepeaterKind,
@@ -320,6 +414,7 @@ pub struct TimestampRepeater {
     pub unit: TimeUnit,
 }
 
+/// Warning delay cookie attached to a timestamp.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TimestampWarning {
     pub kind: WarningKind,
@@ -327,35 +422,53 @@ pub struct TimestampWarning {
     pub unit: TimeUnit,
 }
 
+/// Org timestamp repeater mode.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RepeaterKind {
+    /// Cumulate repeater, written with `++`.
     Cumulate,
+    /// Catch-up repeater, written with `+`.
     CatchUp,
+    /// Restart repeater, written with `.+`.
     Restart,
 }
 
+/// Org timestamp warning delay mode.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WarningKind {
+    /// Warn for all matching occurrences.
     All,
+    /// Warn only for the first occurrence.
     First,
 }
 
+/// Unit used by timestamp repeater and warning cookies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TimeUnit {
+    /// Hour unit.
     Hour,
+    /// Day unit.
     Day,
+    /// Week unit.
     Week,
+    /// Month unit.
     Month,
+    /// Year unit.
     Year,
 }
 
+/// Normalized link target classification.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LinkTarget {
+    /// URI-like link target split into protocol and path.
     Uri { protocol: String, path: String },
+    /// Internal target such as `#custom-id`.
     Internal(String),
+    /// Link target without a dedicated semantic classifier yet.
     Unresolved(String),
 }
 
+/// Link object with target, description, caption, and image metadata.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Link<A = ()> {
     pub path: String,
@@ -367,6 +480,7 @@ pub struct Link<A = ()> {
     pub caption: Option<Keyword<A>>,
 }
 
+/// Citation object with global affixes and per-reference metadata.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Citation<A = ()> {
     pub style: String,
@@ -376,6 +490,7 @@ pub struct Citation<A = ()> {
     pub references: Vec<CiteReference<A>>,
 }
 
+/// Single citation reference inside a citation object.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CiteReference<A = ()> {
     pub id: String,
@@ -383,26 +498,46 @@ pub struct CiteReference<A = ()> {
     pub suffix: Vec<Object<A>>,
 }
 
+/// Borrowed node exposed to semantic traversal callbacks.
 pub enum AstRef<'a, A> {
+    /// Document node.
     Document(&'a Document<A>),
+    /// Section node.
     Section(&'a Section<A>),
+    /// Property node.
     Property(&'a Property<A>),
+    /// Keyword node.
     Keyword(&'a Keyword<A>),
+    /// Element node.
     Element(&'a Element<A>),
+    /// List item node.
     ListItem(&'a ListItem<A>),
+    /// Table row node.
     TableRow(&'a TableRow<A>),
+    /// Table cell node.
     TableCell(&'a TableCell<A>),
+    /// Object node.
     Object(&'a Object<A>),
 }
 
+/// Mutable node exposed to semantic traversal callbacks.
 pub enum AstMut<'a, A> {
+    /// Document node.
     Document(&'a mut Document<A>),
+    /// Section node.
     Section(&'a mut Section<A>),
+    /// Property node.
     Property(&'a mut Property<A>),
+    /// Keyword node.
     Keyword(&'a mut Keyword<A>),
+    /// Element node.
     Element(&'a mut Element<A>),
+    /// List item node.
     ListItem(&'a mut ListItem<A>),
+    /// Table row node.
     TableRow(&'a mut TableRow<A>),
+    /// Table cell node.
     TableCell(&'a mut TableCell<A>),
+    /// Object node.
     Object(&'a mut Object<A>),
 }

@@ -14,7 +14,7 @@ use crate::config::ParseConfig;
 ///
 /// It helps us to pass the `ParseConfig` all the way down to each parsers
 #[derive(Clone, Copy, Debug)]
-pub struct Input<'a> {
+pub(crate) struct Input<'a> {
     pub(crate) s: &'a str,
     pub(crate) c: &'a ParseConfig,
 }
@@ -26,7 +26,7 @@ impl<'a> Input<'a> {
     }
 
     #[inline]
-    pub fn as_str(&self) -> &'a str {
+    pub(crate) fn as_str(&self) -> &'a str {
         self.s
     }
 
@@ -65,22 +65,22 @@ impl<'a> Input<'a> {
     }
 
     #[inline]
-    pub fn token(&self, kind: SyntaxKind) -> GreenElement {
+    pub(crate) fn token(&self, kind: SyntaxKind) -> GreenElement {
         token(kind, self.s)
     }
 
     #[inline]
-    pub fn text_token(&self) -> GreenElement {
+    pub(crate) fn text_token(&self) -> GreenElement {
         token(SyntaxKind::TEXT, self.s)
     }
 
     #[inline]
-    pub fn ws_token(&self) -> GreenElement {
+    pub(crate) fn ws_token(&self) -> GreenElement {
         token(SyntaxKind::WHITESPACE, self.s)
     }
 
     #[inline]
-    pub fn nl_token(&self) -> GreenElement {
+    pub(crate) fn nl_token(&self) -> GreenElement {
         token(SyntaxKind::NEW_LINE, self.s)
     }
 }

@@ -1,3 +1,5 @@
+//! HTML exporter for the lossless syntax traversal API.
+
 use rowan::NodeOrToken;
 use std::cmp::min;
 use std::fmt;
@@ -48,6 +50,7 @@ impl<S: AsRef<str>> fmt::Display for HtmlEscape<S> {
 }
 
 #[derive(Default)]
+/// Traverser that renders Org syntax events to HTML.
 pub struct HtmlExport {
     output: String,
 

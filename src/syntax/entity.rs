@@ -14,7 +14,7 @@ use crate::{
 
 use super::{combinator::GreenElement, input::Input};
 
-pub fn entity_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn entity_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(input.s.starts_with('\\'));
     let mut parser = alt((template1, template2));
     crate::lossless_parser!(parser, input)

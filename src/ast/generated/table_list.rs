@@ -8,6 +8,7 @@ use rowan::{
 
 use super::{affiliated_keyword, AffiliatedKeyword};
 
+/// Typed syntax wrapper for `OrgTable` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OrgTable {
     pub(crate) syntax: SyntaxNode,
@@ -65,6 +66,7 @@ impl OrgTable {
         })
     }
 }
+/// Typed syntax wrapper for `OrgTableRow` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OrgTableRow {
     pub(crate) syntax: SyntaxNode,
@@ -100,6 +102,7 @@ impl OrgTableRow {
     }
 }
 
+/// Typed syntax wrapper for `OrgTableCell` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OrgTableCell {
     pub(crate) syntax: SyntaxNode,
@@ -135,6 +138,7 @@ impl OrgTableCell {
     }
 }
 
+/// Typed syntax wrapper for `List` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct List {
     pub(crate) syntax: SyntaxNode,
@@ -193,6 +197,7 @@ impl List {
     }
 }
 
+/// Typed syntax wrapper for `ListItem` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ListItem {
     pub(crate) syntax: SyntaxNode,
@@ -228,6 +233,7 @@ impl ListItem {
     }
 }
 
+/// Typed syntax wrapper for `Drawer` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Drawer {
     pub(crate) syntax: SyntaxNode,

@@ -146,7 +146,7 @@ fn node_property_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn property_drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn property_drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
     crate::lossless_parser!(property_drawer_node_base, input)
 }
@@ -155,7 +155,7 @@ pub fn property_drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(drawer_node_base, input)
 }
 

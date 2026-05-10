@@ -2,6 +2,7 @@
 
 use rowan::Language;
 
+/// Rowan language marker for Org syntax trees.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OrgLanguage;
 
@@ -18,10 +19,15 @@ impl Language for OrgLanguage {
     }
 }
 
+/// Rowan syntax node specialized to [`OrgLanguage`].
 pub type SyntaxNode = rowan::SyntaxNode<OrgLanguage>;
+/// Rowan syntax token specialized to [`OrgLanguage`].
 pub type SyntaxToken = rowan::SyntaxToken<OrgLanguage>;
+/// Rowan node-or-token element specialized to [`OrgLanguage`].
 pub type SyntaxElement = rowan::SyntaxElement<OrgLanguage>;
+/// Iterator over Org syntax child nodes.
 pub type SyntaxNodeChildren = rowan::SyntaxNodeChildren<OrgLanguage>;
+/// Iterator over Org syntax child elements.
 pub type SyntaxElementChildren = rowan::SyntaxElementChildren<OrgLanguage>;
 
 #[allow(bad_style)]
@@ -29,6 +35,7 @@ pub type SyntaxElementChildren = rowan::SyntaxElementChildren<OrgLanguage>;
 #[non_exhaustive]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[repr(u16)]
+/// Lossless parser token and node kind.
 pub enum SyntaxKind {
     //
     // token

@@ -16,7 +16,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn fn_ref_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn fn_ref_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(fn_ref_node_base, input)
 }
 

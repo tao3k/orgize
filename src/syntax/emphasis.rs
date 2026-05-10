@@ -13,7 +13,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn bold_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn bold_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'*'), |contents| {
         let mut children = vec![token(SyntaxKind::STAR, "*")];
         children.extend(standard_object_nodes(contents));
@@ -27,7 +27,7 @@ pub fn bold_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn code_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn code_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'~'), |contents| {
         node(
             SyntaxKind::CODE,
@@ -45,7 +45,7 @@ pub fn code_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn strike_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn strike_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'+'), |contents| {
         let mut children = vec![token(SyntaxKind::PLUS, "+")];
         children.extend(standard_object_nodes(contents));
@@ -59,7 +59,7 @@ pub fn strike_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn verbatim_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn verbatim_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'='), |contents| {
         node(
             SyntaxKind::VERBATIM,
@@ -77,7 +77,7 @@ pub fn verbatim_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn underline_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn underline_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'_'), |contents| {
         let mut children = vec![token(SyntaxKind::UNDERSCORE, "_")];
         children.extend(standard_object_nodes(contents));
@@ -91,7 +91,7 @@ pub fn underline_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn italic_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn italic_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'/'), |contents| {
         let mut children = vec![token(SyntaxKind::SLASH, "/")];
         children.extend(standard_object_nodes(contents));
@@ -138,7 +138,7 @@ fn validate_marker(pos: usize, text: Input) -> bool {
     }
 }
 
-pub fn verify_pre(input: &str) -> bool {
+pub(crate) fn verify_pre(input: &str) -> bool {
     if input.is_empty() {
         return true;
     }

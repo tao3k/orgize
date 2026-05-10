@@ -23,7 +23,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn headline_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn headline_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
     crate::lossless_parser!(headline_node_base, input)
 }
@@ -108,7 +108,7 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn section_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn section_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
     let (input, section) = section_text(input)?;
     Ok((input, node(SyntaxKind::SECTION, element_nodes(section)?)))

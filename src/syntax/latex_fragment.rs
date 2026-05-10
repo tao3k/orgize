@@ -19,7 +19,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn latex_fragment_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn latex_fragment_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(input.s.starts_with(['\\', '$']));
     let mut parser = alt((template1, template2, template3, template4, template5));
     crate::lossless_parser!(parser, input)

@@ -5,6 +5,7 @@ use rowan::{
     ast::{support, AstChildren, AstNode},
     TextRange, TextSize,
 };
+/// Typed syntax wrapper for `Timestamp` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Timestamp {
     pub(crate) syntax: SyntaxNode,
@@ -72,6 +73,7 @@ impl Timestamp {
     }
 }
 
+/// Typed syntax wrapper for `LatexEnvironment` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexEnvironment {
     pub(crate) syntax: SyntaxNode,
@@ -107,6 +109,7 @@ impl LatexEnvironment {
     }
 }
 
+/// Typed syntax wrapper for `LatexFragment` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatexFragment {
     pub(crate) syntax: SyntaxNode,
@@ -142,6 +145,7 @@ impl LatexFragment {
     }
 }
 
+/// Typed syntax wrapper for `Entity` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Entity {
     pub(crate) syntax: SyntaxNode,
@@ -177,6 +181,7 @@ impl Entity {
     }
 }
 
+/// Typed syntax wrapper for `LineBreak` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LineBreak {
     pub(crate) syntax: SyntaxNode,
@@ -212,6 +217,7 @@ impl LineBreak {
     }
 }
 
+/// Typed syntax wrapper for `Superscript` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Superscript {
     pub(crate) syntax: SyntaxNode,
@@ -247,6 +253,7 @@ impl Superscript {
     }
 }
 
+/// Typed syntax wrapper for `Subscript` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Subscript {
     pub(crate) syntax: SyntaxNode,

@@ -12,29 +12,29 @@ use std::{
     ops::Deref,
 };
 
-pub fn blank_lines(parent: &SyntaxNode) -> usize {
+pub(super) fn blank_lines(parent: &SyntaxNode) -> usize {
     parent
         .children_with_tokens()
         .filter(|n| n.kind() == SyntaxKind::BLANK_LINE)
         .count()
 }
 
-pub fn last_child<N: AstNode>(parent: &rowan::SyntaxNode<N::Language>) -> Option<N> {
+pub(super) fn last_child<N: AstNode>(parent: &rowan::SyntaxNode<N::Language>) -> Option<N> {
     parent.children().filter_map(N::cast).last()
 }
 
-pub fn last_token(parent: &SyntaxNode, kind: SyntaxKind) -> Option<Token> {
+pub(super) fn last_token(parent: &SyntaxNode, kind: SyntaxKind) -> Option<Token> {
     parent
         .children_with_tokens()
         .filter_map(filter_token(kind))
         .last()
 }
 
-pub fn token(parent: &SyntaxNode, kind: SyntaxKind) -> Option<Token> {
+pub(super) fn token(parent: &SyntaxNode, kind: SyntaxKind) -> Option<Token> {
     rowan::ast::support::token(parent, kind).map(Token)
 }
 
-pub fn filter_token(
+pub(super) fn filter_token(
     kind: SyntaxKind,
 ) -> impl Fn(NodeOrToken<SyntaxNode, SyntaxToken>) -> Option<Token> {
     move |elem| match elem {

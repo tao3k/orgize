@@ -15,7 +15,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn cloze_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn cloze_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(cloze_node_base, input)
 }
 

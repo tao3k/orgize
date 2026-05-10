@@ -6,7 +6,7 @@ use super::{
     SyntaxKind,
 };
 
-pub fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             space0,

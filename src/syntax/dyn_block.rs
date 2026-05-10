@@ -71,7 +71,7 @@ fn dyn_block_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn dyn_block_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn dyn_block_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(dyn_block_node_base, input)
 }
 

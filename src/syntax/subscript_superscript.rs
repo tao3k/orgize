@@ -19,7 +19,7 @@ use super::{
     input::Input,
 };
 
-pub fn superscript_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn superscript_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let (input, caret) = caret_token(input)?;
 
     let mut children = vec![caret];
@@ -36,7 +36,7 @@ pub fn superscript_node(input: Input) -> IResult<Input, GreenElement, ()> {
     Ok((input, node(SyntaxKind::SUPERSCRIPT, children)))
 }
 
-pub fn subscript_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn subscript_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let (input, underscore) = underscore_token(input)?;
 
     let mut children = vec![underscore];
@@ -106,7 +106,7 @@ fn balanced_brackets(input: Input) -> IResult<Input, Input, ()> {
     Err(nom::Err::Error(()))
 }
 
-pub fn verify_pre(i: &Input) -> bool {
+pub(crate) fn verify_pre(i: &Input) -> bool {
     if i.c.use_sub_superscript.is_nil() {
         return false;
     }

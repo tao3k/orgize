@@ -5,15 +5,15 @@ use std::iter::once;
 
 use super::{input::Input, OrgLanguage, SyntaxKind};
 
-pub type GreenElement = NodeOrToken<GreenNode, GreenToken>;
+pub(crate) type GreenElement = NodeOrToken<GreenNode, GreenToken>;
 
 #[inline]
-pub fn token(kind: SyntaxKind, input: &str) -> GreenElement {
+pub(crate) fn token(kind: SyntaxKind, input: &str) -> GreenElement {
     GreenElement::Token(GreenToken::new(OrgLanguage::kind_to_raw(kind), input))
 }
 
 #[inline]
-pub fn node<I>(kind: SyntaxKind, children: I) -> GreenElement
+pub(crate) fn node<I>(kind: SyntaxKind, children: I) -> GreenElement
 where
     I: IntoIterator<Item = GreenElement>,
     I::IntoIter: ExactSizeIterator,
@@ -26,7 +26,7 @@ macro_rules! token_parser {
         #[doc = "Recognizes `"]
         #[doc = $token]
         #[doc = "` and returns GreenToken"]
-        pub fn $name(input: Input) -> IResult<Input, GreenElement, ()> {
+        pub(crate) fn $name(input: Input) -> IResult<Input, GreenElement, ()> {
             let (i, o) = tag($token).parse(input)?;
             Ok((i, token($kind, o.as_str())))
         }
@@ -95,7 +95,7 @@ macro_rules! lossless_parser {
 pub(crate) use lossless_parser;
 
 /// Takes all blank lines
-pub fn blank_lines(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
+pub(crate) fn blank_lines(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
     if input.is_empty() {
         return Ok((input, vec![]));
     }
@@ -155,7 +155,7 @@ fn test_blank_lines() {
 }
 
 /// Returns 1. anything before trailing whitespace, 2. whitespace itself, 3. line feeding
-pub fn trim_line_end(input: Input) -> IResult<Input, (Input, Input, Input), ()> {
+pub(crate) fn trim_line_end(input: Input) -> IResult<Input, (Input, Input, Input), ()> {
     let bytes = input.as_bytes();
 
     let (input, contents, nl) = match memchr2(b'\r', b'\n', bytes) {
@@ -211,7 +211,7 @@ fn test_trim_line_end() {
 }
 
 /// Recognizes a line ending \r, \n, \r\n or end of file
-pub fn eol_or_eof(input: Input) -> IResult<Input, Input, ()> {
+pub(crate) fn eol_or_eof(input: Input) -> IResult<Input, Input, ()> {
     let mut bytes = input.bytes();
 
     let count = match bytes.next() {
@@ -261,32 +261,32 @@ impl<'a> Iterator for LineStart<'a> {
 }
 
 /// Returns an iterator of positions of line start, including zero
-pub fn line_starts_iter(s: &str) -> impl Iterator<Item = usize> + '_ {
+pub(crate) fn line_starts_iter(s: &str) -> impl Iterator<Item = usize> + '_ {
     once(0).chain(LineStart::new(s))
 }
 
 /// Returns an iterator of positions of line end, including eof
-pub fn line_ends_iter(s: &str) -> impl Iterator<Item = usize> + '_ {
+pub(crate) fn line_ends_iter(s: &str) -> impl Iterator<Item = usize> + '_ {
     LineStart::new(s).chain(once(s.len()))
 }
 
-pub struct NodeBuilder {
-    pub children: Vec<GreenElement>,
+pub(crate) struct NodeBuilder {
+    pub(crate) children: Vec<GreenElement>,
 }
 
 impl NodeBuilder {
-    pub fn new() -> NodeBuilder {
+    pub(crate) fn new() -> NodeBuilder {
         NodeBuilder { children: vec![] }
     }
 
-    pub fn ws(&mut self, i: Input) {
+    pub(crate) fn ws(&mut self, i: Input) {
         if !i.is_empty() {
             debug_assert!(i.bytes().all(|c| c.is_ascii_whitespace()));
             self.children.push(i.ws_token())
         }
     }
 
-    pub fn nl(&mut self, i: Input) {
+    pub(crate) fn nl(&mut self, i: Input) {
         if !i.is_empty() {
             debug_assert!(
                 i.s == "\n" || i.s == "\r\n" || i.s == "\r",
@@ -297,31 +297,31 @@ impl NodeBuilder {
         }
     }
 
-    pub fn text(&mut self, i: Input) {
+    pub(crate) fn text(&mut self, i: Input) {
         if !i.is_empty() {
             self.children.push(i.text_token())
         }
     }
 
-    pub fn token(&mut self, kind: SyntaxKind, i: Input) {
+    pub(crate) fn token(&mut self, kind: SyntaxKind, i: Input) {
         self.children.push(i.token(kind))
     }
 
-    pub fn push(&mut self, elem: GreenElement) {
+    pub(crate) fn push(&mut self, elem: GreenElement) {
         self.children.push(elem)
     }
 
-    pub fn push_opt(&mut self, elem: Option<GreenElement>) {
+    pub(crate) fn push_opt(&mut self, elem: Option<GreenElement>) {
         if let Some(elem) = elem {
             self.children.push(elem)
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.children.len()
     }
 
-    pub fn finish(self, kind: SyntaxKind) -> GreenElement {
+    pub(crate) fn finish(self, kind: SyntaxKind) -> GreenElement {
         GreenElement::Node(GreenNode::new(kind.into(), self.children))
     }
 }

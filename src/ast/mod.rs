@@ -37,6 +37,6 @@ pub use generated::{
     Underline, Verbatim, VerseBlock,
 };
 pub use headline::TodoType;
-pub use rowan::ast::support::{child, children};
-pub use support::{blank_lines, filter_token, last_child, last_token, token, Token};
+pub use support::Token;
+use support::{blank_lines, filter_token, last_child, last_token, token};
 pub use timestamp::{DelayType, RepeaterType, TimeUnit};

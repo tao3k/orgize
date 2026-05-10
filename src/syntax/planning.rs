@@ -9,7 +9,7 @@ use super::{
     SyntaxKind,
 };
 
-pub fn planning_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn planning_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
     crate::lossless_parser!(planning_node_base, input)
 }

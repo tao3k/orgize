@@ -18,7 +18,7 @@ use super::{
   feature = "tracing",
   tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn fn_def_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn fn_def_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             affiliated_keyword_nodes,

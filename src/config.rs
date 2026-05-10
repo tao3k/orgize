@@ -1,10 +1,16 @@
+//! Parser configuration for Org syntax and semantic projection.
+
 use crate::syntax::document::document_node;
 use crate::Org;
 
 #[derive(Clone, Debug)]
+/// Controls Org subscript and superscript parsing.
 pub enum UseSubSuperscript {
+    /// Disable subscript and superscript parsing.
     Nil,
+    /// Parse only braced subscript and superscript forms.
     Brace,
+    /// Parse subscript and superscript forms.
     True,
 }
 

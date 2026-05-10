@@ -1,3 +1,5 @@
+//! Event model emitted by lossless syntax tree traversal.
+
 use crate::syntax_ast::{
     AffiliatedKeyword, BabelCall, Bold, CenterBlock, Citation, Clock, Code, Comment, CommentBlock,
     Cookie, Document, Drawer, DynBlock, Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef,
@@ -13,6 +15,7 @@ use crate::syntax_ast::Cloze;
 
 #[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug)]
+/// Container event payload for syntax tree enter and leave events.
 pub enum Container {
     Document(Document),
     Section(Section),
@@ -61,6 +64,7 @@ pub enum Container {
 
 #[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug)]
+/// Traversal event emitted by [`Traverser`](crate::export::Traverser).
 pub enum Event {
     Enter(Container),
     Leave(Container),

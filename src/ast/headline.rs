@@ -1,3 +1,5 @@
+//! Typed syntax wrapper helpers for Org headlines.
+
 use rowan::{ast::AstNode, NodeOrToken};
 
 use crate::{syntax::SyntaxKind, SyntaxElement};
@@ -5,8 +7,11 @@ use crate::{syntax::SyntaxKind, SyntaxElement};
 use super::{filter_token, Clock, Drawer, Headline, Section, Timestamp, Token};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+/// Configured TODO state class for a headline keyword.
 pub enum TodoType {
+    /// Keyword belongs to the TODO set.
     Todo,
+    /// Keyword belongs to the DONE set.
     Done,
 }
 

@@ -11,7 +11,7 @@ use super::{
     SyntaxKind,
 };
 
-pub fn radio_target_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn radio_target_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             l_angle3_token,

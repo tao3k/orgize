@@ -1,9 +1,12 @@
 #![doc = include_str!("../README.md")]
 
+/// Owned semantic AST projected from the lossless parser tree.
 #[path = "semantic_ast/mod.rs"]
 pub mod ast;
+/// Parser configuration.
 pub mod config;
 mod entities;
+/// Event traversal and export helpers built on the lossless syntax tree.
 pub mod export;
 mod org;
 mod replace;

@@ -1,3 +1,5 @@
+//! Parsed Org document facade.
+
 use rowan::ast::AstNode;
 use rowan::{GreenNode, TextSize};
 
@@ -9,6 +11,7 @@ use crate::syntax_ast;
 use crate::SyntaxElement;
 
 #[derive(Debug)]
+/// Parsed Org document with access to semantic and lossless syntax APIs.
 pub struct Org {
     pub(crate) green: GreenNode,
     pub(crate) config: ParseConfig,

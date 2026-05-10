@@ -5,6 +5,7 @@ use rowan::{
     ast::{support, AstChildren, AstNode},
     TextRange, TextSize,
 };
+/// Typed syntax wrapper for `Bold` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Bold {
     pub(crate) syntax: SyntaxNode,
@@ -40,6 +41,7 @@ impl Bold {
     }
 }
 
+/// Typed syntax wrapper for `Strike` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Strike {
     pub(crate) syntax: SyntaxNode,
@@ -75,6 +77,7 @@ impl Strike {
     }
 }
 
+/// Typed syntax wrapper for `Italic` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Italic {
     pub(crate) syntax: SyntaxNode,
@@ -110,6 +113,7 @@ impl Italic {
     }
 }
 
+/// Typed syntax wrapper for `Underline` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Underline {
     pub(crate) syntax: SyntaxNode,
@@ -145,6 +149,7 @@ impl Underline {
     }
 }
 
+/// Typed syntax wrapper for `Verbatim` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Verbatim {
     pub(crate) syntax: SyntaxNode,
@@ -180,6 +185,7 @@ impl Verbatim {
     }
 }
 
+/// Typed syntax wrapper for `Code` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Code {
     pub(crate) syntax: SyntaxNode,

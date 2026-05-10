@@ -16,7 +16,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn inline_src_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn inline_src_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             tag("src_"),

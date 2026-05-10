@@ -10,7 +10,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn citation_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn citation_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(citation_node_base, input)
 }
 

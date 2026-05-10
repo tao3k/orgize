@@ -129,7 +129,7 @@ impl<'a> Iterator for ObjectPositions<'a> {
 /// - Text markup (bold code strike verbatim underline italic) ('*', '~', '+', '=', '_', '/')
 /// - Entities ('\\')
 /// - Superscripts and Subscripts
-pub fn minimal_object_nodes(input: Input) -> Vec<GreenElement> {
+pub(crate) fn minimal_object_nodes(input: Input) -> Vec<GreenElement> {
     object_nodes(
         ObjectPositions::minimal,
         |i: Input, pre: Input| match &i.as_bytes()[0] {
@@ -167,7 +167,7 @@ pub fn minimal_object_nodes(input: Input) -> Vec<GreenElement> {
 /// - Subscript and Superscript
 /// - Cloze (if `syntax-org-fc` is enabled)
 /// - Citations
-pub fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
+pub(crate) fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
     object_nodes(
         ObjectPositions::standard,
         |i: Input, pre: Input| match &i.as_bytes()[0] {
@@ -211,7 +211,7 @@ pub fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
     )
 }
 
-pub fn link_description_object_nodes(input: Input) -> Vec<GreenElement> {
+pub(crate) fn link_description_object_nodes(input: Input) -> Vec<GreenElement> {
     object_nodes(
         ObjectPositions::link_description,
         |i: Input<'_>, pre: Input<'_>| match &i.as_bytes()[0] {

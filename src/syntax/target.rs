@@ -14,7 +14,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn target_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn target_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             l_angle2_token,

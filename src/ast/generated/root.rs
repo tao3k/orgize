@@ -8,6 +8,7 @@ use rowan::{
 
 use super::{affiliated_keyword, AffiliatedKeyword};
 
+/// Typed syntax wrapper for `Document` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Document {
     pub(crate) syntax: SyntaxNode,
@@ -57,6 +58,7 @@ impl Document {
         super::blank_lines(&self.syntax)
     }
 }
+/// Typed syntax wrapper for `Section` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Section {
     pub(crate) syntax: SyntaxNode,
@@ -95,6 +97,7 @@ impl Section {
     }
 }
 
+/// Typed syntax wrapper for `Paragraph` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Paragraph {
     pub(crate) syntax: SyntaxNode,
@@ -153,6 +156,7 @@ impl Paragraph {
     }
 }
 
+/// Typed syntax wrapper for `Headline` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Headline {
     pub(crate) syntax: SyntaxNode,
@@ -203,6 +207,7 @@ impl Headline {
     }
 }
 
+/// Typed syntax wrapper for `PropertyDrawer` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PropertyDrawer {
     pub(crate) syntax: SyntaxNode,
@@ -241,6 +246,7 @@ impl PropertyDrawer {
     }
 }
 
+/// Typed syntax wrapper for `NodeProperty` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NodeProperty {
     pub(crate) syntax: SyntaxNode,
@@ -276,6 +282,7 @@ impl NodeProperty {
     }
 }
 
+/// Typed syntax wrapper for `Planning` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Planning {
     pub(crate) syntax: SyntaxNode,

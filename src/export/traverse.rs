@@ -1,3 +1,5 @@
+//! Lossless syntax tree traversal traits and helpers.
+
 use crate::syntax::{SyntaxElement, SyntaxKind};
 use crate::syntax_ast::{
     BabelCall, Bold, CenterBlock, Citation, Clock, Code, Comment, CommentBlock, Cookie, Document,
@@ -24,6 +26,7 @@ enum TraversalControl {
 }
 
 #[derive(Default)]
+/// Mutable control state passed through syntax traversal callbacks.
 pub struct TraversalContext {
     control: TraversalControl,
 }
@@ -234,6 +237,7 @@ pub trait Traverser {
     }
 }
 
+/// Traverser adapter backed by a closure that receives events.
 pub struct FromFn<F: FnMut(Event)>(F);
 
 impl<F: FnMut(Event)> Traverser for FromFn<F> {
@@ -242,6 +246,7 @@ impl<F: FnMut(Event)> Traverser for FromFn<F> {
     }
 }
 
+/// Traverser adapter backed by a closure that can also control traversal.
 pub struct FromFnWithCtx<F: FnMut(Event, &mut TraversalContext)>(F);
 
 impl<F: FnMut(Event, &mut TraversalContext)> Traverser for FromFnWithCtx<F> {

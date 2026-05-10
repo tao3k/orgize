@@ -10,7 +10,7 @@ use super::{
     SyntaxKind,
 };
 
-pub fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             at2_token,

@@ -53,7 +53,7 @@ fn comment_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn comment_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn comment_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(comment_node_base, input)
 }
 

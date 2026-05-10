@@ -291,6 +291,7 @@ fn affiliated_keyword(node: &SyntaxNode, filter: impl Fn(&str) -> bool) -> Optio
 
 for (const node of nodes) {
   content += `
+/// Typed syntax wrapper for \`${node.struct}\` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ${node.struct} {
     pub(crate) syntax: SyntaxNode,
