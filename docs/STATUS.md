@@ -155,4 +155,6 @@ this repository.
 
 - [x] Reuse the document-local target index as the radio-link projection source.
 - [x] Avoid a second semantic pre-scan for radio target collection.
+- [x] Merge target indexing and preprocessing directive collection into one
+      semantic pre-scan.
 - [x] Add a dense target/radio-link projection benchmark.

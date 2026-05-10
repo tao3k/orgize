@@ -67,57 +67,52 @@ pub(super) enum TargetLookup {
     Missing { key: String },
 }
 
-pub(super) fn collect_target_index(
-    root: &SyntaxNode,
-    node_ann: impl Fn(&SyntaxNode) -> ParsedAnnotation,
-    token_ann: impl Fn(&SyntaxToken) -> ParsedAnnotation,
-) -> TargetIndex {
-    let mut index = TargetIndex::default();
-
-    for node in root.descendants() {
-        match node.kind() {
-            SyntaxKind::HEADLINE => {
-                collect_headline_targets(&node, &mut index, &node_ann, &token_ann)
-            }
-            SyntaxKind::TARGET => {
-                let value = strip_wrapping(&node.to_string(), "<<", ">>");
-                index.push(TargetDefinition {
-                    ann: node_ann(&node),
-                    kind: TargetKind::Target,
-                    key: value.clone(),
-                    value,
-                    raw: node.to_string(),
-                });
-            }
-            SyntaxKind::RADIO_TARGET => {
-                let value = strip_wrapping(&node.to_string(), "<<<", ">>>");
-                index.push(TargetDefinition {
-                    ann: node_ann(&node),
-                    kind: TargetKind::RadioTarget,
-                    key: value.clone(),
-                    value,
-                    raw: node.to_string(),
-                });
-            }
-            SyntaxKind::FN_DEF => {
-                if let Some(label) = footnote_definition_label(&node) {
-                    index.push(TargetDefinition {
-                        ann: node_ann(&node),
-                        kind: TargetKind::FootnoteDefinition,
-                        key: format!("fn:{label}"),
-                        value: label,
-                        raw: node.to_string(),
-                    });
-                }
-            }
-            SyntaxKind::SOURCE_BLOCK | SyntaxKind::EXAMPLE_BLOCK => {
-                collect_code_ref_targets(&node, &mut index, &node_ann);
-            }
-            _ => {}
+pub(super) fn collect_target_node(
+    node: &SyntaxNode,
+    index: &mut TargetIndex,
+    node_ann: &impl Fn(&SyntaxNode) -> ParsedAnnotation,
+    token_ann: &impl Fn(&SyntaxToken) -> ParsedAnnotation,
+) {
+    match node.kind() {
+        SyntaxKind::HEADLINE => collect_headline_targets(node, index, node_ann, token_ann),
+        SyntaxKind::TARGET => {
+            let raw = node.to_string();
+            let value = strip_wrapping(&raw, "<<", ">>");
+            index.push(TargetDefinition {
+                ann: node_ann(node),
+                kind: TargetKind::Target,
+                key: value.clone(),
+                value,
+                raw,
+            });
         }
+        SyntaxKind::RADIO_TARGET => {
+            let raw = node.to_string();
+            let value = strip_wrapping(&raw, "<<<", ">>>");
+            index.push(TargetDefinition {
+                ann: node_ann(node),
+                kind: TargetKind::RadioTarget,
+                key: value.clone(),
+                value,
+                raw,
+            });
+        }
+        SyntaxKind::FN_DEF => {
+            if let Some(label) = footnote_definition_label(node) {
+                index.push(TargetDefinition {
+                    ann: node_ann(node),
+                    kind: TargetKind::FootnoteDefinition,
+                    key: format!("fn:{label}"),
+                    value: label,
+                    raw: node.to_string(),
+                });
+            }
+        }
+        SyntaxKind::SOURCE_BLOCK | SyntaxKind::EXAMPLE_BLOCK => {
+            collect_code_ref_targets(node, index, node_ann);
+        }
+        _ => {}
     }
-
-    index
 }
 
 pub(super) fn is_strict_internal_link_path(path: &str) -> bool {

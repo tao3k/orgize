@@ -23,7 +23,7 @@ use super::headline_metadata::{
 use super::preprocessing::{include_directive, macro_definition, split_macro_args};
 use super::radio_links::{is_semantic_radio_link_candidate, next_char_boundary, next_radio_link};
 use super::targets::{
-    collect_target_index, is_strict_internal_link_path, TargetIndex, TargetLookup,
+    collect_target_node, is_strict_internal_link_path, TargetIndex, TargetLookup,
 };
 use super::{
     Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
@@ -72,13 +72,11 @@ impl<'a> Converter<'a> {
     }
 
     fn document(mut self, root: &SyntaxNode) -> ParsedAst {
-        let target_index = collect_target_index(
-            root,
-            |node| self.node_ann(node),
-            |token| self.token_ann(token),
-        );
+        let prescan = self.semantic_prescan(root);
+        let target_index = prescan.target_index;
         self.radio_targets = target_index.radio_targets();
         self.target_index = target_index;
+        self.diagnostics = prescan.diagnostics;
         let ann = self.node_ann(root);
         let mut children = Vec::new();
         let mut sections = Vec::new();
@@ -99,14 +97,13 @@ impl<'a> Converter<'a> {
                 _ => {}
             }
         }
-        let (includes, macro_definitions) = self.preprocessing_directives(root);
         let targets = self.target_index.definitions.clone();
 
         Document {
             ann,
             properties,
-            includes,
-            macro_definitions,
+            includes: prescan.includes,
+            macro_definitions: prescan.macro_definitions,
             targets,
             children,
             sections,
@@ -114,39 +111,44 @@ impl<'a> Converter<'a> {
         }
     }
 
-    fn preprocessing_directives(
-        &mut self,
-        root: &SyntaxNode,
-    ) -> (
-        Vec<IncludeDirective<ParsedAnnotation>>,
-        Vec<MacroDefinition<ParsedAnnotation>>,
-    ) {
-        let mut includes = Vec::new();
-        let mut macro_definitions = Vec::new();
+    fn semantic_prescan(&self, root: &SyntaxNode) -> SemanticPrescan {
+        let mut prescan = SemanticPrescan::default();
 
-        for node in root
-            .descendants()
-            .filter(|node| node.kind() == SyntaxKind::KEYWORD)
-        {
+        for node in root.descendants() {
+            collect_target_node(
+                &node,
+                &mut prescan.target_index,
+                &|node| self.node_ann(node),
+                &|token| self.token_ann(token),
+            );
+
+            if node.kind() != SyntaxKind::KEYWORD {
+                continue;
+            }
+
             let keyword = self.keyword(&node, false);
             if keyword.key.eq_ignore_ascii_case("INCLUDE") {
                 match include_directive(keyword) {
-                    Ok(include) => includes.push(include),
-                    Err((range, message)) => {
-                        self.diagnostic(range, DiagnosticKind::Conversion, message);
-                    }
+                    Ok(include) => prescan.includes.push(include),
+                    Err((range, message)) => prescan.diagnostics.push(Diagnostic {
+                        range,
+                        kind: DiagnosticKind::Conversion,
+                        message,
+                    }),
                 }
             } else if keyword.key.eq_ignore_ascii_case("MACRO") {
                 match macro_definition(keyword) {
-                    Ok(definition) => macro_definitions.push(definition),
-                    Err((range, message)) => {
-                        self.diagnostic(range, DiagnosticKind::Conversion, message);
-                    }
+                    Ok(definition) => prescan.macro_definitions.push(definition),
+                    Err((range, message)) => prescan.diagnostics.push(Diagnostic {
+                        range,
+                        kind: DiagnosticKind::Conversion,
+                        message,
+                    }),
                 }
             }
         }
 
-        (includes, macro_definitions)
+        prescan
     }
 
     fn section(&mut self, node: &SyntaxNode) -> Section<ParsedAnnotation> {
@@ -1235,6 +1237,14 @@ impl<'a> Converter<'a> {
             message,
         });
     }
+}
+
+#[derive(Default)]
+struct SemanticPrescan {
+    target_index: TargetIndex,
+    includes: Vec<IncludeDirective<ParsedAnnotation>>,
+    macro_definitions: Vec<MacroDefinition<ParsedAnnotation>>,
+    diagnostics: Vec<Diagnostic>,
 }
 
 struct LineIndex<'a> {
