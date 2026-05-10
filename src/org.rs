@@ -13,6 +13,7 @@ use crate::SyntaxElement;
 #[derive(Debug)]
 /// Parsed Org document with access to semantic and lossless syntax APIs.
 pub struct Org {
+    pub(crate) source: String,
     pub(crate) green: GreenNode,
     pub(crate) config: ParseConfig,
 }
@@ -33,10 +34,9 @@ impl Org {
 
     /// Returns the owned semantic document.
     pub fn document(&self) -> ParsedAst {
-        let source = self.green.to_string();
         ParsedAst::from_syntax_tree_with_config(
             &SyntaxNode::new_root(self.green.clone()),
-            &source,
+            &self.source,
             &self.config,
         )
     }
@@ -50,7 +50,7 @@ impl Org {
 
     /// Returns org-mode string
     pub fn to_org(&self) -> String {
-        self.green.to_string()
+        self.source.clone()
     }
 
     /// Convert org element tree to html-format using default html handler

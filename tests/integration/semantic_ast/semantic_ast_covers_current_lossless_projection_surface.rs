@@ -25,9 +25,13 @@ Next.
 quoted
 #+end_quote
 
-#+begin_src rust
+#+begin_src rust -n 20
 fn main() {}
 #+end_src
+
+#+begin_example +n 1
+example
+#+end_example
 
 #+begin_export html
 <b>x</b>

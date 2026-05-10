@@ -1,0 +1,19 @@
+#+title: Block line number benchmark
+
+#+begin_src rust -n 20 -r :exports code
+fn main() {
+    println!("numbered");
+}
+#+end_src
+
+#+begin_src rust +n 10
+fn continued() {
+    println!("continued");
+}
+#+end_src
+
+#+begin_example -n 3
+,* escaped headline
+,#+escaped keyword
+plain example line
+#+end_example

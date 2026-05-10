@@ -1,9 +1,7 @@
 use nom::{
-    branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
     character::complete::{alpha1, space0, space1},
-    combinator::{cond, opt},
-    sequence::separated_pair,
+    combinator::opt,
     IResult, Parser,
 };
 
@@ -92,6 +90,20 @@ fn block_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str)
         b.ws(ws2);
         b.nl(nl);
         Ok((input, (b.finish(SyntaxKind::BLOCK_BEGIN), name.as_str())))
+    } else if name.eq_ignore_ascii_case("EXAMPLE") {
+        let (input, switches) = opt((space1, source_block_switches)).parse(input)?;
+        let (input, ws1) = space0(input)?;
+        let (input, (data, ws2, nl)) = trim_line_end(input)?;
+
+        if let Some((ws, switches)) = switches {
+            b.ws(ws);
+            b.token(SyntaxKind::SRC_BLOCK_SWITCHES, switches);
+        }
+        b.ws(ws1);
+        b.text(data);
+        b.ws(ws2);
+        b.nl(nl);
+        Ok((input, (b.finish(SyntaxKind::BLOCK_BEGIN), name.as_str())))
     } else if name.eq_ignore_ascii_case("EXPORT") {
         let (input, ty) = opt((
             space1,
@@ -119,37 +131,94 @@ fn block_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str)
 }
 
 fn source_block_switches(input: Input) -> IResult<Input, Input, ()> {
-    let mut i = input;
+    let s = input.as_str();
+    let mut cursor = 0;
+    let mut parsed = false;
 
-    while !i.is_empty() {
-        match (
-            cond(i.len() != input.len(), space1::<Input, ()>),
-            alt((
-                separated_pair(
-                    alt((tag::<_, Input, ()>("-l"), tag("-n"))),
-                    space1::<Input, ()>,
-                    take_while1::<_, Input, ()>(|c: char| {
-                        c != ' ' && c != '\t' && c != '\n' && c != '\r'
-                    }),
-                ),
-                (tag::<_, Input, ()>("+"), alpha1),
-                (tag::<_, Input, ()>("-"), alpha1),
-            )),
-        )
-            .parse(i)
-        {
-            Ok((i_, _)) => i = i_,
-            _ => break,
+    loop {
+        let token_start = if parsed {
+            let spaces = leading_inline_space_len(&s[cursor..]);
+            if spaces == 0 {
+                break;
+            }
+            cursor + spaces
+        } else {
+            cursor
+        };
+
+        let Some(len) = source_block_switch_len(&s[token_start..]) else {
+            break;
+        };
+
+        parsed = true;
+        cursor = token_start + len;
+    }
+
+    if !parsed {
+        Err(nom::Err::Error(()))
+    } else {
+        Ok(input.take_split(cursor))
+    }
+}
+
+fn source_block_switch_len(s: &str) -> Option<usize> {
+    let first = s.as_bytes().first()?;
+    if !matches!(first, b'+' | b'-') {
+        return None;
+    }
+
+    let name_len = s[1..].bytes().take_while(u8::is_ascii_alphabetic).count();
+    if name_len == 0 {
+        return None;
+    }
+
+    let token_len = 1 + name_len;
+    let token = &s[..token_len];
+    let rest = &s[token_len..];
+
+    if matches!(token, "-n" | "+n") {
+        let spaces = leading_inline_space_len(rest);
+        let digits = rest[spaces..]
+            .bytes()
+            .take_while(u8::is_ascii_digit)
+            .count();
+        if digits > 0 {
+            return Some(token_len + spaces + digits);
         }
     }
 
-    let len = input.len() - i.len();
-
-    if len == 0 {
-        Err(nom::Err::Error(()))
-    } else {
-        Ok(input.take_split(len))
+    if token == "-l" {
+        let spaces = leading_inline_space_len(rest);
+        if spaces > 0 {
+            if let Some(argument) = switch_argument_len(&rest[spaces..]) {
+                return Some(token_len + spaces + argument);
+            }
+        }
     }
+
+    Some(token_len)
+}
+
+fn switch_argument_len(s: &str) -> Option<usize> {
+    if s.is_empty() || matches!(s.as_bytes()[0], b' ' | b'\t' | b'\n' | b'\r') {
+        return None;
+    }
+
+    if s.as_bytes()[0] == b'"' {
+        return s[1..].find('"').map(|index| index + 2);
+    }
+
+    Some(
+        s.bytes()
+            .take_while(|byte| !matches!(byte, b' ' | b'\t' | b'\n' | b'\r'))
+            .count(),
+    )
+}
+
+fn leading_inline_space_len(s: &str) -> usize {
+    s.bytes()
+        .take_while(|byte| matches!(byte, b' ' | b'\t'))
+        .count()
 }
 
 fn block_end_node<'a>(input: Input<'a>, name: &str) -> IResult<Input<'a>, GreenElement, ()> {
@@ -306,6 +375,53 @@ alert('Hello World!');
         NEW_LINE@94..95 "\n"
       BLANK_LINE@95..96 "\n"
       BLANK_LINE@96..100 "    "
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_src_block(
+r#"#+BEGIN_SRC rust +n 10 -r
+fn main() {}
+#+END_SRC"#
+        ).syntax,
+        @r###"
+    SOURCE_BLOCK@0..48
+      BLOCK_BEGIN@0..26
+        TEXT@0..8 "#+BEGIN_"
+        TEXT@8..11 "SRC"
+        WHITESPACE@11..12 " "
+        SRC_BLOCK_LANGUAGE@12..16 "rust"
+        WHITESPACE@16..17 " "
+        SRC_BLOCK_SWITCHES@17..25 "+n 10 -r"
+        NEW_LINE@25..26 "\n"
+      BLOCK_CONTENT@26..39
+        TEXT@26..39 "fn main() {}\n"
+      BLOCK_END@39..48
+        TEXT@39..45 "#+END_"
+        TEXT@45..48 "SRC"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_example_block(
+r#"#+BEGIN_EXAMPLE -n 3
+,* headline
+#+END_EXAMPLE"#
+        ).syntax,
+        @r###"
+    EXAMPLE_BLOCK@0..46
+      BLOCK_BEGIN@0..21
+        TEXT@0..8 "#+BEGIN_"
+        TEXT@8..15 "EXAMPLE"
+        WHITESPACE@15..16 " "
+        SRC_BLOCK_SWITCHES@16..20 "-n 3"
+        NEW_LINE@20..21 "\n"
+      BLOCK_CONTENT@21..33
+        COMMA@21..22 ","
+        TEXT@22..33 "* headline\n"
+      BLOCK_END@33..46
+        TEXT@33..39 "#+END_"
+        TEXT@39..46 "EXAMPLE"
     "###
     );
 

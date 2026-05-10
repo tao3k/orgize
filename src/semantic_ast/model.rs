@@ -242,9 +242,26 @@ pub struct Block<A = ()> {
     pub name: Option<String>,
     pub language: Option<String>,
     pub switches: Option<String>,
+    pub line_numbering: Option<BlockLineNumbering>,
     pub parameters: Option<String>,
     pub value: String,
     pub children: Vec<Element<A>>,
+}
+
+/// Line-numbering switch metadata for source and example blocks.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BlockLineNumbering {
+    pub mode: BlockLineNumberMode,
+    pub start: Option<usize>,
+}
+
+/// Org source/example block line-numbering mode.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BlockLineNumberMode {
+    /// Start a fresh numbered listing with `-n`.
+    New,
+    /// Continue from the previous numbered listing with `+n`.
+    Continued,
 }
 
 /// Semantic category for an Org block.

@@ -99,6 +99,26 @@ impl SourceBlock {
     }
 }
 
+impl ExampleBlock {
+    /// ```rust
+    /// use orgize::{Org, syntax_ast::ExampleBlock};
+    ///
+    /// let block = Org::parse("#+begin_example -n 3\n#+end_example").first_node::<ExampleBlock>().unwrap();
+    /// assert_eq!(block.switches().unwrap(), "-n 3");
+    ///
+    /// let block = Org::parse("#+begin_example\n#+end_example").first_node::<ExampleBlock>().unwrap();
+    /// assert!(block.switches().is_none());
+    /// ````
+    pub fn switches(&self) -> Option<Token> {
+        self.syntax
+            .children()
+            .find(|e| e.kind() == SyntaxKind::BLOCK_BEGIN)
+            .into_iter()
+            .flat_map(|n| n.children_with_tokens())
+            .find_map(filter_token(SyntaxKind::SRC_BLOCK_SWITCHES))
+    }
+}
+
 impl ExportBlock {
     /// ```rust
     /// use orgize::{Org, syntax_ast::ExportBlock};

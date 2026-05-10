@@ -27,7 +27,7 @@ Check out https://orgmode.org/worg/dev/org-syntax.html for more information.
 - [x] Babel Call
 - [x] Blocks
   - [x] Escape characters (`#`,`*`, etc)
-  - [ ] Line numbers
+  - [x] Line numbers
 - [X] Clock, Diary Sexp and Planning
 - [x] Comments
 - [x] Fixed Width Areas

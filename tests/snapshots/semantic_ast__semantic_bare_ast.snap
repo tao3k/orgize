@@ -260,6 +260,7 @@ Document {
                                 "rust",
                             ),
                             switches: None,
+                            line_numbering: None,
                             parameters: None,
                             value: "fn main() {}\n",
                             children: [],

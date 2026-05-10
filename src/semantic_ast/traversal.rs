@@ -936,6 +936,7 @@ impl<A> Block<A> {
             name: self.name.clone(),
             language: self.language.clone(),
             switches: self.switches.clone(),
+            line_numbering: self.line_numbering.clone(),
             parameters: self.parameters.clone(),
             value: self.value.clone(),
             children: self.children.iter().map(|x| x.map_ann_with(f)).collect(),
@@ -951,6 +952,7 @@ impl<A> Block<A> {
             name: self.name.clone(),
             language: self.language.clone(),
             switches: self.switches.clone(),
+            line_numbering: self.line_numbering.clone(),
             parameters: self.parameters.clone(),
             value: self.value.clone(),
             children: self

@@ -56,10 +56,12 @@ pub struct ParseConfig {
 impl ParseConfig {
     /// Parses input with current config
     pub fn parse(self, input: impl AsRef<str>) -> Org {
-        let input = (input.as_ref(), &self).into();
+        let source = input.as_ref().to_string();
+        let input = (source.as_str(), &self).into();
         let node = document_node(input).unwrap().1;
 
         Org {
+            source,
             config: self,
             green: node.into_node().unwrap(),
         }

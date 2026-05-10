@@ -14,12 +14,12 @@ use crate::{
 };
 
 use super::{
-    Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
-    Document, Drawer, Element, ElementData, FootnoteDef, Keyword, Link, LinkTarget, List, ListItem,
-    ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property,
-    RepeaterKind, Section, SourcePosition, Table, TableCell, TableRow, TimeUnit, Timestamp,
-    TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState,
-    WarningKind,
+    Block, BlockKind, BlockLineNumberMode, BlockLineNumbering, Checkbox, Citation, CiteReference,
+    Clock, Diagnostic, DiagnosticKind, Document, Drawer, Element, ElementData, FootnoteDef,
+    Keyword, Link, LinkTarget, List, ListItem, ListType, MarkupKind, Object, ObjectData,
+    ParsedAnnotation, ParsedAst, Planning, Property, RepeaterKind, Section, SourcePosition, Table,
+    TableCell, TableRow, TimeUnit, Timestamp, TimestampKind, TimestampMoment, TimestampRepeater,
+    TimestampWarning, TodoKeyword, TodoState, WarningKind,
 };
 
 impl ParsedAst {
@@ -393,6 +393,7 @@ impl<'a> Converter<'a> {
 
         let source = syntax_ast::SourceBlock::cast(node.clone());
         let export = syntax_ast::ExportBlock::cast(node.clone());
+        let switches = semantic_block_switches(node);
         let value = node
             .children()
             .find(|child| child.kind() == SyntaxKind::BLOCK_CONTENT)
@@ -410,9 +411,8 @@ impl<'a> Converter<'a> {
             language: source
                 .as_ref()
                 .and_then(|block| block.language().map(|x| x.to_string())),
-            switches: source
-                .as_ref()
-                .and_then(|block| block.switches().map(|x| x.to_string())),
+            line_numbering: switches.as_deref().and_then(parse_block_line_numbering),
+            switches,
             parameters: source
                 .as_ref()
                 .and_then(|block| block.parameters().map(|x| x.to_string())),
@@ -986,6 +986,36 @@ fn semantic_block_name(node: &SyntaxNode) -> Option<String> {
         SyntaxKind::SPECIAL_BLOCK => block_name(node),
         _ => None,
     }
+}
+
+fn semantic_block_switches(node: &SyntaxNode) -> Option<String> {
+    node.children()
+        .find(|child| child.kind() == SyntaxKind::BLOCK_BEGIN)
+        .into_iter()
+        .flat_map(|begin| begin.children_with_tokens())
+        .filter_map(NodeOrToken::into_token)
+        .find(|token| token.kind() == SyntaxKind::SRC_BLOCK_SWITCHES)
+        .map(|token| token.text().to_string())
+}
+
+fn parse_block_line_numbering(switches: &str) -> Option<BlockLineNumbering> {
+    let mut tokens = switches.split_whitespace().peekable();
+    let mut numbering = None;
+
+    while let Some(token) = tokens.next() {
+        let mode = match token {
+            "-n" => BlockLineNumberMode::New,
+            "+n" => BlockLineNumberMode::Continued,
+            _ => continue,
+        };
+        let start = tokens.peek().and_then(|value| value.parse::<usize>().ok());
+        if start.is_some() {
+            tokens.next();
+        }
+        numbering = Some(BlockLineNumbering { mode, start });
+    }
+
+    numbering
 }
 
 #[derive(Default)]

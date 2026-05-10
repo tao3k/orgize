@@ -114,6 +114,12 @@ impl Org {
     /// ```
     pub fn replace_range(&mut self, range: TextRange, replace_with: impl AsRef<str>) {
         let replace_with = replace_with.as_ref();
+        let mut source = self.source.clone();
+        source.replace_range(
+            usize::from(range.start())..usize::from(range.end()),
+            replace_with,
+        );
+
         match (
             RangeShape::new(self.syntax_document().syntax, range),
             ReplaceWithShape::new(replace_with),
@@ -147,6 +153,9 @@ impl Org {
 
             _ => self.full_parse(range, replace_with),
         }
+
+        self.source = source;
+        debug_assert_eq!(self.source, self.green.to_string());
     }
 
     fn full_parse(&mut self, range: TextRange, replace_with: &str) {
@@ -156,7 +165,7 @@ impl Org {
         } else {
             let start: usize = range.start().into();
             let end: usize = range.end().into();
-            let mut text = self.green.to_string();
+            let mut text = self.source.clone();
             text.replace_range(start..end, replace_with);
             let input = (text.as_ref(), &self.config).into();
             self.green = document_node(input).unwrap().1.into_node().unwrap();
@@ -294,8 +303,9 @@ fn replace() {
 
             debug_assert_eq!(
                 format!("{:#?}", org.syntax_document().syntax),
-                format!("{:#?}", Org::parse(output).syntax_document().syntax),
+                format!("{:#?}", Org::parse(&output).syntax_document().syntax),
             );
+            assert_eq!(org.to_org(), output);
         };
     }
 
