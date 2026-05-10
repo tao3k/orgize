@@ -1,0 +1,14 @@
+#+title: Quote-heavy semantic projection benchmark
+
+This fixture keeps quote punctuation on the plain-text path while still
+exercising object parsing inside punctuation-heavy prose.
+
+"Plain quoted text" should remain text, while "*bold inside quotes*" and
+'/italic inside single quotes/' still project as markup where Org syntax
+allows quote punctuation as text-markup boundaries.
+
+"A quoted link [[https://example.com][example]]" keeps the quote marks as text
+around the parsed link object.
+
+Paragraphs with many quote marks are common in notes: "alpha", "beta",
+"gamma", "delta", and "epsilon" should not allocate dedicated quote nodes.

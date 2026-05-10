@@ -49,6 +49,10 @@ const INPUT: &[(&str, &str)] = &[
         "internal-links.org",
         include_str!("./fixtures/internal-links.org"),
     ),
+    (
+        "quote-heavy.org",
+        include_str!("./fixtures/quote-heavy.org"),
+    ),
 ];
 
 pub fn bench_parse(c: &mut Criterion) {

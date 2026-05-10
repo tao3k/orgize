@@ -130,7 +130,7 @@ fn validate_marker(pos: usize, text: Input) -> bool {
     } else if let Some(post) = text.as_bytes().get(pos + 1) {
         [
             b' ', b'\t', b'\r', b'\n', b'-', b'.', b',', b';', b':', b'!', b'?', b'\'', b')', b'}',
-            b'[',
+            b'[', b'"', b'\\',
         ]
         .contains(post)
     } else {
@@ -144,13 +144,17 @@ pub(crate) fn verify_pre(input: &str) -> bool {
     }
     matches!(
         input.as_bytes()[input.len() - 1],
-        b'\t' | b' ' | b'-' | b'(' | b'{' | b'\\' | b'"' | b'\r' | b'\n'
+        b'\t' | b' ' | b'-' | b'(' | b'{' | b'\\' | b'\'' | b'"' | b'\r' | b'\n'
     )
 }
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::Bold, tests::to_ast, ParseConfig};
+    use crate::{
+        syntax_ast::{Bold, Italic},
+        tests::to_ast,
+        Org, ParseConfig,
+    };
 
     let to_bold = to_ast::<Bold>(bold_node);
 
@@ -191,4 +195,7 @@ fn parse() {
     assert!(bold_node(("* bold*", config).into()).is_err());
     assert!(bold_node(("*b\nol\nd*", config).into()).is_err());
     assert!(italic_node(("*bold*", config).into()).is_err());
+
+    assert!(Org::parse(r#""*quoted*""#).first_node::<Bold>().is_some());
+    assert!(Org::parse("'/quoted/'").first_node::<Italic>().is_some());
 }

@@ -68,6 +68,8 @@ into semantic headline metadata for that document.
 Inlinetasks use `ParseConfig::inlinetask_min_level`, defaulting to Org's level
 15 convention, and project as semantic elements with parsed title objects,
 planning, properties, optional `END` markers, and body elements.
+Quote punctuation is not modeled as a semantic object; it remains plain text,
+while normal objects inside quote punctuation still project independently.
 Preprocessing directives stay explicit in parser v2. `#+INCLUDE:` and
 `#+MACRO:` remain normal keyword elements in the lossless tree, and the
 semantic document also collects include directives and macro definitions into

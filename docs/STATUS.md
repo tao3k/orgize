@@ -106,10 +106,10 @@ this repository.
   - [x] Detect column property rows such as `<l>`, `<c>`, and `<r>`.
   - [x] Expose semantic column alignment metadata while preserving current
         row/cell text.
-- [ ] Quoted objects
-  - [ ] Decide whether single/double quoted objects belong in core Org syntax
-        coverage or remain exporter-level typography.
-  - [ ] If modeled, add semantic `Quote` object with nested children.
+- [x] Quoted objects
+  - [x] Keep single/double quote punctuation as plain text because core Org
+        syntax does not define a dedicated quote object.
+  - [x] Verify objects inside quote punctuation continue to project normally.
 
 ### Pre/Post Processing Gaps
 
