@@ -84,6 +84,26 @@ pub struct MacroDefinition<A = ()> {
     pub raw_value: String,
 }
 
+/// Opt-in expansion result for one semantic macro call.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MacroExpansion<A = ()> {
+    pub ann: A,
+    pub name: String,
+    pub arguments: Vec<String>,
+    pub template: Option<String>,
+    pub value: Option<String>,
+    pub status: MacroExpansionStatus,
+}
+
+/// Expansion status for a semantic macro call.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MacroExpansionStatus {
+    /// A matching `#+MACRO:` definition was found.
+    Expanded,
+    /// The call has no matching definition in this document.
+    MissingDefinition,
+}
+
 /// Document-local target that can satisfy an internal link.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TargetDefinition<A = ()> {

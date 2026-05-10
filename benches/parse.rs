@@ -90,5 +90,26 @@ pub fn bench_to_html(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_parse, bench_document, bench_to_html);
+pub fn bench_macro_expansions(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::macro_expansions");
+
+    for &(id, org) in INPUT {
+        let document = Org::parse(org).document();
+
+        group.throughput(Throughput::Bytes(org.len() as u64));
+        group.bench_with_input(id, &document, |b, i| {
+            b.iter(|| black_box(i.macro_expansions()))
+        });
+    }
+
+    group.finish();
+}
+
+criterion_group!(
+    benches,
+    bench_parse,
+    bench_document,
+    bench_to_html,
+    bench_macro_expansions
+);
 criterion_main!(benches);

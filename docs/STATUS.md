@@ -121,10 +121,10 @@ this repository.
   - [x] Parse `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:` declarations.
   - [x] Apply declarations before headline semantic projection, or expose a
         two-pass projection API.
-- [ ] Macro definitions and substitution
+- [x] Macro definitions and substitution
   - [x] Collect `#+MACRO:` definitions.
   - [x] Keep macro calls parsed even when substitution is disabled.
-  - [ ] Add opt-in expansion semantics without changing the lossless tree.
+  - [x] Add opt-in expansion semantics without changing the lossless tree.
 - [x] Internal link resolution
   - [x] Build a document-local target table for headlines, custom IDs, targets,
         footnotes, radio targets, and coderefs.

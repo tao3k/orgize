@@ -1,6 +1,6 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{AstRef, ElementData, ObjectData},
+    ast::{AstRef, ElementData, MacroExpansionStatus, ObjectData},
     Org,
 };
 
@@ -65,6 +65,46 @@ fn semantic_ast_collects_preprocessing_directives_without_expansion() {
     let bare = doc.to_bare();
     assert_eq!(bare.includes[0].ann, ());
     assert_eq!(bare.macro_definitions[0].ann, ());
+}
+
+#[test]
+fn semantic_ast_expands_macros_as_an_opt_in_side_table() {
+    let doc = Org::parse(
+        r#"#+MACRO: issue [[https://tracker.example/$1][$2]]
+#+MACRO: all $0 $$ $3
+{{{issue(42\,A, Fix)}}} {{{all(one, two)}}} {{{missing(x)}}}
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+
+    let expansions = doc.macro_expansions();
+    assert_eq!(expansions.len(), 3);
+
+    assert_eq!(expansions[0].name, "issue");
+    assert_eq!(expansions[0].arguments, ["42,A", "Fix"]);
+    assert_eq!(
+        expansions[0].template.as_deref(),
+        Some("[[https://tracker.example/$1][$2]]")
+    );
+    assert_eq!(
+        expansions[0].value.as_deref(),
+        Some("[[https://tracker.example/42,A][Fix]]")
+    );
+    assert_eq!(expansions[0].status, MacroExpansionStatus::Expanded);
+
+    assert_eq!(expansions[1].name, "all");
+    assert_eq!(expansions[1].value.as_deref(), Some("one, two $ "));
+    assert_eq!(expansions[1].status, MacroExpansionStatus::Expanded);
+
+    assert_eq!(expansions[2].name, "missing");
+    assert_eq!(expansions[2].value, None);
+    assert_eq!(expansions[2].template, None);
+    assert_eq!(
+        expansions[2].status,
+        MacroExpansionStatus::MissingDefinition
+    );
 }
 
 #[test]

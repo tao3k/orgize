@@ -65,7 +65,8 @@ Preprocessing directives stay explicit in parser v2. `#+INCLUDE:` and
 `#+MACRO:` remain normal keyword elements in the lossless tree, and the
 semantic document also collects include directives and macro definitions into
 document-level side tables. Macro calls are parsed as objects without expanding
-their templates.
+their templates by default. Use `document.macro_expansions()` for opt-in macro
+substitution side tables when an exporter or indexer wants expanded macro text.
 Document-local link targets are collected into `document.targets`, covering
 headlines, `CUSTOM_ID` properties, explicit targets, radio targets, footnote
 definitions, and source/example block coderefs. Link projection resolves these
