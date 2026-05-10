@@ -2,8 +2,8 @@
 
 use super::{
     AstMut, AstRef, BareAst, Block, Citation, CiteReference, Document, Drawer, Element,
-    ElementData, FootnoteDef, Keyword, Link, List, ListItem, Object, ObjectData, Property, Section,
-    Table, TableCell, TableRow,
+    ElementData, FootnoteDef, IncludeDirective, Keyword, Link, List, ListItem, MacroDefinition,
+    Object, ObjectData, Property, Section, Table, TableCell, TableRow,
 };
 
 impl<A> Document<A> {
@@ -53,6 +53,12 @@ impl<A> Document<A> {
         Document {
             ann: f(&self.ann),
             properties: self.properties.iter().map(|x| x.map_ann_with(f)).collect(),
+            includes: self.includes.iter().map(|x| x.map_ann_with(f)).collect(),
+            macro_definitions: self
+                .macro_definitions
+                .iter()
+                .map(|x| x.map_ann_with(f))
+                .collect(),
             children: self.children.iter().map(|x| x.map_ann_with(f)).collect(),
             sections: self.sections.iter().map(|x| x.map_ann_with(f)).collect(),
             diagnostics: self.diagnostics.clone(),
@@ -67,6 +73,16 @@ impl<A> Document<A> {
             ann: f(&self.ann)?,
             properties: self
                 .properties
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            includes: self
+                .includes
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            macro_definitions: self
+                .macro_definitions
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
@@ -92,6 +108,12 @@ impl<A> Document<A> {
         for property in &self.properties {
             property.visit_with(f);
         }
+        for include in &self.includes {
+            include.visit_with(f);
+        }
+        for definition in &self.macro_definitions {
+            definition.visit_with(f);
+        }
         for child in &self.children {
             child.visit_with(f);
         }
@@ -107,6 +129,12 @@ impl<A> Document<A> {
         f(AstMut::Document(self));
         for property in &mut self.properties {
             property.visit_mut_with(f);
+        }
+        for include in &mut self.includes {
+            include.visit_mut_with(f);
+        }
+        for definition in &mut self.macro_definitions {
+            definition.visit_mut_with(f);
         }
         for child in &mut self.children {
             child.visit_mut_with(f);
@@ -124,6 +152,12 @@ impl<A> Document<A> {
         for property in &self.properties {
             acc = property.fold_with(acc, f);
         }
+        for include in &self.includes {
+            acc = include.fold_with(acc, f);
+        }
+        for definition in &self.macro_definitions {
+            acc = definition.fold_with(acc, f);
+        }
         for child in &self.children {
             acc = child.fold_with(acc, f);
         }
@@ -131,6 +165,104 @@ impl<A> Document<A> {
             acc = section.fold_with(acc, f);
         }
         acc
+    }
+}
+
+impl<A> IncludeDirective<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> IncludeDirective<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        IncludeDirective {
+            ann: f(&self.ann),
+            path: self.path.clone(),
+            raw_path: self.raw_path.clone(),
+            arguments: self.arguments.clone(),
+            options: self.options.clone(),
+            raw_value: self.raw_value.clone(),
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<IncludeDirective<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(IncludeDirective {
+            ann: f(&self.ann)?,
+            path: self.path.clone(),
+            raw_path: self.raw_path.clone(),
+            arguments: self.arguments.clone(),
+            options: self.options.clone(),
+            raw_value: self.raw_value.clone(),
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::IncludeDirective(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::IncludeDirective(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::IncludeDirective(self))
+    }
+}
+
+impl<A> MacroDefinition<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> MacroDefinition<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        MacroDefinition {
+            ann: f(&self.ann),
+            name: self.name.clone(),
+            template: self.template.clone(),
+            raw_value: self.raw_value.clone(),
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<MacroDefinition<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(MacroDefinition {
+            ann: f(&self.ann)?,
+            name: self.name.clone(),
+            template: self.template.clone(),
+            raw_value: self.raw_value.clone(),
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::MacroDefinition(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::MacroDefinition(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::MacroDefinition(self))
     }
 }
 

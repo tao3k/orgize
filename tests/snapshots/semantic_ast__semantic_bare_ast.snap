@@ -5,6 +5,8 @@ expression: doc.to_bare()
 Document {
     ann: (),
     properties: [],
+    includes: [],
+    macro_definitions: [],
     children: [
         Element {
             ann: (),

@@ -41,6 +41,10 @@ const INPUT: &[(&str, &str)] = &[
         "file-todo-keywords.org",
         include_str!("./fixtures/file-todo-keywords.org"),
     ),
+    (
+        "preprocessing-directives.org",
+        include_str!("./fixtures/preprocessing-directives.org"),
+    ),
 ];
 
 pub fn bench_parse(c: &mut Criterion) {

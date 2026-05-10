@@ -113,17 +113,17 @@ this repository.
 
 ### Pre/Post Processing Gaps
 
-- [ ] Include keyword expansion
-  - [ ] Parse `#+INCLUDE:` as a normal keyword without expansion.
-  - [ ] Add an explicit expansion hook or side-table design before resolving
+- [x] Include keyword expansion
+  - [x] Parse `#+INCLUDE:` as a normal keyword without expansion.
+  - [x] Add an explicit expansion hook or side-table design before resolving
         external files.
 - [x] Per-file TODO keyword declarations
   - [x] Parse `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:` declarations.
   - [x] Apply declarations before headline semantic projection, or expose a
         two-pass projection API.
 - [ ] Macro definitions and substitution
-  - [ ] Collect `#+MACRO:` definitions.
-  - [ ] Keep macro calls parsed even when substitution is disabled.
+  - [x] Collect `#+MACRO:` definitions.
+  - [x] Keep macro calls parsed even when substitution is disabled.
   - [ ] Add opt-in expansion semantics without changing the lossless tree.
 - [ ] Internal link resolution
   - [ ] Build a document-local target table for headlines, custom IDs, targets,

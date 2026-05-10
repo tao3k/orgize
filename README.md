@@ -61,6 +61,11 @@ property cookies while preserving the original row and cell contents.
 Per-file TODO declarations from `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`
 are applied before parsing headlines, so custom TODO/DONE states are projected
 into semantic headline metadata for that document.
+Preprocessing directives stay explicit in parser v2. `#+INCLUDE:` and
+`#+MACRO:` remain normal keyword elements in the lossless tree, and the
+semantic document also collects include directives and macro definitions into
+document-level side tables. Macro calls are parsed as objects without expanding
+their templates.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 

@@ -48,9 +48,39 @@ pub enum DiagnosticKind {
 pub struct Document<A = ()> {
     pub ann: A,
     pub properties: Vec<Property<A>>,
+    pub includes: Vec<IncludeDirective<A>>,
+    pub macro_definitions: Vec<MacroDefinition<A>>,
     pub children: Vec<Element<A>>,
     pub sections: Vec<Section<A>>,
     pub diagnostics: Vec<Diagnostic>,
+}
+
+/// `#+INCLUDE:` directive collected for explicit preprocessing.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IncludeDirective<A = ()> {
+    pub ann: A,
+    pub path: String,
+    pub raw_path: String,
+    pub arguments: Vec<String>,
+    pub options: Vec<IncludeOption>,
+    pub raw_value: String,
+}
+
+/// Keyword-style option attached to an `#+INCLUDE:` directive.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IncludeOption {
+    pub key: String,
+    pub value: Option<String>,
+    pub raw: String,
+}
+
+/// `#+MACRO:` definition collected without expanding macro calls.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MacroDefinition<A = ()> {
+    pub ann: A,
+    pub name: String,
+    pub template: String,
+    pub raw_value: String,
 }
 
 /// Semantic section rooted by a headline.
@@ -556,6 +586,10 @@ pub struct CiteReference<A = ()> {
 pub enum AstRef<'a, A> {
     /// Document node.
     Document(&'a Document<A>),
+    /// Include preprocessing directive.
+    IncludeDirective(&'a IncludeDirective<A>),
+    /// Macro definition preprocessing directive.
+    MacroDefinition(&'a MacroDefinition<A>),
     /// Section node.
     Section(&'a Section<A>),
     /// Property node.
@@ -578,6 +612,10 @@ pub enum AstRef<'a, A> {
 pub enum AstMut<'a, A> {
     /// Document node.
     Document(&'a mut Document<A>),
+    /// Include preprocessing directive.
+    IncludeDirective(&'a mut IncludeDirective<A>),
+    /// Macro definition preprocessing directive.
+    MacroDefinition(&'a mut MacroDefinition<A>),
     /// Section node.
     Section(&'a mut Section<A>),
     /// Property node.

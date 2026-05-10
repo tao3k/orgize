@@ -1,0 +1,10 @@
+#+TITLE: Preprocessing directives
+#+INCLUDE: "./chapter one.org" src org :lines "1-20" :minlevel 2
+#+MACRO: issue [[https://tracker.example/$1][$2]]
+
+#+begin_example
+#+INCLUDE: ignored.org
+#+MACRO: ignored no
+#+end_example
+
+{{{issue(42\,A, Fix)}}}
