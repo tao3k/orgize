@@ -14,7 +14,7 @@ use super::{
     input::Input,
     latex_fragment::latex_fragment_node,
     line_break::line_break_node,
-    link::link_node,
+    link::{angle_link_node, link_node},
     macros::macros_node,
     radio_target::radio_target_node,
     snippet::snippet_node,
@@ -37,7 +37,7 @@ impl ObjectPositions<'_> {
             finder: jetscii::bytes!(
                 b'*', b'+', b'/', b'_', b'=', b'~', /* text markup */
                 b'@', /* snippet */
-                b'<', /* timestamp, target, radio target */
+                b'<', /* timestamp, target, radio target, angle link */
                 b'[', /* link, cookie, fn_ref, timestamp */
                 b'c', /* inline call */
                 b's', /* inline source */
@@ -189,6 +189,7 @@ pub(crate) fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
             }
             b'<' => radio_target_node(i)
                 .or_else(|_| target_node(i))
+                .or_else(|_| angle_link_node(i))
                 .or_else(|_| timestamp_diary_node(i))
                 .or_else(|_| timestamp_active_node(i)),
             b'[' => cookie_node(i)

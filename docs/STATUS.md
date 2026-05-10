@@ -47,8 +47,8 @@ Check out https://orgmode.org/worg/dev/org-syntax.html for more information.
 - [x] Line Breaks
 - [x] Links
   - [x] Regular link
+  - [x] Angle link
   - [ ] Plain link
-  - [ ] Angle link
   - [ ] Radio link
 - [x] Macros
 - [x] Targets and Radio Targets

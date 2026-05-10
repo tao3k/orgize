@@ -17,6 +17,11 @@ fn link() {
         Org::parse("Visit[[http://example.com][link1]]or[[http://example.com][link1]].").to_html(),
         @r###"<main><section><p>Visit<a href="http://example.com">link1</a>or<a href="http://example.com">link1</a>.</p></section></main>"###
     );
+
+    insta::assert_snapshot!(
+        Org::parse("Visit <https://example.com/path>.").to_html(),
+        @r###"<main><section><p>Visit <a href="https://example.com/path">https://example.com/path</a>.</p></section></main>"###
+    );
 }
 
 #[test]
