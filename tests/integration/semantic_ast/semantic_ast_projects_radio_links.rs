@@ -164,3 +164,41 @@ fn semantic_ast_prefers_longest_radio_target_at_same_position() {
         LinkTarget::Internal(target) if target == "Alpha"
     ));
 }
+
+#[test]
+fn semantic_ast_projects_multiple_radio_links_across_object_run_slices() {
+    let doc = ParseConfig {
+        radio_link_projection: RadioLinkProjection::Semantic,
+        ..Default::default()
+    }
+    .parse("<<<*One*>>> <<<~Two~>>>\nBefore *One* middle ~Two~ after")
+    .document();
+
+    assert_clean_projection(&doc);
+    let links = doc
+        .children
+        .iter()
+        .filter_map(|element| match &element.data {
+            ElementData::Paragraph(objects) => Some(objects),
+            _ => None,
+        })
+        .flatten()
+        .filter_map(|object| match &object.data {
+            ObjectData::Link(link) => Some(link),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(links.len(), 2);
+    assert!(matches!(
+        &links[0].description[0].data,
+        ObjectData::Markup {
+            kind: MarkupKind::Bold,
+            ..
+        }
+    ));
+    assert!(matches!(
+        &links[1].description[0].data,
+        ObjectData::Code(value) if value == "Two"
+    ));
+}

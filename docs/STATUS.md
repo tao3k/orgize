@@ -159,4 +159,6 @@ this repository.
       semantic pre-scan.
 - [x] Scan each radio-link object run once and prefer the longest target at a
       shared start offset.
+- [x] Precompute object-run spans so radio-link prefix/description/suffix
+      slicing does not rescan the whole run from the first object.
 - [x] Add a dense target/radio-link projection benchmark.

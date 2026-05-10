@@ -684,6 +684,7 @@ impl<'a> Converter<'a> {
             .iter()
             .map(|object| object.ann.raw.as_str())
             .collect::<String>();
+        let spans = object_run_spans(&objects);
         let mut projected = Vec::new();
         let mut emitted_until = 0;
         let mut search_cursor = 0;
@@ -696,12 +697,14 @@ impl<'a> Converter<'a> {
                 continue;
             }
 
-            let Some(description) = self.slice_radio_link_objects(&objects, base, start, end)
+            let Some(description) =
+                self.slice_radio_link_objects(&objects, &spans, base, start, end)
             else {
                 search_cursor = next_char_boundary(&raw, start);
                 continue;
             };
-            let Some(prefix) = self.slice_radio_link_objects(&objects, base, emitted_until, start)
+            let Some(prefix) =
+                self.slice_radio_link_objects(&objects, &spans, base, emitted_until, start)
             else {
                 return objects;
             };
@@ -731,7 +734,8 @@ impl<'a> Converter<'a> {
             return objects;
         }
 
-        let Some(suffix) = self.slice_radio_link_objects(&objects, base, emitted_until, raw.len())
+        let Some(suffix) =
+            self.slice_radio_link_objects(&objects, &spans, base, emitted_until, raw.len())
         else {
             return objects;
         };
@@ -742,6 +746,7 @@ impl<'a> Converter<'a> {
     fn slice_radio_link_objects(
         &self,
         objects: &[Object<ParsedAnnotation>],
+        spans: &[ObjectRunSpan],
         base: usize,
         start: usize,
         end: usize,
@@ -751,20 +756,16 @@ impl<'a> Converter<'a> {
         }
 
         let mut sliced = Vec::new();
-        let mut cursor = 0;
+        let first = spans.partition_point(|span| span.end <= start);
 
-        for object in objects {
-            let object_start = cursor;
-            let object_end = object_start + object.ann.raw.len();
-            cursor = object_end;
-
-            if object_end <= start || object_start >= end {
-                continue;
+        for (span, object) in spans[first..].iter().zip(&objects[first..]) {
+            if span.start >= end {
+                break;
             }
 
-            let slice_start = start.max(object_start);
-            let slice_end = end.min(object_end);
-            if slice_start == object_start && slice_end == object_end {
+            let slice_start = start.max(span.start);
+            let slice_end = end.min(span.end);
+            if slice_start == span.start && slice_end == span.end {
                 sliced.push(object.clone());
                 continue;
             }
@@ -772,8 +773,8 @@ impl<'a> Converter<'a> {
             let ObjectData::Plain(value) = &object.data else {
                 return None;
             };
-            let relative_start = slice_start - object_start;
-            let relative_end = slice_end - object_start;
+            let relative_start = slice_start - span.start;
+            let relative_end = slice_end - span.start;
             let raw = value.get(relative_start..relative_end)?.to_string();
             sliced.push(Object {
                 ann: self.ann(text_range(base + slice_start, base + slice_end)),
@@ -1237,6 +1238,25 @@ impl<'a> Converter<'a> {
             message,
         });
     }
+}
+
+#[derive(Clone, Copy)]
+struct ObjectRunSpan {
+    start: usize,
+    end: usize,
+}
+
+fn object_run_spans(objects: &[Object<ParsedAnnotation>]) -> Vec<ObjectRunSpan> {
+    let mut spans = Vec::with_capacity(objects.len());
+    let mut cursor = 0;
+
+    for object in objects {
+        let start = cursor;
+        cursor += object.ann.raw.len();
+        spans.push(ObjectRunSpan { start, end: cursor });
+    }
+
+    spans
 }
 
 #[derive(Default)]
