@@ -197,3 +197,6 @@ Semantic AST traversal is exposed through Rust-style APIs on `Document<A>`:
 `visit`, `visit_mut`, `fold`, `map_ann`, and `try_map_ann`. The semantic layer is
 projected from the rowan substrate; it does not replace rowan as the lossless
 parser representation.
+
+See [docs/PARSER_V2_RELEASE_READINESS.md](docs/PARSER_V2_RELEASE_READINESS.md)
+for the parser v2 closeout checklist, intentional gaps, and validation gate.

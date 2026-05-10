@@ -143,3 +143,10 @@ this repository.
 - [x] Cover semantic traversal shapes for exporter/indexer consumers.
 - [x] Verify `visit`, `visit_mut`, and `fold` reach all annotation-bearing
       semantic node categories, including preprocessing and metadata nodes.
+
+### M5 PR Closure And Release Readiness
+
+- [x] Document breaking parser v2 API boundaries.
+- [x] Document intentional gaps and deferred exporter work.
+- [x] Document the full local validation gate.
+- [x] Document the no-Haskell-dependency research boundary.
