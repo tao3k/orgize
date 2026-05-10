@@ -1,7 +1,8 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{ElementData, LinkTarget, ObjectData},
-    Org,
+    ast::{ElementData, LinkTarget, MarkupKind, ObjectData},
+    config::RadioLinkProjection,
+    Org, ParseConfig,
 };
 
 #[test]
@@ -50,4 +51,52 @@ fn semantic_ast_projects_radio_links_from_plain_text() {
         })
         .collect::<String>();
     assert!(plain.contains("Radio Targets"));
+}
+
+#[test]
+fn semantic_ast_projects_opt_in_radio_links_across_parsed_objects() {
+    let doc = ParseConfig {
+        radio_link_projection: RadioLinkProjection::Semantic,
+        ..Default::default()
+    }
+    .parse(r#"<<<*Radio*>>> See *Radio* and \alpha, not Radio."#)
+    .document();
+
+    assert_clean_projection(&doc);
+    let objects = match &doc.children[0].data {
+        ElementData::Paragraph(objects) => objects,
+        other => panic!("expected paragraph, got {other:#?}"),
+    };
+
+    let links = objects
+        .iter()
+        .filter_map(|object| match &object.data {
+            ObjectData::Link(link) => Some((object.ann.raw.as_str(), link)),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(links.len(), 1);
+    let (raw, link) = links[0];
+    assert_eq!(raw, "*Radio*");
+    assert_eq!(link.path, "*Radio*");
+    assert_eq!(link.raw_description, "*Radio*");
+    assert!(matches!(
+        &link.target,
+        LinkTarget::Internal(target) if target == "*Radio*"
+    ));
+    assert!(matches!(
+        &link.description[0].data,
+        ObjectData::Markup {
+            kind: MarkupKind::Bold,
+            ..
+        }
+    ));
+
+    assert!(objects.iter().any(|object| {
+        matches!(
+            &object.data,
+            ObjectData::Plain(value) if value.contains("not Radio")
+        )
+    }));
 }

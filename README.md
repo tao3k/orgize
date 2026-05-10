@@ -51,6 +51,10 @@ Semantic timestamps include parsed metadata for date/time start, range end,
 repeater, and warning cookies, while retaining the original raw timestamp text.
 Semantic links include owned path/target data, parsed description objects,
 caption metadata, and image-link detection.
+Radio links keep the lightweight plain-text projection by default. Set
+`radio_link_projection: RadioLinkProjection::Semantic` in `ParseConfig` to run
+the opt-in semantic pass that can link parsed object spans such as
+`<<<*Radio*>>>` against `*Radio*`.
 Semantic source/example blocks include parsed line-numbering metadata for
 `-n` and `+n` switches, optional starting offsets, preserve-indentation
 metadata for `-i`, code-reference cookies from the default `(ref:name)` format

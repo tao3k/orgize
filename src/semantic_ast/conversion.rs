@@ -4,7 +4,7 @@ use rowan::ast::AstNode;
 use rowan::{NodeOrToken, TextRange, TextSize};
 
 use crate::{
-    config::ParseConfig,
+    config::{ParseConfig, RadioLinkProjection},
     syntax::{
         combinator::{line_starts_iter, node},
         object::standard_object_nodes,
@@ -572,6 +572,16 @@ impl<'a> Converter<'a> {
             return objects;
         }
 
+        match self.config.radio_link_projection {
+            RadioLinkProjection::PlainText => self.project_plain_text_radio_links(objects),
+            RadioLinkProjection::Semantic => self.project_semantic_radio_links(objects),
+        }
+    }
+
+    fn project_plain_text_radio_links(
+        &self,
+        objects: Vec<Object<ParsedAnnotation>>,
+    ) -> Vec<Object<ParsedAnnotation>> {
         objects
             .into_iter()
             .flat_map(|object| match object.data {
@@ -579,6 +589,145 @@ impl<'a> Converter<'a> {
                 _ => vec![object],
             })
             .collect()
+    }
+
+    fn project_semantic_radio_links(
+        &self,
+        objects: Vec<Object<ParsedAnnotation>>,
+    ) -> Vec<Object<ParsedAnnotation>> {
+        let mut projected = Vec::new();
+        let mut run = Vec::new();
+
+        for object in objects {
+            if is_semantic_radio_link_candidate(&object.data) {
+                run.push(object);
+                continue;
+            }
+
+            if !run.is_empty() {
+                projected.extend(self.project_radio_links_in_object_run(run));
+                run = Vec::new();
+            }
+            projected.push(object);
+        }
+
+        if !run.is_empty() {
+            projected.extend(self.project_radio_links_in_object_run(run));
+        }
+
+        projected
+    }
+
+    fn project_radio_links_in_object_run(
+        &self,
+        objects: Vec<Object<ParsedAnnotation>>,
+    ) -> Vec<Object<ParsedAnnotation>> {
+        let Some(first) = objects.first() else {
+            return objects;
+        };
+        let base = usize::from(first.ann.range.start());
+        let raw = objects
+            .iter()
+            .map(|object| object.ann.raw.as_str())
+            .collect::<String>();
+        let mut projected = Vec::new();
+        let mut emitted_until = 0;
+        let mut search_cursor = 0;
+
+        while let Some((start, end, target)) =
+            next_radio_link(&raw, search_cursor, &self.radio_targets)
+        {
+            if start < emitted_until {
+                search_cursor = end;
+                continue;
+            }
+
+            let Some(description) = self.slice_radio_link_objects(&objects, base, start, end)
+            else {
+                search_cursor = next_char_boundary(&raw, start);
+                continue;
+            };
+            let Some(prefix) = self.slice_radio_link_objects(&objects, base, emitted_until, start)
+            else {
+                return objects;
+            };
+
+            projected.extend(prefix);
+
+            let raw_description = raw[start..end].to_string();
+            let link_ann = self.ann(text_range(base + start, base + end));
+            projected.push(Object {
+                ann: link_ann,
+                data: ObjectData::Link(Link {
+                    path: target.to_string(),
+                    target: LinkTarget::Internal(target.to_string()),
+                    description,
+                    raw_description,
+                    has_description: true,
+                    is_image: false,
+                    caption: None,
+                }),
+            });
+
+            emitted_until = end;
+            search_cursor = end;
+        }
+
+        if emitted_until == 0 {
+            return objects;
+        }
+
+        let Some(suffix) = self.slice_radio_link_objects(&objects, base, emitted_until, raw.len())
+        else {
+            return objects;
+        };
+        projected.extend(suffix);
+        projected
+    }
+
+    fn slice_radio_link_objects(
+        &self,
+        objects: &[Object<ParsedAnnotation>],
+        base: usize,
+        start: usize,
+        end: usize,
+    ) -> Option<Vec<Object<ParsedAnnotation>>> {
+        if start == end {
+            return Some(Vec::new());
+        }
+
+        let mut sliced = Vec::new();
+        let mut cursor = 0;
+
+        for object in objects {
+            let object_start = cursor;
+            let object_end = object_start + object.ann.raw.len();
+            cursor = object_end;
+
+            if object_end <= start || object_start >= end {
+                continue;
+            }
+
+            let slice_start = start.max(object_start);
+            let slice_end = end.min(object_end);
+            if slice_start == object_start && slice_end == object_end {
+                sliced.push(object.clone());
+                continue;
+            }
+
+            let ObjectData::Plain(value) = &object.data else {
+                return None;
+            };
+            let relative_start = slice_start - object_start;
+            let relative_end = slice_end - object_start;
+            let raw = value.get(relative_start..relative_end)?.to_string();
+            sliced.push(Object {
+                ann: self.ann(text_range(base + slice_start, base + slice_end)),
+                data: ObjectData::Plain(raw),
+            });
+        }
+
+        Some(sliced)
     }
 
     fn project_radio_links_in_plain(
@@ -1553,6 +1702,18 @@ fn next_radio_link<'a>(
     best
 }
 
+fn is_semantic_radio_link_candidate(data: &ObjectData<ParsedAnnotation>) -> bool {
+    matches!(
+        data,
+        ObjectData::Plain(_)
+            | ObjectData::Markup { .. }
+            | ObjectData::Code(_)
+            | ObjectData::Verbatim(_)
+            | ObjectData::Entity(_)
+            | ObjectData::LatexFragment(_)
+    )
+}
+
 fn is_radio_link_boundary(value: &str, start: usize, end: usize) -> bool {
     let before = value[..start].chars().next_back();
     let after = value[end..].chars().next();
@@ -1561,6 +1722,14 @@ fn is_radio_link_boundary(value: &str, start: usize, end: usize) -> bool {
 
 fn is_radio_link_word_char(ch: char) -> bool {
     ch.is_alphanumeric() || ch == '_' || ch == '-'
+}
+
+fn next_char_boundary(value: &str, index: usize) -> usize {
+    value[index..]
+        .chars()
+        .next()
+        .map(|ch| index + ch.len_utf8())
+        .unwrap_or(value.len())
 }
 
 fn text_range(start: usize, end: usize) -> TextRange {

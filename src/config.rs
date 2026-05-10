@@ -28,6 +28,16 @@ impl UseSubSuperscript {
     }
 }
 
+/// Controls how semantic radio links are projected.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RadioLinkProjection {
+    /// Link plain text segments against collected `<<<radio targets>>>`.
+    PlainText,
+    /// Link parsed object spans such as `*marked up*` or `\alpha` against
+    /// collected radio targets.
+    Semantic,
+}
+
 /// Parse configuration
 #[derive(Clone, Debug)]
 pub struct ParseConfig {
@@ -51,6 +61,14 @@ pub struct ParseConfig {
     ///
     /// Equivalent to [`org-element-affiliated-keywords`](https://git.sr.ht/~bzg/org-mode/tree/6f960f3c6a4dfe137fbd33fef9f7dadfd229600c/item/lisp/org-element.el#L331)
     pub affiliated_keywords: Vec<String>,
+
+    /// Semantic radio-link projection mode.
+    ///
+    /// `PlainText` preserves the historical lightweight behavior. `Semantic`
+    /// performs an opt-in second semantic pass over parsed object spans so
+    /// radio targets containing markup or entities can be linked without
+    /// changing the lossless syntax tree.
+    pub radio_link_projection: RadioLinkProjection,
 }
 
 impl ParseConfig {
@@ -180,6 +198,7 @@ impl Default for ParseConfig {
                 "SRCNAME".into(),
                 "TBLNAME".into(),
             ],
+            radio_link_projection: RadioLinkProjection::PlainText,
         }
     }
 }

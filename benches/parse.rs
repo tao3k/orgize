@@ -2,7 +2,7 @@ use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 
-use orgize::Org;
+use orgize::{config::RadioLinkProjection, Org, ParseConfig};
 
 const INPUT: &[(&str, &str)] = &[
     ("doc.org", include_str!("./fixtures/doc.org")),
@@ -105,11 +105,31 @@ pub fn bench_macro_expansions(c: &mut Criterion) {
     group.finish();
 }
 
+pub fn bench_semantic_radio_links(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::document/radio-link-projection");
+    let org = r#"<<<*Radio Target*>>> links *Radio Target* here.
+Paragraph with *Radio Target* and \alpha but not Radio Targets.
+"#;
+    let config = ParseConfig {
+        radio_link_projection: RadioLinkProjection::Semantic,
+        ..Default::default()
+    };
+    let parsed = config.parse(org);
+
+    group.throughput(Throughput::Bytes(org.len() as u64));
+    group.bench_with_input("semantic-object-spans.org", &parsed, |b, i| {
+        b.iter(|| black_box(i.document()))
+    });
+
+    group.finish();
+}
+
 criterion_group!(
     benches,
     bench_parse,
     bench_document,
     bench_to_html,
-    bench_macro_expansions
+    bench_macro_expansions,
+    bench_semantic_radio_links
 );
 criterion_main!(benches);

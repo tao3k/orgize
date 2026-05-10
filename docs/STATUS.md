@@ -131,8 +131,8 @@ this repository.
   - [x] Resolve `LinkTarget::Unresolved` where possible while keeping the
         original link path.
   - [x] Preserve diagnostics for ambiguous or missing targets.
-- [ ] Full radio-link conformance
-  - [ ] Current semantic projection links plain text against collected radio
+- [x] Full radio-link conformance
+  - [x] Current semantic projection links plain text against collected radio
         targets.
-  - [ ] Add opt-in two-pass behavior for edge cases that require preprocessing
+  - [x] Add opt-in two-pass behavior for edge cases that require preprocessing
         before object parsing.
