@@ -13,6 +13,7 @@ mod semantic_ast_projects_inline_babel_and_footnote_details;
 mod semantic_ast_projects_link_metadata;
 mod semantic_ast_projects_object_gap_repairs;
 mod semantic_ast_projects_org_table_formulas;
+mod semantic_ast_projects_radio_links;
 mod semantic_ast_projects_table_el;
 mod semantic_ast_projects_timestamp_metadata;
 mod semantic_citation_affixes_respect_parse_config;

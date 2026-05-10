@@ -42,6 +42,7 @@ struct Converter<'a> {
     config: &'a ParseConfig,
     lines: LineIndex<'a>,
     diagnostics: Vec<Diagnostic>,
+    radio_targets: Vec<String>,
 }
 
 impl<'a> Converter<'a> {
@@ -51,10 +52,12 @@ impl<'a> Converter<'a> {
             config,
             lines: LineIndex::new(source),
             diagnostics: Vec::new(),
+            radio_targets: Vec::new(),
         }
     }
 
     fn document(mut self, root: &SyntaxNode) -> ParsedAst {
+        self.radio_targets = collect_radio_targets(root);
         let ann = self.node_ann(root);
         let mut children = Vec::new();
         let mut sections = Vec::new();
@@ -479,10 +482,83 @@ impl<'a> Converter<'a> {
         &mut self,
         elements: impl IntoIterator<Item = SyntaxElement>,
     ) -> Vec<Object<ParsedAnnotation>> {
-        elements
+        let objects = elements
             .into_iter()
             .filter_map(|element| self.object(element))
+            .collect();
+        self.project_radio_links(objects)
+    }
+
+    fn project_radio_links(
+        &self,
+        objects: Vec<Object<ParsedAnnotation>>,
+    ) -> Vec<Object<ParsedAnnotation>> {
+        if self.radio_targets.is_empty() {
+            return objects;
+        }
+
+        objects
+            .into_iter()
+            .flat_map(|object| match object.data {
+                ObjectData::Plain(value) => self.project_radio_links_in_plain(&object.ann, &value),
+                _ => vec![object],
+            })
             .collect()
+    }
+
+    fn project_radio_links_in_plain(
+        &self,
+        ann: &ParsedAnnotation,
+        value: &str,
+    ) -> Vec<Object<ParsedAnnotation>> {
+        let mut objects = Vec::new();
+        let mut cursor = 0;
+        let base = usize::from(ann.range.start());
+
+        while let Some((start, end, target)) = next_radio_link(value, cursor, &self.radio_targets) {
+            if cursor < start {
+                objects.push(Object {
+                    ann: self.ann(text_range(base + cursor, base + start)),
+                    data: ObjectData::Plain(value[cursor..start].to_string()),
+                });
+            }
+
+            let raw = value[start..end].to_string();
+            let link_ann = self.ann(text_range(base + start, base + end));
+            objects.push(Object {
+                ann: link_ann.clone(),
+                data: ObjectData::Link(Link {
+                    path: target.to_string(),
+                    target: LinkTarget::Internal(target.to_string()),
+                    description: vec![Object {
+                        ann: link_ann,
+                        data: ObjectData::Plain(raw.clone()),
+                    }],
+                    raw_description: raw,
+                    has_description: true,
+                    is_image: false,
+                    caption: None,
+                }),
+            });
+
+            cursor = end;
+        }
+
+        if cursor == 0 {
+            return vec![Object {
+                ann: ann.clone(),
+                data: ObjectData::Plain(value.to_string()),
+            }];
+        }
+
+        if cursor < value.len() {
+            objects.push(Object {
+                ann: self.ann(text_range(base + cursor, base + value.len())),
+                data: ObjectData::Plain(value[cursor..].to_string()),
+            });
+        }
+
+        objects
     }
 
     fn object(&mut self, element: SyntaxElement) -> Option<Object<ParsedAnnotation>> {
@@ -1125,10 +1201,72 @@ fn citation_key_range(reference: &str) -> Option<(usize, usize)> {
     (start < end).then_some((start, end))
 }
 
+fn collect_radio_targets(root: &SyntaxNode) -> Vec<String> {
+    fn collect(node: &SyntaxNode, targets: &mut Vec<String>) {
+        for child in node.children() {
+            if child.kind() == SyntaxKind::RADIO_TARGET {
+                let target = strip_wrapping(&child.to_string(), "<<<", ">>>");
+                if !target.is_empty() {
+                    targets.push(target);
+                }
+            }
+            collect(&child, targets);
+        }
+    }
+
+    let mut targets = Vec::new();
+    collect(root, &mut targets);
+    targets.sort_by(|left, right| right.len().cmp(&left.len()).then_with(|| left.cmp(right)));
+    targets.dedup();
+    targets
+}
+
+fn next_radio_link<'a>(
+    value: &str,
+    cursor: usize,
+    targets: &'a [String],
+) -> Option<(usize, usize, &'a str)> {
+    let mut best: Option<(usize, usize, &'a str)> = None;
+
+    for target in targets {
+        for (relative_start, _) in value[cursor..].match_indices(target) {
+            let start = cursor + relative_start;
+            let end = start + target.len();
+            if !is_radio_link_boundary(value, start, end) {
+                continue;
+            }
+
+            let candidate = (start, end, target.as_str());
+            if best.as_ref().is_none_or(|(best_start, best_end, _)| {
+                start < *best_start || (start == *best_start && end > *best_end)
+            }) {
+                best = Some(candidate);
+            }
+            break;
+        }
+    }
+
+    best
+}
+
+fn is_radio_link_boundary(value: &str, start: usize, end: usize) -> bool {
+    let before = value[..start].chars().next_back();
+    let after = value[end..].chars().next();
+    !before.is_some_and(is_radio_link_word_char) && !after.is_some_and(is_radio_link_word_char)
+}
+
+fn is_radio_link_word_char(ch: char) -> bool {
+    ch.is_alphanumeric() || ch == '_' || ch == '-'
+}
+
+fn text_range(start: usize, end: usize) -> TextRange {
+    TextRange::new((start as u32).into(), (end as u32).into())
+}
+
 fn offset_range(range: TextRange, base: usize) -> TextRange {
-    TextRange::new(
-        ((usize::from(range.start()) + base) as u32).into(),
-        ((usize::from(range.end()) + base) as u32).into(),
+    text_range(
+        usize::from(range.start()) + base,
+        usize::from(range.end()) + base,
     )
 }
 

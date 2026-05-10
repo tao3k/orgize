@@ -49,7 +49,7 @@ Check out https://orgmode.org/worg/dev/org-syntax.html for more information.
   - [x] Regular link
   - [x] Angle link
   - [x] Plain link
-  - [ ] Radio link
+  - [x] Radio link (semantic AST projection)
 - [x] Macros
 - [x] Targets and Radio Targets
 - [x] Statistics Cookies
