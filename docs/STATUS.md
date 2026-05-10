@@ -161,4 +161,6 @@ this repository.
       shared start offset.
 - [x] Precompute object-run spans so radio-link prefix/description/suffix
       slicing does not rescan the whole run from the first object.
+- [x] Return unmatched plain-text radio-link objects without cloning their
+      annotations or reallocating their text.
 - [x] Add a dense target/radio-link projection benchmark.

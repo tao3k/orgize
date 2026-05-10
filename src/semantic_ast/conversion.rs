@@ -638,8 +638,11 @@ impl<'a> Converter<'a> {
     ) -> Vec<Object<ParsedAnnotation>> {
         objects
             .into_iter()
-            .flat_map(|object| match object.data {
-                ObjectData::Plain(value) => self.project_radio_links_in_plain(&object.ann, &value),
+            .flat_map(|object| match object {
+                Object {
+                    ann,
+                    data: ObjectData::Plain(value),
+                } => self.project_radio_links_in_plain(ann, value),
                 _ => vec![object],
             })
             .collect()
@@ -787,14 +790,15 @@ impl<'a> Converter<'a> {
 
     fn project_radio_links_in_plain(
         &self,
-        ann: &ParsedAnnotation,
-        value: &str,
+        ann: ParsedAnnotation,
+        value: String,
     ) -> Vec<Object<ParsedAnnotation>> {
         let mut objects = Vec::new();
         let mut cursor = 0;
         let base = usize::from(ann.range.start());
 
-        while let Some((start, end, target)) = next_radio_link(value, cursor, &self.radio_targets) {
+        while let Some((start, end, target)) = next_radio_link(&value, cursor, &self.radio_targets)
+        {
             if cursor < start {
                 objects.push(Object {
                     ann: self.ann(text_range(base + cursor, base + start)),
@@ -825,8 +829,8 @@ impl<'a> Converter<'a> {
 
         if cursor == 0 {
             return vec![Object {
-                ann: ann.clone(),
-                data: ObjectData::Plain(value.to_string()),
+                ann,
+                data: ObjectData::Plain(value),
             }];
         }
 
