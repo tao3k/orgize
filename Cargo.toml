@@ -41,6 +41,9 @@ rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-
 slugify = "0.1"
 tracing-subscriber = { version = "0.3.23", features = ["fmt"] }
 
+[build-dependencies]
+rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "ed68dc7909e9bc09d432ec263c1dd83fcd390df2" }
+
 [[bench]]
 name = "parse"
 harness = false
