@@ -108,6 +108,25 @@ fn semantic_ast_expands_macros_as_an_opt_in_side_table() {
 }
 
 #[test]
+fn semantic_ast_reuses_all_macro_arguments_in_repeated_placeholders() {
+    let doc = Org::parse(
+        r#"#+MACRO: repeat $0 :: $1 :: $0
+{{{repeat(one, two)}}}
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let expansions = doc.macro_expansions();
+
+    assert_eq!(expansions.len(), 1);
+    assert_eq!(
+        expansions[0].value.as_deref(),
+        Some("one, two :: one :: one, two")
+    );
+}
+
+#[test]
 fn semantic_ast_diagnoses_invalid_preprocessing_directives() {
     let doc = Org::parse(
         r#"#+INCLUDE:

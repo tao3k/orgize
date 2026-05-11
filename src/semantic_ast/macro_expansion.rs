@@ -1,6 +1,6 @@
 //! Opt-in macro expansion over the owned semantic AST.
 
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use super::{AstRef, Document, MacroDefinition, MacroExpansion, MacroExpansionStatus, ObjectData};
 
@@ -49,8 +49,8 @@ impl<A: Clone> Document<A> {
 
 fn macro_definitions_by_name<A>(
     definitions: &[MacroDefinition<A>],
-) -> BTreeMap<&str, &MacroDefinition<A>> {
-    let mut by_name = BTreeMap::new();
+) -> HashMap<&str, &MacroDefinition<A>> {
+    let mut by_name = HashMap::with_capacity(definitions.len());
     for definition in definitions {
         by_name.insert(definition.name.as_str(), definition);
     }
@@ -58,7 +58,9 @@ fn macro_definitions_by_name<A>(
 }
 
 fn expand_macro_template(template: &str, arguments: &[String]) -> String {
-    let mut expanded = String::new();
+    let mut expanded =
+        String::with_capacity(template.len() + arguments.iter().map(String::len).sum::<usize>());
+    let mut all_arguments = None;
     let mut chars = template.chars().peekable();
 
     while let Some(ch) = chars.next() {
@@ -74,7 +76,7 @@ fn expand_macro_template(template: &str, arguments: &[String]) -> String {
             }
             Some('0') => {
                 chars.next();
-                expanded.push_str(&arguments.join(", "));
+                expanded.push_str(all_arguments.get_or_insert_with(|| arguments.join(", ")));
             }
             Some(digit) if digit.is_ascii_digit() => {
                 chars.next();

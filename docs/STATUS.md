@@ -163,4 +163,7 @@ this repository.
       slicing does not rescan the whole run from the first object.
 - [x] Return unmatched plain-text radio-link objects without cloning their
       annotations or reallocating their text.
+- [x] Use capacity-aware macro definition lookup and reuse `$0` argument joins
+      within one macro expansion.
+- [x] Add a dense macro-expansion benchmark.
 - [x] Add a dense target/radio-link projection benchmark.

@@ -106,6 +106,13 @@ pub fn bench_macro_expansions(c: &mut Criterion) {
         });
     }
 
+    let dense_macros = dense_macro_expansion_fixture();
+    let dense_document = Org::parse(&dense_macros).document();
+    group.throughput(Throughput::Bytes(dense_macros.len() as u64));
+    group.bench_with_input("dense-macro-expansions.org", &dense_document, |b, i| {
+        b.iter(|| black_box(i.macro_expansions()))
+    });
+
     group.finish();
 }
 
@@ -179,6 +186,30 @@ fn dense_target_projection_fixture() -> String {
         org.push_str(&format!(
             "* Heading {idx}\n:PROPERTIES:\n:CUSTOM_ID: heading-{idx}\n:END:\n[[*Heading {idx}][headline]] [[#heading-{idx}][custom]] [[Radio Target {idx}][radio]] Radio Target {idx}\n"
         ));
+    }
+
+    org
+}
+
+fn dense_macro_expansion_fixture() -> String {
+    let mut org = String::new();
+
+    for idx in 0..32 {
+        org.push_str(&format!("#+MACRO: m{idx} $0 :: $1 :: $0\n"));
+    }
+
+    org.push('\n');
+
+    for idx in 0..256 {
+        org.push_str(&format!(
+            "{{{{{{m{}(alpha {}, beta {})}}}}}} ",
+            idx % 32,
+            idx,
+            idx
+        ));
+        if idx % 8 == 7 {
+            org.push('\n');
+        }
     }
 
     org
