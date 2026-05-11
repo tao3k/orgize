@@ -1,8 +1,10 @@
 //! Markdown exporter for the lossless syntax traversal API.
 
+use rowan::ast::AstNode;
 use std::cmp::min;
 use std::fmt::Write as _;
 
+use crate::syntax_ast::{OrgTable, OrgTableCell, OrgTableRow};
 use crate::{SyntaxElement, SyntaxNode};
 
 use super::event::{Container, Event};
@@ -15,6 +17,12 @@ pub struct MarkdownExport {
     output: String,
 
     inside_blockquote: bool,
+    table_stack: Vec<TableState>,
+}
+
+#[derive(Default)]
+struct TableState {
+    column_count: usize,
 }
 
 impl MarkdownExport {
@@ -94,8 +102,35 @@ impl Traverser for MarkdownExport {
                 if let Some(language) = block.language() {
                     self.output += &language;
                 }
+                self.output += "\n";
             }
-            Event::Leave(Container::SourceBlock(_)) => self.output += "```\n",
+            Event::Leave(Container::SourceBlock(_)) => {
+                self.follows_newline();
+                self.output += "```\n";
+            }
+
+            Event::Enter(Container::ExampleBlock(_)) | Event::Enter(Container::FixedWidth(_)) => {
+                self.follows_newline();
+                self.output += "```\n";
+            }
+            Event::Leave(Container::ExampleBlock(_)) | Event::Leave(Container::FixedWidth(_)) => {
+                self.follows_newline();
+                self.output += "```\n";
+            }
+
+            Event::Enter(Container::ExportBlock(block)) => {
+                if block.ty().is_some_and(|ty| {
+                    ty.eq_ignore_ascii_case("markdown") || ty.eq_ignore_ascii_case("md")
+                }) {
+                    self.follows_newline();
+                    self.output += &block.value();
+                    if !self.output.ends_with('\n') {
+                        self.output += "\n";
+                    }
+                }
+                ctx.skip();
+            }
+            Event::Leave(Container::ExportBlock(_)) => {}
 
             Event::Enter(Container::QuoteBlock(_)) => {
                 self.inside_blockquote = true;
@@ -126,12 +161,40 @@ impl Traverser for MarkdownExport {
             }
             Event::Leave(Container::ListItem(_)) => {}
 
-            Event::Enter(Container::OrgTable(_table)) => {}
-            Event::Leave(Container::OrgTable(_)) => {}
-            Event::Enter(Container::OrgTableRow(_row)) => {}
-            Event::Leave(Container::OrgTableRow(_row)) => {}
-            Event::Enter(Container::OrgTableCell(_)) => {}
-            Event::Leave(Container::OrgTableCell(_)) => {}
+            Event::Enter(Container::OrgTable(table)) => {
+                self.follows_newline();
+                self.table_stack.push(TableState {
+                    column_count: table_column_count(&table),
+                });
+            }
+            Event::Leave(Container::OrgTable(_)) => {
+                self.table_stack.pop();
+            }
+            Event::Enter(Container::OrgTableRow(row)) => {
+                if row.is_rule() {
+                    let column_count = self
+                        .table_stack
+                        .last()
+                        .map(|table| table.column_count)
+                        .unwrap_or(1);
+                    self.output += "|";
+                    for _ in 0..column_count {
+                        self.output += " --- |";
+                    }
+                    self.output += "\n";
+                    return ctx.skip();
+                }
+
+                self.output += "|";
+            }
+            Event::Leave(Container::OrgTableRow(row)) if !row.is_rule() => {
+                self.output += "\n";
+            }
+            Event::Leave(Container::OrgTableRow(_)) => {}
+            Event::Enter(Container::OrgTableCell(_)) => {
+                self.output += " ";
+            }
+            Event::Leave(Container::OrgTableCell(_)) => self.output += " |",
 
             Event::Enter(Container::Link(link)) => {
                 let path = link.path();
@@ -155,26 +218,27 @@ impl Traverser for MarkdownExport {
 
             Event::Text(text) => {
                 if self.inside_blockquote {
-                    for (idx, line) in text.split('\n').enumerate() {
-                        if idx != 0 {
-                            self.output += "\n>  ";
-                        }
-                        self.output += line;
-                    }
+                    self.push_blockquote_text(&text);
                 } else {
                     self.output += &*text;
                 }
             }
 
-            Event::LineBreak(_) => {}
+            Event::LineBreak(_) => self.output += "\\\n",
 
+            Event::Snippet(snippet)
+                if snippet.backend().eq_ignore_ascii_case("markdown")
+                    || snippet.backend().eq_ignore_ascii_case("md") =>
+            {
+                self.output += &snippet.value();
+            }
             Event::Snippet(_snippet) => {}
 
             Event::Citation(citation) => self.output += &citation.raw(),
 
             Event::Rule(_) => self.output += "\n-----\n",
 
-            Event::Timestamp(_timestamp) => {}
+            Event::Timestamp(timestamp) => self.output += &timestamp.raw(),
 
             Event::LatexFragment(latex) => {
                 let _ = write!(&mut self.output, "{}", &latex.syntax);
@@ -188,4 +252,44 @@ impl Traverser for MarkdownExport {
             _ => {}
         }
     }
+}
+
+impl MarkdownExport {
+    fn push_blockquote_text(&mut self, text: &str) {
+        let mut lines = text.split('\n').peekable();
+        let mut first = true;
+
+        while let Some(line) = lines.next() {
+            if line.is_empty() && lines.peek().is_none() {
+                break;
+            }
+
+            if !first {
+                self.output += "\n> ";
+            }
+            self.output += line;
+            first = false;
+        }
+
+        if text.ends_with('\n') {
+            self.output += "\n";
+        }
+    }
+}
+
+fn table_column_count(table: &OrgTable) -> usize {
+    table
+        .syntax()
+        .children()
+        .filter_map(OrgTableRow::cast)
+        .filter(|row| !row.is_rule())
+        .map(|row| {
+            row.syntax()
+                .children()
+                .filter_map(OrgTableCell::cast)
+                .count()
+        })
+        .max()
+        .unwrap_or(1)
+        .max(1)
 }

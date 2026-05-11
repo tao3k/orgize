@@ -120,6 +120,7 @@
             HTML (rendered)
           </span>
           <span data-value="html">HTML</span>
+          <span data-value="markdown">Markdown</span>
           <span data-value="latex">LaTeX</span>
           <span data-value="syntax">Syntax</span>
           <span data-value="semantic">Semantic AST</span>
@@ -176,6 +177,11 @@
         case "html": {
           const html = html_beautify(org.html(), { indent_size: 2 });
           result.innerHTML = "<pre>" + escapeHtml(html) + "</pre>";
+          break;
+        }
+
+        case "markdown": {
+          result.innerHTML = "<pre>" + escapeHtml(org.markdown()) + "</pre>";
           break;
         }
 
@@ -316,7 +322,7 @@
         ],
         [
           "Export boundary",
-          "HTML and LaTeX rendering continue to use the lossless syntax substrate while the semantic AST is available for indexers and future exporters.",
+          "HTML, Markdown, and LaTeX rendering continue to use the lossless syntax substrate while the semantic AST is available for indexers and future exporters.",
         ],
       ];
 
@@ -375,6 +381,10 @@ and [[coderef:init][source block coderefs]].
 Paragraph with <<target-one>>, <<<Radio Target>>>, Radio Target,
 {{{badge(parser, wasm)}}}, [cite:@doe2026; see @roe2026 p. 42],
 @@latex:\LaTeX{}@@, src_rust[:exports code]{let answer = 42;} and call_build[:cache yes](target="wasm").
+
+#+begin_export markdown
+**Markdown export block** survives in the Markdown tab.
+#+end_export
 
 #+begin_export latex
 \begin{equation}

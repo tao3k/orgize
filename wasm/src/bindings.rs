@@ -32,6 +32,10 @@ impl Org {
         self.inner.to_latex()
     }
 
+    pub fn markdown(&self) -> String {
+        self.inner.to_markdown()
+    }
+
     pub fn org(&self) -> String {
         self.inner.to_org()
     }

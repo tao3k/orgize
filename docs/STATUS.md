@@ -67,6 +67,7 @@ Check out https://orgmode.org/worg/dev/org-syntax.html for more information.
 ## Export
 
 - [x] HTML `Org::to_html`
+- [x] Markdown `Org::to_markdown`
 - [X] Org `Org::to_org`
 - [x] LaTeX `Org::to_latex`
 
@@ -200,3 +201,12 @@ this repository.
 - [x] Replace the stale `element_nodes` blank-line TODO with the current
       lossless parser invariant.
 - [x] Expand block parser coverage for export, quote, and special blocks.
+
+### M9 Markdown Export API
+
+- [x] Add `Org::to_markdown()` as the public convenience API.
+- [x] Use `to_markdown()` in the Markdown example.
+- [x] Render source, example, and fixed-width content as fenced Markdown blocks.
+- [x] Preserve Markdown snippets and `#+begin_export markdown` blocks.
+- [x] Render timestamps, hard line breaks, and basic Org tables in Markdown.
+- [x] Expose Markdown output in the wasm parser demo.

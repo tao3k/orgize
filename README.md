@@ -147,6 +147,20 @@ assert_eq!(
 
 Checkout `examples/html-slugify.rs` on how to customizing html export process.
 
+## Render to Markdown
+
+Call the `Org::to_markdown` function to export the org element tree to
+Markdown:
+
+```rust
+use orgize::Org;
+
+assert_eq!(
+    Org::parse("* title\n*section*").to_markdown(),
+    "# title\n**section**\n"
+);
+```
+
 ## Render to LaTeX
 
 Call the `Org::to_latex` function to export the org element tree to LaTeX body
