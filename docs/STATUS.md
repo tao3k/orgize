@@ -171,3 +171,6 @@ this repository.
       the final semantic document without cloning the target table.
 - [x] Avoid allocating normalized target keys for link lookups that miss the
       document-local target index.
+- [x] Use O(1) source-column projection for ASCII lines while preserving
+      character-accurate UTF-8 columns through per-line char indexes.
+- [x] Add a dense annotation projection benchmark.

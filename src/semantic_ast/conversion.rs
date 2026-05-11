@@ -1273,27 +1273,61 @@ struct SemanticPrescan {
 
 struct LineIndex<'a> {
     source: &'a str,
-    starts: Vec<usize>,
+    lines: Vec<LineInfo>,
+}
+
+struct LineInfo {
+    start: usize,
+    char_starts: Vec<usize>,
 }
 
 impl<'a> LineIndex<'a> {
     fn new(source: &'a str) -> Self {
-        Self {
-            source,
-            starts: line_starts_iter(source).collect(),
-        }
+        let starts = line_starts_iter(source).collect::<Vec<_>>();
+        let lines = starts
+            .iter()
+            .enumerate()
+            .map(|(index, start)| {
+                let end = starts.get(index + 1).copied().unwrap_or(source.len());
+                let slice = &source[*start..end];
+                let char_starts = if slice.is_ascii() {
+                    Vec::new()
+                } else {
+                    slice
+                        .char_indices()
+                        .map(|(offset, _)| *start + offset)
+                        .collect()
+                };
+
+                LineInfo {
+                    start: *start,
+                    char_starts,
+                }
+            })
+            .collect();
+
+        Self { source, lines }
     }
 
     fn position(&self, offset: TextSize) -> SourcePosition {
         let offset = usize::from(offset).min(self.source.len());
-        let line = match self.starts.binary_search(&offset) {
+        let line = match self.lines.binary_search_by_key(&offset, |line| line.start) {
             Ok(idx) => idx,
             Err(idx) => idx.saturating_sub(1),
         };
-        let line_start = self.starts[line];
+        let line_info = &self.lines[line];
+        let column = if line_info.char_starts.is_empty() {
+            offset - line_info.start + 1
+        } else {
+            line_info
+                .char_starts
+                .partition_point(|char_start| *char_start < offset)
+                + 1
+        };
+
         SourcePosition {
             line: line + 1,
-            column: self.source[line_start..offset].chars().count() + 1,
+            column,
         }
     }
 }

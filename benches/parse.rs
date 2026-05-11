@@ -173,6 +173,19 @@ pub fn bench_dense_target_projection(c: &mut Criterion) {
     group.finish();
 }
 
+pub fn bench_dense_annotation_projection(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::document/dense-annotation-projection");
+    let org = dense_annotation_projection_fixture();
+    let parsed = Org::parse(&org);
+
+    group.throughput(Throughput::Bytes(org.len() as u64));
+    group.bench_with_input("many-annotated-ascii-objects.org", &parsed, |b, i| {
+        b.iter(|| black_box(i.document()))
+    });
+
+    group.finish();
+}
+
 fn dense_target_projection_fixture() -> String {
     let mut org = String::new();
 
@@ -185,6 +198,18 @@ fn dense_target_projection_fixture() -> String {
     for idx in 0..128 {
         org.push_str(&format!(
             "* Heading {idx}\n:PROPERTIES:\n:CUSTOM_ID: heading-{idx}\n:END:\n[[*Heading {idx}][headline]] [[#heading-{idx}][custom]] [[Radio Target {idx}][radio]] Radio Target {idx}\n"
+        ));
+    }
+
+    org
+}
+
+fn dense_annotation_projection_fixture() -> String {
+    let mut org = String::new();
+
+    for idx in 0..256 {
+        org.push_str(&format!(
+            "Line {idx:03} with *bold {idx}* /italic {idx}/ _under {idx}_ +strike {idx}+ ~code {idx}~ =verb {idx}= and [[https://example.com/{idx}][link {idx}]].\n"
         ));
     }
 
@@ -223,6 +248,7 @@ criterion_group!(
     bench_macro_expansions,
     bench_semantic_radio_links,
     bench_inlinetask_document,
-    bench_dense_target_projection
+    bench_dense_target_projection,
+    bench_dense_annotation_projection
 );
 criterion_main!(benches);

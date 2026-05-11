@@ -6,7 +6,7 @@ use orgize::{
 
 #[test]
 fn semantic_annotations_handle_parser_line_endings_and_utf8_columns() {
-    let doc = Org::parse("* A\réé *bold*").document();
+    let doc = Org::parse("* A\réé *bold*\n\nPlain *ascii* tail").document();
 
     assert_clean_projection(&doc);
     let paragraph = &doc.sections[0].children[0];
@@ -37,4 +37,27 @@ fn semantic_annotations_handle_parser_line_endings_and_utf8_columns() {
             column: 10
         }
     );
+
+    let ascii_paragraph = &doc.sections[0].children[1];
+    assert_eq!(
+        ascii_paragraph.ann.start,
+        SourcePosition { line: 4, column: 1 }
+    );
+    let ascii_objects = match &ascii_paragraph.data {
+        ElementData::Paragraph(objects) => objects,
+        other => panic!("expected paragraph, got {other:#?}"),
+    };
+    let ascii_bold = ascii_objects
+        .iter()
+        .find(|object| {
+            matches!(
+                object.data,
+                ObjectData::Markup {
+                    kind: MarkupKind::Bold,
+                    ..
+                }
+            )
+        })
+        .expect("ASCII bold object");
+    assert_eq!(ascii_bold.ann.start, SourcePosition { line: 4, column: 7 });
 }
