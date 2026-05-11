@@ -1,0 +1,28 @@
+---
+source: tests/integration/latex.rs
+expression: "Org::parse(r#\"\n* Export\nVisit [[https://example.com?a=1&b=2][Example & Docs]] and [[file:plot.png]].\n\n#+begin_quote\nQuoted *text*.\n#+end_quote\n\n#+begin_src rust\nfn main() {\n    println!(\"hello_{}\", 1);\n}\n#+end_src\n\n+ plain item\n+ second item\n\n| Name | Count |\n|------+-------|\n| one  |     1 |\n| two  |     2 |\n\"#).to_latex()"
+---
+\section{Export}
+Visit \href{https://example.com?a=1\&b=2}{Example \& Docs} and \includegraphics{plot.png}.
+
+\begin{quote}
+Quoted \textbf{text}.
+
+\end{quote}
+\begin{verbatim}
+fn main() {
+    println!("hello_{}", 1);
+}
+\end{verbatim}
+\begin{itemize}
+\item plain item
+
+\item second item
+
+\end{itemize}
+\begin{tabular}{ll}
+Name & Count \\
+\hline
+one & 1 \\
+two & 2 \\
+\end{tabular}

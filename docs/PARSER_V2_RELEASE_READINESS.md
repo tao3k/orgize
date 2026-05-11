@@ -44,10 +44,12 @@ those imports to `orgize::syntax_ast::*`.
 - Semantic traversal compatibility is covered for all annotation-bearing node
   categories exposed through `AstRef` and `AstMut`.
 - Existing HTML/export traversal continues to use the lossless syntax substrate.
+- LaTeX export is available through the lossless syntax traversal substrate via
+  `LatexExport` and `Org::to_latex()`, including raw LaTeX fragments,
+  environments, snippets, and `#+begin_export latex` blocks.
 
 ## Intentional gaps
 
-- LaTeX export is still not implemented.
 - Existing HTML/export is not rewritten to semantic AST in this PR.
 - `#+INCLUDE:` expansion does not read external files; consumers can implement
   expansion using the collected directive side table.

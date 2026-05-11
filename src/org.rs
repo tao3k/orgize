@@ -5,7 +5,7 @@ use rowan::{GreenNode, TextSize};
 
 use crate::ast::ParsedAst;
 use crate::config::ParseConfig;
-use crate::export::{HtmlExport, TraversalContext, Traverser};
+use crate::export::{HtmlExport, LatexExport, TraversalContext, Traverser};
 use crate::syntax::{OrgLanguage, SyntaxNode};
 use crate::syntax_ast;
 use crate::SyntaxElement;
@@ -56,6 +56,13 @@ impl Org {
     /// Convert org element tree to html-format using default html handler
     pub fn to_html(&self) -> String {
         let mut handler = HtmlExport::default();
+        self.traverse(&mut handler);
+        handler.finish()
+    }
+
+    /// Convert org element tree to LaTeX body text using the default LaTeX handler.
+    pub fn to_latex(&self) -> String {
+        let mut handler = LatexExport::default();
         self.traverse(&mut handler);
         handler.finish()
     }

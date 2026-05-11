@@ -28,6 +28,10 @@ impl Org {
         self.inner.to_html()
     }
 
+    pub fn latex(&self) -> String {
+        self.inner.to_latex()
+    }
+
     pub fn org(&self) -> String {
         self.inner.to_org()
     }

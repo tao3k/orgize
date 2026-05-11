@@ -147,6 +147,20 @@ assert_eq!(
 
 Checkout `examples/html-slugify.rs` on how to customizing html export process.
 
+## Render to LaTeX
+
+Call the `Org::to_latex` function to export the org element tree to LaTeX body
+text:
+
+```rust
+use orgize::Org;
+
+assert_eq!(
+    Org::parse("* title\n*section* and $a_b$").to_latex(),
+    "\\section{title}\n\\textbf{section} and $a_b$\n\n"
+);
+```
+
 ## Features
 
 - **`chrono`**: adds the ability to convert `Timestamp` into `chrono::NaiveDateTime`, disabled by default.

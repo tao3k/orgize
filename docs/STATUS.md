@@ -68,7 +68,7 @@ Check out https://orgmode.org/worg/dev/org-syntax.html for more information.
 
 - [x] HTML `Org::to_html`
 - [X] Org `Org::to_org`
-- [ ] LaTeX
+- [x] LaTeX `Org::to_latex`
 
 ## Extra
 
@@ -181,3 +181,13 @@ this repository.
 - [x] Preallocate radio-link projection buffers from input object counts.
 - [x] Scan block begin/content children once when projecting semantic block
       metadata, value, and nested elements.
+
+### M7 LaTeX Export
+
+- [x] Add a lossless traversal based `LatexExport` handler.
+- [x] Add `Org::to_latex()` as the public convenience API.
+- [x] Preserve raw LaTeX fragments, LaTeX environments, LaTeX export blocks,
+      and LaTeX snippets.
+- [x] Cover headline, paragraph, markup, block, list, table, link, timestamp,
+      citation, entity, and subtree rendering behavior with integration tests.
+- [x] Expose LaTeX output in the wasm parser demo.

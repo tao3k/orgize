@@ -120,6 +120,7 @@
             HTML (rendered)
           </span>
           <span data-value="html">HTML</span>
+          <span data-value="latex">LaTeX</span>
           <span data-value="syntax">Syntax</span>
           <span data-value="semantic">Semantic AST</span>
           <span data-value="traverse">Traverse</span>
@@ -175,6 +176,11 @@
         case "html": {
           const html = html_beautify(org.html(), { indent_size: 2 });
           result.innerHTML = "<pre>" + escapeHtml(html) + "</pre>";
+          break;
+        }
+
+        case "latex": {
+          result.innerHTML = "<pre>" + escapeHtml(org.latex()) + "</pre>";
           break;
         }
 
@@ -310,7 +316,7 @@
         ],
         [
           "Export boundary",
-          "HTML rendering continues to use the lossless syntax substrate while the semantic AST is available for indexers and future exporters.",
+          "HTML and LaTeX rendering continue to use the lossless syntax substrate while the semantic AST is available for indexers and future exporters.",
         ],
       ];
 
@@ -368,7 +374,13 @@ and [[coderef:init][source block coderefs]].
 
 Paragraph with <<target-one>>, <<<Radio Target>>>, Radio Target,
 {{{badge(parser, wasm)}}}, [cite:@doe2026; see @roe2026 p. 42],
-src_rust[:exports code]{let answer = 42;} and call_build[:cache yes](target="wasm").
+@@latex:\LaTeX{}@@, src_rust[:exports code]{let answer = 42;} and call_build[:cache yes](target="wasm").
+
+#+begin_export latex
+\begin{equation}
+e^{i\pi}+1=0
+\end{equation}
+#+end_export
 
 #+name: demo-source
 #+begin_src rust -n 10 -l "// ref:%s" :exports both :results output drawer :var answer=42
