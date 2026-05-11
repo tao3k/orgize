@@ -1,6 +1,6 @@
 //! Document-local target collection for semantic internal link resolution.
 
-use std::collections::BTreeMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use rowan::{ast::AstNode, NodeOrToken};
 
@@ -15,7 +15,7 @@ use super::{ParsedAnnotation, TargetDefinition, TargetKind};
 #[derive(Clone, Default)]
 pub(super) struct TargetIndex {
     pub(super) definitions: Vec<TargetDefinition<ParsedAnnotation>>,
-    keys: BTreeMap<String, Vec<usize>>,
+    keys: HashMap<String, Vec<usize>>,
     radio_targets: Vec<String>,
 }
 
@@ -44,27 +44,29 @@ impl TargetIndex {
         targets
     }
 
-    pub(super) fn resolve(&self, path: &str) -> TargetLookup {
+    pub(super) fn resolve<'a>(&self, path: &'a str) -> TargetLookup<'a> {
         let key = normalized_target_key(path);
-        let Some(indices) = self.keys.get(&key) else {
+        let Some(indices) = self.keys.get(key.as_ref()) else {
             return TargetLookup::Missing { key };
         };
 
         if indices.len() == 1 {
-            TargetLookup::Found { key: key.clone() }
+            TargetLookup::Found {
+                key: key.into_owned(),
+            }
         } else {
             TargetLookup::Ambiguous {
-                key,
+                key: key.into_owned(),
                 count: indices.len(),
             }
         }
     }
 }
 
-pub(super) enum TargetLookup {
+pub(super) enum TargetLookup<'a> {
     Found { key: String },
     Ambiguous { key: String, count: usize },
-    Missing { key: String },
+    Missing { key: Cow<'a, str> },
 }
 
 pub(super) fn collect_target_node(
@@ -192,11 +194,11 @@ fn block_switches(node: &SyntaxNode) -> Option<String> {
         .map(|token| token.text().to_string())
 }
 
-fn normalized_target_key(path: &str) -> String {
+fn normalized_target_key(path: &str) -> Cow<'_, str> {
     path.strip_prefix('*')
         .map(str::trim)
-        .unwrap_or(path)
-        .to_string()
+        .map(Cow::Borrowed)
+        .unwrap_or_else(|| Cow::Borrowed(path))
 }
 
 fn footnote_definition_label(node: &SyntaxNode) -> Option<String> {

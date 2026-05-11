@@ -167,3 +167,7 @@ this repository.
       within one macro expansion.
 - [x] Add a dense macro-expansion benchmark.
 - [x] Add a dense target/radio-link projection benchmark.
+- [x] Use hash-based target lookup and move collected target definitions into
+      the final semantic document without cloning the target table.
+- [x] Avoid allocating normalized target keys for link lookups that miss the
+      document-local target index.

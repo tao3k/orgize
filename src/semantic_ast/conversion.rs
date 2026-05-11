@@ -97,7 +97,7 @@ impl<'a> Converter<'a> {
                 _ => {}
             }
         }
-        let targets = self.target_index.definitions.clone();
+        let targets = std::mem::take(&mut self.target_index.definitions);
 
         Document {
             ann,
