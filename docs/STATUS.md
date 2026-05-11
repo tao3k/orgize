@@ -177,3 +177,5 @@ this repository.
 - [x] Append plain-text radio-link projection directly into the output object
       buffer instead of allocating a temporary vector per source object.
 - [x] Preallocate radio-link projection buffers from input object counts.
+- [x] Scan block begin/content children once when projecting semantic block
+      metadata, value, and nested elements.

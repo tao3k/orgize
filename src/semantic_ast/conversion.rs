@@ -492,6 +492,7 @@ impl<'a> Converter<'a> {
     }
 
     fn block(&mut self, node: &SyntaxNode) -> Block<ParsedAnnotation> {
+        let parts = block_parts(node);
         let kind = match node.kind() {
             SyntaxKind::SOURCE_BLOCK => BlockKind::Source,
             SyntaxKind::EXAMPLE_BLOCK => BlockKind::Example,
@@ -501,24 +502,24 @@ impl<'a> Converter<'a> {
             SyntaxKind::CENTER_BLOCK => BlockKind::Center,
             SyntaxKind::COMMENT_BLOCK => BlockKind::Comment,
             SyntaxKind::DYN_BLOCK => BlockKind::Dynamic,
-            SyntaxKind::SPECIAL_BLOCK => {
-                BlockKind::Special(block_name(node).unwrap_or_else(|| "special".into()))
-            }
+            SyntaxKind::SPECIAL_BLOCK => BlockKind::Special(
+                block_name_from_begin(parts.begin.as_ref()).unwrap_or_else(|| "special".into()),
+            ),
             _ => BlockKind::Special(format!("{:?}", node.kind())),
         };
 
         let source = syntax_ast::SourceBlock::cast(node.clone());
         let export = syntax_ast::ExportBlock::cast(node.clone());
-        let switches = semantic_block_switches(node);
-        let value = node
-            .children()
-            .find(|child| child.kind() == SyntaxKind::BLOCK_CONTENT)
-            .map(|child| child.to_string())
+        let switches = block_switches_from_begin(parts.begin.as_ref());
+        let value = parts
+            .content
+            .as_ref()
+            .map(SyntaxNode::to_string)
             .unwrap_or_default();
-        let children = node
-            .children()
-            .find(|child| child.kind() == SyntaxKind::BLOCK_CONTENT)
-            .map(|child| self.elements_from_container(&child))
+        let children = parts
+            .content
+            .as_ref()
+            .map(|content| self.elements_from_container(content))
             .unwrap_or_default();
 
         let value = source
@@ -537,7 +538,7 @@ impl<'a> Converter<'a> {
 
         Block {
             kind,
-            name: semantic_block_name(node),
+            name: semantic_block_name(node.kind(), parts.begin.as_ref()),
             language: source
                 .as_ref()
                 .and_then(|block| block.language().map(|x| x.to_string())),
@@ -1376,20 +1377,42 @@ fn table_column_cookie_alignment(cell: &str) -> Option<Option<TableColumnAlignme
     Some(alignment)
 }
 
-fn block_name(node: &SyntaxNode) -> Option<String> {
-    node.children()
-        .find(|child| child.kind() == SyntaxKind::BLOCK_BEGIN)
-        .and_then(|begin| {
-            begin
-                .children_with_tokens()
-                .filter_map(|child| child.into_token())
-                .find(|token| token.kind() == SyntaxKind::TEXT)
-                .map(|token| token.text().to_string())
-        })
+struct BlockParts {
+    begin: Option<SyntaxNode>,
+    content: Option<SyntaxNode>,
 }
 
-fn semantic_block_name(node: &SyntaxNode) -> Option<String> {
-    match node.kind() {
+fn block_parts(node: &SyntaxNode) -> BlockParts {
+    let mut begin = None;
+    let mut content = None;
+
+    for child in node.children() {
+        match child.kind() {
+            SyntaxKind::BLOCK_BEGIN => begin = Some(child),
+            SyntaxKind::BLOCK_CONTENT => content = Some(child),
+            _ => {}
+        }
+
+        if begin.is_some() && content.is_some() {
+            break;
+        }
+    }
+
+    BlockParts { begin, content }
+}
+
+fn block_name_from_begin(begin: Option<&SyntaxNode>) -> Option<String> {
+    begin.and_then(|begin| {
+        begin
+            .children_with_tokens()
+            .filter_map(|child| child.into_token())
+            .find(|token| token.kind() == SyntaxKind::TEXT)
+            .map(|token| token.text().to_string())
+    })
+}
+
+fn semantic_block_name(kind: SyntaxKind, begin: Option<&SyntaxNode>) -> Option<String> {
+    match kind {
         SyntaxKind::SOURCE_BLOCK => Some("src".into()),
         SyntaxKind::EXAMPLE_BLOCK => Some("example".into()),
         SyntaxKind::EXPORT_BLOCK => Some("export".into()),
@@ -1398,16 +1421,15 @@ fn semantic_block_name(node: &SyntaxNode) -> Option<String> {
         SyntaxKind::CENTER_BLOCK => Some("center".into()),
         SyntaxKind::COMMENT_BLOCK => Some("comment".into()),
         SyntaxKind::DYN_BLOCK => Some("dynamic".into()),
-        SyntaxKind::SPECIAL_BLOCK => block_name(node),
+        SyntaxKind::SPECIAL_BLOCK => block_name_from_begin(begin),
         _ => None,
     }
 }
 
-fn semantic_block_switches(node: &SyntaxNode) -> Option<String> {
-    node.children()
-        .find(|child| child.kind() == SyntaxKind::BLOCK_BEGIN)
+fn block_switches_from_begin(begin: Option<&SyntaxNode>) -> Option<String> {
+    begin
         .into_iter()
-        .flat_map(|begin| begin.children_with_tokens())
+        .flat_map(SyntaxNode::children_with_tokens)
         .filter_map(NodeOrToken::into_token)
         .find(|token| token.kind() == SyntaxKind::SRC_BLOCK_SWITCHES)
         .map(|token| token.text().to_string())
