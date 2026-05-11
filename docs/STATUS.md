@@ -150,6 +150,8 @@ this repository.
 - [x] Document intentional gaps and deferred exporter work.
 - [x] Document the full local validation gate.
 - [x] Document the no-Haskell-dependency research boundary.
+- [x] Align the wasm demo with parser v2 feature coverage and expose semantic
+      AST output in the browser demo.
 
 ### M6 Semantic Projection Performance
 

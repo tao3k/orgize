@@ -36,6 +36,16 @@ impl Org {
         format!("{:#?}", self.inner.syntax_document().syntax())
     }
 
+    pub fn semantic(&self) -> String {
+        let document = self.inner.document();
+        let macro_expansions = document.macro_expansions();
+        if macro_expansions.is_empty() {
+            format!("{document:#?}")
+        } else {
+            format!("{document:#?}\n\nMacro expansions:\n{macro_expansions:#?}")
+        }
+    }
+
     pub fn update(&mut self, s: &str) {
         self.inner = Inner::parse(s);
     }
@@ -94,6 +104,7 @@ impl Org {
                 Event::Text(x) => ("Text", x.text_range()),
                 Event::Macros(x) => ("Macros", x.text_range()),
                 Event::Cookie(x) => ("Cookie", x.text_range()),
+                Event::Citation(x) => ("Citation", x.text_range()),
                 Event::InlineCall(x) => ("InlineCall", x.text_range()),
                 Event::InlineSrc(x) => ("InlineSrc", x.text_range()),
                 Event::Clock(x) => ("Clock", x.text_range()),
