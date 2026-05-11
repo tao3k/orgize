@@ -94,8 +94,8 @@ pub(crate) fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
         Some(b'|') => org_table_node(input),
         Some(b'+') => table_el_node(input).or_else(|_| list_node(input)),
         Some(b'#') => block_node(input)
-            .or_else(|_| keyword_node(input))
             .or_else(|_| dyn_block_node(input))
+            .or_else(|_| keyword_node(input))
             .or_else(|_| comment_node(input)),
         Some(b'\\') => latex_environment_node(input),
         _ => Err(nom::Err::Error(())),

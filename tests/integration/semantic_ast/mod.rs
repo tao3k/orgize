@@ -16,6 +16,7 @@ mod semantic_ast_projects_file_todo_keywords;
 mod semantic_ast_projects_footnote_definition_label_and_body;
 mod semantic_ast_projects_inline_babel_and_footnote_details;
 mod semantic_ast_projects_inlinetasks;
+mod semantic_ast_projects_lesser_elements_and_blocks;
 mod semantic_ast_projects_link_metadata;
 mod semantic_ast_projects_object_gap_repairs;
 mod semantic_ast_projects_org_table_formulas;

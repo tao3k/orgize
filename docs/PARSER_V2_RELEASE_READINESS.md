@@ -41,16 +41,23 @@ those imports to `orgize::syntax_ast::*`.
   radio target, footnote, and coderef targets while preserving original paths.
 - Quote punctuation remains plain text; text markup inside quote boundaries is
   parsed according to Org's text-markup PRE/POST rules.
+- Lesser-used semantic element variants are covered for comments, drawers,
+  fixed-width areas, LaTeX environments, dynamic blocks, verse/center/comment
+  blocks, and named special blocks.
 - Semantic traversal compatibility is covered for all annotation-bearing node
   categories exposed through `AstRef` and `AstMut`.
 - Existing HTML/export traversal continues to use the lossless syntax substrate.
 - Markdown export is available through the lossless syntax traversal substrate
   via `MarkdownExport` and `Org::to_markdown()`, including fenced blocks,
   Markdown snippets/export blocks, timestamps, hard line breaks, and basic
-  table output.
+  table output. Org tables without rule rows get a Markdown delimiter row after
+  the first standard row so they remain valid Markdown tables.
 - LaTeX export is available through the lossless syntax traversal substrate via
   `LatexExport` and `Org::to_latex()`, including raw LaTeX fragments,
   environments, snippets, and `#+begin_export latex` blocks.
+- Criterion smoke coverage includes `Org::to_markdown()` and `Org::to_latex()`
+  alongside parse, semantic projection, macro expansion, radio-link projection,
+  annotation projection, and HTML export paths.
 
 ## Intentional gaps
 

@@ -23,6 +23,8 @@ pub struct MarkdownExport {
 #[derive(Default)]
 struct TableState {
     column_count: usize,
+    has_header: bool,
+    standard_rows_seen: usize,
 }
 
 impl MarkdownExport {
@@ -165,10 +167,13 @@ impl Traverser for MarkdownExport {
                 self.follows_newline();
                 self.table_stack.push(TableState {
                     column_count: table_column_count(&table),
+                    has_header: table.has_header(),
+                    standard_rows_seen: 0,
                 });
             }
             Event::Leave(Container::OrgTable(_)) => {
                 self.table_stack.pop();
+                self.output += "\n";
             }
             Event::Enter(Container::OrgTableRow(row)) => {
                 if row.is_rule() {
@@ -179,7 +184,7 @@ impl Traverser for MarkdownExport {
                         .unwrap_or(1);
                     self.output += "|";
                     for _ in 0..column_count {
-                        self.output += " --- |";
+                        self.push_table_separator_cell();
                     }
                     self.output += "\n";
                     return ctx.skip();
@@ -189,6 +194,18 @@ impl Traverser for MarkdownExport {
             }
             Event::Leave(Container::OrgTableRow(row)) if !row.is_rule() => {
                 self.output += "\n";
+                let delimiter_columns = self.table_stack.last_mut().and_then(|table| {
+                    table.standard_rows_seen += 1;
+                    (!table.has_header && table.standard_rows_seen == 1)
+                        .then_some(table.column_count)
+                });
+                if let Some(column_count) = delimiter_columns {
+                    self.output += "|";
+                    for _ in 0..column_count {
+                        self.push_table_separator_cell();
+                    }
+                    self.output += "\n";
+                }
             }
             Event::Leave(Container::OrgTableRow(_)) => {}
             Event::Enter(Container::OrgTableCell(_)) => {
@@ -274,6 +291,10 @@ impl MarkdownExport {
         if text.ends_with('\n') {
             self.output += "\n";
         }
+    }
+
+    fn push_table_separator_cell(&mut self) {
+        self.output += " --- |";
     }
 }
 

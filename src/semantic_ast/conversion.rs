@@ -1406,7 +1406,8 @@ fn block_name_from_begin(begin: Option<&SyntaxNode>) -> Option<String> {
         begin
             .children_with_tokens()
             .filter_map(|child| child.into_token())
-            .find(|token| token.kind() == SyntaxKind::TEXT)
+            .filter(|token| token.kind() == SyntaxKind::TEXT)
+            .nth(1)
             .map(|token| token.text().to_string())
     })
 }

@@ -210,3 +210,13 @@ this repository.
 - [x] Preserve Markdown snippets and `#+begin_export markdown` blocks.
 - [x] Render timestamps, hard line breaks, and basic Org tables in Markdown.
 - [x] Expose Markdown output in the wasm parser demo.
+
+### M10 Release-Candidate Hardening
+
+- [x] Cover semantic projection of lesser-used elements: comments, drawers,
+      fixed-width areas, LaTeX environments, dynamic blocks, verse/center/comment
+      blocks, and named special blocks.
+- [x] Make Markdown tables without Org rule rows render a Markdown header
+      delimiter instead of emitting a non-table pipe block.
+- [x] Add Criterion smoke coverage for `Org::to_markdown()` and
+      `Org::to_latex()` alongside parse, semantic projection, and HTML export.

@@ -94,6 +94,32 @@ pub fn bench_to_html(c: &mut Criterion) {
     group.finish();
 }
 
+pub fn bench_to_markdown(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::to_markdown");
+
+    for &(id, org) in INPUT {
+        let parsed = Org::parse(org);
+
+        group.throughput(Throughput::Bytes(org.len() as u64));
+        group.bench_with_input(id, &parsed, |b, i| b.iter(|| black_box(i.to_markdown())));
+    }
+
+    group.finish();
+}
+
+pub fn bench_to_latex(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::to_latex");
+
+    for &(id, org) in INPUT {
+        let parsed = Org::parse(org);
+
+        group.throughput(Throughput::Bytes(org.len() as u64));
+        group.bench_with_input(id, &parsed, |b, i| b.iter(|| black_box(i.to_latex())));
+    }
+
+    group.finish();
+}
+
 pub fn bench_macro_expansions(c: &mut Criterion) {
     let mut group = c.benchmark_group("Org::macro_expansions");
 
@@ -245,6 +271,8 @@ criterion_group!(
     bench_parse,
     bench_document,
     bench_to_html,
+    bench_to_markdown,
+    bench_to_latex,
     bench_macro_expansions,
     bench_semantic_radio_links,
     bench_inlinetask_document,

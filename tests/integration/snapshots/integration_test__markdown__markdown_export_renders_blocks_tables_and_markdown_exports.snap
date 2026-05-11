@@ -1,6 +1,6 @@
 ---
 source: tests/integration/markdown.rs
-expression: "Org::parse(r#\"\n#+begin_src rust\nfn main() {\n    println!(\"hello\");\n}\n#+end_src\n\n#+begin_example\n,* escaped headline\n#+end_example\n\n#+begin_export markdown\n**raw markdown**\n#+end_export\n\n@@md:inline markdown@@ and @@html:<span>ignored</span>@@.\n\n| Name | Count |\n|------+-------|\n| one  |     1 |\n| two  |     2 |\n\"#).to_markdown()"
+expression: "Org::parse(r#\"\n#+begin_src rust\nfn main() {\n    println!(\"hello\");\n}\n#+end_src\n\n#+begin_example\n,* escaped headline\n#+end_example\n\n#+begin_export markdown\n**raw markdown**\n#+end_export\n\n@@md:inline markdown@@ and @@html:<span>ignored</span>@@.\n\n| Name | Count |\n|------+-------|\n| one  |     1 |\n| two  |     2 |\n\n| Plain | Table |\n| no    | rule  |\n\"#).to_markdown()"
 ---
 ```rust
 fn main() {
@@ -17,3 +17,7 @@ inline markdown and .
 | --- | --- |
 | one | 1 |
 | two | 2 |
+
+| Plain | Table |
+| --- | --- |
+| no | rule |

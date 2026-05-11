@@ -49,6 +49,9 @@ fn main() {
 |------+-------|
 | one  |     1 |
 | two  |     2 |
+
+| Plain | Table |
+| no    | rule  |
 "#
     )
     .to_markdown());
