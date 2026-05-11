@@ -183,12 +183,13 @@ assert_eq!(
 
 ## Development
 
-Parser v2 mounts `rust-lang-project-harness` from both root `build.rs` and the
-`src/lib.rs` cargo-test gate. The build-time gate prevents filtered cargo test
-runs from bypassing blocking project policy, while the test gate keeps compact
-agent advice visible during normal local validation. Both gates use the current
-standalone harness repository instead of the retired monorepo-local
-`xiuxian-testing` crate. No rule pack or rule severity is downgraded:
+Parser v2 mounts `rust-lang-project-harness` from root `build.rs`,
+`wasm/build.rs`, and the `src/lib.rs` cargo-test gate. The build-time gates
+prevent filtered cargo test runs from bypassing blocking project policy in both
+workspace packages, while the test gate keeps compact agent advice visible
+during normal local validation. All gates use the current standalone harness
+repository instead of the retired monorepo-local `xiuxian-testing` crate. No
+rule pack or rule severity is downgraded:
 `RUST-MOD-*` and project layout findings stay blocking. `AGENT-*` `info`
 findings remain visible as repair advice while this legacy crate burns them down
 separately. New tests should still use explicit imports: `RUST-MOD-R010`

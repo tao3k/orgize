@@ -99,3 +99,6 @@ artifacts.
 - Treat unresolved review threads as blocking until resolved or explicitly
   marked non-actionable.
 - Do not downgrade or disable harness policy to land this lane.
+- Keep the Rust project harness mounted from root `build.rs`, `wasm/build.rs`,
+  and the `src/lib.rs` cargo-test gate so both workspace packages have
+  filter-proof build-time enforcement.

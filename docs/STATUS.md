@@ -220,3 +220,10 @@ this repository.
       delimiter instead of emitting a non-table pipe block.
 - [x] Add Criterion smoke coverage for `Org::to_markdown()` and
       `Org::to_latex()` alongside parse, semantic projection, and HTML export.
+
+### M11 Harness Build-Time Coverage
+
+- [x] Keep root `build.rs` mounted as a filter-proof Rust project harness gate.
+- [x] Add `rust-lang-project-harness` to `orgize-wasm` `[build-dependencies]`.
+- [x] Mount the same build-time harness gate from `wasm/build.rs` before the
+      existing wasm build metadata emission.

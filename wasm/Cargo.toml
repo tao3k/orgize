@@ -13,3 +13,6 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 orgize = { path = ".." }
 wasm-bindgen = "0.2.120"
+
+[build-dependencies]
+rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "ed68dc7909e9bc09d432ec263c1dd83fcd390df2" }
