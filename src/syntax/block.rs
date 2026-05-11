@@ -273,11 +273,14 @@ pub(crate) fn block_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn test_parse() {
-    use crate::syntax_ast::{ExampleBlock, SourceBlock};
+    use crate::syntax_ast::{ExampleBlock, ExportBlock, QuoteBlock, SourceBlock, SpecialBlock};
     use crate::tests::to_ast;
 
     let to_src_block = to_ast::<SourceBlock>(block_node);
     let to_example_block = to_ast::<ExampleBlock>(block_node);
+    let to_export_block = to_ast::<ExportBlock>(block_node);
+    let to_quote_block = to_ast::<QuoteBlock>(block_node);
+    let to_special_block = to_ast::<SpecialBlock>(block_node);
 
     insta::assert_debug_snapshot!(
         to_example_block(
@@ -425,5 +428,76 @@ r#"#+BEGIN_EXAMPLE -n 3
     "###
     );
 
-    // TODO: more testing
+    insta::assert_debug_snapshot!(
+        to_export_block(
+r#"#+BEGIN_EXPORT latex
+\LaTeX{}
+#+END_EXPORT"#
+        ).syntax,
+        @r###"
+    EXPORT_BLOCK@0..42
+      BLOCK_BEGIN@0..21
+        TEXT@0..8 "#+BEGIN_"
+        TEXT@8..14 "EXPORT"
+        WHITESPACE@14..15 " "
+        EXPORT_BLOCK_TYPE@15..20 "latex"
+        NEW_LINE@20..21 "\n"
+      BLOCK_CONTENT@21..30
+        TEXT@21..30 "\\LaTeX{}\n"
+      BLOCK_END@30..42
+        TEXT@30..36 "#+END_"
+        TEXT@36..42 "EXPORT"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_quote_block(
+r#"#+begin_quote
+*quoted*
+#+end_quote"#
+        ).syntax,
+        @r###"
+    QUOTE_BLOCK@0..34
+      BLOCK_BEGIN@0..14
+        TEXT@0..8 "#+begin_"
+        TEXT@8..13 "quote"
+        NEW_LINE@13..14 "\n"
+      BLOCK_CONTENT@14..23
+        PARAGRAPH@14..23
+          BOLD@14..22
+            STAR@14..15 "*"
+            TEXT@15..21 "quoted"
+            STAR@21..22 "*"
+          TEXT@22..23 "\n"
+      BLOCK_END@23..34
+        TEXT@23..29 "#+end_"
+        TEXT@29..34 "quote"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_special_block(
+r#"#+begin_aside
+- nested
+#+end_aside"#
+        ).syntax,
+        @r###"
+    SPECIAL_BLOCK@0..34
+      BLOCK_BEGIN@0..14
+        TEXT@0..8 "#+begin_"
+        TEXT@8..13 "aside"
+        NEW_LINE@13..14 "\n"
+      BLOCK_CONTENT@14..23
+        LIST@14..23
+          LIST_ITEM@14..23
+            LIST_ITEM_INDENT@14..14 ""
+            LIST_ITEM_BULLET@14..16 "- "
+            LIST_ITEM_CONTENT@16..23
+              PARAGRAPH@16..23
+                TEXT@16..23 "nested\n"
+      BLOCK_END@23..34
+        TEXT@23..29 "#+end_"
+        TEXT@29..34 "aside"
+    "###
+    );
 }

@@ -191,3 +191,12 @@ this repository.
 - [x] Cover headline, paragraph, markup, block, list, table, link, timestamp,
       citation, entity, and subtree rendering behavior with integration tests.
 - [x] Expose LaTeX output in the wasm parser demo.
+
+### M8 Status TODO Burn-down
+
+- [x] Remove the stale `Link::caption()` paragraph-only limitation by resolving
+      the nearest ancestor caption keyword.
+- [x] Cover caption lookup through a captioned block ancestor in doctests.
+- [x] Replace the stale `element_nodes` blank-line TODO with the current
+      lossless parser invariant.
+- [x] Expand block parser coverage for export, quote, and special blocks.

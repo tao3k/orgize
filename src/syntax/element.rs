@@ -31,12 +31,9 @@ use super::{
 )]
 pub(crate) fn element_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<()>> {
     debug_assert!(!input.is_empty());
-    // TODO:
-    // debug_assert!(
-    //     blank_lines(input).unwrap().1.is_empty(),
-    //     "input must not starts with blank lines: {:?}",
-    //     input.s
-    // );
+    // Callers may pass blank-only section tails after headline/block splitting;
+    // paragraph fallback keeps that lossless instead of treating it as a hard
+    // precondition violation here.
 
     let mut i = input;
     let mut nodes = vec![];

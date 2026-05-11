@@ -1,7 +1,7 @@
 use rowan::ast::AstNode;
 
-use super::{token, AffiliatedKeyword, Link, Paragraph, Token};
-use crate::{syntax::SyntaxKind, SyntaxElement};
+use super::{token, AffiliatedKeyword, Link, Token};
+use crate::{syntax::SyntaxKind, SyntaxElement, SyntaxNode};
 
 impl Link {
     /// Returns link destination
@@ -113,9 +113,20 @@ impl Link {
     ///
     /// let link = Org::parse("#+CAPTION: image link\n[[file:/home/dominik/images/jupiter.jpg]]").first_node::<Link>().unwrap();
     /// assert_eq!(link.caption().unwrap().value().unwrap(), " image link");
+    /// let link = Org::parse("#+CAPTION: quoted image\n#+begin_quote\n[[file:plot.png]]\n#+end_quote").first_node::<Link>().unwrap();
+    /// assert_eq!(link.caption().unwrap().value().unwrap(), " quoted image");
     /// ```
     pub fn caption(&self) -> Option<AffiliatedKeyword> {
-        // TODO: support other element type
-        Paragraph::cast(self.syntax.parent()?.clone())?.caption()
+        self.syntax
+            .ancestors()
+            .skip(1)
+            .find_map(|node| caption_keyword(&node))
     }
+}
+
+fn caption_keyword(node: &SyntaxNode) -> Option<AffiliatedKeyword> {
+    node.children()
+        .take_while(|node| node.kind() == SyntaxKind::AFFILIATED_KEYWORD)
+        .filter_map(AffiliatedKeyword::cast)
+        .find(|keyword| keyword.key() == "CAPTION")
 }
