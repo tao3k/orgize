@@ -174,3 +174,6 @@ this repository.
 - [x] Use O(1) source-column projection for ASCII lines while preserving
       character-accurate UTF-8 columns through per-line char indexes.
 - [x] Add a dense annotation projection benchmark.
+- [x] Append plain-text radio-link projection directly into the output object
+      buffer instead of allocating a temporary vector per source object.
+- [x] Preallocate radio-link projection buffers from input object counts.

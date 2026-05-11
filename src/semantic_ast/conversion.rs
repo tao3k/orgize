@@ -636,23 +636,26 @@ impl<'a> Converter<'a> {
         &self,
         objects: Vec<Object<ParsedAnnotation>>,
     ) -> Vec<Object<ParsedAnnotation>> {
-        objects
-            .into_iter()
-            .flat_map(|object| match object {
+        let mut projected = Vec::with_capacity(objects.len());
+
+        for object in objects {
+            match object {
                 Object {
                     ann,
                     data: ObjectData::Plain(value),
-                } => self.project_radio_links_in_plain(ann, value),
-                _ => vec![object],
-            })
-            .collect()
+                } => self.extend_radio_links_in_plain(&mut projected, ann, value),
+                _ => projected.push(object),
+            }
+        }
+
+        projected
     }
 
     fn project_semantic_radio_links(
         &self,
         objects: Vec<Object<ParsedAnnotation>>,
     ) -> Vec<Object<ParsedAnnotation>> {
-        let mut projected = Vec::new();
+        let mut projected = Vec::with_capacity(objects.len());
         let mut run = Vec::new();
 
         for object in objects {
@@ -688,7 +691,7 @@ impl<'a> Converter<'a> {
             .map(|object| object.ann.raw.as_str())
             .collect::<String>();
         let spans = object_run_spans(&objects);
-        let mut projected = Vec::new();
+        let mut projected = Vec::with_capacity(objects.len());
         let mut emitted_until = 0;
         let mut search_cursor = 0;
 
@@ -788,12 +791,12 @@ impl<'a> Converter<'a> {
         Some(sliced)
     }
 
-    fn project_radio_links_in_plain(
+    fn extend_radio_links_in_plain(
         &self,
+        objects: &mut Vec<Object<ParsedAnnotation>>,
         ann: ParsedAnnotation,
         value: String,
-    ) -> Vec<Object<ParsedAnnotation>> {
-        let mut objects = Vec::new();
+    ) {
         let mut cursor = 0;
         let base = usize::from(ann.range.start());
 
@@ -828,10 +831,11 @@ impl<'a> Converter<'a> {
         }
 
         if cursor == 0 {
-            return vec![Object {
+            objects.push(Object {
                 ann,
                 data: ObjectData::Plain(value),
-            }];
+            });
+            return;
         }
 
         if cursor < value.len() {
@@ -840,8 +844,6 @@ impl<'a> Converter<'a> {
                 data: ObjectData::Plain(value[cursor..].to_string()),
             });
         }
-
-        objects
     }
 
     fn object(&mut self, element: SyntaxElement) -> Option<Object<ParsedAnnotation>> {
