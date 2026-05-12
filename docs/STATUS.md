@@ -368,3 +368,5 @@ runtime dependency is copied into this repository.
       of mutating parser output.
 - [x] Warn on malformed or duplicate `#+LINK:` abbreviation definitions without
       treating unknown URI schemes as broken abbreviation uses.
+- [x] Warn on invalid values for the supported `#+OPTIONS:` parser-v2 export
+      settings (`H`, `-`, and `e`) while ignoring unknown Org option keys.

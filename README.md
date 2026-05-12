@@ -206,7 +206,8 @@ orgize fmt notes.org docs/
 `lint` reports semantic projection diagnostics, document-local target
 uniqueness issues such as duplicate `ID`/`CUSTOM_ID` targets, missing local
 macro definitions, malformed or duplicate `#+LINK:` abbreviation definitions,
-and missing or non-file `#+INCLUDE:` paths when linting real files. `fmt` starts with
+invalid supported `#+OPTIONS:` values, and missing or non-file `#+INCLUDE:`
+paths when linting real files. `fmt` starts with
 source-safe whitespace normalization: it trims trailing spaces and tabs, aligns
 contiguous Org tables outside blocks, normalizes final blank lines, and ensures
 one final newline for non-empty documents. When paths are provided, `fmt`

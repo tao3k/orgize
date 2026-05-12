@@ -180,6 +180,7 @@ pub fn lint_document_with_options(
         &document.metadata,
         source,
     ));
+    findings.extend(options_keyword_findings(&document.metadata, source));
 
     findings.sort_by(|left, right| {
         left.location
@@ -314,6 +315,52 @@ fn malformed_link_abbreviation_finding(
         message: "LINK keyword is missing an abbreviation name or replacement".into(),
         location: location_for_range(source, keyword.ann.range),
     }
+}
+
+fn options_keyword_findings(
+    metadata: &[Keyword<ParsedAnnotation>],
+    source: &str,
+) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+
+    for keyword in metadata {
+        if !keyword.key.eq_ignore_ascii_case("OPTIONS") {
+            continue;
+        }
+
+        for token in keyword.value.split_whitespace() {
+            let Some((key, value)) = token.split_once(':') else {
+                continue;
+            };
+            let message = match key {
+                "H" if value.parse::<usize>().is_err() => Some(format!(
+                    "OPTIONS `H` expects a non-negative integer, got `{value}`"
+                )),
+                "-" | "e" if !is_bool_option(value) => Some(format!(
+                    "OPTIONS `{key}` expects t/nil or true/false, got `{value}`"
+                )),
+                _ => None,
+            };
+
+            if let Some(message) = message {
+                findings.push(LintFinding {
+                    code: "ORG007",
+                    severity: LintSeverity::Warning,
+                    message,
+                    location: location_for_range(source, keyword.ann.range),
+                });
+            }
+        }
+    }
+
+    findings
+}
+
+fn is_bool_option(value: &str) -> bool {
+    matches!(
+        value.to_ascii_lowercase().as_str(),
+        "t" | "true" | "yes" | "nil" | "false" | "no"
+    )
 }
 
 fn include_path_findings(
