@@ -546,7 +546,8 @@ fn include_path_finding(
         return None;
     }
 
-    let path = Path::new(&include.path);
+    let file_path = include_file_path(&include.path);
+    let path = Path::new(file_path);
     let resolved = if path.is_absolute() {
         path.to_path_buf()
     } else {
@@ -568,6 +569,12 @@ fn include_path_finding(
         message,
         location: location_for_range(source, include.ann.range),
     })
+}
+
+fn include_file_path(path: &str) -> &str {
+    path.split_once("::")
+        .map(|(file_path, _)| file_path)
+        .unwrap_or(path)
 }
 
 fn location_for_range(source: &str, range: TextRange) -> LintLocation {
