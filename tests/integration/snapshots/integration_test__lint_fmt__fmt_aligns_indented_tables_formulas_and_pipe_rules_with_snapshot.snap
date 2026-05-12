@@ -1,0 +1,12 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: format_snapshot(source)
+---
+changed: true
+idempotent: true
+output:
+  | Name   | Count |
+  |--------+-------|
+  | a      | 2     |
+  | longer | 100   |
+#+TBLFM: $2=vsum(@2..@3)

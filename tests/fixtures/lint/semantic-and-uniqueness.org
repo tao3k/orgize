@@ -1,0 +1,9 @@
+* First
+:PROPERTIES:
+:ID: shared
+:END:
+* Second
+:PROPERTIES:
+:ID: shared
+:END:
+[[fn:missing]]

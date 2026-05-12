@@ -1,0 +1,8 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(), report.to_text(\"fixture.org\"))"
+---
+clean: false
+fixture.org:1:1: warning ORG007: OPTIONS `-` expects t/nil or true/false, got `maybe`
+fixture.org:1:1: warning ORG007: OPTIONS `H` expects a non-negative integer, got `two`
+fixture.org:1:1: warning ORG007: OPTIONS `e` expects t/nil or true/false, got `later`

@@ -1,0 +1,5 @@
+  | Name | Count |
+  |---|---|
+  | a | 2 |
+  | longer | 100 |
+#+TBLFM: $2=vsum(@2..@3)

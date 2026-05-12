@@ -1,0 +1,10 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: command_snapshot(output)
+---
+status: 1
+stdout:
+
+stderr:
+notes/a.org: needs formatting
+notes/nested/b.org: needs formatting

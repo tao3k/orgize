@@ -1,0 +1,3 @@
+#+MACRO: issue first $1
+#+MACRO: issue second $1
+{{{issue(42)}}}
