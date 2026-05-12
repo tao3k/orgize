@@ -6,8 +6,9 @@ use rowan::{NodeOrToken, TextRange};
 use crate::{
     config::{ParseConfig, RadioLinkProjection},
     syntax::{
-        combinator::node, object::standard_object_nodes, SyntaxElement, SyntaxKind, SyntaxNode,
-        SyntaxToken,
+        combinator::node,
+        object::{minimal_object_nodes, standard_object_nodes},
+        SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken,
     },
     syntax_ast,
 };
@@ -27,8 +28,13 @@ use super::footnote_parts::{FootnoteDefParts, FootnoteRefParts};
 use super::headline_metadata::{
     headline_level, headline_priority, headline_raw_title, headline_tags, headline_todo,
 };
+use super::postprocess::finalize_document;
 use super::preprocessing::{include_directive, macro_definition, split_macro_args};
+use super::prescan::{collect_document_keyword, SemanticPrescan};
 use super::radio_links::{is_semantic_radio_link_candidate, next_char_boundary, next_radio_link};
+use super::settings::{
+    expand_link_abbreviation, is_parsed_keyword, keyword_attributes, link_search,
+};
 use super::source_position::LineIndex;
 use super::table_metadata::table_column_alignments;
 use super::targets::{
@@ -37,11 +43,11 @@ use super::targets::{
 use super::timestamp_metadata::{timestamp_moment_range, timestamp_repeater, timestamp_warning};
 use super::{
     Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
-    Document, Drawer, Element, ElementData, FootnoteDef, IncludeDirective, Inlinetask,
-    InlinetaskEnd, Keyword, Link, LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget, List,
-    ListItem, ListType, MacroDefinition, MarkupKind, Object, ObjectData, ParsedAnnotation,
-    ParsedAst, Planning, Property, Section, Table, TableCell, TableRow, Timestamp, TimestampKind,
-    TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    Document, Drawer, Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link,
+    LinkAbbreviation, LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget, List, ListItem,
+    ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property,
+    Section, Table, TableCell, TableRow, Timestamp, TimestampKind, TodoKeyword, TodoState,
+    UnsupportedSyntaxKind,
 };
 
 impl ParsedAst {
@@ -66,6 +72,7 @@ struct Converter<'a> {
     diagnostics: Vec<Diagnostic>,
     radio_targets: Vec<String>,
     target_index: TargetIndex,
+    link_abbreviations: Vec<LinkAbbreviation>,
 }
 
 #[derive(Default)]
@@ -84,6 +91,7 @@ impl<'a> Converter<'a> {
             diagnostics: Vec::new(),
             radio_targets: Vec::new(),
             target_index: TargetIndex::default(),
+            link_abbreviations: Vec::new(),
         }
     }
 
@@ -92,6 +100,7 @@ impl<'a> Converter<'a> {
         let target_index = prescan.target_index;
         self.radio_targets = target_index.radio_targets();
         self.target_index = target_index;
+        self.link_abbreviations = prescan.link_abbreviations.clone();
         self.diagnostics = prescan.diagnostics;
         let ann = self.node_ann(root);
         let parts = root
@@ -102,16 +111,23 @@ impl<'a> Converter<'a> {
             });
         let targets = std::mem::take(&mut self.target_index.definitions);
 
-        Document {
+        let mut document = Document {
             ann,
             properties: parts.properties,
+            metadata: prescan.metadata,
+            filetags: prescan.filetags,
+            export_settings: prescan.export_settings,
+            link_abbreviations: prescan.link_abbreviations,
             includes: prescan.includes,
             macro_definitions: prescan.macro_definitions,
             targets,
+            footnotes: prescan.footnotes,
             children: parts.children,
             sections: parts.sections,
             diagnostics: self.diagnostics,
-        }
+        };
+        finalize_document(&mut document);
+        document
     }
 
     fn push_document_child(&mut self, parts: &mut DocumentParts, node: &SyntaxNode) {
@@ -135,7 +151,7 @@ impl<'a> Converter<'a> {
         }
     }
 
-    fn semantic_prescan(&self, root: &SyntaxNode) -> SemanticPrescan {
+    fn semantic_prescan(&mut self, root: &SyntaxNode) -> SemanticPrescan {
         let mut prescan = SemanticPrescan::default();
 
         for node in root.descendants() {
@@ -169,6 +185,8 @@ impl<'a> Converter<'a> {
                         message,
                     }),
                 }
+            } else {
+                collect_document_keyword(keyword, &mut prescan);
             }
         }
 
@@ -218,6 +236,7 @@ impl<'a> Converter<'a> {
             raw_title: legacy.title_raw(),
             anchor,
             tags: legacy.tags().map(|x| x.to_string()).collect(),
+            effective_tags: legacy.tags().map(|x| x.to_string()).collect(),
             planning,
             children,
             subsections,
@@ -333,33 +352,61 @@ impl<'a> Converter<'a> {
             .collect()
     }
 
-    fn keyword(&self, node: &SyntaxNode, affiliated: bool) -> Keyword<ParsedAnnotation> {
+    fn keyword(&mut self, node: &SyntaxNode, affiliated: bool) -> Keyword<ParsedAnnotation> {
         if affiliated {
             let legacy = syntax_ast::AffiliatedKeyword::cast(node.clone()).expect("keyword node");
+            let key = legacy.key().to_string();
+            let value = legacy.value().map(|x| x.to_string()).unwrap_or_default();
             Keyword {
                 ann: self.node_ann(node),
-                key: legacy.key().to_string(),
+                key: key.clone(),
                 optional: legacy.optional().map(|x| x.to_string()),
-                value: legacy.value().map(|x| x.to_string()).unwrap_or_default(),
+                parsed: self.keyword_parsed_objects(node, &key, &value),
+                attributes: keyword_attributes(&key, &value),
+                value,
             }
         } else {
             let legacy = syntax_ast::SyntaxKeyword::cast(node.clone());
             if let Some(legacy) = legacy {
+                let key = legacy.key().to_string();
+                let value = legacy.value().to_string();
                 Keyword {
                     ann: self.node_ann(node),
-                    key: legacy.key().to_string(),
+                    key: key.clone(),
                     optional: None,
-                    value: legacy.value().to_string(),
+                    parsed: self.keyword_parsed_objects(node, &key, &value),
+                    attributes: keyword_attributes(&key, &value),
+                    value,
                 }
             } else {
                 Keyword {
                     ann: self.node_ann(node),
                     key: format!("{:?}", node.kind()),
                     optional: None,
+                    parsed: Vec::new(),
+                    attributes: Vec::new(),
                     value: node.to_string(),
                 }
             }
         }
+    }
+
+    fn keyword_parsed_objects(
+        &mut self,
+        node: &SyntaxNode,
+        key: &str,
+        value: &str,
+    ) -> Vec<Object<ParsedAnnotation>> {
+        if !is_parsed_keyword(key) {
+            return Vec::new();
+        }
+
+        let node_start = usize::from(node.text_range().start());
+        let raw = node.to_string();
+        let value_start = raw
+            .find(value)
+            .map_or(node_start, |offset| node_start + offset);
+        self.objects_from_raw(value, value_start)
     }
 
     fn properties(&self, node: &SyntaxNode) -> Vec<Property<ParsedAnnotation>> {
@@ -713,10 +760,12 @@ impl<'a> Converter<'a> {
                     path: LinkPath::new(target.to_string()),
                     target: LinkTarget::Internal(target.to_string()),
                     description,
+                    default_description: Vec::new(),
                     raw_description,
                     description_state: LinkDescriptionState::Explicit,
                     media_kind: LinkMediaKind::Normal,
                     caption: None,
+                    search: None,
                 }),
             });
 
@@ -813,10 +862,12 @@ impl<'a> Converter<'a> {
                         ann: link_ann,
                         data: ObjectData::Plain(raw.clone()),
                     }],
+                    default_description: Vec::new(),
                     raw_description: raw,
                     description_state: LinkDescriptionState::Explicit,
                     media_kind: LinkMediaKind::Normal,
                     caption: None,
+                    search: None,
                 }),
             });
 
@@ -965,6 +1016,7 @@ impl<'a> Converter<'a> {
 
         ObjectData::FootnoteRef {
             label: (!parts.label.is_empty()).then_some(parts.label),
+            resolved_label: None,
             definition: self.objects_from_elements(parts.definition),
         }
     }
@@ -1004,13 +1056,29 @@ impl<'a> Converter<'a> {
                 saw_reference = true;
                 references.push(CiteReference {
                     id: segment[key_start..key_end].to_string(),
-                    prefix: self.objects_from_raw(&segment[..key_start - 1], absolute_start),
-                    suffix: self.objects_from_raw(&segment[key_end..], absolute_start + key_end),
+                    prefix: self
+                        .objects_from_raw_minimal(&segment[..key_start - 1], absolute_start),
+                    suffix: self
+                        .objects_from_raw_minimal(&segment[key_end..], absolute_start + key_end),
                 });
             } else if saw_reference {
-                suffix.extend(self.objects_from_raw(segment, absolute_start));
+                if segment.contains('@') {
+                    self.diagnostic(
+                        node.text_range(),
+                        DiagnosticKind::Conversion,
+                        format!("malformed citation segment `{}`", segment.trim()),
+                    );
+                }
+                suffix.extend(self.objects_from_raw_minimal(segment, absolute_start));
             } else {
-                prefix.extend(self.objects_from_raw(segment, absolute_start));
+                if segment.contains('@') {
+                    self.diagnostic(
+                        node.text_range(),
+                        DiagnosticKind::Conversion,
+                        format!("malformed citation segment `{}`", segment.trim()),
+                    );
+                }
+                prefix.extend(self.objects_from_raw_minimal(segment, absolute_start));
             }
         }
 
@@ -1071,6 +1139,7 @@ impl<'a> Converter<'a> {
         let legacy = syntax_ast::SyntaxLink::cast(node.clone()).expect("link node");
         let path = legacy.path().to_string();
         let target = self.link_target(&path, node.text_range());
+        let search = link_search(&path);
         let description = legacy.description().collect::<Vec<_>>();
         let caption = legacy
             .caption()
@@ -1079,6 +1148,7 @@ impl<'a> Converter<'a> {
         ObjectData::Link(Link {
             path: LinkPath::new(path),
             target,
+            default_description: Vec::new(),
             raw_description: legacy.description_raw(),
             description_state: if legacy.has_description() {
                 LinkDescriptionState::Explicit
@@ -1091,6 +1161,7 @@ impl<'a> Converter<'a> {
                 LinkMediaKind::Normal
             },
             caption,
+            search,
             description: self.objects_from_elements(description),
         })
     }
@@ -1120,6 +1191,11 @@ impl<'a> Converter<'a> {
         }
 
         if let Some((protocol, path)) = path.split_once(':') {
+            if let Some(expanded) =
+                expand_link_abbreviation(protocol, path, &self.link_abbreviations)
+            {
+                return self.link_target(&expanded, range);
+            }
             LinkTarget::Uri {
                 protocol: protocol.to_string(),
                 path: path.to_string(),
@@ -1180,12 +1256,33 @@ impl<'a> Converter<'a> {
         value: &str,
         absolute_start: usize,
     ) -> Vec<Object<ParsedAnnotation>> {
+        self.objects_from_raw_with(value, absolute_start, false)
+    }
+
+    fn objects_from_raw_minimal(
+        &mut self,
+        value: &str,
+        absolute_start: usize,
+    ) -> Vec<Object<ParsedAnnotation>> {
+        self.objects_from_raw_with(value, absolute_start, true)
+    }
+
+    fn objects_from_raw_with(
+        &mut self,
+        value: &str,
+        absolute_start: usize,
+        minimal: bool,
+    ) -> Vec<Object<ParsedAnnotation>> {
         let Some((start, end)) = trimmed_range(value) else {
             return Vec::new();
         };
         let raw = &value[start..end];
         let base = absolute_start + start;
-        let children = standard_object_nodes((raw, self.config).into());
+        let children = if minimal {
+            minimal_object_nodes((raw, self.config).into())
+        } else {
+            standard_object_nodes((raw, self.config).into())
+        };
         let root = SyntaxNode::new_root(
             node(SyntaxKind::PARAGRAPH, children)
                 .into_node()
@@ -1278,12 +1375,4 @@ fn object_run_spans(objects: &[Object<ParsedAnnotation>]) -> Vec<ObjectRunSpan> 
             })
         })
         .collect()
-}
-
-#[derive(Default)]
-struct SemanticPrescan {
-    target_index: TargetIndex,
-    includes: Vec<IncludeDirective<ParsedAnnotation>>,
-    macro_definitions: Vec<MacroDefinition<ParsedAnnotation>>,
-    diagnostics: Vec<Diagnostic>,
 }

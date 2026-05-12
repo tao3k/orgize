@@ -46,12 +46,31 @@ impl<S: AsRef<str>> fmt::Display for LatexEscape<S> {
     }
 }
 
-#[derive(Default)]
 /// Traverser that renders Org syntax events to LaTeX.
+#[derive(Default)]
 pub struct LatexExport {
     output: String,
     list_stack: Vec<ListKind>,
     table_stack: Vec<TableState>,
+    options: LatexExportOptions,
+}
+
+/// Options for lossless syntax-tree LaTeX export.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LatexExportOptions {
+    /// Convert Org special strings such as `--`, `---`, and `...` while rendering text events.
+    pub special_strings: bool,
+    /// Expand entity events to backend LaTeX when true, or preserve the source-backed raw entity.
+    pub expand_entities: bool,
+}
+
+impl Default for LatexExportOptions {
+    fn default() -> Self {
+        Self {
+            special_strings: false,
+            expand_entities: true,
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -66,6 +85,13 @@ struct TableState {
 }
 
 impl LatexExport {
+    pub fn with_options(options: LatexExportOptions) -> Self {
+        Self {
+            options,
+            ..Self::default()
+        }
+    }
+
     pub fn push_str(&mut self, s: impl AsRef<str>) {
         self.output += s.as_ref();
     }
@@ -360,6 +386,11 @@ impl Traverser for LatexExport {
             | Event::Leave(Container::AffiliatedKeyword(_)) => {}
 
             Event::Text(text) => {
+                let text = if self.options.special_strings {
+                    special_strings(&text)
+                } else {
+                    text.to_string()
+                };
                 let _ = write!(&mut self.output, "{}", LatexEscape(text));
             }
 
@@ -421,7 +452,9 @@ impl Traverser for LatexExport {
             }
 
             Event::Entity(entity) => {
-                if entity.is_latex_math() {
+                if !self.options.expand_entities {
+                    let _ = write!(&mut self.output, "{}", LatexEscape(entity.raw()));
+                } else if entity.is_latex_math() {
                     let _ = write!(&mut self.output, "${}$", entity.latex());
                 } else {
                     self.output += entity.latex();
@@ -434,6 +467,15 @@ impl Traverser for LatexExport {
             }
         }
     }
+}
+
+fn special_strings(value: &str) -> String {
+    value
+        .replace("---", "\u{2014}")
+        .replace("--", "\u{2013}")
+        .replace("...", "\u{2026}")
+        .replace("\\-", "\u{00AD}")
+        .replace('\'', "\u{2019}")
 }
 
 fn headline_command(level: usize) -> &'static str {

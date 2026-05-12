@@ -5,7 +5,10 @@ use rowan::{GreenNode, TextSize};
 
 use crate::ast::ParsedAst;
 use crate::config::ParseConfig;
-use crate::export::{HtmlExport, LatexExport, MarkdownExport, TraversalContext, Traverser};
+use crate::export::{
+    HtmlExport, HtmlExportOptions, LatexExport, LatexExportOptions, MarkdownExport,
+    MarkdownExportOptions, TraversalContext, Traverser,
+};
 use crate::syntax::document::document_node;
 use crate::syntax::{OrgLanguage, SyntaxNode};
 use crate::syntax_ast;
@@ -61,6 +64,13 @@ impl Org {
         handler.finish()
     }
 
+    /// Convert org element tree to html-format using explicit html options.
+    pub fn to_html_with_options(&self, options: HtmlExportOptions) -> String {
+        let mut handler = HtmlExport::with_options(options);
+        self.traverse(&mut handler);
+        handler.finish()
+    }
+
     /// Convert org element tree to LaTeX body text using the default LaTeX handler.
     pub fn to_latex(&self) -> String {
         let mut handler = LatexExport::default();
@@ -68,9 +78,23 @@ impl Org {
         handler.finish()
     }
 
+    /// Convert org element tree to LaTeX body text using explicit LaTeX options.
+    pub fn to_latex_with_options(&self, options: LatexExportOptions) -> String {
+        let mut handler = LatexExport::with_options(options);
+        self.traverse(&mut handler);
+        handler.finish()
+    }
+
     /// Convert org element tree to Markdown using the default Markdown handler.
     pub fn to_markdown(&self) -> String {
         let mut handler = MarkdownExport::default();
+        self.traverse(&mut handler);
+        handler.finish()
+    }
+
+    /// Convert org element tree to Markdown using explicit Markdown options.
+    pub fn to_markdown_with_options(&self, options: MarkdownExportOptions) -> String {
+        let mut handler = MarkdownExport::with_options(options);
         self.traverse(&mut handler);
         handler.finish()
     }

@@ -53,7 +53,9 @@ fn semantic_ast_projects_inline_babel_and_footnote_details() {
     let footnote = paragraph
         .iter()
         .find_map(|object| match &object.data {
-            ObjectData::FootnoteRef { label, definition } => Some((label, definition)),
+            ObjectData::FootnoteRef {
+                label, definition, ..
+            } => Some((label, definition)),
             _ => None,
         })
         .expect("footnote ref object");

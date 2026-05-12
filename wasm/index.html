@@ -301,8 +301,12 @@
           "Source ranges, line/column annotations, diagnostics, traversal, `map_ann`, and `try_map_ann` are exposed through parser v2.",
         ],
         [
+          "M15 side tables",
+          "`metadata`, `filetags`, `export_settings`, `link_abbreviations`, and `footnotes` are visible in the Semantic AST tab without changing the lossless tree.",
+        ],
+        [
           "Headlines and tasks",
-          "Custom TODO/DONE declarations, priorities, tags, planning timestamps, property drawers, anchors, and inlinetasks project into semantic nodes.",
+          "Custom TODO/DONE declarations, priorities, tags, planning timestamps, property drawers, effective tags, stable anchors, and inlinetasks project into semantic nodes.",
         ],
         [
           "Blocks and tables",
@@ -310,11 +314,11 @@
         ],
         [
           "Links and targets",
-          "Internal links resolve against headlines, `CUSTOM_ID`, org-id `ID`, explicit targets, radio targets, footnotes, and source/example coderefs.",
+          "Internal links resolve against headlines, `CUSTOM_ID`, org-id `ID`, explicit targets, radio targets, footnotes, and source/example coderefs; default descriptions and search suffixes are projected.",
         ],
         [
           "Objects",
-          "Links, timestamps, citations, macros, targets, radio targets, entities, snippets, inline src/call, markup, code, and verbatim are covered.",
+          "Links, timestamps, balanced-bracket citations, macros, targets, radio targets, entities, snippets, inline src/call, markup, code, and verbatim are covered.",
         ],
         [
           "Preprocessing",
@@ -322,7 +326,7 @@
         ],
         [
           "Export boundary",
-          "HTML, Markdown, and LaTeX rendering continue to use the lossless syntax substrate while the semantic AST is available for indexers and future exporters.",
+          "`project_for_export` adds opt-in pruning and text transforms; HTML, Markdown, and LaTeX defaults continue to use the lossless syntax substrate.",
         ],
       ];
 
@@ -365,6 +369,13 @@ See also:
 -----
 
 #+TODO: NEXT(n) WAIT(w@/!) | DONE(d) CANCELED(c)
+#+TITLE: *Orgize* parser v2 demo
+#+FILETAGS: :browser:wasm:
+#+OPTIONS: H:3 -:t e:nil
+#+SELECT_TAGS: demo
+#+EXCLUDE_TAGS: noexport
+#+LINK: gh https://github.com/%s
+#+LINK: search https://example.test?q=%h
 #+MACRO: badge $1 :: $0
 #+INCLUDE: "guide.org" :lines "1-12" :minlevel 2
 
@@ -378,11 +389,15 @@ SCHEDULED: <2026-05-10 Sun 09:30-10:30 +1w> DEADLINE: <2026-05-17 Sun -2d>
 Semantic links resolve [[#parser-v2-demo][custom IDs]],
 [[id:parser-v2-org-id][org IDs]],
 [[target-one][explicit targets]], [[fn:note][footnotes]],
-and [[coderef:init][source block coderefs]].
+[[gh:tao3k/orgize][link abbreviations]], [[search:parser/v2][encoded abbreviations]],
+and [[coderef:init][source block coderefs]]. The same target without a description
+gets a semantic default: [[#parser-v2-demo]].
 
 Paragraph with <<target-one>>, <<<Radio Target>>>, Radio Target,
-{{{badge(parser, wasm)}}}, [cite:@doe2026; see @roe2026 p. 42],
+{{{badge(parser, wasm)}}}, [cite:see [balanced] @doe2026 p. [42]; cf. @roe2026],
 @@latex:\LaTeX{}@@, src_rust[:exports code]{let answer = 42;} and call_build[:cache yes](target="wasm").
+Inline footnotes include anonymous definitions [fn::anonymous *inline* note] and
+named definitions [fn:named-inline:named inline note].
 
 #+begin_export markdown
 **Markdown export block** survives in the Markdown tab.

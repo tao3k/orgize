@@ -2,9 +2,9 @@
 
 use super::{
     AstMut, AstRef, BareAst, Block, Citation, CiteReference, Document, Drawer, Element,
-    ElementData, FootnoteDef, IncludeDirective, Inlinetask, InlinetaskEnd, Keyword, Link, List,
-    ListItem, MacroDefinition, Object, ObjectData, Property, Section, Table, TableCell, TableRow,
-    TargetDefinition,
+    ElementData, FootnoteDef, FootnoteDefinition, FootnoteEntry, IncludeDirective, Inlinetask,
+    InlinetaskEnd, Keyword, Link, List, ListItem, MacroDefinition, Object, ObjectData, Property,
+    Section, Table, TableCell, TableRow, TargetDefinition,
 };
 
 impl<A> Document<A> {
@@ -54,6 +54,10 @@ impl<A> Document<A> {
         Document {
             ann: f(&self.ann),
             properties: self.properties.iter().map(|x| x.map_ann_with(f)).collect(),
+            metadata: self.metadata.iter().map(|x| x.map_ann_with(f)).collect(),
+            filetags: self.filetags.clone(),
+            export_settings: self.export_settings.clone(),
+            link_abbreviations: self.link_abbreviations.clone(),
             includes: self.includes.iter().map(|x| x.map_ann_with(f)).collect(),
             macro_definitions: self
                 .macro_definitions
@@ -61,6 +65,7 @@ impl<A> Document<A> {
                 .map(|x| x.map_ann_with(f))
                 .collect(),
             targets: self.targets.iter().map(|x| x.map_ann_with(f)).collect(),
+            footnotes: self.footnotes.iter().map(|x| x.map_ann_with(f)).collect(),
             children: self.children.iter().map(|x| x.map_ann_with(f)).collect(),
             sections: self.sections.iter().map(|x| x.map_ann_with(f)).collect(),
             diagnostics: self.diagnostics.clone(),
@@ -78,6 +83,14 @@ impl<A> Document<A> {
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
+            metadata: self
+                .metadata
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            filetags: self.filetags.clone(),
+            export_settings: self.export_settings.clone(),
+            link_abbreviations: self.link_abbreviations.clone(),
             includes: self
                 .includes
                 .iter()
@@ -90,6 +103,11 @@ impl<A> Document<A> {
                 .collect::<Result<_, _>>()?,
             targets: self
                 .targets
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            footnotes: self
+                .footnotes
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
@@ -115,6 +133,9 @@ impl<A> Document<A> {
         for property in &self.properties {
             property.visit_with(f);
         }
+        for keyword in &self.metadata {
+            keyword.visit_with(f);
+        }
         for include in &self.includes {
             include.visit_with(f);
         }
@@ -123,6 +144,9 @@ impl<A> Document<A> {
         }
         for target in &self.targets {
             target.visit_with(f);
+        }
+        for footnote in &self.footnotes {
+            footnote.visit_with(f);
         }
         for child in &self.children {
             child.visit_with(f);
@@ -140,6 +164,9 @@ impl<A> Document<A> {
         for property in &mut self.properties {
             property.visit_mut_with(f);
         }
+        for keyword in &mut self.metadata {
+            keyword.visit_mut_with(f);
+        }
         for include in &mut self.includes {
             include.visit_mut_with(f);
         }
@@ -148,6 +175,9 @@ impl<A> Document<A> {
         }
         for target in &mut self.targets {
             target.visit_mut_with(f);
+        }
+        for footnote in &mut self.footnotes {
+            footnote.visit_mut_with(f);
         }
         for child in &mut self.children {
             child.visit_mut_with(f);
@@ -165,6 +195,9 @@ impl<A> Document<A> {
         for property in &self.properties {
             acc = property.fold_with(acc, f);
         }
+        for keyword in &self.metadata {
+            acc = keyword.fold_with(acc, f);
+        }
         for include in &self.includes {
             acc = include.fold_with(acc, f);
         }
@@ -173,6 +206,9 @@ impl<A> Document<A> {
         }
         for target in &self.targets {
             acc = target.fold_with(acc, f);
+        }
+        for footnote in &self.footnotes {
+            acc = footnote.fold_with(acc, f);
         }
         for child in &self.children {
             acc = child.fold_with(acc, f);
@@ -293,6 +329,7 @@ impl<A> TargetDefinition<A> {
             key: self.key.clone(),
             value: self.value.clone(),
             raw: self.raw.clone(),
+            alias: self.alias.iter().map(|x| x.map_ann_with(f)).collect(),
         }
     }
 
@@ -306,6 +343,11 @@ impl<A> TargetDefinition<A> {
             key: self.key.clone(),
             value: self.value.clone(),
             raw: self.raw.clone(),
+            alias: self
+                .alias
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
         })
     }
 
@@ -314,6 +356,9 @@ impl<A> TargetDefinition<A> {
         F: FnMut(AstRef<'_, A>),
     {
         f(AstRef::TargetDefinition(self));
+        for object in &self.alias {
+            object.visit_with(f);
+        }
     }
 
     fn visit_mut_with<F>(&mut self, f: &mut F)
@@ -321,13 +366,159 @@ impl<A> TargetDefinition<A> {
         F: FnMut(AstMut<'_, A>),
     {
         f(AstMut::TargetDefinition(self));
+        for object in &mut self.alias {
+            object.visit_mut_with(f);
+        }
     }
 
     fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
     where
         F: FnMut(T, AstRef<'_, A>) -> T,
     {
-        f(init, AstRef::TargetDefinition(self))
+        let mut acc = f(init, AstRef::TargetDefinition(self));
+        for object in &self.alias {
+            acc = object.fold_with(acc, f);
+        }
+        acc
+    }
+}
+
+impl<A> FootnoteEntry<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> FootnoteEntry<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        FootnoteEntry {
+            ann: f(&self.ann),
+            label: self.label.clone(),
+            definition: self.definition.map_ann_with(f),
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<FootnoteEntry<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(FootnoteEntry {
+            ann: f(&self.ann)?,
+            label: self.label.clone(),
+            definition: self.definition.try_map_ann_with(f)?,
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::FootnoteEntry(self));
+        self.definition.visit_with(f);
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::FootnoteEntry(self));
+        self.definition.visit_mut_with(f);
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        self.definition
+            .fold_with(f(init, AstRef::FootnoteEntry(self)), f)
+    }
+}
+
+impl<A> FootnoteDefinition<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> FootnoteDefinition<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        match self {
+            FootnoteDefinition::Standalone(elements) => {
+                FootnoteDefinition::Standalone(elements.iter().map(|x| x.map_ann_with(f)).collect())
+            }
+            FootnoteDefinition::Inline(objects) => {
+                FootnoteDefinition::Inline(objects.iter().map(|x| x.map_ann_with(f)).collect())
+            }
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<FootnoteDefinition<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(match self {
+            FootnoteDefinition::Standalone(elements) => FootnoteDefinition::Standalone(
+                elements
+                    .iter()
+                    .map(|x| x.try_map_ann_with(f))
+                    .collect::<Result<_, _>>()?,
+            ),
+            FootnoteDefinition::Inline(objects) => FootnoteDefinition::Inline(
+                objects
+                    .iter()
+                    .map(|x| x.try_map_ann_with(f))
+                    .collect::<Result<_, _>>()?,
+            ),
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        match self {
+            FootnoteDefinition::Standalone(elements) => {
+                for element in elements {
+                    element.visit_with(f);
+                }
+            }
+            FootnoteDefinition::Inline(objects) => {
+                for object in objects {
+                    object.visit_with(f);
+                }
+            }
+        }
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        match self {
+            FootnoteDefinition::Standalone(elements) => {
+                for element in elements {
+                    element.visit_mut_with(f);
+                }
+            }
+            FootnoteDefinition::Inline(objects) => {
+                for object in objects {
+                    object.visit_mut_with(f);
+                }
+            }
+        }
+    }
+
+    fn fold_with<T, F>(&self, mut acc: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        match self {
+            FootnoteDefinition::Standalone(elements) => {
+                for element in elements {
+                    acc = element.fold_with(acc, f);
+                }
+            }
+            FootnoteDefinition::Inline(objects) => {
+                for object in objects {
+                    acc = object.fold_with(acc, f);
+                }
+            }
+        }
+        acc
     }
 }
 
@@ -347,6 +538,7 @@ impl<A> Section<A> {
             raw_title: self.raw_title.clone(),
             anchor: self.anchor.clone(),
             tags: self.tags.clone(),
+            effective_tags: self.effective_tags.clone(),
             planning: self.planning.clone(),
             children: self.children.iter().map(|x| x.map_ann_with(f)).collect(),
             subsections: self.subsections.iter().map(|x| x.map_ann_with(f)).collect(),
@@ -376,6 +568,7 @@ impl<A> Section<A> {
             raw_title: self.raw_title.clone(),
             anchor: self.anchor.clone(),
             tags: self.tags.clone(),
+            effective_tags: self.effective_tags.clone(),
             planning: self.planning.clone(),
             children: self
                 .children
@@ -661,6 +854,8 @@ impl<A> Keyword<A> {
             key: self.key.clone(),
             optional: self.optional.clone(),
             value: self.value.clone(),
+            parsed: self.parsed.iter().map(|x| x.map_ann_with(f)).collect(),
+            attributes: self.attributes.clone(),
         }
     }
 
@@ -673,6 +868,12 @@ impl<A> Keyword<A> {
             key: self.key.clone(),
             optional: self.optional.clone(),
             value: self.value.clone(),
+            parsed: self
+                .parsed
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            attributes: self.attributes.clone(),
         })
     }
 
@@ -681,6 +882,9 @@ impl<A> Keyword<A> {
         F: FnMut(AstRef<'_, A>),
     {
         f(AstRef::Keyword(self));
+        for object in &self.parsed {
+            object.visit_with(f);
+        }
     }
 
     fn visit_mut_with<F>(&mut self, f: &mut F)
@@ -688,13 +892,20 @@ impl<A> Keyword<A> {
         F: FnMut(AstMut<'_, A>),
     {
         f(AstMut::Keyword(self));
+        for object in &mut self.parsed {
+            object.visit_mut_with(f);
+        }
     }
 
     fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
     where
         F: FnMut(T, AstRef<'_, A>) -> T,
     {
-        f(init, AstRef::Keyword(self))
+        let mut acc = f(init, AstRef::Keyword(self));
+        for object in &self.parsed {
+            acc = object.fold_with(acc, f);
+        }
+        acc
     }
 }
 
@@ -1408,8 +1619,13 @@ impl<A> ObjectData<A> {
                 backend: backend.clone(),
                 value: value.clone(),
             },
-            ObjectData::FootnoteRef { label, definition } => ObjectData::FootnoteRef {
+            ObjectData::FootnoteRef {
+                label,
+                resolved_label,
+                definition,
+            } => ObjectData::FootnoteRef {
                 label: label.clone(),
+                resolved_label: resolved_label.clone(),
                 definition: definition.iter().map(|x| x.map_ann_with(f)).collect(),
             },
             ObjectData::Citation(citation) => ObjectData::Citation(citation.map_ann_with(f)),
@@ -1488,8 +1704,13 @@ impl<A> ObjectData<A> {
                 backend: backend.clone(),
                 value: value.clone(),
             },
-            ObjectData::FootnoteRef { label, definition } => ObjectData::FootnoteRef {
+            ObjectData::FootnoteRef {
+                label,
+                resolved_label,
+                definition,
+            } => ObjectData::FootnoteRef {
                 label: label.clone(),
+                resolved_label: resolved_label.clone(),
                 definition: definition
                     .iter()
                     .map(|x| x.try_map_ann_with(f))
@@ -1641,10 +1862,16 @@ impl<A> Link<A> {
             path: self.path.clone(),
             target: self.target.clone(),
             description: self.description.iter().map(|x| x.map_ann_with(f)).collect(),
+            default_description: self
+                .default_description
+                .iter()
+                .map(|x| x.map_ann_with(f))
+                .collect(),
             raw_description: self.raw_description.clone(),
             description_state: self.description_state,
             media_kind: self.media_kind,
             caption: self.caption.as_ref().map(|caption| caption.map_ann_with(f)),
+            search: self.search.clone(),
         }
     }
 
@@ -1660,6 +1887,11 @@ impl<A> Link<A> {
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
+            default_description: self
+                .default_description
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
             raw_description: self.raw_description.clone(),
             description_state: self.description_state,
             media_kind: self.media_kind,
@@ -1668,6 +1900,7 @@ impl<A> Link<A> {
                 .as_ref()
                 .map(|caption| caption.try_map_ann_with(f))
                 .transpose()?,
+            search: self.search.clone(),
         })
     }
 
@@ -1679,6 +1912,9 @@ impl<A> Link<A> {
             caption.visit_with(f);
         }
         for object in &self.description {
+            object.visit_with(f);
+        }
+        for object in &self.default_description {
             object.visit_with(f);
         }
     }
@@ -1693,6 +1929,9 @@ impl<A> Link<A> {
         for object in &mut self.description {
             object.visit_mut_with(f);
         }
+        for object in &mut self.default_description {
+            object.visit_mut_with(f);
+        }
     }
 
     fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
@@ -1704,6 +1943,9 @@ impl<A> Link<A> {
             acc = caption.fold_with(acc, f);
         }
         for object in &self.description {
+            acc = object.fold_with(acc, f);
+        }
+        for object in &self.default_description {
             acc = object.fold_with(acc, f);
         }
         acc

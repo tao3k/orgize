@@ -39,9 +39,22 @@ those imports to `orgize::syntax_ast::*`.
 - Preprocessing directives are explicit side tables: `#+INCLUDE:` directives
   and `#+MACRO:` definitions are collected without changing the lossless tree.
 - Macro expansion is opt-in through semantic side-table helpers.
+- Document metadata/settings are explicit semantic side tables: parsed metadata
+  keywords, `#+FILETAGS:`, typed export settings, link abbreviations, and
+  footnote entries are available without changing the lossless tree.
 - Internal links resolve against document-local headline, `CUSTOM_ID`, org-id
   `ID`, target, radio target, footnote, and coderef targets while preserving
   original paths.
+- Semantic link post-processing provides stable parser-v2 anchors, target alias
+  fallback descriptions, `%s`/`%h` link abbreviation expansion, and
+  `id:ID::*search` metadata.
+- Export projection is opt-in through `Document::project_for_export`, covering
+  `COMMENT`, `:ARCHIVE:`, select/exclude tag pruning, headline level shifting,
+  and special-string transformation without mutating `ParsedAst`.
+- HTML/Markdown/LaTeX exporters expose options for opt-in special strings and
+  configurable entity expansion while keeping current `Org::to_*()` defaults.
+- Citation parsing uses balanced bracket scanning and semantic diagnostics for
+  malformed citation segments that still reach the syntax tree.
 - Quote punctuation remains plain text; text markup inside quote boundaries is
   parsed according to Org's text-markup PRE/POST rules.
 - Lesser-used semantic element variants are covered for comments, drawers,
@@ -84,15 +97,16 @@ direnv exec . cargo fmt --all -- --check
 direnv exec . cargo test --workspace --all-targets --all-features
 direnv exec . cargo clippy --workspace --all-targets --all-features -- -D warnings
 direnv exec . cargo test --doc --all-features
+direnv exec . cargo run --quiet --manifest-path /Users/guangtao/ghq/github.com/tao3k/rust-lang-project-harness/Cargo.toml -- --json /Users/guangtao/ghq/github.com/tao3k/orgize
 git diff --check
 rg -n "<foreign-reference-and-policy-boundary-pattern>" Cargo.toml Cargo.lock src tests README.md .github wasm examples build.rs benches docs --glob '!target/**'
 ```
 
 The final boundary grep should use the repository's current forbidden
 reference/toolchain and policy-bypass pattern, and it should return no matches.
-The local `.data/` directory may remain untracked as a research checkout, but
-it must not enter Cargo, CI, the release package, tests, or generated
-artifacts.
+The Rust project harness JSON should report zero findings. The local `.data/`
+directory may remain untracked as a research checkout, but it must not enter
+Cargo, CI, the release package, tests, or generated artifacts.
 
 ## PR closeout
 

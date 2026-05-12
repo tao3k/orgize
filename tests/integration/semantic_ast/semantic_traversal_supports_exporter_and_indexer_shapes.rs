@@ -66,7 +66,7 @@ quoted
     });
 
     assert_eq!(shape.headlines, ["Export Me".to_string()]);
-    assert_eq!(shape.paragraphs, 5);
+    assert_eq!(shape.paragraphs, 6);
     assert_eq!(shape.blocks, 1);
     assert_eq!(shape.links, 1);
     assert_eq!(shape.timestamps, 1);

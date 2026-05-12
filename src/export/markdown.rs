@@ -11,13 +11,32 @@ use super::event::{Container, Event};
 use super::TraversalContext;
 use super::Traverser;
 
-#[derive(Default)]
 /// Traverser that renders Org syntax events to Markdown.
+#[derive(Default)]
 pub struct MarkdownExport {
     output: String,
 
     inside_blockquote: bool,
     table_stack: Vec<TableState>,
+    options: MarkdownExportOptions,
+}
+
+/// Options for lossless syntax-tree Markdown export.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MarkdownExportOptions {
+    /// Convert Org special strings such as `--`, `---`, and `...` while rendering text events.
+    pub special_strings: bool,
+    /// Expand entity events to UTF-8 characters when true, or preserve the source-backed raw entity.
+    pub expand_entities: bool,
+}
+
+impl Default for MarkdownExportOptions {
+    fn default() -> Self {
+        Self {
+            special_strings: false,
+            expand_entities: true,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -28,6 +47,13 @@ struct TableState {
 }
 
 impl MarkdownExport {
+    pub fn with_options(options: MarkdownExportOptions) -> Self {
+        Self {
+            options,
+            ..Self::default()
+        }
+    }
+
     pub fn push_str(&mut self, s: impl AsRef<str>) {
         self.output += s.as_ref();
     }
@@ -234,10 +260,15 @@ impl Traverser for MarkdownExport {
             }
 
             Event::Text(text) => {
+                let text = if self.options.special_strings {
+                    special_strings(&text)
+                } else {
+                    text.to_string()
+                };
                 if self.inside_blockquote {
                     self.push_blockquote_text(&text);
                 } else {
-                    self.output += &*text;
+                    self.output += &text;
                 }
             }
 
@@ -264,11 +295,26 @@ impl Traverser for MarkdownExport {
                 let _ = write!(&mut self.output, "{}", &latex.syntax);
             }
 
-            Event::Entity(entity) => self.output += entity.utf8(),
+            Event::Entity(entity) => {
+                if self.options.expand_entities {
+                    self.output += entity.utf8();
+                } else {
+                    self.output += &entity.raw();
+                }
+            }
 
             _ => {}
         }
     }
+}
+
+fn special_strings(value: &str) -> String {
+    value
+        .replace("---", "\u{2014}")
+        .replace("--", "\u{2013}")
+        .replace("...", "\u{2026}")
+        .replace("\\-", "\u{00AD}")
+        .replace('\'', "\u{2019}")
 }
 
 impl MarkdownExport {

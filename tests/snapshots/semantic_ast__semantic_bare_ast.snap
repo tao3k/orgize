@@ -6,6 +6,32 @@ expression: doc.to_bare()
 Document {
     ann: (),
     properties: [],
+    metadata: [
+        Keyword {
+            ann: (),
+            key: "TITLE",
+            optional: None,
+            value: " Demo",
+            parsed: [
+                Object {
+                    ann: (),
+                    data: Plain(
+                        "Demo",
+                    ),
+                },
+            ],
+            attributes: [],
+        },
+    ],
+    filetags: [],
+    export_settings: ExportSettings {
+        select_tags: [],
+        exclude_tags: [],
+        headline_levels: None,
+        special_strings: None,
+        expand_entities: None,
+    },
+    link_abbreviations: [],
     includes: [],
     macro_definitions: [],
     targets: [
@@ -15,6 +41,14 @@ Document {
             key: "Heading",
             value: "Heading",
             raw: "Heading",
+            alias: [
+                Object {
+                    ann: (),
+                    data: Plain(
+                        "Heading ",
+                    ),
+                },
+            ],
         },
         TargetDefinition {
             ann: (),
@@ -22,8 +56,17 @@ Document {
             key: "#heading-id",
             value: "heading-id",
             raw: "heading-id",
+            alias: [
+                Object {
+                    ann: (),
+                    data: Plain(
+                        "Heading ",
+                    ),
+                },
+            ],
         },
     ],
+    footnotes: [],
     children: [
         Element {
             ann: (),
@@ -34,6 +77,15 @@ Document {
                     key: "TITLE",
                     optional: None,
                     value: " Demo",
+                    parsed: [
+                        Object {
+                            ann: (),
+                            data: Plain(
+                                "Demo",
+                            ),
+                        },
+                    ],
+                    attributes: [],
                 },
             ),
         },
@@ -70,6 +122,9 @@ Document {
                 "heading-id",
             ),
             tags: [
+                "work",
+            ],
+            effective_tags: [
                 "work",
             ],
             planning: Planning {
@@ -149,10 +204,12 @@ Document {
                                                 ),
                                             },
                                         ],
+                                        default_description: [],
                                         raw_description: "a link",
                                         description_state: Explicit,
                                         media_kind: Normal,
                                         caption: None,
+                                        search: None,
                                     },
                                 ),
                             },

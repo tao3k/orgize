@@ -49,14 +49,33 @@ impl<S: AsRef<str>> fmt::Display for HtmlEscape<S> {
     }
 }
 
-#[derive(Default)]
 /// Traverser that renders Org syntax events to HTML.
+#[derive(Default)]
 pub struct HtmlExport {
     output: String,
 
     in_descriptive_list: Vec<bool>,
 
     table_row: TableRow,
+    options: HtmlExportOptions,
+}
+
+/// Options for lossless syntax-tree HTML export.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HtmlExportOptions {
+    /// Convert Org special strings such as `--`, `---`, and `...` while rendering text events.
+    pub special_strings: bool,
+    /// Expand entity events to backend HTML when true, or preserve the source-backed raw entity.
+    pub expand_entities: bool,
+}
+
+impl Default for HtmlExportOptions {
+    fn default() -> Self {
+        Self {
+            special_strings: false,
+            expand_entities: true,
+        }
+    }
 }
 
 #[derive(Default, PartialEq, Eq)]
@@ -69,6 +88,13 @@ enum TableRow {
 }
 
 impl HtmlExport {
+    pub fn with_options(options: HtmlExportOptions) -> Self {
+        Self {
+            options,
+            ..Self::default()
+        }
+    }
+
     pub fn push_str(&mut self, s: impl AsRef<str>) {
         self.output += s.as_ref();
     }
@@ -297,6 +323,11 @@ impl Traverser for HtmlExport {
             Event::Leave(Container::Link(_)) => self.output += "</a>",
 
             Event::Text(text) => {
+                let text = if self.options.special_strings {
+                    special_strings(&text)
+                } else {
+                    text.to_string()
+                };
                 let _ = write!(&mut self.output, "{}", HtmlEscape(text));
             }
 
@@ -339,9 +370,24 @@ impl Traverser for HtmlExport {
             // ignores keyword
             Event::Enter(Container::Keyword(_)) => ctx.skip(),
 
-            Event::Entity(entity) => self.output += entity.html(),
+            Event::Entity(entity) => {
+                if self.options.expand_entities {
+                    self.output += entity.html();
+                } else {
+                    let _ = write!(&mut self.output, "{}", HtmlEscape(entity.raw()));
+                }
+            }
 
             _ => {}
         }
     }
+}
+
+fn special_strings(value: &str) -> String {
+    value
+        .replace("---", "\u{2014}")
+        .replace("--", "\u{2013}")
+        .replace("...", "\u{2026}")
+        .replace("\\-", "\u{00AD}")
+        .replace('\'', "\u{2019}")
 }

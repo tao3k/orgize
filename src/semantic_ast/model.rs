@@ -87,12 +87,35 @@ impl From<&str> for UnsupportedSyntaxKind {
 pub struct Document<A = ()> {
     pub ann: A,
     pub properties: Vec<Property<A>>,
+    pub metadata: Vec<Keyword<A>>,
+    pub filetags: Vec<String>,
+    pub export_settings: ExportSettings,
+    pub link_abbreviations: Vec<LinkAbbreviation>,
     pub includes: Vec<IncludeDirective<A>>,
     pub macro_definitions: Vec<MacroDefinition<A>>,
     pub targets: Vec<TargetDefinition<A>>,
+    pub footnotes: Vec<FootnoteEntry<A>>,
     pub children: Vec<Element<A>>,
     pub sections: Vec<Section<A>>,
     pub diagnostics: Vec<Diagnostic>,
+}
+
+/// Document-level export and indexing settings collected from Org keywords.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ExportSettings {
+    pub select_tags: Vec<String>,
+    pub exclude_tags: Vec<String>,
+    pub headline_levels: Option<usize>,
+    pub special_strings: Option<bool>,
+    pub expand_entities: Option<bool>,
+}
+
+/// `#+LINK:` abbreviation definition.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LinkAbbreviation {
+    pub name: String,
+    pub replacement: String,
+    pub raw_value: String,
 }
 
 /// `#+INCLUDE:` directive collected for explicit preprocessing.
@@ -151,6 +174,7 @@ pub struct TargetDefinition<A = ()> {
     pub key: String,
     pub value: String,
     pub raw: String,
+    pub alias: Vec<Object<A>>,
 }
 
 /// Source category for a document-local target.
@@ -185,6 +209,7 @@ pub struct Section<A = ()> {
     pub raw_title: String,
     pub anchor: Option<String>,
     pub tags: Vec<String>,
+    pub effective_tags: Vec<String>,
     pub planning: Planning,
     pub children: Vec<Element<A>>,
     pub subsections: Vec<Section<A>>,
@@ -252,6 +277,16 @@ pub struct Keyword<A = ()> {
     pub key: String,
     pub optional: Option<String>,
     pub value: String,
+    pub parsed: Vec<Object<A>>,
+    pub attributes: Vec<KeywordAttribute>,
+}
+
+/// Structured `:key value` argument from an `ATTR_*` keyword.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct KeywordAttribute {
+    pub key: String,
+    pub value: Option<String>,
+    pub raw: String,
 }
 
 /// Semantic element in a document, section, drawer, list item, or block.
@@ -478,6 +513,21 @@ pub struct FootnoteDef<A = ()> {
     pub children: Vec<Element<A>>,
 }
 
+/// Document-level footnote registry entry.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FootnoteEntry<A = ()> {
+    pub ann: A,
+    pub label: String,
+    pub definition: FootnoteDefinition<A>,
+}
+
+/// Body storage for standalone and inline footnote definitions.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum FootnoteDefinition<A = ()> {
+    Standalone(Vec<Element<A>>),
+    Inline(Vec<Object<A>>),
+}
+
 /// Semantic object inside paragraph-like content.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Object<A = ()> {
@@ -512,6 +562,7 @@ pub enum ObjectData<A = ()> {
     /// Footnote reference, optionally with inline definition objects.
     FootnoteRef {
         label: Option<String>,
+        resolved_label: Option<String>,
         definition: Vec<Object<A>>,
     },
     /// Citation object with parsed references and affixes.
@@ -755,10 +806,12 @@ pub struct Link<A = ()> {
     pub path: LinkPath,
     pub target: LinkTarget,
     pub description: Vec<Object<A>>,
+    pub default_description: Vec<Object<A>>,
     pub raw_description: String,
     pub description_state: LinkDescriptionState,
     pub media_kind: LinkMediaKind,
     pub caption: Option<Keyword<A>>,
+    pub search: Option<LinkSearch>,
 }
 
 impl<A> Link<A> {
@@ -775,6 +828,55 @@ impl<A> Link<A> {
     /// Returns true when the link should be treated as an image.
     pub fn is_image(&self) -> bool {
         self.media_kind.is_image()
+    }
+
+    /// Returns the explicit description when present, otherwise target-derived fallback text.
+    pub fn description_or_default(&self) -> &[Object<A>] {
+        if self.has_description() {
+            &self.description
+        } else {
+            &self.default_description
+        }
+    }
+}
+
+/// Search suffix attached to an internal link target, such as `id:x::*Heading`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LinkSearch {
+    pub raw: String,
+    pub kind: LinkSearchKind,
+}
+
+/// Normalized category for an Org link search suffix.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LinkSearchKind {
+    Headline,
+    Text,
+}
+
+/// Options for explicit semantic export projection.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExportProjectionOptions {
+    pub prune: bool,
+    pub special_strings: bool,
+    pub expand_entities: bool,
+    pub expand_link_abbreviations: bool,
+    pub select_tags: Vec<String>,
+    pub exclude_tags: Vec<String>,
+    pub headline_level_shift: isize,
+}
+
+impl Default for ExportProjectionOptions {
+    fn default() -> Self {
+        Self {
+            prune: false,
+            special_strings: false,
+            expand_entities: true,
+            expand_link_abbreviations: true,
+            select_tags: Vec::new(),
+            exclude_tags: Vec::new(),
+            headline_level_shift: 0,
+        }
     }
 }
 
@@ -806,6 +908,8 @@ pub enum AstRef<'a, A> {
     MacroDefinition(&'a MacroDefinition<A>),
     /// Document-local internal link target.
     TargetDefinition(&'a TargetDefinition<A>),
+    /// Document-level footnote registry entry.
+    FootnoteEntry(&'a FootnoteEntry<A>),
     /// Section node.
     Section(&'a Section<A>),
     /// Property node.
@@ -838,6 +942,8 @@ pub enum AstMut<'a, A> {
     MacroDefinition(&'a mut MacroDefinition<A>),
     /// Document-local internal link target.
     TargetDefinition(&'a mut TargetDefinition<A>),
+    /// Document-level footnote registry entry.
+    FootnoteEntry(&'a mut FootnoteEntry<A>),
     /// Section node.
     Section(&'a mut Section<A>),
     /// Property node.

@@ -1,4 +1,5 @@
 use nom::{Err, IResult};
+use std::ops::ControlFlow;
 
 use super::{
     combinator::{l_bracket_token, node, r_bracket_token, GreenElement},
@@ -16,7 +17,7 @@ pub(crate) fn citation_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 fn citation_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     let (input, l_bracket) = l_bracket_token(input)?;
-    let Some(body_end) = input.as_str().find(']') else {
+    let Some(body_end) = citation_body_end(input.as_str()) else {
         return Err(Err::Error(()));
     };
     let body = input.slice(..body_end);
@@ -35,6 +36,40 @@ fn citation_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
             [l_bracket, body.text_token(), r_bracket],
         ),
     ))
+}
+
+fn citation_body_end(value: &str) -> Option<usize> {
+    value
+        .char_indices()
+        .try_fold(CitationBodyScan::default(), |scan, (index, ch)| {
+            scan.advance(index, ch)
+        })
+        .break_value()
+        .flatten()
+}
+
+#[derive(Default)]
+struct CitationBodyScan {
+    depth: usize,
+    escaped: bool,
+}
+
+impl CitationBodyScan {
+    fn advance(mut self, index: usize, ch: char) -> ControlFlow<Option<usize>, Self> {
+        if self.escaped {
+            self.escaped = false;
+            return ControlFlow::Continue(self);
+        }
+        match ch {
+            '\\' => self.escaped = true,
+            '[' => self.depth += 1,
+            ']' if self.depth == 0 => return ControlFlow::Break(Some(index)),
+            ']' => self.depth -= 1,
+            '\n' | '\r' => return ControlFlow::Break(None),
+            _ => {}
+        }
+        ControlFlow::Continue(self)
+    }
 }
 
 fn is_valid_citation_body(body: &str) -> bool {

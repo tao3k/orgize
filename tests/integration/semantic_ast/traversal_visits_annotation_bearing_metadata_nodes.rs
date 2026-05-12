@@ -45,7 +45,7 @@ fn traversal_visits_annotation_bearing_metadata_nodes() {
         counts
     });
 
-    assert_eq!(counts.keywords, 3);
+    assert_eq!(counts.keywords, 5);
     assert_eq!(counts.properties, 1);
     assert_eq!(counts.list_items, 1);
     assert_eq!(counts.table_rows, 3);

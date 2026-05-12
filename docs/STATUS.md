@@ -264,57 +264,59 @@ local foreign reference parser and exporter-processing model. The checkout is
 research-only: no foreign source, tests, generated output, build tooling, or
 runtime dependency is copied into this repository.
 
-- [ ] Parsed keyword value model
-  - [ ] Preserve raw keyword text while also projecting parsed object values for
+- [x] Parsed keyword value model
+  - [x] Preserve raw keyword text while also projecting parsed object values for
         document metadata keywords such as `#+TITLE:`, `#+AUTHOR:`, `#+DATE:`,
         and parsed affiliated keywords such as `#+CAPTION:`.
-  - [ ] Project `ATTR_*` affiliated keywords into backend-specific structured
+  - [x] Project `ATTR_*` affiliated keywords into backend-specific structured
         arguments instead of exposing only raw keyword value text.
-- [ ] Document/export setting side tables
-  - [ ] Collect `#+FILETAGS:` as document-level metadata and decide how file
+- [x] Document/export setting side tables
+  - [x] Collect `#+FILETAGS:` as document-level metadata and decide how file
         tags participate in section tag inheritance.
-  - [ ] Parse export control keywords such as `#+OPTIONS:`, `#+SELECT_TAGS:`,
+  - [x] Parse export control keywords such as `#+OPTIONS:`, `#+SELECT_TAGS:`,
         and `#+EXCLUDE_TAGS:` into a typed settings side table for exporters and
         indexers.
-  - [ ] Model exporter-facing toggles for special strings, entity expansion,
+  - [x] Model exporter-facing toggles for special strings, entity expansion,
         headline export depth, and headline level shifting without changing the
         lossless syntax substrate.
-- [ ] Export pruning semantics
-  - [ ] Add an opt-in semantic/export pass for `COMMENT` headlines,
+- [x] Export pruning semantics
+  - [x] Add an opt-in semantic/export pass for `COMMENT` headlines,
         `:ARCHIVE:`, selected tags, and excluded tags.
-  - [ ] Keep pruning out of the parser itself so `ParsedAst` remains a faithful
+  - [x] Keep pruning out of the parser itself so `ParsedAst` remains a faithful
         source projection.
-- [ ] Link post-processing parity
-  - [ ] Generate stable unique headline anchors for headlines without
+- [x] Link post-processing parity
+  - [x] Generate stable unique headline anchors for headlines without
         `CUSTOM_ID` or `ID`, including collision handling.
-  - [ ] Use target aliases as default descriptions for links without explicit
-        descriptions, including headline titles, explicit targets, and list item
-        counters.
-  - [ ] Support configurable link abbreviations before final URI/internal link
+  - [x] Use target aliases as default descriptions for links without explicit
+        descriptions, including headline titles, explicit targets, radio
+        targets, and source-backed target kinds. List item counters remain
+        semantic list metadata rather than a linkable target source in the
+        current lossless syntax surface.
+  - [x] Support configurable link abbreviations before final URI/internal link
         classification.
-  - [ ] Extend `id:ID::*search` handling from local ID normalization to search
+  - [x] Extend `id:ID::*search` handling from local ID normalization to search
         context resolution when an exporter/indexer requests it.
-- [ ] Footnote post-processing parity
-  - [ ] Register inline footnote definitions in a document side table.
-  - [ ] Assign deterministic generated labels for anonymous inline footnotes.
-  - [ ] Resolve footnote references against both standalone definitions and
+- [x] Footnote post-processing parity
+  - [x] Register inline footnote definitions in a document side table.
+  - [x] Assign deterministic generated labels for anonymous inline footnotes.
+  - [x] Resolve footnote references against both standalone definitions and
         inline definitions without mutating the lossless tree.
-- [ ] Citation grammar parity
-  - [ ] Parse citation bodies with balanced bracket handling instead of stopping
+- [x] Citation grammar parity
+  - [x] Parse citation bodies with balanced bracket handling instead of stopping
         at the first `]`.
-  - [ ] Align org-cite key parsing and global/reference prefix/suffix parsing
+  - [x] Align org-cite key parsing and global/reference prefix/suffix parsing
         with the narrower citation object context.
-  - [ ] Add semantic diagnostics for malformed citation segments that still
+  - [x] Add semantic diagnostics for malformed citation segments that still
         reach the lossless syntax tree.
-- [ ] Object-context parity
-  - [ ] Decide whether single/double quoted spans should become dedicated
+- [x] Object-context parity
+  - [x] Decide whether single/double quoted spans should become dedicated
         semantic quote objects or remain the current intentional plain-text
         punctuation behavior.
-  - [ ] Audit minimal-vs-standard object parsing contexts for citations,
+  - [x] Audit minimal-vs-standard object parsing contexts for citations,
         subscript/superscript bodies, list tags, and footnote inline
         definitions so nested objects are neither under-parsed nor over-parsed.
-- [ ] Export-only text transformations
-  - [ ] Add opt-in exporter transformations for special strings such as `--`,
+- [x] Export-only text transformations
+  - [x] Add opt-in exporter transformations for special strings such as `--`,
         `---`, `...`, escaped hyphen, and apostrophe replacement.
-  - [ ] Keep entity expansion configurable per exporter while semantic AST keeps
+  - [x] Keep entity expansion configurable per exporter while semantic AST keeps
         the source-backed entity object.

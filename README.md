@@ -82,6 +82,21 @@ targets, footnote definitions, and source/example block coderefs. Link
 projection resolves these targets into `LinkTarget::Internal` while keeping the
 original `link.path()`, and reports diagnostics for ambiguous or missing strict
 internal links.
+Parser v2 also collects exporter/indexer side tables without mutating the
+lossless source tree: `document.metadata`, `document.filetags`,
+`document.export_settings`, `document.link_abbreviations`, and
+`document.footnotes`. Keyword values keep their raw source text and expose
+parsed object values for metadata-style keywords such as `#+TITLE:` and
+`#+CAPTION:`; `ATTR_*` affiliated keywords expose shell-like structured
+attributes. Links without an explicit description can use target-derived
+fallback objects through `Link::description_or_default()`, and `id:ID::*search`
+paths retain their search suffix in `Link::search`.
+Use `document.project_for_export(&ExportProjectionOptions::default())` as the
+opt-in semantic projection hook for exporter-oriented pruning and transformations
+such as `COMMENT`/`:ARCHIVE:`/tag pruning, link abbreviation expansion, and
+special-string conversion. `Org::to_html()`, `Org::to_markdown()`, and
+`Org::to_latex()` keep their existing default output stable; the corresponding
+`*_with_options` methods expose opt-in special-string and entity handling.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 
@@ -213,6 +228,8 @@ Parser v2 makes a breaking API boundary explicit:
   wrappers around the lossless rowan syntax tree. Wrapper names that would
   collide with semantic AST types use a `Syntax` prefix, for example
   `syntax_ast::SyntaxDocument` and `syntax_ast::SyntaxLink`.
+- `Document<A>::project_for_export(&ExportProjectionOptions)` returns an
+  exporter-oriented semantic projection without changing the parsed AST.
 
 Code that previously imported rowan-backed wrappers from `orgize::ast::*`
 should import them from `orgize::syntax_ast::*` instead.

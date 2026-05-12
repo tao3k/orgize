@@ -86,6 +86,7 @@ pub(super) fn collect_target_node(
                 key: value.clone(),
                 value,
                 raw,
+                alias: Vec::new(),
             });
         }
         SyntaxKind::RADIO_TARGET => {
@@ -97,6 +98,7 @@ pub(super) fn collect_target_node(
                 key: value.clone(),
                 value,
                 raw,
+                alias: Vec::new(),
             });
         }
         SyntaxKind::FN_DEF => {
@@ -107,6 +109,7 @@ pub(super) fn collect_target_node(
                     key: format!("fn:{label}"),
                     value: label,
                     raw: node.to_string(),
+                    alias: Vec::new(),
                 });
             }
         }
@@ -136,6 +139,7 @@ fn collect_headline_targets(
             key: title.clone(),
             value: title.clone(),
             raw: title,
+            alias: Vec::new(),
         });
     }
 
@@ -151,6 +155,7 @@ fn collect_headline_targets(
                         key: format!("#{value}"),
                         value: value.clone(),
                         raw: value,
+                        alias: Vec::new(),
                     });
                 }
             } else if key.eq_ignore_ascii_case("ID") {
@@ -163,6 +168,7 @@ fn collect_headline_targets(
                         key: format!("id:{value}"),
                         value: value.clone(),
                         raw: value,
+                        alias: Vec::new(),
                     });
                 }
             }
@@ -192,6 +198,7 @@ fn collect_code_ref_targets(
             key: format!("coderef:{}", code_ref.name),
             value: code_ref.name,
             raw: code_ref.raw,
+            alias: Vec::new(),
         });
     }
 }
