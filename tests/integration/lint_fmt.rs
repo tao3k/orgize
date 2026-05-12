@@ -181,7 +181,7 @@ fn fmt_cli_directory_path_writes_org_files_with_snapshot() {
 
 #[test]
 fn lint_reports_semantic_and_uniqueness_findings_as_text_snapshot() {
-    let report = lint_org(lint_fixture());
+    let report = lint_org(semantic_and_uniqueness_lint_fixture());
 
     insta::assert_snapshot!(format!(
         "clean: {}\n{}",
@@ -192,7 +192,7 @@ fn lint_reports_semantic_and_uniqueness_findings_as_text_snapshot() {
 
 #[test]
 fn lint_reports_semantic_and_uniqueness_findings_as_json_snapshot() {
-    let report = lint_org(lint_fixture());
+    let report = lint_org(semantic_and_uniqueness_lint_fixture());
 
     insta::assert_snapshot!(format!(
         "clean: {}\n{}",
@@ -206,13 +206,9 @@ fn lint_checks_include_paths_with_snapshot() {
     let dir = test_dir("lint-include-paths");
     fs::create_dir_all(dir.join("folder")).unwrap();
     fs::write(dir.join("present.org"), "* Present\n").unwrap();
-    let source = r#"#+INCLUDE: "present.org"
-#+INCLUDE: "missing.org"
-#+INCLUDE: "folder"
-"#;
 
     let report = lint_org_with_options(
-        source,
+        include_paths_lint_fixture(),
         &LintOptions {
             include_base_dir: Some(dir),
         },
@@ -227,11 +223,7 @@ fn lint_checks_include_paths_with_snapshot() {
 
 #[test]
 fn lint_reports_missing_macro_definitions_with_snapshot() {
-    let source = r#"#+MACRO: issue [[https://tracker.example/$1][$2]]
-{{{issue(42, Fix)}}}
-{{{missing(1)}}}
-"#;
-    let report = lint_org(source);
+    let report = lint_org(missing_macro_definitions_lint_fixture());
 
     insta::assert_snapshot!(format!(
         "clean: {}\n{}",
@@ -242,11 +234,7 @@ fn lint_reports_missing_macro_definitions_with_snapshot() {
 
 #[test]
 fn lint_reports_duplicate_macro_definitions_with_snapshot() {
-    let source = r#"#+MACRO: issue first $1
-#+MACRO: issue second $1
-{{{issue(42)}}}
-"#;
-    let report = lint_org(source);
+    let report = lint_org(duplicate_macro_definitions_lint_fixture());
 
     insta::assert_snapshot!(format!(
         "clean: {}\n{}",
@@ -257,12 +245,7 @@ fn lint_reports_duplicate_macro_definitions_with_snapshot() {
 
 #[test]
 fn lint_reports_link_abbreviation_definition_issues_with_snapshot() {
-    let source = r#"#+LINK: gh https://github.com/%s
-#+LINK: bad
-#+LINK: gh https://example.invalid/%s
-[[gh:tao3k/orgize]] [[doi:10.1000/example]]
-"#;
-    let report = lint_org(source);
+    let report = lint_org(link_abbreviation_definition_issues_lint_fixture());
 
     insta::assert_snapshot!(format!(
         "clean: {}\n{}",
@@ -273,9 +256,7 @@ fn lint_reports_link_abbreviation_definition_issues_with_snapshot() {
 
 #[test]
 fn lint_reports_supported_options_keyword_issues_with_snapshot() {
-    let source = r#"#+OPTIONS: H:two -:maybe e:later toc:nil num:t
-"#;
-    let report = lint_org(source);
+    let report = lint_org(supported_options_keyword_issues_lint_fixture());
 
     insta::assert_snapshot!(format!(
         "clean: {}\n{}",
@@ -286,11 +267,7 @@ fn lint_reports_supported_options_keyword_issues_with_snapshot() {
 
 #[test]
 fn lint_reports_todo_declaration_issues_with_snapshot() {
-    let source = r#"#+TODO: NEXT WAIT | DONE
-#+SEQ_TODO: WAIT REVIEW | DONE
-#+TYP_TODO: BLOCKED | NEXT
-"#;
-    let report = lint_org(source);
+    let report = lint_org(todo_declaration_issues_lint_fixture());
 
     insta::assert_snapshot!(format!(
         "clean: {}\n{}",
@@ -313,7 +290,7 @@ fn lint_cli_json_stdin_output_is_snapshotted() {
         .stdin
         .as_mut()
         .unwrap()
-        .write_all(lint_fixture().as_bytes())
+        .write_all(semantic_and_uniqueness_lint_fixture().as_bytes())
         .unwrap();
     let output = child.wait_with_output().unwrap();
 
@@ -325,14 +302,7 @@ fn lint_cli_checks_include_paths_relative_to_file_with_snapshot() {
     let dir = test_dir("lint-cli-include-paths");
     fs::create_dir_all(dir.join("notes/folder")).unwrap();
     fs::write(dir.join("notes/present.org"), "* Present\n").unwrap();
-    fs::write(
-        dir.join("notes/main.org"),
-        r#"#+INCLUDE: "present.org"
-#+INCLUDE: "missing.org"
-#+INCLUDE: "folder"
-"#,
-    )
-    .unwrap();
+    fs::write(dir.join("notes/main.org"), include_paths_lint_fixture()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .current_dir(&dir)
@@ -347,7 +317,11 @@ fn lint_cli_checks_include_paths_relative_to_file_with_snapshot() {
 fn lint_cli_directory_path_output_is_snapshotted() {
     let dir = test_dir("lint-dir");
     fs::create_dir_all(dir.join("notes/nested")).unwrap();
-    fs::write(dir.join("notes/a.org"), lint_fixture()).unwrap();
+    fs::write(
+        dir.join("notes/a.org"),
+        semantic_and_uniqueness_lint_fixture(),
+    )
+    .unwrap();
     fs::write(dir.join("notes/nested/clean.org"), "* Clean\n").unwrap();
     fs::write(dir.join("notes/skip.txt"), "[[fn:missing]]\n").unwrap();
 
@@ -360,17 +334,32 @@ fn lint_cli_directory_path_output_is_snapshotted() {
     insta::assert_snapshot!(command_snapshot(output));
 }
 
-fn lint_fixture() -> &'static str {
-    r#"* First
-:PROPERTIES:
-:ID: shared
-:END:
-* Second
-:PROPERTIES:
-:ID: shared
-:END:
-[[fn:missing]]
-"#
+fn semantic_and_uniqueness_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/semantic-and-uniqueness.org")
+}
+
+fn include_paths_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/include-paths.org")
+}
+
+fn missing_macro_definitions_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/missing-macro-definitions.org")
+}
+
+fn duplicate_macro_definitions_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/duplicate-macro-definitions.org")
+}
+
+fn link_abbreviation_definition_issues_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/link-abbreviation-definition-issues.org")
+}
+
+fn supported_options_keyword_issues_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/supported-options-keyword-issues.org")
+}
+
+fn todo_declaration_issues_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/todo-declaration-issues.org")
 }
 
 fn command_snapshot(output: std::process::Output) -> String {

@@ -374,3 +374,5 @@ runtime dependency is copied into this repository.
       settings (`H`, `-`, and `e`) while ignoring unknown Org option keys.
 - [x] Warn on duplicate or conflicting per-file TODO keyword declarations
       across `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`.
+- [x] Move lint snapshot inputs into standalone `.org` fixtures so rule
+      monitoring reviews Org scenarios separately from Rust test code.
