@@ -2,13 +2,13 @@ use rowan::ast::AstNode;
 
 use crate::Org;
 
-use super::{Document, Keyword, PropertyDrawer};
+use super::{PropertyDrawer, SyntaxDocument, SyntaxKeyword};
 
-impl Document {
+impl SyntaxDocument {
     /// Returns an iterator of keywords in zeroth section
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Document};
+    /// use orgize::{Org, syntax_ast::SyntaxDocument};
     ///
     /// let org = Org::parse(r#"
     /// #+TITLE: hello
@@ -17,13 +17,13 @@ impl Document {
     /// #+AUTHOR: poi
     /// * headline
     /// #+SOMETHING:"#);
-    /// let doc = org.first_node::<Document>().unwrap();
+    /// let doc = org.first_node::<SyntaxDocument>().unwrap();
     /// assert_eq!(doc.keywords().count(), 4);
     /// ```
-    pub fn keywords(&self) -> impl Iterator<Item = Keyword> {
+    pub fn keywords(&self) -> impl Iterator<Item = SyntaxKeyword> {
         self.section()
             .into_iter()
-            .flat_map(|section| section.syntax.children().filter_map(Keyword::cast))
+            .flat_map(|section| section.syntax.children().filter_map(SyntaxKeyword::cast))
     }
 
     /// Returns the value in top-level `#+TITLE`
@@ -33,14 +33,14 @@ impl Document {
     /// Returns `None` if file doesn't contain `#+TITLE`
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Document};
+    /// use orgize::{Org, syntax_ast::SyntaxDocument};
     ///
     /// let org = Org::parse("#+TITLE: hello\n#+TITLE: world");
-    /// let doc = org.first_node::<Document>().unwrap();
+    /// let doc = org.first_node::<SyntaxDocument>().unwrap();
     /// assert_eq!(doc.title().unwrap(), "hello world");
     ///
     /// let org = Org::parse("");
-    /// let doc = org.first_node::<Document>().unwrap();
+    /// let doc = org.first_node::<SyntaxDocument>().unwrap();
     /// assert!(doc.title().is_none());
     /// ```
     pub fn title(&self) -> Option<String> {
@@ -59,14 +59,14 @@ impl Document {
     /// Returns top-level properties drawer
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Document};
+    /// use orgize::{Org, syntax_ast::SyntaxDocument};
     ///
     /// let org = Org::parse(r#":PROPERTIES:
     /// :ID:       20220718T085035.042592
     /// :END:
     /// #+TITLE: Complete Computing"#);
     ///
-    /// let properties = org.document().properties().unwrap();
+    /// let properties = org.syntax_document().properties().unwrap();
     /// assert_eq!(properties.to_hash_map().len(), 1);
     /// assert_eq!(properties.get("ID").unwrap(), "20220718T085035.042592");
     /// ```
@@ -76,13 +76,13 @@ impl Document {
 }
 
 impl Org {
-    /// Equals to `self.document().title()`, see [Document::title]
+    /// Equals to `self.syntax_document().title()`, see [SyntaxDocument::title]
     pub fn title(&self) -> Option<String> {
-        self.document().title()
+        self.syntax_document().title()
     }
 
-    /// Equals to `self.document().keywords()`, see [Document::keywords]
-    pub fn keywords(&self) -> impl Iterator<Item = Keyword> {
-        self.document().keywords()
+    /// Equals to `self.syntax_document().keywords()`, see [SyntaxDocument::keywords]
+    pub fn keywords(&self) -> impl Iterator<Item = SyntaxKeyword> {
+        self.syntax_document().keywords()
     }
 }

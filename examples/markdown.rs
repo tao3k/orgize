@@ -2,7 +2,7 @@
 //! cargo run --example markdown test.org
 //! ```
 
-use orgize::{export::MarkdownExport, Org};
+use orgize::Org;
 use std::{env::args, fs};
 
 fn main() {
@@ -14,10 +14,11 @@ fn main() {
 
     let content = fs::read_to_string(&args[1]).unwrap();
 
-    let mut export = MarkdownExport::default();
-    Org::parse(content).traverse(&mut export);
-
-    fs::write(format!("{}.md", &args[1]), export.finish()).unwrap();
+    fs::write(
+        format!("{}.md", &args[1]),
+        Org::parse(content).to_markdown(),
+    )
+    .unwrap();
 
     println!("Wrote to {}.md", &args[1]);
 }

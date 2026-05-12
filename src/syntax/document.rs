@@ -3,22 +3,23 @@ use nom::{combinator::opt, IResult, Parser};
 use super::{
     combinator::{blank_lines, node, GreenElement},
     drawer::property_drawer_node,
+    element::element_nodes,
     headline::{headline_node, section_node},
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
   feature = "tracing",
   tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn document_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn document_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(document_node_base, input)
 }
 
 fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     if input.is_empty() {
-        return Ok((input, node(DOCUMENT, [])));
+        return Ok((input, node(SyntaxKind::DOCUMENT, [])));
     }
 
     let mut children = vec![];
@@ -33,31 +34,31 @@ fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     children.extend(pre_blank);
 
     if input.is_empty() {
-        return Ok((input, node(DOCUMENT, children)));
+        return Ok((input, node(SyntaxKind::DOCUMENT, children)));
     }
 
-    let (input, section) = opt(section_node).parse(input)?;
+    let (input, section) = opt(|input| section_node(input, element_nodes)).parse(input)?;
     if let Some(section) = section {
         children.push(section);
     }
 
     let mut i = input;
     while !i.is_empty() {
-        let (input, headline) = headline_node(i)?;
+        let (input, headline) = headline_node(i, element_nodes)?;
         debug_assert!(i.len() > input.len(), "{} > {}", i.len(), input.len(),);
         i = input;
         children.push(headline);
     }
 
-    Ok((i, node(DOCUMENT, children)))
+    Ok((i, node(SyntaxKind::DOCUMENT, children)))
 }
 
 #[test]
 fn parse() {
-    use crate::ast::Document;
+    use crate::syntax_ast::SyntaxDocument;
     use crate::tests::to_ast;
 
-    let to_document = to_ast::<Document>(document_node);
+    let to_document = to_ast::<SyntaxDocument>(document_node);
 
     insta::assert_debug_snapshot!(
         to_document("").syntax,

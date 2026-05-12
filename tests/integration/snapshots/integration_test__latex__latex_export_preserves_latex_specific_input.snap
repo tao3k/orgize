@@ -1,0 +1,14 @@
+---
+source: tests/integration/latex.rs
+expression: "Org::parse(r#\"\nInline $a_b$ and @@latex:\\LaTeX{}@@ plus \\alpha{}.\n\n#+begin_export latex\n\\begin{equation}\ne^{i\\pi}+1=0\n\\end{equation}\n#+end_export\n\n\\begin{align}\na &= b + c\n\\end{align}\n\nSee [cite:@doe2026; @roe2026 p. 42] on <2026-05-10 Sun>.\n\"#).to_latex()"
+---
+Inline $a_b$ and \LaTeX{} plus $\alpha$.
+
+\begin{equation}
+e^{i\pi}+1=0
+\end{equation}
+\begin{align}
+a &= b + c
+\end{align}
+
+See \cite{doe2026,roe2026} on \textit{<2026-05-10 Sun>}.

@@ -18,7 +18,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn keyword_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn keyword_node(input: Input) -> IResult<Input, GreenElement, ()> {
     fn f(input: Input) -> IResult<Input, GreenElement, ()> {
         let (input, (key, mut nodes)) = keyword_node_base(input)?;
         let (input, post_blank) = blank_lines(input)?;
@@ -44,7 +44,7 @@ pub fn keyword_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn affiliated_keyword_nodes(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
+pub(crate) fn affiliated_keyword_nodes(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
     if !starts_with_keyword_prefix(input) {
         return Ok((input, Vec::new()));
     }
@@ -82,7 +82,7 @@ pub fn affiliated_keyword_nodes(input: Input) -> IResult<Input, Vec<GreenElement
     Ok((i, children))
 }
 
-pub fn tblfm_keyword_nodes(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
+pub(crate) fn tblfm_keyword_nodes(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
     if !starts_with_keyword_prefix(input) {
         return Ok((input, Vec::new()));
     }
@@ -217,12 +217,12 @@ fn key_with_optional(
 #[test]
 fn parse() {
     use crate::{
-        ast::{BabelCall, Keyword},
+        syntax_ast::{BabelCall, SyntaxKeyword},
         tests::to_ast,
         ParseConfig,
     };
 
-    let to_keyword = to_ast::<Keyword>(keyword_node);
+    let to_keyword = to_ast::<SyntaxKeyword>(keyword_node);
 
     let to_babel_call = to_ast::<BabelCall>(keyword_node);
 

@@ -2,7 +2,7 @@ use nom::{bytes::complete::take_until, combinator::opt, IResult, Parser};
 
 use crate::syntax::{
     combinator::{at_token, l_curly2_token, l_curly_token, r_curly_token},
-    object::standard_object_nodes,
+    parser_contract::ObjectNodesParser,
 };
 
 use super::{
@@ -15,11 +15,17 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn cloze_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    crate::lossless_parser!(cloze_node_base, input)
+pub(crate) fn cloze_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
+    crate::lossless_parser!(|input| cloze_node_base(input, standard_object_nodes), input)
 }
 
-fn cloze_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn cloze_node_base(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, l_curly2) = l_curly2_token(input)?;
 
     let mut inside_latex = false;
@@ -75,11 +81,12 @@ fn cloze_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::ast::Cloze;
     use crate::config::ParseConfig;
+    use crate::syntax_ast::Cloze;
     use crate::tests::to_ast;
 
-    let to_cloze = to_ast::<Cloze>(cloze_node);
+    let to_cloze =
+        to_ast::<Cloze>(|input| cloze_node(input, crate::syntax::object::standard_object_nodes));
 
     insta::assert_debug_snapshot!(
       to_cloze("{{text}}").syntax,
@@ -154,9 +161,29 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(cloze_node(("{{}}", config).into()).is_err());
-    assert!(cloze_node(("{{text}", config).into()).is_err());
-    assert!(cloze_node(("{text}}", config).into()).is_err());
-    assert!(cloze_node(("{{text}{}", config).into()).is_err());
-    assert!(cloze_node(("{{text}a}", config).into()).is_err());
+    assert!(cloze_node(
+        ("{{}}", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(cloze_node(
+        ("{{text}", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(cloze_node(
+        ("{text}}", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(cloze_node(
+        ("{{text}{}", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(cloze_node(
+        ("{{text}a}", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
 }

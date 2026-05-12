@@ -1,7 +1,22 @@
-use crate::ast::*;
+//! Event model emitted by lossless syntax tree traversal.
+
+use crate::syntax_ast::{
+    AffiliatedKeyword, BabelCall, Bold, CenterBlock, Code, Comment, CommentBlock, Cookie, DynBlock,
+    Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef, FnRef, Headline, InlineCall, InlineSrc,
+    Italic, LatexEnvironment, LatexFragment, LineBreak, Macros, OrgTable, OrgTableCell,
+    OrgTableRow, Paragraph, PropertyDrawer, QuoteBlock, RadioTarget, Rule, Snippet, SourceBlock,
+    SpecialBlock, Strike, Subscript, Superscript, SyntaxCitation as Citation, SyntaxClock as Clock,
+    SyntaxDocument as Document, SyntaxDrawer as Drawer, SyntaxKeyword as Keyword,
+    SyntaxLink as Link, SyntaxList as List, SyntaxListItem as ListItem, SyntaxSection as Section,
+    SyntaxTimestamp as Timestamp, TableEl, Target, Token, Underline, Verbatim, VerseBlock,
+};
+
+#[cfg(feature = "syntax-org-fc")]
+use crate::syntax_ast::Cloze;
 
 #[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug)]
+/// Container event payload for syntax tree enter and leave events.
 pub enum Container {
     Document(Document),
     Section(Section),
@@ -50,6 +65,7 @@ pub enum Container {
 
 #[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug)]
+/// Traversal event emitted by [`Traverser`](crate::export::Traverser).
 pub enum Event {
     Enter(Container),
     Leave(Container),
@@ -57,6 +73,7 @@ pub enum Event {
     Text(Token),
     Macros(Macros),
     Cookie(Cookie),
+    Citation(Citation),
     InlineCall(InlineCall),
     InlineSrc(InlineSrc),
     Clock(Clock),

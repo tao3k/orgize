@@ -1,9 +1,7 @@
 use nom::{
-    branch::alt,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
     character::complete::{alpha1, space0, space1},
-    combinator::{cond, opt},
-    sequence::separated_pair,
+    combinator::opt,
     IResult, Parser,
 };
 
@@ -12,26 +10,29 @@ use super::{
         blank_lines, eol_or_eof, line_starts_iter, node, token, trim_line_end, GreenElement,
         NodeBuilder,
     },
-    element::element_nodes,
     input::Input,
     keyword::affiliated_keyword_nodes,
-    SyntaxKind::*,
+    parser_contract::ElementNodesParser,
+    SyntaxKind,
 };
 
-fn block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn block_node_base(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, affiliated_keywords) = affiliated_keyword_nodes(input)?;
     let (input, (block_begin, name)) = block_begin_node(input)?;
     let (input, pre_blank) = blank_lines(input)?;
 
     let kind = match name {
-        s if s.eq_ignore_ascii_case("COMMENT") => COMMENT_BLOCK,
-        s if s.eq_ignore_ascii_case("EXAMPLE") => EXAMPLE_BLOCK,
-        s if s.eq_ignore_ascii_case("EXPORT") => EXPORT_BLOCK,
-        s if s.eq_ignore_ascii_case("SRC") => SOURCE_BLOCK,
-        s if s.eq_ignore_ascii_case("CENTER") => CENTER_BLOCK,
-        s if s.eq_ignore_ascii_case("QUOTE") => QUOTE_BLOCK,
-        s if s.eq_ignore_ascii_case("VERSE") => VERSE_BLOCK,
-        _ => SPECIAL_BLOCK,
+        s if s.eq_ignore_ascii_case("COMMENT") => SyntaxKind::COMMENT_BLOCK,
+        s if s.eq_ignore_ascii_case("EXAMPLE") => SyntaxKind::EXAMPLE_BLOCK,
+        s if s.eq_ignore_ascii_case("EXPORT") => SyntaxKind::EXPORT_BLOCK,
+        s if s.eq_ignore_ascii_case("SRC") => SyntaxKind::SOURCE_BLOCK,
+        s if s.eq_ignore_ascii_case("CENTER") => SyntaxKind::CENTER_BLOCK,
+        s if s.eq_ignore_ascii_case("QUOTE") => SyntaxKind::QUOTE_BLOCK,
+        s if s.eq_ignore_ascii_case("VERSE") => SyntaxKind::VERSE_BLOCK,
+        _ => SyntaxKind::SPECIAL_BLOCK,
     };
 
     for (input, contents) in line_starts_iter(&input).map(|i| input.take_split(i)) {
@@ -43,9 +44,12 @@ fn block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
             children.push(block_begin);
             children.extend(pre_blank);
             if kind.is_greater_element() {
-                children.push(node(BLOCK_CONTENT, element_nodes(contents)?));
+                children.push(node(SyntaxKind::BLOCK_CONTENT, element_nodes(contents)?));
             } else {
-                children.push(node(BLOCK_CONTENT, comma_quoted_text_nodes(contents)));
+                children.push(node(
+                    SyntaxKind::BLOCK_CONTENT,
+                    comma_quoted_text_nodes(contents),
+                ));
             }
             children.push(block_end);
             children.extend(post_blank);
@@ -76,19 +80,33 @@ fn block_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str)
 
         if let Some((ws, language)) = language {
             b.ws(ws);
-            b.token(SRC_BLOCK_LANGUAGE, language);
+            b.token(SyntaxKind::SRC_BLOCK_LANGUAGE, language);
         }
         if let Some((ws, switches)) = switches {
             b.ws(ws);
-            b.token(SRC_BLOCK_SWITCHES, switches);
+            b.token(SyntaxKind::SRC_BLOCK_SWITCHES, switches);
         }
         b.ws(ws1);
         if !parameters.is_empty() {
-            b.token(SRC_BLOCK_PARAMETERS, parameters);
+            b.token(SyntaxKind::SRC_BLOCK_PARAMETERS, parameters);
         }
         b.ws(ws2);
         b.nl(nl);
-        Ok((input, (b.finish(BLOCK_BEGIN), name.as_str())))
+        Ok((input, (b.finish(SyntaxKind::BLOCK_BEGIN), name.as_str())))
+    } else if name.eq_ignore_ascii_case("EXAMPLE") {
+        let (input, switches) = opt((space1, source_block_switches)).parse(input)?;
+        let (input, ws1) = space0(input)?;
+        let (input, (data, ws2, nl)) = trim_line_end(input)?;
+
+        if let Some((ws, switches)) = switches {
+            b.ws(ws);
+            b.token(SyntaxKind::SRC_BLOCK_SWITCHES, switches);
+        }
+        b.ws(ws1);
+        b.text(data);
+        b.ws(ws2);
+        b.nl(nl);
+        Ok((input, (b.finish(SyntaxKind::BLOCK_BEGIN), name.as_str())))
     } else if name.eq_ignore_ascii_case("EXPORT") {
         let (input, ty) = opt((
             space1,
@@ -100,53 +118,110 @@ fn block_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str)
 
         if let Some((ws, ty)) = ty {
             b.ws(ws);
-            b.token(EXPORT_BLOCK_TYPE, ty);
+            b.token(SyntaxKind::EXPORT_BLOCK_TYPE, ty);
         }
         b.text(data);
         b.nl(nl);
-        Ok((input, (b.finish(BLOCK_BEGIN), name.as_str())))
+        Ok((input, (b.finish(SyntaxKind::BLOCK_BEGIN), name.as_str())))
     } else {
         let (input, data) = take_while(|c: char| c != '\n' && c != '\r').parse(input)?;
         let (input, nl) = eol_or_eof(input)?;
 
         b.text(data);
         b.nl(nl);
-        Ok((input, (b.finish(BLOCK_BEGIN), name.as_str())))
+        Ok((input, (b.finish(SyntaxKind::BLOCK_BEGIN), name.as_str())))
     }
 }
 
 fn source_block_switches(input: Input) -> IResult<Input, Input, ()> {
-    let mut i = input;
+    let s = input.as_str();
+    let mut cursor = 0;
+    let mut parsed = false;
 
-    while !i.is_empty() {
-        match (
-            cond(i.len() != input.len(), space1::<Input, ()>),
-            alt((
-                separated_pair(
-                    alt((tag::<_, Input, ()>("-l"), tag("-n"))),
-                    space1::<Input, ()>,
-                    take_while1::<_, Input, ()>(|c: char| {
-                        c != ' ' && c != '\t' && c != '\n' && c != '\r'
-                    }),
-                ),
-                (tag::<_, Input, ()>("+"), alpha1),
-                (tag::<_, Input, ()>("-"), alpha1),
-            )),
-        )
-            .parse(i)
-        {
-            Ok((i_, _)) => i = i_,
-            _ => break,
+    loop {
+        let token_start = if parsed {
+            let spaces = leading_inline_space_len(&s[cursor..]);
+            if spaces == 0 {
+                break;
+            }
+            cursor + spaces
+        } else {
+            cursor
+        };
+
+        let Some(len) = source_block_switch_len(&s[token_start..]) else {
+            break;
+        };
+
+        parsed = true;
+        cursor = token_start + len;
+    }
+
+    if !parsed {
+        Err(nom::Err::Error(()))
+    } else {
+        Ok(input.take_split(cursor))
+    }
+}
+
+fn source_block_switch_len(s: &str) -> Option<usize> {
+    let first = s.as_bytes().first()?;
+    if !matches!(first, b'+' | b'-') {
+        return None;
+    }
+
+    let name_len = s[1..].bytes().take_while(u8::is_ascii_alphabetic).count();
+    if name_len == 0 {
+        return None;
+    }
+
+    let token_len = 1 + name_len;
+    let token = &s[..token_len];
+    let rest = &s[token_len..];
+
+    if matches!(token, "-n" | "+n") {
+        let spaces = leading_inline_space_len(rest);
+        let digits = rest[spaces..]
+            .bytes()
+            .take_while(u8::is_ascii_digit)
+            .count();
+        if digits > 0 {
+            return Some(token_len + spaces + digits);
         }
     }
 
-    let len = input.len() - i.len();
-
-    if len == 0 {
-        Err(nom::Err::Error(()))
-    } else {
-        Ok(input.take_split(len))
+    if token == "-l" {
+        let spaces = leading_inline_space_len(rest);
+        if spaces > 0 {
+            if let Some(argument) = switch_argument_len(&rest[spaces..]) {
+                return Some(token_len + spaces + argument);
+            }
+        }
     }
+
+    Some(token_len)
+}
+
+fn switch_argument_len(s: &str) -> Option<usize> {
+    if s.is_empty() || matches!(s.as_bytes()[0], b' ' | b'\t' | b'\n' | b'\r') {
+        return None;
+    }
+
+    if s.as_bytes()[0] == b'"' {
+        return s[1..].find('"').map(|index| index + 2);
+    }
+
+    Some(
+        s.bytes()
+            .take_while(|byte| !matches!(byte, b' ' | b'\t' | b'\n' | b'\r'))
+            .count(),
+    )
+}
+
+fn leading_inline_space_len(s: &str) -> usize {
+    s.bytes()
+        .take_while(|byte| matches!(byte, b' ' | b'\t'))
+        .count()
 }
 
 fn block_end_node<'a>(input: Input<'a>, name: &str) -> IResult<Input<'a>, GreenElement, ()> {
@@ -160,7 +235,7 @@ fn block_end_node<'a>(input: Input<'a>, name: &str) -> IResult<Input<'a>, GreenE
     b.ws(ws_);
     b.nl(nl);
 
-    Ok((input, b.finish(BLOCK_END)))
+    Ok((input, b.finish(SyntaxKind::BLOCK_END)))
 }
 
 fn comma_quoted_text_nodes(input: Input) -> Vec<GreenElement> {
@@ -177,15 +252,15 @@ fn comma_quoted_text_nodes(input: Input) -> Vec<GreenElement> {
 
         let text = &s[start..i];
         if !text.is_empty() {
-            nodes.push(token(TEXT, text));
+            nodes.push(token(SyntaxKind::TEXT, text));
         }
 
-        nodes.push(token(COMMA, ","));
+        nodes.push(token(SyntaxKind::COMMA, ","));
         start = i + 1;
     }
 
     if !s[start..].is_empty() {
-        nodes.push(token(TEXT, &s[start..]));
+        nodes.push(token(SyntaxKind::TEXT, &s[start..]));
     }
 
     nodes
@@ -195,17 +270,28 @@ fn comma_quoted_text_nodes(input: Input) -> Vec<GreenElement> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn block_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    crate::lossless_parser!(block_node_base, input)
+pub(crate) fn block_node(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
+    crate::lossless_parser!(|input| block_node_base(input, element_nodes), input)
 }
 
 #[test]
 fn test_parse() {
-    use crate::ast::{ExampleBlock, SourceBlock};
+    use crate::syntax_ast::{ExampleBlock, ExportBlock, QuoteBlock, SourceBlock, SpecialBlock};
     use crate::tests::to_ast;
 
-    let to_src_block = to_ast::<SourceBlock>(block_node);
-    let to_example_block = to_ast::<ExampleBlock>(block_node);
+    let to_src_block =
+        to_ast::<SourceBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
+    let to_example_block =
+        to_ast::<ExampleBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
+    let to_export_block =
+        to_ast::<ExportBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
+    let to_quote_block =
+        to_ast::<QuoteBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
+    let to_special_block =
+        to_ast::<SpecialBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
 
     insta::assert_debug_snapshot!(
         to_example_block(
@@ -306,5 +392,123 @@ alert('Hello World!');
     "###
     );
 
-    // TODO: more testing
+    insta::assert_debug_snapshot!(
+        to_src_block(
+r#"#+BEGIN_SRC rust +n 10 -r
+fn main() {}
+#+END_SRC"#
+        ).syntax,
+        @r###"
+    SOURCE_BLOCK@0..48
+      BLOCK_BEGIN@0..26
+        TEXT@0..8 "#+BEGIN_"
+        TEXT@8..11 "SRC"
+        WHITESPACE@11..12 " "
+        SRC_BLOCK_LANGUAGE@12..16 "rust"
+        WHITESPACE@16..17 " "
+        SRC_BLOCK_SWITCHES@17..25 "+n 10 -r"
+        NEW_LINE@25..26 "\n"
+      BLOCK_CONTENT@26..39
+        TEXT@26..39 "fn main() {}\n"
+      BLOCK_END@39..48
+        TEXT@39..45 "#+END_"
+        TEXT@45..48 "SRC"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_example_block(
+r#"#+BEGIN_EXAMPLE -n 3
+,* headline
+#+END_EXAMPLE"#
+        ).syntax,
+        @r###"
+    EXAMPLE_BLOCK@0..46
+      BLOCK_BEGIN@0..21
+        TEXT@0..8 "#+BEGIN_"
+        TEXT@8..15 "EXAMPLE"
+        WHITESPACE@15..16 " "
+        SRC_BLOCK_SWITCHES@16..20 "-n 3"
+        NEW_LINE@20..21 "\n"
+      BLOCK_CONTENT@21..33
+        COMMA@21..22 ","
+        TEXT@22..33 "* headline\n"
+      BLOCK_END@33..46
+        TEXT@33..39 "#+END_"
+        TEXT@39..46 "EXAMPLE"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_export_block(
+r#"#+BEGIN_EXPORT latex
+\LaTeX{}
+#+END_EXPORT"#
+        ).syntax,
+        @r###"
+    EXPORT_BLOCK@0..42
+      BLOCK_BEGIN@0..21
+        TEXT@0..8 "#+BEGIN_"
+        TEXT@8..14 "EXPORT"
+        WHITESPACE@14..15 " "
+        EXPORT_BLOCK_TYPE@15..20 "latex"
+        NEW_LINE@20..21 "\n"
+      BLOCK_CONTENT@21..30
+        TEXT@21..30 "\\LaTeX{}\n"
+      BLOCK_END@30..42
+        TEXT@30..36 "#+END_"
+        TEXT@36..42 "EXPORT"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_quote_block(
+r#"#+begin_quote
+*quoted*
+#+end_quote"#
+        ).syntax,
+        @r###"
+    QUOTE_BLOCK@0..34
+      BLOCK_BEGIN@0..14
+        TEXT@0..8 "#+begin_"
+        TEXT@8..13 "quote"
+        NEW_LINE@13..14 "\n"
+      BLOCK_CONTENT@14..23
+        PARAGRAPH@14..23
+          BOLD@14..22
+            STAR@14..15 "*"
+            TEXT@15..21 "quoted"
+            STAR@21..22 "*"
+          TEXT@22..23 "\n"
+      BLOCK_END@23..34
+        TEXT@23..29 "#+end_"
+        TEXT@29..34 "quote"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_special_block(
+r#"#+begin_aside
+- nested
+#+end_aside"#
+        ).syntax,
+        @r###"
+    SPECIAL_BLOCK@0..34
+      BLOCK_BEGIN@0..14
+        TEXT@0..8 "#+begin_"
+        TEXT@8..13 "aside"
+        NEW_LINE@13..14 "\n"
+      BLOCK_CONTENT@14..23
+        LIST@14..23
+          LIST_ITEM@14..23
+            LIST_ITEM_INDENT@14..14 ""
+            LIST_ITEM_BULLET@14..16 "- "
+            LIST_ITEM_CONTENT@16..23
+              PARAGRAPH@16..23
+                TEXT@16..23 "nested\n"
+      BLOCK_END@23..34
+        TEXT@23..29 "#+end_"
+        TEXT@29..34 "aside"
+    "###
+    );
 }

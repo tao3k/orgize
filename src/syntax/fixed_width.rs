@@ -57,13 +57,13 @@ fn fixed_width_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn fixed_width_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn fixed_width_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(fixed_width_node_base, input)
 }
 
 #[test]
 fn parse() {
-    use crate::{ast::FixedWidth, tests::to_ast};
+    use crate::{syntax_ast::FixedWidth, tests::to_ast};
 
     let to_fixed_width = to_ast::<FixedWidth>(fixed_width_node);
 

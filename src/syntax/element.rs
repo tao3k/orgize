@@ -12,6 +12,7 @@ use super::{
     dyn_block::dyn_block_node,
     fixed_width::fixed_width_node,
     fn_def::fn_def_node,
+    inlinetask::inlinetask_node,
     input::Input,
     keyword::{affiliated_keyword_nodes, keyword_node},
     latex_environment::latex_environment_node,
@@ -28,33 +29,20 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn element_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<()>> {
+pub(crate) fn element_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<()>> {
     debug_assert!(!input.is_empty());
-    // TODO:
-    // debug_assert!(
-    //     blank_lines(input).unwrap().1.is_empty(),
-    //     "input must not starts with blank lines: {:?}",
-    //     input.s
-    // );
+    // Callers may pass blank-only section tails after headline/block splitting;
+    // paragraph fallback keeps that lossless instead of treating it as a hard
+    // precondition violation here.
 
-    let mut i = input;
-    let mut nodes = vec![];
-
-    'l: while !i.is_empty() {
-        for (input, head) in ElementPositions::new(i) {
-            if let Ok((input, element)) = element_node(input) {
-                if !head.is_empty() {
-                    nodes.extend(paragraph_nodes(head)?);
-                }
-                nodes.push(element);
-                debug_assert!(input.len() < i.len(), "{} < {}", input.len(), i.len());
-                i = input;
-                continue 'l;
-            }
-        }
-        nodes.extend(paragraph_nodes(i)?);
-        break;
-    }
+    let mut cursor = input;
+    let nodes = std::iter::from_fn(|| next_element_chunk(&mut cursor)).try_fold(
+        Vec::new(),
+        |mut nodes, chunk| {
+            nodes.extend(chunk?);
+            Ok::<_, nom::Err<()>>(nodes)
+        },
+    )?;
 
     debug_assert_eq!(
         input.as_str(),
@@ -65,12 +53,52 @@ pub fn element_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<()>> {
     Ok(nodes)
 }
 
+fn next_element_chunk<'a>(
+    cursor: &mut Input<'a>,
+) -> Option<Result<Vec<GreenElement>, nom::Err<()>>> {
+    if cursor.is_empty() {
+        return None;
+    }
+
+    if let Some((tail, head, element)) = ElementPositions::new(*cursor).find_map(|(input, head)| {
+        element_node(input)
+            .ok()
+            .map(|(tail, element)| (tail, head, element))
+    }) {
+        debug_assert!(
+            tail.len() < cursor.len(),
+            "{} < {}",
+            tail.len(),
+            cursor.len()
+        );
+        *cursor = tail;
+        return Some(element_chunk_from_match(head, element));
+    }
+
+    let tail = *cursor;
+    *cursor = cursor.of("");
+    Some(paragraph_nodes(tail))
+}
+
+fn element_chunk_from_match(
+    head: Input<'_>,
+    element: GreenElement,
+) -> Result<Vec<GreenElement>, nom::Err<()>> {
+    let mut nodes = if head.is_empty() {
+        Vec::new()
+    } else {
+        paragraph_nodes(head)?
+    };
+    nodes.push(element);
+    Ok(nodes)
+}
+
 /// Recognizes an org-mode element expect paragraph
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
     // skip affiliated keyword first
     let (i, nodes) = affiliated_keyword_nodes(input)?;
 
@@ -87,16 +115,19 @@ pub fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
     let result = match byte {
         Some(b'[') => fn_def_node(input),
-        Some(b'0'..=b'9') | Some(b'*') => list_node(input),
+        Some(b'0'..=b'9') => list_node(input, element_node),
+        Some(b'*') => {
+            inlinetask_node(input, element_nodes).or_else(|_| list_node(input, element_node))
+        }
         // clock doesn't have affiliated keywords
         Some(b'C') if !has_affiliated_keyword => clock_node(input),
-        Some(b'-') => rule_node(input).or_else(|_| list_node(input)),
-        Some(b':') => drawer_node(input).or_else(|_| fixed_width_node(input)),
+        Some(b'-') => rule_node(input).or_else(|_| list_node(input, element_node)),
+        Some(b':') => drawer_node(input, element_nodes).or_else(|_| fixed_width_node(input)),
         Some(b'|') => org_table_node(input),
-        Some(b'+') => table_el_node(input).or_else(|_| list_node(input)),
-        Some(b'#') => block_node(input)
-            .or_else(|_| keyword_node(input))
+        Some(b'+') => table_el_node(input).or_else(|_| list_node(input, element_node)),
+        Some(b'#') => block_node(input, element_nodes)
             .or_else(|_| dyn_block_node(input))
+            .or_else(|_| keyword_node(input))
             .or_else(|_| comment_node(input)),
         Some(b'\\') => latex_environment_node(input),
         _ => Err(nom::Err::Error(())),

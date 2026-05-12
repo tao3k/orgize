@@ -79,6 +79,24 @@
         color: #485fc7;
         cursor: pointer;
       }
+
+      .feature-overview {
+        padding: 1.25rem 1.5rem;
+      }
+
+      .feature-overview h2 {
+        margin-top: 0;
+      }
+
+      .feature-overview table {
+        display: table;
+        width: 100%;
+      }
+
+      .feature-overview td:first-child {
+        white-space: nowrap;
+        width: 12rem;
+      }
     </style>
   </head>
   <body style="height: 100%; display: flex">
@@ -102,8 +120,12 @@
             HTML (rendered)
           </span>
           <span data-value="html">HTML</span>
+          <span data-value="markdown">Markdown</span>
+          <span data-value="latex">LaTeX</span>
           <span data-value="syntax">Syntax</span>
+          <span data-value="semantic">Semantic AST</span>
           <span data-value="traverse">Traverse</span>
+          <span data-value="features">Parser Features</span>
           <div id="spacer"></div>
           <div id="took"></div>
         </div>
@@ -158,6 +180,16 @@
           break;
         }
 
+        case "markdown": {
+          result.innerHTML = "<pre>" + escapeHtml(org.markdown()) + "</pre>";
+          break;
+        }
+
+        case "latex": {
+          result.innerHTML = "<pre>" + escapeHtml(org.latex()) + "</pre>";
+          break;
+        }
+
         case "syntax": {
           const syntax = escapeHtml(org.syntax())
             .split("\n")
@@ -174,6 +206,11 @@
           break;
         }
 
+        case "semantic": {
+          result.innerHTML = "<pre>" + escapeHtml(org.semantic()) + "</pre>";
+          break;
+        }
+
         case "traverse": {
           const syntax = escapeHtml(org.traverse())
             .split("\n")
@@ -187,6 +224,11 @@
             .join("\n");
 
           result.innerHTML = "<pre>" + syntax + "</pre>";
+          break;
+        }
+
+        case "features": {
+          result.innerHTML = renderFeatureOverview();
           break;
         }
       }
@@ -218,7 +260,7 @@
     // switch render type
 
     document.getElementById("tabsList").addEventListener("click", (ev) => {
-      const clicked = event.target.closest("span");
+      const clicked = ev.target.closest("span");
 
       if (!clicked) return;
 
@@ -248,6 +290,66 @@
     const injectHeadingClass = (html) =>
       html.replace(/<h(\d)>/g, (_, l) => `<h${l} class="title is-${l}">`);
 
+    const renderFeatureOverview = () => {
+      const rows = [
+        [
+          "Public parser API",
+          "`Org::document()` returns the owned semantic AST; `Org::syntax_document()` keeps the lossless rowan tree available.",
+        ],
+        [
+          "Semantic metadata",
+          "Source ranges, line/column annotations, diagnostics, traversal, `map_ann`, and `try_map_ann` are exposed through parser v2.",
+        ],
+        [
+          "M15 side tables",
+          "`metadata`, `filetags`, `export_settings`, `link_abbreviations`, and `footnotes` are visible in the Semantic AST tab without changing the lossless tree.",
+        ],
+        [
+          "Headlines and tasks",
+          "Custom TODO/DONE declarations, priorities, tags, planning timestamps, property drawers, effective tags, stable anchors, and inlinetasks project into semantic nodes.",
+        ],
+        [
+          "Blocks and tables",
+          "Source/example block line numbering, code refs, indentation switches, header args, table formulas, and column alignment rows are modeled.",
+        ],
+        [
+          "Links and targets",
+          "Internal links resolve against headlines, `CUSTOM_ID`, org-id `ID`, explicit targets, radio targets, footnotes, and source/example coderefs; default descriptions and search suffixes are projected.",
+        ],
+        [
+          "Objects",
+          "Links, timestamps, balanced-bracket citations, macros, targets, radio targets, entities, snippets, inline src/call, markup, code, and verbatim are covered.",
+        ],
+        [
+          "Preprocessing",
+          "`#+INCLUDE:` and `#+MACRO:` are collected as explicit side tables; macro expansion is opt-in and visible in the Semantic AST tab.",
+        ],
+        [
+          "Export boundary",
+          "`project_for_export` adds opt-in pruning and text transforms; HTML, Markdown, and LaTeX defaults continue to use the lossless syntax substrate.",
+        ],
+      ];
+
+      return `
+        <div class="feature-overview">
+          <h2>Parser v2 Feature Surface</h2>
+          <table>
+            <tbody>
+              ${rows
+                .map(
+                  ([name, detail]) =>
+                    `<tr><td><strong>${escapeHtml(name)}</strong></td><td>${inlineCode(detail)}</td></tr>`
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    };
+
+    const inlineCode = (text) =>
+      escapeHtml(text).replace(/`([^`]+)`/g, "<code>$1</code>");
+
     // init
 
     init().then(() => {
@@ -263,6 +365,67 @@ See also:
 [[https://github.com/tao3k/orgize][GitHub]] |
 [[https://crates.io/crates/orgize][crates.io]] |
 [[https://www.npmjs.com/package/orgize][NPM]]
+
+-----
+
+#+TODO: NEXT(n) WAIT(w@/!) | DONE(d) CANCELED(c)
+#+TITLE: *Orgize* parser v2 demo
+#+FILETAGS: :browser:wasm:
+#+OPTIONS: H:3 -:t e:nil
+#+SELECT_TAGS: demo
+#+EXCLUDE_TAGS: noexport
+#+LINK: gh https://github.com/%s
+#+LINK: search https://example.test?q=%h
+#+MACRO: badge $1 :: $0
+#+INCLUDE: "guide.org" :lines "1-12" :minlevel 2
+
+* NEXT Parser v2 semantic AST :demo:
+SCHEDULED: <2026-05-10 Sun 09:30-10:30 +1w> DEADLINE: <2026-05-17 Sun -2d>
+:PROPERTIES:
+:CUSTOM_ID: parser-v2-demo
+:ID: parser-v2-org-id
+:END:
+
+Semantic links resolve [[#parser-v2-demo][custom IDs]],
+[[id:parser-v2-org-id][org IDs]],
+[[target-one][explicit targets]], [[fn:note][footnotes]],
+[[gh:tao3k/orgize][link abbreviations]], [[search:parser/v2][encoded abbreviations]],
+and [[coderef:init][source block coderefs]]. The same target without a description
+gets a semantic default: [[#parser-v2-demo]].
+
+Paragraph with <<target-one>>, <<<Radio Target>>>, Radio Target,
+{{{badge(parser, wasm)}}}, [cite:see [balanced] @doe2026 p. [42]; cf. @roe2026],
+@@latex:\LaTeX{}@@, src_rust[:exports code]{let answer = 42;} and call_build[:cache yes](target="wasm").
+Inline footnotes include anonymous definitions [fn::anonymous *inline* note] and
+named definitions [fn:named-inline:named inline note].
+
+#+begin_export markdown
+**Markdown export block** survives in the Markdown tab.
+#+end_export
+
+#+begin_export latex
+\begin{equation}
+e^{i\pi}+1=0
+\end{equation}
+#+end_export
+
+#+name: demo-source
+#+begin_src rust -n 10 -l "// ref:%s" :exports both :results output drawer :var answer=42
+let answer = 42; // ref:init
+println!("answer = {}", answer);
+#+end_src
+
+| <l>     | <r> |
+| Feature | Count |
+| links   |     6 |
+#+TBLFM: $2=vsum(@2..@-1)
+
+[fn:note] Footnote definitions are document-local targets.
+
+*************** WAIT Inline task :inline:
+SCHEDULED: <2026-05-11 Mon>
+Inline task body with *markup*.
+*************** END
 
 -----
 

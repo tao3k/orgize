@@ -3,7 +3,7 @@
 // t -> true
 // \x00A0 -> \\x00A0
 #[rustfmt::skip]
-pub const ENTITIES: &[(&str, &str, bool, &str, &str, &str, &str)] = &[
+pub(crate) const ENTITIES: &[(&str, &str, bool, &str, &str, &str, &str)] = &[
 // ("* Letters"
 // Latin
 ("Agrave", "\\`{A}", false, "&Agrave;", "A", "À", "À"),

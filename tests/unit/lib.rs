@@ -1,4 +1,4 @@
-//! test utils
+//! Test helpers mounted into the crate during `cargo test --lib`.
 
 use nom::IResult;
 use rowan::{ast::AstNode, SyntaxNode};

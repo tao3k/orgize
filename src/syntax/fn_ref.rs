@@ -8,19 +8,28 @@ use nom::{
 use super::{
     combinator::{colon_token, l_bracket_token, node, r_bracket_token, GreenElement},
     input::Input,
-    object::standard_object_nodes,
-    SyntaxKind::*,
+    parser_contract::ObjectNodesParser,
+    SyntaxKind,
 };
 
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn fn_ref_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    crate::lossless_parser!(fn_ref_node_base, input)
+pub(crate) fn fn_ref_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
+    crate::lossless_parser!(
+        |input| fn_ref_node_base(input, standard_object_nodes),
+        input
+    )
 }
 
-fn fn_ref_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn fn_ref_node_base(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, (l_bracket, fn_, colon, label, definition, r_bracket)) = (
         l_bracket_token,
         tag("fn"),
@@ -38,7 +47,7 @@ fn fn_ref_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     }
     children.push(r_bracket);
 
-    Ok((input, node(FN_REF, children)))
+    Ok((input, node(SyntaxKind::FN_REF, children)))
 }
 
 fn balanced_brackets(input: Input) -> IResult<Input, Input, ()> {
@@ -58,9 +67,10 @@ fn balanced_brackets(input: Input) -> IResult<Input, Input, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::FnRef, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::FnRef, tests::to_ast, ParseConfig};
 
-    let to_fn_ref = to_ast::<FnRef>(fn_ref_node);
+    let to_fn_ref =
+        to_ast::<FnRef>(|input| fn_ref_node(input, crate::syntax::object::standard_object_nodes));
 
     insta::assert_debug_snapshot!(
         to_fn_ref("[fn:1]").syntax,
@@ -118,5 +128,9 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(fn_ref_node(("[fn::[]", config).into()).is_err());
+    assert!(fn_ref_node(
+        ("[fn::[]", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
 }

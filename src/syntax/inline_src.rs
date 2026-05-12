@@ -16,7 +16,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn inline_src_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn inline_src_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             tag("src_"),
@@ -48,7 +48,7 @@ pub fn inline_src_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::InlineSrc, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::InlineSrc, tests::to_ast, ParseConfig};
 
     let to_inline_src = to_ast::<InlineSrc>(inline_src_node);
 

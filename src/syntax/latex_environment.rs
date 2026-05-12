@@ -15,7 +15,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn latex_environment_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn latex_environment_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(latex_environment_node_base, input)
 }
 
@@ -70,8 +70,8 @@ fn latex_environment_node_base(input: Input) -> IResult<Input, GreenElement, ()>
 
 #[test]
 fn parse() {
-    use crate::ast::LatexEnvironment;
     use crate::config::ParseConfig;
+    use crate::syntax_ast::LatexEnvironment;
     use crate::tests::to_ast;
 
     let to_latex = to_ast::<LatexEnvironment>(latex_environment_node);

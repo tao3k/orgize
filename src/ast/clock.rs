@@ -1,20 +1,22 @@
 use rowan::ast::support;
 
-use crate::{ast::Token, SyntaxKind};
+use crate::SyntaxKind;
 
-use super::{Clock, Timestamp};
+use super::Token;
 
-impl Clock {
-    pub fn value(&self) -> Option<Timestamp> {
+use super::{SyntaxClock, SyntaxTimestamp};
+
+impl SyntaxClock {
+    pub fn value(&self) -> Option<SyntaxTimestamp> {
         support::child(&self.syntax)
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Clock};
+    /// use orgize::{Org, syntax_ast::SyntaxClock};
     ///
-    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39]").first_node::<Clock>().unwrap();
+    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39]").first_node::<SyntaxClock>().unwrap();
     /// assert!(clock.duration().is_none());
-    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39] =>12:00").first_node::<Clock>().unwrap();
+    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39] =>12:00").first_node::<SyntaxClock>().unwrap();
     /// assert_eq!(clock.duration().unwrap(), "12:00");
     ///
     /// ```
@@ -31,11 +33,11 @@ impl Clock {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Clock};
+    /// use orgize::{Org, syntax_ast::SyntaxClock};
     ///
-    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39]").first_node::<Clock>().unwrap();
+    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39]").first_node::<SyntaxClock>().unwrap();
     /// assert!(!clock.is_closed());
-    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39] =>12:00").first_node::<Clock>().unwrap();
+    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39] =>12:00").first_node::<SyntaxClock>().unwrap();
     /// assert!(clock.is_closed());
     /// ```
     pub fn is_closed(&self) -> bool {
@@ -45,11 +47,11 @@ impl Clock {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Clock};
+    /// use orgize::{Org, syntax_ast::SyntaxClock};
     ///
-    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39]").first_node::<Clock>().unwrap();
+    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39]").first_node::<SyntaxClock>().unwrap();
     /// assert!(clock.is_running());
-    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39] =>12:00").first_node::<Clock>().unwrap();
+    /// let clock = Org::parse("CLOCK: [2003-09-16 Tue 09:39] =>12:00").first_node::<SyntaxClock>().unwrap();
     /// assert!(!clock.is_running());
     /// ```
     pub fn is_running(&self) -> bool {

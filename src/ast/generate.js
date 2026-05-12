@@ -79,6 +79,15 @@ const nodes = [
     affiliated_keywords: true,
   },
   {
+    struct: "Inlinetask",
+    kind: ["INLINETASK"],
+    post_blank: true,
+  },
+  {
+    struct: "InlinetaskEnd",
+    kind: ["INLINETASK_END"],
+  },
+  {
     struct: "Keyword",
     kind: ["KEYWORD"],
   },
@@ -172,6 +181,10 @@ const nodes = [
   {
     struct: "InlineSrc",
     kind: ["INLINE_SRC"],
+  },
+  {
+    struct: "Citation",
+    kind: ["CITATION"],
   },
   {
     struct: "Link",
@@ -275,7 +288,7 @@ let content = `//! generated file, do not modify it directly
 #![allow(unused)]
 
 use rowan::{ast::{support, AstChildren, AstNode}, TextSize, TextRange};
-use crate::syntax::{OrgLanguage, SyntaxKind, SyntaxKind::*, SyntaxNode, SyntaxToken};
+use crate::syntax::{OrgLanguage, SyntaxKind, SyntaxNode, SyntaxToken};
 
 fn affiliated_keyword(node: &SyntaxNode, filter: impl Fn(&str) -> bool) -> Option<AffiliatedKeyword> {
     node.children()
@@ -287,6 +300,7 @@ fn affiliated_keyword(node: &SyntaxNode, filter: impl Fn(&str) -> bool) -> Optio
 
 for (const node of nodes) {
   content += `
+/// Typed syntax wrapper for \`${node.struct}\` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ${node.struct} {
     pub(crate) syntax: SyntaxNode,
@@ -294,7 +308,7 @@ pub struct ${node.struct} {
 impl AstNode for ${node.struct} {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool { ${node.kind
-      .map((k) => `kind == ${k}`)
+      .map((k) => `kind == SyntaxKind::${k}`)
       .join(" || ")} }
     fn cast(node: SyntaxNode) -> Option<${
       node.struct
@@ -320,10 +334,10 @@ impl ${node.struct} {
     }
 `;
   for (const [method, kind] of node.token || []) {
-    content += `    pub fn ${method}(&self) -> Option<super::Token> { super::token(&self.syntax, ${kind}) }\n`;
+    content += `    pub fn ${method}(&self) -> Option<super::Token> { super::token(&self.syntax, SyntaxKind::${kind}) }\n`;
   }
   for (const [method, kind] of node.last_token || []) {
-    content += `    pub fn ${method}(&self) -> Option<super::Token> { super::last_token(&self.syntax, ${kind}) }\n`;
+    content += `    pub fn ${method}(&self) -> Option<super::Token> { super::last_token(&self.syntax, SyntaxKind::${kind}) }\n`;
   }
   for (const [method, kind] of node.parent || []) {
     content += `    pub fn ${method}(&self) -> Option<${kind}> { self.syntax.parent().and_then(${kind}::cast) }\n`;

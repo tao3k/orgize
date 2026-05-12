@@ -1,0 +1,10 @@
+#+title: Table column metadata benchmark
+
+| <l> | <c> | <r> |
+| Name | Count | Note |
+|------+-------+------|
+| Foo  |     1 | ok   |
+| Bar  |     2 | done |
+
+| <10> | <r3> |
+| Text |    2 |

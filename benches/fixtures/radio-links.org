@@ -1,0 +1,7 @@
+* Radio links
+
+<<<Radio Target>>> is declared once.
+
+Radio Target should project as a semantic radio link.
+Radio Targets should stay plain because it is a longer word.
+Nested-ish text such as (Radio Target) should still be recognized.

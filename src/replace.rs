@@ -3,10 +3,11 @@ use rowan::{
     SyntaxNode, TextRange, TextSize, TokenAtOffset,
 };
 
-use crate::ast::Headline;
 use crate::syntax::{
-    combinator::line_starts_iter, document::document_node, headline::headline_node, OrgLanguage,
+    combinator::line_starts_iter, document::document_node, element::element_nodes,
+    headline::headline_node, OrgLanguage,
 };
+use crate::syntax_ast::Headline;
 use crate::Org;
 
 #[derive(Debug)]
@@ -100,7 +101,7 @@ impl Org {
     /// the amount of data processed by parser.
     ///
     /// ```rust
-    /// use orgize::{Org, ast::Headline, TextRange, TextSize};
+    /// use orgize::{syntax_ast::Headline, Org, TextRange, TextSize};
     ///
     /// let mut org = Org::parse("** hello");
     /// let hdl = org.first_node::<Headline>().unwrap();
@@ -114,8 +115,14 @@ impl Org {
     /// ```
     pub fn replace_range(&mut self, range: TextRange, replace_with: impl AsRef<str>) {
         let replace_with = replace_with.as_ref();
+        let mut source = self.source.clone();
+        source.replace_range(
+            usize::from(range.start())..usize::from(range.end()),
+            replace_with,
+        );
+
         match (
-            RangeShape::new(self.document().syntax, range),
+            RangeShape::new(self.syntax_document().syntax, range),
             ReplaceWithShape::new(replace_with),
         ) {
             (
@@ -132,7 +139,7 @@ impl Org {
                 ReplaceWithShape::ExactHeadline { level: new_level },
             ) if level <= new_level
             // non-last headline must ends with a newline
-                && (headline.end() == self.document().end()
+                && (headline.end() == self.syntax_document().end()
                     || replace_with.ends_with(['\n', '\r'])) =>
             {
                 self.replace_headline(headline, range, replace_with)
@@ -147,16 +154,19 @@ impl Org {
 
             _ => self.full_parse(range, replace_with),
         }
+
+        self.source = source;
+        debug_assert_eq!(self.source, self.green.to_string());
     }
 
     fn full_parse(&mut self, range: TextRange, replace_with: &str) {
-        if self.document().syntax().text_range() == range {
+        if self.syntax_document().syntax().text_range() == range {
             let input = (replace_with, &self.config).into();
             self.green = document_node(input).unwrap().1.into_node().unwrap();
         } else {
             let start: usize = range.start().into();
             let end: usize = range.end().into();
-            let mut text = self.green.to_string();
+            let mut text = self.source.clone();
             text.replace_range(start..end, replace_with);
             let input = (text.as_ref(), &self.config).into();
             self.green = document_node(input).unwrap().1.into_node().unwrap();
@@ -167,9 +177,13 @@ impl Org {
         if headline.syntax().text_range() == range {
             let input = (replace_with, &self.config).into();
 
-            self.green = headline
-                .syntax
-                .replace_with(headline_node(input).unwrap().1.into_node().unwrap());
+            self.green = headline.syntax.replace_with(
+                headline_node(input, element_nodes)
+                    .unwrap()
+                    .1
+                    .into_node()
+                    .unwrap(),
+            );
         } else {
             let offset: usize = headline.syntax.text_range().start().into();
             let start: usize = range.start().into();
@@ -180,9 +194,13 @@ impl Org {
 
             let input = (text.as_ref(), &self.config).into();
 
-            self.green = headline
-                .syntax
-                .replace_with(headline_node(input).unwrap().1.into_node().unwrap());
+            self.green = headline.syntax.replace_with(
+                headline_node(input, element_nodes)
+                    .unwrap()
+                    .1
+                    .into_node()
+                    .unwrap(),
+            );
         }
     }
 }
@@ -201,23 +219,23 @@ fn follows_newline(syntax: &SyntaxNode<OrgLanguage>, offset: TextSize) -> bool {
 #[test]
 fn replace() {
     assert!(follows_newline(
-        Org::parse("\n*a*").document().syntax(),
+        Org::parse("\n*a*").syntax_document().syntax(),
         TextSize::new(1)
     ));
     assert!(follows_newline(
-        Org::parse(" \na").document().syntax(),
+        Org::parse(" \na").syntax_document().syntax(),
         TextSize::new(1)
     ));
     assert!(follows_newline(
-        Org::parse(" \ra").document().syntax(),
+        Org::parse(" \ra").syntax_document().syntax(),
         TextSize::new(1)
     ));
     assert!(!follows_newline(
-        Org::parse(" *a*").document().syntax(),
+        Org::parse(" *a*").syntax_document().syntax(),
         TextSize::new(1)
     ));
     assert!(!follows_newline(
-        Org::parse(" a").document().syntax(),
+        Org::parse(" a").syntax_document().syntax(),
         TextSize::new(1)
     ));
 
@@ -246,28 +264,28 @@ fn replace() {
 
     assert!(matches!(
         RangeShape::new(
-            Org::parse("** abc\n** b").document().syntax,
+            Org::parse("** abc\n** b").syntax_document().syntax,
             TextRange::new(0.into(), 7.into())
         ),
         RangeShape::ExactHeadline { level: 2, .. }
     ));
     assert!(matches!(
         RangeShape::new(
-            Org::parse("** abc\n** b").document().syntax,
+            Org::parse("** abc\n** b").syntax_document().syntax,
             TextRange::new(3.into(), 7.into())
         ),
         RangeShape::InsideHeadline { level: 2, .. }
     ));
     assert!(matches!(
         RangeShape::new(
-            Org::parse("** abc\n** b").document().syntax,
+            Org::parse("** abc\n** b").syntax_document().syntax,
             TextRange::new(2.into(), 7.into())
         ),
         RangeShape::Other
     ));
     assert!(matches!(
         RangeShape::new(
-            Org::parse("* abc\n** b").document().syntax,
+            Org::parse("* abc\n** b").syntax_document().syntax,
             TextRange::new(4.into(), 7.into())
         ),
         RangeShape::InsideHeadline { level: 1, .. }
@@ -293,9 +311,10 @@ fn replace() {
             );
 
             debug_assert_eq!(
-                format!("{:#?}", org.document().syntax),
-                format!("{:#?}", Org::parse(output).document().syntax),
+                format!("{:#?}", org.syntax_document().syntax),
+                format!("{:#?}", Org::parse(&output).syntax_document().syntax),
             );
+            assert_eq!(org.to_org(), output);
         };
     }
 

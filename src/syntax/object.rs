@@ -1,6 +1,9 @@
 use nom::IResult;
 
+#[cfg(feature = "syntax-org-fc")]
+use super::cloze::cloze_node;
 use super::{
+    citation::citation_node,
     combinator::GreenElement,
     cookie::cookie_node,
     emphasis::{
@@ -13,7 +16,7 @@ use super::{
     input::Input,
     latex_fragment::latex_fragment_node,
     line_break::line_break_node,
-    link::link_node,
+    link::{angle_link_node, link_node, plain_link_node, plain_link_start_before_colon},
     macros::macros_node,
     radio_target::radio_target_node,
     snippet::snippet_node,
@@ -34,16 +37,16 @@ impl ObjectPositions<'_> {
             input,
             pos: 0,
             finder: jetscii::bytes!(
-                b'*', b'+', b'/', b'_', b'=', b'~', /* text markup */
+                b'*', b'+', b'/', b'_', b'=', b'~', /* text markup, subscript */
                 b'@', /* snippet */
-                b'<', /* timestamp, target, radio target */
+                b'<', /* timestamp, target, radio target, angle link */
+                b':', /* plain link scheme separator */
                 b'[', /* link, cookie, fn_ref, timestamp */
                 b'c', /* inline call */
                 b's', /* inline source */
                 b'\\', b'$', /* latex & entity */
                 b'{', /* macros */
-                b'^', /* superscript */
-                b'_'  /* subscript */
+                b'^'  /* superscript */
             ),
         }
     }
@@ -109,6 +112,12 @@ impl<'a> Iterator for ObjectPositions<'a> {
             }
 
             let bytes = &self.input.as_bytes()[p..];
+            if bytes[0] == b':' {
+                if let Some(start) = plain_link_start_before_colon(self.input.as_str(), p) {
+                    return Some(self.input.take_split(start));
+                }
+                continue;
+            }
             if bytes[0] == b'c' && !bytes.starts_with(b"call_") {
                 continue;
             }
@@ -128,20 +137,24 @@ impl<'a> Iterator for ObjectPositions<'a> {
 /// - Text markup (bold code strike verbatim underline italic) ('*', '~', '+', '=', '_', '/')
 /// - Entities ('\\')
 /// - Superscripts and Subscripts
-pub fn minimal_object_nodes(input: Input) -> Vec<GreenElement> {
+pub(crate) fn minimal_object_nodes(input: Input) -> Vec<GreenElement> {
     object_nodes(
         ObjectPositions::minimal,
         |i: Input, pre: Input| match &i.as_bytes()[0] {
-            b'*' if emphasis::verify_pre(pre.s) => bold_node(i),
-            b'+' if emphasis::verify_pre(pre.s) => strike_node(i),
-            b'/' if emphasis::verify_pre(pre.s) => italic_node(i),
-            b'_' if emphasis::verify_pre(pre.s) => underline_node(i),
+            b'*' if emphasis::verify_pre(pre.s) => bold_node(i, standard_object_nodes),
+            b'+' if emphasis::verify_pre(pre.s) => strike_node(i, standard_object_nodes),
+            b'/' if emphasis::verify_pre(pre.s) => italic_node(i, standard_object_nodes),
+            b'_' if emphasis::verify_pre(pre.s) => underline_node(i, standard_object_nodes),
             b'=' if emphasis::verify_pre(pre.s) => verbatim_node(i),
             b'~' if emphasis::verify_pre(pre.s) => code_node(i),
             b'$' => latex_fragment_node(i),
             b'\\' => entity_node(i).or_else(|_| latex_fragment_node(i)),
-            b'^' if subscript_superscript::verify_pre(&pre) => superscript_node(i),
-            b'_' if subscript_superscript::verify_pre(&pre) => subscript_node(i),
+            b'^' if subscript_superscript::verify_pre(&pre) => {
+                superscript_node(i, standard_object_nodes)
+            }
+            b'_' if subscript_superscript::verify_pre(&pre) => {
+                subscript_node(i, standard_object_nodes)
+            }
             _ => Err(nom::Err::Error(())),
         },
         input,
@@ -165,37 +178,38 @@ pub fn minimal_object_nodes(input: Input) -> Vec<GreenElement> {
 /// - Line Breaks
 /// - Subscript and Superscript
 /// - Cloze (if `syntax-org-fc` is enabled)
-///
-/// // todo:
 /// - Citations
-pub fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
+pub(crate) fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
     object_nodes(
         ObjectPositions::standard,
         |i: Input, pre: Input| match &i.as_bytes()[0] {
-            b'*' if emphasis::verify_pre(pre.s) => bold_node(i),
-            b'+' if emphasis::verify_pre(pre.s) => strike_node(i),
-            b'/' if emphasis::verify_pre(pre.s) => italic_node(i),
-            b'_' if emphasis::verify_pre(pre.s) => underline_node(i),
+            b'*' if emphasis::verify_pre(pre.s) => bold_node(i, standard_object_nodes),
+            b'+' if emphasis::verify_pre(pre.s) => strike_node(i, standard_object_nodes),
+            b'/' if emphasis::verify_pre(pre.s) => italic_node(i, standard_object_nodes),
+            b'_' if emphasis::verify_pre(pre.s) => underline_node(i, standard_object_nodes),
             b'=' if emphasis::verify_pre(pre.s) => verbatim_node(i),
             b'~' if emphasis::verify_pre(pre.s) => code_node(i),
             b'@' => snippet_node(i),
             b'{' => {
                 cfg_if::cfg_if! {
                     if #[cfg(feature = "syntax-org-fc")] {
-                        macros_node(i).or_else(|_| super::cloze::cloze_node(i))
+                        macros_node(i).or_else(|_| cloze_node(i, standard_object_nodes))
                     } else {
                         macros_node(i)
                     }
                 }
             }
-            b'<' => radio_target_node(i)
+            b'<' => radio_target_node(i, minimal_object_nodes)
                 .or_else(|_| target_node(i))
+                .or_else(|_| angle_link_node(i))
                 .or_else(|_| timestamp_diary_node(i))
                 .or_else(|_| timestamp_active_node(i)),
             b'[' => cookie_node(i)
-                .or_else(|_| link_node(i))
-                .or_else(|_| fn_ref_node(i))
+                .or_else(|_| citation_node(i))
+                .or_else(|_| link_node(i, link_description_object_nodes))
+                .or_else(|_| fn_ref_node(i, standard_object_nodes))
                 .or_else(|_| timestamp_inactive_node(i)),
+            b'f' | b'h' | b'm' | b'n' => plain_link_node(i),
             // NOTE: although not specified in document, inline call and inline src follows the
             // same pre tokens rule as text markup
             b'c' if emphasis::verify_pre(pre.s) => inline_call_node(i),
@@ -203,15 +217,19 @@ pub fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
             b'$' => latex_fragment_node(i),
             b'\\' if !pre.s.ends_with('\\') && i.as_bytes()[1] == b'\\' => line_break_node(i),
             b'\\' => entity_node(i).or_else(|_| latex_fragment_node(i)),
-            b'^' if subscript_superscript::verify_pre(&pre) => superscript_node(i),
-            b'_' if subscript_superscript::verify_pre(&pre) => subscript_node(i),
+            b'^' if subscript_superscript::verify_pre(&pre) => {
+                superscript_node(i, standard_object_nodes)
+            }
+            b'_' if subscript_superscript::verify_pre(&pre) => {
+                subscript_node(i, standard_object_nodes)
+            }
             _ => Err(nom::Err::Error(())),
         },
         input,
     )
 }
 
-pub fn link_description_object_nodes(input: Input) -> Vec<GreenElement> {
+pub(crate) fn link_description_object_nodes(input: Input) -> Vec<GreenElement> {
     object_nodes(
         ObjectPositions::link_description,
         |i: Input<'_>, pre: Input<'_>| match &i.as_bytes()[0] {
@@ -220,16 +238,20 @@ pub fn link_description_object_nodes(input: Input) -> Vec<GreenElement> {
             b's' if emphasis::verify_pre(pre.s) => inline_src_node(i),
             b'{' => macros_node(i),
             b'[' => cookie_node(i),
-            b'*' if emphasis::verify_pre(pre.s) => bold_node(i),
-            b'+' if emphasis::verify_pre(pre.s) => strike_node(i),
-            b'/' if emphasis::verify_pre(pre.s) => italic_node(i),
-            b'_' if emphasis::verify_pre(pre.s) => underline_node(i),
+            b'*' if emphasis::verify_pre(pre.s) => bold_node(i, standard_object_nodes),
+            b'+' if emphasis::verify_pre(pre.s) => strike_node(i, standard_object_nodes),
+            b'/' if emphasis::verify_pre(pre.s) => italic_node(i, standard_object_nodes),
+            b'_' if emphasis::verify_pre(pre.s) => underline_node(i, standard_object_nodes),
             b'=' if emphasis::verify_pre(pre.s) => verbatim_node(i),
             b'~' if emphasis::verify_pre(pre.s) => code_node(i),
             b'$' => latex_fragment_node(i),
             b'\\' => entity_node(i).or_else(|_| latex_fragment_node(i)),
-            b'^' if subscript_superscript::verify_pre(&pre) => superscript_node(i),
-            b'_' if subscript_superscript::verify_pre(&pre) => subscript_node(i),
+            b'^' if subscript_superscript::verify_pre(&pre) => {
+                superscript_node(i, standard_object_nodes)
+            }
+            b'_' if subscript_superscript::verify_pre(&pre) => {
+                subscript_node(i, standard_object_nodes)
+            }
             _ => Err(nom::Err::Error(())),
         },
         input,
@@ -241,30 +263,10 @@ where
     F: Fn(Input) -> ObjectPositions,
     P: Fn(Input<'a>, Input<'a>) -> IResult<Input<'a>, GreenElement, ()>,
 {
-    let mut i = input;
-    let mut nodes = vec![];
-
-    'l: while !i.is_empty() {
-        for (input, head) in position(i) {
-            debug_assert!(
-                input.s.len() >= 2,
-                "object must have at least two characters: {:?}",
-                input.s
-            );
-
-            if let Ok((input, pre)) = parse(input, head) {
-                if !head.is_empty() {
-                    nodes.push(head.text_token())
-                }
-                nodes.push(pre);
-                debug_assert!(input.len() < i.len(), "{} < {}", input.len(), i.len());
-                i = input;
-                continue 'l;
-            }
-        }
-        nodes.push(i.text_token());
-        break;
-    }
+    let mut cursor = input;
+    let nodes = std::iter::from_fn(|| next_object_chunk(&mut cursor, &position, &parse))
+        .flatten()
+        .collect::<Vec<_>>();
 
     debug_assert_eq!(
         input.as_str(),
@@ -272,6 +274,53 @@ where
         "parser must be lossless"
     );
 
+    nodes
+}
+
+fn next_object_chunk<'a, F, P>(
+    cursor: &mut Input<'a>,
+    position: &F,
+    parse: &P,
+) -> Option<Vec<GreenElement>>
+where
+    F: Fn(Input) -> ObjectPositions,
+    P: Fn(Input<'a>, Input<'a>) -> IResult<Input<'a>, GreenElement, ()>,
+{
+    if cursor.is_empty() {
+        return None;
+    }
+
+    if let Some((tail, head, object)) = position(*cursor).find_map(|(input, head)| {
+        debug_assert!(
+            input.s.len() >= 2,
+            "object must have at least two characters: {:?}",
+            input.s
+        );
+        parse(input, head)
+            .ok()
+            .map(|(tail, object)| (tail, head, object))
+    }) {
+        debug_assert!(
+            tail.len() < cursor.len(),
+            "{} < {}",
+            tail.len(),
+            cursor.len()
+        );
+        *cursor = tail;
+        return Some(object_chunk_from_match(head, object));
+    }
+
+    let tail = *cursor;
+    *cursor = cursor.of("");
+    Some(vec![tail.text_token()])
+}
+
+fn object_chunk_from_match(head: Input<'_>, object: GreenElement) -> Vec<GreenElement> {
+    let mut nodes = Vec::with_capacity(2);
+    if !head.is_empty() {
+        nodes.push(head.text_token());
+    }
+    nodes.push(object);
     nodes
 }
 

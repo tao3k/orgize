@@ -9,12 +9,12 @@ use super::{
 };
 
 /// Recognizes one paragraph
-pub fn paragraph_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn paragraph_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(paragraph_node_base, input)
 }
 
 /// Recognizes multiple paragraphs
-pub fn paragraph_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<()>> {
+pub(crate) fn paragraph_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<()>> {
     let mut i = input;
     let mut children = vec![];
     while !i.is_empty() {
@@ -54,7 +54,7 @@ fn paragraph_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Paragraph, tests::to_ast};
+    use crate::{syntax_ast::Paragraph, tests::to_ast};
 
     let to_paragraph = to_ast::<Paragraph>(paragraph_node);
 

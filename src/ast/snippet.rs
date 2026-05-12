@@ -4,7 +4,7 @@ use super::{filter_token, Snippet, Token};
 
 impl Snippet {
     /// ```rust
-    /// use orgize::{Org, ast::Snippet};
+    /// use orgize::{Org, syntax_ast::Snippet};
     ///
     /// let snippet = Org::parse("@@BACKEND:VALUE@@").first_node::<Snippet>().unwrap();
     /// assert_eq!(snippet.backend(), "BACKEND");
@@ -17,7 +17,7 @@ impl Snippet {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Snippet};
+    /// use orgize::{Org, syntax_ast::Snippet};
     ///
     /// let snippet = Org::parse("@@BACKEND:@@").first_node::<Snippet>().unwrap();
     /// assert_eq!(snippet.value(), "");

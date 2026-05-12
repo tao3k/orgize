@@ -1,9 +1,12 @@
+//! Typed syntax wrapper helpers for `org-fc` cloze objects.
+
 use crate::{syntax::OrgLanguage, SyntaxElement, SyntaxKind, SyntaxNode};
 use rowan::{ast::AstNode, TextRange, TextSize};
 
 use super::Token;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Typed syntax wrapper for an `org-fc` cloze object.
 pub struct Cloze {
     pub(crate) syntax: SyntaxNode,
 }
@@ -53,7 +56,7 @@ impl Cloze {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Cloze};
+    /// use orgize::{Org, syntax_ast::Cloze};
     ///
     /// let cloze = Org::parse("{{text}}").first_node::<Cloze>().unwrap();
     /// assert_eq!(cloze.text_raw(), "text");
@@ -68,7 +71,7 @@ impl Cloze {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Cloze};
+    /// use orgize::{Org, syntax_ast::Cloze};
     ///
     /// let cloze = Org::parse("{{text}}").first_node::<Cloze>().unwrap();
     /// assert!(cloze.hint().is_none());
@@ -89,7 +92,7 @@ impl Cloze {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::Cloze};
+    /// use orgize::{Org, syntax_ast::Cloze};
     ///
     /// let cloze = Org::parse("{{text}}").first_node::<Cloze>().unwrap();
     /// assert!(cloze.id().is_none());

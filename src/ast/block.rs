@@ -6,7 +6,7 @@ use rowan::TextSize;
 
 impl SourceBlock {
     /// ```rust
-    /// use orgize::{Org, ast::SourceBlock};
+    /// use orgize::{Org, syntax_ast::SourceBlock};
     ///
     /// let block = Org::parse("#+begin_src c\n#+end_src").first_node::<SourceBlock>().unwrap();
     /// assert_eq!(block.language().unwrap(), "c");
@@ -26,7 +26,7 @@ impl SourceBlock {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::SourceBlock};
+    /// use orgize::{Org, syntax_ast::SourceBlock};
     ///
     /// let block = Org::parse("#+begin_src emacs-lisp -n 20\n#+end_src").first_node::<SourceBlock>().unwrap();
     /// assert_eq!(block.switches().unwrap(), "-n 20");
@@ -50,7 +50,7 @@ impl SourceBlock {
     }
 
     /// ```rust
-    /// use orgize::{Org, ast::SourceBlock};
+    /// use orgize::{Org, syntax_ast::SourceBlock};
     ///
     /// let block = Org::parse("#+begin_src c :tangle yes\n#+end_src").first_node::<SourceBlock>().unwrap();
     /// assert_eq!(block.parameters().unwrap(), ":tangle yes");
@@ -72,7 +72,7 @@ impl SourceBlock {
     /// Return unescaped source code string
     ///
     /// ```rust
-    /// use orgize::{Org, ast::SourceBlock};
+    /// use orgize::{Org, syntax_ast::SourceBlock};
     ///
     /// let block = Org::parse(r#"
     /// #+begin_src
@@ -99,9 +99,29 @@ impl SourceBlock {
     }
 }
 
+impl ExampleBlock {
+    /// ```rust
+    /// use orgize::{Org, syntax_ast::ExampleBlock};
+    ///
+    /// let block = Org::parse("#+begin_example -n 3\n#+end_example").first_node::<ExampleBlock>().unwrap();
+    /// assert_eq!(block.switches().unwrap(), "-n 3");
+    ///
+    /// let block = Org::parse("#+begin_example\n#+end_example").first_node::<ExampleBlock>().unwrap();
+    /// assert!(block.switches().is_none());
+    /// ````
+    pub fn switches(&self) -> Option<Token> {
+        self.syntax
+            .children()
+            .find(|e| e.kind() == SyntaxKind::BLOCK_BEGIN)
+            .into_iter()
+            .flat_map(|n| n.children_with_tokens())
+            .find_map(filter_token(SyntaxKind::SRC_BLOCK_SWITCHES))
+    }
+}
+
 impl ExportBlock {
     /// ```rust
-    /// use orgize::{Org, ast::ExportBlock};
+    /// use orgize::{Org, syntax_ast::ExportBlock};
     ///
     /// let block = Org::parse("#+begin_export html\n#+end_export").first_node::<ExportBlock>().unwrap();
     /// assert_eq!(block.ty().unwrap(), "html");
@@ -121,7 +141,7 @@ impl ExportBlock {
     /// Returns export block contents
     ///
     /// ```rust
-    /// use orgize::{Org, ast::ExportBlock};
+    /// use orgize::{Org, syntax_ast::ExportBlock};
     ///
     /// let block = Org::parse(r#"
     /// #+begin_export html

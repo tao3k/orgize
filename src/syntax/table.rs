@@ -8,17 +8,18 @@ use nom::{
 use super::{
     combinator::{blank_lines, line_ends_iter, node, pipe_token, GreenElement, NodeBuilder},
     input::Input,
-    keyword::tblfm_keyword_nodes,
+    keyword::{affiliated_keyword_nodes, tblfm_keyword_nodes},
     object::standard_object_nodes,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
-    let mut children = vec![];
+    let (table_input, affiliated_keywords) = affiliated_keyword_nodes(input)?;
+    let mut children = affiliated_keywords;
 
     let mut start = 0;
-    for i in line_ends_iter(input.as_str()) {
-        let line = input.slice(start..i);
+    for i in line_ends_iter(table_input.as_str()) {
+        let line = table_input.slice(start..i);
         let trimmed = line.as_str().trim_start_matches([' ', '\t']);
 
         // Org tables end at the first line not starting with a vertical bar.
@@ -27,7 +28,7 @@ fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         }
 
         if trimmed.starts_with("|-") {
-            children.push(node(ORG_TABLE_RULE_ROW, [line.text_token()]));
+            children.push(node(SyntaxKind::ORG_TABLE_RULE_ROW, [line.text_token()]));
         } else {
             children.push(table_standard_row_node(line)?);
         }
@@ -39,7 +40,7 @@ fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         return Err(nom::Err::Error(()));
     }
 
-    let input = input.slice(start..);
+    let input = table_input.slice(start..);
 
     let (input, tblfm) = tblfm_keyword_nodes(input)?;
 
@@ -48,7 +49,7 @@ fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     children.extend(tblfm);
     children.extend(post_blank);
 
-    Ok((input, node(ORG_TABLE, children)))
+    Ok((input, node(SyntaxKind::ORG_TABLE, children)))
 }
 
 fn table_standard_row_node(input: Input) -> Result<GreenElement, nom::Err<()>> {
@@ -78,18 +79,24 @@ fn table_standard_row_node(input: Input) -> Result<GreenElement, nom::Err<()>> {
         {
             Some(idx) => {
                 let (ws, cell) = input.take_split(idx + 1);
-                b.push(node(ORG_TABLE_CELL, standard_object_nodes(cell)));
+                b.push(node(
+                    SyntaxKind::ORG_TABLE_CELL,
+                    standard_object_nodes(cell),
+                ));
                 b.ws(ws);
             }
             _ => {
-                b.push(node(ORG_TABLE_CELL, standard_object_nodes(input)));
+                b.push(node(
+                    SyntaxKind::ORG_TABLE_CELL,
+                    standard_object_nodes(input),
+                ));
             }
         }
     });
     let (input, _) = it.finish()?;
     debug_assert!(input.is_empty());
 
-    Ok(b.finish(ORG_TABLE_STANDARD_ROW))
+    Ok(b.finish(SyntaxKind::ORG_TABLE_STANDARD_ROW))
 }
 
 fn table_el_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -120,14 +127,14 @@ fn table_el_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     children.push(contents.text_token());
     children.extend(post_blank);
 
-    Ok((input, node(TABLE_EL, children)))
+    Ok((input, node(SyntaxKind::TABLE_EL, children)))
 }
 
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn org_table_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn org_table_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(org_table_node_base, input)
 }
 
@@ -135,13 +142,13 @@ pub fn org_table_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn table_el_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn table_el_node(input: Input) -> IResult<Input, GreenElement, ()> {
     crate::lossless_parser!(table_el_node_base, input)
 }
 
 #[test]
 fn parse_org_table() {
-    use crate::{ast::OrgTable, tests::to_ast};
+    use crate::{syntax_ast::OrgTable, tests::to_ast};
 
     let to_org_table = to_ast::<OrgTable>(org_table_node);
 
@@ -153,6 +160,18 @@ fn parse_org_table() {
         PIPE@0..1 "|"
     "###
     );
+
+    let table = to_org_table("#+ATTR_HTML: :class compact\n| a |\n");
+    let mut children = table.syntax.children();
+    assert_eq!(
+        children.next().unwrap().kind(),
+        SyntaxKind::AFFILIATED_KEYWORD
+    );
+    assert_eq!(
+        children.next().unwrap().kind(),
+        SyntaxKind::ORG_TABLE_STANDARD_ROW
+    );
+    assert!(children.next().is_none());
 
     insta::assert_debug_snapshot!(
         to_org_table(
@@ -237,7 +256,7 @@ r#"|
 
 #[test]
 fn parse_table_el() {
-    use crate::{ast::TableEl, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::TableEl, tests::to_ast, ParseConfig};
 
     let to_table_el = to_ast::<TableEl>(table_el_node);
 

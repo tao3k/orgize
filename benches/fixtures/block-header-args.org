@@ -1,0 +1,10 @@
+#+title: Block header arguments benchmark
+
+#+begin_src emacs-lisp -i -n 5 :exports both :results output drawer :var x=1 :tangle "docs/demo.org" :noweb-ref setup
+(message "setup")
+(message "run")
+#+end_src
+
+#+begin_src sh :dir "/tmp/:not-key" :eval no-export
+echo ok
+#+end_src

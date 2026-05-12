@@ -37,8 +37,12 @@ tracing = { version = "0.1.44", optional = true }
 [dev-dependencies]
 criterion = "0.8.2"
 insta = "1.47.2"
+rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "ed68dc7909e9bc09d432ec263c1dd83fcd390df2" }
 slugify = "0.1"
 tracing-subscriber = { version = "0.3.23", features = ["fmt"] }
+
+[build-dependencies]
+rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "ed68dc7909e9bc09d432ec263c1dd83fcd390df2" }
 
 [[bench]]
 name = "parse"

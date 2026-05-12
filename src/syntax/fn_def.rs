@@ -18,7 +18,7 @@ use super::{
   feature = "tracing",
   tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn fn_def_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn fn_def_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             affiliated_keyword_nodes,
@@ -60,7 +60,7 @@ pub fn fn_def_node(input: Input) -> IResult<Input, GreenElement, ()> {
 #[test]
 fn parse() {
     use crate::ParseConfig;
-    use crate::{ast::FnDef, tests::to_ast};
+    use crate::{syntax_ast::FnDef, tests::to_ast};
 
     let to_fn_def = to_ast::<FnDef>(fn_def_node);
 

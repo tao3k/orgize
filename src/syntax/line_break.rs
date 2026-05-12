@@ -7,7 +7,7 @@ use crate::{
 
 use super::{combinator::GreenElement, input::Input};
 
-pub fn line_break_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn line_break_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(input.s.starts_with('\\'));
     let mut parser = map(
         (backslash_token, backslash_token, space0, eol_or_eof),
@@ -23,7 +23,7 @@ pub fn line_break_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::ast::LineBreak;
+    use crate::syntax_ast::LineBreak;
     use crate::tests::to_ast;
 
     let to_line_break = to_ast::<LineBreak>(line_break_node);

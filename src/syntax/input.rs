@@ -5,7 +5,7 @@ use std::{
 };
 
 use super::{
-    combinator::{token, GreenElement},
+    green::{token, GreenElement},
     SyntaxKind,
 };
 use crate::config::ParseConfig;
@@ -14,7 +14,7 @@ use crate::config::ParseConfig;
 ///
 /// It helps us to pass the `ParseConfig` all the way down to each parsers
 #[derive(Clone, Copy, Debug)]
-pub struct Input<'a> {
+pub(crate) struct Input<'a> {
     pub(crate) s: &'a str,
     pub(crate) c: &'a ParseConfig,
 }
@@ -26,7 +26,7 @@ impl<'a> Input<'a> {
     }
 
     #[inline]
-    pub fn as_str(&self) -> &'a str {
+    pub(crate) fn as_str(&self) -> &'a str {
         self.s
     }
 
@@ -65,22 +65,22 @@ impl<'a> Input<'a> {
     }
 
     #[inline]
-    pub fn token(&self, kind: SyntaxKind) -> GreenElement {
+    pub(crate) fn token(&self, kind: SyntaxKind) -> GreenElement {
         token(kind, self.s)
     }
 
     #[inline]
-    pub fn text_token(&self) -> GreenElement {
+    pub(crate) fn text_token(&self) -> GreenElement {
         token(SyntaxKind::TEXT, self.s)
     }
 
     #[inline]
-    pub fn ws_token(&self) -> GreenElement {
+    pub(crate) fn ws_token(&self) -> GreenElement {
         token(SyntaxKind::WHITESPACE, self.s)
     }
 
     #[inline]
-    pub fn nl_token(&self) -> GreenElement {
+    pub(crate) fn nl_token(&self) -> GreenElement {
         token(SyntaxKind::NEW_LINE, self.s)
     }
 }
@@ -165,17 +165,12 @@ impl<'a> NomInput for Input<'a> {
 
     #[inline]
     fn slice_index(&self, count: usize) -> Result<usize, Needed> {
-        let mut cnt = 0;
-        for (index, _) in self.s.char_indices() {
-            if cnt == count {
-                return Ok(index);
-            }
-            cnt += 1;
-        }
-        if cnt == count {
-            return Ok(self.s.len());
-        }
-        Err(Needed::Unknown)
+        self.s
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(self.s.len()))
+            .nth(count)
+            .ok_or(Needed::Unknown)
     }
 }
 

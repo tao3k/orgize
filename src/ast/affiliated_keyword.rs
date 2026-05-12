@@ -5,7 +5,7 @@ use super::{filter_token, AffiliatedKeyword, Token};
 impl AffiliatedKeyword {
     ///
     /// ```rust
-    /// use orgize::{Org, ast::AffiliatedKeyword};
+    /// use orgize::{Org, syntax_ast::AffiliatedKeyword};
     ///
     /// let keyword = Org::parse("#+CAPTION: VALUE\nabc").first_node::<AffiliatedKeyword>().unwrap();
     /// assert_eq!(keyword.key(), "CAPTION");
@@ -19,7 +19,7 @@ impl AffiliatedKeyword {
 
     ///
     /// ```rust
-    /// use orgize::{Org, ast::AffiliatedKeyword};
+    /// use orgize::{Org, syntax_ast::AffiliatedKeyword};
     ///
     /// let keyword = Org::parse("#+CAPTION: VALUE\nabc").first_node::<AffiliatedKeyword>().unwrap();
     /// assert!(keyword.optional().is_none());
@@ -36,7 +36,7 @@ impl AffiliatedKeyword {
 
     ///
     /// ```rust
-    /// use orgize::{Org, ast::AffiliatedKeyword};
+    /// use orgize::{Org, syntax_ast::AffiliatedKeyword};
     ///
     /// let keyword = Org::parse("#+CAPTION: VALUE\nabc").first_node::<AffiliatedKeyword>().unwrap();
     /// assert_eq!(keyword.value().unwrap(), " VALUE");

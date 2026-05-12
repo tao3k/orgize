@@ -1,0 +1,81 @@
+# Parser v2 performance closeout
+
+This document is the structured performance closeout for the parser-v2.0 lane.
+It records which hot paths are protected, how to reproduce the benchmark set,
+and the current dense-path evidence collected on 2026-05-12.
+
+## Scope
+
+- The lossless rowan syntax tree remains the parser substrate.
+- `Org::document()` is the owned semantic projection path and the main parser-v2
+  performance surface.
+- `Document::project_for_export()` is an opt-in semantic projection for exporter
+  and indexer consumers.
+- HTML, Markdown, and LaTeX exporters continue to traverse the lossless syntax
+  substrate by default.
+- `.data/` reference checkouts remain outside Cargo, CI, benchmarks, and
+  release artifacts.
+
+## Hot Path Structure
+
+| Surface | Owner path | Protected behavior |
+| --- | --- | --- |
+| Syntax parse | `src/syntax/**` | Lossless Org syntax tree construction across representative fixtures. |
+| Semantic prescan | `src/semantic_ast/conversion.rs`, `src/semantic_ast/prescan.rs`, `src/semantic_ast/targets.rs` | Single pass target/preprocessing/settings collection before semantic projection. |
+| Source annotations | `src/semantic_ast/source_position.rs` | O(1) ASCII column projection while preserving UTF-8 character columns. |
+| Radio links | `src/semantic_ast/radio_links.rs`, `src/semantic_ast/conversion.rs` | Single left-to-right object-run scan, longest target at shared start, cached object-run spans. |
+| Macro expansion | `src/semantic_ast/macro_expansion.rs` | Capacity-aware macro definition lookup and `$0` reuse. |
+| M15 postprocess | `src/semantic_ast/postprocess.rs`, `src/semantic_ast/settings.rs` | Metadata/settings side tables, stable anchors, aliases, default link descriptions, footnote resolution. |
+| Export projection | `src/semantic_ast/projection.rs` | Opt-in pruning, special strings, headline shift, and link abbreviation expansion without mutating `ParsedAst`. |
+| Lossless exporters | `src/export/**` | Default HTML/Markdown/LaTeX output stays stable; options only affect explicit `*_with_options` calls. |
+
+## Benchmark Matrix
+
+| Benchmark group | Fixture | What it guards |
+| --- | --- | --- |
+| `Org::macro_expansions` | `dense-macro-expansions.org` | Macro side-table expansion and repeated placeholder reuse. |
+| `Org::document/dense-target-projection` | `many-targets-and-radio-links.org` | Target indexing, internal link resolution, and radio-link lookup. |
+| `Org::document/dense-annotation-projection` | `many-annotated-ascii-objects.org` | Source range and line/column annotation projection. |
+| `Org::document/dense-semantic-radio-projection` | `many-parsed-object-radio-links.org` | Semantic radio links across parsed object spans. |
+| `Org::document/dense-m15-side-tables` | `many-m15-settings-links-footnotes.org` | M15 semantic side tables, aliases, citations, and footnote postprocess. |
+| `Document::project_for_export/dense-m15` | `many-m15-settings-links-footnotes.org` | Export pruning, tag filtering, special strings, headline shifting, and abbreviation expansion. |
+
+## Current Dense Evidence
+
+Command:
+
+```sh
+direnv exec . cargo bench --bench parse "dense-|macro_expansions/dense" -- --sample-size 10 --warm-up-time 1 --measurement-time 2
+```
+
+The numbers below are local low-sample Criterion measurements for closeout
+evidence, not hard cross-machine regression thresholds.
+
+| Benchmark | Estimate | Interval | Throughput estimate |
+| --- | ---: | ---: | ---: |
+| `Org::macro_expansions/dense-macro-expansions.org` | 439.19 us | 354.50-503.15 us | 18.577 MiB/s |
+| `Org::document/dense-target-projection/many-targets-and-radio-links.org` | 6.6523 ms | 5.3127-8.8138 ms | 3.4339 MiB/s |
+| `Org::document/dense-annotation-projection/many-annotated-ascii-objects.org` | 3.4855 ms | 2.6274-4.4575 ms | 8.7250 MiB/s |
+| `Org::document/dense-semantic-radio-projection/many-parsed-object-radio-links.org` | 19.396 ms | 15.447-23.118 ms | 1.6411 MiB/s |
+| `Org::document/dense-m15-side-tables/many-m15-settings-links-footnotes.org` | 10.109 ms | 7.8993-11.831 ms | 4.9057 MiB/s |
+| `Document::project_for_export/dense-m15/many-m15-settings-links-footnotes.org` | 3.9719 ms | 2.7931-5.1902 ms | 12.485 MiB/s |
+
+## Closeout Gate
+
+Run the full parser-v2 closeout gate through the repository environment:
+
+```sh
+direnv exec . cargo fmt --all -- --check
+direnv exec . cargo test --workspace --all-targets --all-features
+direnv exec . cargo clippy --workspace --all-targets --all-features -- -D warnings
+direnv exec . cargo test --doc --all-features
+direnv exec . cargo bench --bench parse dense-m15 -- --test
+direnv exec . cargo bench --bench parse "dense-|macro_expansions/dense" -- --sample-size 10 --warm-up-time 1 --measurement-time 2
+direnv exec . cargo run --quiet --manifest-path /Users/guangtao/ghq/github.com/tao3k/rust-lang-project-harness/Cargo.toml -- --json /Users/guangtao/ghq/github.com/tao3k/orgize
+git diff --check
+rg -n "<policy-and-foreign-reference-boundary-pattern>" Cargo.toml Cargo.lock src tests README.md .github wasm examples docs build.rs benches --glob '!target/**'
+```
+
+The harness JSON must report zero findings. The boundary grep must return no
+matches. PR #4 remains ready only when GitHub `test` is green and review threads
+are resolved or explicitly non-actionable.

@@ -10,14 +10,14 @@ use nom::{
 use super::{
     combinator::{l_bracket_token, node, r_bracket_token, token, GreenElement},
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
   feature = "tracing",
   tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn cookie_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn cookie_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             l_bracket_token,
@@ -30,19 +30,19 @@ pub fn cookie_node(input: Input) -> IResult<Input, GreenElement, ()> {
         |(l_bracket, value, r_bracket)| {
             let mut children = vec![l_bracket];
 
-            children.push(token(TEXT, value.0.as_str()));
+            children.push(token(SyntaxKind::TEXT, value.0.as_str()));
             match value.1.as_str() {
                 "%" => {
-                    children.push(token(PERCENT, value.1.as_str()));
+                    children.push(token(SyntaxKind::PERCENT, value.1.as_str()));
                 }
                 _ => {
-                    children.push(token(SLASH, "/"));
-                    children.push(token(TEXT, value.1.as_str()));
+                    children.push(token(SyntaxKind::SLASH, "/"));
+                    children.push(token(SyntaxKind::TEXT, value.1.as_str()));
                 }
             }
             children.push(r_bracket);
 
-            node(COOKIE, children)
+            node(SyntaxKind::COOKIE, children)
         },
     );
     crate::lossless_parser!(parser, input)
@@ -50,7 +50,7 @@ pub fn cookie_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::ast::Cookie;
+    use crate::syntax_ast::Cookie;
     use crate::tests::to_ast;
     use crate::ParseConfig;
 

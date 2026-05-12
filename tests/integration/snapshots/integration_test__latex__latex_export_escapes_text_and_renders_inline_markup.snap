@@ -1,0 +1,6 @@
+---
+source: tests/integration/latex.rs
+expression: "Org::parse(\"* Heading & 100%\\nText _ # $ & with *bold*, /em/, _under_, =verb=, ~code~, x^2, y_1, and \\\\\\\\alpha.\\n\").to_latex()"
+---
+\section{Heading \& 100\%}
+Text \_ \# \$ \& with \textbf{bold}, \emph{em}, \underline{under}, \texttt{verb}, \texttt{code}, x\textasciicircum{}2, y\_1, and \textbackslash{}$\alpha$.

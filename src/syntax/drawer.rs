@@ -10,9 +10,9 @@ use super::{
         blank_lines, colon_token, eol_or_eof, line_starts_iter, node, trim_line_end, GreenElement,
         NodeBuilder,
     },
-    element::element_nodes,
     input::Input,
-    SyntaxKind::*,
+    parser_contract::ElementNodesParser,
+    SyntaxKind,
 };
 
 fn drawer_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str), ()> {
@@ -35,7 +35,7 @@ fn drawer_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str
     b.ws(ws_);
     b.nl(nl);
 
-    Ok((input, (b.finish(DRAWER_BEGIN), name.as_str())))
+    Ok((input, (b.finish(SyntaxKind::DRAWER_BEGIN), name.as_str())))
 }
 
 fn drawer_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -57,10 +57,13 @@ fn drawer_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
     b.ws(ws_);
     b.nl(nl);
 
-    Ok((input, b.finish(DRAWER_END)))
+    Ok((input, b.finish(SyntaxKind::DRAWER_END)))
 }
 
-fn drawer_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn drawer_node_base(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, (begin, _)) = drawer_begin_node(input)?;
 
     let (input, pre_blank) = blank_lines(input)?;
@@ -71,14 +74,14 @@ fn drawer_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
             let mut children = vec![begin];
             children.extend(pre_blank);
             if !contents.is_empty() {
-                children.push(node(DRAWER_CONTENT, element_nodes(contents)?));
+                children.push(node(SyntaxKind::DRAWER_CONTENT, element_nodes(contents)?));
             } else {
-                children.push(node(DRAWER_CONTENT, []));
+                children.push(node(SyntaxKind::DRAWER_CONTENT, []));
             }
             children.push(end);
             children.extend(post_blank);
 
-            return Ok((input, node(DRAWER, children)));
+            return Ok((input, node(SyntaxKind::DRAWER, children)));
         }
     }
 
@@ -103,7 +106,7 @@ fn property_drawer_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     children.push(end);
     children.extend(post_blank);
 
-    Ok((input, node(PROPERTY_DRAWER, children)))
+    Ok((input, node(SyntaxKind::PROPERTY_DRAWER, children)))
 }
 
 fn node_property_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -128,25 +131,25 @@ fn node_property_node(input: Input) -> IResult<Input, GreenElement, ()> {
     if name.ends_with('+') {
         let (plus, name) = name.take_split(name.len() - 1);
         b.text(name);
-        b.token(PLUS, plus);
+        b.token(SyntaxKind::PLUS, plus);
     } else {
         b.text(name);
     }
 
-    b.token(COLON, colon2);
+    b.token(SyntaxKind::COLON, colon2);
     b.ws(ws2);
     b.text(value);
     b.ws(ws3);
     b.nl(nl);
 
-    Ok((input, b.finish(NODE_PROPERTY)))
+    Ok((input, b.finish(SyntaxKind::NODE_PROPERTY)))
 }
 
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn property_drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn property_drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
     crate::lossless_parser!(property_drawer_node_base, input)
 }
@@ -155,19 +158,23 @@ pub fn property_drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    crate::lossless_parser!(drawer_node_base, input)
+pub(crate) fn drawer_node(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
+    crate::lossless_parser!(|input| drawer_node_base(input, element_nodes), input)
 }
 
 #[test]
 fn parse() {
     use crate::{
-        ast::{Drawer, PropertyDrawer},
+        syntax_ast::{PropertyDrawer, SyntaxDrawer},
         tests::to_ast,
         ParseConfig,
     };
 
-    let to_drawer = to_ast::<Drawer>(drawer_node);
+    let to_drawer =
+        to_ast::<SyntaxDrawer>(|input| drawer_node(input, crate::syntax::element::element_nodes));
     let to_property_drawer = to_ast::<PropertyDrawer>(property_drawer_node);
 
     insta::assert_debug_snapshot!(
@@ -271,7 +278,11 @@ fn parse() {
     let config = &ParseConfig::default();
 
     // https://github.com/PoiScript/orgize/issues/9
-    assert!(drawer_node((":SPAGHETTI:\n", config).into()).is_err());
+    assert!(drawer_node(
+        (":SPAGHETTI:\n", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
 
     assert!(property_drawer_node((":PROPERTIES:\n:NAME:VALUE\n:END:", config).into()).is_err());
 }

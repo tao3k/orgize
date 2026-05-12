@@ -1,0 +1,16 @@
+#+title: Block code references benchmark
+
+#+begin_src rust -l "// ref:%s" -r
+fn setup() {
+    println!("setup"); // ref:setup
+}
+
+fn run() {
+    println!("run"); // ref:run
+}
+#+end_src
+
+#+begin_example
+example line (ref:example)
+another example line
+#+end_example

@@ -7,14 +7,14 @@ use nom::{
 use super::{
     combinator::{l_angle2_token, node, r_angle2_token, GreenElement},
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn target_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn target_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             l_angle2_token,
@@ -26,14 +26,19 @@ pub fn target_node(input: Input) -> IResult<Input, GreenElement, ()> {
             ),
             r_angle2_token,
         ),
-        |(l_angle2, target, r_angle2)| node(TARGET, [l_angle2, target.text_token(), r_angle2]),
+        |(l_angle2, target, r_angle2)| {
+            node(
+                SyntaxKind::TARGET,
+                [l_angle2, target.text_token(), r_angle2],
+            )
+        },
     );
     crate::lossless_parser!(parser, input)
 }
 
 #[test]
 fn parse() {
-    use crate::{ast::Target, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Target, tests::to_ast, ParseConfig};
 
     let to_target = to_ast::<Target>(target_node);
 

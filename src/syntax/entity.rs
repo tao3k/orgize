@@ -14,7 +14,7 @@ use crate::{
 
 use super::{combinator::GreenElement, input::Input};
 
-pub fn entity_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn entity_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(input.s.starts_with('\\'));
     let mut parser = alt((template1, template2));
     crate::lossless_parser!(parser, input)
@@ -72,7 +72,7 @@ fn template2(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Entity, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Entity, tests::to_ast, ParseConfig};
 
     let to_entity = to_ast::<Entity>(entity_node);
 

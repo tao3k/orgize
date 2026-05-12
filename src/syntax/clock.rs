@@ -19,7 +19,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn clock_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn clock_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             space0,
@@ -60,10 +60,10 @@ pub fn clock_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::ast::Clock;
+    use crate::syntax_ast::SyntaxClock;
     use crate::tests::to_ast;
 
-    let to_clock = to_ast::<Clock>(clock_node);
+    let to_clock = to_ast::<SyntaxClock>(clock_node);
 
     insta::assert_debug_snapshot!(
       to_clock("CLOCK: [2003-09-16 Tue 09:39]").syntax,

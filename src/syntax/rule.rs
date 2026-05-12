@@ -3,10 +3,10 @@ use nom::{bytes::complete::take_while_m_n, character::complete::space0, combinat
 use super::{
     combinator::{blank_lines, eol_or_eof, GreenElement, NodeBuilder},
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
-pub fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             space0,
@@ -22,7 +22,7 @@ pub fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
             b.ws(ws_);
             b.nl(nl);
             b.children.extend(post_blank);
-            b.finish(RULE)
+            b.finish(SyntaxKind::RULE)
         },
     );
     crate::lossless_parser!(parser, input)
@@ -30,7 +30,7 @@ pub fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Rule, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Rule, tests::to_ast, ParseConfig};
 
     let to_rule = to_ast::<Rule>(rule_node);
 

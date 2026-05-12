@@ -6,10 +6,10 @@ use super::{
     combinator::{eol_or_eof, GreenElement, NodeBuilder},
     input::Input,
     timestamp::{timestamp_active_node, timestamp_inactive_node},
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
-pub fn planning_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn planning_node(input: Input) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
     crate::lossless_parser!(planning_node_base, input)
 }
@@ -36,9 +36,9 @@ fn planning_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         b_.ws(ws_);
         b_.push(timestamp);
         b.push(b_.finish(match text.as_str() {
-            "DEADLINE:" => PLANNING_DEADLINE,
-            "SCHEDULED:" => PLANNING_SCHEDULED,
-            "CLOSED:" => PLANNING_CLOSED,
+            "DEADLINE:" => SyntaxKind::PLANNING_DEADLINE,
+            "SCHEDULED:" => SyntaxKind::PLANNING_SCHEDULED,
+            "CLOSED:" => SyntaxKind::PLANNING_CLOSED,
             _ => unreachable!(),
         }));
     });
@@ -54,14 +54,14 @@ fn planning_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     b.ws(ws);
     b.nl(nl);
 
-    Ok((input, b.finish(PLANNING)))
+    Ok((input, b.finish(SyntaxKind::PLANNING)))
 }
 
 #[test]
 fn prase() {
-    use crate::{ast::Planning, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::SyntaxPlanning, tests::to_ast, ParseConfig};
 
-    let to_planning = to_ast::<Planning>(planning_node);
+    let to_planning = to_ast::<SyntaxPlanning>(planning_node);
 
     insta::assert_debug_snapshot!(
         to_planning("SCHEDULED: <2019-04-08 Mon>").syntax,

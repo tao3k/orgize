@@ -12,28 +12,34 @@ use super::{
         GreenElement, NodeBuilder,
     },
     drawer::property_drawer_node,
-    element::element_nodes,
     input::Input,
     object::standard_object_nodes,
+    parser_contract::ElementNodesParser,
     planning::planning_node,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn headline_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn headline_node(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
-    crate::lossless_parser!(headline_node_base, input)
+    crate::lossless_parser!(|input| headline_node_base(input, element_nodes), input)
 }
 
-fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn headline_node_base(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, stars) = headline_stars(input)?;
 
     let mut b = NodeBuilder::new();
 
-    b.token(HEADLINE_STARS, stars);
+    b.token(SyntaxKind::HEADLINE_STARS, stars);
 
     let (input, ws) = space0(input)?;
     b.ws(ws);
@@ -56,31 +62,34 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     let (title, tags) = opt(headline_tags_node).parse(title_and_tags)?;
 
     if !title.is_empty() {
-        b.push(node(HEADLINE_TITLE, standard_object_nodes(title)));
+        b.push(node(
+            SyntaxKind::HEADLINE_TITLE,
+            standard_object_nodes(title),
+        ));
     }
     b.push_opt(tags);
     b.ws(ws_);
     b.nl(nl);
 
     if input.is_empty() {
-        return Ok((input, b.finish(HEADLINE)));
+        return Ok((input, b.finish(SyntaxKind::HEADLINE)));
     }
 
     let (input, planning) = opt(planning_node).parse(input)?;
     b.push_opt(planning);
 
     if input.is_empty() {
-        return Ok((input, b.finish(HEADLINE)));
+        return Ok((input, b.finish(SyntaxKind::HEADLINE)));
     }
 
     let (input, property_drawer) = opt(property_drawer_node).parse(input)?;
     b.push_opt(property_drawer);
 
     if input.is_empty() {
-        return Ok((input, b.finish(HEADLINE)));
+        return Ok((input, b.finish(SyntaxKind::HEADLINE)));
     }
 
-    let (input, section) = opt(section_node).parse(input)?;
+    let (input, section) = opt(|input| section_node(input, element_nodes)).parse(input)?;
     b.push_opt(section);
 
     let mut i = input;
@@ -92,28 +101,31 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
             break;
         }
 
-        let (input, headline) = headline_node(i)?;
+        let (input, headline) = headline_node(i, element_nodes)?;
         b.push(headline);
         debug_assert!(i.len() > input.len(), "{} > {}", i.len(), input.len());
         i = input;
     }
 
-    Ok((i, b.finish(HEADLINE)))
+    Ok((i, b.finish(SyntaxKind::HEADLINE)))
 }
 
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn section_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn section_node(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
     let (input, section) = section_text(input)?;
-    Ok((input, node(SECTION, element_nodes(section)?)))
+    Ok((input, node(SyntaxKind::SECTION, element_nodes(section)?)))
 }
 
 fn section_text(input: Input) -> IResult<Input, Input, ()> {
     for (input, section) in line_starts_iter(input.as_str()).map(|i| input.take_split(i)) {
-        if headline_stars(input).is_ok() {
+        if headline_stars(input).is_ok() && !is_inlinetask_start(input) {
             if section.is_empty() {
                 return Err(nom::Err::Error(()));
             }
@@ -125,11 +137,17 @@ fn section_text(input: Input) -> IResult<Input, Input, ()> {
     Ok(input.take_split(input.len()))
 }
 
+fn is_inlinetask_start(input: Input) -> bool {
+    headline_stars(input)
+        .map(|(_, stars)| stars.len() >= input.c.effective_inlinetask_min_level())
+        .unwrap_or(false)
+}
+
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-fn headline_stars(input: Input) -> IResult<Input, Input, ()> {
+pub(super) fn headline_stars(input: Input) -> IResult<Input, Input, ()> {
     let bytes = input.as_bytes();
     let level = bytes.iter().take_while(|&&c| c == b'*').count();
 
@@ -148,7 +166,7 @@ fn headline_stars(input: Input) -> IResult<Input, Input, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(super) fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
     if !input.s.ends_with(':') {
         return Err(nom::Err::Error(()));
     };
@@ -159,13 +177,13 @@ fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
     // second last character
     let mut i = input.len() - 1;
     let mut can_not_be_ws = true;
-    let mut children = vec![token(COLON, ":")];
+    let mut children = vec![token(SyntaxKind::COLON, ":")];
 
     for ii in memrchr_iter(b':', bytes).skip(1) {
         let item = &bytes[ii + 1..i];
 
         if item.is_empty() {
-            children.push(token(COLON, ":"));
+            children.push(token(SyntaxKind::COLON, ":"));
             can_not_be_ws = false;
             debug_assert!(i > ii, "{} > {}", i, ii);
             i = ii;
@@ -175,13 +193,13 @@ fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
             .all(|c| c.is_alphanumeric() || c == '_' || c == '@' || c == '#' || c == '%')
         {
             children.push(input.slice(ii + 1..i).text_token());
-            children.push(token(COLON, ":"));
+            children.push(token(SyntaxKind::COLON, ":"));
             can_not_be_ws = false;
             debug_assert!(i > ii, "{} > {}", i, ii);
             i = ii;
         } else if item.iter().all(|&c| c == b' ' || c == b'\t') && !can_not_be_ws {
             children.push(input.slice(ii + 1..i).ws_token());
-            children.push(token(COLON, ":"));
+            children.push(token(SyntaxKind::COLON, ":"));
             can_not_be_ws = true;
             debug_assert!(i > ii, "{} > {}", i, ii);
             i = ii;
@@ -202,28 +220,33 @@ fn headline_tags_node(input: Input) -> IResult<Input, GreenElement, ()> {
     // so we need to reverse the result after it finishes
     children.reverse();
 
-    Ok((input.slice(0..i), node(HEADLINE_TAGS, children)))
+    Ok((input.slice(0..i), node(SyntaxKind::HEADLINE_TAGS, children)))
 }
 
-fn headline_keyword_token(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
+pub(super) fn headline_keyword_token(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     let (input, word) = take_while1(|c: char| !c.is_ascii_whitespace()).parse(input)?;
     let (input, ws) = space0(input)?;
     if input.c.todo_keywords.0.iter().any(|k| k == word.s) {
-        Ok((input, (word.token(HEADLINE_KEYWORD_TODO), ws)))
+        Ok((input, (word.token(SyntaxKind::HEADLINE_KEYWORD_TODO), ws)))
     } else if input.c.todo_keywords.1.iter().any(|k| k == word.s) {
-        Ok((input, (word.token(HEADLINE_KEYWORD_DONE), ws)))
+        Ok((input, (word.token(SyntaxKind::HEADLINE_KEYWORD_DONE), ws)))
     } else {
         Err(nom::Err::Error(()))
     }
 }
 
-fn headline_priority_node(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
+pub(super) fn headline_priority_node(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     let (input, node) = map(
         (l_bracket_token, hash_token, anychar, r_bracket_token),
         |(l_bracket, hash, char, r_bracket)| {
             node(
-                HEADLINE_PRIORITY,
-                [l_bracket, hash, token(TEXT, &char.to_string()), r_bracket],
+                SyntaxKind::HEADLINE_PRIORITY,
+                [
+                    l_bracket,
+                    hash,
+                    token(SyntaxKind::TEXT, &char.to_string()),
+                    r_bracket,
+                ],
             )
         },
     )
@@ -236,9 +259,10 @@ fn headline_priority_node(input: Input) -> IResult<Input, (GreenElement, Input),
 
 #[test]
 fn parse() {
-    use crate::{ast::Headline, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Headline, tests::to_ast, ParseConfig};
 
-    let to_headline = to_ast::<Headline>(headline_node);
+    let to_headline =
+        to_ast::<Headline>(|input| headline_node(input, crate::syntax::element::element_nodes));
 
     insta::assert_debug_snapshot!(
         to_headline("* foo").syntax,
@@ -314,20 +338,37 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(headline_node(("_ ", config).into()).is_err());
-    assert!(headline_node(("*", config).into()).is_err());
-    assert!(headline_node((" * ", config).into()).is_err());
-    assert!(headline_node(("**", config).into()).is_err());
-    assert!(headline_node(("**\n", config).into()).is_err());
-    assert!(headline_node(("**\r", config).into()).is_err());
-    assert!(headline_node(("**\t", config).into()).is_err());
+    assert!(headline_node(("_ ", config).into(), crate::syntax::element::element_nodes).is_err());
+    assert!(headline_node(("*", config).into(), crate::syntax::element::element_nodes).is_err());
+    assert!(headline_node(
+        (" * ", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
+    assert!(headline_node(("**", config).into(), crate::syntax::element::element_nodes).is_err());
+    assert!(headline_node(
+        ("**\n", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
+    assert!(headline_node(
+        ("**\r", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
+    assert!(headline_node(
+        ("**\t", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
 }
 
 #[test]
 fn issue_15_16() {
-    use crate::{ast::Headline, tests::to_ast};
+    use crate::{syntax_ast::Headline, tests::to_ast};
 
-    let to_headline = to_ast::<Headline>(headline_node);
+    let to_headline =
+        to_ast::<Headline>(|input| headline_node(input, crate::syntax::element::element_nodes));
 
     assert!(to_headline("* a ::").tags().count() == 0);
     assert!(to_headline("* a : :").tags().count() == 0);

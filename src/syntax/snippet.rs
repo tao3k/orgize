@@ -7,10 +7,10 @@ use nom::{
 use super::{
     combinator::{at2_token, colon_token, node, GreenElement},
     input::Input,
-    SyntaxKind::*,
+    SyntaxKind,
 };
 
-pub fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             at2_token,
@@ -21,7 +21,7 @@ pub fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
         ),
         |(at2, name, colon, value, at2_)| {
             node(
-                SNIPPET,
+                SyntaxKind::SNIPPET,
                 [at2, name.text_token(), colon, value.text_token(), at2_],
             )
         },
@@ -31,7 +31,7 @@ pub fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Snippet, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::Snippet, tests::to_ast, ParseConfig};
 
     let to_snippet = to_ast::<Snippet>(snippet_node);
 

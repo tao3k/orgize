@@ -1,23 +1,158 @@
 use nom::{
-    bytes::complete::take_while,
-    combinator::{map, opt},
+    bytes::complete::{take_while, take_while1},
+    combinator::{map, opt, verify},
     IResult,
 };
 
 use super::{
     combinator::{
-        l_bracket2_token, l_bracket_token, node, r_bracket2_token, r_bracket_token, GreenElement,
+        l_angle_token, l_bracket2_token, l_bracket_token, node, r_angle_token, r_bracket2_token,
+        r_bracket_token, GreenElement,
     },
     input::Input,
-    object::link_description_object_nodes,
-    SyntaxKind::*,
+    parser_contract::ObjectNodesParser,
+    SyntaxKind,
 };
+
+fn is_angle_link_path(path: &str) -> bool {
+    let Some((scheme, rest)) = path.split_once(':') else {
+        return false;
+    };
+    if scheme.is_empty() || rest.is_empty() {
+        return false;
+    }
+
+    let mut chars = scheme.chars();
+    matches!(chars.next(), Some(first) if first.is_ascii_alphabetic())
+        && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.' | '_'))
+}
+
+fn is_plain_link_scheme(scheme: &str) -> bool {
+    scheme.eq_ignore_ascii_case("file")
+        || scheme.eq_ignore_ascii_case("ftp")
+        || scheme.eq_ignore_ascii_case("http")
+        || scheme.eq_ignore_ascii_case("https")
+        || scheme.eq_ignore_ascii_case("mailto")
+        || scheme.eq_ignore_ascii_case("news")
+}
+
+fn is_plain_link_path(path: &str) -> bool {
+    let Some((scheme, rest)) = path.split_once(':') else {
+        return false;
+    };
+    if !is_plain_link_scheme(scheme) || rest.is_empty() {
+        return false;
+    }
+
+    if scheme.eq_ignore_ascii_case("ftp")
+        || scheme.eq_ignore_ascii_case("http")
+        || scheme.eq_ignore_ascii_case("https")
+    {
+        rest.starts_with("//") && rest.len() > 2
+    } else {
+        true
+    }
+}
+
+fn starts_with_angle_link_scheme(input: &str) -> bool {
+    let Some(rest) = input.strip_prefix('<') else {
+        return false;
+    };
+    let mut chars = rest.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    if !first.is_ascii_alphabetic() {
+        return false;
+    }
+
+    chars
+        .map(angle_link_scheme_char)
+        .find(|state| !matches!(state, AngleLinkSchemeChar::Continue))
+        == Some(AngleLinkSchemeChar::Terminator)
+}
+
+pub(crate) fn plain_link_start_before_colon(input: &str, colon: usize) -> Option<usize> {
+    let bytes = input.as_bytes();
+    if colon == 0 || colon >= bytes.len() {
+        return None;
+    }
+
+    let start = bytes[..colon]
+        .iter()
+        .rposition(|byte| !is_plain_link_scheme_char(*byte))
+        .map_or(0, |index| index + 1);
+
+    if start == colon || (start > 0 && !is_plain_link_boundary(bytes[start - 1])) {
+        return None;
+    }
+
+    is_plain_link_scheme(&input[start..colon]).then_some(start)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AngleLinkSchemeChar {
+    Continue,
+    Terminator,
+    Invalid,
+}
+
+fn angle_link_scheme_char(ch: char) -> AngleLinkSchemeChar {
+    match ch {
+        ':' => AngleLinkSchemeChar::Terminator,
+        '<' | '>' | '\n' => AngleLinkSchemeChar::Invalid,
+        ch if ch.is_ascii_alphanumeric() || matches!(ch, '+' | '-' | '.' | '_') => {
+            AngleLinkSchemeChar::Continue
+        }
+        _ => AngleLinkSchemeChar::Invalid,
+    }
+}
+
+fn is_plain_link_scheme_char(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'+' | b'-' | b'.' | b'_')
+}
+
+fn is_plain_link_boundary(byte: u8) -> bool {
+    byte.is_ascii_whitespace() || matches!(byte, b'(' | b'[' | b'{' | b'"' | b'\'')
+}
+
+fn starts_with_plain_link_scheme(input: &str) -> bool {
+    input
+        .find(':')
+        .and_then(|colon| plain_link_start_before_colon(input, colon))
+        == Some(0)
+}
+
+fn plain_link_end(input: &str) -> Option<usize> {
+    let bytes = input.as_bytes();
+    let mut end = 0;
+
+    while end < bytes.len() {
+        let byte = bytes[end];
+        if byte.is_ascii_whitespace()
+            || byte.is_ascii_control()
+            || matches!(byte, b'<' | b'>' | b'[' | b']' | b'"' | b'\'')
+        {
+            break;
+        }
+        end += 1;
+    }
+
+    while end > 0 && matches!(bytes[end - 1], b'.' | b',' | b';' | b':' | b'!' | b'?') {
+        end -= 1;
+    }
+
+    (end > 0).then_some(end)
+}
 
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn link_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn link_node(
+    input: Input,
+    link_description_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             l_bracket2_token,
@@ -30,7 +165,7 @@ pub fn link_node(input: Input) -> IResult<Input, GreenElement, ()> {
             r_bracket2_token,
         ),
         |(l_bracket2, path, desc, r_bracket2)| {
-            let mut children = vec![l_bracket2, path.token(LINK_PATH)];
+            let mut children = vec![l_bracket2, path.token(SyntaxKind::LINK_PATH)];
 
             if let Some((r_bracket, l_bracket, desc)) = desc {
                 children.extend([r_bracket, l_bracket]);
@@ -39,7 +174,63 @@ pub fn link_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
             children.push(r_bracket2);
 
-            node(LINK, children)
+            node(SyntaxKind::LINK, children)
+        },
+    );
+    crate::lossless_parser!(parser, input)
+}
+
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(level = "debug", skip(input), fields(input = input.s))
+)]
+pub(crate) fn plain_link_node(input: Input) -> IResult<Input, GreenElement, ()> {
+    crate::lossless_parser!(plain_link_node_base, input)
+}
+
+fn plain_link_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+    if !starts_with_plain_link_scheme(input.as_str()) {
+        return Err(nom::Err::Error(()));
+    }
+
+    let Some(end) = plain_link_end(input.as_str()) else {
+        return Err(nom::Err::Error(()));
+    };
+    let path = input.take(end);
+    if !is_plain_link_path(path.as_str()) {
+        return Err(nom::Err::Error(()));
+    }
+
+    let (input, path) = input.take_split(end);
+    Ok((
+        input,
+        node(SyntaxKind::LINK, [path.token(SyntaxKind::LINK_PATH)]),
+    ))
+}
+
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(level = "debug", skip(input), fields(input = input.s))
+)]
+pub(crate) fn angle_link_node(input: Input) -> IResult<Input, GreenElement, ()> {
+    if !starts_with_angle_link_scheme(input.as_str()) {
+        return Err(nom::Err::Error(()));
+    }
+
+    let mut parser = map(
+        (
+            l_angle_token,
+            verify(
+                take_while1(|c: char| c != '<' && c != '>' && c != '\n'),
+                |path: &Input<'_>| is_angle_link_path(path.as_str()),
+            ),
+            r_angle_token,
+        ),
+        |(l_angle, path, r_angle)| {
+            node(
+                SyntaxKind::LINK,
+                [l_angle, path.token(SyntaxKind::LINK_PATH), r_angle],
+            )
         },
     );
     crate::lossless_parser!(parser, input)
@@ -47,9 +238,11 @@ pub fn link_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::Link, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::SyntaxLink, tests::to_ast, ParseConfig};
 
-    let to_link = to_ast::<Link>(link_node);
+    let to_link = to_ast::<SyntaxLink>(|input| {
+        link_node(input, crate::syntax::object::link_description_object_nodes)
+    });
 
     let link = to_link("[[#id]]");
     insta::assert_debug_snapshot!(
@@ -107,5 +300,67 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(link_node(("[[#id][desc]", config).into()).is_err());
+    assert!(link_node(
+        ("[[#id][desc]", config).into(),
+        crate::syntax::object::link_description_object_nodes
+    )
+    .is_err());
+}
+
+#[test]
+fn parse_angle_link() {
+    use crate::{syntax_ast::SyntaxLink, tests::to_ast, ParseConfig};
+
+    let to_link = to_ast::<SyntaxLink>(angle_link_node);
+
+    let link = to_link("<https://orgmode.org/manual>");
+    insta::assert_debug_snapshot!(
+        link.syntax,
+        @r###"
+    LINK@0..28
+      L_ANGLE@0..1 "<"
+      LINK_PATH@1..27 "https://orgmode.org/m ..."
+      R_ANGLE@27..28 ">"
+    "###
+    );
+    assert_eq!(link.path(), "https://orgmode.org/manual");
+    assert!(!link.has_description());
+
+    let config = &ParseConfig::default();
+    assert!(angle_link_node(("<2026-04-30 Thu 10:00>", config).into()).is_err());
+    assert!(angle_link_node(("<not-a-link>", config).into()).is_err());
+    assert!(angle_link_node(("<https:>", config).into()).is_err());
+}
+
+#[test]
+fn parse_plain_link() {
+    use crate::{syntax_ast::SyntaxLink, tests::to_ast, ParseConfig};
+
+    let to_link = to_ast::<SyntaxLink>(plain_link_node);
+
+    let link = to_link("https://orgmode.org/manual");
+    insta::assert_debug_snapshot!(
+        link.syntax,
+        @r###"
+    LINK@0..26
+      LINK_PATH@0..26 "https://orgmode.org/m ..."
+    "###
+    );
+    assert_eq!(link.path(), "https://orgmode.org/manual");
+    assert!(!link.has_description());
+
+    let link = to_link("mailto:dev@example.com.");
+    insta::assert_debug_snapshot!(
+        link.syntax,
+        @r###"
+    LINK@0..22
+      LINK_PATH@0..22 "mailto:dev@example.com"
+    "###
+    );
+    assert_eq!(link.path(), "mailto:dev@example.com");
+
+    let config = &ParseConfig::default();
+    assert!(plain_link_node(("note:todo", config).into()).is_err());
+    assert!(plain_link_node(("https://", config).into()).is_err());
+    assert!(plain_link_node(("10:00", config).into()).is_err());
 }

@@ -5,20 +5,23 @@ use nom::{combinator::map, IResult};
 use super::{
     combinator::{node, token, GreenElement},
     input::Input,
-    object::standard_object_nodes,
-    SyntaxKind::*,
+    parser_contract::ObjectNodesParser,
+    SyntaxKind,
 };
 
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn bold_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn bold_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'*'), |contents| {
-        let mut children = vec![token(STAR, "*")];
+        let mut children = vec![token(SyntaxKind::STAR, "*")];
         children.extend(standard_object_nodes(contents));
-        children.push(token(STAR, "*"));
-        node(BOLD, children)
+        children.push(token(SyntaxKind::STAR, "*"));
+        node(SyntaxKind::BOLD, children)
     });
     crate::lossless_parser!(parser, input)
 }
@@ -27,11 +30,15 @@ pub fn bold_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn code_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn code_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'~'), |contents| {
         node(
-            CODE,
-            [token(TILDE, "~"), contents.text_token(), token(TILDE, "~")],
+            SyntaxKind::CODE,
+            [
+                token(SyntaxKind::TILDE, "~"),
+                contents.text_token(),
+                token(SyntaxKind::TILDE, "~"),
+            ],
         )
     });
     crate::lossless_parser!(parser, input)
@@ -41,12 +48,15 @@ pub fn code_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn strike_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn strike_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'+'), |contents| {
-        let mut children = vec![token(PLUS, "+")];
+        let mut children = vec![token(SyntaxKind::PLUS, "+")];
         children.extend(standard_object_nodes(contents));
-        children.push(token(PLUS, "+"));
-        node(STRIKE, children)
+        children.push(token(SyntaxKind::PLUS, "+"));
+        node(SyntaxKind::STRIKE, children)
     });
     crate::lossless_parser!(parser, input)
 }
@@ -55,11 +65,15 @@ pub fn strike_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn verbatim_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn verbatim_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'='), |contents| {
         node(
-            VERBATIM,
-            [token(EQUAL, "="), contents.text_token(), token(EQUAL, "=")],
+            SyntaxKind::VERBATIM,
+            [
+                token(SyntaxKind::EQUAL, "="),
+                contents.text_token(),
+                token(SyntaxKind::EQUAL, "="),
+            ],
         )
     });
     crate::lossless_parser!(parser, input)
@@ -69,12 +83,15 @@ pub fn verbatim_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn underline_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn underline_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'_'), |contents| {
-        let mut children = vec![token(UNDERSCORE, "_")];
+        let mut children = vec![token(SyntaxKind::UNDERSCORE, "_")];
         children.extend(standard_object_nodes(contents));
-        children.push(token(UNDERSCORE, "_"));
-        node(UNDERLINE, children)
+        children.push(token(SyntaxKind::UNDERSCORE, "_"));
+        node(SyntaxKind::UNDERLINE, children)
     });
     crate::lossless_parser!(parser, input)
 }
@@ -83,12 +100,15 @@ pub fn underline_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn italic_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn italic_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'/'), |contents| {
-        let mut children = vec![token(SLASH, "/")];
+        let mut children = vec![token(SyntaxKind::SLASH, "/")];
         children.extend(standard_object_nodes(contents));
-        children.push(token(SLASH, "/"));
-        node(ITALIC, children)
+        children.push(token(SyntaxKind::SLASH, "/"));
+        node(SyntaxKind::ITALIC, children)
     });
     crate::lossless_parser!(parser, input)
 }
@@ -122,7 +142,7 @@ fn validate_marker(pos: usize, text: Input) -> bool {
     } else if let Some(post) = text.as_bytes().get(pos + 1) {
         [
             b' ', b'\t', b'\r', b'\n', b'-', b'.', b',', b';', b':', b'!', b'?', b'\'', b')', b'}',
-            b'[',
+            b'[', b'"', b'\\',
         ]
         .contains(post)
     } else {
@@ -130,21 +150,26 @@ fn validate_marker(pos: usize, text: Input) -> bool {
     }
 }
 
-pub fn verify_pre(input: &str) -> bool {
+pub(crate) fn verify_pre(input: &str) -> bool {
     if input.is_empty() {
         return true;
     }
     matches!(
         input.as_bytes()[input.len() - 1],
-        b'\t' | b' ' | b'-' | b'(' | b'{' | b'\\' | b'"' | b'\r' | b'\n'
+        b'\t' | b' ' | b'-' | b'(' | b'{' | b'\\' | b'\'' | b'"' | b'\r' | b'\n'
     )
 }
 
 #[test]
 fn parse() {
-    use crate::{ast::Bold, tests::to_ast, ParseConfig};
+    use crate::{
+        syntax_ast::{Bold, Italic},
+        tests::to_ast,
+        Org, ParseConfig,
+    };
 
-    let to_bold = to_ast::<Bold>(bold_node);
+    let to_bold =
+        to_ast::<Bold>(|input| bold_node(input, crate::syntax::object::standard_object_nodes));
 
     insta::assert_debug_snapshot!(
         to_bold("*bold*").syntax,
@@ -178,9 +203,32 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(bold_node(("*bold*a", config).into()).is_err());
-    assert!(bold_node(("*bold *", config).into()).is_err());
-    assert!(bold_node(("* bold*", config).into()).is_err());
-    assert!(bold_node(("*b\nol\nd*", config).into()).is_err());
-    assert!(italic_node(("*bold*", config).into()).is_err());
+    assert!(bold_node(
+        ("*bold*a", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(bold_node(
+        ("*bold *", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(bold_node(
+        ("* bold*", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(bold_node(
+        ("*b\nol\nd*", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(italic_node(
+        ("*bold*", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+
+    assert!(Org::parse(r#""*quoted*""#).first_node::<Bold>().is_some());
+    assert!(Org::parse("'/quoted/'").first_node::<Italic>().is_some());
 }

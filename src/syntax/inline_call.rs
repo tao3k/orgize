@@ -16,7 +16,7 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub fn inline_call_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn inline_call_node(input: Input) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             tag("call_"),
@@ -59,7 +59,7 @@ pub fn inline_call_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{ast::InlineCall, tests::to_ast};
+    use crate::{syntax_ast::InlineCall, tests::to_ast};
 
     let to_inline_call = to_ast::<InlineCall>(inline_call_node);
 
