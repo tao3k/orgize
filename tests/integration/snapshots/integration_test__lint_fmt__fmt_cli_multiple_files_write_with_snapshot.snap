@@ -7,5 +7,5 @@ stdout:
 
 stderr:
 
-one.org: "One\n"
+one.org: "| Item | Count |\n| one  | 1     |\n"
 two.org: "| A     | Longer |\n| value | x      |\n"

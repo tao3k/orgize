@@ -7,6 +7,6 @@ stdout:
 
 stderr:
 
-a.org: "A\n"
+a.org: "| Key | Value |\n| a   | one   |\n"
 nested/b.org: "| A  | B |\n| xx | y |\n"
-skip.txt: "skip  \n"
+skip.txt: "skip\n"

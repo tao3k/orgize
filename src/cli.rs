@@ -216,6 +216,9 @@ fn collect_org_paths(paths: &[String]) -> Result<Vec<PathBuf>, String> {
 fn collect_org_path(path: &Path, files: &mut Vec<PathBuf>) -> Result<(), String> {
     let metadata = fs::metadata(path).map_err(|error| format!("{}: {error}", path.display()))?;
     if metadata.is_file() {
+        if !is_org_file(path) {
+            return Err(format!("{}: expected .org file", path.display()));
+        }
         files.push(path.to_path_buf());
         return Ok(());
     }

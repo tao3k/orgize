@@ -18,35 +18,24 @@ fn fmt_normalizes_source_with_snapshot() {
 
 #[test]
 fn fmt_aligns_tables_with_snapshot() {
-    let source = r#"| Name | Count |
-|---+---|
-| a | 2 |
-| longer | 100 |
+    insta::assert_snapshot!(format_snapshot(table_with_block_fmt_fixture()));
+}
 
-#+begin_example
-| this | block |
-| stays | as-is |
-#+end_example
-"#;
-    insta::assert_snapshot!(format_snapshot(source));
+#[test]
+fn fmt_aligns_complex_table_lines_with_snapshot() {
+    insta::assert_snapshot!(format_snapshot(complex_table_alignment_fmt_fixture()));
 }
 
 #[test]
 fn fmt_aligns_indented_tables_formulas_and_pipe_rules_with_snapshot() {
-    let source = r#"  | Name | Count |
-  |---|---|
-  | a | 2 |
-  | longer | 100 |
-#+TBLFM: $2=vsum(@2..@3)
-"#;
-    insta::assert_snapshot!(format_snapshot(source));
+    insta::assert_snapshot!(format_snapshot(indented_table_formulas_fmt_fixture()));
 }
 
 #[test]
 fn fmt_cli_check_output_is_snapshotted() {
     let dir = test_dir("fmt-check");
     fs::create_dir_all(&dir).unwrap();
-    fs::write(dir.join("dirty.org"), "* Heading  \n\n").unwrap();
+    fs::write(dir.join("dirty.org"), default_write_fmt_fixture()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .current_dir(&dir)
@@ -71,7 +60,7 @@ fn fmt_cli_check_stdin_output_is_snapshotted() {
         .stdin
         .as_mut()
         .unwrap()
-        .write_all(b"| A | Longer |\n| value | x |\n")
+        .write_all(stdin_table_fmt_fixture().as_bytes())
         .unwrap();
     let output = child.wait_with_output().unwrap();
 
@@ -92,7 +81,7 @@ fn fmt_cli_stdin_aligns_tables_with_snapshot() {
         .stdin
         .as_mut()
         .unwrap()
-        .write_all(b"| A | Longer |\n| value | x |\n")
+        .write_all(stdin_table_fmt_fixture().as_bytes())
         .unwrap();
     let output = child.wait_with_output().unwrap();
 
@@ -103,9 +92,9 @@ fn fmt_cli_stdin_aligns_tables_with_snapshot() {
 fn fmt_cli_check_directory_output_is_snapshotted() {
     let dir = test_dir("fmt-check-dir");
     fs::create_dir_all(dir.join("notes/nested")).unwrap();
-    fs::write(dir.join("notes/a.org"), "A  \n").unwrap();
-    fs::write(dir.join("notes/nested/b.org"), "| A | B |\n| xx | y |\n").unwrap();
-    fs::write(dir.join("notes/skip.txt"), "skip  \n").unwrap();
+    fs::write(dir.join("notes/a.org"), directory_a_fmt_fixture()).unwrap();
+    fs::write(dir.join("notes/nested/b.org"), directory_b_fmt_fixture()).unwrap();
+    fs::write(dir.join("notes/skip.txt"), skip_text_fmt_fixture()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .current_dir(&dir)
@@ -120,7 +109,7 @@ fn fmt_cli_check_directory_output_is_snapshotted() {
 fn fmt_cli_default_writes_file_with_snapshot() {
     let dir = test_dir("fmt-default-write");
     fs::create_dir_all(&dir).unwrap();
-    fs::write(dir.join("notes.org"), "| A | B |\n| x | longer |\n\n\n").unwrap();
+    fs::write(dir.join("notes.org"), default_write_fmt_fixture()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .current_dir(&dir)
@@ -139,8 +128,8 @@ fn fmt_cli_default_writes_file_with_snapshot() {
 fn fmt_cli_multiple_files_write_with_snapshot() {
     let dir = test_dir("fmt-multiple-files");
     fs::create_dir_all(&dir).unwrap();
-    fs::write(dir.join("one.org"), "One  \n").unwrap();
-    fs::write(dir.join("two.org"), "| A | Longer |\n| value | x |\n").unwrap();
+    fs::write(dir.join("one.org"), multiple_one_fmt_fixture()).unwrap();
+    fs::write(dir.join("two.org"), multiple_two_fmt_fixture()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .current_dir(&dir)
@@ -160,9 +149,9 @@ fn fmt_cli_multiple_files_write_with_snapshot() {
 fn fmt_cli_directory_path_writes_org_files_with_snapshot() {
     let dir = test_dir("fmt-dir-write");
     fs::create_dir_all(dir.join("notes/nested")).unwrap();
-    fs::write(dir.join("notes/a.org"), "A  \n").unwrap();
-    fs::write(dir.join("notes/nested/b.org"), "| A | B |\n| xx | y |\n").unwrap();
-    fs::write(dir.join("notes/skip.txt"), "skip  \n").unwrap();
+    fs::write(dir.join("notes/a.org"), directory_a_fmt_fixture()).unwrap();
+    fs::write(dir.join("notes/nested/b.org"), directory_b_fmt_fixture()).unwrap();
+    fs::write(dir.join("notes/skip.txt"), skip_text_fmt_fixture()).unwrap();
 
     let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .current_dir(&dir)
@@ -176,6 +165,42 @@ fn fmt_cli_directory_path_writes_org_files_with_snapshot() {
         fs::read_to_string(dir.join("notes/a.org")).unwrap(),
         fs::read_to_string(dir.join("notes/nested/b.org")).unwrap(),
         fs::read_to_string(dir.join("notes/skip.txt")).unwrap()
+    ));
+}
+
+#[test]
+fn cli_rejects_invalid_path_arguments_with_snapshot() {
+    let dir = test_dir("invalid-paths");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("notes.txt"), skip_text_fmt_fixture()).unwrap();
+
+    let missing_fmt = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["fmt", "missing.org"])
+        .output()
+        .unwrap();
+    let non_org_fmt = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["fmt", "notes.txt"])
+        .output()
+        .unwrap();
+    let missing_lint = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["lint", "missing.org"])
+        .output()
+        .unwrap();
+    let non_org_lint = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["lint", "notes.txt"])
+        .output()
+        .unwrap();
+
+    insta::assert_snapshot!(format!(
+        "fmt missing:\n{}\nfmt non-org:\n{}\nlint missing:\n{}\nlint non-org:\n{}",
+        command_snapshot(missing_fmt),
+        command_snapshot(non_org_fmt),
+        command_snapshot(missing_lint),
+        command_snapshot(non_org_lint)
     ));
 }
 
@@ -360,6 +385,46 @@ fn supported_options_keyword_issues_lint_fixture() -> &'static str {
 
 fn todo_declaration_issues_lint_fixture() -> &'static str {
     include_str!("../fixtures/lint/todo-declaration-issues.org")
+}
+
+fn table_with_block_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/table-with-block.org")
+}
+
+fn complex_table_alignment_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/complex-table-alignment.org")
+}
+
+fn indented_table_formulas_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/indented-table-formulas.org")
+}
+
+fn stdin_table_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/stdin-table.org")
+}
+
+fn default_write_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/default-write.org")
+}
+
+fn multiple_one_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/multiple-one.org")
+}
+
+fn multiple_two_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/multiple-two.org")
+}
+
+fn directory_a_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/directory-a.org")
+}
+
+fn directory_b_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/directory-b.org")
+}
+
+fn skip_text_fmt_fixture() -> &'static str {
+    include_str!("../fixtures/fmt/skip.txt")
 }
 
 fn command_snapshot(output: std::process::Output) -> String {

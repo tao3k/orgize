@@ -1,0 +1,31 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"fmt missing:\\n{}\\nfmt non-org:\\n{}\\nlint missing:\\n{}\\nlint non-org:\\n{}\",\ncommand_snapshot(missing_fmt), command_snapshot(non_org_fmt),\ncommand_snapshot(missing_lint), command_snapshot(non_org_lint))"
+---
+fmt missing:
+status: 2
+stdout:
+
+stderr:
+orgize: missing.org: No such file or directory (os error 2)
+
+fmt non-org:
+status: 2
+stdout:
+
+stderr:
+orgize: notes.txt: expected .org file
+
+lint missing:
+status: 2
+stdout:
+
+stderr:
+orgize: missing.org: No such file or directory (os error 2)
+
+lint non-org:
+status: 2
+stdout:
+
+stderr:
+orgize: notes.txt: expected .org file
