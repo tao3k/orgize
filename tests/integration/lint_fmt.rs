@@ -241,6 +241,21 @@ fn lint_reports_missing_macro_definitions_with_snapshot() {
 }
 
 #[test]
+fn lint_reports_duplicate_macro_definitions_with_snapshot() {
+    let source = r#"#+MACRO: issue first $1
+#+MACRO: issue second $1
+{{{issue(42)}}}
+"#;
+    let report = lint_org(source);
+
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_text("fixture.org")
+    ));
+}
+
+#[test]
 fn lint_reports_link_abbreviation_definition_issues_with_snapshot() {
     let source = r#"#+LINK: gh https://github.com/%s
 #+LINK: bad

@@ -11,8 +11,8 @@ use rowan::TextRange;
 
 use crate::{
     ast::{
-        Diagnostic, IncludeDirective, Keyword, MacroExpansionStatus, ParsedAnnotation, ParsedAst,
-        SourcePosition, TargetDefinition, TargetKind,
+        Diagnostic, IncludeDirective, Keyword, MacroDefinition, MacroExpansionStatus,
+        ParsedAnnotation, ParsedAst, SourcePosition, TargetDefinition, TargetKind,
     },
     Org,
 };
@@ -175,6 +175,10 @@ pub fn lint_document_with_options(
     );
     findings.extend(duplicate_target_findings(&document.targets, source));
     findings.extend(include_path_findings(&document.includes, source, options));
+    findings.extend(duplicate_macro_definition_findings(
+        &document.macro_definitions,
+        source,
+    ));
     findings.extend(missing_macro_findings(document, source));
     findings.extend(link_abbreviation_definition_findings(
         &document.metadata,
@@ -255,6 +259,34 @@ fn missing_macro_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding
             location: location_for_range(source, expansion.ann.range),
         })
         .collect()
+}
+
+fn duplicate_macro_definition_findings(
+    definitions: &[MacroDefinition<ParsedAnnotation>],
+    source: &str,
+) -> Vec<LintFinding> {
+    let mut by_name = BTreeMap::<&str, Vec<&MacroDefinition<ParsedAnnotation>>>::new();
+    for definition in definitions {
+        by_name
+            .entry(&definition.name)
+            .or_default()
+            .push(definition);
+    }
+
+    let mut findings = Vec::new();
+    for (name, definitions) in by_name {
+        if definitions.len() < 2 {
+            continue;
+        }
+        let duplicate = definitions[1];
+        findings.push(LintFinding {
+            code: "ORG008",
+            severity: LintSeverity::Warning,
+            message: format!("macro `{name}` is defined {} times", definitions.len()),
+            location: location_for_range(source, duplicate.ann.range),
+        });
+    }
+    findings
 }
 
 fn link_abbreviation_definition_findings(
