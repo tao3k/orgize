@@ -197,6 +197,7 @@ The `orgize` binary exposes parser-backed `lint` and conservative `fmt`
 commands:
 
 ```sh
+orgize lint notes.org
 orgize lint --format text notes.org
 orgize lint --json notes.org
 orgize fmt --check notes.org
@@ -208,7 +209,10 @@ uniqueness issues such as duplicate `ID`/`CUSTOM_ID` targets, missing local
 macro definitions, duplicate `#+MACRO:` definitions, malformed or duplicate
 `#+LINK:` abbreviation definitions, invalid supported `#+OPTIONS:` values,
 duplicate or conflicting per-file TODO keyword declarations, and missing or
-non-file `#+INCLUDE:` paths when linting real files. `fmt` starts with
+non-file `#+INCLUDE:` paths when linting real files. By default, `lint` prints a
+compact agent-facing repair report with location, source line, fix hint, and
+contract; `--format text` keeps the stable line-oriented form, and `--json`
+keeps structured machine output as an explicit mode. `fmt` starts with
 source-safe whitespace normalization: it trims trailing spaces and tabs, aligns
 contiguous Org tables outside blocks, normalizes final blank lines, and ensures
 one final newline for non-empty documents. When paths are provided, `fmt`

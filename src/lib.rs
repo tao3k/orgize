@@ -15,6 +15,7 @@ pub mod export;
 pub mod fmt;
 /// Org document linting helpers.
 pub mod lint;
+mod lint_render;
 mod org;
 mod replace;
 mod syntax;

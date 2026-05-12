@@ -380,3 +380,6 @@ runtime dependency is copied into this repository.
       across `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`.
 - [x] Move lint snapshot inputs into standalone `.org` fixtures so rule
       monitoring reviews Org scenarios separately from Rust test code.
+- [x] Align `orgize lint` with the Rust project harness output model: compact
+      agent-facing text is the default, while line-oriented text and JSON stay
+      explicit modes.

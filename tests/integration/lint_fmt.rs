@@ -205,6 +205,18 @@ fn cli_rejects_invalid_path_arguments_with_snapshot() {
 }
 
 #[test]
+fn lint_reports_semantic_and_uniqueness_findings_as_compact_snapshot() {
+    let source = semantic_and_uniqueness_lint_fixture();
+    let report = lint_org(source);
+
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_compact_text("fixture.org", source)
+    ));
+}
+
+#[test]
 fn lint_reports_semantic_and_uniqueness_findings_as_text_snapshot() {
     let report = lint_org(semantic_and_uniqueness_lint_fixture());
 
@@ -299,6 +311,48 @@ fn lint_reports_todo_declaration_issues_with_snapshot() {
         report.is_clean(),
         report.to_text("fixture.org")
     ));
+}
+
+#[test]
+fn lint_cli_compact_stdin_output_is_snapshotted() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .args(["lint"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    child
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(semantic_and_uniqueness_lint_fixture().as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+
+    insta::assert_snapshot!(command_snapshot(output));
+}
+
+#[test]
+fn lint_cli_text_stdin_output_is_snapshotted() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .args(["lint", "--format", "text"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    child
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(semantic_and_uniqueness_lint_fixture().as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+
+    insta::assert_snapshot!(command_snapshot(output));
 }
 
 #[test]

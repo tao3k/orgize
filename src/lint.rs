@@ -39,42 +39,6 @@ impl LintReport {
     pub fn is_clean(&self) -> bool {
         self.findings.is_empty()
     }
-
-    /// Renders findings as stable, line-oriented text.
-    pub fn to_text(&self, path: &str) -> String {
-        let mut output = String::new();
-        for finding in &self.findings {
-            output.push_str(path);
-            output.push(':');
-            output.push_str(&finding.location.start.line.to_string());
-            output.push(':');
-            output.push_str(&finding.location.start.column.to_string());
-            output.push_str(": ");
-            output.push_str(finding.severity.as_str());
-            output.push(' ');
-            output.push_str(finding.code);
-            output.push_str(": ");
-            output.push_str(&finding.message);
-            output.push('\n');
-        }
-        output
-    }
-
-    /// Renders findings as a stable JSON object for one file.
-    pub fn to_json_file(&self, path: &str) -> String {
-        let mut output = String::new();
-        output.push_str("{\"path\":\"");
-        push_json_string_body(&mut output, path);
-        output.push_str("\",\"findings\":[");
-        for (index, finding) in self.findings.iter().enumerate() {
-            if index > 0 {
-                output.push(',');
-            }
-            finding.push_json(&mut output);
-        }
-        output.push_str("]}");
-        output
-    }
 }
 
 /// One lint finding.
@@ -86,34 +50,11 @@ pub struct LintFinding {
     pub location: LintLocation,
 }
 
-impl LintFinding {
-    fn push_json(&self, output: &mut String) {
-        output.push_str("{\"code\":\"");
-        output.push_str(self.code);
-        output.push_str("\",\"severity\":\"");
-        output.push_str(self.severity.as_str());
-        output.push_str("\",\"message\":\"");
-        push_json_string_body(output, &self.message);
-        output.push_str("\",\"location\":");
-        self.location.push_json(output);
-        output.push('}');
-    }
-}
-
 /// Finding severity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LintSeverity {
     Error,
     Warning,
-}
-
-impl LintSeverity {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Error => "error",
-            Self::Warning => "warning",
-        }
-    }
 }
 
 /// Source location for one finding.
@@ -123,24 +64,6 @@ pub struct LintLocation {
     pub end: SourcePosition,
     pub range_start: usize,
     pub range_end: usize,
-}
-
-impl LintLocation {
-    fn push_json(&self, output: &mut String) {
-        output.push_str("{\"line\":");
-        output.push_str(&self.start.line.to_string());
-        output.push_str(",\"column\":");
-        output.push_str(&self.start.column.to_string());
-        output.push_str(",\"end_line\":");
-        output.push_str(&self.end.line.to_string());
-        output.push_str(",\"end_column\":");
-        output.push_str(&self.end.column.to_string());
-        output.push_str(",\"range_start\":");
-        output.push_str(&self.range_start.to_string());
-        output.push_str(",\"range_end\":");
-        output.push_str(&self.range_end.to_string());
-        output.push('}');
-    }
 }
 
 /// Lints Org source with the default parser configuration.
@@ -671,21 +594,4 @@ fn position_for_offset(source: &str, offset: usize) -> SourcePosition {
     let line_start = prefix.rfind('\n').map_or(0, |index| index + 1);
     let column = source[line_start..offset].chars().count() + 1;
     SourcePosition { line, column }
-}
-
-fn push_json_string_body(output: &mut String, value: &str) {
-    for ch in value.chars() {
-        match ch {
-            '"' => output.push_str("\\\""),
-            '\\' => output.push_str("\\\\"),
-            '\n' => output.push_str("\\n"),
-            '\r' => output.push_str("\\r"),
-            '\t' => output.push_str("\\t"),
-            ch if ch.is_control() => {
-                output.push_str("\\u");
-                output.push_str(&format!("{:04x}", ch as u32));
-            }
-            ch => output.push(ch),
-        }
-    }
 }

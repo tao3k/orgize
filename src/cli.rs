@@ -100,7 +100,7 @@ fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
 }
 
 fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
-    let mut output_format = LintOutputFormat::Text;
+    let mut output_format = LintOutputFormat::Compact;
     let mut paths = Vec::new();
     let mut index = 0;
 
@@ -110,7 +110,7 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
             "--format" => {
                 index += 1;
                 let Some(value) = args.get(index) else {
-                    return Err("lint --format requires `text` or `json`".to_string());
+                    return Err("lint --format requires `compact`, `text`, or `json`".to_string());
                 };
                 output_format = LintOutputFormat::parse(value)?;
             }
@@ -128,7 +128,12 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
     let mut reports = Vec::new();
     if paths.is_empty() {
         let source = read_stdin()?;
-        reports.push(("<stdin>".to_string(), lint_org(&source)));
+        let report = lint_org(&source);
+        reports.push(LintFileReport {
+            path: "<stdin>".to_string(),
+            source,
+            report,
+        });
     } else {
         for path in collect_org_paths(&paths)? {
             let display_path = path.display().to_string();
@@ -137,24 +142,32 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
             let lint_options = LintOptions {
                 include_base_dir: path.parent().map(Path::to_path_buf),
             };
-            reports.push((display_path, lint_org_with_options(&source, &lint_options)));
+            let report = lint_org_with_options(&source, &lint_options);
+            reports.push(LintFileReport {
+                path: display_path,
+                source,
+                report,
+            });
         }
     }
 
-    let has_findings = reports.iter().any(|(_, report)| !report.is_clean());
+    let has_findings = reports.iter().any(|file| !file.report.is_clean());
     match output_format {
+        LintOutputFormat::Compact => {
+            print!("{}", render_lint_compact(&reports));
+        }
         LintOutputFormat::Text => {
-            for (path, report) in &reports {
-                print!("{}", report.to_text(path));
+            for file in &reports {
+                print!("{}", file.report.to_text(&file.path));
             }
         }
         LintOutputFormat::Json => {
             print!("{{\"files\":[");
-            for (index, (path, report)) in reports.iter().enumerate() {
+            for (index, file) in reports.iter().enumerate() {
                 if index > 0 {
                     print!(",");
                 }
-                print!("{}", report.to_json_file(path));
+                print!("{}", file.report.to_json_file(&file.path));
             }
             println!("]}}");
         }
@@ -175,8 +188,29 @@ fn read_stdin() -> Result<String, String> {
     Ok(input)
 }
 
+struct LintFileReport {
+    path: String,
+    source: String,
+    report: crate::lint::LintReport,
+}
+
+fn render_lint_compact(reports: &[LintFileReport]) -> String {
+    let rendered = reports
+        .iter()
+        .filter(|file| !file.report.is_clean())
+        .map(|file| file.report.to_compact_text(&file.path, &file.source))
+        .collect::<Vec<_>>();
+
+    if rendered.is_empty() {
+        "[ok] orgize lint\n".to_string()
+    } else {
+        rendered.join("\n")
+    }
+}
+
 #[derive(Clone, Copy)]
 enum LintOutputFormat {
+    Compact,
     Text,
     Json,
 }
@@ -184,6 +218,7 @@ enum LintOutputFormat {
 impl LintOutputFormat {
     fn parse(value: &str) -> Result<Self, String> {
         match value {
+            "compact" => Ok(Self::Compact),
             "text" => Ok(Self::Text),
             "json" => Ok(Self::Json),
             _ => Err(format!("unsupported lint output format `{value}`")),
@@ -200,7 +235,7 @@ fn print_fmt_usage() {
 }
 
 fn print_lint_usage() {
-    eprintln!("Usage: orgize lint [--format text|json] [PATH ...]");
+    eprintln!("Usage: orgize lint [--format compact|text|json] [PATH ...]");
 }
 
 fn collect_org_paths(paths: &[String]) -> Result<Vec<PathBuf>, String> {
