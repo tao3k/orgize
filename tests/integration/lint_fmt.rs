@@ -7,7 +7,7 @@ use std::{
 
 use orgize::{
     fmt::{format_org, FormatOptions},
-    lint::lint_org,
+    lint::{lint_org, lint_org_with_options, LintOptions},
 };
 
 #[test]
@@ -202,6 +202,30 @@ fn lint_reports_semantic_and_uniqueness_findings_as_json_snapshot() {
 }
 
 #[test]
+fn lint_checks_include_paths_with_snapshot() {
+    let dir = test_dir("lint-include-paths");
+    fs::create_dir_all(dir.join("folder")).unwrap();
+    fs::write(dir.join("present.org"), "* Present\n").unwrap();
+    let source = r#"#+INCLUDE: "present.org"
+#+INCLUDE: "missing.org"
+#+INCLUDE: "folder"
+"#;
+
+    let report = lint_org_with_options(
+        source,
+        &LintOptions {
+            include_base_dir: Some(dir),
+        },
+    );
+
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_text("fixture.org")
+    ));
+}
+
+#[test]
 fn lint_cli_json_stdin_output_is_snapshotted() {
     let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .args(["lint", "--json"])
@@ -218,6 +242,29 @@ fn lint_cli_json_stdin_output_is_snapshotted() {
         .write_all(lint_fixture().as_bytes())
         .unwrap();
     let output = child.wait_with_output().unwrap();
+
+    insta::assert_snapshot!(command_snapshot(output));
+}
+
+#[test]
+fn lint_cli_checks_include_paths_relative_to_file_with_snapshot() {
+    let dir = test_dir("lint-cli-include-paths");
+    fs::create_dir_all(dir.join("notes/folder")).unwrap();
+    fs::write(dir.join("notes/present.org"), "* Present\n").unwrap();
+    fs::write(
+        dir.join("notes/main.org"),
+        r#"#+INCLUDE: "present.org"
+#+INCLUDE: "missing.org"
+#+INCLUDE: "folder"
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["lint", "--json", "notes/main.org"])
+        .output()
+        .unwrap();
 
     insta::assert_snapshot!(command_snapshot(output));
 }

@@ -360,3 +360,6 @@ runtime dependency is copied into this repository.
 - [x] Snapshot `fmt --check` directory output and stdin table formatting.
 - [x] Snapshot indented table alignment, pipe-only rule rows, formula
       preservation, stdin `--check`, and formatter idempotence.
+- [x] Check collected `#+INCLUDE:` directives for missing or non-file local
+      paths when linting real files, while keeping include expansion out of the
+      parser and semantic AST.

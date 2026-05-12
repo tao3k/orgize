@@ -203,15 +203,16 @@ orgize fmt --check notes.org
 orgize fmt notes.org docs/
 ```
 
-`lint` reports semantic projection diagnostics and document-local target
-uniqueness issues such as duplicate `ID`/`CUSTOM_ID` targets. `fmt` starts with
-source-safe whitespace normalization: it trims trailing spaces and tabs,
-aligns contiguous Org tables outside blocks, normalizes final blank lines, and
-ensures one final newline for non-empty documents. When paths are provided,
-`fmt` writes files by default; with no path it reads stdin and writes stdout.
-Both commands accept multiple file and directory paths; directory paths are
-expanded recursively to `.org` files. Formatter behavior is covered by snapshot
-tests so future formatting expansions review as explicit output diffs.
+`lint` reports semantic projection diagnostics, document-local target
+uniqueness issues such as duplicate `ID`/`CUSTOM_ID` targets, and missing or
+non-file `#+INCLUDE:` paths when linting real files. `fmt` starts with
+source-safe whitespace normalization: it trims trailing spaces and tabs, aligns
+contiguous Org tables outside blocks, normalizes final blank lines, and ensures
+one final newline for non-empty documents. When paths are provided, `fmt`
+writes files by default; with no path it reads stdin and writes stdout. Both
+commands accept multiple file and directory paths; directory paths are expanded
+recursively to `.org` files. Formatter behavior is covered by snapshot tests so
+future formatting expansions review as explicit output diffs.
 
 ## Features
 

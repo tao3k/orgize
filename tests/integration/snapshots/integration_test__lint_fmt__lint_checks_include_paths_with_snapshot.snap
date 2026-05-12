@@ -1,0 +1,7 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(), report.to_text(\"fixture.org\"))"
+---
+clean: false
+fixture.org:2:1: error ORG003: include path `missing.org` was not found
+fixture.org:3:1: error ORG003: include path `folder` is not a file

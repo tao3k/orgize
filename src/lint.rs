@@ -1,13 +1,32 @@
 //! Org document linting built on the semantic parser projection.
 
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    fs,
+    io::ErrorKind,
+    path::{Path, PathBuf},
+};
 
 use rowan::TextRange;
 
 use crate::{
-    ast::{Diagnostic, ParsedAst, SourcePosition, TargetDefinition, TargetKind},
+    ast::{
+        Diagnostic, IncludeDirective, ParsedAnnotation, ParsedAst, SourcePosition,
+        TargetDefinition, TargetKind,
+    },
     Org,
 };
+
+/// Lint configuration.
+///
+/// The default keeps linting pure over the provided source string. Set
+/// [`include_base_dir`](Self::include_base_dir) when checking `#+INCLUDE:`
+/// directives against the filesystem.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LintOptions {
+    /// Base directory used to resolve relative `#+INCLUDE:` paths.
+    pub include_base_dir: Option<PathBuf>,
+}
 
 /// Lint result for one Org source string.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -126,12 +145,26 @@ impl LintLocation {
 
 /// Lints Org source with the default parser configuration.
 pub fn lint_org(source: &str) -> LintReport {
+    lint_org_with_options(source, &LintOptions::default())
+}
+
+/// Lints Org source with explicit lint options.
+pub fn lint_org_with_options(source: &str, options: &LintOptions) -> LintReport {
     let org = Org::parse(source);
-    lint_document(&org.document(), source)
+    lint_document_with_options(&org.document(), source, options)
 }
 
 /// Lints an already projected semantic document.
 pub fn lint_document(document: &ParsedAst, source: &str) -> LintReport {
+    lint_document_with_options(document, source, &LintOptions::default())
+}
+
+/// Lints an already projected semantic document with explicit lint options.
+pub fn lint_document_with_options(
+    document: &ParsedAst,
+    source: &str,
+    options: &LintOptions,
+) -> LintReport {
     let mut findings = Vec::new();
 
     findings.extend(
@@ -141,6 +174,7 @@ pub fn lint_document(document: &ParsedAst, source: &str) -> LintReport {
             .map(|diagnostic| finding_from_diagnostic(diagnostic, source)),
     );
     findings.extend(duplicate_target_findings(&document.targets, source));
+    findings.extend(include_path_findings(&document.includes, source, options));
 
     findings.sort_by(|left, right| {
         left.location
@@ -201,6 +235,54 @@ fn duplicate_target_severity(
     } else {
         LintSeverity::Warning
     }
+}
+
+fn include_path_findings(
+    includes: &[IncludeDirective<ParsedAnnotation>],
+    source: &str,
+    options: &LintOptions,
+) -> Vec<LintFinding> {
+    let Some(base_dir) = &options.include_base_dir else {
+        return Vec::new();
+    };
+
+    includes
+        .iter()
+        .filter_map(|include| include_path_finding(include, source, base_dir))
+        .collect()
+}
+
+fn include_path_finding(
+    include: &IncludeDirective<ParsedAnnotation>,
+    source: &str,
+    base_dir: &Path,
+) -> Option<LintFinding> {
+    if include.path.contains("://") || include.path.starts_with('~') {
+        return None;
+    }
+
+    let path = Path::new(&include.path);
+    let resolved = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        base_dir.join(path)
+    };
+
+    let message = match fs::metadata(&resolved) {
+        Ok(metadata) if metadata.is_file() => return None,
+        Ok(_) => format!("include path `{}` is not a file", include.path),
+        Err(error) if error.kind() == ErrorKind::NotFound => {
+            format!("include path `{}` was not found", include.path)
+        }
+        Err(error) => format!("include path `{}` could not be read: {error}", include.path),
+    };
+
+    Some(LintFinding {
+        code: "ORG003",
+        severity: LintSeverity::Error,
+        message,
+        location: location_for_range(source, include.ann.range),
+    })
 }
 
 fn location_for_range(source: &str, range: TextRange) -> LintLocation {

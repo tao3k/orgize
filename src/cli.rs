@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     fmt::{format_org, FormatOptions},
-    lint::lint_org,
+    lint::{lint_org, lint_org_with_options, LintOptions},
 };
 
 /// Runs the command-line interface with process arguments and stdio.
@@ -134,7 +134,10 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
             let display_path = path.display().to_string();
             let source =
                 fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
-            reports.push((display_path, lint_org(&source)));
+            let lint_options = LintOptions {
+                include_base_dir: path.parent().map(Path::to_path_buf),
+            };
+            reports.push((display_path, lint_org_with_options(&source, &lint_options)));
         }
     }
 
