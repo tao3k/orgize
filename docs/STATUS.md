@@ -332,3 +332,11 @@ runtime dependency is copied into this repository.
       footnotes, and export projection pruning.
 - [x] Precompute export select/exclude tag sets once per projection instead of
       rebuilding lowercase hash sets for every section.
+
+### M17 Parser v2 Closeout Evidence
+
+- [x] Add `docs/PARSER_V2_PERFORMANCE_CLOSEOUT.md` as the durable performance
+      closeout entry point.
+- [x] Record the parser-v2 hot-path ownership matrix, dense benchmark matrix,
+      and current low-sample Criterion measurements.
+- [x] Link release readiness to the structured performance closeout document.

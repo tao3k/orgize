@@ -4,6 +4,9 @@ This document is the PR-closeout checklist for the parser v2 lane. It records
 the intended public boundary, completed parser coverage, deferred work, and
 validation gates for the breaking semantic AST API.
 
+Performance ownership and dense-path measurements live in
+[`PARSER_V2_PERFORMANCE_CLOSEOUT.md`](PARSER_V2_PERFORMANCE_CLOSEOUT.md).
+
 ## Public boundary
 
 - `orgize::ast` is the owned semantic AST API.
@@ -74,6 +77,9 @@ those imports to `orgize::syntax_ast::*`.
 - Criterion smoke coverage includes `Org::to_markdown()` and `Org::to_latex()`
   alongside parse, semantic projection, macro expansion, radio-link projection,
   annotation projection, and HTML export paths.
+- Dense parser-v2 performance coverage includes macro expansion, target
+  projection, annotation projection, semantic radio projection, M15 side-table
+  post-processing, and `Document::project_for_export`.
 
 ## Intentional gaps
 
