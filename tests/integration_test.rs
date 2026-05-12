@@ -2,6 +2,8 @@
 mod html;
 #[path = "integration/latex.rs"]
 mod latex;
+#[path = "integration/lint_fmt.rs"]
+mod lint_fmt;
 #[path = "integration/markdown.rs"]
 mod markdown;
 #[path = "integration/parse.rs"]

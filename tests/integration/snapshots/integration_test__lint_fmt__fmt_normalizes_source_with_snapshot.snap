@@ -1,0 +1,6 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: formatted.output
+---
+* Heading
+Body

@@ -1,0 +1,6 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "report.to_text(\"fixture.org\")"
+---
+fixture.org:3:6: error ORG002: target `id:shared` is defined 2 times
+fixture.org:9:1: error ORG001: internal link target `fn:missing` was not found

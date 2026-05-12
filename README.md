@@ -191,6 +191,25 @@ assert_eq!(
 );
 ```
 
+## Command line
+
+The `orgize` binary exposes parser-backed `lint` and conservative `fmt`
+commands:
+
+```sh
+orgize lint --format text notes.org
+orgize lint --json notes.org
+orgize fmt --check notes.org
+orgize fmt --write notes.org
+```
+
+`lint` reports semantic projection diagnostics and document-local target
+uniqueness issues such as duplicate `ID`/`CUSTOM_ID` targets. `fmt` starts with
+source-safe whitespace normalization: it trims trailing spaces and tabs,
+normalizes final blank lines, and ensures one final newline for non-empty
+documents. Formatter behavior is covered by snapshot tests so future formatting
+expansions review as explicit output diffs.
+
 ## Features
 
 - **`chrono`**: adds the ability to convert `Timestamp` into `chrono::NaiveDateTime`, disabled by default.

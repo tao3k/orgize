@@ -340,3 +340,13 @@ runtime dependency is copied into this repository.
 - [x] Record the parser-v2 hot-path ownership matrix, dense benchmark matrix,
       and current low-sample Criterion measurements.
 - [x] Link release readiness to the structured performance closeout document.
+
+### M18 Orgize lint/fmt CLI
+
+- [x] Add a thin `orgize` binary entrypoint with implementation kept in the
+      library-owned CLI module for harness compliance.
+- [x] Add `orgize::lint` for semantic diagnostics and duplicate document-local
+      target checks, including duplicate `ID`/`CUSTOM_ID` target errors.
+- [x] Add `orgize::fmt` with conservative source-safe whitespace formatting.
+- [x] Snapshot the formatter output contract, `fmt --check` CLI output, and
+      lint text/JSON output.
