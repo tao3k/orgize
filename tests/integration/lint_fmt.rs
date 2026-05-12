@@ -13,10 +13,7 @@ use orgize::{
 #[test]
 fn fmt_normalizes_source_with_snapshot() {
     let source = "* Heading  \r\nBody\t \n\n\n";
-    let formatted = format_org(source, &FormatOptions::default());
-
-    assert!(formatted.changed);
-    insta::assert_snapshot!(formatted.output);
+    insta::assert_snapshot!(format_snapshot(source));
 }
 
 #[test]
@@ -31,10 +28,7 @@ fn fmt_aligns_tables_with_snapshot() {
 | stays | as-is |
 #+end_example
 "#;
-    let formatted = format_org(source, &FormatOptions::default());
-
-    assert!(formatted.changed);
-    insta::assert_snapshot!(formatted.output);
+    insta::assert_snapshot!(format_snapshot(source));
 }
 
 #[test]
@@ -45,16 +39,7 @@ fn fmt_aligns_indented_tables_formulas_and_pipe_rules_with_snapshot() {
   | longer | 100 |
 #+TBLFM: $2=vsum(@2..@3)
 "#;
-    let formatted = format_org(source, &FormatOptions::default());
-    let reformatted = format_org(&formatted.output, &FormatOptions::default());
-
-    assert!(formatted.changed);
-    assert_eq!(formatted.output, reformatted.output);
-    insta::assert_snapshot!(format!(
-        "idempotent: {}\n{}",
-        formatted.output == reformatted.output,
-        formatted.output
-    ));
+    insta::assert_snapshot!(format_snapshot(source));
 }
 
 #[test]
@@ -69,7 +54,6 @@ fn fmt_cli_check_output_is_snapshotted() {
         .output()
         .unwrap();
 
-    assert!(!output.status.success());
     insta::assert_snapshot!(command_snapshot(output));
 }
 
@@ -91,7 +75,6 @@ fn fmt_cli_check_stdin_output_is_snapshotted() {
         .unwrap();
     let output = child.wait_with_output().unwrap();
 
-    assert!(!output.status.success());
     insta::assert_snapshot!(command_snapshot(output));
 }
 
@@ -113,7 +96,6 @@ fn fmt_cli_stdin_aligns_tables_with_snapshot() {
         .unwrap();
     let output = child.wait_with_output().unwrap();
 
-    assert!(output.status.success());
     insta::assert_snapshot!(command_snapshot(output));
 }
 
@@ -131,7 +113,6 @@ fn fmt_cli_check_directory_output_is_snapshotted() {
         .output()
         .unwrap();
 
-    assert!(!output.status.success());
     insta::assert_snapshot!(command_snapshot(output));
 }
 
@@ -147,7 +128,6 @@ fn fmt_cli_default_writes_file_with_snapshot() {
         .output()
         .unwrap();
 
-    assert!(output.status.success());
     insta::assert_snapshot!(format!(
         "{}\nfile: {:?}",
         command_snapshot(output),
@@ -168,7 +148,6 @@ fn fmt_cli_multiple_files_write_with_snapshot() {
         .output()
         .unwrap();
 
-    assert!(output.status.success());
     insta::assert_snapshot!(format!(
         "{}\none.org: {:?}\ntwo.org: {:?}",
         command_snapshot(output),
@@ -191,7 +170,6 @@ fn fmt_cli_directory_path_writes_org_files_with_snapshot() {
         .output()
         .unwrap();
 
-    assert!(output.status.success());
     insta::assert_snapshot!(format!(
         "{}\na.org: {:?}\nnested/b.org: {:?}\nskip.txt: {:?}",
         command_snapshot(output),
@@ -205,16 +183,22 @@ fn fmt_cli_directory_path_writes_org_files_with_snapshot() {
 fn lint_reports_semantic_and_uniqueness_findings_as_text_snapshot() {
     let report = lint_org(lint_fixture());
 
-    assert!(!report.is_clean());
-    insta::assert_snapshot!(report.to_text("fixture.org"));
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_text("fixture.org")
+    ));
 }
 
 #[test]
 fn lint_reports_semantic_and_uniqueness_findings_as_json_snapshot() {
     let report = lint_org(lint_fixture());
 
-    assert!(!report.is_clean());
-    insta::assert_snapshot!(report.to_json_file("fixture.org"));
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_json_file("fixture.org")
+    ));
 }
 
 #[test]
@@ -235,7 +219,6 @@ fn lint_cli_json_stdin_output_is_snapshotted() {
         .unwrap();
     let output = child.wait_with_output().unwrap();
 
-    assert!(!output.status.success());
     insta::assert_snapshot!(command_snapshot(output));
 }
 
@@ -253,7 +236,6 @@ fn lint_cli_directory_path_output_is_snapshotted() {
         .output()
         .unwrap();
 
-    assert!(!output.status.success());
     insta::assert_snapshot!(command_snapshot(output));
 }
 
@@ -276,6 +258,18 @@ fn command_snapshot(output: std::process::Output) -> String {
         output.status.code().unwrap_or_default(),
         String::from_utf8(output.stdout).unwrap(),
         String::from_utf8(output.stderr).unwrap()
+    )
+}
+
+fn format_snapshot(source: &str) -> String {
+    let formatted = format_org(source, &FormatOptions::default());
+    let reformatted = format_org(&formatted.output, &FormatOptions::default());
+
+    format!(
+        "changed: {}\nidempotent: {}\noutput:\n{}",
+        formatted.changed,
+        formatted.output == reformatted.output,
+        formatted.output
     )
 }
 

@@ -1,8 +1,10 @@
 ---
 source: tests/integration/lint_fmt.rs
-expression: "format!(\"idempotent: {}\\n{}\", formatted.output == reformatted.output,\nformatted.output)"
+expression: format_snapshot(source)
 ---
+changed: true
 idempotent: true
+output:
   | Name   | Count |
   |--------+-------|
   | a      | 2     |

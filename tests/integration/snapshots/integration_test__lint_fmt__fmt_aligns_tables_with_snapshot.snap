@@ -1,7 +1,10 @@
 ---
 source: tests/integration/lint_fmt.rs
-expression: formatted.output
+expression: format_snapshot(source)
 ---
+changed: true
+idempotent: true
+output:
 | Name   | Count |
 |--------+-------|
 | a      | 2     |
