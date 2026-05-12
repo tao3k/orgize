@@ -363,3 +363,6 @@ runtime dependency is copied into this repository.
 - [x] Check collected `#+INCLUDE:` directives for missing or non-file local
       paths when linting real files, while keeping include expansion out of the
       parser and semantic AST.
+- [x] Warn on semantic macro calls that have no matching local `#+MACRO:`
+      definition, using the existing opt-in macro expansion side table instead
+      of mutating parser output.

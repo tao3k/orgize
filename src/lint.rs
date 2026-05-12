@@ -11,8 +11,8 @@ use rowan::TextRange;
 
 use crate::{
     ast::{
-        Diagnostic, IncludeDirective, ParsedAnnotation, ParsedAst, SourcePosition,
-        TargetDefinition, TargetKind,
+        Diagnostic, IncludeDirective, MacroExpansionStatus, ParsedAnnotation, ParsedAst,
+        SourcePosition, TargetDefinition, TargetKind,
     },
     Org,
 };
@@ -175,6 +175,7 @@ pub fn lint_document_with_options(
     );
     findings.extend(duplicate_target_findings(&document.targets, source));
     findings.extend(include_path_findings(&document.includes, source, options));
+    findings.extend(missing_macro_findings(document, source));
 
     findings.sort_by(|left, right| {
         left.location
@@ -235,6 +236,20 @@ fn duplicate_target_severity(
     } else {
         LintSeverity::Warning
     }
+}
+
+fn missing_macro_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
+    document
+        .macro_expansions()
+        .into_iter()
+        .filter(|expansion| expansion.status == MacroExpansionStatus::MissingDefinition)
+        .map(|expansion| LintFinding {
+            code: "ORG004",
+            severity: LintSeverity::Warning,
+            message: format!("macro `{}` has no local definition", expansion.name),
+            location: location_for_range(source, expansion.ann.range),
+        })
+        .collect()
 }
 
 fn include_path_findings(

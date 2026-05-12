@@ -226,6 +226,21 @@ fn lint_checks_include_paths_with_snapshot() {
 }
 
 #[test]
+fn lint_reports_missing_macro_definitions_with_snapshot() {
+    let source = r#"#+MACRO: issue [[https://tracker.example/$1][$2]]
+{{{issue(42, Fix)}}}
+{{{missing(1)}}}
+"#;
+    let report = lint_org(source);
+
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_text("fixture.org")
+    ));
+}
+
+#[test]
 fn lint_cli_json_stdin_output_is_snapshotted() {
     let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .args(["lint", "--json"])
