@@ -1,4 +1,7 @@
-use orgize::{export::LatexExport, Org};
+use orgize::{
+    export::{LatexExport, LatexExportOptions},
+    Org,
+};
 use rowan::ast::AstNode;
 
 #[test]
@@ -67,4 +70,20 @@ fn latex_export_can_render_subtrees() {
     let mut latex = LatexExport::default();
     latex.render(bold.syntax());
     assert_eq!(latex.finish(), r"\textbf{world}");
+}
+
+#[test]
+fn latex_export_options_control_special_strings_and_entities() {
+    let org = Org::parse(r#"a -- b --- c... don't \- \alpha{}"#);
+    let rendered = org.to_latex_with_options(LatexExportOptions {
+        special_strings: true,
+        expand_entities: false,
+    });
+
+    assert!(rendered.contains('\u{2013}'));
+    assert!(rendered.contains('\u{2014}'));
+    assert!(rendered.contains('\u{2026}'));
+    assert!(rendered.contains("don\u{2019}t"));
+    assert!(rendered.contains(r"\textbackslash{}alpha\{\}"));
+    assert!(org.to_latex().contains(r"\alpha"));
 }

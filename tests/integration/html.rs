@@ -1,4 +1,4 @@
-use orgize::Org;
+use orgize::{export::HtmlExportOptions, Org};
 
 #[test]
 fn emphasis() {
@@ -183,4 +183,20 @@ fn line_break() {
         Org::parse("aa\\\\\nbb").to_html(),
         @r###""<main><section><p>aa<br/>bb</p></section></main>""###
     );
+}
+
+#[test]
+fn html_export_options_control_special_strings_and_entities() {
+    let org = Org::parse(r#"a -- b --- c... don't \- \alpha{}"#);
+    let rendered = org.to_html_with_options(HtmlExportOptions {
+        special_strings: true,
+        expand_entities: false,
+    });
+
+    assert!(rendered.contains('\u{2013}'));
+    assert!(rendered.contains('\u{2014}'));
+    assert!(rendered.contains('\u{2026}'));
+    assert!(rendered.contains("don\u{2019}t"));
+    assert!(rendered.contains("\\alpha{}"));
+    assert!(org.to_html().contains("&alpha;"));
 }

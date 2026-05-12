@@ -320,3 +320,15 @@ runtime dependency is copied into this repository.
         `---`, `...`, escaped hyphen, and apostrophe replacement.
   - [x] Keep entity expansion configurable per exporter while semantic AST keeps
         the source-backed entity object.
+
+### M16 M15 Projection Performance Guard
+
+- [x] Verify PR #4 has no unresolved review threads and the latest GitHub CI
+      `test` check is green before adding the next parser-v2 slice.
+- [x] Cover HTML/Markdown/LaTeX exporter options for opt-in special strings and
+      entity preservation.
+- [x] Add dense M15 benchmark coverage for metadata/settings, link
+      abbreviations, target alias/default descriptions, citations, inline
+      footnotes, and export projection pruning.
+- [x] Precompute export select/exclude tag sets once per projection instead of
+      rebuilding lowercase hash sets for every section.

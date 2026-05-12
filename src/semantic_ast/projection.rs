@@ -12,6 +12,8 @@ impl<A: Clone> Document<A> {
         let mut document = self.clone();
         let select_tags = export_select_tags(&document, options);
         let exclude_tags = export_exclude_tags(&document, options);
+        let select_tags = TagSet::new(select_tags);
+        let exclude_tags = TagSet::new(exclude_tags);
 
         if options.prune {
             let selected_any = !select_tags.is_empty()
@@ -66,8 +68,8 @@ fn export_exclude_tags<A: Clone>(
 
 fn project_sections<A: Clone>(
     sections: Vec<Section<A>>,
-    select_tags: &[String],
-    exclude_tags: &[String],
+    select_tags: &TagSet,
+    exclude_tags: &TagSet,
     selected_any: bool,
 ) -> Vec<Section<A>> {
     sections
@@ -79,7 +81,7 @@ fn project_sections<A: Clone>(
             section.subsections =
                 project_sections(section.subsections, select_tags, exclude_tags, selected_any);
             if selected_any
-                && !has_any_tag(&section.effective_tags, select_tags)
+                && !select_tags.contains_any(&section.effective_tags)
                 && section.subsections.is_empty()
             {
                 None
@@ -90,14 +92,14 @@ fn project_sections<A: Clone>(
         .collect()
 }
 
-fn should_exclude<A>(section: &Section<A>, exclude_tags: &[String]) -> bool {
+fn should_exclude<A>(section: &Section<A>, exclude_tags: &TagSet) -> bool {
     section.is_comment
         || has_tag(&section.effective_tags, "ARCHIVE")
-        || has_any_tag(&section.effective_tags, exclude_tags)
+        || exclude_tags.contains_any(&section.effective_tags)
 }
 
-fn section_has_selected_tag<A>(section: &Section<A>, select_tags: &[String]) -> bool {
-    has_any_tag(&section.effective_tags, select_tags)
+fn section_has_selected_tag<A>(section: &Section<A>, select_tags: &TagSet) -> bool {
+    select_tags.contains_any(&section.effective_tags)
         || section
             .subsections
             .iter()
@@ -108,13 +110,28 @@ fn has_tag(tags: &[String], expected: &str) -> bool {
     tags.iter().any(|tag| tag.eq_ignore_ascii_case(expected))
 }
 
-fn has_any_tag(tags: &[String], expected: &[String]) -> bool {
-    let expected = expected
-        .iter()
-        .map(|tag| tag.to_ascii_lowercase())
-        .collect::<HashSet<_>>();
-    tags.iter()
-        .any(|tag| expected.contains(&tag.to_ascii_lowercase()))
+struct TagSet {
+    tags: HashSet<String>,
+}
+
+impl TagSet {
+    fn new(tags: Vec<String>) -> Self {
+        Self {
+            tags: tags
+                .into_iter()
+                .map(|tag| tag.to_ascii_lowercase())
+                .collect(),
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.tags.is_empty()
+    }
+
+    fn contains_any(&self, tags: &[String]) -> bool {
+        tags.iter()
+            .any(|tag| self.tags.contains(&tag.to_ascii_lowercase()))
+    }
 }
 
 fn apply_special_strings<A>(document: &mut Document<A>) {

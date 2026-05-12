@@ -1,4 +1,7 @@
-use orgize::{export::MarkdownExport, Org};
+use orgize::{
+    export::{MarkdownExport, MarkdownExportOptions},
+    Org,
+};
 use rowan::ast::AstNode;
 
 #[test]
@@ -64,4 +67,20 @@ fn markdown_export_can_render_subtrees() {
     let mut markdown = MarkdownExport::default();
     markdown.render(bold.syntax());
     assert_eq!(markdown.finish(), "**world**");
+}
+
+#[test]
+fn markdown_export_options_control_special_strings_and_entities() {
+    let org = Org::parse(r#"a -- b --- c... don't \- \alpha{}"#);
+    let rendered = org.to_markdown_with_options(MarkdownExportOptions {
+        special_strings: true,
+        expand_entities: false,
+    });
+
+    assert!(rendered.contains('\u{2013}'));
+    assert!(rendered.contains('\u{2014}'));
+    assert!(rendered.contains('\u{2026}'));
+    assert!(rendered.contains("don\u{2019}t"));
+    assert!(rendered.contains("\\alpha{}"));
+    assert!(org.to_markdown().contains('α'));
 }
