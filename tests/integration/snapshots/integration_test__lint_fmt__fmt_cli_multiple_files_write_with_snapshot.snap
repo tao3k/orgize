@@ -1,0 +1,11 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"{}\\none.org: {:?}\\ntwo.org: {:?}\", command_snapshot(output),\nfs::read_to_string(dir.join(\"one.org\")).unwrap(),\nfs::read_to_string(dir.join(\"two.org\")).unwrap())"
+---
+status: 0
+stdout:
+
+stderr:
+
+one.org: "One\n"
+two.org: "| A     | Longer |\n| value | x      |\n"

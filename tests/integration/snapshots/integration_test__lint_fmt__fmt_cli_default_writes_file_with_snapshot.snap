@@ -1,0 +1,10 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"{}\\nfile: {:?}\", command_snapshot(output),\nfs::read_to_string(dir.join(\"notes.org\")).unwrap())"
+---
+status: 0
+stdout:
+
+stderr:
+
+file: "| A | B      |\n| x | longer |\n"

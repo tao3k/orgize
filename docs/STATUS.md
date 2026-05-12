@@ -350,3 +350,9 @@ runtime dependency is copied into this repository.
 - [x] Add `orgize::fmt` with conservative source-safe whitespace formatting.
 - [x] Snapshot the formatter output contract, `fmt --check` CLI output, and
       lint text/JSON output.
+- [x] Make `orgize fmt PATH...` write files by default, while preserving
+      stdin-to-stdout behavior when no path is provided.
+- [x] Expand directory paths recursively to `.org` files and support multiple
+      file/path operands.
+- [x] Add Org table alignment outside block bodies, covered by formatter
+      snapshots.

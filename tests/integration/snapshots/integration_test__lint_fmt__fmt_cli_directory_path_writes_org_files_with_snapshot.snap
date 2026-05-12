@@ -1,0 +1,12 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"{}\\na.org: {:?}\\nnested/b.org: {:?}\\nskip.txt: {:?}\",\ncommand_snapshot(output),\nfs::read_to_string(dir.join(\"notes/a.org\")).unwrap(),\nfs::read_to_string(dir.join(\"notes/nested/b.org\")).unwrap(),\nfs::read_to_string(dir.join(\"notes/skip.txt\")).unwrap())"
+---
+status: 0
+stdout:
+
+stderr:
+
+a.org: "A\n"
+nested/b.org: "| A  | B |\n| xx | y |\n"
+skip.txt: "skip  \n"

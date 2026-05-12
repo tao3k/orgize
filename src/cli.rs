@@ -1,6 +1,11 @@
 //! Command-line interface implementation for the `orgize` binary.
 
-use std::{env, fs, io::Read, process::ExitCode};
+use std::{
+    env, fs,
+    io::Read,
+    path::{Path, PathBuf},
+    process::ExitCode,
+};
 
 use crate::{
     fmt::{format_org, FormatOptions},
@@ -38,13 +43,12 @@ fn run() -> Result<ExitCode, String> {
 
 fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
     let mut check = false;
-    let mut write = false;
     let mut paths = Vec::new();
 
     for arg in args {
         match arg.as_str() {
             "--check" => check = true,
-            "--write" | "-w" => write = true,
+            "--write" | "-w" => {}
             "-h" | "--help" => {
                 print_fmt_usage();
                 return Ok(ExitCode::SUCCESS);
@@ -52,13 +56,6 @@ fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
             _ if arg.starts_with('-') => return Err(format!("unknown fmt flag `{arg}`")),
             _ => paths.push(arg),
         }
-    }
-
-    if check && write {
-        return Err("fmt cannot combine --check and --write".to_string());
-    }
-    if write && paths.is_empty() {
-        return Err("fmt --write requires at least one path".to_string());
     }
 
     let options = FormatOptions::default();
@@ -76,21 +73,21 @@ fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
             print!("{}", formatted.output);
         }
     } else {
-        for path in paths {
-            let source = fs::read_to_string(&path).map_err(|error| format!("{path}: {error}"))?;
+        for path in collect_org_paths(&paths)? {
+            let display_path = path.display().to_string();
+            let source =
+                fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
             let formatted = format_org(&source, &options);
             changed |= formatted.changed;
             if check {
                 if formatted.changed {
-                    eprintln!("{path}: needs formatting");
-                }
-            } else if write {
-                if formatted.changed {
-                    fs::write(&path, formatted.output)
-                        .map_err(|error| format!("{path}: {error}"))?;
+                    eprintln!("{display_path}: needs formatting");
                 }
             } else {
-                print!("{}", formatted.output);
+                if formatted.changed {
+                    fs::write(&path, formatted.output)
+                        .map_err(|error| format!("{display_path}: {error}"))?;
+                }
             }
         }
     }
@@ -194,9 +191,55 @@ fn print_usage() {
 }
 
 fn print_fmt_usage() {
-    eprintln!("Usage: orgize fmt [--check|--write] [PATH ...]");
+    eprintln!("Usage: orgize fmt [--check] [PATH ...]");
 }
 
 fn print_lint_usage() {
     eprintln!("Usage: orgize lint [--format text|json] [PATH ...]");
+}
+
+fn collect_org_paths(paths: &[String]) -> Result<Vec<PathBuf>, String> {
+    let mut files = Vec::new();
+    for path in paths {
+        collect_org_path(Path::new(path), &mut files)?;
+    }
+    files.sort();
+    files.dedup();
+    Ok(files)
+}
+
+fn collect_org_path(path: &Path, files: &mut Vec<PathBuf>) -> Result<(), String> {
+    let metadata = fs::metadata(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    if metadata.is_file() {
+        files.push(path.to_path_buf());
+        return Ok(());
+    }
+    if !metadata.is_dir() {
+        return Err(format!("{}: unsupported path type", path.display()));
+    }
+
+    let mut entries = fs::read_dir(path)
+        .map_err(|error| format!("{}: {error}", path.display()))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("{}: {error}", path.display()))?;
+    entries.sort_by_key(|entry| entry.path());
+
+    for entry in entries {
+        let entry_path = entry.path();
+        let entry_type = entry
+            .file_type()
+            .map_err(|error| format!("{}: {error}", entry_path.display()))?;
+        if entry_type.is_dir() {
+            collect_org_path(&entry_path, files)?;
+        } else if entry_type.is_file() && is_org_file(&entry_path) {
+            files.push(entry_path);
+        }
+    }
+    Ok(())
+}
+
+fn is_org_file(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("org"))
 }

@@ -20,6 +20,24 @@ fn fmt_normalizes_source_with_snapshot() {
 }
 
 #[test]
+fn fmt_aligns_tables_with_snapshot() {
+    let source = r#"| Name | Count |
+|---+---|
+| a | 2 |
+| longer | 100 |
+
+#+begin_example
+| this | block |
+| stays | as-is |
+#+end_example
+"#;
+    let formatted = format_org(source, &FormatOptions::default());
+
+    assert!(formatted.changed);
+    insta::assert_snapshot!(formatted.output);
+}
+
+#[test]
 fn fmt_cli_check_output_is_snapshotted() {
     let dir = test_dir("fmt-check");
     fs::create_dir_all(&dir).unwrap();
@@ -33,6 +51,72 @@ fn fmt_cli_check_output_is_snapshotted() {
 
     assert!(!output.status.success());
     insta::assert_snapshot!(command_snapshot(output));
+}
+
+#[test]
+fn fmt_cli_default_writes_file_with_snapshot() {
+    let dir = test_dir("fmt-default-write");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("notes.org"), "| A | B |\n| x | longer |\n\n\n").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["fmt", "notes.org"])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    insta::assert_snapshot!(format!(
+        "{}\nfile: {:?}",
+        command_snapshot(output),
+        fs::read_to_string(dir.join("notes.org")).unwrap()
+    ));
+}
+
+#[test]
+fn fmt_cli_multiple_files_write_with_snapshot() {
+    let dir = test_dir("fmt-multiple-files");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("one.org"), "One  \n").unwrap();
+    fs::write(dir.join("two.org"), "| A | Longer |\n| value | x |\n").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["fmt", "one.org", "two.org"])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    insta::assert_snapshot!(format!(
+        "{}\none.org: {:?}\ntwo.org: {:?}",
+        command_snapshot(output),
+        fs::read_to_string(dir.join("one.org")).unwrap(),
+        fs::read_to_string(dir.join("two.org")).unwrap()
+    ));
+}
+
+#[test]
+fn fmt_cli_directory_path_writes_org_files_with_snapshot() {
+    let dir = test_dir("fmt-dir-write");
+    fs::create_dir_all(dir.join("notes/nested")).unwrap();
+    fs::write(dir.join("notes/a.org"), "A  \n").unwrap();
+    fs::write(dir.join("notes/nested/b.org"), "| A | B |\n| xx | y |\n").unwrap();
+    fs::write(dir.join("notes/skip.txt"), "skip  \n").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["fmt", "notes"])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    insta::assert_snapshot!(format!(
+        "{}\na.org: {:?}\nnested/b.org: {:?}\nskip.txt: {:?}",
+        command_snapshot(output),
+        fs::read_to_string(dir.join("notes/a.org")).unwrap(),
+        fs::read_to_string(dir.join("notes/nested/b.org")).unwrap(),
+        fs::read_to_string(dir.join("notes/skip.txt")).unwrap()
+    ));
 }
 
 #[test]
