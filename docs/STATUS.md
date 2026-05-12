@@ -366,3 +366,5 @@ runtime dependency is copied into this repository.
 - [x] Warn on semantic macro calls that have no matching local `#+MACRO:`
       definition, using the existing opt-in macro expansion side table instead
       of mutating parser output.
+- [x] Warn on malformed or duplicate `#+LINK:` abbreviation definitions without
+      treating unknown URI schemes as broken abbreviation uses.

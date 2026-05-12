@@ -11,7 +11,7 @@ use rowan::TextRange;
 
 use crate::{
     ast::{
-        Diagnostic, IncludeDirective, MacroExpansionStatus, ParsedAnnotation, ParsedAst,
+        Diagnostic, IncludeDirective, Keyword, MacroExpansionStatus, ParsedAnnotation, ParsedAst,
         SourcePosition, TargetDefinition, TargetKind,
     },
     Org,
@@ -176,6 +176,10 @@ pub fn lint_document_with_options(
     findings.extend(duplicate_target_findings(&document.targets, source));
     findings.extend(include_path_findings(&document.includes, source, options));
     findings.extend(missing_macro_findings(document, source));
+    findings.extend(link_abbreviation_definition_findings(
+        &document.metadata,
+        source,
+    ));
 
     findings.sort_by(|left, right| {
         left.location
@@ -250,6 +254,66 @@ fn missing_macro_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding
             location: location_for_range(source, expansion.ann.range),
         })
         .collect()
+}
+
+fn link_abbreviation_definition_findings(
+    metadata: &[Keyword<ParsedAnnotation>],
+    source: &str,
+) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    let mut by_name = BTreeMap::<String, Vec<&Keyword<ParsedAnnotation>>>::new();
+
+    for keyword in metadata {
+        if !keyword.key.eq_ignore_ascii_case("LINK") {
+            continue;
+        }
+
+        let value = keyword.value.trim();
+        let Some((name, replacement)) = value.split_once(char::is_whitespace) else {
+            findings.push(malformed_link_abbreviation_finding(keyword, source));
+            continue;
+        };
+        let name = name.trim();
+        if name.is_empty() || replacement.trim().is_empty() {
+            findings.push(malformed_link_abbreviation_finding(keyword, source));
+            continue;
+        }
+
+        by_name
+            .entry(name.to_ascii_lowercase())
+            .or_default()
+            .push(keyword);
+    }
+
+    for (name, definitions) in by_name {
+        if definitions.len() < 2 {
+            continue;
+        }
+        let duplicate = definitions[1];
+        findings.push(LintFinding {
+            code: "ORG006",
+            severity: LintSeverity::Warning,
+            message: format!(
+                "link abbreviation `{name}` is defined {} times",
+                definitions.len()
+            ),
+            location: location_for_range(source, duplicate.ann.range),
+        });
+    }
+
+    findings
+}
+
+fn malformed_link_abbreviation_finding(
+    keyword: &Keyword<ParsedAnnotation>,
+    source: &str,
+) -> LintFinding {
+    LintFinding {
+        code: "ORG005",
+        severity: LintSeverity::Warning,
+        message: "LINK keyword is missing an abbreviation name or replacement".into(),
+        location: location_for_range(source, keyword.ann.range),
+    }
 }
 
 fn include_path_findings(

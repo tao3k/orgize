@@ -241,6 +241,22 @@ fn lint_reports_missing_macro_definitions_with_snapshot() {
 }
 
 #[test]
+fn lint_reports_link_abbreviation_definition_issues_with_snapshot() {
+    let source = r#"#+LINK: gh https://github.com/%s
+#+LINK: bad
+#+LINK: gh https://example.invalid/%s
+[[gh:tao3k/orgize]] [[doi:10.1000/example]]
+"#;
+    let report = lint_org(source);
+
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_text("fixture.org")
+    ));
+}
+
+#[test]
 fn lint_cli_json_stdin_output_is_snapshotted() {
     let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .args(["lint", "--json"])
