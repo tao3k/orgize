@@ -15,4 +15,4 @@ orgize = { path = ".." }
 wasm-bindgen = "0.2.120"
 
 [build-dependencies]
-rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "cfe30635afdaf194891389ce38ec8671c1493471" }
+rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "7f359a988861ad8529612d4970ea528ee6697989" }
