@@ -212,6 +212,23 @@ pub fn bench_dense_annotation_projection(c: &mut Criterion) {
     group.finish();
 }
 
+pub fn bench_dense_semantic_radio_projection(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::document/dense-semantic-radio-projection");
+    let org = dense_semantic_radio_projection_fixture();
+    let config = ParseConfig {
+        radio_link_projection: RadioLinkProjection::Semantic,
+        ..Default::default()
+    };
+    let parsed = config.parse(&org);
+
+    group.throughput(Throughput::Bytes(org.len() as u64));
+    group.bench_with_input("many-parsed-object-radio-links.org", &parsed, |b, i| {
+        b.iter(|| black_box(i.document()))
+    });
+
+    group.finish();
+}
+
 fn dense_target_projection_fixture() -> String {
     let mut org = String::new();
 
@@ -224,6 +241,27 @@ fn dense_target_projection_fixture() -> String {
     for idx in 0..128 {
         org.push_str(&format!(
             "* Heading {idx}\n:PROPERTIES:\n:CUSTOM_ID: heading-{idx}\n:END:\n[[*Heading {idx}][headline]] [[#heading-{idx}][custom]] [[Radio Target {idx}][radio]] Radio Target {idx}\n"
+        ));
+    }
+
+    org
+}
+
+fn dense_semantic_radio_projection_fixture() -> String {
+    let mut org = String::new();
+
+    for idx in 0..64 {
+        org.push_str(&format!(
+            "<<<*Signal {idx}*>>> <<<\\alpha{idx}>>> <<<~Code {idx}~>>>\n"
+        ));
+    }
+
+    org.push('\n');
+
+    for idx in 0..256 {
+        let target = idx % 64;
+        org.push_str(&format!(
+            "Row {idx:03}: *Signal {target}* appears beside \\alpha{target} and ~Code {target}~, with /noise {idx}/ and [[https://example.com/{idx}][link {idx}]].\n"
         ));
     }
 
@@ -277,6 +315,7 @@ criterion_group!(
     bench_semantic_radio_links,
     bench_inlinetask_document,
     bench_dense_target_projection,
-    bench_dense_annotation_projection
+    bench_dense_annotation_projection,
+    bench_dense_semantic_radio_projection
 );
 criterion_main!(benches);

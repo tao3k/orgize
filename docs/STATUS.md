@@ -243,3 +243,10 @@ this repository.
 - [x] Split or extract the semantic projection hot paths flagged by
       `AGENT-R025`/`AGENT-R026`, including `conversion.rs` radio-link,
       footnote, and object-run helpers.
+
+### M13 Release/Performance Guard
+
+- [x] Verify PR #4 has no unresolved review threads before continuing the next
+      parser-v2 closeout slice.
+- [x] Add dense semantic radio-link projection benchmark coverage for parsed
+      object runs after the parser contract split.
