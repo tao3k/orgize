@@ -358,3 +358,5 @@ runtime dependency is copied into this repository.
       snapshots.
 - [x] Reuse directory and multi-file path expansion for `orgize lint`.
 - [x] Snapshot `fmt --check` directory output and stdin table formatting.
+- [x] Snapshot indented table alignment, pipe-only rule rows, formula
+      preservation, stdin `--check`, and formatter idempotence.

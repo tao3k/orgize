@@ -162,10 +162,10 @@ fn parse_table_row(line: &str) -> TableRow {
     let is_rule = !inner.is_empty()
         && inner
             .chars()
-            .all(|ch| matches!(ch, '-' | '+') || ch.is_whitespace());
-    let cells = if is_rule && inner.contains('+') {
+            .all(|ch| matches!(ch, '-' | '+' | '|') || ch.is_whitespace());
+    let cells = if is_rule {
         inner
-            .split('+')
+            .split(['+', '|'])
             .map(|cell| cell.trim().to_string())
             .collect()
     } else {

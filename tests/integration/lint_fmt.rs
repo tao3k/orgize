@@ -38,6 +38,26 @@ fn fmt_aligns_tables_with_snapshot() {
 }
 
 #[test]
+fn fmt_aligns_indented_tables_formulas_and_pipe_rules_with_snapshot() {
+    let source = r#"  | Name | Count |
+  |---|---|
+  | a | 2 |
+  | longer | 100 |
+#+TBLFM: $2=vsum(@2..@3)
+"#;
+    let formatted = format_org(source, &FormatOptions::default());
+    let reformatted = format_org(&formatted.output, &FormatOptions::default());
+
+    assert!(formatted.changed);
+    assert_eq!(formatted.output, reformatted.output);
+    insta::assert_snapshot!(format!(
+        "idempotent: {}\n{}",
+        formatted.output == reformatted.output,
+        formatted.output
+    ));
+}
+
+#[test]
 fn fmt_cli_check_output_is_snapshotted() {
     let dir = test_dir("fmt-check");
     fs::create_dir_all(&dir).unwrap();
@@ -48,6 +68,28 @@ fn fmt_cli_check_output_is_snapshotted() {
         .args(["fmt", "--check", "dirty.org"])
         .output()
         .unwrap();
+
+    assert!(!output.status.success());
+    insta::assert_snapshot!(command_snapshot(output));
+}
+
+#[test]
+fn fmt_cli_check_stdin_output_is_snapshotted() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .args(["fmt", "--check"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    child
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(b"| A | Longer |\n| value | x |\n")
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
 
     assert!(!output.status.success());
     insta::assert_snapshot!(command_snapshot(output));

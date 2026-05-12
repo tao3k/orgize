@@ -1,0 +1,10 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"idempotent: {}\\n{}\", formatted.output == reformatted.output,\nformatted.output)"
+---
+idempotent: true
+  | Name   | Count |
+  |--------+-------|
+  | a      | 2     |
+  | longer | 100   |
+#+TBLFM: $2=vsum(@2..@3)
