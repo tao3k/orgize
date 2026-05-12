@@ -1,0 +1,16 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: format_snapshot(source)
+---
+changed: true
+idempotent: true
+output:
+| Name   | Count |
+|--------+-------|
+| a      | 2     |
+| longer | 100   |
+
+#+begin_example
+| this | block |
+| stays | as-is |
+#+end_example

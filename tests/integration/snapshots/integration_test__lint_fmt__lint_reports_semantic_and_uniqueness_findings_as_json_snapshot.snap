@@ -1,0 +1,6 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_json_file(\"fixture.org\"))"
+---
+clean: false
+{"path":"fixture.org","findings":[{"code":"ORG002","severity":"error","message":"target `id:shared` is defined 2 times","location":{"line":3,"column":6,"end_line":3,"end_column":12,"range_start":26,"range_end":32}},{"code":"ORG001","severity":"error","message":"internal link target `fn:missing` was not found","location":{"line":9,"column":1,"end_line":9,"end_column":15,"range_start":79,"range_end":93}}]}

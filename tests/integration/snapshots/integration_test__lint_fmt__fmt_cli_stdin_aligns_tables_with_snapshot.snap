@@ -1,0 +1,10 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: command_snapshot(output)
+---
+status: 0
+stdout:
+| A     | Longer |
+| value | x      |
+
+stderr:

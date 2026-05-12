@@ -1,0 +1,18 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_compact_text(\"fixture.org\", source))"
+---
+clean: false
+[ORG002] Error: target `id:shared` is defined 2 times
+@ fixture.org:3:6
+fix: make document-local targets unique or update links to the intended target
+line: 3 | :ID: shared
+Help: target `id:shared` is defined 2 times
+Contract: Document-local targets, CUSTOM_ID values, and org-id IDs must resolve without ambiguity.
+
+[ORG001] Error: internal link target `fn:missing` was not found
+@ fixture.org:9:1
+fix: repair the Org construct so semantic projection resolves cleanly
+line: 9 | [[fn:missing]]
+Help: internal link target `fn:missing` was not found
+Contract: Semantic parser diagnostics must be fixed before export or indexing depends on this source.

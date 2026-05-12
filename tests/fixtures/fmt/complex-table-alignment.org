@@ -1,0 +1,12 @@
+* Inventory
+| SKU | Name | Qty | Notes |
+|--+---+--+---|
+| a-1 | Hammer | 2 | short |
+| long-sku-200 | *Composite* widget | 1000 | [[https://example.com][ref]] |
+| alpha | mixed width | 7 |
+#+TBLFM: $3=vsum(@2..@4)
+
+  | Step | Owner | ETA |
+  |--+--+--|
+  | parse | alice | today |
+  | projection | bob-the-builder | next week |

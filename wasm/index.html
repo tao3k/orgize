@@ -29,7 +29,8 @@
       }
 
       .bordered {
-        overflow: auto;
+        min-width: 0;
+        overflow: hidden;
         width: 50%;
         flex: 1;
         display: flex;
@@ -60,6 +61,8 @@
       }
 
       #tabsList span {
+        flex: 0 0 auto;
+        white-space: nowrap;
         text-align: center;
         color: #4a4a4a;
         padding: 0.5em 1em;
@@ -68,11 +71,36 @@
       }
 
       #spacer {
-        flex: 1;
+        flex: 1 0 1rem;
       }
 
       #tabsList span.is-active {
         color: #485fc7;
+      }
+
+      .result-scroll {
+        flex: 1;
+        min-height: 0;
+        min-width: 0;
+        overflow: auto;
+      }
+
+      #result {
+        min-width: 0;
+      }
+
+      #result pre {
+        box-sizing: border-box;
+        margin: 0;
+        max-width: 100%;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        padding: 1rem;
+        white-space: pre-wrap;
+      }
+
+      #result pre.render-error {
+        color: #b42318;
       }
 
       .markdown-body a[data-range] {
@@ -130,7 +158,7 @@
           <div id="took"></div>
         </div>
 
-        <div style="flex: 1; overflow: auto">
+        <div class="result-scroll">
           <div id="result"></div>
         </div>
       </div>
@@ -155,87 +183,75 @@
     const render = () => {
       const startTime = performance.now();
 
-      org.update(editor.session.getValue());
+      try {
+        org.update(editor.session.getValue());
 
-      switch (type) {
-        case "html-rendered": {
-          const html = injectHeadingClass(org.html());
-          result.innerHTML =
-            "<div style='padding:1.25rem 1.5rem'>" + html + "</div>";
-          renderMathInElement(result, {
-            delimiters: [
-              { left: "$$", right: "$$", display: true },
-              { left: "$", right: "$", display: false },
-              { left: "\\(", right: "\\)", display: false },
-              { left: "\\[", right: "\\]", display: true },
-              { left: "\\begin{align}", right: "\\end{align}", display: true },
-            ],
-          });
-          break;
+        switch (type) {
+          case "html-rendered": {
+            const html = injectHeadingClass(org.html());
+            result.innerHTML =
+              "<div style='padding:1.25rem 1.5rem'>" + html + "</div>";
+            renderMathInElement(result, {
+              delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true },
+                {
+                  left: "\\begin{align}",
+                  right: "\\end{align}",
+                  display: true,
+                },
+              ],
+            });
+            break;
+          }
+
+          case "html": {
+            const html = html_beautify(org.html(), { indent_size: 2 });
+            renderPre(html);
+            break;
+          }
+
+          case "markdown": {
+            renderPre(org.markdown());
+            break;
+          }
+
+          case "latex": {
+            renderPre(org.latex());
+            break;
+          }
+
+          case "syntax": {
+            renderPreHtml(renderRangeLinks(org.syntax()));
+            break;
+          }
+
+          case "semantic": {
+            renderPre(org.semantic());
+            break;
+          }
+
+          case "traverse": {
+            renderPreHtml(renderRangeLinks(org.traverse()));
+            break;
+          }
+
+          case "features": {
+            result.innerHTML = renderFeatureOverview();
+            break;
+          }
         }
 
-        case "html": {
-          const html = html_beautify(org.html(), { indent_size: 2 });
-          result.innerHTML = "<pre>" + escapeHtml(html) + "</pre>";
-          break;
-        }
-
-        case "markdown": {
-          result.innerHTML = "<pre>" + escapeHtml(org.markdown()) + "</pre>";
-          break;
-        }
-
-        case "latex": {
-          result.innerHTML = "<pre>" + escapeHtml(org.latex()) + "</pre>";
-          break;
-        }
-
-        case "syntax": {
-          const syntax = escapeHtml(org.syntax())
-            .split("\n")
-            .map((line) =>
-              line.replace(
-                /([A-Za-z0-9_-]*)\@(\d+)\.\.(\d+)/,
-                (text, name, start, end) =>
-                  `<b>${name}</b><a data-range="${start}-${end}">@${start}..${end}</a>`
-              )
-            )
-            .join("\n");
-
-          result.innerHTML = "<pre>" + syntax + "</pre>";
-          break;
-        }
-
-        case "semantic": {
-          result.innerHTML = "<pre>" + escapeHtml(org.semantic()) + "</pre>";
-          break;
-        }
-
-        case "traverse": {
-          const syntax = escapeHtml(org.traverse())
-            .split("\n")
-            .map((line) =>
-              line.replace(
-                /([A-Za-z0-9_-]*)\@(\d+)\.\.(\d+)/,
-                (text, name, start, end) =>
-                  `<b>${name}</b><a data-range="${start}-${end}">@${start}..${end}</a>`
-              )
-            )
-            .join("\n");
-
-          result.innerHTML = "<pre>" + syntax + "</pre>";
-          break;
-        }
-
-        case "features": {
-          result.innerHTML = renderFeatureOverview();
-          break;
-        }
+        const finishTime = performance.now();
+        took.innerText = "took " + (finishTime - startTime).toFixed(2) + "ms";
+      } catch (error) {
+        renderPre(error && error.stack ? error.stack : String(error), {
+          error: true,
+        });
+        took.innerText = "render failed";
       }
-
-      const finishTime = performance.now();
-
-      took.innerText = "took " + (finishTime - startTime).toFixed(2) + "ms";
     };
 
     // select token or node range by click
@@ -264,6 +280,8 @@
 
       if (!clicked) return;
 
+      if (!clicked.dataset.value) return;
+
       type = clicked.dataset.value;
 
       document.querySelectorAll("#tabsList span").forEach((el) => {
@@ -289,6 +307,27 @@
 
     const injectHeadingClass = (html) =>
       html.replace(/<h(\d)>/g, (_, l) => `<h${l} class="title is-${l}">`);
+
+    const renderPre = (text, options = {}) => {
+      const className = options.error ? " class='render-error'" : "";
+      result.innerHTML = `<pre${className}>${escapeHtml(String(text))}</pre>`;
+    };
+
+    const renderPreHtml = (html) => {
+      result.innerHTML = `<pre>${html}</pre>`;
+    };
+
+    const renderRangeLinks = (text) =>
+      escapeHtml(text)
+        .split("\n")
+        .map((line) =>
+          line.replace(
+            /([A-Za-z0-9_-]*)\@(\d+)\.\.(\d+)/,
+            (text, name, start, end) =>
+              `<b>${name}</b><a data-range="${start}-${end}">@${start}..${end}</a>`
+          )
+        )
+        .join("\n");
 
     const renderFeatureOverview = () => {
       const rows = [

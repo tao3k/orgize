@@ -340,3 +340,46 @@ runtime dependency is copied into this repository.
 - [x] Record the parser-v2 hot-path ownership matrix, dense benchmark matrix,
       and current low-sample Criterion measurements.
 - [x] Link release readiness to the structured performance closeout document.
+
+### M18 Orgize lint/fmt CLI
+
+- [x] Add a thin `orgize` binary entrypoint with implementation kept in the
+      library-owned CLI module for harness compliance.
+- [x] Add `orgize::lint` for semantic diagnostics and duplicate document-local
+      target checks, including duplicate `ID`/`CUSTOM_ID` target errors.
+- [x] Add `orgize::fmt` with conservative source-safe whitespace formatting.
+- [x] Snapshot the formatter output contract, `fmt --check` CLI output, and
+      lint text/JSON output.
+- [x] Make `orgize fmt PATH...` write files by default, while preserving
+      stdin-to-stdout behavior when no path is provided.
+- [x] Expand directory paths recursively to `.org` files and support multiple
+      file/path operands.
+- [x] Add Org table alignment outside block bodies, covered by formatter
+      snapshots.
+- [x] Reuse directory and multi-file path expansion for `orgize lint`.
+- [x] Snapshot `fmt --check` directory output and stdin table formatting.
+- [x] Snapshot indented table alignment, pipe-only rule rows, formula
+      preservation, stdin `--check`, and formatter idempotence.
+- [x] Move formatter table/path scenarios into standalone `.org` fixtures,
+      including a complex uneven table and directory/multi-file CLI inputs.
+- [x] Validate explicit `fmt`/`lint` file operands so non-`.org` files are
+      rejected while directory traversal still filters to `.org` files.
+- [x] Check collected `#+INCLUDE:` directives for missing or non-file local
+      paths when linting real files, while keeping include expansion out of the
+      parser and semantic AST.
+- [x] Warn on semantic macro calls that have no matching local `#+MACRO:`
+      definition, using the existing opt-in macro expansion side table instead
+      of mutating parser output.
+- [x] Warn on duplicate `#+MACRO:` definitions before opt-in macro expansion
+      chooses a local template.
+- [x] Warn on malformed or duplicate `#+LINK:` abbreviation definitions without
+      treating unknown URI schemes as broken abbreviation uses.
+- [x] Warn on invalid values for the supported `#+OPTIONS:` parser-v2 export
+      settings (`H`, `-`, and `e`) while ignoring unknown Org option keys.
+- [x] Warn on duplicate or conflicting per-file TODO keyword declarations
+      across `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`.
+- [x] Move lint snapshot inputs into standalone `.org` fixtures so rule
+      monitoring reviews Org scenarios separately from Rust test code.
+- [x] Align `orgize lint` with the Rust project harness output model: compact
+      agent-facing text is the default, while line-oriented text and JSON stay
+      explicit modes.

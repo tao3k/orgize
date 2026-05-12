@@ -1,0 +1,4 @@
+#+LINK: gh https://github.com/%s
+#+LINK: bad
+#+LINK: gh https://example.invalid/%s
+[[gh:tao3k/orgize]] [[doi:10.1000/example]]
