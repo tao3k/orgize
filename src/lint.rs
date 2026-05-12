@@ -185,6 +185,7 @@ pub fn lint_document_with_options(
         source,
     ));
     findings.extend(options_keyword_findings(&document.metadata, source));
+    findings.extend(todo_declaration_findings(source));
 
     findings.sort_by(|left, right| {
         left.location
@@ -395,6 +396,209 @@ fn is_bool_option(value: &str) -> bool {
     )
 }
 
+fn todo_declaration_findings(source: &str) -> Vec<LintFinding> {
+    duplicate_todo_declaration_findings(source, &todo_declaration_lines(source))
+}
+
+fn duplicate_todo_declaration_findings(
+    source: &str,
+    lines: &[TodoDeclarationLine<'_>],
+) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    let mut seen = BTreeMap::<String, SeenTodoDeclaration>::new();
+    for line in lines {
+        push_todo_declaration_line_findings(source, line, &mut seen, &mut findings);
+    }
+    findings
+}
+
+fn push_todo_declaration_line_findings(
+    source: &str,
+    line: &TodoDeclarationLine<'_>,
+    seen: &mut BTreeMap<String, SeenTodoDeclaration>,
+    findings: &mut Vec<LintFinding>,
+) {
+    for declaration in todo_declarations(line.value) {
+        if let Some(finding) = todo_declaration_duplicate_finding(source, line, declaration, seen) {
+            findings.push(finding);
+        }
+    }
+}
+
+fn todo_declaration_duplicate_finding(
+    source: &str,
+    line: &TodoDeclarationLine<'_>,
+    declaration: TodoDeclaration,
+    seen: &mut BTreeMap<String, SeenTodoDeclaration>,
+) -> Option<LintFinding> {
+    let Some(previous) = seen.get_mut(&declaration.name) else {
+        seen.insert(
+            declaration.name,
+            SeenTodoDeclaration {
+                state: declaration.state,
+                count: 1,
+            },
+        );
+        return None;
+    };
+
+    previous.count += 1;
+    Some(LintFinding {
+        code: "ORG009",
+        severity: LintSeverity::Warning,
+        message: todo_declaration_duplicate_message(&declaration, previous),
+        location: location_for_offsets(source, line.range_start, line.range_end),
+    })
+}
+
+fn todo_declaration_duplicate_message(
+    declaration: &TodoDeclaration,
+    previous: &SeenTodoDeclaration,
+) -> String {
+    if previous.state == declaration.state {
+        format!(
+            "TODO keyword `{}` is declared {} times as {}",
+            declaration.name,
+            previous.count,
+            declaration.state.as_str()
+        )
+    } else {
+        format!(
+            "TODO keyword `{}` is declared as both {} and {}",
+            declaration.name,
+            previous.state.as_str(),
+            declaration.state.as_str()
+        )
+    }
+}
+
+fn todo_declaration_lines(source: &str) -> Vec<TodoDeclarationLine<'_>> {
+    let mut lines = Vec::new();
+    let mut in_block = false;
+    let mut offset = 0;
+
+    for segment in source.split_inclusive('\n') {
+        let line = segment.trim_end_matches('\n').trim_end_matches('\r');
+        let trimmed = line.trim_start_matches([' ', '\t']);
+        if in_block {
+            if is_lint_keyword_line_with_prefix(trimmed, "end_") {
+                in_block = false;
+            }
+            offset += segment.len();
+            continue;
+        }
+
+        if is_lint_keyword_line_with_prefix(trimmed, "begin_") {
+            in_block = true;
+            offset += segment.len();
+            continue;
+        }
+
+        let Some(value) = todo_declaration_line_value(trimmed) else {
+            offset += segment.len();
+            continue;
+        };
+
+        lines.push(TodoDeclarationLine {
+            value,
+            range_start: offset + line.len() - trimmed.len(),
+            range_end: offset + line.len(),
+        });
+
+        offset += segment.len();
+    }
+
+    lines
+}
+
+fn todo_declaration_line_value(line: &str) -> Option<&str> {
+    let rest = line.strip_prefix("#+")?;
+    let (key, value) = rest.split_once(':')?;
+    is_todo_declaration_key(key).then_some(value)
+}
+
+fn is_todo_declaration_key(key: &str) -> bool {
+    matches!(
+        key.to_ascii_uppercase().as_str(),
+        "TODO" | "SEQ_TODO" | "TYP_TODO"
+    )
+}
+
+fn is_lint_keyword_line_with_prefix(line: &str, prefix: &str) -> bool {
+    let Some(rest) = line.strip_prefix("#+") else {
+        return false;
+    };
+    rest.get(..prefix.len())
+        .is_some_and(|head| head.eq_ignore_ascii_case(prefix))
+}
+
+fn todo_declarations(value: &str) -> Vec<TodoDeclaration> {
+    let mut declarations = Vec::new();
+    let mut state = TodoDeclarationState::Todo;
+
+    for token in value.split_whitespace() {
+        if token == "|" {
+            state = TodoDeclarationState::Done;
+            continue;
+        }
+
+        if let Some(name) = todo_declaration_name(token) {
+            declarations.push(TodoDeclaration { name, state });
+        }
+    }
+
+    declarations
+}
+
+fn todo_declaration_name(token: &str) -> Option<String> {
+    let token = token.trim();
+    if token.is_empty() || token.starts_with('(') {
+        return None;
+    }
+
+    let name = token
+        .split_once('(')
+        .map(|(name, _)| name)
+        .unwrap_or(token)
+        .trim();
+
+    (!name.is_empty() && name != "|").then(|| name.to_string())
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct SeenTodoDeclaration {
+    state: TodoDeclarationState,
+    count: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct TodoDeclaration {
+    name: String,
+    state: TodoDeclarationState,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct TodoDeclarationLine<'a> {
+    value: &'a str,
+    range_start: usize,
+    range_end: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum TodoDeclarationState {
+    Todo,
+    Done,
+}
+
+impl TodoDeclarationState {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Todo => "TODO",
+            Self::Done => "DONE",
+        }
+    }
+}
+
 fn include_path_findings(
     includes: &[IncludeDirective<ParsedAnnotation>],
     source: &str,
@@ -446,6 +650,12 @@ fn include_path_finding(
 fn location_for_range(source: &str, range: TextRange) -> LintLocation {
     let start = usize::from(range.start()).min(source.len());
     let end = usize::from(range.end()).min(source.len());
+    location_for_offsets(source, start, end)
+}
+
+fn location_for_offsets(source: &str, start: usize, end: usize) -> LintLocation {
+    let start = start.min(source.len());
+    let end = end.min(source.len());
     LintLocation {
         start: position_for_offset(source, start),
         end: position_for_offset(source, end),

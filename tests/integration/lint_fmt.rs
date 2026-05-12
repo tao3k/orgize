@@ -285,6 +285,21 @@ fn lint_reports_supported_options_keyword_issues_with_snapshot() {
 }
 
 #[test]
+fn lint_reports_todo_declaration_issues_with_snapshot() {
+    let source = r#"#+TODO: NEXT WAIT | DONE
+#+SEQ_TODO: WAIT REVIEW | DONE
+#+TYP_TODO: BLOCKED | NEXT
+"#;
+    let report = lint_org(source);
+
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_text("fixture.org")
+    ));
+}
+
+#[test]
 fn lint_cli_json_stdin_output_is_snapshotted() {
     let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .args(["lint", "--json"])

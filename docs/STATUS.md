@@ -372,3 +372,5 @@ runtime dependency is copied into this repository.
       treating unknown URI schemes as broken abbreviation uses.
 - [x] Warn on invalid values for the supported `#+OPTIONS:` parser-v2 export
       settings (`H`, `-`, and `e`) while ignoring unknown Org option keys.
+- [x] Warn on duplicate or conflicting per-file TODO keyword declarations
+      across `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`.
