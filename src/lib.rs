@@ -20,7 +20,6 @@ mod syntax_ast_impl;
 mod tests;
 #[cfg(test)]
 rust_lang_project_harness::rust_project_harness_cargo_test_gate!(
-    advice = allow,
     config = {
         rust_lang_project_harness::default_rust_harness_config()
             .with_verification_profile_hint(

@@ -5,7 +5,7 @@ use std::{
 };
 
 use super::{
-    combinator::{token, GreenElement},
+    green::{token, GreenElement},
     SyntaxKind,
 };
 use crate::config::ParseConfig;
@@ -165,17 +165,12 @@ impl<'a> NomInput for Input<'a> {
 
     #[inline]
     fn slice_index(&self, count: usize) -> Result<usize, Needed> {
-        let mut cnt = 0;
-        for (index, _) in self.s.char_indices() {
-            if cnt == count {
-                return Ok(index);
-            }
-            cnt += 1;
-        }
-        if cnt == count {
-            return Ok(self.s.len());
-        }
-        Err(Needed::Unknown)
+        self.s
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(self.s.len()))
+            .nth(count)
+            .ok_or(Needed::Unknown)
     }
 }
 

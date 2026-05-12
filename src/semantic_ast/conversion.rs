@@ -1,14 +1,13 @@
 //! Conversion from the lossless syntax tree into the semantic AST.
 
 use rowan::ast::AstNode;
-use rowan::{NodeOrToken, TextRange, TextSize};
+use rowan::{NodeOrToken, TextRange};
 
 use crate::{
     config::{ParseConfig, RadioLinkProjection},
     syntax::{
-        combinator::{line_starts_iter, node},
-        object::standard_object_nodes,
-        SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken,
+        combinator::node, object::standard_object_nodes, SyntaxElement, SyntaxKind, SyntaxNode,
+        SyntaxToken,
     },
     syntax_ast,
 };
@@ -17,22 +16,32 @@ use super::block_metadata::{
     parse_block_code_refs, parse_block_header_args, parse_block_line_numbering,
     parse_block_preserve_indentation,
 };
+use super::block_syntax::{
+    block_name_from_begin, block_parts, block_switches_from_begin, semantic_block_name,
+};
+use super::citation_metadata::{citation_key_range, citation_style};
+use super::conversion_util::{
+    offset_range, range_from_elements, strip_pair, strip_wrapping, text_range, trimmed_range,
+};
+use super::footnote_parts::{FootnoteDefParts, FootnoteRefParts};
 use super::headline_metadata::{
     headline_level, headline_priority, headline_raw_title, headline_tags, headline_todo,
 };
 use super::preprocessing::{include_directive, macro_definition, split_macro_args};
 use super::radio_links::{is_semantic_radio_link_candidate, next_char_boundary, next_radio_link};
+use super::source_position::LineIndex;
+use super::table_metadata::table_column_alignments;
 use super::targets::{
     collect_target_node, is_strict_internal_link_path, TargetIndex, TargetLookup,
 };
+use super::timestamp_metadata::{timestamp_moment_range, timestamp_repeater, timestamp_warning};
 use super::{
     Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
     Document, Drawer, Element, ElementData, FootnoteDef, IncludeDirective, Inlinetask,
-    InlinetaskEnd, Keyword, Link, LinkTarget, List, ListItem, ListType, MacroDefinition,
-    MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, RepeaterKind,
-    Section, SourcePosition, Table, TableCell, TableColumnAlignment, TableRow, TimeUnit, Timestamp,
-    TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState,
-    WarningKind,
+    InlinetaskEnd, Keyword, Link, LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget, List,
+    ListItem, ListType, MacroDefinition, MarkupKind, Object, ObjectData, ParsedAnnotation,
+    ParsedAst, Planning, Property, Section, Table, TableCell, TableRow, Timestamp, TimestampKind,
+    TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 
 impl ParsedAst {
@@ -59,6 +68,13 @@ struct Converter<'a> {
     target_index: TargetIndex,
 }
 
+#[derive(Default)]
+struct DocumentParts {
+    properties: Vec<Property<ParsedAnnotation>>,
+    children: Vec<Element<ParsedAnnotation>>,
+    sections: Vec<Section<ParsedAnnotation>>,
+}
+
 impl<'a> Converter<'a> {
     fn new(source: &'a str, config: &'a ParseConfig) -> Self {
         Self {
@@ -78,36 +94,44 @@ impl<'a> Converter<'a> {
         self.target_index = target_index;
         self.diagnostics = prescan.diagnostics;
         let ann = self.node_ann(root);
-        let mut children = Vec::new();
-        let mut sections = Vec::new();
-        let mut properties = Vec::new();
-
-        for node in root.children() {
-            match node.kind() {
-                SyntaxKind::SECTION => {
-                    let section_children = self.elements_from_container(&node);
-                    for child in section_children {
-                        if let ElementData::PropertyDrawer(props) = &child.data {
-                            properties.extend(props.clone());
-                        }
-                        children.push(child);
-                    }
-                }
-                SyntaxKind::HEADLINE => sections.push(self.section(&node)),
-                _ => {}
-            }
-        }
+        let parts = root
+            .children()
+            .fold(DocumentParts::default(), |mut parts, node| {
+                self.push_document_child(&mut parts, &node);
+                parts
+            });
         let targets = std::mem::take(&mut self.target_index.definitions);
 
         Document {
             ann,
-            properties,
+            properties: parts.properties,
             includes: prescan.includes,
             macro_definitions: prescan.macro_definitions,
             targets,
-            children,
-            sections,
+            children: parts.children,
+            sections: parts.sections,
             diagnostics: self.diagnostics,
+        }
+    }
+
+    fn push_document_child(&mut self, parts: &mut DocumentParts, node: &SyntaxNode) {
+        match node.kind() {
+            SyntaxKind::SECTION => {
+                let section_children = self.elements_from_container(node);
+                parts.properties.extend(
+                    section_children
+                        .iter()
+                        .filter_map(|child| match &child.data {
+                            ElementData::PropertyDrawer(properties) => Some(properties),
+                            _ => None,
+                        })
+                        .flatten()
+                        .cloned(),
+                );
+                parts.children.extend(section_children);
+            }
+            SyntaxKind::HEADLINE => parts.sections.push(self.section(node)),
+            _ => {}
         }
     }
 
@@ -289,7 +313,7 @@ impl<'a> Converter<'a> {
                     format!("semantic AST has no dedicated element mapping for {kind:?}"),
                 );
                 ElementData::Unknown {
-                    kind: format!("{kind:?}"),
+                    kind: UnsupportedSyntaxKind::new(format!("{kind:?}")),
                     raw: node.to_string(),
                 }
             }
@@ -319,7 +343,7 @@ impl<'a> Converter<'a> {
                 value: legacy.value().map(|x| x.to_string()).unwrap_or_default(),
             }
         } else {
-            let legacy = syntax_ast::Keyword::cast(node.clone());
+            let legacy = syntax_ast::SyntaxKeyword::cast(node.clone());
             if let Some(legacy) = legacy {
                 Keyword {
                     ann: self.node_ann(node),
@@ -368,7 +392,7 @@ impl<'a> Converter<'a> {
     }
 
     fn clock(&self, node: &SyntaxNode) -> Clock {
-        let legacy = syntax_ast::Clock::cast(node.clone()).expect("clock node");
+        let legacy = syntax_ast::SyntaxClock::cast(node.clone()).expect("clock node");
         let value = node
             .children()
             .find_map(|child| self.timestamp_node(&child));
@@ -381,7 +405,7 @@ impl<'a> Converter<'a> {
     }
 
     fn drawer(&mut self, node: &SyntaxNode) -> Drawer<ParsedAnnotation> {
-        let name = syntax_ast::Drawer::cast(node.clone())
+        let name = syntax_ast::SyntaxDrawer::cast(node.clone())
             .map(|drawer| drawer.name().to_string())
             .unwrap_or_default();
         let children = node
@@ -398,7 +422,7 @@ impl<'a> Converter<'a> {
     }
 
     fn list(&mut self, node: &SyntaxNode) -> List<ParsedAnnotation> {
-        let legacy = syntax_ast::List::cast(node.clone()).expect("list node");
+        let legacy = syntax_ast::SyntaxList::cast(node.clone()).expect("list node");
         let has_descriptive_item = node.children().any(|item| {
             item.kind() == SyntaxKind::LIST_ITEM
                 && item
@@ -422,7 +446,7 @@ impl<'a> Converter<'a> {
     }
 
     fn list_item(&mut self, node: &SyntaxNode) -> ListItem<ParsedAnnotation> {
-        let legacy = syntax_ast::ListItem::cast(node.clone()).expect("list item node");
+        let legacy = syntax_ast::SyntaxListItem::cast(node.clone()).expect("list item node");
         let tag = legacy.tag().collect::<Vec<_>>();
         let children = node
             .children()
@@ -556,42 +580,18 @@ impl<'a> Converter<'a> {
     }
 
     fn footnote_def(&mut self, node: &SyntaxNode) -> FootnoteDef<ParsedAnnotation> {
-        let mut saw_fn_prefix = false;
-        let mut saw_label_colon = false;
-        let mut after_marker = false;
-        let mut label = String::new();
-        let mut content = Vec::new();
-
-        for element in node.children_with_tokens() {
-            match element.kind() {
-                SyntaxKind::AFFILIATED_KEYWORD | SyntaxKind::L_BRACKET => {}
-                SyntaxKind::TEXT if !saw_fn_prefix => {
-                    saw_fn_prefix = true;
-                }
-                SyntaxKind::COLON if saw_fn_prefix && !saw_label_colon => {
-                    saw_label_colon = true;
-                }
-                SyntaxKind::R_BRACKET if saw_label_colon => {
-                    after_marker = true;
-                }
-                _ if after_marker => content.push(element),
-                SyntaxKind::TEXT if saw_label_colon => {
-                    label.push_str(
-                        element
-                            .as_token()
-                            .map(|token| token.text())
-                            .unwrap_or_default(),
-                    );
-                }
-                _ => {}
-            }
-        }
+        let parts = node
+            .children_with_tokens()
+            .fold(FootnoteDefParts::default(), FootnoteDefParts::push);
         let children = self
-            .paragraph_from_elements(content)
+            .paragraph_from_elements(parts.content)
             .into_iter()
             .collect::<Vec<_>>();
 
-        FootnoteDef { label, children }
+        FootnoteDef {
+            label: parts.label,
+            children,
+        }
     }
 
     fn paragraph_from_elements(
@@ -656,27 +656,14 @@ impl<'a> Converter<'a> {
         &self,
         objects: Vec<Object<ParsedAnnotation>>,
     ) -> Vec<Object<ParsedAnnotation>> {
-        let mut projected = Vec::with_capacity(objects.len());
-        let mut run = Vec::new();
-
-        for object in objects {
-            if is_semantic_radio_link_candidate(&object.data) {
-                run.push(object);
-                continue;
-            }
-
-            if !run.is_empty() {
-                projected.extend(self.project_radio_links_in_object_run(run));
-                run = Vec::new();
-            }
-            projected.push(object);
-        }
-
-        if !run.is_empty() {
-            projected.extend(self.project_radio_links_in_object_run(run));
-        }
-
-        projected
+        let capacity = objects.len();
+        objects
+            .into_iter()
+            .fold(
+                SemanticRadioProjection::new(self, capacity),
+                SemanticRadioProjection::push,
+            )
+            .finish()
     }
 
     fn project_radio_links_in_object_run(
@@ -723,12 +710,12 @@ impl<'a> Converter<'a> {
             projected.push(Object {
                 ann: link_ann,
                 data: ObjectData::Link(Link {
-                    path: target.to_string(),
+                    path: LinkPath::new(target.to_string()),
                     target: LinkTarget::Internal(target.to_string()),
                     description,
                     raw_description,
-                    has_description: true,
-                    is_image: false,
+                    description_state: LinkDescriptionState::Explicit,
+                    media_kind: LinkMediaKind::Normal,
                     caption: None,
                 }),
             });
@@ -762,34 +749,39 @@ impl<'a> Converter<'a> {
             return Some(Vec::new());
         }
 
-        let mut sliced = Vec::new();
         let first = spans.partition_point(|span| span.end <= start);
+        spans[first..]
+            .iter()
+            .zip(&objects[first..])
+            .take_while(|(span, _)| span.start < end)
+            .map(|(span, object)| self.slice_radio_link_object(object, *span, base, start, end))
+            .collect()
+    }
 
-        for (span, object) in spans[first..].iter().zip(&objects[first..]) {
-            if span.start >= end {
-                break;
-            }
-
-            let slice_start = start.max(span.start);
-            let slice_end = end.min(span.end);
-            if slice_start == span.start && slice_end == span.end {
-                sliced.push(object.clone());
-                continue;
-            }
-
-            let ObjectData::Plain(value) = &object.data else {
-                return None;
-            };
-            let relative_start = slice_start - span.start;
-            let relative_end = slice_end - span.start;
-            let raw = value.get(relative_start..relative_end)?.to_string();
-            sliced.push(Object {
-                ann: self.ann(text_range(base + slice_start, base + slice_end)),
-                data: ObjectData::Plain(raw),
-            });
+    fn slice_radio_link_object(
+        &self,
+        object: &Object<ParsedAnnotation>,
+        span: ObjectRunSpan,
+        base: usize,
+        start: usize,
+        end: usize,
+    ) -> Option<Object<ParsedAnnotation>> {
+        let slice_start = start.max(span.start);
+        let slice_end = end.min(span.end);
+        if slice_start == span.start && slice_end == span.end {
+            return Some(object.clone());
         }
 
-        Some(sliced)
+        let ObjectData::Plain(value) = &object.data else {
+            return None;
+        };
+        let relative_start = slice_start - span.start;
+        let relative_end = slice_end - span.start;
+        let raw = value.get(relative_start..relative_end)?.to_string();
+        Some(Object {
+            ann: self.ann(text_range(base + slice_start, base + slice_end)),
+            data: ObjectData::Plain(raw),
+        })
     }
 
     fn extend_radio_links_in_plain(
@@ -815,15 +807,15 @@ impl<'a> Converter<'a> {
             objects.push(Object {
                 ann: link_ann.clone(),
                 data: ObjectData::Link(Link {
-                    path: target.to_string(),
+                    path: LinkPath::new(target.to_string()),
                     target: LinkTarget::Internal(target.to_string()),
                     description: vec![Object {
                         ann: link_ann,
                         data: ObjectData::Plain(raw.clone()),
                     }],
                     raw_description: raw,
-                    has_description: true,
-                    is_image: false,
+                    description_state: LinkDescriptionState::Explicit,
+                    media_kind: LinkMediaKind::Normal,
                     caption: None,
                 }),
             });
@@ -911,7 +903,7 @@ impl<'a> Converter<'a> {
                     format!("semantic AST has no dedicated object mapping for {kind:?}"),
                 );
                 ObjectData::Unknown {
-                    kind: format!("{kind:?}"),
+                    kind: UnsupportedSyntaxKind::new(format!("{kind:?}")),
                     raw: node.to_string(),
                 }
             }
@@ -937,7 +929,7 @@ impl<'a> Converter<'a> {
             SyntaxKind::TIMESTAMP_DIARY => TimestampKind::Diary,
             _ => return None,
         };
-        let legacy = syntax_ast::Timestamp::cast(node.clone()).expect("timestamp node");
+        let legacy = syntax_ast::SyntaxTimestamp::cast(node.clone()).expect("timestamp node");
         let is_range = legacy.is_range();
         let (start, end) = timestamp_moment_range(node, is_range);
         Some(Timestamp {
@@ -959,48 +951,21 @@ impl<'a> Converter<'a> {
             }
         } else {
             ObjectData::Unknown {
-                kind: "SNIPPET".into(),
+                kind: UnsupportedSyntaxKind::new("SNIPPET"),
                 raw: node.to_string(),
             }
         }
     }
 
     fn footnote_ref(&mut self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
-        let mut saw_fn_prefix = false;
-        let mut saw_label_colon = false;
-        let mut in_definition = false;
-        let mut label = String::new();
-        let mut definition = Vec::new();
-
-        for element in node.children_with_tokens() {
-            match element.kind() {
-                SyntaxKind::L_BRACKET => {}
-                SyntaxKind::TEXT if !saw_fn_prefix => {
-                    saw_fn_prefix = true;
-                }
-                SyntaxKind::COLON if saw_fn_prefix && !saw_label_colon => {
-                    saw_label_colon = true;
-                }
-                SyntaxKind::COLON if saw_label_colon && !in_definition => {
-                    in_definition = true;
-                }
-                SyntaxKind::R_BRACKET => break,
-                _ if in_definition => definition.push(element),
-                SyntaxKind::TEXT if saw_label_colon => {
-                    label.push_str(
-                        element
-                            .as_token()
-                            .map(|token| token.text())
-                            .unwrap_or_default(),
-                    );
-                }
-                _ => {}
-            }
-        }
+        let parts = node
+            .children_with_tokens()
+            .take_while(|element| element.kind() != SyntaxKind::R_BRACKET)
+            .fold(FootnoteRefParts::default(), FootnoteRefParts::push);
 
         ObjectData::FootnoteRef {
-            label: (!label.is_empty()).then_some(label),
-            definition: self.objects_from_elements(definition),
+            label: (!parts.label.is_empty()).then_some(parts.label),
+            definition: self.objects_from_elements(parts.definition),
         }
     }
 
@@ -1017,7 +982,7 @@ impl<'a> Converter<'a> {
                 "citation syntax node could not be split into head and body".into(),
             );
             return ObjectData::Unknown {
-                kind: "CITATION".into(),
+                kind: UnsupportedSyntaxKind::new("CITATION"),
                 raw,
             };
         };
@@ -1103,7 +1068,7 @@ impl<'a> Converter<'a> {
     }
 
     fn link(&mut self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
-        let legacy = syntax_ast::Link::cast(node.clone()).expect("link node");
+        let legacy = syntax_ast::SyntaxLink::cast(node.clone()).expect("link node");
         let path = legacy.path().to_string();
         let target = self.link_target(&path, node.text_range());
         let description = legacy.description().collect::<Vec<_>>();
@@ -1112,11 +1077,19 @@ impl<'a> Converter<'a> {
             .map(|caption| self.keyword(&caption.syntax, true));
 
         ObjectData::Link(Link {
-            path: legacy.path().to_string(),
+            path: LinkPath::new(path),
             target,
             raw_description: legacy.description_raw(),
-            has_description: legacy.has_description(),
-            is_image: legacy.is_image(),
+            description_state: if legacy.has_description() {
+                LinkDescriptionState::Explicit
+            } else {
+                LinkDescriptionState::None
+            },
+            media_kind: if legacy.is_image() {
+                LinkMediaKind::Image
+            } else {
+                LinkMediaKind::Normal
+            },
             caption,
             description: self.objects_from_elements(description),
         })
@@ -1253,17 +1226,58 @@ struct ObjectRunSpan {
     end: usize,
 }
 
-fn object_run_spans(objects: &[Object<ParsedAnnotation>]) -> Vec<ObjectRunSpan> {
-    let mut spans = Vec::with_capacity(objects.len());
-    let mut cursor = 0;
+struct SemanticRadioProjection<'converter, 'source> {
+    converter: &'converter Converter<'source>,
+    projected: Vec<Object<ParsedAnnotation>>,
+    run: Vec<Object<ParsedAnnotation>>,
+}
 
-    for object in objects {
-        let start = cursor;
-        cursor += object.ann.raw.len();
-        spans.push(ObjectRunSpan { start, end: cursor });
+impl<'converter, 'source> SemanticRadioProjection<'converter, 'source> {
+    fn new(converter: &'converter Converter<'source>, capacity: usize) -> Self {
+        Self {
+            converter,
+            projected: Vec::with_capacity(capacity),
+            run: Vec::new(),
+        }
     }
 
-    spans
+    fn push(mut self, object: Object<ParsedAnnotation>) -> Self {
+        if is_semantic_radio_link_candidate(&object.data) {
+            self.run.push(object);
+        } else {
+            self.flush();
+            self.projected.push(object);
+        }
+        self
+    }
+
+    fn finish(mut self) -> Vec<Object<ParsedAnnotation>> {
+        self.flush();
+        self.projected
+    }
+
+    fn flush(&mut self) {
+        if !self.run.is_empty() {
+            self.projected.extend(
+                self.converter
+                    .project_radio_links_in_object_run(std::mem::take(&mut self.run)),
+            );
+        }
+    }
+}
+
+fn object_run_spans(objects: &[Object<ParsedAnnotation>]) -> Vec<ObjectRunSpan> {
+    objects
+        .iter()
+        .scan(0, |cursor, object| {
+            let start = *cursor;
+            *cursor += object.ann.raw.len();
+            Some(ObjectRunSpan {
+                start,
+                end: *cursor,
+            })
+        })
+        .collect()
 }
 
 #[derive(Default)]
@@ -1272,373 +1286,4 @@ struct SemanticPrescan {
     includes: Vec<IncludeDirective<ParsedAnnotation>>,
     macro_definitions: Vec<MacroDefinition<ParsedAnnotation>>,
     diagnostics: Vec<Diagnostic>,
-}
-
-struct LineIndex<'a> {
-    source: &'a str,
-    lines: Vec<LineInfo>,
-}
-
-struct LineInfo {
-    start: usize,
-    char_starts: Vec<usize>,
-}
-
-impl<'a> LineIndex<'a> {
-    fn new(source: &'a str) -> Self {
-        let starts = line_starts_iter(source).collect::<Vec<_>>();
-        let lines = starts
-            .iter()
-            .enumerate()
-            .map(|(index, start)| {
-                let end = starts.get(index + 1).copied().unwrap_or(source.len());
-                let slice = &source[*start..end];
-                let char_starts = if slice.is_ascii() {
-                    Vec::new()
-                } else {
-                    slice
-                        .char_indices()
-                        .map(|(offset, _)| *start + offset)
-                        .collect()
-                };
-
-                LineInfo {
-                    start: *start,
-                    char_starts,
-                }
-            })
-            .collect();
-
-        Self { source, lines }
-    }
-
-    fn position(&self, offset: TextSize) -> SourcePosition {
-        let offset = usize::from(offset).min(self.source.len());
-        let line = match self.lines.binary_search_by_key(&offset, |line| line.start) {
-            Ok(idx) => idx,
-            Err(idx) => idx.saturating_sub(1),
-        };
-        let line_info = &self.lines[line];
-        let column = if line_info.char_starts.is_empty() {
-            offset - line_info.start + 1
-        } else {
-            line_info
-                .char_starts
-                .partition_point(|char_start| *char_start < offset)
-                + 1
-        };
-
-        SourcePosition {
-            line: line + 1,
-            column,
-        }
-    }
-}
-
-fn table_column_alignments(rows: &[SyntaxNode]) -> Vec<Option<TableColumnAlignment>> {
-    rows.iter()
-        .find_map(table_column_alignment_row)
-        .unwrap_or_default()
-}
-
-fn table_column_alignment_row(row: &SyntaxNode) -> Option<Vec<Option<TableColumnAlignment>>> {
-    if row.kind() != SyntaxKind::ORG_TABLE_STANDARD_ROW {
-        return None;
-    }
-
-    let cells = row
-        .children()
-        .filter(|cell| cell.kind() == SyntaxKind::ORG_TABLE_CELL)
-        .map(|cell| table_column_cookie_alignment(&cell.to_string()))
-        .collect::<Option<Vec<_>>>()?;
-
-    cells.iter().any(Option::is_some).then_some(cells)
-}
-
-fn table_column_cookie_alignment(cell: &str) -> Option<Option<TableColumnAlignment>> {
-    let trimmed = cell.trim();
-    let inner = trimmed.strip_prefix('<')?.strip_suffix('>')?.trim();
-    if inner.is_empty() {
-        return None;
-    }
-
-    let alignment = match inner.chars().next()? {
-        'l' if inner[1..].chars().all(|ch| ch.is_ascii_digit()) => Some(TableColumnAlignment::Left),
-        'c' if inner[1..].chars().all(|ch| ch.is_ascii_digit()) => {
-            Some(TableColumnAlignment::Center)
-        }
-        'r' if inner[1..].chars().all(|ch| ch.is_ascii_digit()) => {
-            Some(TableColumnAlignment::Right)
-        }
-        _ if inner.chars().all(|ch| ch.is_ascii_digit()) => None,
-        _ => return None,
-    };
-
-    Some(alignment)
-}
-
-struct BlockParts {
-    begin: Option<SyntaxNode>,
-    content: Option<SyntaxNode>,
-}
-
-fn block_parts(node: &SyntaxNode) -> BlockParts {
-    let mut begin = None;
-    let mut content = None;
-
-    for child in node.children() {
-        match child.kind() {
-            SyntaxKind::BLOCK_BEGIN => begin = Some(child),
-            SyntaxKind::BLOCK_CONTENT => content = Some(child),
-            _ => {}
-        }
-
-        if begin.is_some() && content.is_some() {
-            break;
-        }
-    }
-
-    BlockParts { begin, content }
-}
-
-fn block_name_from_begin(begin: Option<&SyntaxNode>) -> Option<String> {
-    begin.and_then(|begin| {
-        begin
-            .children_with_tokens()
-            .filter_map(|child| child.into_token())
-            .filter(|token| token.kind() == SyntaxKind::TEXT)
-            .nth(1)
-            .map(|token| token.text().to_string())
-    })
-}
-
-fn semantic_block_name(kind: SyntaxKind, begin: Option<&SyntaxNode>) -> Option<String> {
-    match kind {
-        SyntaxKind::SOURCE_BLOCK => Some("src".into()),
-        SyntaxKind::EXAMPLE_BLOCK => Some("example".into()),
-        SyntaxKind::EXPORT_BLOCK => Some("export".into()),
-        SyntaxKind::QUOTE_BLOCK => Some("quote".into()),
-        SyntaxKind::VERSE_BLOCK => Some("verse".into()),
-        SyntaxKind::CENTER_BLOCK => Some("center".into()),
-        SyntaxKind::COMMENT_BLOCK => Some("comment".into()),
-        SyntaxKind::DYN_BLOCK => Some("dynamic".into()),
-        SyntaxKind::SPECIAL_BLOCK => block_name_from_begin(begin),
-        _ => None,
-    }
-}
-
-fn block_switches_from_begin(begin: Option<&SyntaxNode>) -> Option<String> {
-    begin
-        .into_iter()
-        .flat_map(SyntaxNode::children_with_tokens)
-        .filter_map(NodeOrToken::into_token)
-        .find(|token| token.kind() == SyntaxKind::SRC_BLOCK_SWITCHES)
-        .map(|token| token.text().to_string())
-}
-
-#[derive(Default)]
-struct TimestampMomentBuilder {
-    year: Option<u16>,
-    month: Option<u8>,
-    day: Option<u8>,
-    day_name: Option<String>,
-    times: Vec<(u8, u8)>,
-    pending_hour: Option<u8>,
-}
-
-impl TimestampMomentBuilder {
-    fn is_empty(&self) -> bool {
-        self.year.is_none()
-            && self.month.is_none()
-            && self.day.is_none()
-            && self.day_name.is_none()
-            && self.times.is_empty()
-            && self.pending_hour.is_none()
-    }
-
-    fn to_moment(&self, time_index: usize) -> Option<TimestampMoment> {
-        let (hour, minute) = self
-            .times
-            .get(time_index)
-            .copied()
-            .map(|(hour, minute)| (Some(hour), Some(minute)))
-            .unwrap_or((None, None));
-
-        Some(TimestampMoment {
-            year: self.year?,
-            month: self.month?,
-            day: self.day?,
-            day_name: self.day_name.clone(),
-            hour,
-            minute,
-        })
-    }
-}
-
-fn timestamp_moment_range(
-    node: &SyntaxNode,
-    is_range: bool,
-) -> (Option<TimestampMoment>, Option<TimestampMoment>) {
-    let moments = timestamp_moment_builders(node);
-    let start = moments.first().and_then(|moment| moment.to_moment(0));
-    let end = if is_range {
-        if moments.len() > 1 {
-            moments.last().and_then(|moment| moment.to_moment(0))
-        } else {
-            moments.first().and_then(|moment| moment.to_moment(1))
-        }
-    } else {
-        None
-    };
-
-    (start, end)
-}
-
-fn timestamp_moment_builders(node: &SyntaxNode) -> Vec<TimestampMomentBuilder> {
-    let mut moments = Vec::new();
-    let mut current = TimestampMomentBuilder::default();
-
-    for token in node
-        .children_with_tokens()
-        .filter_map(|element| element.into_token())
-    {
-        match token.kind() {
-            SyntaxKind::TIMESTAMP_YEAR => {
-                if !current.is_empty() {
-                    moments.push(current);
-                    current = TimestampMomentBuilder::default();
-                }
-                current.year = parse_token(token.text());
-            }
-            SyntaxKind::TIMESTAMP_MONTH => current.month = parse_token(token.text()),
-            SyntaxKind::TIMESTAMP_DAY => current.day = parse_token(token.text()),
-            SyntaxKind::TIMESTAMP_DAYNAME => current.day_name = Some(token.text().to_string()),
-            SyntaxKind::TIMESTAMP_HOUR => current.pending_hour = parse_token(token.text()),
-            SyntaxKind::TIMESTAMP_MINUTE => {
-                if let (Some(hour), Some(minute)) =
-                    (current.pending_hour.take(), parse_token(token.text()))
-                {
-                    current.times.push((hour, minute));
-                }
-            }
-            _ => {}
-        }
-    }
-
-    if !current.is_empty() {
-        moments.push(current);
-    }
-
-    moments
-}
-
-fn timestamp_repeater(timestamp: &syntax_ast::Timestamp) -> Option<TimestampRepeater> {
-    Some(TimestampRepeater {
-        kind: match timestamp.repeater_type()? {
-            syntax_ast::RepeaterType::Cumulate => RepeaterKind::Cumulate,
-            syntax_ast::RepeaterType::CatchUp => RepeaterKind::CatchUp,
-            syntax_ast::RepeaterType::Restart => RepeaterKind::Restart,
-        },
-        value: timestamp.repeater_value()?,
-        unit: timestamp_time_unit(timestamp.repeater_unit()?),
-    })
-}
-
-fn timestamp_warning(timestamp: &syntax_ast::Timestamp) -> Option<TimestampWarning> {
-    Some(TimestampWarning {
-        kind: match timestamp.warning_type()? {
-            syntax_ast::DelayType::All => WarningKind::All,
-            syntax_ast::DelayType::First => WarningKind::First,
-        },
-        value: timestamp.warning_value()?,
-        unit: timestamp_time_unit(timestamp.warning_unit()?),
-    })
-}
-
-fn timestamp_time_unit(unit: syntax_ast::TimeUnit) -> TimeUnit {
-    match unit {
-        syntax_ast::TimeUnit::Hour => TimeUnit::Hour,
-        syntax_ast::TimeUnit::Day => TimeUnit::Day,
-        syntax_ast::TimeUnit::Week => TimeUnit::Week,
-        syntax_ast::TimeUnit::Month => TimeUnit::Month,
-        syntax_ast::TimeUnit::Year => TimeUnit::Year,
-    }
-}
-
-fn parse_token<T>(value: &str) -> Option<T>
-where
-    T: std::str::FromStr,
-{
-    value.parse().ok()
-}
-
-fn range_from_elements(elements: &[SyntaxElement]) -> Option<TextRange> {
-    let start = elements.first()?.text_range().start();
-    let end = elements.last()?.text_range().end();
-    Some(TextRange::new(start, end))
-}
-
-fn strip_pair(value: &str) -> &str {
-    value
-        .char_indices()
-        .nth(1)
-        .and_then(|(start, _)| {
-            value
-                .char_indices()
-                .last()
-                .map(|(end, _)| &value[start..end])
-        })
-        .unwrap_or_default()
-}
-
-fn citation_style(head: &str) -> (String, String) {
-    let Some(rest) = head.strip_prefix("cite/") else {
-        return ("nil".into(), String::new());
-    };
-    let mut parts = rest.split('/');
-    let style = parts.next().unwrap_or("nil").to_string();
-    let variant = parts.collect::<Vec<_>>().join("/");
-    (style, variant)
-}
-
-fn citation_key_range(reference: &str) -> Option<(usize, usize)> {
-    let at = reference.find('@')?;
-    let start = at + 1;
-    let end = reference[start..]
-        .find(char::is_whitespace)
-        .map(|offset| start + offset)
-        .unwrap_or(reference.len());
-
-    (start < end).then_some((start, end))
-}
-
-fn text_range(start: usize, end: usize) -> TextRange {
-    TextRange::new((start as u32).into(), (end as u32).into())
-}
-
-fn offset_range(range: TextRange, base: usize) -> TextRange {
-    text_range(
-        usize::from(range.start()) + base,
-        usize::from(range.end()) + base,
-    )
-}
-
-fn trimmed_range(value: &str) -> Option<(usize, usize)> {
-    let start = value
-        .char_indices()
-        .find_map(|(idx, ch)| (!ch.is_whitespace()).then_some(idx))?;
-    let end = value
-        .char_indices()
-        .rfind(|(_, ch)| !ch.is_whitespace())
-        .map(|(idx, ch)| idx + ch.len_utf8())?;
-
-    (start < end).then_some((start, end))
-}
-
-fn strip_wrapping(value: &str, prefix: &str, suffix: &str) -> String {
-    value
-        .strip_prefix(prefix)
-        .and_then(|value| value.strip_suffix(suffix))
-        .unwrap_or(value)
-        .to_string()
 }

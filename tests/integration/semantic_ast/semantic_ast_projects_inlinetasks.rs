@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     ast::{AstRef, ElementData, MarkupKind, ObjectData, TodoState},
-    syntax_ast::Inlinetask as SyntaxInlinetask,
+    syntax_ast::SyntaxInlinetask,
     Org, ParseConfig,
 };
 

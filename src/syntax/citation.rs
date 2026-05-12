@@ -80,9 +80,9 @@ fn citation_key_range(reference: &str) -> Option<(usize, usize)> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::Citation, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::SyntaxCitation, tests::to_ast, ParseConfig};
 
-    let to_citation = to_ast::<Citation>(citation_node);
+    let to_citation = to_ast::<SyntaxCitation>(citation_node);
 
     insta::assert_debug_snapshot!(
         to_citation("[cite:@doe2020]").syntax,

@@ -9,7 +9,7 @@ use nom::{
 use crate::{
     syntax::{
         combinator::{caret_token, underscore_token},
-        object::standard_object_nodes,
+        parser_contract::ObjectNodesParser,
     },
     SyntaxKind,
 };
@@ -19,35 +19,51 @@ use super::{
     input::Input,
 };
 
-pub(crate) fn superscript_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn superscript_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, caret) = caret_token(input)?;
 
     let mut children = vec![caret];
 
     if input.c.use_sub_superscript.is_brace() {
-        let (input, rest) = template1(input)?;
+        let (input, rest) = template1(input, standard_object_nodes)?;
         children.extend(rest);
         return Ok((input, node(SyntaxKind::SUPERSCRIPT, children)));
     }
 
-    let (input, rest) = alt((template0, template1, template2)).parse(input)?;
+    let (input, rest) = alt((
+        template0,
+        |input| template1(input, standard_object_nodes),
+        template2,
+    ))
+    .parse(input)?;
     children.extend(rest);
 
     Ok((input, node(SyntaxKind::SUPERSCRIPT, children)))
 }
 
-pub(crate) fn subscript_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn subscript_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, underscore) = underscore_token(input)?;
 
     let mut children = vec![underscore];
 
     if input.c.use_sub_superscript.is_brace() {
-        let (input, rest) = template1(input)?;
+        let (input, rest) = template1(input, standard_object_nodes)?;
         children.extend(rest);
         return Ok((input, node(SyntaxKind::SUBSCRIPT, children)));
     }
 
-    let (input, rest) = alt((template0, template1, template2)).parse(input)?;
+    let (input, rest) = alt((
+        template0,
+        |input| template1(input, standard_object_nodes),
+        template2,
+    ))
+    .parse(input)?;
     children.extend(rest);
 
     Ok((input, node(SyntaxKind::SUBSCRIPT, children)))
@@ -58,7 +74,10 @@ fn template0(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
     Ok((input, vec![star.text_token()]))
 }
 
-fn template1(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
+fn template1(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, Vec<GreenElement>, ()> {
     let (input, l) = l_curly_token(input)?;
     let (input, contents) = balanced_brackets(input)?;
     let (input, r) = r_curly_token(input)?;
@@ -124,7 +143,9 @@ fn parse() {
     use crate::syntax_ast::Subscript;
     use crate::tests::to_ast;
 
-    let to_subscript = to_ast::<Subscript>(subscript_node);
+    let to_subscript = to_ast::<Subscript>(|input| {
+        subscript_node(input, crate::syntax::object::standard_object_nodes)
+    });
 
     insta::assert_debug_snapshot!(
         to_subscript("_*").syntax,
@@ -173,8 +194,24 @@ fn parse() {
         ..Default::default()
     };
 
-    debug_assert!(subscript_node(("_*", &with_brace).into()).is_err());
-    debug_assert!(subscript_node(("_abc", &with_brace).into()).is_err());
-    debug_assert!(subscript_node(("_+123", &with_brace).into()).is_err());
-    debug_assert!(subscript_node(("_{*bo\nld*}", &with_brace).into()).is_ok());
+    debug_assert!(subscript_node(
+        ("_*", &with_brace).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    debug_assert!(subscript_node(
+        ("_abc", &with_brace).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    debug_assert!(subscript_node(
+        ("_+123", &with_brace).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    debug_assert!(subscript_node(
+        ("_{*bo\nld*}", &with_brace).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_ok());
 }

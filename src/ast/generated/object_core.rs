@@ -77,24 +77,24 @@ impl InlineSrc {
     }
 }
 
-/// Typed syntax wrapper for `Citation` nodes.
+/// Typed syntax wrapper for `SyntaxCitation` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Citation {
+pub struct SyntaxCitation {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Citation {
+impl AstNode for SyntaxCitation {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::CITATION
     }
-    fn cast(node: SyntaxNode) -> Option<Citation> {
-        Self::can_cast(node.kind()).then(|| Citation { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxCitation> {
+        Self::can_cast(node.kind()).then(|| SyntaxCitation { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Citation {
+impl SyntaxCitation {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()
@@ -113,24 +113,24 @@ impl Citation {
     }
 }
 
-/// Typed syntax wrapper for `Link` nodes.
+/// Typed syntax wrapper for `SyntaxLink` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Link {
+pub struct SyntaxLink {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Link {
+impl AstNode for SyntaxLink {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::LINK
     }
-    fn cast(node: SyntaxNode) -> Option<Link> {
-        Self::can_cast(node.kind()).then(|| Link { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxLink> {
+        Self::can_cast(node.kind()).then(|| SyntaxLink { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Link {
+impl SyntaxLink {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()

@@ -1,5 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projection_and_bare_snapshot.rs
+assertion_line: 67
 expression: doc.to_bare()
 ---
 Document {
@@ -133,7 +134,9 @@ Document {
                                 ann: (),
                                 data: Link(
                                     Link {
-                                        path: "https://example.com",
+                                        path: LinkPath(
+                                            "https://example.com",
+                                        ),
                                         target: Uri {
                                             protocol: "https",
                                             path: "//example.com",
@@ -147,8 +150,8 @@ Document {
                                             },
                                         ],
                                         raw_description: "a link",
-                                        has_description: true,
-                                        is_image: false,
+                                        description_state: Explicit,
+                                        media_kind: Normal,
                                         caption: None,
                                     },
                                 ),

@@ -1,13 +1,14 @@
 //! Compatibility re-exports for the lossless typed syntax AST.
 
 pub use crate::syntax_ast_impl::{
-    AffiliatedKeyword, BabelCall, Bold, CenterBlock, Citation, Clock, Code, Comment, CommentBlock,
-    Cookie, DelayType, Document, Drawer, DynBlock, Entity, ExampleBlock, ExportBlock, FixedWidth,
-    FnDef, FnRef, Headline, InlineCall, InlineSrc, Inlinetask, InlinetaskEnd, Italic, Keyword,
-    LatexEnvironment, LatexFragment, LineBreak, Link, List, ListItem, Macros, NodeProperty,
-    OrgTable, OrgTableCell, OrgTableRow, Paragraph, Planning, PropertyDrawer, QuoteBlock,
-    RadioTarget, RepeaterType, Rule, Section, Snippet, SourceBlock, SpecialBlock, Strike,
-    Subscript, Superscript, TableEl, Target, TimeUnit, Timestamp, TodoType, Token, Underline,
+    AffiliatedKeyword, BabelCall, Bold, CenterBlock, Code, Comment, CommentBlock, Cookie,
+    DelayType, DynBlock, Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef, FnRef, Headline,
+    InlineCall, InlineSrc, Italic, LatexEnvironment, LatexFragment, LineBreak, Macros,
+    NodeProperty, OrgTable, OrgTableCell, OrgTableRow, Paragraph, PropertyDrawer, QuoteBlock,
+    RadioTarget, RepeaterType, Rule, Snippet, SourceBlock, SpecialBlock, Strike, Subscript,
+    Superscript, SyntaxCitation, SyntaxClock, SyntaxDocument, SyntaxDrawer, SyntaxInlinetask,
+    SyntaxInlinetaskEnd, SyntaxKeyword, SyntaxLink, SyntaxList, SyntaxListItem, SyntaxPlanning,
+    SyntaxSection, SyntaxTimeUnit, SyntaxTimestamp, TableEl, Target, TodoType, Token, Underline,
     Verbatim, VerseBlock,
 };
 

@@ -8,24 +8,24 @@ use rowan::{
 
 use super::{affiliated_keyword, AffiliatedKeyword};
 
-/// Typed syntax wrapper for `Document` nodes.
+/// Typed syntax wrapper for `SyntaxDocument` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Document {
+pub struct SyntaxDocument {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Document {
+impl AstNode for SyntaxDocument {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::DOCUMENT
     }
-    fn cast(node: SyntaxNode) -> Option<Document> {
-        Self::can_cast(node.kind()).then(|| Document { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxDocument> {
+        Self::can_cast(node.kind()).then(|| SyntaxDocument { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Document {
+impl SyntaxDocument {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()
@@ -42,7 +42,7 @@ impl Document {
     pub fn raw(&self) -> String {
         self.syntax.to_string()
     }
-    pub fn section(&self) -> Option<Section> {
+    pub fn section(&self) -> Option<SyntaxSection> {
         support::child(&self.syntax)
     }
     pub fn first_headline(&self) -> Option<Headline> {
@@ -58,24 +58,24 @@ impl Document {
         super::blank_lines(&self.syntax)
     }
 }
-/// Typed syntax wrapper for `Section` nodes.
+/// Typed syntax wrapper for `SyntaxSection` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Section {
+pub struct SyntaxSection {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Section {
+impl AstNode for SyntaxSection {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::SECTION
     }
-    fn cast(node: SyntaxNode) -> Option<Section> {
-        Self::can_cast(node.kind()).then(|| Section { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxSection> {
+        Self::can_cast(node.kind()).then(|| SyntaxSection { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Section {
+impl SyntaxSection {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()
@@ -190,10 +190,10 @@ impl Headline {
     pub fn raw(&self) -> String {
         self.syntax.to_string()
     }
-    pub fn section(&self) -> Option<Section> {
+    pub fn section(&self) -> Option<SyntaxSection> {
         support::child(&self.syntax)
     }
-    pub fn planning(&self) -> Option<Planning> {
+    pub fn planning(&self) -> Option<SyntaxPlanning> {
         support::child(&self.syntax)
     }
     pub fn properties(&self) -> Option<PropertyDrawer> {
@@ -282,24 +282,24 @@ impl NodeProperty {
     }
 }
 
-/// Typed syntax wrapper for `Planning` nodes.
+/// Typed syntax wrapper for `SyntaxPlanning` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Planning {
+pub struct SyntaxPlanning {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Planning {
+impl AstNode for SyntaxPlanning {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::PLANNING
     }
-    fn cast(node: SyntaxNode) -> Option<Planning> {
-        Self::can_cast(node.kind()).then(|| Planning { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxPlanning> {
+        Self::can_cast(node.kind()).then(|| SyntaxPlanning { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Planning {
+impl SyntaxPlanning {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()

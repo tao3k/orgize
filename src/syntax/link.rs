@@ -10,7 +10,7 @@ use super::{
         r_bracket_token, GreenElement,
     },
     input::Input,
-    object::link_description_object_nodes,
+    parser_contract::ObjectNodesParser,
     SyntaxKind,
 };
 
@@ -66,16 +66,10 @@ fn starts_with_angle_link_scheme(input: &str) -> bool {
         return false;
     }
 
-    for c in chars {
-        match c {
-            ':' => return true,
-            '<' | '>' | '\n' => return false,
-            c if c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.' | '_') => {}
-            _ => return false,
-        }
-    }
-
-    false
+    chars
+        .map(angle_link_scheme_char)
+        .find(|state| !matches!(state, AngleLinkSchemeChar::Continue))
+        == Some(AngleLinkSchemeChar::Terminator)
 }
 
 pub(crate) fn plain_link_start_before_colon(input: &str, colon: usize) -> Option<usize> {
@@ -84,21 +78,38 @@ pub(crate) fn plain_link_start_before_colon(input: &str, colon: usize) -> Option
         return None;
     }
 
-    let mut start = colon;
-    while start > 0 {
-        let byte = bytes[start - 1];
-        if byte.is_ascii_alphanumeric() || matches!(byte, b'+' | b'-' | b'.' | b'_') {
-            start -= 1;
-        } else {
-            break;
-        }
-    }
+    let start = bytes[..colon]
+        .iter()
+        .rposition(|byte| !is_plain_link_scheme_char(*byte))
+        .map_or(0, |index| index + 1);
 
     if start == colon || (start > 0 && !is_plain_link_boundary(bytes[start - 1])) {
         return None;
     }
 
     is_plain_link_scheme(&input[start..colon]).then_some(start)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AngleLinkSchemeChar {
+    Continue,
+    Terminator,
+    Invalid,
+}
+
+fn angle_link_scheme_char(ch: char) -> AngleLinkSchemeChar {
+    match ch {
+        ':' => AngleLinkSchemeChar::Terminator,
+        '<' | '>' | '\n' => AngleLinkSchemeChar::Invalid,
+        ch if ch.is_ascii_alphanumeric() || matches!(ch, '+' | '-' | '.' | '_') => {
+            AngleLinkSchemeChar::Continue
+        }
+        _ => AngleLinkSchemeChar::Invalid,
+    }
+}
+
+fn is_plain_link_scheme_char(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'+' | b'-' | b'.' | b'_')
 }
 
 fn is_plain_link_boundary(byte: u8) -> bool {
@@ -138,7 +149,10 @@ fn plain_link_end(input: &str) -> Option<usize> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn link_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn link_node(
+    input: Input,
+    link_description_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             l_bracket2_token,
@@ -224,9 +238,11 @@ pub(crate) fn angle_link_node(input: Input) -> IResult<Input, GreenElement, ()> 
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::Link, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::SyntaxLink, tests::to_ast, ParseConfig};
 
-    let to_link = to_ast::<Link>(link_node);
+    let to_link = to_ast::<SyntaxLink>(|input| {
+        link_node(input, crate::syntax::object::link_description_object_nodes)
+    });
 
     let link = to_link("[[#id]]");
     insta::assert_debug_snapshot!(
@@ -284,14 +300,18 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(link_node(("[[#id][desc]", config).into()).is_err());
+    assert!(link_node(
+        ("[[#id][desc]", config).into(),
+        crate::syntax::object::link_description_object_nodes
+    )
+    .is_err());
 }
 
 #[test]
 fn parse_angle_link() {
-    use crate::{syntax_ast::Link, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::SyntaxLink, tests::to_ast, ParseConfig};
 
-    let to_link = to_ast::<Link>(angle_link_node);
+    let to_link = to_ast::<SyntaxLink>(angle_link_node);
 
     let link = to_link("<https://orgmode.org/manual>");
     insta::assert_debug_snapshot!(
@@ -314,9 +334,9 @@ fn parse_angle_link() {
 
 #[test]
 fn parse_plain_link() {
-    use crate::{syntax_ast::Link, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::SyntaxLink, tests::to_ast, ParseConfig};
 
-    let to_link = to_ast::<Link>(plain_link_node);
+    let to_link = to_ast::<SyntaxLink>(plain_link_node);
 
     let link = to_link("https://orgmode.org/manual");
     insta::assert_debug_snapshot!(

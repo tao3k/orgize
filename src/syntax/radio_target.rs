@@ -7,11 +7,14 @@ use nom::{
 use super::{
     combinator::{l_angle3_token, node, r_angle3_token, GreenElement},
     input::Input,
-    object::minimal_object_nodes,
+    parser_contract::ObjectNodesParser,
     SyntaxKind,
 };
 
-pub(crate) fn radio_target_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn radio_target_node(
+    input: Input,
+    minimal_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(
         (
             l_angle3_token,
@@ -37,7 +40,9 @@ pub(crate) fn radio_target_node(input: Input) -> IResult<Input, GreenElement, ()
 fn parse() {
     use crate::{syntax_ast::RadioTarget, tests::to_ast, ParseConfig};
 
-    let to_radio_target = to_ast::<RadioTarget>(radio_target_node);
+    let to_radio_target = to_ast::<RadioTarget>(|input| {
+        radio_target_node(input, crate::syntax::object::minimal_object_nodes)
+    });
 
     insta::assert_debug_snapshot!(
         to_radio_target("<<<target>>>").syntax,
@@ -73,10 +78,34 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(radio_target_node(("<<<target >>>", config).into()).is_err());
-    assert!(radio_target_node(("<<< target>>>", config).into()).is_err());
-    assert!(radio_target_node(("<<<ta<get>>>", config).into()).is_err());
-    assert!(radio_target_node(("<<<ta>get>>>", config).into()).is_err());
-    assert!(radio_target_node(("<<<ta\nget>>>", config).into()).is_err());
-    assert!(radio_target_node(("<<<target>>", config).into()).is_err());
+    assert!(radio_target_node(
+        ("<<<target >>>", config).into(),
+        crate::syntax::object::minimal_object_nodes
+    )
+    .is_err());
+    assert!(radio_target_node(
+        ("<<< target>>>", config).into(),
+        crate::syntax::object::minimal_object_nodes
+    )
+    .is_err());
+    assert!(radio_target_node(
+        ("<<<ta<get>>>", config).into(),
+        crate::syntax::object::minimal_object_nodes
+    )
+    .is_err());
+    assert!(radio_target_node(
+        ("<<<ta>get>>>", config).into(),
+        crate::syntax::object::minimal_object_nodes
+    )
+    .is_err());
+    assert!(radio_target_node(
+        ("<<<ta\nget>>>", config).into(),
+        crate::syntax::object::minimal_object_nodes
+    )
+    .is_err());
+    assert!(radio_target_node(
+        ("<<<target>>", config).into(),
+        crate::syntax::object::minimal_object_nodes
+    )
+    .is_err());
 }

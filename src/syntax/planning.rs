@@ -59,9 +59,9 @@ fn planning_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn prase() {
-    use crate::{syntax_ast::Planning, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::SyntaxPlanning, tests::to_ast, ParseConfig};
 
-    let to_planning = to_ast::<Planning>(planning_node);
+    let to_planning = to_ast::<SyntaxPlanning>(planning_node);
 
     insta::assert_debug_snapshot!(
         to_planning("SCHEDULED: <2019-04-08 Mon>").syntax,

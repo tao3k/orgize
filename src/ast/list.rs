@@ -1,19 +1,19 @@
-use super::{filter_token, List, ListItem, Token};
+use super::{filter_token, SyntaxList, SyntaxListItem, Token};
 use crate::{syntax::SyntaxKind, SyntaxElement};
 
-impl List {
+impl SyntaxList {
     /// Returns `true` if this list is an ordered link
     ///
     /// ```rust
-    /// use orgize::{Org, syntax_ast::List};
+    /// use orgize::{Org, syntax_ast::SyntaxList};
     ///
-    /// let list = Org::parse("+ 1").first_node::<List>().unwrap();
+    /// let list = Org::parse("+ 1").first_node::<SyntaxList>().unwrap();
     /// assert!(!list.is_ordered());
     ///
-    /// let list = Org::parse("1. 1").first_node::<List>().unwrap();
+    /// let list = Org::parse("1. 1").first_node::<SyntaxList>().unwrap();
     /// assert!(list.is_ordered());
     ///
-    /// let list = Org::parse("1) 1\n- 2\n3. 3").first_node::<List>().unwrap();
+    /// let list = Org::parse("1) 1\n- 2\n3. 3").first_node::<SyntaxList>().unwrap();
     /// assert!(list.is_ordered());
     /// ```
     pub fn is_ordered(&self) -> bool {
@@ -29,11 +29,11 @@ impl List {
     /// Returns `true` if this list contains a TAG
     ///
     /// ```rust
-    /// use orgize::{Org, syntax_ast::List};
+    /// use orgize::{Org, syntax_ast::SyntaxList};
     ///
-    /// let list = Org::parse("- some tag :: item 2.1").first_node::<List>().unwrap();
+    /// let list = Org::parse("- some tag :: item 2.1").first_node::<SyntaxList>().unwrap();
     /// assert!(list.is_descriptive());
-    /// let list = Org::parse("2. [X] item 2").first_node::<List>().unwrap();
+    /// let list = Org::parse("2. [X] item 2").first_node::<SyntaxList>().unwrap();
     /// assert!(!list.is_descriptive());
     /// ```
     pub fn is_descriptive(&self) -> bool {
@@ -51,13 +51,13 @@ impl List {
     }
 }
 
-impl ListItem {
+impl SyntaxListItem {
     /// ```rust
-    /// use orgize::{Org, syntax_ast::ListItem};
+    /// use orgize::{Org, syntax_ast::SyntaxListItem};
     ///
-    /// let item = Org::parse("- 1").first_node::<ListItem>().unwrap();
+    /// let item = Org::parse("- 1").first_node::<SyntaxListItem>().unwrap();
     /// assert_eq!(item.indent(), 0);
-    /// let item = Org::parse(" \t * 2").first_node::<ListItem>().unwrap();
+    /// let item = Org::parse(" \t * 2").first_node::<SyntaxListItem>().unwrap();
     /// assert_eq!(item.indent(), 3);
     /// ```
     pub fn indent(&self) -> usize {
@@ -74,11 +74,11 @@ impl ListItem {
     }
 
     /// ```rust
-    /// use orgize::{Org, syntax_ast::ListItem};
+    /// use orgize::{Org, syntax_ast::SyntaxListItem};
     ///
-    /// let item = Org::parse("- some tag").first_node::<ListItem>().unwrap();
+    /// let item = Org::parse("- some tag").first_node::<SyntaxListItem>().unwrap();
     /// assert_eq!(item.bullet(), "- ");
-    /// let item = Org::parse("2. [X] item 2").first_node::<ListItem>().unwrap();
+    /// let item = Org::parse("2. [X] item 2").first_node::<SyntaxListItem>().unwrap();
     /// assert_eq!(item.bullet(), "2. ");
     /// ```
     pub fn bullet(&self) -> Token {
@@ -89,13 +89,13 @@ impl ListItem {
     }
 
     /// ```rust
-    /// use orgize::{Org, syntax_ast::ListItem};
+    /// use orgize::{Org, syntax_ast::SyntaxListItem};
     ///
-    /// let item = Org::parse("- [-] item 1").first_node::<ListItem>().unwrap();
+    /// let item = Org::parse("- [-] item 1").first_node::<SyntaxListItem>().unwrap();
     /// assert_eq!(item.checkbox().unwrap(), "-");
-    /// let item = Org::parse("2. [X] item 2").first_node::<ListItem>().unwrap();
+    /// let item = Org::parse("2. [X] item 2").first_node::<SyntaxListItem>().unwrap();
     /// assert_eq!(item.checkbox().unwrap(), "X");
-    /// let item = Org::parse("3) [ ] item 3").first_node::<ListItem>().unwrap();
+    /// let item = Org::parse("3) [ ] item 3").first_node::<SyntaxListItem>().unwrap();
     /// assert_eq!(item.checkbox().unwrap(), " ");
     /// ```
     pub fn checkbox(&self) -> Option<Token> {
@@ -119,9 +119,9 @@ impl ListItem {
     }
 
     /// ```rust
-    /// use orgize::{Org, syntax_ast::ListItem};
+    /// use orgize::{Org, syntax_ast::SyntaxListItem};
     ///
-    /// let item = Org::parse("+ this is *TAG* :: item1").first_node::<ListItem>().unwrap();
+    /// let item = Org::parse("+ this is *TAG* :: item1").first_node::<SyntaxListItem>().unwrap();
     /// let tag = item.tag().map(|n| n.to_string()).collect::<String>();
     /// assert_eq!(tag, "this is *TAG* ");
     /// ```

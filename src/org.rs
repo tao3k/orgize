@@ -6,6 +6,7 @@ use rowan::{GreenNode, TextSize};
 use crate::ast::ParsedAst;
 use crate::config::ParseConfig;
 use crate::export::{HtmlExport, LatexExport, MarkdownExport, TraversalContext, Traverser};
+use crate::syntax::document::document_node;
 use crate::syntax::{OrgLanguage, SyntaxNode};
 use crate::syntax_ast;
 use crate::SyntaxElement;
@@ -42,8 +43,8 @@ impl Org {
     }
 
     /// Returns the lossless syntax-tree document.
-    pub fn syntax_document(&self) -> syntax_ast::Document {
-        syntax_ast::Document {
+    pub fn syntax_document(&self) -> syntax_ast::SyntaxDocument {
+        syntax_ast::SyntaxDocument {
             syntax: SyntaxNode::new_root(self.green.clone()),
         }
     }
@@ -130,5 +131,21 @@ impl Org {
             }
         }
         find(SyntaxNode::new_root(self.green.clone()), offset)
+    }
+}
+
+impl ParseConfig {
+    /// Parses input with current config.
+    pub fn parse(self, input: impl AsRef<str>) -> Org {
+        let source = input.as_ref().to_string();
+        let config = self.with_file_todo_keywords(&source);
+        let input = (source.as_str(), &config).into();
+        let node = document_node(input).unwrap().1;
+
+        Org {
+            source,
+            config,
+            green: node.into_node().unwrap(),
+        }
     }
 }

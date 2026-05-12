@@ -5,7 +5,7 @@ use nom::{combinator::map, IResult};
 use super::{
     combinator::{node, token, GreenElement},
     input::Input,
-    object::standard_object_nodes,
+    parser_contract::ObjectNodesParser,
     SyntaxKind,
 };
 
@@ -13,7 +13,10 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn bold_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn bold_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'*'), |contents| {
         let mut children = vec![token(SyntaxKind::STAR, "*")];
         children.extend(standard_object_nodes(contents));
@@ -45,7 +48,10 @@ pub(crate) fn code_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn strike_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn strike_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'+'), |contents| {
         let mut children = vec![token(SyntaxKind::PLUS, "+")];
         children.extend(standard_object_nodes(contents));
@@ -77,7 +83,10 @@ pub(crate) fn verbatim_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn underline_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn underline_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'_'), |contents| {
         let mut children = vec![token(SyntaxKind::UNDERSCORE, "_")];
         children.extend(standard_object_nodes(contents));
@@ -91,7 +100,10 @@ pub(crate) fn underline_node(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn italic_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn italic_node(
+    input: Input,
+    standard_object_nodes: ObjectNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let mut parser = map(emphasis(b'/'), |contents| {
         let mut children = vec![token(SyntaxKind::SLASH, "/")];
         children.extend(standard_object_nodes(contents));
@@ -156,7 +168,8 @@ fn parse() {
         Org, ParseConfig,
     };
 
-    let to_bold = to_ast::<Bold>(bold_node);
+    let to_bold =
+        to_ast::<Bold>(|input| bold_node(input, crate::syntax::object::standard_object_nodes));
 
     insta::assert_debug_snapshot!(
         to_bold("*bold*").syntax,
@@ -190,11 +203,31 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(bold_node(("*bold*a", config).into()).is_err());
-    assert!(bold_node(("*bold *", config).into()).is_err());
-    assert!(bold_node(("* bold*", config).into()).is_err());
-    assert!(bold_node(("*b\nol\nd*", config).into()).is_err());
-    assert!(italic_node(("*bold*", config).into()).is_err());
+    assert!(bold_node(
+        ("*bold*a", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(bold_node(
+        ("*bold *", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(bold_node(
+        ("* bold*", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(bold_node(
+        ("*b\nol\nd*", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
+    assert!(italic_node(
+        ("*bold*", config).into(),
+        crate::syntax::object::standard_object_nodes
+    )
+    .is_err());
 
     assert!(Org::parse(r#""*quoted*""#).first_node::<Bold>().is_some());
     assert!(Org::parse("'/quoted/'").first_node::<Italic>().is_some());

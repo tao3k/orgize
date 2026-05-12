@@ -109,41 +109,53 @@ fn split_block_switches(switches: &str) -> Vec<String> {
 }
 
 fn block_header_arg_starts(parameters: &str) -> Vec<usize> {
-    let mut starts = Vec::new();
-    let mut in_quote = false;
-    let mut escaped = false;
-    let mut prev = None;
+    let mut scanner = BlockHeaderArgStartScanner::default();
+    parameters
+        .char_indices()
+        .filter_map(|(index, ch)| scanner.next_start(parameters, index, ch))
+        .collect()
+}
 
-    for (index, ch) in parameters.char_indices() {
-        if escaped {
-            escaped = false;
-            prev = Some(ch);
-            continue;
+#[derive(Default)]
+struct BlockHeaderArgStartScanner {
+    in_quote: bool,
+    escaped: bool,
+    prev: Option<char>,
+}
+
+impl BlockHeaderArgStartScanner {
+    fn next_start(&mut self, parameters: &str, index: usize, ch: char) -> Option<usize> {
+        if self.escaped {
+            self.escaped = false;
+            self.prev = Some(ch);
+            return None;
         }
 
-        match ch {
-            '\\' if in_quote => {
-                escaped = true;
+        let start = match ch {
+            '\\' if self.in_quote => {
+                self.escaped = true;
+                None
             }
             '"' => {
-                in_quote = !in_quote;
+                self.in_quote = !self.in_quote;
+                None
             }
-            ':' if !in_quote
-                && prev.is_none_or(char::is_whitespace)
-                && parameters[index + ch.len_utf8()..]
-                    .chars()
-                    .next()
-                    .is_some_and(is_block_header_arg_key_char) =>
-            {
-                starts.push(index);
-            }
-            _ => {}
-        }
+            ':' if self.is_header_arg_start(parameters, index, ch) => Some(index),
+            _ => None,
+        };
 
-        prev = Some(ch);
+        self.prev = Some(ch);
+        start
     }
 
-    starts
+    fn is_header_arg_start(&self, parameters: &str, index: usize, ch: char) -> bool {
+        !self.in_quote
+            && self.prev.is_none_or(char::is_whitespace)
+            && parameters[index + ch.len_utf8()..]
+                .chars()
+                .next()
+                .is_some_and(is_block_header_arg_key_char)
+    }
 }
 
 fn block_header_arg_from_raw(raw: &str) -> Option<BlockHeaderArg> {

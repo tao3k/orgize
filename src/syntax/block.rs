@@ -10,13 +10,16 @@ use super::{
         blank_lines, eol_or_eof, line_starts_iter, node, token, trim_line_end, GreenElement,
         NodeBuilder,
     },
-    element::element_nodes,
     input::Input,
     keyword::affiliated_keyword_nodes,
+    parser_contract::ElementNodesParser,
     SyntaxKind,
 };
 
-fn block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn block_node_base(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, affiliated_keywords) = affiliated_keyword_nodes(input)?;
     let (input, (block_begin, name)) = block_begin_node(input)?;
     let (input, pre_blank) = blank_lines(input)?;
@@ -267,8 +270,11 @@ fn comma_quoted_text_nodes(input: Input) -> Vec<GreenElement> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn block_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    crate::lossless_parser!(block_node_base, input)
+pub(crate) fn block_node(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
+    crate::lossless_parser!(|input| block_node_base(input, element_nodes), input)
 }
 
 #[test]
@@ -276,11 +282,16 @@ fn test_parse() {
     use crate::syntax_ast::{ExampleBlock, ExportBlock, QuoteBlock, SourceBlock, SpecialBlock};
     use crate::tests::to_ast;
 
-    let to_src_block = to_ast::<SourceBlock>(block_node);
-    let to_example_block = to_ast::<ExampleBlock>(block_node);
-    let to_export_block = to_ast::<ExportBlock>(block_node);
-    let to_quote_block = to_ast::<QuoteBlock>(block_node);
-    let to_special_block = to_ast::<SpecialBlock>(block_node);
+    let to_src_block =
+        to_ast::<SourceBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
+    let to_example_block =
+        to_ast::<ExampleBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
+    let to_export_block =
+        to_ast::<ExportBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
+    let to_quote_block =
+        to_ast::<QuoteBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
+    let to_special_block =
+        to_ast::<SpecialBlock>(|input| block_node(input, crate::syntax::element::element_nodes));
 
     insta::assert_debug_snapshot!(
         to_example_block(

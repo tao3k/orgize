@@ -4,7 +4,8 @@ use rowan::{
 };
 
 use crate::syntax::{
-    combinator::line_starts_iter, document::document_node, headline::headline_node, OrgLanguage,
+    combinator::line_starts_iter, document::document_node, element::element_nodes,
+    headline::headline_node, OrgLanguage,
 };
 use crate::syntax_ast::Headline;
 use crate::Org;
@@ -176,9 +177,13 @@ impl Org {
         if headline.syntax().text_range() == range {
             let input = (replace_with, &self.config).into();
 
-            self.green = headline
-                .syntax
-                .replace_with(headline_node(input).unwrap().1.into_node().unwrap());
+            self.green = headline.syntax.replace_with(
+                headline_node(input, element_nodes)
+                    .unwrap()
+                    .1
+                    .into_node()
+                    .unwrap(),
+            );
         } else {
             let offset: usize = headline.syntax.text_range().start().into();
             let start: usize = range.start().into();
@@ -189,9 +194,13 @@ impl Org {
 
             let input = (text.as_ref(), &self.config).into();
 
-            self.green = headline
-                .syntax
-                .replace_with(headline_node(input).unwrap().1.into_node().unwrap());
+            self.green = headline.syntax.replace_with(
+                headline_node(input, element_nodes)
+                    .unwrap()
+                    .1
+                    .into_node()
+                    .unwrap(),
+            );
         }
     }
 }

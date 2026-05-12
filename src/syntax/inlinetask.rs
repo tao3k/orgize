@@ -3,12 +3,12 @@ use nom::{character::complete::space0, combinator::opt, IResult, Parser};
 use super::{
     combinator::{line_starts_iter, node, trim_line_end, GreenElement, NodeBuilder},
     drawer::property_drawer_node,
-    element::element_nodes,
     headline::{
         headline_keyword_token, headline_priority_node, headline_stars, headline_tags_node,
     },
     input::Input,
     object::standard_object_nodes,
+    parser_contract::ElementNodesParser,
     planning::planning_node,
     SyntaxKind,
 };
@@ -17,17 +17,17 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn inlinetask_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    crate::lossless_parser!(inlinetask_node_base, input)
+pub(crate) fn inlinetask_node(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
+    crate::lossless_parser!(|input| inlinetask_node_base(input, element_nodes), input)
 }
 
-pub(crate) fn is_inlinetask_start(input: Input) -> bool {
-    headline_stars(input)
-        .map(|(_, stars)| stars.len() >= input.c.effective_inlinetask_min_level())
-        .unwrap_or(false)
-}
-
-fn inlinetask_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn inlinetask_node_base(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, stars) = headline_stars(input)?;
     if stars.len() < input.c.effective_inlinetask_min_level() {
         return Err(nom::Err::Error(()));

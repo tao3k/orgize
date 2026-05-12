@@ -138,24 +138,24 @@ impl OrgTableCell {
     }
 }
 
-/// Typed syntax wrapper for `List` nodes.
+/// Typed syntax wrapper for `SyntaxList` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct List {
+pub struct SyntaxList {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for List {
+impl AstNode for SyntaxList {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::LIST
     }
-    fn cast(node: SyntaxNode) -> Option<List> {
-        Self::can_cast(node.kind()).then(|| List { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxList> {
+        Self::can_cast(node.kind()).then(|| SyntaxList { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl List {
+impl SyntaxList {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()
@@ -172,7 +172,7 @@ impl List {
     pub fn raw(&self) -> String {
         self.syntax.to_string()
     }
-    pub fn items(&self) -> AstChildren<ListItem> {
+    pub fn items(&self) -> AstChildren<SyntaxListItem> {
         support::children(&self.syntax)
     }
     pub fn caption(&self) -> Option<AffiliatedKeyword> {
@@ -197,24 +197,24 @@ impl List {
     }
 }
 
-/// Typed syntax wrapper for `ListItem` nodes.
+/// Typed syntax wrapper for `SyntaxListItem` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ListItem {
+pub struct SyntaxListItem {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for ListItem {
+impl AstNode for SyntaxListItem {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::LIST_ITEM
     }
-    fn cast(node: SyntaxNode) -> Option<ListItem> {
-        Self::can_cast(node.kind()).then(|| ListItem { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxListItem> {
+        Self::can_cast(node.kind()).then(|| SyntaxListItem { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl ListItem {
+impl SyntaxListItem {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()
@@ -233,24 +233,24 @@ impl ListItem {
     }
 }
 
-/// Typed syntax wrapper for `Drawer` nodes.
+/// Typed syntax wrapper for `SyntaxDrawer` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Drawer {
+pub struct SyntaxDrawer {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Drawer {
+impl AstNode for SyntaxDrawer {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::DRAWER
     }
-    fn cast(node: SyntaxNode) -> Option<Drawer> {
-        Self::can_cast(node.kind()).then(|| Drawer { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxDrawer> {
+        Self::can_cast(node.kind()).then(|| SyntaxDrawer { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Drawer {
+impl SyntaxDrawer {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()

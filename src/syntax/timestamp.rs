@@ -254,9 +254,9 @@ pub(crate) fn timestamp_inactive_node(input: Input) -> IResult<Input, GreenEleme
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::Timestamp, tests::to_ast};
+    use crate::{syntax_ast::SyntaxTimestamp, tests::to_ast};
 
-    let to_timestamp = to_ast::<Timestamp>(timestamp_inactive_node);
+    let to_timestamp = to_ast::<SyntaxTimestamp>(timestamp_inactive_node);
 
     to_timestamp("[2003-09-16]");
     to_timestamp("[2003-09-16 09:09]");

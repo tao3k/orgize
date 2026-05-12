@@ -5,26 +5,26 @@ use rowan::{
     ast::{support, AstChildren, AstNode},
     TextRange, TextSize,
 };
-/// Typed syntax wrapper for `Timestamp` nodes.
+/// Typed syntax wrapper for `SyntaxTimestamp` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Timestamp {
+pub struct SyntaxTimestamp {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Timestamp {
+impl AstNode for SyntaxTimestamp {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::TIMESTAMP_ACTIVE
             || kind == SyntaxKind::TIMESTAMP_INACTIVE
             || kind == SyntaxKind::TIMESTAMP_DIARY
     }
-    fn cast(node: SyntaxNode) -> Option<Timestamp> {
-        Self::can_cast(node.kind()).then(|| Timestamp { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxTimestamp> {
+        Self::can_cast(node.kind()).then(|| SyntaxTimestamp { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Timestamp {
+impl SyntaxTimestamp {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()

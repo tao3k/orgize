@@ -43,6 +43,45 @@ pub enum DiagnosticKind {
     Conversion,
 }
 
+/// Syntax kind name for a node that the semantic projection intentionally keeps unsupported.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnsupportedSyntaxKind(String);
+
+impl UnsupportedSyntaxKind {
+    /// Creates an unsupported syntax kind marker from a parser kind name.
+    pub fn new(kind: impl Into<String>) -> Self {
+        Self(kind.into())
+    }
+
+    /// Returns the parser kind name.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Consumes the marker and returns the parser kind name.
+    pub fn into_string(self) -> String {
+        self.0
+    }
+}
+
+impl std::fmt::Display for UnsupportedSyntaxKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl From<String> for UnsupportedSyntaxKind {
+    fn from(kind: String) -> Self {
+        Self::new(kind)
+    }
+}
+
+impl From<&str> for UnsupportedSyntaxKind {
+    fn from(kind: &str) -> Self {
+        Self::new(kind)
+    }
+}
+
 /// Root semantic representation of an Org document.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Document<A = ()> {
@@ -257,7 +296,10 @@ pub enum ElementData<A = ()> {
     /// LaTeX environment raw text.
     LatexEnvironment(String),
     /// Intentionally unsupported syntax element with kind and raw source.
-    Unknown { kind: String, raw: String },
+    Unknown {
+        kind: UnsupportedSyntaxKind,
+        raw: String,
+    },
 }
 
 /// Clock value and optional duration.
@@ -509,7 +551,10 @@ pub enum ObjectData<A = ()> {
     /// Statistics cookie raw text.
     StatisticCookie(String),
     /// Intentionally unsupported syntax object with kind and raw source.
-    Unknown { kind: String, raw: String },
+    Unknown {
+        kind: UnsupportedSyntaxKind,
+        raw: String,
+    },
 }
 
 /// Semantic markup kind.
@@ -625,16 +670,110 @@ pub enum LinkTarget {
     Unresolved(String),
 }
 
+/// Original link path text as it appears in the link target position.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LinkPath(String);
+
+impl LinkPath {
+    /// Creates a link path from parser-owned text.
+    pub fn new(path: impl Into<String>) -> Self {
+        Self(path.into())
+    }
+
+    /// Returns the path text.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Consumes the path and returns its owned text.
+    pub fn into_string(self) -> String {
+        self.0
+    }
+}
+
+impl std::fmt::Display for LinkPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl From<String> for LinkPath {
+    fn from(path: String) -> Self {
+        Self::new(path)
+    }
+}
+
+impl From<&str> for LinkPath {
+    fn from(path: &str) -> Self {
+        Self::new(path)
+    }
+}
+
+impl AsRef<str> for LinkPath {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+/// Whether a link had an explicit Org description.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LinkDescriptionState {
+    /// Link has no explicit description.
+    None,
+    /// Link was written with a description part.
+    Explicit,
+}
+
+impl LinkDescriptionState {
+    /// Returns true when the source link had an explicit description.
+    pub const fn has_description(self) -> bool {
+        matches!(self, Self::Explicit)
+    }
+}
+
+/// Media classification for link exporter behavior.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LinkMediaKind {
+    /// Normal link.
+    Normal,
+    /// Image link.
+    Image,
+}
+
+impl LinkMediaKind {
+    /// Returns true when the link should be treated as an image.
+    pub const fn is_image(self) -> bool {
+        matches!(self, Self::Image)
+    }
+}
+
 /// Link object with target, description, caption, and image metadata.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Link<A = ()> {
-    pub path: String,
+    pub path: LinkPath,
     pub target: LinkTarget,
     pub description: Vec<Object<A>>,
     pub raw_description: String,
-    pub has_description: bool,
-    pub is_image: bool,
+    pub description_state: LinkDescriptionState,
+    pub media_kind: LinkMediaKind,
     pub caption: Option<Keyword<A>>,
+}
+
+impl<A> Link<A> {
+    /// Returns the original link path text.
+    pub fn path(&self) -> &str {
+        self.path.as_str()
+    }
+
+    /// Returns true when the source link had an explicit description.
+    pub fn has_description(&self) -> bool {
+        self.description_state.has_description()
+    }
+
+    /// Returns true when the link should be treated as an image.
+    pub fn is_image(&self) -> bool {
+        self.media_kind.is_image()
+    }
 }
 
 /// Citation object with global affixes and per-reference metadata.

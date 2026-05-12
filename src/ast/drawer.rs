@@ -1,7 +1,7 @@
 use rowan::TextSize;
 use std::collections::HashMap;
 
-use super::{filter_token, Drawer, PropertyDrawer, SyntaxKind, Token};
+use super::{filter_token, PropertyDrawer, SyntaxDrawer, SyntaxKind, Token};
 
 impl PropertyDrawer {
     /// ```rust
@@ -87,12 +87,12 @@ impl PropertyDrawer {
     }
 }
 
-impl Drawer {
+impl SyntaxDrawer {
     /// ```rust
-    /// use orgize::{Org, syntax_ast::Drawer};
+    /// use orgize::{Org, syntax_ast::SyntaxDrawer};
     ///
     /// let org = Org::parse("* Heading\n:LOGBOOK:\n:END:");
-    /// let drawer = org.first_node::<Drawer>().unwrap();
+    /// let drawer = org.first_node::<SyntaxDrawer>().unwrap();
     /// assert_eq!(drawer.name(), "LOGBOOK");
     /// ```
     pub fn name(&self) -> Token {

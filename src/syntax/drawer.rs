@@ -10,8 +10,8 @@ use super::{
         blank_lines, colon_token, eol_or_eof, line_starts_iter, node, trim_line_end, GreenElement,
         NodeBuilder,
     },
-    element::element_nodes,
     input::Input,
+    parser_contract::ElementNodesParser,
     SyntaxKind,
 };
 
@@ -60,7 +60,10 @@ fn drawer_end_node(input: Input) -> IResult<Input, GreenElement, ()> {
     Ok((input, b.finish(SyntaxKind::DRAWER_END)))
 }
 
-fn drawer_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn drawer_node_base(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, (begin, _)) = drawer_begin_node(input)?;
 
     let (input, pre_blank) = blank_lines(input)?;
@@ -155,19 +158,23 @@ pub(crate) fn property_drawer_node(input: Input) -> IResult<Input, GreenElement,
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn drawer_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    crate::lossless_parser!(drawer_node_base, input)
+pub(crate) fn drawer_node(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
+    crate::lossless_parser!(|input| drawer_node_base(input, element_nodes), input)
 }
 
 #[test]
 fn parse() {
     use crate::{
-        syntax_ast::{Drawer, PropertyDrawer},
+        syntax_ast::{PropertyDrawer, SyntaxDrawer},
         tests::to_ast,
         ParseConfig,
     };
 
-    let to_drawer = to_ast::<Drawer>(drawer_node);
+    let to_drawer =
+        to_ast::<SyntaxDrawer>(|input| drawer_node(input, crate::syntax::element::element_nodes));
     let to_property_drawer = to_ast::<PropertyDrawer>(property_drawer_node);
 
     insta::assert_debug_snapshot!(
@@ -271,7 +278,11 @@ fn parse() {
     let config = &ParseConfig::default();
 
     // https://github.com/PoiScript/orgize/issues/9
-    assert!(drawer_node((":SPAGHETTI:\n", config).into()).is_err());
+    assert!(drawer_node(
+        (":SPAGHETTI:\n", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
 
     assert!(property_drawer_node((":PROPERTIES:\n:NAME:VALUE\n:END:", config).into()).is_err());
 }

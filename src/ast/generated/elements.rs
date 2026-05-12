@@ -63,24 +63,24 @@ impl DynBlock {
         })
     }
 }
-/// Typed syntax wrapper for `Inlinetask` nodes.
+/// Typed syntax wrapper for `SyntaxInlinetask` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Inlinetask {
+pub struct SyntaxInlinetask {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Inlinetask {
+impl AstNode for SyntaxInlinetask {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::INLINETASK
     }
-    fn cast(node: SyntaxNode) -> Option<Inlinetask> {
-        Self::can_cast(node.kind()).then(|| Inlinetask { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxInlinetask> {
+        Self::can_cast(node.kind()).then(|| SyntaxInlinetask { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Inlinetask {
+impl SyntaxInlinetask {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()
@@ -101,24 +101,24 @@ impl Inlinetask {
         super::blank_lines(&self.syntax)
     }
 }
-/// Typed syntax wrapper for `InlinetaskEnd` nodes.
+/// Typed syntax wrapper for `SyntaxInlinetaskEnd` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InlinetaskEnd {
+pub struct SyntaxInlinetaskEnd {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for InlinetaskEnd {
+impl AstNode for SyntaxInlinetaskEnd {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::INLINETASK_END
     }
-    fn cast(node: SyntaxNode) -> Option<InlinetaskEnd> {
-        Self::can_cast(node.kind()).then(|| InlinetaskEnd { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxInlinetaskEnd> {
+        Self::can_cast(node.kind()).then(|| SyntaxInlinetaskEnd { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl InlinetaskEnd {
+impl SyntaxInlinetaskEnd {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()
@@ -136,24 +136,24 @@ impl InlinetaskEnd {
         self.syntax.to_string()
     }
 }
-/// Typed syntax wrapper for `Keyword` nodes.
+/// Typed syntax wrapper for `SyntaxKeyword` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Keyword {
+pub struct SyntaxKeyword {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Keyword {
+impl AstNode for SyntaxKeyword {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::KEYWORD
     }
-    fn cast(node: SyntaxNode) -> Option<Keyword> {
-        Self::can_cast(node.kind()).then(|| Keyword { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxKeyword> {
+        Self::can_cast(node.kind()).then(|| SyntaxKeyword { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Keyword {
+impl SyntaxKeyword {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()
@@ -283,24 +283,24 @@ impl TableEl {
     }
 }
 
-/// Typed syntax wrapper for `Clock` nodes.
+/// Typed syntax wrapper for `SyntaxClock` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Clock {
+pub struct SyntaxClock {
     pub(crate) syntax: SyntaxNode,
 }
-impl AstNode for Clock {
+impl AstNode for SyntaxClock {
     type Language = OrgLanguage;
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == SyntaxKind::CLOCK
     }
-    fn cast(node: SyntaxNode) -> Option<Clock> {
-        Self::can_cast(node.kind()).then(|| Clock { syntax: node })
+    fn cast(node: SyntaxNode) -> Option<SyntaxClock> {
+        Self::can_cast(node.kind()).then(|| SyntaxClock { syntax: node })
     }
     fn syntax(&self) -> &SyntaxNode {
         &self.syntax
     }
 }
-impl Clock {
+impl SyntaxClock {
     /// Beginning position of this element
     pub fn start(&self) -> TextSize {
         self.syntax.text_range().start()

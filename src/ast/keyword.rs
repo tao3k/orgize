@@ -1,13 +1,13 @@
 use crate::SyntaxKind;
 
-use super::{filter_token, Keyword, Token};
+use super::{filter_token, SyntaxKeyword, Token};
 
-impl Keyword {
+impl SyntaxKeyword {
     ///
     /// ```rust
-    /// use orgize::{Org, syntax_ast::Keyword};
+    /// use orgize::{Org, syntax_ast::SyntaxKeyword};
     ///
-    /// let keyword = Org::parse("#+KEY: VALUE\nabc").first_node::<Keyword>().unwrap();
+    /// let keyword = Org::parse("#+KEY: VALUE\nabc").first_node::<SyntaxKeyword>().unwrap();
     /// assert_eq!(keyword.key(), "KEY");
     /// ```
     pub fn key(&self) -> Token {
@@ -19,11 +19,11 @@ impl Keyword {
 
     ///
     /// ```rust
-    /// use orgize::{Org, syntax_ast::Keyword};
+    /// use orgize::{Org, syntax_ast::SyntaxKeyword};
     ///
-    /// let keyword = Org::parse("#+KEY: VALUE\nabc").first_node::<Keyword>().unwrap();
+    /// let keyword = Org::parse("#+KEY: VALUE\nabc").first_node::<SyntaxKeyword>().unwrap();
     /// assert_eq!(keyword.value(), " VALUE");
-    /// let keyword = Org::parse("#+KEY:").first_node::<Keyword>().unwrap();
+    /// let keyword = Org::parse("#+KEY:").first_node::<SyntaxKeyword>().unwrap();
     /// assert_eq!(keyword.value(), "");
     /// ```
     pub fn value(&self) -> Token {

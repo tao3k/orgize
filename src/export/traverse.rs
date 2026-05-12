@@ -2,12 +2,14 @@
 
 use crate::syntax::{SyntaxElement, SyntaxKind};
 use crate::syntax_ast::{
-    BabelCall, Bold, CenterBlock, Citation, Clock, Code, Comment, CommentBlock, Cookie, Document,
-    Drawer, DynBlock, Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef, FnRef, Headline,
-    InlineCall, InlineSrc, Italic, Keyword, LatexEnvironment, LatexFragment, LineBreak, Link, List,
-    ListItem, Macros, OrgTable, OrgTableCell, OrgTableRow, Paragraph, PropertyDrawer, QuoteBlock,
-    RadioTarget, Rule, Section, Snippet, SourceBlock, SpecialBlock, Strike, Subscript, Superscript,
-    Target, Timestamp, Token, Underline, Verbatim, VerseBlock,
+    BabelCall, Bold, CenterBlock, Code, Comment, CommentBlock, Cookie, DynBlock, Entity,
+    ExampleBlock, ExportBlock, FixedWidth, FnDef, FnRef, Headline, InlineCall, InlineSrc, Italic,
+    LatexEnvironment, LatexFragment, LineBreak, Macros, OrgTable, OrgTableCell, OrgTableRow,
+    Paragraph, PropertyDrawer, QuoteBlock, RadioTarget, Rule, Snippet, SourceBlock, SpecialBlock,
+    Strike, Subscript, Superscript, SyntaxCitation as Citation, SyntaxClock as Clock,
+    SyntaxDocument as Document, SyntaxDrawer as Drawer, SyntaxKeyword as Keyword,
+    SyntaxLink as Link, SyntaxList as List, SyntaxListItem as ListItem, SyntaxSection as Section,
+    SyntaxTimestamp as Timestamp, Target, Token, Underline, Verbatim, VerseBlock,
 };
 
 #[cfg(feature = "syntax-org-fc")]

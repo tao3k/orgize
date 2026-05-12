@@ -35,24 +35,14 @@ pub(crate) fn element_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<
     // paragraph fallback keeps that lossless instead of treating it as a hard
     // precondition violation here.
 
-    let mut i = input;
-    let mut nodes = vec![];
-
-    'l: while !i.is_empty() {
-        for (input, head) in ElementPositions::new(i) {
-            if let Ok((input, element)) = element_node(input) {
-                if !head.is_empty() {
-                    nodes.extend(paragraph_nodes(head)?);
-                }
-                nodes.push(element);
-                debug_assert!(input.len() < i.len(), "{} < {}", input.len(), i.len());
-                i = input;
-                continue 'l;
-            }
-        }
-        nodes.extend(paragraph_nodes(i)?);
-        break;
-    }
+    let mut cursor = input;
+    let nodes = std::iter::from_fn(|| next_element_chunk(&mut cursor)).try_fold(
+        Vec::new(),
+        |mut nodes, chunk| {
+            nodes.extend(chunk?);
+            Ok::<_, nom::Err<()>>(nodes)
+        },
+    )?;
 
     debug_assert_eq!(
         input.as_str(),
@@ -60,6 +50,46 @@ pub(crate) fn element_nodes(input: Input) -> Result<Vec<GreenElement>, nom::Err<
         "parser must be lossless"
     );
 
+    Ok(nodes)
+}
+
+fn next_element_chunk<'a>(
+    cursor: &mut Input<'a>,
+) -> Option<Result<Vec<GreenElement>, nom::Err<()>>> {
+    if cursor.is_empty() {
+        return None;
+    }
+
+    if let Some((tail, head, element)) = ElementPositions::new(*cursor).find_map(|(input, head)| {
+        element_node(input)
+            .ok()
+            .map(|(tail, element)| (tail, head, element))
+    }) {
+        debug_assert!(
+            tail.len() < cursor.len(),
+            "{} < {}",
+            tail.len(),
+            cursor.len()
+        );
+        *cursor = tail;
+        return Some(element_chunk_from_match(head, element));
+    }
+
+    let tail = *cursor;
+    *cursor = cursor.of("");
+    Some(paragraph_nodes(tail))
+}
+
+fn element_chunk_from_match(
+    head: Input<'_>,
+    element: GreenElement,
+) -> Result<Vec<GreenElement>, nom::Err<()>> {
+    let mut nodes = if head.is_empty() {
+        Vec::new()
+    } else {
+        paragraph_nodes(head)?
+    };
+    nodes.push(element);
     Ok(nodes)
 }
 
@@ -85,15 +115,17 @@ pub(crate) fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
     let result = match byte {
         Some(b'[') => fn_def_node(input),
-        Some(b'0'..=b'9') => list_node(input),
-        Some(b'*') => inlinetask_node(input).or_else(|_| list_node(input)),
+        Some(b'0'..=b'9') => list_node(input, element_node),
+        Some(b'*') => {
+            inlinetask_node(input, element_nodes).or_else(|_| list_node(input, element_node))
+        }
         // clock doesn't have affiliated keywords
         Some(b'C') if !has_affiliated_keyword => clock_node(input),
-        Some(b'-') => rule_node(input).or_else(|_| list_node(input)),
-        Some(b':') => drawer_node(input).or_else(|_| fixed_width_node(input)),
+        Some(b'-') => rule_node(input).or_else(|_| list_node(input, element_node)),
+        Some(b':') => drawer_node(input, element_nodes).or_else(|_| fixed_width_node(input)),
         Some(b'|') => org_table_node(input),
-        Some(b'+') => table_el_node(input).or_else(|_| list_node(input)),
-        Some(b'#') => block_node(input)
+        Some(b'+') => table_el_node(input).or_else(|_| list_node(input, element_node)),
+        Some(b'#') => block_node(input, element_nodes)
             .or_else(|_| dyn_block_node(input))
             .or_else(|_| keyword_node(input))
             .or_else(|_| comment_node(input)),

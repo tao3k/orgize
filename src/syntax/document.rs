@@ -3,6 +3,7 @@ use nom::{combinator::opt, IResult, Parser};
 use super::{
     combinator::{blank_lines, node, GreenElement},
     drawer::property_drawer_node,
+    element::element_nodes,
     headline::{headline_node, section_node},
     input::Input,
     SyntaxKind,
@@ -36,14 +37,14 @@ fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         return Ok((input, node(SyntaxKind::DOCUMENT, children)));
     }
 
-    let (input, section) = opt(section_node).parse(input)?;
+    let (input, section) = opt(|input| section_node(input, element_nodes)).parse(input)?;
     if let Some(section) = section {
         children.push(section);
     }
 
     let mut i = input;
     while !i.is_empty() {
-        let (input, headline) = headline_node(i)?;
+        let (input, headline) = headline_node(i, element_nodes)?;
         debug_assert!(i.len() > input.len(), "{} > {}", i.len(), input.len(),);
         i = input;
         children.push(headline);
@@ -54,10 +55,10 @@ fn document_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::syntax_ast::Document;
+    use crate::syntax_ast::SyntaxDocument;
     use crate::tests::to_ast;
 
-    let to_document = to_ast::<Document>(document_node);
+    let to_document = to_ast::<SyntaxDocument>(document_node);
 
     insta::assert_debug_snapshot!(
         to_document("").syntax,

@@ -227,3 +227,19 @@ this repository.
 - [x] Add `rust-lang-project-harness` to `orgize-wasm` `[build-dependencies]`.
 - [x] Mount the same build-time harness gate from `wasm/build.rs` before the
       existing wasm build metadata emission.
+
+### M12 Harness Advice Enforcement
+
+- [x] Enforce the default advice surface in the `src/lib.rs` cargo-test harness
+      gate.
+- [x] Verify the cargo-test gate now fails on current advisory findings instead
+      of hiding them behind passing test output.
+- [x] Close `AGENT-R004` public namespace conflicts between semantic AST and
+      legacy `syntax_ast` wrappers without weakening the v2 public API boundary.
+- [x] Close `AGENT-R009` syntax parser owner-cycle findings by moving shared
+      parser contracts behind clearer owner boundaries.
+- [x] Close semantic AST model advice for primitive/stringly public state
+      (`AGENT-R020`, `AGENT-R028`) with typed domain carriers.
+- [x] Split or extract the semantic projection hot paths flagged by
+      `AGENT-R025`/`AGENT-R026`, including `conversion.rs` radio-link,
+      footnote, and object-run helpers.

@@ -11,7 +11,9 @@ validation gates for the breaking semantic AST API.
 - `ast::ParsedAst` is `Document<ParsedAnnotation>`.
 - `ast::BareAst` is `Document<()>`.
 - `Org::syntax_document()` and `orgize::syntax_ast::*` expose the rowan-backed
-  lossless typed syntax wrappers.
+  lossless typed syntax wrappers. Wrapper names that would collide with the
+  semantic AST use a `Syntax` prefix, for example `SyntaxDocument`,
+  `SyntaxLink`, and `SyntaxTimestamp`.
 - The rowan tree remains the lossless parser substrate. The semantic AST is a
   projection layer for exporters, indexers, tests, and higher-level consumers.
 - Semantic traversal is Rust-style: `visit`, `visit_mut`, `fold`, `map_ann`,

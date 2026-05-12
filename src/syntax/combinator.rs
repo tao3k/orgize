@@ -1,25 +1,9 @@
 use memchr::{memchr2, memchr2_iter, Memchr2};
 use nom::{bytes::complete::tag, IResult, Parser};
-use rowan::{GreenNode, GreenToken, Language, NodeOrToken};
 use std::iter::once;
 
-use super::{input::Input, OrgLanguage, SyntaxKind};
-
-pub(crate) type GreenElement = NodeOrToken<GreenNode, GreenToken>;
-
-#[inline]
-pub(crate) fn token(kind: SyntaxKind, input: &str) -> GreenElement {
-    GreenElement::Token(GreenToken::new(OrgLanguage::kind_to_raw(kind), input))
-}
-
-#[inline]
-pub(crate) fn node<I>(kind: SyntaxKind, children: I) -> GreenElement
-where
-    I: IntoIterator<Item = GreenElement>,
-    I::IntoIter: ExactSizeIterator,
-{
-    GreenElement::Node(GreenNode::new(OrgLanguage::kind_to_raw(kind), children))
-}
+pub(crate) use super::green::{node, token, GreenElement};
+use super::{input::Input, SyntaxKind};
 
 macro_rules! token_parser {
     ($name:ident, $token:literal, $kind:path) => {
@@ -322,6 +306,6 @@ impl NodeBuilder {
     }
 
     pub(crate) fn finish(self, kind: SyntaxKind) -> GreenElement {
-        GreenElement::Node(GreenNode::new(kind.into(), self.children))
+        node(kind, self.children)
     }
 }

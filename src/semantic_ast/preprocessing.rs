@@ -118,71 +118,87 @@ struct PreprocessingValueToken {
 }
 
 fn preprocessing_value_tokens(value: &str) -> Vec<PreprocessingValueToken> {
-    let mut tokens = Vec::new();
-    let mut cursor = 0;
+    PreprocessingValueTokenizer::new(value).collect()
+}
 
-    while cursor < value.len() {
-        while let Some(ch) = value[cursor..].chars().next() {
-            if !ch.is_whitespace() {
-                break;
-            }
-            cursor += ch.len_utf8();
-        }
-        if cursor >= value.len() {
-            break;
-        }
+struct PreprocessingValueTokenizer<'a> {
+    value: &'a str,
+    cursor: usize,
+}
 
-        let start = cursor;
-        let Some(first) = value[cursor..].chars().next() else {
-            break;
-        };
-        if matches!(first, '"' | '\'') {
-            let quote = first;
-            cursor += quote.len_utf8();
-            let mut token_value = String::new();
-            let mut escaped = false;
-            while cursor < value.len() {
-                let Some(ch) = value[cursor..].chars().next() else {
-                    break;
-                };
-                cursor += ch.len_utf8();
-                if escaped {
-                    token_value.push(ch);
-                    escaped = false;
-                } else if ch == '\\' {
-                    escaped = true;
-                } else if ch == quote {
-                    break;
-                } else {
-                    token_value.push(ch);
-                }
-            }
-            if escaped {
-                token_value.push('\\');
-            }
-            tokens.push(PreprocessingValueToken {
-                raw: value[start..cursor].to_string(),
-                value: token_value,
-            });
-        } else {
-            while cursor < value.len() {
-                let Some(ch) = value[cursor..].chars().next() else {
-                    break;
-                };
-                if ch.is_whitespace() {
-                    break;
-                }
-                cursor += ch.len_utf8();
-            }
-            let raw = &value[start..cursor];
-            tokens.push(PreprocessingValueToken {
-                raw: raw.to_string(),
-                value: raw.to_string(),
-            });
+impl<'a> PreprocessingValueTokenizer<'a> {
+    fn new(value: &'a str) -> Self {
+        Self { value, cursor: 0 }
+    }
+
+    fn peek_char(&self) -> Option<char> {
+        self.value[self.cursor..].chars().next()
+    }
+
+    fn advance_char(&mut self) -> Option<char> {
+        let ch = self.peek_char()?;
+        self.cursor += ch.len_utf8();
+        Some(ch)
+    }
+
+    fn skip_whitespace(&mut self) {
+        while self.peek_char().is_some_and(char::is_whitespace) {
+            let _ = self.advance_char();
         }
     }
 
-    tokens
+    fn quoted_token(&mut self, start: usize, quote: char) -> PreprocessingValueToken {
+        let mut token_value = String::new();
+        let mut escaped = false;
+        let _ = self.advance_char();
+
+        while let Some(ch) = self.advance_char() {
+            if escaped {
+                token_value.push(ch);
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == quote {
+                break;
+            } else {
+                token_value.push(ch);
+            }
+        }
+        if escaped {
+            token_value.push('\\');
+        }
+
+        PreprocessingValueToken {
+            raw: self.value[start..self.cursor].to_string(),
+            value: token_value,
+        }
+    }
+
+    fn bare_token(&mut self, start: usize) -> PreprocessingValueToken {
+        while self.peek_char().is_some_and(|ch| !ch.is_whitespace()) {
+            let _ = self.advance_char();
+        }
+        let raw = &self.value[start..self.cursor];
+        PreprocessingValueToken {
+            raw: raw.to_string(),
+            value: raw.to_string(),
+        }
+    }
+}
+
+impl Iterator for PreprocessingValueTokenizer<'_> {
+    type Item = PreprocessingValueToken;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.skip_whitespace();
+        let start = self.cursor;
+        let first = self.peek_char()?;
+        Some(if matches!(first, '"' | '\'') {
+            self.quoted_token(start, first)
+        } else {
+            self.bare_token(start)
+        })
+    }
 }
 
 fn is_valid_macro_name(name: &str) -> bool {

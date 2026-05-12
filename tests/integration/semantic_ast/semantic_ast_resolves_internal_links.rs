@@ -55,7 +55,7 @@ let x = 1; ref:init
     doc.visit(|node| {
         if let AstRef::Object(object) = node {
             if let ObjectData::Link(link) = &object.data {
-                link_targets.push((link.path.clone(), link.target.clone()));
+                link_targets.push((link.path().to_string(), link.target.clone()));
             }
         }
     });

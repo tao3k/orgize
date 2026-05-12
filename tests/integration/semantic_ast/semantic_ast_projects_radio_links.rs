@@ -30,12 +30,12 @@ fn semantic_ast_projects_radio_links_from_plain_text() {
     assert_eq!(links.len(), 1);
     let (object, link) = links[0];
     assert_eq!(object.ann.raw, "Radio Target");
-    assert_eq!(link.path, "Radio Target");
+    assert_eq!(link.path(), "Radio Target");
     assert!(matches!(
         &link.target,
         LinkTarget::Internal(target) if target == "Radio Target"
     ));
-    assert!(link.has_description);
+    assert!(link.has_description());
     assert_eq!(link.raw_description, "Radio Target");
     assert_eq!(link.description.len(), 1);
     assert!(matches!(
@@ -79,7 +79,7 @@ fn semantic_ast_projects_opt_in_radio_links_across_parsed_objects() {
     assert_eq!(links.len(), 1);
     let (raw, link) = links[0];
     assert_eq!(raw, "*Radio*");
-    assert_eq!(link.path, "*Radio*");
+    assert_eq!(link.path(), "*Radio*");
     assert_eq!(link.raw_description, "*Radio*");
     assert!(matches!(
         &link.target,

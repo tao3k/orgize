@@ -13,11 +13,11 @@ use super::{
         at_token, blank_lines, colon2_token, eol_or_eof, l_bracket_token, line_starts_iter, node,
         r_bracket_token, GreenElement,
     },
-    element::element_node,
     input::Input,
     keyword::affiliated_keyword_nodes,
     object::standard_object_nodes,
     paragraph::paragraph_nodes,
+    parser_contract::ElementNodeParser,
     SyntaxKind,
 };
 
@@ -25,14 +25,21 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn list_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    crate::lossless_parser!(list_node_base, input)
+pub(crate) fn list_node(
+    input: Input,
+    element_node: ElementNodeParser,
+) -> IResult<Input, GreenElement, ()> {
+    crate::lossless_parser!(|input| list_node_base(input, element_node), input)
 }
 
-fn list_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn list_node_base(
+    input: Input,
+    element_node: ElementNodeParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, affiliated_keywords) = affiliated_keyword_nodes(input)?;
     let (input, first_indent) = space0(input)?;
-    let (input, (ends_with_empty_blank_lines, first_item)) = list_item_node(first_indent, input)?;
+    let (input, (ends_with_empty_blank_lines, first_item)) =
+        list_item_node(first_indent, input, element_node)?;
 
     let mut children = vec![];
     children.extend(affiliated_keywords);
@@ -46,7 +53,8 @@ fn list_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
             break;
         }
 
-        let Ok((input_, (ends_with_empty_blank_lines, list_item))) = list_item_node(indent, input_)
+        let Ok((input_, (ends_with_empty_blank_lines, list_item))) =
+            list_item_node(indent, input_, element_node)
         else {
             break;
         };
@@ -79,6 +87,7 @@ fn list_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 fn list_item_node<'a>(
     indent: Input<'a>,
     input: Input<'a>,
+    element_node: ElementNodeParser,
 ) -> IResult<Input<'a>, (bool, GreenElement), ()> {
     let (input, bullet) = recognize((
         alt((
@@ -118,7 +127,7 @@ fn list_item_node<'a>(
     let (input, checkbox) = opt(list_item_checkbox).parse(input)?;
     let (input, tag) = cond(!is_ordered, opt(list_item_tag)).parse(input)?;
     let (input, (ends_with_empty_blank_lines, content)) =
-        list_item_content_node(input, indent.len())?;
+        list_item_content_node(input, indent.len(), element_node)?;
     let (input, post_blank) = cond(!ends_with_empty_blank_lines, blank_lines).parse(input)?;
 
     let mut children = vec![
@@ -222,7 +231,11 @@ fn list_item_tag(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-fn list_item_content_node(input: Input, indent: usize) -> IResult<Input, (bool, GreenElement), ()> {
+fn list_item_content_node(
+    input: Input,
+    indent: usize,
+    element_node: ElementNodeParser,
+) -> IResult<Input, (bool, GreenElement), ()> {
     if memchr(b'\n', input.as_bytes()).is_none() {
         return Ok((
             input.of(""),
@@ -236,65 +249,166 @@ fn list_item_content_node(input: Input, indent: usize) -> IResult<Input, (bool, 
         ));
     };
 
-    let mut skip_one = true;
-    let mut i = input;
-    let mut children = vec![];
-    let mut previous_blank_line: Option<(Input, Input)> = None;
-    'l: while !i.is_empty() {
-        for (input, head) in line_starts_iter(i.as_str())
-            // the first line in list item content will always be a paragraph
-            // so we need to skip it in the first iteration
-            .skip(if skip_one { 1 } else { 0 })
-            .map(|idx| i.take_split(idx))
-        {
-            match get_line_indent(input.as_str()) {
-                Some(next_indent) => {
-                    if next_indent <= indent {
-                        let (input, head) = previous_blank_line.unwrap_or((input, head));
-                        if !head.is_empty() {
-                            children.extend(paragraph_nodes(head)?);
-                        }
-                        return Ok((
-                            input,
-                            (false, node(SyntaxKind::LIST_ITEM_CONTENT, children)),
-                        ));
-                    }
+    ListItemContentParser::new(input, indent, element_node).finish()
+}
 
-                    previous_blank_line = None;
+type ListItemContentResult<'a> = IResult<Input<'a>, (bool, GreenElement), ()>;
 
-                    if let Ok((input, element)) = element_node(input) {
-                        if !head.is_empty() {
-                            children.extend(paragraph_nodes(head)?);
-                        }
-                        children.push(element);
-                        debug_assert!(input.len() < i.len(), "{} < {}", input.len(), i.len());
-                        i = input;
-                        skip_one = false;
-                        continue 'l;
-                    }
-                }
-                _ => {
-                    // list item ends at two consecutive empty lines
-                    if let Some((input, head)) = previous_blank_line {
-                        if !head.is_empty() {
-                            children.extend(paragraph_nodes(head)?);
-                        }
+enum ListItemContentStep<'a> {
+    Continue,
+    Done(ListItemContentResult<'a>),
+}
 
-                        return Ok((input, (true, node(SyntaxKind::LIST_ITEM_CONTENT, children))));
-                    } else {
-                        previous_blank_line = Some((input, head))
-                    }
-                }
-            }
+struct ListItemContentParser<'a> {
+    root: Input<'a>,
+    cursor: Input<'a>,
+    indent: usize,
+    element_node: ElementNodeParser,
+    skip_one: bool,
+    children: Vec<GreenElement>,
+    previous_blank_line: Option<(Input<'a>, Input<'a>)>,
+}
+
+impl<'a> ListItemContentParser<'a> {
+    fn new(input: Input<'a>, indent: usize, element_node: ElementNodeParser) -> Self {
+        Self {
+            root: input,
+            cursor: input,
+            indent,
+            element_node,
+            skip_one: true,
+            children: Vec::new(),
+            previous_blank_line: None,
         }
-        children.extend(paragraph_nodes(i)?);
-        break;
     }
 
-    Ok((
-        input.of(""),
-        (false, node(SyntaxKind::LIST_ITEM_CONTENT, children)),
-    ))
+    fn finish(mut self) -> ListItemContentResult<'a> {
+        std::iter::from_fn(|| self.next_step())
+            .find_map(|step| match step {
+                ListItemContentStep::Continue => None,
+                ListItemContentStep::Done(result) => Some(result),
+            })
+            .unwrap_or_else(|| self.finish_with(self.root.of(""), false))
+    }
+
+    fn next_step(&mut self) -> Option<ListItemContentStep<'a>> {
+        if self.cursor.is_empty() {
+            return Some(ListItemContentStep::Done(
+                self.finish_with(self.root.of(""), false),
+            ));
+        }
+
+        let cursor = self.cursor;
+        let offsets = line_starts_iter(cursor.as_str())
+            // The first line in list item content is always a paragraph, so the
+            // first scan skips it.
+            .skip(usize::from(self.skip_one))
+            .collect::<Vec<_>>();
+
+        for (input, head) in offsets.into_iter().map(|idx| cursor.take_split(idx)) {
+            let previous_cursor_len = self.cursor.len();
+            match self.step_at_line(input, head) {
+                ListItemContentStep::Continue if self.cursor.len() == previous_cursor_len => {
+                    continue;
+                }
+                ListItemContentStep::Continue => return Some(ListItemContentStep::Continue),
+                done => return Some(done),
+            }
+        }
+
+        Some(ListItemContentStep::Done(
+            self.finish_with_remaining_cursor(),
+        ))
+    }
+
+    fn step_at_line(&mut self, input: Input<'a>, head: Input<'a>) -> ListItemContentStep<'a> {
+        match get_line_indent(input.as_str()) {
+            Some(next_indent) if next_indent <= self.indent => {
+                let (input, head) = self.previous_blank_line.take().unwrap_or((input, head));
+                self.push_paragraph_head(head)
+                    .map(|_| self.finish_with(input, false))
+                    .map_or_else(
+                        |err| ListItemContentStep::Done(Err(err)),
+                        ListItemContentStep::Done,
+                    )
+            }
+            Some(_) => self.step_at_nested_line(input, head),
+            None => self.step_at_blank_line(input, head),
+        }
+    }
+
+    fn step_at_nested_line(
+        &mut self,
+        input: Input<'a>,
+        head: Input<'a>,
+    ) -> ListItemContentStep<'a> {
+        self.previous_blank_line = None;
+        if let Ok((tail, element)) = (self.element_node)(input) {
+            if let Err(err) = self.push_paragraph_head(head) {
+                return ListItemContentStep::Done(Err(err));
+            }
+            self.children.push(element);
+            debug_assert!(
+                tail.len() < self.cursor.len(),
+                "{} < {}",
+                tail.len(),
+                self.cursor.len()
+            );
+            self.cursor = tail;
+            self.skip_one = false;
+            return ListItemContentStep::Continue;
+        }
+
+        ListItemContentStep::Continue
+    }
+
+    fn step_at_blank_line(&mut self, input: Input<'a>, head: Input<'a>) -> ListItemContentStep<'a> {
+        if let Some((input, head)) = self.previous_blank_line.take() {
+            self.push_paragraph_head(head)
+                .map(|_| self.finish_with(input, true))
+                .map_or_else(
+                    |err| ListItemContentStep::Done(Err(err)),
+                    ListItemContentStep::Done,
+                )
+        } else {
+            self.previous_blank_line = Some((input, head));
+            ListItemContentStep::Continue
+        }
+    }
+
+    fn push_paragraph_head(&mut self, head: Input<'a>) -> Result<(), nom::Err<()>> {
+        if !head.is_empty() {
+            self.children.extend(paragraph_nodes(head)?);
+        }
+        Ok(())
+    }
+
+    fn finish_with_remaining_cursor(&mut self) -> ListItemContentResult<'a> {
+        self.push_paragraph_head(self.cursor)?;
+        Ok((
+            self.root.of(""),
+            (
+                false,
+                node(
+                    SyntaxKind::LIST_ITEM_CONTENT,
+                    std::mem::take(&mut self.children),
+                ),
+            ),
+        ))
+    }
+
+    fn finish_with(&mut self, input: Input<'a>, has_more: bool) -> ListItemContentResult<'a> {
+        Ok((
+            input,
+            (
+                has_more,
+                node(
+                    SyntaxKind::LIST_ITEM_CONTENT,
+                    std::mem::take(&mut self.children),
+                ),
+            ),
+        ))
+    }
 }
 
 fn get_line_indent(input: &str) -> Option<usize> {
@@ -306,9 +420,10 @@ fn get_line_indent(input: &str) -> Option<usize> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::List, tests::to_ast, ParseConfig};
+    use crate::{syntax_ast::SyntaxList, tests::to_ast, ParseConfig};
 
-    let to_list = to_ast::<List>(list_node);
+    let to_list =
+        to_ast::<SyntaxList>(|input| list_node(input, crate::syntax::element::element_node));
 
     insta::assert_debug_snapshot!(
         to_list("1)").syntax,
@@ -623,7 +738,11 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(list_node(("-a", config).into()).is_err());
-    assert!(list_node(("*\r\n", config).into()).is_err());
-    assert!(list_node(("* ", config).into()).is_err());
+    assert!(list_node(("-a", config).into(), crate::syntax::element::element_node).is_err());
+    assert!(list_node(
+        ("*\r\n", config).into(),
+        crate::syntax::element::element_node
+    )
+    .is_err());
+    assert!(list_node(("* ", config).into(), crate::syntax::element::element_node).is_err());
 }

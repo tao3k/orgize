@@ -1,3 +1,7 @@
+//! Lossless typed syntax wrappers projected from the rowan syntax tree.
+//!
+//! This module owns the legacy wrapper surface re-exported as `orgize::syntax_ast`.
+
 mod generated;
 
 mod affiliated_keyword;
@@ -28,15 +32,16 @@ use crate::syntax::SyntaxKind;
 #[cfg(feature = "syntax-org-fc")]
 pub use cloze::Cloze;
 pub use generated::{
-    AffiliatedKeyword, BabelCall, Bold, CenterBlock, Citation, Clock, Code, Comment, CommentBlock,
-    Cookie, Document, Drawer, DynBlock, Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef,
-    FnRef, Headline, InlineCall, InlineSrc, Inlinetask, InlinetaskEnd, Italic, Keyword,
-    LatexEnvironment, LatexFragment, LineBreak, Link, List, ListItem, Macros, NodeProperty,
-    OrgTable, OrgTableCell, OrgTableRow, Paragraph, Planning, PropertyDrawer, QuoteBlock,
-    RadioTarget, Rule, Section, Snippet, SourceBlock, SpecialBlock, Strike, Subscript, Superscript,
-    TableEl, Target, Timestamp, Underline, Verbatim, VerseBlock,
+    AffiliatedKeyword, BabelCall, Bold, CenterBlock, Code, Comment, CommentBlock, Cookie, DynBlock,
+    Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef, FnRef, Headline, InlineCall, InlineSrc,
+    Italic, LatexEnvironment, LatexFragment, LineBreak, Macros, NodeProperty, OrgTable,
+    OrgTableCell, OrgTableRow, Paragraph, PropertyDrawer, QuoteBlock, RadioTarget, Rule, Snippet,
+    SourceBlock, SpecialBlock, Strike, Subscript, Superscript, SyntaxCitation, SyntaxClock,
+    SyntaxDocument, SyntaxDrawer, SyntaxInlinetask, SyntaxInlinetaskEnd, SyntaxKeyword, SyntaxLink,
+    SyntaxList, SyntaxListItem, SyntaxPlanning, SyntaxSection, SyntaxTimestamp, TableEl, Target,
+    Underline, Verbatim, VerseBlock,
 };
 pub use headline::TodoType;
 pub use support::Token;
 use support::{blank_lines, filter_token, last_child, last_token, token};
-pub use timestamp::{DelayType, RepeaterType, TimeUnit};
+pub use timestamp::{DelayType, RepeaterType, SyntaxTimeUnit};

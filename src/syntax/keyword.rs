@@ -217,12 +217,12 @@ fn key_with_optional(
 #[test]
 fn parse() {
     use crate::{
-        syntax_ast::{BabelCall, Keyword},
+        syntax_ast::{BabelCall, SyntaxKeyword},
         tests::to_ast,
         ParseConfig,
     };
 
-    let to_keyword = to_ast::<Keyword>(keyword_node);
+    let to_keyword = to_ast::<SyntaxKeyword>(keyword_node);
 
     let to_babel_call = to_ast::<BabelCall>(keyword_node);
 

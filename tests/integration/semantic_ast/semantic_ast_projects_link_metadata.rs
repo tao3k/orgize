@@ -19,14 +19,14 @@ fn semantic_ast_projects_link_metadata() {
             .expect("image link"),
         other => panic!("expected paragraph, got {other:#?}"),
     };
-    assert_eq!(image_link.path, "file:/tmp/logo.svg");
+    assert_eq!(image_link.path(), "file:/tmp/logo.svg");
     assert!(matches!(
         &image_link.target,
         LinkTarget::Uri { protocol, path }
             if protocol == "file" && path == "/tmp/logo.svg"
     ));
-    assert!(!image_link.has_description);
-    assert!(image_link.is_image);
+    assert!(!image_link.has_description());
+    assert!(image_link.is_image());
     assert_eq!(image_link.caption.as_ref().unwrap().key, "CAPTION");
     assert_eq!(image_link.caption.as_ref().unwrap().value, " Logo");
 
@@ -46,12 +46,12 @@ fn semantic_ast_projects_link_metadata() {
     };
 
     assert_eq!(links.len(), 2);
-    assert_eq!(links[0].path, "#heading");
+    assert_eq!(links[0].path(), "#heading");
     assert!(matches!(
         &links[0].target,
         LinkTarget::Internal(target) if target == "#heading"
     ));
-    assert!(links[0].has_description);
+    assert!(links[0].has_description());
     assert_eq!(links[0].raw_description, "*Jump*");
     assert!(links[0].description.iter().any(|object| matches!(
         object.data,
@@ -60,17 +60,17 @@ fn semantic_ast_projects_link_metadata() {
             ..
         }
     )));
-    assert!(!links[0].is_image);
+    assert!(!links[0].is_image());
 
-    assert_eq!(links[1].path, "https://example.com");
+    assert_eq!(links[1].path(), "https://example.com");
     assert!(matches!(
         &links[1].target,
         LinkTarget::Uri { protocol, path }
             if protocol == "https" && path == "//example.com"
     ));
-    assert!(links[1].has_description);
+    assert!(links[1].has_description());
     assert_eq!(links[1].raw_description, "Site");
-    assert!(!links[1].is_image);
+    assert!(!links[1].is_image());
 
     let angle_doc = Org::parse("Angle <https://orgmode.org/manual> link.").document();
 
@@ -85,15 +85,15 @@ fn semantic_ast_projects_link_metadata() {
             .expect("angle link"),
         other => panic!("expected paragraph, got {other:#?}"),
     };
-    assert_eq!(angle_link.path, "https://orgmode.org/manual");
+    assert_eq!(angle_link.path(), "https://orgmode.org/manual");
     assert!(matches!(
         &angle_link.target,
         LinkTarget::Uri { protocol, path }
             if protocol == "https" && path == "//orgmode.org/manual"
     ));
-    assert!(!angle_link.has_description);
+    assert!(!angle_link.has_description());
     assert_eq!(angle_link.raw_description, "");
-    assert!(!angle_link.is_image);
+    assert!(!angle_link.is_image());
 
     let plain_doc = Org::parse("Plain https://orgmode.org/manual link.").document();
 
@@ -108,13 +108,13 @@ fn semantic_ast_projects_link_metadata() {
             .expect("plain link"),
         other => panic!("expected paragraph, got {other:#?}"),
     };
-    assert_eq!(plain_link.path, "https://orgmode.org/manual");
+    assert_eq!(plain_link.path(), "https://orgmode.org/manual");
     assert!(matches!(
         &plain_link.target,
         LinkTarget::Uri { protocol, path }
             if protocol == "https" && path == "//orgmode.org/manual"
     ));
-    assert!(!plain_link.has_description);
+    assert!(!plain_link.has_description());
     assert_eq!(plain_link.raw_description, "");
-    assert!(!plain_link.is_image);
+    assert!(!plain_link.is_image());
 }

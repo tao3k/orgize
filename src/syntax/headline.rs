@@ -12,10 +12,9 @@ use super::{
         GreenElement, NodeBuilder,
     },
     drawer::property_drawer_node,
-    element::element_nodes,
-    inlinetask::is_inlinetask_start,
     input::Input,
     object::standard_object_nodes,
+    parser_contract::ElementNodesParser,
     planning::planning_node,
     SyntaxKind,
 };
@@ -24,12 +23,18 @@ use super::{
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn headline_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn headline_node(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
-    crate::lossless_parser!(headline_node_base, input)
+    crate::lossless_parser!(|input| headline_node_base(input, element_nodes), input)
 }
 
-fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
+fn headline_node_base(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     let (input, stars) = headline_stars(input)?;
 
     let mut b = NodeBuilder::new();
@@ -84,7 +89,7 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         return Ok((input, b.finish(SyntaxKind::HEADLINE)));
     }
 
-    let (input, section) = opt(section_node).parse(input)?;
+    let (input, section) = opt(|input| section_node(input, element_nodes)).parse(input)?;
     b.push_opt(section);
 
     let mut i = input;
@@ -96,7 +101,7 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
             break;
         }
 
-        let (input, headline) = headline_node(i)?;
+        let (input, headline) = headline_node(i, element_nodes)?;
         b.push(headline);
         debug_assert!(i.len() > input.len(), "{} > {}", i.len(), input.len());
         i = input;
@@ -109,7 +114,10 @@ fn headline_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
     feature = "tracing",
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
-pub(crate) fn section_node(input: Input) -> IResult<Input, GreenElement, ()> {
+pub(crate) fn section_node(
+    input: Input,
+    element_nodes: ElementNodesParser,
+) -> IResult<Input, GreenElement, ()> {
     debug_assert!(!input.is_empty());
     let (input, section) = section_text(input)?;
     Ok((input, node(SyntaxKind::SECTION, element_nodes(section)?)))
@@ -127,6 +135,12 @@ fn section_text(input: Input) -> IResult<Input, Input, ()> {
     }
 
     Ok(input.take_split(input.len()))
+}
+
+fn is_inlinetask_start(input: Input) -> bool {
+    headline_stars(input)
+        .map(|(_, stars)| stars.len() >= input.c.effective_inlinetask_min_level())
+        .unwrap_or(false)
 }
 
 #[cfg_attr(
@@ -247,7 +261,8 @@ pub(super) fn headline_priority_node(input: Input) -> IResult<Input, (GreenEleme
 fn parse() {
     use crate::{syntax_ast::Headline, tests::to_ast, ParseConfig};
 
-    let to_headline = to_ast::<Headline>(headline_node);
+    let to_headline =
+        to_ast::<Headline>(|input| headline_node(input, crate::syntax::element::element_nodes));
 
     insta::assert_debug_snapshot!(
         to_headline("* foo").syntax,
@@ -323,20 +338,37 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(headline_node(("_ ", config).into()).is_err());
-    assert!(headline_node(("*", config).into()).is_err());
-    assert!(headline_node((" * ", config).into()).is_err());
-    assert!(headline_node(("**", config).into()).is_err());
-    assert!(headline_node(("**\n", config).into()).is_err());
-    assert!(headline_node(("**\r", config).into()).is_err());
-    assert!(headline_node(("**\t", config).into()).is_err());
+    assert!(headline_node(("_ ", config).into(), crate::syntax::element::element_nodes).is_err());
+    assert!(headline_node(("*", config).into(), crate::syntax::element::element_nodes).is_err());
+    assert!(headline_node(
+        (" * ", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
+    assert!(headline_node(("**", config).into(), crate::syntax::element::element_nodes).is_err());
+    assert!(headline_node(
+        ("**\n", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
+    assert!(headline_node(
+        ("**\r", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
+    assert!(headline_node(
+        ("**\t", config).into(),
+        crate::syntax::element::element_nodes
+    )
+    .is_err());
 }
 
 #[test]
 fn issue_15_16() {
     use crate::{syntax_ast::Headline, tests::to_ast};
 
-    let to_headline = to_ast::<Headline>(headline_node);
+    let to_headline =
+        to_ast::<Headline>(|input| headline_node(input, crate::syntax::element::element_nodes));
 
     assert!(to_headline("* a ::").tags().count() == 0);
     assert!(to_headline("* a : :").tags().count() == 0);

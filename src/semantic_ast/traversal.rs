@@ -1642,8 +1642,8 @@ impl<A> Link<A> {
             target: self.target.clone(),
             description: self.description.iter().map(|x| x.map_ann_with(f)).collect(),
             raw_description: self.raw_description.clone(),
-            has_description: self.has_description,
-            is_image: self.is_image,
+            description_state: self.description_state,
+            media_kind: self.media_kind,
             caption: self.caption.as_ref().map(|caption| caption.map_ann_with(f)),
         }
     }
@@ -1661,8 +1661,8 @@ impl<A> Link<A> {
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
             raw_description: self.raw_description.clone(),
-            has_description: self.has_description,
-            is_image: self.is_image,
+            description_state: self.description_state,
+            media_kind: self.media_kind,
             caption: self
                 .caption
                 .as_ref()

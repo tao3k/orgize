@@ -4,7 +4,10 @@ use rowan::{ast::AstNode, NodeOrToken};
 
 use crate::{syntax::SyntaxKind, SyntaxElement};
 
-use super::{filter_token, Clock, Drawer, Headline, Section, Timestamp, Token};
+use super::{
+    filter_token, Headline, SyntaxClock as Clock, SyntaxDrawer as Drawer, SyntaxSection as Section,
+    SyntaxTimestamp as Timestamp, Token,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 /// Configured TODO state class for a headline keyword.

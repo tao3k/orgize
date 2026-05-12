@@ -1,8 +1,5 @@
 //! Parser configuration for Org syntax and semantic projection.
 
-use crate::syntax::document::document_node;
-use crate::Org;
-
 #[derive(Clone, Debug)]
 /// Controls Org subscript and superscript parsing.
 pub enum UseSubSuperscript {
@@ -77,21 +74,7 @@ pub struct ParseConfig {
 }
 
 impl ParseConfig {
-    /// Parses input with current config
-    pub fn parse(self, input: impl AsRef<str>) -> Org {
-        let source = input.as_ref().to_string();
-        let config = self.with_file_todo_keywords(&source);
-        let input = (source.as_str(), &config).into();
-        let node = document_node(input).unwrap().1;
-
-        Org {
-            source,
-            config,
-            green: node.into_node().unwrap(),
-        }
-    }
-
-    fn with_file_todo_keywords(mut self, source: &str) -> Self {
+    pub(crate) fn with_file_todo_keywords(mut self, source: &str) -> Self {
         if let Some(todo_keywords) = parse_file_todo_keywords(source) {
             self.todo_keywords = todo_keywords;
         }
