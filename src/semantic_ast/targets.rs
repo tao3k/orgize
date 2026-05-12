@@ -153,6 +153,18 @@ fn collect_headline_targets(
                         raw: value,
                     });
                 }
+            } else if key.eq_ignore_ascii_case("ID") {
+                let ann = token_ann(value.syntax());
+                let value = value.to_string();
+                if !value.is_empty() {
+                    index.push(TargetDefinition {
+                        ann,
+                        kind: TargetKind::Id,
+                        key: format!("id:{value}"),
+                        value: value.clone(),
+                        raw: value,
+                    });
+                }
             }
         }
     }
@@ -195,6 +207,13 @@ fn block_switches(node: &SyntaxNode) -> Option<String> {
 }
 
 fn normalized_target_key(path: &str) -> Cow<'_, str> {
+    if let Some(id_path) = path.strip_prefix("id:") {
+        return match id_path.split_once("::") {
+            Some((id, _)) => Cow::Owned(format!("id:{id}")),
+            None => Cow::Borrowed(path),
+        };
+    }
+
     path.strip_prefix('*')
         .map(str::trim)
         .map(Cow::Borrowed)

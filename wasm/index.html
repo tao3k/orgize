@@ -310,7 +310,7 @@
         ],
         [
           "Links and targets",
-          "Internal links resolve against headlines, `CUSTOM_ID`, explicit targets, radio targets, footnotes, and source/example coderefs.",
+          "Internal links resolve against headlines, `CUSTOM_ID`, org-id `ID`, explicit targets, radio targets, footnotes, and source/example coderefs.",
         ],
         [
           "Objects",
@@ -372,9 +372,11 @@ See also:
 SCHEDULED: <2026-05-10 Sun 09:30-10:30 +1w> DEADLINE: <2026-05-17 Sun -2d>
 :PROPERTIES:
 :CUSTOM_ID: parser-v2-demo
+:ID: parser-v2-org-id
 :END:
 
 Semantic links resolve [[#parser-v2-demo][custom IDs]],
+[[id:parser-v2-org-id][org IDs]],
 [[target-one][explicit targets]], [[fn:note][footnotes]],
 and [[coderef:init][source block coderefs]].
 

@@ -10,8 +10,9 @@ fn semantic_ast_resolves_document_local_internal_links() {
         r#"* Anchor Heading
 :PROPERTIES:
 :CUSTOM_ID: heading-id
+:ID: org-id-1
 :END:
-See [[*Anchor Heading][headline]], [[#heading-id][custom id]], [[target-one][target]], [[fn:note][footnote]], and [[coderef:init][code]].
+See [[*Anchor Heading][headline]], [[#heading-id][custom id]], [[id:org-id-1][org id]], [[id:org-id-1::*Anchor Heading][org id search]], [[target-one][target]], [[fn:note][footnote]], and [[coderef:init][code]].
 
 Paragraph with <<target-one>> and <<<radio-one>>>.
 
@@ -34,6 +35,10 @@ let x = 1; ref:init
         .targets
         .iter()
         .any(|target| target.key == "#heading-id" && target.kind == TargetKind::CustomId));
+    assert!(doc
+        .targets
+        .iter()
+        .any(|target| target.key == "id:org-id-1" && target.kind == TargetKind::Id));
     assert!(doc
         .targets
         .iter()
@@ -67,6 +72,14 @@ let x = 1; ref:init
     assert!(link_targets.iter().any(|(path, target)| matches!(
         (path.as_str(), target),
         ("#heading-id", LinkTarget::Internal(value)) if value == "#heading-id"
+    )));
+    assert!(link_targets.iter().any(|(path, target)| matches!(
+        (path.as_str(), target),
+        ("id:org-id-1", LinkTarget::Internal(value)) if value == "id:org-id-1"
+    )));
+    assert!(link_targets.iter().any(|(path, target)| matches!(
+        (path.as_str(), target),
+        ("id:org-id-1::*Anchor Heading", LinkTarget::Internal(value)) if value == "id:org-id-1"
     )));
     assert!(link_targets.iter().any(|(path, target)| matches!(
         (path.as_str(), target),
@@ -127,4 +140,43 @@ fn semantic_ast_diagnoses_ambiguous_and_missing_strict_internal_links() {
     assert!(links
         .iter()
         .any(|link| matches!(link.target, LinkTarget::Unresolved(_))));
+}
+
+#[test]
+fn semantic_ast_treats_org_id_as_local_when_present() {
+    let doc = Org::parse(
+        r#"* First
+:PROPERTIES:
+:ID: shared-id
+:END:
+* Second
+:PROPERTIES:
+:ID: shared-id
+:END:
+[[id:shared-id][ambiguous local]] [[id:external-only][external id]]
+"#,
+    )
+    .document();
+
+    assert_eq!(doc.diagnostics.len(), 1);
+    assert!(doc.diagnostics[0].message.contains("ambiguous"));
+
+    let mut links = Vec::new();
+    doc.visit(|node| {
+        if let AstRef::Object(object) = node {
+            if let ObjectData::Link(link) = &object.data {
+                links.push((link.path().to_string(), link.target.clone()));
+            }
+        }
+    });
+
+    assert!(links.iter().any(|link| matches!(
+        (link.0.as_str(), &link.1),
+        ("id:shared-id", LinkTarget::Unresolved(path)) if path == "id:shared-id"
+    )));
+    assert!(links.iter().any(|link| matches!(
+        (link.0.as_str(), &link.1),
+        ("id:external-only", LinkTarget::Uri { protocol, path })
+            if protocol == "id" && path == "external-only"
+    )));
 }

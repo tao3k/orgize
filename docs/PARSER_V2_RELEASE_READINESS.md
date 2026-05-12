@@ -39,8 +39,9 @@ those imports to `orgize::syntax_ast::*`.
 - Preprocessing directives are explicit side tables: `#+INCLUDE:` directives
   and `#+MACRO:` definitions are collected without changing the lossless tree.
 - Macro expansion is opt-in through semantic side-table helpers.
-- Internal links resolve against document-local headline, `CUSTOM_ID`, target,
-  radio target, footnote, and coderef targets while preserving original paths.
+- Internal links resolve against document-local headline, `CUSTOM_ID`, org-id
+  `ID`, target, radio target, footnote, and coderef targets while preserving
+  original paths.
 - Quote punctuation remains plain text; text markup inside quote boundaries is
   parsed according to Org's text-markup PRE/POST rules.
 - Lesser-used semantic element variants are covered for comments, drawers,

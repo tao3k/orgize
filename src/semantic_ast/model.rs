@@ -160,6 +160,8 @@ pub enum TargetKind {
     Headline,
     /// `CUSTOM_ID` property target.
     CustomId,
+    /// Org-id `ID` property target.
+    Id,
     /// Explicit `<<target>>` object.
     Target,
     /// Explicit `<<<radio target>>>` object.

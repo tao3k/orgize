@@ -127,8 +127,8 @@ this repository.
   - [x] Keep macro calls parsed even when substitution is disabled.
   - [x] Add opt-in expansion semantics without changing the lossless tree.
 - [x] Internal link resolution
-  - [x] Build a document-local target table for headlines, custom IDs, targets,
-        footnotes, radio targets, and coderefs.
+  - [x] Build a document-local target table for headlines, custom IDs, org-id
+        IDs, targets, footnotes, radio targets, and coderefs.
   - [x] Resolve `LinkTarget::Unresolved` where possible while keeping the
         original link path.
   - [x] Preserve diagnostics for ambiguous or missing targets.
@@ -250,3 +250,9 @@ this repository.
       parser-v2 closeout slice.
 - [x] Add dense semantic radio-link projection benchmark coverage for parsed
       object runs after the parser contract split.
+
+### M14 Org-Id Resolution
+
+- [x] Collect headline `:ID:` properties as document-local org-id targets.
+- [x] Resolve matching `id:` links while preserving the original link path and
+      leaving unmatched external org-id links available as URI-like links.

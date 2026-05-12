@@ -77,10 +77,11 @@ document-level side tables. Macro calls are parsed as objects without expanding
 their templates by default. Use `document.macro_expansions()` for opt-in macro
 substitution side tables when an exporter or indexer wants expanded macro text.
 Document-local link targets are collected into `document.targets`, covering
-headlines, `CUSTOM_ID` properties, explicit targets, radio targets, footnote
-definitions, and source/example block coderefs. Link projection resolves these
-targets into `LinkTarget::Internal` while keeping the original `link.path()`, and
-reports diagnostics for ambiguous or missing strict internal links.
+headlines, `CUSTOM_ID` and org-id `ID` properties, explicit targets, radio
+targets, footnote definitions, and source/example block coderefs. Link
+projection resolves these targets into `LinkTarget::Internal` while keeping the
+original `link.path()`, and reports diagnostics for ambiguous or missing strict
+internal links.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 
