@@ -54,6 +54,46 @@ fn fmt_cli_check_output_is_snapshotted() {
 }
 
 #[test]
+fn fmt_cli_stdin_aligns_tables_with_snapshot() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .args(["fmt"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    child
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(b"| A | Longer |\n| value | x |\n")
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+
+    assert!(output.status.success());
+    insta::assert_snapshot!(command_snapshot(output));
+}
+
+#[test]
+fn fmt_cli_check_directory_output_is_snapshotted() {
+    let dir = test_dir("fmt-check-dir");
+    fs::create_dir_all(dir.join("notes/nested")).unwrap();
+    fs::write(dir.join("notes/a.org"), "A  \n").unwrap();
+    fs::write(dir.join("notes/nested/b.org"), "| A | B |\n| xx | y |\n").unwrap();
+    fs::write(dir.join("notes/skip.txt"), "skip  \n").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["fmt", "--check", "notes"])
+        .output()
+        .unwrap();
+
+    assert!(!output.status.success());
+    insta::assert_snapshot!(command_snapshot(output));
+}
+
+#[test]
 fn fmt_cli_default_writes_file_with_snapshot() {
     let dir = test_dir("fmt-default-write");
     fs::create_dir_all(&dir).unwrap();
@@ -152,6 +192,24 @@ fn lint_cli_json_stdin_output_is_snapshotted() {
         .write_all(lint_fixture().as_bytes())
         .unwrap();
     let output = child.wait_with_output().unwrap();
+
+    assert!(!output.status.success());
+    insta::assert_snapshot!(command_snapshot(output));
+}
+
+#[test]
+fn lint_cli_directory_path_output_is_snapshotted() {
+    let dir = test_dir("lint-dir");
+    fs::create_dir_all(dir.join("notes/nested")).unwrap();
+    fs::write(dir.join("notes/a.org"), lint_fixture()).unwrap();
+    fs::write(dir.join("notes/nested/clean.org"), "* Clean\n").unwrap();
+    fs::write(dir.join("notes/skip.txt"), "[[fn:missing]]\n").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["lint", "--json", "notes"])
+        .output()
+        .unwrap();
 
     assert!(!output.status.success());
     insta::assert_snapshot!(command_snapshot(output));

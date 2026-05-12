@@ -356,3 +356,5 @@ runtime dependency is copied into this repository.
       file/path operands.
 - [x] Add Org table alignment outside block bodies, covered by formatter
       snapshots.
+- [x] Reuse directory and multi-file path expansion for `orgize lint`.
+- [x] Snapshot `fmt --check` directory output and stdin table formatting.

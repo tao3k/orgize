@@ -130,9 +130,11 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
         let source = read_stdin()?;
         reports.push(("<stdin>".to_string(), lint_org(&source)));
     } else {
-        for path in paths {
-            let source = fs::read_to_string(&path).map_err(|error| format!("{path}: {error}"))?;
-            reports.push((path, lint_org(&source)));
+        for path in collect_org_paths(&paths)? {
+            let display_path = path.display().to_string();
+            let source =
+                fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
+            reports.push((display_path, lint_org(&source)));
         }
     }
 
