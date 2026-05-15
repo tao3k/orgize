@@ -295,5 +295,5 @@ Semantic AST traversal is exposed through Rust-style APIs on `Document<A>`:
 projected from the rowan substrate; it does not replace rowan as the lossless
 parser representation.
 
-See [docs/PARSER_V2_RELEASE_READINESS.org](docs/PARSER_V2_RELEASE_READINESS.org)
+See [docs/20_parser/20.01_parser_v2_release_readiness.org](docs/20_parser/20.01_parser_v2_release_readiness.org)
 for the parser v2 closeout checklist, intentional gaps, and validation gate.

@@ -1,5 +1,6 @@
 //! Agenda-oriented semantic projection types.
 
+use super::agenda_match::{AgendaMatchParseError, AgendaMatchQuery};
 use super::model::{
     Object, TimeUnit, Timestamp, TimestampMoment, TimestampWarning, TodoKeyword, TodoState,
     WarningKind,
@@ -21,6 +22,7 @@ pub struct AgendaQuery {
     pub(crate) include_deadline_warnings: bool,
     pub(crate) include_overdue_deadlines: bool,
     pub(crate) search_headline_time: bool,
+    pub(crate) match_query: Option<AgendaMatchQuery>,
     pub(crate) required_tags: Vec<String>,
     pub(crate) excluded_tags: Vec<String>,
 }
@@ -42,6 +44,7 @@ impl AgendaQuery {
             include_deadline_warnings: true,
             include_overdue_deadlines: true,
             search_headline_time: true,
+            match_query: None,
             required_tags: Vec::new(),
             excluded_tags: Vec::new(),
         }
@@ -116,6 +119,20 @@ impl AgendaQuery {
     pub fn search_headline_time(mut self, search_headline_time: bool) -> Self {
         self.search_headline_time = search_headline_time;
         self
+    }
+
+    /// Filters agenda rows with a parsed Org Agenda-style tag/property query.
+    pub fn match_query(mut self, match_query: AgendaMatchQuery) -> Self {
+        self.match_query = Some(match_query);
+        self
+    }
+
+    /// Parses and applies an Org Agenda-style tag/property query.
+    pub fn match_expression(
+        self,
+        expression: impl AsRef<str>,
+    ) -> Result<Self, AgendaMatchParseError> {
+        Ok(self.match_query(AgendaMatchQuery::parse(expression)?))
     }
 
     /// Requires a tag to be present in a section's effective tag set.

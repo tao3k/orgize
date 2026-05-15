@@ -1,0 +1,42 @@
+* 00.01 JDex
+
+This is the Johnny.Decimal index for Orgize documentation.
+
+** Topology Authority
+
+The project-local category catalog lives in [[file:../topology.toml][docs/topology.toml]].
+It follows a path-first contract:
+
+- category semantics come from `docs/topology.toml`;
+- note coordinates come from the `AC.ID` prefix in the file path;
+- durable note files use `AC.ID_semantic_name.org`;
+- the leading category prefix in the directory must agree with the file
+  coordinate.
+
+** Current Coordinates
+
+| Coordinate | Path | Purpose |
+|------------+------+---------|
+| `00.01` | `docs/00_index/00.01_jdex.org` | Documentation index and coordinate map. |
+| `10.01` | `docs/10_architecture/10.01_agent_substrate.org` | Org-native semantic compiler and agent substrate direction. |
+| `10.02` | `docs/10_architecture/10.02_agent_memory_projection.org` | Agent-facing memory projection API design. |
+| `20.01` | `docs/20_parser/20.01_parser_v2_release_readiness.org` | Parser v2 public boundary and release-readiness checklist. |
+| `20.02` | `docs/20_parser/20.02_parser_v2_performance_closeout.org` | Parser v2 dense-path performance closeout. |
+| `90.01` | `docs/90_operations/90.01_implementation_status.org` | Implementation status, backlog, and validation notes. |
+
+** Authoring Rule
+
+New durable documents should first choose a declared category in
+`docs/topology.toml`, then select an unused `AC.ID` slot in that category. If no
+existing category is right, propose a reviewable manifest change instead of
+silently inventing category meaning.
+
+Markdown remains acceptable only as an ecosystem compatibility shell when
+external tooling expects it. Governance and architecture records should be Org
+documents under this coordinate system.
+
+After writing documentation, run the local docs lint:
+
+#+begin_src sh
+direnv exec . cargo run --quiet -- lint docs development.org
+#+end_src

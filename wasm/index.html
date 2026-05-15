@@ -153,6 +153,7 @@
           <span data-value="syntax">Syntax</span>
           <span data-value="semantic">Semantic AST</span>
           <span data-value="agenda">Agenda</span>
+          <span data-value="agent-planning">Agent Planning</span>
           <span data-value="traverse">Traverse</span>
           <span data-value="features">Parser Features</span>
           <div id="spacer"></div>
@@ -236,6 +237,11 @@
 
           case "agenda": {
             renderPre(org.agenda());
+            break;
+          }
+
+          case "agent-planning": {
+            renderPre(org.agentPlanning());
             break;
           }
 
@@ -356,6 +362,10 @@
         [
           "Agenda projection",
           "`Document::agenda_entries()` derives scheduled, scheduled-delay, deadline, warning, overdue, closed, plain active timestamp, headline time, repeated, category-aware, range-aware, and tag-filtered agenda rows from semantic timestamps.",
+        ],
+        [
+          "Agent planning",
+          "`Document::agent_planning_snapshot()` renders compact agent cards from agenda rows. `PLANxxx` values are output diagnostics, not Org source syntax.",
         ],
         [
           "Blocks and tables",

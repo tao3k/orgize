@@ -1,7 +1,7 @@
 //! `wasm-bindgen` facade for parsing and rendering Org documents.
 
 use orgize::{
-    ast::{AgendaDate, AgendaQuery},
+    ast::{AgendaDate, AgendaQuery, AgentPlanningQuery},
     export::{from_fn, Container, Event},
     rowan::ast::AstNode,
     Org as Inner,
@@ -56,12 +56,27 @@ impl Org {
     }
 
     pub fn agenda(&self) -> String {
+        let match_expression = r#"+demo|CATEGORY="agenda-demo""#;
         let query = AgendaQuery::new(AgendaDate::new(2026, 5, 10), AgendaDate::new(2026, 5, 24))
-            .include_closed(true);
+            .include_closed(true)
+            .match_expression(match_expression)
+            .expect("demo agenda match expression");
         format!(
-            "{:#?}",
+            "Agenda match query: {match_expression}\n\n{:#?}",
             self.inner.document().to_bare().agenda_entries(&query)
         )
+    }
+
+    #[wasm_bindgen(js_name = agentPlanning)]
+    pub fn agent_planning(&self) -> String {
+        let query = AgentPlanningQuery::new(
+            AgendaQuery::new(AgendaDate::new(2026, 5, 10), AgendaDate::new(2026, 5, 24))
+                .include_closed(true),
+        );
+        self.inner
+            .document()
+            .agent_planning_snapshot(&query)
+            .to_compact_text("wasm-demo.org")
     }
 
     pub fn update(&mut self, s: &str) {

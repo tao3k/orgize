@@ -1,0 +1,63 @@
+# Orgize Johnny.Decimal topology manifest.
+#
+# This is the project-local category catalog for path-first Org
+# documentation. Durable notes live at paths whose directory and file names
+# carry the documentation coordinate.
+
+[manifest]
+id = "orgize.docs-topology"
+framework = "johnny-decimal"
+mode = "path_first"
+coordinate_source = "path"
+note_file_shape = "AC.ID_semantic_name.org"
+category_directory_shape = "docs/AC_slug"
+canonical_index = "docs/00_index/00.01_jdex.org"
+
+[[areas]]
+range = "00-09"
+name = "Index and intake"
+description = "Documentation index, coordinate map, and authoring coordination."
+
+[[areas]]
+range = "10-19"
+name = "Architecture"
+description = "Parser substrate, semantic projection, and agent-facing API direction."
+
+[[areas]]
+range = "20-29"
+name = "Parser and release evidence"
+description = "Parser v2 readiness, performance closeout, and compatibility records."
+
+[[areas]]
+range = "90-99"
+name = "Operations"
+description = "Implementation status, validation commands, and documentation governance."
+
+[[categories]]
+id = "00"
+area = "00-09"
+directory = "docs/00_index"
+name = "JDex and documentation index"
+description = "Stable entrypoint for the documentation coordinate map."
+reserved = true
+
+[[categories]]
+id = "10"
+area = "10-19"
+directory = "docs/10_architecture"
+name = "Architecture and agent substrate"
+description = "Org-native semantic compiler and agent projection boundary."
+
+[[categories]]
+id = "20"
+area = "20-29"
+directory = "docs/20_parser"
+name = "Parser and release evidence"
+description = "Parser v2 readiness, performance evidence, and public API closeout."
+
+[[categories]]
+id = "90"
+area = "90-99"
+directory = "docs/90_operations"
+name = "Status and governance"
+description = "Implementation status, validation gates, and documentation policy."

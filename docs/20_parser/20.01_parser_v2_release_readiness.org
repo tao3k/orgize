@@ -1,11 +1,11 @@
-* Parser v2 release readiness
+* 20.01 Parser v2 Release Readiness
 
 This document is the PR-closeout checklist for the parser v2 lane. It records
 the intended public boundary, completed parser coverage, deferred work, and
 validation gates for the breaking semantic AST API.
 
 Performance ownership and dense-path measurements live in
-[[file:PARSER_V2_PERFORMANCE_CLOSEOUT.org][~PARSER_V2_PERFORMANCE_CLOSEOUT.org~]].
+[[file:20.02_parser_v2_performance_closeout.org][20.02 Parser v2 Performance Closeout]].
 
 ** Public boundary
 

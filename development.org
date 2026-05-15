@@ -6,6 +6,21 @@ cargo test --all-features
 cargo clippy --allow-dirty --allow-staged
 #+end_src
 
+** Documentation
+
+Durable documentation follows the path-first Johnny.Decimal Org topology under
+[[file:docs/index.org][docs/index.org]] and
+[[file:docs/topology.toml][docs/topology.toml]].
+
+Use `docs/AC_slug/AC.ID_semantic_name.org` for long-lived records. The
+category prefix in the directory and the coordinate in the file name must
+agree. If a new category is needed, update `docs/topology.toml` explicitly
+instead of silently inventing category meaning.
+
+#+begin_src sh
+direnv exec . cargo run --quiet -- lint docs development.org
+#+end_src
+
 ** Update snapshot testing
 
 #+begin_src sh

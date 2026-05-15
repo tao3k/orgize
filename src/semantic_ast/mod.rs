@@ -4,7 +4,10 @@
 //! semantic, org-element-like layer projected from that syntax tree.
 
 mod agenda;
+mod agenda_filter;
+mod agenda_match;
 mod agenda_model;
+mod agenda_time;
 mod agent_planning;
 mod agent_planning_model;
 mod block_metadata;
@@ -29,6 +32,7 @@ mod targets;
 mod timestamp_metadata;
 mod traversal;
 
+pub use agenda_match::{AgendaMatchOperator, AgendaMatchParseError, AgendaMatchQuery};
 pub use agenda_model::{
     AgendaCategory, AgendaDate, AgendaDeadlineState, AgendaEntry, AgendaEntryKind,
     AgendaOccurrence, AgendaQuery, AgendaScheduleState, AgendaTime,

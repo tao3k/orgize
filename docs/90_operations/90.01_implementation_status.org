@@ -1,4 +1,4 @@
-* Orgize implementation status
+* 90.01 Orgize Implementation Status
 
 Check out https://orgmode.org/worg/dev/org-syntax.html for more information.
 
@@ -345,7 +345,7 @@ runtime dependency is copied into this repository.
 
 *** M17 Parser v2 Closeout Evidence
 
-- [X] Add `docs/PARSER_V2_PERFORMANCE_CLOSEOUT.org` as the durable performance
+- [X] Add `docs/20_parser/20.02_parser_v2_performance_closeout.org` as the durable performance
       closeout entry point.
 - [X] Record the parser-v2 hot-path ownership matrix, dense benchmark matrix,
       and current low-sample Criterion measurements.
@@ -453,7 +453,174 @@ runtime dependency is copied into this repository.
       for Cargo, rustdoc, npm, and GitHub rendering.
 - [X] Add an Org-native agent substrate direction record for planning, memory,
       and compact agent-facing projections.
+- [X] Move durable docs into a path-first Johnny.Decimal Org topology with
+      `docs/topology.toml`, `docs/index.org`, and
+      `docs/00_index/00.01_jdex.org`.
 - [X] Add an agent planning snapshot projection over agenda rows and source
       metadata.
+- [X] Expose the agent planning snapshot in the wasm demo without adding
+      non-Org source syntax.
 - [ ] Add a memory-oriented projection over standard Org properties, drawers,
       timestamps, and lifecycle states without defining new parser syntax.
+
+*** M23 Agent Memory Projection API
+
+- [X] Record the formal agent-facing memory projection design in
+      `docs/10_architecture/10.02_agent_memory_projection.org`.
+- [ ] Add raw memory record structs over headings, properties, timestamps,
+      drawers, LOGBOOK-like content, links, and source spans.
+- [ ] Add `MemoryQuery` and a conservative official-Org-first default profile.
+- [ ] Add `AgentMemorySnapshot` compact cards that distinguish current, stale,
+      closed, archived, conflicting, and background facts.
+- [ ] Add fixtures proving stale or corrected facts do not re-enter current
+      decisions merely because they remain searchable.
+
+*** M24 Official Org Priority Audit
+
+This audit is based on the local official Org checkout under `.data/org-mode`,
+especially `doc/org-manual.org` and the front-line modules in `lisp/`.  The
+checkout remains research-only and must not enter Cargo, CI, tests, generated
+artifacts, or released packages.
+
+Priority is assigned by common Org usage and by how early/prominent the feature
+appears in the official manual and runtime modules:
+
+- P0 means it affects everyday agenda, search, planning, lint, or agent use.
+- P1 means it is a popular Org workflow and should be modeled as semantic
+      metadata/projection before exporters rely on it.
+- P2 means it is important for parity, but should stay opt-in or side-table
+      based until the core parser/projection surface is stable.
+
+**** P0 Agenda Match And Filtering Semantics
+
+Official anchors: `doc/org-manual.org` sections "Agenda Views",
+"Matching tags and properties", "Properties and Columns"; `lisp/org-agenda.el`
+match/filter code.
+
+- [X] Add an official-style match expression parser alongside the existing
+      required/excluded tag filters for `+tag`, `-tag`, top-level tag OR groups,
+      TODO state predicates, property predicates, and comparisons.
+- [X] Add `AgendaMatchQuery` or equivalent typed API instead of overloading raw
+      strings across consumers.
+- [X] Support inherited tags, file tags, document/category properties, TODO
+      keyword state, priority, and planning timestamp predicates in one query
+      evaluator.
+- [X] Add snapshot and field-level tests for match expressions that combine
+      tags and properties, including negative matches and missing properties.
+- [X] Expose match-query examples in wasm so agenda/indexer consumers can
+      inspect the active query and matched rows.
+
+**** P0 Priority, Effort, And Property Drawers
+
+Official anchors: `doc/org-manual.org` sections "Priorities", "Properties and
+Columns", "Clocking Work Time"; `lisp/org.el`, `lisp/org-colview.el`,
+`lisp/org-duration.el`.
+
+- [ ] Replace `Section::priority: Option<String>` with a typed priority domain
+      carrying the normalized priority cookie and source value.
+- [ ] Parse default priority semantics (`A`, `B`, `C`) into projection metadata
+      while keeping raw priority text for compatibility.
+- [ ] Parse common duration values from `EFFORT`, clock summaries, and
+      property drawer values into typed duration metadata.
+- [ ] Add a property side-table/index for fast lookup by inherited and local
+      properties without reparsing drawers during agenda/lint projections.
+- [ ] Add lint rules for malformed priority cookies, malformed duration values,
+      duplicate local properties, and common property typos that affect agenda
+      behavior.
+
+**** P0 Source Block Results And Tangle Metadata
+
+Official anchors: `doc/org-manual.org` section "Working with Source Code";
+`lisp/ob-core.el`, `lisp/ob-tangle.el`, `lisp/org-src.el`.
+
+- [ ] Model `#+RESULTS:` blocks/keywords as first-class semantic records linked
+      to the preceding source or inline source block.
+- [ ] Parse and normalize common Babel header args beyond the current raw
+      `:key value` projection: `:results`, `:exports`, `:eval`, `:session`,
+      `:var`, `:noweb`, `:tangle`, `:dir`, and `:cache`.
+- [ ] Add a source-block side table for language, name, result, header args,
+      coderefs, and tangle target metadata.
+- [ ] Add lint rules for missing block names referenced by noweb or calls,
+      unsafe/eval-sensitive headers, duplicate `#+NAME:`, and invalid tangle
+      targets.
+- [ ] Keep execution out of orgize; only parse, index, lint, format, and
+      project metadata.
+
+**** P1 Capture, Refile, Archive, And Lifecycle Metadata
+
+Official anchors: `doc/org-manual.org` sections "Capture and Attachments",
+"Refiling and Archiving", "TODO Items", "Progress Logging";
+`lisp/org-capture.el`, `lisp/org-refile.el`, `lisp/org-archive.el`.
+
+- [ ] Parse lifecycle/logbook drawers into semantic records for state changes,
+      notes, refiles, reschedules, redeadlines, and clock history.
+- [ ] Model archive semantics beyond the `ARCHIVE` tag: `ARCHIVE` property,
+      archive location keywords, and archived subtree intent.
+- [ ] Add memory projection over standard Org constructs: heading, TODO state,
+      tags, properties, timestamps, drawers, and logbook events.
+- [ ] Add compact agent-facing memory cards that distinguish current facts,
+      stale facts, superseded facts, closed items, and archived items without
+      defining new Org syntax.
+- [ ] Add lint rules for malformed logbook lines, archive target issues, and
+      refile/archive metadata that cannot be resolved locally.
+
+**** P1 Attachments And File Links
+
+Official anchors: `doc/org-manual.org` section "Capture and Attachments";
+`lisp/org-attach.el`, `lisp/org-attach-git.el`, `lisp/org-id.el`.
+
+- [ ] Model attachment directories from `ID`, `DIR`, `ATTACH_DIR`,
+      `ATTACH_DIR_INHERIT`, and attachment-related properties without touching
+      the filesystem by default.
+- [ ] Resolve attachment links and file links into typed semantic link metadata
+      with path kind, locality, and optional existence diagnostics for lint.
+- [ ] Add lint checks for missing local file/attachment targets when linting a
+      real file path, while keeping parser output filesystem-independent.
+- [ ] Add formatter/path tests for file links and attachment-style links that
+      preserve source text exactly.
+
+**** P1 Tables, Formulas, And Column View
+
+Official anchors: `doc/org-manual.org` sections "Tables" and "Properties and
+Columns"; `lisp/org-table.el`, `lisp/org-colview.el`.
+
+- [ ] Parse table formulas into typed references, assignments, and flags while
+      preserving raw `#+TBLFM:` source.
+- [ ] Add lint rules for malformed table formulas and formula references that
+      point outside the table shape.
+- [ ] Extend `orgize fmt` table alignment to preserve formula boundaries,
+      hlines, cookies, and indentation across more official table examples.
+- [ ] Model column view declarations (`COLUMNS`, `#+COLUMNS:`) as typed document
+      and subtree metadata for indexers and agent summaries.
+
+**** P2 Export, Publishing, And Include Semantics
+
+Official anchors: `doc/org-manual.org` sections "Exporting", "Publishing",
+"Include Files"; `lisp/ox.el`, `lisp/ox-*.el`, `lisp/org-macro.el`.
+
+- [ ] Expand the typed `#+OPTIONS:` model beyond `H`, `-`, and `e` to cover the
+      high-usage export toggles for TODOs, tags, timestamps, author/date/title,
+      drawers, planning, priorities, broken links, and section numbering.
+- [ ] Model `#+BIND:`, `#+SETUPFILE:`, `#+EXPORT_FILE_NAME:`, and backend
+      `#+ATTR_*` settings as side-table metadata without executing Emacs Lisp.
+- [ ] Add an explicit include expansion plan for `#+INCLUDE:` line/range/options
+      semantics; keep expansion opt-in and filesystem-aware only in lint/export
+      helper APIs.
+- [ ] Keep publishing out of core parser execution, but parse publishing-related
+      links/options well enough for lint and export projection.
+
+**** P2 Diary, Habit, Datetree, And Calendar Extras
+
+Official anchors: `doc/org-manual.org` sections "Dates and Times", "Agenda
+Views", "Capture"; `lisp/org-habit.el`, `lisp/org-datetree.el`,
+`lisp/org-agenda.el`.
+
+- [ ] Project diary sexp timestamps as explicit unsupported-or-diary agenda
+      rows with diagnostics instead of silently ignoring them.
+- [ ] Add habit metadata projection for `STYLE: habit`, repeaters, scheduled
+      state, and consistency graph inputs, without implementing Emacs agenda
+      graph rendering.
+- [ ] Recognize datetree shape for date-organized capture files and expose a
+      helper that maps dates to heading paths.
+- [ ] Add tests for inactive timestamp inclusion as an explicit agenda option,
+      keeping the default inactive behavior unchanged.

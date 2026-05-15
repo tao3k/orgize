@@ -1,0 +1,103 @@
+* 10.02 Agent Memory Projection
+
+This document records the first formal design for an Org-native, agent-facing
+memory projection API. The purpose is not to turn orgize into a memory database.
+The purpose is to let historical Org facts enter an agent's current decision in
+a controlled, auditable direction.
+
+** Source Contract
+
+The source format remains ordinary Org. The projection must not define new Org
+syntax. It may read and preserve:
+
+- headlines, outline paths, TODO keywords, priorities, and tags;
+- planning lines: `SCHEDULED`, `DEADLINE`, and `CLOSED`;
+- active and inactive timestamps, including repeaters where the parser already
+  models them;
+- property drawers and ordinary drawers;
+- LOGBOOK-style state-change notes, clock lines, and timestamped notes;
+- links, targets, `CUSTOM_ID`, and org-id `ID` properties;
+- archive tags and archive-related properties as ordinary Org metadata.
+
+Project-specific property names are profile conventions. Orgize should preserve
+and expose them as Org properties, but the core parser should not pretend they
+are new Org language forms.
+
+** API Shape
+
+The API should have two public levels.
+
+`Document::memory_records(&MemoryQuery)` is the raw semantic fact surface. It
+returns addressable records with source spans, heading context, lifecycle state,
+tags, properties, timestamps, drawer/logbook events, and links. This API is
+useful for indexers, tests, and downstream policy engines.
+
+`Document::agent_memory_snapshot(&AgentMemoryQuery)` is the primary agent
+surface. It returns compact memory cards, not a large JSON-first dump. Each card
+should tell an agent:
+
+- whether the fact is current, stale, closed, archived, conflicting, or merely
+  background context;
+- which Org evidence caused that decision;
+- which source line and heading justify the card;
+- which timestamp or log event controls its temporal weight;
+- whether the fact should enter the current decision or be kept only as
+  historical evidence.
+
+JSON can remain an explicit machine output mode, but the default agent-facing
+renderer should be compact text with stable decision identifiers.
+
+** Profile Boundary
+
+An `AgentMemoryProfile` may interpret ordinary properties and tags as policy
+signals for a particular consumer. That profile is a projection policy, not a
+parser extension.
+
+Examples of profile-level decisions:
+
+- which tags define the active scope for a task;
+- which property names represent validity hints for a project;
+- how to compare two records that discuss the same preference or fact;
+- how aggressively old facts decay when newer timestamped evidence appears.
+
+The default orgize profile should remain conservative and official-Org-first:
+TODO state, `CLOSED`, archive tags, planning timestamps, LOGBOOK events, IDs,
+links, and ordinary property presence are evidence. Project-specific property
+names are visible, but not hard-coded as global semantics.
+
+** Temporal Decision Model
+
+Memory quality depends on direction through time.
+
+Old facts should not disappear silently. They should remain available as
+history, but the snapshot must explain why they do or do not enter the current
+decision. A later `CLOSED` timestamp, DONE/CANCELED state, archive marker,
+newer linked heading, or later LOGBOOK state-change note can lower a record's
+current authority without deleting the record.
+
+The projection should distinguish at least:
+
+- current facts: usable in the current decision;
+- stale facts: visible history with weaker current authority;
+- closed facts: lifecycle-complete records;
+- archived facts: intentionally moved out of the active surface;
+- conflict candidates: records that need a profile or caller to choose between
+  competing evidence;
+- background facts: relevant context that should not drive action by itself.
+
+** Implementation Slices
+
+The first implementation should be narrow and testable:
+
+1. add typed memory record structs over headings, properties, timestamps,
+   drawers, LOGBOOK-like content, links, and source spans;
+2. add a conservative `MemoryQuery` with scope filters and timestamp bounds;
+3. add compact `AgentMemorySnapshot` cards over those records;
+4. add fixtures that prove DONE/CLOSED/archive/logbook evidence prevents stale
+   facts from being promoted as current;
+5. expose the compact renderer through the same agent-friendly style as lint
+   and planning snapshots.
+
+This work should continue to calibrate against `.data/org-mode` manual and
+Elisp sources, especially property, TODO logging, agenda, archive, and org-id
+behavior.

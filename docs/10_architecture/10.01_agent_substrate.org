@@ -1,4 +1,4 @@
-* Orgize Agent Substrate Direction
+* 10.01 Agent Substrate
 
 This record captures the parser-v2 architectural direction after the agenda,
 lint, and compact repair-report work. The goal is to keep orgize parser-native
@@ -15,6 +15,11 @@ also include agents that must decide what to repair, what to schedule, what to
 ignore, and what historical fact is still valid for the current task.
 
 ** Documentation Policy
+
+Durable documentation follows the path-first Johnny.Decimal topology in
+[[file:../topology.toml][docs/topology.toml]]. The coordinate map is
+[[file:../00_index/00.01_jdex.org][00.01 JDex]], with a compatibility entry at
+[[file:../index.org][docs/index.org]].
 
 Internal governance, status, release-readiness, planning, and architecture
 records should use Org as the canonical source format.
@@ -77,6 +82,10 @@ decision-oriented questions:
 
 The output should be compact cards first, with JSON as an explicit mode.
 
+The wasm demo exposes this as an Agent Planning tab so the browser surface
+stays synchronized with the Rust semantic API. The tab renders compact cards
+from ordinary Org planning syntax in the sample document.
+
 ** Memory Projection
 
 Agent memory is not only storage. It is governed temporal projection.
@@ -99,6 +108,11 @@ gives them special semantics. Old facts should not disappear silently. They
 should become closed, archived, DONE/CANCELED, or superseded by ordinary Org
 records so retrieval can prevent stale preferences and corrected facts from
 re-entering current decisions.
+
+The formal memory projection API design lives in
+[[file:10.02_agent_memory_projection.org][10.02 Agent Memory Projection]]. The
+short version is: raw memory records are the parse-faithful substrate, while
+agent memory snapshots are the primary API for current-decision use.
 
 ** Boundary
 

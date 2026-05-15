@@ -141,6 +141,59 @@ fn semantic_ast_agenda_filters_done_archived_and_tags() {
 }
 
 #[test]
+fn semantic_ast_agenda_filters_with_official_match_expression_subset() {
+    let doc = Org::parse(
+        r#"#+TODO: TODO WAITING | DONE
+#+FILETAGS: :team:
+#+CATEGORY: inbox
+* WAITING Work wait :work:
+SCHEDULED: <2026-05-15 Fri>
+:PROPERTIES:
+:Effort: 1
+:Owner: Sarah
+:END:
+* TODO Home larger :home:
+SCHEDULED: <2026-05-15 Fri>
+:PROPERTIES:
+:Effort: 3
+:Owner: Taylor
+:END:
+* DONE Work done :work:
+SCHEDULED: <2026-05-15 Fri>
+"#,
+    )
+    .document();
+    let query = AgendaQuery::single_day(AgendaDate::new(2026, 5, 15))
+        .include_done(true)
+        .match_expression(r#"+work+TODO="WAITING"|home+Effort<2"#)
+        .expect("valid agenda match expression");
+
+    let match_entries = doc.to_bare().agenda_entries(&query);
+    let titles = match_entries
+        .iter()
+        .map(|entry| entry.raw_title.as_str())
+        .collect::<Vec<_>>();
+
+    assert_eq!(titles, ["Work wait"]);
+    insta::with_settings!({snapshot_path => "../../snapshots", prepend_module_to_snapshot => false}, {
+        insta::assert_debug_snapshot!("semantic_ast__semantic_agenda_match_filter_entries", match_entries);
+    });
+
+    let category_query = AgendaQuery::single_day(AgendaDate::new(2026, 5, 15))
+        .include_done(true)
+        .match_expression(r#"+team+CATEGORY="inbox"-Owner="Taylor""#)
+        .expect("valid agenda match expression");
+    let titles = doc
+        .to_bare()
+        .agenda_entries(&category_query)
+        .into_iter()
+        .map(|entry| entry.raw_title)
+        .collect::<Vec<_>>();
+
+    assert_eq!(titles, ["Work done", "Work wait"]);
+}
+
+#[test]
 fn semantic_ast_agenda_projects_active_timestamps_only() {
     let doc = Org::parse("* TODO Event\nBody <2026-05-15 Fri 08:00> and [2026-05-15 Fri 09:00].\n")
         .document();
