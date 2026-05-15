@@ -77,12 +77,26 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
 
     let delayed = entries
         .iter()
-        .find(|entry| entry.raw_title == "Delayed scheduled")
+        .find(|entry| entry.raw_title == "Delayed scheduled 8:30-1pm")
         .expect("scheduled delay row");
     assert_eq!(delayed.display_date, AgendaDate::new(2026, 5, 16));
     assert_eq!(
         delayed.scheduled,
         Some(AgendaScheduleState::Delayed { days_delayed: 2 })
+    );
+    assert_eq!(
+        delayed.time,
+        Some(AgendaTime {
+            hour: 8,
+            minute: 30
+        })
+    );
+    assert_eq!(
+        delayed.end_time,
+        Some(AgendaTime {
+            hour: 13,
+            minute: 0
+        })
     );
 
     let plain_meetings = entries
@@ -141,6 +155,53 @@ fn semantic_ast_agenda_projects_active_timestamps_only() {
         .to_bare()
         .agenda_entries(&query.include_timestamps(false));
     assert!(without_timestamps.is_empty());
+}
+
+#[test]
+fn semantic_ast_agenda_extracts_headline_time_of_day() {
+    let doc = Org::parse(
+        "* TODO Arthur Dent 8:30-1pm\nSCHEDULED: <2026-05-15 Fri>\n* TODO Ford <2026-05-15 Fri 12:45>\n",
+    )
+    .document();
+    let query = AgendaQuery::single_day(AgendaDate::new(2026, 5, 15));
+
+    let entries = doc.to_bare().agenda_entries(&query);
+    assert_eq!(entries.len(), 2);
+    assert_eq!(entries[0].raw_title, "Arthur Dent 8:30-1pm");
+    assert_eq!(entries[0].kind, AgendaEntryKind::Scheduled);
+    assert_eq!(
+        entries[0].time,
+        Some(AgendaTime {
+            hour: 8,
+            minute: 30
+        })
+    );
+    assert_eq!(
+        entries[0].end_time,
+        Some(AgendaTime {
+            hour: 13,
+            minute: 0
+        })
+    );
+    assert_eq!(entries[1].raw_title, "Ford <2026-05-15 Fri 12:45>");
+    assert_eq!(entries[1].kind, AgendaEntryKind::Timestamp);
+    assert_eq!(
+        entries[1].time,
+        Some(AgendaTime {
+            hour: 12,
+            minute: 45
+        })
+    );
+
+    let without_headline_time = doc
+        .to_bare()
+        .agenda_entries(&query.search_headline_time(false));
+    let arthur = without_headline_time
+        .iter()
+        .find(|entry| entry.raw_title == "Arthur Dent 8:30-1pm")
+        .expect("scheduled row");
+    assert_eq!(arthur.time, None);
+    assert_eq!(arthur.end_time, None);
 }
 
 #[test]

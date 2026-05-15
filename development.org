@@ -1,30 +1,30 @@
-## Format, test, lint
+** Format, test, lint
 
-```shell
+#+begin_src sh
 cargo fmt -- --check
 cargo test --all-features
 cargo clippy --allow-dirty --allow-staged
-```
+#+end_src
 
-## Update snapshot testing
+** Update snapshot testing
 
-```shell
+#+begin_src sh
 cargo install cargo-insta
 cargo insta test --all-features
 cargo insta review
-```
+#+end_src
 
-## Fuzz testing
+** Fuzz testing
 
-```shell
+#+begin_src sh
 cargo install cargo-fuzz
 rustup default nightly
 cargo fuzz run fuzz_target_1
-```
+#+end_src
 
-## Benchmark
+** Benchmark
 
-```shell
+#+begin_src sh
 curl -q https://orgmode.org/worg/doc.org --output ./benches/doc.org
 curl -q https://orgmode.org/worg/org-faq.org --output ./benches/org-faq.org
 curl -q https://orgmode.org/worg/org-hacks.org --output ./benches/org-hacks.org
@@ -33,12 +33,12 @@ curl -q https://orgmode.org/worg/org-syntax.org --output ./benches/org-syntax.or
 curl -q https://raw.githubusercontent.com/bzg/org-mode/main/doc/org-manual.org --output ./benches/org-manual.org
 
 cargo bench --bench parse
-```
+#+end_src
 
-## Benchmark w/ flamegraph
+** Benchmark w/ flamegraph
 
-```shell
+#+begin_src sh
 cargo install flamegraph
 cargo flamegraph --bench parse -o baseline.svg -- --bench
 # then open baseline.svg with your browser
-```
+#+end_src

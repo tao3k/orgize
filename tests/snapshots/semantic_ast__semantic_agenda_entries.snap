@@ -826,17 +826,27 @@ expression: entries
             day: 14,
         },
         target_end_date: None,
-        time: None,
-        end_time: None,
+        time: Some(
+            AgendaTime {
+                hour: 8,
+                minute: 30,
+            },
+        ),
+        end_time: Some(
+            AgendaTime {
+                hour: 13,
+                minute: 0,
+            },
+        ),
         title: [
             Object {
                 ann: (),
                 data: Plain(
-                    "Delayed scheduled ",
+                    "Delayed scheduled 8:30-1pm ",
                 ),
             },
         ],
-        raw_title: "Delayed scheduled",
+        raw_title: "Delayed scheduled 8:30-1pm",
         category: Some(
             AgendaCategory(
                 "doc-cat",
@@ -857,7 +867,7 @@ expression: entries
             "delay",
         ],
         anchor: Some(
-            "delayed-scheduled",
+            "delayed-scheduled-8-30-1pm",
         ),
         timestamp: Timestamp {
             kind: Active,

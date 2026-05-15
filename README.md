@@ -104,9 +104,13 @@ Use `document.agenda_entries(&AgendaQuery::new(start, end))` when an indexer or
 UI wants an Org Agenda-style semantic view over planning and plain active
 timestamps. The projection derives scheduled, deadline, warning, overdue,
 closed, active timestamp, repeated, and tag-filtered rows, including timestamp
-range display days and start/end times, scheduled delay cookies, and `CATEGORY`
-keyword/property metadata without changing the parsed document or exporter
-defaults.
+range display days and start/end times, headline time-of-day ranges, scheduled
+delay cookies, and `CATEGORY` keyword/property metadata without changing the
+parsed document or exporter defaults. Use
+`document.agent_planning_snapshot(&AgentPlanningQuery::new(query))` when an
+agent wants compact decision cards over those agenda rows. The snapshot is a
+renderer-friendly projection of official Org agenda semantics; its `PLANxxx`
+codes are output diagnostics, not Org source syntax.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 
@@ -291,5 +295,5 @@ Semantic AST traversal is exposed through Rust-style APIs on `Document<A>`:
 projected from the rowan substrate; it does not replace rowan as the lossless
 parser representation.
 
-See [docs/PARSER_V2_RELEASE_READINESS.md](docs/PARSER_V2_RELEASE_READINESS.md)
+See [docs/PARSER_V2_RELEASE_READINESS.org](docs/PARSER_V2_RELEASE_READINESS.org)
 for the parser v2 closeout checklist, intentional gaps, and validation gate.

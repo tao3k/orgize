@@ -355,7 +355,7 @@
         ],
         [
           "Agenda projection",
-          "`Document::agenda_entries()` derives scheduled, scheduled-delay, deadline, warning, overdue, closed, plain active timestamp, repeated, category-aware, range-aware, and tag-filtered agenda rows from semantic timestamps.",
+          "`Document::agenda_entries()` derives scheduled, scheduled-delay, deadline, warning, overdue, closed, plain active timestamp, headline time, repeated, category-aware, range-aware, and tag-filtered agenda rows from semantic timestamps.",
         ],
         [
           "Blocks and tables",
@@ -491,6 +491,10 @@ Delay cookies move scheduled display rows later in the Agenda tab.
 
 * TODO Plain timestamp sample :demo:event:
 Plain active timestamp <2026-05-13 Wed 14:00-15:30> appears in the Agenda tab; inactive [2026-05-13 Wed] stays out.
+
+* TODO Headline time sample 8:30-1pm :demo:time:
+SCHEDULED: <2026-05-13 Wed>
+Plain headline time ranges sort timed agenda rows without changing the source timestamp.
 
 *************** WAIT Inline task :inline:
 SCHEDULED: <2026-05-11 Mon>

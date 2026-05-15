@@ -20,6 +20,7 @@ pub struct AgendaQuery {
     pub(crate) expand_repeaters: bool,
     pub(crate) include_deadline_warnings: bool,
     pub(crate) include_overdue_deadlines: bool,
+    pub(crate) search_headline_time: bool,
     pub(crate) required_tags: Vec<String>,
     pub(crate) excluded_tags: Vec<String>,
 }
@@ -40,6 +41,7 @@ impl AgendaQuery {
             expand_repeaters: true,
             include_deadline_warnings: true,
             include_overdue_deadlines: true,
+            search_headline_time: true,
             required_tags: Vec::new(),
             excluded_tags: Vec::new(),
         }
@@ -107,6 +109,12 @@ impl AgendaQuery {
     /// Enables or disables overdue deadline rows on the query start date.
     pub fn include_overdue_deadlines(mut self, include_overdue_deadlines: bool) -> Self {
         self.include_overdue_deadlines = include_overdue_deadlines;
+        self
+    }
+
+    /// Enables or disables plain time-of-day extraction from headline text.
+    pub fn search_headline_time(mut self, search_headline_time: bool) -> Self {
+        self.search_headline_time = search_headline_time;
         self
     }
 
@@ -193,7 +201,7 @@ impl AgendaDate {
     }
 }
 
-/// Time of day projected from the start of an Org timestamp.
+/// Time of day projected for an agenda row.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AgendaTime {
     pub hour: u8,

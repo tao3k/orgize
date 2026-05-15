@@ -1,0 +1,117 @@
+* Orgize Agent Substrate Direction
+
+This record captures the parser-v2 architectural direction after the agenda,
+lint, and compact repair-report work. The goal is to keep orgize parser-native
+while making its semantic projections directly useful to LLM agents.
+
+** Positioning
+
+orgize should not stop at being a lossless Org parser. The parser remains the
+substrate, but the future-facing boundary is an Org-native semantic compiler
+for agents.
+
+The core consumers are no longer only exporters or human-facing renderers. They
+also include agents that must decide what to repair, what to schedule, what to
+ignore, and what historical fact is still valid for the current task.
+
+** Documentation Policy
+
+Internal governance, status, release-readiness, planning, and architecture
+records should use Org as the canonical source format.
+
+Markdown remains acceptable as a compatibility shell when external tooling
+requires it. The current examples are:
+
+- `README.md`, because Cargo, rustdoc, crates.io, and GitHub use it as the
+  public package entry point.
+- `wasm/README.md`, because the npm package publishes it through
+  `wasm/package.json`.
+
+Long-lived project decisions should live in `.org` documents. Markdown
+compatibility files should point at those sources instead of carrying separate
+governance state.
+
+** Agent-Facing Output
+
+The `orgize lint` compact renderer is the current working model:
+
+- Keep JSON as an explicit machine mode.
+- Make the default human/agent text compact.
+- Include source location, source line, repair hint, and contract.
+- Avoid forcing agents to consume large JSON payloads for ordinary repair
+  loops.
+
+Planning and memory projections should follow the same shape. The parser should
+produce stable semantic facts and compact decision cards; higher-level runtimes
+can decide how to schedule, recall, or execute.
+
+These projections must not invent Org source syntax. They should be derived
+from syntax and behavior already recognized by Org mode: headlines, TODO
+keywords, priorities, tags, planning lines, active/inactive timestamps,
+repeaters, property drawers, ordinary drawers, LOGBOOK records, and standard
+agenda semantics.
+
+Calibration should start from the local research-only Org mode checkout under
+`.data/org-mode`, especially `doc/org-manual.org`, `lisp/org.el`,
+`lisp/org-element.el`, and `lisp/org-agenda.el`. That checkout remains outside
+Cargo, CI, tests, and release artifacts.
+
+** Planning Projection
+
+The existing `Document::agenda_entries(&AgendaQuery)` API is the first planning
+projection. It already turns Org planning syntax into scheduled, deadline,
+closed, active timestamp, warning, overdue, repeater, category, and tag-filtered
+rows without mutating `ParsedAst`.
+
+`Document::agent_planning_snapshot(&AgentPlanningQuery)` derives compact agent
+cards from those rows and section metadata. This is a projection over official
+Org planning semantics, not a new planning syntax. That snapshot should answer
+decision-oriented questions:
+
+- What is due now or overdue?
+- What is blocked?
+- What is stale?
+- What is the next safe action?
+- Which source line and Org heading justify this decision?
+- Which tasks are done, archived, canceled, or intentionally excluded?
+
+The output should be compact cards first, with JSON as an explicit mode.
+
+** Memory Projection
+
+Agent memory is not only storage. It is governed temporal projection.
+
+Org is a better source format than plain Markdown for this because headings,
+properties, timestamps, tags, TODO states, drawers, and logs can express
+validity, scope, correction, and supersession.
+
+A memory-oriented projection should stay within standard Org constructs:
+
+- Headings provide addressable memory records.
+- TODO keywords and tags provide lifecycle state.
+- Active and inactive timestamps provide time evidence.
+- Property drawers provide key-value metadata without changing Org syntax.
+- LOGBOOK or ordinary drawers provide state-change history and notes.
+
+Project-specific property names can be conventions for a consumer, but orgize
+should treat them as ordinary Org properties unless an official Org construct
+gives them special semantics. Old facts should not disappear silently. They
+should become closed, archived, DONE/CANCELED, or superseded by ordinary Org
+records so retrieval can prevent stale preferences and corrected facts from
+re-entering current decisions.
+
+** Boundary
+
+Keep orgize focused on parsing and semantic projection.
+
+orgize should not become a full task manager, scheduler, or long-term memory
+database. It should provide the typed Org-native facts and compact agent-facing
+renderers that those systems can consume.
+
+The clean boundary is:
+
+- Parser: lossless syntax and source-preserving AST.
+- Semantic core: typed planning, timestamps, properties, drawers, tags, links,
+  diagnostics, and side tables.
+- Agent projections: compact lint, planning, and memory snapshots.
+- Runtimes: external systems decide execution, persistence, and scheduling.

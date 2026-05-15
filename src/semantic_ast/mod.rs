@@ -5,6 +5,8 @@
 
 mod agenda;
 mod agenda_model;
+mod agent_planning;
+mod agent_planning_model;
 mod block_metadata;
 mod block_model;
 mod block_syntax;
@@ -30,6 +32,10 @@ mod traversal;
 pub use agenda_model::{
     AgendaCategory, AgendaDate, AgendaDeadlineState, AgendaEntry, AgendaEntryKind,
     AgendaOccurrence, AgendaQuery, AgendaScheduleState, AgendaTime,
+};
+pub use agent_planning_model::{
+    AgentPlanningCard, AgentPlanningDecision, AgentPlanningQuery, AgentPlanningSeverity,
+    AgentPlanningSnapshot, AgentPlanningSource,
 };
 pub use block_model::{
     BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering,

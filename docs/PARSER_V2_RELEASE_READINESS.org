@@ -1,13 +1,13 @@
-# Parser v2 release readiness
+* Parser v2 release readiness
 
 This document is the PR-closeout checklist for the parser v2 lane. It records
 the intended public boundary, completed parser coverage, deferred work, and
 validation gates for the breaking semantic AST API.
 
 Performance ownership and dense-path measurements live in
-[`PARSER_V2_PERFORMANCE_CLOSEOUT.md`](PARSER_V2_PERFORMANCE_CLOSEOUT.md).
+[[file:PARSER_V2_PERFORMANCE_CLOSEOUT.org][~PARSER_V2_PERFORMANCE_CLOSEOUT.org~]].
 
-## Public boundary
+** Public boundary
 
 - `orgize::ast` is the owned semantic AST API.
 - `Org::document()` returns `ast::ParsedAst`.
@@ -25,7 +25,7 @@ Performance ownership and dense-path measurements live in
 Code that previously imported rowan wrappers from `orgize::ast::*` should move
 those imports to `orgize::syntax_ast::*`.
 
-## Completed coverage
+** Completed coverage
 
 - Current lossless syntax surface has semantic projection coverage tests that
   reject accidental `Unknown` fallthrough.
@@ -83,8 +83,12 @@ those imports to `orgize::syntax_ast::*`.
 - Dense parser-v2 performance coverage includes macro expansion, target
   projection, annotation projection, semantic radio projection, M15 side-table
   post-processing, and `Document::project_for_export`.
+- Agent planning snapshots are available through
+  `Document::agent_planning_snapshot(&AgentPlanningQuery)`. They derive compact
+  cards from existing agenda rows and source annotations without defining new
+  Org source syntax.
 
-## Intentional gaps
+** Intentional gaps
 
 - Existing HTML/Markdown/LaTeX export is not rewritten to semantic AST in this
   PR.
@@ -97,11 +101,11 @@ those imports to `orgize::syntax_ast::*`.
   not vendor, translate, depend on, execute, or test against foreign parser
   sources, foreign test cases, generated artifacts, or foreign toolchains.
 
-## Validation gate
+** Validation gate
 
 Run every release-readiness pass through the repository environment:
 
-```sh
+#+begin_src sh
 direnv exec . cargo fmt --all -- --check
 direnv exec . cargo test --workspace --all-targets --all-features
 direnv exec . cargo clippy --workspace --all-targets --all-features -- -D warnings
@@ -109,7 +113,7 @@ direnv exec . cargo test --doc --all-features
 direnv exec . cargo run --quiet --manifest-path /Users/guangtao/ghq/github.com/tao3k/rust-lang-project-harness/Cargo.toml -- --json /Users/guangtao/ghq/github.com/tao3k/orgize
 git diff --check
 rg -n "<foreign-reference-and-policy-boundary-pattern>" Cargo.toml Cargo.lock src tests README.md .github wasm examples build.rs benches docs --glob '!target/**'
-```
+#+end_src
 
 The final boundary grep should use the repository's current forbidden
 reference/toolchain and policy-bypass pattern, and it should return no matches.
@@ -117,7 +121,7 @@ The Rust project harness JSON should report zero findings. The local `.data/`
 directory may remain untracked as a research checkout, but it must not enter
 Cargo, CI, the release package, tests, or generated artifacts.
 
-## PR closeout
+** PR closeout
 
 - Keep PR #4 on `parser-v2.0`; do not split a new PR for this lane.
 - Keep the PR ready for review once local gates and GitHub `test` pass.

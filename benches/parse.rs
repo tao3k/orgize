@@ -411,8 +411,11 @@ fn dense_agenda_projection_fixture() -> String {
         let scheduled_day = idx % 28 + 1;
         let deadline_day = (idx + 3) % 28 + 1;
         let range_end_day = (scheduled_day + 1).min(28);
+        let headline_time = if idx % 11 == 0 { " 8:30-1pm" } else { "" };
 
-        org.push_str(&format!("* {todo} Agenda item {idx} {tag}\n"));
+        org.push_str(&format!(
+            "* {todo} Agenda item {idx}{headline_time} {tag}\n"
+        ));
         if idx % 12 == 0 {
             org.push_str(":PROPERTIES:\n:CATEGORY: bench-work\n:END:\n");
         }
