@@ -1,10 +1,10 @@
 //! Annotation mapping and traversal for the semantic AST.
 
 use super::{
-    AstMut, AstRef, BareAst, Block, BlockLine, Citation, CiteReference, Document, Drawer, Element,
-    ElementData, FootnoteDef, FootnoteDefinition, FootnoteEntry, IncludeDirective, Inlinetask,
-    InlinetaskEnd, Keyword, Link, List, ListItem, MacroDefinition, Object, ObjectData, Property,
-    Section, SemanticFixedWidth, Table, TableCell, TableRow, TargetDefinition,
+    ArchiveLocation, AstMut, AstRef, BareAst, Block, BlockLine, Citation, CiteReference, Document,
+    Drawer, Element, ElementData, FootnoteDef, FootnoteDefinition, FootnoteEntry, IncludeDirective,
+    Inlinetask, InlinetaskEnd, Keyword, Link, List, ListItem, MacroDefinition, Object, ObjectData,
+    Property, Section, SemanticFixedWidth, Table, TableCell, TableRow, TargetDefinition,
 };
 
 impl<A> Document<A> {
@@ -54,6 +54,11 @@ impl<A> Document<A> {
         Document {
             ann: f(&self.ann),
             properties: self.properties.iter().map(|x| x.map_ann_with(f)).collect(),
+            archive_locations: self
+                .archive_locations
+                .iter()
+                .map(|x| x.map_ann_with(f))
+                .collect(),
             metadata: self.metadata.iter().map(|x| x.map_ann_with(f)).collect(),
             filetags: self.filetags.clone(),
             export_settings: self.export_settings.clone(),
@@ -80,6 +85,11 @@ impl<A> Document<A> {
             ann: f(&self.ann)?,
             properties: self
                 .properties
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            archive_locations: self
+                .archive_locations
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
@@ -133,6 +143,9 @@ impl<A> Document<A> {
         for property in &self.properties {
             property.visit_with(f);
         }
+        for archive_location in &self.archive_locations {
+            archive_location.visit_with(f);
+        }
         for keyword in &self.metadata {
             keyword.visit_with(f);
         }
@@ -164,6 +177,9 @@ impl<A> Document<A> {
         for property in &mut self.properties {
             property.visit_mut_with(f);
         }
+        for archive_location in &mut self.archive_locations {
+            archive_location.visit_mut_with(f);
+        }
         for keyword in &mut self.metadata {
             keyword.visit_mut_with(f);
         }
@@ -194,6 +210,9 @@ impl<A> Document<A> {
         let mut acc = f(init, AstRef::Document(self));
         for property in &self.properties {
             acc = property.fold_with(acc, f);
+        }
+        for archive_location in &self.archive_locations {
+            acc = archive_location.fold_with(acc, f);
         }
         for keyword in &self.metadata {
             acc = keyword.fold_with(acc, f);
@@ -268,6 +287,29 @@ impl<A> IncludeDirective<A> {
         F: FnMut(T, AstRef<'_, A>) -> T,
     {
         f(init, AstRef::IncludeDirective(self))
+    }
+}
+
+impl<A> ArchiveLocation<A> {
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::ArchiveLocation(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::ArchiveLocation(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::ArchiveLocation(self))
     }
 }
 
@@ -536,6 +578,7 @@ impl<A> Section<A> {
                 .iter()
                 .map(|x| x.map_ann_with(f))
                 .collect(),
+            archive: self.archive.map_ann_with(f),
             todo: self.todo.clone(),
             is_comment: self.is_comment,
             priority: self.priority.clone(),
@@ -567,6 +610,7 @@ impl<A> Section<A> {
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
+            archive: self.archive.try_map_ann_with(f)?,
             todo: self.todo.clone(),
             is_comment: self.is_comment,
             priority: self.priority.clone(),

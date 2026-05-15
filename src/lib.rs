@@ -15,6 +15,7 @@ pub mod export;
 pub mod fmt;
 /// Org document linting helpers.
 pub mod lint;
+mod lint_lifecycle;
 mod lint_model;
 mod lint_priority;
 mod lint_properties;

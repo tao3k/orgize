@@ -1,0 +1,9 @@
+---
+source: tests/integration/lint_lifecycle.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(), report.to_text(\"fixture.org\"))"
+---
+clean: false
+fixture.org:1:1: warning ORG015: #+ARCHIVE keyword has no archive destination
+fixture.org:2:1: warning ORG015: ARCHIVE property has no archive destination
+fixture.org:4:1: warning ORG014: malformed LOGBOOK lifecycle line: CLOCK LOGBOOK line has an invalid duration summary
+fixture.org:4:1: warning ORG014: malformed LOGBOOK lifecycle line: state-change LOGBOOK line is missing quoted TODO states

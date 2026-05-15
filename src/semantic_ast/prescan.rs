@@ -3,8 +3,8 @@
 use super::settings::{apply_options_keyword, link_abbreviation, parse_tags, split_words};
 use super::targets::TargetIndex;
 use super::{
-    Diagnostic, ExportSettings, FootnoteEntry, IncludeDirective, Keyword, LinkAbbreviation,
-    MacroDefinition, OrgDuration, ParsedAnnotation, Property,
+    ArchiveLocation, Diagnostic, ExportSettings, FootnoteEntry, IncludeDirective, Keyword,
+    LinkAbbreviation, MacroDefinition, OrgDuration, ParsedAnnotation, Property,
 };
 
 #[derive(Default)]
@@ -13,6 +13,7 @@ pub(super) struct SemanticPrescan {
     pub(super) metadata: Vec<Keyword<ParsedAnnotation>>,
     pub(super) filetags: Vec<String>,
     pub(super) properties: Vec<Property<ParsedAnnotation>>,
+    pub(super) archive_locations: Vec<ArchiveLocation<ParsedAnnotation>>,
     pub(super) export_settings: ExportSettings,
     pub(super) link_abbreviations: Vec<LinkAbbreviation>,
     pub(super) includes: Vec<IncludeDirective<ParsedAnnotation>>,
@@ -40,6 +41,13 @@ pub(super) fn collect_document_keyword(
             if let Some(property) = keyword_property(&keyword) {
                 prescan.properties.push(property);
             }
+            prescan.metadata.push(keyword);
+        }
+        "ARCHIVE" => {
+            prescan.archive_locations.push(ArchiveLocation::from_value(
+                keyword.ann.clone(),
+                keyword.value.clone(),
+            ));
             prescan.metadata.push(keyword);
         }
         "SELECT_TAGS" => {

@@ -117,6 +117,7 @@ impl<'a> Converter<'a> {
         let mut document = Document {
             ann,
             properties,
+            archive_locations: prescan.archive_locations,
             metadata: prescan.metadata,
             filetags: prescan.filetags,
             export_settings: prescan.export_settings,
@@ -233,6 +234,7 @@ impl<'a> Converter<'a> {
             level: legacy.level(),
             properties,
             effective_properties: Vec::new(),
+            archive: Default::default(),
             todo,
             is_comment: legacy.is_commented(),
             priority: Priority::from_cookie(legacy.priority().map(|x| x.to_string())),

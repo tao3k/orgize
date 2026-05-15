@@ -259,6 +259,8 @@ pub struct MemoryEvidence {
 pub enum MemoryEvidenceKind {
     TodoState,
     ArchiveTag,
+    ArchiveLocation,
+    ArchiveProperty,
     Property { key: String },
     Scheduled,
     Deadline,
@@ -268,6 +270,7 @@ pub enum MemoryEvidenceKind {
     Drawer { name: String },
     Clock,
     Link,
+    Lifecycle(MemoryLifecycleKind),
 }
 
 impl MemoryEvidenceKind {
@@ -275,6 +278,8 @@ impl MemoryEvidenceKind {
         match self {
             Self::TodoState => "TODO state".to_string(),
             Self::ArchiveTag => "ARCHIVE tag".to_string(),
+            Self::ArchiveLocation => "archive location".to_string(),
+            Self::ArchiveProperty => "ARCHIVE property".to_string(),
             Self::Property { key } => format!("property {key}"),
             Self::Scheduled => "SCHEDULED".to_string(),
             Self::Deadline => "DEADLINE".to_string(),
@@ -288,6 +293,31 @@ impl MemoryEvidenceKind {
             Self::Drawer { name } => format!("drawer {name}"),
             Self::Clock => "CLOCK".to_string(),
             Self::Link => "link".to_string(),
+            Self::Lifecycle(kind) => format!("lifecycle {}", kind.title()),
+        }
+    }
+}
+
+/// Lifecycle event category used by memory evidence.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MemoryLifecycleKind {
+    StateChange,
+    Note,
+    Refile,
+    Reschedule,
+    Redeadline,
+    Clock,
+}
+
+impl MemoryLifecycleKind {
+    pub const fn title(self) -> &'static str {
+        match self {
+            Self::StateChange => "state change",
+            Self::Note => "note",
+            Self::Refile => "refile",
+            Self::Reschedule => "reschedule",
+            Self::Redeadline => "redeadline",
+            Self::Clock => "clock",
         }
     }
 }

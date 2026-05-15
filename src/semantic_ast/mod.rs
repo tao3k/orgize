@@ -18,6 +18,8 @@ mod conversion;
 mod conversion_util;
 mod footnote_parts;
 mod headline_metadata;
+mod lifecycle;
+mod lifecycle_model;
 mod macro_expansion;
 mod memory;
 mod memory_model;
@@ -48,10 +50,11 @@ pub use block_model::{
     BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering,
     BlockSwitches, SemanticFixedWidth,
 };
+pub use lifecycle_model::{ArchiveLocation, ArchiveState, LifecycleRecord, LifecycleRecordKind};
 pub use memory_model::{
     AgentMemoryCard, AgentMemoryDecision, AgentMemoryQuery, AgentMemorySeverity,
-    AgentMemorySnapshot, MemoryEvidence, MemoryEvidenceKind, MemoryLink, MemoryProperty,
-    MemoryQuery, MemoryRecord, MemoryRecordState, MemorySource,
+    AgentMemorySnapshot, MemoryEvidence, MemoryEvidenceKind, MemoryLifecycleKind, MemoryLink,
+    MemoryProperty, MemoryQuery, MemoryRecord, MemoryRecordState, MemorySource,
 };
 pub use model::{
     AstMut, AstRef, BareAst, Block, BlockKind, Checkbox, Citation, CiteReference, Clock,

@@ -17,7 +17,7 @@ pub(crate) fn section_matches_query<A>(
     if !query.include_done && is_done_keyword(&section.todo) {
         return false;
     }
-    if !query.include_archived && has_tag(&section.effective_tags, "ARCHIVE") {
+    if !query.include_archived && section.archive.archived {
         return false;
     }
     if query

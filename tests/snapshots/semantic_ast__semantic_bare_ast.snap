@@ -5,6 +5,7 @@ expression: doc.to_bare()
 Document {
     ann: (),
     properties: [],
+    archive_locations: [],
     metadata: [
         Keyword {
             ann: (),
@@ -109,6 +110,12 @@ Document {
                     duration: None,
                 },
             ],
+            archive: ArchiveState {
+                archived: false,
+                has_archive_tag: false,
+                property_location: None,
+                keyword_location: None,
+            },
             todo: Some(
                 TodoKeyword {
                     state: Todo,

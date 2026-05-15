@@ -114,6 +114,11 @@ The formal memory projection API design lives in
 short version is: raw memory records are the parse-faithful substrate, while
 agent memory snapshots are the primary API for current-decision use.
 
+The wasm demo exposes this as an Agent Memory tab so browser consumers can see
+the compact `MEMxxx` projection beside planning, agenda, semantic AST, and
+rendering outputs. Those `MEMxxx` values are output diagnostics, not Org source
+syntax.
+
 ** Boundary
 
 Keep orgize focused on parsing and semantic projection.

@@ -475,6 +475,23 @@ runtime dependency is copied into this repository.
       archived, and background facts.
 - [X] Add fixtures proving closed and archived facts stay visible as history
       without being promoted as current.
+- [X] Expose the compact agent memory snapshot in the wasm demo without adding
+      non-Org source syntax.
+
+*** M24.5 Official Org Memory And Wendao Search Support Audit
+
+- [X] Record the focused official Org source audit in
+      `docs/10_architecture/10.03_agent_search_memory_org_mode_audit.org`.
+- [ ] Add source-grounded section/index support records for Wendao Search
+      ingestion, preserving sparse-tree-like context and source ranges.
+- [ ] Extend special property projection and match evaluation with official
+      special properties and timestamp-aware operands.
+- [ ] Preserve parsed `LinkSearch` suffixes as typed metadata and
+      document-local resolution hints.
+- [ ] Document the Wendao adapter contract for consuming Orgize projections in
+      search indexes.
+- [ ] Feed richer archive, lifecycle, attachment, and habit authority into
+      `AgentMemorySnapshot`.
 
 *** M24 Official Org Priority Audit
 
@@ -553,17 +570,21 @@ Official anchors: `doc/org-manual.org` sections "Capture and Attachments",
 "Refiling and Archiving", "TODO Items", "Progress Logging";
 `lisp/org-capture.el`, `lisp/org-refile.el`, `lisp/org-archive.el`.
 
-- [ ] Parse lifecycle/logbook drawers into semantic records for state changes,
+- [X] Parse lifecycle/logbook drawers into semantic records for state changes,
       notes, refiles, reschedules, redeadlines, and clock history.
-- [ ] Model archive semantics beyond the `ARCHIVE` tag: `ARCHIVE` property,
+- [X] Model archive semantics beyond the `ARCHIVE` tag: `ARCHIVE` property,
       archive location keywords, and archived subtree intent.
-- [ ] Add memory projection over standard Org constructs: heading, TODO state,
+- [X] Add memory projection over standard Org constructs: heading, TODO state,
       tags, properties, timestamps, drawers, and logbook events.
 - [ ] Add compact agent-facing memory cards that distinguish current facts,
       stale facts, superseded facts, closed items, and archived items without
       defining new Org syntax.
 - [ ] Add lint rules for malformed logbook lines, archive target issues, and
       refile/archive metadata that cannot be resolved locally.
+  - [X] Cover malformed LOGBOOK state/CLOCK lines and empty archive
+        destinations.
+  - [ ] Resolve and lint refile/archive destinations against local files and
+        headings.
 
 **** P1 Attachments And File Links
 

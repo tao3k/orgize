@@ -6,6 +6,7 @@ use super::block_model::{
     joined_block_lines, BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumbering, BlockSwitches,
     SemanticFixedWidth,
 };
+use super::lifecycle_model::{ArchiveLocation, ArchiveState};
 use super::property_model::{OrgDuration, Priority};
 
 /// Parsed semantic document with source annotations on every semantic node.
@@ -93,6 +94,7 @@ impl From<&str> for UnsupportedSyntaxKind {
 pub struct Document<A = ()> {
     pub ann: A,
     pub properties: Vec<Property<A>>,
+    pub archive_locations: Vec<ArchiveLocation<A>>,
     pub metadata: Vec<Keyword<A>>,
     pub filetags: Vec<String>,
     pub export_settings: ExportSettings,
@@ -209,6 +211,7 @@ pub struct Section<A = ()> {
     pub level: usize,
     pub properties: Vec<Property<A>>,
     pub effective_properties: Vec<Property<A>>,
+    pub archive: ArchiveState<A>,
     pub todo: Option<TodoKeyword>,
     pub is_comment: bool,
     pub priority: Priority,
@@ -918,6 +921,8 @@ pub enum AstRef<'a, A> {
     TargetDefinition(&'a TargetDefinition<A>),
     /// Document-level footnote registry entry.
     FootnoteEntry(&'a FootnoteEntry<A>),
+    /// Archive destination collected from `#+ARCHIVE:`.
+    ArchiveLocation(&'a ArchiveLocation<A>),
     /// Section node.
     Section(&'a Section<A>),
     /// Property node.
@@ -954,6 +959,8 @@ pub enum AstMut<'a, A> {
     TargetDefinition(&'a mut TargetDefinition<A>),
     /// Document-level footnote registry entry.
     FootnoteEntry(&'a mut FootnoteEntry<A>),
+    /// Archive destination collected from `#+ARCHIVE:`.
+    ArchiveLocation(&'a mut ArchiveLocation<A>),
     /// Section node.
     Section(&'a mut Section<A>),
     /// Property node.

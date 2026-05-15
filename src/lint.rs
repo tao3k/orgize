@@ -7,6 +7,7 @@ use crate::{
         Diagnostic, IncludeDirective, Keyword, MacroDefinition, MacroExpansionStatus,
         ParsedAnnotation, ParsedAst, TargetDefinition, TargetKind,
     },
+    lint_lifecycle::lifecycle_findings,
     lint_model::{location_for_offsets, location_for_range},
     lint_priority::priority_cookie_findings,
     lint_properties::property_drawer_findings,
@@ -37,6 +38,16 @@ pub fn lint_document_with_options(
     source: &str,
     options: &LintOptions,
 ) -> LintReport {
+    let mut findings = collect_lint_findings(document, source, options);
+    sort_lint_findings(&mut findings);
+    LintReport { findings }
+}
+
+fn collect_lint_findings(
+    document: &ParsedAst,
+    source: &str,
+    options: &LintOptions,
+) -> Vec<LintFinding> {
     let mut findings = Vec::new();
 
     findings.extend(
@@ -59,8 +70,13 @@ pub fn lint_document_with_options(
     findings.extend(options_keyword_findings(&document.metadata, source));
     findings.extend(priority_cookie_findings(source));
     findings.extend(property_drawer_findings(document, source));
+    findings.extend(lifecycle_findings(document, source));
     findings.extend(todo_declaration_findings(source));
 
+    findings
+}
+
+fn sort_lint_findings(findings: &mut [LintFinding]) {
     findings.sort_by(|left, right| {
         left.location
             .range_start
@@ -68,8 +84,6 @@ pub fn lint_document_with_options(
             .then_with(|| left.code.cmp(right.code))
             .then_with(|| left.message.cmp(&right.message))
     });
-
-    LintReport { findings }
 }
 
 fn finding_from_diagnostic(diagnostic: &Diagnostic, source: &str) -> LintFinding {

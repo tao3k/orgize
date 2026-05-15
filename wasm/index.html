@@ -154,6 +154,7 @@
           <span data-value="semantic">Semantic AST</span>
           <span data-value="agenda">Agenda</span>
           <span data-value="agent-planning">Agent Planning</span>
+          <span data-value="agent-memory">Agent Memory</span>
           <span data-value="traverse">Traverse</span>
           <span data-value="features">Parser Features</span>
           <div id="spacer"></div>
@@ -242,6 +243,11 @@
 
           case "agent-planning": {
             renderPre(org.agentPlanning());
+            break;
+          }
+
+          case "agent-memory": {
+            renderPre(org.agentMemory());
             break;
           }
 
@@ -366,6 +372,10 @@
         [
           "Agent planning",
           "`Document::agent_planning_snapshot()` renders compact agent cards from agenda rows. `PLANxxx` values are output diagnostics, not Org source syntax.",
+        ],
+        [
+          "Agent memory",
+          "`Document::agent_memory_snapshot()` renders compact memory cards from ordinary Org headings, TODO states, properties, timestamps, drawers, clocks, archive tags, and links. `MEMxxx` values are output diagnostics, not Org source syntax.",
         ],
         [
           "Blocks and tables",
@@ -505,6 +515,27 @@ Plain active timestamp <2026-05-13 Wed 14:00-15:30> appears in the Agenda tab; i
 * TODO Headline time sample 8:30-1pm :demo:time:
 SCHEDULED: <2026-05-13 Wed>
 Plain headline time ranges sort timed agenda rows without changing the source timestamp.
+
+* TODO Current memory preference :memory:
+:PROPERTIES:
+:ID: memory-current
+:PREF: use Org-native projection
+:END:
+Current memory links to [[id:memory-old][the corrected older record]] on <2026-05-14 Thu>.
+
+* DONE Old memory preference :memory:
+CLOSED: [2026-05-10 Sun]
+:LOGBOOK:
+- State "DONE" from "TODO" [2026-05-10 Sun]
+CLOCK: [2026-05-10 Sun 09:00]--[2026-05-10 Sun 09:30] =>  0:30
+:END:
+This old note remains visible as history without being promoted as current.
+
+* TODO Archived memory preference :memory:ARCHIVE:
+Archived memory remains visible evidence but is suppressed for current decisions.
+
+* Research memory context :memory:
+Background memory can inform context without driving action by itself.
 
 *************** WAIT Inline task :inline:
 SCHEDULED: <2026-05-11 Mon>

@@ -3,9 +3,10 @@
 use std::collections::{HashMap, HashSet};
 
 use super::{
-    AstMut, AstRef, Diagnostic, DiagnosticKind, Document, ElementData, FootnoteDefinition,
-    FootnoteEntry, LinkDescriptionState, LinkTarget, Object, ObjectData, ParsedAnnotation,
-    Property, Section, TargetKind,
+    lifecycle::archive_location_from_property, ArchiveLocation, ArchiveState, AstMut, AstRef,
+    Diagnostic, DiagnosticKind, Document, ElementData, FootnoteDefinition, FootnoteEntry,
+    LinkDescriptionState, LinkTarget, Object, ObjectData, ParsedAnnotation, Property, Section,
+    TargetKind,
 };
 
 pub(super) fn finalize_document(document: &mut Document<ParsedAnnotation>) {
@@ -19,15 +20,23 @@ fn assign_effective_tags_and_anchors(document: &mut Document<ParsedAnnotation>) 
     let mut known = HashSet::new();
     let filetags = document.filetags.clone();
     let properties = document.properties.clone();
+    let archive_location = document.archive_locations.last().cloned();
     for section in &mut document.sections {
-        assign_section_tags_anchor_and_properties(section, &filetags, &properties, &mut known);
+        assign_section_tags_anchor_properties_and_archive(
+            section,
+            &filetags,
+            &properties,
+            archive_location.as_ref(),
+            &mut known,
+        );
     }
 }
 
-fn assign_section_tags_anchor_and_properties(
+fn assign_section_tags_anchor_properties_and_archive(
     section: &mut Section<ParsedAnnotation>,
     inherited_tags: &[String],
     inherited_properties: &[Property<ParsedAnnotation>],
+    inherited_archive_location: Option<&ArchiveLocation<ParsedAnnotation>>,
     known: &mut HashSet<String>,
 ) {
     let mut effective = inherited_tags.to_vec();
@@ -38,6 +47,7 @@ fn assign_section_tags_anchor_and_properties(
     }
     section.effective_tags = effective;
     section.effective_properties = merged_properties(inherited_properties, &section.properties);
+    section.archive = archive_state(section, inherited_archive_location.cloned());
 
     let base = property_value(section, "CUSTOM_ID")
         .or_else(|| property_value(section, "ID"))
@@ -46,13 +56,33 @@ fn assign_section_tags_anchor_and_properties(
 
     let inherited_tags = section.effective_tags.clone();
     let inherited_properties = section.effective_properties.clone();
+    let inherited_archive_location = section.archive.keyword_location.clone();
     for child in &mut section.subsections {
-        assign_section_tags_anchor_and_properties(
+        assign_section_tags_anchor_properties_and_archive(
             child,
             &inherited_tags,
             &inherited_properties,
+            inherited_archive_location.as_ref(),
             known,
         );
+    }
+}
+
+fn archive_state(
+    section: &Section<ParsedAnnotation>,
+    keyword_location: Option<ArchiveLocation<ParsedAnnotation>>,
+) -> ArchiveState<ParsedAnnotation> {
+    let has_archive_tag = has_tag(&section.effective_tags, "ARCHIVE");
+    let property_location = section
+        .effective_properties
+        .iter()
+        .find(|property| property.key.eq_ignore_ascii_case("ARCHIVE"))
+        .map(archive_location_from_property);
+    ArchiveState {
+        archived: has_archive_tag,
+        has_archive_tag,
+        property_location,
+        keyword_location,
     }
 }
 
@@ -81,6 +111,10 @@ fn property_value(section: &Section<ParsedAnnotation>, key: &str) -> Option<Stri
         .find(|property| property.key.eq_ignore_ascii_case(key))
         .map(|property| property.value.clone())
         .filter(|value| !value.is_empty())
+}
+
+fn has_tag(tags: &[String], needle: &str) -> bool {
+    tags.iter().any(|tag| tag.eq_ignore_ascii_case(needle))
 }
 
 fn unique_anchor(base: &str, known: &mut HashSet<String>) -> String {

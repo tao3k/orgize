@@ -20,6 +20,7 @@ It follows a path-first contract:
 | `00.01` | `docs/00_index/00.01_jdex.org` | Documentation index and coordinate map. |
 | `10.01` | `docs/10_architecture/10.01_agent_substrate.org` | Org-native semantic compiler and agent substrate direction. |
 | `10.02` | `docs/10_architecture/10.02_agent_memory_projection.org` | Agent-facing memory projection API design. |
+| `10.03` | `docs/10_architecture/10.03_agent_search_memory_org_mode_audit.org` | Official Org source audit for Wendao Search support and memory alignment. |
 | `20.01` | `docs/20_parser/20.01_parser_v2_release_readiness.org` | Parser v2 public boundary and release-readiness checklist. |
 | `20.02` | `docs/20_parser/20.02_parser_v2_performance_closeout.org` | Parser v2 dense-path performance closeout. |
 | `90.01` | `docs/90_operations/90.01_implementation_status.org` | Implementation status, backlog, and validation notes. |

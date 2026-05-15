@@ -120,6 +120,8 @@ impl LintFinding {
             "ORG011" => "write EFFORT values with Org duration syntax such as 1:30, 2h, or 1d3h",
             "ORG012" => "keep one value for a property key in each local property drawer scope",
             "ORG013" => "rename the property key to the agenda-sensitive spelling shown in the finding",
+            "ORG014" => "write LOGBOOK lifecycle lines with the standard quoted state-change or CLOCK shape",
+            "ORG015" => "provide an archive destination such as archive.org::* Archived",
             _ => "inspect the Org source near this location and repair the lint finding",
         }
     }
@@ -139,6 +141,8 @@ impl LintFinding {
             "ORG011" => "Effort properties feed agenda filters and duration math; invalid durations should not silently degrade to strings.",
             "ORG012" => "Duplicate local properties make inherited agenda/property lookup ambiguous.",
             "ORG013" => "Common agenda property typos should be repaired before lint/index/export consumers depend on them.",
+            "ORG014" => "Lifecycle history is used by memory and agenda projections, so malformed LOGBOOK events should be repaired.",
+            "ORG015" => "Archive metadata should point at a resolvable archive destination before archive-aware tooling consumes it.",
             _ => "Org lint findings should be fixed in source or intentionally reviewed before downstream use.",
         }
     }

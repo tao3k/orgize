@@ -98,6 +98,11 @@ The first implementation should be narrow and testable:
 5. expose the compact renderer through the same agent-friendly style as lint
    and planning snapshots.
 
+The browser demo should expose the same compact projection through a dedicated
+Agent Memory tab. The demo content should remain ordinary Org, using tags,
+properties, `CLOSED`, `LOGBOOK`, `CLOCK`, timestamps, links, and archive tags
+as evidence.
+
 This work should continue to calibrate against `.data/org-mode` manual and
 Elisp sources, especially property, TODO logging, agenda, archive, and org-id
 behavior.

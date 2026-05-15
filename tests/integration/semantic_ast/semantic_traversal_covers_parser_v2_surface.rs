@@ -10,6 +10,7 @@ use orgize::{
 fn semantic_traversal_covers_parser_v2_surface() {
     let mut doc = Org::parse(
         r#"#+TITLE: Traversal
+#+ARCHIVE: archive.org::* Archived
 #+INCLUDE: "chapter.org" :minlevel 2
 #+MACRO: greet Hello $1
 #+CAPTION: Link caption
@@ -65,6 +66,7 @@ fn assert_traversal_surface(seen: &BTreeSet<&'static str>) {
         "MacroDefinition",
         "TargetDefinition",
         "FootnoteEntry",
+        "ArchiveLocation",
         "Section",
         "Property",
         "Keyword",
@@ -91,6 +93,7 @@ fn ast_ref_name(node: AstRef<'_, orgize::ast::ParsedAnnotation>) -> &'static str
         AstRef::MacroDefinition(_) => "MacroDefinition",
         AstRef::TargetDefinition(_) => "TargetDefinition",
         AstRef::FootnoteEntry(_) => "FootnoteEntry",
+        AstRef::ArchiveLocation(_) => "ArchiveLocation",
         AstRef::Section(_) => "Section",
         AstRef::Property(_) => "Property",
         AstRef::Keyword(_) => "Keyword",
@@ -112,6 +115,7 @@ fn ast_mut_name(node: AstMut<'_, orgize::ast::ParsedAnnotation>) -> &'static str
         AstMut::MacroDefinition(_) => "MacroDefinition",
         AstMut::TargetDefinition(_) => "TargetDefinition",
         AstMut::FootnoteEntry(_) => "FootnoteEntry",
+        AstMut::ArchiveLocation(_) => "ArchiveLocation",
         AstMut::Section(_) => "Section",
         AstMut::Property(_) => "Property",
         AstMut::Keyword(_) => "Keyword",

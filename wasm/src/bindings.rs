@@ -1,7 +1,7 @@
 //! `wasm-bindgen` facade for parsing and rendering Org documents.
 
 use orgize::{
-    ast::{AgendaDate, AgendaQuery, AgentPlanningQuery},
+    ast::{AgendaDate, AgendaQuery, AgentMemoryQuery, AgentPlanningQuery, MemoryQuery},
     export::{from_fn, Container, Event},
     rowan::ast::AstNode,
     Org as Inner,
@@ -76,6 +76,15 @@ impl Org {
         self.inner
             .document()
             .agent_planning_snapshot(&query)
+            .to_compact_text("wasm-demo.org")
+    }
+
+    #[wasm_bindgen(js_name = agentMemory)]
+    pub fn agent_memory(&self) -> String {
+        let query = AgentMemoryQuery::new(MemoryQuery::new().require_tag("memory"));
+        self.inner
+            .document()
+            .agent_memory_snapshot(&query)
             .to_compact_text("wasm-demo.org")
     }
 

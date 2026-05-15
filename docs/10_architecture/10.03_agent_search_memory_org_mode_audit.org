@@ -1,0 +1,197 @@
+* 10.03 Wendao Search Support And Memory Org Mode Audit
+
+This audit reviews the local research-only Org mode checkout under
+`.data/org-mode` for memory and Wendao Search support alignment. It does not
+import Emacs Lisp behavior into orgize. It also does not move search ownership
+into orgize. Wendao owns search execution, ranking, cross-document recall,
+storage, and retrieval APIs.
+
+Orgize's job is narrower and more important: parse official Org syntax well,
+project source-grounded semantic records, preserve spans and evidence, and
+render compact agent-support outputs that Wendao and other agent systems can
+consume.
+
+** Source Anchors
+
+The most relevant official surfaces are:
+
+- `lisp/org-agenda.el`: `org-search-view` and `org-tags-view`;
+- `lisp/org.el`: `org-sparse-tree`, `org-occur`, `org-scan-tags`,
+  `org-map-entries`, `org-make-tags-matcher`, `org-entry-properties`, and
+  `org-entry-get`;
+- `lisp/ol.el`: `org-link-search` and precise link target creation;
+- `lisp/org-id.el`: global ID tracking, archive-aware ID search, ID link
+  storage, and `id:...::search` handling;
+- `lisp/org-archive.el`: archive location, archive tag behavior, and
+  `ARCHIVE_*` context properties;
+- `lisp/org-attach.el`: ID/DIR-based attachment directories and attachment
+  links;
+- `lisp/org-habit.el`: `STYLE: habit`, repeaters, and completion history;
+- `doc/org-manual.org`: "Sparse Trees", "Search Options in File Links",
+  "Matching tags and properties", "Search view", "Special Properties",
+  "Refiling and Archiving", "Capture", "Attachments", and "Tracking your
+  habits".
+
+** Memory Implications
+
+Org memory is not a single storage primitive. Official Org distributes memory
+across stable identity, lifecycle evidence, temporal evidence, outline scope,
+and archive context.
+
+The memory projection should therefore treat these as first-class evidence:
+
+- stable identity: `CUSTOM_ID`, `ID`, explicit targets, outline path, and
+  `id:` links;
+- lifecycle: TODO state, DONE/CLOSED state, state-change notes, refiles,
+  reschedules, redeadlines, clock records, and ordinary notes in `LOGBOOK`;
+- archive context: `ARCHIVE` tag, `ARCHIVE` property, `#+ARCHIVE`, archive file
+  location, sibling archive marker, `ARCHIVE_TIME`, and `ARCHIVE_*` properties;
+- temporal evidence: scheduled, deadline, closed, active timestamp, inactive
+  timestamp, repeaters, and habit `LAST_REPEAT`;
+- structured metadata: local properties, inherited properties, file tags,
+  effective tags, category, priority, effort, and special properties;
+- external evidence: attachment directories and file/attachment/id link search
+  suffixes.
+
+The current memory API already covers a useful base: headings, TODO state,
+properties, timestamps, archive tag/location evidence, LOGBOOK-like lifecycle
+records, clocks, links, and compact `MEMxxx` cards. The next gap is authority:
+records should explain not just "this fact exists", but why it is current,
+archived, closed, stale, superseded, or only background.
+
+** Wendao Search Support Implications
+
+Official Org has three complementary search families:
+
+- structured match search: tags, TODO, properties, special properties, group
+  tags, and top-level OR terms through agenda/sparse-tree match syntax;
+- text entry search: phrase search and boolean word/regexp snippets through
+  `org-search-view`;
+- link target search: file/id/attachment search suffixes for line numbers,
+  headline searches, custom IDs, fuzzy text, regexp searches, targets, and
+  coderefs.
+
+Orgize should expose the parsed building blocks for those search families. It
+should not implement the search engine. The clean boundary is:
+
+- orgize parses and projects section records with source spans, outline
+  context, IDs, targets, links, properties, tags, lifecycle evidence, and
+  normalized link-search suffixes;
+- orgize preserves enough structured metadata for Wendao to build indexes and
+  sparse-tree-like result snippets;
+- orgize can provide compact diagnostics or agent-support summaries for one
+  parsed document, but should not own retrieval ranking or cross-document
+  search snapshots;
+- Wendao owns text indexing, vector/keyword search, multi-file scope,
+  query-time ranking, result fusion, and agent-facing search APIs.
+
+The projection should be sparse-tree-like in spirit: Wendao should be able to
+show the match, the containing headline, and enough ancestor context without
+asking an agent to ingest a whole file.
+
+** Priority Backlog
+
+*** P0 Wendao Index Support Records
+
+Add an entry-oriented semantic substrate over sections for downstream indexing:
+
+- outline path and source spans;
+- title text and body text slices with stable ranges;
+- TODO state, priority, category, local/effective tags, local/effective
+  properties, and planning timestamps;
+- links and targets visible from the entry;
+- archive/comment state and section lifecycle evidence.
+
+This is not a query API. It is the shared substrate for Wendao indexing,
+memory recall, sparse-tree-like context, and downstream agent support.
+
+*** P0 Special Properties In Match Evaluation
+
+Expand the existing agenda-style matcher toward official special properties:
+
+- `ALLTAGS`, `TAGS`, `TODO`, `PRIORITY`, `SCHEDULED`, `DEADLINE`, `CLOSED`,
+  `TIMESTAMP`, `TIMESTAMP_IA`, `CATEGORY`, `ITEM`, and `FILE`;
+- typed timestamp comparison for quoted Org timestamp operands;
+- wildcard or regexp value matching that is explicit about whether it is full
+  regexp parity or substring fallback.
+
+This directly improves agenda filtering and the structured metadata Wendao
+receives for search.
+
+*** P0 Link Search Metadata
+
+Treat parsed link search suffixes as typed metadata for Wendao:
+
+- `::*Headline` restricts to headline search;
+- `::#custom-id` targets `CUSTOM_ID`;
+- `::/regexp/` is a regexp match request;
+- `::line-number` is a line target;
+- fuzzy text searches should ignore whitespace like Org's link search;
+- `id:ID::search` should resolve ID first, then search within that subtree.
+
+Core orgize should stay document-local. Cross-file or global ID databases
+belong in downstream callers, but orgize should provide records that make such
+indexes easy to build.
+
+*** P1 Archive Context Authority
+
+Memory cards should promote archive context from "evidence text" into
+decision authority:
+
+- `ARCHIVE` tag suppresses active decision authority by default;
+- `ARCHIVE` property and `#+ARCHIVE` describe destination intent;
+- archive-file context properties such as `ARCHIVE_TIME`, `ARCHIVE_FILE`,
+  `ARCHIVE_OLPATH`, `ARCHIVE_CATEGORY`, `ARCHIVE_TODO`, and inherited tag
+  snapshots should be recognized as ordinary properties with special evidence
+  meaning;
+- local archive sibling headings with archive tag should be distinguishable
+  from external archive files.
+
+*** P1 Attachment And External Evidence
+
+Attachments are official Org memory affordances. Orgize should expose metadata
+without filesystem side effects:
+
+- attachment root kind: ID-derived, DIR property, or explicit attachment
+  directory;
+- `ATTACH` tag and attachment-related properties as evidence;
+- `attachment:` links with optional search suffix;
+- optional lint-only filesystem validation when the caller provides a real
+  base path.
+
+*** P1 Habit And Repetition Memory
+
+Habits are temporal memory patterns, not just tasks:
+
+- recognize `STYLE: habit`;
+- expose scheduled repeaters and deadline repeaters;
+- preserve `LAST_REPEAT`;
+- expose enough completion history for downstream agents to reason about
+  consistency without rendering Emacs agenda graphs.
+
+*** P2 Capture And Refile Provenance
+
+Org capture and refile are creation and movement history:
+
+- parse refile LOGBOOK records;
+- preserve outline paths and ID links used as capture/refile targets;
+- expose capture template metadata only when it appears as ordinary Org source
+  or recorded properties;
+- keep interactive capture behavior out of orgize.
+
+** Implementation Order
+
+1. Implement source-grounded section/index support records over one document,
+   reusing section traversal and existing semantic metadata.
+2. Extend special property projection and agenda match evaluation with official
+   properties and timestamp-aware operands.
+3. Preserve parsed `LinkSearch` suffixes as typed metadata and document-local
+   resolution hints.
+4. Document the Wendao adapter contract for consuming Orgize projections in
+   search indexes.
+5. Teach `AgentMemorySnapshot` to use richer authority reasons from archive
+   context, lifecycle records, link metadata, and habit metadata.
+
+This order keeps orgize in its parser/projection lane while giving agents the
+API substrate they actually need: small, explainable, source-grounded Org
+projections that Wendao Search can rank and retrieve.

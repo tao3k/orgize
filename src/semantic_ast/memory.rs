@@ -2,13 +2,14 @@
 
 use super::memory_model::{
     is_done_todo, AgentMemoryCard, AgentMemoryQuery, AgentMemorySnapshot, MemoryEvidence,
-    MemoryEvidenceKind, MemoryLink, MemoryProperty, MemoryQuery, MemoryRecord, MemoryRecordState,
-    MemorySource,
+    MemoryEvidenceKind, MemoryLifecycleKind, MemoryLink, MemoryProperty, MemoryQuery, MemoryRecord,
+    MemoryRecordState, MemorySource,
 };
 use super::model::{
     Citation, CiteReference, Document, Element, ElementData, Link, ListItem, Object, ObjectData,
     ParsedAnnotation, Property, Section, Timestamp,
 };
+use super::{lifecycle::section_lifecycle_records, LifecycleRecordKind};
 
 impl Document<ParsedAnnotation> {
     /// Projects Org headlines into addressable memory records.
@@ -65,14 +66,16 @@ fn memory_record(section: &Section<ParsedAnnotation>, state: MemoryRecordState) 
             value: todo.name.clone(),
         });
     }
-    if has_tag(&section.effective_tags, "ARCHIVE") {
+    if section.archive.has_archive_tag {
         evidence.push(MemoryEvidence {
             source: MemorySource::from_annotation(&section.ann),
             kind: MemoryEvidenceKind::ArchiveTag,
             value: "ARCHIVE".to_string(),
         });
     }
+    collect_archive_evidence(section, &mut evidence);
     collect_planning_evidence(section, &mut evidence);
+    collect_lifecycle_evidence(section, &mut evidence);
 
     let mut links = Vec::new();
     collect_object_memory(&section.title, &mut evidence, &mut links);
@@ -112,7 +115,7 @@ fn memory_property(
 }
 
 fn classify_section(section: &Section<ParsedAnnotation>) -> MemoryRecordState {
-    if has_tag(&section.effective_tags, "ARCHIVE") {
+    if section.archive.archived {
         MemoryRecordState::Archived
     } else if is_done_todo(&section.todo) || section.planning.closed.is_some() {
         MemoryRecordState::Closed
@@ -123,6 +126,27 @@ fn classify_section(section: &Section<ParsedAnnotation>) -> MemoryRecordState {
         MemoryRecordState::Current
     } else {
         MemoryRecordState::Background
+    }
+}
+
+fn collect_archive_evidence(
+    section: &Section<ParsedAnnotation>,
+    evidence: &mut Vec<MemoryEvidence>,
+) {
+    if let Some(location) = &section.archive.property_location {
+        evidence.push(MemoryEvidence {
+            source: MemorySource::from_annotation(&location.ann),
+            kind: MemoryEvidenceKind::ArchiveProperty,
+            value: location.value.clone(),
+        });
+    } else if section.archive.archived {
+        if let Some(location) = &section.archive.keyword_location {
+            evidence.push(MemoryEvidence {
+                source: MemorySource::from_annotation(&location.ann),
+                kind: MemoryEvidenceKind::ArchiveLocation,
+                value: location.value.clone(),
+            });
+        }
     }
 }
 
@@ -181,6 +205,34 @@ fn collect_planning_evidence(
             MemoryEvidenceKind::Closed,
             timestamp,
         ));
+    }
+}
+
+fn collect_lifecycle_evidence(
+    section: &Section<ParsedAnnotation>,
+    evidence: &mut Vec<MemoryEvidence>,
+) {
+    for record in section_lifecycle_records(section) {
+        if matches!(record.kind, LifecycleRecordKind::MalformedLogbook { .. }) {
+            continue;
+        }
+        evidence.push(MemoryEvidence {
+            source: MemorySource::from_annotation(&record.ann),
+            kind: MemoryEvidenceKind::Lifecycle(memory_lifecycle_kind(&record.kind)),
+            value: record.raw,
+        });
+    }
+}
+
+fn memory_lifecycle_kind(kind: &LifecycleRecordKind) -> MemoryLifecycleKind {
+    match kind {
+        LifecycleRecordKind::StateChange { .. } => MemoryLifecycleKind::StateChange,
+        LifecycleRecordKind::Note { .. } => MemoryLifecycleKind::Note,
+        LifecycleRecordKind::Refile { .. } => MemoryLifecycleKind::Refile,
+        LifecycleRecordKind::Reschedule { .. } => MemoryLifecycleKind::Reschedule,
+        LifecycleRecordKind::Redeadline { .. } => MemoryLifecycleKind::Redeadline,
+        LifecycleRecordKind::Clock { .. } => MemoryLifecycleKind::Clock,
+        LifecycleRecordKind::MalformedLogbook { .. } => MemoryLifecycleKind::Note,
     }
 }
 

@@ -94,7 +94,7 @@ fn project_sections<A: Clone>(
 
 fn should_exclude<A>(section: &Section<A>, exclude_tags: &TagSet) -> bool {
     section.is_comment
-        || has_tag(&section.effective_tags, "ARCHIVE")
+        || section.archive.archived
         || exclude_tags.contains_any(&section.effective_tags)
 }
 
@@ -104,10 +104,6 @@ fn section_has_selected_tag<A>(section: &Section<A>, select_tags: &TagSet) -> bo
             .subsections
             .iter()
             .any(|child| section_has_selected_tag(child, select_tags))
-}
-
-fn has_tag(tags: &[String], expected: &str) -> bool {
-    tags.iter().any(|tag| tag.eq_ignore_ascii_case(expected))
 }
 
 struct TagSet {
