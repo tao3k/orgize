@@ -40,7 +40,7 @@ and the current dense-path evidence collected on 2026-05-12.
 | `Org::document/dense-semantic-radio-projection` | `many-parsed-object-radio-links.org` | Semantic radio links across parsed object spans. |
 | `Org::document/dense-m15-side-tables` | `many-m15-settings-links-footnotes.org` | M15 semantic side tables, aliases, citations, and footnote postprocess. |
 | `Document::project_for_export/dense-m15` | `many-m15-settings-links-footnotes.org` | Export pruning, tag filtering, special strings, headline shifting, and abbreviation expansion. |
-| `Document::agenda_entries/dense-agenda` | `many-agenda-planning-timestamps.org` | Agenda row generation for scheduled/deadline/closed planning, repeaters, warnings, done/archive inclusion, and multi-day ranges. |
+| `Document::agenda_entries/dense-agenda` | `many-agenda-planning-timestamps.org` | Agenda row generation for scheduled/deadline/closed planning, repeaters, warnings, scheduled delays, categories, done/archive inclusion, and multi-day ranges. |
 
 ## Current Dense Evidence
 

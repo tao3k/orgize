@@ -391,7 +391,9 @@ fn dense_m15_projection_fixture() -> String {
 }
 
 fn dense_agenda_projection_fixture() -> String {
-    let mut org = String::from("#+FILETAGS: :agenda:bench:\n#+TODO: TODO NEXT | DONE CANCELED\n\n");
+    let mut org = String::from(
+        "#+FILETAGS: :agenda:bench:\n#+CATEGORY: bench-agenda\n#+TODO: TODO NEXT | DONE CANCELED\n\n",
+    );
 
     for idx in 0usize..256 {
         let todo = match idx % 8 {
@@ -411,9 +413,16 @@ fn dense_agenda_projection_fixture() -> String {
         let range_end_day = (scheduled_day + 1).min(28);
 
         org.push_str(&format!("* {todo} Agenda item {idx} {tag}\n"));
+        if idx % 12 == 0 {
+            org.push_str(":PROPERTIES:\n:CATEGORY: bench-work\n:END:\n");
+        }
         if idx % 6 == 0 {
             org.push_str(&format!(
                 "SCHEDULED: <2026-05-{scheduled_day:02} Fri 09:00>--<2026-05-{range_end_day:02} Sat 10:00 +1w> DEADLINE: <2026-05-{deadline_day:02} Mon -2d>\n"
+            ));
+        } else if idx % 7 == 0 {
+            org.push_str(&format!(
+                "SCHEDULED: <2026-05-{scheduled_day:02} Fri 09:00 -2d> DEADLINE: <2026-05-{deadline_day:02} Mon -2d>\n"
             ));
         } else {
             org.push_str(&format!(

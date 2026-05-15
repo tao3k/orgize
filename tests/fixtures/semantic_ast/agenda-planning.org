@@ -1,6 +1,10 @@
 #+FILETAGS: :team:
+#+CATEGORY: doc-cat
 * TODO Scheduled daily :work:
 SCHEDULED: <2026-05-14 Thu 09:30 +1d>
+:PROPERTIES:
+:CATEGORY: work-cat
+:END:
 * TODO Deadline warning :ops:
 DEADLINE: <2026-05-16 Sat -2d>
 * DONE Done item
@@ -11,3 +15,5 @@ SCHEDULED: <2026-05-14 Thu>
 CLOSED: [2026-05-15 Fri]
 * TODO Range event :range:
 SCHEDULED: <2026-05-14 Thu 10:00>--<2026-05-15 Fri 11:00>
+* TODO Delayed scheduled :delay:
+SCHEDULED: <2026-05-14 Thu -2d>

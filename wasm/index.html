@@ -355,7 +355,7 @@
         ],
         [
           "Agenda projection",
-          "`Document::agenda_entries()` derives scheduled, deadline, warning, overdue, closed, repeated, range-aware, and tag-filtered agenda rows from semantic planning timestamps.",
+          "`Document::agenda_entries()` derives scheduled, scheduled-delay, deadline, warning, overdue, closed, repeated, category-aware, range-aware, and tag-filtered agenda rows from semantic planning timestamps.",
         ],
         [
           "Blocks and tables",
@@ -419,6 +419,7 @@ See also:
 
 #+TODO: NEXT(n) WAIT(w@/!) | DONE(d) CANCELED(c)
 #+TITLE: *Orgize* parser v2 demo
+#+CATEGORY: wasm-demo
 #+FILETAGS: :browser:wasm:
 #+OPTIONS: H:3 -:t e:nil
 #+SELECT_TAGS: demo
@@ -479,7 +480,14 @@ Inline Babel: src_json[:var data=[1,[2]]]{map.get({nested})} and call_square[:va
 
 * TODO Agenda range sample :demo:range:
 SCHEDULED: <2026-05-12 Tue 10:00>--<2026-05-14 Thu 11:00>
+:PROPERTIES:
+:CATEGORY: agenda-demo
+:END:
 Multi-day planning ranges appear as range-aware rows in the Agenda tab.
+
+* TODO Scheduled delay sample :demo:delay:
+SCHEDULED: <2026-05-12 Tue -2d>
+Delay cookies move scheduled display rows later in the Agenda tab.
 
 *************** WAIT Inline task :inline:
 SCHEDULED: <2026-05-11 Mon>

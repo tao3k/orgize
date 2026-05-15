@@ -1,7 +1,8 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     ast::{
-        AgendaDate, AgendaDeadlineState, AgendaEntryKind, AgendaOccurrence, AgendaQuery, AgendaTime,
+        AgendaDate, AgendaDeadlineState, AgendaEntryKind, AgendaOccurrence, AgendaQuery,
+        AgendaScheduleState, AgendaTime,
     },
     Org,
 };
@@ -19,9 +20,16 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
     let bare = doc.to_bare();
     let entries = bare.agenda_entries(&query);
 
-    assert_eq!(entries.len(), 9);
+    assert_eq!(entries.len(), 10);
     assert_eq!(entries[0].kind, AgendaEntryKind::Deadline);
     assert_eq!(entries[0].raw_title, "Deadline warning");
+    assert_eq!(
+        entries[0]
+            .category
+            .as_ref()
+            .map(|category| category.as_str()),
+        Some("doc-cat")
+    );
     assert_eq!(entries[0].display_date, AgendaDate::new(2026, 5, 14));
     assert_eq!(entries[0].target_date, AgendaDate::new(2026, 5, 16));
     assert_eq!(
@@ -36,6 +44,10 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
         })
         .expect("daily scheduled repeater occurrence");
     assert_eq!(repeated.occurrence, AgendaOccurrence::Repeater { index: 1 });
+    assert_eq!(
+        repeated.category.as_ref().map(|category| category.as_str()),
+        Some("work-cat")
+    );
 
     let range_entries = entries
         .iter()
@@ -63,6 +75,16 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
         })
     );
 
+    let delayed = entries
+        .iter()
+        .find(|entry| entry.raw_title == "Delayed scheduled")
+        .expect("scheduled delay row");
+    assert_eq!(delayed.display_date, AgendaDate::new(2026, 5, 16));
+    assert_eq!(
+        delayed.scheduled,
+        Some(AgendaScheduleState::Delayed { days_delayed: 2 })
+    );
+
     insta::with_settings!({snapshot_path => "../../snapshots", prepend_module_to_snapshot => false}, {
         insta::assert_debug_snapshot!("semantic_ast__semantic_agenda_entries", entries);
     });
@@ -76,7 +98,8 @@ fn semantic_ast_agenda_filters_done_archived_and_tags() {
         .include_archived(true)
         .exclude_tag("work")
         .exclude_tag("ops")
-        .exclude_tag("range");
+        .exclude_tag("range")
+        .exclude_tag("delay");
 
     let titles = doc
         .to_bare()

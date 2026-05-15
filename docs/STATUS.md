@@ -423,3 +423,23 @@ runtime dependency is copied into this repository.
       planning ranges.
 - [x] Update wasm demo content and feature copy to show range-aware agenda
       projection.
+
+### M21 Official Agenda Semantics Alignment
+
+- [x] Add local official Org reference checkout at `.data/org-mode` for
+      research-only agenda/manual calibration. It remains ignored and is not
+      imported into Cargo, CI, tests, or released artifacts.
+- [x] Align scheduled delay cookies with official Org semantics:
+      `SCHEDULED: <date -2d>` delays scheduled display rows, while `--2d`
+      applies only to the first projected occurrence.
+- [x] Preserve scheduled display state in agenda rows through
+      `AgendaScheduleState`.
+- [x] Project agenda categories from document `#+CATEGORY:` keywords and
+      per-section `CATEGORY` properties.
+- [x] Extend agenda fixtures, snapshots, wasm copy, and dense benchmark input
+      for scheduled delays and category metadata.
+- [ ] Project plain active timestamps into agenda rows without treating inactive
+      timestamps as agenda events.
+- [ ] Parse headline time-of-day specifications outside timestamp objects.
+- [ ] Add a richer official-style tag/property match query surface beyond simple
+      required/excluded tags.

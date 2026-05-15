@@ -1,10 +1,11 @@
 //! Semantic agenda projection from headline planning timestamps.
 
 use super::agenda_model::{
-    is_done_keyword, warning_start, AgendaDate, AgendaDeadlineState, AgendaEntry, AgendaEntryKind,
-    AgendaOccurrence, AgendaQuery, AgendaTime,
+    is_done_keyword, scheduled_visible_start, warning_start, AgendaCategory, AgendaDate,
+    AgendaDeadlineState, AgendaEntry, AgendaEntryKind, AgendaOccurrence, AgendaQuery,
+    AgendaScheduleState, AgendaTime,
 };
-use super::model::{Document, Section, Timestamp};
+use super::model::{Document, Element, ElementData, Property, Section, Timestamp};
 
 impl<A: Clone> Document<A> {
     /// Projects headline planning timestamps into agenda rows.
@@ -14,9 +15,15 @@ impl<A: Clone> Document<A> {
     pub fn agenda_entries(&self, query: &AgendaQuery) -> Vec<AgendaEntry<A>> {
         let mut entries = Vec::new();
         let (start, end) = query.bounds();
+        let document_category = document_category(self);
 
         for section in &self.sections {
-            collect_section(section, query, start, end, &mut entries);
+            collect_section(
+                section,
+                AgendaCollectContext { query, start, end },
+                document_category.clone(),
+                &mut entries,
+            );
         }
 
         entries.sort_by(|left, right| {
@@ -41,53 +48,58 @@ impl<A: Clone> Document<A> {
     }
 }
 
-fn collect_section<A: Clone>(
-    section: &Section<A>,
-    query: &AgendaQuery,
+#[derive(Clone, Copy)]
+struct AgendaCollectContext<'a> {
+    query: &'a AgendaQuery,
     start: AgendaDate,
     end: AgendaDate,
+}
+
+fn collect_section<A: Clone>(
+    section: &Section<A>,
+    context: AgendaCollectContext<'_>,
+    inherited_category: Option<AgendaCategory>,
     entries: &mut Vec<AgendaEntry<A>>,
 ) {
-    if section_matches_query(section, query) {
-        if query.include_scheduled {
+    let category = section_category(section).or(inherited_category);
+
+    if section_matches_query(section, context.query) {
+        if context.query.include_scheduled {
             collect_timestamp(
                 section,
                 AgendaEntryKind::Scheduled,
                 section.planning.scheduled.as_ref(),
-                query,
-                start,
-                end,
+                context,
+                category.clone(),
                 entries,
             );
         }
 
-        if query.include_deadlines {
+        if context.query.include_deadlines {
             collect_timestamp(
                 section,
                 AgendaEntryKind::Deadline,
                 section.planning.deadline.as_ref(),
-                query,
-                start,
-                end,
+                context,
+                category.clone(),
                 entries,
             );
         }
 
-        if query.include_closed {
+        if context.query.include_closed {
             collect_timestamp(
                 section,
                 AgendaEntryKind::Closed,
                 section.planning.closed.as_ref(),
-                query,
-                start,
-                end,
+                context,
+                category.clone(),
                 entries,
             );
         }
     }
 
     for subsection in &section.subsections {
-        collect_section(subsection, query, start, end, entries);
+        collect_section(subsection, context, category.clone(), entries);
     }
 }
 
@@ -122,9 +134,8 @@ fn collect_timestamp<A: Clone>(
     section: &Section<A>,
     kind: AgendaEntryKind,
     timestamp: Option<&Timestamp>,
-    query: &AgendaQuery,
-    start: AgendaDate,
-    end: AgendaDate,
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
     entries: &mut Vec<AgendaEntry<A>>,
 ) {
     let Some(timestamp) = timestamp else {
@@ -139,19 +150,19 @@ fn collect_timestamp<A: Clone>(
     let time = AgendaTime::from_moment(moment);
     let end_time = timestamp.end.as_ref().and_then(AgendaTime::from_moment);
     let target_end = match kind {
-        AgendaEntryKind::Deadline if query.include_deadline_warnings => timestamp
+        AgendaEntryKind::Deadline if context.query.include_deadline_warnings => timestamp
             .warning
             .as_ref()
-            .and_then(|warning| end.add_interval(warning.value as i32, warning.unit))
-            .unwrap_or(end),
-        _ => end,
+            .and_then(|warning| context.end.add_interval(warning.value as i32, warning.unit))
+            .unwrap_or(context.end),
+        _ => context.end,
     };
     let occurrences = occurrence_spans(
         timestamp,
         base_start,
         base_end,
         target_end,
-        query.expand_repeaters,
+        context.query.expand_repeaters,
     );
 
     for span in occurrences {
@@ -163,12 +174,16 @@ fn collect_timestamp<A: Clone>(
             target_end_date: span.end,
             time,
             end_time,
+            category: category.clone(),
             occurrence: span.occurrence,
         };
         match kind {
-            AgendaEntryKind::Deadline => collect_deadline_entries(seed, query, start, end, entries),
-            AgendaEntryKind::Scheduled | AgendaEntryKind::Closed => {
-                collect_span_entries(&seed, start, end, entries);
+            AgendaEntryKind::Deadline => collect_deadline_entries(seed, context, entries),
+            AgendaEntryKind::Scheduled => {
+                collect_scheduled_entries(&seed, context.start, context.end, entries);
+            }
+            AgendaEntryKind::Closed => {
+                collect_span_entries(&seed, context.start, context.end, entries);
             }
         }
     }
@@ -189,6 +204,7 @@ struct EntrySeed<'a, A> {
     target_end_date: Option<AgendaDate>,
     time: Option<AgendaTime>,
     end_time: Option<AgendaTime>,
+    category: Option<AgendaCategory>,
     occurrence: AgendaOccurrence,
 }
 
@@ -208,36 +224,88 @@ fn collect_span_entries<A: Clone>(
 
     let mut display_date = first;
     while display_date <= last {
-        entries.push(entry(seed, display_date, None));
+        entries.push(entry(seed, display_date, None, None));
+        display_date = display_date.add_days(1);
+    }
+}
+
+fn collect_scheduled_entries<A: Clone>(
+    seed: &EntrySeed<'_, A>,
+    start: AgendaDate,
+    end: AgendaDate,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    let span_end = seed.target_end_date.unwrap_or(seed.target_date);
+    let visible_start = scheduled_visible_start(
+        seed.target_date,
+        seed.timestamp.warning.as_ref(),
+        seed.occurrence,
+    );
+
+    if span_end < start {
+        if visible_start <= start {
+            entries.push(entry(
+                seed,
+                start,
+                Some(AgendaScheduleState::PastDue {
+                    days_overdue: span_end.days_until(start) as u32,
+                }),
+                None,
+            ));
+        }
+        return;
+    }
+
+    let display_end = span_end.max(visible_start);
+    let first = start.max(visible_start);
+    let last = end.min(display_end);
+
+    if first > last {
+        return;
+    }
+
+    let mut display_date = first;
+    while display_date <= last {
+        let scheduled = if visible_start > seed.target_date && display_date == visible_start {
+            Some(AgendaScheduleState::Delayed {
+                days_delayed: seed.target_date.days_until(visible_start) as u32,
+            })
+        } else if display_date > span_end {
+            Some(AgendaScheduleState::PastDue {
+                days_overdue: span_end.days_until(display_date) as u32,
+            })
+        } else {
+            Some(AgendaScheduleState::OnDate)
+        };
+        entries.push(entry(seed, display_date, scheduled, None));
         display_date = display_date.add_days(1);
     }
 }
 
 fn collect_deadline_entries<A: Clone>(
     seed: EntrySeed<'_, A>,
-    query: &AgendaQuery,
-    start: AgendaDate,
-    end: AgendaDate,
+    context: AgendaCollectContext<'_>,
     entries: &mut Vec<AgendaEntry<A>>,
 ) {
-    if query.include_overdue_deadlines && seed.target_date < start {
+    if context.query.include_overdue_deadlines && seed.target_date < context.start {
         entries.push(entry(
             &seed,
-            start,
+            context.start,
+            None,
             Some(AgendaDeadlineState::Overdue {
-                days_overdue: seed.target_date.days_until(start) as u32,
+                days_overdue: seed.target_date.days_until(context.start) as u32,
             }),
         ));
         return;
     }
 
-    let visible_start = if query.include_deadline_warnings {
+    let visible_start = if context.query.include_deadline_warnings {
         warning_start(seed.target_date, seed.timestamp.warning.as_ref())
     } else {
         seed.target_date
     };
-    let first = start.max(visible_start);
-    let last = end.min(seed.target_date);
+    let first = context.start.max(visible_start);
+    let last = context.end.min(seed.target_date);
 
     if first > last {
         return;
@@ -252,7 +320,7 @@ fn collect_deadline_entries<A: Clone>(
         } else {
             Some(AgendaDeadlineState::Due)
         };
-        entries.push(entry(&seed, display_date, deadline));
+        entries.push(entry(&seed, display_date, None, deadline));
         display_date = display_date.add_days(1);
     }
 }
@@ -300,6 +368,7 @@ fn occurrence_spans(
 fn entry<A: Clone>(
     seed: &EntrySeed<'_, A>,
     display_date: AgendaDate,
+    scheduled: Option<AgendaScheduleState>,
     deadline: Option<AgendaDeadlineState>,
 ) -> AgendaEntry<A> {
     AgendaEntry {
@@ -312,6 +381,7 @@ fn entry<A: Clone>(
         end_time: seed.end_time,
         title: seed.section.title.clone(),
         raw_title: seed.section.raw_title.trim_end().to_string(),
+        category: seed.category.clone(),
         level: seed.section.level,
         todo: seed.section.todo.clone(),
         tags: seed.section.tags.clone(),
@@ -319,8 +389,39 @@ fn entry<A: Clone>(
         anchor: seed.section.anchor.clone(),
         timestamp: seed.timestamp.clone(),
         occurrence: seed.occurrence,
+        scheduled,
         deadline,
     }
+}
+
+fn document_category<A>(document: &Document<A>) -> Option<AgendaCategory> {
+    property_category(&document.properties).or_else(|| keyword_category(&document.children))
+}
+
+fn section_category<A>(section: &Section<A>) -> Option<AgendaCategory> {
+    property_category(&section.properties)
+}
+
+fn property_category<A>(properties: &[Property<A>]) -> Option<AgendaCategory> {
+    properties
+        .iter()
+        .find(|property| property.key.eq_ignore_ascii_case("CATEGORY"))
+        .map(|property| property.value.trim())
+        .filter(|value| !value.is_empty())
+        .map(AgendaCategory::new)
+}
+
+fn keyword_category<A>(elements: &[Element<A>]) -> Option<AgendaCategory> {
+    elements
+        .iter()
+        .filter_map(|element| match &element.data {
+            ElementData::Keyword(keyword) if keyword.key.eq_ignore_ascii_case("CATEGORY") => {
+                Some(keyword.value.trim())
+            }
+            _ => None,
+        })
+        .find(|value| !value.is_empty())
+        .map(AgendaCategory::new)
 }
 
 fn has_tag(tags: &[String], needle: &str) -> bool {

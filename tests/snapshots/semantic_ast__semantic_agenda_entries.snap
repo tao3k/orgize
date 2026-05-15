@@ -28,6 +28,11 @@ expression: entries
             },
         ],
         raw_title: "Deadline warning",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
         level: 1,
         todo: Some(
             TodoKeyword {
@@ -72,6 +77,7 @@ expression: entries
             ),
         },
         occurrence: Source,
+        scheduled: None,
         deadline: Some(
             Warning {
                 days_until: 2,
@@ -108,6 +114,11 @@ expression: entries
             },
         ],
         raw_title: "Scheduled daily",
+        category: Some(
+            AgendaCategory(
+                "work-cat",
+            ),
+        ),
         level: 1,
         todo: Some(
             TodoKeyword {
@@ -156,6 +167,9 @@ expression: entries
             warning: None,
         },
         occurrence: Source,
+        scheduled: Some(
+            OnDate,
+        ),
         deadline: None,
     },
     AgendaEntry {
@@ -199,6 +213,11 @@ expression: entries
             },
         ],
         raw_title: "Range event",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
         level: 1,
         todo: Some(
             TodoKeyword {
@@ -256,6 +275,9 @@ expression: entries
             warning: None,
         },
         occurrence: Source,
+        scheduled: Some(
+            OnDate,
+        ),
         deadline: None,
     },
     AgendaEntry {
@@ -283,6 +305,11 @@ expression: entries
             },
         ],
         raw_title: "Deadline warning",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
         level: 1,
         todo: Some(
             TodoKeyword {
@@ -327,6 +354,7 @@ expression: entries
             ),
         },
         occurrence: Source,
+        scheduled: None,
         deadline: Some(
             Warning {
                 days_until: 1,
@@ -358,6 +386,11 @@ expression: entries
             },
         ],
         raw_title: "Closed audit",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
         level: 1,
         todo: Some(
             TodoKeyword {
@@ -393,6 +426,7 @@ expression: entries
             warning: None,
         },
         occurrence: Source,
+        scheduled: None,
         deadline: None,
     },
     AgendaEntry {
@@ -425,6 +459,11 @@ expression: entries
             },
         ],
         raw_title: "Scheduled daily",
+        category: Some(
+            AgendaCategory(
+                "work-cat",
+            ),
+        ),
         level: 1,
         todo: Some(
             TodoKeyword {
@@ -475,6 +514,9 @@ expression: entries
         occurrence: Repeater {
             index: 1,
         },
+        scheduled: Some(
+            OnDate,
+        ),
         deadline: None,
     },
     AgendaEntry {
@@ -518,6 +560,11 @@ expression: entries
             },
         ],
         raw_title: "Range event",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
         level: 1,
         todo: Some(
             TodoKeyword {
@@ -575,6 +622,9 @@ expression: entries
             warning: None,
         },
         occurrence: Source,
+        scheduled: Some(
+            OnDate,
+        ),
         deadline: None,
     },
     AgendaEntry {
@@ -602,6 +652,11 @@ expression: entries
             },
         ],
         raw_title: "Deadline warning",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
         level: 1,
         todo: Some(
             TodoKeyword {
@@ -646,9 +701,91 @@ expression: entries
             ),
         },
         occurrence: Source,
+        scheduled: None,
         deadline: Some(
             Due,
         ),
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 16,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_end_date: None,
+        time: None,
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Delayed scheduled ",
+                ),
+            },
+        ],
+        raw_title: "Delayed scheduled",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "delay",
+        ],
+        effective_tags: [
+            "team",
+            "delay",
+        ],
+        anchor: Some(
+            "delayed-scheduled",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-14 Thu -2d>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 14,
+                    day_name: Some(
+                        "Thu",
+                    ),
+                    hour: None,
+                    minute: None,
+                },
+            ),
+            end: None,
+            repeater: None,
+            warning: Some(
+                TimestampWarning {
+                    kind: All,
+                    value: 2,
+                    unit: Day,
+                },
+            ),
+        },
+        occurrence: Source,
+        scheduled: Some(
+            Delayed {
+                days_delayed: 2,
+            },
+        ),
+        deadline: None,
     },
     AgendaEntry {
         ann: (),
@@ -680,6 +817,11 @@ expression: entries
             },
         ],
         raw_title: "Scheduled daily",
+        category: Some(
+            AgendaCategory(
+                "work-cat",
+            ),
+        ),
         level: 1,
         todo: Some(
             TodoKeyword {
@@ -730,6 +872,9 @@ expression: entries
         occurrence: Repeater {
             index: 2,
         },
+        scheduled: Some(
+            OnDate,
+        ),
         deadline: None,
     },
 ]

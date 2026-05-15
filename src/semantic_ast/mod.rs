@@ -28,8 +28,8 @@ mod timestamp_metadata;
 mod traversal;
 
 pub use agenda_model::{
-    AgendaDate, AgendaDeadlineState, AgendaEntry, AgendaEntryKind, AgendaOccurrence, AgendaQuery,
-    AgendaTime,
+    AgendaCategory, AgendaDate, AgendaDeadlineState, AgendaEntry, AgendaEntryKind,
+    AgendaOccurrence, AgendaQuery, AgendaScheduleState, AgendaTime,
 };
 pub use block_model::{
     BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering,

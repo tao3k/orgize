@@ -2,6 +2,7 @@
 
 use super::model::{
     Object, TimeUnit, Timestamp, TimestampMoment, TimestampWarning, TodoKeyword, TodoState,
+    WarningKind,
 };
 
 /// Inclusive date window and filters for semantic agenda projection.
@@ -200,6 +201,27 @@ impl AgendaTime {
     }
 }
 
+/// Category displayed for an agenda entry.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AgendaCategory(String);
+
+impl AgendaCategory {
+    /// Creates an agenda category from parser-owned text.
+    pub fn new(category: impl Into<String>) -> Self {
+        Self(category.into())
+    }
+
+    /// Returns the category text.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Consumes the category and returns the category text.
+    pub fn into_string(self) -> String {
+        self.0
+    }
+}
+
 /// One semantic agenda row derived from a planning timestamp.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AgendaEntry<A = ()> {
@@ -212,6 +234,7 @@ pub struct AgendaEntry<A = ()> {
     pub end_time: Option<AgendaTime>,
     pub title: Vec<Object<A>>,
     pub raw_title: String,
+    pub category: Option<AgendaCategory>,
     pub level: usize,
     pub todo: Option<TodoKeyword>,
     pub tags: Vec<String>,
@@ -219,6 +242,7 @@ pub struct AgendaEntry<A = ()> {
     pub anchor: Option<String>,
     pub timestamp: Timestamp,
     pub occurrence: AgendaOccurrence,
+    pub scheduled: Option<AgendaScheduleState>,
     pub deadline: Option<AgendaDeadlineState>,
 }
 
@@ -245,6 +269,14 @@ pub enum AgendaDeadlineState {
     Overdue { days_overdue: u32 },
 }
 
+/// Display state for a scheduled agenda row.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AgendaScheduleState {
+    OnDate,
+    Delayed { days_delayed: u32 },
+    PastDue { days_overdue: u32 },
+}
+
 pub(crate) fn is_done_keyword(todo: &Option<TodoKeyword>) -> bool {
     matches!(todo.as_ref().map(|todo| todo.state), Some(TodoState::Done))
 }
@@ -253,6 +285,23 @@ pub(crate) fn warning_start(date: AgendaDate, warning: Option<&TimestampWarning>
     warning
         .and_then(|warning| date.add_interval(-(warning.value as i32), warning.unit))
         .unwrap_or(date)
+}
+
+pub(crate) fn scheduled_visible_start(
+    date: AgendaDate,
+    warning: Option<&TimestampWarning>,
+    occurrence: AgendaOccurrence,
+) -> AgendaDate {
+    let Some(warning) = warning else {
+        return date;
+    };
+    let applies = warning.kind == WarningKind::All || occurrence == AgendaOccurrence::Source;
+    if applies {
+        date.add_interval(warning.value as i32, warning.unit)
+            .unwrap_or(date)
+    } else {
+        date
+    }
 }
 
 fn days_in_month(year: i32, month: i32) -> u8 {
