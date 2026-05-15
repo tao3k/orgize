@@ -629,6 +629,112 @@ expression: entries
     },
     AgendaEntry {
         ann: (),
+        kind: Timestamp,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_end_date: Some(
+            AgendaDate {
+                year: 2026,
+                month: 5,
+                day: 15,
+            },
+        ),
+        time: Some(
+            AgendaTime {
+                hour: 14,
+                minute: 0,
+            },
+        ),
+        end_time: Some(
+            AgendaTime {
+                hour: 15,
+                minute: 30,
+            },
+        ),
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Plain meeting ",
+                ),
+            },
+        ],
+        raw_title: "Plain meeting",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "event",
+        ],
+        effective_tags: [
+            "team",
+            "event",
+        ],
+        anchor: Some(
+            "plain-meeting",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-15 Fri 14:00-15:30>",
+            is_range: true,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: Some(
+                        14,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            end: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: Some(
+                        15,
+                    ),
+                    minute: Some(
+                        30,
+                    ),
+                },
+            ),
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: None,
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
         kind: Deadline,
         display_date: AgendaDate {
             year: 2026,

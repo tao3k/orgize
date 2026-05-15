@@ -20,7 +20,7 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
     let bare = doc.to_bare();
     let entries = bare.agenda_entries(&query);
 
-    assert_eq!(entries.len(), 10);
+    assert_eq!(entries.len(), 11);
     assert_eq!(entries[0].kind, AgendaEntryKind::Deadline);
     assert_eq!(entries[0].raw_title, "Deadline warning");
     assert_eq!(
@@ -85,6 +85,20 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
         Some(AgendaScheduleState::Delayed { days_delayed: 2 })
     );
 
+    let plain_meetings = entries
+        .iter()
+        .filter(|entry| entry.raw_title == "Plain meeting")
+        .collect::<Vec<_>>();
+    assert_eq!(plain_meetings.len(), 1);
+    assert_eq!(plain_meetings[0].kind, AgendaEntryKind::Timestamp);
+    assert_eq!(
+        plain_meetings[0].time,
+        Some(AgendaTime {
+            hour: 14,
+            minute: 0
+        })
+    );
+
     insta::with_settings!({snapshot_path => "../../snapshots", prepend_module_to_snapshot => false}, {
         insta::assert_debug_snapshot!("semantic_ast__semantic_agenda_entries", entries);
     });
@@ -99,7 +113,8 @@ fn semantic_ast_agenda_filters_done_archived_and_tags() {
         .exclude_tag("work")
         .exclude_tag("ops")
         .exclude_tag("range")
-        .exclude_tag("delay");
+        .exclude_tag("delay")
+        .exclude_tag("event");
 
     let titles = doc
         .to_bare()
@@ -109,6 +124,23 @@ fn semantic_ast_agenda_filters_done_archived_and_tags() {
         .collect::<Vec<_>>();
 
     assert_eq!(titles, ["Archived item", "Done item"]);
+}
+
+#[test]
+fn semantic_ast_agenda_projects_active_timestamps_only() {
+    let doc = Org::parse("* TODO Event\nBody <2026-05-15 Fri 08:00> and [2026-05-15 Fri 09:00].\n")
+        .document();
+    let query = AgendaQuery::single_day(AgendaDate::new(2026, 5, 15));
+
+    let entries = doc.to_bare().agenda_entries(&query);
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].kind, AgendaEntryKind::Timestamp);
+    assert_eq!(entries[0].time, Some(AgendaTime { hour: 8, minute: 0 }));
+
+    let without_timestamps = doc
+        .to_bare()
+        .agenda_entries(&query.include_timestamps(false));
+    assert!(without_timestamps.is_empty());
 }
 
 #[test]

@@ -15,6 +15,7 @@ pub struct AgendaQuery {
     pub(crate) include_archived: bool,
     pub(crate) include_scheduled: bool,
     pub(crate) include_deadlines: bool,
+    pub(crate) include_timestamps: bool,
     pub(crate) include_closed: bool,
     pub(crate) expand_repeaters: bool,
     pub(crate) include_deadline_warnings: bool,
@@ -34,6 +35,7 @@ impl AgendaQuery {
             include_archived: false,
             include_scheduled: true,
             include_deadlines: true,
+            include_timestamps: true,
             include_closed: false,
             expand_repeaters: true,
             include_deadline_warnings: true,
@@ -75,6 +77,12 @@ impl AgendaQuery {
     /// Includes or excludes `DEADLINE` planning timestamps.
     pub fn include_deadlines(mut self, include_deadlines: bool) -> Self {
         self.include_deadlines = include_deadlines;
+        self
+    }
+
+    /// Includes or excludes plain active timestamp objects.
+    pub fn include_timestamps(mut self, include_timestamps: bool) -> Self {
+        self.include_timestamps = include_timestamps;
         self
     }
 
@@ -251,6 +259,7 @@ pub struct AgendaEntry<A = ()> {
 pub enum AgendaEntryKind {
     Scheduled,
     Deadline,
+    Timestamp,
     Closed,
 }
 

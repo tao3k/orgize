@@ -17,3 +17,5 @@ CLOSED: [2026-05-15 Fri]
 SCHEDULED: <2026-05-14 Thu 10:00>--<2026-05-15 Fri 11:00>
 * TODO Delayed scheduled :delay:
 SCHEDULED: <2026-05-14 Thu -2d>
+* TODO Plain meeting :event:
+Meet with the team <2026-05-15 Fri 14:00-15:30> and keep inactive note [2026-05-15 Fri].

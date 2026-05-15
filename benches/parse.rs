@@ -432,7 +432,13 @@ fn dense_agenda_projection_fixture() -> String {
         if idx % 10 == 0 {
             org.push_str(&format!("CLOSED: [2026-05-{scheduled_day:02} Fri]\n"));
         }
-        org.push_str("Body with [[https://example.com][link]] and *markup*.\n\n");
+        if idx % 9 == 0 {
+            org.push_str(&format!(
+                "Body with active event <2026-05-{scheduled_day:02} Fri 14:00-15:00> and inactive note [2026-05-{deadline_day:02} Mon].\n\n"
+            ));
+        } else {
+            org.push_str("Body with [[https://example.com][link]] and *markup*.\n\n");
+        }
     }
 
     org

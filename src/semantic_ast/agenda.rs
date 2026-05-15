@@ -5,7 +5,10 @@ use super::agenda_model::{
     AgendaDeadlineState, AgendaEntry, AgendaEntryKind, AgendaOccurrence, AgendaQuery,
     AgendaScheduleState, AgendaTime,
 };
-use super::model::{Document, Element, ElementData, Property, Section, Timestamp};
+use super::model::{
+    Citation, CiteReference, Document, Element, ElementData, Link, ListItem, Object, ObjectData,
+    Property, Section, Timestamp, TimestampKind,
+};
 
 impl<A: Clone> Document<A> {
     /// Projects headline planning timestamps into agenda rows.
@@ -96,6 +99,16 @@ fn collect_section<A: Clone>(
                 entries,
             );
         }
+
+        if context.query.include_timestamps {
+            collect_active_timestamps_in_elements(
+                section,
+                &section.children,
+                context,
+                category.clone(),
+                entries,
+            );
+        }
     }
 
     for subsection in &section.subsections {
@@ -167,6 +180,7 @@ fn collect_timestamp<A: Clone>(
 
     for span in occurrences {
         let seed = EntrySeed {
+            ann: section.ann.clone(),
             section,
             kind,
             timestamp,
@@ -182,10 +196,284 @@ fn collect_timestamp<A: Clone>(
             AgendaEntryKind::Scheduled => {
                 collect_scheduled_entries(&seed, context.start, context.end, entries);
             }
-            AgendaEntryKind::Closed => {
+            AgendaEntryKind::Timestamp | AgendaEntryKind::Closed => {
                 collect_span_entries(&seed, context.start, context.end, entries);
             }
         }
+    }
+}
+
+fn collect_active_timestamps_in_elements<A: Clone>(
+    section: &Section<A>,
+    elements: &[Element<A>],
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    for element in elements {
+        collect_active_timestamps_in_element(section, element, context, category.clone(), entries);
+    }
+}
+
+fn collect_active_timestamps_in_element<A: Clone>(
+    section: &Section<A>,
+    element: &Element<A>,
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    match &element.data {
+        ElementData::Paragraph(objects) => {
+            collect_active_timestamps_in_objects(section, objects, context, category, entries);
+        }
+        ElementData::Keyword(_) | ElementData::BabelCall(_) => {}
+        ElementData::Clock(clock) => {
+            if let Some(timestamp) = &clock.value {
+                collect_active_timestamp(
+                    section,
+                    &element.ann,
+                    timestamp,
+                    context,
+                    category,
+                    entries,
+                );
+            }
+        }
+        ElementData::Drawer(drawer) => {
+            collect_active_timestamps_in_elements(
+                section,
+                &drawer.children,
+                context,
+                category,
+                entries,
+            );
+        }
+        ElementData::PropertyDrawer(_) => {}
+        ElementData::List(list) => {
+            for item in &list.items {
+                collect_active_timestamps_in_list_item(
+                    section,
+                    item,
+                    context,
+                    category.clone(),
+                    entries,
+                );
+            }
+        }
+        ElementData::Table(table) => {
+            for row in &table.rows {
+                for cell in &row.cells {
+                    collect_active_timestamps_in_objects(
+                        section,
+                        &cell.objects,
+                        context,
+                        category.clone(),
+                        entries,
+                    );
+                }
+            }
+        }
+        ElementData::Block(block) => {
+            collect_active_timestamps_in_elements(
+                section,
+                &block.children,
+                context,
+                category,
+                entries,
+            );
+        }
+        ElementData::FootnoteDef(footnote) => {
+            collect_active_timestamps_in_elements(
+                section,
+                &footnote.children,
+                context,
+                category,
+                entries,
+            );
+        }
+        ElementData::Inlinetask(task) => {
+            collect_active_timestamps_in_elements(
+                section,
+                &task.children,
+                context,
+                category,
+                entries,
+            );
+        }
+        ElementData::TableEl { .. }
+        | ElementData::Comment(_)
+        | ElementData::FixedWidth(_)
+        | ElementData::Rule
+        | ElementData::LatexEnvironment(_)
+        | ElementData::Unknown { .. } => {}
+    }
+}
+
+fn collect_active_timestamps_in_list_item<A: Clone>(
+    section: &Section<A>,
+    item: &ListItem<A>,
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    collect_active_timestamps_in_objects(section, &item.tag, context, category.clone(), entries);
+    collect_active_timestamps_in_elements(section, &item.children, context, category, entries);
+}
+
+fn collect_active_timestamps_in_objects<A: Clone>(
+    section: &Section<A>,
+    objects: &[Object<A>],
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    for object in objects {
+        collect_active_timestamps_in_object(section, object, context, category.clone(), entries);
+    }
+}
+
+fn collect_active_timestamps_in_object<A: Clone>(
+    section: &Section<A>,
+    object: &Object<A>,
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    match &object.data {
+        ObjectData::Timestamp(timestamp) => {
+            collect_active_timestamp(section, &object.ann, timestamp, context, category, entries);
+        }
+        ObjectData::Markup { children, .. } => {
+            collect_active_timestamps_in_objects(section, children, context, category, entries);
+        }
+        ObjectData::FootnoteRef { definition, .. } => {
+            collect_active_timestamps_in_objects(section, definition, context, category, entries);
+        }
+        ObjectData::Citation(citation) => {
+            collect_active_timestamps_in_citation(section, citation, context, category, entries);
+        }
+        ObjectData::Cloze { text, .. } => {
+            collect_active_timestamps_in_objects(section, text, context, category, entries);
+        }
+        ObjectData::Link(link) => {
+            collect_active_timestamps_in_link(section, link, context, category, entries);
+        }
+        ObjectData::Plain(_)
+        | ObjectData::LineBreak
+        | ObjectData::Code(_)
+        | ObjectData::Verbatim(_)
+        | ObjectData::Entity(_)
+        | ObjectData::LatexFragment(_)
+        | ObjectData::ExportSnippet { .. }
+        | ObjectData::InlineCall { .. }
+        | ObjectData::InlineSrc { .. }
+        | ObjectData::Target(_)
+        | ObjectData::RadioTarget(_)
+        | ObjectData::Macro { .. }
+        | ObjectData::StatisticCookie(_)
+        | ObjectData::Unknown { .. } => {}
+    }
+}
+
+fn collect_active_timestamps_in_link<A: Clone>(
+    section: &Section<A>,
+    link: &Link<A>,
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    collect_active_timestamps_in_objects(section, &link.description, context, category, entries);
+}
+
+fn collect_active_timestamps_in_citation<A: Clone>(
+    section: &Section<A>,
+    citation: &Citation<A>,
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    collect_active_timestamps_in_objects(
+        section,
+        &citation.prefix,
+        context,
+        category.clone(),
+        entries,
+    );
+    collect_active_timestamps_in_objects(
+        section,
+        &citation.suffix,
+        context,
+        category.clone(),
+        entries,
+    );
+    for reference in &citation.references {
+        collect_active_timestamps_in_cite_reference(
+            section,
+            reference,
+            context,
+            category.clone(),
+            entries,
+        );
+    }
+}
+
+fn collect_active_timestamps_in_cite_reference<A: Clone>(
+    section: &Section<A>,
+    reference: &CiteReference<A>,
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    collect_active_timestamps_in_objects(
+        section,
+        &reference.prefix,
+        context,
+        category.clone(),
+        entries,
+    );
+    collect_active_timestamps_in_objects(section, &reference.suffix, context, category, entries);
+}
+
+fn collect_active_timestamp<A: Clone>(
+    section: &Section<A>,
+    ann: &A,
+    timestamp: &Timestamp,
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    if timestamp.kind != TimestampKind::Active {
+        return;
+    }
+    let Some(moment) = &timestamp.start else {
+        return;
+    };
+
+    let base_start = AgendaDate::from_moment(moment);
+    let base_end = timestamp.end.as_ref().map(AgendaDate::from_moment);
+    let time = AgendaTime::from_moment(moment);
+    let end_time = timestamp.end.as_ref().and_then(AgendaTime::from_moment);
+
+    for span in occurrence_spans(
+        timestamp,
+        base_start,
+        base_end,
+        context.end,
+        context.query.expand_repeaters,
+    ) {
+        let seed = EntrySeed {
+            ann: ann.clone(),
+            section,
+            kind: AgendaEntryKind::Timestamp,
+            timestamp,
+            target_date: span.start,
+            target_end_date: span.end,
+            time,
+            end_time,
+            category: category.clone(),
+            occurrence: span.occurrence,
+        };
+        collect_span_entries(&seed, context.start, context.end, entries);
     }
 }
 
@@ -197,6 +485,7 @@ struct AgendaSpan {
 }
 
 struct EntrySeed<'a, A> {
+    ann: A,
     section: &'a Section<A>,
     kind: AgendaEntryKind,
     timestamp: &'a Timestamp,
@@ -372,7 +661,7 @@ fn entry<A: Clone>(
     deadline: Option<AgendaDeadlineState>,
 ) -> AgendaEntry<A> {
     AgendaEntry {
-        ann: seed.section.ann.clone(),
+        ann: seed.ann.clone(),
         kind: seed.kind,
         display_date,
         target_date: seed.target_date,
@@ -432,6 +721,7 @@ fn kind_order(kind: AgendaEntryKind) -> u8 {
     match kind {
         AgendaEntryKind::Deadline => 0,
         AgendaEntryKind::Scheduled => 1,
-        AgendaEntryKind::Closed => 2,
+        AgendaEntryKind::Timestamp => 2,
+        AgendaEntryKind::Closed => 3,
     }
 }

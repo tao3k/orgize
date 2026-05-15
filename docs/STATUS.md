@@ -437,8 +437,8 @@ runtime dependency is copied into this repository.
 - [x] Project agenda categories from document `#+CATEGORY:` keywords and
       per-section `CATEGORY` properties.
 - [x] Extend agenda fixtures, snapshots, wasm copy, and dense benchmark input
-      for scheduled delays and category metadata.
-- [ ] Project plain active timestamps into agenda rows without treating inactive
+      for scheduled delays, category metadata, and plain active timestamps.
+- [x] Project plain active timestamps into agenda rows without treating inactive
       timestamps as agenda events.
 - [ ] Parse headline time-of-day specifications outside timestamp objects.
 - [ ] Add a richer official-style tag/property match query surface beyond simple

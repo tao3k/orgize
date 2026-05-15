@@ -27,7 +27,7 @@ and the current dense-path evidence collected on 2026-05-12.
 | Macro expansion | `src/semantic_ast/macro_expansion.rs` | Capacity-aware macro definition lookup and `$0` reuse. |
 | M15 postprocess | `src/semantic_ast/postprocess.rs`, `src/semantic_ast/settings.rs` | Metadata/settings side tables, stable anchors, aliases, default link descriptions, footnote resolution. |
 | Export projection | `src/semantic_ast/projection.rs` | Opt-in pruning, special strings, headline shift, and link abbreviation expansion without mutating `ParsedAst`. |
-| Agenda projection | `src/semantic_ast/agenda.rs`, `src/semantic_ast/agenda_model.rs` | Opt-in scheduled/deadline/closed agenda rows, range expansion, tag filtering, repeaters, warning rows, and overdue rows without mutating `ParsedAst`. |
+| Agenda projection | `src/semantic_ast/agenda.rs`, `src/semantic_ast/agenda_model.rs` | Opt-in scheduled/deadline/closed/plain active timestamp agenda rows, range expansion, tag filtering, repeaters, warning rows, scheduled delay rows, categories, and overdue rows without mutating `ParsedAst`. |
 | Lossless exporters | `src/export/**` | Default HTML/Markdown/LaTeX output stays stable; options only affect explicit `*_with_options` calls. |
 
 ## Benchmark Matrix
@@ -40,7 +40,7 @@ and the current dense-path evidence collected on 2026-05-12.
 | `Org::document/dense-semantic-radio-projection` | `many-parsed-object-radio-links.org` | Semantic radio links across parsed object spans. |
 | `Org::document/dense-m15-side-tables` | `many-m15-settings-links-footnotes.org` | M15 semantic side tables, aliases, citations, and footnote postprocess. |
 | `Document::project_for_export/dense-m15` | `many-m15-settings-links-footnotes.org` | Export pruning, tag filtering, special strings, headline shifting, and abbreviation expansion. |
-| `Document::agenda_entries/dense-agenda` | `many-agenda-planning-timestamps.org` | Agenda row generation for scheduled/deadline/closed planning, repeaters, warnings, scheduled delays, categories, done/archive inclusion, and multi-day ranges. |
+| `Document::agenda_entries/dense-agenda` | `many-agenda-planning-timestamps.org` | Agenda row generation for scheduled/deadline/closed planning, plain active timestamps, repeaters, warnings, scheduled delays, categories, done/archive inclusion, and multi-day ranges. |
 
 ## Current Dense Evidence
 
