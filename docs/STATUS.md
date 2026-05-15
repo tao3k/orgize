@@ -408,3 +408,18 @@ runtime dependency is copied into this repository.
       semantic snapshot output.
 - [x] Expose the agenda projection in the wasm demo as a dedicated tab and list
       it in the parser feature surface.
+
+### M20 Agenda Range And Performance Coverage
+
+- [x] Preserve planning timestamp range metadata in agenda rows through
+      `target_end_date` and `end_time`.
+- [x] Expand scheduled/closed multi-day timestamp ranges into one display row
+      per visible agenda day while retaining the original start/end target
+      dates.
+- [x] Keep deadline rows due-date oriented while preserving range metadata for
+      downstream UIs and indexers.
+- [x] Add dense `Document::agenda_entries` benchmark coverage for repeated
+      scheduled items, deadlines, closed timestamps, archive/done filtering, and
+      planning ranges.
+- [x] Update wasm demo content and feature copy to show range-aware agenda
+      projection.

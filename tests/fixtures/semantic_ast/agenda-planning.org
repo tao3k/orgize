@@ -9,3 +9,5 @@ SCHEDULED: <2026-05-14 Thu>
 SCHEDULED: <2026-05-14 Thu>
 * TODO Closed audit
 CLOSED: [2026-05-15 Fri]
+* TODO Range event :range:
+SCHEDULED: <2026-05-14 Thu 10:00>--<2026-05-15 Fri 11:00>

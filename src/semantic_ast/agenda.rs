@@ -134,8 +134,10 @@ fn collect_timestamp<A: Clone>(
         return;
     };
 
-    let base_date = AgendaDate::from_moment(moment);
+    let base_start = AgendaDate::from_moment(moment);
+    let base_end = timestamp.end.as_ref().map(AgendaDate::from_moment);
     let time = AgendaTime::from_moment(moment);
+    let end_time = timestamp.end.as_ref().and_then(AgendaTime::from_moment);
     let target_end = match kind {
         AgendaEntryKind::Deadline if query.include_deadline_warnings => timestamp
             .warning
@@ -144,26 +146,39 @@ fn collect_timestamp<A: Clone>(
             .unwrap_or(end),
         _ => end,
     };
-    let occurrences = occurrence_dates(timestamp, base_date, target_end, query.expand_repeaters);
+    let occurrences = occurrence_spans(
+        timestamp,
+        base_start,
+        base_end,
+        target_end,
+        query.expand_repeaters,
+    );
 
-    for (target_date, occurrence) in occurrences {
+    for span in occurrences {
         let seed = EntrySeed {
             section,
             kind,
             timestamp,
-            target_date,
+            target_date: span.start,
+            target_end_date: span.end,
             time,
-            occurrence,
+            end_time,
+            occurrence: span.occurrence,
         };
         match kind {
             AgendaEntryKind::Deadline => collect_deadline_entries(seed, query, start, end, entries),
             AgendaEntryKind::Scheduled | AgendaEntryKind::Closed => {
-                if (start..=end).contains(&target_date) {
-                    entries.push(entry(&seed, target_date, None));
-                }
+                collect_span_entries(&seed, start, end, entries);
             }
         }
     }
+}
+
+#[derive(Clone, Copy)]
+struct AgendaSpan {
+    start: AgendaDate,
+    end: Option<AgendaDate>,
+    occurrence: AgendaOccurrence,
 }
 
 struct EntrySeed<'a, A> {
@@ -171,8 +186,31 @@ struct EntrySeed<'a, A> {
     kind: AgendaEntryKind,
     timestamp: &'a Timestamp,
     target_date: AgendaDate,
+    target_end_date: Option<AgendaDate>,
     time: Option<AgendaTime>,
+    end_time: Option<AgendaTime>,
     occurrence: AgendaOccurrence,
+}
+
+fn collect_span_entries<A: Clone>(
+    seed: &EntrySeed<'_, A>,
+    start: AgendaDate,
+    end: AgendaDate,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    let span_end = seed.target_end_date.unwrap_or(seed.target_date);
+    let first = start.max(seed.target_date);
+    let last = end.min(span_end);
+
+    if first > last {
+        return;
+    }
+
+    let mut display_date = first;
+    while display_date <= last {
+        entries.push(entry(seed, display_date, None));
+        display_date = display_date.add_days(1);
+    }
 }
 
 fn collect_deadline_entries<A: Clone>(
@@ -219,31 +257,44 @@ fn collect_deadline_entries<A: Clone>(
     }
 }
 
-fn occurrence_dates(
+fn occurrence_spans(
     timestamp: &Timestamp,
-    base_date: AgendaDate,
+    base_start: AgendaDate,
+    base_end: Option<AgendaDate>,
     target_end: AgendaDate,
     expand_repeaters: bool,
-) -> Vec<(AgendaDate, AgendaOccurrence)> {
-    let mut dates = vec![(base_date, AgendaOccurrence::Source)];
+) -> Vec<AgendaSpan> {
+    let normalized_end = base_end.filter(|end| *end >= base_start);
+    let mut spans = vec![AgendaSpan {
+        start: base_start,
+        end: normalized_end,
+        occurrence: AgendaOccurrence::Source,
+    }];
     let Some(repeater) = &timestamp.repeater else {
-        return dates;
+        return spans;
     };
     if !expand_repeaters || repeater.value == 0 {
-        return dates;
+        return spans;
     }
 
     let mut index = 1;
-    let mut current = base_date;
-    while let Some(next) = current.add_interval(repeater.value as i32, repeater.unit) {
-        if next <= current || next > target_end || index > 4_096 {
+    let mut current_start = base_start;
+    let mut current_end = normalized_end;
+    while let Some(next_start) = current_start.add_interval(repeater.value as i32, repeater.unit) {
+        if next_start <= current_start || next_start > target_end || index > 4_096 {
             break;
         }
-        dates.push((next, AgendaOccurrence::Repeater { index }));
-        current = next;
+        current_end =
+            current_end.and_then(|end| end.add_interval(repeater.value as i32, repeater.unit));
+        spans.push(AgendaSpan {
+            start: next_start,
+            end: current_end,
+            occurrence: AgendaOccurrence::Repeater { index },
+        });
+        current_start = next_start;
         index += 1;
     }
-    dates
+    spans
 }
 
 fn entry<A: Clone>(
@@ -256,7 +307,9 @@ fn entry<A: Clone>(
         kind: seed.kind,
         display_date,
         target_date: seed.target_date,
+        target_end_date: seed.target_end_date,
         time: seed.time,
+        end_time: seed.end_time,
         title: seed.section.title.clone(),
         raw_title: seed.section.raw_title.trim_end().to_string(),
         level: seed.section.level,

@@ -355,7 +355,7 @@
         ],
         [
           "Agenda projection",
-          "`Document::agenda_entries()` derives scheduled, deadline, warning, overdue, closed, repeated, and tag-filtered agenda rows from semantic planning timestamps.",
+          "`Document::agenda_entries()` derives scheduled, deadline, warning, overdue, closed, repeated, range-aware, and tag-filtered agenda rows from semantic planning timestamps.",
         ],
         [
           "Blocks and tables",
@@ -476,6 +476,10 @@ Inline Babel: src_json[:var data=[1,[2]]]{map.get({nested})} and call_square[:va
 #+TBLFM: $2=vsum(@2..@-1)
 
 [fn:note] Footnote definitions are document-local targets.
+
+* TODO Agenda range sample :demo:range:
+SCHEDULED: <2026-05-12 Tue 10:00>--<2026-05-14 Thu 11:00>
+Multi-day planning ranges appear as range-aware rows in the Agenda tab.
 
 *************** WAIT Inline task :inline:
 SCHEDULED: <2026-05-11 Mon>

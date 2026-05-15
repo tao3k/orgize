@@ -1,6 +1,8 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{AgendaDate, AgendaDeadlineState, AgendaEntryKind, AgendaOccurrence, AgendaQuery},
+    ast::{
+        AgendaDate, AgendaDeadlineState, AgendaEntryKind, AgendaOccurrence, AgendaQuery, AgendaTime,
+    },
     Org,
 };
 
@@ -17,7 +19,7 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
     let bare = doc.to_bare();
     let entries = bare.agenda_entries(&query);
 
-    assert_eq!(entries.len(), 7);
+    assert_eq!(entries.len(), 9);
     assert_eq!(entries[0].kind, AgendaEntryKind::Deadline);
     assert_eq!(entries[0].raw_title, "Deadline warning");
     assert_eq!(entries[0].display_date, AgendaDate::new(2026, 5, 14));
@@ -35,6 +37,32 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
         .expect("daily scheduled repeater occurrence");
     assert_eq!(repeated.occurrence, AgendaOccurrence::Repeater { index: 1 });
 
+    let range_entries = entries
+        .iter()
+        .filter(|entry| entry.raw_title == "Range event")
+        .collect::<Vec<_>>();
+    assert_eq!(range_entries.len(), 2);
+    assert_eq!(range_entries[0].display_date, AgendaDate::new(2026, 5, 14));
+    assert_eq!(range_entries[1].display_date, AgendaDate::new(2026, 5, 15));
+    assert_eq!(
+        range_entries[0].target_end_date,
+        Some(AgendaDate::new(2026, 5, 15))
+    );
+    assert_eq!(
+        range_entries[0].time,
+        Some(AgendaTime {
+            hour: 10,
+            minute: 0
+        })
+    );
+    assert_eq!(
+        range_entries[0].end_time,
+        Some(AgendaTime {
+            hour: 11,
+            minute: 0
+        })
+    );
+
     insta::with_settings!({snapshot_path => "../../snapshots", prepend_module_to_snapshot => false}, {
         insta::assert_debug_snapshot!("semantic_ast__semantic_agenda_entries", entries);
     });
@@ -47,7 +75,8 @@ fn semantic_ast_agenda_filters_done_archived_and_tags() {
         .include_done(true)
         .include_archived(true)
         .exclude_tag("work")
-        .exclude_tag("ops");
+        .exclude_tag("ops")
+        .exclude_tag("range");
 
     let titles = doc
         .to_bare()

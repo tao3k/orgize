@@ -16,7 +16,9 @@ expression: entries
             month: 5,
             day: 16,
         },
+        target_end_date: None,
         time: None,
+        end_time: None,
         title: [
             Object {
                 ann: (),
@@ -89,12 +91,14 @@ expression: entries
             month: 5,
             day: 14,
         },
+        target_end_date: None,
         time: Some(
             AgendaTime {
                 hour: 9,
                 minute: 30,
             },
         ),
+        end_time: None,
         title: [
             Object {
                 ann: (),
@@ -156,6 +160,106 @@ expression: entries
     },
     AgendaEntry {
         ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_end_date: Some(
+            AgendaDate {
+                year: 2026,
+                month: 5,
+                day: 15,
+            },
+        ),
+        time: Some(
+            AgendaTime {
+                hour: 10,
+                minute: 0,
+            },
+        ),
+        end_time: Some(
+            AgendaTime {
+                hour: 11,
+                minute: 0,
+            },
+        ),
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Range event ",
+                ),
+            },
+        ],
+        raw_title: "Range event",
+        level: 1,
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "range",
+        ],
+        effective_tags: [
+            "team",
+            "range",
+        ],
+        anchor: Some(
+            "range-event",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-14 Thu 10:00>--<2026-05-15 Fri 11:00>",
+            is_range: true,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 14,
+                    day_name: Some(
+                        "Thu",
+                    ),
+                    hour: Some(
+                        10,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            end: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: Some(
+                        11,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
         kind: Deadline,
         display_date: AgendaDate {
             year: 2026,
@@ -167,7 +271,9 @@ expression: entries
             month: 5,
             day: 16,
         },
+        target_end_date: None,
         time: None,
+        end_time: None,
         title: [
             Object {
                 ann: (),
@@ -240,7 +346,9 @@ expression: entries
             month: 5,
             day: 15,
         },
+        target_end_date: None,
         time: None,
+        end_time: None,
         title: [
             Object {
                 ann: (),
@@ -300,12 +408,14 @@ expression: entries
             month: 5,
             day: 15,
         },
+        target_end_date: None,
         time: Some(
             AgendaTime {
                 hour: 9,
                 minute: 30,
             },
         ),
+        end_time: None,
         title: [
             Object {
                 ann: (),
@@ -369,6 +479,106 @@ expression: entries
     },
     AgendaEntry {
         ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_end_date: Some(
+            AgendaDate {
+                year: 2026,
+                month: 5,
+                day: 15,
+            },
+        ),
+        time: Some(
+            AgendaTime {
+                hour: 10,
+                minute: 0,
+            },
+        ),
+        end_time: Some(
+            AgendaTime {
+                hour: 11,
+                minute: 0,
+            },
+        ),
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Range event ",
+                ),
+            },
+        ],
+        raw_title: "Range event",
+        level: 1,
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "range",
+        ],
+        effective_tags: [
+            "team",
+            "range",
+        ],
+        anchor: Some(
+            "range-event",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-14 Thu 10:00>--<2026-05-15 Fri 11:00>",
+            is_range: true,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 14,
+                    day_name: Some(
+                        "Thu",
+                    ),
+                    hour: Some(
+                        10,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            end: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: Some(
+                        11,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
         kind: Deadline,
         display_date: AgendaDate {
             year: 2026,
@@ -380,7 +590,9 @@ expression: entries
             month: 5,
             day: 16,
         },
+        target_end_date: None,
         time: None,
+        end_time: None,
         title: [
             Object {
                 ann: (),
@@ -451,12 +663,14 @@ expression: entries
             month: 5,
             day: 16,
         },
+        target_end_date: None,
         time: Some(
             AgendaTime {
                 hour: 9,
                 minute: 30,
             },
         ),
+        end_time: None,
         title: [
             Object {
                 ann: (),

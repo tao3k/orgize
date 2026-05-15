@@ -103,7 +103,8 @@ special-string conversion. `Org::to_html()`, `Org::to_markdown()`, and
 Use `document.agenda_entries(&AgendaQuery::new(start, end))` when an indexer or
 UI wants an Org Agenda-style semantic view over planning timestamps. The
 projection derives scheduled, deadline, warning, overdue, closed, repeated, and
-tag-filtered rows without changing the parsed document or exporter defaults.
+tag-filtered rows, including timestamp range display days and start/end times,
+without changing the parsed document or exporter defaults.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 

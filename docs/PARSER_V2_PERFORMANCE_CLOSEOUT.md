@@ -27,6 +27,7 @@ and the current dense-path evidence collected on 2026-05-12.
 | Macro expansion | `src/semantic_ast/macro_expansion.rs` | Capacity-aware macro definition lookup and `$0` reuse. |
 | M15 postprocess | `src/semantic_ast/postprocess.rs`, `src/semantic_ast/settings.rs` | Metadata/settings side tables, stable anchors, aliases, default link descriptions, footnote resolution. |
 | Export projection | `src/semantic_ast/projection.rs` | Opt-in pruning, special strings, headline shift, and link abbreviation expansion without mutating `ParsedAst`. |
+| Agenda projection | `src/semantic_ast/agenda.rs`, `src/semantic_ast/agenda_model.rs` | Opt-in scheduled/deadline/closed agenda rows, range expansion, tag filtering, repeaters, warning rows, and overdue rows without mutating `ParsedAst`. |
 | Lossless exporters | `src/export/**` | Default HTML/Markdown/LaTeX output stays stable; options only affect explicit `*_with_options` calls. |
 
 ## Benchmark Matrix
@@ -39,6 +40,7 @@ and the current dense-path evidence collected on 2026-05-12.
 | `Org::document/dense-semantic-radio-projection` | `many-parsed-object-radio-links.org` | Semantic radio links across parsed object spans. |
 | `Org::document/dense-m15-side-tables` | `many-m15-settings-links-footnotes.org` | M15 semantic side tables, aliases, citations, and footnote postprocess. |
 | `Document::project_for_export/dense-m15` | `many-m15-settings-links-footnotes.org` | Export pruning, tag filtering, special strings, headline shifting, and abbreviation expansion. |
+| `Document::agenda_entries/dense-agenda` | `many-agenda-planning-timestamps.org` | Agenda row generation for scheduled/deadline/closed planning, repeaters, warnings, done/archive inclusion, and multi-day ranges. |
 
 ## Current Dense Evidence
 
@@ -70,6 +72,7 @@ direnv exec . cargo test --workspace --all-targets --all-features
 direnv exec . cargo clippy --workspace --all-targets --all-features -- -D warnings
 direnv exec . cargo test --doc --all-features
 direnv exec . cargo bench --bench parse dense-m15 -- --test
+direnv exec . cargo bench --bench parse dense-agenda -- --test
 direnv exec . cargo bench --bench parse "dense-|macro_expansions/dense" -- --sample-size 10 --warm-up-time 1 --measurement-time 2
 direnv exec . cargo run --quiet --manifest-path /Users/guangtao/ghq/github.com/tao3k/rust-lang-project-harness/Cargo.toml -- --json /Users/guangtao/ghq/github.com/tao3k/orgize
 git diff --check
