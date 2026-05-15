@@ -152,6 +152,7 @@
           <span data-value="latex">LaTeX</span>
           <span data-value="syntax">Syntax</span>
           <span data-value="semantic">Semantic AST</span>
+          <span data-value="agenda">Agenda</span>
           <span data-value="traverse">Traverse</span>
           <span data-value="features">Parser Features</span>
           <div id="spacer"></div>
@@ -230,6 +231,11 @@
 
           case "semantic": {
             renderPre(org.semantic());
+            break;
+          }
+
+          case "agenda": {
+            renderPre(org.agenda());
             break;
           }
 
@@ -346,6 +352,10 @@
         [
           "Headlines and tasks",
           "Custom TODO/DONE declarations, priorities, tags, planning timestamps, property drawers, effective tags, stable anchors, and inlinetasks project into semantic nodes.",
+        ],
+        [
+          "Agenda projection",
+          "`Document::agenda_entries()` derives scheduled, deadline, warning, overdue, closed, repeated, and tag-filtered agenda rows from semantic planning timestamps.",
         ],
         [
           "Blocks and tables",

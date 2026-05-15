@@ -3,6 +3,8 @@
 //! The parser still builds the lossless rowan syntax tree. This module is the
 //! semantic, org-element-like layer projected from that syntax tree.
 
+mod agenda;
+mod agenda_model;
 mod block_metadata;
 mod block_model;
 mod block_syntax;
@@ -25,6 +27,10 @@ mod targets;
 mod timestamp_metadata;
 mod traversal;
 
+pub use agenda_model::{
+    AgendaDate, AgendaDeadlineState, AgendaEntry, AgendaEntryKind, AgendaOccurrence, AgendaQuery,
+    AgendaTime,
+};
 pub use block_model::{
     BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering,
     BlockSwitches, SemanticFixedWidth,

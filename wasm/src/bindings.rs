@@ -1,6 +1,7 @@
 //! `wasm-bindgen` facade for parsing and rendering Org documents.
 
 use orgize::{
+    ast::{AgendaDate, AgendaQuery},
     export::{from_fn, Container, Event},
     rowan::ast::AstNode,
     Org as Inner,
@@ -52,6 +53,15 @@ impl Org {
         } else {
             format!("{document:#?}\n\nMacro expansions:\n{macro_expansions:#?}")
         }
+    }
+
+    pub fn agenda(&self) -> String {
+        let query = AgendaQuery::new(AgendaDate::new(2026, 5, 10), AgendaDate::new(2026, 5, 24))
+            .include_closed(true);
+        format!(
+            "{:#?}",
+            self.inner.document().to_bare().agenda_entries(&query)
+        )
     }
 
     pub fn update(&mut self, s: &str) {

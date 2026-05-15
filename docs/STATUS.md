@@ -393,3 +393,18 @@ runtime dependency is copied into this repository.
 - [x] Align `orgize lint` with the Rust project harness output model: compact
       agent-facing text is the default, while line-oriented text and JSON stay
       explicit modes.
+
+### M19 Org Agenda Semantic Projection
+
+- [x] Add `AgendaQuery`, `AgendaDate`, `AgendaEntry`, and related agenda state
+      types to the owned semantic AST API.
+- [x] Project headline `SCHEDULED`, `DEADLINE`, and opt-in `CLOSED` planning
+      timestamps into agenda rows without mutating `ParsedAst` or changing the
+      lossless exporter substrate.
+- [x] Support TODO/DONE filtering, COMMENT/ARCHIVE filtering, required/excluded
+      tag filters, simple date-changing repeater expansion, deadline warning
+      rows, and overdue deadline rows.
+- [x] Cover agenda projection with standalone `.org` fixture input and stable
+      semantic snapshot output.
+- [x] Expose the agenda projection in the wasm demo as a dedicated tab and list
+      it in the parser feature surface.

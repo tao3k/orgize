@@ -1,0 +1,11 @@
+#+FILETAGS: :team:
+* TODO Scheduled daily :work:
+SCHEDULED: <2026-05-14 Thu 09:30 +1d>
+* TODO Deadline warning :ops:
+DEADLINE: <2026-05-16 Sat -2d>
+* DONE Done item
+SCHEDULED: <2026-05-14 Thu>
+* TODO Archived item :ARCHIVE:
+SCHEDULED: <2026-05-14 Thu>
+* TODO Closed audit
+CLOSED: [2026-05-15 Fri]

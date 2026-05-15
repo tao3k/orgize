@@ -100,6 +100,10 @@ such as `COMMENT`/`:ARCHIVE:`/tag pruning, link abbreviation expansion, and
 special-string conversion. `Org::to_html()`, `Org::to_markdown()`, and
 `Org::to_latex()` keep their existing default output stable; the corresponding
 `*_with_options` methods expose opt-in special-string and entity handling.
+Use `document.agenda_entries(&AgendaQuery::new(start, end))` when an indexer or
+UI wants an Org Agenda-style semantic view over planning timestamps. The
+projection derives scheduled, deadline, warning, overdue, closed, repeated, and
+tag-filtered rows without changing the parsed document or exporter defaults.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 
@@ -264,6 +268,8 @@ Parser v2 makes a breaking API boundary explicit:
   `syntax_ast::SyntaxDocument` and `syntax_ast::SyntaxLink`.
 - `Document<A>::project_for_export(&ExportProjectionOptions)` returns an
   exporter-oriented semantic projection without changing the parsed AST.
+- `Document<A>::agenda_entries(&AgendaQuery)` returns an opt-in agenda
+  projection over semantic planning timestamps without mutating `ParsedAst`.
 
 Code that previously imported rowan-backed wrappers from `orgize::ast::*`
 should import them from `orgize::syntax_ast::*` instead.
