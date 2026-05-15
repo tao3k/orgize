@@ -58,8 +58,11 @@ the opt-in semantic pass that can link parsed object spans such as
 Semantic source/example blocks include parsed line-numbering metadata for
 `-n` and `+n` switches, optional starting offsets, preserve-indentation
 metadata for `-i`, code-reference cookies from the default `(ref:name)` format
-or custom `-l` label formats, and structured source block header arguments
-while retaining the raw parameter text.
+or custom `-l` label formats, line-level source/value/normalized-value records,
+typed `-k`/`-r`/`-l` switch metadata, and structured source block header
+arguments while retaining the raw parameter text. Fixed-width areas use the
+same semantic line record shape, and inline Babel source/call contexts now keep
+nested bracket, brace, and parenthesis bodies balanced.
 Semantic tables expose column alignment metadata from `<l>`, `<c>`, and `<r>`
 property cookies while preserving the original row and cell contents.
 Per-file TODO declarations from `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`

@@ -1,13 +1,11 @@
 use nom::{
     bytes::complete::{tag, take_till},
-    combinator::{map, opt},
-    IResult,
+    combinator::opt,
+    IResult, Parser,
 };
 
 use super::{
-    combinator::{
-        l_bracket_token, l_parens_token, node, r_bracket_token, r_parens_token, GreenElement,
-    },
+    combinator::{balanced_delimited_tokens, node, GreenElement},
     input::Input,
     SyntaxKind,
 };
@@ -17,43 +15,50 @@ use super::{
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
 pub(crate) fn inline_call_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    let mut parser = map(
-        (
-            tag("call_"),
-            take_till(|c| c == '[' || c == '\n' || c == '(' || c == ')'),
-            opt((
-                l_bracket_token,
-                take_till(|c| c == ']' || c == '\n'),
-                r_bracket_token,
-            )),
-            l_parens_token,
-            take_till(|c| c == ')' || c == '\n'),
-            r_parens_token,
-            opt((
-                l_bracket_token,
-                take_till(|c| c == ']' || c == '\n'),
-                r_bracket_token,
-            )),
-        ),
-        |(call, name, inside_header, l_paren, arguments, r_paren, end_header)| {
-            let mut children = vec![call.text_token()];
-            children.push(name.text_token());
-            if let Some((l_bracket, header, r_bracket)) = inside_header {
-                children.push(l_bracket);
-                children.push(header.text_token());
-                children.push(r_bracket);
-            }
-            children.push(l_paren);
-            children.push(arguments.text_token());
-            children.push(r_paren);
-            if let Some((l_bracket, header, r_bracket)) = end_header {
-                children.push(l_bracket);
-                children.push(header.text_token());
-                children.push(r_bracket);
-            }
-            node(SyntaxKind::INLINE_CALL, children)
-        },
-    );
+    let mut parser = |input| {
+        let (input, call) = tag("call_").parse(input)?;
+        let (input, name) =
+            take_till(|c| c == '[' || c == '\n' || c == '(' || c == ')').parse(input)?;
+        let (input, inside_header) = opt(|input| {
+            balanced_delimited_tokens(
+                input,
+                '[',
+                ']',
+                SyntaxKind::L_BRACKET,
+                SyntaxKind::R_BRACKET,
+            )
+        })
+        .parse(input)?;
+        let (input, (l_paren, arguments, r_paren)) =
+            balanced_delimited_tokens(input, '(', ')', SyntaxKind::L_PARENS, SyntaxKind::R_PARENS)?;
+        let (input, end_header) = opt(|input| {
+            balanced_delimited_tokens(
+                input,
+                '[',
+                ']',
+                SyntaxKind::L_BRACKET,
+                SyntaxKind::R_BRACKET,
+            )
+        })
+        .parse(input)?;
+
+        let mut children = vec![call.text_token()];
+        children.push(name.text_token());
+        if let Some((l_bracket, header, r_bracket)) = inside_header {
+            children.push(l_bracket);
+            children.push(header.text_token());
+            children.push(r_bracket);
+        }
+        children.push(l_paren);
+        children.push(arguments.text_token());
+        children.push(r_paren);
+        if let Some((l_bracket, header, r_bracket)) = end_header {
+            children.push(l_bracket);
+            children.push(header.text_token());
+            children.push(r_bracket);
+        }
+        Ok((input, node(SyntaxKind::INLINE_CALL, children)))
+    };
     crate::lossless_parser!(parser, input)
 }
 
@@ -125,5 +130,11 @@ fn parse() {
       TEXT@32..45 ":results html"
       R_BRACKET@45..46 "]"
     "###
+    );
+
+    let nested = to_inline_call("call_square[:var xs=[1,[2]]](sum(1, max(2, 3)))[:results [html]]");
+    assert_eq!(
+        nested.syntax.to_string(),
+        "call_square[:var xs=[1,[2]]](sum(1, max(2, 3)))[:results [html]]"
     );
 }

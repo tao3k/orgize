@@ -1,0 +1,10 @@
+#+name: demo-source
+#+begin_src rust -i -n 10 -l "// ref:%s" :exports both :results output drawer :var answer=42
+,* not a headline
+let answer = 42; // ref:init
+println!("answer = {}", answer);
+#+end_src
+
+#+begin_example +n 12
+example line (ref:sample)
+#+end_example

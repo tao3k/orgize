@@ -74,6 +74,7 @@ fn assert_traversal_surface(seen: &BTreeSet<&'static str>) {
         "ListItem",
         "TableRow",
         "TableCell",
+        "BlockLine",
         "Object",
     ] {
         assert!(
@@ -99,6 +100,7 @@ fn ast_ref_name(node: AstRef<'_, orgize::ast::ParsedAnnotation>) -> &'static str
         AstRef::ListItem(_) => "ListItem",
         AstRef::TableRow(_) => "TableRow",
         AstRef::TableCell(_) => "TableCell",
+        AstRef::BlockLine(_) => "BlockLine",
         AstRef::Object(_) => "Object",
     }
 }
@@ -119,6 +121,7 @@ fn ast_mut_name(node: AstMut<'_, orgize::ast::ParsedAnnotation>) -> &'static str
         AstMut::ListItem(_) => "ListItem",
         AstMut::TableRow(_) => "TableRow",
         AstMut::TableCell(_) => "TableCell",
+        AstMut::BlockLine(_) => "BlockLine",
         AstMut::Object(_) => "Object",
     }
 }

@@ -1,0 +1,60 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_fixed_width_lines.rs
+assertion_line: 33
+expression: fixed_width
+---
+SemanticFixedWidth {
+    value: "  one\n\t\ttwo\n",
+    lines: [
+        BlockLine {
+            ann: ParsedAnnotation {
+                range: 0..7,
+                start: SourcePosition {
+                    line: 1,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 1,
+                    column: 8,
+                },
+                raw: ":   one",
+            },
+            number: 1,
+            source: ":   one",
+            value: "  one",
+            normalized_value: "one",
+            value_without_code_ref: "  one",
+            normalized_value_without_code_ref: "one",
+            removed_indent: 2,
+            line_ending: Some(
+                "\n",
+            ),
+            code_ref: None,
+        },
+        BlockLine {
+            ann: ParsedAnnotation {
+                range: 8..15,
+                start: SourcePosition {
+                    line: 2,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 2,
+                    column: 8,
+                },
+                raw: ": \t\ttwo",
+            },
+            number: 2,
+            source: ": \t\ttwo",
+            value: "\t\ttwo",
+            normalized_value: "      two",
+            value_without_code_ref: "\t\ttwo",
+            normalized_value_without_code_ref: "      two",
+            removed_indent: 2,
+            line_ending: Some(
+                "\n",
+            ),
+            code_ref: None,
+        },
+    ],
+}

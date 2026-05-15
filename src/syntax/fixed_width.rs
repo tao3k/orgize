@@ -1,6 +1,6 @@
 use nom::{
     bytes::complete::{tag, take_while},
-    character::complete::{space0, space1},
+    character::complete::space0,
     combinator::{iterator, opt},
     IResult,
 };
@@ -23,7 +23,7 @@ fn fixed_width_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
         opt((
             space0,
             tag(":"),
-            opt((space1, take_while(|c| c != '\r' && c != '\n'))),
+            opt((tag(" "), take_while(|c| c != '\r' && c != '\n'))),
             eol_or_eof,
         )),
     );

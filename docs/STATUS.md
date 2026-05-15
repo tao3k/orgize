@@ -92,13 +92,20 @@ this repository.
 - [x] Source/example block coderefs
   - [x] Preserve per-line coderef cookies such as `(ref:name)`.
   - [x] Respect custom `-l` coderef label formats.
-  - [x] Expose coderef metadata in semantic block lines without losing raw
-        block text.
+  - [x] Expose coderef metadata in semantic `BlockLine` records without losing
+        raw block text.
+  - [x] Preserve per-line source text, comma-unquoted semantic value, line
+        ending, annotation range, and optional coderef metadata.
 - [x] Source/example block indentation semantics
   - [x] Model `-i` preserve-indentation behavior separately from raw source
         retention.
   - [x] Keep tab-width-sensitive normalization as an explicit exporter/indexer
         choice.
+- [x] Fixed-width line projection
+  - [x] Project fixed-width areas into line-level semantic records with source,
+        value, normalized value, line ending, and annotation metadata.
+  - [x] Preserve indentation beyond the one Org marker space and apply the same
+        tab-width-aware normalization surface as source/example blocks.
 - [x] Source block header arguments
   - [x] Project raw `:key value` parameters into structured semantic header
         args.
@@ -111,6 +118,9 @@ this repository.
   - [x] Keep single/double quote punctuation as plain text because core Org
         syntax does not define a dedicated quote object.
   - [x] Verify objects inside quote punctuation continue to project normally.
+- [x] Inline Babel balanced contexts
+  - [x] Parse nested brackets in inline source and call header contexts.
+  - [x] Parse nested braces/parens in inline source bodies and call arguments.
 
 ### Pre/Post Processing Gaps
 

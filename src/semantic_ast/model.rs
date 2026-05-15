@@ -2,6 +2,11 @@
 
 use rowan::TextRange;
 
+use super::block_model::{
+    joined_block_lines, BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumbering, BlockSwitches,
+    SemanticFixedWidth,
+};
+
 /// Parsed semantic document with source annotations on every semantic node.
 pub type ParsedAst = Document<ParsedAnnotation>;
 
@@ -326,8 +331,8 @@ pub enum ElementData<A = ()> {
     Inlinetask(Box<Inlinetask<A>>),
     /// Comment element raw text.
     Comment(String),
-    /// Fixed-width area raw text.
-    FixedWidth(String),
+    /// Fixed-width area with line-level metadata.
+    FixedWidth(SemanticFixedWidth<A>),
     /// Horizontal rule.
     Rule,
     /// LaTeX environment raw text.
@@ -337,6 +342,63 @@ pub enum ElementData<A = ()> {
         kind: UnsupportedSyntaxKind,
         raw: String,
     },
+}
+
+/// Block element with normalized kind and block metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Block<A = ()> {
+    pub kind: BlockKind,
+    pub name: Option<String>,
+    pub language: Option<String>,
+    pub switches: Option<String>,
+    pub switch_options: BlockSwitches,
+    pub line_numbering: Option<BlockLineNumbering>,
+    pub preserve_indentation: bool,
+    pub lines: Vec<BlockLine<A>>,
+    pub code_refs: Vec<BlockCodeRef>,
+    pub parameters: Option<String>,
+    pub header_args: Vec<BlockHeaderArg>,
+    pub value: String,
+    pub children: Vec<Element<A>>,
+}
+
+/// Semantic category for an Org block.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BlockKind {
+    /// Source block.
+    Source,
+    /// Example block.
+    Example,
+    /// Export block.
+    Export,
+    /// Quote block.
+    Quote,
+    /// Verse block.
+    Verse,
+    /// Center block.
+    Center,
+    /// Comment block.
+    Comment,
+    /// Dynamic block.
+    Dynamic,
+    /// Named special block.
+    Special(String),
+}
+
+impl<A> Block<A> {
+    pub fn normalized_value(&self) -> String {
+        joined_block_lines(&self.lines, |line| line.normalized_value.as_str())
+    }
+
+    pub fn value_without_code_refs(&self) -> String {
+        joined_block_lines(&self.lines, |line| line.value_without_code_ref.as_str())
+    }
+
+    pub fn normalized_value_without_code_refs(&self) -> String {
+        joined_block_lines(&self.lines, |line| {
+            line.normalized_value_without_code_ref.as_str()
+        })
+    }
 }
 
 /// Clock value and optional duration.
@@ -427,83 +489,6 @@ pub struct TableRow<A = ()> {
 pub struct TableCell<A = ()> {
     pub ann: A,
     pub objects: Vec<Object<A>>,
-}
-
-/// Block element with normalized kind and block metadata.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Block<A = ()> {
-    pub kind: BlockKind,
-    pub name: Option<String>,
-    pub language: Option<String>,
-    pub switches: Option<String>,
-    pub line_numbering: Option<BlockLineNumbering>,
-    pub preserve_indentation: bool,
-    pub code_refs: Vec<BlockCodeRef>,
-    pub parameters: Option<String>,
-    pub header_args: Vec<BlockHeaderArg>,
-    pub value: String,
-    pub children: Vec<Element<A>>,
-}
-
-/// Line-numbering switch metadata for source and example blocks.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BlockLineNumbering {
-    pub mode: BlockLineNumberMode,
-    pub start: Option<usize>,
-}
-
-/// Org source/example block line-numbering mode.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BlockLineNumberMode {
-    /// Start a fresh numbered listing with `-n`.
-    New,
-    /// Continue from the previous numbered listing with `+n`.
-    Continued,
-}
-
-/// Code reference cookie found inside a source or example block line.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BlockCodeRef {
-    /// One-based line number inside the block value.
-    pub line: usize,
-    /// Reference name extracted from the active label format.
-    pub name: String,
-    /// Raw reference cookie as it appears in the block line.
-    pub raw: String,
-}
-
-/// Header argument parsed from a source block parameter string.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BlockHeaderArg {
-    /// Header argument key without the leading colon.
-    pub key: String,
-    /// Header argument value, if present, preserving inner spacing.
-    pub value: Option<String>,
-    /// Raw header argument fragment as it appears in the begin line.
-    pub raw: String,
-}
-
-/// Semantic category for an Org block.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BlockKind {
-    /// Source block.
-    Source,
-    /// Example block.
-    Example,
-    /// Export block.
-    Export,
-    /// Quote block.
-    Quote,
-    /// Verse block.
-    Verse,
-    /// Center block.
-    Center,
-    /// Comment block.
-    Comment,
-    /// Dynamic block.
-    Dynamic,
-    /// Named special block.
-    Special(String),
 }
 
 /// Footnote definition with label and parsed body elements.
@@ -928,6 +913,8 @@ pub enum AstRef<'a, A> {
     TableRow(&'a TableRow<A>),
     /// Table cell node.
     TableCell(&'a TableCell<A>),
+    /// Source/example/fixed-width content line.
+    BlockLine(&'a BlockLine<A>),
     /// Object node.
     Object(&'a Object<A>),
 }
@@ -962,6 +949,8 @@ pub enum AstMut<'a, A> {
     TableRow(&'a mut TableRow<A>),
     /// Table cell node.
     TableCell(&'a mut TableCell<A>),
+    /// Source/example/fixed-width content line.
+    BlockLine(&'a mut BlockLine<A>),
     /// Object node.
     Object(&'a mut Object<A>),
 }

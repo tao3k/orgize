@@ -34,8 +34,11 @@ those imports to `orgize::syntax_ast::*`.
   target, and text-markup projection are covered.
 - Inlinetasks project into semantic `ElementData::Inlinetask` with title
   objects, planning, properties, optional `END`, body elements, and traversal.
-- Source/example block metadata includes line numbering, preserve indentation,
-  code references, and source block header args.
+- Source/example block metadata includes typed switches, line numbering,
+  preserve indentation, line-level source/value/normalized-value records, code
+  references, and source block header args.
+- Fixed-width areas project into the same line-level semantic record shape, and
+  inline Babel source/call contexts keep nested delimiters balanced.
 - Tables expose formulas and column alignment metadata while preserving row and
   cell content.
 - Per-file TODO declarations are applied before headline projection.

@@ -4,6 +4,7 @@
 //! semantic, org-element-like layer projected from that syntax tree.
 
 mod block_metadata;
+mod block_model;
 mod block_syntax;
 mod citation_metadata;
 mod conversion;
@@ -24,16 +25,19 @@ mod targets;
 mod timestamp_metadata;
 mod traversal;
 
+pub use block_model::{
+    BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering,
+    BlockSwitches, SemanticFixedWidth,
+};
 pub use model::{
-    AstMut, AstRef, BareAst, Block, BlockCodeRef, BlockHeaderArg, BlockKind, BlockLineNumberMode,
-    BlockLineNumbering, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
-    Document, Drawer, Element, ElementData, ExportProjectionOptions, ExportSettings, FootnoteDef,
-    FootnoteDefinition, FootnoteEntry, IncludeDirective, IncludeOption, Inlinetask, InlinetaskEnd,
-    Keyword, KeywordAttribute, Link, LinkAbbreviation, LinkDescriptionState, LinkMediaKind,
-    LinkPath, LinkSearch, LinkSearchKind, LinkTarget, List, ListItem, ListType, MacroDefinition,
-    MacroExpansion, MacroExpansionStatus, MarkupKind, Object, ObjectData, ParsedAnnotation,
-    ParsedAst, Planning, Property, RepeaterKind, Section, SourcePosition, Table, TableCell,
-    TableColumnAlignment, TableRow, TargetDefinition, TargetKind, TimeUnit, Timestamp,
-    TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning, TodoKeyword, TodoState,
-    UnsupportedSyntaxKind, WarningKind,
+    AstMut, AstRef, BareAst, Block, BlockKind, Checkbox, Citation, CiteReference, Clock,
+    Diagnostic, DiagnosticKind, Document, Drawer, Element, ElementData, ExportProjectionOptions,
+    ExportSettings, FootnoteDef, FootnoteDefinition, FootnoteEntry, IncludeDirective,
+    IncludeOption, Inlinetask, InlinetaskEnd, Keyword, KeywordAttribute, Link, LinkAbbreviation,
+    LinkDescriptionState, LinkMediaKind, LinkPath, LinkSearch, LinkSearchKind, LinkTarget, List,
+    ListItem, ListType, MacroDefinition, MacroExpansion, MacroExpansionStatus, MarkupKind, Object,
+    ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, RepeaterKind, Section,
+    SourcePosition, Table, TableCell, TableColumnAlignment, TableRow, TargetDefinition, TargetKind,
+    TimeUnit, Timestamp, TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning,
+    TodoKeyword, TodoState, UnsupportedSyntaxKind, WarningKind,
 };
