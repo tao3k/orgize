@@ -19,5 +19,6 @@ fn semantic_ast_projects_clean_clock_duration() {
     assert_eq!(timestamp.start.as_ref().unwrap().hour, Some(9));
     assert_eq!(timestamp.start.as_ref().unwrap().minute, Some(39));
     assert_eq!(clock.duration.as_deref(), Some("1:00"));
+    assert_eq!(clock.parsed_duration.as_ref().unwrap().total_seconds, 3_600);
     assert!(clock.raw.contains("=>  1:00"));
 }

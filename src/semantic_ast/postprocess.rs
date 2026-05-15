@@ -4,8 +4,8 @@ use std::collections::{HashMap, HashSet};
 
 use super::{
     AstMut, AstRef, Diagnostic, DiagnosticKind, Document, ElementData, FootnoteDefinition,
-    FootnoteEntry, LinkDescriptionState, LinkTarget, Object, ObjectData, ParsedAnnotation, Section,
-    TargetKind,
+    FootnoteEntry, LinkDescriptionState, LinkTarget, Object, ObjectData, ParsedAnnotation,
+    Property, Section, TargetKind,
 };
 
 pub(super) fn finalize_document(document: &mut Document<ParsedAnnotation>) {
@@ -18,33 +18,60 @@ pub(super) fn finalize_document(document: &mut Document<ParsedAnnotation>) {
 fn assign_effective_tags_and_anchors(document: &mut Document<ParsedAnnotation>) {
     let mut known = HashSet::new();
     let filetags = document.filetags.clone();
+    let properties = document.properties.clone();
     for section in &mut document.sections {
-        assign_section_tags_and_anchor(section, &filetags, &mut known);
+        assign_section_tags_anchor_and_properties(section, &filetags, &properties, &mut known);
     }
 }
 
-fn assign_section_tags_and_anchor(
+fn assign_section_tags_anchor_and_properties(
     section: &mut Section<ParsedAnnotation>,
-    inherited: &[String],
+    inherited_tags: &[String],
+    inherited_properties: &[Property<ParsedAnnotation>],
     known: &mut HashSet<String>,
 ) {
-    let mut effective = inherited.to_vec();
+    let mut effective = inherited_tags.to_vec();
     for tag in &section.tags {
         if !effective.iter().any(|existing| existing == tag) {
             effective.push(tag.clone());
         }
     }
     section.effective_tags = effective;
+    section.effective_properties = merged_properties(inherited_properties, &section.properties);
 
     let base = property_value(section, "CUSTOM_ID")
         .or_else(|| property_value(section, "ID"))
         .unwrap_or_else(|| slugify_title(&section.raw_title));
     section.anchor = (!base.is_empty()).then(|| unique_anchor(&base, known));
 
-    let inherited = section.effective_tags.clone();
+    let inherited_tags = section.effective_tags.clone();
+    let inherited_properties = section.effective_properties.clone();
     for child in &mut section.subsections {
-        assign_section_tags_and_anchor(child, &inherited, known);
+        assign_section_tags_anchor_and_properties(
+            child,
+            &inherited_tags,
+            &inherited_properties,
+            known,
+        );
     }
+}
+
+fn merged_properties(
+    inherited: &[Property<ParsedAnnotation>],
+    local: &[Property<ParsedAnnotation>],
+) -> Vec<Property<ParsedAnnotation>> {
+    let mut merged = inherited.to_vec();
+    for property in local {
+        if let Some(existing) = merged
+            .iter_mut()
+            .find(|existing| existing.key.eq_ignore_ascii_case(&property.key))
+        {
+            *existing = property.clone();
+        } else {
+            merged.push(property.clone());
+        }
+    }
+    merged
 }
 
 fn property_value(section: &Section<ParsedAnnotation>, key: &str) -> Option<String> {

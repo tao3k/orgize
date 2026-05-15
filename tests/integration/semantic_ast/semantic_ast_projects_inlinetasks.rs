@@ -39,7 +39,8 @@ Body with [[https://example.com][link]].
     assert_eq!(inlinetask.level, 15);
     assert_eq!(inlinetask.todo.as_ref().unwrap().name, "TODO");
     assert_eq!(inlinetask.todo.as_ref().unwrap().state, TodoState::Todo);
-    assert_eq!(inlinetask.priority.as_deref(), Some("A"));
+    assert_eq!(inlinetask.priority.raw_cookie(), Some("A"));
+    assert_eq!(inlinetask.priority.effective_text(), "A");
     assert_eq!(inlinetask.raw_title, "*Inline* task ");
     assert_eq!(inlinetask.tags, ["work"]);
     assert!(matches!(

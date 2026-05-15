@@ -116,6 +116,10 @@ impl LintFinding {
             "ORG007" => "use supported #+OPTIONS value shapes for parser-v2 export settings",
             "ORG008" => "keep one local #+MACRO definition per name",
             "ORG009" => "declare each TODO keyword once and in only one state group",
+            "ORG010" => "write headline priority cookies as [#A], [#B], [#C], or a configured numeric priority",
+            "ORG011" => "write EFFORT values with Org duration syntax such as 1:30, 2h, or 1d3h",
+            "ORG012" => "keep one value for a property key in each local property drawer scope",
+            "ORG013" => "rename the property key to the agenda-sensitive spelling shown in the finding",
             _ => "inspect the Org source near this location and repair the lint finding",
         }
     }
@@ -131,6 +135,10 @@ impl LintFinding {
             "ORG007" => "Supported #+OPTIONS keys must use values that parser-v2 can interpret deterministically.",
             "ORG008" => "Macro definition names should be unique before opt-in macro expansion chooses a local template.",
             "ORG009" => "Per-file TODO declarations should not assign one keyword to multiple states or duplicate it.",
+            "ORG010" => "Priority cookies affect agenda sorting and matching, so malformed cookies must be made explicit.",
+            "ORG011" => "Effort properties feed agenda filters and duration math; invalid durations should not silently degrade to strings.",
+            "ORG012" => "Duplicate local properties make inherited agenda/property lookup ambiguous.",
+            "ORG013" => "Common agenda property typos should be repaired before lint/index/export consumers depend on them.",
             _ => "Org lint findings should be fixed in source or intentionally reviewed before downstream use.",
         }
     }

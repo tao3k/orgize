@@ -1,70 +1,19 @@
 //! Org document linting built on the semantic parser projection.
 
-use std::{
-    collections::BTreeMap,
-    fs,
-    io::ErrorKind,
-    path::{Path, PathBuf},
-};
-
-use rowan::TextRange;
+use std::{collections::BTreeMap, fs, io::ErrorKind, path::Path};
 
 use crate::{
     ast::{
         Diagnostic, IncludeDirective, Keyword, MacroDefinition, MacroExpansionStatus,
-        ParsedAnnotation, ParsedAst, SourcePosition, TargetDefinition, TargetKind,
+        ParsedAnnotation, ParsedAst, TargetDefinition, TargetKind,
     },
+    lint_model::{location_for_offsets, location_for_range},
+    lint_priority::priority_cookie_findings,
+    lint_properties::property_drawer_findings,
     Org,
 };
 
-/// Lint configuration.
-///
-/// The default keeps linting pure over the provided source string. Set
-/// [`include_base_dir`](Self::include_base_dir) when checking `#+INCLUDE:`
-/// directives against the filesystem.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct LintOptions {
-    /// Base directory used to resolve relative `#+INCLUDE:` paths.
-    pub include_base_dir: Option<PathBuf>,
-}
-
-/// Lint result for one Org source string.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct LintReport {
-    pub findings: Vec<LintFinding>,
-}
-
-impl LintReport {
-    /// Returns true when no lint findings were produced.
-    pub fn is_clean(&self) -> bool {
-        self.findings.is_empty()
-    }
-}
-
-/// One lint finding.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LintFinding {
-    pub code: &'static str,
-    pub severity: LintSeverity,
-    pub message: String,
-    pub location: LintLocation,
-}
-
-/// Finding severity.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LintSeverity {
-    Error,
-    Warning,
-}
-
-/// Source location for one finding.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LintLocation {
-    pub start: SourcePosition,
-    pub end: SourcePosition,
-    pub range_start: usize,
-    pub range_end: usize,
-}
+pub use crate::lint_model::{LintFinding, LintLocation, LintOptions, LintReport, LintSeverity};
 
 /// Lints Org source with the default parser configuration.
 pub fn lint_org(source: &str) -> LintReport {
@@ -108,6 +57,8 @@ pub fn lint_document_with_options(
         source,
     ));
     findings.extend(options_keyword_findings(&document.metadata, source));
+    findings.extend(priority_cookie_findings(source));
+    findings.extend(property_drawer_findings(document, source));
     findings.extend(todo_declaration_findings(source));
 
     findings.sort_by(|left, right| {
@@ -575,30 +526,4 @@ fn include_file_path(path: &str) -> &str {
     path.split_once("::")
         .map(|(file_path, _)| file_path)
         .unwrap_or(path)
-}
-
-fn location_for_range(source: &str, range: TextRange) -> LintLocation {
-    let start = usize::from(range.start()).min(source.len());
-    let end = usize::from(range.end()).min(source.len());
-    location_for_offsets(source, start, end)
-}
-
-fn location_for_offsets(source: &str, start: usize, end: usize) -> LintLocation {
-    let start = start.min(source.len());
-    let end = end.min(source.len());
-    LintLocation {
-        start: position_for_offset(source, start),
-        end: position_for_offset(source, end),
-        range_start: start,
-        range_end: end,
-    }
-}
-
-fn position_for_offset(source: &str, offset: usize) -> SourcePosition {
-    let offset = offset.min(source.len());
-    let prefix = &source[..offset];
-    let line = prefix.bytes().filter(|byte| *byte == b'\n').count() + 1;
-    let line_start = prefix.rfind('\n').map_or(0, |index| index + 1);
-    let column = source[line_start..offset].chars().count() + 1;
-    SourcePosition { line, column }
 }

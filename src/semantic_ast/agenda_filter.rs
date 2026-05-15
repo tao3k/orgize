@@ -101,7 +101,7 @@ fn agenda_match_property_value<A>(
         return Some(section.level.to_string());
     }
     if key.eq_ignore_ascii_case("PRIORITY") {
-        return section.priority.clone();
+        return Some(section.priority.effective_text());
     }
     if key.eq_ignore_ascii_case("CATEGORY") {
         return category.map(|category| category.as_str().to_string());
@@ -132,7 +132,7 @@ fn agenda_match_property_value<A>(
     }
 
     section
-        .properties
+        .effective_properties
         .iter()
         .find(|property| property.key.eq_ignore_ascii_case(key))
         .map(|property| property.value.clone())

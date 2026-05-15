@@ -314,6 +314,17 @@ fn lint_reports_todo_declaration_issues_with_snapshot() {
 }
 
 #[test]
+fn lint_reports_priority_property_issues_with_snapshot() {
+    let report = lint_org(priority_property_issues_lint_fixture());
+
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_text("fixture.org")
+    ));
+}
+
+#[test]
 fn lint_cli_compact_stdin_output_is_snapshotted() {
     let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .args(["lint"])
@@ -439,6 +450,10 @@ fn supported_options_keyword_issues_lint_fixture() -> &'static str {
 
 fn todo_declaration_issues_lint_fixture() -> &'static str {
     include_str!("../fixtures/lint/todo-declaration-issues.org")
+}
+
+fn priority_property_issues_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/priority-property-issues.org")
 }
 
 fn table_with_block_fmt_fixture() -> &'static str {

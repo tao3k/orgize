@@ -1,6 +1,5 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projection_and_bare_snapshot.rs
-assertion_line: 67
 expression: doc.to_bare()
 ---
 Document {
@@ -99,6 +98,15 @@ Document {
                     ann: (),
                     key: "CUSTOM_ID",
                     value: "heading-id",
+                    duration: None,
+                },
+            ],
+            effective_properties: [
+                Property {
+                    ann: (),
+                    key: "CUSTOM_ID",
+                    value: "heading-id",
+                    duration: None,
                 },
             ],
             todo: Some(
@@ -108,7 +116,12 @@ Document {
                 },
             ),
             is_comment: false,
-            priority: None,
+            priority: Priority {
+                cookie: None,
+                effective: Letter(
+                    'B',
+                ),
+            },
             title: [
                 Object {
                     ann: (),

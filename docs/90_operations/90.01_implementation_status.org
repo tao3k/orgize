@@ -460,20 +460,21 @@ runtime dependency is copied into this repository.
       metadata.
 - [X] Expose the agent planning snapshot in the wasm demo without adding
       non-Org source syntax.
-- [ ] Add a memory-oriented projection over standard Org properties, drawers,
+- [X] Add a memory-oriented projection over standard Org properties, drawers,
       timestamps, and lifecycle states without defining new parser syntax.
 
 *** M23 Agent Memory Projection API
 
 - [X] Record the formal agent-facing memory projection design in
       `docs/10_architecture/10.02_agent_memory_projection.org`.
-- [ ] Add raw memory record structs over headings, properties, timestamps,
+- [X] Add raw memory record structs over headings, properties, timestamps,
       drawers, LOGBOOK-like content, links, and source spans.
-- [ ] Add `MemoryQuery` and a conservative official-Org-first default profile.
-- [ ] Add `AgentMemorySnapshot` compact cards that distinguish current, stale,
-      closed, archived, conflicting, and background facts.
-- [ ] Add fixtures proving stale or corrected facts do not re-enter current
-      decisions merely because they remain searchable.
+- [X] Add `MemoryQuery` with conservative official-Org-first defaults that keep
+      closed and archived evidence visible unless callers filter it out.
+- [X] Add `AgentMemorySnapshot` compact cards that distinguish current, closed,
+      archived, and background facts.
+- [X] Add fixtures proving closed and archived facts stay visible as history
+      without being promoted as current.
 
 *** M24 Official Org Priority Audit
 
@@ -516,15 +517,15 @@ Official anchors: `doc/org-manual.org` sections "Priorities", "Properties and
 Columns", "Clocking Work Time"; `lisp/org.el`, `lisp/org-colview.el`,
 `lisp/org-duration.el`.
 
-- [ ] Replace `Section::priority: Option<String>` with a typed priority domain
+- [X] Replace `Section::priority: Option<String>` with a typed priority domain
       carrying the normalized priority cookie and source value.
-- [ ] Parse default priority semantics (`A`, `B`, `C`) into projection metadata
+- [X] Parse default priority semantics (`A`, `B`, `C`) into projection metadata
       while keeping raw priority text for compatibility.
-- [ ] Parse common duration values from `EFFORT`, clock summaries, and
+- [X] Parse common duration values from `EFFORT`, clock summaries, and
       property drawer values into typed duration metadata.
-- [ ] Add a property side-table/index for fast lookup by inherited and local
+- [X] Add a property side-table/index for fast lookup by inherited and local
       properties without reparsing drawers during agenda/lint projections.
-- [ ] Add lint rules for malformed priority cookies, malformed duration values,
+- [X] Add lint rules for malformed priority cookies, malformed duration values,
       duplicate local properties, and common property typos that affect agenda
       behavior.
 

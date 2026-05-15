@@ -1,0 +1,12 @@
+* TODO [#] Missing priority value
+* TODO [#65] Numeric priority outside default Org range
+* TODO Valid effort
+:PROPERTIES:
+:EFFORT: 1:30
+:END:
+* TODO Property issues
+:PROPERTIES:
+:EFFORT: tomorrow
+:EFFORT: 2h
+:Efforts: 1h
+:END:

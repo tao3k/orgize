@@ -4,7 +4,7 @@ use super::settings::{apply_options_keyword, link_abbreviation, parse_tags, spli
 use super::targets::TargetIndex;
 use super::{
     Diagnostic, ExportSettings, FootnoteEntry, IncludeDirective, Keyword, LinkAbbreviation,
-    MacroDefinition, ParsedAnnotation,
+    MacroDefinition, OrgDuration, ParsedAnnotation, Property,
 };
 
 #[derive(Default)]
@@ -12,6 +12,7 @@ pub(super) struct SemanticPrescan {
     pub(super) target_index: TargetIndex,
     pub(super) metadata: Vec<Keyword<ParsedAnnotation>>,
     pub(super) filetags: Vec<String>,
+    pub(super) properties: Vec<Property<ParsedAnnotation>>,
     pub(super) export_settings: ExportSettings,
     pub(super) link_abbreviations: Vec<LinkAbbreviation>,
     pub(super) includes: Vec<IncludeDirective<ParsedAnnotation>>,
@@ -35,6 +36,12 @@ pub(super) fn collect_document_keyword(
             apply_options_keyword(keyword.value.trim(), &mut prescan.export_settings);
             prescan.metadata.push(keyword);
         }
+        "PROPERTY" => {
+            if let Some(property) = keyword_property(&keyword) {
+                prescan.properties.push(property);
+            }
+            prescan.metadata.push(keyword);
+        }
         "SELECT_TAGS" => {
             prescan.export_settings.select_tags = split_words(keyword.value.trim());
             prescan.metadata.push(keyword);
@@ -51,4 +58,18 @@ pub(super) fn collect_document_keyword(
         }
         _ => {}
     }
+}
+
+fn keyword_property(keyword: &Keyword<ParsedAnnotation>) -> Option<Property<ParsedAnnotation>> {
+    let value = keyword.value.trim();
+    let (key, rest) = value
+        .split_once(char::is_whitespace)
+        .map(|(key, rest)| (key.trim(), rest.trim()))
+        .unwrap_or((value, ""));
+    (!key.is_empty()).then(|| Property {
+        ann: keyword.ann.clone(),
+        key: key.to_string(),
+        value: rest.to_string(),
+        duration: OrgDuration::parse(rest.to_string()),
+    })
 }

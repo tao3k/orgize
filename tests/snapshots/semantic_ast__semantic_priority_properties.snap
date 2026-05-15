@@ -1,0 +1,321 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_priority_properties.rs
+expression: doc.to_bare()
+---
+Document {
+    ann: (),
+    properties: [
+        Property {
+            ann: (),
+            key: "Effort",
+            value: "2h",
+            duration: Some(
+                OrgDuration {
+                    raw: "2h",
+                    total_seconds: 7200,
+                },
+            ),
+        },
+    ],
+    metadata: [
+        Keyword {
+            ann: (),
+            key: "PROPERTY",
+            optional: None,
+            value: " Effort 2h",
+            parsed: [],
+            attributes: [],
+        },
+    ],
+    filetags: [],
+    export_settings: ExportSettings {
+        select_tags: [],
+        exclude_tags: [],
+        headline_levels: None,
+        special_strings: None,
+        expand_entities: None,
+    },
+    link_abbreviations: [],
+    includes: [],
+    macro_definitions: [],
+    targets: [
+        TargetDefinition {
+            ann: (),
+            kind: Headline,
+            key: "Parent",
+            value: "Parent",
+            raw: "Parent",
+            alias: [
+                Object {
+                    ann: (),
+                    data: Plain(
+                        "Parent",
+                    ),
+                },
+            ],
+        },
+        TargetDefinition {
+            ann: (),
+            kind: Headline,
+            key: "Child",
+            value: "Child",
+            raw: "Child",
+            alias: [
+                Object {
+                    ann: (),
+                    data: Plain(
+                        "Child",
+                    ),
+                },
+            ],
+        },
+        TargetDefinition {
+            ann: (),
+            kind: Headline,
+            key: "Numeric",
+            value: "Numeric",
+            raw: "Numeric",
+            alias: [
+                Object {
+                    ann: (),
+                    data: Plain(
+                        "Numeric",
+                    ),
+                },
+            ],
+        },
+    ],
+    footnotes: [],
+    children: [
+        Element {
+            ann: (),
+            affiliated_keywords: [],
+            data: Keyword(
+                Keyword {
+                    ann: (),
+                    key: "PROPERTY",
+                    optional: None,
+                    value: " Effort 2h",
+                    parsed: [],
+                    attributes: [],
+                },
+            ),
+        },
+    ],
+    sections: [
+        Section {
+            ann: (),
+            level: 1,
+            properties: [
+                Property {
+                    ann: (),
+                    key: "Owner",
+                    value: "Sarah",
+                    duration: None,
+                },
+            ],
+            effective_properties: [
+                Property {
+                    ann: (),
+                    key: "Effort",
+                    value: "2h",
+                    duration: Some(
+                        OrgDuration {
+                            raw: "2h",
+                            total_seconds: 7200,
+                        },
+                    ),
+                },
+                Property {
+                    ann: (),
+                    key: "Owner",
+                    value: "Sarah",
+                    duration: None,
+                },
+            ],
+            todo: Some(
+                TodoKeyword {
+                    state: Todo,
+                    name: "TODO",
+                },
+            ),
+            is_comment: false,
+            priority: Priority {
+                cookie: Some(
+                    PriorityCookie {
+                        raw: "A",
+                        value: Letter(
+                            'A',
+                        ),
+                        normalized: "A",
+                    },
+                ),
+                effective: Letter(
+                    'A',
+                ),
+            },
+            title: [
+                Object {
+                    ann: (),
+                    data: Plain(
+                        "Parent",
+                    ),
+                },
+            ],
+            raw_title: "Parent",
+            anchor: Some(
+                "parent",
+            ),
+            tags: [],
+            effective_tags: [],
+            planning: Planning {
+                deadline: None,
+                scheduled: None,
+                closed: None,
+            },
+            children: [],
+            subsections: [
+                Section {
+                    ann: (),
+                    level: 2,
+                    properties: [],
+                    effective_properties: [
+                        Property {
+                            ann: (),
+                            key: "Effort",
+                            value: "2h",
+                            duration: Some(
+                                OrgDuration {
+                                    raw: "2h",
+                                    total_seconds: 7200,
+                                },
+                            ),
+                        },
+                        Property {
+                            ann: (),
+                            key: "Owner",
+                            value: "Sarah",
+                            duration: None,
+                        },
+                    ],
+                    todo: Some(
+                        TodoKeyword {
+                            state: Todo,
+                            name: "TODO",
+                        },
+                    ),
+                    is_comment: false,
+                    priority: Priority {
+                        cookie: None,
+                        effective: Letter(
+                            'B',
+                        ),
+                    },
+                    title: [
+                        Object {
+                            ann: (),
+                            data: Plain(
+                                "Child",
+                            ),
+                        },
+                    ],
+                    raw_title: "Child",
+                    anchor: Some(
+                        "child",
+                    ),
+                    tags: [],
+                    effective_tags: [],
+                    planning: Planning {
+                        deadline: None,
+                        scheduled: Some(
+                            Timestamp {
+                                kind: Active,
+                                raw: "<2026-05-15 Fri>",
+                                is_range: false,
+                                start: Some(
+                                    TimestampMoment {
+                                        year: 2026,
+                                        month: 5,
+                                        day: 15,
+                                        day_name: Some(
+                                            "Fri",
+                                        ),
+                                        hour: None,
+                                        minute: None,
+                                    },
+                                ),
+                                end: None,
+                                repeater: None,
+                                warning: None,
+                            },
+                        ),
+                        closed: None,
+                    },
+                    children: [],
+                    subsections: [],
+                },
+            ],
+        },
+        Section {
+            ann: (),
+            level: 1,
+            properties: [],
+            effective_properties: [
+                Property {
+                    ann: (),
+                    key: "Effort",
+                    value: "2h",
+                    duration: Some(
+                        OrgDuration {
+                            raw: "2h",
+                            total_seconds: 7200,
+                        },
+                    ),
+                },
+            ],
+            todo: Some(
+                TodoKeyword {
+                    state: Todo,
+                    name: "TODO",
+                },
+            ),
+            is_comment: false,
+            priority: Priority {
+                cookie: Some(
+                    PriorityCookie {
+                        raw: "2",
+                        value: Numeric(
+                            2,
+                        ),
+                        normalized: "2",
+                    },
+                ),
+                effective: Numeric(
+                    2,
+                ),
+            },
+            title: [
+                Object {
+                    ann: (),
+                    data: Plain(
+                        "Numeric",
+                    ),
+                },
+            ],
+            raw_title: "Numeric",
+            anchor: Some(
+                "numeric",
+            ),
+            tags: [],
+            effective_tags: [],
+            planning: Planning {
+                deadline: None,
+                scheduled: None,
+                closed: None,
+            },
+            children: [],
+            subsections: [],
+        },
+    ],
+    diagnostics: [],
+}

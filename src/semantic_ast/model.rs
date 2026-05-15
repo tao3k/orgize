@@ -6,6 +6,7 @@ use super::block_model::{
     joined_block_lines, BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumbering, BlockSwitches,
     SemanticFixedWidth,
 };
+use super::property_model::{OrgDuration, Priority};
 
 /// Parsed semantic document with source annotations on every semantic node.
 pub type ParsedAst = Document<ParsedAnnotation>;
@@ -207,9 +208,10 @@ pub struct Section<A = ()> {
     pub ann: A,
     pub level: usize,
     pub properties: Vec<Property<A>>,
+    pub effective_properties: Vec<Property<A>>,
     pub todo: Option<TodoKeyword>,
     pub is_comment: bool,
-    pub priority: Option<String>,
+    pub priority: Priority,
     pub title: Vec<Object<A>>,
     pub raw_title: String,
     pub anchor: Option<String>,
@@ -225,7 +227,7 @@ pub struct Section<A = ()> {
 pub struct Inlinetask<A = ()> {
     pub level: usize,
     pub todo: Option<TodoKeyword>,
-    pub priority: Option<String>,
+    pub priority: Priority,
     pub title: Vec<Object<A>>,
     pub raw_title: String,
     pub tags: Vec<String>,
@@ -273,6 +275,19 @@ pub struct Property<A = ()> {
     pub ann: A,
     pub key: String,
     pub value: String,
+    pub duration: Option<OrgDuration>,
+}
+
+impl<A> Property<A> {
+    /// Returns true when this property carries an Org effort estimate.
+    pub fn is_effort(&self) -> bool {
+        self.key.eq_ignore_ascii_case("EFFORT")
+    }
+
+    /// Returns parsed duration metadata for duration-shaped property values.
+    pub fn parsed_duration(&self) -> Option<&OrgDuration> {
+        self.duration.as_ref()
+    }
 }
 
 /// Keyword or affiliated keyword with optional bracket metadata.
@@ -406,7 +421,15 @@ impl<A> Block<A> {
 pub struct Clock {
     pub value: Option<Timestamp>,
     pub duration: Option<String>,
+    pub parsed_duration: Option<OrgDuration>,
     pub raw: String,
+}
+
+impl Clock {
+    /// Returns parsed duration metadata for a clock summary, when present.
+    pub fn parsed_duration(&self) -> Option<&OrgDuration> {
+        self.parsed_duration.as_ref()
+    }
 }
 
 /// Named drawer projected with semantic child elements.

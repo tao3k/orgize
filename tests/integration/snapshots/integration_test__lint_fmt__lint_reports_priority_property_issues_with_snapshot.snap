@@ -1,0 +1,10 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(), report.to_text(\"fixture.org\"))"
+---
+clean: false
+fixture.org:1:8: warning ORG010: priority cookie `[#]` is not a supported Org priority value
+fixture.org:2:8: warning ORG010: priority cookie `[#65]` is not a supported Org priority value
+fixture.org:9:10: warning ORG011: EFFORT property value `tomorrow` is not an Org duration
+fixture.org:10:10: warning ORG012: property `EFFORT` is defined 2 times in one local scope
+fixture.org:11:11: warning ORG013: property `Efforts` looks like a typo; use `EFFORT` for agenda effort semantics

@@ -19,11 +19,14 @@ mod conversion_util;
 mod footnote_parts;
 mod headline_metadata;
 mod macro_expansion;
+mod memory;
+mod memory_model;
 mod model;
 mod postprocess;
 mod preprocessing;
 mod prescan;
 mod projection;
+mod property_model;
 mod radio_links;
 mod settings;
 mod source_position;
@@ -45,6 +48,11 @@ pub use block_model::{
     BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering,
     BlockSwitches, SemanticFixedWidth,
 };
+pub use memory_model::{
+    AgentMemoryCard, AgentMemoryDecision, AgentMemoryQuery, AgentMemorySeverity,
+    AgentMemorySnapshot, MemoryEvidence, MemoryEvidenceKind, MemoryLink, MemoryProperty,
+    MemoryQuery, MemoryRecord, MemoryRecordState, MemorySource,
+};
 pub use model::{
     AstMut, AstRef, BareAst, Block, BlockKind, Checkbox, Citation, CiteReference, Clock,
     Diagnostic, DiagnosticKind, Document, Drawer, Element, ElementData, ExportProjectionOptions,
@@ -57,3 +65,4 @@ pub use model::{
     TimeUnit, Timestamp, TimestampKind, TimestampMoment, TimestampRepeater, TimestampWarning,
     TodoKeyword, TodoState, UnsupportedSyntaxKind, WarningKind,
 };
+pub use property_model::{OrgDuration, Priority, PriorityCookie, PriorityValue};

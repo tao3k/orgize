@@ -45,9 +45,9 @@ use super::{
     Block, BlockKind, BlockSwitches, Checkbox, Citation, CiteReference, Clock, Diagnostic,
     DiagnosticKind, Document, Drawer, Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd,
     Keyword, Link, LinkAbbreviation, LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget,
-    List, ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst,
-    Planning, Property, Section, SemanticFixedWidth, Table, TableCell, TableRow, Timestamp,
-    TimestampKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    List, ListItem, ListType, MarkupKind, Object, ObjectData, OrgDuration, ParsedAnnotation,
+    ParsedAst, Planning, Priority, Property, Section, SemanticFixedWidth, Table, TableCell,
+    TableRow, Timestamp, TimestampKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 
 impl ParsedAst {
@@ -111,9 +111,12 @@ impl<'a> Converter<'a> {
             });
         let targets = std::mem::take(&mut self.target_index.definitions);
 
+        let mut properties = prescan.properties;
+        properties.extend(parts.properties);
+
         let mut document = Document {
             ann,
-            properties: parts.properties,
+            properties,
             metadata: prescan.metadata,
             filetags: prescan.filetags,
             export_settings: prescan.export_settings,
@@ -229,9 +232,10 @@ impl<'a> Converter<'a> {
             ann: self.node_ann(node),
             level: legacy.level(),
             properties,
+            effective_properties: Vec::new(),
             todo,
             is_comment: legacy.is_commented(),
-            priority: legacy.priority().map(|x| x.to_string()),
+            priority: Priority::from_cookie(legacy.priority().map(|x| x.to_string())),
             title: self.objects_from_elements(title),
             raw_title: legacy.title_raw(),
             anchor,
@@ -276,7 +280,7 @@ impl<'a> Converter<'a> {
         Inlinetask {
             level: headline_level(node),
             todo: headline_todo(node),
-            priority: headline_priority(node),
+            priority: Priority::from_cookie(headline_priority(node)),
             title,
             raw_title: headline_raw_title(node),
             tags: headline_tags(node),
@@ -418,6 +422,7 @@ impl<'a> Converter<'a> {
                         ann: self.token_ann(value.syntax()),
                         key: key.to_string(),
                         value: value.to_string(),
+                        duration: OrgDuration::parse(value.to_string()),
                     })
                     .collect()
             })
@@ -447,6 +452,9 @@ impl<'a> Converter<'a> {
         Clock {
             value,
             duration: legacy.duration().map(|token| token.to_string()),
+            parsed_duration: legacy
+                .duration()
+                .and_then(|token| OrgDuration::parse(token.to_string())),
             raw: node.to_string(),
         }
     }

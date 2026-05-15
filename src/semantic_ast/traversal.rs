@@ -531,6 +531,11 @@ impl<A> Section<A> {
             ann: f(&self.ann),
             level: self.level,
             properties: self.properties.iter().map(|x| x.map_ann_with(f)).collect(),
+            effective_properties: self
+                .effective_properties
+                .iter()
+                .map(|x| x.map_ann_with(f))
+                .collect(),
             todo: self.todo.clone(),
             is_comment: self.is_comment,
             priority: self.priority.clone(),
@@ -554,6 +559,11 @@ impl<A> Section<A> {
             level: self.level,
             properties: self
                 .properties
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            effective_properties: self
+                .effective_properties
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
@@ -808,6 +818,7 @@ impl<A> Property<A> {
             ann: f(&self.ann),
             key: self.key.clone(),
             value: self.value.clone(),
+            duration: self.duration.clone(),
         }
     }
 
@@ -819,6 +830,7 @@ impl<A> Property<A> {
             ann: f(&self.ann)?,
             key: self.key.clone(),
             value: self.value.clone(),
+            duration: self.duration.clone(),
         })
     }
 
