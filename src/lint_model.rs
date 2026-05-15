@@ -10,11 +10,15 @@ use crate::ast::SourcePosition;
 ///
 /// The default keeps linting pure over the provided source string. Set
 /// [`include_base_dir`](Self::include_base_dir) when checking `#+INCLUDE:`
-/// directives against the filesystem.
+/// directives against the filesystem. Set
+/// [`attachment_base_dir`](Self::attachment_base_dir) when checking
+/// `attachment:` links against the filesystem.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct LintOptions {
     /// Base directory used to resolve relative `#+INCLUDE:` paths.
     pub include_base_dir: Option<PathBuf>,
+    /// Base directory used to resolve relative Org attachment directories.
+    pub attachment_base_dir: Option<PathBuf>,
 }
 
 /// Lint result for one Org source string.

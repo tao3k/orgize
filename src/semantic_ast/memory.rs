@@ -74,6 +74,7 @@ fn memory_record(section: &Section<ParsedAnnotation>, state: MemoryRecordState) 
         });
     }
     collect_archive_evidence(section, &mut evidence);
+    collect_attachment_evidence(section, &mut evidence);
     collect_planning_evidence(section, &mut evidence);
     collect_lifecycle_evidence(section, &mut evidence);
 
@@ -147,6 +148,26 @@ fn collect_archive_evidence(
                 value: location.value.clone(),
             });
         }
+    }
+}
+
+fn collect_attachment_evidence(
+    section: &Section<ParsedAnnotation>,
+    evidence: &mut Vec<MemoryEvidence>,
+) {
+    if section.attachment.has_attach_tag {
+        evidence.push(MemoryEvidence {
+            source: MemorySource::from_annotation(&section.ann),
+            kind: MemoryEvidenceKind::AttachmentTag,
+            value: "ATTACH".to_string(),
+        });
+    }
+    if let Some(directory) = &section.attachment.directory {
+        evidence.push(MemoryEvidence {
+            source: MemorySource::from_annotation(&directory.ann),
+            kind: MemoryEvidenceKind::AttachmentDirectory,
+            value: directory.path.clone(),
+        });
     }
 }
 
@@ -387,7 +408,11 @@ fn collect_link_memory(
     let source = MemorySource::from_annotation(&object.ann);
     evidence.push(MemoryEvidence {
         source: source.clone(),
-        kind: MemoryEvidenceKind::Link,
+        kind: if link.attachment.is_some() {
+            MemoryEvidenceKind::AttachmentLink
+        } else {
+            MemoryEvidenceKind::Link
+        },
         value: link.path().to_string(),
     });
     links.push(MemoryLink {

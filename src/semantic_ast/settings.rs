@@ -91,6 +91,12 @@ pub(super) fn link_search(path: &str) -> Option<LinkSearch> {
     let (_, search) = path.split_once("::")?;
     let kind = if search.starts_with('*') {
         LinkSearchKind::Headline
+    } else if search.starts_with('#') {
+        LinkSearchKind::CustomId
+    } else if search.starts_with('/') && search.ends_with('/') && search.len() > 1 {
+        LinkSearchKind::Regexp
+    } else if search.chars().all(|ch| ch.is_ascii_digit()) {
+        LinkSearchKind::LineNumber
     } else {
         LinkSearchKind::Text
     };

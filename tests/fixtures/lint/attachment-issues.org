@@ -1,0 +1,8 @@
+* Missing attachment
+:PROPERTIES:
+:DIR: assets
+:END:
+See [[attachment:missing.txt]].
+
+* Missing directory
+See [[attachment:no-root.txt]].

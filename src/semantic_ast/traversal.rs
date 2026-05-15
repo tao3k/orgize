@@ -1,10 +1,11 @@
 //! Annotation mapping and traversal for the semantic AST.
 
 use super::{
-    ArchiveLocation, AstMut, AstRef, BareAst, Block, BlockLine, Citation, CiteReference, Document,
-    Drawer, Element, ElementData, FootnoteDef, FootnoteDefinition, FootnoteEntry, IncludeDirective,
-    Inlinetask, InlinetaskEnd, Keyword, Link, List, ListItem, MacroDefinition, Object, ObjectData,
-    Property, Section, SemanticFixedWidth, Table, TableCell, TableRow, TargetDefinition,
+    ArchiveLocation, AstMut, AstRef, AttachmentDirectory, BareAst, Block, BlockLine, Citation,
+    CiteReference, Document, Drawer, Element, ElementData, FootnoteDef, FootnoteDefinition,
+    FootnoteEntry, IncludeDirective, Inlinetask, InlinetaskEnd, Keyword, Link, List, ListItem,
+    MacroDefinition, Object, ObjectData, Property, Section, SemanticFixedWidth, Table, TableCell,
+    TableRow, TargetDefinition,
 };
 
 impl<A> Document<A> {
@@ -313,6 +314,29 @@ impl<A> ArchiveLocation<A> {
     }
 }
 
+impl<A> AttachmentDirectory<A> {
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::AttachmentDirectory(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::AttachmentDirectory(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::AttachmentDirectory(self))
+    }
+}
+
 impl<A> MacroDefinition<A> {
     fn map_ann_with<B, F>(&self, f: &mut F) -> MacroDefinition<B>
     where
@@ -579,6 +603,7 @@ impl<A> Section<A> {
                 .map(|x| x.map_ann_with(f))
                 .collect(),
             archive: self.archive.map_ann_with(f),
+            attachment: self.attachment.map_ann_with(f),
             todo: self.todo.clone(),
             is_comment: self.is_comment,
             priority: self.priority.clone(),
@@ -611,6 +636,7 @@ impl<A> Section<A> {
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
             archive: self.archive.try_map_ann_with(f)?,
+            attachment: self.attachment.try_map_ann_with(f)?,
             todo: self.todo.clone(),
             is_comment: self.is_comment,
             priority: self.priority.clone(),
@@ -645,6 +671,9 @@ impl<A> Section<A> {
         for property in &self.properties {
             property.visit_with(f);
         }
+        if let Some(directory) = &self.attachment.directory {
+            directory.visit_with(f);
+        }
         for object in &self.title {
             object.visit_with(f);
         }
@@ -664,6 +693,9 @@ impl<A> Section<A> {
         for property in &mut self.properties {
             property.visit_mut_with(f);
         }
+        if let Some(directory) = &mut self.attachment.directory {
+            directory.visit_mut_with(f);
+        }
         for object in &mut self.title {
             object.visit_mut_with(f);
         }
@@ -682,6 +714,9 @@ impl<A> Section<A> {
         let mut acc = f(init, AstRef::Section(self));
         for property in &self.properties {
             acc = property.fold_with(acc, f);
+        }
+        if let Some(directory) = &self.attachment.directory {
+            acc = directory.fold_with(acc, f);
         }
         for object in &self.title {
             acc = object.fold_with(acc, f);
@@ -2067,6 +2102,7 @@ impl<A> Link<A> {
             media_kind: self.media_kind,
             caption: self.caption.as_ref().map(|caption| caption.map_ann_with(f)),
             search: self.search.clone(),
+            attachment: self.attachment.clone(),
         }
     }
 
@@ -2096,6 +2132,7 @@ impl<A> Link<A> {
                 .map(|caption| caption.try_map_ann_with(f))
                 .transpose()?,
             search: self.search.clone(),
+            attachment: self.attachment.clone(),
         })
     }
 

@@ -13,6 +13,7 @@ use crate::{
     syntax_ast,
 };
 
+use super::attachment_model::attachment_link_from_path;
 use super::block_metadata::{
     block_code_refs, parse_block_header_args, parse_block_lines, parse_block_switches,
     split_block_lines, BlockLineOptions,
@@ -235,6 +236,7 @@ impl<'a> Converter<'a> {
             properties,
             effective_properties: Vec::new(),
             archive: Default::default(),
+            attachment: Default::default(),
             todo,
             is_comment: legacy.is_commented(),
             priority: Priority::from_cookie(legacy.priority().map(|x| x.to_string())),
@@ -832,6 +834,7 @@ impl<'a> Converter<'a> {
                     media_kind: LinkMediaKind::Normal,
                     caption: None,
                     search: None,
+                    attachment: None,
                 }),
             });
 
@@ -934,6 +937,7 @@ impl<'a> Converter<'a> {
                     media_kind: LinkMediaKind::Normal,
                     caption: None,
                     search: None,
+                    attachment: None,
                 }),
             });
 
@@ -1206,6 +1210,7 @@ impl<'a> Converter<'a> {
         let path = legacy.path().to_string();
         let target = self.link_target(&path, node.text_range());
         let search = link_search(&path);
+        let attachment = attachment_link_from_path(&path).map(Box::new);
         let description = legacy.description().collect::<Vec<_>>();
         let caption = legacy
             .caption()
@@ -1228,6 +1233,7 @@ impl<'a> Converter<'a> {
             },
             caption,
             search,
+            attachment,
             description: self.objects_from_elements(description),
         })
     }

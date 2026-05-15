@@ -7,6 +7,7 @@ use crate::{
         Diagnostic, IncludeDirective, Keyword, MacroDefinition, MacroExpansionStatus,
         ParsedAnnotation, ParsedAst, TargetDefinition, TargetKind,
     },
+    lint_attachments::attachment_findings,
     lint_lifecycle::lifecycle_findings,
     lint_model::{location_for_offsets, location_for_range},
     lint_priority::priority_cookie_findings,
@@ -70,6 +71,7 @@ fn collect_lint_findings(
     findings.extend(options_keyword_findings(&document.metadata, source));
     findings.extend(priority_cookie_findings(source));
     findings.extend(property_drawer_findings(document, source));
+    findings.extend(attachment_findings(document, source, options));
     findings.extend(lifecycle_findings(document, source));
     findings.extend(todo_declaration_findings(source));
 

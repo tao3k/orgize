@@ -248,6 +248,7 @@ fn lint_checks_include_paths_with_snapshot() {
         include_paths_lint_fixture(),
         &LintOptions {
             include_base_dir: Some(dir),
+            ..LintOptions::default()
         },
     );
 

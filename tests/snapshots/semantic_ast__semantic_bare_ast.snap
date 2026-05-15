@@ -116,6 +116,10 @@ Document {
                 property_location: None,
                 keyword_location: None,
             },
+            attachment: AttachmentState {
+                has_attach_tag: false,
+                directory: None,
+            },
             todo: Some(
                 TodoKeyword {
                     state: Todo,
@@ -230,6 +234,7 @@ Document {
                                         media_kind: Normal,
                                         caption: None,
                                         search: None,
+                                        attachment: None,
                                     },
                                 ),
                             },

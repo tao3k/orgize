@@ -4,9 +4,9 @@ use std::collections::{HashMap, HashSet};
 
 use super::{
     lifecycle::archive_location_from_property, ArchiveLocation, ArchiveState, AstMut, AstRef,
-    Diagnostic, DiagnosticKind, Document, ElementData, FootnoteDefinition, FootnoteEntry,
-    LinkDescriptionState, LinkTarget, Object, ObjectData, ParsedAnnotation, Property, Section,
-    TargetKind,
+    AttachmentDirectory, AttachmentState, Diagnostic, DiagnosticKind, Document, ElementData,
+    FootnoteDefinition, FootnoteEntry, LinkDescriptionState, LinkTarget, Object, ObjectData,
+    ParsedAnnotation, Property, Section, TargetKind,
 };
 
 pub(super) fn finalize_document(document: &mut Document<ParsedAnnotation>) {
@@ -48,6 +48,7 @@ fn assign_section_tags_anchor_properties_and_archive(
     section.effective_tags = effective;
     section.effective_properties = merged_properties(inherited_properties, &section.properties);
     section.archive = archive_state(section, inherited_archive_location.cloned());
+    section.attachment = attachment_state(section);
 
     let base = property_value(section, "CUSTOM_ID")
         .or_else(|| property_value(section, "ID"))
@@ -84,6 +85,53 @@ fn archive_state(
         property_location,
         keyword_location,
     }
+}
+
+fn attachment_state(section: &Section<ParsedAnnotation>) -> AttachmentState<ParsedAnnotation> {
+    let has_attach_tag = has_tag(&section.effective_tags, "ATTACH");
+    let directory = attachment_directory(&section.effective_properties);
+    AttachmentState {
+        has_attach_tag,
+        directory,
+    }
+}
+
+fn attachment_directory(
+    properties: &[Property<ParsedAnnotation>],
+) -> Option<AttachmentDirectory<ParsedAnnotation>> {
+    properties
+        .iter()
+        .find(|property| property.key.eq_ignore_ascii_case("DIR"))
+        .and_then(|property| {
+            AttachmentDirectory::from_property_parts(
+                property.ann.clone(),
+                property.key.as_str(),
+                property.value.as_str(),
+            )
+        })
+        .or_else(|| {
+            properties
+                .iter()
+                .find(|property| property.key.eq_ignore_ascii_case("ATTACH_DIR"))
+                .and_then(|property| {
+                    AttachmentDirectory::from_property_parts(
+                        property.ann.clone(),
+                        property.key.as_str(),
+                        property.value.as_str(),
+                    )
+                })
+        })
+        .or_else(|| {
+            properties
+                .iter()
+                .find(|property| property.key.eq_ignore_ascii_case("ID"))
+                .and_then(|property| {
+                    AttachmentDirectory::from_id_parts(
+                        property.ann.clone(),
+                        property.value.as_str(),
+                    )
+                })
+        })
 }
 
 fn merged_properties(

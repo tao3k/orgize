@@ -159,6 +159,12 @@ without filesystem side effects:
 - optional lint-only filesystem validation when the caller provides a real
   base path.
 
+Orgize follows the official non-mutating read path: `DIR` wins over deprecated
+`ATTACH_DIR`, which wins over an `ID`-derived directory under the default
+`data/` attachment root. Attachment inheritance is modeled through the
+effective property/tag view; there is no separate `ATTACH_DIR_INHERIT` source
+property in the official attachment implementation.
+
 *** P1 Habit And Repetition Memory
 
 Habits are temporal memory patterns, not just tasks:

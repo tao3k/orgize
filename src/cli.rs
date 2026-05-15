@@ -141,6 +141,7 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
                 fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
             let lint_options = LintOptions {
                 include_base_dir: path.parent().map(Path::to_path_buf),
+                attachment_base_dir: path.parent().map(Path::to_path_buf),
             };
             let report = lint_org_with_options(&source, &lint_options);
             reports.push(LintFileReport {

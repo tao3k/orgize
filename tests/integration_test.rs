@@ -2,6 +2,8 @@
 mod html;
 #[path = "integration/latex.rs"]
 mod latex;
+#[path = "integration/lint_attachments.rs"]
+mod lint_attachments;
 #[path = "integration/lint_fmt.rs"]
 mod lint_fmt;
 #[path = "integration/lint_lifecycle.rs"]

@@ -140,6 +140,10 @@ Document {
                 property_location: None,
                 keyword_location: None,
             },
+            attachment: AttachmentState {
+                has_attach_tag: false,
+                directory: None,
+            },
             todo: Some(
                 TodoKeyword {
                     state: Todo,
@@ -210,6 +214,10 @@ Document {
                         has_archive_tag: false,
                         property_location: None,
                         keyword_location: None,
+                    },
+                    attachment: AttachmentState {
+                        has_attach_tag: false,
+                        directory: None,
                     },
                     todo: Some(
                         TodoKeyword {
@@ -291,6 +299,10 @@ Document {
                 has_archive_tag: false,
                 property_location: None,
                 keyword_location: None,
+            },
+            attachment: AttachmentState {
+                has_attach_tag: false,
+                directory: None,
             },
             todo: Some(
                 TodoKeyword {

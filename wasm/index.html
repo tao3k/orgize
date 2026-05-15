@@ -375,7 +375,11 @@
         ],
         [
           "Agent memory",
-          "`Document::agent_memory_snapshot()` renders compact memory cards from ordinary Org headings, TODO states, properties, timestamps, drawers, clocks, archive tags, and links. `MEMxxx` values are output diagnostics, not Org source syntax.",
+          "`Document::agent_memory_snapshot()` renders compact memory cards from ordinary Org headings, TODO states, properties, timestamps, drawers, clocks, archive tags, attachments, and links. `MEMxxx` values are output diagnostics, not Org source syntax.",
+        ],
+        [
+          "Attachments",
+          "`DIR`, deprecated `ATTACH_DIR`, ID-derived attachment directories, `ATTACH` tags, and `attachment:` link search suffixes project into semantic metadata without filesystem access.",
         ],
         [
           "Blocks and tables",
@@ -536,6 +540,12 @@ Archived memory remains visible evidence but is suppressed for current decisions
 
 * Research memory context :memory:
 Background memory can inform context without driving action by itself.
+
+* Attachment memory context :memory:ATTACH:
+:PROPERTIES:
+:DIR: assets
+:END:
+Attached evidence can be referenced with [[attachment:diagram.png::255]] without changing parser source fidelity.
 
 *************** WAIT Inline task :inline:
 SCHEDULED: <2026-05-11 Mon>

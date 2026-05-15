@@ -261,6 +261,8 @@ pub enum MemoryEvidenceKind {
     ArchiveTag,
     ArchiveLocation,
     ArchiveProperty,
+    AttachmentTag,
+    AttachmentDirectory,
     Property { key: String },
     Scheduled,
     Deadline,
@@ -270,6 +272,7 @@ pub enum MemoryEvidenceKind {
     Drawer { name: String },
     Clock,
     Link,
+    AttachmentLink,
     Lifecycle(MemoryLifecycleKind),
 }
 
@@ -280,6 +283,8 @@ impl MemoryEvidenceKind {
             Self::ArchiveTag => "ARCHIVE tag".to_string(),
             Self::ArchiveLocation => "archive location".to_string(),
             Self::ArchiveProperty => "ARCHIVE property".to_string(),
+            Self::AttachmentTag => "ATTACH tag".to_string(),
+            Self::AttachmentDirectory => "attachment directory".to_string(),
             Self::Property { key } => format!("property {key}"),
             Self::Scheduled => "SCHEDULED".to_string(),
             Self::Deadline => "DEADLINE".to_string(),
@@ -293,6 +298,7 @@ impl MemoryEvidenceKind {
             Self::Drawer { name } => format!("drawer {name}"),
             Self::Clock => "CLOCK".to_string(),
             Self::Link => "link".to_string(),
+            Self::AttachmentLink => "attachment link".to_string(),
             Self::Lifecycle(kind) => format!("lifecycle {}", kind.title()),
         }
     }

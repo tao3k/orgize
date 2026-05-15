@@ -10,6 +10,7 @@ mod agenda_model;
 mod agenda_time;
 mod agent_planning;
 mod agent_planning_model;
+mod attachment_model;
 mod block_metadata;
 mod block_model;
 mod block_syntax;
@@ -30,6 +31,8 @@ mod prescan;
 mod projection;
 mod property_model;
 mod radio_links;
+mod section_index;
+mod section_index_model;
 mod settings;
 mod source_position;
 mod table_metadata;
@@ -45,6 +48,10 @@ pub use agenda_model::{
 pub use agent_planning_model::{
     AgentPlanningCard, AgentPlanningDecision, AgentPlanningQuery, AgentPlanningSeverity,
     AgentPlanningSnapshot, AgentPlanningSource,
+};
+pub use attachment_model::{
+    AttachmentDirectory, AttachmentDirectorySource, AttachmentIdPathLayout, AttachmentLink,
+    AttachmentLinkSearch, AttachmentLinkSearchKind, AttachmentState,
 };
 pub use block_model::{
     BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering,
@@ -69,3 +76,8 @@ pub use model::{
     TodoKeyword, TodoState, UnsupportedSyntaxKind, WarningKind,
 };
 pub use property_model::{OrgDuration, Priority, PriorityCookie, PriorityValue};
+pub use section_index_model::{
+    SectionIndexArchive, SectionIndexAttachment, SectionIndexAttachmentDirectory,
+    SectionIndexCategory, SectionIndexLifecycleRecord, SectionIndexLink, SectionIndexProperty,
+    SectionIndexRecord, SectionIndexSource, SectionIndexTarget, SectionIndexTextSlice,
+};

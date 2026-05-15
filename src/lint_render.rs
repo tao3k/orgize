@@ -122,6 +122,7 @@ impl LintFinding {
             "ORG013" => "rename the property key to the agenda-sensitive spelling shown in the finding",
             "ORG014" => "write LOGBOOK lifecycle lines with the standard quoted state-change or CLOCK shape",
             "ORG015" => "provide an archive destination such as archive.org::* Archived",
+            "ORG016" => "add a DIR, ATTACH_DIR, or ID property for the entry, or fix the attachment link target",
             _ => "inspect the Org source near this location and repair the lint finding",
         }
     }
@@ -143,6 +144,7 @@ impl LintFinding {
             "ORG013" => "Common agenda property typos should be repaired before lint/index/export consumers depend on them.",
             "ORG014" => "Lifecycle history is used by memory and agenda projections, so malformed LOGBOOK events should be repaired.",
             "ORG015" => "Archive metadata should point at a resolvable archive destination before archive-aware tooling consumes it.",
+            "ORG016" => "Attachment links are file-like Org links and need a resolvable attachment directory when linting real files.",
             _ => "Org lint findings should be fixed in source or intentionally reviewed before downstream use.",
         }
     }

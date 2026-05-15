@@ -482,7 +482,7 @@ runtime dependency is copied into this repository.
 
 - [X] Record the focused official Org source audit in
       `docs/10_architecture/10.03_agent_search_memory_org_mode_audit.org`.
-- [ ] Add source-grounded section/index support records for Wendao Search
+- [X] Add source-grounded section/index support records for Wendao Search
       ingestion, preserving sparse-tree-like context and source ranges.
 - [ ] Extend special property projection and match evaluation with official
       special properties and timestamp-aware operands.
@@ -591,13 +591,14 @@ Official anchors: `doc/org-manual.org` sections "Capture and Attachments",
 Official anchors: `doc/org-manual.org` section "Capture and Attachments";
 `lisp/org-attach.el`, `lisp/org-attach-git.el`, `lisp/org-id.el`.
 
-- [ ] Model attachment directories from `ID`, `DIR`, `ATTACH_DIR`,
-      `ATTACH_DIR_INHERIT`, and attachment-related properties without touching
-      the filesystem by default.
-- [ ] Resolve attachment links and file links into typed semantic link metadata
+- [X] Model attachment directories from `ID`, `DIR`, `ATTACH_DIR`, and
+      attachment tags without touching the filesystem by default.
+- [X] Resolve attachment links into typed semantic link metadata
       with path kind, locality, and optional existence diagnostics for lint.
-- [ ] Add lint checks for missing local file/attachment targets when linting a
-      real file path, while keeping parser output filesystem-independent.
+- [X] Add lint checks for missing local attachment targets when linting a real
+      file path, while keeping parser output filesystem-independent.
+- [ ] Extend the same typed path metadata and optional diagnostics to ordinary
+      `file:` links.
 - [ ] Add formatter/path tests for file links and attachment-style links that
       preserve source text exactly.
 

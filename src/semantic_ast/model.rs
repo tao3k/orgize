@@ -2,6 +2,7 @@
 
 use rowan::TextRange;
 
+use super::attachment_model::{AttachmentDirectory, AttachmentLink, AttachmentState};
 use super::block_model::{
     joined_block_lines, BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumbering, BlockSwitches,
     SemanticFixedWidth,
@@ -212,6 +213,7 @@ pub struct Section<A = ()> {
     pub properties: Vec<Property<A>>,
     pub effective_properties: Vec<Property<A>>,
     pub archive: ArchiveState<A>,
+    pub attachment: AttachmentState<A>,
     pub todo: Option<TodoKeyword>,
     pub is_comment: bool,
     pub priority: Priority,
@@ -823,6 +825,7 @@ pub struct Link<A = ()> {
     pub media_kind: LinkMediaKind,
     pub caption: Option<Keyword<A>>,
     pub search: Option<LinkSearch>,
+    pub attachment: Option<Box<AttachmentLink>>,
 }
 
 impl<A> Link<A> {
@@ -862,6 +865,9 @@ pub struct LinkSearch {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LinkSearchKind {
     Headline,
+    LineNumber,
+    CustomId,
+    Regexp,
     Text,
 }
 
@@ -923,6 +929,8 @@ pub enum AstRef<'a, A> {
     FootnoteEntry(&'a FootnoteEntry<A>),
     /// Archive destination collected from `#+ARCHIVE:`.
     ArchiveLocation(&'a ArchiveLocation<A>),
+    /// Effective attachment directory visible from a section.
+    AttachmentDirectory(&'a AttachmentDirectory<A>),
     /// Section node.
     Section(&'a Section<A>),
     /// Property node.
@@ -961,6 +969,8 @@ pub enum AstMut<'a, A> {
     FootnoteEntry(&'a mut FootnoteEntry<A>),
     /// Archive destination collected from `#+ARCHIVE:`.
     ArchiveLocation(&'a mut ArchiveLocation<A>),
+    /// Effective attachment directory visible from a section.
+    AttachmentDirectory(&'a mut AttachmentDirectory<A>),
     /// Section node.
     Section(&'a mut Section<A>),
     /// Property node.
