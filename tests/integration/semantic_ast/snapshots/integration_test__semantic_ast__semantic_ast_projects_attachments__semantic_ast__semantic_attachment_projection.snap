@@ -1,0 +1,980 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_attachments.rs
+expression: doc.section_index_records()
+---
+[
+    SectionIndexRecord {
+        source: SectionIndexSource {
+            start: SourcePosition {
+                line: 1,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 8,
+                column: 1,
+            },
+            range_start: 0,
+            range_end: 137,
+        },
+        outline_path: [
+            "Project",
+        ],
+        level: 1,
+        title: "Project",
+        body: [
+            SectionIndexTextSlice {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 5,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    range_start: 51,
+                    range_end: 88,
+                },
+                text: "See [[attachment:diagram.png::255]].",
+            },
+        ],
+        todo: None,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        category: None,
+        tags: [
+            "ATTACH",
+        ],
+        effective_tags: [
+            "ATTACH",
+        ],
+        properties: [
+            SectionIndexProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 3,
+                        column: 7,
+                    },
+                    end: SourcePosition {
+                        line: 3,
+                        column: 13,
+                    },
+                    range_start: 38,
+                    range_end: 44,
+                },
+                key: "DIR",
+                value: "assets",
+            },
+        ],
+        effective_properties: [
+            SectionIndexProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 3,
+                        column: 7,
+                    },
+                    end: SourcePosition {
+                        line: 3,
+                        column: 13,
+                    },
+                    range_start: 38,
+                    range_end: 44,
+                },
+                key: "DIR",
+                value: "assets",
+            },
+        ],
+        special_properties: [
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "ITEM",
+                value: "Project",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "LEVEL",
+                value: "1",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "PRIORITY",
+                value: "B",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "TAGS",
+                value: ":ATTACH:",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "ALLTAGS",
+                value: ":ATTACH:",
+            },
+        ],
+        planning: Planning {
+            deadline: None,
+            scheduled: None,
+            closed: None,
+        },
+        is_comment: false,
+        archive: SectionIndexArchive {
+            archived: false,
+            has_archive_tag: false,
+            location: None,
+        },
+        attachment: SectionIndexAttachment {
+            has_attach_tag: true,
+            directory: Some(
+                SectionIndexAttachmentDirectory {
+                    source: DirProperty,
+                    path: "assets",
+                },
+            ),
+        },
+        links: [
+            SectionIndexLink {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 5,
+                        column: 5,
+                    },
+                    end: SourcePosition {
+                        line: 5,
+                        column: 36,
+                    },
+                    range_start: 55,
+                    range_end: 86,
+                },
+                path: "attachment:diagram.png::255",
+                description: "attachment:diagram.png::255",
+                search: Some(
+                    LinkSearch {
+                        raw: "255",
+                        kind: LineNumber,
+                        normalized: "255",
+                    },
+                ),
+                attachment: Some(
+                    AttachmentLink {
+                        path: "diagram.png",
+                        search: Some(
+                            AttachmentLinkSearch {
+                                raw: "255",
+                                kind: LineNumber,
+                            },
+                        ),
+                    },
+                ),
+                file: None,
+            },
+        ],
+        targets: [
+            SectionIndexTarget {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                kind: Headline,
+                key: "Project",
+                value: "Project",
+            },
+        ],
+        lifecycle: [],
+    },
+    SectionIndexRecord {
+        source: SectionIndexSource {
+            start: SourcePosition {
+                line: 6,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 8,
+                column: 1,
+            },
+            range_start: 88,
+            range_end: 137,
+        },
+        outline_path: [
+            "Project",
+            "Child",
+        ],
+        level: 2,
+        title: "Child",
+        body: [
+            SectionIndexTextSlice {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 7,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 97,
+                    range_end: 137,
+                },
+                text: "See [[attachment:child.txt::*Heading]].",
+            },
+        ],
+        todo: None,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        category: None,
+        tags: [],
+        effective_tags: [
+            "ATTACH",
+        ],
+        properties: [],
+        effective_properties: [
+            SectionIndexProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 3,
+                        column: 7,
+                    },
+                    end: SourcePosition {
+                        line: 3,
+                        column: 13,
+                    },
+                    range_start: 38,
+                    range_end: 44,
+                },
+                key: "DIR",
+                value: "assets",
+            },
+        ],
+        special_properties: [
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "ITEM",
+                value: "Child",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "LEVEL",
+                value: "2",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "PRIORITY",
+                value: "B",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "TAGS",
+                value: "",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "ALLTAGS",
+                value: ":ATTACH:",
+            },
+        ],
+        planning: Planning {
+            deadline: None,
+            scheduled: None,
+            closed: None,
+        },
+        is_comment: false,
+        archive: SectionIndexArchive {
+            archived: false,
+            has_archive_tag: false,
+            location: None,
+        },
+        attachment: SectionIndexAttachment {
+            has_attach_tag: true,
+            directory: Some(
+                SectionIndexAttachmentDirectory {
+                    source: DirProperty,
+                    path: "assets",
+                },
+            ),
+        },
+        links: [
+            SectionIndexLink {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 7,
+                        column: 5,
+                    },
+                    end: SourcePosition {
+                        line: 7,
+                        column: 39,
+                    },
+                    range_start: 101,
+                    range_end: 135,
+                },
+                path: "attachment:child.txt::*Heading",
+                description: "attachment:child.txt::*Heading",
+                search: Some(
+                    LinkSearch {
+                        raw: "*Heading",
+                        kind: Headline,
+                        normalized: "heading",
+                    },
+                ),
+                attachment: Some(
+                    AttachmentLink {
+                        path: "child.txt",
+                        search: Some(
+                            AttachmentLinkSearch {
+                                raw: "*Heading",
+                                kind: Headline,
+                            },
+                        ),
+                    },
+                ),
+                file: None,
+            },
+        ],
+        targets: [
+            SectionIndexTarget {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                kind: Headline,
+                key: "Child",
+                value: "Child",
+            },
+        ],
+        lifecycle: [],
+    },
+    SectionIndexRecord {
+        source: SectionIndexSource {
+            start: SourcePosition {
+                line: 8,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 13,
+                column: 1,
+            },
+            range_start: 137,
+            range_end: 248,
+        },
+        outline_path: [
+            "ID backed",
+        ],
+        level: 1,
+        title: "ID backed",
+        body: [
+            SectionIndexTextSlice {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 12,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 210,
+                    range_end: 248,
+                },
+                text: "See [[attachment:info.org::#custom]].",
+            },
+        ],
+        todo: None,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        category: None,
+        tags: [],
+        effective_tags: [],
+        properties: [
+            SectionIndexProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 10,
+                        column: 6,
+                    },
+                    end: SourcePosition {
+                        line: 10,
+                        column: 42,
+                    },
+                    range_start: 167,
+                    range_end: 203,
+                },
+                key: "ID",
+                value: "95d50008-c12e-479f-a4f2-cc0238205319",
+            },
+        ],
+        effective_properties: [
+            SectionIndexProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 10,
+                        column: 6,
+                    },
+                    end: SourcePosition {
+                        line: 10,
+                        column: 42,
+                    },
+                    range_start: 167,
+                    range_end: 203,
+                },
+                key: "ID",
+                value: "95d50008-c12e-479f-a4f2-cc0238205319",
+            },
+        ],
+        special_properties: [
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "ITEM",
+                value: "ID backed",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "LEVEL",
+                value: "1",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "PRIORITY",
+                value: "B",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "TAGS",
+                value: "",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "ALLTAGS",
+                value: "",
+            },
+        ],
+        planning: Planning {
+            deadline: None,
+            scheduled: None,
+            closed: None,
+        },
+        is_comment: false,
+        archive: SectionIndexArchive {
+            archived: false,
+            has_archive_tag: false,
+            location: None,
+        },
+        attachment: SectionIndexAttachment {
+            has_attach_tag: false,
+            directory: Some(
+                SectionIndexAttachmentDirectory {
+                    source: IdDerived {
+                        id: "95d50008-c12e-479f-a4f2-cc0238205319",
+                        layout: Uuid,
+                    },
+                    path: "data/95/d50008-c12e-479f-a4f2-cc0238205319",
+                },
+            ),
+        },
+        links: [
+            SectionIndexLink {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 12,
+                        column: 5,
+                    },
+                    end: SourcePosition {
+                        line: 12,
+                        column: 37,
+                    },
+                    range_start: 214,
+                    range_end: 246,
+                },
+                path: "attachment:info.org::#custom",
+                description: "attachment:info.org::#custom",
+                search: Some(
+                    LinkSearch {
+                        raw: "#custom",
+                        kind: CustomId,
+                        normalized: "custom",
+                    },
+                ),
+                attachment: Some(
+                    AttachmentLink {
+                        path: "info.org",
+                        search: Some(
+                            AttachmentLinkSearch {
+                                raw: "#custom",
+                                kind: CustomId,
+                            },
+                        ),
+                    },
+                ),
+                file: None,
+            },
+        ],
+        targets: [
+            SectionIndexTarget {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                kind: Headline,
+                key: "ID backed",
+                value: "ID backed",
+            },
+            SectionIndexTarget {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 10,
+                        column: 6,
+                    },
+                    end: SourcePosition {
+                        line: 10,
+                        column: 42,
+                    },
+                    range_start: 167,
+                    range_end: 203,
+                },
+                kind: Id,
+                key: "id:95d50008-c12e-479f-a4f2-cc0238205319",
+                value: "95d50008-c12e-479f-a4f2-cc0238205319",
+            },
+        ],
+        lifecycle: [],
+    },
+    SectionIndexRecord {
+        source: SectionIndexSource {
+            start: SourcePosition {
+                line: 13,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 18,
+                column: 1,
+            },
+            range_start: 248,
+            range_end: 334,
+        },
+        outline_path: [
+            "Legacy",
+        ],
+        level: 1,
+        title: "Legacy",
+        body: [
+            SectionIndexTextSlice {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 17,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 296,
+                    range_end: 334,
+                },
+                text: "See [[attachment:old.pdf::/needle/]].",
+            },
+        ],
+        todo: None,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        category: None,
+        tags: [],
+        effective_tags: [],
+        properties: [
+            SectionIndexProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 15,
+                        column: 14,
+                    },
+                    end: SourcePosition {
+                        line: 15,
+                        column: 20,
+                    },
+                    range_start: 283,
+                    range_end: 289,
+                },
+                key: "ATTACH_DIR",
+                value: "legacy",
+            },
+        ],
+        effective_properties: [
+            SectionIndexProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 15,
+                        column: 14,
+                    },
+                    end: SourcePosition {
+                        line: 15,
+                        column: 20,
+                    },
+                    range_start: 283,
+                    range_end: 289,
+                },
+                key: "ATTACH_DIR",
+                value: "legacy",
+            },
+        ],
+        special_properties: [
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "ITEM",
+                value: "Legacy",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "LEVEL",
+                value: "1",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "PRIORITY",
+                value: "B",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "TAGS",
+                value: "",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "ALLTAGS",
+                value: "",
+            },
+        ],
+        planning: Planning {
+            deadline: None,
+            scheduled: None,
+            closed: None,
+        },
+        is_comment: false,
+        archive: SectionIndexArchive {
+            archived: false,
+            has_archive_tag: false,
+            location: None,
+        },
+        attachment: SectionIndexAttachment {
+            has_attach_tag: false,
+            directory: Some(
+                SectionIndexAttachmentDirectory {
+                    source: LegacyAttachDirProperty,
+                    path: "legacy",
+                },
+            ),
+        },
+        links: [
+            SectionIndexLink {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 17,
+                        column: 5,
+                    },
+                    end: SourcePosition {
+                        line: 17,
+                        column: 37,
+                    },
+                    range_start: 300,
+                    range_end: 332,
+                },
+                path: "attachment:old.pdf::/needle/",
+                description: "attachment:old.pdf::/needle/",
+                search: Some(
+                    LinkSearch {
+                        raw: "/needle/",
+                        kind: Regexp,
+                        normalized: "needle",
+                    },
+                ),
+                attachment: Some(
+                    AttachmentLink {
+                        path: "old.pdf",
+                        search: Some(
+                            AttachmentLinkSearch {
+                                raw: "/needle/",
+                                kind: Regexp,
+                            },
+                        ),
+                    },
+                ),
+                file: None,
+            },
+        ],
+        targets: [
+            SectionIndexTarget {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                kind: Headline,
+                key: "Legacy",
+                value: "Legacy",
+            },
+        ],
+        lifecycle: [],
+    },
+]

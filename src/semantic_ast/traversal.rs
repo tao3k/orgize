@@ -1,10 +1,11 @@
 //! Annotation mapping and traversal for the semantic AST.
 
 use super::{
-    AstMut, AstRef, BareAst, Block, Citation, CiteReference, Document, Drawer, Element,
-    ElementData, FootnoteDef, FootnoteDefinition, FootnoteEntry, IncludeDirective, Inlinetask,
-    InlinetaskEnd, Keyword, Link, List, ListItem, MacroDefinition, Object, ObjectData, Property,
-    Section, Table, TableCell, TableRow, TargetDefinition,
+    ArchiveLocation, AstMut, AstRef, AttachmentDirectory, BareAst, Block, BlockLine, Citation,
+    CiteReference, Document, Drawer, Element, ElementData, FootnoteDef, FootnoteDefinition,
+    FootnoteEntry, IncludeDirective, Inlinetask, InlinetaskEnd, Keyword, Link, List, ListItem,
+    MacroDefinition, Object, ObjectData, Property, Section, SemanticFixedWidth, Table, TableCell,
+    TableFormula, TableRow, TargetDefinition,
 };
 
 impl<A> Document<A> {
@@ -54,6 +55,11 @@ impl<A> Document<A> {
         Document {
             ann: f(&self.ann),
             properties: self.properties.iter().map(|x| x.map_ann_with(f)).collect(),
+            archive_locations: self
+                .archive_locations
+                .iter()
+                .map(|x| x.map_ann_with(f))
+                .collect(),
             metadata: self.metadata.iter().map(|x| x.map_ann_with(f)).collect(),
             filetags: self.filetags.clone(),
             export_settings: self.export_settings.clone(),
@@ -80,6 +86,11 @@ impl<A> Document<A> {
             ann: f(&self.ann)?,
             properties: self
                 .properties
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            archive_locations: self
+                .archive_locations
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
@@ -133,6 +144,9 @@ impl<A> Document<A> {
         for property in &self.properties {
             property.visit_with(f);
         }
+        for archive_location in &self.archive_locations {
+            archive_location.visit_with(f);
+        }
         for keyword in &self.metadata {
             keyword.visit_with(f);
         }
@@ -164,6 +178,9 @@ impl<A> Document<A> {
         for property in &mut self.properties {
             property.visit_mut_with(f);
         }
+        for archive_location in &mut self.archive_locations {
+            archive_location.visit_mut_with(f);
+        }
         for keyword in &mut self.metadata {
             keyword.visit_mut_with(f);
         }
@@ -194,6 +211,9 @@ impl<A> Document<A> {
         let mut acc = f(init, AstRef::Document(self));
         for property in &self.properties {
             acc = property.fold_with(acc, f);
+        }
+        for archive_location in &self.archive_locations {
+            acc = archive_location.fold_with(acc, f);
         }
         for keyword in &self.metadata {
             acc = keyword.fold_with(acc, f);
@@ -268,6 +288,52 @@ impl<A> IncludeDirective<A> {
         F: FnMut(T, AstRef<'_, A>) -> T,
     {
         f(init, AstRef::IncludeDirective(self))
+    }
+}
+
+impl<A> ArchiveLocation<A> {
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::ArchiveLocation(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::ArchiveLocation(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::ArchiveLocation(self))
+    }
+}
+
+impl<A> AttachmentDirectory<A> {
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::AttachmentDirectory(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::AttachmentDirectory(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::AttachmentDirectory(self))
     }
 }
 
@@ -531,6 +597,13 @@ impl<A> Section<A> {
             ann: f(&self.ann),
             level: self.level,
             properties: self.properties.iter().map(|x| x.map_ann_with(f)).collect(),
+            effective_properties: self
+                .effective_properties
+                .iter()
+                .map(|x| x.map_ann_with(f))
+                .collect(),
+            archive: self.archive.map_ann_with(f),
+            attachment: self.attachment.map_ann_with(f),
             todo: self.todo.clone(),
             is_comment: self.is_comment,
             priority: self.priority.clone(),
@@ -557,6 +630,13 @@ impl<A> Section<A> {
                 .iter()
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
+            effective_properties: self
+                .effective_properties
+                .iter()
+                .map(|x| x.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+            archive: self.archive.try_map_ann_with(f)?,
+            attachment: self.attachment.try_map_ann_with(f)?,
             todo: self.todo.clone(),
             is_comment: self.is_comment,
             priority: self.priority.clone(),
@@ -591,6 +671,9 @@ impl<A> Section<A> {
         for property in &self.properties {
             property.visit_with(f);
         }
+        if let Some(directory) = &self.attachment.directory {
+            directory.visit_with(f);
+        }
         for object in &self.title {
             object.visit_with(f);
         }
@@ -610,6 +693,9 @@ impl<A> Section<A> {
         for property in &mut self.properties {
             property.visit_mut_with(f);
         }
+        if let Some(directory) = &mut self.attachment.directory {
+            directory.visit_mut_with(f);
+        }
         for object in &mut self.title {
             object.visit_mut_with(f);
         }
@@ -628,6 +714,9 @@ impl<A> Section<A> {
         let mut acc = f(init, AstRef::Section(self));
         for property in &self.properties {
             acc = property.fold_with(acc, f);
+        }
+        if let Some(directory) = &self.attachment.directory {
+            acc = directory.fold_with(acc, f);
         }
         for object in &self.title {
             acc = object.fold_with(acc, f);
@@ -808,6 +897,7 @@ impl<A> Property<A> {
             ann: f(&self.ann),
             key: self.key.clone(),
             value: self.value.clone(),
+            duration: self.duration.clone(),
         }
     }
 
@@ -819,6 +909,7 @@ impl<A> Property<A> {
             ann: f(&self.ann)?,
             key: self.key.clone(),
             value: self.value.clone(),
+            duration: self.duration.clone(),
         })
     }
 
@@ -1006,7 +1097,9 @@ impl<A> ElementData<A> {
                 ElementData::Inlinetask(Box::new(inlinetask.map_ann_with(f)))
             }
             ElementData::Comment(value) => ElementData::Comment(value.clone()),
-            ElementData::FixedWidth(value) => ElementData::FixedWidth(value.clone()),
+            ElementData::FixedWidth(fixed_width) => {
+                ElementData::FixedWidth(fixed_width.map_ann_with(f))
+            }
             ElementData::Rule => ElementData::Rule,
             ElementData::LatexEnvironment(value) => ElementData::LatexEnvironment(value.clone()),
             ElementData::Unknown { kind, raw } => ElementData::Unknown {
@@ -1061,7 +1154,9 @@ impl<A> ElementData<A> {
                 ElementData::Inlinetask(Box::new(inlinetask.try_map_ann_with(f)?))
             }
             ElementData::Comment(value) => ElementData::Comment(value.clone()),
-            ElementData::FixedWidth(value) => ElementData::FixedWidth(value.clone()),
+            ElementData::FixedWidth(fixed_width) => {
+                ElementData::FixedWidth(fixed_width.try_map_ann_with(f)?)
+            }
             ElementData::Rule => ElementData::Rule,
             ElementData::LatexEnvironment(value) => ElementData::LatexEnvironment(value.clone()),
             ElementData::Unknown { kind, raw } => ElementData::Unknown {
@@ -1101,10 +1196,14 @@ impl<A> ElementData<A> {
                 table.visit_with(f);
             }
             ElementData::Block(block) => {
+                for line in &block.lines {
+                    line.visit_with(f);
+                }
                 for child in &block.children {
                     child.visit_with(f);
                 }
             }
+            ElementData::FixedWidth(fixed_width) => fixed_width.visit_with(f),
             ElementData::FootnoteDef(def) => {
                 for child in &def.children {
                     child.visit_with(f);
@@ -1147,10 +1246,14 @@ impl<A> ElementData<A> {
                 table.visit_mut_with(f);
             }
             ElementData::Block(block) => {
+                for line in &mut block.lines {
+                    line.visit_mut_with(f);
+                }
                 for child in &mut block.children {
                     child.visit_mut_with(f);
                 }
             }
+            ElementData::FixedWidth(fixed_width) => fixed_width.visit_mut_with(f),
             ElementData::FootnoteDef(def) => {
                 for child in &mut def.children {
                     child.visit_mut_with(f);
@@ -1193,9 +1296,15 @@ impl<A> ElementData<A> {
                 acc = table.fold_with(acc, f);
             }
             ElementData::Block(block) => {
+                for line in &block.lines {
+                    acc = line.fold_with(acc, f);
+                }
                 for child in &block.children {
                     acc = child.fold_with(acc, f);
                 }
+            }
+            ElementData::FixedWidth(fixed_width) => {
+                acc = fixed_width.fold_with(acc, f);
             }
             ElementData::FootnoteDef(def) => {
                 for child in &def.children {
@@ -1363,6 +1472,15 @@ impl<A> Table<A> {
                 .iter()
                 .map(|formula| formula.map_ann_with(f))
                 .collect(),
+            parsed_formulas: self
+                .parsed_formulas
+                .iter()
+                .map(|formula| TableFormula {
+                    ann: f(&formula.ann),
+                    raw: formula.raw.clone(),
+                    assignments: formula.assignments.clone(),
+                })
+                .collect(),
         }
     }
 
@@ -1401,6 +1519,17 @@ impl<A> Table<A> {
                 .iter()
                 .map(|formula| formula.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
+            parsed_formulas: self
+                .parsed_formulas
+                .iter()
+                .map(|formula| {
+                    Ok(TableFormula {
+                        ann: f(&formula.ann)?,
+                        raw: formula.raw.clone(),
+                        assignments: formula.assignments.clone(),
+                    })
+                })
+                .collect::<Result<_, E>>()?,
         })
     }
 
@@ -1518,8 +1647,10 @@ impl<A> Block<A> {
             name: self.name.clone(),
             language: self.language.clone(),
             switches: self.switches.clone(),
+            switch_options: self.switch_options.clone(),
             line_numbering: self.line_numbering.clone(),
             preserve_indentation: self.preserve_indentation,
+            lines: self.lines.iter().map(|line| line.map_ann_with(f)).collect(),
             code_refs: self.code_refs.clone(),
             parameters: self.parameters.clone(),
             header_args: self.header_args.clone(),
@@ -1537,8 +1668,14 @@ impl<A> Block<A> {
             name: self.name.clone(),
             language: self.language.clone(),
             switches: self.switches.clone(),
+            switch_options: self.switch_options.clone(),
             line_numbering: self.line_numbering.clone(),
             preserve_indentation: self.preserve_indentation,
+            lines: self
+                .lines
+                .iter()
+                .map(|line| line.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
             code_refs: self.code_refs.clone(),
             parameters: self.parameters.clone(),
             header_args: self.header_args.clone(),
@@ -1549,6 +1686,119 @@ impl<A> Block<A> {
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
         })
+    }
+}
+
+impl<A> SemanticFixedWidth<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> SemanticFixedWidth<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        SemanticFixedWidth {
+            value: self.value.clone(),
+            lines: self.lines.iter().map(|line| line.map_ann_with(f)).collect(),
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<SemanticFixedWidth<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(SemanticFixedWidth {
+            value: self.value.clone(),
+            lines: self
+                .lines
+                .iter()
+                .map(|line| line.try_map_ann_with(f))
+                .collect::<Result<_, _>>()?,
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        for line in &self.lines {
+            line.visit_with(f);
+        }
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        for line in &mut self.lines {
+            line.visit_mut_with(f);
+        }
+    }
+
+    fn fold_with<T, F>(&self, mut acc: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        for line in &self.lines {
+            acc = line.fold_with(acc, f);
+        }
+        acc
+    }
+}
+
+impl<A> BlockLine<A> {
+    fn map_ann_with<B, F>(&self, f: &mut F) -> BlockLine<B>
+    where
+        F: FnMut(&A) -> B,
+    {
+        BlockLine {
+            ann: f(&self.ann),
+            number: self.number,
+            source: self.source.clone(),
+            value: self.value.clone(),
+            normalized_value: self.normalized_value.clone(),
+            value_without_code_ref: self.value_without_code_ref.clone(),
+            normalized_value_without_code_ref: self.normalized_value_without_code_ref.clone(),
+            removed_indent: self.removed_indent,
+            line_ending: self.line_ending.clone(),
+            code_ref: self.code_ref.clone(),
+        }
+    }
+
+    fn try_map_ann_with<B, E, F>(&self, f: &mut F) -> Result<BlockLine<B>, E>
+    where
+        F: FnMut(&A) -> Result<B, E>,
+    {
+        Ok(BlockLine {
+            ann: f(&self.ann)?,
+            number: self.number,
+            source: self.source.clone(),
+            value: self.value.clone(),
+            normalized_value: self.normalized_value.clone(),
+            value_without_code_ref: self.value_without_code_ref.clone(),
+            normalized_value_without_code_ref: self.normalized_value_without_code_ref.clone(),
+            removed_indent: self.removed_indent,
+            line_ending: self.line_ending.clone(),
+            code_ref: self.code_ref.clone(),
+        })
+    }
+
+    fn visit_with<F>(&self, f: &mut F)
+    where
+        F: FnMut(AstRef<'_, A>),
+    {
+        f(AstRef::BlockLine(self));
+    }
+
+    fn visit_mut_with<F>(&mut self, f: &mut F)
+    where
+        F: FnMut(AstMut<'_, A>),
+    {
+        f(AstMut::BlockLine(self));
+    }
+
+    fn fold_with<T, F>(&self, init: T, f: &mut F) -> T
+    where
+        F: FnMut(T, AstRef<'_, A>) -> T,
+    {
+        f(init, AstRef::BlockLine(self))
     }
 }
 
@@ -1666,7 +1916,7 @@ impl<A> ObjectData<A> {
                 value: value.clone(),
                 raw: raw.clone(),
             },
-            ObjectData::Link(link) => ObjectData::Link(link.map_ann_with(f)),
+            ObjectData::Link(link) => ObjectData::Link(Box::new(link.map_ann_with(f))),
             ObjectData::Target(value) => ObjectData::Target(value.clone()),
             ObjectData::RadioTarget(value) => ObjectData::RadioTarget(value.clone()),
             ObjectData::Macro { name, arguments } => ObjectData::Macro {
@@ -1757,7 +2007,7 @@ impl<A> ObjectData<A> {
                 value: value.clone(),
                 raw: raw.clone(),
             },
-            ObjectData::Link(link) => ObjectData::Link(link.try_map_ann_with(f)?),
+            ObjectData::Link(link) => ObjectData::Link(Box::new(link.try_map_ann_with(f)?)),
             ObjectData::Target(value) => ObjectData::Target(value.clone()),
             ObjectData::RadioTarget(value) => ObjectData::RadioTarget(value.clone()),
             ObjectData::Macro { name, arguments } => ObjectData::Macro {
@@ -1872,6 +2122,8 @@ impl<A> Link<A> {
             media_kind: self.media_kind,
             caption: self.caption.as_ref().map(|caption| caption.map_ann_with(f)),
             search: self.search.clone(),
+            attachment: self.attachment.clone(),
+            file: self.file.clone(),
         }
     }
 
@@ -1901,6 +2153,8 @@ impl<A> Link<A> {
                 .map(|caption| caption.try_map_ann_with(f))
                 .transpose()?,
             search: self.search.clone(),
+            attachment: self.attachment.clone(),
+            file: self.file.clone(),
         })
     }
 

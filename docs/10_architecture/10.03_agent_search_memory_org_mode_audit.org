@@ -1,0 +1,553 @@
+* 10.03 Wendao Search Support And Memory Org Mode Audit
+
+This audit reviews the local research-only Org mode checkout under
+`.data/org-mode` for memory and Wendao Search support alignment. It does not
+import Emacs Lisp behavior into orgize. It also does not move search ownership
+into orgize. Wendao owns search execution, ranking, cross-document recall,
+storage, and retrieval APIs.
+
+Orgize's job is narrower and more important: parse official Org syntax well,
+project source-grounded semantic records, preserve spans and evidence, and
+render compact agent-support outputs that Wendao and other agent systems can
+consume.
+
+** Source Anchors
+
+The most relevant official surfaces are:
+
+- `lisp/org-agenda.el`: `org-search-view` and `org-tags-view`;
+- `lisp/org.el`: `org-sparse-tree`, `org-occur`, `org-scan-tags`,
+  `org-map-entries`, `org-make-tags-matcher`, `org-entry-properties`, and
+  `org-entry-get`;
+- `lisp/ol.el`: `org-link-search` and precise link target creation;
+- `lisp/org-id.el`: global ID tracking, archive-aware ID search, ID link
+  storage, and `id:...::search` handling;
+- `lisp/org-archive.el`: archive location, archive tag behavior, and
+  `ARCHIVE_*` context properties;
+- `lisp/org-attach.el`: ID/DIR-based attachment directories and attachment
+  links;
+- `lisp/org-habit.el`: `STYLE: habit`, repeaters, and completion history;
+- `doc/org-manual.org`: "Sparse Trees", "Search Options in File Links",
+  "Matching tags and properties", "Search view", "Special Properties",
+  "Refiling and Archiving", "Capture", "Attachments", and "Tracking your
+  habits".
+
+** Memory Implications
+
+Org memory is not a single storage primitive. Official Org distributes memory
+across stable identity, lifecycle evidence, temporal evidence, outline scope,
+and archive context.
+
+The memory projection should therefore treat these as first-class evidence:
+
+- stable identity: `CUSTOM_ID`, `ID`, explicit targets, outline path, and
+  `id:` links;
+- lifecycle: TODO state, DONE/CLOSED state, state-change notes, refiles,
+  reschedules, redeadlines, clock records, and ordinary notes in `LOGBOOK`;
+- archive context: `ARCHIVE` tag, `ARCHIVE` property, `#+ARCHIVE`, archive file
+  location, sibling archive marker, `ARCHIVE_TIME`, and `ARCHIVE_*` properties;
+- temporal evidence: scheduled, deadline, closed, active timestamp, inactive
+  timestamp, repeaters, and habit `LAST_REPEAT`;
+- structured metadata: local properties, inherited properties, file tags,
+  effective tags, category, priority, effort, and special properties;
+- external evidence: attachment directories and file/attachment/id link search
+  suffixes.
+
+The current memory API already covers a useful base: headings, TODO state,
+properties, timestamps, archive tag/location evidence, LOGBOOK-like lifecycle
+records, clocks, links, and compact `MEMxxx` cards. The next gap is authority:
+records should explain not just "this fact exists", but why it is current,
+archived, closed, stale, superseded, or only background.
+
+** Wendao Search Support Implications
+
+Official Org has three complementary search families:
+
+- structured match search: tags, TODO, properties, special properties, group
+  tags, and top-level OR terms through agenda/sparse-tree match syntax;
+- text entry search: phrase search and boolean word/regexp snippets through
+  `org-search-view`;
+- link target search: file/id/attachment search suffixes for line numbers,
+  headline searches, custom IDs, fuzzy text, regexp searches, targets, and
+  coderefs.
+
+Orgize should expose the parsed building blocks for those search families. It
+should not implement the search engine. The clean boundary is:
+
+- orgize parses and projects section records with source spans, outline
+  context, IDs, targets, links, properties, tags, lifecycle evidence, and
+  normalized link-search suffixes;
+- orgize preserves enough structured metadata for Wendao to build indexes and
+  sparse-tree-like result snippets;
+- orgize can provide compact diagnostics or agent-support summaries for one
+  parsed document, but should not own retrieval ranking or cross-document
+  search snapshots;
+- Wendao owns text indexing, vector/keyword search, multi-file scope,
+  query-time ranking, result fusion, and agent-facing search APIs.
+
+The projection should be sparse-tree-like in spirit: Wendao should be able to
+show the match, the containing headline, and enough ancestor context without
+asking an agent to ingest a whole file.
+
+** Agent Search And Memory Consumption Surface
+
+The operation-level capability queue is tracked in
+[[file:../90_operations/90.01_implementation_status.org][90.01 implementation
+status]]. This document narrows that queue into the API surface that search
+and memory consumers should see. Orgize should expose source-grounded,
+document-local projections; Wendao and downstream agents should own cross-file
+retrieval, ranking, persistence, and promotion policy.
+
+| Consumer layer | Orgize-owned projection | Evidence carried | Wendao or agent-owned work | Next implementation slice |
+| Search recall snippets | Sparse-tree section cards | outline path, matched spans, tags, planning, priority, property summary, link refs, receipts | cross-file ranking, fusion, snippet selection, UI search | clock table adapter after sparse receipts landing |
+| Memory authority | Memory authority cards derived from native lifecycle evidence | TODO or DONE state, CLOSED, SCHEDULED, DEADLINE, archive marker, habit or repeat signal, stable ID | promotion, demotion, staleness policy, contradiction handling | enrich current memory snapshot with lifecycle and archive reasons |
+| Planning triage | =AgendaViewPlan=, =AgendaBlockViewPlan=, and =ClockIssueFinding= diagnostics | scheduling state, configured sort strategy, sort keys, limit receipts, =TaskBlockerRecord= evidence, =ORG029= blocked-state advice, effort totals, clock gaps/overlaps | today/team/user policy, cross-file agenda-file scope, ranking, repair decisions | downstream clock issue consumption receipts |
+| Capture intake | =AgentCapturePlan= | planned target, native Org entry text, provenance, inactive timestamp, tags, properties, links, quote excerpt, non-mutating receipts | conversation/article interpretation, user confirmation, patch application, memory promotion | wasm =capturePlanJson= for org-zhixing and Window/Agent consumers |
+| Repair guidance | Lint advice with source spans | native syntax issue, expected Org-compatible repair, affected section | choose and apply edits, report residual risk | compact agent-facing lint renderer |
+| External evidence | Link and attachment refs | link type, raw target, description, attachment relation, heading context | target resolution, blob storage, backlink index | typed link and attachment projection for index input |
+| Progress and effort | =ProgressStatsRecord= | statistics cookie values, subtree checkbox ratios, descendant TODO state, local and subtree Effort seconds, local =ORDERED= evidence | milestone reporting, burndown, priority weighting | stale cookie lint and clock table adapter |
+
+Two output forms should exist for these projections:
+
+1. A stable machine DTO for WASM, harnesses, and downstream services.
+2. A compact rendered snapshot for agents, because large raw JSON dumps make
+   the decision context noisy and easy to misread.
+
+Input APIs should follow the same rule: use named request objects for
+multi-field queries instead of broad positional argument lists. The WASM
+`agendaViewJson` surface now takes a named JSON request with `start`, `end`,
+optional `limit`, and optional `sortStrategy`, which keeps Window/Agent
+callers from relying on fragile date argument order. `agendaBlockJson` accepts
+named section requests over the same view-query shape, so an agent can ask for
+"today", "waiting", or "priority" sections without executing an Emacs custom
+agenda command.
+
+Both forms must stay aligned with native Org semantics. If Org mode already
+has a construct, orgize should parse and project that construct instead of
+creating a parallel syntax.
+
+*** First Slice: Sparse Tree Projection
+
+The next concrete consumer-facing slice should be a sparse-tree projection
+layer over the existing section index, match query, link, and planning
+records. It should behave like an Org sparse tree for one parsed document:
+return only the matching sections, include the ancestry needed to understand
+them, and preserve enough structured metadata for Wendao to index the result.
+
+The DTO should be deliberately small:
+
+| Field | Purpose |
+| =source= | stable section source and byte or line span |
+| =outline_path= | headings needed to understand the card without full body text |
+| =title= | section title after native Org parsing |
+| =matches= | source-grounded text, tag, property, planning, link, or priority matches |
+| =planning= | TODO keyword, priority, schedule, deadline, closed timestamp, repeat hint |
+| =identity= | =ID=, =CUSTOM_ID=, archive source, and inherited identity hints where available |
+| =relations= | links, attachments, and dependency-like references |
+| =preview= | bounded plain-text excerpt for compact agent consumption |
+
+This layer should not own vector search, global keyword indexing, ranking,
+or memory persistence. Those remain Wendao responsibilities. Its job is to
+make the Org parse tree consumable without asking an agent to reconstruct
+Org semantics from raw text.
+
+Current landing: orgize now exposes `SparseTreeQuery`,
+`SparseTreeProjection`, source-grounded sparse-tree match reasons, compact
+agent text rendering, accepted-card receipts, opt-in skip receipts, wasm
+`sparseTreeJson`, and wasm `sparseTreeExplainJson`. This closes the
+document-local sparse-tree consumption and audit slice. `AgentMemorySnapshot`
+also carries identity, temporal, archive, lifecycle, habit, repeat, stale, and
+superseded authority reasons so old facts can stay visible without being
+promoted as current. `ProgressStatsRecord` now carries subtree TODO, checkbox,
+statistics-cookie, Effort, and local `ORDERED` dependency evidence through both
+the Rust semantic API and wasm `progressStatsJson`. `ClockRollupRecord` now
+compares parsed `CLOCK` durations with local/subtree `Effort` seconds, while
+`ClockTablePlan` projects `#+BEGIN: clocktable` scope/maxlevel rows and applies
+absolute `:block`, `:tstart`, and `:tend` windows plus `:match` filters without
+executing or rewriting dynamic blocks. `:properties` and `:inherit-props` are
+projected as row property values for agent-facing column evidence, still
+without refreshing generated table text. The wasm layer exposes the same time
+evidence through `clockRollupsJson`, `clockTablePlansJson`, `clockIssuesJson`,
+and the snapshot DTO. `ClockIssueFinding` projects Org agenda-style
+no-end-time, long/short-duration, overlap, and gap diagnostics over parsed
+CLOCK intervals, using the same default max-duration, min-duration, max-gap,
+and gap-ok-around policy as `org-agenda-clock-consistency-checks` while
+staying read-only. `DynamicBlockRecord` now indexes native
+`#+BEGIN: name ... #+END:`
+blocks by writer kind, parameter plist, and existing-output state without
+calling `org-dblock-update` or any writer function. `ORG028` now
+also checks list-item checkbox statistics cookies against
+Org's direct-child checkbox hierarchy, with `COOKIE_DATA: recursive` preserved
+for recursive list counts. Wendao still owns
+cross-document ranking, fusion, storage, memory promotion policy, and planning
+policy.
+`AgendaViewPlan` now wraps existing agenda rows with candidate counts, default
+sort keys, accepted receipts, and limit-skip receipts through the Rust semantic
+API and wasm `agendaViewJson` named requests. `TaskBlockerRecord` now projects local
+`ORDERED` previous-sibling blocker edges with exact blocked and blocking
+headlines, and both `AgendaViewPlan` and `AgentPlanningSnapshot` attach that
+evidence for downstream agents. The wasm layer exposes the same records through
+`taskBlockersJson` and nested agenda-view blockers. `ORG029` now renders the
+same blocker evidence as compact lint advice, so an agent can report a visible
+but not-ready task without enforcing TODO transitions or inventing dependency
+syntax. `PropertyProfile` now exposes orgize's current effective-property
+inheritance view, inherited property keys, fixed global Org allowed-value
+descriptors, document/section `PROPERTY_ALL` descriptors, wasm
+`propertyProfileJson`, snapshot `propertyProfile`, and `ORG030` compact advice
+for values that drift outside the applicable allowed-value schema.
+`RefileTargetIndex` now projects document-local refile candidates from native
+Org target selectors, and `RefilePlan` resolves source/target outline paths
+with non-mutating safety receipts for downstream agents. `RefileCreateParentPlan`
+now mirrors Org's `org-refile-allow-creating-parent-nodes` path behavior by
+planning exactly one missing final target heading under an existing parent,
+without inserting source. `AgendaViewPlan` now
+also accepts a configurable Org agenda-style sort strategy subset and records
+that strategy in sort receipts; `AgendaBlockViewPlan` groups multiple named
+agenda view plans into a non-executing block-agenda projection. The wasm layer
+exposes the same contract through `agendaViewJson` `sortStrategy` and
+`agendaBlockJson`, with agenda DTO ownership split into a focused module.
+
+*** Current Slice: Property Profile And Allowed Values
+
+Property profile is a read-only projection over native Org property metadata.
+It exists because agents need to know not only "which property value is
+present", but also whether the value is constrained by an inherited
+`PROPERTY_ALL` descriptor.
+
+| Field | Purpose |
+| =inheritance= | caller-visible policy label for the effective-property view; currently =all= to preserve orgize's existing projection behavior |
+| =inherited_keys= | deduplicated property names visible through the current effective-property model |
+| =allowed_values= | fixed global, document-level, and section-level descriptors such as =Effort_ALL= or =Owner_ALL= |
+| =scope= | whether a descriptor is fixed global, document-wide, or defined under a section outline path |
+| =values= | shell-like parsed allowed values, including quoted multi-word values and explicit empty values |
+
+This keeps property schemas source-grounded. Orgize does not invent a new
+metadata language and does not mutate property drawers. `ORG030` uses the same
+profile to warn when a local property value is not one of the inherited or
+effective allowed values, while leaving downstream agents to choose whether to
+edit the value, update the descriptor, or apply a user-specific policy.
+
+*** Current Slice: Refile Target Index And Plan
+
+Refile support is intentionally a planning/indexing projection, not an
+interactive editor. Orgize reads existing headings and returns target
+candidates or safety warnings; it does not cut, paste, create parent nodes,
+bookmark, cache, or update LOGBOOK notes.
+
+| Field | Purpose |
+| =RefileTargetQuery.specs= | native target selectors: all, local tag, TODO keyword, exact level, max level, and preserved regexp warnings |
+| =outline_path_mode= | heading-only, outline path, file basename, full file path, buffer-name style, or document-title style display |
+| =RefileTarget.receipts= | why a headline entered the target set, using source-grounded selector receipts |
+| =RefilePlan.source= | resolved source outline path, local identity values, and source range |
+| =RefilePlan.target= | resolved target heading and display path |
+| =RefileCreateParentPlan= | optional plan for one missing final target heading under an existing parent |
+| =RefilePlan.warnings= | missing/ambiguous paths, same-source target, target-inside-source, and copy-may-duplicate-ID risks |
+
+This matches the useful non-mutating part of Org's refile machinery:
+`org-refile-get-targets` compiles candidates from configured selectors and
+`org-refile` rejects moves into the same subtree. Orgize keeps regexp target
+specs visible but does not evaluate them yet, because silently treating an
+Emacs regexp as a different regex dialect would create worse agent advice than
+an explicit unsupported warning. When callers enable parent creation, orgize
+only plans the same narrow case as Org's completion suffix: an existing target
+path plus one `/new node name`. Missing intermediate parents stay explicit
+warnings instead of becoming invented multi-level source edits.
+
+*** Current Slice: Agenda Sort Strategy And Block Plans
+
+Agenda sort and block agenda support is a projection API over existing
+document-local agenda rows. It mirrors the useful non-mutating parts of
+`org-agenda-sorting-strategy` and block agenda composition, but orgize does not
+evaluate custom commands, scan `org-agenda-files`, or rewrite agenda buffers.
+
+| Field | Purpose |
+| =AgendaViewQuery.sort_strategy= | ordered strategy entries such as =time-up=, =priority-down=, =scheduledDate-up=, and =category-keep= |
+| =AgendaViewPlan.sort_strategy= | the applied strategy echoed back for machine consumers |
+| =AgendaViewCard.sort_keys= | expanded values used to explain ordering and limit decisions |
+| =AgendaBlockViewQuery.sections= | named view queries for block-agenda style sections |
+| =AgendaBlockViewPlan.sections= | independent named section plans with their own counts, sort receipts, accepted cards, and skipped rows |
+
+This gives Window/Agent consumers a stable API for "what should I look at
+next?" without forcing them to ingest raw agenda JSON or invent a separate
+planning DSL. Wendao still owns cross-file search, ranking, user/team policy,
+and any execution workflow.
+
+*** Current Slice: Clock Issue Diagnostics
+
+Clock issue diagnostics are the parser-owned, non-mutating part of Org
+agenda's clock consistency checks. Orgize reads existing `CLOCK:` lines and
+returns source-grounded findings; it does not stop live clocks, rewrite
+LOGBOOK entries, create agenda overlays, refresh clocktables, or scan external
+agenda files.
+
+| Field | Purpose |
+| =ClockIssueProfile= | Org-default thresholds for max duration, min duration, max gap, and gap-ok-around suppression |
+| =ClockIssueFinding.kind= | stable diagnostic kind: invalid clock, invalid duration, invalid range, no end time, long duration, short duration, overlap, or gap |
+| =clock= | source range, raw CLOCK text, parsed start/end bounds, and duration seconds |
+| =previous_clock= | prior closed CLOCK evidence for overlap and gap explanations |
+| =duration_seconds= | measured interval, overlap, or gap size used by the diagnostic |
+| =threshold_seconds= | profile threshold that triggered the finding, when applicable |
+
+This gives agents a clear "why this timeline is risky" projection without
+asking them to reconstruct time intervals from raw Org text. Wendao still owns
+cross-document timeline policy, repair prioritization, and any source edit.
+
+*** Current Slice: Progress Stats And Dependency Evidence
+
+The current planning-consumer slice projects progress without mutating Org
+source. It intentionally reads official Org constructs instead of inventing a
+parallel task syntax:
+
+| Field | Purpose |
+| =todo= | current heading TODO state as =none=, =todo=, or =done= |
+| =descendant_todos= | child and deeper TODO/DONE totals, excluding the section itself |
+| =checkboxes= | checked, unchecked, and partial checkbox totals across the section subtree |
+| =statistic_cookies= | parsed =[n/m]= and =[p%]= cookies with source spans |
+| =effort= | local =Effort= duration plus subtree total seconds |
+| =dependencies= | open descendant TODOs, unresolved checkboxes, and local =ORDERED= evidence |
+
+The =ORDERED= dependency is local to the section's own property drawer. This
+matches Org's dependency checks, where an entry can be blocked because its
+parent has =:ORDERED:=, rather than because every descendant inherited an
+ordered flag as its own local property.
+
+This slice does not update statistics cookies, enforce TODO transitions, or
+compute clock tables. The companion lint surface now reports ambiguous heading
+cookies that need `COOKIE_DATA` and stale heading cookies that no longer match
+the parsed TODO or checkbox progress; source mutation remains outside orgize.
+
+*** Current Slice: Ordered Sibling Blocker Evidence
+
+The current planning blocker slice is deliberately narrower than a workflow
+engine. It reads the native `:ORDERED:` property only from a parent entry's
+local property drawer. When that parent has direct open TODO children, orgize
+emits one `TaskBlockerRecord` for each later open child that is blocked by the
+nearest previous open TODO sibling.
+
+| Field | Purpose |
+| =kind= | currently =orderedPreviousSibling= |
+| =blocked= | source, outline path, TODO state, and title of the delayed child |
+| =blocker= | source, outline path, TODO state, and title of the previous open sibling |
+| =parent= | source and outline path of the local =ORDERED= parent plus the property source |
+| =message= | compact explanation for agent-facing receipts |
+
+The projection is non-mutating and does not enforce TODO transitions. It exists
+so planning agents can distinguish "visible in the agenda" from "ready to do
+now" without reconstructing sibling order from raw Org text. The companion lint
+surface emits `ORG029` at the blocked task headline and tells agents to finish,
+reorder, or explicitly defer the task until the previous open sibling is done.
+
+*** Current Slice: Sparse Tree Query Receipts
+
+Sparse-tree receipts explain document-local search decisions without turning
+orgize into the ranking layer:
+
+| Field | Purpose |
+| =total_candidates= | number of section-index records considered after optional source-file narrowing |
+| =card.receipts= | candidate, visibility-filter, match-expression, text, default-all, and accepted receipts |
+| =skipped= | opt-in skipped section cards when =explain_skips(true)= is enabled |
+| =skip.reason= | comment, archived, done, match-expression, or text skip reason |
+
+The default `sparseTreeJson` keeps skipped rows empty so agents are not flooded
+with negative evidence. `sparseTreeExplainJson` enables the skipped row audit
+path for harnesses or UI debugging that need to show why a section did not
+surface.
+
+*** Current Slice: Clocktable And Effort Rollup Plans
+
+Clocktable planning is deliberately read-only. Orgize reads official `CLOCK`
+lines, typed `Effort` properties, and `#+BEGIN: clocktable` dynamic-block
+parameters, then exposes what an Agent needs to reason about time:
+
+| Field | Purpose |
+| =ClockRollupRecord.local_clock= | CLOCK entries in the section body, including LOGBOOK drawers |
+| =ClockRollupRecord.subtree_clock= | subtree CLOCK entries and total seconds |
+| =ClockRollupRecord.effort= | local Effort, subtree Effort seconds, delta, and under/on/over status |
+| =ClockTablePlan.scope= | parsed clocktable scope such as file, subtree, tree, or treeN |
+| =ClockTablePlan.time_window= | applied absolute `:block`, `:tstart`, or `:tend` bounds, with exclusive end |
+| =ClockTablePlan.match_filter= | applied `:match` tags/property expression, parsed through the shared Agenda match subset |
+| =ClockTablePlan.property_columns= | applied native `:properties` column names plus `:inherit-props` behavior |
+| =ClockTablePlan.rows= | maxlevel-filtered section rows carrying subtree clock and Effort totals |
+| =ClockTablePlan.warnings= | relative/unparsed time windows, unparsed match or properties filters, step splitting, or external-scope parameters preserved for downstream policy |
+
+This aligns with Org's clocktable model while staying in orgize's
+parser/projection lane. `:scope file`, `:scope subtree`, `:scope tree`, and
+`:scope treeN` are resolved inside the parsed document. Absolute `:block`
+values in `YYYY`, `YYYY-QN`, `YYYY-MM`, `YYYY-WNN`, and `YYYY-MM-DD` forms are
+expanded into stable windows; absolute Org timestamp `:tstart`/`:tend` bounds
+clip row totals. `:match` reuses the shared Agenda-style tag/property matcher
+so matched sections contribute their local CLOCK and Effort evidence, while
+ancestors can still appear as aggregate rows when matched descendants
+contribute. `:properties` is parsed as the native Org list of property names;
+each row carries values for those columns, using inherited effective properties
+only when `:inherit-props` is non-nil. Relative ranges, unparsed match or
+property expressions, external/agenda scopes, and table splitting are preserved
+as warnings for downstream policy instead of being silently approximated.
+
+*** Current Slice: Dynamic Block Registry
+
+Dynamic-block registry is intentionally a non-executing index over native Org
+dynamic blocks. It mirrors the official model where `#+BEGIN: NAME :param
+value` maps to a writer named `org-dblock-write:NAME`, but orgize never calls
+that function and never erases or refreshes block contents.
+
+| Field | Purpose |
+| =DynamicBlockRecord.name= | source block name from the `#+BEGIN:` line |
+| =DynamicBlockRecord.writer= | stable writer category: =clocktable=, =columnview=, or =unknown= |
+| =DynamicBlockRecord.parameters= | native plist-like parameters parsed from the begin line |
+| =DynamicBlockRecord.content_state= | whether the block currently has nonblank existing output |
+| =DynamicBlockRecord.content_line_count= | number of source lines between begin and end markers |
+
+This gives agents enough information to decide whether a dynamic block is a
+known projection (`clocktable` or `columnview`), a custom writer that must stay
+downstream-owned, or a block with existing generated output that may be stale.
+Freshness and source rewriting stay outside orgize.
+
+*** Current Slice: List Item Checkbox Statistics Cookie Lint
+
+Org checkbox statistics cookies can live in the first line of a plain-list
+item, not only in a headline. The lint layer now checks those list-item cookies
+without inventing new syntax or mutating source:
+
+| Field | Purpose |
+| =cookie location= | source span of =[n/m]= or =[p%]= in the list item first line |
+| =default summary= | direct child list-item checkboxes under the item |
+| =recursive summary= | all descendant checkboxes when the containing heading has =COOKIE_DATA: recursive= |
+| =todo cookie data= | skip checkbox lint when =COOKIE_DATA= contains =todo=, matching Org's updater |
+| =finding= | existing =ORG028= stale-cookie advice with the expected checkbox cookie |
+
+This keeps heading ambiguity (`ORG027`) separate from plain-list behavior:
+headline cookies may mean TODO or checkbox progress, while list-item cookies
+are checkbox progress only.
+
+** Priority Backlog
+
+*** P0 Wendao Index Support Records
+
+Current substrate: section index records already carry the core heading,
+outline, planning, tag, property, identity, and span evidence needed by a
+downstream indexer.
+
+Current consumer work: sparse-tree projection now sits on top of those records
+so Wendao receives cards rather than raw parse fragments. The cards are usable
+as search result snippets and as memory-candidate evidence.
+
+The record substrate includes:
+
+- outline path and source spans;
+- title text and body text slices with stable ranges;
+- TODO state, priority, category, local/effective tags, local/effective
+  properties, and planning timestamps;
+- links and targets visible from the entry;
+- archive/comment state and section lifecycle evidence.
+
+This is still not a ranking API. It is the shared substrate for Wendao
+indexing, memory recall, sparse-tree-like context, and downstream agent
+support.
+
+*** P0 Special Properties In Match Evaluation
+
+Current substrate: native Org special properties are available to match and
+projection code.
+
+Current consumer work: sparse-tree cards now carry match reasons so an agent
+can see whether a result matched because of title text, body text, priority,
+scheduling, identity, links, targets, properties, or tags.
+
+The official special-property surface remains:
+
+- `ALLTAGS`, `TAGS`, `TODO`, `PRIORITY`, `SCHEDULED`, `DEADLINE`, `CLOSED`,
+  `TIMESTAMP`, `TIMESTAMP_IA`, `CATEGORY`, `ITEM`, and `FILE`;
+- typed timestamp comparison for quoted Org timestamp operands;
+- wildcard or regexp value matching that is explicit about whether it is full
+  regexp parity or substring fallback.
+
+This directly improves agenda filtering and the structured metadata Wendao
+receives for search.
+
+*** P0 Link Search Metadata
+
+Current substrate: parsed link search suffixes are typed metadata for Wendao:
+
+- `::*Headline` restricts to headline search;
+- `::#custom-id` targets `CUSTOM_ID`;
+- `::/regexp/` is a regexp match request;
+- `::line-number` is a line target;
+- fuzzy text searches should ignore whitespace like Org's link search;
+- `id:ID::search` should resolve ID first, then search within that subtree.
+
+Current consumer work: link refs are grouped with the sparse-tree card that
+produced them. Core orgize should stay document-local. Cross-file or global ID
+databases belong in downstream callers, but orgize should provide records that
+make such indexes easy to build.
+
+*** P1 Archive Context Authority
+
+Memory cards should promote archive context from "evidence text" into
+decision authority:
+
+- `ARCHIVE` tag suppresses active decision authority by default;
+- `ARCHIVE` property and `#+ARCHIVE` describe destination intent;
+- archive-file context properties such as `ARCHIVE_TIME`, `ARCHIVE_FILE`,
+  `ARCHIVE_OLPATH`, `ARCHIVE_CATEGORY`, `ARCHIVE_TODO`, and inherited tag
+  snapshots should be recognized as ordinary properties with special evidence
+  meaning;
+- local archive sibling headings with archive tag should be distinguishable
+  from external archive files.
+
+*** P1 Attachment And External Evidence
+
+Attachments are official Org memory affordances. Orgize should expose metadata
+without filesystem side effects:
+
+- attachment root kind: ID-derived, DIR property, or explicit attachment
+  directory;
+- `ATTACH` tag and attachment-related properties as evidence;
+- `attachment:` links with optional search suffix;
+- optional lint-only filesystem validation when the caller provides a real
+  base path.
+
+Orgize follows the official non-mutating read path: `DIR` wins over deprecated
+`ATTACH_DIR`, which wins over an `ID`-derived directory under the default
+`data/` attachment root. Attachment inheritance is modeled through the
+effective property/tag view; there is no separate `ATTACH_DIR_INHERIT` source
+property in the official attachment implementation.
+
+*** P1 Habit And Repetition Memory
+
+Habits are temporal memory patterns, not just tasks:
+
+- recognize `STYLE: habit`;
+- expose scheduled repeaters and deadline repeaters;
+- preserve `LAST_REPEAT`;
+- expose enough completion history for downstream agents to reason about
+  consistency without rendering Emacs agenda graphs.
+
+*** P2 Agent Capture And Refile Provenance
+
+Capture and refile are creation and movement history, but the Agent capture API
+is not an Emacs Lisp template evaluator.  The modern capture object is an Agent
+interpretation of an interaction event into a native Org plan:
+
+- parse refile LOGBOOK records;
+- preserve outline paths and ID links used as capture/refile targets;
+- expose document-local `RefileTargetIndex` and non-executing `RefilePlan`
+  records for target inspection and safety review;
+- expose `AgentCapturePlan` as a non-mutating native Org entry preview;
+- keep article extraction, interaction UI, confirmation, and patch application
+  in org-zhixing or another runtime;
+- keep `org-capture-templates` and Emacs Lisp configuration outside the core
+  Agent capture path.
+
+** Implementation Order
+
+1. Add downstream clock issue consumption receipts only if Wendao needs
+   planning/report context beyond the current `ClockIssueFinding` DTO.
+2. Add richer refile provenance only if persisted movement logs need more
+   detail than the current non-executing plan.
+3. Add caller-selectable property inheritance policy only if downstream needs
+   non-default Org property visibility.
+
+This order keeps orgize in its parser/projection lane while giving agents the
+API substrate they actually need: small, explainable, source-grounded Org
+projections that Wendao Search can rank and retrieve.

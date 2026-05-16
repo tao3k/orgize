@@ -13,9 +13,10 @@ use crate::{
     syntax_ast,
 };
 
+use super::attachment_model::attachment_link_from_path;
 use super::block_metadata::{
-    parse_block_code_refs, parse_block_header_args, parse_block_line_numbering,
-    parse_block_preserve_indentation,
+    block_code_refs, parse_block_header_args, parse_block_lines, parse_block_switches,
+    split_block_lines, BlockLineOptions,
 };
 use super::block_syntax::{
     block_name_from_begin, block_parts, block_switches_from_begin, semantic_block_name,
@@ -33,21 +34,21 @@ use super::preprocessing::{include_directive, macro_definition, split_macro_args
 use super::prescan::{collect_document_keyword, SemanticPrescan};
 use super::radio_links::{is_semantic_radio_link_candidate, next_char_boundary, next_radio_link};
 use super::settings::{
-    expand_link_abbreviation, is_parsed_keyword, keyword_attributes, link_search,
+    expand_link_abbreviation, file_link, is_parsed_keyword, keyword_attributes, link_search,
 };
 use super::source_position::LineIndex;
-use super::table_metadata::table_column_alignments;
+use super::table_metadata::{parsed_table_formulas, table_column_alignments};
 use super::targets::{
     collect_target_node, is_strict_internal_link_path, TargetIndex, TargetLookup,
 };
 use super::timestamp_metadata::{timestamp_moment_range, timestamp_repeater, timestamp_warning};
 use super::{
-    Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
-    Document, Drawer, Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link,
-    LinkAbbreviation, LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget, List, ListItem,
-    ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property,
-    Section, Table, TableCell, TableRow, Timestamp, TimestampKind, TodoKeyword, TodoState,
-    UnsupportedSyntaxKind,
+    Block, BlockKind, BlockSwitches, Checkbox, Citation, CiteReference, Clock, Diagnostic,
+    DiagnosticKind, Document, Drawer, Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd,
+    Keyword, Link, LinkAbbreviation, LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget,
+    List, ListItem, ListType, MarkupKind, Object, ObjectData, OrgDuration, ParsedAnnotation,
+    ParsedAst, Planning, Priority, Property, Section, SemanticFixedWidth, Table, TableCell,
+    TableRow, Timestamp, TimestampKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 
 impl ParsedAst {
@@ -111,9 +112,13 @@ impl<'a> Converter<'a> {
             });
         let targets = std::mem::take(&mut self.target_index.definitions);
 
+        let mut properties = prescan.properties;
+        properties.extend(parts.properties);
+
         let mut document = Document {
             ann,
-            properties: parts.properties,
+            properties,
+            archive_locations: prescan.archive_locations,
             metadata: prescan.metadata,
             filetags: prescan.filetags,
             export_settings: prescan.export_settings,
@@ -229,9 +234,12 @@ impl<'a> Converter<'a> {
             ann: self.node_ann(node),
             level: legacy.level(),
             properties,
+            effective_properties: Vec::new(),
+            archive: Default::default(),
+            attachment: Default::default(),
             todo,
             is_comment: legacy.is_commented(),
-            priority: legacy.priority().map(|x| x.to_string()),
+            priority: Priority::from_cookie(legacy.priority().map(|x| x.to_string())),
             title: self.objects_from_elements(title),
             raw_title: legacy.title_raw(),
             anchor,
@@ -276,7 +284,7 @@ impl<'a> Converter<'a> {
         Inlinetask {
             level: headline_level(node),
             todo: headline_todo(node),
-            priority: headline_priority(node),
+            priority: Priority::from_cookie(headline_priority(node)),
             title,
             raw_title: headline_raw_title(node),
             tags: headline_tags(node),
@@ -322,7 +330,7 @@ impl<'a> Converter<'a> {
             SyntaxKind::FN_DEF => ElementData::FootnoteDef(self.footnote_def(node)),
             SyntaxKind::INLINETASK => ElementData::Inlinetask(Box::new(self.inlinetask(node))),
             SyntaxKind::COMMENT => ElementData::Comment(node.to_string()),
-            SyntaxKind::FIXED_WIDTH => ElementData::FixedWidth(node.to_string()),
+            SyntaxKind::FIXED_WIDTH => ElementData::FixedWidth(self.fixed_width(node)),
             SyntaxKind::RULE => ElementData::Rule,
             SyntaxKind::LATEX_ENVIRONMENT => ElementData::LatexEnvironment(node.to_string()),
             kind => {
@@ -418,6 +426,7 @@ impl<'a> Converter<'a> {
                         ann: self.token_ann(value.syntax()),
                         key: key.to_string(),
                         value: value.to_string(),
+                        duration: OrgDuration::parse(value.to_string()),
                     })
                     .collect()
             })
@@ -447,6 +456,9 @@ impl<'a> Converter<'a> {
         Clock {
             value,
             duration: legacy.duration().map(|token| token.to_string()),
+            parsed_duration: legacy
+                .duration()
+                .and_then(|token| OrgDuration::parse(token.to_string())),
             raw: node.to_string(),
         }
     }
@@ -547,12 +559,14 @@ impl<'a> Converter<'a> {
             .children()
             .filter(|child| child.kind() == SyntaxKind::KEYWORD)
             .map(|child| self.keyword(&child, false))
-            .collect();
+            .collect::<Vec<_>>();
+        let parsed_formulas = parsed_table_formulas(&formulas);
 
         Table {
             rows,
             column_alignments,
             formulas,
+            parsed_formulas,
         }
     }
 
@@ -582,6 +596,9 @@ impl<'a> Converter<'a> {
         let source = syntax_ast::SourceBlock::cast(node.clone());
         let export = syntax_ast::ExportBlock::cast(node.clone());
         let switches = block_switches_from_begin(parts.begin.as_ref());
+        let switch_options = parse_block_switches(switches.as_deref());
+        let preserve_indentation =
+            self.config.src_preserve_indentation || switch_options.preserve_indentation;
         let value = parts
             .content
             .as_ref()
@@ -598,11 +615,37 @@ impl<'a> Converter<'a> {
             .map(|block| block.value())
             .or_else(|| export.as_ref().map(|block| block.value()))
             .unwrap_or(value);
-        let code_refs = if matches!(kind, BlockKind::Source | BlockKind::Example) {
-            parse_block_code_refs(&value, switches.as_deref())
+        let lines = if matches!(kind, BlockKind::Source | BlockKind::Example) {
+            let source = parts.content.as_ref().map(SyntaxNode::to_string);
+            let line_ranges = parts
+                .content
+                .as_ref()
+                .zip(source.as_deref())
+                .map(|(content, source)| block_content_line_ranges(content, source))
+                .unwrap_or_default();
+            let fallback_range = parts
+                .content
+                .as_ref()
+                .map(|content| {
+                    let end = usize::from(content.text_range().end());
+                    text_range(end, end)
+                })
+                .unwrap_or_else(|| node.text_range());
+
+            parse_block_lines(
+                &value,
+                source.as_deref(),
+                BlockLineOptions {
+                    switches: &switch_options,
+                    tab_width: self.config.src_tab_width,
+                    preserve_indentation,
+                },
+                |index| self.ann(line_ranges.get(index).copied().unwrap_or(fallback_range)),
+            )
         } else {
             Vec::new()
         };
+        let code_refs = block_code_refs(&lines);
         let parameters = source
             .as_ref()
             .and_then(|block| block.parameters().map(|x| x.to_string()));
@@ -613,10 +656,10 @@ impl<'a> Converter<'a> {
             language: source
                 .as_ref()
                 .and_then(|block| block.language().map(|x| x.to_string())),
-            line_numbering: switches.as_deref().and_then(parse_block_line_numbering),
-            preserve_indentation: switches
-                .as_deref()
-                .is_some_and(parse_block_preserve_indentation),
+            line_numbering: switch_options.line_numbering.clone(),
+            switch_options,
+            preserve_indentation,
+            lines,
             code_refs,
             switches,
             header_args: parse_block_header_args(parameters.as_deref()),
@@ -624,6 +667,33 @@ impl<'a> Converter<'a> {
             value,
             children,
         }
+    }
+
+    fn fixed_width(&mut self, node: &SyntaxNode) -> SemanticFixedWidth<ParsedAnnotation> {
+        let syntax = syntax_ast::FixedWidth::cast(node.clone());
+        let value = syntax
+            .as_ref()
+            .map(syntax_ast::FixedWidth::value)
+            .unwrap_or_else(|| node.to_string());
+        let source = node.to_string();
+        let line_ranges = source_line_ranges(usize::from(node.text_range().start()), &source);
+        let switches = BlockSwitches::default();
+        let fallback_range = {
+            let end = usize::from(node.text_range().end());
+            text_range(end, end)
+        };
+        let lines = parse_block_lines(
+            &value,
+            Some(&source),
+            BlockLineOptions {
+                switches: &switches,
+                tab_width: self.config.src_tab_width,
+                preserve_indentation: self.config.src_preserve_indentation,
+            },
+            |index| self.ann(line_ranges.get(index).copied().unwrap_or(fallback_range)),
+        );
+
+        SemanticFixedWidth { value, lines }
     }
 
     fn footnote_def(&mut self, node: &SyntaxNode) -> FootnoteDef<ParsedAnnotation> {
@@ -756,7 +826,7 @@ impl<'a> Converter<'a> {
             let link_ann = self.ann(text_range(base + start, base + end));
             projected.push(Object {
                 ann: link_ann,
-                data: ObjectData::Link(Link {
+                data: ObjectData::Link(Box::new(Link {
                     path: LinkPath::new(target.to_string()),
                     target: LinkTarget::Internal(target.to_string()),
                     description,
@@ -766,7 +836,9 @@ impl<'a> Converter<'a> {
                     media_kind: LinkMediaKind::Normal,
                     caption: None,
                     search: None,
-                }),
+                    attachment: None,
+                    file: None,
+                })),
             });
 
             emitted_until = end;
@@ -855,7 +927,7 @@ impl<'a> Converter<'a> {
             let link_ann = self.ann(text_range(base + start, base + end));
             objects.push(Object {
                 ann: link_ann.clone(),
-                data: ObjectData::Link(Link {
+                data: ObjectData::Link(Box::new(Link {
                     path: LinkPath::new(target.to_string()),
                     target: LinkTarget::Internal(target.to_string()),
                     description: vec![Object {
@@ -868,7 +940,9 @@ impl<'a> Converter<'a> {
                     media_kind: LinkMediaKind::Normal,
                     caption: None,
                     search: None,
-                }),
+                    attachment: None,
+                    file: None,
+                })),
             });
 
             cursor = end;
@@ -1140,12 +1214,14 @@ impl<'a> Converter<'a> {
         let path = legacy.path().to_string();
         let target = self.link_target(&path, node.text_range());
         let search = link_search(&path);
+        let attachment = attachment_link_from_path(&path).map(Box::new);
+        let file = file_link(&path, search.clone()).map(Box::new);
         let description = legacy.description().collect::<Vec<_>>();
         let caption = legacy
             .caption()
             .map(|caption| self.keyword(&caption.syntax, true));
 
-        ObjectData::Link(Link {
+        ObjectData::Link(Box::new(Link {
             path: LinkPath::new(path),
             target,
             default_description: Vec::new(),
@@ -1162,8 +1238,10 @@ impl<'a> Converter<'a> {
             },
             caption,
             search,
+            attachment,
+            file,
             description: self.objects_from_elements(description),
-        })
+        }))
     }
 
     fn link_target(&mut self, path: &str, range: TextRange) -> LinkTarget {
@@ -1374,5 +1452,16 @@ fn object_run_spans(objects: &[Object<ParsedAnnotation>]) -> Vec<ObjectRunSpan> 
                 end: *cursor,
             })
         })
+        .collect()
+}
+
+fn block_content_line_ranges(content: &SyntaxNode, source: &str) -> Vec<TextRange> {
+    source_line_ranges(usize::from(content.text_range().start()), source)
+}
+
+fn source_line_ranges(base: usize, source: &str) -> Vec<TextRange> {
+    split_block_lines(source)
+        .into_iter()
+        .map(|line| text_range(base + line.start, base + line.end))
         .collect()
 }

@@ -1,0 +1,11 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: "format!(\"default clean: {}\\n{}custom clean: {}\\n{}\",\ndefault_report.is_clean(), default_report.to_text(\"fixture.org\"),\ncustom_report.is_clean(), custom_report.to_text(\"fixture.org\"))"
+---
+default clean: false
+fixture.org:1:8: warning ORG010: priority cookie `[#D]` is outside configured priority range A..C
+fixture.org:2:8: warning ORG010: priority cookie `[#9]` is outside configured priority range A..C
+fixture.org:3:8: warning ORG010: priority cookie `[#10]` is outside configured priority range A..C
+custom clean: false
+fixture.org:1:8: warning ORG010: priority cookie `[#D]` is outside configured priority range 0..9
+fixture.org:3:8: warning ORG010: priority cookie `[#10]` is outside configured priority range 0..9

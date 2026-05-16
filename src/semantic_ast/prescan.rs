@@ -3,8 +3,8 @@
 use super::settings::{apply_options_keyword, link_abbreviation, parse_tags, split_words};
 use super::targets::TargetIndex;
 use super::{
-    Diagnostic, ExportSettings, FootnoteEntry, IncludeDirective, Keyword, LinkAbbreviation,
-    MacroDefinition, ParsedAnnotation,
+    ArchiveLocation, Diagnostic, ExportSettings, FootnoteEntry, IncludeDirective, Keyword,
+    LinkAbbreviation, MacroDefinition, OrgDuration, ParsedAnnotation, Property,
 };
 
 #[derive(Default)]
@@ -12,6 +12,8 @@ pub(super) struct SemanticPrescan {
     pub(super) target_index: TargetIndex,
     pub(super) metadata: Vec<Keyword<ParsedAnnotation>>,
     pub(super) filetags: Vec<String>,
+    pub(super) properties: Vec<Property<ParsedAnnotation>>,
+    pub(super) archive_locations: Vec<ArchiveLocation<ParsedAnnotation>>,
     pub(super) export_settings: ExportSettings,
     pub(super) link_abbreviations: Vec<LinkAbbreviation>,
     pub(super) includes: Vec<IncludeDirective<ParsedAnnotation>>,
@@ -28,11 +30,26 @@ pub(super) fn collect_document_keyword(
     match key.as_str() {
         "TITLE" | "AUTHOR" | "DATE" | "CAPTION" => prescan.metadata.push(keyword),
         "FILETAGS" => {
-            prescan.filetags.extend(parse_tags(keyword.value.trim()));
+            for tag in parse_tags(keyword.value.trim()) {
+                push_unique(&mut prescan.filetags, tag);
+            }
             prescan.metadata.push(keyword);
         }
         "OPTIONS" => {
             apply_options_keyword(keyword.value.trim(), &mut prescan.export_settings);
+            prescan.metadata.push(keyword);
+        }
+        "PROPERTY" => {
+            if let Some(property) = keyword_property(&keyword) {
+                prescan.properties.push(property);
+            }
+            prescan.metadata.push(keyword);
+        }
+        "ARCHIVE" => {
+            prescan.archive_locations.push(ArchiveLocation::from_value(
+                keyword.ann.clone(),
+                keyword.value.clone(),
+            ));
             prescan.metadata.push(keyword);
         }
         "SELECT_TAGS" => {
@@ -51,4 +68,24 @@ pub(super) fn collect_document_keyword(
         }
         _ => {}
     }
+}
+
+fn push_unique(values: &mut Vec<String>, value: String) {
+    if !values.iter().any(|existing| existing == &value) {
+        values.push(value);
+    }
+}
+
+fn keyword_property(keyword: &Keyword<ParsedAnnotation>) -> Option<Property<ParsedAnnotation>> {
+    let value = keyword.value.trim();
+    let (key, rest) = value
+        .split_once(char::is_whitespace)
+        .map(|(key, rest)| (key.trim(), rest.trim()))
+        .unwrap_or((value, ""));
+    (!key.is_empty()).then(|| Property {
+        ann: keyword.ann.clone(),
+        key: key.to_string(),
+        value: rest.to_string(),
+        duration: OrgDuration::parse(rest.to_string()),
+    })
 }

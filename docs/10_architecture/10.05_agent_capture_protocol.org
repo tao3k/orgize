@@ -1,0 +1,142 @@
+* 10.05 Agent Capture Protocol
+
+This record replaces the old "capture template compatibility" framing with an
+Agent-facing capture boundary.  The design still learns from Org's capture
+workflow, but it does not make Emacs Lisp configuration the object of orgize.
+
+** Object Shift
+
+Traditional Org capture optimizes a human interrupt:
+
+#+begin_src text
+human interrupt -> template selection -> inserted Org node
+#+end_src
+
+The Agent-era object is different:
+
+#+begin_src text
+interaction event -> agent interpretation -> non-mutating capture plan -> durable Org artifact
+#+end_src
+
+The input may be a chat turn, article, selected text, code-review finding,
+preference correction, decision, or fleeting idea.  The Agent decides whether it
+is worth capturing and how it should affect future memory, search, or planning
+consumption.  orgize should expose the Org-native plan and artifact shape; it
+should not become the interactive capture runtime.
+
+** Boundary
+
+Orgize owns:
+
+- native Org entry rendering for capture candidates;
+- source-grounded target plans such as inbox, outline path, or datetree intent;
+- stable DTOs for wasm and downstream Agent consumers;
+- receipts and warnings that prove the plan is non-mutating and Org-native.
+
+Agents and downstream runtimes own:
+
+- deciding capture intent from conversation or browsing context;
+- asking the user for missing fields;
+- applying edits after confirmation;
+- search ranking, memory promotion, stale-fact policy, and cross-file storage.
+
+org-zhixing or another UI/runtime can implement richer capture interaction,
+review, browser article extraction, and patch application.  The wasm boundary
+should expose the small typed interface those runtimes need.  orgize remains the
+parser/projection and plan-rendering substrate.
+
+Emacs Lisp is not part of the core chain:
+
+- orgize does not parse user init files as a primary configuration source;
+- orgize does not execute `%(...)`, hooks, or template functions;
+- `org-capture-templates` may be studied as historical behavior or imported by
+  a separate compatibility tool, but it is not the Agent capture API.
+
+** Request Shape
+
+The stable input should be a named request object, not positional arguments:
+
+| Field | Meaning |
+|-------+---------|
+| =kind= | =idea=, =articleNote=, =task=, =decision=, =preference=, =correction=, =memoryCandidate=, =evidence=, or =note= |
+| =title= | one-line heading title chosen or confirmed by the Agent |
+| =body= | Agent/user text that should become the body of the Org entry |
+| =target= | inbox, datetree, current section, or explicit outline-path intent |
+| =source= | conversation, URL, file, selected text, article, code, or other provenance |
+| =capturedAt= | inactive Org timestamp evidence supplied by the caller |
+| =tags= | ordinary Org tags selected by the caller |
+| =properties= | ordinary Org property drawer conventions for the consumer |
+| =quote= | optional quoted source excerpt rendered as an Org quote block |
+| =links= | source or related links rendered as ordinary Org links |
+| =memoryPolicy= | candidate, background, decision, transient, supersedes, or none |
+
+The property names are conventions, not new Org syntax.  A default Agent profile
+may use names such as =CAPTURE_KIND=, =CAPTURE_SOURCE=, =CAPTURE_ACTOR=,
+=CAPTURED_AT=, =SOURCE_URL=, and =MEMORY_POLICY=, but orgize should still treat
+them as ordinary Org properties.
+
+** Plan Shape
+
+The output should be a previewable plan:
+
+| Field | Meaning |
+|-------+---------|
+| =target= | where a downstream runtime would insert the entry |
+| =orgEntry= | complete native Org entry text, ready for review |
+| =receipts= | non-mutating, native-Org, provenance, memory-policy, and confirmation receipts |
+| =warnings= | missing title/body, sanitized tags/properties, unsupported target, or runtime-owned action |
+| =requiresConfirmation= | true when applying the plan would mutate a file |
+
+The important invariant is that orgize returns a plan, not an edit.  A caller can
+show the exact Org text to the user, pass the DTO to org-zhixing, or ask Wendao
+to store/search/rank it after an explicit write path.
+
+** Org Artifact
+
+The artifact must remain ordinary Org:
+
+#+begin_src org
+* Agent capture should target Agent decisions :idea:memory_candidate:
+:PROPERTIES:
+:CAPTURE_KIND: idea
+:CAPTURE_SOURCE: conversation
+:CAPTURE_ACTOR: user
+:CAPTURED_AT: [2026-05-16 10:24]
+:MEMORY_POLICY: candidate
+:END:
+
+The user corrected the design: capture is no longer a human-template object.
+It is an Agent-facing intake protocol over native Org.
+#+end_src
+
+For article capture, the same plan can include a source URL and excerpt:
+
+#+begin_src org
+#+begin_quote
+Selected source excerpt goes here.
+#+end_quote
+
+Source: [[https://example.test/article][article]]
+#+end_src
+
+** Memory And Search Consumption
+
+Captured entries are candidate history, not automatic long-term authority.
+Memory projection decides later whether a record is current, stale, superseded,
+archived, or background context.  Search consumes the same Org-native evidence:
+headline, tags, properties, links, quote blocks, timestamps, and outline path.
+
+This prevents old facts and old preferences from re-entering current decisions
+only because they were once captured.  Capture records evidence; memory
+authority and search ranking decide how that evidence participates in the
+current task.
+
+** Implementation Order
+
+1. Replace the capture-template snapshot surface with an =AgentCaptureRequest=
+   and =AgentCapturePlan= model.
+2. Render native Org entries from structured requests without source mutation.
+3. Expose wasm =capturePlanJson(request)= so org-zhixing and Window/Agent
+   runtimes can consume the plan without reimplementing Org entry rendering.
+4. Keep richer article extraction, review UI, patch application, and memory
+   promotion outside orgize.

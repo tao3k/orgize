@@ -1,0 +1,36 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_lifecycle_archive.rs
+expression: compact
+---
+[
+    (
+        "Active with archive location",
+        "state change",
+        "- State \"WAIT\" from \"TODO\" [2026-05-13 Wed]",
+    ),
+    (
+        "Active with archive location",
+        "note",
+        "- Note taken on [2026-05-14 Thu]",
+    ),
+    (
+        "Active with archive location",
+        "refile",
+        "- Refiled on [2026-05-14 Thu] from [[file:old.org][old]]",
+    ),
+    (
+        "Active with archive location",
+        "reschedule",
+        "- Rescheduled from \"<2026-05-14 Thu>\" on [2026-05-15 Fri]",
+    ),
+    (
+        "Active with archive location",
+        "redeadline",
+        "- New deadline from \"<2026-05-16 Sat>\" on [2026-05-15 Fri]",
+    ),
+    (
+        "Active with archive location",
+        "clock",
+        "CLOCK: [2026-05-14 Thu 10:00]--[2026-05-14 Thu 10:30] =>  0:30",
+    ),
+]

@@ -1,0 +1,8 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_m25_alignment.rs
+expression: render_citation_plan(&citations)
+---
+bibliography refs.bib,extra.json
+processor csl style=chicago-author-date.csl
+print options=2
+citation style=nil variant= nocite=false keys=doe2024,roe2025

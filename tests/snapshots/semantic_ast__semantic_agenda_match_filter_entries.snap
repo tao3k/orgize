@@ -1,0 +1,86 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_agenda.rs
+assertion_line: 179
+expression: match_entries
+---
+[
+    AgendaEntry {
+        ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_end_date: None,
+        time: None,
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Work wait ",
+                ),
+            },
+        ],
+        raw_title: "Work wait",
+        category: Some(
+            AgendaCategory(
+                "inbox",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "WAITING",
+            },
+        ),
+        tags: [
+            "work",
+        ],
+        effective_tags: [
+            "team",
+            "work",
+        ],
+        anchor: Some(
+            "work-wait",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-15 Fri>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: None,
+                    minute: None,
+                },
+            ),
+            end: None,
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: Some(
+            OnDate,
+        ),
+        deadline: None,
+    },
+]

@@ -1,0 +1,21 @@
+---
+source: tests/integration/fmt_table.rs
+assertion_line: 26
+expression: format_snapshot(official_style_table_alignment_fmt_fixture())
+---
+changed: true
+idempotent: true
+output:
+* Official-style table alignment
+| Name  | Phone | Age |
+|-------+-------+-----|
+| Peter | 1234  | 17  |
+| Anna  | 4321  | 25  |
+#+TBLFM: @>$3=vsum(@2..@-1)
+
+  | / | <l>         | <r> | <c>  |
+  |---+-------------+-----+------|
+  | ! | Item        | Qty | Done |
+  | # | [1/2] tasks | 10  | 50%  |
+  | ^ | footer      | 3   | ok   |
+#+TBLFM: $3=vsum(@3..@4)

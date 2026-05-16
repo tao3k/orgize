@@ -58,8 +58,11 @@ the opt-in semantic pass that can link parsed object spans such as
 Semantic source/example blocks include parsed line-numbering metadata for
 `-n` and `+n` switches, optional starting offsets, preserve-indentation
 metadata for `-i`, code-reference cookies from the default `(ref:name)` format
-or custom `-l` label formats, and structured source block header arguments
-while retaining the raw parameter text.
+or custom `-l` label formats, line-level source/value/normalized-value records,
+typed `-k`/`-r`/`-l` switch metadata, and structured source block header
+arguments while retaining the raw parameter text. Fixed-width areas use the
+same semantic line record shape, and inline Babel source/call contexts now keep
+nested bracket, brace, and parenthesis bodies balanced.
 Semantic tables expose column alignment metadata from `<l>`, `<c>`, and `<r>`
 property cookies while preserving the original row and cell contents.
 Per-file TODO declarations from `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`
@@ -91,12 +94,42 @@ parsed object values for metadata-style keywords such as `#+TITLE:` and
 attributes. Links without an explicit description can use target-derived
 fallback objects through `Link::description_or_default()`, and `id:ID::*search`
 paths retain their search suffix in `Link::search`.
+Use `document.link_protocol_records()` to inspect built-in link families,
+custom protocols, `#+LINK` abbreviations, executable `shell:`/`elisp:` links,
+and inert `org-protocol:` calls without opening files or dispatching handlers.
+Use `document.column_summary_plans()` to inspect non-mutating Column View
+summary behavior for `COLUMNS` declarations, including common Org operators
+such as `+`, `:`, `X%`, and `est+`.
 Use `document.project_for_export(&ExportProjectionOptions::default())` as the
 opt-in semantic projection hook for exporter-oriented pruning and transformations
 such as `COMMENT`/`:ARCHIVE:`/tag pruning, link abbreviation expansion, and
 special-string conversion. `Org::to_html()`, `Org::to_markdown()`, and
 `Org::to_latex()` keep their existing default output stable; the corresponding
 `*_with_options` methods expose opt-in special-string and entity handling.
+Use `document.agenda_entries(&AgendaQuery::new(start, end))` when an indexer or
+UI wants an Org Agenda-style semantic view over planning and plain active
+timestamps. The projection derives scheduled, deadline, warning, overdue,
+closed, active timestamp, repeated, and tag-filtered rows, including timestamp
+range display days and start/end times, headline time-of-day ranges, scheduled
+delay cookies, and `CATEGORY` keyword/property metadata without changing the
+parsed document or exporter defaults. Use
+`document.agent_planning_snapshot(&AgentPlanningQuery::new(query))` when an
+agent wants compact decision cards over those agenda rows. The snapshot is a
+renderer-friendly projection of official Org agenda semantics; its `PLANxxx`
+codes are output diagnostics, not Org source syntax.
+Use `AgendaWorkspaceBuilder` with `AgendaWorkspaceQuery` when a caller already
+has multiple parsed documents and wants built-in Agenda-style command plans for
+daily agenda rows, TODO lists, tag/property matches, text search, and stuck
+projects without letting orgize scan agenda files itself. Agenda view cards now
+carry `AgendaUrgencyScore` ingredients for explainable ranking. Use
+`document.citation_export_plan()` for Org Cite bibliography/processor/print
+bibliography side tables, `agent_capture_plan(&AgentCaptureRequest::new(...))`
+for non-mutating Agent capture previews over native Org entries,
+`publishing_project_plan()` for explicit blog/site publishing graphs,
+`export_dependency_graph()` for combined include/setupfile/bibliography/macro
+and publishing-output dependency graphs, `document.table_visualization_plans()`
+for non-executing Org Plot/radio-table metadata, and
+`document.attachment_inventory()` for opt-in filesystem attachment evidence.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 
@@ -200,6 +233,7 @@ commands:
 orgize lint notes.org
 orgize lint --format text notes.org
 orgize lint --json notes.org
+orgize lint --priority-highest 0 --priority-default 5 --priority-lowest 9 notes.org
 orgize fmt --check notes.org
 orgize fmt notes.org docs/
 ```
@@ -209,7 +243,10 @@ uniqueness issues such as duplicate `ID`/`CUSTOM_ID` targets, missing local
 macro definitions, duplicate `#+MACRO:` definitions, malformed or duplicate
 `#+LINK:` abbreviation definitions, invalid supported `#+OPTIONS:` values,
 duplicate or conflicting per-file TODO keyword declarations, and missing or
-non-file `#+INCLUDE:` paths when linting real files. By default, `lint` prints a
+non-file `#+INCLUDE:` paths when linting real files. Priority-cookie checks use
+Org's default `A..C` profile unless callers pass
+`--priority-highest/--priority-default/--priority-lowest`, which also supports
+numeric profiles such as `0..9`. By default, `lint` prints a
 compact agent-facing repair report with location, source line, fix hint, and
 contract; `--format text` keeps the stable line-oriented form, and `--json`
 keeps structured machine output as an explicit mode. `fmt` starts with
@@ -230,13 +267,15 @@ review as explicit output diffs.
 
 ## Development
 
-Parser v2 mounts `rust-lang-project-harness` from root `build.rs`,
-`wasm/build.rs`, and the `src/lib.rs` cargo-test gate. The build-time gates
-prevent filtered cargo test runs from bypassing blocking project policy in both
-workspace packages, while the test gate keeps compact agent advice visible
-during normal local validation. All gates use the current standalone harness
-repository instead of the retired monorepo-local `xiuxian-testing` crate. No
-rule pack or rule severity is downgraded:
+Parser v2 mounts `rust-lang-project-harness` from root `build.rs` and the
+`src/lib.rs` cargo-test gate. The wasm package is a standalone
+`tao3k/orgize-wasm` repository mounted at `wasm/` as a git submodule; its own
+`wasm/build.rs` keeps the same build-time harness policy inside that repository.
+The build-time gates prevent filtered cargo test runs from bypassing blocking
+project policy, while the test gate keeps compact agent advice visible during
+normal local validation. All gates use the current standalone harness repository
+instead of the retired monorepo-local `xiuxian-testing` crate. No rule pack or
+rule severity is downgraded:
 `RUST-MOD-*` and project layout findings stay blocking. `AGENT-*` `info`
 findings remain visible as repair advice while this legacy crate burns them down
 separately. New tests should still use explicit imports: `RUST-MOD-R010`
@@ -244,6 +283,14 @@ reports parent-scope glob imports.
 The build-time gate ignores generated environment/data roots such as `.devenv/`
 and `.data/` so research checkouts stay outside Cargo, CI, and published
 package boundaries.
+
+Fresh checkouts that need the browser demo or npm package should initialize the
+submodule first:
+
+```sh
+git submodule update --init --recursive wasm
+just wasm-build
+```
 
 ## API compatibility
 
@@ -261,6 +308,9 @@ Parser v2 makes a breaking API boundary explicit:
   `syntax_ast::SyntaxDocument` and `syntax_ast::SyntaxLink`.
 - `Document<A>::project_for_export(&ExportProjectionOptions)` returns an
   exporter-oriented semantic projection without changing the parsed AST.
+- `Document<A>::agenda_entries(&AgendaQuery)` returns an opt-in agenda
+  projection over semantic planning and active timestamps without mutating
+  `ParsedAst`.
 
 Code that previously imported rowan-backed wrappers from `orgize::ast::*`
 should import them from `orgize::syntax_ast::*` instead.
@@ -278,5 +328,5 @@ Semantic AST traversal is exposed through Rust-style APIs on `Document<A>`:
 projected from the rowan substrate; it does not replace rowan as the lossless
 parser representation.
 
-See [docs/PARSER_V2_RELEASE_READINESS.md](docs/PARSER_V2_RELEASE_READINESS.md)
+See [docs/20_parser/20.01_parser_v2_release_readiness.org](docs/20_parser/20.01_parser_v2_release_readiness.org)
 for the parser v2 closeout checklist, intentional gaps, and validation gate.

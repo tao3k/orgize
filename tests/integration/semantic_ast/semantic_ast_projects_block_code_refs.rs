@@ -35,18 +35,31 @@ example line (ref:sample)
     assert_eq!(blocks[0].switches.as_deref(), Some(r#"-l "// ref:%s" -r"#));
     assert_eq!(blocks[0].code_refs.len(), 2);
     assert_eq!(blocks[0].code_refs[0].line, 1);
+    assert_eq!(blocks[0].code_refs[0].column, 16);
     assert_eq!(blocks[0].code_refs[0].name, "init");
     assert_eq!(blocks[0].code_refs[0].raw, "// ref:init");
     assert_eq!(blocks[0].code_refs[1].line, 2);
+    assert_eq!(blocks[0].code_refs[1].column, 22);
     assert_eq!(blocks[0].code_refs[1].name, "print_value");
     assert_eq!(blocks[0].code_refs[1].raw, "// ref:print_value");
     assert!(blocks[0].value.contains("// ref:init"));
+    assert_eq!(blocks[0].lines.len(), 2);
+    assert_eq!(
+        blocks[0].lines[0].code_ref,
+        Some(blocks[0].code_refs[0].clone())
+    );
 
     assert_eq!(blocks[1].kind, BlockKind::Example);
     assert_eq!(blocks[1].switches, None);
     assert_eq!(blocks[1].code_refs.len(), 1);
     assert_eq!(blocks[1].code_refs[0].line, 1);
+    assert_eq!(blocks[1].code_refs[0].column, 14);
     assert_eq!(blocks[1].code_refs[0].name, "sample");
     assert_eq!(blocks[1].code_refs[0].raw, "(ref:sample)");
+    assert_eq!(blocks[1].lines.len(), 1);
+    assert_eq!(
+        blocks[1].lines[0].code_ref,
+        Some(blocks[1].code_refs[0].clone())
+    );
     assert!(blocks[1].value.contains("(ref:sample)"));
 }

@@ -1,0 +1,35 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_m25_alignment.rs
+expression: render_agent_capture_plan(&capture)
+---
+target kind=datetree file=notes/inbox.org path=none date=2026-05-16 position=append confirm=true
+entry:
+* Agent capture should target Agent decisions :idea:memory_candidate:
+:PROPERTIES:
+:CAPTURE_KIND: idea
+:CAPTURE_SOURCE: article
+:CAPTURE_ACTOR: user
+:CAPTURED_AT: [2026-05-16 10:24]
+:SOURCE_URL: https://example.test/agent-capture
+:SOURCE_LABEL: Agent capture article
+:MEMORY_POLICY: candidate
+:DECISION_IMPACT: high
+:END:
+
+The user corrected the design: capture is no longer a human-template object.
+
+#+begin_quote
+Selected source excerpt goes here.
+#+end_quote
+
+Links:
+- [[https://example.test/agent-capture][Agent capture article]]
+receipts:
+  nonMutating orgize rendered a plan without inserting or editing source
+  nativeOrgEntry capture artifact uses ordinary Org headline, tags, properties, links, and blocks
+  agentInterpreted capture kind `idea` is supplied by the Agent/caller, not inferred from Emacs Lisp
+  sourceProvenance source kind `article` recorded in property drawer
+  memoryPolicy memory policy `candidate` is advisory evidence for downstream authority projection
+  requiresConfirmation a runtime should ask for confirmation before applying this plan
+warnings:
+  sanitizedPropertyKey property key `decision impact` was rendered as `DECISION_IMPACT`

@@ -2,7 +2,11 @@ use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 
-use orgize::{ast::ExportProjectionOptions, config::RadioLinkProjection, Org, ParseConfig};
+use orgize::{
+    ast::{AgendaDate, AgendaQuery, ExportProjectionOptions, IncludeExpansionOptions},
+    config::RadioLinkProjection,
+    Org, ParseConfig,
+};
 
 const INPUT: &[(&str, &str)] = &[
     ("doc.org", include_str!("./fixtures/doc.org")),
@@ -263,6 +267,46 @@ pub fn bench_dense_m15_export_projection(c: &mut Criterion) {
     group.finish();
 }
 
+pub fn bench_dense_agenda_projection(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Document::agenda_entries/dense-agenda");
+    let org = dense_agenda_projection_fixture();
+    let document = Org::parse(&org).document();
+    let query = AgendaQuery::new(AgendaDate::new(2026, 5, 1), AgendaDate::new(2026, 5, 31))
+        .include_done(true)
+        .include_closed(true)
+        .include_archived(true);
+
+    group.throughput(Throughput::Bytes(org.len() as u64));
+    group.bench_function("many-agenda-planning-timestamps.org", |b| {
+        b.iter(|| black_box(document.agenda_entries(black_box(&query))))
+    });
+
+    group.finish();
+}
+
+pub fn bench_dense_include_dated_projection(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Document::include-datetree-agenda-extras/dense");
+    let org = dense_include_dated_projection_fixture();
+    let document = Org::parse(&org).document();
+    let include_options = IncludeExpansionOptions::with_base_dir("/site");
+    let agenda_query = AgendaQuery::new(AgendaDate::new(2026, 5, 1), AgendaDate::new(2026, 5, 31))
+        .include_inactive_timestamps(true)
+        .include_diary_timestamps(true);
+
+    group.throughput(Throughput::Bytes(org.len() as u64));
+    group.bench_function("include-expansion-plan.org", |b| {
+        b.iter(|| black_box(document.include_expansion_plan(black_box(&include_options))))
+    });
+    group.bench_function("datetree-entries.org", |b| {
+        b.iter(|| black_box(document.datetree_entries()))
+    });
+    group.bench_function("agenda-inactive-diary.org", |b| {
+        b.iter(|| black_box(document.agenda_entries(black_box(&agenda_query))))
+    });
+
+    group.finish();
+}
+
 fn dense_target_projection_fixture() -> String {
     let mut org = String::new();
 
@@ -369,6 +413,95 @@ fn dense_m15_projection_fixture() -> String {
     org
 }
 
+fn dense_agenda_projection_fixture() -> String {
+    let mut org = String::from(
+        "#+FILETAGS: :agenda:bench:\n#+CATEGORY: bench-agenda\n#+TODO: TODO NEXT | DONE CANCELED\n\n",
+    );
+
+    for idx in 0usize..256 {
+        let todo = match idx % 8 {
+            0 => "DONE",
+            1 => "NEXT",
+            _ => "TODO",
+        };
+        let tag = match idx % 5 {
+            0 => ":work:",
+            1 => ":ops:",
+            2 => ":ARCHIVE:",
+            3 => ":range:",
+            _ => ":bench:",
+        };
+        let scheduled_day = idx % 28 + 1;
+        let deadline_day = (idx + 3) % 28 + 1;
+        let range_end_day = (scheduled_day + 1).min(28);
+        let headline_time = if idx % 11 == 0 { " 8:30-1pm" } else { "" };
+
+        org.push_str(&format!(
+            "* {todo} Agenda item {idx}{headline_time} {tag}\n"
+        ));
+        if idx % 12 == 0 {
+            org.push_str(":PROPERTIES:\n:CATEGORY: bench-work\n:END:\n");
+        }
+        if idx % 6 == 0 {
+            org.push_str(&format!(
+                "SCHEDULED: <2026-05-{scheduled_day:02} Fri 09:00>--<2026-05-{range_end_day:02} Sat 10:00 +1w> DEADLINE: <2026-05-{deadline_day:02} Mon -2d>\n"
+            ));
+        } else if idx % 7 == 0 {
+            org.push_str(&format!(
+                "SCHEDULED: <2026-05-{scheduled_day:02} Fri 09:00 -2d> DEADLINE: <2026-05-{deadline_day:02} Mon -2d>\n"
+            ));
+        } else {
+            org.push_str(&format!(
+                "SCHEDULED: <2026-05-{scheduled_day:02} Fri 09:00 +1w> DEADLINE: <2026-05-{deadline_day:02} Mon -2d>\n"
+            ));
+        }
+        if idx % 10 == 0 {
+            org.push_str(&format!("CLOSED: [2026-05-{scheduled_day:02} Fri]\n"));
+        }
+        if idx % 9 == 0 {
+            org.push_str(&format!(
+                "Body with active event <2026-05-{scheduled_day:02} Fri 14:00-15:00> and inactive note [2026-05-{deadline_day:02} Mon].\n\n"
+            ));
+        } else {
+            org.push_str("Body with [[https://example.com][link]] and *markup*.\n\n");
+        }
+    }
+
+    org
+}
+
+fn dense_include_dated_projection_fixture() -> String {
+    let mut org = String::new();
+
+    for idx in 0usize..128 {
+        if idx % 3 == 0 {
+            org.push_str(&format!(
+                "#+INCLUDE: \"partials/header-{idx}.org\" :lines \"{}-{}\" :minlevel {}\n",
+                idx + 1,
+                idx + 4,
+                idx % 4 + 1
+            ));
+        } else {
+            org.push_str(&format!(
+                "#+INCLUDE: ./src/demo-{idx}.rs src rust :lines \"{}-\"\n",
+                idx + 10
+            ));
+        }
+    }
+
+    org.push_str("\n* 2026\n");
+    for month in 1..=6 {
+        org.push_str(&format!("** 2026-{month:02} Month {month}\n"));
+        for day in 1..=28 {
+            org.push_str(&format!(
+                "*** 2026-{month:02}-{day:02} Day {day}\n:PROPERTIES:\n:CATEGORY: datetree\n:END:\nBody <2026-{month:02}-{day:02} Fri> [2026-{month:02}-{day:02} Fri] <%%(diary-date {month} {day})>.\n"
+            ));
+        }
+    }
+
+    org
+}
+
 criterion_group!(
     benches,
     bench_parse,
@@ -383,6 +516,8 @@ criterion_group!(
     bench_dense_annotation_projection,
     bench_dense_semantic_radio_projection,
     bench_dense_m15_document,
-    bench_dense_m15_export_projection
+    bench_dense_m15_export_projection,
+    bench_dense_agenda_projection,
+    bench_dense_include_dated_projection
 );
 criterion_main!(benches);

@@ -12,13 +12,17 @@
 
   # https://devenv.sh/packages/
   packages = [
+    pkgs.binaryen
+    pkgs.just
     pkgs.pkg-config
     pkgs.protobuf
+    pkgs.wasm-pack
   ];
 
   languages.rust = {
     enable = true;
     channel = "stable";
+    targets = [ "wasm32-unknown-unknown" ];
     # Ensure rust can link python library
     components = [
       "rustc"

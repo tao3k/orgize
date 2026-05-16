@@ -1,0 +1,28 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_table_visualization.rs
+assertion_line: 44
+expression: render_table_visualization_plans(&plans)
+---
+plans=3
+table 1 kind=orgTable rows=4 cols=4 header=Sede|Max cites|H-index|Score
+  plot title=Citas type=2d with=histograms file=charts/cites.png ind=1 deps=3,4 transpose=true
+    option title title=Citas
+    option indexColumn ind=1
+    option dependentColumns deps=(3 4)
+    option type type=2d
+    option with with=histograms
+    option transpose transpose=yes
+    option file file=charts/cites.png
+table 2 kind=orgTable rows=3 cols=2 header=Label|Value
+  plot title=none type=none with=none file=none ind=none deps= transpose=none
+    option indexColumn ind=zero
+    option dependentColumns deps=(bad)
+    option transpose transpose=maybe
+  warning invalidPlotOption PLOT option `ind:zero` is invalid: expected a positive integer
+  warning invalidPlotOption PLOT option `deps:(bad)` is invalid: expected one or more positive column numbers
+  warning invalidPlotOption PLOT option `transpose:maybe` is invalid: expected y/yes/t/true or n/no/nil/false
+table 3 kind=orgTable rows=4 cols=3 header=Month|Days|Nr sold
+  radio salesfigures translator=orgtbl-to-latex receiver=salesfigures:true:true
+    param splice splice=t
+    param skip skip=2
+    param format fmt=$%s$

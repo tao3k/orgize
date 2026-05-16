@@ -1,0 +1,1063 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_agenda.rs
+assertion_line: 117
+expression: entries
+---
+[
+    AgendaEntry {
+        ann: (),
+        kind: Deadline,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 16,
+        },
+        target_end_date: None,
+        time: None,
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Deadline warning ",
+                ),
+            },
+        ],
+        raw_title: "Deadline warning",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "ops",
+        ],
+        effective_tags: [
+            "team",
+            "ops",
+        ],
+        anchor: Some(
+            "deadline-warning",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-16 Sat -2d>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 16,
+                    day_name: Some(
+                        "Sat",
+                    ),
+                    hour: None,
+                    minute: None,
+                },
+            ),
+            end: None,
+            repeater: None,
+            warning: Some(
+                TimestampWarning {
+                    kind: All,
+                    value: 2,
+                    unit: Day,
+                },
+            ),
+        },
+        occurrence: Source,
+        scheduled: None,
+        deadline: Some(
+            Warning {
+                days_until: 2,
+            },
+        ),
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_end_date: None,
+        time: Some(
+            AgendaTime {
+                hour: 9,
+                minute: 30,
+            },
+        ),
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Scheduled daily ",
+                ),
+            },
+        ],
+        raw_title: "Scheduled daily",
+        category: Some(
+            AgendaCategory(
+                "work-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "work",
+        ],
+        effective_tags: [
+            "team",
+            "work",
+        ],
+        anchor: Some(
+            "scheduled-daily",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-14 Thu 09:30 +1d>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 14,
+                    day_name: Some(
+                        "Thu",
+                    ),
+                    hour: Some(
+                        9,
+                    ),
+                    minute: Some(
+                        30,
+                    ),
+                },
+            ),
+            end: None,
+            repeater: Some(
+                TimestampRepeater {
+                    kind: Cumulate,
+                    value: 1,
+                    unit: Day,
+                },
+            ),
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: Some(
+            OnDate,
+        ),
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_end_date: Some(
+            AgendaDate {
+                year: 2026,
+                month: 5,
+                day: 15,
+            },
+        ),
+        time: Some(
+            AgendaTime {
+                hour: 10,
+                minute: 0,
+            },
+        ),
+        end_time: Some(
+            AgendaTime {
+                hour: 11,
+                minute: 0,
+            },
+        ),
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Range event ",
+                ),
+            },
+        ],
+        raw_title: "Range event",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "range",
+        ],
+        effective_tags: [
+            "team",
+            "range",
+        ],
+        anchor: Some(
+            "range-event",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-14 Thu 10:00>--<2026-05-15 Fri 11:00>",
+            is_range: true,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 14,
+                    day_name: Some(
+                        "Thu",
+                    ),
+                    hour: Some(
+                        10,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            end: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: Some(
+                        11,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: Some(
+            OnDate,
+        ),
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Deadline,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 16,
+        },
+        target_end_date: None,
+        time: None,
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Deadline warning ",
+                ),
+            },
+        ],
+        raw_title: "Deadline warning",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "ops",
+        ],
+        effective_tags: [
+            "team",
+            "ops",
+        ],
+        anchor: Some(
+            "deadline-warning",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-16 Sat -2d>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 16,
+                    day_name: Some(
+                        "Sat",
+                    ),
+                    hour: None,
+                    minute: None,
+                },
+            ),
+            end: None,
+            repeater: None,
+            warning: Some(
+                TimestampWarning {
+                    kind: All,
+                    value: 2,
+                    unit: Day,
+                },
+            ),
+        },
+        occurrence: Source,
+        scheduled: None,
+        deadline: Some(
+            Warning {
+                days_until: 1,
+            },
+        ),
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Closed,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_end_date: None,
+        time: None,
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Closed audit",
+                ),
+            },
+        ],
+        raw_title: "Closed audit",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [],
+        effective_tags: [
+            "team",
+        ],
+        anchor: Some(
+            "closed-audit",
+        ),
+        timestamp: Timestamp {
+            kind: Inactive,
+            raw: "[2026-05-15 Fri]",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: None,
+                    minute: None,
+                },
+            ),
+            end: None,
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: None,
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_end_date: None,
+        time: Some(
+            AgendaTime {
+                hour: 9,
+                minute: 30,
+            },
+        ),
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Scheduled daily ",
+                ),
+            },
+        ],
+        raw_title: "Scheduled daily",
+        category: Some(
+            AgendaCategory(
+                "work-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "work",
+        ],
+        effective_tags: [
+            "team",
+            "work",
+        ],
+        anchor: Some(
+            "scheduled-daily",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-14 Thu 09:30 +1d>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 14,
+                    day_name: Some(
+                        "Thu",
+                    ),
+                    hour: Some(
+                        9,
+                    ),
+                    minute: Some(
+                        30,
+                    ),
+                },
+            ),
+            end: None,
+            repeater: Some(
+                TimestampRepeater {
+                    kind: Cumulate,
+                    value: 1,
+                    unit: Day,
+                },
+            ),
+            warning: None,
+        },
+        occurrence: Repeater {
+            index: 1,
+        },
+        scheduled: Some(
+            OnDate,
+        ),
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_end_date: Some(
+            AgendaDate {
+                year: 2026,
+                month: 5,
+                day: 15,
+            },
+        ),
+        time: Some(
+            AgendaTime {
+                hour: 10,
+                minute: 0,
+            },
+        ),
+        end_time: Some(
+            AgendaTime {
+                hour: 11,
+                minute: 0,
+            },
+        ),
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Range event ",
+                ),
+            },
+        ],
+        raw_title: "Range event",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "range",
+        ],
+        effective_tags: [
+            "team",
+            "range",
+        ],
+        anchor: Some(
+            "range-event",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-14 Thu 10:00>--<2026-05-15 Fri 11:00>",
+            is_range: true,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 14,
+                    day_name: Some(
+                        "Thu",
+                    ),
+                    hour: Some(
+                        10,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            end: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: Some(
+                        11,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: Some(
+            OnDate,
+        ),
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Timestamp,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_end_date: Some(
+            AgendaDate {
+                year: 2026,
+                month: 5,
+                day: 15,
+            },
+        ),
+        time: Some(
+            AgendaTime {
+                hour: 14,
+                minute: 0,
+            },
+        ),
+        end_time: Some(
+            AgendaTime {
+                hour: 15,
+                minute: 30,
+            },
+        ),
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Plain meeting ",
+                ),
+            },
+        ],
+        raw_title: "Plain meeting",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "event",
+        ],
+        effective_tags: [
+            "team",
+            "event",
+        ],
+        anchor: Some(
+            "plain-meeting",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-15 Fri 14:00-15:30>",
+            is_range: true,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: Some(
+                        14,
+                    ),
+                    minute: Some(
+                        0,
+                    ),
+                },
+            ),
+            end: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: Some(
+                        15,
+                    ),
+                    minute: Some(
+                        30,
+                    ),
+                },
+            ),
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: None,
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Deadline,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 16,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 16,
+        },
+        target_end_date: None,
+        time: None,
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Deadline warning ",
+                ),
+            },
+        ],
+        raw_title: "Deadline warning",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "ops",
+        ],
+        effective_tags: [
+            "team",
+            "ops",
+        ],
+        anchor: Some(
+            "deadline-warning",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-16 Sat -2d>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 16,
+                    day_name: Some(
+                        "Sat",
+                    ),
+                    hour: None,
+                    minute: None,
+                },
+            ),
+            end: None,
+            repeater: None,
+            warning: Some(
+                TimestampWarning {
+                    kind: All,
+                    value: 2,
+                    unit: Day,
+                },
+            ),
+        },
+        occurrence: Source,
+        scheduled: None,
+        deadline: Some(
+            Due,
+        ),
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 16,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 14,
+        },
+        target_end_date: None,
+        time: Some(
+            AgendaTime {
+                hour: 8,
+                minute: 30,
+            },
+        ),
+        end_time: Some(
+            AgendaTime {
+                hour: 13,
+                minute: 0,
+            },
+        ),
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Delayed scheduled 8:30-1pm ",
+                ),
+            },
+        ],
+        raw_title: "Delayed scheduled 8:30-1pm",
+        category: Some(
+            AgendaCategory(
+                "doc-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "delay",
+        ],
+        effective_tags: [
+            "team",
+            "delay",
+        ],
+        anchor: Some(
+            "delayed-scheduled-8-30-1pm",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-14 Thu -2d>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 14,
+                    day_name: Some(
+                        "Thu",
+                    ),
+                    hour: None,
+                    minute: None,
+                },
+            ),
+            end: None,
+            repeater: None,
+            warning: Some(
+                TimestampWarning {
+                    kind: All,
+                    value: 2,
+                    unit: Day,
+                },
+            ),
+        },
+        occurrence: Source,
+        scheduled: Some(
+            Delayed {
+                days_delayed: 2,
+            },
+        ),
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Scheduled,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 16,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 16,
+        },
+        target_end_date: None,
+        time: Some(
+            AgendaTime {
+                hour: 9,
+                minute: 30,
+            },
+        ),
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "Scheduled daily ",
+                ),
+            },
+        ],
+        raw_title: "Scheduled daily",
+        category: Some(
+            AgendaCategory(
+                "work-cat",
+            ),
+        ),
+        level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "work",
+        ],
+        effective_tags: [
+            "team",
+            "work",
+        ],
+        anchor: Some(
+            "scheduled-daily",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-14 Thu 09:30 +1d>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 14,
+                    day_name: Some(
+                        "Thu",
+                    ),
+                    hour: Some(
+                        9,
+                    ),
+                    minute: Some(
+                        30,
+                    ),
+                },
+            ),
+            end: None,
+            repeater: Some(
+                TimestampRepeater {
+                    kind: Cumulate,
+                    value: 1,
+                    unit: Day,
+                },
+            ),
+            warning: None,
+        },
+        occurrence: Repeater {
+            index: 2,
+        },
+        scheduled: Some(
+            OnDate,
+        ),
+        deadline: None,
+    },
+]

@@ -1,0 +1,8 @@
+---
+source: tests/integration/lint_lifecycle.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_text(\"lifecycle-destination-issues.org\"))"
+---
+clean: false
+lifecycle-destination-issues.org:1:1: warning ORG018: archive destination heading `* Missing` was not found
+lifecycle-destination-issues.org:4:11: warning ORG018: archive destination `missing-archive.org` was not found
+lifecycle-destination-issues.org:6:1: warning ORG019: refile destination heading `*Missing` was not found

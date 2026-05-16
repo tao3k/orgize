@@ -1,13 +1,11 @@
 use nom::{
-    bytes::complete::{tag, take_till, take_while1},
-    combinator::{map, opt},
-    IResult,
+    bytes::complete::{tag, take_while1},
+    combinator::opt,
+    IResult, Parser,
 };
 
 use super::{
-    combinator::{
-        l_bracket_token, l_curly_token, node, r_bracket_token, r_curly_token, GreenElement,
-    },
+    combinator::{balanced_delimited_tokens, node, GreenElement},
     input::Input,
     SyntaxKind,
 };
@@ -17,32 +15,34 @@ use super::{
     tracing::instrument(level = "debug", skip(input), fields(input = input.s))
 )]
 pub(crate) fn inline_src_node(input: Input) -> IResult<Input, GreenElement, ()> {
-    let mut parser = map(
-        (
-            tag("src_"),
-            take_while1(|c: char| !c.is_ascii_whitespace() && c != '[' && c != '{'),
-            opt((
-                l_bracket_token,
-                take_till(|c| c == '\n' || c == ']'),
-                r_bracket_token,
-            )),
-            l_curly_token,
-            take_till(|c| c == '\n' || c == '}'),
-            r_curly_token,
-        ),
-        |(src, lang, options, l_curly, body, r_curly)| {
-            let mut children = vec![src.text_token(), lang.text_token()];
-            if let Some((l_bracket, options, r_bracket)) = options {
-                children.push(l_bracket);
-                children.push(options.text_token());
-                children.push(r_bracket);
-            }
-            children.push(l_curly);
-            children.push(body.text_token());
-            children.push(r_curly);
-            node(SyntaxKind::INLINE_SRC, children)
-        },
-    );
+    let mut parser = |input| {
+        let (input, src) = tag("src_").parse(input)?;
+        let (input, lang) =
+            take_while1(|c: char| !c.is_ascii_whitespace() && c != '[' && c != '{').parse(input)?;
+        let (input, options) = opt(|input| {
+            balanced_delimited_tokens(
+                input,
+                '[',
+                ']',
+                SyntaxKind::L_BRACKET,
+                SyntaxKind::R_BRACKET,
+            )
+        })
+        .parse(input)?;
+        let (input, (l_curly, body, r_curly)) =
+            balanced_delimited_tokens(input, '{', '}', SyntaxKind::L_CURLY, SyntaxKind::R_CURLY)?;
+
+        let mut children = vec![src.text_token(), lang.text_token()];
+        if let Some((l_bracket, options, r_bracket)) = options {
+            children.push(l_bracket);
+            children.push(options.text_token());
+            children.push(r_bracket);
+        }
+        children.push(l_curly);
+        children.push(body.text_token());
+        children.push(r_curly);
+        Ok((input, node(SyntaxKind::INLINE_SRC, children)))
+    };
     crate::lossless_parser!(parser, input)
 }
 
@@ -77,6 +77,12 @@ fn parse() {
       TEXT@23..38 "<tag>text</tag>"
       R_CURLY@38..39 "}"
     "###
+    );
+
+    let nested = to_inline_src("src_json[:var data=[1,[2]]]{map.get({nested})}");
+    assert_eq!(
+        nested.syntax.to_string(),
+        "src_json[:var data=[1,[2]]]{map.get({nested})}"
     );
 
     let config = &ParseConfig::default();

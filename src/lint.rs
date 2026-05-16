@@ -1,70 +1,52 @@
 //! Org document linting built on the semantic parser projection.
 
-use std::{
-    collections::BTreeMap,
-    fs,
-    io::ErrorKind,
-    path::{Path, PathBuf},
-};
+#[path = "lint_attachments.rs"]
+mod lint_attachments;
+#[path = "lint_babel.rs"]
+mod lint_babel;
+#[path = "lint_file_links.rs"]
+mod lint_file_links;
+#[path = "lint_lifecycle.rs"]
+mod lint_lifecycle;
+#[path = "lint_model.rs"]
+mod lint_model;
+#[path = "lint_priority.rs"]
+mod lint_priority;
+#[path = "lint_progress.rs"]
+mod lint_progress;
+#[path = "lint_properties.rs"]
+mod lint_properties;
+#[path = "lint_render.rs"]
+mod lint_render;
+#[path = "lint_table_formulas.rs"]
+mod lint_table_formulas;
+#[path = "lint_task_blockers.rs"]
+mod lint_task_blockers;
 
-use rowan::TextRange;
+use std::{collections::BTreeMap, fs, io::ErrorKind, path::Path};
+
+use self::{
+    lint_attachments::attachment_findings,
+    lint_babel::babel_findings,
+    lint_file_links::file_link_findings,
+    lint_lifecycle::lifecycle_findings,
+    lint_model::{location_for_offsets, location_for_range},
+    lint_priority::priority_cookie_findings,
+    lint_progress::progress_findings,
+    lint_properties::property_drawer_findings,
+    lint_table_formulas::table_formula_findings,
+    lint_task_blockers::task_blocker_findings,
+};
 
 use crate::{
     ast::{
         Diagnostic, IncludeDirective, Keyword, MacroDefinition, MacroExpansionStatus,
-        ParsedAnnotation, ParsedAst, SourcePosition, TargetDefinition, TargetKind,
+        ParsedAnnotation, ParsedAst, TargetDefinition, TargetKind,
     },
     Org,
 };
 
-/// Lint configuration.
-///
-/// The default keeps linting pure over the provided source string. Set
-/// [`include_base_dir`](Self::include_base_dir) when checking `#+INCLUDE:`
-/// directives against the filesystem.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct LintOptions {
-    /// Base directory used to resolve relative `#+INCLUDE:` paths.
-    pub include_base_dir: Option<PathBuf>,
-}
-
-/// Lint result for one Org source string.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct LintReport {
-    pub findings: Vec<LintFinding>,
-}
-
-impl LintReport {
-    /// Returns true when no lint findings were produced.
-    pub fn is_clean(&self) -> bool {
-        self.findings.is_empty()
-    }
-}
-
-/// One lint finding.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LintFinding {
-    pub code: &'static str,
-    pub severity: LintSeverity,
-    pub message: String,
-    pub location: LintLocation,
-}
-
-/// Finding severity.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LintSeverity {
-    Error,
-    Warning,
-}
-
-/// Source location for one finding.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LintLocation {
-    pub start: SourcePosition,
-    pub end: SourcePosition,
-    pub range_start: usize,
-    pub range_end: usize,
-}
+pub use self::lint_model::{LintFinding, LintLocation, LintOptions, LintReport, LintSeverity};
 
 /// Lints Org source with the default parser configuration.
 pub fn lint_org(source: &str) -> LintReport {
@@ -88,6 +70,16 @@ pub fn lint_document_with_options(
     source: &str,
     options: &LintOptions,
 ) -> LintReport {
+    let mut findings = collect_lint_findings(document, source, options);
+    sort_lint_findings(&mut findings);
+    LintReport { findings }
+}
+
+fn collect_lint_findings(
+    document: &ParsedAst,
+    source: &str,
+    options: &LintOptions,
+) -> Vec<LintFinding> {
     let mut findings = Vec::new();
 
     findings.extend(
@@ -108,8 +100,21 @@ pub fn lint_document_with_options(
         source,
     ));
     findings.extend(options_keyword_findings(&document.metadata, source));
+    findings.extend(priority_cookie_findings(source, &options.priority_profile));
+    findings.extend(property_drawer_findings(document, source));
+    findings.extend(progress_findings(document, source));
+    findings.extend(attachment_findings(document, source, options));
+    findings.extend(babel_findings(document, source));
+    findings.extend(file_link_findings(document, source, options));
+    findings.extend(lifecycle_findings(document, source, options));
+    findings.extend(table_formula_findings(document, source));
+    findings.extend(task_blocker_findings(document, source));
     findings.extend(todo_declaration_findings(source));
 
+    findings
+}
+
+fn sort_lint_findings(findings: &mut [LintFinding]) {
     findings.sort_by(|left, right| {
         left.location
             .range_start
@@ -117,8 +122,6 @@ pub fn lint_document_with_options(
             .then_with(|| left.code.cmp(right.code))
             .then_with(|| left.message.cmp(&right.message))
     });
-
-    LintReport { findings }
 }
 
 fn finding_from_diagnostic(diagnostic: &Diagnostic, source: &str) -> LintFinding {
@@ -575,30 +578,4 @@ fn include_file_path(path: &str) -> &str {
     path.split_once("::")
         .map(|(file_path, _)| file_path)
         .unwrap_or(path)
-}
-
-fn location_for_range(source: &str, range: TextRange) -> LintLocation {
-    let start = usize::from(range.start()).min(source.len());
-    let end = usize::from(range.end()).min(source.len());
-    location_for_offsets(source, start, end)
-}
-
-fn location_for_offsets(source: &str, start: usize, end: usize) -> LintLocation {
-    let start = start.min(source.len());
-    let end = end.min(source.len());
-    LintLocation {
-        start: position_for_offset(source, start),
-        end: position_for_offset(source, end),
-        range_start: start,
-        range_end: end,
-    }
-}
-
-fn position_for_offset(source: &str, offset: usize) -> SourcePosition {
-    let offset = offset.min(source.len());
-    let prefix = &source[..offset];
-    let line = prefix.bytes().filter(|byte| *byte == b'\n').count() + 1;
-    let line_start = prefix.rfind('\n').map_or(0, |index| index + 1);
-    let column = source[line_start..offset].chars().count() + 1;
-    SourcePosition { line, column }
 }

@@ -2,6 +2,18 @@
 
 use rowan::TextRange;
 
+use super::attachment_model::{AttachmentDirectory, AttachmentLink, AttachmentState};
+use super::block_model::{
+    joined_block_lines, BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumbering, BlockSwitches,
+    SemanticFixedWidth,
+};
+use super::lifecycle_model::{ArchiveLocation, ArchiveState};
+use super::link_model::{
+    FileLink, LinkDescriptionState, LinkMediaKind, LinkPath, LinkSearch, LinkTarget,
+};
+use super::property_model::{OrgDuration, Priority};
+use super::timestamp_model::Timestamp;
+
 /// Parsed semantic document with source annotations on every semantic node.
 pub type ParsedAst = Document<ParsedAnnotation>;
 
@@ -87,6 +99,7 @@ impl From<&str> for UnsupportedSyntaxKind {
 pub struct Document<A = ()> {
     pub ann: A,
     pub properties: Vec<Property<A>>,
+    pub archive_locations: Vec<ArchiveLocation<A>>,
     pub metadata: Vec<Keyword<A>>,
     pub filetags: Vec<String>,
     pub export_settings: ExportSettings,
@@ -116,6 +129,48 @@ pub struct LinkAbbreviation {
     pub name: String,
     pub replacement: String,
     pub raw_value: String,
+}
+
+/// Link object with target, description, caption, and image metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Link<A = ()> {
+    pub path: LinkPath,
+    pub target: LinkTarget,
+    pub description: Vec<Object<A>>,
+    pub default_description: Vec<Object<A>>,
+    pub raw_description: String,
+    pub description_state: LinkDescriptionState,
+    pub media_kind: LinkMediaKind,
+    pub caption: Option<Keyword<A>>,
+    pub search: Option<LinkSearch>,
+    pub attachment: Option<Box<AttachmentLink>>,
+    pub file: Option<Box<FileLink>>,
+}
+
+impl<A> Link<A> {
+    /// Returns the original link path text.
+    pub fn path(&self) -> &str {
+        self.path.as_str()
+    }
+
+    /// Returns true when the source link had an explicit description.
+    pub fn has_description(&self) -> bool {
+        self.description_state.has_description()
+    }
+
+    /// Returns true when the link should be treated as an image.
+    pub fn is_image(&self) -> bool {
+        self.media_kind.is_image()
+    }
+
+    /// Returns the explicit description when present, otherwise target-derived fallback text.
+    pub fn description_or_default(&self) -> &[Object<A>] {
+        if self.has_description() {
+            &self.description
+        } else {
+            &self.default_description
+        }
+    }
 }
 
 /// `#+INCLUDE:` directive collected for explicit preprocessing.
@@ -202,9 +257,12 @@ pub struct Section<A = ()> {
     pub ann: A,
     pub level: usize,
     pub properties: Vec<Property<A>>,
+    pub effective_properties: Vec<Property<A>>,
+    pub archive: ArchiveState<A>,
+    pub attachment: AttachmentState<A>,
     pub todo: Option<TodoKeyword>,
     pub is_comment: bool,
-    pub priority: Option<String>,
+    pub priority: Priority,
     pub title: Vec<Object<A>>,
     pub raw_title: String,
     pub anchor: Option<String>,
@@ -220,7 +278,7 @@ pub struct Section<A = ()> {
 pub struct Inlinetask<A = ()> {
     pub level: usize,
     pub todo: Option<TodoKeyword>,
-    pub priority: Option<String>,
+    pub priority: Priority,
     pub title: Vec<Object<A>>,
     pub raw_title: String,
     pub tags: Vec<String>,
@@ -268,6 +326,19 @@ pub struct Property<A = ()> {
     pub ann: A,
     pub key: String,
     pub value: String,
+    pub duration: Option<OrgDuration>,
+}
+
+impl<A> Property<A> {
+    /// Returns true when this property carries an Org effort estimate.
+    pub fn is_effort(&self) -> bool {
+        self.key.eq_ignore_ascii_case("EFFORT")
+    }
+
+    /// Returns parsed duration metadata for duration-shaped property values.
+    pub fn parsed_duration(&self) -> Option<&OrgDuration> {
+        self.duration.as_ref()
+    }
 }
 
 /// Keyword or affiliated keyword with optional bracket metadata.
@@ -326,8 +397,8 @@ pub enum ElementData<A = ()> {
     Inlinetask(Box<Inlinetask<A>>),
     /// Comment element raw text.
     Comment(String),
-    /// Fixed-width area raw text.
-    FixedWidth(String),
+    /// Fixed-width area with line-level metadata.
+    FixedWidth(SemanticFixedWidth<A>),
     /// Horizontal rule.
     Rule,
     /// LaTeX environment raw text.
@@ -339,12 +410,77 @@ pub enum ElementData<A = ()> {
     },
 }
 
+/// Block element with normalized kind and block metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Block<A = ()> {
+    pub kind: BlockKind,
+    pub name: Option<String>,
+    pub language: Option<String>,
+    pub switches: Option<String>,
+    pub switch_options: BlockSwitches,
+    pub line_numbering: Option<BlockLineNumbering>,
+    pub preserve_indentation: bool,
+    pub lines: Vec<BlockLine<A>>,
+    pub code_refs: Vec<BlockCodeRef>,
+    pub parameters: Option<String>,
+    pub header_args: Vec<BlockHeaderArg>,
+    pub value: String,
+    pub children: Vec<Element<A>>,
+}
+
+/// Semantic category for an Org block.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BlockKind {
+    /// Source block.
+    Source,
+    /// Example block.
+    Example,
+    /// Export block.
+    Export,
+    /// Quote block.
+    Quote,
+    /// Verse block.
+    Verse,
+    /// Center block.
+    Center,
+    /// Comment block.
+    Comment,
+    /// Dynamic block.
+    Dynamic,
+    /// Named special block.
+    Special(String),
+}
+
+impl<A> Block<A> {
+    pub fn normalized_value(&self) -> String {
+        joined_block_lines(&self.lines, |line| line.normalized_value.as_str())
+    }
+
+    pub fn value_without_code_refs(&self) -> String {
+        joined_block_lines(&self.lines, |line| line.value_without_code_ref.as_str())
+    }
+
+    pub fn normalized_value_without_code_refs(&self) -> String {
+        joined_block_lines(&self.lines, |line| {
+            line.normalized_value_without_code_ref.as_str()
+        })
+    }
+}
+
 /// Clock value and optional duration.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Clock {
     pub value: Option<Timestamp>,
     pub duration: Option<String>,
+    pub parsed_duration: Option<OrgDuration>,
     pub raw: String,
+}
+
+impl Clock {
+    /// Returns parsed duration metadata for a clock summary, when present.
+    pub fn parsed_duration(&self) -> Option<&OrgDuration> {
+        self.parsed_duration.as_ref()
+    }
 }
 
 /// Named drawer projected with semantic child elements.
@@ -401,6 +537,40 @@ pub struct Table<A = ()> {
     pub rows: Vec<TableRow<A>>,
     pub column_alignments: Vec<Option<TableColumnAlignment>>,
     pub formulas: Vec<Keyword<A>>,
+    pub parsed_formulas: Vec<TableFormula<A>>,
+}
+
+/// Parsed table formula metadata from a `#+TBLFM:` keyword.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TableFormula<A = ()> {
+    pub ann: A,
+    pub raw: String,
+    pub assignments: Vec<TableFormulaAssignment>,
+}
+
+/// One formula assignment inside a `#+TBLFM:` line, split on Org's `::`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TableFormulaAssignment {
+    pub raw: String,
+    pub lhs: String,
+    pub rhs: String,
+    pub flags: Vec<String>,
+    pub references: Vec<TableFormulaReference>,
+}
+
+/// A table reference token found in a formula expression.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TableFormulaReference {
+    pub raw: String,
+    pub kind: TableFormulaReferenceKind,
+}
+
+/// Formula reference category.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TableFormulaReferenceKind {
+    Field,
+    Remote,
+    Row,
 }
 
 /// Alignment cookie parsed from an Org table column metadata row.
@@ -427,83 +597,6 @@ pub struct TableRow<A = ()> {
 pub struct TableCell<A = ()> {
     pub ann: A,
     pub objects: Vec<Object<A>>,
-}
-
-/// Block element with normalized kind and block metadata.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Block<A = ()> {
-    pub kind: BlockKind,
-    pub name: Option<String>,
-    pub language: Option<String>,
-    pub switches: Option<String>,
-    pub line_numbering: Option<BlockLineNumbering>,
-    pub preserve_indentation: bool,
-    pub code_refs: Vec<BlockCodeRef>,
-    pub parameters: Option<String>,
-    pub header_args: Vec<BlockHeaderArg>,
-    pub value: String,
-    pub children: Vec<Element<A>>,
-}
-
-/// Line-numbering switch metadata for source and example blocks.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BlockLineNumbering {
-    pub mode: BlockLineNumberMode,
-    pub start: Option<usize>,
-}
-
-/// Org source/example block line-numbering mode.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BlockLineNumberMode {
-    /// Start a fresh numbered listing with `-n`.
-    New,
-    /// Continue from the previous numbered listing with `+n`.
-    Continued,
-}
-
-/// Code reference cookie found inside a source or example block line.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BlockCodeRef {
-    /// One-based line number inside the block value.
-    pub line: usize,
-    /// Reference name extracted from the active label format.
-    pub name: String,
-    /// Raw reference cookie as it appears in the block line.
-    pub raw: String,
-}
-
-/// Header argument parsed from a source block parameter string.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BlockHeaderArg {
-    /// Header argument key without the leading colon.
-    pub key: String,
-    /// Header argument value, if present, preserving inner spacing.
-    pub value: Option<String>,
-    /// Raw header argument fragment as it appears in the begin line.
-    pub raw: String,
-}
-
-/// Semantic category for an Org block.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BlockKind {
-    /// Source block.
-    Source,
-    /// Example block.
-    Example,
-    /// Export block.
-    Export,
-    /// Quote block.
-    Quote,
-    /// Verse block.
-    Verse,
-    /// Center block.
-    Center,
-    /// Comment block.
-    Comment,
-    /// Dynamic block.
-    Dynamic,
-    /// Named special block.
-    Special(String),
 }
 
 /// Footnote definition with label and parsed body elements.
@@ -591,7 +684,7 @@ pub enum ObjectData<A = ()> {
         raw: String,
     },
     /// Link object with parsed target and description metadata.
-    Link(Link<A>),
+    Link(Box<Link<A>>),
     /// Target object without angle delimiters.
     Target(String),
     /// Radio target object without angle delimiters.
@@ -625,233 +718,6 @@ pub enum MarkupKind {
     Superscript,
     /// Subscript markup.
     Subscript,
-}
-
-/// Timestamp metadata projected from Org timestamp syntax.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Timestamp {
-    pub kind: TimestampKind,
-    pub raw: String,
-    pub is_range: bool,
-    pub start: Option<TimestampMoment>,
-    pub end: Option<TimestampMoment>,
-    pub repeater: Option<TimestampRepeater>,
-    pub warning: Option<TimestampWarning>,
-}
-
-/// Org timestamp delimiter category.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TimestampKind {
-    /// Active timestamp, for example `<2026-05-01 Fri>`.
-    Active,
-    /// Inactive timestamp, for example `[2026-05-01 Fri]`.
-    Inactive,
-    /// Diary sexp timestamp, for example `<%%(diary-date 5 1)>`.
-    Diary,
-}
-
-/// Parsed date and optional time within a timestamp.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TimestampMoment {
-    pub year: u16,
-    pub month: u8,
-    pub day: u8,
-    pub day_name: Option<String>,
-    pub hour: Option<u8>,
-    pub minute: Option<u8>,
-}
-
-/// Repeater cookie attached to a timestamp.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TimestampRepeater {
-    pub kind: RepeaterKind,
-    pub value: u32,
-    pub unit: TimeUnit,
-}
-
-/// Warning delay cookie attached to a timestamp.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TimestampWarning {
-    pub kind: WarningKind,
-    pub value: u32,
-    pub unit: TimeUnit,
-}
-
-/// Org timestamp repeater mode.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RepeaterKind {
-    /// Cumulate repeater, written with `++`.
-    Cumulate,
-    /// Catch-up repeater, written with `+`.
-    CatchUp,
-    /// Restart repeater, written with `.+`.
-    Restart,
-}
-
-/// Org timestamp warning delay mode.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum WarningKind {
-    /// Warn for all matching occurrences.
-    All,
-    /// Warn only for the first occurrence.
-    First,
-}
-
-/// Unit used by timestamp repeater and warning cookies.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TimeUnit {
-    /// Hour unit.
-    Hour,
-    /// Day unit.
-    Day,
-    /// Week unit.
-    Week,
-    /// Month unit.
-    Month,
-    /// Year unit.
-    Year,
-}
-
-/// Normalized link target classification.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum LinkTarget {
-    /// URI-like link target split into protocol and path.
-    Uri { protocol: String, path: String },
-    /// Internal target such as `#custom-id`.
-    Internal(String),
-    /// Link target without a dedicated semantic classifier yet.
-    Unresolved(String),
-}
-
-/// Original link path text as it appears in the link target position.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LinkPath(String);
-
-impl LinkPath {
-    /// Creates a link path from parser-owned text.
-    pub fn new(path: impl Into<String>) -> Self {
-        Self(path.into())
-    }
-
-    /// Returns the path text.
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
-    /// Consumes the path and returns its owned text.
-    pub fn into_string(self) -> String {
-        self.0
-    }
-}
-
-impl std::fmt::Display for LinkPath {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
-impl From<String> for LinkPath {
-    fn from(path: String) -> Self {
-        Self::new(path)
-    }
-}
-
-impl From<&str> for LinkPath {
-    fn from(path: &str) -> Self {
-        Self::new(path)
-    }
-}
-
-impl AsRef<str> for LinkPath {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
-/// Whether a link had an explicit Org description.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LinkDescriptionState {
-    /// Link has no explicit description.
-    None,
-    /// Link was written with a description part.
-    Explicit,
-}
-
-impl LinkDescriptionState {
-    /// Returns true when the source link had an explicit description.
-    pub const fn has_description(self) -> bool {
-        matches!(self, Self::Explicit)
-    }
-}
-
-/// Media classification for link exporter behavior.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LinkMediaKind {
-    /// Normal link.
-    Normal,
-    /// Image link.
-    Image,
-}
-
-impl LinkMediaKind {
-    /// Returns true when the link should be treated as an image.
-    pub const fn is_image(self) -> bool {
-        matches!(self, Self::Image)
-    }
-}
-
-/// Link object with target, description, caption, and image metadata.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Link<A = ()> {
-    pub path: LinkPath,
-    pub target: LinkTarget,
-    pub description: Vec<Object<A>>,
-    pub default_description: Vec<Object<A>>,
-    pub raw_description: String,
-    pub description_state: LinkDescriptionState,
-    pub media_kind: LinkMediaKind,
-    pub caption: Option<Keyword<A>>,
-    pub search: Option<LinkSearch>,
-}
-
-impl<A> Link<A> {
-    /// Returns the original link path text.
-    pub fn path(&self) -> &str {
-        self.path.as_str()
-    }
-
-    /// Returns true when the source link had an explicit description.
-    pub fn has_description(&self) -> bool {
-        self.description_state.has_description()
-    }
-
-    /// Returns true when the link should be treated as an image.
-    pub fn is_image(&self) -> bool {
-        self.media_kind.is_image()
-    }
-
-    /// Returns the explicit description when present, otherwise target-derived fallback text.
-    pub fn description_or_default(&self) -> &[Object<A>] {
-        if self.has_description() {
-            &self.description
-        } else {
-            &self.default_description
-        }
-    }
-}
-
-/// Search suffix attached to an internal link target, such as `id:x::*Heading`.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LinkSearch {
-    pub raw: String,
-    pub kind: LinkSearchKind,
-}
-
-/// Normalized category for an Org link search suffix.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LinkSearchKind {
-    Headline,
-    Text,
 }
 
 /// Options for explicit semantic export projection.
@@ -910,6 +776,10 @@ pub enum AstRef<'a, A> {
     TargetDefinition(&'a TargetDefinition<A>),
     /// Document-level footnote registry entry.
     FootnoteEntry(&'a FootnoteEntry<A>),
+    /// Archive destination collected from `#+ARCHIVE:`.
+    ArchiveLocation(&'a ArchiveLocation<A>),
+    /// Effective attachment directory visible from a section.
+    AttachmentDirectory(&'a AttachmentDirectory<A>),
     /// Section node.
     Section(&'a Section<A>),
     /// Property node.
@@ -928,6 +798,8 @@ pub enum AstRef<'a, A> {
     TableRow(&'a TableRow<A>),
     /// Table cell node.
     TableCell(&'a TableCell<A>),
+    /// Source/example/fixed-width content line.
+    BlockLine(&'a BlockLine<A>),
     /// Object node.
     Object(&'a Object<A>),
 }
@@ -944,6 +816,10 @@ pub enum AstMut<'a, A> {
     TargetDefinition(&'a mut TargetDefinition<A>),
     /// Document-level footnote registry entry.
     FootnoteEntry(&'a mut FootnoteEntry<A>),
+    /// Archive destination collected from `#+ARCHIVE:`.
+    ArchiveLocation(&'a mut ArchiveLocation<A>),
+    /// Effective attachment directory visible from a section.
+    AttachmentDirectory(&'a mut AttachmentDirectory<A>),
     /// Section node.
     Section(&'a mut Section<A>),
     /// Property node.
@@ -962,6 +838,8 @@ pub enum AstMut<'a, A> {
     TableRow(&'a mut TableRow<A>),
     /// Table cell node.
     TableCell(&'a mut TableCell<A>),
+    /// Source/example/fixed-width content line.
+    BlockLine(&'a mut BlockLine<A>),
     /// Object node.
     Object(&'a mut Object<A>),
 }

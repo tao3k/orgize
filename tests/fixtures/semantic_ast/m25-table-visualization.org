@@ -1,0 +1,21 @@
+#+TITLE: Table Visualization Demo
+
+#+PLOT: title:"Citas" ind:1 deps:(3 4) type:2d with:histograms transpose:yes file:"charts/cites.png"
+| Sede      | Max cites | H-index | Score |
+|-----------+-----------+---------+-------|
+| Chile     |    257.72 |   21.39 |     5 |
+| Stockholm |    134.19 |   14.33 |     3 |
+
+#+PLOT: ind:zero deps:(bad) transpose:maybe
+| Label | Value |
+|-------+-------|
+| Bad   |     1 |
+
+# BEGIN RECEIVE ORGTBL salesfigures
+# END RECEIVE ORGTBL salesfigures
+#+ORGTBL: SEND salesfigures orgtbl-to-latex :splice t :skip 2 :fmt "$%s$"
+| Month | Days | Nr sold |
+|-------+------+---------|
+| Jan   |   23 |      55 |
+| Feb   |   21 |      16 |
+#+TBLFM: $3=$2*2

@@ -1,0 +1,7 @@
+---
+source: tests/integration/lint_attachments.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_text(\"attachment-issues.org\"))"
+---
+clean: false
+attachment-issues.org:5:5: warning ORG016: attachment target `attachment:missing.txt` was not found
+attachment-issues.org:8:5: warning ORG016: attachment link `attachment:no-root.txt` has no DIR, ATTACH_DIR, or ID attachment directory

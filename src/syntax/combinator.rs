@@ -55,8 +55,47 @@ token_parser!(dollar2_token, "$$", SyntaxKind::DOLLAR2);
 // token_parser!(tilde_token, "~", TILDE);
 token_parser!(hash_plus_token, "#+", SyntaxKind::HASH_PLUS);
 token_parser!(caret_token, "^", SyntaxKind::CARET);
-token_parser!(hash_token, "#", SyntaxKind::HASH);
 token_parser!(double_arrow_token, "=>", SyntaxKind::DOUBLE_ARROW);
+
+pub(crate) fn balanced_delimited_tokens(
+    input: Input,
+    open: char,
+    close: char,
+    open_kind: SyntaxKind,
+    close_kind: SyntaxKind,
+) -> IResult<Input, (GreenElement, Input, GreenElement), ()> {
+    let source = input.as_str();
+    if !source.starts_with(open) {
+        return Err(nom::Err::Error(()));
+    }
+
+    let mut depth = 0usize;
+    for (index, ch) in source.char_indices() {
+        if matches!(ch, '\r' | '\n') {
+            return Err(nom::Err::Error(()));
+        }
+
+        if ch == open {
+            depth += 1;
+        } else if ch == close {
+            depth = depth.checked_sub(1).ok_or(nom::Err::Error(()))?;
+            if depth == 0 {
+                let open_end = open.len_utf8();
+                let close_end = index + close.len_utf8();
+                return Ok((
+                    input.take_from(close_end),
+                    (
+                        input.slice(..open_end).token(open_kind),
+                        input.slice(open_end..index),
+                        input.slice(index..close_end).token(close_kind),
+                    ),
+                ));
+            }
+        }
+    }
+
+    Err(nom::Err::Error(()))
+}
 
 macro_rules! lossless_parser {
     ($parser:expr, $input:expr) => {{

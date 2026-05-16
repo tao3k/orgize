@@ -1,0 +1,33 @@
+---
+source: tests/integration/lint_babel.rs
+assertion_line: 8
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_compact_text(\"fixture.org\", source))"
+---
+clean: false
+[ORG021] Warning: noweb reference `missing` has no local source block
+@ fixture.org:1:1
+fix: add a matching local source block, noweb-ref, or rename the Babel reference
+line: 1 | #+NAME: duplicate
+Help: noweb reference `missing` has no local source block
+Contract: Babel call and noweb references should point at a local block name or noweb-ref before agent tooling depends on them.
+
+[ORG022] Warning: source block uses eval-sensitive header `:eval yes`
+@ fixture.org:1:1
+fix: review the explicit :eval header and prefer no/query only when execution is intentional
+line: 1 | #+NAME: duplicate
+Help: source block uses eval-sensitive header `:eval yes`
+Contract: Explicit eval-sensitive headers should be reviewed before automated tooling treats source blocks as executable context.
+
+[ORG023] Warning: source block tangle target is empty
+@ fixture.org:1:1
+fix: set :tangle to yes, no, or a non-empty target path
+line: 1 | #+NAME: duplicate
+Help: source block tangle target is empty
+Contract: Tangle metadata should have a deterministic target when it is not explicitly yes or no.
+
+[ORG020] Warning: source block name `duplicate` is defined 2 times
+@ fixture.org:6:1
+fix: rename the duplicate source block or update callers to one canonical block name
+line: 6 | #+NAME: duplicate
+Help: source block name `duplicate` is defined 2 times
+Contract: Babel source block names should be unique before calls, result association, or noweb references consume them.

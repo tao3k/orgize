@@ -1,0 +1,10 @@
+#+TITLE: Dependency A
+#+SETUPFILE: setup/theme.org
+#+BIBLIOGRAPHY: refs/main.bib
+#+EXPORT_FILE_NAME: public/a.html
+#+INCLUDE: "b.org"
+#+INCLUDE: "missing.org"
+#+MACRO: badge @@html:<span>$1</span>@@
+
+* A
+This calls {{{badge(ready)}}} and {{{missing_macro(value)}}}.

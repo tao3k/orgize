@@ -1,8 +1,8 @@
 //! Parser-v2 semantic helpers for keyword-backed document settings.
 
 use super::{
-    ExportSettings, Keyword, KeywordAttribute, LinkAbbreviation, LinkSearch, LinkSearchKind,
-    ParsedAnnotation,
+    ExportSettings, FileLink, FileLinkPathKind, Keyword, KeywordAttribute, LinkAbbreviation,
+    LinkSearch, LinkSearchKind, ParsedAnnotation,
 };
 
 pub(super) fn is_parsed_keyword(key: &str) -> bool {
@@ -89,15 +89,88 @@ pub(super) fn link_abbreviation(keyword: &Keyword<ParsedAnnotation>) -> Option<L
 
 pub(super) fn link_search(path: &str) -> Option<LinkSearch> {
     let (_, search) = path.split_once("::")?;
+    link_search_suffix(search)
+}
+
+pub(super) fn link_search_suffix(search: &str) -> Option<LinkSearch> {
     let kind = if search.starts_with('*') {
         LinkSearchKind::Headline
+    } else if search.starts_with('#') {
+        LinkSearchKind::CustomId
+    } else if search.starts_with('/') && search.ends_with('/') && search.len() > 1 {
+        LinkSearchKind::Regexp
+    } else if search.chars().all(|ch| ch.is_ascii_digit()) {
+        LinkSearchKind::LineNumber
     } else {
         LinkSearchKind::Text
     };
     Some(LinkSearch {
         raw: search.to_string(),
         kind,
+        normalized: normalized_link_search(search, kind),
     })
+}
+
+pub(super) fn file_link(path: &str, search: Option<LinkSearch>) -> Option<FileLink> {
+    let (protocol, target) = path.split_once(':')?;
+    if !is_file_link_protocol(protocol) {
+        return None;
+    }
+    let file_path = target
+        .split_once("::")
+        .map(|(file_path, _)| file_path)
+        .unwrap_or(target);
+    Some(FileLink {
+        protocol: protocol.to_string(),
+        path: file_path.to_string(),
+        path_kind: file_link_path_kind(file_path),
+        search,
+    })
+}
+
+fn is_file_link_protocol(protocol: &str) -> bool {
+    matches!(
+        protocol.to_ascii_lowercase().as_str(),
+        "file" | "file+sys" | "file+emacs" | "file+shell"
+    )
+}
+
+fn file_link_path_kind(path: &str) -> FileLinkPathKind {
+    let path = path.trim();
+    if path.is_empty() {
+        FileLinkPathKind::Empty
+    } else if path.starts_with("/ssh:") || path.starts_with("/scp:") {
+        FileLinkPathKind::Remote
+    } else if path.starts_with('/') {
+        FileLinkPathKind::Absolute
+    } else if path.starts_with("~/") {
+        FileLinkPathKind::HomeRelative
+    } else {
+        FileLinkPathKind::Relative
+    }
+}
+
+fn normalized_link_search(search: &str, kind: LinkSearchKind) -> String {
+    match kind {
+        LinkSearchKind::Headline => normalize_search_text(search.trim_start_matches('*')),
+        LinkSearchKind::CustomId => search.trim_start_matches('#').trim().to_string(),
+        LinkSearchKind::Regexp => search
+            .strip_prefix('/')
+            .and_then(|value| value.strip_suffix('/'))
+            .unwrap_or(search)
+            .trim()
+            .to_string(),
+        LinkSearchKind::LineNumber => search.trim().to_string(),
+        LinkSearchKind::Text => normalize_search_text(search),
+    }
+}
+
+fn normalize_search_text(value: &str) -> String {
+    value
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_ascii_lowercase()
 }
 
 pub(super) fn expand_link_abbreviation(

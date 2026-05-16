@@ -71,6 +71,17 @@ pub struct ParseConfig {
     ///
     /// This mirrors `org-inlinetask-min-level`; Org's default is 15.
     pub inlinetask_min_level: usize,
+
+    /// Tab width used when deriving normalized source/example/fixed-width lines.
+    ///
+    /// This mirrors `org-src-tab-width`; Org's default is 4.
+    pub src_tab_width: usize,
+
+    /// Preserve source/example/fixed-width indentation during normalized projection.
+    ///
+    /// This mirrors `org-src-preserve-indentation`; block-level `-i` also
+    /// enables preservation for a single source/example block.
+    pub src_preserve_indentation: bool,
 }
 
 impl ParseConfig {
@@ -192,6 +203,8 @@ impl Default for ParseConfig {
             ],
             radio_link_projection: RadioLinkProjection::PlainText,
             inlinetask_min_level: 15,
+            src_tab_width: 4,
+            src_preserve_indentation: false,
         }
     }
 }

@@ -1,0 +1,17 @@
+* TODO Daily review :agenda:
+SCHEDULED: <2026-05-15 Fri .+1d>
+:PROPERTIES:
+:STYLE: habit
+:LAST_REPEAT: [2026-05-14 Thu 08:00]
+:EFFORT: 0:30
+:END:
+:LOGBOOK:
+CLOCK: [2026-05-14 Thu 08:00]--[2026-05-14 Thu 08:25] =>  0:25
+:END:
+* TODO Missing repeater
+SCHEDULED: <2026-05-16 Sat>
+:PROPERTIES:
+:STYLE: habit
+:END:
+* TODO Plain task
+SCHEDULED: <2026-05-16 Sat .+1d>

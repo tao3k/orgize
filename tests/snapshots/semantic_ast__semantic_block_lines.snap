@@ -1,0 +1,209 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_block_lines.rs
+assertion_line: 57
+expression: bare_blocks
+---
+[
+    Block {
+        kind: Source,
+        name: Some(
+            "src",
+        ),
+        language: Some(
+            "rust",
+        ),
+        switches: Some(
+            "-i -n 10 -l \"// ref:%s\"",
+        ),
+        switch_options: BlockSwitches {
+            raw: Some(
+                "-i -n 10 -l \"// ref:%s\"",
+            ),
+            line_numbering: Some(
+                BlockLineNumbering {
+                    mode: New,
+                    start: Some(
+                        10,
+                    ),
+                },
+            ),
+            preserve_indentation: true,
+            keep_labels: false,
+            remove_labels: false,
+            label_format: Some(
+                "// ref:%s",
+            ),
+        },
+        line_numbering: Some(
+            BlockLineNumbering {
+                mode: New,
+                start: Some(
+                    10,
+                ),
+            },
+        ),
+        preserve_indentation: true,
+        lines: [
+            BlockLine {
+                ann: (),
+                number: 1,
+                source: ",* not a headline",
+                value: "* not a headline",
+                normalized_value: "* not a headline",
+                value_without_code_ref: "* not a headline",
+                normalized_value_without_code_ref: "* not a headline",
+                removed_indent: 0,
+                line_ending: Some(
+                    "\n",
+                ),
+                code_ref: None,
+            },
+            BlockLine {
+                ann: (),
+                number: 2,
+                source: "let answer = 42; // ref:init",
+                value: "let answer = 42; // ref:init",
+                normalized_value: "let answer = 42; // ref:init",
+                value_without_code_ref: "let answer = 42;",
+                normalized_value_without_code_ref: "let answer = 42;",
+                removed_indent: 0,
+                line_ending: Some(
+                    "\n",
+                ),
+                code_ref: Some(
+                    BlockCodeRef {
+                        line: 2,
+                        column: 18,
+                        end_column: 29,
+                        name: "init",
+                        raw: "// ref:init",
+                    },
+                ),
+            },
+            BlockLine {
+                ann: (),
+                number: 3,
+                source: "println!(\"answer = {}\", answer);",
+                value: "println!(\"answer = {}\", answer);",
+                normalized_value: "println!(\"answer = {}\", answer);",
+                value_without_code_ref: "println!(\"answer = {}\", answer);",
+                normalized_value_without_code_ref: "println!(\"answer = {}\", answer);",
+                removed_indent: 0,
+                line_ending: Some(
+                    "\n",
+                ),
+                code_ref: None,
+            },
+        ],
+        code_refs: [
+            BlockCodeRef {
+                line: 2,
+                column: 18,
+                end_column: 29,
+                name: "init",
+                raw: "// ref:init",
+            },
+        ],
+        parameters: Some(
+            ":exports both :results output drawer :var answer=42",
+        ),
+        header_args: [
+            BlockHeaderArg {
+                key: "exports",
+                value: Some(
+                    "both",
+                ),
+                raw: ":exports both",
+            },
+            BlockHeaderArg {
+                key: "results",
+                value: Some(
+                    "output drawer",
+                ),
+                raw: ":results output drawer",
+            },
+            BlockHeaderArg {
+                key: "var",
+                value: Some(
+                    "answer=42",
+                ),
+                raw: ":var answer=42",
+            },
+        ],
+        value: "* not a headline\nlet answer = 42; // ref:init\nprintln!(\"answer = {}\", answer);\n",
+        children: [],
+    },
+    Block {
+        kind: Example,
+        name: Some(
+            "example",
+        ),
+        language: None,
+        switches: Some(
+            "+n 12",
+        ),
+        switch_options: BlockSwitches {
+            raw: Some(
+                "+n 12",
+            ),
+            line_numbering: Some(
+                BlockLineNumbering {
+                    mode: Continued,
+                    start: Some(
+                        12,
+                    ),
+                },
+            ),
+            preserve_indentation: false,
+            keep_labels: false,
+            remove_labels: false,
+            label_format: None,
+        },
+        line_numbering: Some(
+            BlockLineNumbering {
+                mode: Continued,
+                start: Some(
+                    12,
+                ),
+            },
+        ),
+        preserve_indentation: false,
+        lines: [
+            BlockLine {
+                ann: (),
+                number: 1,
+                source: "example line (ref:sample)",
+                value: "example line (ref:sample)",
+                normalized_value: "example line (ref:sample)",
+                value_without_code_ref: "example line",
+                normalized_value_without_code_ref: "example line",
+                removed_indent: 0,
+                line_ending: Some(
+                    "\n",
+                ),
+                code_ref: Some(
+                    BlockCodeRef {
+                        line: 1,
+                        column: 14,
+                        end_column: 26,
+                        name: "sample",
+                        raw: "(ref:sample)",
+                    },
+                ),
+            },
+        ],
+        code_refs: [
+            BlockCodeRef {
+                line: 1,
+                column: 14,
+                end_column: 26,
+                name: "sample",
+                raw: "(ref:sample)",
+            },
+        ],
+        parameters: None,
+        header_args: [],
+        value: "example line (ref:sample)\n",
+        children: [],
+    },
+]

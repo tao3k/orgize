@@ -8,8 +8,9 @@ use std::{
 };
 
 use crate::{
+    ast::{PriorityProfile, PriorityValue},
     fmt::{format_org, FormatOptions},
-    lint::{lint_org, lint_org_with_options, LintOptions},
+    lint::{lint_org_with_options, LintOptions},
 };
 
 /// Runs the command-line interface with process arguments and stdio.
@@ -101,6 +102,9 @@ fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
 
 fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
     let mut output_format = LintOutputFormat::Compact;
+    let mut priority_highest = None;
+    let mut priority_lowest = None;
+    let mut priority_default = None;
     let mut paths = Vec::new();
     let mut index = 0;
 
@@ -115,6 +119,18 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
                 output_format = LintOutputFormat::parse(value)?;
             }
             "--json" => output_format = LintOutputFormat::Json,
+            "--priority-highest" => {
+                index += 1;
+                priority_highest = Some(parse_priority_flag(&args, index, "--priority-highest")?);
+            }
+            "--priority-lowest" => {
+                index += 1;
+                priority_lowest = Some(parse_priority_flag(&args, index, "--priority-lowest")?);
+            }
+            "--priority-default" => {
+                index += 1;
+                priority_default = Some(parse_priority_flag(&args, index, "--priority-default")?);
+            }
             "-h" | "--help" => {
                 print_lint_usage();
                 return Ok(ExitCode::SUCCESS);
@@ -125,10 +141,17 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
         index += 1;
     }
 
+    let priority_profile =
+        priority_profile_from_flags(priority_highest, priority_lowest, priority_default)?;
+    let base_lint_options = LintOptions {
+        priority_profile,
+        ..LintOptions::default()
+    };
+
     let mut reports = Vec::new();
     if paths.is_empty() {
         let source = read_stdin()?;
-        let report = lint_org(&source);
+        let report = lint_org_with_options(&source, &base_lint_options);
         reports.push(LintFileReport {
             path: "<stdin>".to_string(),
             source,
@@ -141,6 +164,9 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
                 fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
             let lint_options = LintOptions {
                 include_base_dir: path.parent().map(Path::to_path_buf),
+                attachment_base_dir: path.parent().map(Path::to_path_buf),
+                file_base_dir: path.parent().map(Path::to_path_buf),
+                ..base_lint_options.clone()
             };
             let report = lint_org_with_options(&source, &lint_options);
             reports.push(LintFileReport {
@@ -226,6 +252,35 @@ impl LintOutputFormat {
     }
 }
 
+fn parse_priority_flag(
+    args: &[String],
+    index: usize,
+    flag: &'static str,
+) -> Result<PriorityValue, String> {
+    let Some(value) = args.get(index) else {
+        return Err(format!("lint {flag} requires a priority value"));
+    };
+    PriorityValue::parse(value).ok_or_else(|| format!("unsupported priority value `{value}`"))
+}
+
+fn priority_profile_from_flags(
+    highest: Option<PriorityValue>,
+    lowest: Option<PriorityValue>,
+    default: Option<PriorityValue>,
+) -> Result<PriorityProfile, String> {
+    if highest.is_none() && lowest.is_none() && default.is_none() {
+        return Ok(PriorityProfile::org_default());
+    }
+    let profile = PriorityProfile::org_default();
+    let highest = highest.unwrap_or_else(|| profile.highest().clone());
+    let lowest = lowest.unwrap_or_else(|| profile.lowest().clone());
+    let default = default.unwrap_or_else(|| profile.default_priority().clone());
+    PriorityProfile::new(highest, lowest, default).ok_or_else(|| {
+        "priority profile must use one priority family and satisfy highest <= default <= lowest"
+            .to_string()
+    })
+}
+
 fn print_usage() {
     eprintln!("Usage: orgize <fmt|lint> [options] [PATH ...]");
 }
@@ -235,7 +290,9 @@ fn print_fmt_usage() {
 }
 
 fn print_lint_usage() {
-    eprintln!("Usage: orgize lint [--format compact|text|json] [PATH ...]");
+    eprintln!(
+        "Usage: orgize lint [--format compact|text|json] [--priority-highest VALUE] [--priority-default VALUE] [--priority-lowest VALUE] [PATH ...]"
+    );
 }
 
 fn collect_org_paths(paths: &[String]) -> Result<Vec<PathBuf>, String> {

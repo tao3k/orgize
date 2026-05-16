@@ -1,0 +1,59 @@
+** Format, test, lint
+
+#+begin_src sh
+cargo fmt -- --check
+cargo test --all-features
+cargo clippy --allow-dirty --allow-staged
+#+end_src
+
+** Documentation
+
+Durable documentation follows the path-first Johnny.Decimal Org topology under
+[[file:docs/index.org][docs/index.org]] and
+[[file:docs/topology.toml][docs/topology.toml]].
+
+Use `docs/AC_slug/AC.ID_semantic_name.org` for long-lived records. The
+category prefix in the directory and the coordinate in the file name must
+agree. If a new category is needed, update `docs/topology.toml` explicitly
+instead of silently inventing category meaning.
+
+#+begin_src sh
+direnv exec . cargo run --quiet -- lint docs development.org
+#+end_src
+
+** Update snapshot testing
+
+#+begin_src sh
+cargo install cargo-insta
+cargo insta test --all-features
+cargo insta review
+#+end_src
+
+** Fuzz testing
+
+#+begin_src sh
+cargo install cargo-fuzz
+rustup default nightly
+cargo fuzz run fuzz_target_1
+#+end_src
+
+** Benchmark
+
+#+begin_src sh
+curl -q https://orgmode.org/worg/doc.org --output ./benches/doc.org
+curl -q https://orgmode.org/worg/org-faq.org --output ./benches/org-faq.org
+curl -q https://orgmode.org/worg/org-hacks.org --output ./benches/org-hacks.org
+curl -q https://orgmode.org/worg/org-release-notes.org --output ./benches/org-release-notes.org
+curl -q https://orgmode.org/worg/org-syntax.org --output ./benches/org-syntax.org
+curl -q https://raw.githubusercontent.com/bzg/org-mode/main/doc/org-manual.org --output ./benches/org-manual.org
+
+cargo bench --bench parse
+#+end_src
+
+** Benchmark w/ flamegraph
+
+#+begin_src sh
+cargo install flamegraph
+cargo flamegraph --bench parse -o baseline.svg -- --bench
+# then open baseline.svg with your browser
+#+end_src

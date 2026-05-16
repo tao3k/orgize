@@ -6,167 +6,9 @@ use std::{
 };
 
 use orgize::{
-    fmt::{format_org, FormatOptions},
+    ast::{PriorityProfile, PriorityValue},
     lint::{lint_org, lint_org_with_options, LintOptions},
 };
-
-#[test]
-fn fmt_normalizes_source_with_snapshot() {
-    let source = "* Heading  \r\nBody\t \n\n\n";
-    insta::assert_snapshot!(format_snapshot(source));
-}
-
-#[test]
-fn fmt_aligns_tables_with_snapshot() {
-    insta::assert_snapshot!(format_snapshot(table_with_block_fmt_fixture()));
-}
-
-#[test]
-fn fmt_aligns_complex_table_lines_with_snapshot() {
-    insta::assert_snapshot!(format_snapshot(complex_table_alignment_fmt_fixture()));
-}
-
-#[test]
-fn fmt_aligns_indented_tables_formulas_and_pipe_rules_with_snapshot() {
-    insta::assert_snapshot!(format_snapshot(indented_table_formulas_fmt_fixture()));
-}
-
-#[test]
-fn fmt_cli_check_output_is_snapshotted() {
-    let dir = test_dir("fmt-check");
-    fs::create_dir_all(&dir).unwrap();
-    fs::write(dir.join("dirty.org"), default_write_fmt_fixture()).unwrap();
-
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .current_dir(&dir)
-        .args(["fmt", "--check", "dirty.org"])
-        .output()
-        .unwrap();
-
-    insta::assert_snapshot!(command_snapshot(output));
-}
-
-#[test]
-fn fmt_cli_check_stdin_output_is_snapshotted() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .args(["fmt", "--check"])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .unwrap();
-
-    child
-        .stdin
-        .as_mut()
-        .unwrap()
-        .write_all(stdin_table_fmt_fixture().as_bytes())
-        .unwrap();
-    let output = child.wait_with_output().unwrap();
-
-    insta::assert_snapshot!(command_snapshot(output));
-}
-
-#[test]
-fn fmt_cli_stdin_aligns_tables_with_snapshot() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .args(["fmt"])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .unwrap();
-
-    child
-        .stdin
-        .as_mut()
-        .unwrap()
-        .write_all(stdin_table_fmt_fixture().as_bytes())
-        .unwrap();
-    let output = child.wait_with_output().unwrap();
-
-    insta::assert_snapshot!(command_snapshot(output));
-}
-
-#[test]
-fn fmt_cli_check_directory_output_is_snapshotted() {
-    let dir = test_dir("fmt-check-dir");
-    fs::create_dir_all(dir.join("notes/nested")).unwrap();
-    fs::write(dir.join("notes/a.org"), directory_a_fmt_fixture()).unwrap();
-    fs::write(dir.join("notes/nested/b.org"), directory_b_fmt_fixture()).unwrap();
-    fs::write(dir.join("notes/skip.txt"), skip_text_fmt_fixture()).unwrap();
-
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .current_dir(&dir)
-        .args(["fmt", "--check", "notes"])
-        .output()
-        .unwrap();
-
-    insta::assert_snapshot!(command_snapshot(output));
-}
-
-#[test]
-fn fmt_cli_default_writes_file_with_snapshot() {
-    let dir = test_dir("fmt-default-write");
-    fs::create_dir_all(&dir).unwrap();
-    fs::write(dir.join("notes.org"), default_write_fmt_fixture()).unwrap();
-
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .current_dir(&dir)
-        .args(["fmt", "notes.org"])
-        .output()
-        .unwrap();
-
-    insta::assert_snapshot!(format!(
-        "{}\nfile: {:?}",
-        command_snapshot(output),
-        fs::read_to_string(dir.join("notes.org")).unwrap()
-    ));
-}
-
-#[test]
-fn fmt_cli_multiple_files_write_with_snapshot() {
-    let dir = test_dir("fmt-multiple-files");
-    fs::create_dir_all(&dir).unwrap();
-    fs::write(dir.join("one.org"), multiple_one_fmt_fixture()).unwrap();
-    fs::write(dir.join("two.org"), multiple_two_fmt_fixture()).unwrap();
-
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .current_dir(&dir)
-        .args(["fmt", "one.org", "two.org"])
-        .output()
-        .unwrap();
-
-    insta::assert_snapshot!(format!(
-        "{}\none.org: {:?}\ntwo.org: {:?}",
-        command_snapshot(output),
-        fs::read_to_string(dir.join("one.org")).unwrap(),
-        fs::read_to_string(dir.join("two.org")).unwrap()
-    ));
-}
-
-#[test]
-fn fmt_cli_directory_path_writes_org_files_with_snapshot() {
-    let dir = test_dir("fmt-dir-write");
-    fs::create_dir_all(dir.join("notes/nested")).unwrap();
-    fs::write(dir.join("notes/a.org"), directory_a_fmt_fixture()).unwrap();
-    fs::write(dir.join("notes/nested/b.org"), directory_b_fmt_fixture()).unwrap();
-    fs::write(dir.join("notes/skip.txt"), skip_text_fmt_fixture()).unwrap();
-
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .current_dir(&dir)
-        .args(["fmt", "notes"])
-        .output()
-        .unwrap();
-
-    insta::assert_snapshot!(format!(
-        "{}\na.org: {:?}\nnested/b.org: {:?}\nskip.txt: {:?}",
-        command_snapshot(output),
-        fs::read_to_string(dir.join("notes/a.org")).unwrap(),
-        fs::read_to_string(dir.join("notes/nested/b.org")).unwrap(),
-        fs::read_to_string(dir.join("notes/skip.txt")).unwrap()
-    ));
-}
 
 #[test]
 fn cli_rejects_invalid_path_arguments_with_snapshot() {
@@ -248,6 +90,7 @@ fn lint_checks_include_paths_with_snapshot() {
         include_paths_lint_fixture(),
         &LintOptions {
             include_base_dir: Some(dir),
+            ..LintOptions::default()
         },
     );
 
@@ -311,6 +154,74 @@ fn lint_reports_todo_declaration_issues_with_snapshot() {
         report.is_clean(),
         report.to_text("fixture.org")
     ));
+}
+
+#[test]
+fn lint_reports_priority_property_issues_with_snapshot() {
+    let report = lint_org(priority_property_issues_lint_fixture());
+
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_text("fixture.org")
+    ));
+}
+
+#[test]
+fn lint_reports_priority_profile_issues_with_snapshot() {
+    let default_report = lint_org(priority_profile_issues_lint_fixture());
+    let numeric_profile = PriorityProfile::new(
+        PriorityValue::Numeric(0),
+        PriorityValue::Numeric(9),
+        PriorityValue::Numeric(5),
+    )
+    .expect("valid numeric priority profile");
+    let custom_report = lint_org_with_options(
+        priority_profile_issues_lint_fixture(),
+        &LintOptions {
+            priority_profile: numeric_profile,
+            ..LintOptions::default()
+        },
+    );
+
+    insta::assert_snapshot!(format!(
+        "default clean: {}\n{}custom clean: {}\n{}",
+        default_report.is_clean(),
+        default_report.to_text("fixture.org"),
+        custom_report.is_clean(),
+        custom_report.to_text("fixture.org")
+    ));
+}
+
+#[test]
+fn lint_cli_accepts_priority_profile_flags_with_snapshot() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .args([
+            "lint",
+            "--format",
+            "text",
+            "--priority-highest",
+            "0",
+            "--priority-default",
+            "5",
+            "--priority-lowest",
+            "9",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    child
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(priority_profile_issues_lint_fixture().as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+
+    insta::assert_snapshot!(command_snapshot(output));
 }
 
 #[test]
@@ -441,40 +352,12 @@ fn todo_declaration_issues_lint_fixture() -> &'static str {
     include_str!("../fixtures/lint/todo-declaration-issues.org")
 }
 
-fn table_with_block_fmt_fixture() -> &'static str {
-    include_str!("../fixtures/fmt/table-with-block.org")
+fn priority_property_issues_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/priority-property-issues.org")
 }
 
-fn complex_table_alignment_fmt_fixture() -> &'static str {
-    include_str!("../fixtures/fmt/complex-table-alignment.org")
-}
-
-fn indented_table_formulas_fmt_fixture() -> &'static str {
-    include_str!("../fixtures/fmt/indented-table-formulas.org")
-}
-
-fn stdin_table_fmt_fixture() -> &'static str {
-    include_str!("../fixtures/fmt/stdin-table.org")
-}
-
-fn default_write_fmt_fixture() -> &'static str {
-    include_str!("../fixtures/fmt/default-write.org")
-}
-
-fn multiple_one_fmt_fixture() -> &'static str {
-    include_str!("../fixtures/fmt/multiple-one.org")
-}
-
-fn multiple_two_fmt_fixture() -> &'static str {
-    include_str!("../fixtures/fmt/multiple-two.org")
-}
-
-fn directory_a_fmt_fixture() -> &'static str {
-    include_str!("../fixtures/fmt/directory-a.org")
-}
-
-fn directory_b_fmt_fixture() -> &'static str {
-    include_str!("../fixtures/fmt/directory-b.org")
+fn priority_profile_issues_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/priority-profile-issues.org")
 }
 
 fn skip_text_fmt_fixture() -> &'static str {
@@ -487,18 +370,6 @@ fn command_snapshot(output: std::process::Output) -> String {
         output.status.code().unwrap_or_default(),
         String::from_utf8(output.stdout).unwrap(),
         String::from_utf8(output.stderr).unwrap()
-    )
-}
-
-fn format_snapshot(source: &str) -> String {
-    let formatted = format_org(source, &FormatOptions::default());
-    let reformatted = format_org(&formatted.output, &FormatOptions::default());
-
-    format!(
-        "changed: {}\nidempotent: {}\noutput:\n{}",
-        formatted.changed,
-        formatted.output == reformatted.output,
-        formatted.output
     )
 }
 

@@ -1,0 +1,150 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_habits.rs
+assertion_line: 46
+expression: habits
+---
+[
+    HabitRecord {
+        source: SectionIndexSource {
+            start: SourcePosition {
+                line: 1,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 11,
+                column: 1,
+            },
+            range_start: 0,
+            range_end: 225,
+        },
+        level: 1,
+        title: "Daily review",
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [
+            "agenda",
+        ],
+        effective_tags: [
+            "agenda",
+        ],
+        scheduled: Some(
+            Timestamp {
+                kind: Active,
+                raw: "<2026-05-15 Fri .+1d>",
+                is_range: false,
+                start: Some(
+                    TimestampMoment {
+                        year: 2026,
+                        month: 5,
+                        day: 15,
+                        day_name: Some(
+                            "Fri",
+                        ),
+                        hour: None,
+                        minute: None,
+                    },
+                ),
+                end: None,
+                repeater: Some(
+                    TimestampRepeater {
+                        kind: Restart,
+                        value: 1,
+                        unit: Day,
+                    },
+                ),
+                warning: None,
+            },
+        ),
+        deadline: None,
+        repeater: Some(
+            TimestampRepeater {
+                kind: Restart,
+                value: 1,
+                unit: Day,
+            },
+        ),
+        last_repeat: Some(
+            HabitLastRepeat {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 5,
+                        column: 15,
+                    },
+                    end: SourcePosition {
+                        line: 5,
+                        column: 37,
+                    },
+                    range_start: 103,
+                    range_end: 125,
+                },
+                raw: "[2026-05-14 Thu 08:00]",
+            },
+        ),
+        effort: Some(
+            OrgDuration {
+                raw: "0:30",
+                total_seconds: 1800,
+            },
+        ),
+        clock_count: 1,
+        clock_total_seconds: 1500,
+        consistency: Complete,
+    },
+    HabitRecord {
+        source: SectionIndexSource {
+            start: SourcePosition {
+                line: 11,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 16,
+                column: 1,
+            },
+            range_start: 225,
+            range_end: 310,
+        },
+        level: 1,
+        title: "Missing repeater",
+        todo: Some(
+            TodoKeyword {
+                state: Todo,
+                name: "TODO",
+            },
+        ),
+        tags: [],
+        effective_tags: [],
+        scheduled: Some(
+            Timestamp {
+                kind: Active,
+                raw: "<2026-05-16 Sat>",
+                is_range: false,
+                start: Some(
+                    TimestampMoment {
+                        year: 2026,
+                        month: 5,
+                        day: 16,
+                        day_name: Some(
+                            "Sat",
+                        ),
+                        hour: None,
+                        minute: None,
+                    },
+                ),
+                end: None,
+                repeater: None,
+                warning: None,
+            },
+        ),
+        deadline: None,
+        repeater: None,
+        last_repeat: None,
+        effort: None,
+        clock_count: 0,
+        clock_total_seconds: 0,
+        consistency: MissingRepeater,
+    },
+]

@@ -1,0 +1,34 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_include_dated_agenda_extras.rs
+assertion_line: 74
+expression: datetree
+---
+[
+    DateTreeEntry {
+        source: SectionIndexSource {
+            start: SourcePosition {
+                line: 6,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 8,
+                column: 1,
+            },
+            range_start: 177,
+            range_end: 295,
+        },
+        date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        year_title: "2026",
+        month_title: "2026-05 May",
+        day_title: "2026-05-15 Friday",
+        outline_path: [
+            "2026",
+            "2026-05 May",
+            "2026-05-15 Friday",
+        ],
+    },
+]

@@ -1,0 +1,13 @@
+---
+source: tests/integration/fmt_links.rs
+assertion_line: 5
+expression: format_snapshot(file_and_attachment_links_fmt_fixture())
+---
+changed: false
+idempotent: true
+output:
+* Links
+[[file:notes/demo.org::*Exact Heading][heading]]
+[[file:../assets/report.pdf::12]]
+[[file+sys:/Applications/Preview.app]]
+[[attachment:images/screenshot.png::*Caption]]

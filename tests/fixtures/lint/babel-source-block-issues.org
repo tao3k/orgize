@@ -1,0 +1,11 @@
+#+NAME: duplicate
+#+begin_src sh :eval yes :tangle ""
+echo <<missing>>
+#+end_src
+
+#+NAME: duplicate
+#+begin_src sh
+echo ok
+#+end_src
+
+#+CALL: missing_call()

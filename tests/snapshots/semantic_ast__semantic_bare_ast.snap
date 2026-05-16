@@ -1,11 +1,11 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projection_and_bare_snapshot.rs
-assertion_line: 67
 expression: doc.to_bare()
 ---
 Document {
     ann: (),
     properties: [],
+    archive_locations: [],
     metadata: [
         Keyword {
             ann: (),
@@ -99,8 +99,27 @@ Document {
                     ann: (),
                     key: "CUSTOM_ID",
                     value: "heading-id",
+                    duration: None,
                 },
             ],
+            effective_properties: [
+                Property {
+                    ann: (),
+                    key: "CUSTOM_ID",
+                    value: "heading-id",
+                    duration: None,
+                },
+            ],
+            archive: ArchiveState {
+                archived: false,
+                has_archive_tag: false,
+                property_location: None,
+                keyword_location: None,
+            },
+            attachment: AttachmentState {
+                has_attach_tag: false,
+                directory: None,
+            },
             todo: Some(
                 TodoKeyword {
                     state: Todo,
@@ -108,7 +127,12 @@ Document {
                 },
             ),
             is_comment: false,
-            priority: None,
+            priority: Priority {
+                cookie: None,
+                effective: Letter(
+                    'B',
+                ),
+            },
             title: [
                 Object {
                     ann: (),
@@ -210,6 +234,8 @@ Document {
                                         media_kind: Normal,
                                         caption: None,
                                         search: None,
+                                        attachment: None,
+                                        file: None,
                                     },
                                 ),
                             },
@@ -338,8 +364,32 @@ Document {
                                 "rust",
                             ),
                             switches: None,
+                            switch_options: BlockSwitches {
+                                raw: None,
+                                line_numbering: None,
+                                preserve_indentation: false,
+                                keep_labels: false,
+                                remove_labels: false,
+                                label_format: None,
+                            },
                             line_numbering: None,
                             preserve_indentation: false,
+                            lines: [
+                                BlockLine {
+                                    ann: (),
+                                    number: 1,
+                                    source: "fn main() {}",
+                                    value: "fn main() {}",
+                                    normalized_value: "fn main() {}",
+                                    value_without_code_ref: "fn main() {}",
+                                    normalized_value_without_code_ref: "fn main() {}",
+                                    removed_indent: 0,
+                                    line_ending: Some(
+                                        "\n",
+                                    ),
+                                    code_ref: None,
+                                },
+                            ],
                             code_refs: [],
                             parameters: None,
                             header_args: [],

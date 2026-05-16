@@ -1,0 +1,31 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_m25_alignment.rs
+assertion_line: 216
+expression: render_export_dependency_graph(&graph)
+---
+nodes=9 edges=11 diagnostics=5
+node bibliography:site/refs/main.bib bibliography site/refs/main.bib
+node doc:site/a.org document site/a.org
+node doc:site/b.org document site/b.org
+node include:site/missing.org include site/missing.org
+node macro:badge macro badge
+node macro:missing_macro macro missing_macro
+node macro:note macro note
+node output:public/a.html publishingOutput public/a.html
+node setup:site/setup/theme.org setupFile site/setup/theme.org
+edge doc:site/a.org usesBibliography bibliography:site/refs/main.bib
+edge doc:site/a.org includes doc:site/b.org
+edge doc:site/a.org includes include:site/missing.org
+edge doc:site/a.org definesMacro macro:badge
+edge doc:site/a.org usesMacro macro:badge
+edge doc:site/a.org usesMacro macro:missing_macro
+edge doc:site/a.org publishesTo output:public/a.html
+edge doc:site/a.org usesSetupFile setup:site/setup/theme.org
+edge doc:site/b.org includes doc:site/a.org
+edge doc:site/b.org usesMacro macro:badge
+edge doc:site/b.org definesMacro macro:note
+diagnostic missingPath site/missing.org include dependency `site/missing.org` does not exist
+diagnostic missingPath site/setup/theme.org setupFile dependency `site/setup/theme.org` does not exist
+diagnostic missingPath site/refs/main.bib bibliography dependency `site/refs/main.bib` does not exist
+diagnostic missingMacroDefinition missing_macro macro `missing_macro` is used by `site/a.org` but no parsed document defines it
+diagnostic dependencyCycle site/a.org -> site/b.org -> site/a.org export dependency cycle detected: site/a.org -> site/b.org -> site/a.org

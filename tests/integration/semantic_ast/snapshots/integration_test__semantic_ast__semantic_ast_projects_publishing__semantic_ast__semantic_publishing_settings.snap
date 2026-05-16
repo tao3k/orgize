@@ -1,0 +1,183 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_publishing.rs
+assertion_line: 48
+expression: settings_without_annotations(settings)
+---
+PublishingSettings {
+    export_file_name: Some(
+        PublishingKeyword {
+            ann: (),
+            key: "EXPORT_FILE_NAME",
+            value: "public/demo/index.html",
+        },
+    ),
+    setup_files: [
+        PublishingKeyword {
+            ann: (),
+            key: "SETUPFILE",
+            value: "./theme.setup",
+        },
+    ],
+    binds: [
+        PublishingBind {
+            ann: (),
+            name: "org-export-use-babel",
+            value: "nil",
+            raw: " org-export-use-babel nil",
+        },
+    ],
+    options: [
+        PublishingOption {
+            ann: (),
+            key: "H",
+            value: "3",
+            raw: "H:3",
+            kind: HeadlineLevels,
+        },
+        PublishingOption {
+            ann: (),
+            key: "num",
+            value: "t",
+            raw: "num:t",
+            kind: SectionNumbering,
+        },
+        PublishingOption {
+            ann: (),
+            key: "todo",
+            value: "nil",
+            raw: "todo:nil",
+            kind: TodoKeywords,
+        },
+        PublishingOption {
+            ann: (),
+            key: "tags",
+            value: "t",
+            raw: "tags:t",
+            kind: Tags,
+        },
+        PublishingOption {
+            ann: (),
+            key: "<",
+            value: "nil",
+            raw: "<:nil",
+            kind: Timestamps,
+        },
+        PublishingOption {
+            ann: (),
+            key: "author",
+            value: "t",
+            raw: "author:t",
+            kind: Author,
+        },
+        PublishingOption {
+            ann: (),
+            key: "creator",
+            value: "nil",
+            raw: "creator:nil",
+            kind: Creator,
+        },
+        PublishingOption {
+            ann: (),
+            key: "date",
+            value: "t",
+            raw: "date:t",
+            kind: Date,
+        },
+        PublishingOption {
+            ann: (),
+            key: "email",
+            value: "nil",
+            raw: "email:nil",
+            kind: Email,
+        },
+        PublishingOption {
+            ann: (),
+            key: "title",
+            value: "t",
+            raw: "title:t",
+            kind: Title,
+        },
+        PublishingOption {
+            ann: (),
+            key: "d",
+            value: "nil",
+            raw: "d:nil",
+            kind: Drawers,
+        },
+        PublishingOption {
+            ann: (),
+            key: "p",
+            value: "nil",
+            raw: "p:nil",
+            kind: Planning,
+        },
+        PublishingOption {
+            ann: (),
+            key: "pri",
+            value: "nil",
+            raw: "pri:nil",
+            kind: Priorities,
+        },
+        PublishingOption {
+            ann: (),
+            key: "broken-links",
+            value: "mark",
+            raw: "broken-links:mark",
+            kind: BrokenLinks,
+        },
+    ],
+    attributes: [
+        PublishingAttribute {
+            ann: (),
+            backend: "html",
+            optional: None,
+            attributes: [
+                KeywordAttribute {
+                    key: "class",
+                    value: Some(
+                        "article-cover",
+                    ),
+                    raw: ":class article-cover",
+                },
+                KeywordAttribute {
+                    key: "loading",
+                    value: Some(
+                        "lazy",
+                    ),
+                    raw: ":loading lazy",
+                },
+            ],
+            raw: " :class article-cover :loading lazy",
+        },
+    ],
+    backend_keywords: [
+        PublishingKeyword {
+            ann: (),
+            key: "HTML_HEAD",
+            value: "<link rel=\"stylesheet\" href=\"/theme.css\">",
+        },
+        PublishingKeyword {
+            ann: (),
+            key: "LATEX_HEADER",
+            value: "\\usepackage{minted}",
+        },
+    ],
+    includes: [
+        IncludeDirective {
+            ann: (),
+            path: "partials/header.org",
+            raw_path: "\"partials/header.org\"",
+            arguments: [],
+            options: [
+                IncludeOption {
+                    key: "lines",
+                    value: Some(
+                        "1-12",
+                    ),
+                    raw: ":lines \"1-12\"",
+                },
+            ],
+            raw_value: " \"partials/header.org\" :lines \"1-12\"",
+        },
+    ],
+}

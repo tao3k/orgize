@@ -1,0 +1,8 @@
+---
+source: tests/integration/lint_file_links.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_text(\"file-link-issues.org\"))"
+---
+clean: false
+file-link-issues.org:2:1: warning ORG017: file target `file:missing.org::*Heading` was not found
+file-link-issues.org:3:1: warning ORG017: file target `file:directory` points at a directory
+file-link-issues.org:4:1: warning ORG017: file link has no file path

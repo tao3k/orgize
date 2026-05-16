@@ -1,0 +1,7 @@
+#+ARCHIVE:
+#+PROPERTY: ARCHIVE
+* TODO Bad lifecycle
+:LOGBOOK:
+- State DONE from TODO [2026-05-14 Thu]
+CLOCK: [2026-05-14 Thu 10:00] => tomorrow
+:END:

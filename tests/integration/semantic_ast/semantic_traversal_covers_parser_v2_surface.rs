@@ -10,6 +10,7 @@ use orgize::{
 fn semantic_traversal_covers_parser_v2_surface() {
     let mut doc = Org::parse(
         r#"#+TITLE: Traversal
+#+ARCHIVE: archive.org::* Archived
 #+INCLUDE: "chapter.org" :minlevel 2
 #+MACRO: greet Hello $1
 #+CAPTION: Link caption
@@ -18,6 +19,7 @@ fn semantic_traversal_covers_parser_v2_surface() {
 * Heading :tag:
 :PROPERTIES:
 :CUSTOM_ID: heading-id
+:DIR: attachments
 :END:
 Paragraph with <<target>> <<<radio>>> {{{greet(World)}}} [cite:@doe; see @roe] [[#heading-id][self]] <2026-05-10 Sun>.
 
@@ -65,6 +67,8 @@ fn assert_traversal_surface(seen: &BTreeSet<&'static str>) {
         "MacroDefinition",
         "TargetDefinition",
         "FootnoteEntry",
+        "ArchiveLocation",
+        "AttachmentDirectory",
         "Section",
         "Property",
         "Keyword",
@@ -74,6 +78,7 @@ fn assert_traversal_surface(seen: &BTreeSet<&'static str>) {
         "ListItem",
         "TableRow",
         "TableCell",
+        "BlockLine",
         "Object",
     ] {
         assert!(
@@ -90,6 +95,8 @@ fn ast_ref_name(node: AstRef<'_, orgize::ast::ParsedAnnotation>) -> &'static str
         AstRef::MacroDefinition(_) => "MacroDefinition",
         AstRef::TargetDefinition(_) => "TargetDefinition",
         AstRef::FootnoteEntry(_) => "FootnoteEntry",
+        AstRef::ArchiveLocation(_) => "ArchiveLocation",
+        AstRef::AttachmentDirectory(_) => "AttachmentDirectory",
         AstRef::Section(_) => "Section",
         AstRef::Property(_) => "Property",
         AstRef::Keyword(_) => "Keyword",
@@ -99,6 +106,7 @@ fn ast_ref_name(node: AstRef<'_, orgize::ast::ParsedAnnotation>) -> &'static str
         AstRef::ListItem(_) => "ListItem",
         AstRef::TableRow(_) => "TableRow",
         AstRef::TableCell(_) => "TableCell",
+        AstRef::BlockLine(_) => "BlockLine",
         AstRef::Object(_) => "Object",
     }
 }
@@ -110,6 +118,8 @@ fn ast_mut_name(node: AstMut<'_, orgize::ast::ParsedAnnotation>) -> &'static str
         AstMut::MacroDefinition(_) => "MacroDefinition",
         AstMut::TargetDefinition(_) => "TargetDefinition",
         AstMut::FootnoteEntry(_) => "FootnoteEntry",
+        AstMut::ArchiveLocation(_) => "ArchiveLocation",
+        AstMut::AttachmentDirectory(_) => "AttachmentDirectory",
         AstMut::Section(_) => "Section",
         AstMut::Property(_) => "Property",
         AstMut::Keyword(_) => "Keyword",
@@ -119,6 +129,7 @@ fn ast_mut_name(node: AstMut<'_, orgize::ast::ParsedAnnotation>) -> &'static str
         AstMut::ListItem(_) => "ListItem",
         AstMut::TableRow(_) => "TableRow",
         AstMut::TableCell(_) => "TableCell",
+        AstMut::BlockLine(_) => "BlockLine",
         AstMut::Object(_) => "Object",
     }
 }

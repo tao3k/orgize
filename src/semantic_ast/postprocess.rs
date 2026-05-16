@@ -3,9 +3,10 @@
 use std::collections::{HashMap, HashSet};
 
 use super::{
-    AstMut, AstRef, Diagnostic, DiagnosticKind, Document, ElementData, FootnoteDefinition,
-    FootnoteEntry, LinkDescriptionState, LinkTarget, Object, ObjectData, ParsedAnnotation, Section,
-    TargetKind,
+    lifecycle::archive_location_from_property, ArchiveLocation, ArchiveState, AstMut, AstRef,
+    AttachmentDirectory, AttachmentState, Diagnostic, DiagnosticKind, Document, ElementData,
+    FootnoteDefinition, FootnoteEntry, LinkDescriptionState, LinkTarget, Object, ObjectData,
+    ParsedAnnotation, Property, Section, TargetKind,
 };
 
 pub(super) fn finalize_document(document: &mut Document<ParsedAnnotation>) {
@@ -18,33 +19,137 @@ pub(super) fn finalize_document(document: &mut Document<ParsedAnnotation>) {
 fn assign_effective_tags_and_anchors(document: &mut Document<ParsedAnnotation>) {
     let mut known = HashSet::new();
     let filetags = document.filetags.clone();
+    let properties = document.properties.clone();
+    let archive_location = document.archive_locations.last().cloned();
     for section in &mut document.sections {
-        assign_section_tags_and_anchor(section, &filetags, &mut known);
+        assign_section_tags_anchor_properties_and_archive(
+            section,
+            &filetags,
+            &properties,
+            archive_location.as_ref(),
+            &mut known,
+        );
     }
 }
 
-fn assign_section_tags_and_anchor(
+fn assign_section_tags_anchor_properties_and_archive(
     section: &mut Section<ParsedAnnotation>,
-    inherited: &[String],
+    inherited_tags: &[String],
+    inherited_properties: &[Property<ParsedAnnotation>],
+    inherited_archive_location: Option<&ArchiveLocation<ParsedAnnotation>>,
     known: &mut HashSet<String>,
 ) {
-    let mut effective = inherited.to_vec();
+    let mut effective = inherited_tags.to_vec();
     for tag in &section.tags {
         if !effective.iter().any(|existing| existing == tag) {
             effective.push(tag.clone());
         }
     }
     section.effective_tags = effective;
+    section.effective_properties = merged_properties(inherited_properties, &section.properties);
+    section.archive = archive_state(section, inherited_archive_location.cloned());
+    section.attachment = attachment_state(section);
 
     let base = property_value(section, "CUSTOM_ID")
         .or_else(|| property_value(section, "ID"))
         .unwrap_or_else(|| slugify_title(&section.raw_title));
     section.anchor = (!base.is_empty()).then(|| unique_anchor(&base, known));
 
-    let inherited = section.effective_tags.clone();
+    let inherited_tags = section.effective_tags.clone();
+    let inherited_properties = section.effective_properties.clone();
+    let inherited_archive_location = section.archive.keyword_location.clone();
     for child in &mut section.subsections {
-        assign_section_tags_and_anchor(child, &inherited, known);
+        assign_section_tags_anchor_properties_and_archive(
+            child,
+            &inherited_tags,
+            &inherited_properties,
+            inherited_archive_location.as_ref(),
+            known,
+        );
     }
+}
+
+fn archive_state(
+    section: &Section<ParsedAnnotation>,
+    keyword_location: Option<ArchiveLocation<ParsedAnnotation>>,
+) -> ArchiveState<ParsedAnnotation> {
+    let has_archive_tag = has_tag(&section.effective_tags, "ARCHIVE");
+    let property_location = section
+        .effective_properties
+        .iter()
+        .find(|property| property.key.eq_ignore_ascii_case("ARCHIVE"))
+        .map(archive_location_from_property);
+    ArchiveState {
+        archived: has_archive_tag,
+        has_archive_tag,
+        property_location,
+        keyword_location,
+    }
+}
+
+fn attachment_state(section: &Section<ParsedAnnotation>) -> AttachmentState<ParsedAnnotation> {
+    let has_attach_tag = has_tag(&section.effective_tags, "ATTACH");
+    let directory = attachment_directory(&section.effective_properties);
+    AttachmentState {
+        has_attach_tag,
+        directory,
+    }
+}
+
+fn attachment_directory(
+    properties: &[Property<ParsedAnnotation>],
+) -> Option<AttachmentDirectory<ParsedAnnotation>> {
+    properties
+        .iter()
+        .find(|property| property.key.eq_ignore_ascii_case("DIR"))
+        .and_then(|property| {
+            AttachmentDirectory::from_property_parts(
+                property.ann.clone(),
+                property.key.as_str(),
+                property.value.as_str(),
+            )
+        })
+        .or_else(|| {
+            properties
+                .iter()
+                .find(|property| property.key.eq_ignore_ascii_case("ATTACH_DIR"))
+                .and_then(|property| {
+                    AttachmentDirectory::from_property_parts(
+                        property.ann.clone(),
+                        property.key.as_str(),
+                        property.value.as_str(),
+                    )
+                })
+        })
+        .or_else(|| {
+            properties
+                .iter()
+                .find(|property| property.key.eq_ignore_ascii_case("ID"))
+                .and_then(|property| {
+                    AttachmentDirectory::from_id_parts(
+                        property.ann.clone(),
+                        property.value.as_str(),
+                    )
+                })
+        })
+}
+
+fn merged_properties(
+    inherited: &[Property<ParsedAnnotation>],
+    local: &[Property<ParsedAnnotation>],
+) -> Vec<Property<ParsedAnnotation>> {
+    let mut merged = inherited.to_vec();
+    for property in local {
+        if let Some(existing) = merged
+            .iter_mut()
+            .find(|existing| existing.key.eq_ignore_ascii_case(&property.key))
+        {
+            *existing = property.clone();
+        } else {
+            merged.push(property.clone());
+        }
+    }
+    merged
 }
 
 fn property_value(section: &Section<ParsedAnnotation>, key: &str) -> Option<String> {
@@ -54,6 +159,10 @@ fn property_value(section: &Section<ParsedAnnotation>, key: &str) -> Option<Stri
         .find(|property| property.key.eq_ignore_ascii_case(key))
         .map(|property| property.value.clone())
         .filter(|value| !value.is_empty())
+}
+
+fn has_tag(tags: &[String], needle: &str) -> bool {
+    tags.iter().any(|tag| tag.eq_ignore_ascii_case(needle))
 }
 
 fn unique_anchor(base: &str, known: &mut HashSet<String>) -> String {

@@ -1,6 +1,6 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{ElementData, LinkTarget, MarkupKind, ObjectData},
+    ast::{ElementData, FileLinkPathKind, LinkSearchKind, LinkTarget, MarkupKind, ObjectData},
     Org,
 };
 
@@ -27,8 +27,33 @@ fn semantic_ast_projects_link_metadata() {
     ));
     assert!(!image_link.has_description());
     assert!(image_link.is_image());
+    let file = image_link.file.as_ref().expect("file metadata");
+    assert_eq!(file.protocol, "file");
+    assert_eq!(file.path, "/tmp/logo.svg");
+    assert_eq!(file.path_kind, FileLinkPathKind::Absolute);
+    assert_eq!(file.search, None);
     assert_eq!(image_link.caption.as_ref().unwrap().key, "CAPTION");
     assert_eq!(image_link.caption.as_ref().unwrap().value, " Logo");
+
+    let searched_file = Org::parse("[[file:notes/demo.org::*Target Heading][target]]").document();
+    let searched_link = match &searched_file.children[0].data {
+        ElementData::Paragraph(objects) => objects
+            .iter()
+            .find_map(|object| match &object.data {
+                ObjectData::Link(link) => Some(link),
+                _ => None,
+            })
+            .expect("searched file link"),
+        other => panic!("expected paragraph, got {other:#?}"),
+    };
+    let file = searched_link.file.as_ref().expect("file search metadata");
+    assert_eq!(file.path, "notes/demo.org");
+    assert_eq!(file.path_kind, FileLinkPathKind::Relative);
+    assert!(file.search.as_ref().is_some_and(|search| {
+        search.raw == "*Target Heading"
+            && search.kind == LinkSearchKind::Headline
+            && search.normalized == "target heading"
+    }));
 
     let doc =
         Org::parse("Links [[#heading][*Jump*]] and [[https://example.com][Site]].").document();
