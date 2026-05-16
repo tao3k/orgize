@@ -11,12 +11,12 @@ a local path dependency.
 
 | Surface | Location | Rev |
 |---------+----------+-----|
-| Root dev dependency | `Cargo.toml` | `8d9950eae61bdc38cc78ad2f4892fb789de4e903` |
-| Root build dependency | `Cargo.toml` | `8d9950eae61bdc38cc78ad2f4892fb789de4e903` |
-| Wasm submodule build dependency | `wasm/Cargo.toml` in `tao3k/orgize-wasm` | `8d9950eae61bdc38cc78ad2f4892fb789de4e903` |
+| Root dev dependency | `Cargo.toml` | `acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67` |
+| Root build dependency | `Cargo.toml` | `acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67` |
+| Wasm submodule build dependency | `wasm/Cargo.toml` in `tao3k/orgize-wasm` | `acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67` |
 
 Local `Cargo.lock` resolution records the same source as
-`git+https://github.com/tao3k/rust-lang-project-harness?rev=8d9950eae61bdc38cc78ad2f4892fb789de4e903#8d9950eae61bdc38cc78ad2f4892fb789de4e903`.
+`git+https://github.com/tao3k/rust-lang-project-harness?rev=acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67#acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67`.
 The manifest rev is the durable contract for clean checkouts; the lockfile is
 the local reproduction receipt when present.
 
