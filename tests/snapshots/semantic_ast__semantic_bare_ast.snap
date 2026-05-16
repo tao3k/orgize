@@ -235,6 +235,7 @@ Document {
                                         caption: None,
                                         search: None,
                                         attachment: None,
+                                        file: None,
                                     },
                                 ),
                             },

@@ -148,7 +148,7 @@ pub(super) fn block_code_refs<A>(lines: &[BlockLine<A>]) -> Vec<BlockCodeRef> {
         .collect()
 }
 
-pub(super) fn parse_block_header_args(args: Option<&str>) -> Vec<BlockHeaderArg> {
+pub(crate) fn parse_block_header_args(args: Option<&str>) -> Vec<BlockHeaderArg> {
     let Some(args) = args else {
         return Vec::new();
     };

@@ -32,6 +32,26 @@ impl Priority {
     pub fn effective_text(&self) -> String {
         self.effective.to_normalized_string()
     }
+
+    /// Returns the `org-get-priority` style score using Org's default A/B/C profile.
+    pub fn org_priority_score(&self) -> Option<i32> {
+        PriorityProfile::org_default().score_for_value(&self.effective)
+    }
+
+    /// Returns whether the effective value sits inside Org's default A/B/C profile.
+    pub fn range_status(&self) -> PriorityRangeStatus {
+        PriorityProfile::org_default().range_status_for_value(&self.effective)
+    }
+
+    /// Returns the `org-get-priority` style score using a caller-provided profile.
+    pub fn score_with_profile(&self, profile: &PriorityProfile) -> Option<i32> {
+        profile.score_for_value(&self.effective)
+    }
+
+    /// Returns whether the effective value sits inside a caller-provided profile.
+    pub fn range_status_with_profile(&self, profile: &PriorityProfile) -> PriorityRangeStatus {
+        profile.range_status_for_value(&self.effective)
+    }
 }
 
 /// Explicit priority cookie projected from `[#...]`.
@@ -62,7 +82,10 @@ pub enum PriorityValue {
     Letter(char),
     /// Numeric priority. Org's numeric priority custom variables use `0..=64`.
     Numeric(u8),
-    /// Single-character custom priority outside ASCII letters and digits.
+    /// Legacy extension value outside official Org priority grammar.
+    ///
+    /// Native parsing and lint no longer produce this variant, but it remains
+    /// in the public model so older consumers do not need an enum-shape break.
     Custom(String),
 }
 
@@ -73,9 +96,8 @@ impl PriorityValue {
         if value.is_empty() {
             return None;
         }
-        if value.chars().all(|ch| ch.is_ascii_digit()) {
-            let numeric = value.parse::<u8>().ok()?;
-            return (numeric <= 64).then_some(Self::Numeric(numeric));
+        if let Some(numeric) = parse_priority_numeric(value) {
+            return Some(Self::Numeric(numeric));
         }
 
         let mut chars = value.chars();
@@ -83,10 +105,10 @@ impl PriorityValue {
         if chars.next().is_some() {
             return None;
         }
-        if first.is_ascii_alphabetic() {
-            Some(Self::Letter(first.to_ascii_uppercase()))
+        if first.is_ascii_uppercase() {
+            Some(Self::Letter(first))
         } else {
-            Some(Self::Custom(first.to_string()))
+            None
         }
     }
 
@@ -98,11 +120,159 @@ impl PriorityValue {
             Self::Custom(value) => value.clone(),
         }
     }
+
+    fn org_numeric_value(&self) -> Option<i32> {
+        match self {
+            Self::Letter(value) => Some(*value as i32),
+            Self::Numeric(value) => Some(i32::from(*value)),
+            Self::Custom(_) => None,
+        }
+    }
 }
 
 impl Default for PriorityValue {
     fn default() -> Self {
         Self::Letter('B')
+    }
+}
+
+fn parse_priority_numeric(value: &str) -> Option<u8> {
+    let bytes = value.as_bytes();
+    match *bytes {
+        [digit @ b'0'..=b'9'] => Some(digit - b'0'),
+        [first @ b'1'..=b'5', second @ b'0'..=b'9'] => Some((first - b'0') * 10 + second - b'0'),
+        [b'6', second @ b'0'..=b'4'] => Some(60 + second - b'0'),
+        _ => None,
+    }
+}
+
+/// Priority bounds used by Org to validate and score a priority cookie.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PriorityProfile {
+    highest: PriorityValue,
+    lowest: PriorityValue,
+    default: PriorityValue,
+}
+
+impl PriorityProfile {
+    /// Creates a priority profile when all bounds belong to one valid priority family.
+    pub fn new(
+        highest: PriorityValue,
+        lowest: PriorityValue,
+        default: PriorityValue,
+    ) -> Option<Self> {
+        let family = priority_family(&highest)?;
+        if priority_family(&lowest) != Some(family) || priority_family(&default) != Some(family) {
+            return None;
+        }
+        let highest_value = highest.org_numeric_value()?;
+        let lowest_value = lowest.org_numeric_value()?;
+        let default_value = default.org_numeric_value()?;
+        (highest_value <= default_value && default_value <= lowest_value).then_some(Self {
+            highest,
+            lowest,
+            default,
+        })
+    }
+
+    /// Returns Org's default `A`/`B`/`C` priority profile.
+    pub fn org_default() -> Self {
+        Self {
+            highest: PriorityValue::Letter('A'),
+            lowest: PriorityValue::Letter('C'),
+            default: PriorityValue::Letter('B'),
+        }
+    }
+
+    /// Returns the highest priority value in this profile.
+    pub fn highest(&self) -> &PriorityValue {
+        &self.highest
+    }
+
+    /// Returns the lowest priority value in this profile.
+    pub fn lowest(&self) -> &PriorityValue {
+        &self.lowest
+    }
+
+    /// Returns the implicit priority used when a headline has no explicit cookie.
+    pub fn default_priority(&self) -> &PriorityValue {
+        &self.default
+    }
+
+    /// Computes the same score shape as Org's `org-get-priority`.
+    ///
+    /// The score increases by 1000 for each priority step above the profile's
+    /// lowest value.  Values outside the profile can still be scored, matching
+    /// Org's runtime behavior; callers can use `range_status_for_value` to
+    /// distinguish those cases.
+    pub fn score_for_value(&self, value: &PriorityValue) -> Option<i32> {
+        Some(1000 * (self.lowest.org_numeric_value()? - value.org_numeric_value()?))
+    }
+
+    /// Returns whether a priority value is inside this profile's configured bounds.
+    pub fn range_status_for_value(&self, value: &PriorityValue) -> PriorityRangeStatus {
+        let Some(value_family) = priority_family(value) else {
+            return PriorityRangeStatus::Unsupported;
+        };
+        let Some(profile_family) = priority_family(&self.highest) else {
+            return PriorityRangeStatus::Unsupported;
+        };
+        if value_family != profile_family {
+            return PriorityRangeStatus::OutOfRange;
+        }
+        let Some(value) = value.org_numeric_value() else {
+            return PriorityRangeStatus::Unsupported;
+        };
+        let Some(highest) = self.highest.org_numeric_value() else {
+            return PriorityRangeStatus::Unsupported;
+        };
+        let Some(lowest) = self.lowest.org_numeric_value() else {
+            return PriorityRangeStatus::Unsupported;
+        };
+        if highest <= value && value <= lowest {
+            PriorityRangeStatus::InRange
+        } else {
+            PriorityRangeStatus::OutOfRange
+        }
+    }
+}
+
+impl Default for PriorityProfile {
+    fn default() -> Self {
+        Self::org_default()
+    }
+}
+
+/// Profile membership for a parsed priority value.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PriorityRangeStatus {
+    InRange,
+    OutOfRange,
+    Unsupported,
+}
+
+impl PriorityRangeStatus {
+    /// Stable label for compact agent and JSON projections.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::InRange => "inRange",
+            Self::OutOfRange => "outOfRange",
+            Self::Unsupported => "unsupported",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PriorityFamily {
+    Letter,
+    Numeric,
+}
+
+fn priority_family(value: &PriorityValue) -> Option<PriorityFamily> {
+    match value {
+        PriorityValue::Letter(_) => Some(PriorityFamily::Letter),
+        PriorityValue::Numeric(_) => Some(PriorityFamily::Numeric),
+        PriorityValue::Custom(_) => None,
     }
 }
 

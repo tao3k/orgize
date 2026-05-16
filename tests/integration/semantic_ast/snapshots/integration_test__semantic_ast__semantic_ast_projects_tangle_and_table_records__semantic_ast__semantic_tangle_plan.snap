@@ -1,0 +1,291 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_tangle_and_table_records.rs
+assertion_line: 48
+expression: tangle
+---
+SourceTanglePlan {
+    files: [
+        SourceTangleFile {
+            target: "notebook.py",
+            blocks: [
+                SourceTangleBlock {
+                    source: SourceBlockSource {
+                        start: SourcePosition {
+                            line: 6,
+                            column: 1,
+                        },
+                        end: SourcePosition {
+                            line: 10,
+                            column: 1,
+                        },
+                        range_start: 99,
+                        range_end: 153,
+                    },
+                    name: None,
+                    language: Some(
+                        "python",
+                    ),
+                    header_args: [
+                        SourceBlockHeaderArg {
+                            key: "session",
+                            value: Some(
+                                "none",
+                            ),
+                            raw: ":session none",
+                            kind: Session,
+                            source: Default,
+                            tokens: [
+                                "none",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "results",
+                            value: Some(
+                                "replace",
+                            ),
+                            raw: ":results replace",
+                            kind: Results,
+                            source: Default,
+                            tokens: [
+                                "replace",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "exports",
+                            value: Some(
+                                "code",
+                            ),
+                            raw: ":exports code",
+                            kind: Exports,
+                            source: Default,
+                            tokens: [
+                                "code",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "cache",
+                            value: Some(
+                                "no",
+                            ),
+                            raw: ":cache no",
+                            kind: Cache,
+                            source: Default,
+                            tokens: [
+                                "no",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "noweb",
+                            value: Some(
+                                "no",
+                            ),
+                            raw: ":noweb no",
+                            kind: Noweb,
+                            source: Default,
+                            tokens: [
+                                "no",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "hlines",
+                            value: Some(
+                                "no",
+                            ),
+                            raw: ":hlines no",
+                            kind: Hlines,
+                            source: Default,
+                            tokens: [
+                                "no",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "tangle",
+                            value: Some(
+                                "yes",
+                            ),
+                            raw: ":tangle yes",
+                            kind: Tangle,
+                            source: Explicit,
+                            tokens: [
+                                "yes",
+                            ],
+                            variable: None,
+                        },
+                    ],
+                    value: "print(\"ok\")\n",
+                },
+            ],
+        },
+        SourceTangleFile {
+            target: "src/lib.rs",
+            blocks: [
+                SourceTangleBlock {
+                    source: SourceBlockSource {
+                        start: SourcePosition {
+                            line: 1,
+                            column: 1,
+                        },
+                        end: SourcePosition {
+                            line: 6,
+                            column: 1,
+                        },
+                        range_start: 0,
+                        range_end: 99,
+                    },
+                    name: Some(
+                        "explicit-rust",
+                    ),
+                    language: Some(
+                        "rust",
+                    ),
+                    header_args: [
+                        SourceBlockHeaderArg {
+                            key: "session",
+                            value: Some(
+                                "none",
+                            ),
+                            raw: ":session none",
+                            kind: Session,
+                            source: Default,
+                            tokens: [
+                                "none",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "results",
+                            value: Some(
+                                "replace",
+                            ),
+                            raw: ":results replace",
+                            kind: Results,
+                            source: Default,
+                            tokens: [
+                                "replace",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "exports",
+                            value: Some(
+                                "code",
+                            ),
+                            raw: ":exports code",
+                            kind: Exports,
+                            source: Default,
+                            tokens: [
+                                "code",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "cache",
+                            value: Some(
+                                "no",
+                            ),
+                            raw: ":cache no",
+                            kind: Cache,
+                            source: Default,
+                            tokens: [
+                                "no",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "noweb",
+                            value: Some(
+                                "no",
+                            ),
+                            raw: ":noweb no",
+                            kind: Noweb,
+                            source: Default,
+                            tokens: [
+                                "no",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "hlines",
+                            value: Some(
+                                "no",
+                            ),
+                            raw: ":hlines no",
+                            kind: Hlines,
+                            source: Default,
+                            tokens: [
+                                "no",
+                            ],
+                            variable: None,
+                        },
+                        SourceBlockHeaderArg {
+                            key: "tangle",
+                            value: Some(
+                                "src/lib.rs",
+                            ),
+                            raw: ":tangle src/lib.rs",
+                            kind: Tangle,
+                            source: Explicit,
+                            tokens: [
+                                "src/lib.rs",
+                            ],
+                            variable: None,
+                        },
+                    ],
+                    value: "pub fn answer() -> i32 { 42 }\n",
+                },
+            ],
+        },
+    ],
+    skipped: [
+        SourceTangleSkip {
+            source: SourceBlockSource {
+                start: SourcePosition {
+                    line: 10,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 14,
+                    column: 1,
+                },
+                range_start: 153,
+                range_end: 203,
+            },
+            name: None,
+            language: Some(
+                "shell",
+            ),
+            mode: Some(
+                No,
+            ),
+            reason: Disabled,
+        },
+        SourceTangleSkip {
+            source: SourceBlockSource {
+                start: SourcePosition {
+                    line: 14,
+                    column: 8,
+                },
+                end: SourcePosition {
+                    line: 14,
+                    column: 45,
+                },
+                range_start: 210,
+                range_end: 247,
+            },
+            name: None,
+            language: Some(
+                "rust",
+            ),
+            mode: Some(
+                Yes,
+            ),
+            reason: InlineSource,
+        },
+    ],
+}

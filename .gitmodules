@@ -1,0 +1,6 @@
+[submodule ".data/org-zhixing"]
+	path = .data/org-zhixing
+	url = https://github.com/tao3k/org-zhixing.git
+[submodule "wasm"]
+	path = wasm
+	url = https://github.com/tao3k/orgize-wasm.git

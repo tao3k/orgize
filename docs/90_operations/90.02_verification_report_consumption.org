@@ -1,0 +1,137 @@
+* 90.02 Verification Report Consumption
+
+This record keeps the harness report evidence durable inside Orgize. It exists
+because a temporary downstream crate can prove compilation, but it cannot teach
+future Agents which optimization work the report exposed.
+
+** Git-Locked Harness Source
+
+Orgize consumes `rust-lang-project-harness` through a pinned git dependency, not
+a local path dependency.
+
+| Surface | Location | Rev |
+|---------+----------+-----|
+| Root dev dependency | `Cargo.toml` | `8d9950eae61bdc38cc78ad2f4892fb789de4e903` |
+| Root build dependency | `Cargo.toml` | `8d9950eae61bdc38cc78ad2f4892fb789de4e903` |
+| Wasm submodule build dependency | `wasm/Cargo.toml` in `tao3k/orgize-wasm` | `8d9950eae61bdc38cc78ad2f4892fb789de4e903` |
+
+Local `Cargo.lock` resolution records the same source as
+`git+https://github.com/tao3k/rust-lang-project-harness?rev=8d9950eae61bdc38cc78ad2f4892fb789de4e903#8d9950eae61bdc38cc78ad2f4892fb789de4e903`.
+The manifest rev is the durable contract for clean checkouts; the lockfile is
+the local reproduction receipt when present.
+
+** Durable Consumer Contract
+
+The durable downstream test is:
+
+#+begin_src sh
+direnv exec . cargo test --locked --test integration_test git_locked_harness_report_exposes_actionable_performance_gaps
+#+end_src
+
+The test builds a small latency-sensitive Rust crate through Orgize's
+git-locked harness dependency, writes modular verification reports, reloads the
+runtime manifest and receipt JSON, then opens the selected first artifact from
+`RustVerificationReportEntryAdvice`.
+
+The contract intentionally checks the report's optimization surface:
+
+- entry action is `load_selection_advice_sidecar`;
+- first artifact is `performance_index_json`;
+- `artifact_path("performance_index_json")` points to the persisted
+  `performance_index.json`;
+- `sidecar_path("selection_advice_json")` points to persisted selection advice;
+- the selected performance record is `pending`;
+- required evidence includes `benchmark_command`, `baseline`, and
+  `regression_threshold`.
+
+Those final three evidence keys are the important part: a report that only says
+"tests passed" is not enough. The useful report tells the next Agent exactly
+which performance evidence is missing before a latency-sensitive path can be
+called optimized.
+
+** Report-Derived Optimization Points
+
+1. Preserve the current structural gate as a clean baseline.
+
+   `rust-project-harness --json` currently reports no blocking findings for the
+   checked Orgize parser workspace. The wasm package keeps the same build gate
+   in the `tao3k/orgize-wasm` submodule, so parser and browser package policy
+   remain enforced at their own repository boundaries; it does not mean
+   performance work is complete.
+
+2. Promote dense parser paths into explicit performance evidence.
+
+   The parser-v2 closeout already names dense Criterion surfaces in
+   `20.02_parser_v2_performance_closeout.org`. The report consumer contract now
+   says what each latency-sensitive report must carry before it is actionable:
+   benchmark command, baseline, and regression threshold. The next useful
+   improvement is to map dense parser surfaces to those evidence keys instead of
+   leaving benchmark results only as prose.
+
+3. Keep selection policy upstream.
+
+   Downstream code should not guess report filenames. It should load
+   `selection_advice.json` first, then open the `first_artifact.path` chosen by
+   `RustVerificationReportEntryAdvice`. This keeps small reports cheap and lets
+   broader workspaces load `analysis_profile_json` before heavy payloads.
+
+4. Turn missing evidence into backlog, not noise.
+
+   A pending `performance_index_json` record means "run or attach the benchmark
+   evidence", not "the harness failed". For Orgize this translates into a
+   backlog item: persist dense-path benchmark receipts with baseline and
+   threshold metadata whenever parser-v2 hot paths change.
+
+5. Keep evidence-producing tests below harness structure gates.
+
+   The 2026-05-15 dense-agenda benchmark attempt first failed at build time with
+   `RUST-PROJ-R005` because `tests/integration/lint_fmt.rs` had grown back into
+   a large mixed formatter/lint leaf. The fix was to keep table formatting in
+   `tests/integration/fmt_table.rs`, move formatter CLI checks into
+   `tests/integration/fmt_cli.rs`, and leave `tests/integration/lint_fmt.rs` as
+   the lint-focused owner. That structural split reopened the benchmark path
+   without weakening the harness gate.
+
+** Dense Parser Evidence Backlog
+
+This standard Org table maps the parser-v2 dense surfaces to the three evidence
+keys the harness report requires: `benchmark_command`, `baseline`, and
+`regression_threshold`. Existing local numbers are baseline evidence only; every
+row still needs a calibrated threshold receipt before it can graduate from
+backlog to enforced performance gate.
+
+| Surface | Benchmark command | Baseline evidence | Regression threshold | Next action |
+|---------+-------------------+-------------------+----------------------+-------------|
+| `Org::macro_expansions/dense-macro-expansions.org` | `direnv exec . cargo bench --bench parse macro_expansions/dense -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `439.19 us` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
+| `Org::document/dense-target-projection/many-targets-and-radio-links.org` | `direnv exec . cargo bench --bench parse dense-target-projection -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `6.6523 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
+| `Org::document/dense-annotation-projection/many-annotated-ascii-objects.org` | `direnv exec . cargo bench --bench parse dense-annotation-projection -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `3.4855 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
+| `Org::document/dense-semantic-radio-projection/many-parsed-object-radio-links.org` | `direnv exec . cargo bench --bench parse dense-semantic-radio-projection -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `19.396 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
+| `Org::document/dense-m15-side-tables/many-m15-settings-links-footnotes.org` | `direnv exec . cargo bench --bench parse dense-m15-side-tables -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `10.109 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
+| `Document::project_for_export/dense-m15/many-m15-settings-links-footnotes.org` | `direnv exec . cargo bench --bench parse project_for_export/dense-m15 -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `3.9719 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
+| `Document::agenda_entries/dense-agenda/many-agenda-planning-timestamps.org` | `direnv exec . cargo bench --bench parse dense-agenda -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `1.5405 ms` from 2026-05-15 local run | pending | Calibrate from repeated clean runs and persist threshold receipt. |
+| `Document::include-datetree-agenda-extras/dense/include-expansion-plan.org` | `direnv exec . cargo bench --bench parse include-datetree -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `97.327 us` from 2026-05-15 local run | pending | Calibrate include expansion planning threshold and persist receipt. |
+| `Document::include-datetree-agenda-extras/dense/datetree-entries.org` | `direnv exec . cargo bench --bench parse include-datetree -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `82.463 us` from 2026-05-15 local run | pending | Calibrate datetree recognition threshold and persist receipt. |
+| `Document::include-datetree-agenda-extras/dense/agenda-inactive-diary.org` | `direnv exec . cargo bench --bench parse include-datetree -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `161.02 us` from 2026-05-15 local run | pending | Calibrate inactive/diary agenda projection threshold and persist receipt. |
+
+** Validation
+
+Current validation commands:
+
+#+begin_src sh
+direnv exec . cargo test --locked --lib
+direnv exec . cargo test --locked --test integration_test git_locked_harness_report_exposes_actionable_performance_gaps
+direnv exec . cargo test --locked --workspace --all-targets --all-features
+direnv exec . cargo run --quiet --manifest-path /Users/guangtao/ghq/github.com/tao3k/rust-lang-project-harness/Cargo.toml -- --json /Users/guangtao/ghq/github.com/tao3k/orgize
+direnv exec . cargo run --quiet -- lint docs
+direnv exec . cargo fmt --all -- --check
+git submodule update --init --recursive wasm
+direnv exec . cargo test --manifest-path wasm/Cargo.toml --all-targets --all-features
+git diff --check
+#+end_src
+
+The first parser commands prove Orgize compiles and report consumption stays
+inside the repository instead of a temporary crate. The full workspace command
+now covers the parser workspace; the wasm commands initialize the submodule and
+prove the browser package still compiles against the parent parser checkout. The
+harness command remains the broad structural policy check, and the final checks
+keep docs, formatting, and whitespace suitable for downstream consumption.

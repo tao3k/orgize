@@ -1,0 +1,154 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_include_dated_agenda_extras.rs
+assertion_line: 70
+expression: include_plan_without_annotations(include_plan)
+---
+IncludeExpansionPlan {
+    entries: [
+        IncludeExpansionEntry {
+            directive: IncludeDirective {
+                ann: (),
+                path: "partials/header.org",
+                raw_path: "\"partials/header.org\"",
+                arguments: [],
+                options: [
+                    IncludeOption {
+                        key: "lines",
+                        value: Some(
+                            "2-5",
+                        ),
+                        raw: ":lines \"2-5\"",
+                    },
+                    IncludeOption {
+                        key: "minlevel",
+                        value: Some(
+                            "2",
+                        ),
+                        raw: ":minlevel 2",
+                    },
+                ],
+                raw_value: " \"partials/header.org\" :lines \"2-5\" :minlevel 2",
+            },
+            resolved_path: Some(
+                "/site/partials/header.org",
+            ),
+            line_selection: Range {
+                start: Some(
+                    2,
+                ),
+                end: Some(
+                    5,
+                ),
+                raw: "2-5",
+            },
+            min_level: Some(
+                2,
+            ),
+            mode: Org,
+            options: [
+                IncludeOption {
+                    key: "lines",
+                    value: Some(
+                        "2-5",
+                    ),
+                    raw: ":lines \"2-5\"",
+                },
+                IncludeOption {
+                    key: "minlevel",
+                    value: Some(
+                        "2",
+                    ),
+                    raw: ":minlevel 2",
+                },
+            ],
+        },
+        IncludeExpansionEntry {
+            directive: IncludeDirective {
+                ann: (),
+                path: "./src/demo.rs",
+                raw_path: "./src/demo.rs",
+                arguments: [
+                    "src",
+                    "rust",
+                ],
+                options: [
+                    IncludeOption {
+                        key: "lines",
+                        value: Some(
+                            "10-",
+                        ),
+                        raw: ":lines \"10-\"",
+                    },
+                ],
+                raw_value: " ./src/demo.rs src rust :lines \"10-\"",
+            },
+            resolved_path: Some(
+                "/site/src/demo.rs",
+            ),
+            line_selection: Range {
+                start: Some(
+                    10,
+                ),
+                end: None,
+                raw: "10-",
+            },
+            min_level: None,
+            mode: Source {
+                language: Some(
+                    "rust",
+                ),
+            },
+            options: [
+                IncludeOption {
+                    key: "lines",
+                    value: Some(
+                        "10-",
+                    ),
+                    raw: ":lines \"10-\"",
+                },
+            ],
+        },
+        IncludeExpansionEntry {
+            directive: IncludeDirective {
+                ann: (),
+                path: "export.html",
+                raw_path: "\"export.html\"",
+                arguments: [
+                    "export",
+                    "html",
+                ],
+                options: [
+                    IncludeOption {
+                        key: "lines",
+                        value: Some(
+                            "bad",
+                        ),
+                        raw: ":lines \"bad\"",
+                    },
+                ],
+                raw_value: " \"export.html\" export html :lines \"bad\"",
+            },
+            resolved_path: Some(
+                "/site/export.html",
+            ),
+            line_selection: Invalid {
+                raw: "bad",
+            },
+            min_level: None,
+            mode: Export {
+                backend: Some(
+                    "html",
+                ),
+            },
+            options: [
+                IncludeOption {
+                    key: "lines",
+                    value: Some(
+                        "bad",
+                    ),
+                    raw: ":lines \"bad\"",
+                },
+            ],
+        },
+    ],
+}

@@ -88,6 +88,88 @@ expression: doc.section_index_records()
                 value: "assets",
             },
         ],
+        special_properties: [
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "ITEM",
+                value: "Project",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "LEVEL",
+                value: "1",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "PRIORITY",
+                value: "B",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "TAGS",
+                value: ":ATTACH:",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 1,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 0,
+                    range_end: 137,
+                },
+                name: "ALLTAGS",
+                value: ":ATTACH:",
+            },
+        ],
         planning: Planning {
             deadline: None,
             scheduled: None,
@@ -128,6 +210,7 @@ expression: doc.section_index_records()
                     LinkSearch {
                         raw: "255",
                         kind: LineNumber,
+                        normalized: "255",
                     },
                 ),
                 attachment: Some(
@@ -141,6 +224,7 @@ expression: doc.section_index_records()
                         ),
                     },
                 ),
+                file: None,
             },
         ],
         targets: [
@@ -231,6 +315,88 @@ expression: doc.section_index_records()
                 value: "assets",
             },
         ],
+        special_properties: [
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "ITEM",
+                value: "Child",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "LEVEL",
+                value: "2",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "PRIORITY",
+                value: "B",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "TAGS",
+                value: "",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 6,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    range_start: 88,
+                    range_end: 137,
+                },
+                name: "ALLTAGS",
+                value: ":ATTACH:",
+            },
+        ],
         planning: Planning {
             deadline: None,
             scheduled: None,
@@ -271,6 +437,7 @@ expression: doc.section_index_records()
                     LinkSearch {
                         raw: "*Heading",
                         kind: Headline,
+                        normalized: "heading",
                     },
                 ),
                 attachment: Some(
@@ -284,6 +451,7 @@ expression: doc.section_index_records()
                         ),
                     },
                 ),
+                file: None,
             },
         ],
         targets: [
@@ -388,6 +556,88 @@ expression: doc.section_index_records()
                 value: "95d50008-c12e-479f-a4f2-cc0238205319",
             },
         ],
+        special_properties: [
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "ITEM",
+                value: "ID backed",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "LEVEL",
+                value: "1",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "PRIORITY",
+                value: "B",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "TAGS",
+                value: "",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 8,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    range_start: 137,
+                    range_end: 248,
+                },
+                name: "ALLTAGS",
+                value: "",
+            },
+        ],
         planning: Planning {
             deadline: None,
             scheduled: None,
@@ -431,6 +681,7 @@ expression: doc.section_index_records()
                     LinkSearch {
                         raw: "#custom",
                         kind: CustomId,
+                        normalized: "custom",
                     },
                 ),
                 attachment: Some(
@@ -444,6 +695,7 @@ expression: doc.section_index_records()
                         ),
                     },
                 ),
+                file: None,
             },
         ],
         targets: [
@@ -565,6 +817,88 @@ expression: doc.section_index_records()
                 value: "legacy",
             },
         ],
+        special_properties: [
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "ITEM",
+                value: "Legacy",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "LEVEL",
+                value: "1",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "PRIORITY",
+                value: "B",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "TAGS",
+                value: "",
+            },
+            SectionIndexSpecialProperty {
+                source: SectionIndexSource {
+                    start: SourcePosition {
+                        line: 13,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 18,
+                        column: 1,
+                    },
+                    range_start: 248,
+                    range_end: 334,
+                },
+                name: "ALLTAGS",
+                value: "",
+            },
+        ],
         planning: Planning {
             deadline: None,
             scheduled: None,
@@ -605,6 +939,7 @@ expression: doc.section_index_records()
                     LinkSearch {
                         raw: "/needle/",
                         kind: Regexp,
+                        normalized: "needle",
                     },
                 ),
                 attachment: Some(
@@ -618,6 +953,7 @@ expression: doc.section_index_records()
                         ),
                     },
                 ),
+                file: None,
             },
         ],
         targets: [

@@ -1,0 +1,7 @@
+#+INCLUDE: "partials/header.org" :lines "2-5" :minlevel 2
+#+INCLUDE: ./src/demo.rs src rust :lines "10-"
+#+INCLUDE: "export.html" export html :lines "bad"
+* 2026
+** 2026-05 May
+*** 2026-05-15 Friday
+Entry with active <2026-05-15 Fri>, inactive [2026-05-15 Fri], and diary <%%(diary-date 5 15)>.

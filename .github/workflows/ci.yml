@@ -40,10 +40,10 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ github.workspace }}/.sccache/
-          key: orgize-sccache-${{ runner.os }}-${{ github.job }}-${{ hashFiles('Cargo.toml', 'wasm/Cargo.toml', '.github/workflows/ci.yml') }}-${{ github.run_id }}
+          key: orgize-sccache-${{ runner.os }}-${{ github.job }}-${{ hashFiles('Cargo.toml', '.github/workflows/ci.yml') }}-${{ github.run_id }}
           restore-keys: |
-            orgize-sccache-${{ runner.os }}-${{ github.job }}-${{ hashFiles('Cargo.toml', 'wasm/Cargo.toml', '.github/workflows/ci.yml') }}-
-            orgize-sccache-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'wasm/Cargo.toml', '.github/workflows/ci.yml') }}-
+            orgize-sccache-${{ runner.os }}-${{ github.job }}-${{ hashFiles('Cargo.toml', '.github/workflows/ci.yml') }}-
+            orgize-sccache-${{ runner.os }}-${{ hashFiles('Cargo.toml', '.github/workflows/ci.yml') }}-
             orgize-sccache-${{ runner.os }}-
 
       - name: Cache cargo artifacts
@@ -68,7 +68,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ${{ github.workspace }}/.sccache/
-          key: orgize-sccache-${{ runner.os }}-${{ github.job }}-${{ hashFiles('Cargo.toml', 'wasm/Cargo.toml', '.github/workflows/ci.yml') }}-${{ github.run_id }}
+          key: orgize-sccache-${{ runner.os }}-${{ github.job }}-${{ hashFiles('Cargo.toml', '.github/workflows/ci.yml') }}-${{ github.run_id }}
 
       - name: sccache summary
         if: ${{ always() }}
@@ -92,6 +92,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
       - name: Setup Pages
         uses: actions/configure-pages@v6

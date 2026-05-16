@@ -1,0 +1,74 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_tangle_and_table_records.rs
+assertion_line: 49
+expression: formula_records
+---
+[
+    TableFormulaRecord {
+        source: SectionIndexSource {
+            start: SourcePosition {
+                line: 16,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 21,
+                column: 1,
+            },
+            range_start: 277,
+            range_end: 420,
+        },
+        row_count: 3,
+        column_count: 3,
+        formulas: [
+            TableFormula {
+                ann: ParsedAnnotation {
+                    range: 377..420,
+                    start: SourcePosition {
+                        line: 20,
+                        column: 1,
+                    },
+                    end: SourcePosition {
+                        line: 21,
+                        column: 1,
+                    },
+                    raw: "#+TBLFM: $3=$2*10::@3$2=remote(other,@1$1)\n",
+                },
+                raw: "$3=$2*10::@3$2=remote(other,@1$1)",
+                assignments: [
+                    TableFormulaAssignment {
+                        raw: "$3=$2*10",
+                        lhs: "$3",
+                        rhs: "$2*10",
+                        flags: [],
+                        references: [
+                            TableFormulaReference {
+                                raw: "$3",
+                                kind: Field,
+                            },
+                            TableFormulaReference {
+                                raw: "$2",
+                                kind: Field,
+                            },
+                        ],
+                    },
+                    TableFormulaAssignment {
+                        raw: "@3$2=remote(other,@1$1)",
+                        lhs: "@3$2",
+                        rhs: "remote(other,@1$1)",
+                        flags: [],
+                        references: [
+                            TableFormulaReference {
+                                raw: "@3$2",
+                                kind: Row,
+                            },
+                            TableFormulaReference {
+                                raw: "remote(other,@1$1)",
+                                kind: Remote,
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+    },
+]

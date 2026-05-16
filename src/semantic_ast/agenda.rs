@@ -8,8 +8,9 @@ use super::agenda_model::{
 use super::agenda_time::{headline_time, HeadlineTimeSpec};
 use super::model::{
     Citation, CiteReference, Document, Element, ElementData, Link, ListItem, Object, ObjectData,
-    Property, Section, Timestamp, TimestampKind,
+    Property, Section,
 };
+use super::timestamp_model::{Timestamp, TimestampKind};
 
 impl<A: Clone> Document<A> {
     /// Projects headline planning timestamps into agenda rows.
@@ -178,7 +179,7 @@ fn collect_timestamp<A: Clone>(
             AgendaEntryKind::Scheduled => {
                 collect_scheduled_entries(&seed, context.start, context.end, entries);
             }
-            AgendaEntryKind::Timestamp | AgendaEntryKind::Closed => {
+            AgendaEntryKind::Timestamp | AgendaEntryKind::Diary | AgendaEntryKind::Closed => {
                 collect_span_entries(&seed, context.start, context.end, entries);
             }
         }
@@ -424,8 +425,14 @@ fn collect_active_timestamp<A: Clone>(
     category: Option<AgendaCategory>,
     entries: &mut Vec<AgendaEntry<A>>,
 ) {
-    if timestamp.kind != TimestampKind::Active {
-        return;
+    match timestamp.kind {
+        TimestampKind::Active => {}
+        TimestampKind::Inactive if context.query.include_inactive_timestamps => {}
+        TimestampKind::Diary if context.query.include_diary_timestamps => {
+            collect_diary_timestamp(section, ann, timestamp, context, category, entries);
+            return;
+        }
+        TimestampKind::Inactive | TimestampKind::Diary => return,
     }
     let Some(moment) = &timestamp.start else {
         return;
@@ -458,6 +465,50 @@ fn collect_active_timestamp<A: Clone>(
         };
         collect_span_entries(&seed, context.start, context.end, entries);
     }
+}
+
+fn collect_diary_timestamp<A: Clone>(
+    section: &Section<A>,
+    ann: &A,
+    timestamp: &Timestamp,
+    context: AgendaCollectContext<'_>,
+    category: Option<AgendaCategory>,
+    entries: &mut Vec<AgendaEntry<A>>,
+) {
+    let Some((month, day)) = diary_date_month_day(timestamp.raw.as_str()) else {
+        return;
+    };
+    for target_date in diary_dates_in_range(month, day, context.start, context.end) {
+        let seed = EntrySeed {
+            ann: ann.clone(),
+            section,
+            kind: AgendaEntryKind::Diary,
+            timestamp,
+            target_date,
+            target_end_date: None,
+            time: None,
+            end_time: None,
+            headline_time: headline_time(section, context.query),
+            category: category.clone(),
+            occurrence: AgendaOccurrence::Source,
+        };
+        entries.push(entry(&seed, target_date, None, None));
+    }
+}
+
+fn diary_date_month_day(raw: &str) -> Option<(u8, u8)> {
+    let start = raw.find("diary-date")? + "diary-date".len();
+    let mut parts = raw[start..]
+        .split(|ch: char| ch.is_whitespace() || matches!(ch, ')' | '>'))
+        .filter(|part| !part.is_empty());
+    Some((parts.next()?.parse().ok()?, parts.next()?.parse().ok()?))
+}
+
+fn diary_dates_in_range(month: u8, day: u8, start: AgendaDate, end: AgendaDate) -> Vec<AgendaDate> {
+    (start.year..=end.year)
+        .map(|year| AgendaDate::new(year, month, day))
+        .filter(|date| *date >= start && *date <= end)
+        .collect()
 }
 
 #[derive(Clone, Copy)]
@@ -658,6 +709,7 @@ fn entry<A: Clone>(
         raw_title: seed.section.raw_title.trim_end().to_string(),
         category: seed.category.clone(),
         level: seed.section.level,
+        priority: seed.section.priority.clone(),
         todo: seed.section.todo.clone(),
         tags: seed.section.tags.clone(),
         effective_tags: seed.section.effective_tags.clone(),
@@ -704,6 +756,7 @@ fn kind_order(kind: AgendaEntryKind) -> u8 {
         AgendaEntryKind::Deadline => 0,
         AgendaEntryKind::Scheduled => 1,
         AgendaEntryKind::Timestamp => 2,
-        AgendaEntryKind::Closed => 3,
+        AgendaEntryKind::Diary => 3,
+        AgendaEntryKind::Closed => 4,
     }
 }

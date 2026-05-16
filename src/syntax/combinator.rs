@@ -55,7 +55,6 @@ token_parser!(dollar2_token, "$$", SyntaxKind::DOLLAR2);
 // token_parser!(tilde_token, "~", TILDE);
 token_parser!(hash_plus_token, "#+", SyntaxKind::HASH_PLUS);
 token_parser!(caret_token, "^", SyntaxKind::CARET);
-token_parser!(hash_token, "#", SyntaxKind::HASH);
 token_parser!(double_arrow_token, "=>", SyntaxKind::DOUBLE_ARROW);
 
 pub(crate) fn balanced_delimited_tokens(

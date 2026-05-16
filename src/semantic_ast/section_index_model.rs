@@ -2,9 +2,8 @@
 
 use super::attachment_model::{AttachmentDirectorySource, AttachmentLink};
 use super::lifecycle_model::LifecycleRecordKind;
-use super::model::{
-    LinkSearch, ParsedAnnotation, Planning, SourcePosition, TargetKind, TodoKeyword,
-};
+use super::link_model::{FileLink, LinkSearch};
+use super::model::{ParsedAnnotation, Planning, SourcePosition, TargetKind, TodoKeyword};
 use super::property_model::Priority;
 
 /// One source-grounded Org section projected for downstream indexing.
@@ -22,6 +21,7 @@ pub struct SectionIndexRecord {
     pub effective_tags: Vec<String>,
     pub properties: Vec<SectionIndexProperty>,
     pub effective_properties: Vec<SectionIndexProperty>,
+    pub special_properties: Vec<SectionIndexSpecialProperty>,
     pub planning: Planning,
     pub is_comment: bool,
     pub archive: SectionIndexArchive,
@@ -63,6 +63,14 @@ pub struct SectionIndexTextSlice {
 pub struct SectionIndexProperty {
     pub source: SectionIndexSource,
     pub key: String,
+    pub value: String,
+}
+
+/// Official Org special property projected for a section.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SectionIndexSpecialProperty {
+    pub source: SectionIndexSource,
+    pub name: String,
     pub value: String,
 }
 
@@ -111,6 +119,7 @@ pub struct SectionIndexLink {
     pub description: String,
     pub search: Option<LinkSearch>,
     pub attachment: Option<AttachmentLink>,
+    pub file: Option<FileLink>,
 }
 
 /// Document-local target metadata visible from a section.

@@ -1,0 +1,1980 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_workspace_index.rs
+assertion_line: 74
+expression: index
+---
+WorkspaceIndex {
+    documents: [
+        WorkspaceDocument {
+            source_file: "workspace-a.org",
+            summary: WorkspaceDocumentSummary {
+                section_count: 2,
+                target_count: 5,
+                link_count: 4,
+                attachment_section_count: 2,
+                attachment_link_count: 1,
+                source_block_count: 1,
+            },
+            sections: [
+                SectionIndexRecord {
+                    source: SectionIndexSource {
+                        start: SourcePosition {
+                            line: 2,
+                            column: 1,
+                        },
+                        end: SourcePosition {
+                            line: 13,
+                            column: 1,
+                        },
+                        range_start: 21,
+                        range_end: 307,
+                    },
+                    outline_path: [
+                        "Alpha",
+                    ],
+                    level: 1,
+                    title: "Alpha",
+                    body: [
+                        SectionIndexTextSlice {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 9,
+                                    column: 1,
+                                },
+                                range_start: 120,
+                                range_end: 230,
+                            },
+                            text: "See [[id:beta-id::*Beta][Beta heading]], [[#beta-custom]], [[attachment:plan.pdf::1]], and [[id:missing-id]].",
+                        },
+                        SectionIndexTextSlice {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 9,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 230,
+                                range_end: 307,
+                            },
+                            text: "#+NAME: alpha-block\n#+begin_src rust :tangle alpha.rs\nfn main() {}\n#+end_src",
+                        },
+                    ],
+                    todo: Some(
+                        TodoKeyword {
+                            state: Todo,
+                            name: "TODO",
+                        },
+                    ),
+                    priority: Priority {
+                        cookie: None,
+                        effective: Letter(
+                            'B',
+                        ),
+                    },
+                    category: Some(
+                        SectionIndexCategory(
+                            "workshop",
+                        ),
+                    ),
+                    tags: [
+                        "ATTACH",
+                    ],
+                    effective_tags: [
+                        "ATTACH",
+                    ],
+                    properties: [
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 4,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 4,
+                                    column: 14,
+                                },
+                                range_start: 61,
+                                range_end: 69,
+                            },
+                            key: "ID",
+                            value: "alpha-id",
+                        },
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 5,
+                                    column: 13,
+                                },
+                                end: SourcePosition {
+                                    line: 5,
+                                    column: 25,
+                                },
+                                range_start: 82,
+                                range_end: 94,
+                            },
+                            key: "CUSTOM_ID",
+                            value: "alpha-custom",
+                        },
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 6,
+                                    column: 7,
+                                },
+                                end: SourcePosition {
+                                    line: 6,
+                                    column: 19,
+                                },
+                                range_start: 101,
+                                range_end: 113,
+                            },
+                            key: "DIR",
+                            value: "alpha-assets",
+                        },
+                    ],
+                    effective_properties: [
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 4,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 4,
+                                    column: 14,
+                                },
+                                range_start: 61,
+                                range_end: 69,
+                            },
+                            key: "ID",
+                            value: "alpha-id",
+                        },
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 5,
+                                    column: 13,
+                                },
+                                end: SourcePosition {
+                                    line: 5,
+                                    column: 25,
+                                },
+                                range_start: 82,
+                                range_end: 94,
+                            },
+                            key: "CUSTOM_ID",
+                            value: "alpha-custom",
+                        },
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 6,
+                                    column: 7,
+                                },
+                                end: SourcePosition {
+                                    line: 6,
+                                    column: 19,
+                                },
+                                range_start: 101,
+                                range_end: 113,
+                            },
+                            key: "DIR",
+                            value: "alpha-assets",
+                        },
+                    ],
+                    special_properties: [
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 2,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 21,
+                                range_end: 307,
+                            },
+                            name: "ITEM",
+                            value: "Alpha",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 2,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 21,
+                                range_end: 307,
+                            },
+                            name: "TODO",
+                            value: "TODO",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 2,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 21,
+                                range_end: 307,
+                            },
+                            name: "LEVEL",
+                            value: "1",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 2,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 21,
+                                range_end: 307,
+                            },
+                            name: "PRIORITY",
+                            value: "B",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 2,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 21,
+                                range_end: 307,
+                            },
+                            name: "TAGS",
+                            value: ":ATTACH:",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 2,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 21,
+                                range_end: 307,
+                            },
+                            name: "ALLTAGS",
+                            value: ":ATTACH:",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 2,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 21,
+                                range_end: 307,
+                            },
+                            name: "CATEGORY",
+                            value: "workshop",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 2,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 21,
+                                range_end: 307,
+                            },
+                            name: "FILE",
+                            value: "workspace-a.org",
+                        },
+                    ],
+                    planning: Planning {
+                        deadline: None,
+                        scheduled: None,
+                        closed: None,
+                    },
+                    is_comment: false,
+                    archive: SectionIndexArchive {
+                        archived: false,
+                        has_archive_tag: false,
+                        location: None,
+                    },
+                    attachment: SectionIndexAttachment {
+                        has_attach_tag: true,
+                        directory: Some(
+                            SectionIndexAttachmentDirectory {
+                                source: DirProperty,
+                                path: "alpha-assets",
+                            },
+                        ),
+                    },
+                    links: [
+                        SectionIndexLink {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 5,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 40,
+                                },
+                                range_start: 124,
+                                range_end: 159,
+                            },
+                            path: "id:beta-id::*Beta",
+                            description: "Beta heading",
+                            search: Some(
+                                LinkSearch {
+                                    raw: "*Beta",
+                                    kind: Headline,
+                                    normalized: "beta",
+                                },
+                            ),
+                            attachment: None,
+                            file: None,
+                        },
+                        SectionIndexLink {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 42,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 58,
+                                },
+                                range_start: 161,
+                                range_end: 177,
+                            },
+                            path: "#beta-custom",
+                            description: "#beta-custom",
+                            search: None,
+                            attachment: None,
+                            file: None,
+                        },
+                        SectionIndexLink {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 60,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 86,
+                                },
+                                range_start: 179,
+                                range_end: 205,
+                            },
+                            path: "attachment:plan.pdf::1",
+                            description: "attachment:plan.pdf::1",
+                            search: Some(
+                                LinkSearch {
+                                    raw: "1",
+                                    kind: LineNumber,
+                                    normalized: "1",
+                                },
+                            ),
+                            attachment: Some(
+                                AttachmentLink {
+                                    path: "plan.pdf",
+                                    search: Some(
+                                        AttachmentLinkSearch {
+                                            raw: "1",
+                                            kind: LineNumber,
+                                        },
+                                    ),
+                                },
+                            ),
+                            file: None,
+                        },
+                        SectionIndexLink {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 92,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 109,
+                                },
+                                range_start: 211,
+                                range_end: 228,
+                            },
+                            path: "id:missing-id",
+                            description: "id:missing-id",
+                            search: None,
+                            attachment: None,
+                            file: None,
+                        },
+                    ],
+                    targets: [
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 2,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                range_start: 21,
+                                range_end: 307,
+                            },
+                            kind: Headline,
+                            key: "Alpha",
+                            value: "Alpha",
+                        },
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 4,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 4,
+                                    column: 14,
+                                },
+                                range_start: 61,
+                                range_end: 69,
+                            },
+                            kind: Id,
+                            key: "id:alpha-id",
+                            value: "alpha-id",
+                        },
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 5,
+                                    column: 13,
+                                },
+                                end: SourcePosition {
+                                    line: 5,
+                                    column: 25,
+                                },
+                                range_start: 82,
+                                range_end: 94,
+                            },
+                            kind: CustomId,
+                            key: "#alpha-custom",
+                            value: "alpha-custom",
+                        },
+                    ],
+                    lifecycle: [],
+                },
+                SectionIndexRecord {
+                    source: SectionIndexSource {
+                        start: SourcePosition {
+                            line: 13,
+                            column: 1,
+                        },
+                        end: SourcePosition {
+                            line: 17,
+                            column: 1,
+                        },
+                        range_start: 307,
+                        range_end: 354,
+                    },
+                    outline_path: [
+                        "Shared One",
+                    ],
+                    level: 1,
+                    title: "Shared One",
+                    body: [],
+                    todo: None,
+                    priority: Priority {
+                        cookie: None,
+                        effective: Letter(
+                            'B',
+                        ),
+                    },
+                    category: Some(
+                        SectionIndexCategory(
+                            "workshop",
+                        ),
+                    ),
+                    tags: [],
+                    effective_tags: [],
+                    properties: [
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 15,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 15,
+                                    column: 15,
+                                },
+                                range_start: 338,
+                                range_end: 347,
+                            },
+                            key: "ID",
+                            value: "shared-id",
+                        },
+                    ],
+                    effective_properties: [
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 15,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 15,
+                                    column: 15,
+                                },
+                                range_start: 338,
+                                range_end: 347,
+                            },
+                            key: "ID",
+                            value: "shared-id",
+                        },
+                    ],
+                    special_properties: [
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 17,
+                                    column: 1,
+                                },
+                                range_start: 307,
+                                range_end: 354,
+                            },
+                            name: "ITEM",
+                            value: "Shared One",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 17,
+                                    column: 1,
+                                },
+                                range_start: 307,
+                                range_end: 354,
+                            },
+                            name: "LEVEL",
+                            value: "1",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 17,
+                                    column: 1,
+                                },
+                                range_start: 307,
+                                range_end: 354,
+                            },
+                            name: "PRIORITY",
+                            value: "B",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 17,
+                                    column: 1,
+                                },
+                                range_start: 307,
+                                range_end: 354,
+                            },
+                            name: "TAGS",
+                            value: "",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 17,
+                                    column: 1,
+                                },
+                                range_start: 307,
+                                range_end: 354,
+                            },
+                            name: "ALLTAGS",
+                            value: "",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 17,
+                                    column: 1,
+                                },
+                                range_start: 307,
+                                range_end: 354,
+                            },
+                            name: "CATEGORY",
+                            value: "workshop",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 17,
+                                    column: 1,
+                                },
+                                range_start: 307,
+                                range_end: 354,
+                            },
+                            name: "FILE",
+                            value: "workspace-a.org",
+                        },
+                    ],
+                    planning: Planning {
+                        deadline: None,
+                        scheduled: None,
+                        closed: None,
+                    },
+                    is_comment: false,
+                    archive: SectionIndexArchive {
+                        archived: false,
+                        has_archive_tag: false,
+                        location: None,
+                    },
+                    attachment: SectionIndexAttachment {
+                        has_attach_tag: false,
+                        directory: Some(
+                            SectionIndexAttachmentDirectory {
+                                source: IdDerived {
+                                    id: "shared-id",
+                                    layout: Uuid,
+                                },
+                                path: "data/sh/ared-id",
+                            },
+                        ),
+                    },
+                    links: [],
+                    targets: [
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 13,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 17,
+                                    column: 1,
+                                },
+                                range_start: 307,
+                                range_end: 354,
+                            },
+                            kind: Headline,
+                            key: "Shared One",
+                            value: "Shared One",
+                        },
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 15,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 15,
+                                    column: 15,
+                                },
+                                range_start: 338,
+                                range_end: 347,
+                            },
+                            kind: Id,
+                            key: "id:shared-id",
+                            value: "shared-id",
+                        },
+                    ],
+                    lifecycle: [],
+                },
+            ],
+        },
+        WorkspaceDocument {
+            source_file: "workspace-b.org",
+            summary: WorkspaceDocumentSummary {
+                section_count: 2,
+                target_count: 6,
+                link_count: 2,
+                attachment_section_count: 2,
+                attachment_link_count: 0,
+                source_block_count: 0,
+            },
+            sections: [
+                SectionIndexRecord {
+                    source: SectionIndexSource {
+                        start: SourcePosition {
+                            line: 1,
+                            column: 1,
+                        },
+                        end: SourcePosition {
+                            line: 8,
+                            column: 1,
+                        },
+                        range_start: 0,
+                        range_end: 121,
+                    },
+                    outline_path: [
+                        "Beta",
+                    ],
+                    level: 1,
+                    title: "Beta",
+                    body: [
+                        SectionIndexTextSlice {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 6,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                range_start: 63,
+                                range_end: 121,
+                            },
+                            text: "<<beta-target>>\nSee [[id:alpha-id]] and [[id:shared-id]].",
+                        },
+                    ],
+                    todo: None,
+                    priority: Priority {
+                        cookie: None,
+                        effective: Letter(
+                            'B',
+                        ),
+                    },
+                    category: None,
+                    tags: [],
+                    effective_tags: [],
+                    properties: [
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 3,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 3,
+                                    column: 13,
+                                },
+                                range_start: 25,
+                                range_end: 32,
+                            },
+                            key: "ID",
+                            value: "beta-id",
+                        },
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 4,
+                                    column: 13,
+                                },
+                                end: SourcePosition {
+                                    line: 4,
+                                    column: 24,
+                                },
+                                range_start: 45,
+                                range_end: 56,
+                            },
+                            key: "CUSTOM_ID",
+                            value: "beta-custom",
+                        },
+                    ],
+                    effective_properties: [
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 3,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 3,
+                                    column: 13,
+                                },
+                                range_start: 25,
+                                range_end: 32,
+                            },
+                            key: "ID",
+                            value: "beta-id",
+                        },
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 4,
+                                    column: 13,
+                                },
+                                end: SourcePosition {
+                                    line: 4,
+                                    column: 24,
+                                },
+                                range_start: 45,
+                                range_end: 56,
+                            },
+                            key: "CUSTOM_ID",
+                            value: "beta-custom",
+                        },
+                    ],
+                    special_properties: [
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 1,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                range_start: 0,
+                                range_end: 121,
+                            },
+                            name: "ITEM",
+                            value: "Beta",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 1,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                range_start: 0,
+                                range_end: 121,
+                            },
+                            name: "LEVEL",
+                            value: "1",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 1,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                range_start: 0,
+                                range_end: 121,
+                            },
+                            name: "PRIORITY",
+                            value: "B",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 1,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                range_start: 0,
+                                range_end: 121,
+                            },
+                            name: "TAGS",
+                            value: "",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 1,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                range_start: 0,
+                                range_end: 121,
+                            },
+                            name: "ALLTAGS",
+                            value: "",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 1,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                range_start: 0,
+                                range_end: 121,
+                            },
+                            name: "FILE",
+                            value: "workspace-b.org",
+                        },
+                    ],
+                    planning: Planning {
+                        deadline: None,
+                        scheduled: None,
+                        closed: None,
+                    },
+                    is_comment: false,
+                    archive: SectionIndexArchive {
+                        archived: false,
+                        has_archive_tag: false,
+                        location: None,
+                    },
+                    attachment: SectionIndexAttachment {
+                        has_attach_tag: false,
+                        directory: Some(
+                            SectionIndexAttachmentDirectory {
+                                source: IdDerived {
+                                    id: "beta-id",
+                                    layout: Uuid,
+                                },
+                                path: "data/be/ta-id",
+                            },
+                        ),
+                    },
+                    links: [
+                        SectionIndexLink {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 7,
+                                    column: 5,
+                                },
+                                end: SourcePosition {
+                                    line: 7,
+                                    column: 20,
+                                },
+                                range_start: 83,
+                                range_end: 98,
+                            },
+                            path: "id:alpha-id",
+                            description: "id:alpha-id",
+                            search: None,
+                            attachment: None,
+                            file: None,
+                        },
+                        SectionIndexLink {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 7,
+                                    column: 25,
+                                },
+                                end: SourcePosition {
+                                    line: 7,
+                                    column: 41,
+                                },
+                                range_start: 103,
+                                range_end: 119,
+                            },
+                            path: "id:shared-id",
+                            description: "id:shared-id",
+                            search: None,
+                            attachment: None,
+                            file: None,
+                        },
+                    ],
+                    targets: [
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 1,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                range_start: 0,
+                                range_end: 121,
+                            },
+                            kind: Headline,
+                            key: "Beta",
+                            value: "Beta",
+                        },
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 3,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 3,
+                                    column: 13,
+                                },
+                                range_start: 25,
+                                range_end: 32,
+                            },
+                            kind: Id,
+                            key: "id:beta-id",
+                            value: "beta-id",
+                        },
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 4,
+                                    column: 13,
+                                },
+                                end: SourcePosition {
+                                    line: 4,
+                                    column: 24,
+                                },
+                                range_start: 45,
+                                range_end: 56,
+                            },
+                            kind: CustomId,
+                            key: "#beta-custom",
+                            value: "beta-custom",
+                        },
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 6,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 6,
+                                    column: 16,
+                                },
+                                range_start: 63,
+                                range_end: 78,
+                            },
+                            kind: Target,
+                            key: "beta-target",
+                            value: "beta-target",
+                        },
+                    ],
+                    lifecycle: [],
+                },
+                SectionIndexRecord {
+                    source: SectionIndexSource {
+                        start: SourcePosition {
+                            line: 8,
+                            column: 1,
+                        },
+                        end: SourcePosition {
+                            line: 12,
+                            column: 1,
+                        },
+                        range_start: 121,
+                        range_end: 168,
+                    },
+                    outline_path: [
+                        "Shared Two",
+                    ],
+                    level: 1,
+                    title: "Shared Two",
+                    body: [],
+                    todo: None,
+                    priority: Priority {
+                        cookie: None,
+                        effective: Letter(
+                            'B',
+                        ),
+                    },
+                    category: None,
+                    tags: [],
+                    effective_tags: [],
+                    properties: [
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 10,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 10,
+                                    column: 15,
+                                },
+                                range_start: 152,
+                                range_end: 161,
+                            },
+                            key: "ID",
+                            value: "shared-id",
+                        },
+                    ],
+                    effective_properties: [
+                        SectionIndexProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 10,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 10,
+                                    column: 15,
+                                },
+                                range_start: 152,
+                                range_end: 161,
+                            },
+                            key: "ID",
+                            value: "shared-id",
+                        },
+                    ],
+                    special_properties: [
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 12,
+                                    column: 1,
+                                },
+                                range_start: 121,
+                                range_end: 168,
+                            },
+                            name: "ITEM",
+                            value: "Shared Two",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 12,
+                                    column: 1,
+                                },
+                                range_start: 121,
+                                range_end: 168,
+                            },
+                            name: "LEVEL",
+                            value: "1",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 12,
+                                    column: 1,
+                                },
+                                range_start: 121,
+                                range_end: 168,
+                            },
+                            name: "PRIORITY",
+                            value: "B",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 12,
+                                    column: 1,
+                                },
+                                range_start: 121,
+                                range_end: 168,
+                            },
+                            name: "TAGS",
+                            value: "",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 12,
+                                    column: 1,
+                                },
+                                range_start: 121,
+                                range_end: 168,
+                            },
+                            name: "ALLTAGS",
+                            value: "",
+                        },
+                        SectionIndexSpecialProperty {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 12,
+                                    column: 1,
+                                },
+                                range_start: 121,
+                                range_end: 168,
+                            },
+                            name: "FILE",
+                            value: "workspace-b.org",
+                        },
+                    ],
+                    planning: Planning {
+                        deadline: None,
+                        scheduled: None,
+                        closed: None,
+                    },
+                    is_comment: false,
+                    archive: SectionIndexArchive {
+                        archived: false,
+                        has_archive_tag: false,
+                        location: None,
+                    },
+                    attachment: SectionIndexAttachment {
+                        has_attach_tag: false,
+                        directory: Some(
+                            SectionIndexAttachmentDirectory {
+                                source: IdDerived {
+                                    id: "shared-id",
+                                    layout: Uuid,
+                                },
+                                path: "data/sh/ared-id",
+                            },
+                        ),
+                    },
+                    links: [],
+                    targets: [
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 8,
+                                    column: 1,
+                                },
+                                end: SourcePosition {
+                                    line: 12,
+                                    column: 1,
+                                },
+                                range_start: 121,
+                                range_end: 168,
+                            },
+                            kind: Headline,
+                            key: "Shared Two",
+                            value: "Shared Two",
+                        },
+                        SectionIndexTarget {
+                            source: SectionIndexSource {
+                                start: SourcePosition {
+                                    line: 10,
+                                    column: 6,
+                                },
+                                end: SourcePosition {
+                                    line: 10,
+                                    column: 15,
+                                },
+                                range_start: 152,
+                                range_end: 161,
+                            },
+                            kind: Id,
+                            key: "id:shared-id",
+                            value: "shared-id",
+                        },
+                    ],
+                    lifecycle: [],
+                },
+            ],
+        },
+    ],
+    targets: [
+        WorkspaceTargetRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 2,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 13,
+                    column: 1,
+                },
+                range_start: 21,
+                range_end: 307,
+            },
+            section_title: "Alpha",
+            outline_path: [
+                "Alpha",
+            ],
+            kind: Headline,
+            key: "Alpha",
+            value: "Alpha",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 4,
+                    column: 6,
+                },
+                end: SourcePosition {
+                    line: 4,
+                    column: 14,
+                },
+                range_start: 61,
+                range_end: 69,
+            },
+            section_title: "Alpha",
+            outline_path: [
+                "Alpha",
+            ],
+            kind: Id,
+            key: "id:alpha-id",
+            value: "alpha-id",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 5,
+                    column: 13,
+                },
+                end: SourcePosition {
+                    line: 5,
+                    column: 25,
+                },
+                range_start: 82,
+                range_end: 94,
+            },
+            section_title: "Alpha",
+            outline_path: [
+                "Alpha",
+            ],
+            kind: CustomId,
+            key: "#alpha-custom",
+            value: "alpha-custom",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 13,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 17,
+                    column: 1,
+                },
+                range_start: 307,
+                range_end: 354,
+            },
+            section_title: "Shared One",
+            outline_path: [
+                "Shared One",
+            ],
+            kind: Headline,
+            key: "Shared One",
+            value: "Shared One",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 15,
+                    column: 6,
+                },
+                end: SourcePosition {
+                    line: 15,
+                    column: 15,
+                },
+                range_start: 338,
+                range_end: 347,
+            },
+            section_title: "Shared One",
+            outline_path: [
+                "Shared One",
+            ],
+            kind: Id,
+            key: "id:shared-id",
+            value: "shared-id",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 1,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 8,
+                    column: 1,
+                },
+                range_start: 0,
+                range_end: 121,
+            },
+            section_title: "Beta",
+            outline_path: [
+                "Beta",
+            ],
+            kind: Headline,
+            key: "Beta",
+            value: "Beta",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 3,
+                    column: 6,
+                },
+                end: SourcePosition {
+                    line: 3,
+                    column: 13,
+                },
+                range_start: 25,
+                range_end: 32,
+            },
+            section_title: "Beta",
+            outline_path: [
+                "Beta",
+            ],
+            kind: Id,
+            key: "id:beta-id",
+            value: "beta-id",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 4,
+                    column: 13,
+                },
+                end: SourcePosition {
+                    line: 4,
+                    column: 24,
+                },
+                range_start: 45,
+                range_end: 56,
+            },
+            section_title: "Beta",
+            outline_path: [
+                "Beta",
+            ],
+            kind: CustomId,
+            key: "#beta-custom",
+            value: "beta-custom",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 6,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 6,
+                    column: 16,
+                },
+                range_start: 63,
+                range_end: 78,
+            },
+            section_title: "Beta",
+            outline_path: [
+                "Beta",
+            ],
+            kind: Target,
+            key: "beta-target",
+            value: "beta-target",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 8,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 12,
+                    column: 1,
+                },
+                range_start: 121,
+                range_end: 168,
+            },
+            section_title: "Shared Two",
+            outline_path: [
+                "Shared Two",
+            ],
+            kind: Headline,
+            key: "Shared Two",
+            value: "Shared Two",
+        },
+        WorkspaceTargetRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 10,
+                    column: 6,
+                },
+                end: SourcePosition {
+                    line: 10,
+                    column: 15,
+                },
+                range_start: 152,
+                range_end: 161,
+            },
+            section_title: "Shared Two",
+            outline_path: [
+                "Shared Two",
+            ],
+            kind: Id,
+            key: "id:shared-id",
+            value: "shared-id",
+        },
+    ],
+    links: [
+        WorkspaceLinkRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 8,
+                    column: 5,
+                },
+                end: SourcePosition {
+                    line: 8,
+                    column: 40,
+                },
+                range_start: 124,
+                range_end: 159,
+            },
+            section_title: "Alpha",
+            outline_path: [
+                "Alpha",
+            ],
+            path: "id:beta-id::*Beta",
+            description: "Beta heading",
+            search: Some(
+                LinkSearch {
+                    raw: "*Beta",
+                    kind: Headline,
+                    normalized: "beta",
+                },
+            ),
+            attachment: None,
+            file: None,
+            resolved_target: Some(
+                WorkspaceResolvedTarget {
+                    source_file: "workspace-b.org",
+                    section_title: "Beta",
+                    outline_path: [
+                        "Beta",
+                    ],
+                    kind: Id,
+                    key: "id:beta-id",
+                    value: "beta-id",
+                },
+            ),
+        },
+        WorkspaceLinkRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 8,
+                    column: 42,
+                },
+                end: SourcePosition {
+                    line: 8,
+                    column: 58,
+                },
+                range_start: 161,
+                range_end: 177,
+            },
+            section_title: "Alpha",
+            outline_path: [
+                "Alpha",
+            ],
+            path: "#beta-custom",
+            description: "#beta-custom",
+            search: None,
+            attachment: None,
+            file: None,
+            resolved_target: Some(
+                WorkspaceResolvedTarget {
+                    source_file: "workspace-b.org",
+                    section_title: "Beta",
+                    outline_path: [
+                        "Beta",
+                    ],
+                    kind: CustomId,
+                    key: "#beta-custom",
+                    value: "beta-custom",
+                },
+            ),
+        },
+        WorkspaceLinkRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 8,
+                    column: 60,
+                },
+                end: SourcePosition {
+                    line: 8,
+                    column: 86,
+                },
+                range_start: 179,
+                range_end: 205,
+            },
+            section_title: "Alpha",
+            outline_path: [
+                "Alpha",
+            ],
+            path: "attachment:plan.pdf::1",
+            description: "attachment:plan.pdf::1",
+            search: Some(
+                LinkSearch {
+                    raw: "1",
+                    kind: LineNumber,
+                    normalized: "1",
+                },
+            ),
+            attachment: Some(
+                AttachmentLink {
+                    path: "plan.pdf",
+                    search: Some(
+                        AttachmentLinkSearch {
+                            raw: "1",
+                            kind: LineNumber,
+                        },
+                    ),
+                },
+            ),
+            file: None,
+            resolved_target: None,
+        },
+        WorkspaceLinkRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 8,
+                    column: 92,
+                },
+                end: SourcePosition {
+                    line: 8,
+                    column: 109,
+                },
+                range_start: 211,
+                range_end: 228,
+            },
+            section_title: "Alpha",
+            outline_path: [
+                "Alpha",
+            ],
+            path: "id:missing-id",
+            description: "id:missing-id",
+            search: None,
+            attachment: None,
+            file: None,
+            resolved_target: None,
+        },
+        WorkspaceLinkRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 7,
+                    column: 5,
+                },
+                end: SourcePosition {
+                    line: 7,
+                    column: 20,
+                },
+                range_start: 83,
+                range_end: 98,
+            },
+            section_title: "Beta",
+            outline_path: [
+                "Beta",
+            ],
+            path: "id:alpha-id",
+            description: "id:alpha-id",
+            search: None,
+            attachment: None,
+            file: None,
+            resolved_target: Some(
+                WorkspaceResolvedTarget {
+                    source_file: "workspace-a.org",
+                    section_title: "Alpha",
+                    outline_path: [
+                        "Alpha",
+                    ],
+                    kind: Id,
+                    key: "id:alpha-id",
+                    value: "alpha-id",
+                },
+            ),
+        },
+        WorkspaceLinkRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 7,
+                    column: 25,
+                },
+                end: SourcePosition {
+                    line: 7,
+                    column: 41,
+                },
+                range_start: 103,
+                range_end: 119,
+            },
+            section_title: "Beta",
+            outline_path: [
+                "Beta",
+            ],
+            path: "id:shared-id",
+            description: "id:shared-id",
+            search: None,
+            attachment: None,
+            file: None,
+            resolved_target: None,
+        },
+    ],
+    attachments: [
+        WorkspaceAttachmentRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 2,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 13,
+                    column: 1,
+                },
+                range_start: 21,
+                range_end: 307,
+            },
+            section_title: "Alpha",
+            outline_path: [
+                "Alpha",
+            ],
+            kind: SectionDirectory,
+            path: "alpha-assets",
+            link: None,
+        },
+        WorkspaceAttachmentRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 8,
+                    column: 60,
+                },
+                end: SourcePosition {
+                    line: 8,
+                    column: 86,
+                },
+                range_start: 179,
+                range_end: 205,
+            },
+            section_title: "Alpha",
+            outline_path: [
+                "Alpha",
+            ],
+            kind: Link,
+            path: "plan.pdf",
+            link: Some(
+                AttachmentLink {
+                    path: "plan.pdf",
+                    search: Some(
+                        AttachmentLinkSearch {
+                            raw: "1",
+                            kind: LineNumber,
+                        },
+                    ),
+                },
+            ),
+        },
+        WorkspaceAttachmentRef {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 13,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 17,
+                    column: 1,
+                },
+                range_start: 307,
+                range_end: 354,
+            },
+            section_title: "Shared One",
+            outline_path: [
+                "Shared One",
+            ],
+            kind: SectionDirectory,
+            path: "data/sh/ared-id",
+            link: None,
+        },
+        WorkspaceAttachmentRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 1,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 8,
+                    column: 1,
+                },
+                range_start: 0,
+                range_end: 121,
+            },
+            section_title: "Beta",
+            outline_path: [
+                "Beta",
+            ],
+            kind: SectionDirectory,
+            path: "data/be/ta-id",
+            link: None,
+        },
+        WorkspaceAttachmentRef {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 8,
+                    column: 1,
+                },
+                end: SourcePosition {
+                    line: 12,
+                    column: 1,
+                },
+                range_start: 121,
+                range_end: 168,
+            },
+            section_title: "Shared Two",
+            outline_path: [
+                "Shared Two",
+            ],
+            kind: SectionDirectory,
+            path: "data/sh/ared-id",
+            link: None,
+        },
+    ],
+    issues: [
+        WorkspaceIssue {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 15,
+                    column: 6,
+                },
+                end: SourcePosition {
+                    line: 15,
+                    column: 15,
+                },
+                range_start: 338,
+                range_end: 347,
+            },
+            kind: DuplicateId {
+                key: "id:shared-id",
+            },
+            message: "workspace target `id:shared-id` is defined more than once; internal links are ambiguous",
+        },
+        WorkspaceIssue {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 10,
+                    column: 6,
+                },
+                end: SourcePosition {
+                    line: 10,
+                    column: 15,
+                },
+                range_start: 152,
+                range_end: 161,
+            },
+            kind: DuplicateId {
+                key: "id:shared-id",
+            },
+            message: "workspace target `id:shared-id` is defined more than once; internal links are ambiguous",
+        },
+        WorkspaceIssue {
+            source_file: "workspace-a.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 8,
+                    column: 92,
+                },
+                end: SourcePosition {
+                    line: 8,
+                    column: 109,
+                },
+                range_start: 211,
+                range_end: 228,
+            },
+            kind: UnresolvedIdLink {
+                key: "id:missing-id",
+            },
+            message: "workspace link `id:missing-id` does not resolve to exactly one target",
+        },
+        WorkspaceIssue {
+            source_file: "workspace-b.org",
+            source: SectionIndexSource {
+                start: SourcePosition {
+                    line: 7,
+                    column: 25,
+                },
+                end: SourcePosition {
+                    line: 7,
+                    column: 41,
+                },
+                range_start: 103,
+                range_end: 119,
+            },
+            kind: AmbiguousInternalLink {
+                key: "id:shared-id",
+            },
+            message: "workspace link `id:shared-id` does not resolve to exactly one target",
+        },
+    ],
+}

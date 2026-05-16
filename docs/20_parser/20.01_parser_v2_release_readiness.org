@@ -129,6 +129,7 @@ Cargo, CI, the release package, tests, or generated artifacts.
 - Treat unresolved review threads as blocking until resolved or explicitly
   marked non-actionable.
 - Do not downgrade or disable harness policy to land this lane.
-- Keep the Rust project harness mounted from root `build.rs`, `wasm/build.rs`,
-  and the `src/lib.rs` cargo-test gate so both workspace packages have
-  filter-proof build-time enforcement.
+- Keep the Rust project harness mounted from root `build.rs` and the
+  `src/lib.rs` cargo-test gate for the parser workspace. The `wasm/build.rs`
+  gate now lives in the `tao3k/orgize-wasm` submodule so browser-package policy
+  is enforced at its own repository boundary.

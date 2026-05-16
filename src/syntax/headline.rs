@@ -1,16 +1,10 @@
 use memchr::memrchr_iter;
 use nom::{
-    bytes::complete::take_while1,
-    character::complete::{anychar, space0},
-    combinator::{map, opt},
-    IResult, Parser,
+    bytes::complete::take_while1, character::complete::space0, combinator::opt, IResult, Parser,
 };
 
 use super::{
-    combinator::{
-        hash_token, l_bracket_token, line_starts_iter, node, r_bracket_token, token, trim_line_end,
-        GreenElement, NodeBuilder,
-    },
+    combinator::{line_starts_iter, node, token, trim_line_end, GreenElement, NodeBuilder},
     drawer::property_drawer_node,
     input::Input,
     object::standard_object_nodes,
@@ -236,25 +230,46 @@ pub(super) fn headline_keyword_token(input: Input) -> IResult<Input, (GreenEleme
 }
 
 pub(super) fn headline_priority_node(input: Input) -> IResult<Input, (GreenElement, Input), ()> {
-    let (input, node) = map(
-        (l_bracket_token, hash_token, anychar, r_bracket_token),
-        |(l_bracket, hash, char, r_bracket)| {
-            node(
-                SyntaxKind::HEADLINE_PRIORITY,
-                [
-                    l_bracket,
-                    hash,
-                    token(SyntaxKind::TEXT, &char.to_string()),
-                    r_bracket,
-                ],
-            )
-        },
-    )
-    .parse(input)?;
+    if !input.starts_with("[#") {
+        return Err(nom::Err::Error(()));
+    }
+    let Some(value_len) = priority_value_len(&input[2..]) else {
+        return Err(nom::Err::Error(()));
+    };
+    let close = 2 + value_len;
+    if input.as_bytes().get(close) != Some(&b']') {
+        return Err(nom::Err::Error(()));
+    }
+
+    let node = node(
+        SyntaxKind::HEADLINE_PRIORITY,
+        [
+            input.slice(..1).token(SyntaxKind::L_BRACKET),
+            input.slice(1..2).token(SyntaxKind::HASH),
+            input.slice(2..close).text_token(),
+            input.slice(close..close + 1).token(SyntaxKind::R_BRACKET),
+        ],
+    );
+    let input = input.take_from(close + 1);
 
     let (input, ws) = space0(input)?;
 
     Ok((input, (node, ws)))
+}
+
+fn priority_value_len(rest: &str) -> Option<usize> {
+    let bytes = rest.as_bytes();
+    match bytes.first().copied()? {
+        b'A'..=b'Z' => Some(1),
+        digit @ b'0'..=b'9' => match bytes.get(1).copied() {
+            Some(next) if next.is_ascii_digit() => match (digit, next) {
+                (b'1'..=b'5', b'0'..=b'9') | (b'6', b'0'..=b'4') => Some(2),
+                _ => None,
+            },
+            _ => Some(1),
+        },
+        _ => None,
+    }
 }
 
 #[test]
@@ -333,6 +348,24 @@ fn parse() {
       HEADLINE_TITLE@8..11
         TEXT@8..11 "foo"
       NEW_LINE@11..12 "\n"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_headline("** [#64] foo\n* baz").syntax,
+        @r###"
+    HEADLINE@0..13
+      HEADLINE_STARS@0..2 "**"
+      WHITESPACE@2..3 " "
+      HEADLINE_PRIORITY@3..8
+        L_BRACKET@3..4 "["
+        HASH@4..5 "#"
+        TEXT@5..7 "64"
+        R_BRACKET@7..8 "]"
+      WHITESPACE@8..9 " "
+      HEADLINE_TITLE@9..12
+        TEXT@9..12 "foo"
+      NEW_LINE@12..13 "\n"
     "###
     );
 

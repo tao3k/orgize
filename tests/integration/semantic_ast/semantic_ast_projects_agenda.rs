@@ -194,6 +194,34 @@ SCHEDULED: <2026-05-15 Fri>
 }
 
 #[test]
+fn semantic_ast_agenda_match_uses_official_special_properties() {
+    let doc = Org::parse(
+        r#"#+FILETAGS: :team:
+#+CATEGORY: inbox
+* TODO Memory seed :local:
+SCHEDULED: <2026-05-15 Fri>
+Body <2026-05-15 Fri 12:00> and [2026-05-14 Thu].
+"#,
+    )
+    .document();
+    let query = AgendaQuery::single_day(AgendaDate::new(2026, 5, 15))
+        .source_file("agenda.org")
+        .match_expression(
+            r#"+FILE="agenda.org"+ITEM="Memory seed"+TODO="TODO"+LEVEL=1+TAGS={local}+ALLTAGS={team}+CATEGORY="inbox"+SCHEDULED<"<2026-05-16 Sat>"+TIMESTAMP>="<2026-05-15 Fri>"+TIMESTAMP_IA="[2026-05-14 Thu]""#,
+        )
+        .expect("valid agenda match expression");
+
+    let titles = doc
+        .to_bare()
+        .agenda_entries(&query)
+        .into_iter()
+        .map(|entry| entry.raw_title)
+        .collect::<Vec<_>>();
+
+    assert_eq!(titles, ["Memory seed", "Memory seed"]);
+}
+
+#[test]
 fn semantic_ast_agenda_projects_active_timestamps_only() {
     let doc = Org::parse("* TODO Event\nBody <2026-05-15 Fri 08:00> and [2026-05-15 Fri 09:00].\n")
         .document();

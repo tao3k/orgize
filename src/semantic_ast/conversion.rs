@@ -34,10 +34,10 @@ use super::preprocessing::{include_directive, macro_definition, split_macro_args
 use super::prescan::{collect_document_keyword, SemanticPrescan};
 use super::radio_links::{is_semantic_radio_link_candidate, next_char_boundary, next_radio_link};
 use super::settings::{
-    expand_link_abbreviation, is_parsed_keyword, keyword_attributes, link_search,
+    expand_link_abbreviation, file_link, is_parsed_keyword, keyword_attributes, link_search,
 };
 use super::source_position::LineIndex;
-use super::table_metadata::table_column_alignments;
+use super::table_metadata::{parsed_table_formulas, table_column_alignments};
 use super::targets::{
     collect_target_node, is_strict_internal_link_path, TargetIndex, TargetLookup,
 };
@@ -559,12 +559,14 @@ impl<'a> Converter<'a> {
             .children()
             .filter(|child| child.kind() == SyntaxKind::KEYWORD)
             .map(|child| self.keyword(&child, false))
-            .collect();
+            .collect::<Vec<_>>();
+        let parsed_formulas = parsed_table_formulas(&formulas);
 
         Table {
             rows,
             column_alignments,
             formulas,
+            parsed_formulas,
         }
     }
 
@@ -824,7 +826,7 @@ impl<'a> Converter<'a> {
             let link_ann = self.ann(text_range(base + start, base + end));
             projected.push(Object {
                 ann: link_ann,
-                data: ObjectData::Link(Link {
+                data: ObjectData::Link(Box::new(Link {
                     path: LinkPath::new(target.to_string()),
                     target: LinkTarget::Internal(target.to_string()),
                     description,
@@ -835,7 +837,8 @@ impl<'a> Converter<'a> {
                     caption: None,
                     search: None,
                     attachment: None,
-                }),
+                    file: None,
+                })),
             });
 
             emitted_until = end;
@@ -924,7 +927,7 @@ impl<'a> Converter<'a> {
             let link_ann = self.ann(text_range(base + start, base + end));
             objects.push(Object {
                 ann: link_ann.clone(),
-                data: ObjectData::Link(Link {
+                data: ObjectData::Link(Box::new(Link {
                     path: LinkPath::new(target.to_string()),
                     target: LinkTarget::Internal(target.to_string()),
                     description: vec![Object {
@@ -938,7 +941,8 @@ impl<'a> Converter<'a> {
                     caption: None,
                     search: None,
                     attachment: None,
-                }),
+                    file: None,
+                })),
             });
 
             cursor = end;
@@ -1211,12 +1215,13 @@ impl<'a> Converter<'a> {
         let target = self.link_target(&path, node.text_range());
         let search = link_search(&path);
         let attachment = attachment_link_from_path(&path).map(Box::new);
+        let file = file_link(&path, search.clone()).map(Box::new);
         let description = legacy.description().collect::<Vec<_>>();
         let caption = legacy
             .caption()
             .map(|caption| self.keyword(&caption.syntax, true));
 
-        ObjectData::Link(Link {
+        ObjectData::Link(Box::new(Link {
             path: LinkPath::new(path),
             target,
             default_description: Vec::new(),
@@ -1234,8 +1239,9 @@ impl<'a> Converter<'a> {
             caption,
             search,
             attachment,
+            file,
             description: self.objects_from_elements(description),
-        })
+        }))
     }
 
     fn link_target(&mut self, path: &str, range: TextRange) -> LinkTarget {

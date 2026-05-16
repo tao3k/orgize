@@ -1,21 +1,52 @@
 //! Org document linting built on the semantic parser projection.
 
+#[path = "lint_attachments.rs"]
+mod lint_attachments;
+#[path = "lint_babel.rs"]
+mod lint_babel;
+#[path = "lint_file_links.rs"]
+mod lint_file_links;
+#[path = "lint_lifecycle.rs"]
+mod lint_lifecycle;
+#[path = "lint_model.rs"]
+mod lint_model;
+#[path = "lint_priority.rs"]
+mod lint_priority;
+#[path = "lint_progress.rs"]
+mod lint_progress;
+#[path = "lint_properties.rs"]
+mod lint_properties;
+#[path = "lint_render.rs"]
+mod lint_render;
+#[path = "lint_table_formulas.rs"]
+mod lint_table_formulas;
+#[path = "lint_task_blockers.rs"]
+mod lint_task_blockers;
+
 use std::{collections::BTreeMap, fs, io::ErrorKind, path::Path};
+
+use self::{
+    lint_attachments::attachment_findings,
+    lint_babel::babel_findings,
+    lint_file_links::file_link_findings,
+    lint_lifecycle::lifecycle_findings,
+    lint_model::{location_for_offsets, location_for_range},
+    lint_priority::priority_cookie_findings,
+    lint_progress::progress_findings,
+    lint_properties::property_drawer_findings,
+    lint_table_formulas::table_formula_findings,
+    lint_task_blockers::task_blocker_findings,
+};
 
 use crate::{
     ast::{
         Diagnostic, IncludeDirective, Keyword, MacroDefinition, MacroExpansionStatus,
         ParsedAnnotation, ParsedAst, TargetDefinition, TargetKind,
     },
-    lint_attachments::attachment_findings,
-    lint_lifecycle::lifecycle_findings,
-    lint_model::{location_for_offsets, location_for_range},
-    lint_priority::priority_cookie_findings,
-    lint_properties::property_drawer_findings,
     Org,
 };
 
-pub use crate::lint_model::{LintFinding, LintLocation, LintOptions, LintReport, LintSeverity};
+pub use self::lint_model::{LintFinding, LintLocation, LintOptions, LintReport, LintSeverity};
 
 /// Lints Org source with the default parser configuration.
 pub fn lint_org(source: &str) -> LintReport {
@@ -71,8 +102,13 @@ fn collect_lint_findings(
     findings.extend(options_keyword_findings(&document.metadata, source));
     findings.extend(priority_cookie_findings(source));
     findings.extend(property_drawer_findings(document, source));
+    findings.extend(progress_findings(document, source));
     findings.extend(attachment_findings(document, source, options));
-    findings.extend(lifecycle_findings(document, source));
+    findings.extend(babel_findings(document, source));
+    findings.extend(file_link_findings(document, source, options));
+    findings.extend(lifecycle_findings(document, source, options));
+    findings.extend(table_formula_findings(document, source));
+    findings.extend(task_blocker_findings(document, source));
     findings.extend(todo_declaration_findings(source));
 
     findings

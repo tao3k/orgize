@@ -12,13 +12,16 @@ use crate::ast::SourcePosition;
 /// [`include_base_dir`](Self::include_base_dir) when checking `#+INCLUDE:`
 /// directives against the filesystem. Set
 /// [`attachment_base_dir`](Self::attachment_base_dir) when checking
-/// `attachment:` links against the filesystem.
+/// `attachment:` links against the filesystem. Set
+/// [`file_base_dir`](Self::file_base_dir) when checking ordinary `file:` links.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct LintOptions {
     /// Base directory used to resolve relative `#+INCLUDE:` paths.
     pub include_base_dir: Option<PathBuf>,
     /// Base directory used to resolve relative Org attachment directories.
     pub attachment_base_dir: Option<PathBuf>,
+    /// Base directory used to resolve relative ordinary `file:` link targets.
+    pub file_base_dir: Option<PathBuf>,
 }
 
 /// Lint result for one Org source string.

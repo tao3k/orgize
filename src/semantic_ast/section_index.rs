@@ -4,8 +4,10 @@ use super::lifecycle::section_lifecycle_records;
 use super::section_index_model::{
     SectionIndexArchive, SectionIndexAttachment, SectionIndexAttachmentDirectory,
     SectionIndexCategory, SectionIndexLifecycleRecord, SectionIndexLink, SectionIndexProperty,
-    SectionIndexRecord, SectionIndexSource, SectionIndexTarget, SectionIndexTextSlice,
+    SectionIndexRecord, SectionIndexSource, SectionIndexSpecialProperty, SectionIndexTarget,
+    SectionIndexTextSlice,
 };
+use super::special_properties::{special_properties, SpecialPropertyContext};
 use super::{
     Document, Element, ElementData, Link, ListItem, Object, ObjectData, ParsedAnnotation, Property,
     Section, TargetKind,
@@ -18,10 +20,33 @@ impl Document<ParsedAnnotation> {
     /// It preserves official Org syntax and source evidence so callers such as
     /// Wendao can build their own retrieval indexes.
     pub fn section_index_records(&self) -> Vec<SectionIndexRecord> {
+        self.section_index_records_with_context(None)
+    }
+
+    /// Projects section records with a caller-provided source file for `FILE`
+    /// special-property projection.
+    pub fn section_index_records_for_file(
+        &self,
+        source_file: impl Into<String>,
+    ) -> Vec<SectionIndexRecord> {
+        let source_file = source_file.into();
+        self.section_index_records_with_context(Some(source_file.as_str()))
+    }
+
+    fn section_index_records_with_context(
+        &self,
+        source_file: Option<&str>,
+    ) -> Vec<SectionIndexRecord> {
         let mut records = Vec::new();
         let document_category = document_category(self);
         for section in &self.sections {
-            collect_section_index(section, Vec::new(), document_category.clone(), &mut records);
+            collect_section_index(
+                section,
+                Vec::new(),
+                document_category.clone(),
+                source_file,
+                &mut records,
+            );
         }
         records
     }
@@ -31,6 +56,7 @@ fn collect_section_index(
     section: &Section<ParsedAnnotation>,
     parent_outline_path: Vec<String>,
     inherited_category: Option<SectionIndexCategory>,
+    source_file: Option<&str>,
     records: &mut Vec<SectionIndexRecord>,
 ) {
     let title = section.raw_title.trim_end().to_string();
@@ -43,10 +69,17 @@ fn collect_section_index(
         outline_path.clone(),
         title,
         category.clone(),
+        source_file,
     ));
 
     for subsection in &section.subsections {
-        collect_section_index(subsection, outline_path.clone(), category.clone(), records);
+        collect_section_index(
+            subsection,
+            outline_path.clone(),
+            category.clone(),
+            source_file,
+            records,
+        );
     }
 }
 
@@ -55,6 +88,7 @@ fn section_index_record(
     outline_path: Vec<String>,
     title: String,
     category: Option<SectionIndexCategory>,
+    source_file: Option<&str>,
 ) -> SectionIndexRecord {
     let mut links = Vec::new();
     let mut targets = section_targets(section);
@@ -69,7 +103,7 @@ fn section_index_record(
         body: body_slices(&section.children),
         todo: section.todo.clone(),
         priority: section.priority.clone(),
-        category,
+        category: category.clone(),
         tags: section.tags.clone(),
         effective_tags: section.effective_tags.clone(),
         properties: section.properties.iter().map(section_property).collect(),
@@ -78,6 +112,7 @@ fn section_index_record(
             .iter()
             .map(section_property)
             .collect(),
+        special_properties: section_special_properties(section, category.as_ref(), source_file),
         planning: section.planning.clone(),
         is_comment: section.is_comment,
         archive: section_archive(section),
@@ -93,6 +128,23 @@ fn section_index_record(
             })
             .collect(),
     }
+}
+
+fn section_special_properties(
+    section: &Section<ParsedAnnotation>,
+    category: Option<&SectionIndexCategory>,
+    source_file: Option<&str>,
+) -> Vec<SectionIndexSpecialProperty> {
+    let context =
+        SpecialPropertyContext::new(category.map(SectionIndexCategory::as_str), source_file);
+    special_properties(section, context)
+        .into_iter()
+        .map(|property| SectionIndexSpecialProperty {
+            source: SectionIndexSource::from_annotation(&section.ann),
+            name: property.name.to_string(),
+            value: property.value,
+        })
+        .collect()
 }
 
 fn body_slices(elements: &[Element<ParsedAnnotation>]) -> Vec<SectionIndexTextSlice> {
@@ -338,6 +390,7 @@ fn collect_link_index_metadata(
         description,
         search: link.search.clone(),
         attachment: link.attachment.as_deref().cloned(),
+        file: link.file.as_deref().cloned(),
     });
     collect_object_index_metadata(link.description_or_default(), links, targets);
 }

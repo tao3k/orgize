@@ -8,7 +8,11 @@ use super::block_model::{
     SemanticFixedWidth,
 };
 use super::lifecycle_model::{ArchiveLocation, ArchiveState};
+use super::link_model::{
+    FileLink, LinkDescriptionState, LinkMediaKind, LinkPath, LinkSearch, LinkTarget,
+};
 use super::property_model::{OrgDuration, Priority};
+use super::timestamp_model::Timestamp;
 
 /// Parsed semantic document with source annotations on every semantic node.
 pub type ParsedAst = Document<ParsedAnnotation>;
@@ -125,6 +129,48 @@ pub struct LinkAbbreviation {
     pub name: String,
     pub replacement: String,
     pub raw_value: String,
+}
+
+/// Link object with target, description, caption, and image metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Link<A = ()> {
+    pub path: LinkPath,
+    pub target: LinkTarget,
+    pub description: Vec<Object<A>>,
+    pub default_description: Vec<Object<A>>,
+    pub raw_description: String,
+    pub description_state: LinkDescriptionState,
+    pub media_kind: LinkMediaKind,
+    pub caption: Option<Keyword<A>>,
+    pub search: Option<LinkSearch>,
+    pub attachment: Option<Box<AttachmentLink>>,
+    pub file: Option<Box<FileLink>>,
+}
+
+impl<A> Link<A> {
+    /// Returns the original link path text.
+    pub fn path(&self) -> &str {
+        self.path.as_str()
+    }
+
+    /// Returns true when the source link had an explicit description.
+    pub fn has_description(&self) -> bool {
+        self.description_state.has_description()
+    }
+
+    /// Returns true when the link should be treated as an image.
+    pub fn is_image(&self) -> bool {
+        self.media_kind.is_image()
+    }
+
+    /// Returns the explicit description when present, otherwise target-derived fallback text.
+    pub fn description_or_default(&self) -> &[Object<A>] {
+        if self.has_description() {
+            &self.description
+        } else {
+            &self.default_description
+        }
+    }
 }
 
 /// `#+INCLUDE:` directive collected for explicit preprocessing.
@@ -491,6 +537,40 @@ pub struct Table<A = ()> {
     pub rows: Vec<TableRow<A>>,
     pub column_alignments: Vec<Option<TableColumnAlignment>>,
     pub formulas: Vec<Keyword<A>>,
+    pub parsed_formulas: Vec<TableFormula<A>>,
+}
+
+/// Parsed table formula metadata from a `#+TBLFM:` keyword.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TableFormula<A = ()> {
+    pub ann: A,
+    pub raw: String,
+    pub assignments: Vec<TableFormulaAssignment>,
+}
+
+/// One formula assignment inside a `#+TBLFM:` line, split on Org's `::`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TableFormulaAssignment {
+    pub raw: String,
+    pub lhs: String,
+    pub rhs: String,
+    pub flags: Vec<String>,
+    pub references: Vec<TableFormulaReference>,
+}
+
+/// A table reference token found in a formula expression.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TableFormulaReference {
+    pub raw: String,
+    pub kind: TableFormulaReferenceKind,
+}
+
+/// Formula reference category.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TableFormulaReferenceKind {
+    Field,
+    Remote,
+    Row,
 }
 
 /// Alignment cookie parsed from an Org table column metadata row.
@@ -604,7 +684,7 @@ pub enum ObjectData<A = ()> {
         raw: String,
     },
     /// Link object with parsed target and description metadata.
-    Link(Link<A>),
+    Link(Box<Link<A>>),
     /// Target object without angle delimiters.
     Target(String),
     /// Radio target object without angle delimiters.
@@ -638,237 +718,6 @@ pub enum MarkupKind {
     Superscript,
     /// Subscript markup.
     Subscript,
-}
-
-/// Timestamp metadata projected from Org timestamp syntax.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Timestamp {
-    pub kind: TimestampKind,
-    pub raw: String,
-    pub is_range: bool,
-    pub start: Option<TimestampMoment>,
-    pub end: Option<TimestampMoment>,
-    pub repeater: Option<TimestampRepeater>,
-    pub warning: Option<TimestampWarning>,
-}
-
-/// Org timestamp delimiter category.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TimestampKind {
-    /// Active timestamp, for example `<2026-05-01 Fri>`.
-    Active,
-    /// Inactive timestamp, for example `[2026-05-01 Fri]`.
-    Inactive,
-    /// Diary sexp timestamp, for example `<%%(diary-date 5 1)>`.
-    Diary,
-}
-
-/// Parsed date and optional time within a timestamp.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TimestampMoment {
-    pub year: u16,
-    pub month: u8,
-    pub day: u8,
-    pub day_name: Option<String>,
-    pub hour: Option<u8>,
-    pub minute: Option<u8>,
-}
-
-/// Repeater cookie attached to a timestamp.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TimestampRepeater {
-    pub kind: RepeaterKind,
-    pub value: u32,
-    pub unit: TimeUnit,
-}
-
-/// Warning delay cookie attached to a timestamp.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TimestampWarning {
-    pub kind: WarningKind,
-    pub value: u32,
-    pub unit: TimeUnit,
-}
-
-/// Org timestamp repeater mode.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RepeaterKind {
-    /// Cumulate repeater, written with `++`.
-    Cumulate,
-    /// Catch-up repeater, written with `+`.
-    CatchUp,
-    /// Restart repeater, written with `.+`.
-    Restart,
-}
-
-/// Org timestamp warning delay mode.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum WarningKind {
-    /// Warn for all matching occurrences.
-    All,
-    /// Warn only for the first occurrence.
-    First,
-}
-
-/// Unit used by timestamp repeater and warning cookies.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TimeUnit {
-    /// Hour unit.
-    Hour,
-    /// Day unit.
-    Day,
-    /// Week unit.
-    Week,
-    /// Month unit.
-    Month,
-    /// Year unit.
-    Year,
-}
-
-/// Normalized link target classification.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum LinkTarget {
-    /// URI-like link target split into protocol and path.
-    Uri { protocol: String, path: String },
-    /// Internal target such as `#custom-id`.
-    Internal(String),
-    /// Link target without a dedicated semantic classifier yet.
-    Unresolved(String),
-}
-
-/// Original link path text as it appears in the link target position.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LinkPath(String);
-
-impl LinkPath {
-    /// Creates a link path from parser-owned text.
-    pub fn new(path: impl Into<String>) -> Self {
-        Self(path.into())
-    }
-
-    /// Returns the path text.
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
-    /// Consumes the path and returns its owned text.
-    pub fn into_string(self) -> String {
-        self.0
-    }
-}
-
-impl std::fmt::Display for LinkPath {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
-impl From<String> for LinkPath {
-    fn from(path: String) -> Self {
-        Self::new(path)
-    }
-}
-
-impl From<&str> for LinkPath {
-    fn from(path: &str) -> Self {
-        Self::new(path)
-    }
-}
-
-impl AsRef<str> for LinkPath {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
-/// Whether a link had an explicit Org description.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LinkDescriptionState {
-    /// Link has no explicit description.
-    None,
-    /// Link was written with a description part.
-    Explicit,
-}
-
-impl LinkDescriptionState {
-    /// Returns true when the source link had an explicit description.
-    pub const fn has_description(self) -> bool {
-        matches!(self, Self::Explicit)
-    }
-}
-
-/// Media classification for link exporter behavior.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LinkMediaKind {
-    /// Normal link.
-    Normal,
-    /// Image link.
-    Image,
-}
-
-impl LinkMediaKind {
-    /// Returns true when the link should be treated as an image.
-    pub const fn is_image(self) -> bool {
-        matches!(self, Self::Image)
-    }
-}
-
-/// Link object with target, description, caption, and image metadata.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Link<A = ()> {
-    pub path: LinkPath,
-    pub target: LinkTarget,
-    pub description: Vec<Object<A>>,
-    pub default_description: Vec<Object<A>>,
-    pub raw_description: String,
-    pub description_state: LinkDescriptionState,
-    pub media_kind: LinkMediaKind,
-    pub caption: Option<Keyword<A>>,
-    pub search: Option<LinkSearch>,
-    pub attachment: Option<Box<AttachmentLink>>,
-}
-
-impl<A> Link<A> {
-    /// Returns the original link path text.
-    pub fn path(&self) -> &str {
-        self.path.as_str()
-    }
-
-    /// Returns true when the source link had an explicit description.
-    pub fn has_description(&self) -> bool {
-        self.description_state.has_description()
-    }
-
-    /// Returns true when the link should be treated as an image.
-    pub fn is_image(&self) -> bool {
-        self.media_kind.is_image()
-    }
-
-    /// Returns the explicit description when present, otherwise target-derived fallback text.
-    pub fn description_or_default(&self) -> &[Object<A>] {
-        if self.has_description() {
-            &self.description
-        } else {
-            &self.default_description
-        }
-    }
-}
-
-/// Search suffix attached to an internal link target, such as `id:x::*Heading`.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LinkSearch {
-    pub raw: String,
-    pub kind: LinkSearchKind,
-}
-
-/// Normalized category for an Org link search suffix.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LinkSearchKind {
-    Headline,
-    LineNumber,
-    CustomId,
-    Regexp,
-    Text,
 }
 
 /// Options for explicit semantic export projection.

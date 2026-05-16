@@ -1,10 +1,9 @@
 //! Agenda-oriented semantic projection types.
 
 use super::agenda_match::{AgendaMatchParseError, AgendaMatchQuery};
-use super::model::{
-    Object, TimeUnit, Timestamp, TimestampMoment, TimestampWarning, TodoKeyword, TodoState,
-    WarningKind,
-};
+use super::model::{Object, TodoKeyword, TodoState};
+use super::property_model::Priority;
+use super::timestamp_model::{TimeUnit, Timestamp, TimestampMoment, TimestampWarning, WarningKind};
 
 /// Inclusive date window and filters for semantic agenda projection.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -17,11 +16,14 @@ pub struct AgendaQuery {
     pub(crate) include_scheduled: bool,
     pub(crate) include_deadlines: bool,
     pub(crate) include_timestamps: bool,
+    pub(crate) include_inactive_timestamps: bool,
+    pub(crate) include_diary_timestamps: bool,
     pub(crate) include_closed: bool,
     pub(crate) expand_repeaters: bool,
     pub(crate) include_deadline_warnings: bool,
     pub(crate) include_overdue_deadlines: bool,
     pub(crate) search_headline_time: bool,
+    pub(crate) source_file: Option<String>,
     pub(crate) match_query: Option<AgendaMatchQuery>,
     pub(crate) required_tags: Vec<String>,
     pub(crate) excluded_tags: Vec<String>,
@@ -39,11 +41,14 @@ impl AgendaQuery {
             include_scheduled: true,
             include_deadlines: true,
             include_timestamps: true,
+            include_inactive_timestamps: false,
+            include_diary_timestamps: false,
             include_closed: false,
             expand_repeaters: true,
             include_deadline_warnings: true,
             include_overdue_deadlines: true,
             search_headline_time: true,
+            source_file: None,
             match_query: None,
             required_tags: Vec::new(),
             excluded_tags: Vec::new(),
@@ -91,6 +96,18 @@ impl AgendaQuery {
         self
     }
 
+    /// Includes or excludes plain inactive timestamp objects.
+    pub fn include_inactive_timestamps(mut self, include_inactive_timestamps: bool) -> Self {
+        self.include_inactive_timestamps = include_inactive_timestamps;
+        self
+    }
+
+    /// Includes or excludes parseable diary sexp timestamp objects.
+    pub fn include_diary_timestamps(mut self, include_diary_timestamps: bool) -> Self {
+        self.include_diary_timestamps = include_diary_timestamps;
+        self
+    }
+
     /// Includes or excludes `CLOSED` planning timestamps.
     pub fn include_closed(mut self, include_closed: bool) -> Self {
         self.include_closed = include_closed;
@@ -118,6 +135,12 @@ impl AgendaQuery {
     /// Enables or disables plain time-of-day extraction from headline text.
     pub fn search_headline_time(mut self, search_headline_time: bool) -> Self {
         self.search_headline_time = search_headline_time;
+        self
+    }
+
+    /// Provides an optional source file name for `FILE` special-property matches.
+    pub fn source_file(mut self, source_file: impl Into<String>) -> Self {
+        self.source_file = Some(source_file.into());
         self
     }
 
@@ -269,6 +292,7 @@ pub struct AgendaEntry<A = ()> {
     pub raw_title: String,
     pub category: Option<AgendaCategory>,
     pub level: usize,
+    pub priority: Priority,
     pub todo: Option<TodoKeyword>,
     pub tags: Vec<String>,
     pub effective_tags: Vec<String>,
@@ -285,7 +309,21 @@ pub enum AgendaEntryKind {
     Scheduled,
     Deadline,
     Timestamp,
+    Diary,
     Closed,
+}
+
+impl AgendaEntryKind {
+    /// Stable label for DTO and compact consumers.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Scheduled => "scheduled",
+            Self::Deadline => "deadline",
+            Self::Timestamp => "timestamp",
+            Self::Diary => "diary",
+            Self::Closed => "closed",
+        }
+    }
 }
 
 /// Whether an agenda row is the source timestamp or a repeated occurrence.
@@ -338,7 +376,7 @@ pub(crate) fn scheduled_visible_start(
     }
 }
 
-fn days_in_month(year: i32, month: i32) -> u8 {
+pub(crate) fn days_in_month(year: i32, month: i32) -> u8 {
     match month {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,
@@ -352,7 +390,7 @@ fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
 
-fn days_from_civil(year: i32, month: u32, day: u32) -> i32 {
+pub(crate) fn days_from_civil(year: i32, month: u32, day: u32) -> i32 {
     let year = year - i32::from(month <= 2);
     let era = if year >= 0 { year } else { year - 399 } / 400;
     let yoe = year - era * 400;
@@ -362,7 +400,7 @@ fn days_from_civil(year: i32, month: u32, day: u32) -> i32 {
     era * 146_097 + doe - 719_468
 }
 
-fn civil_from_days(day_number: i32) -> (i32, u32, u32) {
+pub(crate) fn civil_from_days(day_number: i32) -> (i32, u32, u32) {
     let z = day_number + 719_468;
     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
     let doe = z - era * 146_097;

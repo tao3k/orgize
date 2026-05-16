@@ -1,5 +1,8 @@
 * TODO [#] Missing priority value
-* TODO [#65] Numeric priority outside default Org range
+* TODO [#65] Numeric priority outside official Org value range
+* TODO [#a] Lowercase priority value
+* TODO [#09] Numeric priority with leading zero
+* TODO [#破] Custom priority value outside official Org grammar
 * TODO Valid effort
 :PROPERTIES:
 :EFFORT: 1:30
@@ -9,4 +12,6 @@
 :EFFORT: tomorrow
 :EFFORT: 2h
 :Efforts: 1h
+:Owner_ALL: Sarah Jim
+:Owner: Dave
 :END:

@@ -2,20 +2,30 @@
 
 use std::collections::BTreeMap;
 
-use crate::{
-    ast::{Inlinetask, ParsedAnnotation, ParsedAst, Property, Section},
-    lint_model::{location_for_range, LintFinding, LintSeverity},
+use crate::ast::{
+    is_allowed_value_descriptor, property_allowed_values, Inlinetask, ParsedAnnotation, ParsedAst,
+    Property, PropertyProfile, Section,
 };
+
+use super::lint_model::{location_for_range, LintFinding, LintSeverity};
 
 pub(crate) fn property_drawer_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
     let mut findings = Vec::new();
-    push_property_findings(&document.properties, source, &mut findings);
+    let profile = document.property_profile();
+    push_property_findings(&document.properties, &profile, source, &mut findings);
+    push_allowed_value_findings(
+        &document.properties,
+        &document.properties,
+        &profile,
+        source,
+        &mut findings,
+    );
     for section in &document.sections {
-        push_section_property_findings(section, source, &mut findings);
+        push_section_property_findings(section, &profile, source, &mut findings);
     }
     document.visit(|node| {
         if let crate::ast::AstRef::Inlinetask(task) = node {
-            push_inlinetask_property_findings(task, source, &mut findings);
+            push_inlinetask_property_findings(task, &profile, source, &mut findings);
         }
     });
     findings
@@ -23,25 +33,42 @@ pub(crate) fn property_drawer_findings(document: &ParsedAst, source: &str) -> Ve
 
 fn push_section_property_findings(
     section: &Section<ParsedAnnotation>,
+    profile: &PropertyProfile,
     source: &str,
     findings: &mut Vec<LintFinding>,
 ) {
-    push_property_findings(&section.properties, source, findings);
+    push_property_findings(&section.properties, profile, source, findings);
+    push_allowed_value_findings(
+        &section.properties,
+        &section.effective_properties,
+        profile,
+        source,
+        findings,
+    );
     for child in &section.subsections {
-        push_section_property_findings(child, source, findings);
+        push_section_property_findings(child, profile, source, findings);
     }
 }
 
 fn push_inlinetask_property_findings(
     task: &Inlinetask<ParsedAnnotation>,
+    profile: &PropertyProfile,
     source: &str,
     findings: &mut Vec<LintFinding>,
 ) {
-    push_property_findings(&task.properties, source, findings);
+    push_property_findings(&task.properties, profile, source, findings);
+    push_allowed_value_findings(
+        &task.properties,
+        &task.properties,
+        profile,
+        source,
+        findings,
+    );
 }
 
 fn push_property_findings(
     properties: &[Property<ParsedAnnotation>],
+    _profile: &PropertyProfile,
     source: &str,
     findings: &mut Vec<LintFinding>,
 ) {
@@ -55,6 +82,44 @@ fn push_property_findings(
             .push(property);
     }
     push_duplicate_property_findings(by_key, source, findings);
+}
+
+fn push_allowed_value_findings(
+    local_properties: &[Property<ParsedAnnotation>],
+    effective_properties: &[Property<ParsedAnnotation>],
+    profile: &PropertyProfile,
+    source: &str,
+    findings: &mut Vec<LintFinding>,
+) {
+    findings.extend(local_properties.iter().filter_map(|property| {
+        allowed_value_finding(property, effective_properties, profile, source)
+    }));
+}
+
+fn allowed_value_finding(
+    property: &Property<ParsedAnnotation>,
+    effective_properties: &[Property<ParsedAnnotation>],
+    profile: &PropertyProfile,
+    source: &str,
+) -> Option<LintFinding> {
+    if property.value.trim().is_empty() || is_allowed_value_descriptor(&property.key) {
+        return None;
+    }
+    let values = property_allowed_values(effective_properties, profile, &property.key)?;
+    if values.iter().any(|value| value == &property.value) {
+        return None;
+    }
+    Some(LintFinding {
+        code: "ORG030",
+        severity: LintSeverity::Warning,
+        message: format!(
+            "property `{}` value `{}` is not in allowed values: {}",
+            property.key,
+            property.value,
+            values.join(", ")
+        ),
+        location: location_for_range(source, property.ann.range),
+    })
 }
 
 fn push_effort_duration_finding(

@@ -7,8 +7,9 @@ use super::memory_model::{
 };
 use super::model::{
     Citation, CiteReference, Document, Element, ElementData, Link, ListItem, Object, ObjectData,
-    ParsedAnnotation, Property, Section, Timestamp,
+    ParsedAnnotation, Property, Section,
 };
+use super::timestamp_model::Timestamp;
 use super::{lifecycle::section_lifecycle_records, LifecycleRecordKind};
 
 impl Document<ParsedAnnotation> {
@@ -27,11 +28,7 @@ impl Document<ParsedAnnotation> {
 
     /// Projects memory records into compact agent-facing cards.
     pub fn agent_memory_snapshot(&self, query: &AgentMemoryQuery) -> AgentMemorySnapshot {
-        let cards = self
-            .memory_records(&query.memory)
-            .into_iter()
-            .map(AgentMemoryCard::from_record)
-            .collect();
+        let cards = AgentMemoryCard::from_records(self.memory_records(&query.memory));
         AgentMemorySnapshot { cards }
     }
 }
@@ -101,6 +98,38 @@ fn memory_property(
     property: &Property<ParsedAnnotation>,
     evidence: &mut Vec<MemoryEvidence>,
 ) -> MemoryProperty {
+    if is_identity_property(property.key.as_str()) {
+        evidence.push(MemoryEvidence {
+            source: MemorySource::from_annotation(&property.ann),
+            kind: MemoryEvidenceKind::Identity {
+                key: property.key.clone(),
+            },
+            value: property.value.clone(),
+        });
+    }
+    if is_archive_context_property(property.key.as_str()) {
+        evidence.push(MemoryEvidence {
+            source: MemorySource::from_annotation(&property.ann),
+            kind: MemoryEvidenceKind::ArchiveProperty,
+            value: property.value.clone(),
+        });
+    }
+    if property.key.eq_ignore_ascii_case("STYLE")
+        && property.value.trim().eq_ignore_ascii_case("habit")
+    {
+        evidence.push(MemoryEvidence {
+            source: MemorySource::from_annotation(&property.ann),
+            kind: MemoryEvidenceKind::HabitStyle,
+            value: property.value.clone(),
+        });
+    }
+    if property.key.eq_ignore_ascii_case("LAST_REPEAT") {
+        evidence.push(MemoryEvidence {
+            source: MemorySource::from_annotation(&property.ann),
+            kind: MemoryEvidenceKind::HabitLastRepeat,
+            value: property.value.clone(),
+        });
+    }
     evidence.push(MemoryEvidence {
         source: MemorySource::from_annotation(&property.ann),
         kind: MemoryEvidenceKind::Property {
@@ -113,6 +142,14 @@ fn memory_property(
         key: property.key.clone(),
         value: property.value.clone(),
     }
+}
+
+fn is_identity_property(key: &str) -> bool {
+    key.eq_ignore_ascii_case("ID") || key.eq_ignore_ascii_case("CUSTOM_ID")
+}
+
+fn is_archive_context_property(key: &str) -> bool {
+    key.to_ascii_uppercase().starts_with("ARCHIVE_")
 }
 
 fn classify_section(section: &Section<ParsedAnnotation>) -> MemoryRecordState {
@@ -206,12 +243,14 @@ fn collect_planning_evidence(
     section: &Section<ParsedAnnotation>,
     evidence: &mut Vec<MemoryEvidence>,
 ) {
+    let habit = is_habit_section(section);
     if let Some(timestamp) = &section.planning.scheduled {
         evidence.push(timestamp_evidence(
             &section.ann,
             MemoryEvidenceKind::Scheduled,
             timestamp,
         ));
+        collect_habit_repeater_evidence(section, habit, timestamp, evidence);
     }
     if let Some(timestamp) = &section.planning.deadline {
         evidence.push(timestamp_evidence(
@@ -219,11 +258,34 @@ fn collect_planning_evidence(
             MemoryEvidenceKind::Deadline,
             timestamp,
         ));
+        collect_habit_repeater_evidence(section, habit, timestamp, evidence);
     }
     if let Some(timestamp) = &section.planning.closed {
         evidence.push(timestamp_evidence(
             &section.ann,
             MemoryEvidenceKind::Closed,
+            timestamp,
+        ));
+    }
+}
+
+fn is_habit_section(section: &Section<ParsedAnnotation>) -> bool {
+    section.properties.iter().any(|property| {
+        property.key.eq_ignore_ascii_case("STYLE")
+            && property.value.trim().eq_ignore_ascii_case("habit")
+    })
+}
+
+fn collect_habit_repeater_evidence(
+    section: &Section<ParsedAnnotation>,
+    habit: bool,
+    timestamp: &Timestamp,
+    evidence: &mut Vec<MemoryEvidence>,
+) {
+    if habit && timestamp.repeater.is_some() {
+        evidence.push(timestamp_evidence(
+            &section.ann,
+            MemoryEvidenceKind::HabitRepeater,
             timestamp,
         ));
     }

@@ -1,5 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_agenda.rs
+assertion_line: 117
 expression: entries
 ---
 [
@@ -34,6 +35,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -120,6 +127,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -219,6 +232,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -311,6 +330,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -392,6 +417,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -465,6 +496,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -566,6 +603,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -674,6 +717,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -764,6 +813,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -853,6 +908,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,
@@ -939,6 +1000,12 @@ expression: entries
             ),
         ),
         level: 1,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
         todo: Some(
             TodoKeyword {
                 state: Todo,

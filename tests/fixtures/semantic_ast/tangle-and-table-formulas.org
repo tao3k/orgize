@@ -1,0 +1,20 @@
+#+NAME: explicit-rust
+#+begin_src rust :tangle src/lib.rs
+pub fn answer() -> i32 { 42 }
+#+end_src
+
+#+begin_src python :tangle yes
+print("ok")
+#+end_src
+
+#+begin_src shell :tangle no
+echo skip
+#+end_src
+
+Inline src_rust[:tangle yes]{let value = 1;} is visible but not tangled.
+
+| Item | Count | Total |
+|------+-------+-------|
+| A    |     2 |       |
+| B    |     3 |       |
+#+TBLFM: $3=$2*10::@3$2=remote(other,@1$1)

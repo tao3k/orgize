@@ -85,6 +85,20 @@ The projection should distinguish at least:
   competing evidence;
 - background facts: relevant context that should not drive action by itself.
 
+Current landing: `AgentMemorySnapshot` now promotes identity, temporal,
+archive context, lifecycle, attachment, habit, repeat, stale-candidate, and
+superseded-candidate reasons into compact cards. `ID` and `CUSTOM_ID` become
+identity authority, `ARCHIVE_*` properties become archive context, ordinary
+timestamps add temporal bounds, and habit repeaters explain cadence without
+turning old repeated facts into timeless preferences.
+
+Adjacent planning context now comes from `ProgressStatsRecord`: agents can
+consume subtree TODO totals, checkbox state, statistics cookies, Effort totals,
+and local `ORDERED` dependency evidence without asking the memory projection to
+become a planning engine. Memory authority decides whether facts enter the
+current decision; progress stats describe whether the related task surface is
+open, blocked, or partially complete.
+
 ** Implementation Slices
 
 The first implementation should be narrow and testable:

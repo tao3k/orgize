@@ -1,0 +1,16 @@
+#+CATEGORY: workshop
+* TODO Alpha :ATTACH:
+:PROPERTIES:
+:ID: alpha-id
+:CUSTOM_ID: alpha-custom
+:DIR: alpha-assets
+:END:
+See [[id:beta-id::*Beta][Beta heading]], [[#beta-custom]], [[attachment:plan.pdf::1]], and [[id:missing-id]].
+#+NAME: alpha-block
+#+begin_src rust :tangle alpha.rs
+fn main() {}
+#+end_src
+* Shared One
+:PROPERTIES:
+:ID: shared-id
+:END:

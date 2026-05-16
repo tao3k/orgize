@@ -1,0 +1,185 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_include_dated_agenda_extras.rs
+assertion_line: 75
+expression: opt_in_entries
+---
+[
+    AgendaEntry {
+        ann: (),
+        kind: Timestamp,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_end_date: None,
+        time: None,
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "2026-05-15 Friday",
+                ),
+            },
+        ],
+        raw_title: "2026-05-15 Friday",
+        category: None,
+        level: 3,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: None,
+        tags: [],
+        effective_tags: [],
+        anchor: Some(
+            "2026-05-15-friday",
+        ),
+        timestamp: Timestamp {
+            kind: Active,
+            raw: "<2026-05-15 Fri>",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: None,
+                    minute: None,
+                },
+            ),
+            end: None,
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: None,
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Timestamp,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_end_date: None,
+        time: None,
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "2026-05-15 Friday",
+                ),
+            },
+        ],
+        raw_title: "2026-05-15 Friday",
+        category: None,
+        level: 3,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: None,
+        tags: [],
+        effective_tags: [],
+        anchor: Some(
+            "2026-05-15-friday",
+        ),
+        timestamp: Timestamp {
+            kind: Inactive,
+            raw: "[2026-05-15 Fri]",
+            is_range: false,
+            start: Some(
+                TimestampMoment {
+                    year: 2026,
+                    month: 5,
+                    day: 15,
+                    day_name: Some(
+                        "Fri",
+                    ),
+                    hour: None,
+                    minute: None,
+                },
+            ),
+            end: None,
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: None,
+        deadline: None,
+    },
+    AgendaEntry {
+        ann: (),
+        kind: Diary,
+        display_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_date: AgendaDate {
+            year: 2026,
+            month: 5,
+            day: 15,
+        },
+        target_end_date: None,
+        time: None,
+        end_time: None,
+        title: [
+            Object {
+                ann: (),
+                data: Plain(
+                    "2026-05-15 Friday",
+                ),
+            },
+        ],
+        raw_title: "2026-05-15 Friday",
+        category: None,
+        level: 3,
+        priority: Priority {
+            cookie: None,
+            effective: Letter(
+                'B',
+            ),
+        },
+        todo: None,
+        tags: [],
+        effective_tags: [],
+        anchor: Some(
+            "2026-05-15-friday",
+        ),
+        timestamp: Timestamp {
+            kind: Diary,
+            raw: "<%%(diary-date 5 15)>",
+            is_range: false,
+            start: None,
+            end: None,
+            repeater: None,
+            warning: None,
+        },
+        occurrence: Source,
+        scheduled: None,
+        deadline: None,
+    },
+]

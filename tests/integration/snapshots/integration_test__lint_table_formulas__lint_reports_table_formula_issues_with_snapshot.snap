@@ -1,0 +1,39 @@
+---
+source: tests/integration/lint_table_formulas.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_compact_text(\"fixture.org\", source))"
+---
+clean: false
+[ORG024] Warning: remote table reference is missing a closing `)`
+@ fixture.org:5:1
+fix: write TBLFM assignments as supported Org table targets with non-empty right-hand sides
+line: 5 | #+TBLFM: $2=$1::$2=$99::bad-lhs=$1::@99=$1::$1=remote(other,$1
+Help: remote table reference is missing a closing `)`
+Contract: TBLFM formulas should use Org-supported left-hand targets and complete assignments before table tooling consumes them.
+
+[ORG024] Warning: table formula left-hand side `bad-lhs` is not an Org table target
+@ fixture.org:5:1
+fix: write TBLFM assignments as supported Org table targets with non-empty right-hand sides
+line: 5 | #+TBLFM: $2=$1::$2=$99::bad-lhs=$1::@99=$1::$1=remote(other,$1
+Help: table formula left-hand side `bad-lhs` is not an Org table target
+Contract: TBLFM formulas should use Org-supported left-hand targets and complete assignments before table tooling consumes them.
+
+[ORG025] Warning: table formula target `$2` is defined 2 times in one TBLFM line
+@ fixture.org:5:1
+fix: keep one formula assignment per TBLFM target in each active TBLFM line
+line: 5 | #+TBLFM: $2=$1::$2=$99::bad-lhs=$1::@99=$1::$1=remote(other,$1
+Help: table formula target `$2` is defined 2 times in one TBLFM line
+Contract: Each TBLFM target should have one active definition so agents and exporters do not guess which formula wins.
+
+[ORG026] Warning: table formula column reference `$99` points outside 2 table columns
+@ fixture.org:5:1
+fix: point table formula row and column references inside the current table shape
+line: 5 | #+TBLFM: $2=$1::$2=$99::bad-lhs=$1::@99=$1::$1=remote(other,$1
+Help: table formula column reference `$99` points outside 2 table columns
+Contract: Absolute table formula references should stay within the table rows and columns visible to this parser projection.
+
+[ORG026] Warning: table formula row reference `@99` points outside 4 table rows
+@ fixture.org:5:1
+fix: point table formula row and column references inside the current table shape
+line: 5 | #+TBLFM: $2=$1::$2=$99::bad-lhs=$1::@99=$1::$1=remote(other,$1
+Help: table formula row reference `@99` points outside 4 table rows
+Contract: Absolute table formula references should stay within the table rows and columns visible to this parser projection.

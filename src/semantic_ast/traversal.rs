@@ -5,7 +5,7 @@ use super::{
     CiteReference, Document, Drawer, Element, ElementData, FootnoteDef, FootnoteDefinition,
     FootnoteEntry, IncludeDirective, Inlinetask, InlinetaskEnd, Keyword, Link, List, ListItem,
     MacroDefinition, Object, ObjectData, Property, Section, SemanticFixedWidth, Table, TableCell,
-    TableRow, TargetDefinition,
+    TableFormula, TableRow, TargetDefinition,
 };
 
 impl<A> Document<A> {
@@ -1472,6 +1472,15 @@ impl<A> Table<A> {
                 .iter()
                 .map(|formula| formula.map_ann_with(f))
                 .collect(),
+            parsed_formulas: self
+                .parsed_formulas
+                .iter()
+                .map(|formula| TableFormula {
+                    ann: f(&formula.ann),
+                    raw: formula.raw.clone(),
+                    assignments: formula.assignments.clone(),
+                })
+                .collect(),
         }
     }
 
@@ -1510,6 +1519,17 @@ impl<A> Table<A> {
                 .iter()
                 .map(|formula| formula.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
+            parsed_formulas: self
+                .parsed_formulas
+                .iter()
+                .map(|formula| {
+                    Ok(TableFormula {
+                        ann: f(&formula.ann)?,
+                        raw: formula.raw.clone(),
+                        assignments: formula.assignments.clone(),
+                    })
+                })
+                .collect::<Result<_, E>>()?,
         })
     }
 
@@ -1896,7 +1916,7 @@ impl<A> ObjectData<A> {
                 value: value.clone(),
                 raw: raw.clone(),
             },
-            ObjectData::Link(link) => ObjectData::Link(link.map_ann_with(f)),
+            ObjectData::Link(link) => ObjectData::Link(Box::new(link.map_ann_with(f))),
             ObjectData::Target(value) => ObjectData::Target(value.clone()),
             ObjectData::RadioTarget(value) => ObjectData::RadioTarget(value.clone()),
             ObjectData::Macro { name, arguments } => ObjectData::Macro {
@@ -1987,7 +2007,7 @@ impl<A> ObjectData<A> {
                 value: value.clone(),
                 raw: raw.clone(),
             },
-            ObjectData::Link(link) => ObjectData::Link(link.try_map_ann_with(f)?),
+            ObjectData::Link(link) => ObjectData::Link(Box::new(link.try_map_ann_with(f)?)),
             ObjectData::Target(value) => ObjectData::Target(value.clone()),
             ObjectData::RadioTarget(value) => ObjectData::RadioTarget(value.clone()),
             ObjectData::Macro { name, arguments } => ObjectData::Macro {
@@ -2103,6 +2123,7 @@ impl<A> Link<A> {
             caption: self.caption.as_ref().map(|caption| caption.map_ann_with(f)),
             search: self.search.clone(),
             attachment: self.attachment.clone(),
+            file: self.file.clone(),
         }
     }
 
@@ -2133,6 +2154,7 @@ impl<A> Link<A> {
                 .transpose()?,
             search: self.search.clone(),
             attachment: self.attachment.clone(),
+            file: self.file.clone(),
         })
     }
 

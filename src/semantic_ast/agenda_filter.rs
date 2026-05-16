@@ -5,6 +5,7 @@ use super::agenda_match::{
 };
 use super::agenda_model::{is_done_keyword, AgendaCategory, AgendaQuery};
 use super::model::Section;
+use super::special_properties::{special_property_value, SpecialPropertyContext};
 
 pub(crate) fn section_matches_query<A>(
     section: &Section<A>,
@@ -35,29 +36,36 @@ pub(crate) fn section_matches_query<A>(
         return false;
     }
     if let Some(match_query) = &query.match_query {
-        if !agenda_match_query_matches(section, category, match_query) {
+        if !section_matches_agenda_match(
+            section,
+            category,
+            query.source_file.as_deref(),
+            match_query,
+        ) {
             return false;
         }
     }
     true
 }
 
-fn agenda_match_query_matches<A>(
+pub(crate) fn section_matches_agenda_match<A>(
     section: &Section<A>,
     category: Option<&AgendaCategory>,
+    source_file: Option<&str>,
     match_query: &AgendaMatchQuery,
 ) -> bool {
     match_query.clauses.iter().any(|clause| {
         clause
             .terms
             .iter()
-            .all(|term| agenda_match_term_matches(section, category, term))
+            .all(|term| agenda_match_term_matches(section, category, source_file, term))
     })
 }
 
 fn agenda_match_term_matches<A>(
     section: &Section<A>,
     category: Option<&AgendaCategory>,
+    source_file: Option<&str>,
     term: &AgendaMatchTerm,
 ) -> bool {
     let matched = match &term.predicate {
@@ -66,7 +74,7 @@ fn agenda_match_term_matches<A>(
             key,
             operator,
             value,
-        } => agenda_match_property_matches(section, category, key, *operator, value),
+        } => agenda_match_property_matches(section, category, source_file, key, *operator, value),
     };
 
     if term.positive {
@@ -79,11 +87,12 @@ fn agenda_match_term_matches<A>(
 fn agenda_match_property_matches<A>(
     section: &Section<A>,
     category: Option<&AgendaCategory>,
+    source_file: Option<&str>,
     key: &str,
     operator: AgendaMatchOperator,
     expected: &AgendaMatchValue,
 ) -> bool {
-    let Some(actual) = agenda_match_property_value(section, category, key) else {
+    let Some(actual) = agenda_match_property_value(section, category, source_file, key) else {
         return false;
     };
     compare_agenda_match_values(actual.as_str(), operator, expected)
@@ -92,43 +101,12 @@ fn agenda_match_property_matches<A>(
 fn agenda_match_property_value<A>(
     section: &Section<A>,
     category: Option<&AgendaCategory>,
+    source_file: Option<&str>,
     key: &str,
 ) -> Option<String> {
-    if key.eq_ignore_ascii_case("TODO") {
-        return section.todo.as_ref().map(|todo| todo.name.clone());
-    }
-    if key.eq_ignore_ascii_case("LEVEL") {
-        return Some(section.level.to_string());
-    }
-    if key.eq_ignore_ascii_case("PRIORITY") {
-        return Some(section.priority.effective_text());
-    }
-    if key.eq_ignore_ascii_case("CATEGORY") {
-        return category.map(|category| category.as_str().to_string());
-    }
-    if key.eq_ignore_ascii_case("SCHEDULED") {
-        return section
-            .planning
-            .scheduled
-            .as_ref()
-            .map(|timestamp| timestamp.raw.clone());
-    }
-    if key.eq_ignore_ascii_case("DEADLINE") {
-        return section
-            .planning
-            .deadline
-            .as_ref()
-            .map(|timestamp| timestamp.raw.clone());
-    }
-    if key.eq_ignore_ascii_case("CLOSED") {
-        return section
-            .planning
-            .closed
-            .as_ref()
-            .map(|timestamp| timestamp.raw.clone());
-    }
-    if key.eq_ignore_ascii_case("TAGS") {
-        return Some(section.effective_tags.join(":"));
+    let context = SpecialPropertyContext::new(category.map(AgendaCategory::as_str), source_file);
+    if let Some(value) = special_property_value(section, context, key) {
+        return Some(value);
     }
 
     section
@@ -155,6 +133,20 @@ fn compare_agenda_match_values(
     }
 
     if let (Ok(left), Ok(right)) = (actual.parse::<f64>(), expected.as_str().parse::<f64>()) {
+        return match operator {
+            AgendaMatchOperator::Equal => left == right,
+            AgendaMatchOperator::NotEqual => left != right,
+            AgendaMatchOperator::Less => left < right,
+            AgendaMatchOperator::LessOrEqual => left <= right,
+            AgendaMatchOperator::Greater => left > right,
+            AgendaMatchOperator::GreaterOrEqual => left >= right,
+        };
+    }
+
+    if let (Some(left), Some(right)) = (
+        super::special_properties::timestamp_sort_key(actual),
+        super::special_properties::timestamp_sort_key(expected.as_str()),
+    ) {
         return match operator {
             AgendaMatchOperator::Equal => left == right,
             AgendaMatchOperator::NotEqual => left != right,

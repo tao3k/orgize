@@ -1,6 +1,7 @@
 //! Agent-facing memory projection types derived from ordinary Org semantics.
 
-use super::model::{ParsedAnnotation, SourcePosition, TimestampKind, TodoKeyword, TodoState};
+use super::model::{ParsedAnnotation, SourcePosition, TodoKeyword, TodoState};
+use super::timestamp_model::TimestampKind;
 
 /// Query for Org-native memory records.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -122,6 +123,7 @@ impl AgentMemorySnapshot {
 pub struct AgentMemoryCard {
     pub source: MemorySource,
     pub decision: AgentMemoryDecision,
+    pub authority: Vec<MemoryAuthorityReason>,
     pub title: String,
     pub todo: Option<TodoKeyword>,
     pub tags: Vec<String>,
@@ -132,10 +134,51 @@ pub struct AgentMemoryCard {
 }
 
 impl AgentMemoryCard {
-    pub(crate) fn from_record(record: MemoryRecord) -> Self {
+    pub(crate) fn from_records(records: Vec<MemoryRecord>) -> Vec<Self> {
+        let current_keys = records
+            .iter()
+            .filter(|record| record.state == MemoryRecordState::Current)
+            .flat_map(memory_authority_keys)
+            .collect::<Vec<_>>();
+
+        records
+            .into_iter()
+            .map(|record| {
+                let mut extra = Vec::new();
+                if is_historical_state(record.state) {
+                    push_authority(
+                        &mut extra,
+                        MemoryAuthorityKind::StaleCandidate,
+                        "historical state makes this a stale candidate for current decisions",
+                    );
+                }
+                if is_historical_state(record.state)
+                    && memory_authority_keys(&record)
+                        .into_iter()
+                        .any(|key| current_keys.iter().any(|current| current == &key))
+                {
+                    push_authority(
+                        &mut extra,
+                        MemoryAuthorityKind::SupersededCandidate,
+                        "a current memory card with the same anchor or title may supersede this fact",
+                    );
+                }
+                Self::from_record_with_extra_authority(record, extra)
+            })
+            .collect()
+    }
+
+    fn from_record_with_extra_authority(
+        record: MemoryRecord,
+        mut extra_authority: Vec<MemoryAuthorityReason>,
+    ) -> Self {
+        let decision = AgentMemoryDecision::from_state(record.state);
+        let mut authority = memory_authority_reasons(record.state, &record.evidence);
+        authority.append(&mut extra_authority);
         Self {
             source: record.source,
-            decision: AgentMemoryDecision::from_state(record.state),
+            decision,
+            authority,
             title: record.title,
             todo: record.todo,
             tags: record.tags,
@@ -183,6 +226,18 @@ impl AgentMemoryCard {
         if !evidence.is_empty() {
             output.push_str("evidence: ");
             output.push_str(&evidence.join(", "));
+            output.push('\n');
+        }
+        if !self.authority.is_empty() {
+            output.push_str("authority: ");
+            output.push_str(
+                &self
+                    .authority
+                    .iter()
+                    .map(|reason| reason.message.as_str())
+                    .collect::<Vec<_>>()
+                    .join("; "),
+            );
             output.push('\n');
         }
         if !self.links.is_empty() {
@@ -254,6 +309,30 @@ pub struct MemoryEvidence {
     pub value: String,
 }
 
+/// Agent-facing reason that explains how memory evidence may influence a decision.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MemoryAuthorityReason {
+    pub kind: MemoryAuthorityKind,
+    pub message: String,
+}
+
+/// Coarse authority category for agent memory consumption.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MemoryAuthorityKind {
+    Current,
+    Closed,
+    Archived,
+    Background,
+    Identity,
+    Temporal,
+    Lifecycle,
+    Attachment,
+    Habit,
+    Repeat,
+    StaleCandidate,
+    SupersededCandidate,
+}
+
 /// Kind of official Org evidence attached to a memory record.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MemoryEvidenceKind {
@@ -263,6 +342,10 @@ pub enum MemoryEvidenceKind {
     ArchiveProperty,
     AttachmentTag,
     AttachmentDirectory,
+    HabitStyle,
+    HabitLastRepeat,
+    HabitRepeater,
+    Identity { key: String },
     Property { key: String },
     Scheduled,
     Deadline,
@@ -285,6 +368,10 @@ impl MemoryEvidenceKind {
             Self::ArchiveProperty => "ARCHIVE property".to_string(),
             Self::AttachmentTag => "ATTACH tag".to_string(),
             Self::AttachmentDirectory => "attachment directory".to_string(),
+            Self::HabitStyle => "habit style".to_string(),
+            Self::HabitLastRepeat => "habit last repeat".to_string(),
+            Self::HabitRepeater => "habit repeater".to_string(),
+            Self::Identity { key } => format!("identity {key}"),
             Self::Property { key } => format!("property {key}"),
             Self::Scheduled => "SCHEDULED".to_string(),
             Self::Deadline => "DEADLINE".to_string(),
@@ -302,6 +389,147 @@ impl MemoryEvidenceKind {
             Self::Lifecycle(kind) => format!("lifecycle {}", kind.title()),
         }
     }
+}
+
+fn memory_authority_reasons(
+    state: MemoryRecordState,
+    evidence: &[MemoryEvidence],
+) -> Vec<MemoryAuthorityReason> {
+    let mut reasons = Vec::new();
+    match state {
+        MemoryRecordState::Current => push_authority(
+            &mut reasons,
+            MemoryAuthorityKind::Current,
+            "current Org task or planning evidence may enter active decisions",
+        ),
+        MemoryRecordState::Closed => push_authority(
+            &mut reasons,
+            MemoryAuthorityKind::Closed,
+            "DONE or CLOSED evidence keeps this fact historical",
+        ),
+        MemoryRecordState::Archived => push_authority(
+            &mut reasons,
+            MemoryAuthorityKind::Archived,
+            "ARCHIVE evidence suppresses active promotion by default",
+        ),
+        MemoryRecordState::Background => push_authority(
+            &mut reasons,
+            MemoryAuthorityKind::Background,
+            "no active task lifecycle; use as background context",
+        ),
+    }
+
+    for item in evidence {
+        match &item.kind {
+            MemoryEvidenceKind::ArchiveTag
+            | MemoryEvidenceKind::ArchiveLocation
+            | MemoryEvidenceKind::ArchiveProperty => push_authority(
+                &mut reasons,
+                MemoryAuthorityKind::Archived,
+                "archive metadata marks this as retained historical evidence",
+            ),
+            MemoryEvidenceKind::Closed => push_authority(
+                &mut reasons,
+                MemoryAuthorityKind::Closed,
+                "CLOSED timestamp blocks promotion as a fresh active fact",
+            ),
+            MemoryEvidenceKind::Identity { .. } => push_authority(
+                &mut reasons,
+                MemoryAuthorityKind::Identity,
+                "stable identity evidence lets agents correlate corrections across time",
+            ),
+            MemoryEvidenceKind::Scheduled
+            | MemoryEvidenceKind::Deadline
+            | MemoryEvidenceKind::Timestamp { .. } => push_authority(
+                &mut reasons,
+                MemoryAuthorityKind::Temporal,
+                "timestamp evidence gives this fact a bounded time context",
+            ),
+            MemoryEvidenceKind::Lifecycle(_) | MemoryEvidenceKind::Logbook => push_authority(
+                &mut reasons,
+                MemoryAuthorityKind::Lifecycle,
+                "LOGBOOK or lifecycle records explain how this fact changed over time",
+            ),
+            MemoryEvidenceKind::AttachmentTag
+            | MemoryEvidenceKind::AttachmentDirectory
+            | MemoryEvidenceKind::AttachmentLink => push_authority(
+                &mut reasons,
+                MemoryAuthorityKind::Attachment,
+                "attachment evidence provides supporting artifact context",
+            ),
+            MemoryEvidenceKind::HabitStyle => push_authority(
+                &mut reasons,
+                MemoryAuthorityKind::Habit,
+                "habit evidence marks recurring cadence instead of a one-off fact",
+            ),
+            MemoryEvidenceKind::HabitLastRepeat | MemoryEvidenceKind::HabitRepeater => {
+                push_authority(
+                    &mut reasons,
+                    MemoryAuthorityKind::Habit,
+                    "habit evidence marks recurring cadence instead of a one-off fact",
+                );
+                push_authority(
+                    &mut reasons,
+                    MemoryAuthorityKind::Repeat,
+                    "repeat evidence should be interpreted as cadence, not a timeless preference",
+                );
+            }
+            MemoryEvidenceKind::TodoState
+            | MemoryEvidenceKind::Property { .. }
+            | MemoryEvidenceKind::Drawer { .. }
+            | MemoryEvidenceKind::Clock
+            | MemoryEvidenceKind::Link => {}
+        }
+    }
+    reasons
+}
+
+fn push_authority(
+    reasons: &mut Vec<MemoryAuthorityReason>,
+    kind: MemoryAuthorityKind,
+    message: &'static str,
+) {
+    if reasons.iter().any(|reason| reason.kind == kind) {
+        return;
+    }
+    reasons.push(MemoryAuthorityReason {
+        kind,
+        message: message.to_string(),
+    });
+}
+
+fn is_historical_state(state: MemoryRecordState) -> bool {
+    matches!(
+        state,
+        MemoryRecordState::Closed | MemoryRecordState::Archived
+    )
+}
+
+fn memory_authority_keys(record: &MemoryRecord) -> Vec<String> {
+    let mut keys = Vec::new();
+    if let Some(anchor) = &record.anchor {
+        keys.push(format!("anchor:{}", anchor.to_ascii_lowercase()));
+    }
+    for property in &record.properties {
+        if property.key.eq_ignore_ascii_case("ID") || property.key.eq_ignore_ascii_case("CUSTOM_ID")
+        {
+            keys.push(format!(
+                "{}:{}",
+                property.key.to_ascii_lowercase(),
+                property.value.to_ascii_lowercase()
+            ));
+        }
+    }
+    keys.push(format!(
+        "title:{}",
+        record
+            .title
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .to_ascii_lowercase()
+    ));
+    keys
 }
 
 /// Lifecycle event category used by memory evidence.

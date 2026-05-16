@@ -1,9 +1,8 @@
 //! Priority-cookie lint checks.
 
-use crate::{
-    ast::PriorityValue,
-    lint_model::{location_for_offsets, LintFinding, LintSeverity},
-};
+use crate::ast::PriorityValue;
+
+use super::lint_model::{location_for_offsets, LintFinding, LintSeverity};
 
 pub(crate) fn priority_cookie_findings(source: &str) -> Vec<LintFinding> {
     source

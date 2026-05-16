@@ -1,0 +1,5 @@
+* Links
+[[file:notes/demo.org::*Exact Heading][heading]]
+[[file:../assets/report.pdf::12]]
+[[file+sys:/Applications/Preview.app]]
+[[attachment:images/screenshot.png::*Caption]]

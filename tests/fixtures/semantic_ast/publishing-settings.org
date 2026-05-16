@@ -1,0 +1,10 @@
+#+TITLE: Publish Demo
+#+EXPORT_FILE_NAME: public/demo/index.html
+#+SETUPFILE: ./theme.setup
+#+BIND: org-export-use-babel nil
+#+OPTIONS: H:3 num:t todo:nil tags:t <:nil author:t creator:nil date:t email:nil title:t d:nil p:nil pri:nil broken-links:mark
+#+HTML_HEAD: <link rel="stylesheet" href="/theme.css">
+#+LATEX_HEADER: \usepackage{minted}
+#+INCLUDE: "partials/header.org" :lines "1-12"
+#+ATTR_HTML: :class article-cover :loading lazy
+[[file:cover.png]]

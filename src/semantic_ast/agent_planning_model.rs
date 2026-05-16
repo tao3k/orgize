@@ -5,6 +5,7 @@ use super::agenda_model::{
     AgendaOccurrence, AgendaQuery, AgendaScheduleState, AgendaTime,
 };
 use super::model::{ParsedAnnotation, SourcePosition, TodoKeyword};
+use super::task_blocker_model::TaskBlockerRecord;
 
 /// Query wrapper for agent-facing planning snapshots.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -67,10 +68,14 @@ pub struct AgentPlanningCard {
     pub effective_tags: Vec<String>,
     pub anchor: Option<String>,
     pub occurrence: AgendaOccurrence,
+    pub blockers: Vec<TaskBlockerRecord>,
 }
 
 impl AgentPlanningCard {
-    pub(crate) fn from_agenda_entry(entry: AgendaEntry<ParsedAnnotation>) -> Self {
+    pub(crate) fn from_agenda_entry(
+        entry: AgendaEntry<ParsedAnnotation>,
+        blockers: Vec<TaskBlockerRecord>,
+    ) -> Self {
         Self {
             source: AgentPlanningSource::from_annotation(&entry.ann),
             decision: AgentPlanningDecision::from_agenda_entry(&entry),
@@ -86,6 +91,7 @@ impl AgentPlanningCard {
             effective_tags: entry.effective_tags,
             anchor: entry.anchor,
             occurrence: entry.occurrence,
+            blockers,
         }
     }
 
@@ -132,6 +138,17 @@ impl AgentPlanningCard {
         output.push_str("next: ");
         output.push_str(self.decision.next_action());
         output.push('\n');
+        for blocker in &self.blockers {
+            output.push_str("blocked-by: ");
+            output.push_str(blocker.kind.as_str());
+            output.push(' ');
+            output.push_str(&blocker.blocker.title);
+            output.push_str(" @ ");
+            output.push_str(&blocker.blocker.source.start.line.to_string());
+            output.push(':');
+            output.push_str(&blocker.blocker.source.start.column.to_string());
+            output.push('\n');
+        }
         output.push_str("contract: ");
         output.push_str(
             "Derived from official Org agenda syntax; no custom source syntax is required.",
@@ -195,7 +212,7 @@ impl AgentPlanningDecision {
                 }
                 Some(AgendaScheduleState::OnDate) | None => Self::Scheduled,
             },
-            AgendaEntryKind::Timestamp => Self::ActiveTimestamp,
+            AgendaEntryKind::Timestamp | AgendaEntryKind::Diary => Self::ActiveTimestamp,
             AgendaEntryKind::Closed => Self::Closed,
         }
     }

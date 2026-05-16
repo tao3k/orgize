@@ -1,0 +1,11 @@
+* Beta
+:PROPERTIES:
+:ID: beta-id
+:CUSTOM_ID: beta-custom
+:END:
+<<beta-target>>
+See [[id:alpha-id]] and [[id:shared-id]].
+* Shared Two
+:PROPERTIES:
+:ID: shared-id
+:END:

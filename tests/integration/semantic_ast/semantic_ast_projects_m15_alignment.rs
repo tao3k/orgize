@@ -13,6 +13,7 @@ fn semantic_ast_projects_m15_keyword_settings_and_abbreviations() {
         r#"#+TITLE: *Demo* Doc
 #+AUTHOR: Alice
 #+FILETAGS: :work:rust:
+#+FILETAGS: :work:rust:
 #+OPTIONS: H:2 -:t e:nil
 #+SELECT_TAGS: publish
 #+EXCLUDE_TAGS: noexport archived

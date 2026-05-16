@@ -32,7 +32,7 @@ fn semantic_ast_projects_source_grounded_section_index_records() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
 
-    let records = doc.section_index_records();
+    let records = doc.section_index_records_for_file("research.org");
     assert_eq!(records.len(), 2);
 
     let parent = records
@@ -68,8 +68,26 @@ fn semantic_ast_projects_source_grounded_section_index_records() {
         .iter()
         .any(|link| link.path == "id:child-id::*Child"
             && link.search.as_ref().is_some_and(|search| {
-                search.raw == "*Child" && search.kind == LinkSearchKind::Headline
+                search.raw == "*Child"
+                    && search.kind == LinkSearchKind::Headline
+                    && search.normalized == "child"
             })));
+    assert!(parent
+        .special_properties
+        .iter()
+        .any(|property| { property.name == "ITEM" && property.value == "Parent" }));
+    assert!(parent
+        .special_properties
+        .iter()
+        .any(|property| { property.name == "FILE" && property.value == "research.org" }));
+    assert!(parent
+        .special_properties
+        .iter()
+        .any(|property| { property.name == "CATEGORY" && property.value == "research" }));
+    assert!(parent
+        .special_properties
+        .iter()
+        .any(|property| { property.name == "TAGS" && property.value == ":agent:" }));
     assert!(parent.targets.iter().any(|target| {
         target.kind == TargetKind::CustomId
             && target.key == "#parent-custom"

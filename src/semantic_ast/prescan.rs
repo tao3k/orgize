@@ -30,7 +30,9 @@ pub(super) fn collect_document_keyword(
     match key.as_str() {
         "TITLE" | "AUTHOR" | "DATE" | "CAPTION" => prescan.metadata.push(keyword),
         "FILETAGS" => {
-            prescan.filetags.extend(parse_tags(keyword.value.trim()));
+            for tag in parse_tags(keyword.value.trim()) {
+                push_unique(&mut prescan.filetags, tag);
+            }
             prescan.metadata.push(keyword);
         }
         "OPTIONS" => {
@@ -65,6 +67,12 @@ pub(super) fn collect_document_keyword(
             prescan.metadata.push(keyword);
         }
         _ => {}
+    }
+}
+
+fn push_unique(values: &mut Vec<String>, value: String) {
+    if !values.iter().any(|existing| existing == &value) {
+        values.push(value);
     }
 }
 

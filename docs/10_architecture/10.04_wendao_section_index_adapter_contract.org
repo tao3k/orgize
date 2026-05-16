@@ -1,0 +1,79 @@
+* 10.04 Wendao Section Index Adapter Contract
+
+This note defines the contract between Orgize and Wendao for Org-native section
+index ingestion.  It is intentionally narrow: Orgize parses and projects
+official Org semantics; Wendao owns search, storage, ranking, fusion, and
+agent-facing retrieval APIs.
+
+** Boundary
+
+Orgize provides a document-local semantic projection:
+
+- source ranges for every section and nested evidence;
+- outline path, direct body slices, TODO, priority, tags, properties, planning,
+  archive, attachment, lifecycle, links, targets, and official special
+  properties;
+- typed link search suffix hints from Org links such as `file:x.org::*Heading`;
+- no filesystem crawl, global ID database, vector index, ranking, or cross-file
+  resolution.
+
+Wendao consumes that projection and owns:
+
+- repository and workspace scans;
+- file IO policy, cache invalidation, and persistence;
+- text, vector, graph, and source-pack indexes;
+- cross-file target resolution and global `ID` lookup;
+- agent-facing search APIs and ranking/fusion policy.
+
+** Adapter Flow
+
+For each Org file, Wendao should:
+
+1. parse source text through `Org::parse(source).document()`;
+2. call `section_index_records_for_file(path)` when a caller-visible file path
+   is known, or `section_index_records()` for path-independent tests;
+3. persist one row per `SectionIndexRecord`;
+4. retain `source.range_start`, `source.range_end`, `outline_path`,
+   `special_properties`, `links`, `targets`, and `lifecycle` as indexed
+   evidence rather than flattening them into prose.
+
+`FILE` is a caller-context special property, so Orgize only projects it when
+the adapter supplies a path.  This mirrors Org's buffer/file context without
+making the parser depend on the host filesystem.
+
+** Link Search Hints
+
+`LinkSearch` is a parse-time hint for Wendao, not a search engine.  It preserves:
+
+- `raw`: the source suffix after `::`;
+- `kind`: headline, custom id, line number, regexp, or text;
+- `normalized`: a stable lookup hint for common document-local matching.
+
+Wendao may use these hints to look up section targets, but unresolved matches
+must remain ordinary link evidence.  Orgize does not invent fallback targets.
+
+** Agent Projection Policy
+
+Agent APIs should prefer structured fields over generated prose:
+
+- use `special_properties` for agenda-like filtering and memory authority
+  checks;
+- use `lifecycle` and `archive` to prevent closed or archived facts from
+  re-entering current decisions without newer evidence;
+- use `attachment` and attachment links as supporting artifact evidence;
+- use `links` and `targets` for graph construction, leaving ranking to Wendao.
+
+This keeps Org source syntax standard while giving agents a compact,
+deterministic projection that can be searched, ranked, and explained.
+
+** Validation
+
+After changing this boundary, run:
+
+#+begin_src sh
+direnv exec . cargo fmt --check
+direnv exec . cargo check
+direnv exec . cargo test --test integration_test semantic_ast_projects_section_index_records -- --nocapture
+direnv exec . cargo test --test integration_test semantic_ast_projects_agent_memory -- --nocapture
+direnv exec . cargo run --quiet -- lint docs development.org
+#+end_src

@@ -2,7 +2,8 @@
 
 This document is the structured performance closeout for the parser-v2.0 lane.
 It records which hot paths are protected, how to reproduce the benchmark set,
-and the current dense-path evidence collected on 2026-05-12.
+and the current dense-path evidence collected on 2026-05-12, with the
+dense-agenda and include/datetree rows refreshed on 2026-05-15.
 
 ** Scope
 
@@ -41,13 +42,15 @@ and the current dense-path evidence collected on 2026-05-12.
 | `Org::document/dense-m15-side-tables` | `many-m15-settings-links-footnotes.org` | M15 semantic side tables, aliases, citations, and footnote postprocess. |
 | `Document::project_for_export/dense-m15` | `many-m15-settings-links-footnotes.org` | Export pruning, tag filtering, special strings, headline shifting, and abbreviation expansion. |
 | `Document::agenda_entries/dense-agenda` | `many-agenda-planning-timestamps.org` | Agenda row generation for scheduled/deadline/closed planning, plain active timestamps, headline time-of-day ranges, repeaters, warnings, scheduled delays, categories, done/archive inclusion, and multi-day ranges. |
+| `Document::include-datetree-agenda-extras/dense` | `include-expansion-plan.org`, `datetree-entries.org`, `agenda-inactive-diary.org` | Include expansion planning, datetree recognition, inactive timestamp projection, and diary timestamp agenda rows. |
 
 ** Current Dense Evidence
 
-Command:
+Commands:
 
 #+begin_src sh
 direnv exec . cargo bench --bench parse "dense-|macro_expansions/dense" -- --sample-size 10 --warm-up-time 1 --measurement-time 2
+direnv exec . cargo bench --bench parse include-datetree -- --sample-size 10 --warm-up-time 1 --measurement-time 2
 #+end_src
 
 The numbers below are local low-sample Criterion measurements for closeout
@@ -61,6 +64,10 @@ evidence, not hard cross-machine regression thresholds.
 | `Org::document/dense-semantic-radio-projection/many-parsed-object-radio-links.org` | 19.396 ms | 15.447-23.118 ms | 1.6411 MiB/s |
 | `Org::document/dense-m15-side-tables/many-m15-settings-links-footnotes.org` | 10.109 ms | 7.8993-11.831 ms | 4.9057 MiB/s |
 | `Document::project_for_export/dense-m15/many-m15-settings-links-footnotes.org` | 3.9719 ms | 2.7931-5.1902 ms | 12.485 MiB/s |
+| `Document::agenda_entries/dense-agenda/many-agenda-planning-timestamps.org` | 1.5405 ms | 1.4914-1.6307 ms | 26.863 MiB/s |
+| `Document::include-datetree-agenda-extras/dense/include-expansion-plan.org` | 97.327 us | 89.396-111.76 us | 271.38 MiB/s |
+| `Document::include-datetree-agenda-extras/dense/datetree-entries.org` | 82.463 us | 78.602-90.595 us | 320.30 MiB/s |
+| `Document::include-datetree-agenda-extras/dense/agenda-inactive-diary.org` | 161.02 us | 150.65-176.77 us | 164.03 MiB/s |
 
 ** Closeout Gate
 
@@ -73,6 +80,7 @@ direnv exec . cargo clippy --workspace --all-targets --all-features -- -D warnin
 direnv exec . cargo test --doc --all-features
 direnv exec . cargo bench --bench parse dense-m15 -- --test
 direnv exec . cargo bench --bench parse dense-agenda -- --test
+direnv exec . cargo bench --bench parse include-datetree -- --test
 direnv exec . cargo bench --bench parse "dense-|macro_expansions/dense" -- --sample-size 10 --warm-up-time 1 --measurement-time 2
 direnv exec . cargo run --quiet --manifest-path /Users/guangtao/ghq/github.com/tao3k/rust-lang-project-harness/Cargo.toml -- --json /Users/guangtao/ghq/github.com/tao3k/orgize
 git diff --check

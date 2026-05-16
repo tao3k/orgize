@@ -6,10 +6,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{
-    ast::{Element, ElementData, Link, Object, ObjectData, ParsedAnnotation, ParsedAst, Section},
-    lint_model::{location_for_range, LintFinding, LintOptions, LintSeverity},
+use crate::ast::{
+    Element, ElementData, Link, Object, ObjectData, ParsedAnnotation, ParsedAst, Section,
 };
+
+use super::lint_model::{location_for_range, LintFinding, LintOptions, LintSeverity};
 
 pub(crate) fn attachment_findings(
     document: &ParsedAst,
