@@ -1068,3 +1068,53 @@ Views", "Capture"; `lisp/org-habit.el`, `lisp/org-datetree.el`,
       helper that maps dates to heading paths.
 - [X] Add tests for inactive timestamp inclusion as an explicit agenda option,
       keeping the default inactive behavior unchanged.
+
+*** M25 Official Org Alignment Priority Queue
+
+This is the refreshed backlog table for "which major Org-mode capabilities
+should orgize align next".  It differs from the M24 audit above: M24 records
+the broad official capability map and historical coverage, while M25 is the
+ordered implementation queue.  The source references are the local official Org
+checkout at `.data/org-mode` (`doc/org-manual.org`, `lisp/org-*.el`,
+`lisp/oc*.el`, and `lisp/ox*.el`) plus the local research-only AST/exporter
+comparison checkout.  Neither checkout may enter Cargo, CI, tests, generated
+artifacts, or release packages.
+
+Priority rules:
+
+- P0: everyday agenda/search/planning behavior that downstream agents and UIs
+      need to trust.
+- P1: high-value Org workflows that should become semantic side tables or
+      non-executing plans before exporter/frontend work depends on them.
+- P2: useful parity work that should remain opt-in, filesystem-aware, or
+      explicitly out of the parser core.
+- Out-of-core: interactive editing, code execution, network handlers, live
+      Emacs state, and source mutation.  orgize can expose safe plans or lint
+      evidence for these, but should not perform the action.
+
+| Order | Priority | Capability | Official anchors | Current orgize coverage | Missing alignment | Next slice | Acceptance shape |
+|-------+----------+------------+------------------+-------------------------+-------------------+------------+------------------|
+| M25.1 | P0 | Workspace agenda file set and built-in command plans | `doc/org-manual.org` "Agenda Files", "The Built-in Agenda Views", "Stuck projects"; `lisp/org-agenda.el` | Document-local `AgendaQuery`, `AgendaViewPlan`, block agenda sections, workspace section index | No typed `org-agenda-files`/manifest contract; no global TODO/search/stuck command plan over multiple parsed documents | Add `AgendaWorkspaceQuery` and `AgendaCommandPlan` over caller-supplied parsed docs or file manifests, covering agenda, TODO, tags/property, search, and stuck-project views without scanning the filesystem by default | Field assertions and compact snapshots for multi-file agenda/TODO/search/stuck outputs, stable source-file receipts, wasm DTO smoke |
+| M25.2 | P0 | Agenda urgency, skip, and official filter receipts | `doc/org-manual.org` "Presentation and Sorting", "Filtering/limiting agenda items"; `lisp/org-agenda.el` | Sort strategy subset, limits, match query, deadline/schedule state, priority score metadata | No official urgency score bundle; pre-agenda skip/filter reasons are not fully exposed as receipts | Add `AgendaUrgencyScore`, skip/filter receipt taxonomy, and score ingredients for deadline warning, scheduled state, priority, TODO state, time, category, and inherited tags | Snapshot rows include sort keys, urgency ingredients, accepted/skipped receipts; existing agenda tests remain stable |
+| M25.3 | P1 | Org Cite bibliography and print-bibliography projection | `lisp/oc.el`, `lisp/oc-csl.el`, `lisp/oc-biblatex.el`, `lisp/oc-natbib.el`; local AST/exporter research checkout as comparison only | Citation syntax and semantic `Citation`/`CiteReference` objects exist; malformed citations are diagnosed | No `#+bibliography`, `#+cite_export`, `#+print_bibliography`, nocite, processor/style metadata, or bibliography placement plan | Add `CitationExportPlan` side table that records bibliography files, citation keys, processors, style hints, nocite/all-cite intent, and print-bibliography locations without loading bibliography files | Original Rust snapshots for bibliography keywords, citation key collection, nocite, malformed print options; no citeproc dependency |
+| M25.4 | P1 | Capture template semantics without capture execution | `doc/org-manual.org` "Capture templates"; `lisp/org-capture.el` | Datetree, refile, lifecycle, and attachment evidence can represent captured source after it exists | No representation of template target kinds, `%` expansion placeholders, context filters, clock options, or immediate-finish/jump flags | Add optional `CaptureTemplateRecord` for source/config snapshots, target classification, placeholder inventory, and non-mutating insertion plan | Snapshot config examples for file/headline/datetree/clock/refile targets, placeholder diagnostics, no source insertion |
+| M25.5 | P1 | Publishing/site graph for blog-style consumers | `doc/org-manual.org` "Publishing"; `lisp/ox-publish.el`; export manual settings | Publishing/export keywords and include plans are side tables | No project graph, sitemap/index plan, publish dependency graph, or changed-file selection model | Add `PublishingProjectPlan` from explicit TOML/Org/config snapshots, with source/destination roots, sitemap intent, include/macro dependencies, and no write action | Snapshot project graph and sitemap plan; path validation lint; org-zhixing can consume the DTO without rebuilding Org parsing in TypeScript |
+| M25.6 | P1 | Attachment filesystem and VCS evidence | `doc/org-manual.org` "Attachments", "Automatic version-control with Git"; `lisp/org-attach.el`, `lisp/org-attach-git.el` | Attachment directories, ID/DIR precedence, attachment links, optional existence lint | No git-annex/git dirty/missing evidence, attachment sync inventory, archive-delete advice, or configurable inheritance/profile DTO | Add filesystem-aware `AttachmentInventory`/`AttachmentVcsEvidence` helper behind lint APIs, keeping parser output filesystem-independent | Tempdir snapshot tests for present/missing/untracked files; no mutation; no default filesystem walk |
+| M25.7 | P1 | Include/macro/export dependency graph | `doc/org-manual.org` "Include Files", "Macro Replacement", "Export Settings"; `lisp/org-macro.el`, `lisp/ox.el` | Include expansion plan, macro expansion side table, high-usage export settings | No combined export dependency graph that explains include/macro/setupfile/cite/publish inputs across files | Add `ExportDependencyGraph` over existing include, macro, setupfile, bibliography, and publishing side tables | Snapshot graph nodes/edges and cycle/missing-file diagnostics; exporters remain non-mutating |
+| M25.8 | P2 | Org Plot, radio tables, and table-derived chart metadata | `doc/org-manual.org` "Org Plot", "Tables in Arbitrary Syntax"; `lisp/org-plot.el`, `lisp/org-table.el` | Tables, formulas, alignment, and formula lint are implemented | No `#+PLOT:` option model, ASCII plot metadata, or radio-table translation plan | Add `TableVisualizationPlan` for `#+PLOT:` and radio-table metadata without invoking gnuplot or rewriting tables | Snapshot plot option parsing, invalid option diagnostics, and table association rules |
+| M25.9 | P2 | Org Crypt and opaque subtree advice | `doc/org-manual.org` "Org Crypt"; `lisp/org-crypt.el` | Crypt tags/properties are ordinary tags/properties | No explicit warning that encrypted bodies are opaque and headline/properties remain visible | Add `CryptState` projection and lint/advice for crypt-tagged sections; never decrypt | Snapshot crypt-tagged sections, inherited tags, and export/indexer pruning advice |
+| M25.10 | P2 | RSS/feed, org-timer, and mobile/persist metadata | `doc/org-manual.org` "RSS Feeds", "Taking Notes with a Relative Timer"; `lisp/org-feed.el`, `lisp/org-timer.el`, `lisp/org-mobile.el`, `lisp/org-persist.el` | Generic keywords, timestamps, links, and metadata can be parsed | No feed template/source metadata, relative timer side table, mobile/persist state model | Keep as metadata-only side tables if real downstream source files require them | Add only after P0/P1; snapshots must prove no runtime/network interaction |
+| M25.x | Out-of-core | Remote editing, dynamic block refresh, table recalculation, capture finalization, publishing execution, link opening, code execution | Agenda remote edit commands, `org-dblock-update`, `org-table-recalculate`, `org-capture-finalize`, `org-publish`, `org-link-open`, Babel execution | orgize already favors non-mutating plans and lint evidence | These actions require live editor state, filesystem mutation, subprocesses, or network/handler execution | Do not implement in core; expose safe source-grounded plans and explicit diagnostics only | Boundary tests ensure no execution dependencies or hidden mutation paths enter parser/export APIs |
+
+Recommended implementation order for the next major PR train:
+
+1. M25.1 workspace agenda command plans, because it unlocks realistic Org
+   agenda/blog/agent consumers over more than one file.
+2. M25.2 agenda urgency and receipt fidelity, because it makes the multi-file
+   agenda explainable and rank-stable.
+3. M25.3 citation export planning, because orgize already parses citations but
+   lacks the bibliography side table needed by serious writing/export flows.
+4. M25.5 publishing/site graph, because downstream frontend/blog consumers need
+   an explicit content graph instead of reimplementing Org parsing in TypeScript.
+5. M25.4 capture templates and M25.6 attachment inventory, as opt-in workflow
+   projections after the agenda/export graph substrate is stable.
