@@ -125,8 +125,10 @@ carry `AgendaUrgencyScore` ingredients for explainable ranking. Use
 `document.citation_export_plan()` for Org Cite bibliography/processor/print
 bibliography side tables, `agent_capture_plan(&AgentCaptureRequest::new(...))`
 for non-mutating Agent capture previews over native Org entries,
-`publishing_project_plan()` for explicit blog/site publishing graphs, and
-`document.attachment_inventory()` for opt-in filesystem attachment evidence.
+`publishing_project_plan()` for explicit blog/site publishing graphs,
+`export_dependency_graph()` for combined include/setupfile/bibliography/macro
+and publishing-output dependency graphs, and `document.attachment_inventory()`
+for opt-in filesystem attachment evidence.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 

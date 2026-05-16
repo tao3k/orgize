@@ -1101,7 +1101,7 @@ Priority rules:
 | M25.4 | P1 | Agent capture protocol and wasm plan DTO | `doc/org-manual.org` "Capture", "Tags", "Properties and Columns", "Dates and Times"; `org-capture.el` is historical comparison only | Datetree, refile, lifecycle, attachment, link, property, and memory projections can consume captured Org entries after they exist | No structured Agent capture request that renders a native Org entry preview with provenance, target intent, memory policy, and non-mutating receipts | Add `AgentCaptureRequest`, `AgentCapturePlan`, and wasm `capturePlanJson`; keep rich interaction and patch application in org-zhixing/runtime | Core snapshot for idea/article/task capture plans; wasm DTO smoke over named JSON requests; no source insertion or Emacs Lisp evaluation |
 | M25.5 | P1 | Publishing/site graph for blog-style consumers | `doc/org-manual.org` "Publishing"; `lisp/ox-publish.el`; export manual settings | Publishing/export keywords and include plans are side tables | No project graph, sitemap/index plan, publish dependency graph, or changed-file selection model | Add `PublishingProjectPlan` from explicit TOML/Org/config snapshots, with source/destination roots, sitemap intent, include/macro dependencies, and no write action | Snapshot project graph and sitemap plan; path validation lint; org-zhixing can consume the DTO without rebuilding Org parsing in TypeScript |
 | M25.6 | P1 | Attachment filesystem and VCS evidence | `doc/org-manual.org` "Attachments", "Automatic version-control with Git"; `lisp/org-attach.el`, `lisp/org-attach-git.el` | Attachment directories, ID/DIR precedence, attachment links, optional existence lint | No git-annex/git dirty/missing evidence, attachment sync inventory, archive-delete advice, or configurable inheritance/profile DTO | Add filesystem-aware `AttachmentInventory`/`AttachmentVcsEvidence` helper behind lint APIs, keeping parser output filesystem-independent | Tempdir snapshot tests for present/missing/untracked files; no mutation; no default filesystem walk |
-| M25.7 | P1 | Include/macro/export dependency graph | `doc/org-manual.org` "Include Files", "Macro Replacement", "Export Settings"; `lisp/org-macro.el`, `lisp/ox.el` | Include expansion plan, macro expansion side table, high-usage export settings | No combined export dependency graph that explains include/macro/setupfile/cite/publish inputs across files | Add `ExportDependencyGraph` over existing include, macro, setupfile, bibliography, and publishing side tables | Snapshot graph nodes/edges and cycle/missing-file diagnostics; exporters remain non-mutating |
+| M25.7 | P1 | Include/macro/export dependency graph | `doc/org-manual.org` "Include Files", "Macro Replacement", "Export Settings"; `lisp/org-macro.el`, `lisp/ox.el` | Include expansion plan, macro expansion side table, high-usage export settings, and `ExportDependencyGraph` over include/setupfile/bibliography/macro/output side tables | Runtime file loading, setupfile expansion, macro rewriting, and exporter execution remain intentionally out of core | Keep graph as non-mutating projection and extend only with explicit consumer DTOs | Snapshot graph nodes/edges plus cycle, missing-file, and missing-macro diagnostics; exporters remain non-mutating |
 | M25.8 | P2 | Org Plot, radio tables, and table-derived chart metadata | `doc/org-manual.org` "Org Plot", "Tables in Arbitrary Syntax"; `lisp/org-plot.el`, `lisp/org-table.el` | Tables, formulas, alignment, and formula lint are implemented | No `#+PLOT:` option model, ASCII plot metadata, or radio-table translation plan | Add `TableVisualizationPlan` for `#+PLOT:` and radio-table metadata without invoking gnuplot or rewriting tables | Snapshot plot option parsing, invalid option diagnostics, and table association rules |
 | M25.9 | P2 | Org Crypt and opaque subtree advice | `doc/org-manual.org` "Org Crypt"; `lisp/org-crypt.el` | Crypt tags/properties are ordinary tags/properties | No explicit warning that encrypted bodies are opaque and headline/properties remain visible | Add `CryptState` projection and lint/advice for crypt-tagged sections; never decrypt | Snapshot crypt-tagged sections, inherited tags, and export/indexer pruning advice |
 | M25.10 | P2 | RSS/feed, org-timer, and mobile/persist metadata | `doc/org-manual.org` "RSS Feeds", "Taking Notes with a Relative Timer"; `lisp/org-feed.el`, `lisp/org-timer.el`, `lisp/org-mobile.el`, `lisp/org-persist.el` | Generic keywords, timestamps, links, and metadata can be parsed | No feed template/source metadata, relative timer side table, mobile/persist state model | Keep as metadata-only side tables if real downstream source files require them | Add only after P0/P1; snapshots must prove no runtime/network interaction |
@@ -1120,8 +1120,11 @@ Recommended implementation order for the next major PR train:
    template parser.
 5. M25.5 publishing/site graph and M25.6 attachment inventory, as opt-in
    workflow projections after the agenda/export/capture substrates are stable.
+6. M25.7 export dependency graph, so downstream blog/frontend consumers can
+   explain cross-file include/setupfile/bibliography/macro/output relationships
+   without executing export.
 
-**** M25.1-M25.6 Implementation Receipt
+**** M25.1-M25.7 Implementation Receipt
 
 - [X] Add `AgendaWorkspaceBuilder`, `AgendaWorkspaceQuery`, and named
       workspace command plans for daily agenda rows, TODO lists, tag/property
@@ -1145,7 +1148,14 @@ Recommended implementation order for the next major PR train:
 - [X] Add opt-in `AttachmentInventory` with filesystem existence evidence and
       optional git status evidence while keeping parser output
       filesystem-independent by default.
-- [X] Cover M25.1-M25.6 with original compact snapshots based on Rust fixtures:
+- [X] Add `ExportDependencyGraph` / `export_dependency_graph()` over
+      include/setupfile/bibliography/macro/publishing-output side tables, with
+      document-to-document edges when parsed sources are available and optional
+      missing-path checks.
+- [X] Diagnose dependency cycles and missing macro definitions in the graph
+      projection without rewriting source, loading setupfiles, or invoking
+      exporters.
+- [X] Cover M25.1-M25.7 with original compact snapshots based on Rust fixtures:
       multi-file agenda/TODO/search/stuck plans, citation export planning,
       Agent capture planning, publishing graph planning, and attachment
-      inventory warnings.
+      inventory warnings, and export dependency graph diagnostics.

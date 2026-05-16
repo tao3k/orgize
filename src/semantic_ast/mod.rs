@@ -43,6 +43,8 @@ mod datetree;
 mod datetree_model;
 mod dynamic_block_model;
 mod dynamic_blocks;
+mod export_dependency_graph;
+mod export_dependency_graph_model;
 mod footnote_parts;
 mod habit_model;
 mod habits;
@@ -166,6 +168,12 @@ pub use column_view_model::{
 pub use datetree_model::DateTreeEntry;
 pub use dynamic_block_model::{
     DynamicBlockContentState, DynamicBlockParameter, DynamicBlockRecord, DynamicBlockWriterKind,
+};
+pub use export_dependency_graph::export_dependency_graph;
+pub use export_dependency_graph_model::{
+    ExportDependencyDiagnostic, ExportDependencyDiagnosticKind, ExportDependencyEdge,
+    ExportDependencyEdgeKind, ExportDependencyGraph, ExportDependencyGraphOptions,
+    ExportDependencyNode, ExportDependencyNodeKind,
 };
 pub use habit_model::{HabitConsistency, HabitLastRepeat, HabitRecord};
 pub use include_model::{

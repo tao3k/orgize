@@ -1,0 +1,6 @@
+#+TITLE: Dependency B
+#+INCLUDE: "a.org"
+#+MACRO: note $1
+
+* B
+This calls {{{badge(shared)}}}.

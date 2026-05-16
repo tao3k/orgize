@@ -6,20 +6,23 @@ use std::{
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     ast::{
-        agent_capture_plan, publishing_project_plan, AgendaDate, AgendaMatchQuery, AgendaTime,
-        AgendaUrgencyIngredientKind, AgendaViewQuery, AgendaViewSortKey, AgendaViewSortSpec,
-        AgendaWorkspaceBuilder, AgendaWorkspaceCardKind, AgendaWorkspaceCommandKind,
-        AgendaWorkspaceMatchCommand, AgendaWorkspacePlan, AgendaWorkspaceQuery, AgentCaptureKind,
-        AgentCaptureMemoryPolicy, AgentCapturePlan, AgentCaptureRequest, AgentCaptureSource,
-        AgentCaptureSourceKind, AgentCaptureTarget, AgentCaptureTimestamp,
-        AttachmentInventoryOptions, AttachmentVcsStatus, CitationExportPlan,
-        PublishingProjectConfig, PublishingProjectPlan,
+        agent_capture_plan, export_dependency_graph, publishing_project_plan, AgendaDate,
+        AgendaMatchQuery, AgendaTime, AgendaUrgencyIngredientKind, AgendaViewQuery,
+        AgendaViewSortKey, AgendaViewSortSpec, AgendaWorkspaceBuilder, AgendaWorkspaceCardKind,
+        AgendaWorkspaceCommandKind, AgendaWorkspaceMatchCommand, AgendaWorkspacePlan,
+        AgendaWorkspaceQuery, AgentCaptureKind, AgentCaptureMemoryPolicy, AgentCapturePlan,
+        AgentCaptureRequest, AgentCaptureSource, AgentCaptureSourceKind, AgentCaptureTarget,
+        AgentCaptureTimestamp, AttachmentInventoryOptions, AttachmentVcsStatus, CitationExportPlan,
+        ExportDependencyDiagnosticKind, ExportDependencyEdgeKind, ExportDependencyGraph,
+        ExportDependencyGraphOptions, PublishingProjectConfig, PublishingProjectPlan,
     },
     Org,
 };
 
 const WORKSPACE_A: &str = include_str!("../../fixtures/semantic_ast/m25-workspace-a.org");
 const WORKSPACE_B: &str = include_str!("../../fixtures/semantic_ast/m25-workspace-b.org");
+const DEPENDENCY_A: &str = include_str!("../../fixtures/semantic_ast/m25-dependency-a.org");
+const DEPENDENCY_B: &str = include_str!("../../fixtures/semantic_ast/m25-dependency-b.org");
 
 #[test]
 fn semantic_ast_projects_m25_workspace_agenda_and_workflow_plans() {
@@ -185,6 +188,37 @@ fn semantic_ast_projects_m25_citation_capture_publishing_and_attachments() {
     let _ = fs::remove_dir_all(temp);
 }
 
+#[test]
+fn semantic_ast_projects_m25_export_dependency_graph() {
+    let doc_a = Org::parse(DEPENDENCY_A).document();
+    let doc_b = Org::parse(DEPENDENCY_B).document();
+    assert_clean_projection(&doc_a);
+    assert_clean_projection(&doc_b);
+
+    let graph = export_dependency_graph(
+        [("site/a.org", &doc_a), ("site/b.org", &doc_b)],
+        &ExportDependencyGraphOptions::new().validate_paths(true),
+    );
+    assert!(graph.edges.iter().any(|edge| {
+        edge.kind == ExportDependencyEdgeKind::Includes
+            && edge.source == "doc:site/a.org"
+            && edge.target == "doc:site/b.org"
+    }));
+    assert!(graph
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.kind == ExportDependencyDiagnosticKind::DependencyCycle));
+    assert!(graph.diagnostics.iter().any(|diagnostic| {
+        diagnostic.kind == ExportDependencyDiagnosticKind::MissingMacroDefinition
+            && diagnostic.subject == "missing_macro"
+    }));
+
+    insta::assert_snapshot!(
+        "semantic_ast__m25_export_dependency_graph",
+        render_export_dependency_graph(&graph)
+    );
+}
+
 fn render_workspace_plan(plan: &AgendaWorkspacePlan) -> String {
     let mut out = String::new();
     out.push_str(&format!("documents={}\n", plan.documents.len()));
@@ -336,6 +370,41 @@ fn render_attachment_inventory(inventory: &orgize::ast::AttachmentInventory) -> 
             "warning {} {}\n",
             warning.kind.as_str(),
             warning.message
+        ));
+    }
+    out
+}
+
+fn render_export_dependency_graph(graph: &ExportDependencyGraph) -> String {
+    let mut out = String::new();
+    out.push_str(&format!(
+        "nodes={} edges={} diagnostics={}\n",
+        graph.nodes.len(),
+        graph.edges.len(),
+        graph.diagnostics.len()
+    ));
+    for node in &graph.nodes {
+        out.push_str(&format!(
+            "node {} {} {}\n",
+            node.id,
+            node.kind.as_str(),
+            node.label
+        ));
+    }
+    for edge in &graph.edges {
+        out.push_str(&format!(
+            "edge {} {} {}\n",
+            edge.source,
+            edge.kind.as_str(),
+            edge.target
+        ));
+    }
+    for diagnostic in &graph.diagnostics {
+        out.push_str(&format!(
+            "diagnostic {} {} {}\n",
+            diagnostic.kind.as_str(),
+            diagnostic.subject,
+            diagnostic.message
         ));
     }
     out
