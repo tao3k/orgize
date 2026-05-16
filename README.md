@@ -94,6 +94,9 @@ parsed object values for metadata-style keywords such as `#+TITLE:` and
 attributes. Links without an explicit description can use target-derived
 fallback objects through `Link::description_or_default()`, and `id:ID::*search`
 paths retain their search suffix in `Link::search`.
+Use `document.link_protocol_records()` to inspect built-in link families,
+custom protocols, `#+LINK` abbreviations, executable `shell:`/`elisp:` links,
+and inert `org-protocol:` calls without opening files or dispatching handlers.
 Use `document.project_for_export(&ExportProjectionOptions::default())` as the
 opt-in semantic projection hook for exporter-oriented pruning and transformations
 such as `COMMENT`/`:ARCHIVE:`/tag pruning, link abbreviation expansion, and

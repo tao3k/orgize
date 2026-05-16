@@ -1,0 +1,346 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_link_protocols.rs
+expression: records
+---
+[
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 0..33,
+            start: SourcePosition {
+                line: 1,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 2,
+                column: 1,
+            },
+            raw: "#+LINK: gh https://github.com/%s\n",
+        },
+        source: AbbreviationDefinition,
+        protocol: "gh",
+        kind: Abbreviation,
+        raw: " gh https://github.com/%s",
+        target: "https://github.com/%s",
+        search: None,
+        replacement: Some(
+            "https://github.com/%s",
+        ),
+        org_protocol: None,
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 33..87,
+            start: SourcePosition {
+                line: 2,
+                column: 1,
+            },
+            end: SourcePosition {
+                line: 3,
+                column: 1,
+            },
+            raw: "#+LINK: clip org-protocol://capture?template=c&url=%h\n",
+        },
+        source: AbbreviationDefinition,
+        protocol: "clip",
+        kind: Abbreviation,
+        raw: " clip org-protocol://capture?template=c&url=%h",
+        target: "org-protocol://capture?template=c&url=%h",
+        search: None,
+        replacement: Some(
+            "org-protocol://capture?template=c&url=%h",
+        ),
+        org_protocol: Some(
+            OrgProtocolCall {
+                subprotocol: "capture",
+                kind: Capture,
+                parameters: [
+                    OrgProtocolParameter {
+                        key: "template",
+                        value: Some(
+                            "c",
+                        ),
+                        raw: "template=c",
+                    },
+                    OrgProtocolParameter {
+                        key: "url",
+                        value: Some(
+                            "%h",
+                        ),
+                        raw: "url=%h",
+                    },
+                ],
+            },
+        ),
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 91..116,
+            start: SourcePosition {
+                line: 3,
+                column: 5,
+            },
+            end: SourcePosition {
+                line: 3,
+                column: 30,
+            },
+            raw: "[[gh:tao3k/orgize][repo]]",
+        },
+        source: Link,
+        protocol: "gh",
+        kind: Abbreviation,
+        raw: "gh:tao3k/orgize",
+        target: "tao3k/orgize",
+        search: None,
+        replacement: Some(
+            "https://github.com/%s",
+        ),
+        org_protocol: None,
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 121..162,
+            start: SourcePosition {
+                line: 3,
+                column: 35,
+            },
+            end: SourcePosition {
+                line: 3,
+                column: 76,
+            },
+            raw: "[[clip:https://example.com/a path][clip]]",
+        },
+        source: Link,
+        protocol: "clip",
+        kind: Abbreviation,
+        raw: "clip:https://example.com/a path",
+        target: "https://example.com/a path",
+        search: None,
+        replacement: Some(
+            "org-protocol://capture?template=c&url=%h",
+        ),
+        org_protocol: Some(
+            OrgProtocolCall {
+                subprotocol: "capture",
+                kind: Capture,
+                parameters: [
+                    OrgProtocolParameter {
+                        key: "template",
+                        value: Some(
+                            "c",
+                        ),
+                        raw: "template=c",
+                    },
+                    OrgProtocolParameter {
+                        key: "url",
+                        value: Some(
+                            "https://example.com/a path",
+                        ),
+                        raw: "url=https%3A%2F%2Fexample.com%2Fa%20path",
+                    },
+                ],
+            },
+        ),
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 169..244,
+            start: SourcePosition {
+                line: 4,
+                column: 6,
+            },
+            end: SourcePosition {
+                line: 4,
+                column: 81,
+            },
+            raw: "[[org-protocol://open-source?url=https%3A%2F%2Fexample.com%2Fpost][source]]",
+        },
+        source: Link,
+        protocol: "org-protocol",
+        kind: OrgProtocol,
+        raw: "org-protocol://open-source?url=https%3A%2F%2Fexample.com%2Fpost",
+        target: "//open-source?url=https%3A%2F%2Fexample.com%2Fpost",
+        search: None,
+        replacement: None,
+        org_protocol: Some(
+            OrgProtocolCall {
+                subprotocol: "open-source",
+                kind: OpenSource,
+                parameters: [
+                    OrgProtocolParameter {
+                        key: "url",
+                        value: Some(
+                            "https://example.com/post",
+                        ),
+                        raw: "url=https%3A%2F%2Fexample.com%2Fpost",
+                    },
+                ],
+            },
+        ),
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 251..275,
+            start: SourcePosition {
+                line: 5,
+                column: 6,
+            },
+            end: SourcePosition {
+                line: 5,
+                column: 30,
+            },
+            raw: "[[shell:echo hi][shell]]",
+        },
+        source: Link,
+        protocol: "shell",
+        kind: Executable,
+        raw: "shell:echo hi",
+        target: "echo hi",
+        search: None,
+        replacement: None,
+        org_protocol: None,
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 280..308,
+            start: SourcePosition {
+                line: 5,
+                column: 35,
+            },
+            end: SourcePosition {
+                line: 5,
+                column: 63,
+            },
+            raw: "[[elisp:org-agenda][agenda]]",
+        },
+        source: Link,
+        protocol: "elisp",
+        kind: Executable,
+        raw: "elisp:org-agenda",
+        target: "org-agenda",
+        search: None,
+        replacement: None,
+        org_protocol: None,
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 315..342,
+            start: SourcePosition {
+                line: 6,
+                column: 6,
+            },
+            end: SourcePosition {
+                line: 6,
+                column: 33,
+            },
+            raw: "[[file:notes.org::*Target]]",
+        },
+        source: Link,
+        protocol: "file",
+        kind: File,
+        raw: "file:notes.org::*Target",
+        target: "notes.org::*Target",
+        search: Some(
+            LinkSearch {
+                raw: "*Target",
+                kind: Headline,
+                normalized: "target",
+            },
+        ),
+        replacement: None,
+        org_protocol: None,
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 343..369,
+            start: SourcePosition {
+                line: 6,
+                column: 34,
+            },
+            end: SourcePosition {
+                line: 6,
+                column: 60,
+            },
+            raw: "[[attachment:diagram.png]]",
+        },
+        source: Link,
+        protocol: "attachment",
+        kind: Attachment,
+        raw: "attachment:diagram.png",
+        target: "diagram.png",
+        search: None,
+        replacement: None,
+        org_protocol: None,
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 370..390,
+            start: SourcePosition {
+                line: 6,
+                column: 61,
+            },
+            end: SourcePosition {
+                line: 6,
+                column: 81,
+            },
+            raw: "[[id:abc::*Heading]]",
+        },
+        source: Link,
+        protocol: "id",
+        kind: InternalId,
+        raw: "id:abc::*Heading",
+        target: "abc::*Heading",
+        search: Some(
+            LinkSearch {
+                raw: "*Heading",
+                kind: Headline,
+                normalized: "heading",
+            },
+        ),
+        replacement: None,
+        org_protocol: None,
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 399..421,
+            start: SourcePosition {
+                line: 7,
+                column: 8,
+            },
+            end: SourcePosition {
+                line: 7,
+                column: 30,
+            },
+            raw: "[[man:printf][manual]]",
+        },
+        source: Link,
+        protocol: "man",
+        kind: Custom,
+        raw: "man:printf",
+        target: "printf",
+        search: None,
+        replacement: None,
+        org_protocol: None,
+    },
+    LinkProtocolRecord {
+        ann: ParsedAnnotation {
+            range: 431..457,
+            start: SourcePosition {
+                line: 7,
+                column: 40,
+            },
+            end: SourcePosition {
+                line: 7,
+                column: 66,
+            },
+            raw: "[[mailto:dev@example.com]]",
+        },
+        source: Link,
+        protocol: "mailto",
+        kind: Message,
+        raw: "mailto:dev@example.com",
+        target: "dev@example.com",
+        search: None,
+        replacement: None,
+        org_protocol: None,
+    },
+]

@@ -40,6 +40,8 @@ mod includes;
 mod lifecycle;
 mod lifecycle_model;
 mod link_model;
+mod link_protocol_model;
+mod link_protocols;
 mod macro_expansion;
 mod memory;
 mod memory_model;
@@ -128,6 +130,10 @@ pub use lifecycle_model::{ArchiveLocation, ArchiveState, LifecycleRecord, Lifecy
 pub use link_model::{
     FileLink, FileLinkPathKind, LinkDescriptionState, LinkMediaKind, LinkPath, LinkSearch,
     LinkSearchKind, LinkTarget,
+};
+pub use link_protocol_model::{
+    LinkProtocolKind, LinkProtocolRecord, LinkProtocolSource, OrgProtocolCall, OrgProtocolKind,
+    OrgProtocolParameter,
 };
 pub use memory_model::{
     AgentMemoryCard, AgentMemoryDecision, AgentMemoryQuery, AgentMemorySeverity,
