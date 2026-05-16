@@ -48,6 +48,7 @@ mod semantic_ast_projects_source_blocks;
 mod semantic_ast_projects_sparse_tree;
 mod semantic_ast_projects_table_column_metadata;
 mod semantic_ast_projects_table_el;
+mod semantic_ast_projects_table_visualization;
 mod semantic_ast_projects_tangle_and_table_records;
 mod semantic_ast_projects_task_blockers;
 mod semantic_ast_projects_timestamp_metadata;

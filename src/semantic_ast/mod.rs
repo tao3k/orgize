@@ -86,6 +86,8 @@ mod sparse_tree;
 mod sparse_tree_model;
 mod special_properties;
 mod table_metadata;
+mod table_visualization;
+mod table_visualization_model;
 mod tangle;
 mod tangle_model;
 mod targets;
@@ -250,6 +252,11 @@ pub use source_block_model::{
 pub use sparse_tree_model::{
     SparseTreeCard, SparseTreeMatch, SparseTreeMatchKind, SparseTreeProjection, SparseTreeQuery,
     SparseTreeReceipt, SparseTreeReceiptKind, SparseTreeSkip, SparseTreeSkipReason,
+};
+pub use table_visualization_model::{
+    RadioTable, RadioTableReceiver, TablePlot, TablePlotType, TableVisualizationKind,
+    TableVisualizationOption, TableVisualizationOptionKind, TableVisualizationPlan,
+    TableVisualizationWarning, TableVisualizationWarningKind,
 };
 pub use tangle_model::{
     SourceTangleBlock, SourceTangleFile, SourceTangleOptions, SourceTanglePlan, SourceTangleSkip,

@@ -127,8 +127,9 @@ bibliography side tables, `agent_capture_plan(&AgentCaptureRequest::new(...))`
 for non-mutating Agent capture previews over native Org entries,
 `publishing_project_plan()` for explicit blog/site publishing graphs,
 `export_dependency_graph()` for combined include/setupfile/bibliography/macro
-and publishing-output dependency graphs, and `document.attachment_inventory()`
-for opt-in filesystem attachment evidence.
+and publishing-output dependency graphs, `document.table_visualization_plans()`
+for non-executing Org Plot/radio-table metadata, and
+`document.attachment_inventory()` for opt-in filesystem attachment evidence.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 
