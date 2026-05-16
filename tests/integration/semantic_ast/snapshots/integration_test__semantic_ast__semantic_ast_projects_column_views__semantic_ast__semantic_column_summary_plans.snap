@@ -1,0 +1,88 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_column_views.rs
+expression: render_column_summary_plans(&plans)
+---
+plan 1 scope=DocumentKeyword raw=%25ITEM %Score{+;%.1f} %Effort{:} %Approved{X} %Progress{X%} %Estimate{est+} %TODO{+}
+  summary SCORE + kind=numericSum status=computed inputs=1/1 value=5.5
+  summary EFFORT : kind=durationSum status=computed inputs=2/2 value=4:15
+  summary APPROVED X kind=checkboxState status=computed inputs=1/1 value=[ ]
+  summary PROGRESS X% kind=checkboxPercent status=computed inputs=1/1 value=[0%]
+  summary ESTIMATE est+ kind=estimate status=computed inputs=1/1 value=4-6
+  summary TODO + kind=numericSum status=ignoredSpecialProperty inputs=0/0 value=<none>
+  row level=1 path=Project title=Project
+    cell ITEM source=specialProperty value=Project
+    cell SCORE source=localProperty value=100
+    cell EFFORT source=missing value=<none>
+    cell APPROVED source=missing value=<none>
+    cell PROGRESS source=missing value=<none>
+    cell ESTIMATE source=missing value=<none>
+    cell TODO source=missing value=<none>
+    row-summary SCORE + kind=numericSum status=computed inputs=2/2 value=5.5
+    row-summary EFFORT : kind=durationSum status=computed inputs=2/2 value=2:15
+    row-summary APPROVED X kind=checkboxState status=computed inputs=2/2 value=[-]
+    row-summary PROGRESS X% kind=checkboxPercent status=computed inputs=2/2 value=[50%]
+    row-summary ESTIMATE est+ kind=estimate status=computed inputs=2/2 value=4-6
+    row-summary TODO + kind=numericSum status=ignoredSpecialProperty inputs=0/0 value=<none>
+    row level=2 path=Project > Task A title=Task A
+      cell ITEM source=specialProperty value=Task A
+      cell SCORE source=localProperty value=2
+      cell EFFORT source=localProperty value=1:30
+      cell APPROVED source=localProperty value=[X]
+      cell PROGRESS source=localProperty value=[X]
+      cell ESTIMATE source=localProperty value=1-3
+      cell TODO source=missing value=<none>
+      row-summary TODO + kind=numericSum status=ignoredSpecialProperty inputs=0/0 value=<none>
+    row level=2 path=Project > Task B title=Task B
+      cell ITEM source=specialProperty value=Task B
+      cell SCORE source=localProperty value=3.5
+      cell EFFORT source=localProperty value=45
+      cell APPROVED source=localProperty value=[ ]
+      cell PROGRESS source=localProperty value=[ ]
+      cell ESTIMATE source=localProperty value=2-4
+      cell TODO source=missing value=<none>
+      row-summary TODO + kind=numericSum status=ignoredSpecialProperty inputs=0/0 value=<none>
+  row level=1 path=Scoped title=Scoped
+    cell ITEM source=specialProperty value=Scoped
+    cell SCORE source=missing value=<none>
+    cell EFFORT source=missing value=<none>
+    cell APPROVED source=missing value=<none>
+    cell PROGRESS source=missing value=<none>
+    cell ESTIMATE source=missing value=<none>
+    cell TODO source=missing value=<none>
+    row-summary EFFORT : kind=durationSum status=computed inputs=2/2 value=2:00
+    row-summary TODO + kind=numericSum status=ignoredSpecialProperty inputs=0/0 value=<none>
+    row level=2 path=Scoped > Child one title=Child one
+      cell ITEM source=specialProperty value=Child one
+      cell SCORE source=missing value=<none>
+      cell EFFORT source=localProperty value=0:30
+      cell APPROVED source=missing value=<none>
+      cell PROGRESS source=missing value=<none>
+      cell ESTIMATE source=missing value=<none>
+      cell TODO source=missing value=<none>
+      row-summary TODO + kind=numericSum status=ignoredSpecialProperty inputs=0/0 value=<none>
+    row level=2 path=Scoped > Child two title=Child two
+      cell ITEM source=specialProperty value=Child two
+      cell SCORE source=missing value=<none>
+      cell EFFORT source=localProperty value=1:30
+      cell APPROVED source=missing value=<none>
+      cell PROGRESS source=missing value=<none>
+      cell ESTIMATE source=missing value=<none>
+      cell TODO source=missing value=<none>
+      row-summary TODO + kind=numericSum status=ignoredSpecialProperty inputs=0/0 value=<none>
+plan 2 scope=SectionProperty { level: 1, title: "Scoped", outline_path: ["Scoped"] } raw=%ITEM %Points{max} %Effort{:mean}
+  summary POINTS max kind=numericMax status=computed inputs=2/2 value=13
+  summary EFFORT :mean kind=durationMean status=computed inputs=2/2 value=1:00
+  row level=1 path=Scoped title=Scoped
+    cell ITEM source=specialProperty value=Scoped
+    cell POINTS source=missing value=<none>
+    cell EFFORT source=missing value=<none>
+    row-summary POINTS max kind=numericMax status=computed inputs=2/2 value=13
+    row-summary EFFORT :mean kind=durationMean status=computed inputs=2/2 value=1:00
+    row level=2 path=Scoped > Child one title=Child one
+      cell ITEM source=specialProperty value=Child one
+      cell POINTS source=localProperty value=8
+      cell EFFORT source=localProperty value=0:30
+    row level=2 path=Scoped > Child two title=Child two
+      cell ITEM source=specialProperty value=Child two
+      cell POINTS source=localProperty value=13
+      cell EFFORT source=localProperty value=1:30

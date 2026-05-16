@@ -23,6 +23,8 @@ mod clock_rollup;
 mod clock_rollup_model;
 mod clock_table_properties;
 mod clock_table_time;
+mod column_summaries;
+mod column_summary_model;
 mod column_view_model;
 mod column_views;
 mod conversion;
@@ -113,6 +115,11 @@ pub use clock_rollup_model::{
     ClockTableParameter, ClockTablePlan, ClockTablePropertyColumns, ClockTablePropertyValue,
     ClockTableRow, ClockTableScope, ClockTableScopeKind, ClockTableTimeBound, ClockTableTimeWindow,
     ClockTableTimeWindowSource, ClockTableWarning, ClockTableWarningKind,
+};
+pub use column_summary_model::{
+    ColumnSummaryCell, ColumnSummaryOperatorKind, ColumnSummaryPlan, ColumnSummaryResult,
+    ColumnSummaryRow, ColumnSummaryStatus, ColumnSummaryValueSource, ColumnSummaryWarning,
+    ColumnSummaryWarningKind,
 };
 pub use column_view_model::{
     ColumnViewColumn, ColumnViewRecord, ColumnViewScope, ColumnViewSource,

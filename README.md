@@ -97,6 +97,9 @@ paths retain their search suffix in `Link::search`.
 Use `document.link_protocol_records()` to inspect built-in link families,
 custom protocols, `#+LINK` abbreviations, executable `shell:`/`elisp:` links,
 and inert `org-protocol:` calls without opening files or dispatching handlers.
+Use `document.column_summary_plans()` to inspect non-mutating Column View
+summary behavior for `COLUMNS` declarations, including common Org operators
+such as `+`, `:`, `X%`, and `est+`.
 Use `document.project_for_export(&ExportProjectionOptions::default())` as the
 opt-in semantic projection hook for exporter-oriented pruning and transformations
 such as `COMMENT`/`:ARCHIVE:`/tag pruning, link abbreviation expansion, and
