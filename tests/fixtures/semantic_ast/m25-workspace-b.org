@@ -1,0 +1,10 @@
+#+TITLE: Notes Demo
+#+TODO: TODO NEXT | DONE
+#+CATEGORY: notes
+
+* TODO Review citation notes :research:
+DEADLINE: <2026-05-16 Sat>
+This note mentions Citation exports and [cite/nocite:@all].
+
+* DONE Completed note
+CLOSED: [2026-05-15 Fri]

@@ -1,0 +1,11 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_m25_alignment.rs
+expression: render_attachment_inventory(&inventory)
+---
+entry directory title=Ship agenda API exists=true vcs=notChecked
+  path=assets
+entry link title=Ship agenda API exists=true vcs=notChecked
+  path=plan.pdf
+entry link title=Ship agenda API exists=false vcs=notChecked
+  path=missing.pdf
+warning missingPath attachment path `missing.pdf` does not exist

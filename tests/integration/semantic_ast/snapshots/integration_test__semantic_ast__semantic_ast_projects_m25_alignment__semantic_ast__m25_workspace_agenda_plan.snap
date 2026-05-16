@@ -1,0 +1,23 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_m25_alignment.rs
+expression: render_workspace_plan(&plan)
+---
+documents=2
+command daily kind=agenda cards=3 skipped=0 total=3
+  card m25-workspace-a.org Ship agenda API kind=agenda urgency=3203 todo=TODO path=Ship agenda API
+  card m25-workspace-a.org Action child kind=agenda urgency=1995 todo=NEXT path=Active project > Action child
+  card m25-workspace-b.org Review citation notes kind=agenda urgency=4250 todo=TODO path=Review citation notes
+command open-todos kind=todoList cards=6 skipped=0 total=6
+  card m25-workspace-a.org Ship agenda API kind=todo urgency=2450 todo=TODO path=Ship agenda API
+  card m25-workspace-a.org Stuck project kind=todo urgency=1250 todo=TODO path=Stuck project
+  card m25-workspace-a.org Waiting child kind=todo urgency=1250 todo=WAITING path=Stuck project > Waiting child
+  card m25-workspace-a.org Active project kind=todo urgency=1250 todo=TODO path=Active project
+  card m25-workspace-a.org Action child kind=todo urgency=1250 todo=NEXT path=Active project > Action child
+  card m25-workspace-b.org Review citation notes kind=todo urgency=1250 todo=TODO path=Review citation notes
+command work-match kind=match cards=1 skipped=0 total=1
+  card m25-workspace-a.org Ship agenda API kind=match urgency=2450 todo=TODO path=Ship agenda API
+command text-search kind=search cards=2 skipped=0 total=2
+  card m25-workspace-a.org Ship agenda API kind=search urgency=2450 todo=TODO path=Ship agenda API
+  card m25-workspace-b.org Review citation notes kind=search urgency=1250 todo=TODO path=Review citation notes
+command stuck-projects kind=stuckProjects cards=1 skipped=0 total=1
+  card m25-workspace-a.org Stuck project kind=stuckProject urgency=1250 todo=TODO path=Stuck project

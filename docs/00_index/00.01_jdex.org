@@ -22,6 +22,7 @@ It follows a path-first contract:
 | `10.02` | `docs/10_architecture/10.02_agent_memory_projection.org` | Agent-facing memory projection API design. |
 | `10.03` | `docs/10_architecture/10.03_agent_search_memory_org_mode_audit.org` | Official Org source audit for Wendao Search support and memory alignment. |
 | `10.04` | `docs/10_architecture/10.04_wendao_section_index_adapter_contract.org` | Wendao adapter contract for consuming Orgize section index projections. |
+| `10.05` | `docs/10_architecture/10.05_agent_capture_protocol.org` | Agent-facing capture protocol over native Org artifacts and wasm DTOs. |
 | `20.01` | `docs/20_parser/20.01_parser_v2_release_readiness.org` | Parser v2 public boundary and release-readiness checklist. |
 | `20.02` | `docs/20_parser/20.02_parser_v2_performance_closeout.org` | Parser v2 dense-path performance closeout. |
 | `90.01` | `docs/90_operations/90.01_implementation_status.org` | Implementation status, backlog, and validation notes. |

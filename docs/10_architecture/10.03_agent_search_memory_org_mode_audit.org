@@ -102,6 +102,7 @@ retrieval, ranking, persistence, and promotion policy.
 | Search recall snippets | Sparse-tree section cards | outline path, matched spans, tags, planning, priority, property summary, link refs, receipts | cross-file ranking, fusion, snippet selection, UI search | clock table adapter after sparse receipts landing |
 | Memory authority | Memory authority cards derived from native lifecycle evidence | TODO or DONE state, CLOSED, SCHEDULED, DEADLINE, archive marker, habit or repeat signal, stable ID | promotion, demotion, staleness policy, contradiction handling | enrich current memory snapshot with lifecycle and archive reasons |
 | Planning triage | =AgendaViewPlan=, =AgendaBlockViewPlan=, and =ClockIssueFinding= diagnostics | scheduling state, configured sort strategy, sort keys, limit receipts, =TaskBlockerRecord= evidence, =ORG029= blocked-state advice, effort totals, clock gaps/overlaps | today/team/user policy, cross-file agenda-file scope, ranking, repair decisions | downstream clock issue consumption receipts |
+| Capture intake | =AgentCapturePlan= | planned target, native Org entry text, provenance, inactive timestamp, tags, properties, links, quote excerpt, non-mutating receipts | conversation/article interpretation, user confirmation, patch application, memory promotion | wasm =capturePlanJson= for org-zhixing and Window/Agent consumers |
 | Repair guidance | Lint advice with source spans | native syntax issue, expected Org-compatible repair, affected section | choose and apply edits, report residual risk | compact agent-facing lint renderer |
 | External evidence | Link and attachment refs | link type, raw target, description, attachment relation, heading context | target resolution, blob storage, backlink index | typed link and attachment projection for index input |
 | Progress and effort | =ProgressStatsRecord= | statistics cookie values, subtree checkbox ratios, descendant TODO state, local and subtree Effort seconds, local =ORDERED= evidence | milestone reporting, burndown, priority weighting | stale cookie lint and clock table adapter |
@@ -522,17 +523,21 @@ Habits are temporal memory patterns, not just tasks:
 - expose enough completion history for downstream agents to reason about
   consistency without rendering Emacs agenda graphs.
 
-*** P2 Capture And Refile Provenance
+*** P2 Agent Capture And Refile Provenance
 
-Org capture and refile are creation and movement history:
+Capture and refile are creation and movement history, but the Agent capture API
+is not an Emacs Lisp template evaluator.  The modern capture object is an Agent
+interpretation of an interaction event into a native Org plan:
 
 - parse refile LOGBOOK records;
 - preserve outline paths and ID links used as capture/refile targets;
 - expose document-local `RefileTargetIndex` and non-executing `RefilePlan`
   records for target inspection and safety review;
-- expose capture template metadata only when it appears as ordinary Org source
-  or recorded properties;
-- keep interactive capture behavior out of orgize.
+- expose `AgentCapturePlan` as a non-mutating native Org entry preview;
+- keep article extraction, interaction UI, confirmation, and patch application
+  in org-zhixing or another runtime;
+- keep `org-capture-templates` and Emacs Lisp configuration outside the core
+  Agent capture path.
 
 ** Implementation Order
 

@@ -99,6 +99,20 @@ become a planning engine. Memory authority decides whether facts enter the
 current decision; progress stats describe whether the related task surface is
 open, blocked, or partially complete.
 
+** Capture Intake Boundary
+
+Agent capture is the intake side of this memory model, but it is not memory
+authority.  A captured idea, article note, preference, correction, or decision is
+candidate evidence until a memory projection or downstream policy promotes it,
+demotes it, marks it stale, or relates it to a superseding record.
+
+Capture plans should therefore preserve provenance and lifecycle hints as
+ordinary Org evidence: tags, properties, inactive timestamps, links, quote
+blocks, and body text.  They should not silently overwrite older facts or
+declare a new preference authoritative merely because it was captured.  The
+capture protocol is documented in
+[[file:10.05_agent_capture_protocol.org][10.05 Agent Capture Protocol]].
+
 ** Implementation Slices
 
 The first implementation should be narrow and testable:

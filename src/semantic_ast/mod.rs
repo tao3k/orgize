@@ -8,14 +8,24 @@ mod agenda_filter;
 mod agenda_match;
 mod agenda_model;
 mod agenda_time;
+mod agenda_urgency;
+mod agenda_urgency_model;
 mod agenda_view;
 mod agenda_view_model;
+mod agenda_workspace;
+mod agenda_workspace_model;
 mod agent_planning;
 mod agent_planning_model;
+mod attachment_inventory;
+mod attachment_inventory_model;
 mod attachment_model;
 mod block_metadata;
 mod block_model;
 mod block_syntax;
+mod capture;
+mod capture_model;
+mod citation_export;
+mod citation_export_model;
 mod citation_metadata;
 mod clock_issue_model;
 mod clock_issues;
@@ -59,6 +69,8 @@ mod property_profile;
 mod property_profile_model;
 mod publishing;
 mod publishing_model;
+mod publishing_project;
+mod publishing_project_model;
 mod radio_links;
 mod refile;
 mod refile_model;
@@ -88,15 +100,31 @@ pub use agenda_model::{
     AgendaCategory, AgendaDate, AgendaDeadlineState, AgendaEntry, AgendaEntryKind,
     AgendaOccurrence, AgendaQuery, AgendaScheduleState, AgendaTime,
 };
+pub use agenda_urgency_model::{
+    AgendaUrgencyIngredient, AgendaUrgencyIngredientKind, AgendaUrgencyScore,
+};
 pub use agenda_view_model::{
     AgendaBlockSectionPlan, AgendaBlockSectionQuery, AgendaBlockViewPlan, AgendaBlockViewQuery,
     AgendaViewCard, AgendaViewPlan, AgendaViewQuery, AgendaViewReceipt, AgendaViewReceiptKind,
     AgendaViewSkip, AgendaViewSkipReason, AgendaViewSortDirection, AgendaViewSortKey,
     AgendaViewSortSpec, AgendaViewSortValue,
 };
+pub use agenda_workspace::AgendaWorkspaceBuilder;
+pub use agenda_workspace_model::{
+    AgendaWorkspaceCard, AgendaWorkspaceCardKind, AgendaWorkspaceCommandKind,
+    AgendaWorkspaceCommandKindLabel, AgendaWorkspaceCommandPlan, AgendaWorkspaceCommandQuery,
+    AgendaWorkspaceDocumentSummary, AgendaWorkspaceMatchCommand, AgendaWorkspacePlan,
+    AgendaWorkspaceQuery, AgendaWorkspaceReceipt, AgendaWorkspaceReceiptKind, AgendaWorkspaceSkip,
+    AgendaWorkspaceSkipReason,
+};
 pub use agent_planning_model::{
     AgentPlanningCard, AgentPlanningDecision, AgentPlanningQuery, AgentPlanningSeverity,
     AgentPlanningSnapshot, AgentPlanningSource,
+};
+pub use attachment_inventory_model::{
+    AttachmentInventory, AttachmentInventoryEntry, AttachmentInventoryEntryKind,
+    AttachmentInventoryOptions, AttachmentInventoryWarning, AttachmentInventoryWarningKind,
+    AttachmentVcsEvidence, AttachmentVcsStatus,
 };
 pub use attachment_model::{
     AttachmentDirectory, AttachmentDirectorySource, AttachmentIdPathLayout, AttachmentLink,
@@ -105,6 +133,17 @@ pub use attachment_model::{
 pub use block_model::{
     BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering,
     BlockSwitches, SemanticFixedWidth,
+};
+pub use capture::agent_capture_plan;
+pub use capture_model::{
+    AgentCaptureInsertPosition, AgentCaptureKind, AgentCaptureLink, AgentCaptureMemoryPolicy,
+    AgentCapturePlan, AgentCaptureProperty, AgentCaptureReceipt, AgentCaptureReceiptKind,
+    AgentCaptureRequest, AgentCaptureSource, AgentCaptureSourceKind, AgentCaptureTarget,
+    AgentCaptureTargetKind, AgentCaptureTimestamp, AgentCaptureWarning, AgentCaptureWarningKind,
+};
+pub use citation_export_model::{
+    CitationBibliography, CitationExportOption, CitationExportPlan, CitationExportWarning,
+    CitationExportWarningKind, CitationProcessor, CitationUsage, PrintBibliography,
 };
 pub use clock_issue_model::{
     ClockIssueClock, ClockIssueDurationThreshold, ClockIssueFinding, ClockIssueFindingKind,
@@ -175,6 +214,12 @@ pub use property_profile_model::{
 pub use publishing_model::{
     PublishingAttribute, PublishingBind, PublishingKeyword, PublishingOption, PublishingOptionKind,
     PublishingSettings,
+};
+pub use publishing_project::publishing_project_plan;
+pub use publishing_project_model::{
+    PublishingDependency, PublishingDependencyKind, PublishingProjectConfig,
+    PublishingProjectDocument, PublishingProjectPlan, PublishingProjectWarning,
+    PublishingProjectWarningKind, PublishingSitemapEntry, PublishingSitemapPlan,
 };
 pub use refile_model::{
     RefileAction, RefileCreateParentNode, RefileCreateParentPlan, RefileInsertPosition,

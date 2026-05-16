@@ -1,0 +1,15 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_m25_alignment.rs
+expression: render_publishing_plan(&publishing)
+---
+project blog docs=2 deps=7 sitemap=true
+  doc blog/index.org -> public/demo.html title=Publish Demo
+  doc blog/notes.org -> blog/notes.html title=Notes Demo
+  dep blog/index.org include intro.org
+  dep blog/index.org setupFile setup.org
+  dep blog/index.org bibliography refs.bib
+  dep blog/index.org bibliography extra.json
+  dep blog/index.org macro badge
+  dep blog/index.org projectRoot blog
+  dep blog/notes.org projectRoot blog
+  sitemap public/sitemap.org entries=2

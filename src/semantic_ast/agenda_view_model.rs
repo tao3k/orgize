@@ -1,8 +1,8 @@
 //! Agenda view plans with sort and limit receipts for downstream consumers.
 
 use super::{
-    AgendaCategory, AgendaDate, AgendaEntryKind, AgendaQuery, AgendaTime, SectionIndexSource,
-    TaskBlockerRecord, TodoKeyword,
+    AgendaCategory, AgendaDate, AgendaEntryKind, AgendaQuery, AgendaTime, AgendaUrgencyScore,
+    SectionIndexSource, TaskBlockerRecord, TodoKeyword,
 };
 
 /// Query wrapper for explainable agenda view plans.
@@ -109,6 +109,7 @@ pub struct AgendaViewCard {
     pub category: Option<AgendaCategory>,
     pub todo: Option<TodoKeyword>,
     pub effective_tags: Vec<String>,
+    pub urgency: AgendaUrgencyScore,
     pub blockers: Vec<TaskBlockerRecord>,
     pub sort_keys: Vec<AgendaViewSortValue>,
     pub receipts: Vec<AgendaViewReceipt>,
@@ -166,6 +167,7 @@ pub struct AgendaViewSkip {
     pub sorted_position: usize,
     pub title: String,
     pub reason: AgendaViewSkipReason,
+    pub urgency: AgendaUrgencyScore,
     pub blockers: Vec<TaskBlockerRecord>,
     pub sort_keys: Vec<AgendaViewSortValue>,
     pub receipts: Vec<AgendaViewReceipt>,

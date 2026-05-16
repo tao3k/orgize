@@ -886,7 +886,7 @@ orgize core unless represented as source-grounded metadata.
 | P0 | Clock tables and effort rollups | `doc/org-manual.org` "Clocking Work Time", "The clock table", "Effort Estimates"; `lisp/org-clock.el` `org-clock-get-table-data`, `org-dblock-write:clocktable` | CLOCK lines and durations are parsed; effort durations are typed; progress stats expose local and subtree Effort seconds; `ClockRollupRecord` adds local/subtree clock totals and Effort delta status; `ClockTablePlan` projects file/subtree/tree/treeN clocktable rows without source mutation; absolute `:block`, `:tstart`, and `:tend` windows are applied and exposed as `time_window`; `:match` tags/property filters are applied and exposed as `match_filter`; `:properties`/`:inherit-props` are projected as property columns and row values; `ClockIssueFinding` reports default Org agenda-style no-end-time, long/short duration, overlap, and gap diagnostics; wasm exposes `clockRollupsJson`, `clockTablePlansJson`, `clockIssuesJson`, and snapshot fields | No generated table refresh, step-split tables, or agenda/external-file scope scan | Keep source refresh and agenda-file scan downstream; add downstream consumption receipts only where needed |
 | P0 | Property inheritance profile and allowed-value schema | `doc/org-manual.org` "Property Inheritance", "Column View"; `lisp/org.el` `org-use-property-inheritance`; `lisp/org-colview.el` summary/value metadata | Effective properties, special properties, column declarations, `PropertyProfile`, native `PROPERTY_ALL` allowed values, fixed global descriptors, wasm `propertyProfileJson`, and `ORG030` allowed-value advice | No caller-provided inheritance policy profile yet; current projection preserves orgize's existing all-property effective view | Add caller-selectable inheritance policy only if downstream needs non-default Org property inheritance behavior |
 | P1 | Refile target index and movement provenance | `doc/org-manual.org` "Refile and Copy"; `lisp/org-refile.el` `org-refile-get-targets`, `org-refile-use-outline-path`, `org-refile-allow-creating-parent-nodes` | LOGBOOK refile records, local destination lint, `RefileTargetIndex`, native all/tag/TODO/level/maxlevel selectors, outline display modes, non-executing `RefilePlan`, `RefileCreateParentPlan` for one missing final target heading under an existing parent, wasm `refileTargetsJson`, wasm `refilePlanJson`, and snapshot `refileTargets` | No source mutation, history/bookmark update, cache regeneration, or regexp target evaluation | Keep execution downstream; add richer refile provenance only if persisted movement logs need more detail |
-| P1 | Capture template semantics without capture execution | `doc/org-manual.org` "Capture templates"; `lisp/org-capture.el` `org-capture-fill-template` | Datetree and capture/refile evidence can be projected from existing Org source | No parser for template target kinds, expansion placeholders, or context rules | Add optional `CaptureTemplateRecord` for Org-visible template source or config snapshots |
+| P1 | Agent capture protocol without source mutation | `doc/org-manual.org` "Capture", "Tags", "Properties and Columns", "Dates and Times" as Org artifact anchors; `org-capture.el` is historical comparison only | Datetree, refile, lifecycle, links, properties, and timestamps can represent captured source after it exists | No Agent-facing request/plan DTO that turns interaction events into previewable native Org entries | Add `AgentCaptureRequest` and `AgentCapturePlan`, plus wasm `capturePlanJson`, while keeping article UI and patch application in org-zhixing/runtime |
 | P1 | Dynamic block registry and parameter projection | `doc/org-manual.org` "Dynamic Blocks"; `lisp/org.el` `org-dblock-update`; `lisp/org-clock.el`, `lisp/org-colview.el` writers | Dynamic blocks are parsed as syntax nodes; `DynamicBlockRecord` now projects block names, plist-like params, `clocktable`/`columnview`/`unknown` writer kind, existing-output state, wasm `dynamicBlocksJson`, and snapshot `dynamicBlocks` without executing writers | No generated output refresh or writer-specific freshness proof | Keep execution/source refresh downstream; use registry to drive agent warnings and UI receipts |
 | P1 | Link protocol and custom search registry | `doc/org-manual.org` "Handling Links", "Protocols for External Access"; `lisp/org-protocol.el`; `ol.el` link parameters | Link targets, file/link searches, abbreviations, attachments are typed; `LinkProtocolRecord` now projects built-in/custom protocol families, `#+LINK` definitions/usages, executable link risk categories, and inert `org-protocol` capture/store/open-source calls | No runtime `org-link-parameters` integration or handler execution, by design | Keep execution/opening downstream; use protocol records for frontend receipts, lint advice, and index filters |
 | P1 | Attachment VCS evidence | `doc/org-manual.org` "Automatic version-control with Git"; `lisp/org-attach-git.el` | Attachment directories and paths are projected; existence lint is optional | No git-annex/git tracking metadata or dirty/missing attachment evidence | Add optional filesystem-aware `AttachmentVcsEvidence` behind lint/helper APIs |
@@ -982,7 +982,8 @@ Official anchors: `doc/org-manual.org` section "Working with Source Code";
 
 Official anchors: `doc/org-manual.org` sections "Capture and Attachments",
 "Refiling and Archiving", "TODO Items", "Progress Logging";
-`lisp/org-capture.el`, `lisp/org-refile.el`, `lisp/org-archive.el`.
+`lisp/org-refile.el`, `lisp/org-archive.el`, with `lisp/org-capture.el` kept
+as historical comparison rather than an Agent API source.
 
 - [X] Parse lifecycle/logbook drawers into semantic records for state changes,
       notes, refiles, reschedules, redeadlines, and clock history.
@@ -1097,7 +1098,7 @@ Priority rules:
 | M25.1 | P0 | Workspace agenda file set and built-in command plans | `doc/org-manual.org` "Agenda Files", "The Built-in Agenda Views", "Stuck projects"; `lisp/org-agenda.el` | Document-local `AgendaQuery`, `AgendaViewPlan`, block agenda sections, workspace section index | No typed `org-agenda-files`/manifest contract; no global TODO/search/stuck command plan over multiple parsed documents | Add `AgendaWorkspaceQuery` and `AgendaCommandPlan` over caller-supplied parsed docs or file manifests, covering agenda, TODO, tags/property, search, and stuck-project views without scanning the filesystem by default | Field assertions and compact snapshots for multi-file agenda/TODO/search/stuck outputs, stable source-file receipts, wasm DTO smoke |
 | M25.2 | P0 | Agenda urgency, skip, and official filter receipts | `doc/org-manual.org` "Presentation and Sorting", "Filtering/limiting agenda items"; `lisp/org-agenda.el` | Sort strategy subset, limits, match query, deadline/schedule state, priority score metadata | No official urgency score bundle; pre-agenda skip/filter reasons are not fully exposed as receipts | Add `AgendaUrgencyScore`, skip/filter receipt taxonomy, and score ingredients for deadline warning, scheduled state, priority, TODO state, time, category, and inherited tags | Snapshot rows include sort keys, urgency ingredients, accepted/skipped receipts; existing agenda tests remain stable |
 | M25.3 | P1 | Org Cite bibliography and print-bibliography projection | `lisp/oc.el`, `lisp/oc-csl.el`, `lisp/oc-biblatex.el`, `lisp/oc-natbib.el`; local AST/exporter research checkout as comparison only | Citation syntax and semantic `Citation`/`CiteReference` objects exist; malformed citations are diagnosed | No `#+bibliography`, `#+cite_export`, `#+print_bibliography`, nocite, processor/style metadata, or bibliography placement plan | Add `CitationExportPlan` side table that records bibliography files, citation keys, processors, style hints, nocite/all-cite intent, and print-bibliography locations without loading bibliography files | Original Rust snapshots for bibliography keywords, citation key collection, nocite, malformed print options; no citeproc dependency |
-| M25.4 | P1 | Capture template semantics without capture execution | `doc/org-manual.org` "Capture templates"; `lisp/org-capture.el` | Datetree, refile, lifecycle, and attachment evidence can represent captured source after it exists | No representation of template target kinds, `%` expansion placeholders, context filters, clock options, or immediate-finish/jump flags | Add optional `CaptureTemplateRecord` for source/config snapshots, target classification, placeholder inventory, and non-mutating insertion plan | Snapshot config examples for file/headline/datetree/clock/refile targets, placeholder diagnostics, no source insertion |
+| M25.4 | P1 | Agent capture protocol and wasm plan DTO | `doc/org-manual.org` "Capture", "Tags", "Properties and Columns", "Dates and Times"; `org-capture.el` is historical comparison only | Datetree, refile, lifecycle, attachment, link, property, and memory projections can consume captured Org entries after they exist | No structured Agent capture request that renders a native Org entry preview with provenance, target intent, memory policy, and non-mutating receipts | Add `AgentCaptureRequest`, `AgentCapturePlan`, and wasm `capturePlanJson`; keep rich interaction and patch application in org-zhixing/runtime | Core snapshot for idea/article/task capture plans; wasm DTO smoke over named JSON requests; no source insertion or Emacs Lisp evaluation |
 | M25.5 | P1 | Publishing/site graph for blog-style consumers | `doc/org-manual.org` "Publishing"; `lisp/ox-publish.el`; export manual settings | Publishing/export keywords and include plans are side tables | No project graph, sitemap/index plan, publish dependency graph, or changed-file selection model | Add `PublishingProjectPlan` from explicit TOML/Org/config snapshots, with source/destination roots, sitemap intent, include/macro dependencies, and no write action | Snapshot project graph and sitemap plan; path validation lint; org-zhixing can consume the DTO without rebuilding Org parsing in TypeScript |
 | M25.6 | P1 | Attachment filesystem and VCS evidence | `doc/org-manual.org` "Attachments", "Automatic version-control with Git"; `lisp/org-attach.el`, `lisp/org-attach-git.el` | Attachment directories, ID/DIR precedence, attachment links, optional existence lint | No git-annex/git dirty/missing evidence, attachment sync inventory, archive-delete advice, or configurable inheritance/profile DTO | Add filesystem-aware `AttachmentInventory`/`AttachmentVcsEvidence` helper behind lint APIs, keeping parser output filesystem-independent | Tempdir snapshot tests for present/missing/untracked files; no mutation; no default filesystem walk |
 | M25.7 | P1 | Include/macro/export dependency graph | `doc/org-manual.org` "Include Files", "Macro Replacement", "Export Settings"; `lisp/org-macro.el`, `lisp/ox.el` | Include expansion plan, macro expansion side table, high-usage export settings | No combined export dependency graph that explains include/macro/setupfile/cite/publish inputs across files | Add `ExportDependencyGraph` over existing include, macro, setupfile, bibliography, and publishing side tables | Snapshot graph nodes/edges and cycle/missing-file diagnostics; exporters remain non-mutating |
@@ -1114,7 +1115,37 @@ Recommended implementation order for the next major PR train:
    agenda explainable and rank-stable.
 3. M25.3 citation export planning, because orgize already parses citations but
    lacks the bibliography side table needed by serious writing/export flows.
-4. M25.5 publishing/site graph, because downstream frontend/blog consumers need
-   an explicit content graph instead of reimplementing Org parsing in TypeScript.
-5. M25.4 capture templates and M25.6 attachment inventory, as opt-in workflow
-   projections after the agenda/export graph substrate is stable.
+4. M25.4 Agent capture protocol and wasm plan DTO, because org-zhixing and
+   Window/Agent consumers need a native Org entry preview rather than an Emacs
+   template parser.
+5. M25.5 publishing/site graph and M25.6 attachment inventory, as opt-in
+   workflow projections after the agenda/export/capture substrates are stable.
+
+**** M25.1-M25.6 Implementation Receipt
+
+- [X] Add `AgendaWorkspaceBuilder`, `AgendaWorkspaceQuery`, and named
+      workspace command plans for daily agenda rows, TODO lists, tag/property
+      matches, text search, and stuck-project detection over caller-supplied
+      parsed documents.
+- [X] Add `AgendaUrgencyScore` and score ingredients to agenda view cards and
+      skips, covering priority, deadline, scheduled state, TODO state, time of
+      day, tags, category, and repeater occurrence evidence.
+- [X] Add `CitationExportPlan` for `#+BIBLIOGRAPHY:`, `#+CITE_EXPORT:`,
+      `#+PRINT_BIBLIOGRAPHY:`, collected citation keys, nocite intent, and
+      non-fatal missing-bibliography warnings without loading bibliography
+      files or adding citeproc dependencies.
+- [X] Add `AgentCaptureRequest`, `AgentCapturePlan`, and wasm
+      `capturePlanJson` for non-mutating Agent capture previews over native Org
+      entries, including target intent, provenance, memory policy, receipts,
+      and warnings without Emacs Lisp evaluation.
+- [X] Add `PublishingProjectPlan` / `publishing_project_plan()` for explicit
+      blog/site project graphs, output-file planning, sitemap entries, and
+      include/setupfile/bibliography/macro dependency edges without writing
+      files or invoking exporters.
+- [X] Add opt-in `AttachmentInventory` with filesystem existence evidence and
+      optional git status evidence while keeping parser output
+      filesystem-independent by default.
+- [X] Cover M25.1-M25.6 with original compact snapshots based on Rust fixtures:
+      multi-file agenda/TODO/search/stuck plans, citation export planning,
+      Agent capture planning, publishing graph planning, and attachment
+      inventory warnings.

@@ -3,6 +3,7 @@
 use std::cmp::Ordering;
 
 use super::{
+    agenda_urgency::agenda_urgency_score,
     agenda_view_model::{compact_sort_strategy, format_date, format_time},
     task_blockers::{blockers_by_blocked_source, blockers_for_source},
     AgendaBlockSectionPlan, AgendaBlockViewPlan, AgendaBlockViewQuery, AgendaEntry,
@@ -95,6 +96,7 @@ fn accepted_card(
     strategy: &[AgendaViewSortSpec],
 ) -> AgendaViewCard {
     let sort_keys = sort_keys(&entry);
+    let urgency = agenda_urgency_score(&entry);
     let receipts = accepted_receipts(sorted_position, limit, blockers.len(), &sort_keys, strategy);
     AgendaViewCard {
         source,
@@ -109,6 +111,7 @@ fn accepted_card(
         category: entry.category,
         todo: entry.todo,
         effective_tags: entry.effective_tags,
+        urgency,
         blockers,
         sort_keys,
         receipts,
@@ -124,11 +127,13 @@ fn skipped_entry(
     strategy: &[AgendaViewSortSpec],
 ) -> AgendaViewSkip {
     let sort_keys = sort_keys(&entry);
+    let urgency = agenda_urgency_score(&entry);
     AgendaViewSkip {
         source,
         sorted_position,
         title: entry.raw_title,
         reason: AgendaViewSkipReason::Limit { limit },
+        urgency,
         receipts: skipped_receipts(sorted_position, limit, blockers.len(), &sort_keys, strategy),
         blockers,
         sort_keys,

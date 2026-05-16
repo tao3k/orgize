@@ -119,6 +119,21 @@ the compact `MEMxxx` projection beside planning, agenda, semantic AST, and
 rendering outputs. Those `MEMxxx` values are output diagnostics, not Org source
 syntax.
 
+** Agent Capture Protocol
+
+Capture is no longer modeled as Emacs `org-capture-templates` for a human
+operator.  The Agent-era object is an interaction event that the Agent
+interprets into a non-mutating Org capture plan.  The durable artifact remains
+ordinary Org: headline, tags, property drawer, inactive timestamp, links, quote
+blocks, and body text.
+
+The formal boundary lives in
+[[file:10.05_agent_capture_protocol.org][10.05 Agent Capture Protocol]].  The
+short version is: orgize renders and explains a native Org entry plan; wasm
+exposes a stable `capturePlanJson` DTO; org-zhixing or another runtime owns rich
+interaction, confirmation, and patch application; Wendao and downstream agents
+own search ranking and memory promotion.
+
 ** Boundary
 
 Keep orgize focused on parsing and semantic projection.
@@ -132,5 +147,5 @@ The clean boundary is:
 - Parser: lossless syntax and source-preserving AST.
 - Semantic core: typed planning, timestamps, properties, drawers, tags, links,
   diagnostics, and side tables.
-- Agent projections: compact lint, planning, and memory snapshots.
+- Agent projections: compact lint, planning, memory, and capture plans.
 - Runtimes: external systems decide execution, persistence, and scheduling.

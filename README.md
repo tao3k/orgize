@@ -117,6 +117,16 @@ parsed document or exporter defaults. Use
 agent wants compact decision cards over those agenda rows. The snapshot is a
 renderer-friendly projection of official Org agenda semantics; its `PLANxxx`
 codes are output diagnostics, not Org source syntax.
+Use `AgendaWorkspaceBuilder` with `AgendaWorkspaceQuery` when a caller already
+has multiple parsed documents and wants built-in Agenda-style command plans for
+daily agenda rows, TODO lists, tag/property matches, text search, and stuck
+projects without letting orgize scan agenda files itself. Agenda view cards now
+carry `AgendaUrgencyScore` ingredients for explainable ranking. Use
+`document.citation_export_plan()` for Org Cite bibliography/processor/print
+bibliography side tables, `agent_capture_plan(&AgentCaptureRequest::new(...))`
+for non-mutating Agent capture previews over native Org entries,
+`publishing_project_plan()` for explicit blog/site publishing graphs, and
+`document.attachment_inventory()` for opt-in filesystem attachment evidence.
 
 Use `Org::syntax_document()` when you need the lossless rowan-backed syntax tree:
 
