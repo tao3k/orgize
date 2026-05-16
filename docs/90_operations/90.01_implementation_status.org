@@ -954,7 +954,7 @@ Columns", "Clocking Work Time"; `lisp/org.el`, `lisp/org-colview.el`,
       widened alphabetic priority ranges.
 - [X] Project the `org-get-priority` urgency score / sortable key next to the
       normalized value for agenda and Wendao index consumers.
-- [ ] Add profile-aware lint configuration once callers can pass non-default
+- [X] Add profile-aware lint configuration once callers can pass non-default
       priority bounds into lint runs.
 
 **** P0 Source Block Results And Tangle Metadata

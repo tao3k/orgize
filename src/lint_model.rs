@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use rowan::TextRange;
 
-use crate::ast::SourcePosition;
+use crate::ast::{PriorityProfile, SourcePosition};
 
 /// Lint configuration.
 ///
@@ -22,6 +22,8 @@ pub struct LintOptions {
     pub attachment_base_dir: Option<PathBuf>,
     /// Base directory used to resolve relative ordinary `file:` link targets.
     pub file_base_dir: Option<PathBuf>,
+    /// Priority bounds used when checking otherwise valid priority cookies.
+    pub priority_profile: PriorityProfile,
 }
 
 /// Lint result for one Org source string.

@@ -214,6 +214,7 @@ commands:
 orgize lint notes.org
 orgize lint --format text notes.org
 orgize lint --json notes.org
+orgize lint --priority-highest 0 --priority-default 5 --priority-lowest 9 notes.org
 orgize fmt --check notes.org
 orgize fmt notes.org docs/
 ```
@@ -223,7 +224,10 @@ uniqueness issues such as duplicate `ID`/`CUSTOM_ID` targets, missing local
 macro definitions, duplicate `#+MACRO:` definitions, malformed or duplicate
 `#+LINK:` abbreviation definitions, invalid supported `#+OPTIONS:` values,
 duplicate or conflicting per-file TODO keyword declarations, and missing or
-non-file `#+INCLUDE:` paths when linting real files. By default, `lint` prints a
+non-file `#+INCLUDE:` paths when linting real files. Priority-cookie checks use
+Org's default `A..C` profile unless callers pass
+`--priority-highest/--priority-default/--priority-lowest`, which also supports
+numeric profiles such as `0..9`. By default, `lint` prints a
 compact agent-facing repair report with location, source line, fix hint, and
 contract; `--format text` keeps the stable line-oriented form, and `--json`
 keeps structured machine output as an explicit mode. `fmt` starts with

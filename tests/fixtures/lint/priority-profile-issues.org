@@ -1,0 +1,3 @@
+* TODO [#D] Letter outside default Org priority bounds
+* TODO [#9] Numeric priority accepted by custom profile
+* TODO [#10] Numeric priority outside custom profile

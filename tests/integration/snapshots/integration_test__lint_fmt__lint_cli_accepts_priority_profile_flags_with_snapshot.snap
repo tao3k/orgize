@@ -1,0 +1,10 @@
+---
+source: tests/integration/lint_fmt.rs
+expression: command_snapshot(output)
+---
+status: 1
+stdout:
+<stdin>:1:8: warning ORG010: priority cookie `[#D]` is outside configured priority range 0..9
+<stdin>:3:8: warning ORG010: priority cookie `[#10]` is outside configured priority range 0..9
+
+stderr:

@@ -1,10 +1,13 @@
 //! Priority-cookie lint checks.
 
-use crate::ast::PriorityValue;
+use crate::ast::{PriorityProfile, PriorityRangeStatus, PriorityValue};
 
 use super::lint_model::{location_for_offsets, LintFinding, LintSeverity};
 
-pub(crate) fn priority_cookie_findings(source: &str) -> Vec<LintFinding> {
+pub(crate) fn priority_cookie_findings(
+    source: &str,
+    profile: &PriorityProfile,
+) -> Vec<LintFinding> {
     source
         .split_inclusive('\n')
         .scan(0, |offset, segment| {
@@ -12,15 +15,20 @@ pub(crate) fn priority_cookie_findings(source: &str) -> Vec<LintFinding> {
             *offset += segment.len();
             Some((current, segment))
         })
-        .filter_map(|(offset, segment)| priority_cookie_finding(source, offset, segment))
+        .filter_map(|(offset, segment)| priority_cookie_finding(source, offset, segment, profile))
         .collect()
 }
 
-fn priority_cookie_finding(source: &str, offset: usize, segment: &str) -> Option<LintFinding> {
+fn priority_cookie_finding(
+    source: &str,
+    offset: usize,
+    segment: &str,
+    profile: &PriorityProfile,
+) -> Option<LintFinding> {
     let line = segment.trim_end_matches('\n').trim_end_matches('\r');
     let trimmed_start = line.len() - line.trim_start_matches([' ', '\t']).len();
     let trimmed = &line[trimmed_start..];
-    let (start, end, message) = malformed_priority_cookie(trimmed)?;
+    let (start, end, message) = malformed_priority_cookie(trimmed, profile)?;
     Some(LintFinding {
         code: "ORG010",
         severity: LintSeverity::Warning,
@@ -33,7 +41,10 @@ fn priority_cookie_finding(source: &str, offset: usize, segment: &str) -> Option
     })
 }
 
-fn malformed_priority_cookie(line: &str) -> Option<(usize, usize, String)> {
+fn malformed_priority_cookie(
+    line: &str,
+    profile: &PriorityProfile,
+) -> Option<(usize, usize, String)> {
     let bytes = line.as_bytes();
     let stars = bytes.iter().take_while(|byte| **byte == b'*').count();
     if stars == 0
@@ -45,15 +56,19 @@ fn malformed_priority_cookie(line: &str) -> Option<(usize, usize, String)> {
     }
 
     let first = next_token(line, stars)?;
-    if let Some(finding) = malformed_priority_token(line, first) {
+    if let Some(finding) = malformed_priority_token(line, first, profile) {
         return Some(finding);
     }
 
     let second = next_token(line, first.1)?;
-    malformed_priority_token(line, second)
+    malformed_priority_token(line, second, profile)
 }
 
-fn malformed_priority_token(line: &str, token: (usize, usize)) -> Option<(usize, usize, String)> {
+fn malformed_priority_token(
+    line: &str,
+    token: (usize, usize),
+    profile: &PriorityProfile,
+) -> Option<(usize, usize, String)> {
     let raw = &line[token.0..token.1];
     if !raw.starts_with("[#") {
         return None;
@@ -73,13 +88,24 @@ fn malformed_priority_token(line: &str, token: (usize, usize)) -> Option<(usize,
         ));
     }
     let value = &raw[2..close];
-    if PriorityValue::parse(value).is_some() {
+    let Some(value) = PriorityValue::parse(value) else {
+        return Some((
+            token.0,
+            token.1,
+            format!("priority cookie `{raw}` is not a supported Org priority value"),
+        ));
+    };
+    if profile.range_status_for_value(&value) == PriorityRangeStatus::InRange {
         return None;
     }
     Some((
         token.0,
         token.1,
-        format!("priority cookie `{raw}` is not a supported Org priority value"),
+        format!(
+            "priority cookie `{raw}` is outside configured priority range {}..{}",
+            profile.highest().to_normalized_string(),
+            profile.lowest().to_normalized_string()
+        ),
     ))
 }
 

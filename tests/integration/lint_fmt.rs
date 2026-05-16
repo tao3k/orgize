@@ -5,7 +5,10 @@ use std::{
     process::{Command, Stdio},
 };
 
-use orgize::lint::{lint_org, lint_org_with_options, LintOptions};
+use orgize::{
+    ast::{PriorityProfile, PriorityValue},
+    lint::{lint_org, lint_org_with_options, LintOptions},
+};
 
 #[test]
 fn cli_rejects_invalid_path_arguments_with_snapshot() {
@@ -165,6 +168,63 @@ fn lint_reports_priority_property_issues_with_snapshot() {
 }
 
 #[test]
+fn lint_reports_priority_profile_issues_with_snapshot() {
+    let default_report = lint_org(priority_profile_issues_lint_fixture());
+    let numeric_profile = PriorityProfile::new(
+        PriorityValue::Numeric(0),
+        PriorityValue::Numeric(9),
+        PriorityValue::Numeric(5),
+    )
+    .expect("valid numeric priority profile");
+    let custom_report = lint_org_with_options(
+        priority_profile_issues_lint_fixture(),
+        &LintOptions {
+            priority_profile: numeric_profile,
+            ..LintOptions::default()
+        },
+    );
+
+    insta::assert_snapshot!(format!(
+        "default clean: {}\n{}custom clean: {}\n{}",
+        default_report.is_clean(),
+        default_report.to_text("fixture.org"),
+        custom_report.is_clean(),
+        custom_report.to_text("fixture.org")
+    ));
+}
+
+#[test]
+fn lint_cli_accepts_priority_profile_flags_with_snapshot() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .args([
+            "lint",
+            "--format",
+            "text",
+            "--priority-highest",
+            "0",
+            "--priority-default",
+            "5",
+            "--priority-lowest",
+            "9",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    child
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(priority_profile_issues_lint_fixture().as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+
+    insta::assert_snapshot!(command_snapshot(output));
+}
+
+#[test]
 fn lint_cli_compact_stdin_output_is_snapshotted() {
     let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .args(["lint"])
@@ -294,6 +354,10 @@ fn todo_declaration_issues_lint_fixture() -> &'static str {
 
 fn priority_property_issues_lint_fixture() -> &'static str {
     include_str!("../fixtures/lint/priority-property-issues.org")
+}
+
+fn priority_profile_issues_lint_fixture() -> &'static str {
+    include_str!("../fixtures/lint/priority-profile-issues.org")
 }
 
 fn skip_text_fmt_fixture() -> &'static str {

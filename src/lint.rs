@@ -100,7 +100,7 @@ fn collect_lint_findings(
         source,
     ));
     findings.extend(options_keyword_findings(&document.metadata, source));
-    findings.extend(priority_cookie_findings(source));
+    findings.extend(priority_cookie_findings(source, &options.priority_profile));
     findings.extend(property_drawer_findings(document, source));
     findings.extend(progress_findings(document, source));
     findings.extend(attachment_findings(document, source, options));
