@@ -3,9 +3,11 @@
 use std::fmt::Write;
 
 use super::{
-    AgendaDate, AgendaTime, AgentCaptureLink, AgentCaptureMemoryPolicy, AgentCapturePlan,
-    AgentCaptureProperty, AgentCaptureReceipt, AgentCaptureReceiptKind, AgentCaptureRequest,
-    AgentCaptureTargetKind, AgentCaptureTimestamp, AgentCaptureWarning, AgentCaptureWarningKind,
+    AgendaDate, AgendaTime, AgentCaptureApplication, AgentCaptureApplicationAction,
+    AgentCaptureApplicationPrecondition, AgentCaptureApplicationPreconditionKind, AgentCaptureLink,
+    AgentCaptureMemoryPolicy, AgentCapturePlan, AgentCaptureProperty, AgentCaptureReceipt,
+    AgentCaptureReceiptKind, AgentCaptureRequest, AgentCaptureTargetKind, AgentCaptureTimestamp,
+    AgentCaptureWarning, AgentCaptureWarningKind,
 };
 
 /// Renders an Agent capture request into a reviewable native Org entry plan.
@@ -53,6 +55,7 @@ pub fn agent_capture_plan(request: &AgentCaptureRequest) -> AgentCapturePlan {
     AgentCapturePlan {
         target: request.target.clone(),
         org_entry,
+        application: capture_application(request),
         receipts: capture_receipts(request),
         warnings,
         requires_confirmation: request.requires_confirmation,
@@ -133,6 +136,61 @@ fn render_org_entry(
     }
 
     output
+}
+
+fn capture_application(request: &AgentCaptureRequest) -> AgentCaptureApplication {
+    let action = match request.target.kind {
+        AgentCaptureTargetKind::CurrentSection => {
+            AgentCaptureApplicationAction::ResolveRuntimeTarget
+        }
+        AgentCaptureTargetKind::Inbox
+        | AgentCaptureTargetKind::Datetree
+        | AgentCaptureTargetKind::OutlinePath => AgentCaptureApplicationAction::InsertOrgEntry,
+    };
+    AgentCaptureApplication {
+        action,
+        target: request.target.clone(),
+        preconditions: capture_application_preconditions(request),
+    }
+}
+
+fn capture_application_preconditions(
+    request: &AgentCaptureRequest,
+) -> Vec<AgentCaptureApplicationPrecondition> {
+    let mut preconditions = Vec::new();
+    if request.requires_confirmation {
+        preconditions.push(application_precondition(
+            AgentCaptureApplicationPreconditionKind::UserConfirmation,
+            "runtime must confirm with the user before writing the Org entry",
+        ));
+    }
+    if request.target.source_file.is_none() {
+        preconditions.push(application_precondition(
+            AgentCaptureApplicationPreconditionKind::SourceFileResolution,
+            "runtime must resolve the target Org source file without relying on a local absolute path",
+        ));
+    } else {
+        preconditions.push(application_precondition(
+            AgentCaptureApplicationPreconditionKind::WriteLock,
+            "runtime must acquire a host-owned git write lock for the target source before applying",
+        ));
+    }
+    match request.target.kind {
+        AgentCaptureTargetKind::Datetree => preconditions.push(application_precondition(
+            AgentCaptureApplicationPreconditionKind::DatetreeResolution,
+            "runtime must create or resolve the datetree heading before insertion",
+        )),
+        AgentCaptureTargetKind::OutlinePath => preconditions.push(application_precondition(
+            AgentCaptureApplicationPreconditionKind::OutlinePathResolution,
+            "runtime must resolve the outline path before insertion",
+        )),
+        AgentCaptureTargetKind::CurrentSection => preconditions.push(application_precondition(
+            AgentCaptureApplicationPreconditionKind::CurrentSectionResolution,
+            "runtime/editor context must resolve the current section before insertion",
+        )),
+        AgentCaptureTargetKind::Inbox => {}
+    }
+    preconditions
 }
 
 fn capture_properties(
@@ -235,6 +293,10 @@ fn capture_receipts(request: &AgentCaptureRequest) -> Vec<AgentCaptureReceipt> {
             "a runtime should ask for confirmation before applying this plan",
         ));
     }
+    receipts.push(receipt(
+        AgentCaptureReceiptKind::ApplicationPlan,
+        "application intent is explicit for downstream runtimes but orgize still performs no write",
+    ));
     receipts
 }
 
@@ -335,6 +397,16 @@ fn property(key: impl Into<String>, value: impl Into<String>) -> AgentCapturePro
     AgentCaptureProperty {
         key: key.into(),
         value: value.into(),
+    }
+}
+
+fn application_precondition(
+    kind: AgentCaptureApplicationPreconditionKind,
+    message: impl Into<String>,
+) -> AgentCaptureApplicationPrecondition {
+    AgentCaptureApplicationPrecondition {
+        kind,
+        message: message.into(),
     }
 }
 

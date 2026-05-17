@@ -1,5 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_m25_alignment.rs
+assertion_line: 152
 expression: render_agent_capture_plan(&capture)
 ---
 target kind=datetree file=notes/inbox.org path=none date=2026-05-16 position=append confirm=true
@@ -24,6 +25,11 @@ Selected source excerpt goes here.
 
 Links:
 - [[https://example.test/agent-capture][Agent capture article]]
+application:
+  action=insertOrgEntry target=datetree file=notes/inbox.org position=append
+  precondition userConfirmation runtime must confirm with the user before writing the Org entry
+  precondition writeLock runtime must acquire a host-owned git write lock for the target source before applying
+  precondition datetreeResolution runtime must create or resolve the datetree heading before insertion
 receipts:
   nonMutating orgize rendered a plan without inserting or editing source
   nativeOrgEntry capture artifact uses ordinary Org headline, tags, properties, links, and blocks
@@ -31,5 +37,6 @@ receipts:
   sourceProvenance source kind `article` recorded in property drawer
   memoryPolicy memory policy `candidate` is advisory evidence for downstream authority projection
   requiresConfirmation a runtime should ask for confirmation before applying this plan
+  applicationPlan application intent is explicit for downstream runtimes but orgize still performs no write
 warnings:
   sanitizedPropertyKey property key `decision impact` was rendered as `DECISION_IMPACT`

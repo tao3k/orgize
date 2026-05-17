@@ -83,6 +83,7 @@ The output should be a previewable plan:
 |-------+---------|
 | =target= | where a downstream runtime would insert the entry |
 | =orgEntry= | complete native Org entry text, ready for review |
+| =application= | explicit runtime application intent: action, target, and preconditions |
 | =receipts= | non-mutating, native-Org, provenance, memory-policy, and confirmation receipts |
 | =warnings= | missing title/body, sanitized tags/properties, unsupported target, or runtime-owned action |
 | =requiresConfirmation= | true when applying the plan would mutate a file |
@@ -90,6 +91,32 @@ The output should be a previewable plan:
 The important invariant is that orgize returns a plan, not an edit.  A caller can
 show the exact Org text to the user, pass the DTO to org-zhixing, or ask Wendao
 to store/search/rank it after an explicit write path.
+
+The =application= field is intentionally not a patch.  It says things like
+=insertOrgEntry= or =resolveRuntimeTarget= and lists preconditions such as user
+confirmation, source-file resolution, host-owned git write lock, datetree
+resolution, outline-path resolution, or current-section resolution.  Downstream
+runtimes may turn that contract into a patch, but orgize never writes the file.
+Those runtimes should consume repo-relative source identities and host-owned git
+locks rather than smuggling local absolute paths through the DTO.
+
+** Runtime Projection
+
+org-zhixing demonstrates the expected downstream shape.  It calls the wasm
+=capturePlan= API, reads =plan.application=, and derives a review-only patch
+preview for the active configured Org source.  The preview is useful evidence
+for an Agent or human reviewer, but it is not the mutation itself.
+
+The real writer remains outside orgize:
+
+- the host confirms user intent;
+- the host acquires the git write lock;
+- the host resolves source-file, datetree, outline-path, or current-section
+  targets;
+- the host applies the edit and emits its own write receipt.
+
+This keeps orgize a native Org parser/projection substrate while still giving
+Agent runtimes enough typed information to build a safe capture workflow.
 
 ** Org Artifact
 
@@ -138,5 +165,8 @@ current task.
 2. Render native Org entries from structured requests without source mutation.
 3. Expose wasm =capturePlanJson(request)= so org-zhixing and Window/Agent
    runtimes can consume the plan without reimplementing Org entry rendering.
-4. Keep richer article extraction, review UI, patch application, and memory
+4. Add an org-zhixing Capture view that prepares an Agent request from the
+   active Org source and renders the returned native Org preview, receipts,
+   warnings, target, confirmation requirement, and memory policy.
+5. Keep richer article extraction, review UI, patch application, and memory
    promotion outside orgize.

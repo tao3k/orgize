@@ -367,6 +367,7 @@ impl AgentCaptureMemoryPolicy {
 pub struct AgentCapturePlan {
     pub target: AgentCaptureTarget,
     pub org_entry: String,
+    pub application: AgentCaptureApplication,
     pub receipts: Vec<AgentCaptureReceipt>,
     pub warnings: Vec<AgentCaptureWarning>,
     pub requires_confirmation: bool,
@@ -376,6 +377,63 @@ impl AgentCapturePlan {
     /// Renders a non-mutating native Org capture plan from a request.
     pub fn from_request(request: &AgentCaptureRequest) -> Self {
         request.plan()
+    }
+}
+
+/// Runtime-facing application intent for a reviewed capture plan.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AgentCaptureApplication {
+    pub action: AgentCaptureApplicationAction,
+    pub target: AgentCaptureTarget,
+    pub preconditions: Vec<AgentCaptureApplicationPrecondition>,
+}
+
+/// Stable application actions for downstream runtimes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AgentCaptureApplicationAction {
+    InsertOrgEntry,
+    ResolveRuntimeTarget,
+}
+
+impl AgentCaptureApplicationAction {
+    /// Stable label for DTO and compact consumers.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::InsertOrgEntry => "insertOrgEntry",
+            Self::ResolveRuntimeTarget => "resolveRuntimeTarget",
+        }
+    }
+}
+
+/// A condition a runtime must satisfy before applying a capture plan.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AgentCaptureApplicationPrecondition {
+    pub kind: AgentCaptureApplicationPreconditionKind,
+    pub message: String,
+}
+
+/// Stable precondition categories for downstream runtimes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AgentCaptureApplicationPreconditionKind {
+    UserConfirmation,
+    SourceFileResolution,
+    WriteLock,
+    DatetreeResolution,
+    OutlinePathResolution,
+    CurrentSectionResolution,
+}
+
+impl AgentCaptureApplicationPreconditionKind {
+    /// Stable label for DTO and compact consumers.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::UserConfirmation => "userConfirmation",
+            Self::SourceFileResolution => "sourceFileResolution",
+            Self::WriteLock => "writeLock",
+            Self::DatetreeResolution => "datetreeResolution",
+            Self::OutlinePathResolution => "outlinePathResolution",
+            Self::CurrentSectionResolution => "currentSectionResolution",
+        }
     }
 }
 
@@ -395,6 +453,7 @@ pub enum AgentCaptureReceiptKind {
     SourceProvenance,
     MemoryPolicy,
     RequiresConfirmation,
+    ApplicationPlan,
 }
 
 impl AgentCaptureReceiptKind {
@@ -407,6 +466,7 @@ impl AgentCaptureReceiptKind {
             Self::SourceProvenance => "sourceProvenance",
             Self::MemoryPolicy => "memoryPolicy",
             Self::RequiresConfirmation => "requiresConfirmation",
+            Self::ApplicationPlan => "applicationPlan",
         }
     }
 }

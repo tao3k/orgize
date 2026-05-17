@@ -299,6 +299,25 @@ fn render_agent_capture_plan(plan: &AgentCapturePlan) -> String {
     ));
     out.push_str("entry:\n");
     out.push_str(&plan.org_entry);
+    out.push_str("application:\n");
+    out.push_str(&format!(
+        "  action={} target={} file={} position={}\n",
+        plan.application.action.as_str(),
+        plan.application.target.kind.as_str(),
+        plan.application
+            .target
+            .source_file
+            .as_deref()
+            .unwrap_or("none"),
+        plan.application.target.insert_position.as_str()
+    ));
+    for precondition in &plan.application.preconditions {
+        out.push_str(&format!(
+            "  precondition {} {}\n",
+            precondition.kind.as_str(),
+            precondition.message
+        ));
+    }
     out.push_str("receipts:\n");
     for receipt in &plan.receipts {
         out.push_str(&format!(

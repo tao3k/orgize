@@ -140,10 +140,12 @@ pub use block_model::{
 };
 pub use capture::agent_capture_plan;
 pub use capture_model::{
-    AgentCaptureInsertPosition, AgentCaptureKind, AgentCaptureLink, AgentCaptureMemoryPolicy,
-    AgentCapturePlan, AgentCaptureProperty, AgentCaptureReceipt, AgentCaptureReceiptKind,
-    AgentCaptureRequest, AgentCaptureSource, AgentCaptureSourceKind, AgentCaptureTarget,
-    AgentCaptureTargetKind, AgentCaptureTimestamp, AgentCaptureWarning, AgentCaptureWarningKind,
+    AgentCaptureApplication, AgentCaptureApplicationAction, AgentCaptureApplicationPrecondition,
+    AgentCaptureApplicationPreconditionKind, AgentCaptureInsertPosition, AgentCaptureKind,
+    AgentCaptureLink, AgentCaptureMemoryPolicy, AgentCapturePlan, AgentCaptureProperty,
+    AgentCaptureReceipt, AgentCaptureReceiptKind, AgentCaptureRequest, AgentCaptureSource,
+    AgentCaptureSourceKind, AgentCaptureTarget, AgentCaptureTargetKind, AgentCaptureTimestamp,
+    AgentCaptureWarning, AgentCaptureWarningKind,
 };
 pub use citation_export_model::{
     CitationBibliography, CitationExportOption, CitationExportPlan, CitationExportWarning,
