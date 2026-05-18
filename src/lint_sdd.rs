@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::lint_model::{location_for_range, LintFinding, LintSeverity};
-use crate::ast::{ParsedAnnotation, ParsedAst, Section};
+use crate::ast::{Element, ElementData, ParsedAnnotation, ParsedAst, Section};
 
 /// Lints Org-native SDD nodes and requirement structure.
 pub(crate) fn sdd_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
@@ -45,14 +45,44 @@ pub(crate) fn sdd_findings(document: &ParsedAst, source: &str) -> Vec<LintFindin
         }
 
         lint_parent_edge(record, &ids, source, &mut findings);
+        lint_kind_metadata(record, source, &mut findings);
     }
 
     findings.extend(duplicate_sdd_id_findings(&records, source));
     for section in &document.sections {
+        collect_sdd_execution_state_findings(section, source, &mut findings);
         collect_requirement_findings(section, false, source, &mut findings);
     }
 
     findings
+}
+
+fn lint_kind_metadata(
+    record: &crate::ast::SddNodeRecord,
+    source: &str,
+    findings: &mut Vec<LintFinding>,
+) {
+    let missing = match record.kind {
+        crate::ast::SddKind::System => record.concern.is_none().then_some("SDD_CONCERN"),
+        crate::ast::SddKind::Capability => record.capability.is_none().then_some("SDD_CAPABILITY"),
+        crate::ast::SddKind::View => record.viewpoint.is_none().then_some("SDD_VIEWPOINT"),
+        crate::ast::SddKind::Decision => record.rationale.is_none().then_some("SDD_RATIONALE"),
+        crate::ast::SddKind::Audit => record.concern.is_none().then_some("SDD_CONCERN"),
+        crate::ast::SddKind::Unknown(_) => None,
+    };
+
+    if let Some(property) = missing {
+        findings.push(LintFinding {
+            code: "ORG037",
+            severity: LintSeverity::Error,
+            message: format!(
+                "SDD {} node `{}` is missing architecture metadata `{property}`",
+                record.kind.as_str(),
+                record.title
+            ),
+            location: location_for_range(source, record.source_range()),
+        });
+    }
 }
 
 trait SddRange {
@@ -159,6 +189,106 @@ fn collect_requirement_findings(
     for child in &section.subsections {
         collect_requirement_findings(child, current_inside_sdd, source, findings);
     }
+}
+
+fn collect_sdd_execution_state_findings(
+    section: &Section<ParsedAnnotation>,
+    source: &str,
+    findings: &mut Vec<LintFinding>,
+) {
+    if is_sdd_section(section) {
+        if section.todo.is_some() {
+            findings.push(sdd_execution_state_finding(
+                section,
+                "SDD headings must not carry TODO state; move execution state to an Org task or ExecPlan heading",
+                source,
+            ));
+        }
+        if title_has_statistics_cookie(&section.raw_title) {
+            findings.push(sdd_execution_state_finding(
+                section,
+                "SDD headings must not carry progress cookies; move implementation progress to an Org task or ExecPlan heading",
+                source,
+            ));
+        }
+        if has_direct_checklist(section) {
+            findings.push(sdd_execution_state_finding(
+                section,
+                "SDD headings must not own direct task checklists; move step tracking to an Org task or ExecPlan heading",
+                source,
+            ));
+        }
+        if section.subsections.iter().any(|child| child.todo.is_some()) {
+            findings.push(sdd_execution_state_finding(
+                section,
+                "SDD headings must not own direct TODO child tasks; use architecture child headings or link to an implementation plan",
+                source,
+            ));
+        }
+    }
+
+    for child in &section.subsections {
+        collect_sdd_execution_state_findings(child, source, findings);
+    }
+}
+
+fn sdd_execution_state_finding(
+    section: &Section<ParsedAnnotation>,
+    message: &str,
+    source: &str,
+) -> LintFinding {
+    LintFinding {
+        code: "ORG036",
+        severity: LintSeverity::Warning,
+        message: message.to_string(),
+        location: location_for_range(source, section.ann.range),
+    }
+}
+
+fn title_has_statistics_cookie(title: &str) -> bool {
+    title
+        .split_whitespace()
+        .any(|part| fraction_cookie(part) || percent_cookie(part))
+}
+
+fn fraction_cookie(value: &str) -> bool {
+    let Some(inner) = value
+        .strip_prefix('[')
+        .and_then(|value| value.strip_suffix(']'))
+    else {
+        return false;
+    };
+    let Some((done, total)) = inner.split_once('/') else {
+        return false;
+    };
+    !done.is_empty()
+        && !total.is_empty()
+        && done.chars().all(|ch| ch.is_ascii_digit())
+        && total.chars().all(|ch| ch.is_ascii_digit())
+}
+
+fn percent_cookie(value: &str) -> bool {
+    let Some(inner) = value
+        .strip_prefix('[')
+        .and_then(|value| value.strip_suffix("%]"))
+    else {
+        return false;
+    };
+    !inner.is_empty() && inner.chars().all(|ch| ch.is_ascii_digit())
+}
+
+fn has_direct_checklist(section: &Section<ParsedAnnotation>) -> bool {
+    section
+        .children
+        .iter()
+        .any(|element| has_direct_checklist_element(element))
+}
+
+fn has_direct_checklist_element(element: &Element<ParsedAnnotation>) -> bool {
+    if let ElementData::List(list) = &element.data {
+        return list.items.iter().any(|item| item.checkbox.is_some());
+    }
+    false
 }
 
 fn is_sdd_section(section: &Section<ParsedAnnotation>) -> bool {

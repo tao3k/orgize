@@ -13,6 +13,10 @@ pub struct SddNodeRecord {
     pub id: Option<String>,
     pub parent: Option<SddParentRef>,
     pub capability: Option<String>,
+    pub viewpoint: Option<String>,
+    pub concern: Option<String>,
+    pub quality: Option<String>,
+    pub rationale: Option<String>,
     pub slug: Option<String>,
     pub status: Option<String>,
     pub todo: Option<TodoKeyword>,
@@ -29,10 +33,11 @@ impl SddNodeRecord {
 /// SDD node kind.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SddKind {
-    Program,
+    System,
     Capability,
-    Change,
-    TaskGroup,
+    View,
+    Decision,
+    Audit,
     Unknown(String),
 }
 
@@ -40,10 +45,11 @@ impl SddKind {
     /// Parses an SDD kind property value.
     pub fn parse(value: &str) -> Self {
         match value.trim().to_ascii_lowercase().as_str() {
-            "program" => Self::Program,
+            "system" => Self::System,
             "capability" => Self::Capability,
-            "change" => Self::Change,
-            "task-group" | "task_group" | "taskgroup" => Self::TaskGroup,
+            "view" => Self::View,
+            "decision" => Self::Decision,
+            "audit" => Self::Audit,
             other => Self::Unknown(other.to_string()),
         }
     }
@@ -51,10 +57,11 @@ impl SddKind {
     /// Stable label for compact and DTO consumers.
     pub fn as_str(&self) -> &str {
         match self {
-            Self::Program => "program",
+            Self::System => "system",
             Self::Capability => "capability",
-            Self::Change => "change",
-            Self::TaskGroup => "task-group",
+            Self::View => "view",
+            Self::Decision => "decision",
+            Self::Audit => "audit",
             Self::Unknown(value) => value.as_str(),
         }
     }
@@ -66,7 +73,7 @@ impl SddKind {
 
     /// Returns true when this node kind can omit `SDD_PARENT`.
     pub const fn can_omit_parent(&self) -> bool {
-        matches!(self, Self::Program | Self::Unknown(_))
+        matches!(self, Self::System | Self::Unknown(_))
     }
 }
 
@@ -142,7 +149,7 @@ impl SddStatus {
         output.push_str("[SDD] ");
         output.push_str(path);
         output.push('\n');
-        output.push_str("nodes: ");
+        output.push_str("architecture nodes: ");
         output.push_str(&self.records.len().to_string());
         output.push('\n');
 
@@ -193,6 +200,26 @@ fn push_record_card(output: &mut String, path: &str, record: &SddNodeRecord) {
     if let Some(capability) = &record.capability {
         output.push_str("  capability: ");
         output.push_str(capability);
+        output.push('\n');
+    }
+    if let Some(viewpoint) = &record.viewpoint {
+        output.push_str("  viewpoint: ");
+        output.push_str(viewpoint);
+        output.push('\n');
+    }
+    if let Some(concern) = &record.concern {
+        output.push_str("  concern: ");
+        output.push_str(concern);
+        output.push('\n');
+    }
+    if let Some(quality) = &record.quality {
+        output.push_str("  quality: ");
+        output.push_str(quality);
+        output.push('\n');
+    }
+    if let Some(rationale) = &record.rationale {
+        output.push_str("  rationale: ");
+        output.push_str(rationale);
         output.push('\n');
     }
     if let Some(slug) = &record.slug {

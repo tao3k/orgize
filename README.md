@@ -260,9 +260,11 @@ recursively to `.org` files, and explicit file operands must be `.org` files.
 Formatter behavior is covered by snapshot tests so future formatting expansions
 review as explicit output diffs.
 `sdd status` projects Org-native SDD headings from ordinary tags and property
-drawers without writing files.  It treats `ID` as the stable machine identity,
-`SDD_PARENT` as a semantic Org `id:` link edge, and reports compact node cards
-for Agent planning surfaces.
+drawers without writing files. It treats `ID` as the stable machine identity,
+`SDD_PARENT` as a semantic Org `id:` link edge, and reports compact
+architecture/audit cards for Agent design-review surfaces. SDD headings describe
+system boundaries, capabilities, views, decisions, and audits; implementation
+checklists belong in linked Org task or ExecPlan files.
 
 ## Features
 

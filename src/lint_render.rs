@@ -138,10 +138,12 @@ impl LintFinding {
             "ORG029" => "finish, reorder, or explicitly defer this task until the previous open ORDERED sibling is complete",
             "ORG030" => "choose one of the inherited PROPERTY_ALL values, or update the allowed-value descriptor",
             "ORG031" => "add a UUID-shaped or ULID-shaped ID property to the SDD heading",
-            "ORG032" => "set SDD_KIND to program, capability, change, or task-group",
+            "ORG032" => "set SDD_KIND to system, capability, view, decision, or audit",
             "ORG033" => "set SDD_PARENT to an Org id link that resolves to a visible parent SDD node",
             "ORG034" => "assign a unique ID to each SDD heading",
             "ORG035" => "add at least one direct Scenario child heading under this SDD requirement",
+            "ORG036" => "move task state, progress cookies, and checklists from SDD headings into an Org task or ExecPlan",
+            "ORG037" => "add the architecture metadata required by this SDD_KIND",
             _ => "inspect the Org source near this location and repair the lint finding",
         }
     }
@@ -179,10 +181,12 @@ impl LintFinding {
             "ORG029" => "Blocked-state advice must be derived from native local ORDERED sibling evidence, not custom dependency syntax.",
             "ORG030" => "Property allowed-value advice must be derived from native inherited PROPERTY_ALL descriptors.",
             "ORG031" => "SDD nodes need stable machine identity in ID while keeping semantic naming in headings, tags, and properties.",
-            "ORG032" => "SDD node kinds must stay in the supported artifact hierarchy so status projections remain deterministic.",
+            "ORG032" => "SDD node kinds must stay in the supported architecture-description hierarchy so status projections remain deterministic.",
             "ORG033" => "SDD parent edges should be native Org id links with readable labels, not path or stringly hierarchy conventions.",
             "ORG034" => "SDD ID values must resolve to one visible node before parent edges and archives depend on them.",
             "ORG035" => "SDD requirements should have directly visible scenarios so Agent and test planning can verify behavior.",
+            "ORG036" => "SDD describes architecture and audit rationale; implementation progress belongs to plan/task surfaces.",
+            "ORG037" => "Architecture descriptions need explicit concerns, viewpoints, or rationale instead of task-only labels.",
             _ => "Org lint findings should be fixed in source or intentionally reviewed before downstream use.",
         }
     }

@@ -7,30 +7,34 @@ fn sdd_status_projects_org_native_parent_edges() {
     let document = Org::parse(valid_sdd_fixture()).document();
     let status = document.sdd_status();
 
-    assert_eq!(status.records.len(), 3);
-    assert_eq!(status.records[0].kind.as_str(), "program");
+    assert_eq!(status.records.len(), 5);
+    assert_eq!(status.records[0].kind.as_str(), "system");
     assert_eq!(status.records[1].kind.as_str(), "capability");
     assert_eq!(
         status.records[1]
             .parent
             .as_ref()
             .and_then(|parent| parent.label.as_deref()),
-        Some("Program SDD")
+        Some("System SDD")
     );
 
     let rendered = status.to_compact_text("fixture.org");
     assert!(rendered.contains("[SDD] fixture.org"));
-    assert!(rendered.contains("nodes: 3"));
-    assert!(rendered.contains("- program active: Program SDD"));
-    assert!(rendered.contains("parent: 018f3f9c-8d3e-7b2a-9c91-4f5b2e7a2c11 (Program SDD)"));
+    assert!(rendered.contains("architecture nodes: 5"));
+    assert!(rendered.contains("- system review: System SDD"));
+    assert!(rendered.contains("- view review: Runtime View"));
+    assert!(rendered.contains("- decision accepted: Rust-owned Scheduling Decision"));
+    assert!(rendered.contains("parent: 018f3f9c-8d3e-7b2a-9c91-4f5b2e7a2c11 (System SDD)"));
+    assert!(rendered.contains("viewpoint: runtime"));
+    assert!(rendered.contains("rationale: Rust has deterministic admission control boundaries."));
 }
 
 #[test]
-fn sdd_lint_reports_identity_parent_kind_and_requirement_issues() {
-    let source = r#"* Program SDD :sdd:
+fn sdd_lint_reports_identity_parent_kind_metadata_and_requirement_issues() {
+    let source = r#"* System SDD :sdd:
 :PROPERTIES:
 :ID: 018f3f9c-8d3e-7b2a-9c91-4f5b2e7a2c11
-:SDD_KIND: program
+:SDD_KIND: system
 :END:
 ** Broken capability :sdd:
 :PROPERTIES:
@@ -39,12 +43,20 @@ fn sdd_lint_reports_identity_parent_kind_and_requirement_issues() {
 :END:
 *** Requirement: Missing scenario
 The system SHALL expose bad SDD evidence.
-** Broken change :sdd:
+** Broken view :sdd:
 :PROPERTIES:
 :ID: 018f3f9c-8d3e-7b2a-9c91-4f5b2e7a2c11
 :SDD_KIND: surprise
 :SDD_PARENT: semantic-parent-only
 :END:
+** TODO Checklist-shaped SDD [0/1] :sdd:
+:PROPERTIES:
+:ID: 018f3f9c-55a2-70c0-98db-7ac2c4d80d78
+:SDD_KIND: decision
+:SDD_PARENT: [[id:018f3f9c-8d3e-7b2a-9c91-4f5b2e7a2c11][System SDD]]
+:SDD_RATIONALE: This is present so ORG036 isolates task-state misuse.
+:END:
+- [ ] Implement this plan step.
 "#;
 
     let report = lint_org(source);
@@ -59,12 +71,17 @@ The system SHALL expose bad SDD evidence.
     assert!(codes.contains(&"ORG033"));
     assert!(codes.contains(&"ORG034"));
     assert!(codes.contains(&"ORG035"));
+    assert!(codes.contains(&"ORG036"));
+    assert!(codes.contains(&"ORG037"));
 
     let compact = report.to_compact_text("fixture.org", source);
+    assert!(compact.contains("SDD system node `System SDD` is missing architecture metadata"));
     assert!(compact.contains("SDD node `Broken capability` has malformed ID"));
     assert!(compact.contains("SDD node `Broken capability` is missing SDD_PARENT"));
-    assert!(compact.contains("SDD node `Broken change` has unsupported SDD_KIND"));
+    assert!(compact.contains("SDD node `Broken view` has unsupported SDD_KIND"));
     assert!(compact.contains("SDD requirement `Requirement: Missing scenario`"));
+    assert!(compact.contains("SDD headings must not carry TODO state"));
+    assert!(compact.contains("SDD headings must not own direct task checklists"));
 }
 
 #[test]
@@ -81,37 +98,56 @@ fn cli_sdd_status_renders_compact_projection() {
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("[SDD]"));
-    assert!(stdout.contains("nodes: 3"));
-    assert!(stdout.contains("- change active: Change SDD"));
+    assert!(stdout.contains("architecture nodes: 5"));
+    assert!(stdout.contains("- audit review: Precision Audit"));
 }
 
 fn valid_sdd_fixture() -> &'static str {
-    r#"* Program SDD :sdd:
+    r#"* System SDD :sdd:
 :PROPERTIES:
 :ID: 018f3f9c-8d3e-7b2a-9c91-4f5b2e7a2c11
-:SDD_KIND: program
-:SDD_STATUS: active
+:SDD_KIND: system
+:SDD_STATUS: review
+:SDD_CONCERN: OCR pipeline boundary, precision, and latency.
 :END:
 ** Capability SDD :sdd:
 :PROPERTIES:
 :ID: 018f3f9c-7a91-73b4-b3f2-12c4c4d80d77
 :SDD_KIND: capability
-:SDD_PARENT: [[id:018f3f9c-8d3e-7b2a-9c91-4f5b2e7a2c11][Program SDD]]
-:SDD_CAPABILITY: agent-planning
-:SDD_STATUS: active
+:SDD_PARENT: [[id:018f3f9c-8d3e-7b2a-9c91-4f5b2e7a2c11][System SDD]]
+:SDD_CAPABILITY: polyglot-ocr-routing
+:SDD_STATUS: review
 :END:
-*** Requirement: Child SDD dispatch
-The system SHALL allow parent SDD nodes to dispatch child SDD nodes.
-**** Scenario: Agent resumes child SDD
-- WHEN an Agent queries active SDD work
-- THEN orgize SHALL expose parent and child status.
-** Change SDD :sdd:
+*** Requirement: Architecture calibration
+The system SHALL keep implementation plans linked to accepted design decisions.
+**** Scenario: Agent inspects design drift
+- WHEN an Agent queries SDD status
+- THEN orgize SHALL expose architecture nodes, parent edges, concerns, and rationale.
+** Runtime View :sdd:
 :PROPERTIES:
 :ID: 018f3f9c-55a2-70c0-98db-7ac2c4d80d78
-:SDD_KIND: change
+:SDD_KIND: view
 :SDD_PARENT: [[id:018f3f9c-7a91-73b4-b3f2-12c4c4d80d77][Capability SDD]]
-:SDD_SLUG: org-native-sdd
-:SDD_STATUS: active
+:SDD_VIEWPOINT: runtime
+:SDD_CONCERN: shard scheduling, backend routing, and fallback gates
+:SDD_SLUG: runtime-view
+:SDD_STATUS: review
+:END:
+** Rust-owned Scheduling Decision :sdd:
+:PROPERTIES:
+:ID: 018f3f9c-4242-72d0-a51d-0ac2c4d80d79
+:SDD_KIND: decision
+:SDD_PARENT: [[id:018f3f9c-55a2-70c0-98db-7ac2c4d80d78][Runtime View]]
+:SDD_RATIONALE: Rust has deterministic admission control boundaries.
+:SDD_STATUS: accepted
+:END:
+** Precision Audit :sdd:
+:PROPERTIES:
+:ID: 018f3f9c-4242-72d0-a51d-0ac2c4d80d80
+:SDD_KIND: audit
+:SDD_PARENT: [[id:018f3f9c-7a91-73b4-b3f2-12c4c4d80d77][Capability SDD]]
+:SDD_CONCERN: OCR profile changes must not regress frozen precision evidence.
+:SDD_STATUS: review
 :END:
 "#
 }
