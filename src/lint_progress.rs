@@ -83,6 +83,7 @@ enum CookieKind {
 enum ProgressDomain {
     Todo,
     Checkbox,
+    Direct,
 }
 
 impl ProgressDomain {
@@ -90,6 +91,7 @@ impl ProgressDomain {
         match self {
             Self::Todo => "todo",
             Self::Checkbox => "checkbox",
+            Self::Direct => "direct",
         }
     }
 }
@@ -103,6 +105,9 @@ fn progress_domain(
     record: &crate::ast::ProgressStatsRecord,
 ) -> Option<ProgressDomain> {
     if let Some(cookie_data) = cookie_data {
+        if cookie_data.contains("direct") {
+            return Some(ProgressDomain::Direct);
+        }
         if cookie_data.contains("todo") {
             return Some(ProgressDomain::Todo);
         }
@@ -298,8 +303,25 @@ fn expected_cookie(
             (summary.done, summary.total)
         }
         ProgressDomain::Checkbox => {
-            let summary = record.checkboxes;
+            let summary = if recursive {
+                record.checkboxes
+            } else {
+                direct_checkbox_summary(section)
+            };
             (summary.checked, summary.total)
+        }
+        ProgressDomain::Direct => {
+            let todo = if recursive {
+                record.descendant_todos
+            } else {
+                direct_todo_summary(section)
+            };
+            let checkbox = if recursive {
+                record.checkboxes
+            } else {
+                direct_checkbox_summary(section)
+            };
+            (todo.done + checkbox.checked, todo.total + checkbox.total)
         }
     };
     match kind {
@@ -343,6 +365,27 @@ fn direct_todo_summary(section: &Section<ParsedAnnotation>) -> ProgressTodoSumma
     summary
 }
 
+fn direct_checkbox_summary(section: &Section<ParsedAnnotation>) -> ProgressCheckboxSummary {
+    let mut summary = ProgressCheckboxSummary::default();
+    for element in &section.children {
+        add_direct_element_checkboxes(element, &mut summary);
+    }
+    summary
+}
+
+fn add_direct_element_checkboxes(
+    element: &Element<ParsedAnnotation>,
+    summary: &mut ProgressCheckboxSummary,
+) {
+    if let ElementData::List(list) = &element.data {
+        for item in &list.items {
+            if let Some(checkbox) = item.checkbox {
+                add_checkbox_state(checkbox, summary);
+            }
+        }
+    }
+}
+
 fn cookie_data(section: &Section<ParsedAnnotation>) -> Option<String> {
     section
         .effective_properties
@@ -355,7 +398,7 @@ fn ambiguous_cookie_finding(cookie: &StatisticCookie, source: &str) -> LintFindi
     LintFinding {
         code: "ORG027",
         severity: LintSeverity::Warning,
-        message: "statistics cookie is ambiguous because this heading has both TODO children and checkboxes; set COOKIE_DATA to todo or checkbox".to_string(),
+        message: "statistics cookie is ambiguous because this heading has both TODO children and checkboxes; set COOKIE_DATA to todo, checkbox, or direct".to_string(),
         location: location_for_offsets(source, cookie.range_start, cookie.range_end),
     }
 }
