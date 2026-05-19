@@ -1,10 +1,12 @@
 //! Document-level semantic prescan state and keyword routing.
 
-use super::settings::{apply_options_keyword, link_abbreviation, parse_tags, split_words};
+use super::settings::{
+    apply_options_keyword, link_abbreviation, parse_tag_definitions, parse_tags, split_words,
+};
 use super::targets::TargetIndex;
 use super::{
     ArchiveLocation, Diagnostic, ExportSettings, FootnoteEntry, IncludeDirective, Keyword,
-    LinkAbbreviation, MacroDefinition, OrgDuration, ParsedAnnotation, Property,
+    LinkAbbreviation, MacroDefinition, OrgDuration, ParsedAnnotation, Property, TagDefinition,
 };
 
 #[derive(Default)]
@@ -12,6 +14,7 @@ pub(super) struct SemanticPrescan {
     pub(super) target_index: TargetIndex,
     pub(super) metadata: Vec<Keyword<ParsedAnnotation>>,
     pub(super) filetags: Vec<String>,
+    pub(super) tag_definitions: Vec<TagDefinition>,
     pub(super) properties: Vec<Property<ParsedAnnotation>>,
     pub(super) archive_locations: Vec<ArchiveLocation<ParsedAnnotation>>,
     pub(super) export_settings: ExportSettings,
@@ -28,11 +31,19 @@ pub(super) fn collect_document_keyword(
 ) {
     let key = keyword.key.to_ascii_uppercase();
     match key.as_str() {
-        "TITLE" | "AUTHOR" | "DATE" | "CAPTION" => prescan.metadata.push(keyword),
+        "TITLE" | "AUTHOR" | "DATE" | "CAPTION" | "PYTHON" | "PYTHON_FILE" | "PYTHON-FILE" => {
+            prescan.metadata.push(keyword);
+        }
         "FILETAGS" => {
             for tag in parse_tags(keyword.value.trim()) {
                 push_unique(&mut prescan.filetags, tag);
             }
+            prescan.metadata.push(keyword);
+        }
+        "TAGS" => {
+            prescan
+                .tag_definitions
+                .extend(parse_tag_definitions(keyword.value.trim()));
             prescan.metadata.push(keyword);
         }
         "OPTIONS" => {

@@ -43,6 +43,8 @@ mod datetree;
 mod datetree_model;
 mod dynamic_block_model;
 mod dynamic_blocks;
+mod elements_bridge;
+mod elements_bridge_model;
 mod export_dependency_graph;
 mod export_dependency_graph_model;
 mod footnote_parts;
@@ -175,6 +177,11 @@ pub use datetree_model::DateTreeEntry;
 pub use dynamic_block_model::{
     DynamicBlockContentState, DynamicBlockParameter, DynamicBlockRecord, DynamicBlockWriterKind,
 };
+pub use elements_bridge_model::{
+    OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
+    OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, PythonDirective,
+    PythonDirectiveKind, PythonExecutionOptions, PythonExecutionProgram,
+};
 pub use export_dependency_graph::export_dependency_graph;
 pub use export_dependency_graph_model::{
     ExportDependencyDiagnostic, ExportDependencyDiagnosticKind, ExportDependencyEdge,
@@ -209,8 +216,8 @@ pub use model::{
     List, ListItem, ListType, MacroDefinition, MacroExpansion, MacroExpansionStatus, MarkupKind,
     Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, Section, SourcePosition,
     Table, TableCell, TableColumnAlignment, TableFormula, TableFormulaAssignment,
-    TableFormulaReference, TableFormulaReferenceKind, TableRow, TargetDefinition, TargetKind,
-    TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    TableFormulaReference, TableFormulaReferenceKind, TableRow, TagDefinition, TargetDefinition,
+    TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 pub use progress_model::{
     ProgressCheckboxSummary, ProgressEffortSummary, ProgressStatisticCookie,

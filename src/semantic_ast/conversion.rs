@@ -121,6 +121,7 @@ impl<'a> Converter<'a> {
             archive_locations: prescan.archive_locations,
             metadata: prescan.metadata,
             filetags: prescan.filetags,
+            tag_definitions: prescan.tag_definitions,
             export_settings: prescan.export_settings,
             link_abbreviations: prescan.link_abbreviations,
             includes: prescan.includes,

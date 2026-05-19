@@ -87,13 +87,20 @@ original `link.path()`, and reports diagnostics for ambiguous or missing strict
 internal links.
 Parser v2 also collects exporter/indexer side tables without mutating the
 lossless source tree: `document.metadata`, `document.filetags`,
-`document.export_settings`, `document.link_abbreviations`, and
+`document.tag_definitions`, `document.export_settings`, `document.link_abbreviations`, and
 `document.footnotes`. Keyword values keep their raw source text and expose
 parsed object values for metadata-style keywords such as `#+TITLE:` and
 `#+CAPTION:`; `ATTR_*` affiliated keywords expose shell-like structured
 attributes. Links without an explicit description can use target-derived
 fallback objects through `Link::description_or_default()`, and `id:ID::*search`
 paths retain their search suffix in `Link::search`.
+`#+TAGS:` vocabulary lines project shortcuts such as `EMACS (e)` and `READ(r)`
+into `document.tag_definitions`. Hosts that want org-mode-style programmable
+behavior can call `document.org_elements_json()` or explicitly run
+`document.execute_org_elements(&OrgElementsHostExecutionOptions::new(...))`;
+parsing alone never executes host tools or header directives. Python remains a
+convenience adapter through `PythonExecutionOptions`, not the core element
+contract.
 Use `document.link_protocol_records()` to inspect built-in link families,
 custom protocols, `#+LINK` abbreviations, executable `shell:`/`elisp:` links,
 and inert `org-protocol:` calls without opening files or dispatching handlers.

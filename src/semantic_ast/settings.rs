@@ -2,7 +2,7 @@
 
 use super::{
     ExportSettings, FileLink, FileLinkPathKind, Keyword, KeywordAttribute, LinkAbbreviation,
-    LinkSearch, LinkSearchKind, ParsedAnnotation,
+    LinkSearch, LinkSearchKind, ParsedAnnotation, TagDefinition,
 };
 
 pub(super) fn is_parsed_keyword(key: &str) -> bool {
@@ -55,12 +55,62 @@ pub(super) fn parse_tags(value: &str) -> Vec<String> {
         .collect()
 }
 
+pub(super) fn parse_tag_definitions(value: &str) -> Vec<TagDefinition> {
+    let mut definitions: Vec<TagDefinition> = Vec::new();
+    for token in value.split_whitespace() {
+        if let Some(shortcut) = shortcut_token(token) {
+            if let Some(previous) = definitions.last_mut() {
+                if previous.shortcut.is_none() {
+                    previous.shortcut = Some(shortcut.to_string());
+                    previous.raw.push(' ');
+                    previous.raw.push_str(token);
+                }
+            }
+            continue;
+        }
+
+        let (name, shortcut) = split_tag_shortcut(token);
+        if name.is_empty() {
+            continue;
+        }
+        definitions.push(TagDefinition {
+            name: name.to_string(),
+            shortcut: shortcut.map(ToString::to_string),
+            raw: token.to_string(),
+        });
+    }
+    definitions
+}
+
 pub(super) fn split_words(value: &str) -> Vec<String> {
     value
         .split_whitespace()
         .filter(|word| !word.is_empty())
         .map(ToOwned::to_owned)
         .collect()
+}
+
+fn shortcut_token(token: &str) -> Option<&str> {
+    token
+        .strip_prefix('(')
+        .and_then(|value| value.strip_suffix(')'))
+        .filter(|value| !value.is_empty())
+}
+
+fn split_tag_shortcut(token: &str) -> (&str, Option<&str>) {
+    let Some(shortcut_end) = token.strip_suffix(')') else {
+        return (token, None);
+    };
+    let Some(open) = shortcut_end.rfind('(') else {
+        return (token, None);
+    };
+    let name = token[..open].trim();
+    let shortcut = shortcut_end[open + 1..].trim();
+    if name.is_empty() || shortcut.is_empty() {
+        (token, None)
+    } else {
+        (name, Some(shortcut))
+    }
 }
 
 pub(super) fn apply_options_keyword(value: &str, settings: &mut ExportSettings) {

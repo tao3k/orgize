@@ -1048,6 +1048,10 @@ Official anchors: `doc/org-manual.org` sections "Exporting", "Publishing",
       compatibility surface used by current exporters.
 - [X] Model `#+BIND:`, `#+SETUPFILE:`, `#+EXPORT_FILE_NAME:`, and backend
       `#+ATTR_*` settings as side-table metadata without executing Emacs Lisp.
+- [X] Model `#+TAGS:` vocabulary shortcuts and explicit `#+PYTHON:` directives;
+      expose an org-elements JSON payload and opt-in host execution API so
+      Python, TypeScript, CLIs, and other tools can bind to semantic Org
+      elements without running code during parse.
 - [X] Add an explicit include expansion plan for `#+INCLUDE:` line/range/options
       semantics; keep expansion opt-in and filesystem-aware only in lint/export
       helper APIs.
