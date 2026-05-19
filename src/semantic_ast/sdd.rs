@@ -1,8 +1,8 @@
 //! Org-native SDD projections.
 
 use super::{
-    Document, ParsedAnnotation, SddKind, SddNodeRecord, SddParentRef, SddStatus, Section,
-    SectionIndexSource,
+    Document, ParsedAnnotation, SddKind, SddNodeRecord, SddParentRef, SddStatus, SddStatusValue,
+    Section, SectionIndexSource,
 };
 
 impl Document<ParsedAnnotation> {
@@ -55,10 +55,8 @@ fn sdd_node_record(
         outline_path,
         level: section.level,
         title,
-        kind: local_property(section, "SDD_KIND").map_or_else(
-            || SddKind::Unknown(String::new()),
-            |value| SddKind::parse(value),
-        ),
+        kind: local_property(section, "SDD_KIND")
+            .map_or_else(|| SddKind::Unknown(String::new()), SddKind::parse),
         id: local_property(section, "ID").map(str::to_string),
         parent: local_property(section, "SDD_PARENT").and_then(SddParentRef::parse),
         capability: local_property(section, "SDD_CAPABILITY").map(str::to_string),
@@ -67,7 +65,7 @@ fn sdd_node_record(
         quality: local_property(section, "SDD_QUALITY").map(str::to_string),
         rationale: local_property(section, "SDD_RATIONALE").map(str::to_string),
         slug: local_property(section, "SDD_SLUG").map(str::to_string),
-        status: local_property(section, "SDD_STATUS").map(str::to_string),
+        status: local_property(section, "SDD_STATUS").and_then(SddStatusValue::parse),
         todo: section.todo.clone(),
         tags: section.tags.clone(),
     }

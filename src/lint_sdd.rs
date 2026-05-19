@@ -278,10 +278,7 @@ fn percent_cookie(value: &str) -> bool {
 }
 
 fn has_direct_checklist(section: &Section<ParsedAnnotation>) -> bool {
-    section
-        .children
-        .iter()
-        .any(|element| has_direct_checklist_element(element))
+    section.children.iter().any(has_direct_checklist_element)
 }
 
 fn has_direct_checklist_element(element: &Element<ParsedAnnotation>) -> bool {
@@ -320,21 +317,15 @@ fn is_stable_sdd_id(value: &str) -> bool {
 
 fn is_uuid(value: &str) -> bool {
     let bytes = value.as_bytes();
-    if bytes.len() != 36 {
-        return false;
+    bytes.len() == 36 && bytes.iter().copied().enumerate().all(uuid_byte_matches)
+}
+
+fn uuid_byte_matches((index, byte): (usize, u8)) -> bool {
+    match (index, byte) {
+        (8 | 13 | 18 | 23, b'-') => true,
+        (8 | 13 | 18 | 23, _) => false,
+        (_, byte) => byte.is_ascii_hexdigit(),
     }
-    for (index, byte) in bytes.iter().enumerate() {
-        match index {
-            8 | 13 | 18 | 23 => {
-                if *byte != b'-' {
-                    return false;
-                }
-            }
-            _ if !byte.is_ascii_hexdigit() => return false,
-            _ => {}
-        }
-    }
-    true
 }
 
 fn is_ulid(value: &str) -> bool {

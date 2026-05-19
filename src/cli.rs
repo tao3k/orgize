@@ -62,26 +62,20 @@ fn run_sdd(args: Vec<String>) -> Result<ExitCode, String> {
 }
 
 fn run_sdd_status(args: Vec<String>) -> Result<ExitCode, String> {
-    let mut paths = Vec::new();
-    for arg in args {
-        match arg.as_str() {
-            "-h" | "--help" => {
-                print_sdd_status_usage();
-                return Ok(ExitCode::SUCCESS);
-            }
-            _ if arg.starts_with('-') => return Err(format!("unknown sdd status flag `{arg}`")),
-            _ => paths.push(arg),
-        }
+    let args = parse_sdd_status_args(args)?;
+    if args.help {
+        print_sdd_status_usage();
+        return Ok(ExitCode::SUCCESS);
     }
 
-    if paths.is_empty() {
+    if args.paths.is_empty() {
         let source = read_stdin()?;
         let document = Org::parse(&source).document();
         print!("{}", document.sdd_status().to_compact_text("<stdin>"));
         return Ok(ExitCode::SUCCESS);
     }
 
-    for path in collect_org_paths(&paths)? {
+    for path in collect_org_paths(&args.paths)? {
         let display_path = path.display().to_string();
         let source =
             fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
@@ -90,6 +84,26 @@ fn run_sdd_status(args: Vec<String>) -> Result<ExitCode, String> {
     }
 
     Ok(ExitCode::SUCCESS)
+}
+
+#[derive(Default)]
+struct SddStatusArgs {
+    help: bool,
+    paths: Vec<String>,
+}
+
+fn parse_sdd_status_args(args: Vec<String>) -> Result<SddStatusArgs, String> {
+    args.into_iter()
+        .try_fold(SddStatusArgs::default(), |mut parsed, arg| {
+            match arg.as_str() {
+                "-h" | "--help" => parsed.help = true,
+                _ if arg.starts_with('-') => {
+                    return Err(format!("unknown sdd status flag `{arg}`"));
+                }
+                _ => parsed.paths.push(arg),
+            }
+            Ok(parsed)
+        })
 }
 
 fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {

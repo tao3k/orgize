@@ -18,7 +18,7 @@ pub struct SddNodeRecord {
     pub quality: Option<String>,
     pub rationale: Option<String>,
     pub slug: Option<String>,
-    pub status: Option<String>,
+    pub status: Option<SddStatusValue>,
     pub todo: Option<TodoKeyword>,
     pub tags: Vec<String>,
 }
@@ -74,6 +74,48 @@ impl SddKind {
     /// Returns true when this node kind can omit `SDD_PARENT`.
     pub const fn can_omit_parent(&self) -> bool {
         matches!(self, Self::System | Self::Unknown(_))
+    }
+}
+
+/// SDD lifecycle/status value projected from `SDD_STATUS`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SddStatusValue {
+    Draft,
+    Review,
+    Accepted,
+    Deprecated,
+    Superseded,
+    Unknown(String),
+}
+
+impl SddStatusValue {
+    /// Parses an SDD status property value.
+    pub fn parse(value: &str) -> Option<Self> {
+        let value = value.trim();
+        if value.is_empty() {
+            return None;
+        }
+
+        Some(match value.to_ascii_lowercase().as_str() {
+            "draft" => Self::Draft,
+            "review" => Self::Review,
+            "accepted" => Self::Accepted,
+            "deprecated" => Self::Deprecated,
+            "superseded" => Self::Superseded,
+            _ => Self::Unknown(value.to_string()),
+        })
+    }
+
+    /// Stable label for compact and DTO consumers.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Draft => "draft",
+            Self::Review => "review",
+            Self::Accepted => "accepted",
+            Self::Deprecated => "deprecated",
+            Self::Superseded => "superseded",
+            Self::Unknown(value) => value.as_str(),
+        }
     }
 }
 
@@ -166,7 +208,7 @@ fn push_record_card(output: &mut String, path: &str, record: &SddNodeRecord) {
     output.push_str(record.kind.as_str());
     if let Some(status) = &record.status {
         output.push(' ');
-        output.push_str(status);
+        output.push_str(status.as_str());
     }
     output.push_str(": ");
     output.push_str(&record.title);

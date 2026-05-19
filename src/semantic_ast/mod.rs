@@ -242,7 +242,7 @@ pub use refile_model::{
     RefileTargetQuery, RefileTargetReceipt, RefileTargetSpec, RefileTargetSpecKind, RefileWarning,
     RefileWarningKind,
 };
-pub use sdd_model::{SddKind, SddNodeRecord, SddParentRef, SddStatus};
+pub use sdd_model::{SddKind, SddNodeRecord, SddParentRef, SddStatus, SddStatusValue};
 pub use section_index_model::{
     SectionIndexArchive, SectionIndexAttachment, SectionIndexAttachmentDirectory,
     SectionIndexCategory, SectionIndexLifecycleRecord, SectionIndexLink, SectionIndexProperty,
