@@ -76,6 +76,8 @@ mod publishing_project_model;
 mod radio_links;
 mod refile;
 mod refile_model;
+mod sdd;
+mod sdd_model;
 mod section_index;
 mod section_index_model;
 mod settings;
@@ -240,6 +242,7 @@ pub use refile_model::{
     RefileTargetQuery, RefileTargetReceipt, RefileTargetSpec, RefileTargetSpecKind, RefileWarning,
     RefileWarningKind,
 };
+pub use sdd_model::{SddKind, SddNodeRecord, SddParentRef, SddStatus, SddStatusValue};
 pub use section_index_model::{
     SectionIndexArchive, SectionIndexAttachment, SectionIndexAttachmentDirectory,
     SectionIndexCategory, SectionIndexLifecycleRecord, SectionIndexLink, SectionIndexProperty,

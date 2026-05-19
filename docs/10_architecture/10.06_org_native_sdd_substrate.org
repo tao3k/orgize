@@ -1,0 +1,117 @@
+* 10.06 Org-native SDD Substrate
+
+This record defines the first Org-native Software Design Description boundary
+for orgize.  It absorbs OpenSpec's useful artifact graph while preserving the
+classic SDD responsibility: describing architecture, design rationale, and
+audit concerns.  Implementation tasks remain in Org task or ExecPlan surfaces.
+
+** Positioning
+
+Org already has the primitives architecture descriptions need:
+
+- headings provide durable artifact boundaries;
+- property drawers provide typed metadata;
+- `ID` properties provide stable machine identity;
+- links provide semantic edges with labels;
+- tags support fast sparse-tree and agenda queries;
+- source blocks and tables can carry diagrams, matrices, and evidence.
+
+Therefore an SDD in orgize should be a heading graph, not a directory.  A large
+SDD may dispatch child SDD headings for capability boundaries, views, decisions,
+and audits.  File splitting remains an escape hatch for very large or
+cross-repository work, not the default model.  TODO state, progress cookies, and
+checkboxes are intentionally outside the SDD heading because they belong to the
+implementation plan that realizes the architecture.
+
+** Node Model
+
+An SDD node is any Org section with either a local `sdd` tag or a local
+`SDD_KIND` property.
+
+The stable node properties are:
+
+| Property | Meaning |
+|----------+---------|
+| =ID= | Stable machine identity.  This should be UUID-shaped or ULID-shaped and must be unique in the visible SDD set. |
+| =SDD_KIND= | One of =system=, =capability=, =view=, =decision=, or =audit=. |
+| =SDD_PARENT= | Semantic parent edge.  Prefer an Org =id:= link such as =[[id:<id>][Capability label]]= so the target is precise and the relationship remains readable. |
+| =SDD_CAPABILITY= | Search and reporting dimension for the capability or bounded context. |
+| =SDD_VIEWPOINT= | Viewpoint name for an architecture view, such as runtime, data, deployment, or integration. |
+| =SDD_CONCERN= | Stakeholder concern or audit concern addressed by the node. |
+| =SDD_QUALITY= | Quality attribute under review, such as latency, precision, safety, or maintainability. |
+| =SDD_RATIONALE= | Rationale for a design decision. |
+| =SDD_SLUG= | Human-readable short key for display and filename candidates. |
+| =SDD_STATUS= | Design review state such as =draft=, =review=, =accepted=, or =superseded=. |
+
+The =ID= value is not the semantic name.  It is the stable identity.  The
+=SDD_PARENT= field is semantic: it is a typed parent edge whose target can be
+resolved by orgize and whose label can explain the relationship to an Agent.
+
+** Architecture Graph
+
+The expected graph is:
+
+#+begin_src text
+system SDD
+  -> capability SDD
+    -> view SDD
+      -> decision SDD
+    -> audit SDD
+#+end_src
+
+The graph is logical, not path-driven.  A child SDD can live in the same file as
+its parent, or in another Org file later when the host supplies a multi-file
+index.  The first orgize slice is document-local and read-only.
+
+** Requirement Shape
+
+SDD requirements use native Org headings:
+
+#+begin_src org
+** Requirement: Architecture calibration
+The system SHALL keep implementation plans linked to accepted design decisions.
+
+*** Scenario: Agent inspects design drift
+- WHEN an Agent queries SDD status
+- THEN orgize SHALL expose architecture nodes, parent edges, concerns, and
+  rationale.
+#+end_src
+
+Requirements and scenarios stay behavior-facing.  Implementation steps belong
+in a linked Org task or ExecPlan, not under the SDD heading itself.
+
+** First Slice
+
+The first implementation slice is intentionally read-only:
+
+1. project SDD nodes from native Org headings and properties;
+2. lint missing or malformed =ID=, =SDD_KIND=, and =SDD_PARENT= fields;
+3. lint duplicate visible SDD IDs;
+4. lint SDD requirements that lack direct scenario headings;
+5. lint SDD headings that accidentally contain TODO state, progress cookies, or
+   direct task checklists;
+6. render a compact architecture/audit status tree for Agents.
+
+This slice does not archive changes, write files, maintain a database, or
+replace a host planning workflow by itself.  Hosts such as Wendao can use the
+projection as the design-governance surface and keep execution in SDD-linked
+Org task or ExecPlan files.
+
+** Boundary
+
+orgize owns:
+
+- parsing ordinary Org SDD headings;
+- projecting SDD node records and parent edges;
+- compact architecture/audit status and lint renderers;
+- non-mutating archive or apply plans in later slices.
+
+Hosts own:
+
+- file discovery across repositories;
+- git write locks and mutation;
+- long-lived storage;
+- policy decisions about when an SDD can be applied or archived.
+
+This keeps SDD as a semantic projection over Org instead of turning orgize into
+a project-management runtime.

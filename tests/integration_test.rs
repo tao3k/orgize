@@ -30,5 +30,7 @@ mod lint_task_blockers;
 mod markdown;
 #[path = "integration/parse.rs"]
 mod parse;
+#[path = "integration/sdd.rs"]
+mod sdd;
 #[path = "integration/semantic_ast/mod.rs"]
 mod semantic_ast;

@@ -11,6 +11,7 @@ use crate::{
     ast::{PriorityProfile, PriorityValue},
     fmt::{format_org, FormatOptions},
     lint::{lint_org_with_options, LintOptions},
+    Org,
 };
 
 /// Runs the command-line interface with process arguments and stdio.
@@ -34,12 +35,75 @@ fn run() -> Result<ExitCode, String> {
     match command.as_str() {
         "fmt" => run_fmt(args.collect()),
         "lint" => run_lint(args.collect()),
+        "sdd" => run_sdd(args.collect()),
         "-h" | "--help" | "help" => {
             print_usage();
             Ok(ExitCode::SUCCESS)
         }
         command => Err(format!("unknown command `{command}`")),
     }
+}
+
+fn run_sdd(args: Vec<String>) -> Result<ExitCode, String> {
+    let mut args = args.into_iter();
+    let Some(command) = args.next() else {
+        print_sdd_usage();
+        return Ok(ExitCode::from(2));
+    };
+
+    match command.as_str() {
+        "status" => run_sdd_status(args.collect()),
+        "-h" | "--help" | "help" => {
+            print_sdd_usage();
+            Ok(ExitCode::SUCCESS)
+        }
+        command => Err(format!("unknown sdd command `{command}`")),
+    }
+}
+
+fn run_sdd_status(args: Vec<String>) -> Result<ExitCode, String> {
+    let args = parse_sdd_status_args(args)?;
+    if args.help {
+        print_sdd_status_usage();
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    if args.paths.is_empty() {
+        let source = read_stdin()?;
+        let document = Org::parse(&source).document();
+        print!("{}", document.sdd_status().to_compact_text("<stdin>"));
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    for path in collect_org_paths(&args.paths)? {
+        let display_path = path.display().to_string();
+        let source =
+            fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
+        let document = Org::parse(&source).document();
+        print!("{}", document.sdd_status().to_compact_text(&display_path));
+    }
+
+    Ok(ExitCode::SUCCESS)
+}
+
+#[derive(Default)]
+struct SddStatusArgs {
+    help: bool,
+    paths: Vec<String>,
+}
+
+fn parse_sdd_status_args(args: Vec<String>) -> Result<SddStatusArgs, String> {
+    args.into_iter()
+        .try_fold(SddStatusArgs::default(), |mut parsed, arg| {
+            match arg.as_str() {
+                "-h" | "--help" => parsed.help = true,
+                _ if arg.starts_with('-') => {
+                    return Err(format!("unknown sdd status flag `{arg}`"));
+                }
+                _ => parsed.paths.push(arg),
+            }
+            Ok(parsed)
+        })
 }
 
 fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
@@ -282,7 +346,7 @@ fn priority_profile_from_flags(
 }
 
 fn print_usage() {
-    eprintln!("Usage: orgize <fmt|lint> [options] [PATH ...]");
+    eprintln!("Usage: orgize <fmt|lint|sdd> [options] [PATH ...]");
 }
 
 fn print_fmt_usage() {
@@ -293,6 +357,14 @@ fn print_lint_usage() {
     eprintln!(
         "Usage: orgize lint [--format compact|text|json] [--priority-highest VALUE] [--priority-default VALUE] [--priority-lowest VALUE] [PATH ...]"
     );
+}
+
+fn print_sdd_usage() {
+    eprintln!("Usage: orgize sdd <status> [options] [PATH ...]");
+}
+
+fn print_sdd_status_usage() {
+    eprintln!("Usage: orgize sdd status [PATH ...]");
 }
 
 fn collect_org_paths(paths: &[String]) -> Result<Vec<PathBuf>, String> {

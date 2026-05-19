@@ -226,8 +226,8 @@ assert_eq!(
 
 ## Command line
 
-The `orgize` binary exposes parser-backed `lint` and conservative `fmt`
-commands:
+The `orgize` binary exposes parser-backed `lint`, conservative `fmt`, and
+read-only SDD status commands:
 
 ```sh
 orgize lint notes.org
@@ -236,6 +236,7 @@ orgize lint --json notes.org
 orgize lint --priority-highest 0 --priority-default 5 --priority-lowest 9 notes.org
 orgize fmt --check notes.org
 orgize fmt notes.org docs/
+orgize sdd status notes.org
 ```
 
 `lint` reports semantic projection diagnostics, document-local target
@@ -258,6 +259,12 @@ commands accept multiple file and directory paths; directory paths are expanded
 recursively to `.org` files, and explicit file operands must be `.org` files.
 Formatter behavior is covered by snapshot tests so future formatting expansions
 review as explicit output diffs.
+`sdd status` projects Org-native SDD headings from ordinary tags and property
+drawers without writing files. It treats `ID` as the stable machine identity,
+`SDD_PARENT` as a semantic Org `id:` link edge, and reports compact
+architecture/audit cards for Agent design-review surfaces. SDD headings describe
+system boundaries, capabilities, views, decisions, and audits; implementation
+checklists belong in linked Org task or ExecPlan files.
 
 ## Features
 

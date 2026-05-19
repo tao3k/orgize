@@ -34,6 +34,45 @@ fn lint_reports_progress_statistics_cookie_issues() {
 }
 
 #[test]
+fn lint_accepts_direct_heading_progress_without_nested_child_tasks() {
+    let source = r#"* TODO Mixed direct [2/3] [66%]
+:PROPERTIES:
+:COOKIE_DATA: direct
+:END:
+- [X] direct checked
+** DONE Done child [0/1] [0%]
+- [ ] nested unchecked
+** TODO Open child [1/1] [100%]
+- [X] nested checked
+"#;
+    let report = lint_org(source);
+
+    assert_eq!(report.findings, Vec::new());
+}
+
+#[test]
+fn lint_reports_stale_direct_heading_progress() {
+    let source = r#"* TODO Mixed direct [3/5] [60%]
+:PROPERTIES:
+:COOKIE_DATA: direct
+:END:
+- [X] direct checked
+** DONE Done child [0/1] [0%]
+- [ ] nested unchecked
+** TODO Open child [1/1] [100%]
+- [X] nested checked
+"#;
+    let report = lint_org(source);
+    let findings = report.findings;
+
+    assert_eq!(findings.len(), 2);
+    assert_eq!(findings[0].code, "ORG028");
+    assert!(findings[0].message.contains("expected `[2/3]`"));
+    assert_eq!(findings[1].code, "ORG028");
+    assert!(findings[1].message.contains("expected `[66%]`"));
+}
+
+#[test]
 fn lint_reports_list_item_checkbox_statistics_cookie_issues() {
     let source = r#"* TODO Lists
 - Parent [0/3]

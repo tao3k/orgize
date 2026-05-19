@@ -18,6 +18,8 @@ mod lint_progress;
 mod lint_properties;
 #[path = "lint_render.rs"]
 mod lint_render;
+#[path = "lint_sdd.rs"]
+mod lint_sdd;
 #[path = "lint_table_formulas.rs"]
 mod lint_table_formulas;
 #[path = "lint_task_blockers.rs"]
@@ -34,6 +36,7 @@ use self::{
     lint_priority::priority_cookie_findings,
     lint_progress::progress_findings,
     lint_properties::property_drawer_findings,
+    lint_sdd::sdd_findings,
     lint_table_formulas::table_formula_findings,
     lint_task_blockers::task_blocker_findings,
 };
@@ -109,6 +112,7 @@ fn collect_lint_findings(
     findings.extend(lifecycle_findings(document, source, options));
     findings.extend(table_formula_findings(document, source));
     findings.extend(task_blocker_findings(document, source));
+    findings.extend(sdd_findings(document, source));
     findings.extend(todo_declaration_findings(source));
 
     findings
