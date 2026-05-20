@@ -2,12 +2,21 @@
 
 use super::{
     Document, ParsedAnnotation, Property, PropertyAllowedValueRecord, PropertyAllowedValueScope,
-    PropertyInheritancePolicy, PropertyProfile, Section, SectionIndexSource,
+    PropertyInheritancePolicy, PropertyProfile, PropertySchemaRegistry, Section,
+    SectionIndexSource,
 };
 
 impl Document<ParsedAnnotation> {
     /// Projects inheritance metadata and `PROPERTY_ALL` allowed-value descriptors.
     pub fn property_profile(&self) -> PropertyProfile {
+        self.property_profile_with_schema_registry(&PropertySchemaRegistry::default())
+    }
+
+    /// Projects property metadata and validates loaded `PROPERTY_SCHEMA` contracts.
+    pub fn property_profile_with_schema_registry(
+        &self,
+        registry: &PropertySchemaRegistry,
+    ) -> PropertyProfile {
         let mut inherited_keys = Vec::new();
         let mut allowed_values = fixed_global_allowed_values();
         for property in &self.properties {
@@ -31,6 +40,11 @@ impl Document<ParsedAnnotation> {
             inheritance: PropertyInheritancePolicy::All,
             inherited_keys,
             allowed_values,
+            schema_applications: super::property_schema::property_schema_applications(
+                &self.properties,
+                &self.sections,
+                registry,
+            ),
         }
     }
 }

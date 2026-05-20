@@ -1,0 +1,11 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_priority_properties.rs
+expression: render_property_schema_applications(&profile.schema_applications)
+---
+schema_applications=3
+application scope=section path=File-backed capture level=1 title=File-backed capture reference=orgFileLink raw=[[file:schemas/capture.schema.json#wendao.capture.v1][Capture schema]] normalized=file:schemas/capture.schema.json#wendao.capture.v1 contract=wendao.capture.v1
+  finding disallowedValue property=CAPTURE_KIND actual=surprise expected=idea|articleNote|task|decision|preference|correction|memoryCandidate|evidence|note source=4:16-4:24 message=property `CAPTURE_KIND` value `surprise` is not allowed by schema: idea, articleNote, task, decision, preference, correction, memoryCandidate, evidence, note
+  finding missingRequiredProperty property=MEMORY_POLICY actual=none expected=none source=3:19-3:89 message=property schema `wendao.capture.v1` requires `MEMORY_POLICY`
+  finding unknownProperty property=EXTRA actual=no expected=CAPTURE_KIND|CAPTURE_SOURCE|MEMORY_POLICY source=6:9-6:11 message=property `EXTRA` is not declared by schema `wendao.capture.v1`
+application scope=section path=Macro-backed capture level=1 title=Macro-backed capture reference=macro raw={{{property_schema(wendao.capture.v1)}}} normalized=wendao.capture.v1 contract=wendao.capture.v1
+application scope=section path=Direct file capture level=1 title=Direct file capture reference=file raw=capture.schema.json#wendao.capture.v1 normalized=capture.schema.json#wendao.capture.v1 contract=wendao.capture.v1

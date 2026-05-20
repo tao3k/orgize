@@ -6,7 +6,10 @@ use std::{
 };
 
 use orgize::{
-    ast::{PriorityProfile, PriorityValue},
+    ast::{
+        PriorityProfile, PriorityValue, PropertySchemaContract, PropertySchemaField,
+        PropertySchemaRegistry, PropertySchemaValueRule,
+    },
     lint::{LintOptions, lint_org, lint_org_with_options},
 };
 
@@ -194,6 +197,45 @@ fn lint_reports_priority_profile_issues_with_snapshot() {
 }
 
 #[test]
+fn lint_reports_property_schema_contract_issues() {
+    let report = lint_org_with_options(
+        r#"* Capture
+:PROPERTIES:
+:PROPERTY_SCHEMA: file:schemas/capture.schema.json#wendao.capture.v1
+:CAPTURE_KIND: surprise
+:CAPTURE_SOURCE: conversation
+:EXTRA: no
+:END:
+"#,
+        &LintOptions {
+            property_schema_registry: PropertySchemaRegistry::new([capture_schema_contract()]),
+            ..LintOptions::default()
+        },
+    );
+
+    let messages = report
+        .findings
+        .iter()
+        .filter(|finding| finding.code == "ORG040")
+        .map(|finding| finding.message.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        messages,
+        [
+            "property schema `wendao.capture.v1` requires `MEMORY_POLICY`",
+            "property `CAPTURE_KIND` value `surprise` is not allowed by schema: idea, note",
+            "property `EXTRA` is not declared by schema `wendao.capture.v1`",
+        ]
+    );
+
+    insta::assert_snapshot!(format!(
+        "clean: {}\n{}",
+        report.is_clean(),
+        report.to_text("fixture.org")
+    ));
+}
+
+#[test]
 fn lint_cli_accepts_priority_profile_flags_with_snapshot() {
     let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .args([
@@ -358,6 +400,31 @@ fn priority_property_issues_lint_fixture() -> &'static str {
 
 fn priority_profile_issues_lint_fixture() -> &'static str {
     include_str!("../fixtures/lint/priority-profile-issues.org")
+}
+
+fn capture_schema_contract() -> PropertySchemaContract {
+    PropertySchemaContract::new("wendao.capture.v1")
+        .alias("file:schemas/capture.schema.json#wendao.capture.v1")
+        .allow_unknown_properties(false)
+        .field(PropertySchemaField::required(
+            "CAPTURE_KIND",
+            PropertySchemaValueRule::OneOf(
+                ["idea", "note"].into_iter().map(str::to_string).collect(),
+            ),
+        ))
+        .field(PropertySchemaField::required(
+            "CAPTURE_SOURCE",
+            PropertySchemaValueRule::NonEmpty,
+        ))
+        .field(PropertySchemaField::required(
+            "MEMORY_POLICY",
+            PropertySchemaValueRule::OneOf(
+                ["none", "candidate", "background", "decision"]
+                    .into_iter()
+                    .map(str::to_string)
+                    .collect(),
+            ),
+        ))
 }
 
 fn skip_text_fmt_fixture() -> &'static str {

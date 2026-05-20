@@ -78,6 +78,8 @@ mod projection;
 mod property_model;
 mod property_profile;
 mod property_profile_model;
+mod property_schema;
+mod property_schema_model;
 mod publishing;
 mod publishing_model;
 mod publishing_project;
@@ -244,6 +246,12 @@ pub(crate) use property_profile::{is_allowed_value_descriptor, property_allowed_
 pub use property_profile_model::{
     PropertyAllowedValueRecord, PropertyAllowedValueScope, PropertyInheritancePolicy,
     PropertyProfile,
+};
+pub use property_schema_model::{
+    PROPERTY_SCHEMA_PROPERTY, PropertySchemaApplication, PropertySchemaContract,
+    PropertySchemaField, PropertySchemaFinding, PropertySchemaFindingKind, PropertySchemaReference,
+    PropertySchemaReferenceKind, PropertySchemaRegistry, PropertySchemaScope,
+    PropertySchemaValueRule,
 };
 pub use publishing_model::{
     PublishingAttribute, PublishingBind, PublishingKeyword, PublishingOption, PublishingOptionKind,

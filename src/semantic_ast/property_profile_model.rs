@@ -1,6 +1,6 @@
 //! Property inheritance and allowed-value profile for agent-facing projections.
 
-use super::SectionIndexSource;
+use super::{PropertySchemaApplication, SectionIndexSource};
 
 /// Document-local property profile derived from native Org property metadata.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -8,6 +8,7 @@ pub struct PropertyProfile {
     pub inheritance: PropertyInheritancePolicy,
     pub inherited_keys: Vec<String>,
     pub allowed_values: Vec<PropertyAllowedValueRecord>,
+    pub schema_applications: Vec<PropertySchemaApplication>,
 }
 
 /// Caller-visible inheritance policy for projected effective properties.

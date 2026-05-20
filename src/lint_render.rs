@@ -184,6 +184,9 @@ impl LintFinding {
             "ORG039" => {
                 "add the crypt tag to the section or remove the CRYPTKEY property if it is not an Org Crypt entry"
             }
+            "ORG040" => {
+                "load the referenced PROPERTY_SCHEMA contract, add required properties, or set values allowed by that schema"
+            }
             _ => "inspect the Org source near this location and repair the lint finding",
         }
     }
@@ -304,6 +307,9 @@ impl LintFinding {
             }
             "ORG039" => {
                 "CRYPTKEY only selects an encryption key for entries matched by the Org Crypt tag matcher."
+            }
+            "ORG040" => {
+                "PROPERTY_SCHEMA validation must use a host-loaded contract registry; agents should not invent drawer schemas at runtime."
             }
             _ => {
                 "Org lint findings should be fixed in source or intentionally reviewed before downstream use."

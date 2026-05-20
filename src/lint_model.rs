@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use rowan::TextRange;
 
-use crate::ast::{PriorityProfile, SourcePosition};
+use crate::ast::{PriorityProfile, PropertySchemaRegistry, SourcePosition};
 
 /// Lint configuration.
 ///
@@ -24,6 +24,8 @@ pub struct LintOptions {
     pub file_base_dir: Option<PathBuf>,
     /// Priority bounds used when checking otherwise valid priority cookies.
     pub priority_profile: PriorityProfile,
+    /// Host-loaded property schema contracts referenced by `PROPERTY_SCHEMA`.
+    pub property_schema_registry: PropertySchemaRegistry,
 }
 
 /// Lint result for one Org source string.

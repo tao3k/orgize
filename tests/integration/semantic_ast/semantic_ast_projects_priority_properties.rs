@@ -3,7 +3,10 @@ use orgize::{
     Org,
     ast::{
         AgendaDate, AgendaQuery, PriorityProfile, PriorityRangeStatus, PriorityValue,
-        PropertyAllowedValueScope, PropertyInheritancePolicy,
+        PropertyAllowedValueScope, PropertyInheritancePolicy, PropertySchemaApplication,
+        PropertySchemaContract, PropertySchemaField, PropertySchemaFindingKind,
+        PropertySchemaReferenceKind, PropertySchemaRegistry, PropertySchemaScope,
+        PropertySchemaValueRule,
     },
 };
 
@@ -186,4 +189,217 @@ fn semantic_ast_projects_property_profile_allowed_values() {
         PropertyAllowedValueScope::Section { title, .. } if title == "Project"
     ));
     assert_eq!(owner.values, ["Sarah Connor", "Jim", ""]);
+}
+
+#[test]
+fn semantic_ast_projects_property_schema_registry_validates_loaded_contracts() {
+    let doc = Org::parse(
+        r#"* File-backed capture
+:PROPERTIES:
+:PROPERTY_SCHEMA: [[file:schemas/capture.schema.json#wendao.capture.v1][Capture schema]]
+:CAPTURE_KIND: surprise
+:CAPTURE_SOURCE: conversation
+:EXTRA: no
+:END:
+* Macro-backed capture
+:PROPERTIES:
+:PROPERTY_SCHEMA: {{{property_schema(wendao.capture.v1)}}}
+:CAPTURE_KIND: idea
+:CAPTURE_SOURCE: article
+:MEMORY_POLICY: candidate
+:END:
+* Direct file capture
+:PROPERTIES:
+:PROPERTY_SCHEMA: capture.schema.json#wendao.capture.v1
+:CAPTURE_KIND: note
+:CAPTURE_SOURCE: article
+:MEMORY_POLICY: candidate
+:END:
+"#,
+    )
+    .document();
+    assert_clean_projection(&doc);
+
+    let registry = PropertySchemaRegistry::new([capture_schema_contract()]);
+    let profile = doc.property_profile_with_schema_registry(&registry);
+    assert_eq!(profile.schema_applications.len(), 3);
+
+    let file_application = &profile.schema_applications[0];
+    assert_eq!(
+        file_application.reference.kind,
+        PropertySchemaReferenceKind::OrgFileLink
+    );
+    assert_eq!(
+        file_application.reference.normalized,
+        "file:schemas/capture.schema.json#wendao.capture.v1"
+    );
+    assert_eq!(
+        file_application.contract_id.as_deref(),
+        Some("wendao.capture.v1")
+    );
+    assert!(matches!(
+        &file_application.scope,
+        PropertySchemaScope::Section { title, .. } if title == "File-backed capture"
+    ));
+    assert!(file_application.findings.iter().any(|finding| {
+        finding.kind == PropertySchemaFindingKind::MissingRequiredProperty
+            && finding.property.as_deref() == Some("MEMORY_POLICY")
+    }));
+    assert!(file_application.findings.iter().any(|finding| {
+        finding.kind == PropertySchemaFindingKind::DisallowedValue
+            && finding.property.as_deref() == Some("CAPTURE_KIND")
+    }));
+    assert!(file_application.findings.iter().any(|finding| {
+        finding.kind == PropertySchemaFindingKind::UnknownProperty
+            && finding.property.as_deref() == Some("EXTRA")
+    }));
+
+    let macro_application = &profile.schema_applications[1];
+    assert_eq!(
+        macro_application.reference.kind,
+        PropertySchemaReferenceKind::Macro
+    );
+    assert_eq!(macro_application.reference.normalized, "wendao.capture.v1");
+    assert_eq!(
+        macro_application.contract_id.as_deref(),
+        Some("wendao.capture.v1")
+    );
+    assert!(macro_application.findings.is_empty());
+
+    let direct_file_application = &profile.schema_applications[2];
+    assert_eq!(
+        direct_file_application.reference.kind,
+        PropertySchemaReferenceKind::File
+    );
+    assert_eq!(
+        direct_file_application.reference.normalized,
+        "capture.schema.json#wendao.capture.v1"
+    );
+    assert_eq!(
+        direct_file_application.contract_id.as_deref(),
+        Some("wendao.capture.v1")
+    );
+    assert!(direct_file_application.findings.is_empty());
+
+    insta::assert_snapshot!(
+        "semantic_ast__property_schema_applications",
+        render_property_schema_applications(&profile.schema_applications)
+    );
+}
+
+fn render_property_schema_applications(applications: &[PropertySchemaApplication]) -> String {
+    let mut out = String::new();
+    out.push_str(&format!("schema_applications={}\n", applications.len()));
+    for application in applications {
+        out.push_str(&format!(
+            "application scope={} path={} level={} title={} reference={} raw={} normalized={} contract={}\n",
+            application.scope.as_str(),
+            property_schema_scope_path(&application.scope),
+            property_schema_scope_level(&application.scope),
+            property_schema_scope_title(&application.scope),
+            application.reference.kind.as_str(),
+            application.reference.raw,
+            application.reference.normalized,
+            application.contract_id.as_deref().unwrap_or("none")
+        ));
+        for finding in &application.findings {
+            out.push_str(&format!(
+                "  finding {} property={} actual={} expected={} source={}:{}-{}:{} message={}\n",
+                finding.kind.as_str(),
+                finding.property.as_deref().unwrap_or("none"),
+                finding.actual.as_deref().unwrap_or("none"),
+                if finding.expected.is_empty() {
+                    "none".to_string()
+                } else {
+                    finding.expected.join("|")
+                },
+                finding.source.start.line,
+                finding.source.start.column,
+                finding.source.end.line,
+                finding.source.end.column,
+                finding.message
+            ));
+        }
+    }
+    out
+}
+
+fn property_schema_scope_path(scope: &PropertySchemaScope) -> String {
+    match scope {
+        PropertySchemaScope::Document => "document".to_string(),
+        PropertySchemaScope::Section { outline_path, .. } => outline_path.join(" > "),
+    }
+}
+
+fn property_schema_scope_level(scope: &PropertySchemaScope) -> String {
+    match scope {
+        PropertySchemaScope::Document => "none".to_string(),
+        PropertySchemaScope::Section { level, .. } => level.to_string(),
+    }
+}
+
+fn property_schema_scope_title(scope: &PropertySchemaScope) -> &str {
+    match scope {
+        PropertySchemaScope::Document => "document",
+        PropertySchemaScope::Section { title, .. } => title,
+    }
+}
+
+fn capture_schema_contract() -> PropertySchemaContract {
+    PropertySchemaContract::new("wendao.capture.v1")
+        .alias("file:schemas/capture.schema.json#wendao.capture.v1")
+        .alias("capture.schema.json#wendao.capture.v1")
+        .allow_unknown_properties(false)
+        .field(PropertySchemaField::required(
+            "CAPTURE_KIND",
+            PropertySchemaValueRule::OneOf(
+                [
+                    "idea",
+                    "articleNote",
+                    "task",
+                    "decision",
+                    "preference",
+                    "correction",
+                    "memoryCandidate",
+                    "evidence",
+                    "note",
+                ]
+                .into_iter()
+                .map(str::to_string)
+                .collect(),
+            ),
+        ))
+        .field(PropertySchemaField::required(
+            "CAPTURE_SOURCE",
+            PropertySchemaValueRule::OneOf(
+                [
+                    "conversation",
+                    "url",
+                    "file",
+                    "selection",
+                    "article",
+                    "code",
+                    "other",
+                ]
+                .into_iter()
+                .map(str::to_string)
+                .collect(),
+            ),
+        ))
+        .field(PropertySchemaField::required(
+            "MEMORY_POLICY",
+            PropertySchemaValueRule::OneOf(
+                [
+                    "none",
+                    "candidate",
+                    "background",
+                    "decision",
+                    "transient",
+                    "supersedes",
+                ]
+                .into_iter()
+                .map(str::to_string)
+                .collect(),
+            ),
+        ))
 }

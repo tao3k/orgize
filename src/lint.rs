@@ -107,7 +107,11 @@ fn collect_lint_findings(
     ));
     findings.extend(options_keyword_findings(&document.metadata, source));
     findings.extend(priority_cookie_findings(source, &options.priority_profile));
-    findings.extend(property_drawer_findings(document, source));
+    findings.extend(property_drawer_findings(
+        document,
+        source,
+        &options.property_schema_registry,
+    ));
     findings.extend(progress_findings(document, source));
     findings.extend(attachment_findings(document, source, options));
     findings.extend(babel_findings(document, source));
