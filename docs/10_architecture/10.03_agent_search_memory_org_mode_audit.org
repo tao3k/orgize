@@ -249,9 +249,12 @@ findings.
 | =contract_id= | matched loaded contract id, when the host supplied one |
 | =findings= | unresolved schema, missing required property, unknown property, empty value, or disallowed value |
 
-`ORG040` renders the same contract findings as lint advice. This gives Agent
-and Window runtimes a stable validation API while keeping schema authorship in
-user-controlled files/configuration.
+`ORG040` renders the same contract findings as lint advice.
+`propertyProfileWithSchemasJson` returns the focused profile projection, while
+`snapshotWithSchemasJson` embeds the same schema applications and lint findings
+in the full Agent snapshot. This gives Agent and Window runtimes a stable
+validation API while keeping schema authorship in user-controlled
+files/configuration.
 
 *** Current Slice: Refile Target Index And Plan
 
