@@ -1,0 +1,13 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_crypt.rs
+assertion_line: 53
+expression: render_crypt_states(&doc)
+---
+Secret note level=1 direct=true inherited=false opaque=true encrypted=true key=local path=Secret note
+Inherited child level=2 direct=false inherited=true opaque=true encrypted=false key=inherited path=Secret note > Inherited child
+  warning inheritedCryptTag
+  warning plaintextCryptBody
+Plaintext secret level=1 direct=true inherited=false opaque=true encrypted=false key=none path=Plaintext secret
+  warning plaintextCryptBody
+Key only level=1 direct=false inherited=false opaque=false encrypted=false key=local path=Key only
+  warning cryptKeyWithoutCryptTag

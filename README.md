@@ -108,6 +108,11 @@ or `orgElementsIndexQueryJson(...)` without materializing the full tree.
 Parsing alone never executes host tools or header directives. Python remains a
 convenience adapter through `PythonExecutionOptions`, not the core element
 contract.
+Org Crypt is modeled as source-grounded advice, not an execution feature:
+`document.crypt_states()` records `crypt`-tagged sections, inherited crypt tag
+evidence, `CRYPTKEY` visibility, encrypted payload markers, and opaque-body
+warnings while never decrypting source text. The wasm package exposes the same
+shape through `cryptJson()` and `snapshotJson().crypt`.
 Use `document.link_protocol_records()` to inspect built-in link families,
 custom protocols, `#+LINK` abbreviations, executable `shell:`/`elisp:` links,
 and inert `org-protocol:` calls without opening files or dispatching handlers.

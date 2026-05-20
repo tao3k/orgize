@@ -4,6 +4,8 @@
 mod lint_attachments;
 #[path = "lint_babel.rs"]
 mod lint_babel;
+#[path = "lint_crypt.rs"]
+mod lint_crypt;
 #[path = "lint_file_links.rs"]
 mod lint_file_links;
 #[path = "lint_lifecycle.rs"]
@@ -30,6 +32,7 @@ use std::{collections::BTreeMap, fs, io::ErrorKind, path::Path};
 use self::{
     lint_attachments::attachment_findings,
     lint_babel::babel_findings,
+    lint_crypt::crypt_findings,
     lint_file_links::file_link_findings,
     lint_lifecycle::lifecycle_findings,
     lint_model::{location_for_offsets, location_for_range},
@@ -113,6 +116,7 @@ fn collect_lint_findings(
     findings.extend(table_formula_findings(document, source));
     findings.extend(task_blocker_findings(document, source));
     findings.extend(sdd_findings(document, source));
+    findings.extend(crypt_findings(document, source));
     findings.extend(todo_declaration_findings(source));
 
     findings

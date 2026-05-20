@@ -144,6 +144,8 @@ impl LintFinding {
             "ORG035" => "add at least one direct Scenario child heading under this SDD requirement",
             "ORG036" => "move task state, progress cookies, and checklists from SDD headings into an Org task or ExecPlan",
             "ORG037" => "add the architecture metadata required by this SDD_KIND",
+            "ORG038" => "treat this crypt-tagged subtree body as opaque for indexing/export, or remove the crypt tag if the body is intentionally public",
+            "ORG039" => "add the crypt tag to the section or remove the CRYPTKEY property if it is not an Org Crypt entry",
             _ => "inspect the Org source near this location and repair the lint finding",
         }
     }
@@ -187,6 +189,8 @@ impl LintFinding {
             "ORG035" => "SDD requirements should have directly visible scenarios so Agent and test planning can verify behavior.",
             "ORG036" => "SDD describes architecture and audit rationale; implementation progress belongs to plan/task surfaces.",
             "ORG037" => "Architecture descriptions need explicit concerns, viewpoints, or rationale instead of task-only labels.",
+            "ORG038" => "Org Crypt protects subtree body text, while headline and property metadata remain visible to parsers and indexers.",
+            "ORG039" => "CRYPTKEY only selects an encryption key for entries matched by the Org Crypt tag matcher.",
             _ => "Org lint findings should be fixed in source or intentionally reviewed before downstream use.",
         }
     }

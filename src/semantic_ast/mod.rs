@@ -39,6 +39,8 @@ mod column_view_model;
 mod column_views;
 mod conversion;
 mod conversion_util;
+mod crypt;
+mod crypt_model;
 mod datetree;
 mod datetree_model;
 mod dynamic_block_model;
@@ -178,6 +180,7 @@ pub use column_summary_model::{
 pub use column_view_model::{
     ColumnViewColumn, ColumnViewRecord, ColumnViewScope, ColumnViewSource,
 };
+pub use crypt_model::{CryptKey, CryptState, CryptTag, CryptWarning, CryptWarningKind};
 pub use datetree_model::DateTreeEntry;
 pub use dynamic_block_model::{
     DynamicBlockContentState, DynamicBlockParameter, DynamicBlockRecord, DynamicBlockWriterKind,

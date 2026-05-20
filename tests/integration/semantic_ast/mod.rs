@@ -21,6 +21,7 @@ mod semantic_ast_projects_clock_issues;
 mod semantic_ast_projects_clock_rollups;
 mod semantic_ast_projects_cloze_objects_with_metadata;
 mod semantic_ast_projects_column_views;
+mod semantic_ast_projects_crypt;
 mod semantic_ast_projects_dynamic_blocks;
 mod semantic_ast_projects_elements_bridge;
 mod semantic_ast_projects_file_todo_keywords;
