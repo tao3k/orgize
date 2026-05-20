@@ -45,6 +45,7 @@ mod dynamic_block_model;
 mod dynamic_blocks;
 mod elements_bridge;
 mod elements_bridge_element_json;
+mod elements_bridge_index_json;
 mod elements_bridge_json;
 mod elements_bridge_model;
 mod elements_bridge_object_json;

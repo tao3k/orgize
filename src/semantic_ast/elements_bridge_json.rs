@@ -33,6 +33,7 @@ fn document_value(document: &Document<ParsedAnnotation>) -> Value {
         "footnotes": document.footnotes.iter().map(footnote_entry_json).collect::<Vec<_>>(),
         "elements": super::elements_bridge_element_json::elements_json(&document.children),
         "sections": sections_json(&document.sections, Vec::new()),
+        "index": super::elements_bridge_index_json::index_json(document),
         "sourceBlocks": document
             .source_block_records()
             .iter()

@@ -99,8 +99,9 @@ into `document.tag_definitions`. Hosts that want org-mode-style programmable
 behavior can call `document.org_elements_json()` or explicitly run
 `document.execute_org_elements(&OrgElementsHostExecutionOptions::new(...))`;
 the payload exposes source-backed root/section/element/object trees, targets,
-footnotes, metadata, and source block side tables for external mappers. Parsing
-alone never executes host tools or header directives. Python remains a
+footnotes, metadata, source block side tables, and a flat `index` for
+`org-element-map`-style filtering by node kind. Parsing alone never executes
+host tools or header directives. Python remains a
 convenience adapter through `PythonExecutionOptions`, not the core element
 contract.
 Use `document.link_protocol_records()` to inspect built-in link families,

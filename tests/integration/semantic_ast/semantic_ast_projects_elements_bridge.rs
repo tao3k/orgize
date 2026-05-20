@@ -82,6 +82,19 @@ print(topic)
     assert!(section_elements
         .iter()
         .any(|element| element["kind"] == "src-block" && element["language"] == "python"));
+    let index = payload["index"].as_array().expect("flat node index");
+    assert!(index.iter().any(|node| node["category"] == "section"
+        && node["kind"] == "headline"
+        && node["summary"]["title"] == "Learn parser bindings"));
+    assert!(index.iter().any(|node| node["category"] == "object"
+        && node["kind"] == "link"
+        && node["summary"]["path"] == "https://example.test"));
+    assert!(index.iter().any(|node| node["category"] == "object"
+        && node["kind"] == "timestamp"
+        && node["context"] == "paragraph"));
+    assert!(index.iter().any(|node| node["category"] == "element"
+        && node["kind"] == "src-block"
+        && node["summary"]["language"] == "python"));
     assert!(payload["sourceBlocks"]
         .as_array()
         .expect("source blocks")

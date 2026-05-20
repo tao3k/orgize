@@ -1053,6 +1053,10 @@ Official anchors: `doc/org-manual.org` sections "Exporting", "Publishing",
       API so Python, TypeScript, CLIs, and other tools can bind to semantic Org
       sections, elements, objects, targets, footnotes, and source blocks without
       running code during parse.
+- [X] Add a flat org-elements node index with stable ordinal/category/kind,
+      source range, outline path, context, and summary fields so downstream
+      tools can perform `org-element-map`-style filtering without recursively
+      walking the full payload themselves.
 - [X] Add an explicit include expansion plan for `#+INCLUDE:` line/range/options
       semantics; keep expansion opt-in and filesystem-aware only in lint/export
       helper APIs.
