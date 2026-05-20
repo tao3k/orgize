@@ -1,0 +1,139 @@
+* 20.03 Property Schema Registry Contract
+
+This note defines the durable host-facing file contract for
+=PROPERTY_SCHEMA= validation. The Org source remains native Org: drawers store
+ordinary properties, and =PROPERTY_SCHEMA= stores only a reference to a
+host-loaded contract.
+
+The machine-readable JSON Schema lives next to this note:
+[[file:20.03_property_schema_registry.schema.json][20.03_property_schema_registry.schema.json]].
+
+** Scope
+
+Orgize does not invent drawer schemas from model output. Users and hosts load a
+registry, then Orgize resolves =PROPERTY_SCHEMA= values against that registry
+and emits read-only findings through lint, semantic projections, and WASM DTOs.
+
+The first stable file format is JSON. Core reference parsing still recognizes
+file-shaped references such as =.toml= and =.yaml= so other hosts can project
+their own registries, but the CLI loader intentionally accepts JSON until a
+non-JSON format has a downstream consumer and validation story.
+
+** Registry Shape
+
+JSON registry files should declare the schema when they are meant to be edited
+or validated by downstream tools:
+
+#+begin_src json
+{
+  "$schema": "../../docs/20_parser/20.03_property_schema_registry.schema.json",
+  "contracts": []
+}
+#+end_src
+
+#+begin_src json
+{
+  "contracts": [
+    {
+      "id": "wendao.capture.v1",
+      "aliases": [
+        "capture"
+      ],
+      "allowUnknownProperties": false,
+      "fields": [
+        {
+          "key": "CAPTURE_KIND",
+          "required": true,
+          "valueRule": {
+            "kind": "oneOf",
+            "values": [
+              "idea",
+              "note"
+            ]
+          }
+        },
+        {
+          "key": "CAPTURE_SOURCE",
+          "required": true,
+          "valueRule": "nonEmpty"
+        }
+      ]
+    }
+  ]
+}
+#+end_src
+
+Allowed top-level forms are:
+
+- an object with =contracts=;
+- a single contract object with =id=;
+- an array of contract objects.
+
+Supported contract fields are:
+
+| Field | Required | Meaning |
+|-------+----------+---------|
+| =id= | yes | Stable contract identifier. |
+| =aliases= | no | Extra references that resolve to this contract. |
+| =allowUnknownProperties= | no | Defaults to =true=; when =false=, undeclared drawer keys produce =ORG040=. |
+| =fields= | no | Property rules keyed by drawer property name. |
+
+Supported field keys are =key=, =required=, and =valueRule=. Snake-case
+variants are accepted for host JSON encoders that prefer them.
+
+Supported =valueRule= forms are:
+
+- ="any"=;
+- ="nonEmpty"=;
+- ={"kind": "oneOf", "values": ["..."]}=.
+
+** Loader Semantics
+
+The CLI accepts one or more registry files:
+
+#+begin_src sh
+orgize lint --property-schema-registry tests/fixtures/lint/property-schema-registry.json notes.org
+#+end_src
+
+When a CLI registry file is loaded, Orgize adds file-shaped aliases for each
+contract in that file:
+
+- =path/to/registry.json#contract.id=;
+- =file:path/to/registry.json#contract.id=;
+- canonical absolute-path variants when the file can be canonicalized.
+
+If the file contains exactly one contract, the path without a fragment also
+resolves to that contract. This lets a user write a direct Org reference
+without repeating file aliases inside the JSON contract:
+
+#+begin_example
+,* Capture
+,:PROPERTIES:
+,:PROPERTY_SCHEMA: file:property-schema-registry.json#wendao.capture.v1
+,:CAPTURE_KIND: idea
+,:CAPTURE_SOURCE: chat
+,:END:
+#+end_example
+
+Browser and WASM hosts do not read files. They pass the registry object
+directly through =propertyProfileWithSchemasJson= or =snapshotWithSchemasJson=;
+therefore, they should include explicit =aliases= when they want file-shaped
+references to resolve in memory.
+
+** Validation Surface
+
+Resolved contracts produce =PropertySchemaApplication= records on the property
+profile. Lint renders the same findings as =ORG040= advice. Current findings
+cover:
+
+- empty =PROPERTY_SCHEMA= values;
+- unresolved references;
+- missing required properties;
+- unknown properties when =allowUnknownProperties= is =false=;
+- empty values under =nonEmpty=;
+- disallowed values under =oneOf=.
+
+The durable CLI fixture is
+[[file:../../tests/fixtures/lint/property-schema-registry.json][tests/fixtures/lint/property-schema-registry.json]].
+The snapshot receipt is
+[[file:../../tests/integration/snapshots/integration_test__lint_fmt__lint_cli_loads_property_schema_registry_file_with_snapshot.snap][lint_cli_loads_property_schema_registry_file_with_snapshot]].

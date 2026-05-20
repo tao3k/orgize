@@ -1,0 +1,7 @@
+* Capture
+:PROPERTIES:
+:PROPERTY_SCHEMA: file:property-schema-registry.json#wendao.capture.v1
+:CAPTURE_KIND: surprise
+:CAPTURE_SOURCE: conversation
+:EXTRA: no
+:END:

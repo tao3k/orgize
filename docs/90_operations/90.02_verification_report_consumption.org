@@ -92,6 +92,17 @@ called optimized.
    the lint-focused owner. That structural split reopened the benchmark path
    without weakening the harness gate.
 
+6. Treat new contract fixtures as their own test owner.
+
+   The `PROPERTY_SCHEMA` registry contract initially added more snapshot tests
+   to `tests/integration/lint_fmt.rs`, and the harness repeated
+   `RUST-PROJ-R005`: the file had grown to 486 effective lines across 22 test
+   functions. The repair was to split registry loading, invalid-registry
+   diagnostics, JSON Schema shape snapshots, and schema-contract lint advice
+   into `tests/integration/lint_property_schema.rs`. This keeps the new
+   Agent-facing contract evidence durable without regressing the structural
+   test ownership gate.
+
 ** Dense Parser Evidence Backlog
 
 This standard Org table maps the parser-v2 dense surfaces to the three evidence

@@ -23,6 +23,11 @@ fn semantic_ast_projects_tag_vocabulary_groups_and_exclusive_sets() {
     .document();
 
     assert_clean_projection(&doc);
+    assert!(
+        doc.tag_definitions
+            .iter()
+            .all(|definition| !matches!(definition.name.as_str(), "{" | "}" | "[" | "]" | ":"))
+    );
 
     let work = doc
         .tag_definitions

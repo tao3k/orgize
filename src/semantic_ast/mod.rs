@@ -194,6 +194,7 @@ pub use elements_bridge_model::{
     OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
     OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, OrgElementsIndexCategory,
     OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexRecord, OrgElementsIndexSummary,
+    OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
     OrgElementsIndexSummaryValue, PythonDirective, PythonDirectiveKind, PythonExecutionOptions,
     PythonExecutionProgram,
 };

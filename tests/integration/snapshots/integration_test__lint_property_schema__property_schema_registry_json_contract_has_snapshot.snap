@@ -1,0 +1,14 @@
+---
+source: tests/integration/lint_property_schema.rs
+expression: "format!(\"schema_id: {}\\n\\\n         title: {}\\n\\\n         registry_properties: {}\\n\\\n         contract_properties: {}\\n\\\n         field_properties: {}\\n\\\n         value_rule_options: {}\\n\\\n         fixture_schema: {}\\n\\\n         fixture_contracts: {}\\n\\\n         fixture_first_contract: {}\\n\\\n         fixture_fields: {}\\n\",\nschema[\"$id\"].as_str().unwrap(), schema[\"title\"].as_str().unwrap(),\nregistry_properties.join(\", \"), contract_properties.join(\", \"),\nfield_properties.join(\", \"), value_rule_options,\nfixture[\"$schema\"].as_str().unwrap(), fixture_contracts.len(),\nfixture_contracts[0][\"id\"].as_str().unwrap(), fixture_fields)"
+---
+schema_id: https://github.com/tao3k/orgize/docs/20_parser/20.03_property_schema_registry.schema.json
+title: Orgize PROPERTY_SCHEMA Registry
+registry_properties: $schema, contracts, schemaVersion
+contract_properties: aliases, allowUnknownProperties, allow_unknown_properties, fields, id
+field_properties: key, required, valueRule, value_rule
+value_rule_options: string:any|nonEmpty, object:any, object:nonEmpty, object:oneOf
+fixture_schema: ../../../docs/20_parser/20.03_property_schema_registry.schema.json
+fixture_contracts: 1
+fixture_first_contract: wendao.capture.v1
+fixture_fields: CAPTURE_KIND, CAPTURE_SOURCE, MEMORY_POLICY

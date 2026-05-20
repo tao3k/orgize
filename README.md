@@ -108,8 +108,10 @@ footnotes, metadata, source block side tables, and a flat `index` for
 `org-element-map`-style filtering by node kind. Rust consumers can call
 `document.org_elements_index()` for typed index records and
 `document.query_org_elements_index(&OrgElementsIndexQuery::new().kind("link"))`
-for filtered views, while wasm consumers can request `orgElementsIndexJson()`
-or `orgElementsIndexQueryJson(...)` without materializing the full tree.
+for filtered views; the query can also match compact summary fields with
+`summary_eq` and `summary_contains` selectors. Wasm consumers can request
+`orgElementsIndexJson()` or `orgElementsIndexQueryJson(...)` without
+materializing the full tree.
 Parsing alone never executes host tools or header directives. Python remains a
 convenience adapter through `PythonExecutionOptions`, not the core element
 contract.

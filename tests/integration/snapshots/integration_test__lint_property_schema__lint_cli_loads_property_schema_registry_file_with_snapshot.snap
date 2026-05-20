@@ -1,0 +1,11 @@
+---
+source: tests/integration/lint_property_schema.rs
+expression: command_snapshot(output)
+---
+status: 1
+stdout:
+property-schema-registry-capture.org:3:19: warning ORG040: property schema `wendao.capture.v1` requires `MEMORY_POLICY`
+property-schema-registry-capture.org:4:16: warning ORG040: property `CAPTURE_KIND` value `surprise` is not allowed by schema: idea, note
+property-schema-registry-capture.org:6:9: warning ORG040: property `EXTRA` is not declared by schema `wendao.capture.v1`
+
+stderr:

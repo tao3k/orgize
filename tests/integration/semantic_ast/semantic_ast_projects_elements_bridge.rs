@@ -117,6 +117,22 @@ print(topic)
     );
     assert_eq!(filtered_index.len(), 1);
     assert_eq!(filtered_index[0].kind.as_str(), "link");
+    let summary_eq_index = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .kind("link")
+            .summary_eq("path", "https://example.test"),
+    );
+    assert_eq!(summary_eq_index.len(), 1);
+    let summary_contains_index = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Section)
+            .summary_contains("title", "parser"),
+    );
+    assert_eq!(summary_contains_index.len(), 1);
+    assert_eq!(
+        summary_contains_index[0].outline_path,
+        vec!["Learn parser bindings".to_string()]
+    );
     assert!(
         doc.query_org_elements_index(&OrgElementsIndexQuery::new().kind("link").limit(0))
             .is_empty()

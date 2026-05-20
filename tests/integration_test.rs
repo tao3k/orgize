@@ -24,6 +24,8 @@ mod lint_fmt;
 mod lint_lifecycle;
 #[path = "integration/lint_progress.rs"]
 mod lint_progress;
+#[path = "integration/lint_property_schema.rs"]
+mod lint_property_schema;
 #[path = "integration/lint_table_formulas.rs"]
 mod lint_table_formulas;
 #[path = "integration/lint_task_blockers.rs"]

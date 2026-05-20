@@ -41,6 +41,8 @@ pub struct OrgElementsIndexQuery {
     pub kind: Option<OrgElementsIndexKind>,
     pub context: Option<String>,
     pub outline_path_prefix: Vec<String>,
+    pub summary_equals: Vec<OrgElementsIndexSummaryPredicate>,
+    pub summary_contains: Vec<OrgElementsIndexSummaryTextPredicate>,
     pub limit: Option<usize>,
 }
 
@@ -72,6 +74,27 @@ impl OrgElementsIndexQuery {
         self
     }
 
+    pub fn summary_eq(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<OrgElementsIndexSummaryValue>,
+    ) -> Self {
+        self.summary_equals.push(OrgElementsIndexSummaryPredicate {
+            key: key.into(),
+            value: value.into(),
+        });
+        self
+    }
+
+    pub fn summary_contains(mut self, key: impl Into<String>, needle: impl Into<String>) -> Self {
+        self.summary_contains
+            .push(OrgElementsIndexSummaryTextPredicate {
+                key: key.into(),
+                needle: needle.into(),
+            });
+        self
+    }
+
     pub fn limit(mut self, limit: usize) -> Self {
         self.limit = Some(limit);
         self
@@ -93,8 +116,22 @@ impl OrgElementsIndexQuery {
         {
             return false;
         }
-        self.outline_path_prefix.is_empty()
-            || record.outline_path.starts_with(&self.outline_path_prefix)
+        if !self.outline_path_prefix.is_empty()
+            && !record.outline_path.starts_with(&self.outline_path_prefix)
+        {
+            return false;
+        }
+        self.summary_equals.iter().all(|predicate| {
+            record
+                .summary
+                .get(&predicate.key)
+                .is_some_and(|value| value == &predicate.value)
+        }) && self.summary_contains.iter().all(|predicate| {
+            record
+                .summary
+                .get(&predicate.key)
+                .is_some_and(|value| value.contains_text(&predicate.needle))
+        })
     }
 }
 
@@ -163,6 +200,30 @@ pub enum OrgElementsIndexSummaryValue {
     Integer(i64),
     Text(String),
     StringList(Vec<String>),
+}
+
+impl OrgElementsIndexSummaryValue {
+    fn contains_text(&self, needle: &str) -> bool {
+        match self {
+            Self::Text(value) => value.contains(needle),
+            Self::StringList(values) => values.iter().any(|value| value.contains(needle)),
+            Self::Null | Self::Bool(_) | Self::Integer(_) => false,
+        }
+    }
+}
+
+/// Exact-match predicate over one compact Org elements index summary field.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgElementsIndexSummaryPredicate {
+    pub key: String,
+    pub value: OrgElementsIndexSummaryValue,
+}
+
+/// Text substring predicate over one compact Org elements index summary field.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgElementsIndexSummaryTextPredicate {
+    pub key: String,
+    pub needle: String,
 }
 
 impl From<bool> for OrgElementsIndexSummaryValue {

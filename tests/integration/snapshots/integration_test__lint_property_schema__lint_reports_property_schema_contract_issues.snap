@@ -1,5 +1,5 @@
 ---
-source: tests/integration/lint_fmt.rs
+source: tests/integration/lint_property_schema.rs
 expression: "format!(\"clean: {}\\n{}\", report.is_clean(), report.to_text(\"fixture.org\"))"
 ---
 clean: false

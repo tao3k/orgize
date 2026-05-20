@@ -256,6 +256,37 @@ in the full Agent snapshot. This gives Agent and Window runtimes a stable
 validation API while keeping schema authorship in user-controlled
 files/configuration.
 
+CLI consumers can load the same registry shape from JSON:
+
+#+begin_example
+orgize lint --property-schema-registry schemas/property-contracts.json notes.org
+#+end_example
+
+The durable contract is specified in
+[[file:../20_parser/20.03_property_schema_registry_contract.org][20.03 Property Schema Registry Contract]].
+
+The loaded file uses the same request shape as WASM:
+
+#+begin_src json
+{
+  "contracts": [{
+    "id": "wendao.capture.v1",
+    "allowUnknownProperties": false,
+    "fields": [
+      {"key": "CAPTURE_KIND", "required": true, "valueRule": {"kind": "oneOf", "values": ["idea", "note"]}},
+      {"key": "CAPTURE_SOURCE", "required": true, "valueRule": "nonEmpty"}
+    ]
+  }]
+}
+#+end_src
+
+When the CLI loads a registry file it also registers file-shaped references
+for the loaded contracts, for example =schemas/property-contracts.json#wendao.capture.v1=
+and =file:schemas/property-contracts.json#wendao.capture.v1=. A single-contract
+file may also be referenced by the file path alone. Browser/WASM hosts do not
+read files themselves, so they should pass explicit =aliases= when they want
+file-shaped references in an in-memory registry.
+
 *** Current Slice: Refile Target Index And Plan
 
 Refile support is intentionally a planning/indexing projection, not an

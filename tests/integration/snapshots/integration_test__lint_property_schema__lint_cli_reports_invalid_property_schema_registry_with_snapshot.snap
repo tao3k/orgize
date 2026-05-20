@@ -1,0 +1,9 @@
+---
+source: tests/integration/lint_property_schema.rs
+expression: command_snapshot(output)
+---
+status: 2
+stdout:
+
+stderr:
+orgize: registry.json: contracts[0]: contract requires string `id`

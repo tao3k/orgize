@@ -26,6 +26,7 @@ It follows a path-first contract:
 | `10.06` | `docs/10_architecture/10.06_org_native_sdd_substrate.org` | Org-native SDD node, parent-edge, requirement, and status projection boundary. |
 | `20.01` | `docs/20_parser/20.01_parser_v2_release_readiness.org` | Parser v2 public boundary and release-readiness checklist. |
 | `20.02` | `docs/20_parser/20.02_parser_v2_performance_closeout.org` | Parser v2 dense-path performance closeout. |
+| `20.03` | `docs/20_parser/20.03_property_schema_registry_contract.org` | Host-loaded `PROPERTY_SCHEMA` registry contract, loader semantics, and fixtures. |
 | `90.01` | `docs/90_operations/90.01_implementation_status.org` | Implementation status, backlog, and validation notes. |
 | `90.02` | `docs/90_operations/90.02_verification_report_consumption.org` | Git-locked verification report consumption and optimization backlog. |
 
