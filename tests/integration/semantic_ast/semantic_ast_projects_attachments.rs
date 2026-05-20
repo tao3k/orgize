@@ -9,8 +9,9 @@ use orgize::{
     Org,
     ast::{
         AttachmentAnnexStatus, AttachmentArchiveDeletePolicy, AttachmentDirectorySource,
-        AttachmentIdPathLayout, AttachmentInventoryOptions, AttachmentLinkSearchKind,
-        AttachmentVcsStatus, ElementData, ObjectData,
+        AttachmentDisplayMediaKind, AttachmentIdPathLayout, AttachmentInventoryOptions,
+        AttachmentLinkSearchKind, AttachmentSyncActionKind, AttachmentVcsStatus, ElementData,
+        ObjectData,
     },
 };
 
@@ -45,6 +46,16 @@ See [[attachment:loose.txt]].
 :DIR: archived
 :END:
 See [[attachment:old.txt]].
+* ID Gallery :ATTACH:wallpaper:
+:PROPERTIES:
+:ID: aabbccdd-0000-4000-8000-000000000000
+:END:
+#+ATTR_HTML: :width 400
+See [[attachment:id-wallpaper.jpg]] and [[attachment:missing-id.jpg]].
+* Empty ID :ATTACH:
+:PROPERTIES:
+:ID: ccddeeff-0000-4000-8000-000000000000
+:END:
 "#;
 
 #[test]
@@ -141,9 +152,23 @@ fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
     let temp = unique_temp_dir("orgize-attachment-vcs");
     fs::create_dir_all(temp.join("assets")).expect("create attachment directory");
     fs::create_dir_all(temp.join("archived")).expect("create archived attachment directory");
+    fs::create_dir_all(temp.join(".attach/aa/bbccdd-0000-4000-8000-000000000000"))
+        .expect("create id attachment directory");
+    fs::create_dir_all(temp.join(".attach/cc/ddeeff-0000-4000-8000-000000000000"))
+        .expect("create empty id attachment directory");
     run_git(&temp, &["init", "--quiet"]);
     fs::write(temp.join("assets/tracked.txt"), b"tracked").expect("write tracked attachment");
     fs::write(temp.join("archived/old.txt"), b"old attachment").expect("write archived attachment");
+    fs::write(
+        temp.join(".attach/aa/bbccdd-0000-4000-8000-000000000000/id-wallpaper.jpg"),
+        b"wallpaper",
+    )
+    .expect("write id attachment");
+    fs::write(
+        temp.join(".attach/aa/bbccdd-0000-4000-8000-000000000000/orphan.jpg"),
+        b"orphan",
+    )
+    .expect("write orphan attachment");
     run_git(&temp, &["add", "assets/tracked.txt"]);
     run_git(
         &temp,
@@ -164,9 +189,11 @@ fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
     assert_clean_projection(&doc);
     let inventory = doc.attachment_inventory(
         &AttachmentInventoryOptions::new(path_str(&temp))
+            .attach_id_dir(".attach")
             .check_vcs(true)
             .check_annex(true)
-            .archive_delete_policy(AttachmentArchiveDeletePolicy::Query),
+            .archive_delete_policy(AttachmentArchiveDeletePolicy::Query)
+            .scan_orphans(true),
     );
 
     let tracked = inventory_entry(&inventory, "tracked.txt");
@@ -189,6 +216,35 @@ fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
         advice.section_title == "Archived"
             && advice.path == "archived"
             && advice.policy == AttachmentArchiveDeletePolicy::Query
+    }));
+    let id_directory = inventory_entry(&inventory, ".attach/aa/bbccdd-0000-4000-8000-000000000000");
+    assert!(id_directory.exists);
+    let display = inventory
+        .display
+        .iter()
+        .find(|record| record.link_path.as_str() == "id-wallpaper.jpg")
+        .expect("id wallpaper display record");
+    assert_eq!(display.section_title, "ID Gallery");
+    assert_eq!(
+        display.attachment_id.as_ref().map(|id| id.as_str()),
+        Some("aabbccdd-0000-4000-8000-000000000000")
+    );
+    assert_eq!(display.media_kind, AttachmentDisplayMediaKind::Image);
+    assert!(display.exists);
+    assert!(inventory.sync_plan.actions.iter().any(|action| {
+        action.kind == AttachmentSyncActionKind::MissingLinkedFile
+            && action.path == "missing-id.jpg"
+    }));
+    assert!(inventory.sync_plan.actions.iter().any(|action| {
+        action.kind == AttachmentSyncActionKind::OrphanFile && action.path.ends_with("/orphan.jpg")
+    }));
+    assert!(inventory.sync_plan.actions.iter().any(|action| {
+        action.kind == AttachmentSyncActionKind::EmptyDirectory
+            && action.section_title == "Empty ID"
+    }));
+    assert!(inventory.sync_plan.actions.iter().any(|action| {
+        action.kind == AttachmentSyncActionKind::StaleAttachTag
+            && action.section_title == "Empty ID"
     }));
 
     insta::assert_snapshot!(
@@ -249,6 +305,36 @@ fn render_attachment_inventory(
             "warning {} {}\n",
             warning.kind.as_str(),
             warning.message
+        ));
+    }
+    for display in &inventory.display {
+        out.push_str(&format!(
+            "display title={} id={} directory={} link={} absolute={} exists={} media={}\n",
+            display.section_title,
+            display
+                .attachment_id
+                .as_ref()
+                .map(|id| id.as_str())
+                .unwrap_or("-"),
+            display.directory_path.as_str(),
+            display.link_path.as_str(),
+            relative_path(display.absolute_path.as_str(), base_dir),
+            display.exists,
+            display.media_kind.as_str()
+        ));
+    }
+    for action in &inventory.sync_plan.actions {
+        out.push_str(&format!(
+            "sync {} title={} path={} absolute={} {}\n",
+            action.kind.as_str(),
+            action.section_title,
+            action.path,
+            action
+                .absolute_path
+                .as_deref()
+                .map(|path| relative_path(path, base_dir))
+                .unwrap_or_else(|| "-".to_string()),
+            action.message
         ));
     }
     for advice in &inventory.archive_advice {

@@ -146,9 +146,12 @@ pub use agent_planning_model::{
 };
 pub use attachment_inventory_model::{
     AttachmentAnnexEvidence, AttachmentAnnexStatus, AttachmentArchiveAdvice,
-    AttachmentArchiveDeletePolicy, AttachmentInventory, AttachmentInventoryEntry,
+    AttachmentArchiveDeletePolicy, AttachmentDisplayAbsolutePath, AttachmentDisplayDirectoryPath,
+    AttachmentDisplayId, AttachmentDisplayLinkPath, AttachmentDisplayMediaKind,
+    AttachmentDisplayRecord, AttachmentInventory, AttachmentInventoryEntry,
     AttachmentInventoryEntryKind, AttachmentInventoryOptions, AttachmentInventoryWarning,
-    AttachmentInventoryWarningKind, AttachmentVcsEvidence, AttachmentVcsStatus,
+    AttachmentInventoryWarningKind, AttachmentSyncAction, AttachmentSyncActionKind,
+    AttachmentSyncPlan, AttachmentVcsEvidence, AttachmentVcsStatus,
 };
 pub use attachment_model::{
     AttachmentDirectory, AttachmentDirectorySource, AttachmentIdPathLayout, AttachmentLink,

@@ -1390,3 +1390,15 @@ Recommended implementation order for the next major PR train:
       archive-delete advice for =query= and =always= policies.
 - [X] Keep orgize read-only: the advice records possible deletion impact but
       never deletes attachment files or modifies archived subtrees.
+
+*** M29.12 Attachment Display And Sync Plan
+
+- [X] Add configurable =org-attach-id-dir= support to filesystem-aware
+      attachment inventory, preserving the default =data/= layout while allowing
+      local =.attach/= trees.
+- [X] Project attachment links into display records with section context,
+      effective tags, ID, media kind, existence, and resolved absolute path.
+- [X] Add non-mutating sync-plan advice for missing directories, missing linked
+      files, orphan files, empty directories, and stale =:ATTACH:= tags.
+- [X] Expose =attachmentInventoryJson= through wasm/worker DTOs without growing
+      the root DTO surface past the harness line budget.

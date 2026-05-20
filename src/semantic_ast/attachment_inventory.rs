@@ -1,16 +1,21 @@
 //! Opt-in filesystem-aware attachment inventory.
 
 use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
     path::{Path, PathBuf},
     process::Command,
 };
 
 use super::{
     AttachmentAnnexEvidence, AttachmentAnnexStatus, AttachmentArchiveAdvice,
-    AttachmentArchiveDeletePolicy, AttachmentInventory, AttachmentInventoryEntry,
-    AttachmentInventoryEntryKind, AttachmentInventoryOptions, AttachmentInventoryWarning,
-    AttachmentInventoryWarningKind, AttachmentVcsEvidence, AttachmentVcsStatus, Document,
-    ParsedAnnotation, SectionIndexRecord,
+    AttachmentArchiveDeletePolicy, AttachmentDirectorySource, AttachmentDisplayAbsolutePath,
+    AttachmentDisplayDirectoryPath, AttachmentDisplayId, AttachmentDisplayLinkPath,
+    AttachmentDisplayMediaKind, AttachmentDisplayRecord, AttachmentIdPathLayout,
+    AttachmentInventory, AttachmentInventoryEntry, AttachmentInventoryEntryKind,
+    AttachmentInventoryOptions, AttachmentInventoryWarning, AttachmentInventoryWarningKind,
+    AttachmentSyncAction, AttachmentSyncActionKind, AttachmentVcsEvidence, AttachmentVcsStatus,
+    Document, ParsedAnnotation, SectionIndexRecord, SectionIndexSource,
 };
 
 impl Document<ParsedAnnotation> {
@@ -20,61 +25,133 @@ impl Document<ParsedAnnotation> {
         &self,
         options: &AttachmentInventoryOptions,
     ) -> AttachmentInventory {
-        let sections = self.section_index_records();
-        let mut inventory = AttachmentInventory::default();
-        for section in sections {
-            let directory_path =
-                section.attachment.directory.as_ref().map(|directory| {
-                    absolute_path(options.base_dir.as_str(), directory.path.as_str())
+        build_attachment_inventory(options, self.section_index_records())
+    }
+}
+
+fn build_attachment_inventory(
+    options: &AttachmentInventoryOptions,
+    sections: Vec<SectionIndexRecord>,
+) -> AttachmentInventory {
+    let mut inventory = AttachmentInventory::default();
+    let mut directory_links: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    let mut directory_scan_records: BTreeMap<String, DirectoryScanRecord> = BTreeMap::new();
+    for section in sections {
+        let directory_path = section.attachment.directory.as_ref().map(|directory| {
+            attachment_directory_path(options, &directory.source, &directory.path)
+        });
+        let directory_absolute_path = directory_path
+            .as_ref()
+            .map(|path| absolute_path(options.base_dir.as_str(), path.as_str()));
+        if let Some(directory) = section.attachment.directory.as_ref() {
+            let path = attachment_directory_path(options, &directory.source, &directory.path);
+            let absolute_path = absolute_path(options.base_dir.as_str(), path.as_str());
+            let exists = absolute_path.exists();
+            let vcs = vcs_evidence(options, &absolute_path);
+            push_missing_warning(&mut inventory, exists, path.as_str());
+            push_missing_directory_action(
+                &mut inventory,
+                exists,
+                &section,
+                path.as_str(),
+                Some(absolute_path.display().to_string()),
+            );
+            push_archive_delete_advice(&mut inventory, options, &section, path.as_str());
+            directory_scan_records
+                .entry(path.clone())
+                .or_insert_with(|| DirectoryScanRecord {
+                    source: section.source.clone(),
+                    section_title: section.title.clone(),
+                    path: path.clone(),
+                    absolute_path: absolute_path.clone(),
+                    has_attach_tag: section.attachment.has_attach_tag,
                 });
-            if let Some(directory) = section.attachment.directory.as_ref() {
-                let path = directory.path.clone();
-                let absolute_path = absolute_path(options.base_dir.as_str(), path.as_str());
+            inventory.entries.push(AttachmentInventoryEntry {
+                source: section.source.clone(),
+                section_title: section.title.clone(),
+                kind: AttachmentInventoryEntryKind::Directory {
+                    source: directory.source.clone(),
+                },
+                path,
+                absolute_path: absolute_path.display().to_string(),
+                exists,
+                vcs,
+            });
+        }
+        for link in section
+            .links
+            .iter()
+            .filter_map(|link| link.attachment.as_ref())
+        {
+            let path = link.path.clone();
+            let (absolute_path, exists, vcs) = if let Some(directory_path) = &directory_path {
+                let absolute_path = directory_absolute_path
+                    .as_ref()
+                    .expect("directory absolute path")
+                    .join(path.as_str());
                 let exists = absolute_path.exists();
                 let vcs = vcs_evidence(options, &absolute_path);
                 push_missing_warning(&mut inventory, exists, path.as_str());
-                push_archive_delete_advice(&mut inventory, options, &section, path.as_str());
-                inventory.entries.push(AttachmentInventoryEntry {
+                push_missing_link_action(
+                    &mut inventory,
+                    exists,
+                    &section,
+                    path.as_str(),
+                    absolute_path.display().to_string(),
+                );
+                directory_links
+                    .entry(directory_path.clone())
+                    .or_default()
+                    .insert(path.clone());
+                inventory.display.push(AttachmentDisplayRecord {
                     source: section.source.clone(),
                     section_title: section.title.clone(),
-                    kind: AttachmentInventoryEntryKind::Directory {
-                        source: directory.source.clone(),
-                    },
-                    path,
-                    absolute_path: absolute_path.display().to_string(),
+                    outline_path: section.outline_path.clone(),
+                    tags: section.tags.clone(),
+                    effective_tags: section.effective_tags.clone(),
+                    attachment_id: attachment_id(&section),
+                    directory_path: AttachmentDisplayDirectoryPath::new(directory_path.clone()),
+                    link_path: AttachmentDisplayLinkPath::new(path.clone()),
+                    absolute_path: AttachmentDisplayAbsolutePath::new(
+                        absolute_path.display().to_string(),
+                    ),
                     exists,
-                    vcs,
+                    media_kind: media_kind(path.as_str()),
                 });
-            }
-            for link in section.links.into_iter().filter_map(|link| link.attachment) {
-                let path = link.path.clone();
-                let (absolute_path, exists, vcs) = if let Some(directory_path) = &directory_path {
-                    let absolute_path = directory_path.join(path.as_str());
-                    let exists = absolute_path.exists();
-                    let vcs = vcs_evidence(options, &absolute_path);
-                    push_missing_warning(&mut inventory, exists, path.as_str());
-                    (absolute_path, exists, vcs)
-                } else {
-                    push_missing_directory_warning(&mut inventory, path.as_str());
-                    (
-                        absolute_path(options.base_dir.as_str(), path.as_str()),
-                        false,
-                        AttachmentVcsEvidence::default(),
-                    )
-                };
-                inventory.entries.push(AttachmentInventoryEntry {
-                    source: section.source.clone(),
-                    section_title: section.title.clone(),
-                    kind: AttachmentInventoryEntryKind::Link { link },
-                    path,
-                    absolute_path: absolute_path.display().to_string(),
-                    exists,
-                    vcs,
-                });
-            }
+                (absolute_path, exists, vcs)
+            } else {
+                push_missing_directory_warning(&mut inventory, path.as_str());
+                push_unresolved_directory_action(&mut inventory, &section, path.as_str());
+                (
+                    absolute_path(options.base_dir.as_str(), path.as_str()),
+                    false,
+                    AttachmentVcsEvidence::default(),
+                )
+            };
+            inventory.entries.push(AttachmentInventoryEntry {
+                source: section.source.clone(),
+                section_title: section.title.clone(),
+                kind: AttachmentInventoryEntryKind::Link { link: link.clone() },
+                path,
+                absolute_path: absolute_path.display().to_string(),
+                exists,
+                vcs,
+            });
         }
-        inventory
     }
+    if options.scan_orphans {
+        push_directory_sync_actions(&mut inventory, &directory_scan_records, &directory_links);
+    }
+    inventory
+}
+
+#[derive(Clone, Debug)]
+struct DirectoryScanRecord {
+    source: SectionIndexSource,
+    section_title: String,
+    path: String,
+    absolute_path: PathBuf,
+    has_attach_tag: bool,
 }
 
 fn push_archive_delete_advice(
@@ -127,6 +204,219 @@ fn push_missing_warning(inventory: &mut AttachmentInventory, exists: bool, path:
         kind: AttachmentInventoryWarningKind::MissingPath,
         message: format!("attachment path `{path}` does not exist"),
     });
+}
+
+fn push_missing_directory_action(
+    inventory: &mut AttachmentInventory,
+    exists: bool,
+    section: &SectionIndexRecord,
+    path: &str,
+    absolute_path: Option<String>,
+) {
+    if exists {
+        return;
+    }
+    inventory.sync_plan.actions.push(AttachmentSyncAction {
+        kind: AttachmentSyncActionKind::MissingDirectory,
+        source: section.source.clone(),
+        section_title: section.title.clone(),
+        path: path.to_string(),
+        absolute_path,
+        message: format!(
+            "section `{}` references missing attachment directory `{path}`",
+            section.title
+        ),
+    });
+}
+
+fn push_unresolved_directory_action(
+    inventory: &mut AttachmentInventory,
+    section: &SectionIndexRecord,
+    link_path: &str,
+) {
+    inventory.sync_plan.actions.push(AttachmentSyncAction {
+        kind: AttachmentSyncActionKind::MissingDirectory,
+        source: section.source.clone(),
+        section_title: section.title.clone(),
+        path: link_path.to_string(),
+        absolute_path: None,
+        message: format!(
+            "section `{}` has attachment link `{link_path}` without a resolved attachment directory",
+            section.title
+        ),
+    });
+}
+
+fn push_missing_link_action(
+    inventory: &mut AttachmentInventory,
+    exists: bool,
+    section: &SectionIndexRecord,
+    path: &str,
+    absolute_path: String,
+) {
+    if exists {
+        return;
+    }
+    inventory.sync_plan.actions.push(AttachmentSyncAction {
+        kind: AttachmentSyncActionKind::MissingLinkedFile,
+        source: section.source.clone(),
+        section_title: section.title.clone(),
+        path: path.to_string(),
+        absolute_path: Some(absolute_path),
+        message: format!(
+            "section `{}` references missing attachment file `{path}`",
+            section.title
+        ),
+    });
+}
+
+fn push_directory_sync_actions(
+    inventory: &mut AttachmentInventory,
+    directories: &BTreeMap<String, DirectoryScanRecord>,
+    directory_links: &BTreeMap<String, BTreeSet<String>>,
+) {
+    for (directory_path, directory) in directories {
+        if !directory.absolute_path.is_dir() {
+            continue;
+        }
+        let Ok(entries) = fs::read_dir(&directory.absolute_path) else {
+            continue;
+        };
+        let linked = directory_links.get(directory_path);
+        let mut has_file = false;
+        for entry in entries.flatten() {
+            let Ok(file_type) = entry.file_type() else {
+                continue;
+            };
+            if !file_type.is_file() {
+                continue;
+            }
+            has_file = true;
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if linked.is_some_and(|linked| linked.contains(name.as_str())) {
+                continue;
+            }
+            let absolute_path = entry.path().display().to_string();
+            inventory.sync_plan.actions.push(AttachmentSyncAction {
+                kind: AttachmentSyncActionKind::OrphanFile,
+                source: directory.source.clone(),
+                section_title: directory.section_title.clone(),
+                path: join_relative(directory.path.as_str(), name.as_str()),
+                absolute_path: Some(absolute_path),
+                message: format!(
+                    "attachment file `{name}` is present under `{}` but no section link references it",
+                    directory.path
+                ),
+            });
+        }
+        if !has_file {
+            inventory.sync_plan.actions.push(AttachmentSyncAction {
+                kind: AttachmentSyncActionKind::EmptyDirectory,
+                source: directory.source.clone(),
+                section_title: directory.section_title.clone(),
+                path: directory.path.clone(),
+                absolute_path: Some(directory.absolute_path.display().to_string()),
+                message: format!(
+                    "attachment directory `{}` has no direct files",
+                    directory.path
+                ),
+            });
+            if directory.has_attach_tag {
+                inventory.sync_plan.actions.push(AttachmentSyncAction {
+                    kind: AttachmentSyncActionKind::StaleAttachTag,
+                    source: directory.source.clone(),
+                    section_title: directory.section_title.clone(),
+                    path: directory.path.clone(),
+                    absolute_path: Some(directory.absolute_path.display().to_string()),
+                    message: format!(
+                        "section `{}` keeps :ATTACH: but `{}` has no direct files",
+                        directory.section_title, directory.path
+                    ),
+                });
+            }
+        }
+    }
+}
+
+fn attachment_directory_path(
+    options: &AttachmentInventoryOptions,
+    source: &AttachmentDirectorySource,
+    path: &str,
+) -> String {
+    match source {
+        AttachmentDirectorySource::IdDerived { id, layout } => join_relative(
+            options.attach_id_dir.as_str(),
+            attachment_id_suffix(id, *layout).as_str(),
+        ),
+        AttachmentDirectorySource::DirProperty
+        | AttachmentDirectorySource::LegacyAttachDirProperty => path.to_string(),
+    }
+}
+
+fn attachment_id(section: &SectionIndexRecord) -> Option<AttachmentDisplayId> {
+    section
+        .effective_properties
+        .iter()
+        .find(|property| property.key.eq_ignore_ascii_case("ID"))
+        .map(|property| property.value.trim())
+        .filter(|value| !value.is_empty())
+        .map(AttachmentDisplayId::new)
+}
+
+fn attachment_id_suffix(id: &str, layout: AttachmentIdPathLayout) -> String {
+    match layout {
+        AttachmentIdPathLayout::Uuid => split_after_chars(id, 2)
+            .map(|(prefix, suffix)| format!("{prefix}/{suffix}"))
+            .unwrap_or_else(|| id.to_string()),
+        AttachmentIdPathLayout::Timestamp => split_after_chars(id, 6)
+            .map(|(prefix, suffix)| format!("{prefix}/{suffix}"))
+            .unwrap_or_else(|| id.to_string()),
+        AttachmentIdPathLayout::Fallback => split_after_chars(id, 1)
+            .map(|(prefix, _)| format!("__/{prefix}/{id}"))
+            .unwrap_or_else(|| id.to_string()),
+    }
+}
+
+fn split_after_chars(value: &str, count: usize) -> Option<(&str, &str)> {
+    if count == 0 {
+        return Some(("", value));
+    }
+    let index = value
+        .char_indices()
+        .nth(count)
+        .map(|(index, _)| index)
+        .or_else(|| (value.chars().count() == count).then_some(value.len()))?;
+    Some(value.split_at(index))
+}
+
+fn join_relative(root: &str, suffix: &str) -> String {
+    let root = root.trim_end_matches('/');
+    let suffix = suffix.trim_start_matches('/');
+    if root.is_empty() {
+        suffix.to_string()
+    } else if suffix.is_empty() {
+        root.to_string()
+    } else {
+        format!("{root}/{suffix}")
+    }
+}
+
+fn media_kind(path: &str) -> AttachmentDisplayMediaKind {
+    let Some(extension) = Path::new(path)
+        .extension()
+        .and_then(|extension| extension.to_str())
+    else {
+        return AttachmentDisplayMediaKind::Other;
+    };
+    match extension.to_ascii_lowercase().as_str() {
+        "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "svg" | "bmp" | "tif" | "tiff" => {
+            AttachmentDisplayMediaKind::Image
+        }
+        "mp4" | "webm" | "mov" | "m4v" | "mkv" => AttachmentDisplayMediaKind::Video,
+        "mp3" | "flac" | "wav" | "ogg" | "m4a" => AttachmentDisplayMediaKind::Audio,
+        "pdf" => AttachmentDisplayMediaKind::Pdf,
+        _ => AttachmentDisplayMediaKind::Other,
+    }
 }
 
 fn absolute_path(base_dir: &str, path: &str) -> PathBuf {
