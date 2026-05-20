@@ -1,6 +1,9 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{OrgElementsHostExecutionOptions, PythonDirectiveKind},
+    ast::{
+        OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexSummaryValue,
+        PythonDirectiveKind,
+    },
     Org,
 };
 use serde_json::Value;
@@ -82,6 +85,27 @@ print(topic)
     assert!(section_elements
         .iter()
         .any(|element| element["kind"] == "src-block" && element["language"] == "python"));
+    let typed_index = doc.org_elements_index();
+    assert_eq!(typed_index[0].category, OrgElementsIndexCategory::Document);
+    let typed_link = typed_index
+        .iter()
+        .find(|node| {
+            node.category == OrgElementsIndexCategory::Object && node.kind.as_str() == "link"
+        })
+        .expect("typed link index record");
+    assert_eq!(typed_link.context, "paragraph");
+    assert_eq!(
+        typed_link.summary.get("path"),
+        Some(&OrgElementsIndexSummaryValue::Text(
+            "https://example.test".to_string()
+        ))
+    );
+    let index_only: Value =
+        serde_json::from_str(&doc.org_elements_index_json()).expect("index JSON should parse");
+    assert_eq!(
+        index_only.as_array().expect("index array").len(),
+        typed_index.len()
+    );
     let index = payload["index"].as_array().expect("flat node index");
     assert!(index.iter().any(|node| node["category"] == "section"
         && node["kind"] == "headline"

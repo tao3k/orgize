@@ -1,11 +1,132 @@
-//! Host execution model for explicit Org element bindings.
+//! Model types for explicit Org element bindings.
 
-use std::fmt;
+use std::{collections::BTreeMap, fmt};
 
 /// Explicit host execution directives projected from Org keywords.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OrgElementsExecutionPlan<A = ()> {
     pub python_directives: Vec<PythonDirective<A>>,
+}
+
+/// One flat, source-backed record in the Org elements index.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgElementsIndexRecord<A = ()> {
+    pub ann: A,
+    pub ordinal: usize,
+    pub category: OrgElementsIndexCategory,
+    pub kind: OrgElementsIndexKind,
+    pub outline_path: Vec<String>,
+    pub context: String,
+    pub summary: OrgElementsIndexSummary,
+}
+
+/// Stable node kind label in the Org elements flat index.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct OrgElementsIndexKind(String);
+
+impl OrgElementsIndexKind {
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl From<&str> for OrgElementsIndexKind {
+    fn from(value: &str) -> Self {
+        Self::new(value)
+    }
+}
+
+impl From<String> for OrgElementsIndexKind {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
+
+/// High-level category for an Org elements index record.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OrgElementsIndexCategory {
+    Document,
+    Section,
+    Element,
+    Object,
+    Keyword,
+    Property,
+    TargetDefinition,
+    FootnoteEntry,
+}
+
+impl OrgElementsIndexCategory {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Document => "document",
+            Self::Section => "section",
+            Self::Element => "element",
+            Self::Object => "object",
+            Self::Keyword => "keyword",
+            Self::Property => "property",
+            Self::TargetDefinition => "target-definition",
+            Self::FootnoteEntry => "footnote-entry",
+        }
+    }
+}
+
+/// Compact per-kind summary fields for a flat Org elements index record.
+pub type OrgElementsIndexSummary = BTreeMap<String, OrgElementsIndexSummaryValue>;
+
+/// JSON-compatible scalar or small-list value used by `OrgElementsIndexSummary`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OrgElementsIndexSummaryValue {
+    Null,
+    Bool(bool),
+    Integer(i64),
+    Text(String),
+    StringList(Vec<String>),
+}
+
+impl From<bool> for OrgElementsIndexSummaryValue {
+    fn from(value: bool) -> Self {
+        Self::Bool(value)
+    }
+}
+
+impl From<usize> for OrgElementsIndexSummaryValue {
+    fn from(value: usize) -> Self {
+        Self::Integer(value as i64)
+    }
+}
+
+impl From<u8> for OrgElementsIndexSummaryValue {
+    fn from(value: u8) -> Self {
+        Self::Integer(i64::from(value))
+    }
+}
+
+impl From<&str> for OrgElementsIndexSummaryValue {
+    fn from(value: &str) -> Self {
+        Self::Text(value.to_string())
+    }
+}
+
+impl From<String> for OrgElementsIndexSummaryValue {
+    fn from(value: String) -> Self {
+        Self::Text(value)
+    }
+}
+
+impl From<&String> for OrgElementsIndexSummaryValue {
+    fn from(value: &String) -> Self {
+        Self::Text(value.clone())
+    }
+}
+
+impl From<Vec<String>> for OrgElementsIndexSummaryValue {
+    fn from(value: Vec<String>) -> Self {
+        Self::StringList(value)
+    }
 }
 
 /// One executable Python directive from `#+PYTHON:` or `#+PYTHON_FILE:`.

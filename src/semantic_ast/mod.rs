@@ -45,6 +45,7 @@ mod dynamic_block_model;
 mod dynamic_blocks;
 mod elements_bridge;
 mod elements_bridge_element_json;
+mod elements_bridge_index;
 mod elements_bridge_index_json;
 mod elements_bridge_json;
 mod elements_bridge_model;
@@ -183,8 +184,10 @@ pub use dynamic_block_model::{
 };
 pub use elements_bridge_model::{
     OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
-    OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, PythonDirective,
-    PythonDirectiveKind, PythonExecutionOptions, PythonExecutionProgram,
+    OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, OrgElementsIndexCategory,
+    OrgElementsIndexKind, OrgElementsIndexRecord, OrgElementsIndexSummary,
+    OrgElementsIndexSummaryValue, PythonDirective, PythonDirectiveKind, PythonExecutionOptions,
+    PythonExecutionProgram,
 };
 pub use export_dependency_graph::export_dependency_graph;
 pub use export_dependency_graph_model::{

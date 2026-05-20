@@ -8,8 +8,8 @@ use std::{
 use super::{
     Document, Element, ElementData, Keyword, ListItem, OrgElementsExecutionPlan,
     OrgElementsHostExecutionError, OrgElementsHostExecutionOptions, OrgElementsHostExecutionOutput,
-    OrgElementsHostExecutionStatus, ParsedAnnotation, PythonDirective, PythonDirectiveKind,
-    PythonExecutionOptions, Section,
+    OrgElementsHostExecutionStatus, OrgElementsIndexRecord, ParsedAnnotation, PythonDirective,
+    PythonDirectiveKind, PythonExecutionOptions, Section,
 };
 
 impl<A: Clone> Document<A> {
@@ -28,6 +28,19 @@ impl<A: Clone> Document<A> {
 }
 
 impl Document<ParsedAnnotation> {
+    /// Builds a typed, flat `org-element-map`-style index for host consumers.
+    pub fn org_elements_index(&self) -> Vec<OrgElementsIndexRecord<ParsedAnnotation>> {
+        super::elements_bridge_index::index_records(self)
+    }
+
+    /// Serializes only the flat Org elements index, without the full tree.
+    pub fn org_elements_index_json(&self) -> String {
+        serde_json::to_string(&super::elements_bridge_index_json::index_json_from_records(
+            &self.org_elements_index(),
+        ))
+        .expect("Org elements index JSON serialization should not fail")
+    }
+
     /// Serializes a stable, compact Org elements payload for host consumers.
     pub fn org_elements_json(&self) -> String {
         super::elements_bridge_json::document_json(self)
