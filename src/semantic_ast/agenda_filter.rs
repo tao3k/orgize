@@ -78,7 +78,15 @@ fn agenda_match_term_matches<A>(
             key,
             operator,
             value,
-        } => agenda_match_property_matches(section, category, source_file, key, *operator, value),
+        } => agenda_match_property_matches(
+            section,
+            category,
+            source_file,
+            key,
+            *operator,
+            value,
+            tag_matcher,
+        ),
     };
 
     if term.positive { matched } else { !matched }
@@ -91,11 +99,65 @@ fn agenda_match_property_matches<A>(
     key: &str,
     operator: AgendaMatchOperator,
     expected: &AgendaMatchValue,
+    tag_matcher: TagMatcher<'_>,
 ) -> bool {
+    if let Some(matched) =
+        agenda_match_tag_property_matches(section, key, operator, expected, tag_matcher)
+    {
+        return matched;
+    }
+
     let Some(actual) = agenda_match_property_value(section, category, source_file, key) else {
         return false;
     };
     compare_agenda_match_values(actual.as_str(), operator, expected)
+}
+
+fn agenda_match_tag_property_matches<A>(
+    section: &Section<A>,
+    key: &str,
+    operator: AgendaMatchOperator,
+    expected: &AgendaMatchValue,
+    tag_matcher: TagMatcher<'_>,
+) -> Option<bool> {
+    let tags = if key.eq_ignore_ascii_case("TAGS") {
+        &section.tags
+    } else if key.eq_ignore_ascii_case("ALLTAGS") {
+        &section.effective_tags
+    } else {
+        return None;
+    };
+
+    match operator {
+        AgendaMatchOperator::Equal | AgendaMatchOperator::NotEqual => {
+            let matched = tag_property_value_matches(tags, expected, tag_matcher);
+            Some(if operator == AgendaMatchOperator::Equal {
+                matched
+            } else {
+                !matched
+            })
+        }
+        AgendaMatchOperator::Less
+        | AgendaMatchOperator::LessOrEqual
+        | AgendaMatchOperator::Greater
+        | AgendaMatchOperator::GreaterOrEqual => None,
+    }
+}
+
+fn tag_property_value_matches(
+    tags: &[String],
+    expected: &AgendaMatchValue,
+    tag_matcher: TagMatcher<'_>,
+) -> bool {
+    if compare_agenda_match_values(
+        super::special_properties::tag_string(tags).as_str(),
+        AgendaMatchOperator::Equal,
+        expected,
+    ) {
+        return true;
+    }
+
+    tag_matcher.has_tag_value(tags, expected.as_str())
 }
 
 fn agenda_match_property_value<A>(

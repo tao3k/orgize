@@ -1229,3 +1229,14 @@ Recommended implementation order for the next major PR train:
       without changing headline tags or parser output.
 - [X] Add an original Rust snapshot proving =+GTD= and =+Control= behavior
       across agenda, sparse-tree, workspace, and clocktable projections.
+
+*** M28 Group Tags In Special-Property Matches
+
+- [X] Reuse the same document-level tag vocabulary matcher for =TAGS= and
+      =ALLTAGS= special-property agenda match expressions, so
+      =ALLTAGS={GTD}= and =TAGS={Control}= follow group expansion.
+- [X] Preserve existing string/substring behavior for literal colon-delimited
+      tag property values while adding group-aware fallback matching.
+- [X] Extend the original tag vocabulary snapshot to cover agenda and
+      sparse-tree special-property matches plus negative =ALLTAGS<>{...}=
+      behavior.

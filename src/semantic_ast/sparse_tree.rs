@@ -262,7 +262,7 @@ fn match_term_reasons(
             key,
             operator,
             value,
-        } => property_match_reasons(record, key, *operator, value),
+        } => property_match_reasons(record, key, *operator, value, tag_matcher),
     }
 }
 
@@ -286,14 +286,23 @@ fn property_match_reasons(
     key: &str,
     operator: AgendaMatchOperator,
     expected: &AgendaMatchValue,
+    tag_matcher: TagMatcher<'_>,
 ) -> Vec<SparseTreeMatch> {
     let mut reasons = Vec::new();
+    let tag_property_match =
+        tag_property_match_result(record, key, operator, expected, tag_matcher);
     for property in &record.special_properties {
-        if property.name.eq_ignore_ascii_case(key)
-            && compare_match_values(&property.value, operator, expected)
-        {
+        if !property.name.eq_ignore_ascii_case(key) {
+            continue;
+        }
+        let matched = tag_property_match
+            .unwrap_or_else(|| compare_match_values(&property.value, operator, expected));
+        if matched {
             reasons.push(special_property_match(property));
         }
+    }
+    if tag_property_match.is_some() {
+        return reasons;
     }
     for property in &record.effective_properties {
         if property.key.eq_ignore_ascii_case(key)
@@ -303,6 +312,53 @@ fn property_match_reasons(
         }
     }
     reasons
+}
+
+fn tag_property_match_result(
+    record: &SectionIndexRecord,
+    key: &str,
+    operator: AgendaMatchOperator,
+    expected: &AgendaMatchValue,
+    tag_matcher: TagMatcher<'_>,
+) -> Option<bool> {
+    let tags = if key.eq_ignore_ascii_case("TAGS") {
+        &record.tags
+    } else if key.eq_ignore_ascii_case("ALLTAGS") {
+        &record.effective_tags
+    } else {
+        return None;
+    };
+
+    match operator {
+        AgendaMatchOperator::Equal | AgendaMatchOperator::NotEqual => {
+            let matched = sparse_tag_property_value_matches(tags, expected, tag_matcher);
+            Some(if operator == AgendaMatchOperator::Equal {
+                matched
+            } else {
+                !matched
+            })
+        }
+        AgendaMatchOperator::Less
+        | AgendaMatchOperator::LessOrEqual
+        | AgendaMatchOperator::Greater
+        | AgendaMatchOperator::GreaterOrEqual => None,
+    }
+}
+
+fn sparse_tag_property_value_matches(
+    tags: &[String],
+    expected: &AgendaMatchValue,
+    tag_matcher: TagMatcher<'_>,
+) -> bool {
+    if compare_match_values(
+        super::special_properties::tag_string(tags).as_str(),
+        AgendaMatchOperator::Equal,
+        expected,
+    ) {
+        return true;
+    }
+
+    tag_matcher.has_tag_value(tags, expected.as_str())
 }
 
 fn special_property_match(property: &SectionIndexSpecialProperty) -> SparseTreeMatch {

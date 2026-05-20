@@ -1,7 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_tag_vocabulary.rs
-assertion_line: 162
-expression: "(agenda_titles, excluded_titles, sparse_titles, workspace_titles, clock_rows)"
+expression: "(agenda_titles, excluded_titles, alltags_property_titles,\ntags_property_titles, not_gtd_property_titles, sparse_titles,\nsparse_alltags_property_titles, workspace_titles, clock_rows)"
 ---
 (
     [
@@ -15,6 +14,23 @@ expression: "(agenda_titles, excluded_titles, sparse_titles, workspace_titles, c
     [
         "Deep task",
         "Direct control",
+        "Perspective",
+    ],
+    [
+        "Deep task",
+        "Direct control",
+    ],
+    [
+        "Outside",
+    ],
+    [
+        "Deep task",
+        "Direct control",
+    ],
+    [
+        "Deep task",
+        "Direct control",
+        "Perspective",
     ],
     [
         "Deep task",

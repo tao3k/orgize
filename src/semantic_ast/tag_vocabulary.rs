@@ -21,6 +21,12 @@ impl<'a> TagMatcher<'a> {
         tags.iter().find(|tag| self.tag_matches(tag, needle))
     }
 
+    pub(crate) fn has_tag_value(&self, tags: &[String], value: &str) -> bool {
+        tag_value_candidates(value)
+            .iter()
+            .any(|candidate| self.has_tag(tags, candidate))
+    }
+
     fn tag_matches(&self, actual: &str, needle: &str) -> bool {
         actual.eq_ignore_ascii_case(needle) || self.group_contains(needle, actual, &mut Vec::new())
     }
@@ -47,5 +53,17 @@ impl<'a> TagMatcher<'a> {
             .any(|member| {
                 member.eq_ignore_ascii_case(actual) || self.group_contains(member, actual, visited)
             })
+    }
+}
+
+fn tag_value_candidates(value: &str) -> Vec<&str> {
+    let trimmed = value.trim();
+    if trimmed.starts_with(':') && trimmed.ends_with(':') {
+        trimmed
+            .split(':')
+            .filter(|candidate| !candidate.is_empty())
+            .collect()
+    } else {
+        vec![trimmed]
     }
 }

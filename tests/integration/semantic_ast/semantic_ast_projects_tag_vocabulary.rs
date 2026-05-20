@@ -127,6 +127,42 @@ CLOCK: [2026-05-20 Wed 12:00]--[2026-05-20 Wed 12:30] =>  0:30
         .collect::<Vec<_>>();
     assert_eq!(excluded_titles, ["Outside"]);
 
+    let alltags_property_titles = doc
+        .agenda_entries(
+            &AgendaQuery::single_day(day)
+                .match_expression(r#"ALLTAGS={GTD}"#)
+                .expect("valid group special-property match"),
+        )
+        .into_iter()
+        .map(|entry| entry.raw_title)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        alltags_property_titles,
+        ["Deep task", "Direct control", "Perspective"]
+    );
+
+    let tags_property_titles = doc
+        .agenda_entries(
+            &AgendaQuery::single_day(day)
+                .match_expression(r#"TAGS={Control}"#)
+                .expect("valid local tag group special-property match"),
+        )
+        .into_iter()
+        .map(|entry| entry.raw_title)
+        .collect::<Vec<_>>();
+    assert_eq!(tags_property_titles, ["Deep task", "Direct control"]);
+
+    let not_gtd_property_titles = doc
+        .agenda_entries(
+            &AgendaQuery::single_day(day)
+                .match_expression(r#"ALLTAGS<>{GTD}"#)
+                .expect("valid negative group special-property match"),
+        )
+        .into_iter()
+        .map(|entry| entry.raw_title)
+        .collect::<Vec<_>>();
+    assert_eq!(not_gtd_property_titles, ["Outside"]);
+
     let sparse_titles = doc
         .sparse_tree_projection(
             &SparseTreeQuery::new()
@@ -138,6 +174,21 @@ CLOCK: [2026-05-20 Wed 12:00]--[2026-05-20 Wed 12:30] =>  0:30
         .map(|card| card.title)
         .collect::<Vec<_>>();
     assert_eq!(sparse_titles, ["Deep task", "Direct control"]);
+
+    let sparse_alltags_property_titles = doc
+        .sparse_tree_projection(
+            &SparseTreeQuery::new()
+                .match_expression(r#"ALLTAGS={GTD}"#)
+                .expect("valid sparse group special-property match"),
+        )
+        .cards
+        .into_iter()
+        .map(|card| card.title)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        sparse_alltags_property_titles,
+        ["Deep task", "Direct control", "Perspective"]
+    );
 
     let mut builder = AgendaWorkspaceBuilder::new();
     builder.add_document("tag-groups.org", &doc);
@@ -170,7 +221,11 @@ CLOCK: [2026-05-20 Wed 12:00]--[2026-05-20 Wed 12:30] =>  0:30
         (
             agenda_titles,
             excluded_titles,
+            alltags_property_titles,
+            tags_property_titles,
+            not_gtd_property_titles,
             sparse_titles,
+            sparse_alltags_property_titles,
             workspace_titles,
             clock_rows
         )
