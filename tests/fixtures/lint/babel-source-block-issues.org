@@ -20,6 +20,10 @@ print("stateful")
 print("inert")
 #+end_src
 
+#+begin_src python :results file
+print("plot.png")
+#+end_src
+
 #+CALL: missing_call()
 
 Inline call_missing_inline().

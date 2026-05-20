@@ -53,16 +53,23 @@ line: 15 | #+begin_src python :session shared :cache yes
 Help: source block enables Babel result cache `:cache yes`
 Contract: Babel cache headers imply reusable execution results; agents and indexers should verify freshness before relying on cached output.
 
-[ORG021] Warning: Babel call target `missing_call` has no local source block
+[ORG043] Warning: source block declares `:results file` without an explicit `:file` target
 @ fixture.org:23:1
+fix: add an explicit :file target or remove the file result collection mode
+line: 23 | #+begin_src python :results file
+Help: source block declares `:results file` without an explicit `:file` target
+Contract: File result blocks should expose their intended output path in source metadata before agents or indexers depend on generated artifacts.
+
+[ORG021] Warning: Babel call target `missing_call` has no local source block
+@ fixture.org:27:1
 fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
-line: 23 | #+CALL: missing_call()
+line: 27 | #+CALL: missing_call()
 Help: Babel call target `missing_call` has no local source block
 Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
 
 [ORG021] Warning: inline Babel call target `missing_inline` has no local source block
-@ fixture.org:25:8
+@ fixture.org:29:8
 fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
-line: 25 | Inline call_missing_inline().
+line: 29 | Inline call_missing_inline().
 Help: inline Babel call target `missing_inline` has no local source block
 Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.

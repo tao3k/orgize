@@ -4,7 +4,8 @@ use std::collections::BTreeMap;
 
 use crate::ast::{
     ParsedAst, SourceBlockEvalPolicy, SourceBlockHeaderArgKind, SourceBlockHeaderArgSource,
-    SourceBlockRecord, SourceBlockReferenceKind, SourceBlockTangleMode,
+    SourceBlockRecord, SourceBlockReferenceKind, SourceBlockResultCollection,
+    SourceBlockTangleMode,
 };
 
 use super::lint_model::{LintFinding, LintLocation, LintSeverity, location_for_offsets};
@@ -15,6 +16,7 @@ pub(crate) fn babel_findings(document: &ParsedAst, source: &str) -> Vec<LintFind
     findings.extend(duplicate_source_block_name_findings(&records, source));
     findings.extend(eval_header_findings(&records, source));
     findings.extend(execution_context_findings(&records, source));
+    findings.extend(result_file_findings(&records, source));
     findings.extend(tangle_target_findings(&records, source));
     findings.extend(missing_source_reference_findings(document, source));
     findings
@@ -124,6 +126,26 @@ fn eval_policy_can_execute(policy: SourceBlockEvalPolicy) -> bool {
         policy,
         SourceBlockEvalPolicy::No | SourceBlockEvalPolicy::Never
     )
+}
+
+fn result_file_findings(records: &[SourceBlockRecord], source: &str) -> Vec<LintFinding> {
+    records
+        .iter()
+        .filter_map(|record| {
+            if record.result_options.collection != Some(SourceBlockResultCollection::File)
+                || record.result_options.file.is_some()
+            {
+                return None;
+            }
+            Some(LintFinding {
+                code: "ORG043",
+                severity: LintSeverity::Warning,
+                message: "source block declares `:results file` without an explicit `:file` target"
+                    .to_string(),
+                location: location_for_source_record(source, record),
+            })
+        })
+        .collect()
 }
 
 fn tangle_target_findings(records: &[SourceBlockRecord], source: &str) -> Vec<LintFinding> {

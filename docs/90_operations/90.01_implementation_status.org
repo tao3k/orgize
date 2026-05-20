@@ -1362,3 +1362,12 @@ Recommended implementation order for the next major PR train:
       =:eval= policy can execute.
 - [X] Add agent-facing warnings for explicit =:cache yes= blocks whose =:eval=
       policy can execute, while keeping inert =:eval never= blocks quiet.
+
+*** M29.9 Babel Result File Lint Receipts
+
+- [X] Route Babel lint through =SourceBlockResultOptions= for file-result
+      readiness checks.
+- [X] Add an agent-facing warning for =:results file= blocks that do not
+      declare an explicit =:file= target.
+- [X] Keep the check non-executing and metadata-only; orgize does not infer
+      generated file paths from source code output.

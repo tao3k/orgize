@@ -193,6 +193,7 @@ impl LintFinding {
             "ORG042" => {
                 "review the :cache header and make cache freshness explicit before tooling trusts cached results"
             }
+            "ORG043" => "add an explicit :file target or remove the file result collection mode",
             _ => "inspect the Org source near this location and repair the lint finding",
         }
     }
@@ -322,6 +323,9 @@ impl LintFinding {
             }
             "ORG042" => {
                 "Babel cache headers imply reusable execution results; agents and indexers should verify freshness before relying on cached output."
+            }
+            "ORG043" => {
+                "File result blocks should expose their intended output path in source metadata before agents or indexers depend on generated artifacts."
             }
             _ => {
                 "Org lint findings should be fixed in source or intentionally reviewed before downstream use."
