@@ -18,6 +18,7 @@ pub struct SourceBlockRecord {
     pub normalized_header_args: Vec<SourceBlockHeaderArg>,
     pub code_refs: Vec<BlockCodeRef>,
     pub tangle: Option<SourceBlockTangle>,
+    pub result_options: SourceBlockResultOptions,
     pub result: Option<SourceBlockResult>,
     pub value: String,
 }
@@ -93,8 +94,13 @@ pub enum SourceBlockHeaderArgKind {
     Dir,
     Eval,
     Exports,
+    File,
+    FileDesc,
+    FileExt,
+    FileMode,
     Hlines,
     Noweb,
+    OutputDir,
     Results,
     Session,
     Tangle,
@@ -175,6 +181,79 @@ pub enum SourceBlockTangleNowebMode {
     Disabled,
     Expand,
     Strip,
+}
+
+/// Parsed result-handling metadata from Org Babel `:results` and file headers.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockResultOptions {
+    pub raw: String,
+    pub source: SourceBlockHeaderArgSource,
+    pub tokens: Vec<String>,
+    pub collection: Option<SourceBlockResultCollection>,
+    pub format: Option<SourceBlockResultFormat>,
+    pub handling: SourceBlockResultHandling,
+    pub value_type: SourceBlockResultValueType,
+    pub unknown: Vec<String>,
+    pub file: Option<SourceBlockResultFile>,
+}
+
+/// Result collection shape selected by `:results`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockResultCollection {
+    File,
+    List,
+    Vector,
+    Table,
+    Scalar,
+    Verbatim,
+}
+
+/// Result rendering format selected by `:results`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockResultFormat {
+    Raw,
+    Html,
+    Latex,
+    Org,
+    Code,
+    Pp,
+    Drawer,
+    Link,
+    Graphics,
+}
+
+/// Result insertion strategy selected by `:results`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockResultHandling {
+    Replace,
+    Silent,
+    None,
+    Discard,
+    Append,
+    Prepend,
+}
+
+/// Whether Babel should treat the result as a value or output stream.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockResultValueType {
+    Value,
+    Output,
+}
+
+/// File-output metadata from `:file` and related header arguments.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockResultFile {
+    pub target: String,
+    pub description: Option<String>,
+    pub extension: Option<String>,
+    pub file_mode: Option<SourceBlockResultFileMode>,
+    pub output_dir: Option<String>,
+}
+
+/// Raw `:file-mode` permission hint preserved without applying it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockResultFileMode {
+    pub raw: String,
 }
 
 /// Result evidence following a source block.

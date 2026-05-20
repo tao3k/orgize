@@ -288,10 +288,12 @@ pub use section_index_model::{
 pub use source_block_model::{
     SourceBlockHeaderArg, SourceBlockHeaderArgKind, SourceBlockHeaderArgSource,
     SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind, SourceBlockReference,
-    SourceBlockReferenceKind, SourceBlockResult, SourceBlockResultKind, SourceBlockSource,
-    SourceBlockTangle, SourceBlockTangleComments, SourceBlockTangleCommentsMode,
-    SourceBlockTangleMkdirp, SourceBlockTangleMode, SourceBlockTangleNoweb,
-    SourceBlockTangleNowebMode,
+    SourceBlockReferenceKind, SourceBlockResult, SourceBlockResultCollection,
+    SourceBlockResultFile, SourceBlockResultFileMode, SourceBlockResultFormat,
+    SourceBlockResultHandling, SourceBlockResultKind, SourceBlockResultOptions,
+    SourceBlockResultValueType, SourceBlockSource, SourceBlockTangle, SourceBlockTangleComments,
+    SourceBlockTangleCommentsMode, SourceBlockTangleMkdirp, SourceBlockTangleMode,
+    SourceBlockTangleNoweb, SourceBlockTangleNowebMode,
 };
 pub use sparse_tree_model::{
     SparseTreeCard, SparseTreeMatch, SparseTreeMatchKind, SparseTreeProjection, SparseTreeQuery,

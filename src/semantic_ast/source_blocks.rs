@@ -4,7 +4,9 @@ use super::{
     BlockHeaderArg, BlockKind, Document, Element, ElementData, Keyword, ListItem, Object,
     ObjectData, ParsedAnnotation, Property, Section, SourceBlockHeaderArg,
     SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockRecord,
-    SourceBlockRecordKind, SourceBlockResult, SourceBlockResultKind, SourceBlockSource,
+    SourceBlockRecordKind, SourceBlockResult, SourceBlockResultCollection, SourceBlockResultFile,
+    SourceBlockResultFileMode, SourceBlockResultFormat, SourceBlockResultHandling,
+    SourceBlockResultKind, SourceBlockResultOptions, SourceBlockResultValueType, SourceBlockSource,
     SourceBlockTangle, SourceBlockTangleComments, SourceBlockTangleCommentsMode,
     SourceBlockTangleMkdirp, SourceBlockTangleMode, SourceBlockTangleNoweb,
     SourceBlockTangleNowebMode, block_metadata::parse_block_header_args,
@@ -54,6 +56,8 @@ fn collect_source_block_records_in_elements(
                     properties,
                     &block.header_args,
                 );
+                let normalized_header_args =
+                    source_block_header_args(SourceBlockRecordKind::Block, &header_args);
                 records.push(SourceBlockRecord {
                     source: SourceBlockSource::from_annotation(&element.ann),
                     kind: SourceBlockRecordKind::Block,
@@ -61,10 +65,8 @@ fn collect_source_block_records_in_elements(
                     language: block.language.clone(),
                     parameters: block.parameters.clone(),
                     header_args: header_args.clone(),
-                    normalized_header_args: source_block_header_args(
-                        SourceBlockRecordKind::Block,
-                        &header_args,
-                    ),
+                    result_options: source_block_result_options(&normalized_header_args),
+                    normalized_header_args,
                     code_refs: block.code_refs.clone(),
                     tangle: source_block_tangle(&header_args),
                     result: elements
@@ -172,16 +174,16 @@ fn collect_inline_source_records_in_objects(
                     properties,
                     parameters.as_deref(),
                 );
+                let normalized_header_args =
+                    source_block_header_args(SourceBlockRecordKind::InlineSource, &header_args);
                 records.push(SourceBlockRecord {
                     source: SourceBlockSource::from_annotation(&object.ann),
                     kind: SourceBlockRecordKind::InlineSource,
                     name: None,
                     language: Some(language.clone()),
                     parameters: parameters.clone(),
-                    normalized_header_args: source_block_header_args(
-                        SourceBlockRecordKind::InlineSource,
-                        &header_args,
-                    ),
+                    result_options: source_block_result_options(&normalized_header_args),
+                    normalized_header_args,
                     header_args: header_args.clone(),
                     code_refs: Vec::new(),
                     tangle: source_block_tangle(&header_args),
@@ -446,6 +448,106 @@ fn source_block_tangle_noweb(header_args: &[BlockHeaderArg]) -> SourceBlockTangl
     SourceBlockTangleNoweb { raw, mode }
 }
 
+fn source_block_result_options(header_args: &[SourceBlockHeaderArg]) -> SourceBlockResultOptions {
+    let mut options = SourceBlockResultOptions {
+        raw: ":results replace".to_string(),
+        source: SourceBlockHeaderArgSource::Default,
+        tokens: vec!["replace".to_string()],
+        collection: None,
+        format: None,
+        handling: SourceBlockResultHandling::Replace,
+        value_type: SourceBlockResultValueType::Value,
+        unknown: Vec::new(),
+        file: None,
+    };
+
+    for arg in result_header_args(header_args) {
+        apply_result_header_arg(&mut options, arg);
+    }
+
+    options.file = source_block_result_file(header_args);
+    options
+}
+
+fn result_header_args(
+    header_args: &[SourceBlockHeaderArg],
+) -> impl Iterator<Item = &SourceBlockHeaderArg> {
+    header_args
+        .iter()
+        .filter(|arg| arg.kind == SourceBlockHeaderArgKind::Results)
+}
+
+fn apply_result_header_arg(options: &mut SourceBlockResultOptions, arg: &SourceBlockHeaderArg) {
+    options.raw = arg.raw.clone();
+    options.source = arg.source;
+    options.tokens = arg.tokens.clone();
+    for token in &arg.tokens {
+        apply_result_token(options, token);
+    }
+}
+
+fn apply_result_token(options: &mut SourceBlockResultOptions, token: &str) {
+    match token.to_ascii_lowercase().as_str() {
+        "file" => options.collection = Some(SourceBlockResultCollection::File),
+        "list" => options.collection = Some(SourceBlockResultCollection::List),
+        "vector" => options.collection = Some(SourceBlockResultCollection::Vector),
+        "table" => options.collection = Some(SourceBlockResultCollection::Table),
+        "scalar" => options.collection = Some(SourceBlockResultCollection::Scalar),
+        "verbatim" => options.collection = Some(SourceBlockResultCollection::Verbatim),
+        "raw" => options.format = Some(SourceBlockResultFormat::Raw),
+        "html" => options.format = Some(SourceBlockResultFormat::Html),
+        "latex" => options.format = Some(SourceBlockResultFormat::Latex),
+        "org" => options.format = Some(SourceBlockResultFormat::Org),
+        "code" => options.format = Some(SourceBlockResultFormat::Code),
+        "pp" => options.format = Some(SourceBlockResultFormat::Pp),
+        "drawer" => options.format = Some(SourceBlockResultFormat::Drawer),
+        "link" => options.format = Some(SourceBlockResultFormat::Link),
+        "graphics" => options.format = Some(SourceBlockResultFormat::Graphics),
+        "replace" => options.handling = SourceBlockResultHandling::Replace,
+        "silent" => options.handling = SourceBlockResultHandling::Silent,
+        "none" => options.handling = SourceBlockResultHandling::None,
+        "discard" => options.handling = SourceBlockResultHandling::Discard,
+        "append" => options.handling = SourceBlockResultHandling::Append,
+        "prepend" => options.handling = SourceBlockResultHandling::Prepend,
+        "output" => options.value_type = SourceBlockResultValueType::Output,
+        "value" => options.value_type = SourceBlockResultValueType::Value,
+        _ => push_unknown_result_token(options, token),
+    }
+}
+
+fn push_unknown_result_token(options: &mut SourceBlockResultOptions, token: &str) {
+    if !options.unknown.iter().any(|unknown| unknown == token) {
+        options.unknown.push(token.to_string());
+    }
+}
+
+fn source_block_result_file(header_args: &[SourceBlockHeaderArg]) -> Option<SourceBlockResultFile> {
+    last_normalized_header_value(header_args, "file")
+        .filter(|target| !target.is_empty())
+        .map(|target| SourceBlockResultFile {
+            target,
+            description: last_normalized_header_value(header_args, "file-desc")
+                .filter(|value| !value.is_empty()),
+            extension: last_normalized_header_value(header_args, "file-ext")
+                .filter(|value| !value.is_empty()),
+            file_mode: last_normalized_header_value(header_args, "file-mode")
+                .filter(|value| !value.is_empty())
+                .map(|raw| SourceBlockResultFileMode { raw }),
+            output_dir: last_normalized_header_value(header_args, "output-dir")
+                .filter(|value| !value.is_empty()),
+        })
+}
+
+fn last_normalized_header_value(header_args: &[SourceBlockHeaderArg], key: &str) -> Option<String> {
+    header_args
+        .iter()
+        .rev()
+        .find(|arg| arg.key.eq_ignore_ascii_case(key))
+        .and_then(|arg| arg.value.as_deref())
+        .map(str::trim)
+        .map(unquote_header_value)
+}
+
 fn header_value(header_args: &[BlockHeaderArg], key: &str) -> Option<String> {
     last_header_arg(header_args, key)
         .and_then(|arg| arg.value.as_deref())
@@ -549,8 +651,13 @@ fn source_block_header_arg_kind(key: &str) -> SourceBlockHeaderArgKind {
         "dir" => SourceBlockHeaderArgKind::Dir,
         "eval" => SourceBlockHeaderArgKind::Eval,
         "exports" => SourceBlockHeaderArgKind::Exports,
+        "file" => SourceBlockHeaderArgKind::File,
+        "file-desc" => SourceBlockHeaderArgKind::FileDesc,
+        "file-ext" => SourceBlockHeaderArgKind::FileExt,
+        "file-mode" => SourceBlockHeaderArgKind::FileMode,
         "hlines" => SourceBlockHeaderArgKind::Hlines,
         "noweb" => SourceBlockHeaderArgKind::Noweb,
+        "output-dir" => SourceBlockHeaderArgKind::OutputDir,
         "results" => SourceBlockHeaderArgKind::Results,
         "session" => SourceBlockHeaderArgKind::Session,
         "tangle" => SourceBlockHeaderArgKind::Tangle,

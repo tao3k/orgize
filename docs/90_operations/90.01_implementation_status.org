@@ -1328,3 +1328,16 @@ Recommended implementation order for the next major PR train:
       shebang, and noweb behavior without executing Babel.
 - [X] Expose the same tangle metadata through wasm =sourceBlocksJson= for
       browser and downstream TypeScript consumers.
+
+*** M29.6 Babel Result Planning Metadata
+
+- [X] Extend =SourceBlockRecord= with non-executing =:results= planning
+      metadata for collection, format, insertion handling, and value/output
+      type.
+- [X] Preserve partial override semantics across defaults, =#+PROPERTY:=
+      header args, =#+HEADER:=, and block-line args by classifying result
+      tokens by Org Babel value group.
+- [X] Carry =:file=, =:file-desc=, =:file-ext=, =:file-mode=, and
+      =:output-dir= hints into result planning without writing files.
+- [X] Expose the same result planning metadata through wasm =sourceBlocksJson=
+      and TypeScript DTO declarations.

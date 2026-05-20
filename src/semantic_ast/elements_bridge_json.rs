@@ -6,7 +6,9 @@ use super::{
     Document, FootnoteDefinition, FootnoteEntry, Keyword, OrgDuration, ParsedAnnotation, Planning,
     Priority, Property, Section, SourceBlockHeaderArg, SourceBlockHeaderArgKind,
     SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind,
-    SourceBlockResult, SourceBlockResultKind, SourceBlockSource, SourceBlockTangle,
+    SourceBlockResult, SourceBlockResultCollection, SourceBlockResultFile, SourceBlockResultFormat,
+    SourceBlockResultHandling, SourceBlockResultKind, SourceBlockResultOptions,
+    SourceBlockResultValueType, SourceBlockSource, SourceBlockTangle,
     SourceBlockTangleCommentsMode, SourceBlockTangleMode, SourceBlockTangleNowebMode,
     SourcePosition, TargetDefinition, TargetKind, TodoKeyword, TodoState,
 };
@@ -192,6 +194,7 @@ fn source_block_json(record: &SourceBlockRecord) -> Value {
             }))
             .collect::<Vec<_>>(),
         "tangle": record.tangle.as_ref().map(source_block_tangle_json),
+        "resultOptions": source_block_result_options_json(&record.result_options),
         "result": record.result.as_ref().map(source_block_result_json),
         "value": &record.value,
     })
@@ -256,6 +259,30 @@ fn source_block_result_json(result: &SourceBlockResult) -> Value {
     })
 }
 
+fn source_block_result_options_json(options: &SourceBlockResultOptions) -> Value {
+    json!({
+        "raw": &options.raw,
+        "source": source_block_header_arg_source(options.source),
+        "tokens": &options.tokens,
+        "collection": options.collection.map(source_block_result_collection),
+        "format": options.format.map(source_block_result_format),
+        "handling": source_block_result_handling(options.handling),
+        "valueType": source_block_result_value_type(options.value_type),
+        "unknown": &options.unknown,
+        "file": options.file.as_ref().map(source_block_result_file_json),
+    })
+}
+
+fn source_block_result_file_json(file: &SourceBlockResultFile) -> Value {
+    json!({
+        "target": &file.target,
+        "description": &file.description,
+        "extension": &file.extension,
+        "fileMode": file.file_mode.as_ref().map(|mode| mode.raw.as_str()),
+        "outputDir": &file.output_dir,
+    })
+}
+
 pub(super) fn annotation_json(annotation: &ParsedAnnotation) -> Value {
     json!({
         "start": source_position_json(annotation.start),
@@ -302,8 +329,13 @@ fn source_block_header_arg_kind(kind: SourceBlockHeaderArgKind) -> &'static str 
         SourceBlockHeaderArgKind::Dir => "dir",
         SourceBlockHeaderArgKind::Eval => "eval",
         SourceBlockHeaderArgKind::Exports => "exports",
+        SourceBlockHeaderArgKind::File => "file",
+        SourceBlockHeaderArgKind::FileDesc => "fileDesc",
+        SourceBlockHeaderArgKind::FileExt => "fileExt",
+        SourceBlockHeaderArgKind::FileMode => "fileMode",
         SourceBlockHeaderArgKind::Hlines => "hlines",
         SourceBlockHeaderArgKind::Noweb => "noweb",
+        SourceBlockHeaderArgKind::OutputDir => "outputDir",
         SourceBlockHeaderArgKind::Results => "results",
         SourceBlockHeaderArgKind::Session => "session",
         SourceBlockHeaderArgKind::Tangle => "tangle",
@@ -351,6 +383,49 @@ fn source_block_result_kind(kind: SourceBlockResultKind) -> &'static str {
     match kind {
         SourceBlockResultKind::Keyword => "keyword",
         SourceBlockResultKind::InlineMacro => "inlineMacro",
+    }
+}
+
+fn source_block_result_collection(collection: SourceBlockResultCollection) -> &'static str {
+    match collection {
+        SourceBlockResultCollection::File => "file",
+        SourceBlockResultCollection::List => "list",
+        SourceBlockResultCollection::Vector => "vector",
+        SourceBlockResultCollection::Table => "table",
+        SourceBlockResultCollection::Scalar => "scalar",
+        SourceBlockResultCollection::Verbatim => "verbatim",
+    }
+}
+
+fn source_block_result_format(format: SourceBlockResultFormat) -> &'static str {
+    match format {
+        SourceBlockResultFormat::Raw => "raw",
+        SourceBlockResultFormat::Html => "html",
+        SourceBlockResultFormat::Latex => "latex",
+        SourceBlockResultFormat::Org => "org",
+        SourceBlockResultFormat::Code => "code",
+        SourceBlockResultFormat::Pp => "pp",
+        SourceBlockResultFormat::Drawer => "drawer",
+        SourceBlockResultFormat::Link => "link",
+        SourceBlockResultFormat::Graphics => "graphics",
+    }
+}
+
+fn source_block_result_handling(handling: SourceBlockResultHandling) -> &'static str {
+    match handling {
+        SourceBlockResultHandling::Replace => "replace",
+        SourceBlockResultHandling::Silent => "silent",
+        SourceBlockResultHandling::None => "none",
+        SourceBlockResultHandling::Discard => "discard",
+        SourceBlockResultHandling::Append => "append",
+        SourceBlockResultHandling::Prepend => "prepend",
+    }
+}
+
+fn source_block_result_value_type(value_type: SourceBlockResultValueType) -> &'static str {
+    match value_type {
+        SourceBlockResultValueType::Value => "value",
+        SourceBlockResultValueType::Output => "output",
     }
 }
 

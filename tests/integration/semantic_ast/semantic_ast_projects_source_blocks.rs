@@ -3,8 +3,9 @@ use orgize::{
     Org,
     ast::{
         SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockRecordKind,
-        SourceBlockReferenceKind, SourceBlockResultKind, SourceBlockTangleCommentsMode,
-        SourceBlockTangleMode, SourceBlockTangleNowebMode,
+        SourceBlockReferenceKind, SourceBlockResultCollection, SourceBlockResultFormat,
+        SourceBlockResultHandling, SourceBlockResultKind, SourceBlockResultValueType,
+        SourceBlockTangleCommentsMode, SourceBlockTangleMode, SourceBlockTangleNowebMode,
     },
 };
 
@@ -69,6 +70,10 @@ echo hi
         })
         .expect("explicit :results projection");
     assert_eq!(results_arg.tokens, ["output"]);
+    assert_eq!(
+        records[0].result_options.value_type,
+        SourceBlockResultValueType::Output
+    );
 
     assert_eq!(records[1].language.as_deref(), Some("emacs-lisp"));
     assert_eq!(
@@ -76,6 +81,48 @@ echo hi
         Some(SourceBlockTangleMode::No)
     );
     assert!(records[1].result.is_none());
+}
+
+#[test]
+fn semantic_ast_projects_source_block_result_options() {
+    let doc = Org::parse(
+        r#"#+PROPERTY: header-args :results file html replace :file "default.html"
+#+NAME: report
+#+begin_src python :results list append output :file "reports/out.json" :file-desc "Report output" :file-ext json :file-mode 0644 :output-dir public
+print("report")
+#+end_src
+
+#+begin_src sh :results drawer silent unknown-mode
+echo hidden
+#+end_src
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let records = doc.source_block_records();
+    assert_eq!(records.len(), 2);
+
+    let report = &records[0].result_options;
+    assert_eq!(report.collection, Some(SourceBlockResultCollection::List));
+    assert_eq!(report.format, Some(SourceBlockResultFormat::Html));
+    assert_eq!(report.handling, SourceBlockResultHandling::Append);
+    assert_eq!(report.value_type, SourceBlockResultValueType::Output);
+    let file = report.file.as_ref().expect("file result target");
+    assert_eq!(file.target, "reports/out.json");
+    assert_eq!(file.description.as_deref(), Some("Report output"));
+    assert_eq!(file.extension.as_deref(), Some("json"));
+    assert_eq!(
+        file.file_mode.as_ref().map(|mode| mode.raw.as_str()),
+        Some("0644")
+    );
+    assert_eq!(file.output_dir.as_deref(), Some("public"));
+
+    let hidden = &records[1].result_options;
+    assert_eq!(hidden.format, Some(SourceBlockResultFormat::Drawer));
+    assert_eq!(hidden.handling, SourceBlockResultHandling::Silent);
+    assert_eq!(hidden.value_type, SourceBlockResultValueType::Value);
+    assert_eq!(hidden.unknown, ["unknown-mode"]);
 }
 
 #[test]
