@@ -1295,3 +1295,14 @@ Recommended implementation order for the next major PR train:
       source blocks and explicit =:noweb-ref= declarations.
 - [X] Expose header-variable reference edges through wasm =sourceBlocksJson=
       with optional =variable= metadata.
+
+*** M29.3 Babel Affiliated Header Argument Projection
+
+- [X] Merge native =#+HEADER:= affiliated keywords into source-block semantic
+      header arguments before the =#+BEGIN_SRC= line arguments, matching Org's
+      code-block-specific header argument precedence without executing Babel.
+- [X] Accept the legacy plural =#+HEADERS:= spelling as an affiliated header
+      source because Org-mode still accepts it for backward compatibility.
+- [X] Reuse the existing structured header-arg parser so =:var=, =:results=,
+      =:tangle=, =:noweb-ref=, and other header arguments have the same
+      normalized shape whether they appear on =#+HEADER:= or =#+BEGIN_SRC=.

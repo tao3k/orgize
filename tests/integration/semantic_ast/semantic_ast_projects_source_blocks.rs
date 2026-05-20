@@ -73,6 +73,56 @@ echo hi
 }
 
 #[test]
+fn semantic_ast_projects_source_block_records_affiliated_header_args() {
+    let doc = Org::parse(
+        r#"#+HEADER: :var data=dataset :results output
+#+HEADERS: :tangle "scripts/report.py" :noweb-ref report
+#+NAME: report
+#+begin_src python :results drawer :exports both
+print(data)
+#+end_src
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let records = doc.source_block_records();
+    assert_eq!(records.len(), 1);
+
+    let record = &records[0];
+    assert_eq!(record.name.as_deref(), Some("report"));
+    assert_eq!(record.language.as_deref(), Some("python"));
+    assert_eq!(record.header_args.len(), 6);
+    assert_eq!(record.header_args[0].raw, ":var data=dataset");
+    assert_eq!(record.header_args[1].raw, ":results output");
+    assert_eq!(record.header_args[2].raw, r#":tangle "scripts/report.py""#);
+    assert_eq!(record.header_args[3].raw, ":noweb-ref report");
+    assert_eq!(record.header_args[4].raw, ":results drawer");
+    assert_eq!(record.header_args[5].raw, ":exports both");
+    assert_eq!(
+        record
+            .tangle
+            .as_ref()
+            .and_then(|tangle| tangle.target.as_deref()),
+        Some("scripts/report.py")
+    );
+    assert!(record.normalized_header_args.iter().any(|arg| {
+        arg.key == "var"
+            && arg.variable.as_ref().is_some_and(|var| {
+                var.name == "data" && var.assignment.as_deref() == Some("dataset")
+            })
+    }));
+    assert_eq!(
+        record
+            .normalized_header_args
+            .iter()
+            .find(|arg| arg.key == "exports")
+            .and_then(|arg| arg.value.as_deref()),
+        Some("both")
+    );
+}
+
+#[test]
 fn semantic_ast_projects_inline_source_records_with_defaults_and_results_macro() {
     let doc = Org::parse(
         r#"Value src_sh[:exports both :var x=1]{echo $x}{{{results(=1=)}}}

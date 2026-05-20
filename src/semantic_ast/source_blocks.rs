@@ -42,19 +42,20 @@ fn collect_source_block_records_in_elements(
     for (index, element) in elements.iter().enumerate() {
         if let ElementData::Block(block) = &element.data {
             if block.kind == BlockKind::Source {
+                let header_args = explicit_source_block_header_args(element, &block.header_args);
                 records.push(SourceBlockRecord {
                     source: SourceBlockSource::from_annotation(&element.ann),
                     kind: SourceBlockRecordKind::Block,
                     name: affiliated_keyword_value(&element.affiliated_keywords, "NAME"),
                     language: block.language.clone(),
                     parameters: block.parameters.clone(),
-                    header_args: block.header_args.clone(),
+                    header_args: header_args.clone(),
                     normalized_header_args: source_block_header_args(
                         SourceBlockRecordKind::Block,
-                        &block.header_args,
+                        &header_args,
                     ),
                     code_refs: block.code_refs.clone(),
-                    tangle: source_block_tangle(&block.header_args),
+                    tangle: source_block_tangle(&header_args),
                     result: elements
                         .get(index + 1)
                         .and_then(source_block_result_from_element),
@@ -209,6 +210,22 @@ fn affiliated_keyword_value(keywords: &[Keyword<ParsedAnnotation>], key: &str) -
         .find(|keyword| keyword.key.eq_ignore_ascii_case(key))
         .map(|keyword| keyword.value.trim().to_string())
         .filter(|value| !value.is_empty())
+}
+
+fn explicit_source_block_header_args(
+    element: &Element<ParsedAnnotation>,
+    begin_line_args: &[BlockHeaderArg],
+) -> Vec<BlockHeaderArg> {
+    element
+        .affiliated_keywords
+        .iter()
+        .filter(|keyword| {
+            keyword.key.eq_ignore_ascii_case("HEADER")
+                || keyword.key.eq_ignore_ascii_case("HEADERS")
+        })
+        .flat_map(|keyword| parse_block_header_args(Some(&keyword.value)))
+        .chain(begin_line_args.iter().cloned())
+        .collect()
 }
 
 fn source_block_result_from_element(
