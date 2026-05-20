@@ -19,6 +19,7 @@ pub struct SourceBlockRecord {
     pub code_refs: Vec<BlockCodeRef>,
     pub tangle: Option<SourceBlockTangle>,
     pub result_options: SourceBlockResultOptions,
+    pub execution: SourceBlockExecutionPlan,
     pub result: Option<SourceBlockResult>,
     pub value: String,
 }
@@ -254,6 +255,118 @@ pub struct SourceBlockResultFile {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SourceBlockResultFileMode {
     pub raw: String,
+}
+
+/// Non-executing execution/export planning metadata from common Babel headers.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockExecutionPlan {
+    pub eval: SourceBlockEval,
+    pub exports: SourceBlockExports,
+    pub cache: SourceBlockCache,
+    pub session: SourceBlockSession,
+    pub directory: Option<SourceBlockDirectory>,
+    pub hlines: SourceBlockBooleanHeader,
+    pub noweb: SourceBlockNowebPlan,
+}
+
+/// Parsed `:eval` policy.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockEval {
+    pub raw: String,
+    pub source: SourceBlockHeaderArgSource,
+    pub policy: SourceBlockEvalPolicy,
+}
+
+/// Org Babel evaluation policies.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockEvalPolicy {
+    Yes,
+    No,
+    NoExport,
+    StripExport,
+    NeverExport,
+    Eval,
+    Never,
+    Query,
+    Other,
+}
+
+/// Parsed `:exports` policy.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockExports {
+    pub raw: String,
+    pub source: SourceBlockHeaderArgSource,
+    pub policy: SourceBlockExportsPolicy,
+}
+
+/// Org Babel export inclusion policies.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockExportsPolicy {
+    Code,
+    Results,
+    Both,
+    None,
+    Other,
+}
+
+/// Parsed `:cache` metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockCache {
+    pub raw: String,
+    pub source: SourceBlockHeaderArgSource,
+    pub enabled: bool,
+}
+
+/// Parsed `:session` metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockSession {
+    pub raw: String,
+    pub source: SourceBlockHeaderArgSource,
+    pub name: Option<String>,
+    pub active: bool,
+}
+
+/// Parsed `:dir` metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockDirectory {
+    pub raw: String,
+    pub source: SourceBlockHeaderArgSource,
+    pub target: String,
+    pub kind: SourceBlockDirectoryKind,
+}
+
+/// Directory target class.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockDirectoryKind {
+    Path,
+    Attachment,
+}
+
+/// Parsed boolean-ish Babel header metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockBooleanHeader {
+    pub raw: String,
+    pub source: SourceBlockHeaderArgSource,
+    pub enabled: bool,
+}
+
+/// Parsed `:noweb` behavior by execution context.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockNowebPlan {
+    pub raw: String,
+    pub source: SourceBlockHeaderArgSource,
+    pub tokens: Vec<String>,
+    pub eval: SourceBlockNowebAction,
+    pub export: SourceBlockNowebAction,
+    pub tangle: SourceBlockNowebAction,
+}
+
+/// Noweb behavior in one context.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockNowebAction {
+    Disabled,
+    Expand,
+    Strip,
 }
 
 /// Result evidence following a source block.

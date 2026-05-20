@@ -66,6 +66,9 @@ Tangle metadata includes non-executing `:mkdirp`, `:comments`, `:shebang`, and
 `:noweb` planning flags alongside the target file mode.
 Result planning metadata normalizes `:results` collection, format, insertion,
 value/output, and `:file` output hints without executing source blocks.
+Execution/export planning metadata normalizes `:eval`, `:exports`, `:cache`,
+`:session`, `:dir`, `:hlines`, and context-specific `:noweb` behavior as
+source-grounded policy hints without running code or touching the filesystem.
 `source_block_references()` projects non-executing literate-programming edges for `#+CALL`,
 `call_name(...)`, source-block `:var` dependencies, and noweb `<<name>>`
 references, resolving them against local `#+NAME` and syntax-appropriate

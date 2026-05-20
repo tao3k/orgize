@@ -1,5 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_tangle_and_table_records.rs
+assertion_line: 64
 expression: tangle
 ---
 SourceTanglePlan {
@@ -43,6 +44,19 @@ SourceTanglePlan {
                         },
                     },
                     header_args: [
+                        SourceBlockHeaderArg {
+                            key: "eval",
+                            value: Some(
+                                "yes",
+                            ),
+                            raw: ":eval yes",
+                            kind: Eval,
+                            source: Default,
+                            tokens: [
+                                "yes",
+                            ],
+                            variable: None,
+                        },
                         SourceBlockHeaderArg {
                             key: "session",
                             value: Some(
@@ -184,6 +198,19 @@ SourceTanglePlan {
                         },
                     },
                     header_args: [
+                        SourceBlockHeaderArg {
+                            key: "eval",
+                            value: Some(
+                                "yes",
+                            ),
+                            raw: ":eval yes",
+                            kind: Eval,
+                            source: Default,
+                            tokens: [
+                                "yes",
+                            ],
+                            variable: None,
+                        },
                         SourceBlockHeaderArg {
                             key: "session",
                             value: Some(

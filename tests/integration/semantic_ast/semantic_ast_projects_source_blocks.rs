@@ -2,10 +2,12 @@ use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
     ast::{
-        SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockRecordKind,
-        SourceBlockReferenceKind, SourceBlockResultCollection, SourceBlockResultFormat,
-        SourceBlockResultHandling, SourceBlockResultKind, SourceBlockResultValueType,
-        SourceBlockTangleCommentsMode, SourceBlockTangleMode, SourceBlockTangleNowebMode,
+        SourceBlockDirectoryKind, SourceBlockEvalPolicy, SourceBlockExportsPolicy,
+        SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockNowebAction,
+        SourceBlockRecordKind, SourceBlockReferenceKind, SourceBlockResultCollection,
+        SourceBlockResultFormat, SourceBlockResultHandling, SourceBlockResultKind,
+        SourceBlockResultValueType, SourceBlockTangleCommentsMode, SourceBlockTangleMode,
+        SourceBlockTangleNowebMode,
     },
 };
 
@@ -123,6 +125,86 @@ echo hidden
     assert_eq!(hidden.handling, SourceBlockResultHandling::Silent);
     assert_eq!(hidden.value_type, SourceBlockResultValueType::Value);
     assert_eq!(hidden.unknown, ["unknown-mode"]);
+}
+
+#[test]
+fn semantic_ast_projects_source_block_execution_plan() {
+    let doc = Org::parse(
+        r#"#+PROPERTY: header-args :eval query :cache yes :session shared :dir ./workspace :noweb no-export
+#+PROPERTY: header-args:python :exports results :hlines yes
+#+begin_src python :eval never-export :exports both :cache no :session none :dir attach :noweb strip-export
+print("x")
+#+end_src
+
+Inline src_sh[:exports none :eval no :noweb eval]{echo hi}
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let records = doc.source_block_records();
+    assert_eq!(records.len(), 2);
+
+    let block = records
+        .iter()
+        .find(|record| record.kind == SourceBlockRecordKind::Block)
+        .expect("source block");
+    assert_eq!(
+        block.execution.eval.policy,
+        SourceBlockEvalPolicy::NeverExport
+    );
+    assert_eq!(
+        block.execution.eval.source,
+        SourceBlockHeaderArgSource::Explicit
+    );
+    assert_eq!(
+        block.execution.exports.policy,
+        SourceBlockExportsPolicy::Both
+    );
+    assert!(!block.execution.cache.enabled);
+    assert!(!block.execution.session.active);
+    assert_eq!(
+        block
+            .execution
+            .directory
+            .as_ref()
+            .map(|directory| (directory.target.as_str(), directory.kind)),
+        Some(("attach", SourceBlockDirectoryKind::Attachment))
+    );
+    assert!(block.execution.hlines.enabled);
+    assert_eq!(block.execution.noweb.eval, SourceBlockNowebAction::Expand);
+    assert_eq!(block.execution.noweb.export, SourceBlockNowebAction::Strip);
+    assert_eq!(block.execution.noweb.tangle, SourceBlockNowebAction::Expand);
+
+    let inline = records
+        .iter()
+        .find(|record| record.kind == SourceBlockRecordKind::InlineSource)
+        .expect("inline source block");
+    assert_eq!(inline.execution.eval.policy, SourceBlockEvalPolicy::No);
+    assert_eq!(
+        inline.execution.exports.policy,
+        SourceBlockExportsPolicy::None
+    );
+    assert!(inline.execution.cache.enabled);
+    assert_eq!(inline.execution.session.name.as_deref(), Some("shared"));
+    assert_eq!(
+        inline
+            .execution
+            .directory
+            .as_ref()
+            .map(|directory| (directory.target.as_str(), directory.kind)),
+        Some(("./workspace", SourceBlockDirectoryKind::Path))
+    );
+    assert!(inline.execution.hlines.enabled);
+    assert_eq!(inline.execution.noweb.eval, SourceBlockNowebAction::Expand);
+    assert_eq!(
+        inline.execution.noweb.export,
+        SourceBlockNowebAction::Disabled
+    );
+    assert_eq!(
+        inline.execution.noweb.tangle,
+        SourceBlockNowebAction::Disabled
+    );
 }
 
 #[test]

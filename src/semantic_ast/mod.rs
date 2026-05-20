@@ -94,6 +94,8 @@ mod sdd_model;
 mod section_index;
 mod section_index_model;
 mod settings;
+mod source_block_execution;
+mod source_block_headers;
 mod source_block_model;
 mod source_block_references;
 mod source_blocks;
@@ -286,12 +288,15 @@ pub use section_index_model::{
     SectionIndexTextSlice,
 };
 pub use source_block_model::{
-    SourceBlockHeaderArg, SourceBlockHeaderArgKind, SourceBlockHeaderArgSource,
-    SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind, SourceBlockReference,
-    SourceBlockReferenceKind, SourceBlockResult, SourceBlockResultCollection,
-    SourceBlockResultFile, SourceBlockResultFileMode, SourceBlockResultFormat,
-    SourceBlockResultHandling, SourceBlockResultKind, SourceBlockResultOptions,
-    SourceBlockResultValueType, SourceBlockSource, SourceBlockTangle, SourceBlockTangleComments,
+    SourceBlockBooleanHeader, SourceBlockCache, SourceBlockDirectory, SourceBlockDirectoryKind,
+    SourceBlockEval, SourceBlockEvalPolicy, SourceBlockExecutionPlan, SourceBlockExports,
+    SourceBlockExportsPolicy, SourceBlockHeaderArg, SourceBlockHeaderArgKind,
+    SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockNowebAction, SourceBlockNowebPlan,
+    SourceBlockRecord, SourceBlockRecordKind, SourceBlockReference, SourceBlockReferenceKind,
+    SourceBlockResult, SourceBlockResultCollection, SourceBlockResultFile,
+    SourceBlockResultFileMode, SourceBlockResultFormat, SourceBlockResultHandling,
+    SourceBlockResultKind, SourceBlockResultOptions, SourceBlockResultValueType,
+    SourceBlockSession, SourceBlockSource, SourceBlockTangle, SourceBlockTangleComments,
     SourceBlockTangleCommentsMode, SourceBlockTangleMkdirp, SourceBlockTangleMode,
     SourceBlockTangleNoweb, SourceBlockTangleNowebMode,
 };

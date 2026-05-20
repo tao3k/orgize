@@ -4,13 +4,16 @@ use serde_json::{Value, json};
 
 use super::{
     Document, FootnoteDefinition, FootnoteEntry, Keyword, OrgDuration, ParsedAnnotation, Planning,
-    Priority, Property, Section, SourceBlockHeaderArg, SourceBlockHeaderArgKind,
-    SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind,
-    SourceBlockResult, SourceBlockResultCollection, SourceBlockResultFile, SourceBlockResultFormat,
-    SourceBlockResultHandling, SourceBlockResultKind, SourceBlockResultOptions,
-    SourceBlockResultValueType, SourceBlockSource, SourceBlockTangle,
-    SourceBlockTangleCommentsMode, SourceBlockTangleMode, SourceBlockTangleNowebMode,
-    SourcePosition, TargetDefinition, TargetKind, TodoKeyword, TodoState,
+    Priority, Property, Section, SourceBlockBooleanHeader, SourceBlockCache, SourceBlockDirectory,
+    SourceBlockDirectoryKind, SourceBlockEval, SourceBlockEvalPolicy, SourceBlockExecutionPlan,
+    SourceBlockExports, SourceBlockExportsPolicy, SourceBlockHeaderArg, SourceBlockHeaderArgKind,
+    SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockNowebAction, SourceBlockNowebPlan,
+    SourceBlockRecord, SourceBlockRecordKind, SourceBlockResult, SourceBlockResultCollection,
+    SourceBlockResultFile, SourceBlockResultFormat, SourceBlockResultHandling,
+    SourceBlockResultKind, SourceBlockResultOptions, SourceBlockResultValueType,
+    SourceBlockSession, SourceBlockSource, SourceBlockTangle, SourceBlockTangleCommentsMode,
+    SourceBlockTangleMode, SourceBlockTangleNowebMode, SourcePosition, TargetDefinition,
+    TargetKind, TodoKeyword, TodoState,
 };
 
 pub(super) fn document_json(document: &Document<ParsedAnnotation>) -> String {
@@ -195,6 +198,7 @@ fn source_block_json(record: &SourceBlockRecord) -> Value {
             .collect::<Vec<_>>(),
         "tangle": record.tangle.as_ref().map(source_block_tangle_json),
         "resultOptions": source_block_result_options_json(&record.result_options),
+        "execution": source_block_execution_json(&record.execution),
         "result": record.result.as_ref().map(source_block_result_json),
         "value": &record.value,
     })
@@ -280,6 +284,79 @@ fn source_block_result_file_json(file: &SourceBlockResultFile) -> Value {
         "extension": &file.extension,
         "fileMode": file.file_mode.as_ref().map(|mode| mode.raw.as_str()),
         "outputDir": &file.output_dir,
+    })
+}
+
+fn source_block_execution_json(execution: &SourceBlockExecutionPlan) -> Value {
+    json!({
+        "eval": source_block_eval_json(&execution.eval),
+        "exports": source_block_exports_json(&execution.exports),
+        "cache": source_block_cache_json(&execution.cache),
+        "session": source_block_session_json(&execution.session),
+        "directory": execution.directory.as_ref().map(source_block_directory_json),
+        "hlines": source_block_boolean_header_json(&execution.hlines),
+        "noweb": source_block_noweb_json(&execution.noweb),
+    })
+}
+
+fn source_block_eval_json(eval: &SourceBlockEval) -> Value {
+    json!({
+        "raw": &eval.raw,
+        "source": source_block_header_arg_source(eval.source),
+        "policy": source_block_eval_policy(eval.policy),
+    })
+}
+
+fn source_block_exports_json(exports: &SourceBlockExports) -> Value {
+    json!({
+        "raw": &exports.raw,
+        "source": source_block_header_arg_source(exports.source),
+        "policy": source_block_exports_policy(exports.policy),
+    })
+}
+
+fn source_block_cache_json(cache: &SourceBlockCache) -> Value {
+    json!({
+        "raw": &cache.raw,
+        "source": source_block_header_arg_source(cache.source),
+        "enabled": cache.enabled,
+    })
+}
+
+fn source_block_session_json(session: &SourceBlockSession) -> Value {
+    json!({
+        "raw": &session.raw,
+        "source": source_block_header_arg_source(session.source),
+        "name": &session.name,
+        "active": session.active,
+    })
+}
+
+fn source_block_directory_json(directory: &SourceBlockDirectory) -> Value {
+    json!({
+        "raw": &directory.raw,
+        "source": source_block_header_arg_source(directory.source),
+        "target": &directory.target,
+        "kind": source_block_directory_kind(directory.kind),
+    })
+}
+
+fn source_block_boolean_header_json(header: &SourceBlockBooleanHeader) -> Value {
+    json!({
+        "raw": &header.raw,
+        "source": source_block_header_arg_source(header.source),
+        "enabled": header.enabled,
+    })
+}
+
+fn source_block_noweb_json(noweb: &SourceBlockNowebPlan) -> Value {
+    json!({
+        "raw": &noweb.raw,
+        "source": source_block_header_arg_source(noweb.source),
+        "tokens": &noweb.tokens,
+        "eval": source_block_noweb_action(noweb.eval),
+        "export": source_block_noweb_action(noweb.export),
+        "tangle": source_block_noweb_action(noweb.tangle),
     })
 }
 
@@ -426,6 +503,45 @@ fn source_block_result_value_type(value_type: SourceBlockResultValueType) -> &'s
     match value_type {
         SourceBlockResultValueType::Value => "value",
         SourceBlockResultValueType::Output => "output",
+    }
+}
+
+fn source_block_eval_policy(policy: SourceBlockEvalPolicy) -> &'static str {
+    match policy {
+        SourceBlockEvalPolicy::Yes => "yes",
+        SourceBlockEvalPolicy::No => "no",
+        SourceBlockEvalPolicy::NoExport => "noExport",
+        SourceBlockEvalPolicy::StripExport => "stripExport",
+        SourceBlockEvalPolicy::NeverExport => "neverExport",
+        SourceBlockEvalPolicy::Eval => "eval",
+        SourceBlockEvalPolicy::Never => "never",
+        SourceBlockEvalPolicy::Query => "query",
+        SourceBlockEvalPolicy::Other => "other",
+    }
+}
+
+fn source_block_exports_policy(policy: SourceBlockExportsPolicy) -> &'static str {
+    match policy {
+        SourceBlockExportsPolicy::Code => "code",
+        SourceBlockExportsPolicy::Results => "results",
+        SourceBlockExportsPolicy::Both => "both",
+        SourceBlockExportsPolicy::None => "none",
+        SourceBlockExportsPolicy::Other => "other",
+    }
+}
+
+fn source_block_directory_kind(kind: SourceBlockDirectoryKind) -> &'static str {
+    match kind {
+        SourceBlockDirectoryKind::Path => "path",
+        SourceBlockDirectoryKind::Attachment => "attachment",
+    }
+}
+
+fn source_block_noweb_action(action: SourceBlockNowebAction) -> &'static str {
+    match action {
+        SourceBlockNowebAction::Disabled => "disabled",
+        SourceBlockNowebAction::Expand => "expand",
+        SourceBlockNowebAction::Strip => "strip",
     }
 }
 
