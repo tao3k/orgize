@@ -19,8 +19,12 @@ expression: doc.section_index_records()
         outline_path: [
             "Project",
         ],
+        outline_path_text: [
+            "Project",
+        ],
         level: 1,
         title: "Project",
+        title_text: "Project",
         body: [
             SectionIndexTextSlice {
                 source: SectionIndexSource {
@@ -265,8 +269,13 @@ expression: doc.section_index_records()
             "Project",
             "Child",
         ],
+        outline_path_text: [
+            "Project",
+            "Child",
+        ],
         level: 2,
         title: "Child",
+        title_text: "Child",
         body: [
             SectionIndexTextSlice {
                 source: SectionIndexSource {
@@ -491,8 +500,12 @@ expression: doc.section_index_records()
         outline_path: [
             "ID backed",
         ],
+        outline_path_text: [
+            "ID backed",
+        ],
         level: 1,
         title: "ID backed",
+        title_text: "ID backed",
         body: [
             SectionIndexTextSlice {
                 source: SectionIndexSource {
@@ -752,8 +765,12 @@ expression: doc.section_index_records()
         outline_path: [
             "Legacy",
         ],
+        outline_path_text: [
+            "Legacy",
+        ],
         level: 1,
         title: "Legacy",
+        title_text: "Legacy",
         body: [
             SectionIndexTextSlice {
                 source: SectionIndexSource {
