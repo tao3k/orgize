@@ -1353,3 +1353,12 @@ Recommended implementation order for the next major PR train:
       expand/strip/disabled decisions without executing Babel.
 - [X] Expose the same execution/export planning metadata through wasm
       =sourceBlocksJson= and TypeScript DTO declarations.
+
+*** M29.8 Babel Execution Risk Lint Receipts
+
+- [X] Route Babel lint through the structured execution plan instead of only
+      scanning raw header arguments.
+- [X] Add agent-facing warnings for explicit stateful =:session= blocks whose
+      =:eval= policy can execute.
+- [X] Add agent-facing warnings for explicit =:cache yes= blocks whose =:eval=
+      policy can execute, while keeping inert =:eval never= blocks quiet.

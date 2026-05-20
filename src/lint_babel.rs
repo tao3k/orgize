@@ -3,8 +3,8 @@
 use std::collections::BTreeMap;
 
 use crate::ast::{
-    ParsedAst, SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockRecord,
-    SourceBlockReferenceKind, SourceBlockTangleMode,
+    ParsedAst, SourceBlockEvalPolicy, SourceBlockHeaderArgKind, SourceBlockHeaderArgSource,
+    SourceBlockRecord, SourceBlockReferenceKind, SourceBlockTangleMode,
 };
 
 use super::lint_model::{LintFinding, LintLocation, LintSeverity, location_for_offsets};
@@ -14,6 +14,7 @@ pub(crate) fn babel_findings(document: &ParsedAst, source: &str) -> Vec<LintFind
     let mut findings = Vec::new();
     findings.extend(duplicate_source_block_name_findings(&records, source));
     findings.extend(eval_header_findings(&records, source));
+    findings.extend(execution_context_findings(&records, source));
     findings.extend(tangle_target_findings(&records, source));
     findings.extend(missing_source_reference_findings(document, source));
     findings
@@ -79,6 +80,50 @@ fn eval_header_findings(records: &[SourceBlockRecord], source: &str) -> Vec<Lint
             })
         })
         .collect()
+}
+
+fn execution_context_findings(records: &[SourceBlockRecord], source: &str) -> Vec<LintFinding> {
+    let mut findings = Vec::new();
+    for record in records {
+        let execution = &record.execution;
+        if execution.session.source == SourceBlockHeaderArgSource::Explicit
+            && execution.session.active
+            && eval_policy_can_execute(execution.eval.policy)
+        {
+            findings.push(LintFinding {
+                code: "ORG041",
+                severity: LintSeverity::Warning,
+                message: format!(
+                    "source block uses stateful Babel session `:session {}`",
+                    execution.session.raw
+                ),
+                location: location_for_source_record(source, record),
+            });
+        }
+
+        if execution.cache.source == SourceBlockHeaderArgSource::Explicit
+            && execution.cache.enabled
+            && eval_policy_can_execute(execution.eval.policy)
+        {
+            findings.push(LintFinding {
+                code: "ORG042",
+                severity: LintSeverity::Warning,
+                message: format!(
+                    "source block enables Babel result cache `:cache {}`",
+                    execution.cache.raw
+                ),
+                location: location_for_source_record(source, record),
+            });
+        }
+    }
+    findings
+}
+
+fn eval_policy_can_execute(policy: SourceBlockEvalPolicy) -> bool {
+    !matches!(
+        policy,
+        SourceBlockEvalPolicy::No | SourceBlockEvalPolicy::Never
+    )
 }
 
 fn tangle_target_findings(records: &[SourceBlockRecord], source: &str) -> Vec<LintFinding> {

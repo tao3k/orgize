@@ -39,16 +39,30 @@ line: 11 | #+begin_src sh :var data=missing_var()
 Help: source block header variable `data` references missing source block `missing_var`
 Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
 
-[ORG021] Warning: Babel call target `missing_call` has no local source block
+[ORG041] Warning: source block uses stateful Babel session `:session shared`
 @ fixture.org:15:1
+fix: review the stateful :session header or set :eval no/never when this block is metadata-only
+line: 15 | #+begin_src python :session shared :cache yes
+Help: source block uses stateful Babel session `:session shared`
+Contract: Stateful Babel sessions can depend on hidden process state, so automated tooling should not treat them as pure source evidence without review.
+
+[ORG042] Warning: source block enables Babel result cache `:cache yes`
+@ fixture.org:15:1
+fix: review the :cache header and make cache freshness explicit before tooling trusts cached results
+line: 15 | #+begin_src python :session shared :cache yes
+Help: source block enables Babel result cache `:cache yes`
+Contract: Babel cache headers imply reusable execution results; agents and indexers should verify freshness before relying on cached output.
+
+[ORG021] Warning: Babel call target `missing_call` has no local source block
+@ fixture.org:23:1
 fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
-line: 15 | #+CALL: missing_call()
+line: 23 | #+CALL: missing_call()
 Help: Babel call target `missing_call` has no local source block
 Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
 
 [ORG021] Warning: inline Babel call target `missing_inline` has no local source block
-@ fixture.org:17:8
+@ fixture.org:25:8
 fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
-line: 17 | Inline call_missing_inline().
+line: 25 | Inline call_missing_inline().
 Help: inline Babel call target `missing_inline` has no local source block
 Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.

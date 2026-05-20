@@ -12,6 +12,14 @@ echo ok
 echo "$data"
 #+end_src
 
+#+begin_src python :session shared :cache yes
+print("stateful")
+#+end_src
+
+#+begin_src python :session quiet :cache yes :eval never
+print("inert")
+#+end_src
+
 #+CALL: missing_call()
 
 Inline call_missing_inline().

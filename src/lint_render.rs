@@ -187,6 +187,12 @@ impl LintFinding {
             "ORG040" => {
                 "load the referenced PROPERTY_SCHEMA contract, add required properties, or set values allowed by that schema"
             }
+            "ORG041" => {
+                "review the stateful :session header or set :eval no/never when this block is metadata-only"
+            }
+            "ORG042" => {
+                "review the :cache header and make cache freshness explicit before tooling trusts cached results"
+            }
             _ => "inspect the Org source near this location and repair the lint finding",
         }
     }
@@ -310,6 +316,12 @@ impl LintFinding {
             }
             "ORG040" => {
                 "PROPERTY_SCHEMA validation must use a host-loaded contract registry; agents should not invent drawer schemas at runtime."
+            }
+            "ORG041" => {
+                "Stateful Babel sessions can depend on hidden process state, so automated tooling should not treat them as pure source evidence without review."
+            }
+            "ORG042" => {
+                "Babel cache headers imply reusable execution results; agents and indexers should verify freshness before relying on cached output."
             }
             _ => {
                 "Org lint findings should be fixed in source or intentionally reviewed before downstream use."
