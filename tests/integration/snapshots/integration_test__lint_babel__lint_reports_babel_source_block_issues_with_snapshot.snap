@@ -1,6 +1,5 @@
 ---
 source: tests/integration/lint_babel.rs
-assertion_line: 8
 expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_compact_text(\"fixture.org\", source))"
 ---
 clean: false
@@ -9,7 +8,7 @@ clean: false
 fix: add a matching local source block, noweb-ref, or rename the Babel reference
 line: 1 | #+NAME: duplicate
 Help: noweb reference `missing` has no local source block
-Contract: Babel call and noweb references should point at a local block name or noweb-ref before agent tooling depends on them.
+Contract: Babel calls, inline Babel calls, and noweb references should point at a local block name or noweb-ref before agent tooling depends on them.
 
 [ORG022] Warning: source block uses eval-sensitive header `:eval yes`
 @ fixture.org:1:1
@@ -31,3 +30,17 @@ fix: rename the duplicate source block or update callers to one canonical block 
 line: 6 | #+NAME: duplicate
 Help: source block name `duplicate` is defined 2 times
 Contract: Babel source block names should be unique before calls, result association, or noweb references consume them.
+
+[ORG021] Warning: Babel call target `missing_call` has no local source block
+@ fixture.org:11:1
+fix: add a matching local source block, noweb-ref, or rename the Babel reference
+line: 11 | #+CALL: missing_call()
+Help: Babel call target `missing_call` has no local source block
+Contract: Babel calls, inline Babel calls, and noweb references should point at a local block name or noweb-ref before agent tooling depends on them.
+
+[ORG021] Warning: inline Babel call target `missing_inline` has no local source block
+@ fixture.org:13:8
+fix: add a matching local source block, noweb-ref, or rename the Babel reference
+line: 13 | Inline call_missing_inline().
+Help: inline Babel call target `missing_inline` has no local source block
+Contract: Babel calls, inline Babel calls, and noweb references should point at a local block name or noweb-ref before agent tooling depends on them.

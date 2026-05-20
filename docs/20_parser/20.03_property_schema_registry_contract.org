@@ -136,4 +136,4 @@ cover:
 The durable CLI fixture is
 [[file:../../tests/fixtures/lint/property-schema-registry.json][tests/fixtures/lint/property-schema-registry.json]].
 The snapshot receipt is
-[[file:../../tests/integration/snapshots/integration_test__lint_fmt__lint_cli_loads_property_schema_registry_file_with_snapshot.snap][lint_cli_loads_property_schema_registry_file_with_snapshot]].
+[[file:../../tests/integration/snapshots/integration_test__lint_property_schema__lint_cli_loads_property_schema_registry_file_with_snapshot.snap][lint_cli_loads_property_schema_registry_file_with_snapshot]].

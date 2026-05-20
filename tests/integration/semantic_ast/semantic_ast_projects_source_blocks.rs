@@ -3,7 +3,7 @@ use orgize::{
     Org,
     ast::{
         SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockRecordKind,
-        SourceBlockResultKind, SourceBlockTangleMode,
+        SourceBlockReferenceKind, SourceBlockResultKind, SourceBlockTangleMode,
     },
 };
 
@@ -124,5 +124,55 @@ fn semantic_ast_projects_inline_source_records_with_defaults_and_results_macro()
             .as_ref()
             .map(|result| result.value.as_str()),
         Some("=1=")
+    );
+}
+
+#[test]
+fn semantic_ast_projects_literate_source_block_references() {
+    let doc = Org::parse(
+        r#"#+NAME: load_data
+#+begin_src python :noweb-ref setup
+print("load")
+#+end_src
+
+#+begin_src python
+<<load_data>>
+<<setup("topic")>>
+<<missing>>
+#+end_src
+
+#+CALL: load_data()
+Inline call_load_data() and call_missing_inline().
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let references = doc.source_block_references();
+    let summary = references
+        .iter()
+        .map(|reference| {
+            (
+                reference.kind,
+                reference.target.as_str(),
+                reference.resolved,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        summary,
+        [
+            (SourceBlockReferenceKind::Noweb, "load_data", true),
+            (SourceBlockReferenceKind::Noweb, "setup", true),
+            (SourceBlockReferenceKind::Noweb, "missing", false),
+            (SourceBlockReferenceKind::BabelCall, "load_data", true),
+            (SourceBlockReferenceKind::InlineCall, "load_data", true),
+            (
+                SourceBlockReferenceKind::InlineCall,
+                "missing_inline",
+                false
+            ),
+        ]
     );
 }

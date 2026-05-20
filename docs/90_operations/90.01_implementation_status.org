@@ -517,8 +517,8 @@ runtime dependency is copied into this repository.
       release scripts.
 - [X] Project block and inline source records with normalized Babel header args,
       Org Babel defaults, tangle metadata, coderefs, and result evidence.
-- [X] Add Babel lint for duplicate source names, missing noweb/CALL targets,
-      eval-sensitive headers, and empty tangle targets.
+- [X] Add Babel lint for duplicate source names, missing noweb/CALL/inline-call
+      targets, eval-sensitive headers, and empty tangle targets.
 - [X] Project `#+TBLFM:` assignments, flags, and references without evaluating
       formulas.
 - [X] Project document and section `COLUMNS` declarations using the official
@@ -979,12 +979,16 @@ Official anchors: `doc/org-manual.org` section "Working with Source Code";
       `:var`, `:noweb`, `:tangle`, `:dir`, and `:cache`.
 - [X] Add a source-block side table for language, name, result, header args,
       coderefs, and tangle target metadata.
+- [X] Add a source-block reference side table for literate programming:
+      =#+CALL:=, inline =call_name(...)=, and noweb =<<name>>= references are
+      resolved against local =#+NAME= and =:noweb-ref= declarations without
+      executing Babel.
 - [X] Add a safe, non-executing source tangle plan that groups blocks by
       explicit or caller-provided targets and records disabled/inline/missing
       target skips without writing files.
-- [X] Add lint rules for missing block names referenced by noweb or calls,
-      unsafe/eval-sensitive headers, duplicate `#+NAME:`, and invalid tangle
-      targets.
+- [X] Add lint rules for missing block names referenced by noweb, =#+CALL:=, or
+      inline calls, unsafe/eval-sensitive headers, duplicate =#+NAME:=, and
+      invalid tangle targets.
 - [X] Keep execution out of orgize; only parse, index, lint, format, and
       project metadata.
 
@@ -1263,3 +1267,16 @@ Recommended implementation order for the next major PR train:
       =summaryEquals= and =summaryContains= so TypeScript/Python hosts can ask
       for link paths, section titles, and source-block languages without
       materializing the full Org elements tree.
+
+*** M29.1 Literate Source Reference Projection
+
+- [X] Add =SourceBlockReference= and =SourceBlockReferenceKind= to the semantic
+      AST API so host tools can consume non-executing Babel edges separately
+      from source-block definitions.
+- [X] Resolve =#+CALL: name(...)= targets after trimming Org's ordinary keyword
+      spacing, covering a long-standing lint blind spot where =#+CALL: foo()=
+      did not produce a missing-target warning.
+- [X] Expose source-block references through wasm =sourceBlocksJson= with
+      =kind=, =target=, =resolved=, and source range fields.
+- [X] Split wasm source-block DTO tests into a dedicated owner so the harness
+      large-test-leaf policy stays enabled.

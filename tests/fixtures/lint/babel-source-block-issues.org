@@ -9,3 +9,5 @@ echo ok
 #+end_src
 
 #+CALL: missing_call()
+
+Inline call_missing_inline().

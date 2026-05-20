@@ -95,6 +95,7 @@ mod section_index;
 mod section_index_model;
 mod settings;
 mod source_block_model;
+mod source_block_references;
 mod source_blocks;
 mod source_position;
 mod sparse_tree;
@@ -286,8 +287,9 @@ pub use section_index_model::{
 };
 pub use source_block_model::{
     SourceBlockHeaderArg, SourceBlockHeaderArgKind, SourceBlockHeaderArgSource,
-    SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind, SourceBlockResult,
-    SourceBlockResultKind, SourceBlockSource, SourceBlockTangle, SourceBlockTangleMode,
+    SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind, SourceBlockReference,
+    SourceBlockReferenceKind, SourceBlockResult, SourceBlockResultKind, SourceBlockSource,
+    SourceBlockTangle, SourceBlockTangleMode,
 };
 pub use sparse_tree_model::{
     SparseTreeCard, SparseTreeMatch, SparseTreeMatchKind, SparseTreeProjection, SparseTreeQuery,

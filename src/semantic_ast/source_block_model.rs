@@ -22,6 +22,26 @@ pub struct SourceBlockRecord {
     pub value: String,
 }
 
+/// One source-block name reference projected for literate-programming tooling.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockReference {
+    pub source: SourceBlockSource,
+    pub kind: SourceBlockReferenceKind,
+    pub target: String,
+    pub resolved: bool,
+}
+
+/// Source-block reference syntax aligned with Org Babel entry points.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockReferenceKind {
+    /// `#+CALL: name(...)`.
+    BabelCall,
+    /// `call_name(...)` inline Babel call.
+    InlineCall,
+    /// `<<name>>` or `<<name(args)>>` noweb reference inside source text.
+    Noweb,
+}
+
 /// Org source execution construct kind.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SourceBlockRecordKind {

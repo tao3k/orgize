@@ -252,7 +252,7 @@ impl LintFinding {
                 "Babel source block names should be unique before calls, result association, or noweb references consume them."
             }
             "ORG021" => {
-                "Babel call and noweb references should point at a local block name or noweb-ref before agent tooling depends on them."
+                "Babel calls, inline Babel calls, and noweb references should point at a local block name or noweb-ref before agent tooling depends on them."
             }
             "ORG022" => {
                 "Explicit eval-sensitive headers should be reviewed before automated tooling treats source blocks as executable context."
