@@ -8,6 +8,10 @@ echo <<missing>>
 echo ok
 #+end_src
 
+#+begin_src sh :var data=missing_var()
+echo "$data"
+#+end_src
+
 #+CALL: missing_call()
 
 Inline call_missing_inline().

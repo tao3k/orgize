@@ -122,6 +122,13 @@ fn missing_source_reference_findings(document: &ParsedAst, source: &str) -> Vec<
                         reference.target
                     )
                 }
+                SourceBlockReferenceKind::HeaderVar => {
+                    let variable = reference.variable.as_deref().unwrap_or("unknown");
+                    format!(
+                        "source block header variable `{variable}` references missing source block `{}`",
+                        reference.target
+                    )
+                }
                 SourceBlockReferenceKind::InlineCall => {
                     format!(
                         "inline Babel call target `{}` has no local source block",

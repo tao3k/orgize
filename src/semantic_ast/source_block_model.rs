@@ -27,6 +27,7 @@ pub struct SourceBlockRecord {
 pub struct SourceBlockReference {
     pub source: SourceBlockSource,
     pub kind: SourceBlockReferenceKind,
+    pub variable: Option<String>,
     pub target: String,
     pub resolved: bool,
 }
@@ -36,6 +37,8 @@ pub struct SourceBlockReference {
 pub enum SourceBlockReferenceKind {
     /// `#+CALL: name(...)`.
     BabelCall,
+    /// `:var value=name(...)` or `:var value=name` source-block dependency.
+    HeaderVar,
     /// `call_name(...)` inline Babel call.
     InlineCall,
     /// `<<name>>` or `<<name(args)>>` noweb reference inside source text.

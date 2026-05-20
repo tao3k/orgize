@@ -1280,3 +1280,18 @@ Recommended implementation order for the next major PR train:
       =kind=, =target=, =resolved=, and source range fields.
 - [X] Split wasm source-block DTO tests into a dedicated owner so the harness
       large-test-leaf policy stays enabled.
+
+*** M29.2 Babel Header Variable Dependency Projection
+
+- [X] Extend =SourceBlockReferenceKind= with =HeaderVar= so
+      =:var data=name= and =:var data=name(args)= source-block dependencies
+      enter the same non-executing literate graph as noweb and Babel calls.
+- [X] Keep =:var= literal assignments such as numbers, quoted strings, lists,
+      and ambiguous bare non-source names out of missing-source diagnostics, so
+      named tables and ordinary literal values are not misreported as broken
+      source blocks.
+- [X] Resolve Babel calls and header variables only against local =#+NAME=
+      source blocks, while noweb references continue to accept both =#+NAME=
+      source blocks and explicit =:noweb-ref= declarations.
+- [X] Expose header-variable reference edges through wasm =sourceBlocksJson=
+      with optional =variable= metadata.

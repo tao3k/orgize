@@ -142,7 +142,7 @@ impl LintFinding {
                 "rename the duplicate source block or update callers to one canonical block name"
             }
             "ORG021" => {
-                "add a matching local source block, noweb-ref, or rename the Babel reference"
+                "add a matching local source block, noweb-ref, or rename the Babel/header variable reference"
             }
             "ORG022" => {
                 "review the explicit :eval header and prefer no/query only when execution is intentional"
@@ -252,7 +252,7 @@ impl LintFinding {
                 "Babel source block names should be unique before calls, result association, or noweb references consume them."
             }
             "ORG021" => {
-                "Babel calls, inline Babel calls, and noweb references should point at a local block name or noweb-ref before agent tooling depends on them."
+                "Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them."
             }
             "ORG022" => {
                 "Explicit eval-sensitive headers should be reviewed before automated tooling treats source blocks as executable context."

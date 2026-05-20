@@ -141,7 +141,12 @@ print("load")
 <<missing>>
 #+end_src
 
+#+begin_src python :var rows=load_data :var scoped=load_data(limit=1) :var literal=42 :var quoted="load_data" :var missing=missing_call()
+print(rows)
+#+end_src
+
 #+CALL: load_data()
+#+CALL: setup()
 Inline call_load_data() and call_missing_inline().
 "#,
     )
@@ -166,7 +171,11 @@ Inline call_load_data() and call_missing_inline().
             (SourceBlockReferenceKind::Noweb, "load_data", true),
             (SourceBlockReferenceKind::Noweb, "setup", true),
             (SourceBlockReferenceKind::Noweb, "missing", false),
+            (SourceBlockReferenceKind::HeaderVar, "load_data", true),
+            (SourceBlockReferenceKind::HeaderVar, "load_data", true),
+            (SourceBlockReferenceKind::HeaderVar, "missing_call", false),
             (SourceBlockReferenceKind::BabelCall, "load_data", true),
+            (SourceBlockReferenceKind::BabelCall, "setup", false),
             (SourceBlockReferenceKind::InlineCall, "load_data", true),
             (
                 SourceBlockReferenceKind::InlineCall,

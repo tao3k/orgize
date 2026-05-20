@@ -1,14 +1,15 @@
 ---
 source: tests/integration/lint_babel.rs
+assertion_line: 8
 expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_compact_text(\"fixture.org\", source))"
 ---
 clean: false
 [ORG021] Warning: noweb reference `missing` has no local source block
 @ fixture.org:1:1
-fix: add a matching local source block, noweb-ref, or rename the Babel reference
+fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
 line: 1 | #+NAME: duplicate
 Help: noweb reference `missing` has no local source block
-Contract: Babel calls, inline Babel calls, and noweb references should point at a local block name or noweb-ref before agent tooling depends on them.
+Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
 
 [ORG022] Warning: source block uses eval-sensitive header `:eval yes`
 @ fixture.org:1:1
@@ -31,16 +32,23 @@ line: 6 | #+NAME: duplicate
 Help: source block name `duplicate` is defined 2 times
 Contract: Babel source block names should be unique before calls, result association, or noweb references consume them.
 
-[ORG021] Warning: Babel call target `missing_call` has no local source block
+[ORG021] Warning: source block header variable `data` references missing source block `missing_var`
 @ fixture.org:11:1
-fix: add a matching local source block, noweb-ref, or rename the Babel reference
-line: 11 | #+CALL: missing_call()
+fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
+line: 11 | #+begin_src sh :var data=missing_var()
+Help: source block header variable `data` references missing source block `missing_var`
+Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
+
+[ORG021] Warning: Babel call target `missing_call` has no local source block
+@ fixture.org:15:1
+fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
+line: 15 | #+CALL: missing_call()
 Help: Babel call target `missing_call` has no local source block
-Contract: Babel calls, inline Babel calls, and noweb references should point at a local block name or noweb-ref before agent tooling depends on them.
+Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
 
 [ORG021] Warning: inline Babel call target `missing_inline` has no local source block
-@ fixture.org:13:8
-fix: add a matching local source block, noweb-ref, or rename the Babel reference
-line: 13 | Inline call_missing_inline().
+@ fixture.org:17:8
+fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
+line: 17 | Inline call_missing_inline().
 Help: inline Babel call target `missing_inline` has no local source block
-Contract: Babel calls, inline Babel calls, and noweb references should point at a local block name or noweb-ref before agent tooling depends on them.
+Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
