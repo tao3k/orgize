@@ -122,6 +122,10 @@ pub struct SourceBlockTangle {
     pub raw: String,
     pub mode: SourceBlockTangleMode,
     pub target: Option<String>,
+    pub mkdirp: SourceBlockTangleMkdirp,
+    pub comments: SourceBlockTangleComments,
+    pub shebang: Option<String>,
+    pub noweb: SourceBlockTangleNoweb,
 }
 
 /// Normalized `:tangle` mode.
@@ -130,6 +134,47 @@ pub enum SourceBlockTangleMode {
     Yes,
     No,
     File,
+}
+
+/// Parsed `:mkdirp` tangle metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockTangleMkdirp {
+    pub raw: String,
+    pub enabled: bool,
+}
+
+/// Parsed `:comments` tangle metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockTangleComments {
+    pub raw: String,
+    pub mode: SourceBlockTangleCommentsMode,
+}
+
+/// Normalized `:comments` mode.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockTangleCommentsMode {
+    No,
+    Link,
+    Yes,
+    Org,
+    Both,
+    Noweb,
+    Other,
+}
+
+/// Parsed `:noweb` metadata for the tangle context.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceBlockTangleNoweb {
+    pub raw: String,
+    pub mode: SourceBlockTangleNowebMode,
+}
+
+/// Normalized `:noweb` behavior in the tangle context.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SourceBlockTangleNowebMode {
+    Disabled,
+    Expand,
+    Strip,
 }
 
 /// Result evidence following a source block.

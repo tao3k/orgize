@@ -3,7 +3,8 @@ use orgize::{
     Org,
     ast::{
         SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockRecordKind,
-        SourceBlockReferenceKind, SourceBlockResultKind, SourceBlockTangleMode,
+        SourceBlockReferenceKind, SourceBlockResultKind, SourceBlockTangleCommentsMode,
+        SourceBlockTangleMode, SourceBlockTangleNowebMode,
     },
 };
 
@@ -11,7 +12,7 @@ use orgize::{
 fn semantic_ast_projects_source_block_records_with_results_and_tangle() {
     let doc = Org::parse(
         r#"#+NAME: demo-block
-#+begin_src sh :results output :tangle "scripts/run.sh"
+#+begin_src sh :results output :tangle "scripts/run.sh" :mkdirp yes :comments both :shebang #!/usr/bin/env sh :noweb tangle
 echo hi
 #+end_src
 
@@ -43,6 +44,11 @@ echo hi
         records[0].tangle.as_ref().map(|tangle| tangle.mode),
         Some(SourceBlockTangleMode::File)
     );
+    let tangle = records[0].tangle.as_ref().expect("tangle metadata");
+    assert!(tangle.mkdirp.enabled);
+    assert_eq!(tangle.comments.mode, SourceBlockTangleCommentsMode::Both);
+    assert_eq!(tangle.shebang.as_deref(), Some("#!/usr/bin/env sh"));
+    assert_eq!(tangle.noweb.mode, SourceBlockTangleNowebMode::Expand);
     assert_eq!(
         records[0]
             .result

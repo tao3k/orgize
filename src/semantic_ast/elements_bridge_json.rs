@@ -7,7 +7,8 @@ use super::{
     Priority, Property, Section, SourceBlockHeaderArg, SourceBlockHeaderArgKind,
     SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind,
     SourceBlockResult, SourceBlockResultKind, SourceBlockSource, SourceBlockTangle,
-    SourceBlockTangleMode, SourcePosition, TargetDefinition, TargetKind, TodoKeyword, TodoState,
+    SourceBlockTangleCommentsMode, SourceBlockTangleMode, SourceBlockTangleNowebMode,
+    SourcePosition, TargetDefinition, TargetKind, TodoKeyword, TodoState,
 };
 
 pub(super) fn document_json(document: &Document<ParsedAnnotation>) -> String {
@@ -228,6 +229,19 @@ fn source_block_tangle_json(tangle: &SourceBlockTangle) -> Value {
         "raw": &tangle.raw,
         "mode": source_block_tangle_mode(tangle.mode),
         "target": &tangle.target,
+        "mkdirp": {
+            "raw": &tangle.mkdirp.raw,
+            "enabled": tangle.mkdirp.enabled,
+        },
+        "comments": {
+            "raw": &tangle.comments.raw,
+            "mode": source_block_tangle_comments_mode(tangle.comments.mode),
+        },
+        "shebang": &tangle.shebang,
+        "noweb": {
+            "raw": &tangle.noweb.raw,
+            "mode": source_block_tangle_noweb_mode(tangle.noweb.mode),
+        },
     })
 }
 
@@ -310,6 +324,26 @@ fn source_block_tangle_mode(mode: SourceBlockTangleMode) -> &'static str {
         SourceBlockTangleMode::Yes => "yes",
         SourceBlockTangleMode::No => "no",
         SourceBlockTangleMode::File => "file",
+    }
+}
+
+fn source_block_tangle_comments_mode(mode: SourceBlockTangleCommentsMode) -> &'static str {
+    match mode {
+        SourceBlockTangleCommentsMode::No => "no",
+        SourceBlockTangleCommentsMode::Link => "link",
+        SourceBlockTangleCommentsMode::Yes => "yes",
+        SourceBlockTangleCommentsMode::Org => "org",
+        SourceBlockTangleCommentsMode::Both => "both",
+        SourceBlockTangleCommentsMode::Noweb => "noweb",
+        SourceBlockTangleCommentsMode::Other => "other",
+    }
+}
+
+fn source_block_tangle_noweb_mode(mode: SourceBlockTangleNowebMode) -> &'static str {
+    match mode {
+        SourceBlockTangleNowebMode::Disabled => "disabled",
+        SourceBlockTangleNowebMode::Expand => "expand",
+        SourceBlockTangleNowebMode::Strip => "strip",
     }
 }
 

@@ -5,7 +5,9 @@ use super::{
     ObjectData, ParsedAnnotation, Property, Section, SourceBlockHeaderArg,
     SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockRecord,
     SourceBlockRecordKind, SourceBlockResult, SourceBlockResultKind, SourceBlockSource,
-    SourceBlockTangle, SourceBlockTangleMode, block_metadata::parse_block_header_args,
+    SourceBlockTangle, SourceBlockTangleComments, SourceBlockTangleCommentsMode,
+    SourceBlockTangleMkdirp, SourceBlockTangleMode, SourceBlockTangleNoweb,
+    SourceBlockTangleNowebMode, block_metadata::parse_block_header_args,
 };
 
 impl Document<ParsedAnnotation> {
@@ -375,10 +377,7 @@ fn strip_affiliated_result_prefix(element: &Element<ParsedAnnotation>) -> String
 }
 
 fn source_block_tangle(header_args: &[BlockHeaderArg]) -> Option<SourceBlockTangle> {
-    let arg = header_args
-        .iter()
-        .rev()
-        .find(|arg| arg.key.eq_ignore_ascii_case("tangle"))?;
+    let arg = last_header_arg(header_args, "tangle")?;
     let raw_value = arg.value.clone().unwrap_or_else(|| "yes".to_string());
     let normalized = unquote_header_value(raw_value.trim());
     let mode = if normalized.eq_ignore_ascii_case("no") {
@@ -393,7 +392,72 @@ fn source_block_tangle(header_args: &[BlockHeaderArg]) -> Option<SourceBlockTang
         raw: arg.raw.clone(),
         mode,
         target,
+        mkdirp: source_block_tangle_mkdirp(header_args),
+        comments: source_block_tangle_comments(header_args),
+        shebang: source_block_tangle_shebang(header_args),
+        noweb: source_block_tangle_noweb(header_args),
     })
+}
+
+fn source_block_tangle_mkdirp(header_args: &[BlockHeaderArg]) -> SourceBlockTangleMkdirp {
+    let raw = header_value(header_args, "mkdirp").unwrap_or_else(|| "no".to_string());
+    SourceBlockTangleMkdirp {
+        enabled: raw.eq_ignore_ascii_case("yes") || raw.eq_ignore_ascii_case("t"),
+        raw,
+    }
+}
+
+fn source_block_tangle_comments(header_args: &[BlockHeaderArg]) -> SourceBlockTangleComments {
+    let raw = header_value(header_args, "comments").unwrap_or_else(|| "no".to_string());
+    let mode = match raw.to_ascii_lowercase().as_str() {
+        "no" => SourceBlockTangleCommentsMode::No,
+        "link" => SourceBlockTangleCommentsMode::Link,
+        "yes" => SourceBlockTangleCommentsMode::Yes,
+        "org" => SourceBlockTangleCommentsMode::Org,
+        "both" => SourceBlockTangleCommentsMode::Both,
+        "noweb" => SourceBlockTangleCommentsMode::Noweb,
+        _ => SourceBlockTangleCommentsMode::Other,
+    };
+    SourceBlockTangleComments { raw, mode }
+}
+
+fn source_block_tangle_shebang(header_args: &[BlockHeaderArg]) -> Option<String> {
+    header_value(header_args, "shebang").filter(|value| !value.is_empty())
+}
+
+fn source_block_tangle_noweb(header_args: &[BlockHeaderArg]) -> SourceBlockTangleNoweb {
+    let raw = header_value(header_args, "noweb").unwrap_or_else(|| "no".to_string());
+    let tokens = split_header_value(&raw);
+    let mode = if tokens
+        .iter()
+        .any(|token| token.eq_ignore_ascii_case("strip-tangle"))
+    {
+        SourceBlockTangleNowebMode::Strip
+    } else if tokens.iter().any(|token| {
+        matches!(
+            token.to_ascii_lowercase().as_str(),
+            "yes" | "tangle" | "no-export" | "strip-export"
+        )
+    }) {
+        SourceBlockTangleNowebMode::Expand
+    } else {
+        SourceBlockTangleNowebMode::Disabled
+    };
+    SourceBlockTangleNoweb { raw, mode }
+}
+
+fn header_value(header_args: &[BlockHeaderArg], key: &str) -> Option<String> {
+    last_header_arg(header_args, key)
+        .and_then(|arg| arg.value.as_deref())
+        .map(str::trim)
+        .map(unquote_header_value)
+}
+
+fn last_header_arg<'a>(header_args: &'a [BlockHeaderArg], key: &str) -> Option<&'a BlockHeaderArg> {
+    header_args
+        .iter()
+        .rev()
+        .find(|arg| arg.key.eq_ignore_ascii_case(key))
 }
 
 fn source_block_header_args(

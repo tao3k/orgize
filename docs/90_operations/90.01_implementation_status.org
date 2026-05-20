@@ -1318,3 +1318,13 @@ Recommended implementation order for the next major PR train:
       preserving inner subtree override semantics.
 - [X] Fix =:tangle= precedence so the most specific header argument wins across
       property, affiliated keyword, and block-line layers.
+
+*** M29.5 Babel Tangle Planning Metadata
+
+- [X] Extend =SourceBlockTangle= with non-executing =:mkdirp=,
+      =:comments=, =:shebang=, and =:noweb= tangle-context metadata.
+- [X] Carry the structured tangle metadata into =SourceTangleBlock= so
+      =source_tangle_plan= consumers can preview file creation, comments,
+      shebang, and noweb behavior without executing Babel.
+- [X] Expose the same tangle metadata through wasm =sourceBlocksJson= for
+      browser and downstream TypeScript consumers.

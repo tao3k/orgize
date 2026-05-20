@@ -1,6 +1,5 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_tangle_and_table_records.rs
-assertion_line: 49
 expression: formula_records
 ---
 [
@@ -14,15 +13,15 @@ expression: formula_records
                 line: 21,
                 column: 1,
             },
-            range_start: 277,
-            range_end: 420,
+            range_start: 356,
+            range_end: 499,
         },
         row_count: 3,
         column_count: 3,
         formulas: [
             TableFormula {
                 ann: ParsedAnnotation {
-                    range: 377..420,
+                    range: 456..499,
                     start: SourcePosition {
                         line: 20,
                         column: 1,

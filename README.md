@@ -62,6 +62,8 @@ or custom `-l` label formats, line-level source/value/normalized-value records,
 typed `-k`/`-r`/`-l` switch metadata, and structured source block header
 arguments from `#+PROPERTY: header-args`, `#+PROPERTY: header-args:LANG`,
 `#+HEADER:`, and the `#+BEGIN_SRC` line while retaining the raw parameter text.
+Tangle metadata includes non-executing `:mkdirp`, `:comments`, `:shebang`, and
+`:noweb` planning flags alongside the target file mode.
 `source_block_references()` projects non-executing literate-programming edges for `#+CALL`,
 `call_name(...)`, source-block `:var` dependencies, and noweb `<<name>>`
 references, resolving them against local `#+NAME` and syntax-appropriate

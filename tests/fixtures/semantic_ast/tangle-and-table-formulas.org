@@ -1,5 +1,5 @@
 #+NAME: explicit-rust
-#+begin_src rust :tangle src/lib.rs
+#+begin_src rust :tangle src/lib.rs :mkdirp yes :comments both :shebang "#!/usr/bin/env rust-script" :noweb tangle
 pub fn answer() -> i32 { 42 }
 #+end_src
 

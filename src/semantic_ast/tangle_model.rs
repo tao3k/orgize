@@ -1,8 +1,8 @@
 //! Safe source tangle planning records.
 
 use super::{
-    SectionIndexSource, SourceBlockHeaderArg, SourceBlockSource, SourceBlockTangleMode,
-    TableFormula,
+    SectionIndexSource, SourceBlockHeaderArg, SourceBlockSource, SourceBlockTangle,
+    SourceBlockTangleMode, TableFormula,
 };
 
 /// Options for safe source tangle planning.
@@ -40,6 +40,7 @@ pub struct SourceTangleBlock {
     pub source: SourceBlockSource,
     pub name: Option<String>,
     pub language: Option<String>,
+    pub tangle: SourceBlockTangle,
     pub header_args: Vec<SourceBlockHeaderArg>,
     pub value: String,
 }

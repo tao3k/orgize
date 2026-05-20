@@ -1,7 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
-    ast::{SourceTangleOptions, SourceTangleSkipReason, TableFormulaReferenceKind},
+    ast::{
+        SourceBlockTangleCommentsMode, SourceBlockTangleNowebMode, SourceTangleOptions,
+        SourceTangleSkipReason, TableFormulaReferenceKind,
+    },
 };
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/tangle-and-table-formulas.org");
@@ -17,6 +20,10 @@ fn semantic_ast_projects_safe_tangle_plan_and_table_formula_records() {
         file.target == "src/lib.rs"
             && file.blocks.len() == 1
             && file.blocks[0].name.as_deref() == Some("explicit-rust")
+            && file.blocks[0].tangle.mkdirp.enabled
+            && file.blocks[0].tangle.comments.mode == SourceBlockTangleCommentsMode::Both
+            && file.blocks[0].tangle.shebang.as_deref() == Some("#!/usr/bin/env rust-script")
+            && file.blocks[0].tangle.noweb.mode == SourceBlockTangleNowebMode::Expand
     }));
     assert!(
         tangle
