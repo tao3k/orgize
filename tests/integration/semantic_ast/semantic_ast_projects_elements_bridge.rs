@@ -15,6 +15,8 @@ fn semantic_ast_projects_header_tags_and_org_elements_host_execution() {
 :PROPERTIES:
 :Effort: 1:00
 :END:
+See [[https://example.test][example]] at <2026-05-19 Tue>.
+- [X] done item with src_python{print("ok")}
 #+begin_src python :results output :var topic="org-elements"
 print(topic)
 #+end_src
@@ -46,9 +48,53 @@ print(topic)
     assert_eq!(payload["sections"][0]["title"], "Learn parser bindings");
     assert_eq!(payload["sections"][0]["todo"], "TODO");
     assert_eq!(payload["sections"][0]["tags"][0], "EMACS");
-    assert_eq!(payload["sourceBlocks"][0]["language"], "python");
     assert_eq!(
-        payload["sourceBlocks"][0]["normalizedHeaderArgs"]
+        payload["sections"][0]["properties"][0]["duration"]["raw"],
+        "1:00"
+    );
+    assert!(payload["sections"][0]["titleObjects"]
+        .as_array()
+        .expect("title objects")
+        .iter()
+        .any(|object| object["kind"] == "plain-text"));
+    let section_elements = payload["sections"][0]["elements"]
+        .as_array()
+        .expect("section elements");
+    let paragraph = section_elements
+        .iter()
+        .find(|element| element["kind"] == "paragraph")
+        .expect("paragraph element");
+    assert!(paragraph["objects"]
+        .as_array()
+        .expect("paragraph objects")
+        .iter()
+        .any(|object| object["kind"] == "link" && object["path"] == "https://example.test"));
+    assert!(paragraph["objects"]
+        .as_array()
+        .expect("paragraph objects")
+        .iter()
+        .any(|object| object["kind"] == "timestamp" && object["raw"] == "<2026-05-19 Tue>"));
+    let list = section_elements
+        .iter()
+        .find(|element| element["kind"] == "plain-list")
+        .expect("plain-list element");
+    assert_eq!(list["items"][0]["checkbox"], "on");
+    assert!(section_elements
+        .iter()
+        .any(|element| element["kind"] == "src-block" && element["language"] == "python"));
+    assert!(payload["sourceBlocks"]
+        .as_array()
+        .expect("source blocks")
+        .iter()
+        .any(|block| block["kind"] == "inlineSource" && block["language"] == "python"));
+    let python_block = payload["sourceBlocks"]
+        .as_array()
+        .expect("source blocks")
+        .iter()
+        .find(|block| block["kind"] == "block" && block["language"] == "python")
+        .expect("python source block");
+    assert_eq!(
+        python_block["normalizedHeaderArgs"]
             .as_array()
             .expect("normalized args")
             .iter()
