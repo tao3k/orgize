@@ -52,13 +52,13 @@ impl TableVisualizationCollector {
         source: Option<SectionIndexSource>,
     ) {
         for element in elements {
-            if let ElementData::Keyword(keyword) = &element.data {
-                if keyword.key.eq_ignore_ascii_case("ORGTBL") {
-                    let (radio, warnings) = radio_table(keyword, &self.receivers);
-                    self.pending_radio = radio;
-                    self.pending_radio_warnings = warnings;
-                    continue;
-                }
+            if let ElementData::Keyword(keyword) = &element.data
+                && keyword.key.eq_ignore_ascii_case("ORGTBL")
+            {
+                let (radio, warnings) = radio_table(keyword, &self.receivers);
+                self.pending_radio = radio;
+                self.pending_radio_warnings = warnings;
+                continue;
             }
 
             match &element.data {
@@ -581,11 +581,13 @@ fn split_option_tokens(value: &str) -> Vec<String> {
             paren_depth += 1;
         } else if quote.is_none() && ch == ')' {
             paren_depth = paren_depth.saturating_sub(1);
-        } else if quote.is_none() && paren_depth == 0 && ch.is_whitespace() {
-            if let Some(token_start) = start.take() {
-                let end = value[..cursor].trim_end().len();
-                tokens.push(value[token_start..end].to_string());
-            }
+        } else if quote.is_none()
+            && paren_depth == 0
+            && ch.is_whitespace()
+            && let Some(token_start) = start.take()
+        {
+            let end = value[..cursor].trim_end().len();
+            tokens.push(value[token_start..end].to_string());
         }
     }
 

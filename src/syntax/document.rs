@@ -1,12 +1,12 @@
-use nom::{combinator::opt, IResult, Parser};
+use nom::{IResult, Parser, combinator::opt};
 
 use super::{
-    combinator::{blank_lines, node, GreenElement},
+    SyntaxKind,
+    combinator::{GreenElement, blank_lines, node},
     drawer::property_drawer_node,
     element::element_nodes,
     headline::{headline_node, section_node},
     input::Input,
-    SyntaxKind,
 };
 
 #[cfg_attr(

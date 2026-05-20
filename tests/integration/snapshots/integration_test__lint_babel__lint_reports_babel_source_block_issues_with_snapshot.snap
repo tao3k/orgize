@@ -6,10 +6,10 @@ expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_compact_t
 clean: false
 [ORG021] Warning: noweb reference `missing` has no local source block
 @ fixture.org:1:1
-fix: add a matching local source block, noweb-ref, or rename the Babel reference
+fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
 line: 1 | #+NAME: duplicate
 Help: noweb reference `missing` has no local source block
-Contract: Babel call and noweb references should point at a local block name or noweb-ref before agent tooling depends on them.
+Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
 
 [ORG022] Warning: source block uses eval-sensitive header `:eval yes`
 @ fixture.org:1:1
@@ -31,3 +31,45 @@ fix: rename the duplicate source block or update callers to one canonical block 
 line: 6 | #+NAME: duplicate
 Help: source block name `duplicate` is defined 2 times
 Contract: Babel source block names should be unique before calls, result association, or noweb references consume them.
+
+[ORG021] Warning: source block header variable `data` references missing source block `missing_var`
+@ fixture.org:11:1
+fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
+line: 11 | #+begin_src sh :var data=missing_var()
+Help: source block header variable `data` references missing source block `missing_var`
+Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
+
+[ORG041] Warning: source block uses stateful Babel session `:session shared`
+@ fixture.org:15:1
+fix: review the stateful :session header or set :eval no/never when this block is metadata-only
+line: 15 | #+begin_src python :session shared :cache yes
+Help: source block uses stateful Babel session `:session shared`
+Contract: Stateful Babel sessions can depend on hidden process state, so automated tooling should not treat them as pure source evidence without review.
+
+[ORG042] Warning: source block enables Babel result cache `:cache yes`
+@ fixture.org:15:1
+fix: review the :cache header and make cache freshness explicit before tooling trusts cached results
+line: 15 | #+begin_src python :session shared :cache yes
+Help: source block enables Babel result cache `:cache yes`
+Contract: Babel cache headers imply reusable execution results; agents and indexers should verify freshness before relying on cached output.
+
+[ORG043] Warning: source block declares `:results file` without an explicit `:file` target
+@ fixture.org:23:1
+fix: add an explicit :file target or remove the file result collection mode
+line: 23 | #+begin_src python :results file
+Help: source block declares `:results file` without an explicit `:file` target
+Contract: File result blocks should expose their intended output path in source metadata before agents or indexers depend on generated artifacts.
+
+[ORG021] Warning: Babel call target `missing_call` has no local source block
+@ fixture.org:27:1
+fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
+line: 27 | #+CALL: missing_call()
+Help: Babel call target `missing_call` has no local source block
+Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
+
+[ORG021] Warning: inline Babel call target `missing_inline` has no local source block
+@ fixture.org:29:8
+fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
+line: 29 | Inline call_missing_inline().
+Help: inline Babel call target `missing_inline` has no local source block
+Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.

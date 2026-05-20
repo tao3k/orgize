@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org as OrgParser,
     ast::{
         ColumnSummaryOperatorKind, ColumnSummaryPlan, ColumnSummaryStatus,
         ColumnSummaryValueSource, ColumnViewScope,
     },
-    Org as OrgParser,
 };
 
 #[test]

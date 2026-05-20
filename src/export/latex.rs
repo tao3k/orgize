@@ -1,6 +1,6 @@
 //! LaTeX exporter for the lossless syntax traversal API.
 
-use rowan::{ast::AstNode, NodeOrToken};
+use rowan::{NodeOrToken, ast::AstNode};
 use std::cmp::min;
 use std::fmt;
 use std::fmt::Write as _;
@@ -8,9 +8,9 @@ use std::fmt::Write as _;
 use crate::syntax_ast::{OrgTable, OrgTableCell, OrgTableRow};
 use crate::{SyntaxElement, SyntaxKind, SyntaxNode};
 
-use super::event::{Container, Event};
 use super::TraversalContext;
 use super::Traverser;
+use super::event::{Container, Event};
 
 /// A wrapper for escaping text in LaTeX output.
 ///

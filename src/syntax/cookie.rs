@@ -1,16 +1,16 @@
 use nom::{
+    IResult,
     branch::alt,
     bytes::complete::tag,
     character::complete::digit0,
     combinator::map,
     sequence::{pair, separated_pair},
-    IResult,
 };
 
 use super::{
-    combinator::{l_bracket_token, node, r_bracket_token, token, GreenElement},
-    input::Input,
     SyntaxKind,
+    combinator::{GreenElement, l_bracket_token, node, r_bracket_token, token},
+    input::Input,
 };
 
 #[cfg_attr(
@@ -50,9 +50,9 @@ pub(crate) fn cookie_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
+    use crate::ParseConfig;
     use crate::syntax_ast::Cookie;
     use crate::tests::to_ast;
-    use crate::ParseConfig;
 
     let to_cookie = to_ast::<Cookie>(cookie_node);
 

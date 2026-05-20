@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{SparseTreeMatchKind, SparseTreeQuery, SparseTreeReceiptKind, SparseTreeSkipReason},
     Org,
+    ast::{SparseTreeMatchKind, SparseTreeQuery, SparseTreeReceiptKind, SparseTreeSkipReason},
 };
 
 const SOURCE: &str = r#"#+CATEGORY: memory
@@ -44,14 +44,16 @@ fn semantic_ast_projects_sparse_tree_cards_from_org_match_and_text() {
     );
     assert_eq!(card.priority.effective_text(), "A");
     assert_eq!(card.effective_tags, ["agent"]);
-    assert!(card
-        .preview
-        .as_ref()
-        .is_some_and(|preview| preview.contains("sparse tree cards")));
-    assert!(card
-        .matches
-        .iter()
-        .any(|matched| matched.kind == SparseTreeMatchKind::Tag && matched.value == "agent"));
+    assert!(
+        card.preview
+            .as_ref()
+            .is_some_and(|preview| preview.contains("sparse tree cards"))
+    );
+    assert!(
+        card.matches
+            .iter()
+            .any(|matched| matched.kind == SparseTreeMatchKind::Tag && matched.value == "agent")
+    );
     assert!(card.matches.iter().any(|matched| {
         matched.kind == SparseTreeMatchKind::SpecialProperty
             && matched.key.as_deref() == Some("TODO")
@@ -62,31 +64,37 @@ fn semantic_ast_projects_sparse_tree_cards_from_org_match_and_text() {
             && matched.key.as_deref() == Some("PRIORITY")
             && matched.value == "A"
     }));
-    assert!(card
-        .matches
-        .iter()
-        .any(|matched| matched.kind == SparseTreeMatchKind::Body
-            && matched.value.contains("corrected facts")));
-    assert!(card
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind == SparseTreeReceiptKind::MatchExpressionMatched));
-    assert!(card
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind == SparseTreeReceiptKind::TextMatched));
-    assert!(card
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind == SparseTreeReceiptKind::Accepted));
-    assert!(card
-        .links
-        .iter()
-        .any(|link| link.path == "id:archived-memory::*Retired memory"));
-    assert!(card
-        .targets
-        .iter()
-        .any(|target| target.key == "id:active-memory"));
+    assert!(
+        card.matches
+            .iter()
+            .any(|matched| matched.kind == SparseTreeMatchKind::Body
+                && matched.value.contains("corrected facts"))
+    );
+    assert!(
+        card.receipts
+            .iter()
+            .any(|receipt| receipt.kind == SparseTreeReceiptKind::MatchExpressionMatched)
+    );
+    assert!(
+        card.receipts
+            .iter()
+            .any(|receipt| receipt.kind == SparseTreeReceiptKind::TextMatched)
+    );
+    assert!(
+        card.receipts
+            .iter()
+            .any(|receipt| receipt.kind == SparseTreeReceiptKind::Accepted)
+    );
+    assert!(
+        card.links
+            .iter()
+            .any(|link| link.path == "id:archived-memory::*Retired memory")
+    );
+    assert!(
+        card.targets
+            .iter()
+            .any(|target| target.key == "id:active-memory")
+    );
 }
 
 #[test]
@@ -96,27 +104,32 @@ fn semantic_ast_sparse_tree_preserves_archive_evidence_but_can_filter_it() {
 
     let query = SparseTreeQuery::new().text("retired memory");
     let projection = doc.sparse_tree_projection(&query);
-    assert!(projection
-        .cards
-        .iter()
-        .any(|card| card.title == "Retired memory" && card.archive.archived));
+    assert!(
+        projection
+            .cards
+            .iter()
+            .any(|card| card.title == "Retired memory" && card.archive.archived)
+    );
 
     let active_query = SparseTreeQuery::new()
         .include_archived(false)
         .text("retired memory")
         .explain_skips(true);
     let active_projection = doc.sparse_tree_projection(&active_query);
-    assert!(active_projection
-        .cards
-        .iter()
-        .all(|card| card.title != "Retired memory"));
+    assert!(
+        active_projection
+            .cards
+            .iter()
+            .all(|card| card.title != "Retired memory")
+    );
     assert!(active_projection.skipped.iter().any(|skip| {
         skip.title == "Retired memory" && skip.reason == SparseTreeSkipReason::Archived
     }));
-    assert!(active_projection.skipped.iter().any(|skip| skip
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind == SparseTreeReceiptKind::SkippedArchived)));
+    assert!(active_projection.skipped.iter().any(|skip| {
+        skip.receipts
+            .iter()
+            .any(|receipt| receipt.kind == SparseTreeReceiptKind::SkippedArchived)
+    }));
 }
 
 #[test]

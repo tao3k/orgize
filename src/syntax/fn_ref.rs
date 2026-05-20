@@ -1,15 +1,15 @@
 use memchr::memchr2_iter;
 use nom::{
+    Err, IResult, Parser,
     bytes::complete::{tag, take_while},
     combinator::opt,
-    Err, IResult, Parser,
 };
 
 use super::{
-    combinator::{colon_token, l_bracket_token, node, r_bracket_token, GreenElement},
+    SyntaxKind,
+    combinator::{GreenElement, colon_token, l_bracket_token, node, r_bracket_token},
     input::Input,
     parser_contract::ObjectNodesParser,
-    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -67,7 +67,7 @@ fn balanced_brackets(input: Input) -> IResult<Input, Input, ()> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::FnRef, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::FnRef, tests::to_ast};
 
     let to_fn_ref =
         to_ast::<FnRef>(|input| fn_ref_node(input, crate::syntax::object::standard_object_nodes));
@@ -128,9 +128,11 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(fn_ref_node(
-        ("[fn::[]", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
+    assert!(
+        fn_ref_node(
+            ("[fn::[]", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
 }

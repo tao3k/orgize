@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         AgendaDate, AgendaEntryKind, AgendaQuery, IncludeExpansionMode, IncludeExpansionOptions,
         IncludeExpansionPlan, IncludeLineSelection, TimestampKind,
     },
-    Org,
 };
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/include-datetree-agenda-extras.org");
@@ -63,9 +63,11 @@ fn semantic_ast_projects_include_dated_and_agenda_extras() {
     assert!(opt_in_entries.iter().any(|entry| {
         entry.kind == AgendaEntryKind::Diary && entry.timestamp.kind == TimestampKind::Diary
     }));
-    assert!(opt_in_entries
-        .iter()
-        .any(|entry| entry.timestamp.kind == TimestampKind::Inactive));
+    assert!(
+        opt_in_entries
+            .iter()
+            .any(|entry| entry.timestamp.kind == TimestampKind::Inactive)
+    );
 
     insta::assert_debug_snapshot!(
         "semantic_ast__semantic_include_expansion_plan",

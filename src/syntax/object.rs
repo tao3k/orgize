@@ -351,19 +351,21 @@ fn positions() {
     let vec =
         ObjectPositions::standard(("call_square(4) and src_rust{let x = 1;}", &config).into())
             .collect::<Vec<_>>();
-    assert!(vec
-        .iter()
-        .any(|(input, _)| input.s == "call_square(4) and src_rust{let x = 1;}"));
-    assert!(vec
-        .iter()
-        .any(|(input, _)| input.s == "src_rust{let x = 1;}"));
+    assert!(
+        vec.iter()
+            .any(|(input, _)| input.s == "call_square(4) and src_rust{let x = 1;}")
+    );
+    assert!(
+        vec.iter()
+            .any(|(input, _)| input.s == "src_rust{let x = 1;}")
+    );
 }
 
 #[test]
 fn parse() {
     use crate::{
-        syntax::{combinator::node, SyntaxKind, SyntaxNode},
         ParseConfig,
+        syntax::{SyntaxKind, SyntaxNode, combinator::node},
     };
 
     let t = |input: &str| {

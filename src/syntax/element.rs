@@ -209,7 +209,7 @@ fn positions() {
 #[test]
 fn parse() {
     use crate::syntax::{SyntaxKind, SyntaxNode};
-    use crate::{syntax::combinator::node, ParseConfig};
+    use crate::{ParseConfig, syntax::combinator::node};
 
     let t = |input: &str| {
         let config = &ParseConfig::default();
@@ -251,7 +251,7 @@ b"#),
 #[test]
 fn affiliated_keywords() {
     use crate::syntax::{SyntaxKind, SyntaxNode};
-    use crate::{syntax::combinator::node, ParseConfig};
+    use crate::{ParseConfig, syntax::combinator::node};
 
     let t = |input: &str| {
         let config = &ParseConfig::default();

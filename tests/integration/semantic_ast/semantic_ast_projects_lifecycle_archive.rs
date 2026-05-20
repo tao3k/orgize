@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         LifecycleRecordKind, MemoryEvidenceKind, MemoryLifecycleKind, MemoryQuery,
         MemoryRecordState,
     },
-    Org,
 };
 
 const SOURCE: &str = r#"#+ARCHIVE: archive.org::* Archived
@@ -57,18 +57,26 @@ fn semantic_ast_projects_lifecycle_and_archive_metadata() {
 
     let records = doc.lifecycle_records();
     assert_eq!(records.len(), 6);
-    assert!(records
-        .iter()
-        .any(|record| matches!(record.kind, LifecycleRecordKind::StateChange { .. })));
-    assert!(records
-        .iter()
-        .any(|record| matches!(record.kind, LifecycleRecordKind::Refile { .. })));
-    assert!(records
-        .iter()
-        .any(|record| matches!(record.kind, LifecycleRecordKind::Reschedule { .. })));
-    assert!(records
-        .iter()
-        .any(|record| matches!(record.kind, LifecycleRecordKind::Redeadline { .. })));
+    assert!(
+        records
+            .iter()
+            .any(|record| matches!(record.kind, LifecycleRecordKind::StateChange { .. }))
+    );
+    assert!(
+        records
+            .iter()
+            .any(|record| matches!(record.kind, LifecycleRecordKind::Refile { .. }))
+    );
+    assert!(
+        records
+            .iter()
+            .any(|record| matches!(record.kind, LifecycleRecordKind::Reschedule { .. }))
+    );
+    assert!(
+        records
+            .iter()
+            .any(|record| matches!(record.kind, LifecycleRecordKind::Redeadline { .. }))
+    );
     assert!(records.iter().any(|record| {
         matches!(
             &record.kind,
@@ -103,27 +111,32 @@ fn semantic_ast_projects_memory_uses_lifecycle_and_archive_evidence() {
         .find(|record| record.title == "Active with archive location")
         .expect("active memory");
     assert_eq!(active.state, MemoryRecordState::Current);
-    assert!(active
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::ArchiveProperty));
-    assert!(active
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind
-            == MemoryEvidenceKind::Lifecycle(MemoryLifecycleKind::StateChange)));
+    assert!(
+        active
+            .evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::ArchiveProperty)
+    );
+    assert!(
+        active.evidence.iter().any(|evidence| evidence.kind
+            == MemoryEvidenceKind::Lifecycle(MemoryLifecycleKind::StateChange))
+    );
 
     let archived = records
         .iter()
         .find(|record| record.title == "Archived subtree")
         .expect("archived memory");
     assert_eq!(archived.state, MemoryRecordState::Archived);
-    assert!(archived
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::ArchiveTag));
-    assert!(archived
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::ArchiveLocation));
+    assert!(
+        archived
+            .evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::ArchiveTag)
+    );
+    assert!(
+        archived
+            .evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::ArchiveLocation)
+    );
 }

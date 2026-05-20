@@ -1,0 +1,19 @@
+---
+source: tests/integration/lint_crypt.rs
+assertion_line: 14
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_compact_text(\"crypt.org\", source))"
+---
+clean: false
+[ORG038] Warning: crypt-tagged section `Secret note` has an opaque body; orgize exposes headline/properties but does not decrypt Org Crypt payloads
+@ crypt.org:1:1
+fix: treat this crypt-tagged subtree body as opaque for indexing/export, or remove the crypt tag if the body is intentionally public
+line: 1 | * Secret note :crypt:
+Help: crypt-tagged section `Secret note` has an opaque body; orgize exposes headline/properties but does not decrypt Org Crypt payloads
+Contract: Org Crypt protects subtree body text, while headline and property metadata remain visible to parsers and indexers.
+
+[ORG039] Warning: section `Key only` sets CRYPTKEY but has no visible crypt tag
+@ crypt.org:3:1
+fix: add the crypt tag to the section or remove the CRYPTKEY property if it is not an Org Crypt entry
+line: 3 | * Key only
+Help: section `Key only` sets CRYPTKEY but has no visible crypt tag
+Contract: CRYPTKEY only selects an encryption key for entries matched by the Org Crypt tag matcher.

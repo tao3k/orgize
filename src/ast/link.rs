@@ -1,7 +1,7 @@
 use rowan::ast::AstNode;
 
-use super::{token, AffiliatedKeyword, SyntaxLink, Token};
-use crate::{syntax::SyntaxKind, SyntaxElement, SyntaxNode};
+use super::{AffiliatedKeyword, SyntaxLink, Token, token};
+use crate::{SyntaxElement, SyntaxNode, syntax::SyntaxKind};
 
 impl SyntaxLink {
     /// Returns link destination
@@ -57,7 +57,7 @@ impl SyntaxLink {
     /// assert_eq!((description[0].kind(), description[0].to_string()), (SyntaxKind::BOLD, "*abc*".into()));
     /// assert_eq!((description[2].kind(), description[2].to_string()), (SyntaxKind::ITALIC, "/abc/".into()));
     /// ```
-    pub fn description(&self) -> impl Iterator<Item = SyntaxElement> {
+    pub fn description(&self) -> impl Iterator<Item = SyntaxElement> + use<> {
         self.syntax()
             .children_with_tokens()
             .skip_while(|e| e.kind() != SyntaxKind::L_BRACKET)

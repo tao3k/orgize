@@ -3,15 +3,19 @@
 use std::collections::BTreeMap;
 
 use crate::ast::{
-    is_allowed_value_descriptor, property_allowed_values, Inlinetask, ParsedAnnotation, ParsedAst,
-    Property, PropertyProfile, Section,
+    Inlinetask, ParsedAnnotation, ParsedAst, Property, PropertyProfile, PropertySchemaRegistry,
+    Section, is_allowed_value_descriptor, property_allowed_values,
 };
 
-use super::lint_model::{location_for_range, LintFinding, LintSeverity};
+use super::lint_model::{LintFinding, LintSeverity, location_for_offsets, location_for_range};
 
-pub(crate) fn property_drawer_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
+pub(crate) fn property_drawer_findings(
+    document: &ParsedAst,
+    source: &str,
+    schema_registry: &PropertySchemaRegistry,
+) -> Vec<LintFinding> {
     let mut findings = Vec::new();
-    let profile = document.property_profile();
+    let profile = document.property_profile_with_schema_registry(schema_registry);
     push_property_findings(&document.properties, &profile, source, &mut findings);
     push_allowed_value_findings(
         &document.properties,
@@ -28,6 +32,7 @@ pub(crate) fn property_drawer_findings(document: &ParsedAst, source: &str) -> Ve
             push_inlinetask_property_findings(task, &profile, source, &mut findings);
         }
     });
+    push_property_schema_findings(&profile, source, &mut findings);
     findings
 }
 
@@ -120,6 +125,29 @@ fn allowed_value_finding(
         ),
         location: location_for_range(source, property.ann.range),
     })
+}
+
+fn push_property_schema_findings(
+    profile: &PropertyProfile,
+    source: &str,
+    findings: &mut Vec<LintFinding>,
+) {
+    findings.extend(
+        profile
+            .schema_applications
+            .iter()
+            .flat_map(|application| application.findings.iter())
+            .map(|finding| LintFinding {
+                code: "ORG040",
+                severity: LintSeverity::Warning,
+                message: finding.message.clone(),
+                location: location_for_offsets(
+                    source,
+                    finding.source.range_start as usize,
+                    finding.source.range_end as usize,
+                ),
+            }),
+    );
 }
 
 fn push_effort_duration_finding(

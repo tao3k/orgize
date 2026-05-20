@@ -2,9 +2,9 @@ use nom::{Err, IResult};
 use std::ops::ControlFlow;
 
 use super::{
-    combinator::{l_bracket_token, node, r_bracket_token, GreenElement},
-    input::Input,
     SyntaxKind,
+    combinator::{GreenElement, l_bracket_token, node, r_bracket_token},
+    input::Input,
 };
 
 #[cfg_attr(
@@ -115,7 +115,7 @@ fn citation_key_range(reference: &str) -> Option<(usize, usize)> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::SyntaxCitation, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::SyntaxCitation, tests::to_ast};
 
     let to_citation = to_ast::<SyntaxCitation>(citation_node);
 

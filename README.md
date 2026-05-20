@@ -60,9 +60,21 @@ Semantic source/example blocks include parsed line-numbering metadata for
 metadata for `-i`, code-reference cookies from the default `(ref:name)` format
 or custom `-l` label formats, line-level source/value/normalized-value records,
 typed `-k`/`-r`/`-l` switch metadata, and structured source block header
-arguments while retaining the raw parameter text. Fixed-width areas use the
-same semantic line record shape, and inline Babel source/call contexts now keep
-nested bracket, brace, and parenthesis bodies balanced.
+arguments from `#+PROPERTY: header-args`, `#+PROPERTY: header-args:LANG`,
+`#+HEADER:`, and the `#+BEGIN_SRC` line while retaining the raw parameter text.
+Tangle metadata includes non-executing `:mkdirp`, `:comments`, `:shebang`, and
+`:noweb` planning flags alongside the target file mode.
+Result planning metadata normalizes `:results` collection, format, insertion,
+value/output, and `:file` output hints without executing source blocks.
+Execution/export planning metadata normalizes `:eval`, `:exports`, `:cache`,
+`:session`, `:dir`, `:hlines`, and context-specific `:noweb` behavior as
+source-grounded policy hints without running code or touching the filesystem.
+`source_block_references()` projects non-executing literate-programming edges for `#+CALL`,
+`call_name(...)`, source-block `:var` dependencies, and noweb `<<name>>`
+references, resolving them against local `#+NAME` and syntax-appropriate
+`:noweb-ref` declarations. Fixed-width areas use the same semantic
+line record shape, and inline Babel source/call contexts now keep nested
+bracket, brace, and parenthesis bodies balanced.
 Semantic tables expose column alignment metadata from `<l>`, `<c>`, and `<r>`
 property cookies while preserving the original row and cell contents.
 Per-file TODO declarations from `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:`
@@ -87,13 +99,45 @@ original `link.path()`, and reports diagnostics for ambiguous or missing strict
 internal links.
 Parser v2 also collects exporter/indexer side tables without mutating the
 lossless source tree: `document.metadata`, `document.filetags`,
-`document.export_settings`, `document.link_abbreviations`, and
+`document.tag_definitions`, `document.export_settings`, `document.link_abbreviations`, and
 `document.footnotes`. Keyword values keep their raw source text and expose
 parsed object values for metadata-style keywords such as `#+TITLE:` and
 `#+CAPTION:`; `ATTR_*` affiliated keywords expose shell-like structured
 attributes. Links without an explicit description can use target-derived
 fallback objects through `Link::description_or_default()`, and `id:ID::*search`
 paths retain their search suffix in `Link::search`.
+`#+TAGS:` vocabulary lines project shortcuts such as `EMACS (e)` and `READ(r)`
+into `document.tag_definitions`, including official `{ ... }` mutually
+exclusive sets and `[ group : members ]` hierarchy metadata. Hosts that want
+org-mode-style programmable behavior can call `document.org_elements_json()` or
+explicitly run
+`document.execute_org_elements(&OrgElementsHostExecutionOptions::new(...))`;
+agenda, sparse-tree, workspace match, and clocktable `:match` projections
+expand group tags from that vocabulary without mutating headline tags,
+including `TAGS` and `ALLTAGS` special-property match expressions.
+the payload exposes source-backed root/section/element/object trees, targets,
+footnotes, metadata, source block side tables, and a flat `index` for
+`org-element-map`-style filtering by node kind. Rust consumers can call
+`document.org_elements_index()` for typed index records and
+`document.query_org_elements_index(&OrgElementsIndexQuery::new().kind("link"))`
+for filtered views; the query can also match compact summary fields with
+`summary_eq` and `summary_contains` selectors. Wasm consumers can request
+`orgElementsIndexJson()` or `orgElementsIndexQueryJson(...)` without
+materializing the full tree.
+Parsing alone never executes host tools or header directives. Python remains a
+convenience adapter through `PythonExecutionOptions`, not the core element
+contract.
+Org Crypt is modeled as source-grounded advice, not an execution feature:
+`document.crypt_states()` records `crypt`-tagged sections, inherited crypt tag
+evidence, `CRYPTKEY` visibility, encrypted payload markers, and opaque-body
+warnings while never decrypting source text. The wasm package exposes the same
+shape through `cryptJson()` and `snapshotJson().crypt`.
+Runtime-adjacent Org features stay source-grounded too:
+`document.runtime_metadata_plan()` records FEEDSTATUS drawers, relative timer
+stamps, MobileOrg index and `FLAGGED`/`ORIGINAL_ID` metadata, plus explicit
+feed/timer/mobile/persist execution boundaries without network access,
+filesystem sync, or cache writes. Wasm consumers can request
+`runtimeMetadataJson()` or read `snapshotJson().runtimeMetadata`.
 Use `document.link_protocol_records()` to inspect built-in link families,
 custom protocols, `#+LINK` abbreviations, executable `shell:`/`elisp:` links,
 and inert `org-protocol:` calls without opening files or dispatching handlers.

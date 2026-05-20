@@ -1,13 +1,13 @@
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take_while1},
     character::complete::space0,
-    IResult, Parser,
 };
 
 use crate::SyntaxKind;
 
 use super::{
-    combinator::{eol_or_eof, l_curly_token, line_starts_iter, node, r_curly_token, GreenElement},
+    combinator::{GreenElement, eol_or_eof, l_curly_token, line_starts_iter, node, r_curly_token},
     input::Input,
 };
 

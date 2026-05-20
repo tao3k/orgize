@@ -1,18 +1,18 @@
 use nom::{
+    IResult,
     branch::alt,
     bytes::complete::tag,
     character::complete::{digit1, space0},
     combinator::{map, opt, recognize},
-    IResult,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{
-        blank_lines, colon_token, double_arrow_token, eol_or_eof, GreenElement, NodeBuilder,
+        GreenElement, NodeBuilder, blank_lines, colon_token, double_arrow_token, eol_or_eof,
     },
     input::Input,
     timestamp::{timestamp_active_node, timestamp_inactive_node},
-    SyntaxKind,
 };
 
 #[cfg_attr(

@@ -22,13 +22,16 @@ impl Document<ParsedAnnotation> {
                         .or_default()
                         .push(source_tangle_block(&record));
                 }
-                TangleDecision::Skip(reason) => skipped.push(SourceTangleSkip {
-                    source: record.source,
-                    name: record.name,
-                    language: record.language,
-                    mode: record.tangle.map(|tangle| tangle.mode),
-                    reason,
-                }),
+                TangleDecision::Skip(reason) => {
+                    let mode = record.tangle.as_ref().map(|tangle| tangle.mode);
+                    skipped.push(SourceTangleSkip {
+                        source: record.source,
+                        name: record.name,
+                        language: record.language,
+                        mode,
+                        reason,
+                    });
+                }
             }
         }
         SourceTanglePlan {
@@ -118,6 +121,10 @@ fn source_tangle_block(record: &SourceBlockRecord) -> SourceTangleBlock {
         source: record.source.clone(),
         name: record.name.clone(),
         language: record.language.clone(),
+        tangle: record
+            .tangle
+            .clone()
+            .expect("selected tangle block carries tangle metadata"),
         header_args: record.normalized_header_args.clone(),
         value: record.value.clone(),
     }

@@ -1,9 +1,9 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         AgendaDate, AgendaQuery, AgentPlanningDecision, AgentPlanningQuery, AgentPlanningSeverity,
     },
-    Org,
 };
 
 const SOURCE: &str = r#"* TODO Late deadline

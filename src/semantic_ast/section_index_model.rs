@@ -11,8 +11,10 @@ use super::property_model::Priority;
 pub struct SectionIndexRecord {
     pub source: SectionIndexSource,
     pub outline_path: Vec<String>,
+    pub outline_path_text: Vec<String>,
     pub level: usize,
     pub title: String,
+    pub title_text: String,
     pub body: Vec<SectionIndexTextSlice>,
     pub todo: Option<TodoKeyword>,
     pub priority: Priority,

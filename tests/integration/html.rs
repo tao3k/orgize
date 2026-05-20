@@ -1,4 +1,4 @@
-use orgize::{export::HtmlExportOptions, Org};
+use orgize::{Org, export::HtmlExportOptions};
 
 #[test]
 fn emphasis() {

@@ -1,21 +1,21 @@
 use memchr::memchr2_iter;
 use nom::{
+    IResult, Parser,
     branch::alt,
     bytes::complete::{tag, take_while1},
     combinator::opt,
-    IResult, Parser,
 };
 
 use crate::{
+    SyntaxKind,
     syntax::{
         combinator::{caret_token, underscore_token},
         parser_contract::ObjectNodesParser,
     },
-    SyntaxKind,
 };
 
 use super::{
-    combinator::{l_curly_token, node, r_curly_token, GreenElement},
+    combinator::{GreenElement, l_curly_token, node, r_curly_token},
     input::Input,
 };
 
@@ -194,24 +194,32 @@ fn parse() {
         ..Default::default()
     };
 
-    debug_assert!(subscript_node(
-        ("_*", &with_brace).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    debug_assert!(subscript_node(
-        ("_abc", &with_brace).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    debug_assert!(subscript_node(
-        ("_+123", &with_brace).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    debug_assert!(subscript_node(
-        ("_{*bo\nld*}", &with_brace).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_ok());
+    debug_assert!(
+        subscript_node(
+            ("_*", &with_brace).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    debug_assert!(
+        subscript_node(
+            ("_abc", &with_brace).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    debug_assert!(
+        subscript_node(
+            ("_+123", &with_brace).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    debug_assert!(
+        subscript_node(
+            ("_{*bo\nld*}", &with_brace).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_ok()
+    );
 }

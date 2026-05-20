@@ -1,11 +1,11 @@
 use nom::IResult;
 
 use super::{
-    combinator::{blank_lines, line_ends_iter, node, GreenElement},
+    SyntaxKind,
+    combinator::{GreenElement, blank_lines, line_ends_iter, node},
     input::Input,
     keyword::affiliated_keyword_nodes,
     object::standard_object_nodes,
-    SyntaxKind,
 };
 
 /// Recognizes one paragraph

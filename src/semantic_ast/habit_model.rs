@@ -1,9 +1,9 @@
 //! Habit-oriented agenda metadata.
 
+use super::TodoKeyword;
 use super::property_model::OrgDuration;
 use super::section_index_model::SectionIndexSource;
 use super::timestamp_model::{Timestamp, TimestampRepeater};
-use super::TodoKeyword;
 
 /// One `STYLE: habit` headline projected for agenda/indexer consumers.
 #[derive(Clone, Debug, PartialEq, Eq)]

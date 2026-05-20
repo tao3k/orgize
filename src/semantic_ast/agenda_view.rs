@@ -3,14 +3,14 @@
 use std::cmp::Ordering;
 
 use super::{
-    agenda_urgency::agenda_urgency_score,
-    agenda_view_model::{compact_sort_strategy, format_date, format_time},
-    task_blockers::{blockers_by_blocked_source, blockers_for_source},
     AgendaBlockSectionPlan, AgendaBlockViewPlan, AgendaBlockViewQuery, AgendaEntry,
     AgendaEntryKind, AgendaViewCard, AgendaViewPlan, AgendaViewQuery, AgendaViewReceipt,
     AgendaViewReceiptKind, AgendaViewSkip, AgendaViewSkipReason, AgendaViewSortDirection,
     AgendaViewSortKey, AgendaViewSortSpec, AgendaViewSortValue, Document, ParsedAnnotation,
     SectionIndexSource, TaskBlockerRecord,
+    agenda_urgency::agenda_urgency_score,
+    agenda_view_model::{compact_sort_strategy, format_date, format_time},
+    task_blockers::{blockers_by_blocked_source, blockers_for_source},
 };
 
 impl Document<ParsedAnnotation> {

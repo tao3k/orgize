@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{AstRef, ElementData, MacroExpansionStatus, ObjectData},
     Org,
+    ast::{AstRef, ElementData, MacroExpansionStatus, ObjectData},
 };
 
 #[test]
@@ -138,12 +138,14 @@ fn semantic_ast_diagnoses_invalid_preprocessing_directives() {
     assert!(doc.includes.is_empty());
     assert!(doc.macro_definitions.is_empty());
     assert_eq!(doc.diagnostics.len(), 2);
-    assert!(doc
-        .diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.message.contains("INCLUDE keyword")));
-    assert!(doc
-        .diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.message.contains("MACRO keyword")));
+    assert!(
+        doc.diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.message.contains("INCLUDE keyword"))
+    );
+    assert!(
+        doc.diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.message.contains("MACRO keyword"))
+    );
 }

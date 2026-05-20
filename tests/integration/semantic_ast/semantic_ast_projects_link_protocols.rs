@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{LinkProtocolKind, LinkProtocolSource, OrgProtocolKind},
     Org,
+    ast::{LinkProtocolKind, LinkProtocolSource, OrgProtocolKind},
 };
 
 const SOURCE: &str = r#"#+LINK: gh https://github.com/%s

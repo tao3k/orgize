@@ -1,6 +1,6 @@
 use super::{
-    filter_token, CenterBlock, CommentBlock, DynBlock, ExampleBlock, ExportBlock, QuoteBlock,
-    SourceBlock, SpecialBlock, SyntaxKind, Token, VerseBlock,
+    CenterBlock, CommentBlock, DynBlock, ExampleBlock, ExportBlock, QuoteBlock, SourceBlock,
+    SpecialBlock, SyntaxKind, Token, VerseBlock, filter_token,
 };
 use rowan::TextSize;
 

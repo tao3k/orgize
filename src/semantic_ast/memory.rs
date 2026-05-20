@@ -1,16 +1,16 @@
 //! Org-native memory records and agent-facing memory snapshots.
 
 use super::memory_model::{
-    is_done_todo, AgentMemoryCard, AgentMemoryQuery, AgentMemorySnapshot, MemoryEvidence,
-    MemoryEvidenceKind, MemoryLifecycleKind, MemoryLink, MemoryProperty, MemoryQuery, MemoryRecord,
-    MemoryRecordState, MemorySource,
+    AgentMemoryCard, AgentMemoryQuery, AgentMemorySnapshot, MemoryEvidence, MemoryEvidenceKind,
+    MemoryLifecycleKind, MemoryLink, MemoryProperty, MemoryQuery, MemoryRecord, MemoryRecordState,
+    MemorySource, is_done_todo,
 };
 use super::model::{
     Citation, CiteReference, Document, Element, ElementData, Link, ListItem, Object, ObjectData,
     ParsedAnnotation, Property, Section,
 };
 use super::timestamp_model::Timestamp;
-use super::{lifecycle::section_lifecycle_records, LifecycleRecordKind};
+use super::{LifecycleRecordKind, lifecycle::section_lifecycle_records};
 
 impl Document<ParsedAnnotation> {
     /// Projects Org headlines into addressable memory records.
@@ -177,14 +177,14 @@ fn collect_archive_evidence(
             kind: MemoryEvidenceKind::ArchiveProperty,
             value: location.value.clone(),
         });
-    } else if section.archive.archived {
-        if let Some(location) = &section.archive.keyword_location {
-            evidence.push(MemoryEvidence {
-                source: MemorySource::from_annotation(&location.ann),
-                kind: MemoryEvidenceKind::ArchiveLocation,
-                value: location.value.clone(),
-            });
-        }
+    } else if section.archive.archived
+        && let Some(location) = &section.archive.keyword_location
+    {
+        evidence.push(MemoryEvidence {
+            source: MemorySource::from_annotation(&location.ann),
+            kind: MemoryEvidenceKind::ArchiveLocation,
+            value: location.value.clone(),
+        });
     }
 }
 

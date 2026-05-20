@@ -1,5 +1,5 @@
 use crate::semantic_ast::support::assert_clean_projection;
-use orgize::{ast::TodoState, Org};
+use orgize::{Org, ast::TodoState};
 
 #[test]
 fn semantic_ast_applies_file_todo_keyword_declarations_before_headline_projection() {

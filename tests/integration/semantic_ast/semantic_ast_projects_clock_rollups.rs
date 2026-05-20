@@ -1,9 +1,9 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         ClockEffortStatus, ClockTableScopeKind, ClockTableTimeWindowSource, ClockTableWarningKind,
     },
-    Org,
 };
 
 const SOURCE: &str = r#"#+BEGIN: clocktable :scope file :maxlevel 2
@@ -133,10 +133,11 @@ CLOCK: [2026-05-15 Fri 10:00]--[2026-05-15 Fri 11:00] =>  1:00
     assert_eq!(plan.rows[0].title, "Project");
     assert_eq!(plan.rows[0].clock.total_seconds, 2_700);
     assert!(plan.rows.iter().all(|row| row.title != "Outside"));
-    assert!(plan
-        .warnings
-        .iter()
-        .all(|warning| warning.kind != ClockTableWarningKind::TimeRangePreserved));
+    assert!(
+        plan.warnings
+            .iter()
+            .all(|warning| warning.kind != ClockTableWarningKind::TimeRangePreserved)
+    );
 }
 
 #[test]
@@ -210,10 +211,11 @@ CLOCK: [2026-06-01 Mon 09:00]--[2026-06-01 Mon 11:00] =>  2:00
     assert_eq!(plan.rows.len(), 1);
     assert_eq!(plan.rows[0].clock.entries, 1);
     assert_eq!(plan.rows[0].clock.total_seconds, 3_600);
-    assert!(plan
-        .warnings
-        .iter()
-        .all(|warning| warning.kind != ClockTableWarningKind::BlockRangePreserved));
+    assert!(
+        plan.warnings
+            .iter()
+            .all(|warning| warning.kind != ClockTableWarningKind::BlockRangePreserved)
+    );
 }
 
 #[test]
@@ -232,10 +234,11 @@ CLOCK: [2026-05-15 Fri 09:00]--[2026-05-15 Fri 10:00] =>  1:00
     assert!(plan.time_window.is_none());
     assert_eq!(plan.rows.len(), 1);
     assert_eq!(plan.rows[0].clock.total_seconds, 3_600);
-    assert!(plan
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == ClockTableWarningKind::TimeRangePreserved));
+    assert!(
+        plan.warnings
+            .iter()
+            .any(|warning| warning.kind == ClockTableWarningKind::TimeRangePreserved)
+    );
 }
 
 #[test]
@@ -274,10 +277,11 @@ CLOCK: [2026-05-15 Fri 11:00]--[2026-05-15 Fri 11:30] =>  0:30
     assert!(plan.rows.iter().all(|row| row.title != "Internal detail"));
     assert_eq!(plan.rows[1].title, "Client followup");
     assert_eq!(plan.rows[1].clock.total_seconds, 1_800);
-    assert!(plan
-        .warnings
-        .iter()
-        .all(|warning| warning.kind != ClockTableWarningKind::MatchPreserved));
+    assert!(
+        plan.warnings
+            .iter()
+            .all(|warning| warning.kind != ClockTableWarningKind::MatchPreserved)
+    );
 }
 
 #[test]
@@ -296,10 +300,11 @@ CLOCK: [2026-05-15 Fri 09:00]--[2026-05-15 Fri 10:00] =>  1:00
     assert!(plan.match_filter.is_none());
     assert_eq!(plan.rows.len(), 1);
     assert_eq!(plan.rows[0].clock.total_seconds, 3_600);
-    assert!(plan
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == ClockTableWarningKind::MatchPreserved));
+    assert!(
+        plan.warnings
+            .iter()
+            .any(|warning| warning.kind == ClockTableWarningKind::MatchPreserved)
+    );
 }
 
 #[test]
@@ -368,8 +373,9 @@ CLOCK: [2026-05-15 Fri 09:00]--[2026-05-15 Fri 10:00] =>  1:00
     assert!(plan.property_columns.is_none());
     assert_eq!(plan.rows.len(), 1);
     assert_eq!(plan.rows[0].clock.total_seconds, 3_600);
-    assert!(plan
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == ClockTableWarningKind::PropertiesPreserved));
+    assert!(
+        plan.warnings
+            .iter()
+            .any(|warning| warning.kind == ClockTableWarningKind::PropertiesPreserved)
+    );
 }

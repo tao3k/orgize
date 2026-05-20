@@ -1,0 +1,45 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_tag_vocabulary.rs
+expression: "(agenda_titles, excluded_titles, alltags_property_titles,\ntags_property_titles, not_gtd_property_titles, sparse_titles,\nsparse_alltags_property_titles, workspace_titles, clock_rows)"
+---
+(
+    [
+        "Deep task",
+        "Direct control",
+        "Perspective",
+    ],
+    [
+        "Outside",
+    ],
+    [
+        "Deep task",
+        "Direct control",
+        "Perspective",
+    ],
+    [
+        "Deep task",
+        "Direct control",
+    ],
+    [
+        "Outside",
+    ],
+    [
+        "Deep task",
+        "Direct control",
+    ],
+    [
+        "Deep task",
+        "Direct control",
+        "Perspective",
+    ],
+    [
+        "Deep task",
+        "Direct control",
+        "Perspective",
+    ],
+    [
+        "Deep task",
+        "Direct control",
+        "Perspective",
+    ],
+)

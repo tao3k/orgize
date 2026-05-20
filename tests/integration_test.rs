@@ -14,6 +14,8 @@ mod latex;
 mod lint_attachments;
 #[path = "integration/lint_babel.rs"]
 mod lint_babel;
+#[path = "integration/lint_crypt.rs"]
+mod lint_crypt;
 #[path = "integration/lint_file_links.rs"]
 mod lint_file_links;
 #[path = "integration/lint_fmt.rs"]
@@ -22,6 +24,8 @@ mod lint_fmt;
 mod lint_lifecycle;
 #[path = "integration/lint_progress.rs"]
 mod lint_progress;
+#[path = "integration/lint_property_schema.rs"]
+mod lint_property_schema;
 #[path = "integration/lint_table_formulas.rs"]
 mod lint_table_formulas;
 #[path = "integration/lint_task_blockers.rs"]

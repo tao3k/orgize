@@ -1,8 +1,8 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org, ParseConfig,
     ast::{ElementData, LinkTarget, MarkupKind, ObjectData, TargetKind},
     config::RadioLinkProjection,
-    Org, ParseConfig,
 };
 
 #[test]

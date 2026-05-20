@@ -1,7 +1,7 @@
 use rowan::TextSize;
 use std::collections::HashMap;
 
-use super::{filter_token, PropertyDrawer, SyntaxDrawer, SyntaxKind, Token};
+use super::{PropertyDrawer, SyntaxDrawer, SyntaxKind, Token, filter_token};
 
 impl PropertyDrawer {
     /// ```rust
@@ -11,7 +11,7 @@ impl PropertyDrawer {
     /// let drawer = org.first_node::<PropertyDrawer>().unwrap();
     /// assert_eq!(drawer.iter().count(), 2);
     /// ```
-    pub fn iter(&self) -> impl Iterator<Item = (Token, Token)> {
+    pub fn iter(&self) -> impl Iterator<Item = (Token, Token)> + use<> {
         self.node_properties().filter_map(|property| {
             let mut texts = property
                 .syntax

@@ -227,6 +227,66 @@ profile to warn when a local property value is not one of the inherited or
 effective allowed values, while leaving downstream agents to choose whether to
 edit the value, update the descriptor, or apply a user-specific policy.
 
+`PROPERTY_SCHEMA` adds a contract reference layer without changing Org syntax.
+The property value is ordinary drawer text; the authoritative schema is loaded
+by the downstream host or user configuration and passed into orgize as a
+registry. The reference may be a loaded contract id, a direct file reference
+such as =file:schemas/capture.schema.json#wendao.capture.v1= or an Org file
+link, or a macro-shaped drawer value:
+
+#+begin_example
+:PROPERTY_SCHEMA: {{{property_schema(wendao.capture.v1)}}}
+#+end_example
+
+orgize does not read those files, expand those macros, or ask the Agent to
+invent fields. It only matches the
+reference against the loaded registry and emits schema applications plus
+findings.
+
+| Field | Purpose |
+| =schema_applications= | drawers that referenced =PROPERTY_SCHEMA= |
+| =reference.kind= | contract id, direct file reference, Org file link, macro, or empty |
+| =contract_id= | matched loaded contract id, when the host supplied one |
+| =findings= | unresolved schema, missing required property, unknown property, empty value, or disallowed value |
+
+`ORG040` renders the same contract findings as lint advice.
+`propertyProfileWithSchemasJson` returns the focused profile projection, while
+`snapshotWithSchemasJson` embeds the same schema applications and lint findings
+in the full Agent snapshot. This gives Agent and Window runtimes a stable
+validation API while keeping schema authorship in user-controlled
+files/configuration.
+
+CLI consumers can load the same registry shape from JSON:
+
+#+begin_example
+orgize lint --property-schema-registry schemas/property-contracts.json notes.org
+#+end_example
+
+The durable contract is specified in
+[[file:../20_parser/20.03_property_schema_registry_contract.org][20.03 Property Schema Registry Contract]].
+
+The loaded file uses the same request shape as WASM:
+
+#+begin_src json
+{
+  "contracts": [{
+    "id": "wendao.capture.v1",
+    "allowUnknownProperties": false,
+    "fields": [
+      {"key": "CAPTURE_KIND", "required": true, "valueRule": {"kind": "oneOf", "values": ["idea", "note"]}},
+      {"key": "CAPTURE_SOURCE", "required": true, "valueRule": "nonEmpty"}
+    ]
+  }]
+}
+#+end_src
+
+When the CLI loads a registry file it also registers file-shaped references
+for the loaded contracts, for example =schemas/property-contracts.json#wendao.capture.v1=
+and =file:schemas/property-contracts.json#wendao.capture.v1=. A single-contract
+file may also be referenced by the file path alone. Browser/WASM hosts do not
+read files themselves, so they should pass explicit =aliases= when they want
+file-shaped references in an in-memory registry.
+
 *** Current Slice: Refile Target Index And Plan
 
 Refile support is intentionally a planning/indexing projection, not an

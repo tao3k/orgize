@@ -1,18 +1,18 @@
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag_no_case, take_while1},
     character::complete::{space0, space1},
     combinator::{iterator, map, verify},
-    IResult, Parser,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{
-        blank_lines, colon_token, eol_or_eof, line_starts_iter, node, trim_line_end, GreenElement,
-        NodeBuilder,
+        GreenElement, NodeBuilder, blank_lines, colon_token, eol_or_eof, line_starts_iter, node,
+        trim_line_end,
     },
     input::Input,
     parser_contract::ElementNodesParser,
-    SyntaxKind,
 };
 
 fn drawer_begin_node(input: Input<'_>) -> IResult<Input<'_>, (GreenElement, &str), ()> {
@@ -168,9 +168,9 @@ pub(crate) fn drawer_node(
 #[test]
 fn parse() {
     use crate::{
+        ParseConfig,
         syntax_ast::{PropertyDrawer, SyntaxDrawer},
         tests::to_ast,
-        ParseConfig,
     };
 
     let to_drawer =
@@ -278,11 +278,13 @@ fn parse() {
     let config = &ParseConfig::default();
 
     // https://github.com/PoiScript/orgize/issues/9
-    assert!(drawer_node(
-        (":SPAGHETTI:\n", config).into(),
-        crate::syntax::element::element_nodes
-    )
-    .is_err());
+    assert!(
+        drawer_node(
+            (":SPAGHETTI:\n", config).into(),
+            crate::syntax::element::element_nodes
+        )
+        .is_err()
+    );
 
     assert!(property_drawer_node((":PROPERTIES:\n:NAME:VALUE\n:END:", config).into()).is_err());
 }

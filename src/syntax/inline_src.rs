@@ -1,13 +1,13 @@
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take_while1},
     combinator::opt,
-    IResult, Parser,
 };
 
 use super::{
-    combinator::{balanced_delimited_tokens, node, GreenElement},
-    input::Input,
     SyntaxKind,
+    combinator::{GreenElement, balanced_delimited_tokens, node},
+    input::Input,
 };
 
 #[cfg_attr(
@@ -48,7 +48,7 @@ pub(crate) fn inline_src_node(input: Input) -> IResult<Input, GreenElement, ()> 
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::InlineSrc, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::InlineSrc, tests::to_ast};
 
     let to_inline_src = to_ast::<InlineSrc>(inline_src_node);
 

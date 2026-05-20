@@ -37,4 +37,4 @@ pub use table_list::{
     OrgTable, OrgTableCell, OrgTableRow, SyntaxDrawer, SyntaxList, SyntaxListItem,
 };
 
-pub(super) use super::{blank_lines, last_child, last_token, token, Token};
+pub(super) use super::{Token, blank_lines, last_child, last_token, token};

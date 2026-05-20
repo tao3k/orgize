@@ -1,9 +1,9 @@
-use memchr::{memchr2, memchr2_iter, Memchr2};
-use nom::{bytes::complete::tag, IResult, Parser};
+use memchr::{Memchr2, memchr2, memchr2_iter};
+use nom::{IResult, Parser, bytes::complete::tag};
 use std::iter::once;
 
-pub(crate) use super::green::{node, token, GreenElement};
-use super::{input::Input, SyntaxKind};
+pub(crate) use super::green::{GreenElement, node, token};
+use super::{SyntaxKind, input::Input};
 
 macro_rules! token_parser {
     ($name:ident, $token:literal, $kind:path) => {

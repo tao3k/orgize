@@ -1,14 +1,14 @@
 use rowan::{
-    ast::{support, AstNode},
     SyntaxNode, TextRange, TextSize, TokenAtOffset,
+    ast::{AstNode, support},
 };
 
+use crate::Org;
 use crate::syntax::{
-    combinator::line_starts_iter, document::document_node, element::element_nodes,
-    headline::headline_node, OrgLanguage,
+    OrgLanguage, combinator::line_starts_iter, document::document_node, element::element_nodes,
+    headline::headline_node,
 };
 use crate::syntax_ast::Headline;
-use crate::Org;
 
 #[derive(Debug)]
 enum RangeShape {

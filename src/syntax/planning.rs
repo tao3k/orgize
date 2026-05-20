@@ -1,12 +1,12 @@
 use nom::{
-    branch::alt, bytes::complete::tag, character::complete::space0, combinator::iterator, IResult,
+    IResult, branch::alt, bytes::complete::tag, character::complete::space0, combinator::iterator,
 };
 
 use super::{
-    combinator::{eol_or_eof, GreenElement, NodeBuilder},
+    SyntaxKind,
+    combinator::{GreenElement, NodeBuilder, eol_or_eof},
     input::Input,
     timestamp::{timestamp_active_node, timestamp_inactive_node},
-    SyntaxKind,
 };
 
 pub(crate) fn planning_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -59,7 +59,7 @@ fn planning_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn prase() {
-    use crate::{syntax_ast::SyntaxPlanning, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::SyntaxPlanning, tests::to_ast};
 
     let to_planning = to_ast::<SyntaxPlanning>(planning_node);
 

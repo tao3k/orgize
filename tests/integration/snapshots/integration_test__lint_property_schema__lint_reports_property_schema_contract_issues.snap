@@ -1,0 +1,8 @@
+---
+source: tests/integration/lint_property_schema.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(), report.to_text(\"fixture.org\"))"
+---
+clean: false
+fixture.org:3:19: warning ORG040: property schema `wendao.capture.v1` requires `MEMORY_POLICY`
+fixture.org:4:16: warning ORG040: property `CAPTURE_KIND` value `surprise` is not allowed by schema: idea, note
+fixture.org:6:9: warning ORG040: property `EXTRA` is not declared by schema `wendao.capture.v1`

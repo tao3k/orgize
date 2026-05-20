@@ -1,0 +1,18 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_runtime_metadata.rs
+assertion_line: 24
+expression: render_runtime_metadata_plan(&doc)
+---
+feeds=1 timers=3 indexLinks=2 flagged=1 originalIds=1 boundaries=4 warnings=0
+feed section=Feed Inbox drawer=FEEDSTATUS entries=2 readable=true
+timer paragraph raw=0:00:12 seconds=12 path=Feed Inbox
+timer paragraph raw=0:01:05 seconds=65 path=Feed Inbox
+timer paragraph raw=-0:00:03 seconds=-3 path=Mobile edit
+mobile all-priorities A,B,C
+mobile index file=agendas.org desc=Agenda Views title=[[file:agendas.org][Agenda Views]]
+mobile index file=notes.org desc=notes.org title=[[file:notes.org][notes.org]]
+mobile flagged title=Mobile edit original=id:mobile-item props=ORIGINAL_ID=id:mobile-item,MOBILE_NOTE=review this change
+boundary feedNetworkUpdate
+boundary timerRuntimeState
+boundary mobileFilesystemSync
+boundary orgPersistCache

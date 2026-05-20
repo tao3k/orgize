@@ -1,16 +1,16 @@
 use memchr::memrchr_iter;
 use nom::{
-    bytes::complete::take_while1, character::complete::space0, combinator::opt, IResult, Parser,
+    IResult, Parser, bytes::complete::take_while1, character::complete::space0, combinator::opt,
 };
 
 use super::{
-    combinator::{line_starts_iter, node, token, trim_line_end, GreenElement, NodeBuilder},
+    SyntaxKind,
+    combinator::{GreenElement, NodeBuilder, line_starts_iter, node, token, trim_line_end},
     drawer::property_drawer_node,
     input::Input,
     object::standard_object_nodes,
     parser_contract::ElementNodesParser,
     planning::planning_node,
-    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -274,7 +274,7 @@ fn priority_value_len(rest: &str) -> Option<usize> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::Headline, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::Headline, tests::to_ast};
 
     let to_headline =
         to_ast::<Headline>(|input| headline_node(input, crate::syntax::element::element_nodes));
@@ -373,27 +373,35 @@ fn parse() {
 
     assert!(headline_node(("_ ", config).into(), crate::syntax::element::element_nodes).is_err());
     assert!(headline_node(("*", config).into(), crate::syntax::element::element_nodes).is_err());
-    assert!(headline_node(
-        (" * ", config).into(),
-        crate::syntax::element::element_nodes
-    )
-    .is_err());
+    assert!(
+        headline_node(
+            (" * ", config).into(),
+            crate::syntax::element::element_nodes
+        )
+        .is_err()
+    );
     assert!(headline_node(("**", config).into(), crate::syntax::element::element_nodes).is_err());
-    assert!(headline_node(
-        ("**\n", config).into(),
-        crate::syntax::element::element_nodes
-    )
-    .is_err());
-    assert!(headline_node(
-        ("**\r", config).into(),
-        crate::syntax::element::element_nodes
-    )
-    .is_err());
-    assert!(headline_node(
-        ("**\t", config).into(),
-        crate::syntax::element::element_nodes
-    )
-    .is_err());
+    assert!(
+        headline_node(
+            ("**\n", config).into(),
+            crate::syntax::element::element_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        headline_node(
+            ("**\r", config).into(),
+            crate::syntax::element::element_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        headline_node(
+            ("**\t", config).into(),
+            crate::syntax::element::element_nodes
+        )
+        .is_err()
+    );
 }
 
 #[test]

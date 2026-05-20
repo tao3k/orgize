@@ -1,16 +1,16 @@
 use nom::{
+    IResult, Parser,
     branch::alt,
     bytes::complete::{take_until1, take_while1},
     character::complete::alpha1,
-    IResult, Parser,
 };
 
 use crate::SyntaxKind;
 
 use super::{
     combinator::{
-        backslash_token, dollar2_token, dollar_token, l_bracket_token, l_curly_token,
-        l_parens_token, node, r_bracket_token, r_curly_token, r_parens_token, GreenElement,
+        GreenElement, backslash_token, dollar_token, dollar2_token, l_bracket_token, l_curly_token,
+        l_parens_token, node, r_bracket_token, r_curly_token, r_parens_token,
     },
     input::Input,
 };
@@ -114,10 +114,10 @@ fn template5(input: Input) -> IResult<Input, GreenElement, ()> {
     }
 
     let p = input.bytes().next();
-    if let Some(p) = p {
-        if !matches!(p, b')' | b'}' | b']' | b'\'' | b'"' | b' ' | b'\r' | b'\n') {
-            return Err(nom::Err::Error(()));
-        }
+    if let Some(p) = p
+        && !matches!(p, b')' | b'}' | b']' | b'\'' | b'"' | b' ' | b'\r' | b'\n')
+    {
+        return Err(nom::Err::Error(()));
     }
 
     Ok((
@@ -128,7 +128,7 @@ fn template5(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::LatexFragment, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::LatexFragment, tests::to_ast};
 
     let to_fragment = to_ast::<LatexFragment>(latex_fragment_node);
 

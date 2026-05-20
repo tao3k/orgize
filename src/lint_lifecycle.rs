@@ -7,14 +7,14 @@ use std::{
 };
 
 use crate::{
+    Org,
     ast::{
         ArchiveLocation, AstRef, LifecycleRecordKind, ParsedAnnotation, ParsedAst, Property,
         Section,
     },
-    Org,
 };
 
-use super::lint_model::{location_for_range, LintFinding, LintOptions, LintSeverity};
+use super::lint_model::{LintFinding, LintOptions, LintSeverity, location_for_range};
 
 pub(crate) fn lifecycle_findings(
     document: &ParsedAst,
@@ -94,18 +94,9 @@ fn push_archive_destination_finding(
             });
             return;
         }
-        if let Some(heading) = &location.heading {
-            if !heading_exists_in_file(path.as_path(), heading) {
-                findings.push(LintFinding {
-                    code: "ORG018",
-                    severity: LintSeverity::Warning,
-                    message: format!("archive destination heading `{heading}` was not found"),
-                    location: location_for_range(source, location.ann.range),
-                });
-            }
-        }
-    } else if let Some(heading) = &location.heading {
-        if !heading_exists_in_document(document, heading) {
+        if let Some(heading) = &location.heading
+            && !heading_exists_in_file(path.as_path(), heading)
+        {
             findings.push(LintFinding {
                 code: "ORG018",
                 severity: LintSeverity::Warning,
@@ -113,6 +104,15 @@ fn push_archive_destination_finding(
                 location: location_for_range(source, location.ann.range),
             });
         }
+    } else if let Some(heading) = &location.heading
+        && !heading_exists_in_document(document, heading)
+    {
+        findings.push(LintFinding {
+            code: "ORG018",
+            severity: LintSeverity::Warning,
+            message: format!("archive destination heading `{heading}` was not found"),
+            location: location_for_range(source, location.ann.range),
+        });
     }
 }
 
@@ -150,15 +150,15 @@ fn push_refile_destination_findings(
             });
             continue;
         }
-        if let Some(heading) = heading {
-            if !heading_exists_in_file(path.as_path(), heading) {
-                findings.push(LintFinding {
-                    code: "ORG019",
-                    severity: LintSeverity::Warning,
-                    message: format!("refile destination heading `{heading}` was not found"),
-                    location: location_for_range(source, record.ann.range),
-                });
-            }
+        if let Some(heading) = heading
+            && !heading_exists_in_file(path.as_path(), heading)
+        {
+            findings.push(LintFinding {
+                code: "ORG019",
+                severity: LintSeverity::Warning,
+                message: format!("refile destination heading `{heading}` was not found"),
+                location: location_for_range(source, record.ann.range),
+            });
         }
     }
 }

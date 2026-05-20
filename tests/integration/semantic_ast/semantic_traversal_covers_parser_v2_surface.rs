@@ -2,8 +2,8 @@ use std::collections::BTreeSet;
 
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{AstMut, AstRef},
     Org,
+    ast::{AstMut, AstRef},
 };
 
 #[test]

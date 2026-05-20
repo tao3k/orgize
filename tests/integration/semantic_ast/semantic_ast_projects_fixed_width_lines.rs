@@ -1,5 +1,5 @@
 use crate::semantic_ast::support::assert_clean_projection;
-use orgize::{ast::ElementData, Org};
+use orgize::{Org, ast::ElementData};
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/fixed-width-lines.org");
 

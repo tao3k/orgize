@@ -1,13 +1,13 @@
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take_till},
     combinator::opt,
-    IResult, Parser,
 };
 
 use super::{
-    combinator::{balanced_delimited_tokens, node, GreenElement},
-    input::Input,
     SyntaxKind,
+    combinator::{GreenElement, balanced_delimited_tokens, node},
+    input::Input,
 };
 
 #[cfg_attr(

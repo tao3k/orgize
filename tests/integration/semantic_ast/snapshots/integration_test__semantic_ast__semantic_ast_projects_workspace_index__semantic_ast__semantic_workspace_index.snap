@@ -1,6 +1,5 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_workspace_index.rs
-assertion_line: 74
 expression: index
 ---
 WorkspaceIndex {
@@ -32,8 +31,12 @@ WorkspaceIndex {
                     outline_path: [
                         "Alpha",
                     ],
+                    outline_path_text: [
+                        "Alpha",
+                    ],
                     level: 1,
                     title: "Alpha",
+                    title_text: "Alpha",
                     body: [
                         SectionIndexTextSlice {
                             source: SectionIndexSource {
@@ -510,8 +513,12 @@ WorkspaceIndex {
                     outline_path: [
                         "Shared One",
                     ],
+                    outline_path_text: [
+                        "Shared One",
+                    ],
                     level: 1,
                     title: "Shared One",
+                    title_text: "Shared One",
                     body: [],
                     todo: None,
                     priority: Priority {
@@ -768,8 +775,12 @@ WorkspaceIndex {
                     outline_path: [
                         "Beta",
                     ],
+                    outline_path_text: [
+                        "Beta",
+                    ],
                     level: 1,
                     title: "Beta",
+                    title_text: "Beta",
                     body: [
                         SectionIndexTextSlice {
                             source: SectionIndexSource {
@@ -1114,8 +1125,12 @@ WorkspaceIndex {
                     outline_path: [
                         "Shared Two",
                     ],
+                    outline_path_text: [
+                        "Shared Two",
+                    ],
                     level: 1,
                     title: "Shared Two",
+                    title_text: "Shared Two",
                     body: [],
                     todo: None,
                     priority: Priority {

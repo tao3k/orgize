@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{PublishingOptionKind, PublishingSettings},
     Org,
+    ast::{PublishingOptionKind, PublishingSettings},
 };
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/publishing-settings.org");
@@ -32,10 +32,12 @@ fn semantic_ast_projects_publishing_settings_without_executing_export() {
             && option.value == "mark"
             && option.kind == PublishingOptionKind::BrokenLinks
     }));
-    assert!(settings
-        .backend_keywords
-        .iter()
-        .any(|keyword| keyword.key == "HTML_HEAD"));
+    assert!(
+        settings
+            .backend_keywords
+            .iter()
+            .any(|keyword| keyword.key == "HTML_HEAD")
+    );
     assert!(settings.attributes.iter().any(|attribute| {
         attribute.backend == "html"
             && attribute

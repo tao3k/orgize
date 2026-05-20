@@ -1,12 +1,12 @@
 //! Typed syntax wrapper helpers for Org headlines.
 
-use rowan::{ast::AstNode, NodeOrToken};
+use rowan::{NodeOrToken, ast::AstNode};
 
-use crate::{syntax::SyntaxKind, SyntaxElement};
+use crate::{SyntaxElement, syntax::SyntaxKind};
 
 use super::{
-    filter_token, Headline, SyntaxClock as Clock, SyntaxDrawer as Drawer, SyntaxSection as Section,
-    SyntaxTimestamp as Timestamp, Token,
+    Headline, SyntaxClock as Clock, SyntaxDrawer as Drawer, SyntaxSection as Section,
+    SyntaxTimestamp as Timestamp, Token, filter_token,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -120,7 +120,7 @@ impl Headline {
     /// assert_eq!(title[3].kind(), SyntaxKind::ITALIC);
     /// assert_eq!(title[3].to_string(), "/abc/");
     /// ```
-    pub fn title(&self) -> impl Iterator<Item = SyntaxElement> {
+    pub fn title(&self) -> impl Iterator<Item = SyntaxElement> + use<> {
         self.syntax
             .children()
             .find(|n| n.kind() == SyntaxKind::HEADLINE_TITLE)
@@ -218,7 +218,7 @@ impl Headline {
     /// assert_eq!(tags_vec("* TODO :tag:  :a2%:"), vec!["tag".to_string(), "a2%".to_string()]);
     /// assert_eq!(tags_vec("* title :tag:a2%:"), vec!["tag".to_string(), "a2%".to_string()]);
     /// ```
-    pub fn tags(&self) -> impl Iterator<Item = Token> {
+    pub fn tags(&self) -> impl Iterator<Item = Token> + use<> {
         self.syntax
             .children()
             .find(|n| n.kind() == SyntaxKind::HEADLINE_TAGS)
@@ -268,7 +268,7 @@ impl Headline {
     /// let hdl = org.first_node::<Headline>().unwrap();
     /// assert_eq!(hdl.clocks().count(), 2);
     /// ```
-    pub fn clocks(&self) -> impl Iterator<Item = Clock> {
+    pub fn clocks(&self) -> impl Iterator<Item = Clock> + use<> {
         self.syntax
             .children()
             .flat_map(Section::cast)

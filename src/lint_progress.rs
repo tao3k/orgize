@@ -5,7 +5,7 @@ use crate::ast::{
     ProgressCheckboxSummary, ProgressTodoSummary, Section, TodoState,
 };
 
-use super::lint_model::{location_for_offsets, LintFinding, LintSeverity};
+use super::lint_model::{LintFinding, LintSeverity, location_for_offsets};
 
 pub(crate) fn progress_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
     let progress_records = document.progress_stats_records();
@@ -56,10 +56,10 @@ fn push_title_cookie_findings(
             findings.push(ambiguous_cookie_finding(&cookie, source));
             continue;
         };
-        if let Some(expected) = expected_cookie(domain, recursive, section, record, cookie.kind) {
-            if cookie.raw != expected.raw {
-                findings.push(stale_cookie_finding(&cookie, domain, &expected.raw, source));
-            }
+        if let Some(expected) = expected_cookie(domain, recursive, section, record, cookie.kind)
+            && cookie.raw != expected.raw
+        {
+            findings.push(stale_cookie_finding(&cookie, domain, &expected.raw, source));
         }
     }
 }
@@ -519,9 +519,5 @@ fn parse_percent(value: &str) -> Option<u8> {
 
 fn percent_cookie(done: u32, total: u32) -> u8 {
     let percent = ((done as f64 * 100.0) / total.max(1) as f64).floor() as u8;
-    if percent == 0 && done > 0 {
-        1
-    } else {
-        percent
-    }
+    if percent == 0 && done > 0 { 1 } else { percent }
 }

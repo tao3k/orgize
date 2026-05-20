@@ -1,0 +1,38 @@
+{
+  "$schema": "../../../docs/20_parser/20.03_property_schema_registry.schema.json",
+  "contracts": [
+    {
+      "id": "wendao.capture.v1",
+      "allowUnknownProperties": false,
+      "fields": [
+        {
+          "key": "CAPTURE_KIND",
+          "required": true,
+          "valueRule": {
+            "kind": "oneOf",
+            "values": [
+              "idea",
+              "note"
+            ]
+          }
+        },
+        {
+          "key": "CAPTURE_SOURCE",
+          "required": true,
+          "valueRule": "nonEmpty"
+        },
+        {
+          "key": "MEMORY_POLICY",
+          "required": true,
+          "valueRule": {
+            "kind": "oneOf",
+            "values": [
+              "none",
+              "candidate"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

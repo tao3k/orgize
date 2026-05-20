@@ -2,11 +2,11 @@
 
 use crate::syntax::{OrgLanguage, SyntaxKind, SyntaxNode, SyntaxToken};
 use rowan::{
-    ast::{support, AstChildren, AstNode},
     TextRange, TextSize,
+    ast::{AstChildren, AstNode, support},
 };
 
-use super::{affiliated_keyword, AffiliatedKeyword};
+use super::{AffiliatedKeyword, affiliated_keyword};
 
 /// Typed syntax wrapper for `SyntaxDocument` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

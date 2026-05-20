@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         RefileAction, RefileInsertPosition, RefileOutlinePathMode, RefileParentCreationMode,
         RefilePlanReceiptKind, RefilePlanRequest, RefileTargetQuery, RefileWarningKind,
     },
-    Org,
 };
 
 #[test]
@@ -64,20 +64,24 @@ fn semantic_ast_projects_refile_target_index_and_plan() {
     assert_eq!(plan.target.as_ref().unwrap().title, "Project A");
     assert_eq!(plan.action, RefileAction::Copy);
     assert_eq!(plan.insert_position, RefileInsertPosition::FirstChild);
-    assert!(plan
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == RefileWarningKind::CopyMayDuplicateId));
-    assert!(plan
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind.as_str() == "nonMutating"));
+    assert!(
+        plan.warnings
+            .iter()
+            .any(|warning| warning.kind == RefileWarningKind::CopyMayDuplicateId)
+    );
+    assert!(
+        plan.receipts
+            .iter()
+            .any(|receipt| receipt.kind.as_str() == "nonMutating")
+    );
 
     let invalid_plan = doc.refile_plan(&RefilePlanRequest::new(["Inbox"], ["Inbox", "Capture"]));
-    assert!(invalid_plan
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == RefileWarningKind::TargetInsideSource));
+    assert!(
+        invalid_plan
+            .warnings
+            .iter()
+            .any(|warning| warning.kind == RefileWarningKind::TargetInsideSource)
+    );
 }
 
 #[test]
@@ -107,30 +111,36 @@ fn semantic_ast_projects_refile_plans_single_missing_parent_node_creation() {
     assert_eq!(created.nodes[0].title, "Project B");
     assert_eq!(created.nodes[0].level, 2);
     assert_eq!(created.nodes[0].display, "Projects/Project B");
-    assert!(plan
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind == RefilePlanReceiptKind::ParentCreationPlanned));
-    assert!(plan
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind == RefilePlanReceiptKind::ParentCreationRequiresConfirmation));
+    assert!(
+        plan.receipts
+            .iter()
+            .any(|receipt| receipt.kind == RefilePlanReceiptKind::ParentCreationPlanned)
+    );
+    assert!(
+        plan.receipts.iter().any(
+            |receipt| receipt.kind == RefilePlanReceiptKind::ParentCreationRequiresConfirmation
+        )
+    );
 
     let missing_parent = doc.refile_plan(
         &RefilePlanRequest::new(["Inbox", "Capture"], ["Projects", "Nested", "Project C"])
             .allow_creating_parent_nodes(),
     );
     assert!(missing_parent.created_target.is_none());
-    assert!(missing_parent
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == RefileWarningKind::ParentNotFound));
+    assert!(
+        missing_parent
+            .warnings
+            .iter()
+            .any(|warning| warning.kind == RefileWarningKind::ParentNotFound)
+    );
 
     let inside_source = doc.refile_plan(
         &RefilePlanRequest::new(["Inbox"], ["Inbox", "New child"]).allow_creating_parent_nodes(),
     );
-    assert!(inside_source
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == RefileWarningKind::TargetInsideSource));
+    assert!(
+        inside_source
+            .warnings
+            .iter()
+            .any(|warning| warning.kind == RefileWarningKind::TargetInsideSource)
+    );
 }

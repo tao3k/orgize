@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{AstRef, ElementData, LinkTarget, ObjectData, TargetKind},
     Org,
+    ast::{AstRef, ElementData, LinkTarget, ObjectData, TargetKind},
 };
 
 #[test]
@@ -27,41 +27,48 @@ let x = 1; ref:init
 
     assert_clean_projection(&doc);
 
-    assert!(doc
-        .targets
-        .iter()
-        .any(|target| target.key == "Anchor Heading" && target.kind == TargetKind::Headline));
-    assert!(doc
-        .targets
-        .iter()
-        .any(|target| target.key == "#heading-id" && target.kind == TargetKind::CustomId));
-    assert!(doc
-        .targets
-        .iter()
-        .any(|target| target.key == "id:org-id-1" && target.kind == TargetKind::Id));
-    assert!(doc
-        .targets
-        .iter()
-        .any(|target| target.key == "target-one" && target.kind == TargetKind::Target));
-    assert!(doc
-        .targets
-        .iter()
-        .any(|target| target.key == "radio-one" && target.kind == TargetKind::RadioTarget));
-    assert!(doc
-        .targets
-        .iter()
-        .any(|target| target.key == "fn:note" && target.kind == TargetKind::FootnoteDefinition));
-    assert!(doc
-        .targets
-        .iter()
-        .any(|target| target.key == "coderef:init" && target.kind == TargetKind::CodeRef));
+    assert!(
+        doc.targets
+            .iter()
+            .any(|target| target.key == "Anchor Heading" && target.kind == TargetKind::Headline)
+    );
+    assert!(
+        doc.targets
+            .iter()
+            .any(|target| target.key == "#heading-id" && target.kind == TargetKind::CustomId)
+    );
+    assert!(
+        doc.targets
+            .iter()
+            .any(|target| target.key == "id:org-id-1" && target.kind == TargetKind::Id)
+    );
+    assert!(
+        doc.targets
+            .iter()
+            .any(|target| target.key == "target-one" && target.kind == TargetKind::Target)
+    );
+    assert!(
+        doc.targets
+            .iter()
+            .any(|target| target.key == "radio-one" && target.kind == TargetKind::RadioTarget)
+    );
+    assert!(
+        doc.targets
+            .iter()
+            .any(|target| target.key == "fn:note" && target.kind == TargetKind::FootnoteDefinition)
+    );
+    assert!(
+        doc.targets
+            .iter()
+            .any(|target| target.key == "coderef:init" && target.kind == TargetKind::CodeRef)
+    );
 
     let mut link_targets = Vec::new();
     doc.visit(|node| {
-        if let AstRef::Object(object) = node {
-            if let ObjectData::Link(link) = &object.data {
-                link_targets.push((link.path().to_string(), link.target.clone()));
-            }
+        if let AstRef::Object(object) = node
+            && let ObjectData::Link(link) = &object.data
+        {
+            link_targets.push((link.path().to_string(), link.target.clone()));
         }
     });
 
@@ -112,10 +119,11 @@ fn semantic_ast_diagnoses_ambiguous_and_missing_strict_internal_links() {
 
     assert_eq!(doc.targets.len(), 2);
     assert_eq!(doc.diagnostics.len(), 4);
-    assert!(doc
-        .diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.message.contains("ambiguous")));
+    assert!(
+        doc.diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.message.contains("ambiguous"))
+    );
     assert_eq!(
         doc.diagnostics
             .iter()
@@ -137,9 +145,11 @@ fn semantic_ast_diagnoses_ambiguous_and_missing_strict_internal_links() {
             _ => None,
         })
         .collect::<Vec<_>>();
-    assert!(links
-        .iter()
-        .any(|link| matches!(link.target, LinkTarget::Unresolved(_))));
+    assert!(
+        links
+            .iter()
+            .any(|link| matches!(link.target, LinkTarget::Unresolved(_)))
+    );
 }
 
 #[test]
@@ -163,10 +173,10 @@ fn semantic_ast_treats_org_id_as_local_when_present() {
 
     let mut links = Vec::new();
     doc.visit(|node| {
-        if let AstRef::Object(object) = node {
-            if let ObjectData::Link(link) = &object.data {
-                links.push((link.path().to_string(), link.target.clone()));
-            }
+        if let AstRef::Object(object) = node
+            && let ObjectData::Link(link) = &object.data
+        {
+            links.push((link.path().to_string(), link.target.clone()));
         }
     });
 

@@ -7,7 +7,7 @@ use super::section_index_model::{
     SectionIndexRecord, SectionIndexSource, SectionIndexSpecialProperty, SectionIndexTarget,
     SectionIndexTextSlice,
 };
-use super::special_properties::{special_properties, SpecialPropertyContext};
+use super::special_properties::{SpecialPropertyContext, special_properties};
 use super::{
     Document, Element, ElementData, Link, ListItem, Object, ObjectData, ParsedAnnotation, Property,
     Section, TargetKind,
@@ -43,6 +43,7 @@ impl Document<ParsedAnnotation> {
             collect_section_index(
                 section,
                 Vec::new(),
+                Vec::new(),
                 document_category.clone(),
                 source_file,
                 &mut records,
@@ -55,19 +56,25 @@ impl Document<ParsedAnnotation> {
 fn collect_section_index(
     section: &Section<ParsedAnnotation>,
     parent_outline_path: Vec<String>,
+    parent_outline_path_text: Vec<String>,
     inherited_category: Option<SectionIndexCategory>,
     source_file: Option<&str>,
     records: &mut Vec<SectionIndexRecord>,
 ) {
     let title = section.raw_title.trim_end().to_string();
+    let title_text = objects_text(&section.title).trim_end().to_string();
     let mut outline_path = parent_outline_path;
     outline_path.push(title.clone());
+    let mut outline_path_text = parent_outline_path_text;
+    outline_path_text.push(title_text.clone());
     let category = section_category(section).or(inherited_category);
 
     records.push(section_index_record(
         section,
         outline_path.clone(),
+        outline_path_text.clone(),
         title,
+        title_text,
         category.clone(),
         source_file,
     ));
@@ -76,6 +83,7 @@ fn collect_section_index(
         collect_section_index(
             subsection,
             outline_path.clone(),
+            outline_path_text.clone(),
             category.clone(),
             source_file,
             records,
@@ -86,7 +94,9 @@ fn collect_section_index(
 fn section_index_record(
     section: &Section<ParsedAnnotation>,
     outline_path: Vec<String>,
+    outline_path_text: Vec<String>,
     title: String,
+    title_text: String,
     category: Option<SectionIndexCategory>,
     source_file: Option<&str>,
 ) -> SectionIndexRecord {
@@ -98,8 +108,10 @@ fn section_index_record(
     SectionIndexRecord {
         source: SectionIndexSource::from_annotation(&section.ann),
         outline_path,
+        outline_path_text,
         level: section.level,
         title,
+        title_text,
         body: body_slices(&section.children),
         todo: section.todo.clone(),
         priority: section.priority.clone(),
@@ -127,6 +139,53 @@ fn section_index_record(
                 raw: record.raw,
             })
             .collect(),
+    }
+}
+
+fn objects_text(objects: &[Object<ParsedAnnotation>]) -> String {
+    objects.iter().map(object_text).collect::<Vec<_>>().join("")
+}
+
+fn object_text(object: &Object<ParsedAnnotation>) -> String {
+    match &object.data {
+        ObjectData::Plain(value)
+        | ObjectData::Code(value)
+        | ObjectData::Verbatim(value)
+        | ObjectData::Entity(value)
+        | ObjectData::LatexFragment(value)
+        | ObjectData::Target(value)
+        | ObjectData::RadioTarget(value)
+        | ObjectData::StatisticCookie(value) => value.clone(),
+        ObjectData::Timestamp(timestamp) => timestamp.raw.clone(),
+        ObjectData::LineBreak => "\n".to_string(),
+        ObjectData::Markup { children, .. } => objects_text(children),
+        ObjectData::ExportSnippet { value, .. } => value.clone(),
+        ObjectData::FootnoteRef { label, .. } => label.clone().unwrap_or_default(),
+        ObjectData::Citation(citation) => citation
+            .references
+            .iter()
+            .map(|reference| format!("@{}", reference.id))
+            .collect::<Vec<_>>()
+            .join(";"),
+        ObjectData::Cloze { raw_text, .. } => raw_text.clone(),
+        ObjectData::InlineCall { raw, .. }
+        | ObjectData::InlineSrc { raw, .. }
+        | ObjectData::Unknown { raw, .. } => raw.clone(),
+        ObjectData::Link(link) => {
+            let description = link.description_or_default();
+            if description.is_empty() {
+                link.path().to_string()
+            } else {
+                objects_text(description)
+            }
+        }
+        ObjectData::Macro { name, arguments } => {
+            if arguments.is_empty() {
+                format!("{{{{{{{name}}}}}}}")
+            } else {
+                format!("{{{{{{{}({})}}}}}}", name, arguments.join(","))
+            }
+        }
     }
 }
 

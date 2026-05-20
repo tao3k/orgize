@@ -129,20 +129,20 @@ fn column_view_column(raw: &str) -> Option<ColumnViewColumn> {
     let mut summary_format = None;
     let mut tail = &rest[property_end..];
 
-    if let Some(after_open) = tail.strip_prefix('(') {
-        if let Some(close) = after_open.find(')') {
-            title = Some(after_open[..close].to_string());
-            tail = &after_open[close + 1..];
-        }
+    if let Some(after_open) = tail.strip_prefix('(')
+        && let Some(close) = after_open.find(')')
+    {
+        title = Some(after_open[..close].to_string());
+        tail = &after_open[close + 1..];
     }
 
-    if let Some(after_open) = tail.strip_prefix('{') {
-        if let Some(close) = after_open.rfind('}') {
-            let summary = &after_open[..close];
-            let (operator, format) = summary.split_once(';').unwrap_or((summary, ""));
-            summary_operator = (!operator.trim().is_empty()).then(|| operator.trim().to_string());
-            summary_format = (!format.trim().is_empty()).then(|| format.trim().to_string());
-        }
+    if let Some(after_open) = tail.strip_prefix('{')
+        && let Some(close) = after_open.rfind('}')
+    {
+        let summary = &after_open[..close];
+        let (operator, format) = summary.split_once(';').unwrap_or((summary, ""));
+        summary_operator = (!operator.trim().is_empty()).then(|| operator.trim().to_string());
+        summary_format = (!format.trim().is_empty()).then(|| format.trim().to_string());
     }
 
     Some(ColumnViewColumn {

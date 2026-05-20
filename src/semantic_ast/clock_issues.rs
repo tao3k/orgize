@@ -249,70 +249,70 @@ fn clock_issue_finding(
         ));
     };
 
-    if let Some(max_duration_seconds) = profile.max_duration.map(|duration| duration.as_seconds()) {
-        if duration_seconds > max_duration_seconds {
-            return Some(finding(
-                entry,
-                ClockIssueFindingKind::LongDuration,
-                format!(
-                    "Clocking interval is very long: {}",
-                    format_duration(duration_seconds)
-                ),
-                None,
-                Some(duration_seconds),
-                Some(max_duration_seconds),
-            ));
-        }
+    if let Some(max_duration_seconds) = profile.max_duration.map(|duration| duration.as_seconds())
+        && duration_seconds > max_duration_seconds
+    {
+        return Some(finding(
+            entry,
+            ClockIssueFindingKind::LongDuration,
+            format!(
+                "Clocking interval is very long: {}",
+                format_duration(duration_seconds)
+            ),
+            None,
+            Some(duration_seconds),
+            Some(max_duration_seconds),
+        ));
     }
 
-    if let Some(min_duration_seconds) = profile.min_duration.map(|duration| duration.as_seconds()) {
-        if duration_seconds < min_duration_seconds {
-            return Some(finding(
-                entry,
-                ClockIssueFindingKind::ShortDuration,
-                format!(
-                    "Clocking interval is very short: {}",
-                    format_duration(duration_seconds)
-                ),
-                None,
-                Some(duration_seconds),
-                Some(min_duration_seconds),
-            ));
-        }
+    if let Some(min_duration_seconds) = profile.min_duration.map(|duration| duration.as_seconds())
+        && duration_seconds < min_duration_seconds
+    {
+        return Some(finding(
+            entry,
+            ClockIssueFindingKind::ShortDuration,
+            format!(
+                "Clocking interval is very short: {}",
+                format_duration(duration_seconds)
+            ),
+            None,
+            Some(duration_seconds),
+            Some(min_duration_seconds),
+        ));
     }
 
-    if let Some(previous) = previous_closed {
-        if let Some(previous_end_minute) = previous.end_minute {
-            if start_minute < previous_end_minute {
-                let overlap_seconds = (previous_end_minute - start_minute) as u64 * 60;
+    if let Some(previous) = previous_closed
+        && let Some(previous_end_minute) = previous.end_minute
+    {
+        if start_minute < previous_end_minute {
+            let overlap_seconds = (previous_end_minute - start_minute) as u64 * 60;
+            return Some(finding(
+                entry,
+                ClockIssueFindingKind::Overlap,
+                format!("Clocking overlap: {} minutes", overlap_seconds / 60),
+                Some(previous.clock.clone()),
+                Some(overlap_seconds),
+                None,
+            ));
+        }
+
+        if let Some(max_gap_seconds) = profile.max_gap.map(|duration| duration.as_seconds()) {
+            let gap_seconds = (start_minute - previous_end_minute) as u64 * 60;
+            if gap_seconds > max_gap_seconds
+                && !gap_contains_ok_minute(
+                    previous_end_minute,
+                    start_minute,
+                    &profile.gap_ok_around_minutes,
+                )
+            {
                 return Some(finding(
                     entry,
-                    ClockIssueFindingKind::Overlap,
-                    format!("Clocking overlap: {} minutes", overlap_seconds / 60),
+                    ClockIssueFindingKind::Gap,
+                    format!("Clocking gap: {} minutes", gap_seconds / 60),
                     Some(previous.clock.clone()),
-                    Some(overlap_seconds),
-                    None,
+                    Some(gap_seconds),
+                    Some(max_gap_seconds),
                 ));
-            }
-
-            if let Some(max_gap_seconds) = profile.max_gap.map(|duration| duration.as_seconds()) {
-                let gap_seconds = (start_minute - previous_end_minute) as u64 * 60;
-                if gap_seconds > max_gap_seconds
-                    && !gap_contains_ok_minute(
-                        previous_end_minute,
-                        start_minute,
-                        &profile.gap_ok_around_minutes,
-                    )
-                {
-                    return Some(finding(
-                        entry,
-                        ClockIssueFindingKind::Gap,
-                        format!("Clocking gap: {} minutes", gap_seconds / 60),
-                        Some(previous.clock.clone()),
-                        Some(gap_seconds),
-                        Some(max_gap_seconds),
-                    ));
-                }
             }
         }
     }

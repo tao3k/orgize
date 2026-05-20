@@ -97,20 +97,20 @@ fn render_org_entry(
         output.push_str(":END:\n");
     }
 
-    if let Some(body) = request.body.as_ref().map(|body| body.trim()) {
-        if !body.is_empty() {
-            output.push('\n');
-            output.push_str(body);
-            output.push('\n');
-        }
+    if let Some(body) = request.body.as_ref().map(|body| body.trim())
+        && !body.is_empty()
+    {
+        output.push('\n');
+        output.push_str(body);
+        output.push('\n');
     }
 
-    if let Some(quote) = request.quote.as_ref().map(|quote| quote.trim()) {
-        if !quote.is_empty() {
-            output.push_str("\n#+begin_quote\n");
-            output.push_str(quote);
-            output.push_str("\n#+end_quote\n");
-        }
+    if let Some(quote) = request.quote.as_ref().map(|quote| quote.trim())
+        && !quote.is_empty()
+    {
+        output.push_str("\n#+begin_quote\n");
+        output.push_str(quote);
+        output.push_str("\n#+end_quote\n");
     }
 
     let mut links = request.links.clone();

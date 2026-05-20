@@ -1,4 +1,4 @@
-use orgize::fmt::{format_org, FormatOptions};
+use orgize::fmt::{FormatOptions, format_org};
 
 #[test]
 fn fmt_normalizes_source_with_snapshot() {

@@ -1,17 +1,17 @@
 #![allow(clippy::type_complexity)]
 
 use nom::{
+    IResult, Parser,
     branch::alt,
     bytes::complete::{tag, take_till, take_while1},
     character::complete::space0,
     combinator::{recognize, verify},
-    IResult, Parser,
 };
 
 use super::{
-    combinator::{blank_lines, hash_plus_token, node, trim_line_end, GreenElement},
-    input::Input,
     SyntaxKind,
+    combinator::{GreenElement, blank_lines, hash_plus_token, node, trim_line_end},
+    input::Input,
 };
 
 #[cfg_attr(
@@ -49,10 +49,11 @@ pub(crate) fn affiliated_keyword_nodes(input: Input) -> IResult<Input, Vec<Green
         return Ok((input, Vec::new()));
     }
 
-    if let Some(key) = peek_keyword_key(input) {
-        if input.c.affiliated_keywords.iter().all(|w| w != key) && !key.starts_with("ATTR_") {
-            return Ok((input, Vec::new()));
-        }
+    if let Some(key) = peek_keyword_key(input)
+        && input.c.affiliated_keywords.iter().all(|w| w != key)
+        && !key.starts_with("ATTR_")
+    {
+        return Ok((input, Vec::new()));
     }
 
     let mut children = vec![];
@@ -217,9 +218,9 @@ fn key_with_optional(
 #[test]
 fn parse() {
     use crate::{
+        ParseConfig,
         syntax_ast::{BabelCall, SyntaxKeyword},
         tests::to_ast,
-        ParseConfig,
     };
 
     let to_keyword = to_ast::<SyntaxKeyword>(keyword_node);

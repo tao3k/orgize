@@ -1,6 +1,6 @@
 use crate::SyntaxKind;
 
-use super::{filter_token, SyntaxKeyword, Token};
+use super::{SyntaxKeyword, Token, filter_token};
 
 impl SyntaxKeyword {
     ///

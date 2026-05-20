@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{AstRef, ElementData, TableFormulaReferenceKind},
     Org,
+    ast::{AstRef, ElementData, TableFormulaReferenceKind},
 };
 
 #[test]

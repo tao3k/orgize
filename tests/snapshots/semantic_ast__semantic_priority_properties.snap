@@ -29,6 +29,7 @@ Document {
         },
     ],
     filetags: [],
+    tag_definitions: [],
     export_settings: ExportSettings {
         select_tags: [],
         exclude_tags: [],

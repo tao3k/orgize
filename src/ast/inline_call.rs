@@ -1,6 +1,6 @@
 use crate::syntax::SyntaxKind;
 
-use super::{filter_token, InlineCall, Token};
+use super::{InlineCall, Token, filter_token};
 
 impl InlineCall {
     ///

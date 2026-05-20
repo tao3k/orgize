@@ -62,6 +62,7 @@ impl<A> Document<A> {
                 .collect(),
             metadata: self.metadata.iter().map(|x| x.map_ann_with(f)).collect(),
             filetags: self.filetags.clone(),
+            tag_definitions: self.tag_definitions.clone(),
             export_settings: self.export_settings.clone(),
             link_abbreviations: self.link_abbreviations.clone(),
             includes: self.includes.iter().map(|x| x.map_ann_with(f)).collect(),
@@ -100,6 +101,7 @@ impl<A> Document<A> {
                 .map(|x| x.try_map_ann_with(f))
                 .collect::<Result<_, _>>()?,
             filetags: self.filetags.clone(),
+            tag_definitions: self.tag_definitions.clone(),
             export_settings: self.export_settings.clone(),
             link_abbreviations: self.link_abbreviations.clone(),
             includes: self

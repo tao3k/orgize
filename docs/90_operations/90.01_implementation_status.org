@@ -517,8 +517,8 @@ runtime dependency is copied into this repository.
       release scripts.
 - [X] Project block and inline source records with normalized Babel header args,
       Org Babel defaults, tangle metadata, coderefs, and result evidence.
-- [X] Add Babel lint for duplicate source names, missing noweb/CALL targets,
-      eval-sensitive headers, and empty tangle targets.
+- [X] Add Babel lint for duplicate source names, missing noweb/CALL/inline-call
+      targets, eval-sensitive headers, and empty tangle targets.
 - [X] Project `#+TBLFM:` assignments, flags, and references without evaluating
       formulas.
 - [X] Project document and section `COLUMNS` declarations using the official
@@ -776,6 +776,16 @@ runtime dependency is copied into this repository.
 - [X] Expose `propertyProfileJson` and snapshot `propertyProfile` through wasm,
       with matching TypeScript DTO definitions for downstream Window/Agent
       consumers.
+- [X] Add host-loaded `PROPERTY_SCHEMA` contract validation without changing
+      Org property drawer syntax. Schema references may be loaded contract ids,
+      direct file references/Org file links, or macro-shaped references; orgize
+      matches them against the caller supplied registry and emits read-only
+      schema applications plus `ORG040` advice. Snapshot fixtures now cover the
+      core schema application projection, lint advice text, focused wasm DTO
+      shape, full `snapshotWithSchemasJson` handoff, and CLI registry-file
+      loading with a durable fixture plus the `20.03` registry contract,
+      machine-readable JSON Schema sidecar, invalid-registry CLI diagnostic
+      snapshot, and dedicated `lint_property_schema` test owner.
 
 *** M24.26 Refile Target Index And Non-Executing Plan
 
@@ -884,7 +894,7 @@ orgize core unless represented as source-grounded metadata.
 | P0 | TODO dependencies and blocked task evidence | `doc/org-manual.org` "TODO dependencies"; `lisp/org.el` `org-enforce-todo-dependencies`, `org-track-ordered-property-with-tag` | TODO state, lifecycle, planning rows, tags/properties, `TaskDependencyRecord` for open descendant TODOs, unresolved checkboxes, local `ORDERED` evidence, exact `TaskBlockerRecord` previous-sibling identity, wasm `taskBlockersJson`, agenda/planning embedding, and compact `ORG029` blocked-state advice | No transition-enforcement diagnostics or configurable dependency policy profile yet | Add policy/profile hooks only if downstream needs non-default dependency checks |
 | P0 | Progress and statistics cookies | `doc/org-manual.org` "Breaking Down Tasks into Subtasks", "Checkboxes"; `lisp/org.el` `org-update-statistics-cookies`; `lisp/org-list.el` `org-update-checkbox-count` | Statistics cookie syntax exists; lists and checkboxes are parsed; `ProgressStatsRecord` rolls up subtree TODOs, checkboxes, cookies, Effort, dependencies, and wasm `progressStatsJson`; `ORG027`/`ORG028` lint ambiguous and stale heading cookies; `ORG028` also checks list-item checkbox cookies with direct-child and `COOKIE_DATA: recursive` behavior | No source update plan or custom `org-checkbox-hierarchical-statistics` profile toggle beyond native `COOKIE_DATA: recursive` evidence | Keep source updates out of core; add profile hooks only if downstream needs non-default checkbox hierarchy policy |
 | P0 | Clock tables and effort rollups | `doc/org-manual.org` "Clocking Work Time", "The clock table", "Effort Estimates"; `lisp/org-clock.el` `org-clock-get-table-data`, `org-dblock-write:clocktable` | CLOCK lines and durations are parsed; effort durations are typed; progress stats expose local and subtree Effort seconds; `ClockRollupRecord` adds local/subtree clock totals and Effort delta status; `ClockTablePlan` projects file/subtree/tree/treeN clocktable rows without source mutation; absolute `:block`, `:tstart`, and `:tend` windows are applied and exposed as `time_window`; `:match` tags/property filters are applied and exposed as `match_filter`; `:properties`/`:inherit-props` are projected as property columns and row values; `ClockIssueFinding` reports default Org agenda-style no-end-time, long/short duration, overlap, and gap diagnostics; wasm exposes `clockRollupsJson`, `clockTablePlansJson`, `clockIssuesJson`, and snapshot fields | No generated table refresh, step-split tables, or agenda/external-file scope scan | Keep source refresh and agenda-file scan downstream; add downstream consumption receipts only where needed |
-| P0 | Property inheritance profile and allowed-value schema | `doc/org-manual.org` "Property Inheritance", "Column View"; `lisp/org.el` `org-use-property-inheritance`; `lisp/org-colview.el` summary/value metadata | Effective properties, special properties, column declarations, `PropertyProfile`, native `PROPERTY_ALL` allowed values, fixed global descriptors, wasm `propertyProfileJson`, and `ORG030` allowed-value advice | No caller-provided inheritance policy profile yet; current projection preserves orgize's existing all-property effective view | Add caller-selectable inheritance policy only if downstream needs non-default Org property inheritance behavior |
+| P0 | Property inheritance profile and allowed-value schema | `doc/org-manual.org` "Property Inheritance", "Column View"; `lisp/org.el` `org-use-property-inheritance`; `lisp/org-colview.el` summary/value metadata | Effective properties, special properties, column declarations, `PropertyProfile`, native `PROPERTY_ALL` allowed values, fixed global descriptors, host-loaded `PROPERTY_SCHEMA` registry validation, snapshot-covered schema applications, CLI `--property-schema-registry`, durable `20.03` registry contract, JSON Schema sidecar and fixture, wasm `propertyProfileJson`/`propertyProfileWithSchemasJson`/`snapshotWithSchemasJson`, `ORG030` allowed-value advice, and `ORG040` schema-contract advice | No caller-provided inheritance policy profile yet; current projection preserves orgize's existing all-property effective view | Add caller-selectable inheritance policy only if downstream needs non-default Org property inheritance behavior |
 | P1 | Refile target index and movement provenance | `doc/org-manual.org` "Refile and Copy"; `lisp/org-refile.el` `org-refile-get-targets`, `org-refile-use-outline-path`, `org-refile-allow-creating-parent-nodes` | LOGBOOK refile records, local destination lint, `RefileTargetIndex`, native all/tag/TODO/level/maxlevel selectors, outline display modes, non-executing `RefilePlan`, `RefileCreateParentPlan` for one missing final target heading under an existing parent, wasm `refileTargetsJson`, wasm `refilePlanJson`, and snapshot `refileTargets` | No source mutation, history/bookmark update, cache regeneration, or regexp target evaluation | Keep execution downstream; add richer refile provenance only if persisted movement logs need more detail |
 | P1 | Agent capture protocol without source mutation | `doc/org-manual.org` "Capture", "Tags", "Properties and Columns", "Dates and Times" as Org artifact anchors; `org-capture.el` is historical comparison only | Datetree, refile, lifecycle, links, properties, and timestamps can represent captured source after it exists | No Agent-facing request/plan DTO that turns interaction events into previewable native Org entries | Add `AgentCaptureRequest` and `AgentCapturePlan`, plus wasm `capturePlanJson`, while keeping article UI and patch application in org-zhixing/runtime |
 | P1 | Dynamic block registry and parameter projection | `doc/org-manual.org` "Dynamic Blocks"; `lisp/org.el` `org-dblock-update`; `lisp/org-clock.el`, `lisp/org-colview.el` writers | Dynamic blocks are parsed as syntax nodes; `DynamicBlockRecord` now projects block names, plist-like params, `clocktable`/`columnview`/`unknown` writer kind, existing-output state, wasm `dynamicBlocksJson`, and snapshot `dynamicBlocks` without executing writers | No generated output refresh or writer-specific freshness proof | Keep execution/source refresh downstream; use registry to drive agent warnings and UI receipts |
@@ -969,12 +979,16 @@ Official anchors: `doc/org-manual.org` section "Working with Source Code";
       `:var`, `:noweb`, `:tangle`, `:dir`, and `:cache`.
 - [X] Add a source-block side table for language, name, result, header args,
       coderefs, and tangle target metadata.
+- [X] Add a source-block reference side table for literate programming:
+      =#+CALL:=, inline =call_name(...)=, and noweb =<<name>>= references are
+      resolved against local =#+NAME= and =:noweb-ref= declarations without
+      executing Babel.
 - [X] Add a safe, non-executing source tangle plan that groups blocks by
       explicit or caller-provided targets and records disabled/inline/missing
       target skips without writing files.
-- [X] Add lint rules for missing block names referenced by noweb or calls,
-      unsafe/eval-sensitive headers, duplicate `#+NAME:`, and invalid tangle
-      targets.
+- [X] Add lint rules for missing block names referenced by noweb, =#+CALL:=, or
+      inline calls, unsafe/eval-sensitive headers, duplicate =#+NAME:=, and
+      invalid tangle targets.
 - [X] Keep execution out of orgize; only parse, index, lint, format, and
       project metadata.
 
@@ -1048,6 +1062,21 @@ Official anchors: `doc/org-manual.org` sections "Exporting", "Publishing",
       compatibility surface used by current exporters.
 - [X] Model `#+BIND:`, `#+SETUPFILE:`, `#+EXPORT_FILE_NAME:`, and backend
       `#+ATTR_*` settings as side-table metadata without executing Emacs Lisp.
+- [X] Model `#+TAGS:` vocabulary shortcuts and explicit `#+PYTHON:` directives;
+      expose a recursive org-elements JSON payload and opt-in host execution
+      API so Python, TypeScript, CLIs, and other tools can bind to semantic Org
+      sections, elements, objects, targets, footnotes, and source blocks without
+      running code during parse.
+- [X] Add a flat org-elements node index with stable ordinal/category/kind,
+      source range, outline path, context, and summary fields so downstream
+      tools can perform `org-element-map`-style filtering without recursively
+      walking the full payload themselves.
+- [X] Promote the flat node index from JSON-only output to a typed Rust API
+      (`Document::org_elements_index`) plus an index-only wasm projection
+      (`orgElementsIndexJson`) for lower-cost TypeScript/Python consumers.
+- [X] Add a typed `OrgElementsIndexQuery` and filtered JSON/wasm projection so
+      consumers can select category/kind/context/outline subsets without
+      loading or walking the whole org-elements tree.
 - [X] Add an explicit include expansion plan for `#+INCLUDE:` line/range/options
       semantics; keep expansion opt-in and filesystem-aware only in lint/export
       helper APIs.
@@ -1100,11 +1129,11 @@ Priority rules:
 | M25.3 | P1 | Org Cite bibliography and print-bibliography projection | `lisp/oc.el`, `lisp/oc-csl.el`, `lisp/oc-biblatex.el`, `lisp/oc-natbib.el`; local AST/exporter research checkout as comparison only | Citation syntax and semantic `Citation`/`CiteReference` objects exist; malformed citations are diagnosed | No `#+bibliography`, `#+cite_export`, `#+print_bibliography`, nocite, processor/style metadata, or bibliography placement plan | Add `CitationExportPlan` side table that records bibliography files, citation keys, processors, style hints, nocite/all-cite intent, and print-bibliography locations without loading bibliography files | Original Rust snapshots for bibliography keywords, citation key collection, nocite, malformed print options; no citeproc dependency |
 | M25.4 | P1 | Agent capture protocol and wasm plan DTO | `doc/org-manual.org` "Capture", "Tags", "Properties and Columns", "Dates and Times"; `org-capture.el` is historical comparison only | Datetree, refile, lifecycle, attachment, link, property, and memory projections can consume captured Org entries after they exist | No structured Agent capture request that renders a native Org entry preview with provenance, target intent, memory policy, and non-mutating receipts | Add `AgentCaptureRequest`, `AgentCapturePlan`, and wasm `capturePlanJson`; keep rich interaction and patch application in org-zhixing/runtime | Core snapshot for idea/article/task capture plans; wasm DTO smoke over named JSON requests; no source insertion or Emacs Lisp evaluation |
 | M25.5 | P1 | Publishing/site graph for blog-style consumers | `doc/org-manual.org` "Publishing"; `lisp/ox-publish.el`; export manual settings | Publishing/export keywords and include plans are side tables | No project graph, sitemap/index plan, publish dependency graph, or changed-file selection model | Add `PublishingProjectPlan` from explicit TOML/Org/config snapshots, with source/destination roots, sitemap intent, include/macro dependencies, and no write action | Snapshot project graph and sitemap plan; path validation lint; org-zhixing can consume the DTO without rebuilding Org parsing in TypeScript |
-| M25.6 | P1 | Attachment filesystem and VCS evidence | `doc/org-manual.org` "Attachments", "Automatic version-control with Git"; `lisp/org-attach.el`, `lisp/org-attach-git.el` | Attachment directories, ID/DIR precedence, attachment links, optional existence lint | No git-annex/git dirty/missing evidence, attachment sync inventory, archive-delete advice, or configurable inheritance/profile DTO | Add filesystem-aware `AttachmentInventory`/`AttachmentVcsEvidence` helper behind lint APIs, keeping parser output filesystem-independent | Tempdir snapshot tests for present/missing/untracked files; no mutation; no default filesystem walk |
+| M25.6 | P1 | Attachment filesystem and VCS evidence | `doc/org-manual.org` "Attachments", "Automatic version-control with Git"; `lisp/org-attach.el`, `lisp/org-attach-git.el` | Attachment directories, ID/DIR precedence, attachment links, optional existence lint, attachment-directory-aware inventory resolution, opt-in git/git-annex evidence, and non-mutating archive-delete advice | No attachment sync inventory or configurable inheritance/profile DTO | Keep parser output filesystem-independent; add sync/profile DTOs only if downstream needs them | Tempdir snapshot tests for present/missing/untracked files; no mutation; no default filesystem walk |
 | M25.7 | P1 | Include/macro/export dependency graph | `doc/org-manual.org` "Include Files", "Macro Replacement", "Export Settings"; `lisp/org-macro.el`, `lisp/ox.el` | Include expansion plan, macro expansion side table, high-usage export settings, and `ExportDependencyGraph` over include/setupfile/bibliography/macro/output side tables | Runtime file loading, setupfile expansion, macro rewriting, and exporter execution remain intentionally out of core | Keep graph as non-mutating projection and extend only with explicit consumer DTOs | Snapshot graph nodes/edges plus cycle, missing-file, and missing-macro diagnostics; exporters remain non-mutating |
 | M25.8 | P2 | Org Plot, radio tables, and table-derived chart metadata | `doc/org-manual.org` "Org Plot", "Tables in Arbitrary Syntax"; `lisp/org-plot.el`, `lisp/org-table.el` | Tables, formulas, alignment, formula lint, and `TableVisualizationPlan` metadata for `#+PLOT:` and `#+ORGTBL:` are implemented | Actual graph rendering, ASCII plot generation, radio-table insertion, and translator execution remain intentionally out of core | Keep as side-table metadata; expose downstream DTOs only when a real consumer needs them | Snapshot plot option parsing, invalid option diagnostics, radio receiver matching, and table association rules |
-| M25.9 | P2 | Org Crypt and opaque subtree advice | `doc/org-manual.org` "Org Crypt"; `lisp/org-crypt.el` | Crypt tags/properties are ordinary tags/properties | No explicit warning that encrypted bodies are opaque and headline/properties remain visible | Add `CryptState` projection and lint/advice for crypt-tagged sections; never decrypt | Snapshot crypt-tagged sections, inherited tags, and export/indexer pruning advice |
-| M25.10 | P2 | RSS/feed, org-timer, and mobile/persist metadata | `doc/org-manual.org` "RSS Feeds", "Taking Notes with a Relative Timer"; `lisp/org-feed.el`, `lisp/org-timer.el`, `lisp/org-mobile.el`, `lisp/org-persist.el` | Generic keywords, timestamps, links, and metadata can be parsed | No feed template/source metadata, relative timer side table, mobile/persist state model | Keep as metadata-only side tables if real downstream source files require them | Add only after P0/P1; snapshots must prove no runtime/network interaction |
+| M25.9 | P2 | Org Crypt and opaque subtree advice | `doc/org-manual.org` "Org Crypt"; `lisp/org-crypt.el` | `CryptState`, `document.crypt_states()`, `ORG038`/`ORG039`, wasm `cryptJson`, and `snapshotJson().crypt` expose direct/inherited `crypt` tags, `CRYPTKEY`, encrypted payload markers, and opaque-body advice | No configurable custom `org-crypt-tag-matcher` profile yet | Add custom matcher/profile support only if downstream needs non-default crypt tag names | Snapshot crypt-tagged sections, inherited tags, key-only advice, and wasm DTO smoke |
+| M25.10 | P2 | RSS/feed, org-timer, and mobile/persist metadata | `doc/org-manual.org` "RSS Feeds", "Taking Notes with a Relative Timer"; `lisp/org-feed.el`, `lisp/org-timer.el`, `lisp/org-mobile.el`, `lisp/org-persist.el` | `RuntimeMetadataPlan`, `document.runtime_metadata_plan()`, wasm `runtimeMetadataJson`, and `snapshotJson().runtimeMetadata` expose FEEDSTATUS drawers, relative timer stamps, MobileOrg index links, `FLAGGED`/`ORIGINAL_ID` evidence, and feed/timer/mobile/persist execution boundaries | No feed retrieval/template expansion, timer runtime state mutation, mobile push-pull/checksum/encryption, or org-persist cache I/O | Keep as source-backed metadata and explicit boundary receipts only | Snapshot runtime metadata fixture, wasm DTO smoke, and build-time wasm DTO line-budget gate |
 | M25.x | Out-of-core | Remote editing, dynamic block refresh, table recalculation, capture finalization, publishing execution, link opening, code execution | Agenda remote edit commands, `org-dblock-update`, `org-table-recalculate`, `org-capture-finalize`, `org-publish`, `org-link-open`, Babel execution | orgize already favors non-mutating plans and lint evidence | These actions require live editor state, filesystem mutation, subprocesses, or network/handler execution | Do not implement in core; expose safe source-grounded plans and explicit diagnostics only | Boundary tests ensure no execution dependencies or hidden mutation paths enter parser/export APIs |
 
 Recommended implementation order for the next major PR train:
@@ -1126,8 +1155,13 @@ Recommended implementation order for the next major PR train:
 7. M25.8 table visualization metadata, so Org Plot and radio-table consumers
    get table-shape and option plans without gnuplot, translator, or source
    mutation in core.
+8. M25.9 Org Crypt projection, so index/export/frontend consumers can see the
+   sensitive-body boundary without decrypting or executing Org Crypt.
+9. M25.10 runtime metadata projection, so feed/timer/mobile/persist evidence
+   is available as a safe side table without network, filesystem sync, or cache
+   execution.
 
-**** M25.1-M25.8 Implementation Receipt
+**** M25.1-M25.10 Implementation Receipt
 
 - [X] Add `AgendaWorkspaceBuilder`, `AgendaWorkspaceQuery`, and named
       workspace command plans for daily agenda rows, TODO lists, tag/property
@@ -1164,8 +1198,207 @@ Recommended implementation order for the next major PR train:
       plots or rewriting target buffers.
 - [X] Diagnose invalid PLOT integer/list/boolean options and missing radio
       receivers as side-table warnings.
-- [X] Cover M25.1-M25.8 with original compact snapshots based on Rust fixtures:
+- [X] Add `CryptState` / `document.crypt_states()` for default `crypt` tags,
+      inherited crypt tag evidence, `CRYPTKEY` visibility, encrypted payload
+      markers, and opaque-body warnings without decrypting source text.
+- [X] Add `ORG038`/`ORG039` lint advice and wasm `cryptJson` /
+      `snapshotJson().crypt` DTO projection so downstream tools do not need to
+      rescan raw tags and properties.
+- [X] Add `RuntimeMetadataPlan` / `document.runtime_metadata_plan()` for
+      FEEDSTATUS drawers, relative timer stamps, MobileOrg index links,
+      READONLY/ALLPRIORITIES metadata, `FLAGGED` sections, and
+      `ORIGINAL_ID`/`MOBILE*` properties.
+- [X] Add wasm `runtimeMetadataJson` and `snapshotJson().runtimeMetadata`, then
+      split the public DTO declaration surface into focused `dto/*.d.ts`
+      modules instead of growing one 1000+ line declaration file.
+- [X] Add a wasm build-dependency policy gate for public DTO/binding line
+      budgets, because the Rust harness scans Rust source but does not parse
+      TypeScript declaration files.
+- [X] Cover M25.1-M25.10 with original compact snapshots based on Rust fixtures:
       multi-file agenda/TODO/search/stuck plans, citation export planning,
       Agent capture planning, publishing graph planning, and attachment
       inventory warnings, export dependency graph diagnostics, and table
-      visualization/radio-table metadata.
+      visualization/radio-table metadata, Org Crypt opaque subtree advice, and
+      runtime metadata boundary receipts.
+
+*** M26 Org Vocabulary And Host Binding Refinement
+
+- [X] Preserve official =#+TAGS:= group structure in the semantic tag
+      vocabulary: unlabelled ={ ... }= mutually exclusive sets, labelled
+      =[ group : members ]= hierarchies, and labelled ={ group : members }=
+      mutually exclusive child sets.
+- [X] Extend =TagDefinition=, wasm metadata DTOs, and =org_elements_json()=
+      with =is_group= and =group= metadata while keeping existing
+      =name=/=shortcut=/=raw= fields stable for older consumers.
+- [X] Add an original Rust snapshot over tag vocabulary groups without copying
+      Org-mode tests or introducing runtime Emacs dependencies.
+
+*** M27 Org Group Tag Match Expansion
+
+- [X] Expand document-level =#+TAGS:= group vocabulary in agenda match
+      evaluation, including transitive groups such as =[ GTD : Control ]=
+      followed by =[ Control : Context Task ]=.
+- [X] Apply the same group-tag matcher to agenda entries, sparse-tree
+      projections, workspace match commands, and clocktable =:match= filters
+      without changing headline tags or parser output.
+- [X] Add an original Rust snapshot proving =+GTD= and =+Control= behavior
+      across agenda, sparse-tree, workspace, and clocktable projections.
+
+*** M28 Group Tags In Special-Property Matches
+
+- [X] Reuse the same document-level tag vocabulary matcher for =TAGS= and
+      =ALLTAGS= special-property agenda match expressions, so
+      =ALLTAGS={GTD}= and =TAGS={Control}= follow group expansion.
+- [X] Preserve existing string/substring behavior for literal colon-delimited
+      tag property values while adding group-aware fallback matching.
+- [X] Extend the original tag vocabulary snapshot to cover agenda and
+      sparse-tree special-property matches plus negative =ALLTAGS<>{...}=
+      behavior.
+
+*** M29 Org Elements Index Selector Refinement
+
+- [X] Resolve the PR review thread around =#+TAGS:= group delimiters by
+      keeping ={=, =}=, =[=, =]=, and =:= out of exported tag definitions and
+      adding an explicit regression assertion over the semantic vocabulary.
+- [X] Extend =OrgElementsIndexQuery= with summary-field selectors:
+      =summary_eq= for exact compact values and =summary_contains= for text or
+      string-list fields.
+- [X] Expose the same selectors through wasm =orgElementsIndexQueryJson= as
+      =summaryEquals= and =summaryContains= so TypeScript/Python hosts can ask
+      for link paths, section titles, and source-block languages without
+      materializing the full Org elements tree.
+
+*** M29.1 Literate Source Reference Projection
+
+- [X] Add =SourceBlockReference= and =SourceBlockReferenceKind= to the semantic
+      AST API so host tools can consume non-executing Babel edges separately
+      from source-block definitions.
+- [X] Resolve =#+CALL: name(...)= targets after trimming Org's ordinary keyword
+      spacing, covering a long-standing lint blind spot where =#+CALL: foo()=
+      did not produce a missing-target warning.
+- [X] Expose source-block references through wasm =sourceBlocksJson= with
+      =kind=, =target=, =resolved=, and source range fields.
+- [X] Split wasm source-block DTO tests into a dedicated owner so the harness
+      large-test-leaf policy stays enabled.
+
+*** M29.2 Babel Header Variable Dependency Projection
+
+- [X] Extend =SourceBlockReferenceKind= with =HeaderVar= so
+      =:var data=name= and =:var data=name(args)= source-block dependencies
+      enter the same non-executing literate graph as noweb and Babel calls.
+- [X] Keep =:var= literal assignments such as numbers, quoted strings, lists,
+      and ambiguous bare non-source names out of missing-source diagnostics, so
+      named tables and ordinary literal values are not misreported as broken
+      source blocks.
+- [X] Resolve Babel calls and header variables only against local =#+NAME=
+      source blocks, while noweb references continue to accept both =#+NAME=
+      source blocks and explicit =:noweb-ref= declarations.
+- [X] Expose header-variable reference edges through wasm =sourceBlocksJson=
+      with optional =variable= metadata.
+
+*** M29.3 Babel Affiliated Header Argument Projection
+
+- [X] Merge native =#+HEADER:= affiliated keywords into source-block semantic
+      header arguments before the =#+BEGIN_SRC= line arguments, matching Org's
+      code-block-specific header argument precedence without executing Babel.
+- [X] Accept the legacy plural =#+HEADERS:= spelling as an affiliated header
+      source because Org-mode still accepts it for backward compatibility.
+- [X] Reuse the existing structured header-arg parser so =:var=, =:results=,
+      =:tangle=, =:noweb-ref=, and other header arguments have the same
+      normalized shape whether they appear on =#+HEADER:= or =#+BEGIN_SRC=.
+
+*** M29.4 Babel Property Header Argument Projection
+
+- [X] Project native =#+PROPERTY: header-args= file-level defaults into source
+      and inline-source block records without executing Babel.
+- [X] Project language-specific =#+PROPERTY: header-args:LANG= defaults after
+      common property defaults and before =#+HEADER:= / =#+BEGIN_SRC= args.
+- [X] Apply subtree property drawer =:header-args:= and
+      =:header-args:LANG:= inheritance through =Section.effective_properties=,
+      preserving inner subtree override semantics.
+- [X] Fix =:tangle= precedence so the most specific header argument wins across
+      property, affiliated keyword, and block-line layers.
+
+*** M29.5 Babel Tangle Planning Metadata
+
+- [X] Extend =SourceBlockTangle= with non-executing =:mkdirp=,
+      =:comments=, =:shebang=, and =:noweb= tangle-context metadata.
+- [X] Carry the structured tangle metadata into =SourceTangleBlock= so
+      =source_tangle_plan= consumers can preview file creation, comments,
+      shebang, and noweb behavior without executing Babel.
+- [X] Expose the same tangle metadata through wasm =sourceBlocksJson= for
+      browser and downstream TypeScript consumers.
+
+*** M29.6 Babel Result Planning Metadata
+
+- [X] Extend =SourceBlockRecord= with non-executing =:results= planning
+      metadata for collection, format, insertion handling, and value/output
+      type.
+- [X] Preserve partial override semantics across defaults, =#+PROPERTY:=
+      header args, =#+HEADER:=, and block-line args by classifying result
+      tokens by Org Babel value group.
+- [X] Carry =:file=, =:file-desc=, =:file-ext=, =:file-mode=, and
+      =:output-dir= hints into result planning without writing files.
+- [X] Expose the same result planning metadata through wasm =sourceBlocksJson=
+      and TypeScript DTO declarations.
+
+*** M29.7 Babel Execution And Export Planning Metadata
+
+- [X] Extend =SourceBlockRecord= with a non-executing execution/export plan
+      for =:eval=, =:exports=, =:cache=, =:session=, =:dir=, and =:hlines=.
+- [X] Split source-block header normalization into a dedicated semantic module
+      so source-block record collection stays small enough for the harness
+      large-module policy.
+- [X] Model =:noweb= by context so eval, export, and tangle consumers can see
+      expand/strip/disabled decisions without executing Babel.
+- [X] Expose the same execution/export planning metadata through wasm
+      =sourceBlocksJson= and TypeScript DTO declarations.
+
+*** M29.8 Babel Execution Risk Lint Receipts
+
+- [X] Route Babel lint through the structured execution plan instead of only
+      scanning raw header arguments.
+- [X] Add agent-facing warnings for explicit stateful =:session= blocks whose
+      =:eval= policy can execute.
+- [X] Add agent-facing warnings for explicit =:cache yes= blocks whose =:eval=
+      policy can execute, while keeping inert =:eval never= blocks quiet.
+
+*** M29.9 Babel Result File Lint Receipts
+
+- [X] Route Babel lint through =SourceBlockResultOptions= for file-result
+      readiness checks.
+- [X] Add an agent-facing warning for =:results file= blocks that do not
+      declare an explicit =:file= target.
+- [X] Keep the check non-executing and metadata-only; orgize does not infer
+      generated file paths from source code output.
+
+*** M29.10 Attachment Inventory VCS Closure
+
+- [X] Resolve =attachment:= links through the section's current or inherited
+      attachment directory when building filesystem-aware inventory entries.
+- [X] Add opt-in git-annex availability evidence alongside existing git status
+      checks, while keeping parse output and default inventory calls
+      filesystem-independent.
+- [X] Add an original temp-git snapshot covering clean, untracked, missing, and
+      no-directory attachment receipts without copying upstream Org tests.
+
+*** M29.11 Attachment Archive Delete Advice
+
+- [X] Add caller-supplied =org-attach-archive-delete= policy metadata to
+      =AttachmentInventoryOptions=.
+- [X] Project archived sections with attachment directories into non-mutating
+      archive-delete advice for =query= and =always= policies.
+- [X] Keep orgize read-only: the advice records possible deletion impact but
+      never deletes attachment files or modifies archived subtrees.
+
+*** M29.12 Attachment Display And Sync Plan
+
+- [X] Add configurable =org-attach-id-dir= support to filesystem-aware
+      attachment inventory, preserving the default =data/= layout while allowing
+      local =.attach/= trees.
+- [X] Project attachment links into display records with section context,
+      effective tags, ID, media kind, existence, and resolved absolute path.
+- [X] Add non-mutating sync-plan advice for missing directories, missing linked
+      files, orphan files, empty directories, and stale =:ATTACH:= tags.
+- [X] Expose =attachmentInventoryJson= through wasm/worker DTOs without growing
+      the root DTO surface past the harness line budget.

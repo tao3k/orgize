@@ -6,8 +6,9 @@ use std::{error::Error, fmt, str::FromStr};
 ///
 /// This intentionally covers the common official syntax used by agenda tag
 /// searches: `+tag`, `-tag`, `tag|other`, `PROP="value"`, and numeric
-/// comparisons such as `Effort<2`. Parentheses and group-tag expansion remain
-/// outside this first parser-v2 surface.
+/// comparisons such as `Effort<2`. Parentheses remain outside this parser-v2
+/// surface; document projections apply `#+TAGS:` group expansion when a tag
+/// vocabulary is available.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AgendaMatchQuery {
     pub(crate) source: String,
@@ -237,15 +238,16 @@ fn find_property_operator(raw: &str) -> Option<(usize, AgendaMatchOperator, usiz
             _ => {}
         }
 
-        if !in_quote && brace_depth == 0 {
-            if let Some((operator, len)) = operator_at(&raw[index..]) {
-                let len = if raw[index + len..].starts_with('*') {
-                    len + 1
-                } else {
-                    len
-                };
-                return Some((index, operator, len));
-            }
+        if !in_quote
+            && brace_depth == 0
+            && let Some((operator, len)) = operator_at(&raw[index..])
+        {
+            let len = if raw[index + len..].starts_with('*') {
+                len + 1
+            } else {
+                len
+            };
+            return Some((index, operator, len));
         }
         index += 1;
     }

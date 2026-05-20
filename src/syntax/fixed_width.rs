@@ -1,15 +1,15 @@
 use nom::{
+    IResult,
     bytes::complete::{tag, take_while},
     character::complete::space0,
     combinator::{iterator, opt},
-    IResult,
 };
 
 use super::{
-    combinator::{blank_lines, eol_or_eof, GreenElement, NodeBuilder},
+    SyntaxKind,
+    combinator::{GreenElement, NodeBuilder, blank_lines, eol_or_eof},
     input::Input,
     keyword::affiliated_keyword_nodes,
-    SyntaxKind,
 };
 
 fn fixed_width_node_base(input: Input) -> IResult<Input, GreenElement, ()> {

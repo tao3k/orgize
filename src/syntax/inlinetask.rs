@@ -1,7 +1,8 @@
-use nom::{character::complete::space0, combinator::opt, IResult, Parser};
+use nom::{IResult, Parser, character::complete::space0, combinator::opt};
 
 use super::{
-    combinator::{line_starts_iter, node, trim_line_end, GreenElement, NodeBuilder},
+    SyntaxKind,
+    combinator::{GreenElement, NodeBuilder, line_starts_iter, node, trim_line_end},
     drawer::property_drawer_node,
     headline::{
         headline_keyword_token, headline_priority_node, headline_stars, headline_tags_node,
@@ -10,7 +11,6 @@ use super::{
     object::standard_object_nodes,
     parser_contract::ElementNodesParser,
     planning::planning_node,
-    SyntaxKind,
 };
 
 #[cfg_attr(

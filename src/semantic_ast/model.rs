@@ -4,8 +4,8 @@ use rowan::TextRange;
 
 use super::attachment_model::{AttachmentDirectory, AttachmentLink, AttachmentState};
 use super::block_model::{
-    joined_block_lines, BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumbering, BlockSwitches,
-    SemanticFixedWidth,
+    BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumbering, BlockSwitches, SemanticFixedWidth,
+    joined_block_lines,
 };
 use super::lifecycle_model::{ArchiveLocation, ArchiveState};
 use super::link_model::{
@@ -102,6 +102,7 @@ pub struct Document<A = ()> {
     pub archive_locations: Vec<ArchiveLocation<A>>,
     pub metadata: Vec<Keyword<A>>,
     pub filetags: Vec<String>,
+    pub tag_definitions: Vec<TagDefinition>,
     pub export_settings: ExportSettings,
     pub link_abbreviations: Vec<LinkAbbreviation>,
     pub includes: Vec<IncludeDirective<A>>,
@@ -111,6 +112,23 @@ pub struct Document<A = ()> {
     pub children: Vec<Element<A>>,
     pub sections: Vec<Section<A>>,
     pub diagnostics: Vec<Diagnostic>,
+}
+
+/// One tag entry from a document-level `#+TAGS:` vocabulary line.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TagDefinition {
+    pub name: String,
+    pub shortcut: Option<String>,
+    pub raw: String,
+    pub is_group: bool,
+    pub group: Option<TagDefinitionGroup>,
+}
+
+/// Parent group metadata for a tag declared in `#+TAGS:`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TagDefinitionGroup {
+    pub name: Option<String>,
+    pub exclusive: bool,
 }
 
 /// Document-level export and indexing settings collected from Org keywords.

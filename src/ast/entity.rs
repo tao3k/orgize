@@ -1,6 +1,6 @@
-use crate::{entities::ENTITIES, SyntaxKind};
+use crate::{SyntaxKind, entities::ENTITIES};
 
-use super::{filter_token, Entity};
+use super::{Entity, filter_token};
 
 impl Entity {
     fn entity(&self) -> Option<&(&str, &str, bool, &str, &str, &str, &str)> {

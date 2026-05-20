@@ -5,10 +5,10 @@ use super::agenda_match::{
     AgendaMatchTerm, AgendaMatchValue,
 };
 use super::sparse_tree_model::{
-    truncate_text, SparseTreeCard, SparseTreeMatch, SparseTreeMatchKind, SparseTreeProjection,
-    SparseTreeQuery, SparseTreeReceipt, SparseTreeReceiptKind, SparseTreeSkip,
-    SparseTreeSkipReason,
+    SparseTreeCard, SparseTreeMatch, SparseTreeMatchKind, SparseTreeProjection, SparseTreeQuery,
+    SparseTreeReceipt, SparseTreeReceiptKind, SparseTreeSkip, SparseTreeSkipReason, truncate_text,
 };
+use super::tag_vocabulary::TagMatcher;
 use super::{
     Document, ParsedAnnotation, SectionIndexProperty, SectionIndexRecord, SectionIndexSource,
     SectionIndexSpecialProperty,
@@ -27,11 +27,12 @@ impl Document<ParsedAnnotation> {
             Some(source_file) => self.section_index_records_for_file(source_file),
             None => self.section_index_records(),
         };
+        let tag_matcher = TagMatcher::new(&self.tag_definitions);
         let total_candidates = records.len();
         let (cards, skipped) = records.iter().fold(
             (Vec::new(), Vec::new()),
             |(mut cards, mut skipped), record| {
-                match sparse_tree_decision(record, query) {
+                match sparse_tree_decision(record, query, tag_matcher) {
                     SparseTreeDecision::Accept(card) => cards.push(*card),
                     SparseTreeDecision::Skip(skip) if query.explain_skips => skipped.push(skip),
                     SparseTreeDecision::Skip(_) => {}
@@ -55,6 +56,7 @@ enum SparseTreeDecision {
 fn sparse_tree_decision(
     record: &SectionIndexRecord,
     query: &SparseTreeQuery,
+    tag_matcher: TagMatcher<'_>,
 ) -> SparseTreeDecision {
     let mut receipts = vec![SparseTreeReceipt {
         kind: SparseTreeReceiptKind::Candidate,
@@ -81,7 +83,8 @@ fn sparse_tree_decision(
 
     let mut matches = Vec::new();
     if let Some(match_query) = &query.match_query {
-        let Some(match_reasons) = match_query_matches_record(record, match_query) else {
+        let Some(match_reasons) = match_query_matches_record(record, match_query, tag_matcher)
+        else {
             return skipped_record(record, SparseTreeSkipReason::MatchExpression, receipts);
         };
         receipts.push(SparseTreeReceipt {
@@ -197,21 +200,23 @@ fn skipped_message(reason: SparseTreeSkipReason) -> String {
 fn match_query_matches_record(
     record: &SectionIndexRecord,
     query: &AgendaMatchQuery,
+    tag_matcher: TagMatcher<'_>,
 ) -> Option<Vec<SparseTreeMatch>> {
     query
         .clauses
         .iter()
-        .find_map(|clause| match_clause_reasons(record, query, clause))
+        .find_map(|clause| match_clause_reasons(record, query, clause, tag_matcher))
 }
 
 fn match_clause_reasons(
     record: &SectionIndexRecord,
     query: &AgendaMatchQuery,
     clause: &AgendaMatchClause,
+    tag_matcher: TagMatcher<'_>,
 ) -> Option<Vec<SparseTreeMatch>> {
     let mut reasons = Vec::new();
     for term in &clause.terms {
-        if !collect_accepted_term_reasons(record, term, &mut reasons) {
+        if !collect_accepted_term_reasons(record, term, &mut reasons, tag_matcher) {
             return None;
         }
     }
@@ -230,8 +235,9 @@ fn collect_accepted_term_reasons(
     record: &SectionIndexRecord,
     term: &AgendaMatchTerm,
     reasons: &mut Vec<SparseTreeMatch>,
+    tag_matcher: TagMatcher<'_>,
 ) -> bool {
-    let term_reasons = match_term_reasons(record, term);
+    let term_reasons = match_term_reasons(record, term, tag_matcher);
     let term_matched = !term_reasons.is_empty();
     if term.positive && term_matched {
         reasons.extend(term_reasons);
@@ -243,22 +249,30 @@ fn collect_accepted_term_reasons(
     }
 }
 
-fn match_term_reasons(record: &SectionIndexRecord, term: &AgendaMatchTerm) -> Vec<SparseTreeMatch> {
+fn match_term_reasons(
+    record: &SectionIndexRecord,
+    term: &AgendaMatchTerm,
+    tag_matcher: TagMatcher<'_>,
+) -> Vec<SparseTreeMatch> {
     match &term.predicate {
-        AgendaMatchPredicate::Tag(tag) => tag_match_reason(record, tag).into_iter().collect(),
+        AgendaMatchPredicate::Tag(tag) => tag_match_reason(record, tag, tag_matcher)
+            .into_iter()
+            .collect(),
         AgendaMatchPredicate::Property {
             key,
             operator,
             value,
-        } => property_match_reasons(record, key, *operator, value),
+        } => property_match_reasons(record, key, *operator, value, tag_matcher),
     }
 }
 
-fn tag_match_reason(record: &SectionIndexRecord, tag: &str) -> Option<SparseTreeMatch> {
-    record
-        .effective_tags
-        .iter()
-        .find(|actual| actual.eq_ignore_ascii_case(tag))
+fn tag_match_reason(
+    record: &SectionIndexRecord,
+    tag: &str,
+    tag_matcher: TagMatcher<'_>,
+) -> Option<SparseTreeMatch> {
+    tag_matcher
+        .matched_tag(&record.effective_tags, tag)
         .map(|actual| SparseTreeMatch {
             source: record.source.clone(),
             kind: SparseTreeMatchKind::Tag,
@@ -272,14 +286,23 @@ fn property_match_reasons(
     key: &str,
     operator: AgendaMatchOperator,
     expected: &AgendaMatchValue,
+    tag_matcher: TagMatcher<'_>,
 ) -> Vec<SparseTreeMatch> {
     let mut reasons = Vec::new();
+    let tag_property_match =
+        tag_property_match_result(record, key, operator, expected, tag_matcher);
     for property in &record.special_properties {
-        if property.name.eq_ignore_ascii_case(key)
-            && compare_match_values(&property.value, operator, expected)
-        {
+        if !property.name.eq_ignore_ascii_case(key) {
+            continue;
+        }
+        let matched = tag_property_match
+            .unwrap_or_else(|| compare_match_values(&property.value, operator, expected));
+        if matched {
             reasons.push(special_property_match(property));
         }
+    }
+    if tag_property_match.is_some() {
+        return reasons;
     }
     for property in &record.effective_properties {
         if property.key.eq_ignore_ascii_case(key)
@@ -289,6 +312,53 @@ fn property_match_reasons(
         }
     }
     reasons
+}
+
+fn tag_property_match_result(
+    record: &SectionIndexRecord,
+    key: &str,
+    operator: AgendaMatchOperator,
+    expected: &AgendaMatchValue,
+    tag_matcher: TagMatcher<'_>,
+) -> Option<bool> {
+    let tags = if key.eq_ignore_ascii_case("TAGS") {
+        &record.tags
+    } else if key.eq_ignore_ascii_case("ALLTAGS") {
+        &record.effective_tags
+    } else {
+        return None;
+    };
+
+    match operator {
+        AgendaMatchOperator::Equal | AgendaMatchOperator::NotEqual => {
+            let matched = sparse_tag_property_value_matches(tags, expected, tag_matcher);
+            Some(if operator == AgendaMatchOperator::Equal {
+                matched
+            } else {
+                !matched
+            })
+        }
+        AgendaMatchOperator::Less
+        | AgendaMatchOperator::LessOrEqual
+        | AgendaMatchOperator::Greater
+        | AgendaMatchOperator::GreaterOrEqual => None,
+    }
+}
+
+fn sparse_tag_property_value_matches(
+    tags: &[String],
+    expected: &AgendaMatchValue,
+    tag_matcher: TagMatcher<'_>,
+) -> bool {
+    if compare_match_values(
+        super::special_properties::tag_string(tags).as_str(),
+        AgendaMatchOperator::Equal,
+        expected,
+    ) {
+        return true;
+    }
+
+    tag_matcher.has_tag_value(tags, expected.as_str())
 }
 
 fn special_property_match(property: &SectionIndexSpecialProperty) -> SparseTreeMatch {

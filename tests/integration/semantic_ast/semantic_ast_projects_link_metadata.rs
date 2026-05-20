@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{ElementData, FileLinkPathKind, LinkSearchKind, LinkTarget, MarkupKind, ObjectData},
     Org,
+    ast::{ElementData, FileLinkPathKind, LinkSearchKind, LinkTarget, MarkupKind, ObjectData},
 };
 
 #[test]

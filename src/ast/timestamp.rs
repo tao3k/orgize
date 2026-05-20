@@ -1,6 +1,6 @@
 //! Typed syntax wrapper helpers for Org timestamps.
 
-use super::{filter_token, SyntaxTimestamp};
+use super::{SyntaxTimestamp, filter_token};
 use crate::syntax::SyntaxKind;
 
 #[derive(Debug, Copy, Clone, PartialEq)]

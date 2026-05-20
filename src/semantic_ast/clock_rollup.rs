@@ -3,10 +3,11 @@
 use super::block_metadata::parse_block_header_args;
 use super::clock_table_properties::{clock_table_property_columns, clock_table_property_values};
 use super::clock_table_time::{
-    clipped_clock_seconds, clock_start_in_window, clock_table_time_window, ClockTableWindowFilter,
+    ClockTableWindowFilter, clipped_clock_seconds, clock_start_in_window, clock_table_time_window,
 };
-use super::dynamic_blocks::{dynamic_block_begin, ParsedDynamicBlockBegin};
-use super::{agenda_filter::section_matches_agenda_match, AgendaMatchQuery};
+use super::dynamic_blocks::{ParsedDynamicBlockBegin, dynamic_block_begin};
+use super::tag_vocabulary::TagMatcher;
+use super::{AgendaMatchQuery, agenda_filter::section_matches_agenda_match};
 use super::{
     BlockHeaderArg, BlockKind, Clock, ClockEffortStatus, ClockEffortSummary, ClockRollupRecord,
     ClockSummary, ClockTableMatchFilter, ClockTableParameter, ClockTablePlan,
@@ -32,15 +33,23 @@ impl Document<ParsedAnnotation> {
     /// Projects `#+BEGIN: clocktable` dynamic blocks into non-mutating plans.
     pub fn clock_table_plans(&self) -> Vec<ClockTablePlan> {
         let mut plans = Vec::new();
+        let tag_matcher = TagMatcher::new(&self.tag_definitions);
         collect_clock_table_plans_in_elements(
             &self.children,
             None,
             &[],
             &self.sections,
+            tag_matcher,
             &mut plans,
         );
         for section in &self.sections {
-            collect_clock_table_plans_in_section(section, &[], &self.sections, &mut plans);
+            collect_clock_table_plans_in_section(
+                section,
+                &[],
+                &self.sections,
+                tag_matcher,
+                &mut plans,
+            );
         }
         plans.sort_by_key(|plan| plan.source.range_start);
         plans
@@ -242,6 +251,7 @@ fn collect_clock_table_plans_in_section<'a>(
     section: &'a Section<ParsedAnnotation>,
     ancestors: &[&'a Section<ParsedAnnotation>],
     root_sections: &'a [Section<ParsedAnnotation>],
+    tag_matcher: TagMatcher<'a>,
     plans: &mut Vec<ClockTablePlan>,
 ) {
     let mut stack = ancestors.to_vec();
@@ -251,10 +261,11 @@ fn collect_clock_table_plans_in_section<'a>(
         Some(section),
         &stack,
         root_sections,
+        tag_matcher,
         plans,
     );
     for child in &section.subsections {
-        collect_clock_table_plans_in_section(child, &stack, root_sections, plans);
+        collect_clock_table_plans_in_section(child, &stack, root_sections, tag_matcher, plans);
     }
 }
 
@@ -263,6 +274,7 @@ fn collect_clock_table_plans_in_elements<'a>(
     current_section: Option<&'a Section<ParsedAnnotation>>,
     section_stack: &[&'a Section<ParsedAnnotation>],
     root_sections: &'a [Section<ParsedAnnotation>],
+    tag_matcher: TagMatcher<'a>,
     plans: &mut Vec<ClockTablePlan>,
 ) {
     for element in elements {
@@ -273,6 +285,7 @@ fn collect_clock_table_plans_in_elements<'a>(
                 current_section,
                 section_stack,
                 root_sections,
+                tag_matcher,
             ));
         }
         match &element.data {
@@ -281,6 +294,7 @@ fn collect_clock_table_plans_in_elements<'a>(
                 current_section,
                 section_stack,
                 root_sections,
+                tag_matcher,
                 plans,
             ),
             ElementData::List(list) => {
@@ -290,6 +304,7 @@ fn collect_clock_table_plans_in_elements<'a>(
                         current_section,
                         section_stack,
                         root_sections,
+                        tag_matcher,
                         plans,
                     );
                 }
@@ -299,6 +314,7 @@ fn collect_clock_table_plans_in_elements<'a>(
                 current_section,
                 section_stack,
                 root_sections,
+                tag_matcher,
                 plans,
             ),
             ElementData::FootnoteDef(footnote) => collect_clock_table_plans_in_elements(
@@ -306,6 +322,7 @@ fn collect_clock_table_plans_in_elements<'a>(
                 current_section,
                 section_stack,
                 root_sections,
+                tag_matcher,
                 plans,
             ),
             ElementData::Inlinetask(task) => collect_clock_table_plans_in_elements(
@@ -313,6 +330,7 @@ fn collect_clock_table_plans_in_elements<'a>(
                 current_section,
                 section_stack,
                 root_sections,
+                tag_matcher,
                 plans,
             ),
             ElementData::Paragraph(_)
@@ -353,6 +371,7 @@ fn clock_table_plan<'a>(
     current_section: Option<&'a Section<ParsedAnnotation>>,
     section_stack: &[&'a Section<ParsedAnnotation>],
     root_sections: &'a [Section<ParsedAnnotation>],
+    tag_matcher: TagMatcher<'a>,
 ) -> ClockTablePlan {
     let parameters = clock_table_parameters(&block.parameters);
     let scope = clock_table_scope(&parameters);
@@ -380,15 +399,14 @@ fn clock_table_plan<'a>(
     }
 
     let rows = if clock_table_scope_is_document_local(&scope) {
-        clock_table_rows(
-            root_sections,
-            scope_section,
-            section_stack,
+        let options = ClockTableRowOptions {
             max_level,
-            time_window.as_ref(),
-            match_filter.as_ref(),
-            property_columns.as_ref(),
-        )
+            time_window: time_window.as_ref(),
+            match_filter: match_filter.as_ref(),
+            property_columns: property_columns.as_ref(),
+            tag_matcher,
+        };
+        clock_table_rows(root_sections, scope_section, section_stack, options)
     } else {
         Vec::new()
     };
@@ -492,6 +510,7 @@ struct ClockTableRowOptions<'a> {
     time_window: Option<&'a ClockTableWindowFilter>,
     match_filter: Option<&'a ClockTableMatchRuntime>,
     property_columns: Option<&'a ClockTablePropertyColumns>,
+    tag_matcher: TagMatcher<'a>,
 }
 
 fn clock_table_match_filter(
@@ -623,18 +642,9 @@ fn clock_table_rows<'a>(
     root_sections: &'a [Section<ParsedAnnotation>],
     scope_section: Option<&Section<ParsedAnnotation>>,
     section_stack: &[&'a Section<ParsedAnnotation>],
-    max_level: usize,
-    time_window: Option<&ClockTableWindowFilter>,
-    match_filter: Option<&ClockTableMatchRuntime>,
-    property_columns: Option<&ClockTablePropertyColumns>,
+    options: ClockTableRowOptions<'a>,
 ) -> Vec<ClockTableRow> {
     let mut rows = Vec::new();
-    let options = ClockTableRowOptions {
-        max_level,
-        time_window,
-        match_filter,
-        property_columns,
-    };
     if let Some(section) = scope_section {
         let prefix = outline_prefix_before_scope(section, section_stack);
         let scope_depth = prefix.len() + 1;
@@ -662,7 +672,9 @@ fn collect_clock_table_row_from_section(
 
     let local_matches = options
         .match_filter
-        .map(|filter| section_matches_agenda_match(section, None, None, &filter.query))
+        .map(|filter| {
+            section_matches_agenda_match(section, None, None, &filter.query, options.tag_matcher)
+        })
         .unwrap_or(true);
     let local_clock = if local_matches {
         clock_summary_from_elements_with_window(&section.children, options.time_window)

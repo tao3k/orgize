@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{ElementData, MarkupKind, ObjectData},
     Org,
+    ast::{ElementData, MarkupKind, ObjectData},
 };
 
 #[test]
@@ -44,7 +44,9 @@ fn semantic_ast_keeps_quote_punctuation_plain() {
             ..
         }
     )));
-    assert!(paragraph
-        .iter()
-        .any(|object| matches!(object.data, ObjectData::Link(_))));
+    assert!(
+        paragraph
+            .iter()
+            .any(|object| matches!(object.data, ObjectData::Link(_)))
+    );
 }

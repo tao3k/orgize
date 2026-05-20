@@ -3,10 +3,10 @@
 use std::collections::{HashMap, HashSet};
 
 use super::{
-    lifecycle::archive_location_from_property, ArchiveLocation, ArchiveState, AstMut, AstRef,
-    AttachmentDirectory, AttachmentState, Diagnostic, DiagnosticKind, Document, ElementData,
-    FootnoteDefinition, FootnoteEntry, LinkDescriptionState, LinkTarget, Object, ObjectData,
-    ParsedAnnotation, Property, Section, TargetKind,
+    ArchiveLocation, ArchiveState, AstMut, AstRef, AttachmentDirectory, AttachmentState,
+    Diagnostic, DiagnosticKind, Document, ElementData, FootnoteDefinition, FootnoteEntry,
+    LinkDescriptionState, LinkTarget, Object, ObjectData, ParsedAnnotation, Property, Section,
+    TargetKind, lifecycle::archive_location_from_property,
 };
 
 pub(super) fn finalize_document(document: &mut Document<ParsedAnnotation>) {
@@ -321,10 +321,9 @@ fn known_footnote_labels(
             definition,
             ..
         } = &object.data
+            && !definition.is_empty()
         {
-            if !definition.is_empty() {
-                labels.insert(label.clone());
-            }
+            labels.insert(label.clone());
         }
     });
     labels
@@ -379,14 +378,13 @@ fn inline_footnotes(document: &Document<ParsedAnnotation>) -> Vec<FootnoteEntry<
             definition,
             ..
         } = &object.data
+            && !definition.is_empty()
         {
-            if !definition.is_empty() {
-                entries.push(FootnoteEntry {
-                    ann: object.ann.clone(),
-                    label: label.clone(),
-                    definition: FootnoteDefinition::Inline(definition.clone()),
-                });
-            }
+            entries.push(FootnoteEntry {
+                ann: object.ann.clone(),
+                label: label.clone(),
+                definition: FootnoteDefinition::Inline(definition.clone()),
+            });
         }
     });
     entries

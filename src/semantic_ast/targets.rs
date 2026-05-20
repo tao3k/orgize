@@ -2,7 +2,7 @@
 
 use std::{borrow::Cow, collections::HashMap};
 
-use rowan::{ast::AstNode, NodeOrToken};
+use rowan::{NodeOrToken, ast::AstNode};
 
 use crate::{
     syntax::{SyntaxKind, SyntaxNode, SyntaxToken},

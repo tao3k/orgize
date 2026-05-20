@@ -1,6 +1,6 @@
 use crate::syntax::SyntaxKind;
 
-use super::{filter_token, Snippet, Token};
+use super::{Snippet, Token, filter_token};
 
 impl Snippet {
     /// ```rust

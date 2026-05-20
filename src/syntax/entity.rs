@@ -1,15 +1,15 @@
 use nom::{
+    IResult, Parser,
     branch::alt,
     bytes::complete::{tag, take_while_m_n},
     character::complete::alphanumeric1,
     combinator::opt,
-    IResult, Parser,
 };
 
 use crate::{
+    SyntaxKind,
     entities::ENTITIES,
     syntax::combinator::{backslash_token, node},
-    SyntaxKind,
 };
 
 use super::{combinator::GreenElement, input::Input};
@@ -40,10 +40,10 @@ fn template1(input: Input) -> IResult<Input, GreenElement, ()> {
         ));
     }
 
-    if let Some(post) = input.bytes().next() {
-        if post.is_ascii_alphabetic() {
-            return Err(nom::Err::Error(()));
-        }
+    if let Some(post) = input.bytes().next()
+        && post.is_ascii_alphabetic()
+    {
+        return Err(nom::Err::Error(()));
     }
 
     Ok((
@@ -72,7 +72,7 @@ fn template2(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::Entity, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::Entity, tests::to_ast};
 
     let to_entity = to_ast::<Entity>(entity_node);
 

@@ -1,15 +1,15 @@
 use nom::{
+    IResult,
     bytes::complete::{take_until, take_while1},
     combinator::{map, opt, verify},
-    IResult,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{
-        l_curly3_token, l_parens_token, node, r_curly3_token, r_parens_token, GreenElement,
+        GreenElement, l_curly3_token, l_parens_token, node, r_curly3_token, r_parens_token,
     },
     input::Input,
-    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -43,7 +43,7 @@ pub(crate) fn macros_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn test() {
-    use crate::{syntax_ast::Macros, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::Macros, tests::to_ast};
 
     let to_macros = to_ast::<Macros>(macros_node);
 

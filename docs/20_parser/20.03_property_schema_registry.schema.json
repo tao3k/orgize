@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tao3k/orgize/docs/20_parser/20.03_property_schema_registry.schema.json",
+  "title": "Orgize PROPERTY_SCHEMA Registry",
+  "description": "Host-loaded property drawer schema contracts referenced by native Org PROPERTY_SCHEMA drawer values.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/registry"
+    },
+    {
+      "$ref": "#/$defs/contract"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/contract"
+      }
+    }
+  ],
+  "$defs": {
+    "registry": {
+      "type": "object",
+      "required": [
+        "contracts"
+      ],
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "contracts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/contract"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "contract": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "allowUnknownProperties": {
+          "type": "boolean"
+        },
+        "allow_unknown_properties": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/field"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "field": {
+      "type": "object",
+      "required": [
+        "key"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "valueRule": {
+          "$ref": "#/$defs/valueRule"
+        },
+        "value_rule": {
+          "$ref": "#/$defs/valueRule"
+        }
+      },
+      "additionalProperties": false
+    },
+    "valueRule": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "any",
+            "nonEmpty"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "any"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "nonEmpty"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "values"
+          ],
+          "properties": {
+            "kind": {
+              "const": "oneOf"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 use crate::SyntaxKind;
 
-use super::{filter_token, FixedWidth};
+use super::{FixedWidth, filter_token};
 
 impl FixedWidth {
     /// Contents without colons prefix

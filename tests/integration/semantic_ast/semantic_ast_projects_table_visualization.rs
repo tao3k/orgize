@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{TableVisualizationPlan, TableVisualizationWarningKind},
     Org,
+    ast::{TableVisualizationPlan, TableVisualizationWarningKind},
 };
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/m25-table-visualization.org");
@@ -24,10 +24,12 @@ fn semantic_ast_projects_table_visualization_plans() {
             .map(|plot| plot.dependent_columns.as_slice()),
         Some(&[3, 4][..])
     );
-    assert!(plans[1]
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == TableVisualizationWarningKind::InvalidPlotOption));
+    assert!(
+        plans[1]
+            .warnings
+            .iter()
+            .any(|warning| warning.kind == TableVisualizationWarningKind::InvalidPlotOption)
+    );
     assert_eq!(
         plans[2]
             .radio
@@ -35,11 +37,13 @@ fn semantic_ast_projects_table_visualization_plans() {
             .and_then(|radio| radio.translator.as_deref()),
         Some("orgtbl-to-latex")
     );
-    assert!(plans[2]
-        .radio
-        .as_ref()
-        .and_then(|radio| radio.receiver.as_ref())
-        .is_some_and(|receiver| receiver.begin_found && receiver.end_found));
+    assert!(
+        plans[2]
+            .radio
+            .as_ref()
+            .and_then(|radio| radio.receiver.as_ref())
+            .is_some_and(|receiver| receiver.begin_found && receiver.end_found)
+    );
 
     insta::assert_snapshot!(
         "semantic_ast__m25_table_visualization_plans",

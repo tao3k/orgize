@@ -39,10 +39,19 @@ mod column_view_model;
 mod column_views;
 mod conversion;
 mod conversion_util;
+mod crypt;
+mod crypt_model;
 mod datetree;
 mod datetree_model;
 mod dynamic_block_model;
 mod dynamic_blocks;
+mod elements_bridge;
+mod elements_bridge_element_json;
+mod elements_bridge_index;
+mod elements_bridge_index_json;
+mod elements_bridge_json;
+mod elements_bridge_model;
+mod elements_bridge_object_json;
 mod export_dependency_graph;
 mod export_dependency_graph_model;
 mod footnote_parts;
@@ -69,6 +78,8 @@ mod projection;
 mod property_model;
 mod property_profile;
 mod property_profile_model;
+mod property_schema;
+mod property_schema_model;
 mod publishing;
 mod publishing_model;
 mod publishing_project;
@@ -76,12 +87,17 @@ mod publishing_project_model;
 mod radio_links;
 mod refile;
 mod refile_model;
+mod runtime_metadata;
+mod runtime_metadata_model;
 mod sdd;
 mod sdd_model;
 mod section_index;
 mod section_index_model;
 mod settings;
+mod source_block_execution;
+mod source_block_headers;
 mod source_block_model;
+mod source_block_references;
 mod source_blocks;
 mod source_position;
 mod sparse_tree;
@@ -90,6 +106,7 @@ mod special_properties;
 mod table_metadata;
 mod table_visualization;
 mod table_visualization_model;
+mod tag_vocabulary;
 mod tangle;
 mod tangle_model;
 mod targets;
@@ -128,9 +145,13 @@ pub use agent_planning_model::{
     AgentPlanningSnapshot, AgentPlanningSource,
 };
 pub use attachment_inventory_model::{
-    AttachmentInventory, AttachmentInventoryEntry, AttachmentInventoryEntryKind,
-    AttachmentInventoryOptions, AttachmentInventoryWarning, AttachmentInventoryWarningKind,
-    AttachmentVcsEvidence, AttachmentVcsStatus,
+    AttachmentAnnexEvidence, AttachmentAnnexStatus, AttachmentArchiveAdvice,
+    AttachmentArchiveDeletePolicy, AttachmentDisplayAbsolutePath, AttachmentDisplayDirectoryPath,
+    AttachmentDisplayId, AttachmentDisplayLinkPath, AttachmentDisplayMediaKind,
+    AttachmentDisplayRecord, AttachmentInventory, AttachmentInventoryEntry,
+    AttachmentInventoryEntryKind, AttachmentInventoryOptions, AttachmentInventoryWarning,
+    AttachmentInventoryWarningKind, AttachmentSyncAction, AttachmentSyncActionKind,
+    AttachmentSyncPlan, AttachmentVcsEvidence, AttachmentVcsStatus,
 };
 pub use attachment_model::{
     AttachmentDirectory, AttachmentDirectorySource, AttachmentIdPathLayout, AttachmentLink,
@@ -171,9 +192,18 @@ pub use column_summary_model::{
 pub use column_view_model::{
     ColumnViewColumn, ColumnViewRecord, ColumnViewScope, ColumnViewSource,
 };
+pub use crypt_model::{CryptKey, CryptState, CryptTag, CryptWarning, CryptWarningKind};
 pub use datetree_model::DateTreeEntry;
 pub use dynamic_block_model::{
     DynamicBlockContentState, DynamicBlockParameter, DynamicBlockRecord, DynamicBlockWriterKind,
+};
+pub use elements_bridge_model::{
+    OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
+    OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, OrgElementsIndexCategory,
+    OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexRecord, OrgElementsIndexSummary,
+    OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
+    OrgElementsIndexSummaryValue, PythonDirective, PythonDirectiveKind, PythonExecutionOptions,
+    PythonExecutionProgram,
 };
 pub use export_dependency_graph::export_dependency_graph;
 pub use export_dependency_graph_model::{
@@ -209,8 +239,8 @@ pub use model::{
     List, ListItem, ListType, MacroDefinition, MacroExpansion, MacroExpansionStatus, MarkupKind,
     Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, Section, SourcePosition,
     Table, TableCell, TableColumnAlignment, TableFormula, TableFormulaAssignment,
-    TableFormulaReference, TableFormulaReferenceKind, TableRow, TargetDefinition, TargetKind,
-    TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    TableFormulaReference, TableFormulaReferenceKind, TableRow, TagDefinition, TagDefinitionGroup,
+    TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 pub use progress_model::{
     ProgressCheckboxSummary, ProgressEffortSummary, ProgressStatisticCookie,
@@ -224,6 +254,12 @@ pub(crate) use property_profile::{is_allowed_value_descriptor, property_allowed_
 pub use property_profile_model::{
     PropertyAllowedValueRecord, PropertyAllowedValueScope, PropertyInheritancePolicy,
     PropertyProfile,
+};
+pub use property_schema_model::{
+    PROPERTY_SCHEMA_PROPERTY, PropertySchemaApplication, PropertySchemaContract,
+    PropertySchemaField, PropertySchemaFinding, PropertySchemaFindingKind, PropertySchemaReference,
+    PropertySchemaReferenceKind, PropertySchemaRegistry, PropertySchemaScope,
+    PropertySchemaValueRule,
 };
 pub use publishing_model::{
     PublishingAttribute, PublishingBind, PublishingKeyword, PublishingOption, PublishingOptionKind,
@@ -242,6 +278,12 @@ pub use refile_model::{
     RefileTargetQuery, RefileTargetReceipt, RefileTargetSpec, RefileTargetSpecKind, RefileWarning,
     RefileWarningKind,
 };
+pub use runtime_metadata_model::{
+    FeedStatusDrawerName, FeedStatusRecord, MobileFlaggedSection, MobileIndexLink,
+    MobileOriginalId, MobilePriorityDeclaration, MobileProperty, MobileReadonlyKeyword,
+    MobileSyncMetadata, RuntimeMetadataBoundary, RuntimeMetadataBoundaryKind, RuntimeMetadataPlan,
+    RuntimeMetadataWarning, RuntimeMetadataWarningKind, TimerContext, TimerRecord,
+};
 pub use sdd_model::{SddKind, SddNodeRecord, SddParentRef, SddStatus, SddStatusValue};
 pub use section_index_model::{
     SectionIndexArchive, SectionIndexAttachment, SectionIndexAttachmentDirectory,
@@ -250,9 +292,17 @@ pub use section_index_model::{
     SectionIndexTextSlice,
 };
 pub use source_block_model::{
-    SourceBlockHeaderArg, SourceBlockHeaderArgKind, SourceBlockHeaderArgSource,
-    SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind, SourceBlockResult,
-    SourceBlockResultKind, SourceBlockSource, SourceBlockTangle, SourceBlockTangleMode,
+    SourceBlockBooleanHeader, SourceBlockCache, SourceBlockDirectory, SourceBlockDirectoryKind,
+    SourceBlockEval, SourceBlockEvalPolicy, SourceBlockExecutionPlan, SourceBlockExports,
+    SourceBlockExportsPolicy, SourceBlockHeaderArg, SourceBlockHeaderArgKind,
+    SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockNowebAction, SourceBlockNowebPlan,
+    SourceBlockRecord, SourceBlockRecordKind, SourceBlockReference, SourceBlockReferenceKind,
+    SourceBlockResult, SourceBlockResultCollection, SourceBlockResultFile,
+    SourceBlockResultFileMode, SourceBlockResultFormat, SourceBlockResultHandling,
+    SourceBlockResultKind, SourceBlockResultOptions, SourceBlockResultValueType,
+    SourceBlockSession, SourceBlockSource, SourceBlockTangle, SourceBlockTangleComments,
+    SourceBlockTangleCommentsMode, SourceBlockTangleMkdirp, SourceBlockTangleMode,
+    SourceBlockTangleNoweb, SourceBlockTangleNowebMode,
 };
 pub use sparse_tree_model::{
     SparseTreeCard, SparseTreeMatch, SparseTreeMatchKind, SparseTreeProjection, SparseTreeQuery,

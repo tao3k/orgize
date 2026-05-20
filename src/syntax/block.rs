@@ -1,19 +1,19 @@
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, tag_no_case, take_while, take_while1},
     character::complete::{alpha1, space0, space1},
     combinator::opt,
-    IResult, Parser,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{
-        blank_lines, eol_or_eof, line_starts_iter, node, token, trim_line_end, GreenElement,
-        NodeBuilder,
+        GreenElement, NodeBuilder, blank_lines, eol_or_eof, line_starts_iter, node, token,
+        trim_line_end,
     },
     input::Input,
     keyword::affiliated_keyword_nodes,
     parser_contract::ElementNodesParser,
-    SyntaxKind,
 };
 
 fn block_node_base(
@@ -192,10 +192,10 @@ fn source_block_switch_len(s: &str) -> Option<usize> {
 
     if token == "-l" {
         let spaces = leading_inline_space_len(rest);
-        if spaces > 0 {
-            if let Some(argument) = switch_argument_len(&rest[spaces..]) {
-                return Some(token_len + spaces + argument);
-            }
+        if spaces > 0
+            && let Some(argument) = switch_argument_len(&rest[spaces..])
+        {
+            return Some(token_len + spaces + argument);
         }
     }
 

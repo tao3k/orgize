@@ -3,9 +3,9 @@
 //! ```
 
 use orgize::{
-    export::HtmlExport,
-    export::{from_fn_with_ctx, Container, Event, Traverser},
     Org,
+    export::HtmlExport,
+    export::{Container, Event, Traverser, from_fn_with_ctx},
 };
 use slugify::slugify;
 use std::cmp::min;

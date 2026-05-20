@@ -1,11 +1,11 @@
 use std::hint::black_box;
 
-use criterion::{criterion_group, criterion_main, Criterion, Throughput};
+use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 
 use orgize::{
+    Org, ParseConfig,
     ast::{AgendaDate, AgendaQuery, ExportProjectionOptions, IncludeExpansionOptions},
     config::RadioLinkProjection,
-    Org, ParseConfig,
 };
 
 const INPUT: &[(&str, &str)] = &[
