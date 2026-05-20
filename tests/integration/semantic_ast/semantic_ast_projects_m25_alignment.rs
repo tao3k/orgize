@@ -174,7 +174,7 @@ fn semantic_ast_projects_m25_citation_capture_publishing_and_attachments() {
 
     let temp = unique_temp_dir("orgize-m25-attachments");
     fs::create_dir_all(temp.join("assets")).expect("create attachment directory");
-    fs::write(temp.join("plan.pdf"), b"plan").expect("write attachment file");
+    fs::write(temp.join("assets/plan.pdf"), b"plan").expect("write attachment file");
     let inventory = doc_a.attachment_inventory(&AttachmentInventoryOptions::new(path_str(&temp)));
     assert!(
         inventory

@@ -1,8 +1,15 @@
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
+
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
     ast::{
-        AttachmentDirectorySource, AttachmentIdPathLayout, AttachmentLinkSearchKind, ElementData,
+        AttachmentAnnexStatus, AttachmentDirectorySource, AttachmentIdPathLayout,
+        AttachmentInventoryOptions, AttachmentLinkSearchKind, AttachmentVcsStatus, ElementData,
         ObjectData,
     },
 };
@@ -24,6 +31,15 @@ See [[attachment:info.org::#custom]].
 :ATTACH_DIR: legacy
 :END:
 See [[attachment:old.pdf::/needle/]].
+"#;
+
+const INVENTORY_SOURCE: &str = r#"* Project
+:PROPERTIES:
+:DIR: assets
+:END:
+See [[attachment:tracked.txt]], [[attachment:untracked.txt]], and [[attachment:missing.txt]].
+* Rootless
+See [[attachment:loose.txt]].
 "#;
 
 #[test]
@@ -115,6 +131,60 @@ fn semantic_ast_projects_attachment_directories_and_links() {
     );
 }
 
+#[test]
+fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
+    let temp = unique_temp_dir("orgize-attachment-vcs");
+    fs::create_dir_all(temp.join("assets")).expect("create attachment directory");
+    run_git(&temp, &["init", "--quiet"]);
+    fs::write(temp.join("assets/tracked.txt"), b"tracked").expect("write tracked attachment");
+    run_git(&temp, &["add", "assets/tracked.txt"]);
+    run_git(
+        &temp,
+        &[
+            "-c",
+            "user.name=Orgize Test",
+            "-c",
+            "user.email=orgize@example.test",
+            "commit",
+            "--quiet",
+            "-m",
+            "track attachment",
+        ],
+    );
+    fs::write(temp.join("assets/untracked.txt"), b"untracked").expect("write untracked attachment");
+
+    let doc = Org::parse(INVENTORY_SOURCE).document();
+    assert_clean_projection(&doc);
+    let inventory = doc.attachment_inventory(
+        &AttachmentInventoryOptions::new(path_str(&temp))
+            .check_vcs(true)
+            .check_annex(true),
+    );
+
+    let tracked = inventory_entry(&inventory, "tracked.txt");
+    assert!(tracked.absolute_path.ends_with("assets/tracked.txt"));
+    assert!(tracked.exists);
+    assert_eq!(tracked.vcs.status, AttachmentVcsStatus::Clean);
+    assert_eq!(
+        tracked.vcs.annex.status,
+        AttachmentAnnexStatus::NotAnnexRepository
+    );
+    let untracked = inventory_entry(&inventory, "untracked.txt");
+    assert_eq!(untracked.vcs.status, AttachmentVcsStatus::Untracked);
+    let missing = inventory_entry(&inventory, "missing.txt");
+    assert!(!missing.exists);
+    assert_eq!(missing.vcs.status, AttachmentVcsStatus::Missing);
+    assert!(inventory.warnings.iter().any(|warning| {
+        warning.kind.as_str() == "missingDirectory" && warning.message.contains("loose.txt")
+    }));
+
+    insta::assert_snapshot!(
+        "semantic_ast__semantic_attachment_inventory_vcs",
+        render_attachment_inventory(&inventory, &temp)
+    );
+    let _ = fs::remove_dir_all(temp);
+}
+
 fn first_section_link(
     section: &orgize::ast::Section<orgize::ast::ParsedAnnotation>,
 ) -> &orgize::ast::Link<orgize::ast::ParsedAnnotation> {
@@ -128,4 +198,80 @@ fn first_section_link(
             .expect("attachment link"),
         other => panic!("expected paragraph, got {other:#?}"),
     }
+}
+
+fn inventory_entry<'a>(
+    inventory: &'a orgize::ast::AttachmentInventory,
+    path: &str,
+) -> &'a orgize::ast::AttachmentInventoryEntry {
+    inventory
+        .entries
+        .iter()
+        .find(|entry| entry.path == path)
+        .unwrap_or_else(|| panic!("missing attachment inventory entry for {path}"))
+}
+
+fn render_attachment_inventory(
+    inventory: &orgize::ast::AttachmentInventory,
+    base_dir: &Path,
+) -> String {
+    let mut out = String::new();
+    for entry in &inventory.entries {
+        out.push_str(&format!(
+            "entry {} title={} path={} absolute={} exists={} vcs={} annex={}\n",
+            entry.kind.as_str(),
+            entry.section_title,
+            entry.path,
+            relative_path(&entry.absolute_path, base_dir),
+            entry.exists,
+            entry.vcs.status.as_str(),
+            entry.vcs.annex.status.as_str()
+        ));
+        if let Some(raw) = &entry.vcs.raw {
+            out.push_str(&format!("  raw={}\n", raw.replace('\n', "\\n")));
+        }
+    }
+    for warning in &inventory.warnings {
+        out.push_str(&format!(
+            "warning {} {}\n",
+            warning.kind.as_str(),
+            warning.message
+        ));
+    }
+    out
+}
+
+fn relative_path(path: &str, base_dir: &Path) -> String {
+    Path::new(path)
+        .strip_prefix(base_dir)
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|_| path.to_string())
+}
+
+fn run_git(dir: &Path, args: &[&str]) {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(args)
+        .output()
+        .expect("run git command");
+    assert!(
+        output.status.success(),
+        "git {args:?} failed\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+fn unique_temp_dir(label: &str) -> PathBuf {
+    let pid = std::process::id();
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("system clock after epoch")
+        .as_nanos();
+    std::env::temp_dir().join(format!("{label}-{pid}-{nanos}"))
+}
+
+fn path_str(path: &Path) -> String {
+    path.to_string_lossy().into_owned()
 }

@@ -7,6 +7,7 @@ use super::{AttachmentDirectorySource, AttachmentLink, SectionIndexSource};
 pub struct AttachmentInventoryOptions {
     pub base_dir: String,
     pub check_vcs: bool,
+    pub check_annex: bool,
 }
 
 impl AttachmentInventoryOptions {
@@ -15,12 +16,19 @@ impl AttachmentInventoryOptions {
         Self {
             base_dir: base_dir.into(),
             check_vcs: false,
+            check_annex: false,
         }
     }
 
     /// Enables or disables git status checks for discovered paths.
     pub fn check_vcs(mut self, check_vcs: bool) -> Self {
         self.check_vcs = check_vcs;
+        self
+    }
+
+    /// Enables or disables git-annex availability checks when VCS checks run.
+    pub fn check_annex(mut self, check_annex: bool) -> Self {
+        self.check_annex = check_annex;
         self
     }
 }
@@ -65,6 +73,7 @@ impl AttachmentInventoryEntryKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttachmentVcsEvidence {
     pub status: AttachmentVcsStatus,
+    pub annex: AttachmentAnnexEvidence,
     pub raw: Option<String>,
 }
 
@@ -72,6 +81,7 @@ impl Default for AttachmentVcsEvidence {
     fn default() -> Self {
         Self {
             status: AttachmentVcsStatus::NotChecked,
+            annex: AttachmentAnnexEvidence::default(),
             raw: None,
         }
     }
@@ -104,6 +114,47 @@ impl AttachmentVcsStatus {
     }
 }
 
+/// Optional git-annex content-location evidence for an attachment path.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AttachmentAnnexEvidence {
+    pub status: AttachmentAnnexStatus,
+    pub raw: Option<String>,
+}
+
+impl Default for AttachmentAnnexEvidence {
+    fn default() -> Self {
+        Self {
+            status: AttachmentAnnexStatus::NotChecked,
+            raw: None,
+        }
+    }
+}
+
+/// Stable git-annex status category.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AttachmentAnnexStatus {
+    NotChecked,
+    NotAnnexRepository,
+    GitAnnexUnavailable,
+    Present,
+    Missing,
+    Unknown,
+}
+
+impl AttachmentAnnexStatus {
+    /// Stable label for DTO and compact consumers.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::NotChecked => "notChecked",
+            Self::NotAnnexRepository => "notAnnexRepository",
+            Self::GitAnnexUnavailable => "gitAnnexUnavailable",
+            Self::Present => "present",
+            Self::Missing => "missing",
+            Self::Unknown => "unknown",
+        }
+    }
+}
+
 /// Non-fatal attachment inventory warning.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttachmentInventoryWarning {
@@ -114,6 +165,7 @@ pub struct AttachmentInventoryWarning {
 /// Stable inventory warning kind.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AttachmentInventoryWarningKind {
+    MissingDirectory,
     MissingPath,
 }
 
@@ -121,6 +173,7 @@ impl AttachmentInventoryWarningKind {
     /// Stable label for DTO and compact consumers.
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::MissingDirectory => "missingDirectory",
             Self::MissingPath => "missingPath",
         }
     }

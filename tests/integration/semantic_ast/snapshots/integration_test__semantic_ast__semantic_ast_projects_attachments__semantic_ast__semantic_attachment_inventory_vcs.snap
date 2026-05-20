@@ -1,0 +1,14 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_attachments.rs
+assertion_line: 181
+expression: "render_attachment_inventory(&inventory, &temp)"
+---
+entry directory title=Project path=assets absolute=assets exists=true vcs=untracked annex=notAnnexRepository
+  raw=?? assets/untracked.txt
+entry link title=Project path=tracked.txt absolute=assets/tracked.txt exists=true vcs=clean annex=notAnnexRepository
+entry link title=Project path=untracked.txt absolute=assets/untracked.txt exists=true vcs=untracked annex=notAnnexRepository
+  raw=?? assets/untracked.txt
+entry link title=Project path=missing.txt absolute=assets/missing.txt exists=false vcs=missing annex=notAnnexRepository
+entry link title=Rootless path=loose.txt absolute=loose.txt exists=false vcs=notChecked annex=notChecked
+warning missingPath attachment path `missing.txt` does not exist
+warning missingDirectory attachment link `loose.txt` has no resolved attachment directory
