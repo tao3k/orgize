@@ -1306,3 +1306,15 @@ Recommended implementation order for the next major PR train:
 - [X] Reuse the existing structured header-arg parser so =:var=, =:results=,
       =:tangle=, =:noweb-ref=, and other header arguments have the same
       normalized shape whether they appear on =#+HEADER:= or =#+BEGIN_SRC=.
+
+*** M29.4 Babel Property Header Argument Projection
+
+- [X] Project native =#+PROPERTY: header-args= file-level defaults into source
+      and inline-source block records without executing Babel.
+- [X] Project language-specific =#+PROPERTY: header-args:LANG= defaults after
+      common property defaults and before =#+HEADER:= / =#+BEGIN_SRC= args.
+- [X] Apply subtree property drawer =:header-args:= and
+      =:header-args:LANG:= inheritance through =Section.effective_properties=,
+      preserving inner subtree override semantics.
+- [X] Fix =:tangle= precedence so the most specific header argument wins across
+      property, affiliated keyword, and block-line layers.

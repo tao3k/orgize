@@ -123,6 +123,125 @@ print(data)
 }
 
 #[test]
+fn semantic_ast_projects_source_block_records_property_header_args() {
+    let doc = Org::parse(
+        r#"#+PROPERTY: header-args :results output :exports results :var dataset=data_block
+#+PROPERTY: header-args:python :session py :tangle "python.py"
+#+NAME: data_block
+#+begin_src emacs-lisp
+(list 1 2)
+#+end_src
+
+#+NAME: root
+#+HEADER: :tangle "affiliated.py"
+#+begin_src python :exports both :tangle "root.py"
+print(dataset)
+#+end_src
+
+Inline src_python[:results value]{print("inline")}
+
+* Local
+:PROPERTIES:
+:header-args: :cache yes :results drawer
+:header-args:python: :session local
+:END:
+#+begin_src python
+print("local")
+#+end_src
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let records = doc.source_block_records();
+    assert_eq!(records.len(), 4);
+
+    let root = records
+        .iter()
+        .find(|record| record.name.as_deref() == Some("root"))
+        .expect("named root source block");
+    assert_eq!(
+        root.header_args
+            .iter()
+            .map(|arg| arg.raw.as_str())
+            .collect::<Vec<_>>(),
+        [
+            ":results output",
+            ":exports results",
+            ":var dataset=data_block",
+            ":session py",
+            r#":tangle "python.py""#,
+            r#":tangle "affiliated.py""#,
+            ":exports both",
+            r#":tangle "root.py""#,
+        ]
+    );
+    assert_eq!(
+        root.tangle
+            .as_ref()
+            .and_then(|tangle| tangle.target.as_deref()),
+        Some("root.py")
+    );
+    assert_eq!(
+        root.normalized_header_args
+            .iter()
+            .find(|arg| arg.key == "session")
+            .and_then(|arg| arg.value.as_deref()),
+        Some("py")
+    );
+    assert_eq!(
+        root.normalized_header_args
+            .iter()
+            .find(|arg| arg.key == "exports")
+            .and_then(|arg| arg.value.as_deref()),
+        Some("both")
+    );
+    assert!(root.normalized_header_args.iter().any(|arg| {
+        arg.kind == SourceBlockHeaderArgKind::Var
+            && arg.variable.as_ref().is_some_and(|var| {
+                var.name == "dataset" && var.assignment.as_deref() == Some("data_block")
+            })
+    }));
+
+    let inline = records
+        .iter()
+        .find(|record| record.kind == SourceBlockRecordKind::InlineSource)
+        .expect("inline source block");
+    assert_eq!(inline.language.as_deref(), Some("python"));
+    assert_eq!(
+        inline
+            .normalized_header_args
+            .iter()
+            .find(|arg| arg.key == "session")
+            .and_then(|arg| arg.value.as_deref()),
+        Some("py")
+    );
+    assert!(inline.normalized_header_args.iter().any(|arg| {
+        arg.key == "results"
+            && arg.source == SourceBlockHeaderArgSource::Explicit
+            && arg.value.as_deref() == Some("value")
+    }));
+
+    let local = records
+        .iter()
+        .find(|record| record.value == "print(\"local\")\n")
+        .expect("subtree source block");
+    assert_eq!(
+        local
+            .header_args
+            .iter()
+            .map(|arg| arg.raw.as_str())
+            .collect::<Vec<_>>(),
+        [":cache yes", ":results drawer", ":session local"]
+    );
+    assert!(local.normalized_header_args.iter().all(|arg| {
+        arg.variable
+            .as_ref()
+            .is_none_or(|var| var.name.as_str() != "dataset")
+    }));
+}
+
+#[test]
 fn semantic_ast_projects_inline_source_records_with_defaults_and_results_macro() {
     let doc = Org::parse(
         r#"Value src_sh[:exports both :var x=1]{echo $x}{{{results(=1=)}}}

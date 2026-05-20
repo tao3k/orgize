@@ -60,9 +60,9 @@ Semantic source/example blocks include parsed line-numbering metadata for
 metadata for `-i`, code-reference cookies from the default `(ref:name)` format
 or custom `-l` label formats, line-level source/value/normalized-value records,
 typed `-k`/`-r`/`-l` switch metadata, and structured source block header
-arguments from both `#+HEADER:` and the `#+BEGIN_SRC` line while retaining the
-raw parameter text. `source_block_references()` projects non-executing
-literate-programming edges for `#+CALL`,
+arguments from `#+PROPERTY: header-args`, `#+PROPERTY: header-args:LANG`,
+`#+HEADER:`, and the `#+BEGIN_SRC` line while retaining the raw parameter text.
+`source_block_references()` projects non-executing literate-programming edges for `#+CALL`,
 `call_name(...)`, source-block `:var` dependencies, and noweb `<<name>>`
 references, resolving them against local `#+NAME` and syntax-appropriate
 `:noweb-ref` declarations. Fixed-width areas use the same semantic

@@ -2,10 +2,10 @@
 
 use super::{
     BlockHeaderArg, BlockKind, Document, Element, ElementData, Keyword, ListItem, Object,
-    ObjectData, ParsedAnnotation, SourceBlockHeaderArg, SourceBlockHeaderArgKind,
-    SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind,
-    SourceBlockResult, SourceBlockResultKind, SourceBlockSource, SourceBlockTangle,
-    SourceBlockTangleMode, block_metadata::parse_block_header_args,
+    ObjectData, ParsedAnnotation, Property, Section, SourceBlockHeaderArg,
+    SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockRecord,
+    SourceBlockRecordKind, SourceBlockResult, SourceBlockResultKind, SourceBlockSource,
+    SourceBlockTangle, SourceBlockTangleMode, block_metadata::parse_block_header_args,
 };
 
 impl Document<ParsedAnnotation> {
@@ -16,33 +16,42 @@ impl Document<ParsedAnnotation> {
     /// store, lint, or display source-block evidence.
     pub fn source_block_records(&self) -> Vec<SourceBlockRecord> {
         let mut records = Vec::new();
-        collect_source_block_records_in_elements(&self.children, &mut records);
+        collect_source_block_records_in_elements(&self.children, &self.properties, &mut records);
         for section in &self.sections {
-            collect_source_block_records_in_elements(&section.children, &mut records);
-            collect_source_block_records_in_sections(&section.subsections, &mut records);
+            collect_source_block_records_in_section(section, &mut records);
         }
         records
     }
 }
 
-fn collect_source_block_records_in_sections(
-    sections: &[super::Section<ParsedAnnotation>],
+fn collect_source_block_records_in_section(
+    section: &Section<ParsedAnnotation>,
     records: &mut Vec<SourceBlockRecord>,
 ) {
-    for section in sections {
-        collect_source_block_records_in_elements(&section.children, records);
-        collect_source_block_records_in_sections(&section.subsections, records);
+    collect_source_block_records_in_elements(
+        &section.children,
+        &section.effective_properties,
+        records,
+    );
+    for subsection in &section.subsections {
+        collect_source_block_records_in_section(subsection, records);
     }
 }
 
 fn collect_source_block_records_in_elements(
     elements: &[Element<ParsedAnnotation>],
+    properties: &[Property<ParsedAnnotation>],
     records: &mut Vec<SourceBlockRecord>,
 ) {
     for (index, element) in elements.iter().enumerate() {
         if let ElementData::Block(block) = &element.data {
             if block.kind == BlockKind::Source {
-                let header_args = explicit_source_block_header_args(element, &block.header_args);
+                let header_args = explicit_source_block_header_args(
+                    element,
+                    block.language.as_deref(),
+                    properties,
+                    &block.header_args,
+                );
                 records.push(SourceBlockRecord {
                     source: SourceBlockSource::from_annotation(&element.ann),
                     kind: SourceBlockRecordKind::Block,
@@ -62,27 +71,31 @@ fn collect_source_block_records_in_elements(
                     value: block.value.clone(),
                 });
             }
-            collect_source_block_records_in_elements(&block.children, records);
+            collect_source_block_records_in_elements(&block.children, properties, records);
         }
-        collect_inline_source_records(element, records);
-        collect_nested_source_block_records(element, records);
+        collect_inline_source_records(element, properties, records);
+        collect_nested_source_block_records(element, properties, records);
     }
 }
 
 fn collect_nested_source_block_records(
     element: &Element<ParsedAnnotation>,
+    properties: &[Property<ParsedAnnotation>],
     records: &mut Vec<SourceBlockRecord>,
 ) {
     match &element.data {
         ElementData::Drawer(drawer) => {
-            collect_source_block_records_in_elements(&drawer.children, records)
+            collect_source_block_records_in_elements(&drawer.children, properties, records)
         }
-        ElementData::List(list) => collect_source_block_records_in_list_items(&list.items, records),
+        ElementData::List(list) => {
+            collect_source_block_records_in_list_items(&list.items, properties, records)
+        }
         ElementData::FootnoteDef(footnote) => {
-            collect_source_block_records_in_elements(&footnote.children, records);
+            collect_source_block_records_in_elements(&footnote.children, properties, records);
         }
         ElementData::Inlinetask(task) => {
-            collect_source_block_records_in_elements(&task.children, records);
+            let scoped_properties = merged_properties(properties, &task.properties);
+            collect_source_block_records_in_elements(&task.children, &scoped_properties, records);
         }
         ElementData::Paragraph(_)
         | ElementData::Table(_)
@@ -102,35 +115,38 @@ fn collect_nested_source_block_records(
 
 fn collect_source_block_records_in_list_items(
     items: &[ListItem<ParsedAnnotation>],
+    properties: &[Property<ParsedAnnotation>],
     records: &mut Vec<SourceBlockRecord>,
 ) {
     for item in items {
-        collect_source_block_records_in_elements(&item.children, records);
+        collect_source_block_records_in_elements(&item.children, properties, records);
     }
 }
 
 fn collect_inline_source_records(
     element: &Element<ParsedAnnotation>,
+    properties: &[Property<ParsedAnnotation>],
     records: &mut Vec<SourceBlockRecord>,
 ) {
     match &element.data {
         ElementData::Paragraph(objects) => {
-            collect_inline_source_records_in_objects(objects, records)
+            collect_inline_source_records_in_objects(objects, properties, records)
         }
         ElementData::Table(table) => {
             for row in &table.rows {
                 for cell in &row.cells {
-                    collect_inline_source_records_in_objects(&cell.objects, records);
+                    collect_inline_source_records_in_objects(&cell.objects, properties, records);
                 }
             }
         }
         ElementData::List(list) => {
             for item in &list.items {
-                collect_inline_source_records_in_objects(&item.tag, records);
+                collect_inline_source_records_in_objects(&item.tag, properties, records);
             }
         }
         ElementData::Inlinetask(task) => {
-            collect_inline_source_records_in_objects(&task.title, records);
+            let scoped_properties = merged_properties(properties, &task.properties);
+            collect_inline_source_records_in_objects(&task.title, &scoped_properties, records);
         }
         _ => {}
     }
@@ -138,6 +154,7 @@ fn collect_inline_source_records(
 
 fn collect_inline_source_records_in_objects(
     objects: &[Object<ParsedAnnotation>],
+    properties: &[Property<ParsedAnnotation>],
     records: &mut Vec<SourceBlockRecord>,
 ) {
     for (index, object) in objects.iter().enumerate() {
@@ -148,7 +165,11 @@ fn collect_inline_source_records_in_objects(
                 value,
                 ..
             } => {
-                let header_args = parse_block_header_args(parameters.as_deref());
+                let header_args = explicit_inline_source_header_args(
+                    language.as_str(),
+                    properties,
+                    parameters.as_deref(),
+                );
                 records.push(SourceBlockRecord {
                     source: SourceBlockSource::from_annotation(&object.ann),
                     kind: SourceBlockRecordKind::InlineSource,
@@ -167,24 +188,32 @@ fn collect_inline_source_records_in_objects(
                 });
             }
             ObjectData::Markup { children, .. } => {
-                collect_inline_source_records_in_objects(children, records);
+                collect_inline_source_records_in_objects(children, properties, records);
             }
             ObjectData::FootnoteRef { definition, .. } => {
-                collect_inline_source_records_in_objects(definition, records);
+                collect_inline_source_records_in_objects(definition, properties, records);
             }
             ObjectData::Citation(citation) => {
-                collect_inline_source_records_in_objects(&citation.prefix, records);
-                collect_inline_source_records_in_objects(&citation.suffix, records);
+                collect_inline_source_records_in_objects(&citation.prefix, properties, records);
+                collect_inline_source_records_in_objects(&citation.suffix, properties, records);
                 for reference in &citation.references {
-                    collect_inline_source_records_in_objects(&reference.prefix, records);
-                    collect_inline_source_records_in_objects(&reference.suffix, records);
+                    collect_inline_source_records_in_objects(
+                        &reference.prefix,
+                        properties,
+                        records,
+                    );
+                    collect_inline_source_records_in_objects(
+                        &reference.suffix,
+                        properties,
+                        records,
+                    );
                 }
             }
             ObjectData::Link(link) => {
-                collect_inline_source_records_in_objects(&link.description, records);
+                collect_inline_source_records_in_objects(&link.description, properties, records);
             }
             ObjectData::Cloze { text, .. } => {
-                collect_inline_source_records_in_objects(text, records);
+                collect_inline_source_records_in_objects(text, properties, records);
             }
             ObjectData::Plain(_)
             | ObjectData::LineBreak
@@ -214,18 +243,79 @@ fn affiliated_keyword_value(keywords: &[Keyword<ParsedAnnotation>], key: &str) -
 
 fn explicit_source_block_header_args(
     element: &Element<ParsedAnnotation>,
+    language: Option<&str>,
+    properties: &[Property<ParsedAnnotation>],
     begin_line_args: &[BlockHeaderArg],
 ) -> Vec<BlockHeaderArg> {
-    element
-        .affiliated_keywords
-        .iter()
-        .filter(|keyword| {
-            keyword.key.eq_ignore_ascii_case("HEADER")
-                || keyword.key.eq_ignore_ascii_case("HEADERS")
-        })
-        .flat_map(|keyword| parse_block_header_args(Some(&keyword.value)))
-        .chain(begin_line_args.iter().cloned())
-        .collect()
+    let mut header_args = property_header_args(properties, language);
+    header_args.extend(
+        element
+            .affiliated_keywords
+            .iter()
+            .filter(|keyword| {
+                keyword.key.eq_ignore_ascii_case("HEADER")
+                    || keyword.key.eq_ignore_ascii_case("HEADERS")
+            })
+            .flat_map(|keyword| parse_block_header_args(Some(&keyword.value))),
+    );
+    header_args.extend(begin_line_args.iter().cloned());
+    header_args
+}
+
+fn explicit_inline_source_header_args(
+    language: &str,
+    properties: &[Property<ParsedAnnotation>],
+    parameters: Option<&str>,
+) -> Vec<BlockHeaderArg> {
+    let mut header_args = property_header_args(properties, Some(language));
+    header_args.extend(parse_block_header_args(parameters));
+    header_args
+}
+
+fn property_header_args(
+    properties: &[Property<ParsedAnnotation>],
+    language: Option<&str>,
+) -> Vec<BlockHeaderArg> {
+    let mut header_args = Vec::new();
+    header_args.extend(
+        properties
+            .iter()
+            .filter(|property| property.key.eq_ignore_ascii_case("header-args"))
+            .flat_map(|property| parse_block_header_args(Some(&property.value))),
+    );
+    if let Some(language) = language {
+        header_args.extend(
+            properties
+                .iter()
+                .filter(|property| is_language_header_args_property(&property.key, language))
+                .flat_map(|property| parse_block_header_args(Some(&property.value))),
+        );
+    }
+    header_args
+}
+
+fn is_language_header_args_property(key: &str, language: &str) -> bool {
+    key.get(.."header-args:".len())
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("header-args:"))
+        && key["header-args:".len()..].eq_ignore_ascii_case(language)
+}
+
+fn merged_properties(
+    inherited: &[Property<ParsedAnnotation>],
+    local: &[Property<ParsedAnnotation>],
+) -> Vec<Property<ParsedAnnotation>> {
+    let mut merged = inherited.to_vec();
+    for property in local {
+        if let Some(existing) = merged
+            .iter_mut()
+            .find(|existing| existing.key.eq_ignore_ascii_case(&property.key))
+        {
+            *existing = property.clone();
+        } else {
+            merged.push(property.clone());
+        }
+    }
+    merged
 }
 
 fn source_block_result_from_element(
@@ -287,6 +377,7 @@ fn strip_affiliated_result_prefix(element: &Element<ParsedAnnotation>) -> String
 fn source_block_tangle(header_args: &[BlockHeaderArg]) -> Option<SourceBlockTangle> {
     let arg = header_args
         .iter()
+        .rev()
         .find(|arg| arg.key.eq_ignore_ascii_case("tangle"))?;
     let raw_value = arg.value.clone().unwrap_or_else(|| "yes".to_string());
     let normalized = unquote_header_value(raw_value.trim());
