@@ -1,16 +1,16 @@
 use nom::{
+    Err, IResult,
     bytes::complete::take_while,
     character::complete::{multispace0, space0},
     combinator::iterator,
-    Err, IResult,
 };
 
 use super::{
-    combinator::{blank_lines, line_ends_iter, node, pipe_token, GreenElement, NodeBuilder},
+    SyntaxKind,
+    combinator::{GreenElement, NodeBuilder, blank_lines, line_ends_iter, node, pipe_token},
     input::Input,
     keyword::{affiliated_keyword_nodes, tblfm_keyword_nodes},
     object::standard_object_nodes,
-    SyntaxKind,
 };
 
 fn org_table_node_base(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -256,7 +256,7 @@ r#"|
 
 #[test]
 fn parse_table_el() {
-    use crate::{syntax_ast::TableEl, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::TableEl, tests::to_ast};
 
     let to_table_el = to_ast::<TableEl>(table_el_node);
 

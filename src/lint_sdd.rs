@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::lint_model::{location_for_range, LintFinding, LintSeverity};
+use super::lint_model::{LintFinding, LintSeverity, location_for_range};
 use crate::ast::{Element, ElementData, ParsedAnnotation, ParsedAst, Section};
 
 /// Lints Org-native SDD nodes and requirement structure.

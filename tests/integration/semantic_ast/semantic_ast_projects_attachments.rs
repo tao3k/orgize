@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         AttachmentDirectorySource, AttachmentIdPathLayout, AttachmentLinkSearchKind, ElementData,
         ObjectData,
     },
-    Org,
 };
 
 const SOURCE: &str = r#"* Project :ATTACH:

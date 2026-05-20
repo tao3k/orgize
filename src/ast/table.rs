@@ -1,6 +1,6 @@
 use rowan::ast::AstNode;
 
-use super::{filter_token, OrgTable, OrgTableRow, Token};
+use super::{OrgTable, OrgTableRow, Token, filter_token};
 use crate::syntax::SyntaxKind;
 
 impl OrgTable {
@@ -68,7 +68,7 @@ impl OrgTable {
     /// assert_eq!(tblfm[0], " test1");
     /// assert_eq!(tblfm[1], " test2");
     /// ```
-    pub fn tblfm(&self) -> impl Iterator<Item = Token> {
+    pub fn tblfm(&self) -> impl Iterator<Item = Token> + use<> {
         self.syntax.children().filter_map(|n| {
             if n.kind() == SyntaxKind::KEYWORD {
                 n.children_with_tokens()

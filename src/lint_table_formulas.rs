@@ -6,7 +6,7 @@ use crate::ast::{
     AstRef, ElementData, ParsedAnnotation, ParsedAst, Table, TableFormula, TableFormulaAssignment,
 };
 
-use super::lint_model::{location_for_range, LintFinding, LintSeverity};
+use super::lint_model::{LintFinding, LintSeverity, location_for_range};
 
 pub(crate) fn table_formula_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
     let mut findings = Vec::new();
@@ -225,11 +225,11 @@ fn out_of_bounds_messages(value: &str, shape: TableShape) -> Vec<String> {
     let mut index = 0usize;
     while index < value.len() {
         let rest = &value[index..];
-        if rest.starts_with("remote(") {
-            if let Some(end) = remote_reference_end(rest) {
-                index += end;
-                continue;
-            }
+        if rest.starts_with("remote(")
+            && let Some(end) = remote_reference_end(rest)
+        {
+            index += end;
+            continue;
         }
 
         let ch = rest.chars().next().unwrap();
@@ -250,21 +250,21 @@ fn push_reference_shape_messages(raw: &str, shape: TableShape, messages: &mut Ve
         return;
     }
     for endpoint in raw.split("..") {
-        if let Some(row) = absolute_reference_number(endpoint, '@') {
-            if row == 0 || row > shape.rows {
-                messages.push(format!(
-                    "table formula row reference `{raw}` points outside {} table rows",
-                    shape.rows
-                ));
-            }
+        if let Some(row) = absolute_reference_number(endpoint, '@')
+            && (row == 0 || row > shape.rows)
+        {
+            messages.push(format!(
+                "table formula row reference `{raw}` points outside {} table rows",
+                shape.rows
+            ));
         }
-        if let Some(column) = absolute_reference_number(endpoint, '$') {
-            if column == 0 || column > shape.columns {
-                messages.push(format!(
-                    "table formula column reference `{raw}` points outside {} table columns",
-                    shape.columns
-                ));
-            }
+        if let Some(column) = absolute_reference_number(endpoint, '$')
+            && (column == 0 || column > shape.columns)
+        {
+            messages.push(format!(
+                "table formula column reference `{raw}` points outside {} table columns",
+                shape.columns
+            ));
         }
     }
 }

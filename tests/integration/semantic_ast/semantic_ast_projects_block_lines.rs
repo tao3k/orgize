@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{BlockKind, ElementData},
     Org,
+    ast::{BlockKind, ElementData},
 };
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/source-example-block-lines.org");

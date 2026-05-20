@@ -4,8 +4,8 @@ use rowan::TextRange;
 
 use super::attachment_model::{AttachmentDirectory, AttachmentLink, AttachmentState};
 use super::block_model::{
-    joined_block_lines, BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumbering, BlockSwitches,
-    SemanticFixedWidth,
+    BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumbering, BlockSwitches, SemanticFixedWidth,
+    joined_block_lines,
 };
 use super::lifecycle_model::{ArchiveLocation, ArchiveState};
 use super::link_model::{

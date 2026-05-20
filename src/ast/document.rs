@@ -20,7 +20,7 @@ impl SyntaxDocument {
     /// let doc = org.first_node::<SyntaxDocument>().unwrap();
     /// assert_eq!(doc.keywords().count(), 4);
     /// ```
-    pub fn keywords(&self) -> impl Iterator<Item = SyntaxKeyword> {
+    pub fn keywords(&self) -> impl Iterator<Item = SyntaxKeyword> + use<> {
         self.section()
             .into_iter()
             .flat_map(|section| section.syntax.children().filter_map(SyntaxKeyword::cast))
@@ -82,7 +82,10 @@ impl Org {
     }
 
     /// Equals to `self.syntax_document().keywords()`, see [SyntaxDocument::keywords]
-    pub fn keywords(&self) -> impl Iterator<Item = SyntaxKeyword> {
-        self.syntax_document().keywords()
+    pub fn keywords(&self) -> impl Iterator<Item = SyntaxKeyword> + use<> {
+        self.syntax_document()
+            .keywords()
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 }

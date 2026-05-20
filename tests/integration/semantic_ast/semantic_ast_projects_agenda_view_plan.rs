@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         AgendaBlockViewQuery, AgendaDate, AgendaQuery, AgendaViewQuery, AgendaViewReceiptKind,
         AgendaViewSkipReason, AgendaViewSortKey, AgendaViewSortSpec,
     },
-    Org,
 };
 
 #[test]
@@ -30,18 +30,24 @@ SCHEDULED: <2026-05-15 Fri 13:00>
     assert_eq!(plan.skipped.len(), 1);
     assert_eq!(plan.cards[0].title, "Deadline");
     assert_eq!(plan.cards[0].sorted_position, 1);
-    assert!(plan.cards[0]
-        .sort_keys
-        .iter()
-        .any(|sort_key| sort_key.key.as_str() == "kind" && sort_key.value == "deadline"));
-    assert!(plan.cards[0]
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind == AgendaViewReceiptKind::QueryMatched));
-    assert!(plan.cards[0]
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind == AgendaViewReceiptKind::Accepted));
+    assert!(
+        plan.cards[0]
+            .sort_keys
+            .iter()
+            .any(|sort_key| sort_key.key.as_str() == "kind" && sort_key.value == "deadline")
+    );
+    assert!(
+        plan.cards[0]
+            .receipts
+            .iter()
+            .any(|receipt| receipt.kind == AgendaViewReceiptKind::QueryMatched)
+    );
+    assert!(
+        plan.cards[0]
+            .receipts
+            .iter()
+            .any(|receipt| receipt.kind == AgendaViewReceiptKind::Accepted)
+    );
 
     let skipped = &plan.skipped[0];
     assert_eq!(skipped.title, "Afternoon");
@@ -90,15 +96,18 @@ DEADLINE: <2026-05-15 Fri>
     assert_eq!(plan.cards[0].title, "High timed");
     assert_eq!(plan.cards[1].title, "Low timed");
     assert_eq!(plan.skipped[0].title, "Untimed deadline");
-    assert!(plan.cards[0].receipts.iter().any(|receipt| receipt.kind
-        == AgendaViewReceiptKind::Sorted
-        && receipt
-            .message
-            .contains("agenda sort strategy: time-up,priority-down")));
-    assert!(plan.cards[0]
-        .sort_keys
-        .iter()
-        .any(|sort_key| sort_key.key == AgendaViewSortKey::Priority && sort_key.value == "A"));
+    assert!(plan.cards[0].receipts.iter().any(|receipt| {
+        receipt.kind == AgendaViewReceiptKind::Sorted
+            && receipt
+                .message
+                .contains("agenda sort strategy: time-up,priority-down")
+    }));
+    assert!(
+        plan.cards[0]
+            .sort_keys
+            .iter()
+            .any(|sort_key| sort_key.key == AgendaViewSortKey::Priority && sort_key.value == "A")
+    );
 }
 
 #[test]
@@ -143,7 +152,9 @@ SCHEDULED: <2026-05-16 Sat>
     assert_eq!(block.sections[1].index, 2);
     assert_eq!(block.sections[1].name, "Waiting");
     assert_eq!(block.sections[1].plan.cards[0].title, "Review queue");
-    assert!(block
-        .to_compact_text("agenda.org")
-        .contains("[AGENDA_SECTION] 2 Waiting"));
+    assert!(
+        block
+            .to_compact_text("agenda.org")
+            .contains("[AGENDA_SECTION] 2 Waiting")
+    );
 }

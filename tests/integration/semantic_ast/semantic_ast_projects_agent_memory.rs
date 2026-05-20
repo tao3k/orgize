@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         AgentMemoryDecision, AgentMemoryQuery, AgentMemorySeverity, MemoryAuthorityKind,
         MemoryEvidenceKind, MemoryQuery, MemoryRecordState,
     },
-    Org,
 };
 
 const SOURCE: &str = r#"* TODO Current preference :agent:
@@ -56,10 +56,12 @@ fn semantic_ast_projects_agent_memory_records_from_org_constructs() {
         .iter()
         .any(|property| property.key == "PREF" && property.value == "use Org-native projection"));
     assert!(current.links.iter().any(|link| link.path == "id:mem-old"));
-    assert!(current
-        .evidence
-        .iter()
-        .any(|evidence| matches!(evidence.kind, MemoryEvidenceKind::Timestamp { .. })));
+    assert!(
+        current
+            .evidence
+            .iter()
+            .any(|evidence| matches!(evidence.kind, MemoryEvidenceKind::Timestamp { .. }))
+    );
     assert!(current.evidence.iter().any(|evidence| {
         matches!(
             &evidence.kind,
@@ -72,18 +74,21 @@ fn semantic_ast_projects_agent_memory_records_from_org_constructs() {
         .find(|record| record.title == "Old preference")
         .expect("old memory record");
     assert_eq!(old.state, MemoryRecordState::Closed);
-    assert!(old
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::Closed));
-    assert!(old
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::Logbook));
-    assert!(old
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::Clock));
+    assert!(
+        old.evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::Closed)
+    );
+    assert!(
+        old.evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::Logbook)
+    );
+    assert!(
+        old.evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::Clock)
+    );
 
     let superseded = records
         .iter()
@@ -91,10 +96,12 @@ fn semantic_ast_projects_agent_memory_records_from_org_constructs() {
             record.title == "Current preference" && record.state == MemoryRecordState::Closed
         })
         .expect("superseded memory record");
-    assert!(superseded
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::Closed));
+    assert!(
+        superseded
+            .evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::Closed)
+    );
 
     let archived = records
         .iter()
@@ -110,18 +117,24 @@ fn semantic_ast_projects_agent_memory_records_from_org_constructs() {
         .find(|record| record.title == "Daily habit")
         .expect("habit memory record");
     assert_eq!(habit.state, MemoryRecordState::Current);
-    assert!(habit
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::HabitStyle));
-    assert!(habit
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::HabitLastRepeat));
-    assert!(habit
-        .evidence
-        .iter()
-        .any(|evidence| evidence.kind == MemoryEvidenceKind::HabitRepeater));
+    assert!(
+        habit
+            .evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::HabitStyle)
+    );
+    assert!(
+        habit
+            .evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::HabitLastRepeat)
+    );
+    assert!(
+        habit
+            .evidence
+            .iter()
+            .any(|evidence| evidence.kind == MemoryEvidenceKind::HabitRepeater)
+    );
 
     let background = records
         .iter()
@@ -147,18 +160,24 @@ fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
         .expect("current card");
     assert_eq!(current.decision, AgentMemoryDecision::Current);
     assert_eq!(current.decision.severity(), AgentMemorySeverity::Action);
-    assert!(current
-        .authority
-        .iter()
-        .any(|reason| reason.kind == MemoryAuthorityKind::Current));
-    assert!(current
-        .authority
-        .iter()
-        .any(|reason| reason.kind == MemoryAuthorityKind::Identity));
-    assert!(current
-        .authority
-        .iter()
-        .any(|reason| reason.kind == MemoryAuthorityKind::Temporal));
+    assert!(
+        current
+            .authority
+            .iter()
+            .any(|reason| reason.kind == MemoryAuthorityKind::Current)
+    );
+    assert!(
+        current
+            .authority
+            .iter()
+            .any(|reason| reason.kind == MemoryAuthorityKind::Identity)
+    );
+    assert!(
+        current
+            .authority
+            .iter()
+            .any(|reason| reason.kind == MemoryAuthorityKind::Temporal)
+    );
 
     let old = snapshot
         .cards
@@ -167,14 +186,16 @@ fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
         .expect("old card");
     assert_eq!(old.decision, AgentMemoryDecision::Closed);
     assert_eq!(old.decision.severity(), AgentMemorySeverity::Suppressed);
-    assert!(old
-        .authority
-        .iter()
-        .any(|reason| reason.kind == MemoryAuthorityKind::Closed));
-    assert!(old
-        .authority
-        .iter()
-        .any(|reason| reason.kind == MemoryAuthorityKind::Lifecycle));
+    assert!(
+        old.authority
+            .iter()
+            .any(|reason| reason.kind == MemoryAuthorityKind::Closed)
+    );
+    assert!(
+        old.authority
+            .iter()
+            .any(|reason| reason.kind == MemoryAuthorityKind::Lifecycle)
+    );
 
     let superseded = snapshot
         .cards
@@ -183,34 +204,45 @@ fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
             card.title == "Current preference" && card.decision == AgentMemoryDecision::Closed
         })
         .expect("superseded card");
-    assert!(superseded
-        .authority
-        .iter()
-        .any(|reason| reason.kind == MemoryAuthorityKind::StaleCandidate));
-    assert!(superseded
-        .authority
-        .iter()
-        .any(|reason| reason.kind == MemoryAuthorityKind::SupersededCandidate));
+    assert!(
+        superseded
+            .authority
+            .iter()
+            .any(|reason| reason.kind == MemoryAuthorityKind::StaleCandidate)
+    );
+    assert!(
+        superseded
+            .authority
+            .iter()
+            .any(|reason| reason.kind == MemoryAuthorityKind::SupersededCandidate)
+    );
 
     let habit = snapshot
         .cards
         .iter()
         .find(|card| card.title == "Daily habit")
         .expect("habit card");
-    assert!(habit
-        .authority
-        .iter()
-        .any(|reason| reason.kind == MemoryAuthorityKind::Habit));
-    assert!(habit
-        .authority
-        .iter()
-        .any(|reason| reason.kind == MemoryAuthorityKind::Repeat));
+    assert!(
+        habit
+            .authority
+            .iter()
+            .any(|reason| reason.kind == MemoryAuthorityKind::Habit)
+    );
+    assert!(
+        habit
+            .authority
+            .iter()
+            .any(|reason| reason.kind == MemoryAuthorityKind::Repeat)
+    );
 
     let rendered = snapshot.to_compact_text("memory.org");
     assert!(rendered.contains("[MEM001] Action: Current memory\n@ memory.org:1:1"));
     assert!(rendered.contains("[MEM002] Suppressed: Closed memory\n@ memory.org:7:1"));
-    assert!(rendered
-        .contains("a current memory card with the same anchor or title may supersede this fact"));
+    assert!(
+        rendered.contains(
+            "a current memory card with the same anchor or title may supersede this fact"
+        )
+    );
     assert!(rendered.contains("[MEM003] Suppressed: Archived memory"));
     assert!(rendered.contains("[MEM004] Info: Background memory"));
     assert!(rendered.contains("habit evidence marks recurring cadence instead of a one-off fact"));
@@ -218,8 +250,11 @@ fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
         rendered.contains("stable identity evidence lets agents correlate corrections across time")
     );
     assert!(rendered.contains("timestamp evidence gives this fact a bounded time context"));
-    assert!(rendered
-        .contains("repeat evidence should be interpreted as cadence, not a timeless preference"));
+    assert!(
+        rendered.contains(
+            "repeat evidence should be interpreted as cadence, not a timeless preference"
+        )
+    );
     assert!(rendered.contains("links: id:mem-old"));
     assert!(rendered.contains(
         "contract: Derived from official Org memory-bearing constructs; no custom source syntax is required."

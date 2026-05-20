@@ -2,7 +2,7 @@
 
 use crate::ast::{CryptWarningKind, ParsedAst};
 
-use super::lint_model::{location_for_offsets, LintFinding, LintSeverity};
+use super::lint_model::{LintFinding, LintSeverity, location_for_offsets};
 
 pub(crate) fn crypt_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
     let mut findings = Vec::new();

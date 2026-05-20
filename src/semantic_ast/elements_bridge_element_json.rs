@@ -1,6 +1,6 @@
 //! Element-level JSON projection for the Org elements bridge.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::{
     Block, BlockKind, BlockLine, BlockLineNumberMode, BlockLineNumbering, BlockSwitches, Checkbox,
@@ -140,11 +140,13 @@ fn with_element_base(element: &Element<ParsedAnnotation>, kind: &str, mut value:
         map.insert("kind".to_string(), json!(kind));
         map.insert(
             "affiliatedKeywords".to_string(),
-            json!(element
-                .affiliated_keywords
-                .iter()
-                .map(super::elements_bridge_json::keyword_json)
-                .collect::<Vec<_>>()),
+            json!(
+                element
+                    .affiliated_keywords
+                    .iter()
+                    .map(super::elements_bridge_json::keyword_json)
+                    .collect::<Vec<_>>()
+            ),
         );
     }
     value

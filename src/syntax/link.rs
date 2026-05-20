@@ -1,17 +1,17 @@
 use nom::{
+    IResult,
     bytes::complete::{take_while, take_while1},
     combinator::{map, opt, verify},
-    IResult,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{
-        l_angle_token, l_bracket2_token, l_bracket_token, node, r_angle_token, r_bracket2_token,
-        r_bracket_token, GreenElement,
+        GreenElement, l_angle_token, l_bracket_token, l_bracket2_token, node, r_angle_token,
+        r_bracket_token, r_bracket2_token,
     },
     input::Input,
     parser_contract::ObjectNodesParser,
-    SyntaxKind,
 };
 
 fn is_angle_link_path(path: &str) -> bool {
@@ -238,7 +238,7 @@ pub(crate) fn angle_link_node(input: Input) -> IResult<Input, GreenElement, ()> 
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::SyntaxLink, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::SyntaxLink, tests::to_ast};
 
     let to_link = to_ast::<SyntaxLink>(|input| {
         link_node(input, crate::syntax::object::link_description_object_nodes)
@@ -300,16 +300,18 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(link_node(
-        ("[[#id][desc]", config).into(),
-        crate::syntax::object::link_description_object_nodes
-    )
-    .is_err());
+    assert!(
+        link_node(
+            ("[[#id][desc]", config).into(),
+            crate::syntax::object::link_description_object_nodes
+        )
+        .is_err()
+    );
 }
 
 #[test]
 fn parse_angle_link() {
-    use crate::{syntax_ast::SyntaxLink, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::SyntaxLink, tests::to_ast};
 
     let to_link = to_ast::<SyntaxLink>(angle_link_node);
 
@@ -334,7 +336,7 @@ fn parse_angle_link() {
 
 #[test]
 fn parse_plain_link() {
-    use crate::{syntax_ast::SyntaxLink, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::SyntaxLink, tests::to_ast};
 
     let to_link = to_ast::<SyntaxLink>(plain_link_node);
 

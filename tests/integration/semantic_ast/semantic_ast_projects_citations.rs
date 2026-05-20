@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{ElementData, MarkupKind, ObjectData},
     Org,
+    ast::{ElementData, MarkupKind, ObjectData},
 };
 
 #[test]
@@ -43,30 +43,34 @@ fn semantic_ast_projects_citations() {
         &citations[0].references[0].prefix[0].data,
         ObjectData::Plain(value) if value == "see "
     ));
-    assert!(citations[0].references[0]
-        .prefix
-        .iter()
-        .any(|object| matches!(
-            object.data,
-            ObjectData::Markup {
-                kind: MarkupKind::Italic,
-                ..
-            }
-        )));
+    assert!(
+        citations[0].references[0]
+            .prefix
+            .iter()
+            .any(|object| matches!(
+                object.data,
+                ObjectData::Markup {
+                    kind: MarkupKind::Italic,
+                    ..
+                }
+            ))
+    );
     assert!(matches!(
         &citations[0].references[0].suffix[0].data,
         ObjectData::Plain(value) if value == "p. "
     ));
-    assert!(citations[0].references[0]
-        .suffix
-        .iter()
-        .any(|object| matches!(
-            object.data,
-            ObjectData::Markup {
-                kind: MarkupKind::Bold,
-                ..
-            }
-        )));
+    assert!(
+        citations[0].references[0]
+            .suffix
+            .iter()
+            .any(|object| matches!(
+                object.data,
+                ObjectData::Markup {
+                    kind: MarkupKind::Bold,
+                    ..
+                }
+            ))
+    );
     assert_eq!(citations[0].references[1].id, "roe2021");
     assert!(matches!(
         &citations[0].suffix[0].data,

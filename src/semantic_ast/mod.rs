@@ -85,6 +85,8 @@ mod publishing_project_model;
 mod radio_links;
 mod refile;
 mod refile_model;
+mod runtime_metadata;
+mod runtime_metadata_model;
 mod sdd;
 mod sdd_model;
 mod section_index;
@@ -258,6 +260,12 @@ pub use refile_model::{
     RefilePlanReceiptKind, RefilePlanRequest, RefilePlanSection, RefileTarget, RefileTargetIndex,
     RefileTargetQuery, RefileTargetReceipt, RefileTargetSpec, RefileTargetSpecKind, RefileWarning,
     RefileWarningKind,
+};
+pub use runtime_metadata_model::{
+    FeedStatusDrawerName, FeedStatusRecord, MobileFlaggedSection, MobileIndexLink,
+    MobileOriginalId, MobilePriorityDeclaration, MobileProperty, MobileReadonlyKeyword,
+    MobileSyncMetadata, RuntimeMetadataBoundary, RuntimeMetadataBoundaryKind, RuntimeMetadataPlan,
+    RuntimeMetadataWarning, RuntimeMetadataWarningKind, TimerContext, TimerRecord,
 };
 pub use sdd_model::{SddKind, SddNodeRecord, SddParentRef, SddStatus, SddStatusValue};
 pub use section_index_model::{

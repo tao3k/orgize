@@ -1,10 +1,10 @@
 //! Shared helpers for typed syntax AST wrappers.
 
 use crate::{
-    syntax::{SyntaxKind, SyntaxNode},
     SyntaxToken,
+    syntax::{SyntaxKind, SyntaxNode},
 };
-use rowan::{ast::AstNode, NodeOrToken, TextRange, TextSize};
+use rowan::{NodeOrToken, TextRange, TextSize, ast::AstNode};
 use std::{
     borrow::{Borrow, Cow},
     fmt,

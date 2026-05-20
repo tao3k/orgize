@@ -1,6 +1,6 @@
 use crate::SyntaxKind;
 
-use super::{filter_token, InlineSrc, Token};
+use super::{InlineSrc, Token, filter_token};
 
 impl InlineSrc {
     /// Language of the code

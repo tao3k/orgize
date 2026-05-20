@@ -3,14 +3,14 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use rust_lang_project_harness::{
+    RustOwnerResponsibility, RustVerificationProfileHint, RustVerificationReportBundle,
+    RustVerificationReportEntryAction, RustVerificationReportEntryArtifact,
+    RustVerificationReportOptions, RustVerificationReportWriteConfig,
+    RustVerificationReportWriteReceipt, RustVerificationSkillBinding, RustVerificationTaskKind,
     build_rust_verification_analysis_profile_with_config,
     build_rust_verification_report_entry_advice_with_receipt, default_rust_harness_config,
     plan_rust_project_verification_with_config, render_rust_verification_report_write_receipt_json,
-    write_rust_verification_reports_with_options, RustOwnerResponsibility,
-    RustVerificationProfileHint, RustVerificationReportBundle, RustVerificationReportEntryAction,
-    RustVerificationReportEntryArtifact, RustVerificationReportOptions,
-    RustVerificationReportWriteConfig, RustVerificationReportWriteReceipt,
-    RustVerificationSkillBinding, RustVerificationTaskKind,
+    write_rust_verification_reports_with_options,
 };
 
 #[test]
@@ -84,13 +84,17 @@ fn git_locked_harness_report_exposes_actionable_performance_gaps() {
         Some(&cache_dir.join("selection_advice.json"))
     );
     assert_eq!(records[0]["state"], "pending");
-    assert!(required_evidence
-        .iter()
-        .any(|key| key == "benchmark_command"));
+    assert!(
+        required_evidence
+            .iter()
+            .any(|key| key == "benchmark_command")
+    );
     assert!(required_evidence.iter().any(|key| key == "baseline"));
-    assert!(required_evidence
-        .iter()
-        .any(|key| key == "regression_threshold"));
+    assert!(
+        required_evidence
+            .iter()
+            .any(|key| key == "regression_threshold")
+    );
 }
 
 #[test]

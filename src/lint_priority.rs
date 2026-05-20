@@ -2,7 +2,7 @@
 
 use crate::ast::{PriorityProfile, PriorityRangeStatus, PriorityValue};
 
-use super::lint_model::{location_for_offsets, LintFinding, LintSeverity};
+use super::lint_model::{LintFinding, LintSeverity, location_for_offsets};
 
 pub(crate) fn priority_cookie_findings(
     source: &str,

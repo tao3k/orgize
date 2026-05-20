@@ -5,9 +5,8 @@ use super::agenda_match::{
     AgendaMatchTerm, AgendaMatchValue,
 };
 use super::sparse_tree_model::{
-    truncate_text, SparseTreeCard, SparseTreeMatch, SparseTreeMatchKind, SparseTreeProjection,
-    SparseTreeQuery, SparseTreeReceipt, SparseTreeReceiptKind, SparseTreeSkip,
-    SparseTreeSkipReason,
+    SparseTreeCard, SparseTreeMatch, SparseTreeMatchKind, SparseTreeProjection, SparseTreeQuery,
+    SparseTreeReceipt, SparseTreeReceiptKind, SparseTreeSkip, SparseTreeSkipReason, truncate_text,
 };
 use super::{
     Document, ParsedAnnotation, SectionIndexProperty, SectionIndexRecord, SectionIndexSource,

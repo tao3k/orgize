@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf, process::Command};
 
-use orgize::{lint::lint_org, Org};
+use orgize::{Org, lint::lint_org};
 
 #[test]
 fn sdd_status_projects_org_native_parent_edges() {

@@ -1,24 +1,24 @@
 use memchr::{memchr, memchr2};
 use nom::{
+    IResult, Parser,
     branch::alt,
     bytes::complete::{tag, take},
     character::complete::{alphanumeric1, digit1, space0, space1},
     combinator::{cond, map, opt, recognize, verify},
     sequence::preceded,
-    IResult, Parser,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{
-        at_token, blank_lines, colon2_token, eol_or_eof, l_bracket_token, line_starts_iter, node,
-        r_bracket_token, GreenElement,
+        GreenElement, at_token, blank_lines, colon2_token, eol_or_eof, l_bracket_token,
+        line_starts_iter, node, r_bracket_token,
     },
     input::Input,
     keyword::affiliated_keyword_nodes,
     object::standard_object_nodes,
     paragraph::paragraph_nodes,
     parser_contract::ElementNodeParser,
-    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -420,7 +420,7 @@ fn get_line_indent(input: &str) -> Option<usize> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::SyntaxList, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::SyntaxList, tests::to_ast};
 
     let to_list =
         to_ast::<SyntaxList>(|input| list_node(input, crate::syntax::element::element_node));
@@ -739,10 +739,12 @@ fn parse() {
     let config = &ParseConfig::default();
 
     assert!(list_node(("-a", config).into(), crate::syntax::element::element_node).is_err());
-    assert!(list_node(
-        ("*\r\n", config).into(),
-        crate::syntax::element::element_node
-    )
-    .is_err());
+    assert!(
+        list_node(
+            ("*\r\n", config).into(),
+            crate::syntax::element::element_node
+        )
+        .is_err()
+    );
     assert!(list_node(("* ", config).into(), crate::syntax::element::element_node).is_err());
 }

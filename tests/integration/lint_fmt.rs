@@ -7,7 +7,7 @@ use std::{
 
 use orgize::{
     ast::{PriorityProfile, PriorityValue},
-    lint::{lint_org, lint_org_with_options, LintOptions},
+    lint::{LintOptions, lint_org, lint_org_with_options},
 };
 
 #[test]

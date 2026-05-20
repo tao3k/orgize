@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{AgendaDate, AgendaQuery, AgendaViewQuery, AgentPlanningQuery, TaskBlockerKind},
     Org,
+    ast::{AgendaDate, AgendaQuery, AgendaViewQuery, AgentPlanningQuery, TaskBlockerKind},
 };
 
 const SOURCE: &str = r#"* TODO Project
@@ -44,9 +44,11 @@ fn semantic_ast_projects_task_blockers_follow_local_ordered_siblings() {
         .expect("Third should be blocked by the nearest previous open sibling");
     assert_eq!(third.blocker.title, "Second");
 
-    assert!(!blockers
-        .iter()
-        .any(|record| record.blocked.title == "Nested B"));
+    assert!(
+        !blockers
+            .iter()
+            .any(|record| record.blocked.title == "Nested B")
+    );
 }
 
 #[test]
@@ -63,10 +65,12 @@ fn semantic_ast_projects_agenda_view_embeds_ordered_sibling_blockers() {
 
     assert_eq!(second.blockers.len(), 1);
     assert_eq!(second.blockers[0].blocker.title, "First");
-    assert!(second
-        .receipts
-        .iter()
-        .any(|receipt| receipt.kind.as_str() == "blockedByOrderedSibling"));
+    assert!(
+        second
+            .receipts
+            .iter()
+            .any(|receipt| receipt.kind.as_str() == "blockedByOrderedSibling")
+    );
 
     let rendered = plan.to_compact_text("ordered.org");
     assert!(rendered.contains("[AGENDA_ACCEPT] Second"));
@@ -88,7 +92,9 @@ fn semantic_ast_projects_agent_planning_embeds_ordered_sibling_blockers() {
 
     assert_eq!(second.blockers.len(), 1);
     assert_eq!(second.blockers[0].blocker.title, "First");
-    assert!(snapshot
-        .to_compact_text("ordered.org")
-        .contains("blocked-by: orderedPreviousSibling First @ 5:1"));
+    assert!(
+        snapshot
+            .to_compact_text("ordered.org")
+            .contains("blocked-by: orderedPreviousSibling First @ 5:1")
+    );
 }

@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{HabitConsistency, TimeUnit},
     Org,
+    ast::{HabitConsistency, TimeUnit},
 };
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/habit-records.org");

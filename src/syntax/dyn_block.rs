@@ -1,15 +1,15 @@
 use nom::{
+    IResult, Parser,
     bytes::complete::tag_no_case,
     character::complete::{alpha1, space0, space1},
-    IResult, Parser,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{
-        blank_lines, eol_or_eof, line_starts_iter, node, trim_line_end, GreenElement, NodeBuilder,
+        GreenElement, NodeBuilder, blank_lines, eol_or_eof, line_starts_iter, node, trim_line_end,
     },
     input::Input,
-    SyntaxKind,
 };
 
 fn dyn_block_node_base(input: Input) -> IResult<Input, GreenElement, ()> {

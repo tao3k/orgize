@@ -1,7 +1,7 @@
 //! Typed syntax wrapper helpers for `org-fc` cloze objects.
 
-use crate::{syntax::OrgLanguage, SyntaxElement, SyntaxKind, SyntaxNode};
-use rowan::{ast::AstNode, TextRange, TextSize};
+use crate::{SyntaxElement, SyntaxKind, SyntaxNode, syntax::OrgLanguage};
+use rowan::{TextRange, TextSize, ast::AstNode};
 
 use super::Token;
 
@@ -48,7 +48,7 @@ impl Cloze {
         self.syntax.to_string()
     }
 
-    pub fn text(&self) -> impl Iterator<Item = SyntaxElement> {
+    pub fn text(&self) -> impl Iterator<Item = SyntaxElement> + use<> {
         self.syntax
             .children_with_tokens()
             .skip(1)

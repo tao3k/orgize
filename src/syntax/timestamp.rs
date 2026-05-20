@@ -1,19 +1,19 @@
 use nom::{
+    IResult, Parser,
     branch::alt,
-    bytes::complete::{tag, take_till, take_while1, take_while_m_n},
+    bytes::complete::{tag, take_till, take_while_m_n, take_while1},
     character::complete::{digit1, space0, space1},
     combinator::{iterator, map, opt},
-    IResult, Parser,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{
-        colon_token, l_angle_token, l_bracket_token, l_parens_token, minus2_token, minus_token,
-        node, percent2_token, r_angle_token, r_bracket_token, r_parens_token, GreenElement,
-        NodeBuilder,
+        GreenElement, NodeBuilder, colon_token, l_angle_token, l_bracket_token, l_parens_token,
+        minus_token, minus2_token, node, percent2_token, r_angle_token, r_bracket_token,
+        r_parens_token,
     },
     input::Input,
-    SyntaxKind,
 };
 
 #[cfg_attr(

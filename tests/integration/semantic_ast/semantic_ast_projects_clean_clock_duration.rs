@@ -1,4 +1,4 @@
-use orgize::{ast::ElementData, Org};
+use orgize::{Org, ast::ElementData};
 
 #[test]
 fn semantic_ast_projects_clean_clock_duration() {

@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use orgize::lint::{lint_org_with_options, LintOptions};
+use orgize::lint::{LintOptions, lint_org_with_options};
 
 #[test]
 fn lint_reports_attachment_path_issues_with_snapshot() {

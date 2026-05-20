@@ -1,6 +1,6 @@
 use crate::SyntaxKind;
 
-use super::{filter_token, Comment};
+use super::{Comment, filter_token};
 
 impl Comment {
     /// Contents without pound signs

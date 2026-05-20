@@ -113,6 +113,12 @@ Org Crypt is modeled as source-grounded advice, not an execution feature:
 evidence, `CRYPTKEY` visibility, encrypted payload markers, and opaque-body
 warnings while never decrypting source text. The wasm package exposes the same
 shape through `cryptJson()` and `snapshotJson().crypt`.
+Runtime-adjacent Org features stay source-grounded too:
+`document.runtime_metadata_plan()` records FEEDSTATUS drawers, relative timer
+stamps, MobileOrg index and `FLAGGED`/`ORIGINAL_ID` metadata, plus explicit
+feed/timer/mobile/persist execution boundaries without network access,
+filesystem sync, or cache writes. Wasm consumers can request
+`runtimeMetadataJson()` or read `snapshotJson().runtimeMetadata`.
 Use `document.link_protocol_records()` to inspect built-in link families,
 custom protocols, `#+LINK` abbreviations, executable `shell:`/`elisp:` links,
 and inert `org-protocol:` calls without opening files or dispatching handlers.

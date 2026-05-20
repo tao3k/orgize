@@ -7,7 +7,7 @@ use super::section_index_model::{
     SectionIndexRecord, SectionIndexSource, SectionIndexSpecialProperty, SectionIndexTarget,
     SectionIndexTextSlice,
 };
-use super::special_properties::{special_properties, SpecialPropertyContext};
+use super::special_properties::{SpecialPropertyContext, special_properties};
 use super::{
     Document, Element, ElementData, Link, ListItem, Object, ObjectData, ParsedAnnotation, Property,
     Section, TargetKind,

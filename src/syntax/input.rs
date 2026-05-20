@@ -5,8 +5,8 @@ use std::{
 };
 
 use super::{
-    green::{token, GreenElement},
     SyntaxKind,
+    green::{GreenElement, token},
 };
 use crate::config::ParseConfig;
 

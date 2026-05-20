@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         ElementData, ExportProjectionOptions, FootnoteDefinition, LinkSearchKind, LinkTarget,
         MarkupKind, ObjectData, TargetKind,
     },
-    Org,
 };
 
 #[test]
@@ -108,10 +108,11 @@ Inline [fn::anonymous *inline*] and named [fn:named:explicit inline] then [fn:na
     assert_eq!(doc.sections[0].anchor.as_deref(), Some("custom-anchor"));
     assert_eq!(doc.sections[1].anchor.as_deref(), Some("duplicate"));
     assert_eq!(doc.sections[2].anchor.as_deref(), Some("duplicate-1"));
-    assert!(doc
-        .targets
-        .iter()
-        .any(|target| target.kind == TargetKind::Id && target.key == "id:org-id-anchor"));
+    assert!(
+        doc.targets
+            .iter()
+            .any(|target| target.kind == TargetKind::Id && target.key == "id:org-id-anchor")
+    );
 
     let links = doc.sections[0]
         .children
@@ -183,9 +184,11 @@ Archived
         ElementData::Paragraph(objects) => objects,
         other => panic!("expected paragraph, got {other:#?}"),
     };
-    assert!(original
-        .iter()
-        .any(|object| matches!(object.data, ObjectData::Plain(ref value) if value.contains("--"))));
+    assert!(
+        original.iter().any(
+            |object| matches!(object.data, ObjectData::Plain(ref value) if value.contains("--"))
+        )
+    );
 }
 
 #[test]
@@ -219,8 +222,9 @@ fn semantic_ast_projects_m15_balanced_citation_body() {
 fn semantic_ast_projects_m15_diagnoses_malformed_citation_segment() {
     let doc = Org::parse("[cite:@ok; @].").document();
 
-    assert!(doc
-        .diagnostics
-        .iter()
-        .any(|diagnostic| { diagnostic.message.contains("malformed citation segment") }));
+    assert!(
+        doc.diagnostics
+            .iter()
+            .any(|diagnostic| { diagnostic.message.contains("malformed citation segment") })
+    );
 }

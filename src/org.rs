@@ -3,6 +3,7 @@
 use rowan::ast::AstNode;
 use rowan::{GreenNode, TextSize};
 
+use crate::SyntaxElement;
 use crate::ast::ParsedAst;
 use crate::config::ParseConfig;
 use crate::export::{
@@ -12,7 +13,6 @@ use crate::export::{
 use crate::syntax::document::document_node;
 use crate::syntax::{OrgLanguage, SyntaxNode};
 use crate::syntax_ast;
-use crate::SyntaxElement;
 
 #[derive(Debug)]
 /// Parsed Org document with access to semantic and lossless syntax APIs.

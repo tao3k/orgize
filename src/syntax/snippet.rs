@@ -1,13 +1,13 @@
 use nom::{
+    IResult,
     bytes::complete::{take_until, take_while1},
     combinator::map,
-    IResult,
 };
 
 use super::{
-    combinator::{at2_token, colon_token, node, GreenElement},
-    input::Input,
     SyntaxKind,
+    combinator::{GreenElement, at2_token, colon_token, node},
+    input::Input,
 };
 
 pub(crate) fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -31,7 +31,7 @@ pub(crate) fn snippet_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::Snippet, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::Snippet, tests::to_ast};
 
     let to_snippet = to_ast::<Snippet>(snippet_node);
 

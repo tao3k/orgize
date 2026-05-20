@@ -1119,7 +1119,7 @@ Priority rules:
 | M25.7 | P1 | Include/macro/export dependency graph | `doc/org-manual.org` "Include Files", "Macro Replacement", "Export Settings"; `lisp/org-macro.el`, `lisp/ox.el` | Include expansion plan, macro expansion side table, high-usage export settings, and `ExportDependencyGraph` over include/setupfile/bibliography/macro/output side tables | Runtime file loading, setupfile expansion, macro rewriting, and exporter execution remain intentionally out of core | Keep graph as non-mutating projection and extend only with explicit consumer DTOs | Snapshot graph nodes/edges plus cycle, missing-file, and missing-macro diagnostics; exporters remain non-mutating |
 | M25.8 | P2 | Org Plot, radio tables, and table-derived chart metadata | `doc/org-manual.org` "Org Plot", "Tables in Arbitrary Syntax"; `lisp/org-plot.el`, `lisp/org-table.el` | Tables, formulas, alignment, formula lint, and `TableVisualizationPlan` metadata for `#+PLOT:` and `#+ORGTBL:` are implemented | Actual graph rendering, ASCII plot generation, radio-table insertion, and translator execution remain intentionally out of core | Keep as side-table metadata; expose downstream DTOs only when a real consumer needs them | Snapshot plot option parsing, invalid option diagnostics, radio receiver matching, and table association rules |
 | M25.9 | P2 | Org Crypt and opaque subtree advice | `doc/org-manual.org` "Org Crypt"; `lisp/org-crypt.el` | `CryptState`, `document.crypt_states()`, `ORG038`/`ORG039`, wasm `cryptJson`, and `snapshotJson().crypt` expose direct/inherited `crypt` tags, `CRYPTKEY`, encrypted payload markers, and opaque-body advice | No configurable custom `org-crypt-tag-matcher` profile yet | Add custom matcher/profile support only if downstream needs non-default crypt tag names | Snapshot crypt-tagged sections, inherited tags, key-only advice, and wasm DTO smoke |
-| M25.10 | P2 | RSS/feed, org-timer, and mobile/persist metadata | `doc/org-manual.org` "RSS Feeds", "Taking Notes with a Relative Timer"; `lisp/org-feed.el`, `lisp/org-timer.el`, `lisp/org-mobile.el`, `lisp/org-persist.el` | Generic keywords, timestamps, links, and metadata can be parsed | No feed template/source metadata, relative timer side table, mobile/persist state model | Keep as metadata-only side tables if real downstream source files require them | Add only after P0/P1; snapshots must prove no runtime/network interaction |
+| M25.10 | P2 | RSS/feed, org-timer, and mobile/persist metadata | `doc/org-manual.org` "RSS Feeds", "Taking Notes with a Relative Timer"; `lisp/org-feed.el`, `lisp/org-timer.el`, `lisp/org-mobile.el`, `lisp/org-persist.el` | `RuntimeMetadataPlan`, `document.runtime_metadata_plan()`, wasm `runtimeMetadataJson`, and `snapshotJson().runtimeMetadata` expose FEEDSTATUS drawers, relative timer stamps, MobileOrg index links, `FLAGGED`/`ORIGINAL_ID` evidence, and feed/timer/mobile/persist execution boundaries | No feed retrieval/template expansion, timer runtime state mutation, mobile push-pull/checksum/encryption, or org-persist cache I/O | Keep as source-backed metadata and explicit boundary receipts only | Snapshot runtime metadata fixture, wasm DTO smoke, and build-time wasm DTO line-budget gate |
 | M25.x | Out-of-core | Remote editing, dynamic block refresh, table recalculation, capture finalization, publishing execution, link opening, code execution | Agenda remote edit commands, `org-dblock-update`, `org-table-recalculate`, `org-capture-finalize`, `org-publish`, `org-link-open`, Babel execution | orgize already favors non-mutating plans and lint evidence | These actions require live editor state, filesystem mutation, subprocesses, or network/handler execution | Do not implement in core; expose safe source-grounded plans and explicit diagnostics only | Boundary tests ensure no execution dependencies or hidden mutation paths enter parser/export APIs |
 
 Recommended implementation order for the next major PR train:
@@ -1143,8 +1143,11 @@ Recommended implementation order for the next major PR train:
    mutation in core.
 8. M25.9 Org Crypt projection, so index/export/frontend consumers can see the
    sensitive-body boundary without decrypting or executing Org Crypt.
+9. M25.10 runtime metadata projection, so feed/timer/mobile/persist evidence
+   is available as a safe side table without network, filesystem sync, or cache
+   execution.
 
-**** M25.1-M25.9 Implementation Receipt
+**** M25.1-M25.10 Implementation Receipt
 
 - [X] Add `AgendaWorkspaceBuilder`, `AgendaWorkspaceQuery`, and named
       workspace command plans for daily agenda rows, TODO lists, tag/property
@@ -1187,8 +1190,19 @@ Recommended implementation order for the next major PR train:
 - [X] Add `ORG038`/`ORG039` lint advice and wasm `cryptJson` /
       `snapshotJson().crypt` DTO projection so downstream tools do not need to
       rescan raw tags and properties.
-- [X] Cover M25.1-M25.9 with original compact snapshots based on Rust fixtures:
+- [X] Add `RuntimeMetadataPlan` / `document.runtime_metadata_plan()` for
+      FEEDSTATUS drawers, relative timer stamps, MobileOrg index links,
+      READONLY/ALLPRIORITIES metadata, `FLAGGED` sections, and
+      `ORIGINAL_ID`/`MOBILE*` properties.
+- [X] Add wasm `runtimeMetadataJson` and `snapshotJson().runtimeMetadata`, then
+      split the public DTO declaration surface into focused `dto/*.d.ts`
+      modules instead of growing one 1000+ line declaration file.
+- [X] Add a wasm build-dependency policy gate for public DTO/binding line
+      budgets, because the Rust harness scans Rust source but does not parse
+      TypeScript declaration files.
+- [X] Cover M25.1-M25.10 with original compact snapshots based on Rust fixtures:
       multi-file agenda/TODO/search/stuck plans, citation export planning,
       Agent capture planning, publishing graph planning, and attachment
       inventory warnings, export dependency graph diagnostics, and table
-      visualization/radio-table metadata, plus Org Crypt opaque subtree advice.
+      visualization/radio-table metadata, Org Crypt opaque subtree advice, and
+      runtime metadata boundary receipts.

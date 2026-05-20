@@ -1,17 +1,17 @@
 use nom::{
+    IResult,
     bytes::complete::{tag, take_while1},
     combinator::map,
-    IResult,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{
-        blank_lines, colon_token, l_bracket_token, r_bracket_token, trim_line_end, GreenElement,
-        NodeBuilder,
+        GreenElement, NodeBuilder, blank_lines, colon_token, l_bracket_token, r_bracket_token,
+        trim_line_end,
     },
     input::Input,
     keyword::affiliated_keyword_nodes,
-    SyntaxKind,
 };
 
 #[cfg_attr(

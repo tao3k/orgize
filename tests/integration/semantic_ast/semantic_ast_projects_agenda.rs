@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         AgendaDate, AgendaDeadlineState, AgendaEntryKind, AgendaOccurrence, AgendaQuery,
         AgendaScheduleState, AgendaTime,
     },
-    Org,
 };
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/agenda-planning.org");

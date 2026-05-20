@@ -3,9 +3,9 @@
 use super::agenda_match::{
     AgendaMatchOperator, AgendaMatchPredicate, AgendaMatchQuery, AgendaMatchTerm, AgendaMatchValue,
 };
-use super::agenda_model::{is_done_keyword, AgendaCategory, AgendaQuery};
+use super::agenda_model::{AgendaCategory, AgendaQuery, is_done_keyword};
 use super::model::Section;
-use super::special_properties::{special_property_value, SpecialPropertyContext};
+use super::special_properties::{SpecialPropertyContext, special_property_value};
 
 pub(crate) fn section_matches_query<A>(
     section: &Section<A>,
@@ -35,15 +35,15 @@ pub(crate) fn section_matches_query<A>(
     {
         return false;
     }
-    if let Some(match_query) = &query.match_query {
-        if !section_matches_agenda_match(
+    if let Some(match_query) = &query.match_query
+        && !section_matches_agenda_match(
             section,
             category,
             query.source_file.as_deref(),
             match_query,
-        ) {
-            return false;
-        }
+        )
+    {
+        return false;
     }
     true
 }
@@ -77,11 +77,7 @@ fn agenda_match_term_matches<A>(
         } => agenda_match_property_matches(section, category, source_file, key, *operator, value),
     };
 
-    if term.positive {
-        matched
-    } else {
-        !matched
-    }
+    if term.positive { matched } else { !matched }
 }
 
 fn agenda_match_property_matches<A>(

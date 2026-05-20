@@ -1,11 +1,11 @@
 //! Test helpers mounted into the crate during `cargo test --lib`.
 
 use nom::IResult;
-use rowan::{ast::AstNode, SyntaxNode};
+use rowan::{SyntaxNode, ast::AstNode};
 
 use crate::{
-    syntax::{combinator::GreenElement, input::Input},
     ParseConfig,
+    syntax::{combinator::GreenElement, input::Input},
 };
 
 pub fn to_ast<N: AstNode>(

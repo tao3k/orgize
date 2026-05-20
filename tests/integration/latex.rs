@@ -1,6 +1,6 @@
 use orgize::{
-    export::{LatexExport, LatexExportOptions},
     Org,
+    export::{LatexExport, LatexExportOptions},
 };
 use rowan::ast::AstNode;
 
@@ -14,8 +14,9 @@ fn latex_export_escapes_text_and_renders_inline_markup() {
 
 #[test]
 fn latex_export_renders_structural_blocks_lists_tables_and_links() {
-    insta::assert_snapshot!(Org::parse(
-        r#"
+    insta::assert_snapshot!(
+        Org::parse(
+            r#"
 * Export
 Visit [[https://example.com?a=1&b=2][Example & Docs]] and [[file:plot.png]].
 
@@ -37,14 +38,16 @@ fn main() {
 | one  |     1 |
 | two  |     2 |
 "#
-    )
-    .to_latex());
+        )
+        .to_latex()
+    );
 }
 
 #[test]
 fn latex_export_preserves_latex_specific_input() {
-    insta::assert_snapshot!(Org::parse(
-        r#"
+    insta::assert_snapshot!(
+        Org::parse(
+            r#"
 Inline $a_b$ and @@latex:\LaTeX{}@@ plus \alpha{}.
 
 #+begin_export latex
@@ -59,8 +62,9 @@ a &= b + c
 
 See [cite:@doe2026; @roe2026 p. 42] on <2026-05-10 Sun>.
 "#
-    )
-    .to_latex());
+        )
+        .to_latex()
+    );
 }
 
 #[test]

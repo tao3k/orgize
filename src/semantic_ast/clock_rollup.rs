@@ -3,10 +3,10 @@
 use super::block_metadata::parse_block_header_args;
 use super::clock_table_properties::{clock_table_property_columns, clock_table_property_values};
 use super::clock_table_time::{
-    clipped_clock_seconds, clock_start_in_window, clock_table_time_window, ClockTableWindowFilter,
+    ClockTableWindowFilter, clipped_clock_seconds, clock_start_in_window, clock_table_time_window,
 };
-use super::dynamic_blocks::{dynamic_block_begin, ParsedDynamicBlockBegin};
-use super::{agenda_filter::section_matches_agenda_match, AgendaMatchQuery};
+use super::dynamic_blocks::{ParsedDynamicBlockBegin, dynamic_block_begin};
+use super::{AgendaMatchQuery, agenda_filter::section_matches_agenda_match};
 use super::{
     BlockHeaderArg, BlockKind, Clock, ClockEffortStatus, ClockEffortSummary, ClockRollupRecord,
     ClockSummary, ClockTableMatchFilter, ClockTableParameter, ClockTablePlan,

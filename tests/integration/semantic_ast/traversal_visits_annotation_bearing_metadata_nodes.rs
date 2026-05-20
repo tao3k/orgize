@@ -1,6 +1,6 @@
 use orgize::{
-    ast::{AstMut, AstRef, ElementData},
     Org,
+    ast::{AstMut, AstRef, ElementData},
 };
 
 #[test]
@@ -52,10 +52,10 @@ fn traversal_visits_annotation_bearing_metadata_nodes() {
     assert_eq!(counts.table_cells, 4);
 
     doc.visit_mut(|node| {
-        if let AstMut::Keyword(keyword) = node {
-            if keyword.key == "TITLE" {
-                keyword.value = " Changed".into();
-            }
+        if let AstMut::Keyword(keyword) = node
+            && keyword.key == "TITLE"
+        {
+            keyword.value = " Changed".into();
         }
     });
     assert_eq!(

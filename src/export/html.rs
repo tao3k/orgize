@@ -5,9 +5,9 @@ use std::cmp::min;
 use std::fmt;
 use std::fmt::Write as _;
 
-use super::event::{Container, Event};
 use super::TraversalContext;
 use super::Traverser;
+use super::event::{Container, Event};
 use crate::{SyntaxElement, SyntaxKind, SyntaxNode};
 
 /// A wrapper for escaping sensitive characters in html.

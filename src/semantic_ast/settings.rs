@@ -59,12 +59,12 @@ pub(super) fn parse_tag_definitions(value: &str) -> Vec<TagDefinition> {
     let mut definitions: Vec<TagDefinition> = Vec::new();
     for token in value.split_whitespace() {
         if let Some(shortcut) = shortcut_token(token) {
-            if let Some(previous) = definitions.last_mut() {
-                if previous.shortcut.is_none() {
-                    previous.shortcut = Some(shortcut.to_string());
-                    previous.raw.push(' ');
-                    previous.raw.push_str(token);
-                }
+            if let Some(previous) = definitions.last_mut()
+                && previous.shortcut.is_none()
+            {
+                previous.shortcut = Some(shortcut.to_string());
+                previous.raw.push(' ');
+                previous.raw.push_str(token);
             }
             continue;
         }

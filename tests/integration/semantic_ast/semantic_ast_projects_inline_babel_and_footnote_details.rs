@@ -1,6 +1,6 @@
 use orgize::{
-    ast::{ElementData, MarkupKind, ObjectData},
     Org,
+    ast::{ElementData, MarkupKind, ObjectData},
 };
 
 #[test]

@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{ElementData, MarkupKind, ObjectData, TodoState},
     Org,
+    ast::{ElementData, MarkupKind, ObjectData, TodoState},
 };
 
 #[test]
@@ -59,9 +59,11 @@ fn main() {}
             ..
         }
     )));
-    assert!(paragraph
-        .iter()
-        .any(|object| matches!(object.data, ObjectData::Link(_))));
+    assert!(
+        paragraph
+            .iter()
+            .any(|object| matches!(object.data, ObjectData::Link(_)))
+    );
 
     insta::with_settings!({snapshot_path => "../../snapshots", prepend_module_to_snapshot => false}, {
         insta::assert_debug_snapshot!("semantic_ast__semantic_bare_ast", doc.to_bare());

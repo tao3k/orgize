@@ -7,9 +7,9 @@ use std::fmt::Write as _;
 use crate::syntax_ast::{OrgTable, OrgTableCell, OrgTableRow};
 use crate::{SyntaxElement, SyntaxNode};
 
-use super::event::{Container, Event};
 use super::TraversalContext;
 use super::Traverser;
+use super::event::{Container, Event};
 
 /// Traverser that renders Org syntax events to Markdown.
 #[derive(Default)]

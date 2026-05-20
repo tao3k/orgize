@@ -6,17 +6,17 @@ use rowan::{NodeOrToken, TextRange};
 use crate::{
     config::{ParseConfig, RadioLinkProjection},
     syntax::{
+        SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken,
         combinator::node,
         object::{minimal_object_nodes, standard_object_nodes},
-        SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken,
     },
     syntax_ast,
 };
 
 use super::attachment_model::attachment_link_from_path;
 use super::block_metadata::{
-    block_code_refs, parse_block_header_args, parse_block_lines, parse_block_switches,
-    split_block_lines, BlockLineOptions,
+    BlockLineOptions, block_code_refs, parse_block_header_args, parse_block_lines,
+    parse_block_switches, split_block_lines,
 };
 use super::block_syntax::{
     block_name_from_begin, block_parts, block_switches_from_begin, semantic_block_name,
@@ -31,7 +31,7 @@ use super::headline_metadata::{
 };
 use super::postprocess::finalize_document;
 use super::preprocessing::{include_directive, macro_definition, split_macro_args};
-use super::prescan::{collect_document_keyword, SemanticPrescan};
+use super::prescan::{SemanticPrescan, collect_document_keyword};
 use super::radio_links::{is_semantic_radio_link_candidate, next_char_boundary, next_radio_link};
 use super::settings::{
     expand_link_abbreviation, file_link, is_parsed_keyword, keyword_attributes, link_search,
@@ -39,7 +39,7 @@ use super::settings::{
 use super::source_position::LineIndex;
 use super::table_metadata::{parsed_table_formulas, table_column_alignments};
 use super::targets::{
-    collect_target_node, is_strict_internal_link_path, TargetIndex, TargetLookup,
+    TargetIndex, TargetLookup, collect_target_node, is_strict_internal_link_path,
 };
 use super::timestamp_metadata::{timestamp_moment_range, timestamp_repeater, timestamp_warning};
 use super::{

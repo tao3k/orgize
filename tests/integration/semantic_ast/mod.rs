@@ -45,6 +45,7 @@ mod semantic_ast_projects_progress_stats;
 mod semantic_ast_projects_publishing;
 mod semantic_ast_projects_radio_links;
 mod semantic_ast_projects_refile;
+mod semantic_ast_projects_runtime_metadata;
 mod semantic_ast_projects_section_index_records;
 mod semantic_ast_projects_source_blocks;
 mod semantic_ast_projects_sparse_tree;

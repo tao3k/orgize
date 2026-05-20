@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockRecordKind,
         SourceBlockResultKind, SourceBlockTangleMode,
     },
-    Org,
 };
 
 #[test]

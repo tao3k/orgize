@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexQuery,
         OrgElementsIndexSummaryValue, PythonDirectiveKind,
     },
-    Org,
 };
 use serde_json::Value;
 
@@ -55,11 +55,13 @@ print(topic)
         payload["sections"][0]["properties"][0]["duration"]["raw"],
         "1:00"
     );
-    assert!(payload["sections"][0]["titleObjects"]
-        .as_array()
-        .expect("title objects")
-        .iter()
-        .any(|object| object["kind"] == "plain-text"));
+    assert!(
+        payload["sections"][0]["titleObjects"]
+            .as_array()
+            .expect("title objects")
+            .iter()
+            .any(|object| object["kind"] == "plain-text")
+    );
     let section_elements = payload["sections"][0]["elements"]
         .as_array()
         .expect("section elements");
@@ -67,24 +69,30 @@ print(topic)
         .iter()
         .find(|element| element["kind"] == "paragraph")
         .expect("paragraph element");
-    assert!(paragraph["objects"]
-        .as_array()
-        .expect("paragraph objects")
-        .iter()
-        .any(|object| object["kind"] == "link" && object["path"] == "https://example.test"));
-    assert!(paragraph["objects"]
-        .as_array()
-        .expect("paragraph objects")
-        .iter()
-        .any(|object| object["kind"] == "timestamp" && object["raw"] == "<2026-05-19 Tue>"));
+    assert!(
+        paragraph["objects"]
+            .as_array()
+            .expect("paragraph objects")
+            .iter()
+            .any(|object| object["kind"] == "link" && object["path"] == "https://example.test")
+    );
+    assert!(
+        paragraph["objects"]
+            .as_array()
+            .expect("paragraph objects")
+            .iter()
+            .any(|object| object["kind"] == "timestamp" && object["raw"] == "<2026-05-19 Tue>")
+    );
     let list = section_elements
         .iter()
         .find(|element| element["kind"] == "plain-list")
         .expect("plain-list element");
     assert_eq!(list["items"][0]["checkbox"], "on");
-    assert!(section_elements
-        .iter()
-        .any(|element| element["kind"] == "src-block" && element["language"] == "python"));
+    assert!(
+        section_elements
+            .iter()
+            .any(|element| element["kind"] == "src-block" && element["language"] == "python")
+    );
     let typed_index = doc.org_elements_index();
     assert_eq!(typed_index[0].category, OrgElementsIndexCategory::Document);
     let typed_link = typed_index
@@ -109,9 +117,10 @@ print(topic)
     );
     assert_eq!(filtered_index.len(), 1);
     assert_eq!(filtered_index[0].kind.as_str(), "link");
-    assert!(doc
-        .query_org_elements_index(&OrgElementsIndexQuery::new().kind("link").limit(0))
-        .is_empty());
+    assert!(
+        doc.query_org_elements_index(&OrgElementsIndexQuery::new().kind("link").limit(0))
+            .is_empty()
+    );
     let index_only: Value =
         serde_json::from_str(&doc.org_elements_index_json()).expect("index JSON should parse");
     assert_eq!(
@@ -122,11 +131,13 @@ print(topic)
         &doc.org_elements_index_query_json(&OrgElementsIndexQuery::new().kind("timestamp")),
     )
     .expect("filtered index JSON should parse");
-    assert!(filtered_json
-        .as_array()
-        .expect("filtered index")
-        .iter()
-        .all(|node| node["kind"] == "timestamp"));
+    assert!(
+        filtered_json
+            .as_array()
+            .expect("filtered index")
+            .iter()
+            .all(|node| node["kind"] == "timestamp")
+    );
     let index = payload["index"].as_array().expect("flat node index");
     assert!(index.iter().any(|node| node["category"] == "section"
         && node["kind"] == "headline"
@@ -140,11 +151,13 @@ print(topic)
     assert!(index.iter().any(|node| node["category"] == "element"
         && node["kind"] == "src-block"
         && node["summary"]["language"] == "python"));
-    assert!(payload["sourceBlocks"]
-        .as_array()
-        .expect("source blocks")
-        .iter()
-        .any(|block| block["kind"] == "inlineSource" && block["language"] == "python"));
+    assert!(
+        payload["sourceBlocks"]
+            .as_array()
+            .expect("source blocks")
+            .iter()
+            .any(|block| block["kind"] == "inlineSource" && block["language"] == "python")
+    );
     let python_block = payload["sourceBlocks"]
         .as_array()
         .expect("source blocks")

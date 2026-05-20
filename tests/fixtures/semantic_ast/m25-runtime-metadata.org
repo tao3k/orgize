@@ -1,0 +1,22 @@
+#+READONLY
+#+TODO: TODO | DONE
+#+TAGS: FLAGGED(f) RSS(r)
+#+ALLPRIORITIES: A B C
+
+* [[file:agendas.org][Agenda Views]]
+* [[file:notes.org][notes.org]]
+
+* Feed Inbox :RSS:
+:FEEDSTATUS:
+(("guid-1" t "hash-1")
+ ("guid-2" nil "hash-2"))
+:END:
+0:00:12 Intro notes
+- 0:01:05 :: chapter marker
+
+* Mobile edit :FLAGGED:
+:PROPERTIES:
+:ORIGINAL_ID: id:mobile-item
+:MOBILE_NOTE: review this change
+:END:
+Body note after a -0:00:03 rewind.

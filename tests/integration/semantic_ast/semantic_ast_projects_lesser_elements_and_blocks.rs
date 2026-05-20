@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{BlockKind, ElementData},
     Org,
+    ast::{BlockKind, ElementData},
 };
 
 #[test]
@@ -45,18 +45,21 @@ x=1
 
     assert_clean_projection(&doc);
 
-    assert!(doc
-        .children
-        .iter()
-        .any(|element| matches!(element.data, ElementData::Comment(_))));
-    assert!(doc
-        .children
-        .iter()
-        .any(|element| matches!(element.data, ElementData::FixedWidth(_))));
-    assert!(doc
-        .children
-        .iter()
-        .any(|element| matches!(element.data, ElementData::LatexEnvironment(_))));
+    assert!(
+        doc.children
+            .iter()
+            .any(|element| matches!(element.data, ElementData::Comment(_)))
+    );
+    assert!(
+        doc.children
+            .iter()
+            .any(|element| matches!(element.data, ElementData::FixedWidth(_)))
+    );
+    assert!(
+        doc.children
+            .iter()
+            .any(|element| matches!(element.data, ElementData::LatexEnvironment(_)))
+    );
 
     let drawer = doc
         .children
@@ -67,10 +70,12 @@ x=1
         })
         .expect("drawer element");
     assert_eq!(drawer.name, "LOGBOOK");
-    assert!(drawer
-        .children
-        .iter()
-        .any(|element| matches!(element.data, ElementData::Paragraph(_))));
+    assert!(
+        drawer
+            .children
+            .iter()
+            .any(|element| matches!(element.data, ElementData::Paragraph(_)))
+    );
 
     let block_kinds = doc
         .children
@@ -84,7 +89,9 @@ x=1
     assert!(block_kinds.contains(&&BlockKind::Center));
     assert!(block_kinds.contains(&&BlockKind::Comment));
     assert!(block_kinds.contains(&&BlockKind::Dynamic));
-    assert!(block_kinds
-        .iter()
-        .any(|kind| matches!(kind, BlockKind::Special(name) if name == "details")));
+    assert!(
+        block_kinds
+            .iter()
+            .any(|kind| matches!(kind, BlockKind::Special(name) if name == "details"))
+    );
 }

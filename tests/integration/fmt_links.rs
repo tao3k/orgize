@@ -1,4 +1,4 @@
-use orgize::fmt::{format_org, FormatOptions};
+use orgize::fmt::{FormatOptions, format_org};
 
 #[test]
 fn fmt_preserves_file_and_attachment_links_with_snapshot() {

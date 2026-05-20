@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{CryptWarningKind, ParsedAst},
     Org,
+    ast::{CryptWarningKind, ParsedAst},
 };
 
 const SOURCE: &str = r#"* Secret note :crypt:
@@ -36,19 +36,25 @@ fn semantic_ast_projects_org_crypt_states() {
         Some(false)
     );
     assert!(states[1].has_inherited_tag);
-    assert!(states[1]
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == CryptWarningKind::InheritedCryptTag));
-    assert!(states[2]
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == CryptWarningKind::PlaintextCryptBody));
+    assert!(
+        states[1]
+            .warnings
+            .iter()
+            .any(|warning| warning.kind == CryptWarningKind::InheritedCryptTag)
+    );
+    assert!(
+        states[2]
+            .warnings
+            .iter()
+            .any(|warning| warning.kind == CryptWarningKind::PlaintextCryptBody)
+    );
     assert!(!states[3].body_is_opaque);
-    assert!(states[3]
-        .warnings
-        .iter()
-        .any(|warning| warning.kind == CryptWarningKind::CryptKeyWithoutCryptTag));
+    assert!(
+        states[3]
+            .warnings
+            .iter()
+            .any(|warning| warning.kind == CryptWarningKind::CryptKeyWithoutCryptTag)
+    );
 
     insta::assert_snapshot!(
         "semantic_ast__semantic_crypt_states",

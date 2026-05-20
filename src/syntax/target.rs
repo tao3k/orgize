@@ -1,13 +1,13 @@
 use nom::{
+    IResult,
     bytes::complete::take_while,
     combinator::{map, verify},
-    IResult,
 };
 
 use super::{
-    combinator::{l_angle2_token, node, r_angle2_token, GreenElement},
-    input::Input,
     SyntaxKind,
+    combinator::{GreenElement, l_angle2_token, node, r_angle2_token},
+    input::Input,
 };
 
 #[cfg_attr(
@@ -38,7 +38,7 @@ pub(crate) fn target_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::Target, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::Target, tests::to_ast};
 
     let to_target = to_ast::<Target>(target_node);
 

@@ -1,13 +1,14 @@
 use orgize::{
-    export::{MarkdownExport, MarkdownExportOptions},
     Org,
+    export::{MarkdownExport, MarkdownExportOptions},
 };
 use rowan::ast::AstNode;
 
 #[test]
 fn markdown_export_renders_core_document_shapes() {
-    insta::assert_snapshot!(Org::parse(
-        r#"
+    insta::assert_snapshot!(
+        Org::parse(
+            r#"
 * Title
 Paragraph with *bold*, /italic/, =verbatim=, ~code~, \alpha{}, and <2026-05-11 Mon>.
 
@@ -24,14 +25,16 @@ text.
 + first
 + second
 "#
-    )
-    .to_markdown());
+        )
+        .to_markdown()
+    );
 }
 
 #[test]
 fn markdown_export_renders_blocks_tables_and_markdown_exports() {
-    insta::assert_snapshot!(Org::parse(
-        r#"
+    insta::assert_snapshot!(
+        Org::parse(
+            r#"
 #+begin_src rust
 fn main() {
     println!("hello");
@@ -56,8 +59,9 @@ fn main() {
 | Plain | Table |
 | no    | rule  |
 "#
-    )
-    .to_markdown());
+        )
+        .to_markdown()
+    );
 }
 
 #[test]

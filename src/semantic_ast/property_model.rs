@@ -323,12 +323,10 @@ fn duration_minutes(value: &str) -> Option<f64> {
         if cursor >= value.len() {
             break;
         }
-        if parsed_unit {
-            if let Some((hms, next)) = hms_minutes_at(value, cursor) {
-                let tail = skip_ascii_whitespace(value, next);
-                if tail == value.len() {
-                    return Some(minutes + hms);
-                }
+        if parsed_unit && let Some((hms, next)) = hms_minutes_at(value, cursor) {
+            let tail = skip_ascii_whitespace(value, next);
+            if tail == value.len() {
+                return Some(minutes + hms);
             }
         }
 

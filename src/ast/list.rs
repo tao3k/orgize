@@ -1,5 +1,5 @@
-use super::{filter_token, SyntaxList, SyntaxListItem, Token};
-use crate::{syntax::SyntaxKind, SyntaxElement};
+use super::{SyntaxList, SyntaxListItem, Token, filter_token};
+use crate::{SyntaxElement, syntax::SyntaxKind};
 
 impl SyntaxList {
     /// Returns `true` if this list is an ordered link
@@ -125,7 +125,7 @@ impl SyntaxListItem {
     /// let tag = item.tag().map(|n| n.to_string()).collect::<String>();
     /// assert_eq!(tag, "this is *TAG* ");
     /// ```
-    pub fn tag(&self) -> impl Iterator<Item = SyntaxElement> {
+    pub fn tag(&self) -> impl Iterator<Item = SyntaxElement> + use<> {
         self.syntax
             .children()
             .find(|n| n.kind() == SyntaxKind::LIST_ITEM_TAG)

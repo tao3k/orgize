@@ -1,8 +1,8 @@
-use nom::{character::complete::space0, combinator::map, IResult};
+use nom::{IResult, character::complete::space0, combinator::map};
 
 use crate::{
-    syntax::combinator::{backslash_token, eol_or_eof, node},
     SyntaxKind,
+    syntax::combinator::{backslash_token, eol_or_eof, node},
 };
 
 use super::{combinator::GreenElement, input::Input};

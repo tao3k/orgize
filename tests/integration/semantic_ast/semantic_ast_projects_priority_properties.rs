@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
         AgendaDate, AgendaQuery, PriorityProfile, PriorityRangeStatus, PriorityValue,
         PropertyAllowedValueScope, PropertyInheritancePolicy,
     },
-    Org,
 };
 
 #[test]
@@ -34,20 +34,24 @@ SCHEDULED: <2026-05-15 Fri>
     assert_eq!(parent.priority.effective_text(), "A");
     assert_eq!(parent.priority.org_priority_score(), Some(2_000));
     assert_eq!(parent.priority.range_status(), PriorityRangeStatus::InRange);
-    assert!(parent
-        .effective_properties
-        .iter()
-        .any(|property| property.key == "Effort" && property.value == "2h"));
+    assert!(
+        parent
+            .effective_properties
+            .iter()
+            .any(|property| property.key == "Effort" && property.value == "2h")
+    );
 
     let child = &parent.subsections[0];
     assert!(child.priority.is_default());
     assert_eq!(child.priority.effective_text(), "B");
     assert_eq!(child.priority.org_priority_score(), Some(1_000));
     assert_eq!(child.priority.range_status(), PriorityRangeStatus::InRange);
-    assert!(child
-        .effective_properties
-        .iter()
-        .any(|property| property.key == "Owner" && property.value == "Sarah"));
+    assert!(
+        child
+            .effective_properties
+            .iter()
+            .any(|property| property.key == "Owner" && property.value == "Sarah")
+    );
 
     let numeric = &doc.sections[1];
     assert_eq!(numeric.priority.raw_cookie(), Some("2"));
@@ -139,10 +143,12 @@ fn semantic_ast_projects_property_profile_allowed_values() {
 
     let profile = doc.property_profile();
     assert_eq!(profile.inheritance, PropertyInheritancePolicy::All);
-    assert!(profile
-        .inherited_keys
-        .iter()
-        .any(|key| key.eq_ignore_ascii_case("Owner")));
+    assert!(
+        profile
+            .inherited_keys
+            .iter()
+            .any(|key| key.eq_ignore_ascii_case("Owner"))
+    );
 
     let fixed = profile
         .allowed_values

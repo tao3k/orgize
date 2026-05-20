@@ -8,7 +8,7 @@ use crate::ast::{
 };
 
 use super::lint_model::{
-    location_for_offsets, location_for_range, LintFinding, LintLocation, LintSeverity,
+    LintFinding, LintLocation, LintSeverity, location_for_offsets, location_for_range,
 };
 
 pub(crate) fn babel_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {

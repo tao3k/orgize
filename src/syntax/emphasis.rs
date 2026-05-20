@@ -1,12 +1,12 @@
 use bytecount::count;
 use memchr::memchr_iter;
-use nom::{combinator::map, IResult};
+use nom::{IResult, combinator::map};
 
 use super::{
-    combinator::{node, token, GreenElement},
+    SyntaxKind,
+    combinator::{GreenElement, node, token},
     input::Input,
     parser_contract::ObjectNodesParser,
-    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -163,9 +163,9 @@ pub(crate) fn verify_pre(input: &str) -> bool {
 #[test]
 fn parse() {
     use crate::{
+        Org, ParseConfig,
         syntax_ast::{Bold, Italic},
         tests::to_ast,
-        Org, ParseConfig,
     };
 
     let to_bold =
@@ -203,31 +203,41 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(bold_node(
-        ("*bold*a", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    assert!(bold_node(
-        ("*bold *", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    assert!(bold_node(
-        ("* bold*", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    assert!(bold_node(
-        ("*b\nol\nd*", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    assert!(italic_node(
-        ("*bold*", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
+    assert!(
+        bold_node(
+            ("*bold*a", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        bold_node(
+            ("*bold *", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        bold_node(
+            ("* bold*", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        bold_node(
+            ("*b\nol\nd*", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        italic_node(
+            ("*bold*", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
 
     assert!(Org::parse(r#""*quoted*""#).first_node::<Bold>().is_some());
     assert!(Org::parse("'/quoted/'").first_node::<Italic>().is_some());

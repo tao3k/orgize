@@ -8,10 +8,10 @@ use std::{
 };
 
 use crate::{
-    ast::{PriorityProfile, PriorityValue},
-    fmt::{format_org, FormatOptions},
-    lint::{lint_org_with_options, LintOptions},
     Org,
+    ast::{PriorityProfile, PriorityValue},
+    fmt::{FormatOptions, format_org},
+    lint::{LintOptions, lint_org_with_options},
 };
 
 /// Runs the command-line interface with process arguments and stdio.

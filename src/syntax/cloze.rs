@@ -1,14 +1,14 @@
-use nom::{bytes::complete::take_until, combinator::opt, IResult, Parser};
+use nom::{IResult, Parser, bytes::complete::take_until, combinator::opt};
 
 use crate::syntax::{
-    combinator::{at_token, l_curly2_token, l_curly_token, r_curly_token},
+    combinator::{at_token, l_curly_token, l_curly2_token, r_curly_token},
     parser_contract::ObjectNodesParser,
 };
 
 use super::{
+    SyntaxKind,
     combinator::{GreenElement, NodeBuilder},
     input::Input,
-    SyntaxKind,
 };
 
 #[cfg_attr(
@@ -161,29 +161,39 @@ fn parse() {
 
     let config = &ParseConfig::default();
 
-    assert!(cloze_node(
-        ("{{}}", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    assert!(cloze_node(
-        ("{{text}", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    assert!(cloze_node(
-        ("{text}}", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    assert!(cloze_node(
-        ("{{text}{}", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
-    assert!(cloze_node(
-        ("{{text}a}", config).into(),
-        crate::syntax::object::standard_object_nodes
-    )
-    .is_err());
+    assert!(
+        cloze_node(
+            ("{{}}", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        cloze_node(
+            ("{{text}", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        cloze_node(
+            ("{text}}", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        cloze_node(
+            ("{{text}{}", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    assert!(
+        cloze_node(
+            ("{{text}a}", config).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
 }

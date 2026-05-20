@@ -1,6 +1,6 @@
 //! Stable JSON projection for explicit Org element host bindings.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::{
     Document, FootnoteDefinition, FootnoteEntry, Keyword, OrgDuration, ParsedAnnotation, Planning,

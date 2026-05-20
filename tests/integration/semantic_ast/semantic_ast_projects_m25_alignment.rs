@@ -5,9 +5,9 @@ use std::{
 
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    Org,
     ast::{
-        agent_capture_plan, export_dependency_graph, publishing_project_plan, AgendaDate,
-        AgendaMatchQuery, AgendaTime, AgendaUrgencyIngredientKind, AgendaViewQuery,
+        AgendaDate, AgendaMatchQuery, AgendaTime, AgendaUrgencyIngredientKind, AgendaViewQuery,
         AgendaViewSortKey, AgendaViewSortSpec, AgendaWorkspaceBuilder, AgendaWorkspaceCardKind,
         AgendaWorkspaceCommandKind, AgendaWorkspaceMatchCommand, AgendaWorkspacePlan,
         AgendaWorkspaceQuery, AgentCaptureKind, AgentCaptureMemoryPolicy, AgentCapturePlan,
@@ -15,8 +15,8 @@ use orgize::{
         AgentCaptureTimestamp, AttachmentInventoryOptions, AttachmentVcsStatus, CitationExportPlan,
         ExportDependencyDiagnosticKind, ExportDependencyEdgeKind, ExportDependencyGraph,
         ExportDependencyGraphOptions, PublishingProjectConfig, PublishingProjectPlan,
+        agent_capture_plan, export_dependency_graph, publishing_project_plan,
     },
-    Org,
 };
 
 const WORKSPACE_A: &str = include_str!("../../fixtures/semantic_ast/m25-workspace-a.org");
@@ -109,10 +109,12 @@ fn semantic_ast_projects_m25_citation_capture_publishing_and_attachments() {
         citations.bibliographies[0].files,
         ["refs.bib", "extra.json"]
     );
-    assert!(citations
-        .citations
-        .iter()
-        .any(|citation| citation.keys == ["doe2024", "roe2025"]));
+    assert!(
+        citations
+            .citations
+            .iter()
+            .any(|citation| citation.keys == ["doe2024", "roe2025"])
+    );
     insta::assert_snapshot!(
         "semantic_ast__m25_citation_export_plan",
         render_citation_plan(&citations)
@@ -158,10 +160,12 @@ fn semantic_ast_projects_m25_citation_capture_publishing_and_attachments() {
         PublishingProjectConfig::new("blog", "blog", "public").sitemap(true),
         [("blog/index.org", &doc_a), ("blog/notes.org", &doc_b)],
     );
-    assert!(publishing
-        .dependencies
-        .iter()
-        .any(|dependency| dependency.target == "intro.org"));
+    assert!(
+        publishing
+            .dependencies
+            .iter()
+            .any(|dependency| dependency.target == "intro.org")
+    );
     assert!(publishing.sitemap.is_some());
     insta::assert_snapshot!(
         "semantic_ast__m25_publishing_project_plan",
@@ -172,10 +176,12 @@ fn semantic_ast_projects_m25_citation_capture_publishing_and_attachments() {
     fs::create_dir_all(temp.join("assets")).expect("create attachment directory");
     fs::write(temp.join("plan.pdf"), b"plan").expect("write attachment file");
     let inventory = doc_a.attachment_inventory(&AttachmentInventoryOptions::new(path_str(&temp)));
-    assert!(inventory
-        .entries
-        .iter()
-        .any(|entry| entry.path == "assets" && entry.exists));
+    assert!(
+        inventory
+            .entries
+            .iter()
+            .any(|entry| entry.path == "assets" && entry.exists)
+    );
     assert!(inventory.entries.iter().any(|entry| {
         entry.path == "missing.pdf"
             && !entry.exists
@@ -204,10 +210,12 @@ fn semantic_ast_projects_m25_export_dependency_graph() {
             && edge.source == "doc:site/a.org"
             && edge.target == "doc:site/b.org"
     }));
-    assert!(graph
-        .diagnostics
-        .iter()
-        .any(|diagnostic| diagnostic.kind == ExportDependencyDiagnosticKind::DependencyCycle));
+    assert!(
+        graph
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.kind == ExportDependencyDiagnosticKind::DependencyCycle)
+    );
     assert!(graph.diagnostics.iter().any(|diagnostic| {
         diagnostic.kind == ExportDependencyDiagnosticKind::MissingMacroDefinition
             && diagnostic.subject == "missing_macro"

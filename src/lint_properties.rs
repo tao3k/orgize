@@ -3,11 +3,11 @@
 use std::collections::BTreeMap;
 
 use crate::ast::{
-    is_allowed_value_descriptor, property_allowed_values, Inlinetask, ParsedAnnotation, ParsedAst,
-    Property, PropertyProfile, Section,
+    Inlinetask, ParsedAnnotation, ParsedAst, Property, PropertyProfile, Section,
+    is_allowed_value_descriptor, property_allowed_values,
 };
 
-use super::lint_model::{location_for_range, LintFinding, LintSeverity};
+use super::lint_model::{LintFinding, LintSeverity, location_for_range};
 
 pub(crate) fn property_drawer_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
     let mut findings = Vec::new();

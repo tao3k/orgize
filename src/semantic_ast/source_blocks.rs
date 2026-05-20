@@ -1,11 +1,11 @@
 //! Source-block side-table projection for Babel/tangle-aware consumers.
 
 use super::{
-    block_metadata::parse_block_header_args, BlockHeaderArg, BlockKind, Document, Element,
-    ElementData, Keyword, ListItem, Object, ObjectData, ParsedAnnotation, SourceBlockHeaderArg,
-    SourceBlockHeaderArgKind, SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockRecord,
-    SourceBlockRecordKind, SourceBlockResult, SourceBlockResultKind, SourceBlockSource,
-    SourceBlockTangle, SourceBlockTangleMode,
+    BlockHeaderArg, BlockKind, Document, Element, ElementData, Keyword, ListItem, Object,
+    ObjectData, ParsedAnnotation, SourceBlockHeaderArg, SourceBlockHeaderArgKind,
+    SourceBlockHeaderArgSource, SourceBlockHeaderVar, SourceBlockRecord, SourceBlockRecordKind,
+    SourceBlockResult, SourceBlockResultKind, SourceBlockSource, SourceBlockTangle,
+    SourceBlockTangleMode, block_metadata::parse_block_header_args,
 };
 
 impl Document<ParsedAnnotation> {

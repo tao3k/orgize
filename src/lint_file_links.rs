@@ -8,7 +8,7 @@ use std::{
 
 use crate::ast::{AstRef, FileLinkPathKind, ObjectData, ParsedAst};
 
-use super::lint_model::{location_for_range, LintFinding, LintOptions, LintSeverity};
+use super::lint_model::{LintFinding, LintOptions, LintSeverity, location_for_range};
 
 pub(crate) fn file_link_findings(
     document: &ParsedAst,

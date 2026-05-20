@@ -101,15 +101,15 @@ fn table_formula_references(value: &str) -> Vec<TableFormulaReference> {
 
     while index < value.len() {
         let rest = &value[index..];
-        if rest.starts_with("remote(") {
-            if let Some(end) = remote_reference_end(rest) {
-                references.push(TableFormulaReference {
-                    raw: rest[..end].to_string(),
-                    kind: TableFormulaReferenceKind::Remote,
-                });
-                index += end;
-                continue;
-            }
+        if rest.starts_with("remote(")
+            && let Some(end) = remote_reference_end(rest)
+        {
+            references.push(TableFormulaReference {
+                raw: rest[..end].to_string(),
+                kind: TableFormulaReferenceKind::Remote,
+            });
+            index += end;
+            continue;
         }
 
         let ch = rest.chars().next().unwrap();

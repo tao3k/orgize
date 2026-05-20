@@ -1,9 +1,9 @@
-use nom::{bytes::complete::take_while_m_n, character::complete::space0, combinator::map, IResult};
+use nom::{IResult, bytes::complete::take_while_m_n, character::complete::space0, combinator::map};
 
 use super::{
-    combinator::{blank_lines, eol_or_eof, GreenElement, NodeBuilder},
-    input::Input,
     SyntaxKind,
+    combinator::{GreenElement, NodeBuilder, blank_lines, eol_or_eof},
+    input::Input,
 };
 
 pub(crate) fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
@@ -30,7 +30,7 @@ pub(crate) fn rule_node(input: Input) -> IResult<Input, GreenElement, ()> {
 
 #[test]
 fn parse() {
-    use crate::{syntax_ast::Rule, tests::to_ast, ParseConfig};
+    use crate::{ParseConfig, syntax_ast::Rule, tests::to_ast};
 
     let to_rule = to_ast::<Rule>(rule_node);
 

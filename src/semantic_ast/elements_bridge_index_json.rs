@@ -1,6 +1,6 @@
 //! JSON projection for the flat Org elements index.
 
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 use super::{
     Document, OrgElementsIndexRecord, OrgElementsIndexSummary, OrgElementsIndexSummaryValue,

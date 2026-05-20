@@ -10,7 +10,7 @@ use crate::ast::{
     Element, ElementData, Link, Object, ObjectData, ParsedAnnotation, ParsedAst, Section,
 };
 
-use super::lint_model::{location_for_range, LintFinding, LintOptions, LintSeverity};
+use super::lint_model::{LintFinding, LintOptions, LintSeverity, location_for_range};
 
 pub(crate) fn attachment_findings(
     document: &ParsedAst,

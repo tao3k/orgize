@@ -45,11 +45,11 @@ use self::{
 };
 
 use crate::{
+    Org,
     ast::{
         Diagnostic, IncludeDirective, Keyword, MacroDefinition, MacroExpansionStatus,
         ParsedAnnotation, ParsedAst, TargetDefinition, TargetKind,
     },
-    Org,
 };
 
 pub use self::lint_model::{LintFinding, LintLocation, LintOptions, LintReport, LintSeverity};

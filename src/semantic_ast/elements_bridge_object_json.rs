@@ -1,6 +1,6 @@
 //! Object-level JSON projection for the Org elements bridge.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::{
     AttachmentLinkSearchKind, Citation, CiteReference, FileLinkPathKind, Link,

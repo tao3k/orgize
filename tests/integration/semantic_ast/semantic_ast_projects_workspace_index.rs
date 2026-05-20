@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{WorkspaceAttachmentKind, WorkspaceIndexBuilder, WorkspaceIssueKind},
     Org,
+    ast::{WorkspaceAttachmentKind, WorkspaceIndexBuilder, WorkspaceIssueKind},
 };
 
 const WORKSPACE_A: &str = include_str!("../../fixtures/semantic_ast/workspace-index-a.org");
@@ -23,14 +23,18 @@ fn semantic_ast_projects_workspace_index_from_document_local_records() {
     assert_eq!(index.documents.len(), 2);
     assert_eq!(index.documents[0].summary.section_count, 2);
     assert_eq!(index.documents[0].summary.source_block_count, 1);
-    assert!(index
-        .targets
-        .iter()
-        .any(|target| target.source_file == "workspace-a.org" && target.key == "id:alpha-id"));
-    assert!(index
-        .targets
-        .iter()
-        .any(|target| target.source_file == "workspace-b.org" && target.key == "#beta-custom"));
+    assert!(
+        index
+            .targets
+            .iter()
+            .any(|target| target.source_file == "workspace-a.org" && target.key == "id:alpha-id")
+    );
+    assert!(
+        index
+            .targets
+            .iter()
+            .any(|target| target.source_file == "workspace-b.org" && target.key == "#beta-custom")
+    );
 
     let beta_link = index
         .links

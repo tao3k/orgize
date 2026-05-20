@@ -237,15 +237,16 @@ fn find_property_operator(raw: &str) -> Option<(usize, AgendaMatchOperator, usiz
             _ => {}
         }
 
-        if !in_quote && brace_depth == 0 {
-            if let Some((operator, len)) = operator_at(&raw[index..]) {
-                let len = if raw[index + len..].starts_with('*') {
-                    len + 1
-                } else {
-                    len
-                };
-                return Some((index, operator, len));
-            }
+        if !in_quote
+            && brace_depth == 0
+            && let Some((operator, len)) = operator_at(&raw[index..])
+        {
+            let len = if raw[index + len..].starts_with('*') {
+                len + 1
+            } else {
+                len
+            };
+            return Some((index, operator, len));
         }
         index += 1;
     }

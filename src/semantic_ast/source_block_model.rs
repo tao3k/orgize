@@ -1,9 +1,9 @@
 //! Source-block side-table records for Babel/tangle-aware indexers.
 
 use super::{
+    SourcePosition,
     block_model::{BlockCodeRef, BlockHeaderArg},
     model::ParsedAnnotation,
-    SourcePosition,
 };
 
 /// One source block projected for indexers and agent tooling.

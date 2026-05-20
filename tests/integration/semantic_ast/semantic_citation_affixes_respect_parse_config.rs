@@ -1,8 +1,8 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
+    ParseConfig,
     ast::{ElementData, ObjectData},
     config::UseSubSuperscript,
-    ParseConfig,
 };
 
 #[test]

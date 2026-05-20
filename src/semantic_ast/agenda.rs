@@ -2,10 +2,11 @@
 
 use super::agenda_filter::section_matches_query;
 use super::agenda_model::{
-    scheduled_visible_start, warning_start, AgendaCategory, AgendaDate, AgendaDeadlineState,
-    AgendaEntry, AgendaEntryKind, AgendaOccurrence, AgendaQuery, AgendaScheduleState, AgendaTime,
+    AgendaCategory, AgendaDate, AgendaDeadlineState, AgendaEntry, AgendaEntryKind,
+    AgendaOccurrence, AgendaQuery, AgendaScheduleState, AgendaTime, scheduled_visible_start,
+    warning_start,
 };
-use super::agenda_time::{headline_time, HeadlineTimeSpec};
+use super::agenda_time::{HeadlineTimeSpec, headline_time};
 use super::model::{
     Citation, CiteReference, Document, Element, ElementData, Link, ListItem, Object, ObjectData,
     Property, Section,

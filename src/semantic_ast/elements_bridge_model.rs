@@ -78,20 +78,20 @@ impl OrgElementsIndexQuery {
     }
 
     pub fn matches<A>(&self, record: &OrgElementsIndexRecord<A>) -> bool {
-        if let Some(category) = self.category {
-            if record.category != category {
-                return false;
-            }
+        if let Some(category) = self.category
+            && record.category != category
+        {
+            return false;
         }
-        if let Some(kind) = &self.kind {
-            if record.kind != *kind {
-                return false;
-            }
+        if let Some(kind) = &self.kind
+            && record.kind != *kind
+        {
+            return false;
         }
-        if let Some(context) = &self.context {
-            if record.context != *context {
-                return false;
-            }
+        if let Some(context) = &self.context
+            && record.context != *context
+        {
+            return false;
         }
         self.outline_path_prefix.is_empty()
             || record.outline_path.starts_with(&self.outline_path_prefix)

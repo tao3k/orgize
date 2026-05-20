@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{ProgressStatisticCookieKind, ProgressTodoState, TaskDependencyKind},
     Org,
+    ast::{ProgressStatisticCookieKind, ProgressTodoState, TaskDependencyKind},
 };
 
 const SOURCE: &str = r#"* TODO Parent [1/2] [50%]
@@ -64,10 +64,12 @@ fn semantic_ast_projects_progress_stats_for_agent_planning() {
     assert!(parent.dependencies.iter().any(|dependency| dependency.kind
         == TaskDependencyKind::OpenCheckbox
         && dependency.count == 3));
-    assert!(parent
-        .dependencies
-        .iter()
-        .any(|dependency| dependency.kind == TaskDependencyKind::OrderedProperty));
+    assert!(
+        parent
+            .dependencies
+            .iter()
+            .any(|dependency| dependency.kind == TaskDependencyKind::OrderedProperty)
+    );
 
     let done_child = records
         .iter()

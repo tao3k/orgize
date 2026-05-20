@@ -1,6 +1,6 @@
 use crate::SyntaxKind;
 
-use super::{filter_token, Macros, Token};
+use super::{Macros, Token, filter_token};
 
 impl Macros {
     /// ```rust

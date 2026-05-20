@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{SourceTangleOptions, SourceTangleSkipReason, TableFormulaReferenceKind},
     Org,
+    ast::{SourceTangleOptions, SourceTangleSkipReason, TableFormulaReferenceKind},
 };
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/tangle-and-table-formulas.org");
@@ -18,31 +18,41 @@ fn semantic_ast_projects_safe_tangle_plan_and_table_formula_records() {
             && file.blocks.len() == 1
             && file.blocks[0].name.as_deref() == Some("explicit-rust")
     }));
-    assert!(tangle
-        .files
-        .iter()
-        .any(|file| file.target == "notebook.py" && file.blocks.len() == 1));
-    assert!(tangle
-        .skipped
-        .iter()
-        .any(|skip| skip.reason == SourceTangleSkipReason::Disabled));
-    assert!(tangle
-        .skipped
-        .iter()
-        .any(|skip| skip.reason == SourceTangleSkipReason::InlineSource));
+    assert!(
+        tangle
+            .files
+            .iter()
+            .any(|file| file.target == "notebook.py" && file.blocks.len() == 1)
+    );
+    assert!(
+        tangle
+            .skipped
+            .iter()
+            .any(|skip| skip.reason == SourceTangleSkipReason::Disabled)
+    );
+    assert!(
+        tangle
+            .skipped
+            .iter()
+            .any(|skip| skip.reason == SourceTangleSkipReason::InlineSource)
+    );
 
     let formula_records = doc.table_formula_records();
     assert_eq!(formula_records.len(), 1);
     assert_eq!(formula_records[0].row_count, 3);
     assert_eq!(formula_records[0].column_count, 3);
-    assert!(formula_records[0].formulas[0].assignments[0]
-        .references
-        .iter()
-        .any(|reference| reference.kind == TableFormulaReferenceKind::Field));
-    assert!(formula_records[0].formulas[0].assignments[1]
-        .references
-        .iter()
-        .any(|reference| reference.kind == TableFormulaReferenceKind::Remote));
+    assert!(
+        formula_records[0].formulas[0].assignments[0]
+            .references
+            .iter()
+            .any(|reference| reference.kind == TableFormulaReferenceKind::Field)
+    );
+    assert!(
+        formula_records[0].formulas[0].assignments[1]
+            .references
+            .iter()
+            .any(|reference| reference.kind == TableFormulaReferenceKind::Remote)
+    );
 
     insta::assert_debug_snapshot!("semantic_ast__semantic_tangle_plan", tangle);
     insta::assert_debug_snapshot!(

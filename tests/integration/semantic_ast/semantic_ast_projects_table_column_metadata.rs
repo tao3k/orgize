@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
-    ast::{ElementData, TableColumnAlignment},
     Org,
+    ast::{ElementData, TableColumnAlignment},
 };
 
 #[test]
