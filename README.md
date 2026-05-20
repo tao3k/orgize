@@ -100,6 +100,8 @@ exclusive sets and `[ group : members ]` hierarchy metadata. Hosts that want
 org-mode-style programmable behavior can call `document.org_elements_json()` or
 explicitly run
 `document.execute_org_elements(&OrgElementsHostExecutionOptions::new(...))`;
+agenda, sparse-tree, workspace match, and clocktable `:match` projections
+expand group tags from that vocabulary without mutating headline tags.
 the payload exposes source-backed root/section/element/object trees, targets,
 footnotes, metadata, source block side tables, and a flat `index` for
 `org-element-map`-style filtering by node kind. Rust consumers can call

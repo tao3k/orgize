@@ -1218,3 +1218,14 @@ Recommended implementation order for the next major PR train:
       =name=/=shortcut=/=raw= fields stable for older consumers.
 - [X] Add an original Rust snapshot over tag vocabulary groups without copying
       Org-mode tests or introducing runtime Emacs dependencies.
+
+*** M27 Org Group Tag Match Expansion
+
+- [X] Expand document-level =#+TAGS:= group vocabulary in agenda match
+      evaluation, including transitive groups such as =[ GTD : Control ]=
+      followed by =[ Control : Context Task ]=.
+- [X] Apply the same group-tag matcher to agenda entries, sparse-tree
+      projections, workspace match commands, and clocktable =:match= filters
+      without changing headline tags or parser output.
+- [X] Add an original Rust snapshot proving =+GTD= and =+Control= behavior
+      across agenda, sparse-tree, workspace, and clocktable projections.

@@ -11,6 +11,7 @@ use super::model::{
     Citation, CiteReference, Document, Element, ElementData, Link, ListItem, Object, ObjectData,
     Property, Section,
 };
+use super::tag_vocabulary::TagMatcher;
 use super::timestamp_model::{Timestamp, TimestampKind};
 
 impl<A: Clone> Document<A> {
@@ -22,11 +23,17 @@ impl<A: Clone> Document<A> {
         let mut entries = Vec::new();
         let (start, end) = query.bounds();
         let document_category = document_category(self);
+        let tag_matcher = TagMatcher::new(&self.tag_definitions);
 
         for section in &self.sections {
             collect_section(
                 section,
-                AgendaCollectContext { query, start, end },
+                AgendaCollectContext {
+                    query,
+                    start,
+                    end,
+                    tag_matcher,
+                },
                 document_category.clone(),
                 &mut entries,
             );
@@ -59,6 +66,7 @@ struct AgendaCollectContext<'a> {
     query: &'a AgendaQuery,
     start: AgendaDate,
     end: AgendaDate,
+    tag_matcher: TagMatcher<'a>,
 }
 
 fn collect_section<A: Clone>(
@@ -69,7 +77,12 @@ fn collect_section<A: Clone>(
 ) {
     let category = section_category(section).or(inherited_category);
 
-    if section_matches_query(section, context.query, category.as_ref()) {
+    if section_matches_query(
+        section,
+        context.query,
+        category.as_ref(),
+        context.tag_matcher,
+    ) {
         if context.query.include_scheduled {
             collect_timestamp(
                 section,

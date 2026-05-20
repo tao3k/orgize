@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 
 use super::agenda_filter::section_matches_agenda_match;
 use super::agenda_model::is_done_keyword;
+use super::tag_vocabulary::TagMatcher;
 use super::{
     AgendaUrgencyIngredient, AgendaUrgencyIngredientKind, AgendaUrgencyScore, AgendaViewCard,
     AgendaWorkspaceCard, AgendaWorkspaceCardKind, AgendaWorkspaceCommandKind,
@@ -24,6 +25,7 @@ struct AgendaWorkspaceInput<'a> {
     source_file: String,
     document: &'a Document<ParsedAnnotation>,
     sections: Vec<SectionIndexRecord>,
+    tag_matcher: TagMatcher<'a>,
 }
 
 impl<'a> AgendaWorkspaceBuilder<'a> {
@@ -40,10 +42,12 @@ impl<'a> AgendaWorkspaceBuilder<'a> {
     ) -> &mut Self {
         let source_file = source_file.into();
         let sections = document.section_index_records_for_file(source_file.clone());
+        let tag_matcher = TagMatcher::new(&document.tag_definitions);
         self.documents.push(AgendaWorkspaceInput {
             source_file,
             document,
             sections,
+            tag_matcher,
         });
         self
     }
@@ -206,57 +210,60 @@ fn collect_match_cards(
     command: &AgendaWorkspaceMatchCommand,
     cards: &mut Vec<AgendaWorkspaceCard>,
 ) {
+    let context = WorkspaceMatchContext {
+        source_file: document.source_file.as_str(),
+        query: &command.query,
+        include_done: command.include_done,
+        include_archived: command.include_archived,
+        tag_matcher: document.tag_matcher,
+    };
     for section in &document.document.sections {
-        collect_match_cards_from_section(
-            document.source_file.as_str(),
-            section,
-            Vec::new(),
-            &command.query,
-            command.include_done,
-            command.include_archived,
-            cards,
-        );
+        collect_match_cards_from_section(section, Vec::new(), context, cards);
     }
 }
 
-fn collect_match_cards_from_section(
-    source_file: &str,
-    section: &Section<ParsedAnnotation>,
-    parent_outline_path: Vec<String>,
-    query: &super::AgendaMatchQuery,
+#[derive(Clone, Copy)]
+struct WorkspaceMatchContext<'a> {
+    source_file: &'a str,
+    query: &'a super::AgendaMatchQuery,
     include_done: bool,
     include_archived: bool,
+    tag_matcher: TagMatcher<'a>,
+}
+
+fn collect_match_cards_from_section(
+    section: &Section<ParsedAnnotation>,
+    parent_outline_path: Vec<String>,
+    context: WorkspaceMatchContext<'_>,
     cards: &mut Vec<AgendaWorkspaceCard>,
 ) {
     let current_outline_path = outline_path(parent_outline_path, section);
-    if (include_done || !is_done_keyword(&section.todo))
-        && (include_archived || !section.archive.archived)
-        && section_matches_agenda_match(section, None, Some(source_file), query)
+    if (context.include_done || !is_done_keyword(&section.todo))
+        && (context.include_archived || !section.archive.archived)
+        && section_matches_agenda_match(
+            section,
+            None,
+            Some(context.source_file),
+            context.query,
+            context.tag_matcher,
+        )
     {
         cards.push(section_ast_card(
-            source_file,
+            context.source_file,
             section,
             current_outline_path.clone(),
             AgendaWorkspaceCardKind::Match,
             vec![
-                document_receipt(source_file),
+                document_receipt(context.source_file),
                 AgendaWorkspaceReceipt {
                     kind: AgendaWorkspaceReceiptKind::QueryMatched,
-                    message: format!("matched {}", query.expression()),
+                    message: format!("matched {}", context.query.expression()),
                 },
             ],
         ));
     }
     for subsection in &section.subsections {
-        collect_match_cards_from_section(
-            source_file,
-            subsection,
-            current_outline_path.clone(),
-            query,
-            include_done,
-            include_archived,
-            cards,
-        );
+        collect_match_cards_from_section(subsection, current_outline_path.clone(), context, cards);
     }
 }
 

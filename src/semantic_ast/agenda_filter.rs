@@ -6,11 +6,13 @@ use super::agenda_match::{
 use super::agenda_model::{AgendaCategory, AgendaQuery, is_done_keyword};
 use super::model::Section;
 use super::special_properties::{SpecialPropertyContext, special_property_value};
+use super::tag_vocabulary::TagMatcher;
 
 pub(crate) fn section_matches_query<A>(
     section: &Section<A>,
     query: &AgendaQuery,
     category: Option<&AgendaCategory>,
+    tag_matcher: TagMatcher<'_>,
 ) -> bool {
     if section.is_comment && !query.include_comments {
         return false;
@@ -24,14 +26,14 @@ pub(crate) fn section_matches_query<A>(
     if query
         .required_tags
         .iter()
-        .any(|required| !has_tag(&section.effective_tags, required))
+        .any(|required| !tag_matcher.has_tag(&section.effective_tags, required))
     {
         return false;
     }
     if query
         .excluded_tags
         .iter()
-        .any(|excluded| has_tag(&section.effective_tags, excluded))
+        .any(|excluded| tag_matcher.has_tag(&section.effective_tags, excluded))
     {
         return false;
     }
@@ -41,6 +43,7 @@ pub(crate) fn section_matches_query<A>(
             category,
             query.source_file.as_deref(),
             match_query,
+            tag_matcher,
         )
     {
         return false;
@@ -53,12 +56,12 @@ pub(crate) fn section_matches_agenda_match<A>(
     category: Option<&AgendaCategory>,
     source_file: Option<&str>,
     match_query: &AgendaMatchQuery,
+    tag_matcher: TagMatcher<'_>,
 ) -> bool {
     match_query.clauses.iter().any(|clause| {
-        clause
-            .terms
-            .iter()
-            .all(|term| agenda_match_term_matches(section, category, source_file, term))
+        clause.terms.iter().all(|term| {
+            agenda_match_term_matches(section, category, source_file, term, tag_matcher)
+        })
     })
 }
 
@@ -67,9 +70,10 @@ fn agenda_match_term_matches<A>(
     category: Option<&AgendaCategory>,
     source_file: Option<&str>,
     term: &AgendaMatchTerm,
+    tag_matcher: TagMatcher<'_>,
 ) -> bool {
     let matched = match &term.predicate {
-        AgendaMatchPredicate::Tag(tag) => has_tag(&section.effective_tags, tag),
+        AgendaMatchPredicate::Tag(tag) => tag_matcher.has_tag(&section.effective_tags, tag),
         AgendaMatchPredicate::Property {
             key,
             operator,
@@ -161,8 +165,4 @@ fn compare_agenda_match_values(
         AgendaMatchOperator::Greater => actual > expected.as_str(),
         AgendaMatchOperator::GreaterOrEqual => actual >= expected.as_str(),
     }
-}
-
-fn has_tag(tags: &[String], needle: &str) -> bool {
-    tags.iter().any(|tag| tag.eq_ignore_ascii_case(needle))
 }

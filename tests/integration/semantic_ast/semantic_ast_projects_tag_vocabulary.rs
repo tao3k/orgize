@@ -1,5 +1,12 @@
 use crate::semantic_ast::support::assert_clean_projection;
-use orgize::Org;
+use orgize::{
+    Org,
+    ast::{
+        AgendaDate, AgendaMatchQuery, AgendaQuery, AgendaWorkspaceBuilder,
+        AgendaWorkspaceCommandKind, AgendaWorkspaceMatchCommand, AgendaWorkspaceQuery,
+        SparseTreeQuery,
+    },
+};
 use serde_json::Value;
 
 #[test]
@@ -69,5 +76,103 @@ fn semantic_ast_projects_tag_vocabulary_groups_and_exclusive_sets() {
     insta::assert_debug_snapshot!(
         "semantic_ast__tag_vocabulary_groups",
         doc.to_bare().tag_definitions
+    );
+}
+
+#[test]
+fn semantic_ast_expands_tag_groups_for_agenda_sparse_workspace_and_clocktable_match() {
+    let doc = Org::parse(
+        r#"#+TAGS: [ GTD : Control Persp ]
+#+TAGS: [ Control : Context Task ]
+
+#+BEGIN: clocktable :scope file :match "+GTD" :maxlevel 1
+#+END:
+
+* TODO Deep task :Task:
+SCHEDULED: <2026-05-20 Wed>
+CLOCK: [2026-05-20 Wed 09:00]--[2026-05-20 Wed 09:30] =>  0:30
+* TODO Direct control :Control:
+SCHEDULED: <2026-05-20 Wed>
+CLOCK: [2026-05-20 Wed 10:00]--[2026-05-20 Wed 10:30] =>  0:30
+* TODO Perspective :Persp:
+SCHEDULED: <2026-05-20 Wed>
+CLOCK: [2026-05-20 Wed 11:00]--[2026-05-20 Wed 11:30] =>  0:30
+* TODO Outside :other:
+SCHEDULED: <2026-05-20 Wed>
+CLOCK: [2026-05-20 Wed 12:00]--[2026-05-20 Wed 12:30] =>  0:30
+"#,
+    )
+    .document();
+    assert_clean_projection(&doc);
+
+    let day = AgendaDate::new(2026, 5, 20);
+    let agenda_titles = doc
+        .agenda_entries(
+            &AgendaQuery::single_day(day)
+                .match_expression("+GTD")
+                .expect("valid group tag match"),
+        )
+        .into_iter()
+        .map(|entry| entry.raw_title)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        agenda_titles,
+        ["Deep task", "Direct control", "Perspective"]
+    );
+
+    let excluded_titles = doc
+        .agenda_entries(&AgendaQuery::single_day(day).exclude_tag("GTD"))
+        .into_iter()
+        .map(|entry| entry.raw_title)
+        .collect::<Vec<_>>();
+    assert_eq!(excluded_titles, ["Outside"]);
+
+    let sparse_titles = doc
+        .sparse_tree_projection(
+            &SparseTreeQuery::new()
+                .match_expression("+Control")
+                .expect("valid nested group tag match"),
+        )
+        .cards
+        .into_iter()
+        .map(|card| card.title)
+        .collect::<Vec<_>>();
+    assert_eq!(sparse_titles, ["Deep task", "Direct control"]);
+
+    let mut builder = AgendaWorkspaceBuilder::new();
+    builder.add_document("tag-groups.org", &doc);
+    let workspace = builder.finish(&AgendaWorkspaceQuery::new().command(
+        "gtd",
+        AgendaWorkspaceCommandKind::Match(AgendaWorkspaceMatchCommand::new(
+            AgendaMatchQuery::parse("+GTD").expect("valid workspace group match"),
+        )),
+    ));
+    let workspace_titles = workspace.commands[0]
+        .cards
+        .iter()
+        .map(|card| card.title.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        workspace_titles,
+        ["Deep task", "Direct control", "Perspective"]
+    );
+
+    let clock_plans = doc.clock_table_plans();
+    let clock_rows = clock_plans[0]
+        .rows
+        .iter()
+        .map(|row| row.title.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(clock_rows, ["Deep task", "Direct control", "Perspective"]);
+
+    insta::assert_debug_snapshot!(
+        "semantic_ast__tag_vocabulary_group_match_expansion",
+        (
+            agenda_titles,
+            excluded_titles,
+            sparse_titles,
+            workspace_titles,
+            clock_rows
+        )
     );
 }

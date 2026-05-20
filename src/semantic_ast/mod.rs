@@ -101,6 +101,7 @@ mod special_properties;
 mod table_metadata;
 mod table_visualization;
 mod table_visualization_model;
+mod tag_vocabulary;
 mod tangle;
 mod tangle_model;
 mod targets;

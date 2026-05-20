@@ -6,8 +6,9 @@ use std::{error::Error, fmt, str::FromStr};
 ///
 /// This intentionally covers the common official syntax used by agenda tag
 /// searches: `+tag`, `-tag`, `tag|other`, `PROP="value"`, and numeric
-/// comparisons such as `Effort<2`. Parentheses and group-tag expansion remain
-/// outside this first parser-v2 surface.
+/// comparisons such as `Effort<2`. Parentheses remain outside this parser-v2
+/// surface; document projections apply `#+TAGS:` group expansion when a tag
+/// vocabulary is available.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AgendaMatchQuery {
     pub(crate) source: String,
