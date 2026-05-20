@@ -8,9 +8,9 @@ use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
     ast::{
-        AttachmentAnnexStatus, AttachmentDirectorySource, AttachmentIdPathLayout,
-        AttachmentInventoryOptions, AttachmentLinkSearchKind, AttachmentVcsStatus, ElementData,
-        ObjectData,
+        AttachmentAnnexStatus, AttachmentArchiveDeletePolicy, AttachmentDirectorySource,
+        AttachmentIdPathLayout, AttachmentInventoryOptions, AttachmentLinkSearchKind,
+        AttachmentVcsStatus, ElementData, ObjectData,
     },
 };
 
@@ -40,6 +40,11 @@ const INVENTORY_SOURCE: &str = r#"* Project
 See [[attachment:tracked.txt]], [[attachment:untracked.txt]], and [[attachment:missing.txt]].
 * Rootless
 See [[attachment:loose.txt]].
+* Archived :ARCHIVE:
+:PROPERTIES:
+:DIR: archived
+:END:
+See [[attachment:old.txt]].
 "#;
 
 #[test]
@@ -135,8 +140,10 @@ fn semantic_ast_projects_attachment_directories_and_links() {
 fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
     let temp = unique_temp_dir("orgize-attachment-vcs");
     fs::create_dir_all(temp.join("assets")).expect("create attachment directory");
+    fs::create_dir_all(temp.join("archived")).expect("create archived attachment directory");
     run_git(&temp, &["init", "--quiet"]);
     fs::write(temp.join("assets/tracked.txt"), b"tracked").expect("write tracked attachment");
+    fs::write(temp.join("archived/old.txt"), b"old attachment").expect("write archived attachment");
     run_git(&temp, &["add", "assets/tracked.txt"]);
     run_git(
         &temp,
@@ -158,7 +165,8 @@ fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
     let inventory = doc.attachment_inventory(
         &AttachmentInventoryOptions::new(path_str(&temp))
             .check_vcs(true)
-            .check_annex(true),
+            .check_annex(true)
+            .archive_delete_policy(AttachmentArchiveDeletePolicy::Query),
     );
 
     let tracked = inventory_entry(&inventory, "tracked.txt");
@@ -176,6 +184,11 @@ fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
     assert_eq!(missing.vcs.status, AttachmentVcsStatus::Missing);
     assert!(inventory.warnings.iter().any(|warning| {
         warning.kind.as_str() == "missingDirectory" && warning.message.contains("loose.txt")
+    }));
+    assert!(inventory.archive_advice.iter().any(|advice| {
+        advice.section_title == "Archived"
+            && advice.path == "archived"
+            && advice.policy == AttachmentArchiveDeletePolicy::Query
     }));
 
     insta::assert_snapshot!(
@@ -236,6 +249,15 @@ fn render_attachment_inventory(
             "warning {} {}\n",
             warning.kind.as_str(),
             warning.message
+        ));
+    }
+    for advice in &inventory.archive_advice {
+        out.push_str(&format!(
+            "archive {} title={} path={} {}\n",
+            advice.policy.as_str(),
+            advice.section_title,
+            advice.path,
+            advice.message
         ));
     }
     out

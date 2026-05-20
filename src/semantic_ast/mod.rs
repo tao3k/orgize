@@ -145,7 +145,8 @@ pub use agent_planning_model::{
     AgentPlanningSnapshot, AgentPlanningSource,
 };
 pub use attachment_inventory_model::{
-    AttachmentAnnexEvidence, AttachmentAnnexStatus, AttachmentInventory, AttachmentInventoryEntry,
+    AttachmentAnnexEvidence, AttachmentAnnexStatus, AttachmentArchiveAdvice,
+    AttachmentArchiveDeletePolicy, AttachmentInventory, AttachmentInventoryEntry,
     AttachmentInventoryEntryKind, AttachmentInventoryOptions, AttachmentInventoryWarning,
     AttachmentInventoryWarningKind, AttachmentVcsEvidence, AttachmentVcsStatus,
 };

@@ -8,6 +8,7 @@ pub struct AttachmentInventoryOptions {
     pub base_dir: String,
     pub check_vcs: bool,
     pub check_annex: bool,
+    pub archive_delete_policy: AttachmentArchiveDeletePolicy,
 }
 
 impl AttachmentInventoryOptions {
@@ -17,6 +18,7 @@ impl AttachmentInventoryOptions {
             base_dir: base_dir.into(),
             check_vcs: false,
             check_annex: false,
+            archive_delete_policy: AttachmentArchiveDeletePolicy::NotConfigured,
         }
     }
 
@@ -31,12 +33,19 @@ impl AttachmentInventoryOptions {
         self.check_annex = check_annex;
         self
     }
+
+    /// Sets the caller-known `org-attach-archive-delete` policy.
+    pub fn archive_delete_policy(mut self, policy: AttachmentArchiveDeletePolicy) -> Self {
+        self.archive_delete_policy = policy;
+        self
+    }
 }
 
 /// Filesystem-aware attachment inventory for one parsed document.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct AttachmentInventory {
     pub entries: Vec<AttachmentInventoryEntry>,
+    pub archive_advice: Vec<AttachmentArchiveAdvice>,
     pub warnings: Vec<AttachmentInventoryWarning>,
 }
 
@@ -50,6 +59,37 @@ pub struct AttachmentInventoryEntry {
     pub absolute_path: String,
     pub exists: bool,
     pub vcs: AttachmentVcsEvidence,
+}
+
+/// Non-mutating advice for archived sections whose attachments may be deleted.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AttachmentArchiveAdvice {
+    pub source: SectionIndexSource,
+    pub section_title: String,
+    pub policy: AttachmentArchiveDeletePolicy,
+    pub path: String,
+    pub message: String,
+}
+
+/// Caller-supplied `org-attach-archive-delete` policy.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AttachmentArchiveDeletePolicy {
+    NotConfigured,
+    Never,
+    Query,
+    Always,
+}
+
+impl AttachmentArchiveDeletePolicy {
+    /// Stable label for DTO and compact consumers.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::NotConfigured => "notConfigured",
+            Self::Never => "never",
+            Self::Query => "query",
+            Self::Always => "always",
+        }
+    }
 }
 
 /// Stable attachment inventory entry kind.

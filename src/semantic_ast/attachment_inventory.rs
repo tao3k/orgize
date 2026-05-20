@@ -6,10 +6,11 @@ use std::{
 };
 
 use super::{
-    AttachmentAnnexEvidence, AttachmentAnnexStatus, AttachmentInventory, AttachmentInventoryEntry,
+    AttachmentAnnexEvidence, AttachmentAnnexStatus, AttachmentArchiveAdvice,
+    AttachmentArchiveDeletePolicy, AttachmentInventory, AttachmentInventoryEntry,
     AttachmentInventoryEntryKind, AttachmentInventoryOptions, AttachmentInventoryWarning,
     AttachmentInventoryWarningKind, AttachmentVcsEvidence, AttachmentVcsStatus, Document,
-    ParsedAnnotation,
+    ParsedAnnotation, SectionIndexRecord,
 };
 
 impl Document<ParsedAnnotation> {
@@ -32,6 +33,7 @@ impl Document<ParsedAnnotation> {
                 let exists = absolute_path.exists();
                 let vcs = vcs_evidence(options, &absolute_path);
                 push_missing_warning(&mut inventory, exists, path.as_str());
+                push_archive_delete_advice(&mut inventory, options, &section, path.as_str());
                 inventory.entries.push(AttachmentInventoryEntry {
                     source: section.source.clone(),
                     section_title: section.title.clone(),
@@ -73,6 +75,41 @@ impl Document<ParsedAnnotation> {
         }
         inventory
     }
+}
+
+fn push_archive_delete_advice(
+    inventory: &mut AttachmentInventory,
+    options: &AttachmentInventoryOptions,
+    section: &SectionIndexRecord,
+    path: &str,
+) {
+    if !section.archive.archived {
+        return;
+    }
+    let policy = options.archive_delete_policy;
+    if matches!(
+        policy,
+        AttachmentArchiveDeletePolicy::NotConfigured | AttachmentArchiveDeletePolicy::Never
+    ) {
+        return;
+    }
+    let action = match policy {
+        AttachmentArchiveDeletePolicy::Query => "may ask before deleting",
+        AttachmentArchiveDeletePolicy::Always => "may delete",
+        AttachmentArchiveDeletePolicy::NotConfigured | AttachmentArchiveDeletePolicy::Never => {
+            return;
+        }
+    };
+    inventory.archive_advice.push(AttachmentArchiveAdvice {
+        source: section.source.clone(),
+        section_title: section.title.clone(),
+        policy,
+        path: path.to_string(),
+        message: format!(
+            "archived section `{}` {action} attachment directory `{path}`",
+            section.title
+        ),
+    });
 }
 
 fn push_missing_directory_warning(inventory: &mut AttachmentInventory, path: &str) {
