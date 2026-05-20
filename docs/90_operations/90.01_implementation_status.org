@@ -1206,3 +1206,15 @@ Recommended implementation order for the next major PR train:
       inventory warnings, export dependency graph diagnostics, and table
       visualization/radio-table metadata, Org Crypt opaque subtree advice, and
       runtime metadata boundary receipts.
+
+*** M26 Org Vocabulary And Host Binding Refinement
+
+- [X] Preserve official =#+TAGS:= group structure in the semantic tag
+      vocabulary: unlabelled ={ ... }= mutually exclusive sets, labelled
+      =[ group : members ]= hierarchies, and labelled ={ group : members }=
+      mutually exclusive child sets.
+- [X] Extend =TagDefinition=, wasm metadata DTOs, and =org_elements_json()=
+      with =is_group= and =group= metadata while keeping existing
+      =name=/=shortcut=/=raw= fields stable for older consumers.
+- [X] Add an original Rust snapshot over tag vocabulary groups without copying
+      Org-mode tests or introducing runtime Emacs dependencies.

@@ -1,0 +1,186 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_tag_vocabulary.rs
+assertion_line: 69
+expression: doc.to_bare().tag_definitions
+---
+[
+    TagDefinition {
+        name: "@work",
+        shortcut: Some(
+            "w",
+        ),
+        raw: "@work(w)",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: None,
+                exclusive: true,
+            },
+        ),
+    },
+    TagDefinition {
+        name: "@home",
+        shortcut: Some(
+            "h",
+        ),
+        raw: "@home(h)",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: None,
+                exclusive: true,
+            },
+        ),
+    },
+    TagDefinition {
+        name: "@tennisclub",
+        shortcut: Some(
+            "t",
+        ),
+        raw: "@tennisclub(t)",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: None,
+                exclusive: true,
+            },
+        ),
+    },
+    TagDefinition {
+        name: "laptop",
+        shortcut: Some(
+            "l",
+        ),
+        raw: "laptop(l)",
+        is_group: false,
+        group: None,
+    },
+    TagDefinition {
+        name: "pc",
+        shortcut: Some(
+            "p",
+        ),
+        raw: "pc(p)",
+        is_group: false,
+        group: None,
+    },
+    TagDefinition {
+        name: "GTD",
+        shortcut: None,
+        raw: "GTD",
+        is_group: true,
+        group: None,
+    },
+    TagDefinition {
+        name: "Control",
+        shortcut: None,
+        raw: "Control",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: Some(
+                    "GTD",
+                ),
+                exclusive: false,
+            },
+        ),
+    },
+    TagDefinition {
+        name: "Persp",
+        shortcut: None,
+        raw: "Persp",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: Some(
+                    "GTD",
+                ),
+                exclusive: false,
+            },
+        ),
+    },
+    TagDefinition {
+        name: "Control",
+        shortcut: None,
+        raw: "Control",
+        is_group: true,
+        group: None,
+    },
+    TagDefinition {
+        name: "Context",
+        shortcut: None,
+        raw: "Context",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: Some(
+                    "Control",
+                ),
+                exclusive: false,
+            },
+        ),
+    },
+    TagDefinition {
+        name: "Task",
+        shortcut: None,
+        raw: "Task",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: Some(
+                    "Control",
+                ),
+                exclusive: false,
+            },
+        ),
+    },
+    TagDefinition {
+        name: "Context",
+        shortcut: None,
+        raw: "Context",
+        is_group: true,
+        group: None,
+    },
+    TagDefinition {
+        name: "@Home",
+        shortcut: None,
+        raw: "@Home",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: Some(
+                    "Context",
+                ),
+                exclusive: true,
+            },
+        ),
+    },
+    TagDefinition {
+        name: "@Work",
+        shortcut: None,
+        raw: "@Work",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: Some(
+                    "Context",
+                ),
+                exclusive: true,
+            },
+        ),
+    },
+    TagDefinition {
+        name: "@Call",
+        shortcut: None,
+        raw: "@Call",
+        is_group: false,
+        group: Some(
+            TagDefinitionGroup {
+                name: Some(
+                    "Context",
+                ),
+                exclusive: true,
+            },
+        ),
+    },
+]

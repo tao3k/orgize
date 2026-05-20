@@ -95,8 +95,10 @@ attributes. Links without an explicit description can use target-derived
 fallback objects through `Link::description_or_default()`, and `id:ID::*search`
 paths retain their search suffix in `Link::search`.
 `#+TAGS:` vocabulary lines project shortcuts such as `EMACS (e)` and `READ(r)`
-into `document.tag_definitions`. Hosts that want org-mode-style programmable
-behavior can call `document.org_elements_json()` or explicitly run
+into `document.tag_definitions`, including official `{ ... }` mutually
+exclusive sets and `[ group : members ]` hierarchy metadata. Hosts that want
+org-mode-style programmable behavior can call `document.org_elements_json()` or
+explicitly run
 `document.execute_org_elements(&OrgElementsHostExecutionOptions::new(...))`;
 the payload exposes source-backed root/section/element/object trees, targets,
 footnotes, metadata, source block side tables, and a flat `index` for

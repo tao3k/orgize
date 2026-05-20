@@ -120,6 +120,15 @@ pub struct TagDefinition {
     pub name: String,
     pub shortcut: Option<String>,
     pub raw: String,
+    pub is_group: bool,
+    pub group: Option<TagDefinitionGroup>,
+}
+
+/// Parent group metadata for a tag declared in `#+TAGS:`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TagDefinitionGroup {
+    pub name: Option<String>,
+    pub exclusive: bool,
 }
 
 /// Document-level export and indexing settings collected from Org keywords.

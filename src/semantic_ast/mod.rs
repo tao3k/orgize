@@ -228,8 +228,8 @@ pub use model::{
     List, ListItem, ListType, MacroDefinition, MacroExpansion, MacroExpansionStatus, MarkupKind,
     Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, Section, SourcePosition,
     Table, TableCell, TableColumnAlignment, TableFormula, TableFormulaAssignment,
-    TableFormulaReference, TableFormulaReferenceKind, TableRow, TagDefinition, TargetDefinition,
-    TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    TableFormulaReference, TableFormulaReferenceKind, TableRow, TagDefinition, TagDefinitionGroup,
+    TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 pub use progress_model::{
     ProgressCheckboxSummary, ProgressEffortSummary, ProgressStatisticCookie,

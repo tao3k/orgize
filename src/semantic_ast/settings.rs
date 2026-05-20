@@ -2,7 +2,7 @@
 
 use super::{
     ExportSettings, FileLink, FileLinkPathKind, Keyword, KeywordAttribute, LinkAbbreviation,
-    LinkSearch, LinkSearchKind, ParsedAnnotation, TagDefinition,
+    LinkSearch, LinkSearchKind, ParsedAnnotation, TagDefinition, TagDefinitionGroup,
 };
 
 pub(super) fn is_parsed_keyword(key: &str) -> bool {
@@ -57,7 +57,32 @@ pub(super) fn parse_tags(value: &str) -> Vec<String> {
 
 pub(super) fn parse_tag_definitions(value: &str) -> Vec<TagDefinition> {
     let mut definitions: Vec<TagDefinition> = Vec::new();
-    for token in value.split_whitespace() {
+    let tokens = value.split_whitespace().collect::<Vec<_>>();
+    let mut group_stack: Vec<TagGroupState> = Vec::new();
+    for (index, token) in tokens.iter().enumerate() {
+        match *token {
+            "{" | "[" => {
+                group_stack.push(TagGroupState {
+                    exclusive: *token == "{",
+                    labeled: group_has_separator(&tokens[index + 1..], closing_delimiter(token)),
+                    parent: None,
+                    after_separator: false,
+                });
+                continue;
+            }
+            "}" | "]" => {
+                group_stack.pop();
+                continue;
+            }
+            ":" => {
+                if let Some(group) = group_stack.last_mut() {
+                    group.after_separator = true;
+                }
+                continue;
+            }
+            _ => {}
+        }
+
         if let Some(shortcut) = shortcut_token(token) {
             if let Some(previous) = definitions.last_mut()
                 && previous.shortcut.is_none()
@@ -73,11 +98,30 @@ pub(super) fn parse_tag_definitions(value: &str) -> Vec<TagDefinition> {
         if name.is_empty() {
             continue;
         }
+        let active_group = group_stack.last_mut();
+        let is_group = active_group
+            .as_ref()
+            .is_some_and(|group| group.labeled && !group.after_separator);
+        let group = active_group.as_ref().and_then(|group| {
+            if is_group {
+                None
+            } else {
+                Some(TagDefinitionGroup {
+                    name: group.parent.clone(),
+                    exclusive: group.exclusive,
+                })
+            }
+        });
         definitions.push(TagDefinition {
             name: name.to_string(),
             shortcut: shortcut.map(ToString::to_string),
             raw: token.to_string(),
+            is_group,
+            group,
         });
+        if is_group && let Some(group) = group_stack.last_mut() {
+            group.parent = Some(name.to_string());
+        }
     }
     definitions
 }
@@ -95,6 +139,25 @@ fn shortcut_token(token: &str) -> Option<&str> {
         .strip_prefix('(')
         .and_then(|value| value.strip_suffix(')'))
         .filter(|value| !value.is_empty())
+}
+
+#[derive(Debug)]
+struct TagGroupState {
+    exclusive: bool,
+    labeled: bool,
+    parent: Option<String>,
+    after_separator: bool,
+}
+
+fn closing_delimiter(open: &str) -> &str {
+    if open == "{" { "}" } else { "]" }
+}
+
+fn group_has_separator(tokens: &[&str], closing: &str) -> bool {
+    tokens
+        .iter()
+        .take_while(|token| **token != closing)
+        .any(|token| *token == ":")
 }
 
 fn split_tag_shortcut(token: &str) -> (&str, Option<&str>) {

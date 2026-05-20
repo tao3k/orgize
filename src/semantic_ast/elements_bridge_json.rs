@@ -27,6 +27,11 @@ fn document_value(document: &Document<ParsedAnnotation>) -> Value {
                 "name": &definition.name,
                 "shortcut": &definition.shortcut,
                 "raw": &definition.raw,
+                "isGroup": definition.is_group,
+                "group": definition.group.as_ref().map(|group| json!({
+                    "name": &group.name,
+                    "exclusive": group.exclusive,
+                })),
             }))
             .collect::<Vec<_>>(),
         "targets": document.targets.iter().map(target_definition_json).collect::<Vec<_>>(),
