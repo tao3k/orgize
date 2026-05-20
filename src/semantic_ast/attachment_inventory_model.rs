@@ -96,7 +96,9 @@ pub struct AttachmentArchiveAdvice {
 pub struct AttachmentDisplayRecord {
     pub source: SectionIndexSource,
     pub section_title: String,
+    pub section_title_text: String,
     pub outline_path: Vec<String>,
+    pub outline_path_text: Vec<String>,
     pub tags: Vec<String>,
     pub effective_tags: Vec<String>,
     pub attachment_id: Option<AttachmentDisplayId>,

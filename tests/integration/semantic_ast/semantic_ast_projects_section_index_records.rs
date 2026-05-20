@@ -158,3 +158,29 @@ fn semantic_ast_projects_source_grounded_section_index_records() {
     );
     assert!(child.source.start.line < child.source.end.line);
 }
+
+#[test]
+fn semantic_ast_projects_section_index_keeps_display_title_and_planning_range() {
+    let doc = Org::parse(
+        r#"* [[https://example.com/wallpaper][Wallpaper]] :ATTACH:
+SCHEDULED: <2020-12-19 Sat>-<2020-12-19 Sat>
+"#,
+    )
+    .document();
+    assert_clean_projection(&doc);
+
+    let records = doc.section_index_records();
+    assert_eq!(
+        records[0].title,
+        "[[https://example.com/wallpaper][Wallpaper]]"
+    );
+    assert_eq!(records[0].title_text, "Wallpaper");
+    assert_eq!(records[0].outline_path_text, ["Wallpaper"]);
+    let scheduled = records[0]
+        .planning
+        .scheduled
+        .as_ref()
+        .expect("scheduled planning range");
+    assert_eq!(scheduled.raw, "<2020-12-19 Sat>-<2020-12-19 Sat>");
+    assert!(scheduled.is_range);
+}

@@ -106,7 +106,9 @@ fn build_attachment_inventory(
                 inventory.display.push(AttachmentDisplayRecord {
                     source: section.source.clone(),
                     section_title: section.title.clone(),
+                    section_title_text: section.title_text.clone(),
                     outline_path: section.outline_path.clone(),
+                    outline_path_text: section.outline_path_text.clone(),
                     tags: section.tags.clone(),
                     effective_tags: section.effective_tags.clone(),
                     attachment_id: attachment_id(&section),

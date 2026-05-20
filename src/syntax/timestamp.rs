@@ -193,14 +193,22 @@ fn timestamp_node_base(
     b.ws(space);
     b.push(r_angle);
 
-    if input.as_str().starts_with("--") {
-        let (input, minus2) = minus2_token(input)?;
-        let (input, l_angle) = l_parser(input)?;
+    let range_start = input;
+    if input.as_str().starts_with("--") || input.as_str().starts_with('-') {
+        let (input, range_separator) = if input.as_str().starts_with("--") {
+            minus2_token(input)?
+        } else {
+            minus_token(input)?
+        };
+        let (input, l_angle) = match l_parser(input) {
+            Ok(parsed) => parsed,
+            Err(_) => return Ok((range_start, b.children)),
+        };
         let (input, end_date) = date(input)?;
         let (input, end_dayname) = opt((space1, dayname)).parse(input)?;
         let (input, end_time) = opt((space1, time)).parse(input)?;
 
-        b.children.extend([minus2, l_angle]);
+        b.children.extend([range_separator, l_angle]);
         b.children.extend(end_date);
         if let Some((ws, dayname)) = end_dayname {
             b.push(ws.ws_token());
@@ -263,6 +271,7 @@ fn parse() {
     to_timestamp("[2003-09-16 Tue]");
     to_timestamp("[2003-09-16 Tue 09:09]");
     to_timestamp("[2003-09-16]--[2003-09-16]");
+    to_timestamp("[2003-09-16]-[2003-09-16]");
     to_timestamp("[2003-09-16 09:09]--[2003-09-16 09:09]");
     to_timestamp("[2003-09-16]--[2003-09-16 09:09]");
     to_timestamp("[2003-09-16 Tue]--[2003-09-16 Tue]");
