@@ -34,6 +34,70 @@ impl OrgElementsIndexKind {
     }
 }
 
+/// Predicate for selecting records from `Document::org_elements_index()`.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct OrgElementsIndexQuery {
+    pub category: Option<OrgElementsIndexCategory>,
+    pub kind: Option<OrgElementsIndexKind>,
+    pub context: Option<String>,
+    pub outline_path_prefix: Vec<String>,
+    pub limit: Option<usize>,
+}
+
+impl OrgElementsIndexQuery {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn category(mut self, category: OrgElementsIndexCategory) -> Self {
+        self.category = Some(category);
+        self
+    }
+
+    pub fn kind(mut self, kind: impl Into<OrgElementsIndexKind>) -> Self {
+        self.kind = Some(kind.into());
+        self
+    }
+
+    pub fn context(mut self, context: impl Into<String>) -> Self {
+        self.context = Some(context.into());
+        self
+    }
+
+    pub fn outline_path_prefix(
+        mut self,
+        outline_path_prefix: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
+        self.outline_path_prefix = outline_path_prefix.into_iter().map(Into::into).collect();
+        self
+    }
+
+    pub fn limit(mut self, limit: usize) -> Self {
+        self.limit = Some(limit);
+        self
+    }
+
+    pub fn matches<A>(&self, record: &OrgElementsIndexRecord<A>) -> bool {
+        if let Some(category) = self.category {
+            if record.category != category {
+                return false;
+            }
+        }
+        if let Some(kind) = &self.kind {
+            if record.kind != *kind {
+                return false;
+            }
+        }
+        if let Some(context) = &self.context {
+            if record.context != *context {
+                return false;
+            }
+        }
+        self.outline_path_prefix.is_empty()
+            || record.outline_path.starts_with(&self.outline_path_prefix)
+    }
+}
+
 impl From<&str> for OrgElementsIndexKind {
     fn from(value: &str) -> Self {
         Self::new(value)
@@ -70,6 +134,20 @@ impl OrgElementsIndexCategory {
             Self::Property => "property",
             Self::TargetDefinition => "target-definition",
             Self::FootnoteEntry => "footnote-entry",
+        }
+    }
+
+    pub fn from_label(value: &str) -> Option<Self> {
+        match value {
+            "document" => Some(Self::Document),
+            "section" => Some(Self::Section),
+            "element" => Some(Self::Element),
+            "object" => Some(Self::Object),
+            "keyword" => Some(Self::Keyword),
+            "property" => Some(Self::Property),
+            "target-definition" => Some(Self::TargetDefinition),
+            "footnote-entry" => Some(Self::FootnoteEntry),
+            _ => None,
         }
     }
 }

@@ -185,7 +185,7 @@ pub use dynamic_block_model::{
 pub use elements_bridge_model::{
     OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
     OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, OrgElementsIndexCategory,
-    OrgElementsIndexKind, OrgElementsIndexRecord, OrgElementsIndexSummary,
+    OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexRecord, OrgElementsIndexSummary,
     OrgElementsIndexSummaryValue, PythonDirective, PythonDirectiveKind, PythonExecutionOptions,
     PythonExecutionProgram,
 };

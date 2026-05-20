@@ -1,8 +1,8 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     ast::{
-        OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexSummaryValue,
-        PythonDirectiveKind,
+        OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexQuery,
+        OrgElementsIndexSummaryValue, PythonDirectiveKind,
     },
     Org,
 };
@@ -100,12 +100,33 @@ print(topic)
             "https://example.test".to_string()
         ))
     );
+    let filtered_index = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Object)
+            .kind("link")
+            .context("paragraph")
+            .limit(1),
+    );
+    assert_eq!(filtered_index.len(), 1);
+    assert_eq!(filtered_index[0].kind.as_str(), "link");
+    assert!(doc
+        .query_org_elements_index(&OrgElementsIndexQuery::new().kind("link").limit(0))
+        .is_empty());
     let index_only: Value =
         serde_json::from_str(&doc.org_elements_index_json()).expect("index JSON should parse");
     assert_eq!(
         index_only.as_array().expect("index array").len(),
         typed_index.len()
     );
+    let filtered_json: Value = serde_json::from_str(
+        &doc.org_elements_index_query_json(&OrgElementsIndexQuery::new().kind("timestamp")),
+    )
+    .expect("filtered index JSON should parse");
+    assert!(filtered_json
+        .as_array()
+        .expect("filtered index")
+        .iter()
+        .all(|node| node["kind"] == "timestamp"));
     let index = payload["index"].as_array().expect("flat node index");
     assert!(index.iter().any(|node| node["category"] == "section"
         && node["kind"] == "headline"

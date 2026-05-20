@@ -1060,6 +1060,9 @@ Official anchors: `doc/org-manual.org` sections "Exporting", "Publishing",
 - [X] Promote the flat node index from JSON-only output to a typed Rust API
       (`Document::org_elements_index`) plus an index-only wasm projection
       (`orgElementsIndexJson`) for lower-cost TypeScript/Python consumers.
+- [X] Add a typed `OrgElementsIndexQuery` and filtered JSON/wasm projection so
+      consumers can select category/kind/context/outline subsets without
+      loading or walking the whole org-elements tree.
 - [X] Add an explicit include expansion plan for `#+INCLUDE:` line/range/options
       semantics; keep expansion opt-in and filesystem-aware only in lint/export
       helper APIs.

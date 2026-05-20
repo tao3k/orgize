@@ -8,8 +8,8 @@ use std::{
 use super::{
     Document, Element, ElementData, Keyword, ListItem, OrgElementsExecutionPlan,
     OrgElementsHostExecutionError, OrgElementsHostExecutionOptions, OrgElementsHostExecutionOutput,
-    OrgElementsHostExecutionStatus, OrgElementsIndexRecord, ParsedAnnotation, PythonDirective,
-    PythonDirectiveKind, PythonExecutionOptions, Section,
+    OrgElementsHostExecutionStatus, OrgElementsIndexQuery, OrgElementsIndexRecord,
+    ParsedAnnotation, PythonDirective, PythonDirectiveKind, PythonExecutionOptions, Section,
 };
 
 impl<A: Clone> Document<A> {
@@ -33,12 +33,40 @@ impl Document<ParsedAnnotation> {
         super::elements_bridge_index::index_records(self)
     }
 
+    /// Builds a typed flat index filtered by an `OrgElementsIndexQuery`.
+    pub fn query_org_elements_index(
+        &self,
+        query: &OrgElementsIndexQuery,
+    ) -> Vec<OrgElementsIndexRecord<ParsedAnnotation>> {
+        if query.limit == Some(0) {
+            return Vec::new();
+        }
+        let mut records = Vec::new();
+        for record in self.org_elements_index() {
+            if query.matches(&record) {
+                records.push(record);
+                if query.limit.is_some_and(|limit| records.len() >= limit) {
+                    break;
+                }
+            }
+        }
+        records
+    }
+
     /// Serializes only the flat Org elements index, without the full tree.
     pub fn org_elements_index_json(&self) -> String {
         serde_json::to_string(&super::elements_bridge_index_json::index_json_from_records(
             &self.org_elements_index(),
         ))
         .expect("Org elements index JSON serialization should not fail")
+    }
+
+    /// Serializes a filtered flat Org elements index.
+    pub fn org_elements_index_query_json(&self, query: &OrgElementsIndexQuery) -> String {
+        serde_json::to_string(&super::elements_bridge_index_json::index_json_from_records(
+            &self.query_org_elements_index(query),
+        ))
+        .expect("Org elements index query JSON serialization should not fail")
     }
 
     /// Serializes a stable, compact Org elements payload for host consumers.
