@@ -26,7 +26,7 @@ pub(crate) fn keyword_node(input: Input) -> IResult<Input, GreenElement, ()> {
         Ok((
             input,
             node(
-                if key == "CALL" {
+                if key.eq_ignore_ascii_case("CALL") {
                     SyntaxKind::BABEL_CALL
                 } else {
                     SyntaxKind::KEYWORD
@@ -50,8 +50,7 @@ pub(crate) fn affiliated_keyword_nodes(input: Input) -> IResult<Input, Vec<Green
     }
 
     if let Some(key) = peek_keyword_key(input)
-        && input.c.affiliated_keywords.iter().all(|w| w != key)
-        && !key.starts_with("ATTR_")
+        && !is_affiliated_keyword_key(input, key)
     {
         return Ok((input, Vec::new()));
     }
@@ -71,7 +70,7 @@ pub(crate) fn affiliated_keyword_nodes(input: Input) -> IResult<Input, Vec<Green
             return Ok((input, vec![]));
         }
 
-        if input_.c.affiliated_keywords.iter().all(|w| w != key) && !key.starts_with("ATTR_") {
+        if !is_affiliated_keyword_key(input_, key) {
             break;
         }
 
@@ -188,6 +187,17 @@ fn peek_keyword_key(input: Input<'_>) -> Option<&str> {
     }
 }
 
+fn is_affiliated_keyword_key(input: Input<'_>, key: &str) -> bool {
+    input
+        .c
+        .affiliated_keywords
+        .iter()
+        .any(|word| word.eq_ignore_ascii_case(key))
+        || key
+            .get(.."ATTR_".len())
+            .is_some_and(|prefix| prefix.eq_ignore_ascii_case("ATTR_"))
+}
+
 fn key(input: Input) -> IResult<Input, (Input, Option<(Input, Input, Input)>, Input), ()> {
     let (input, output) = verify(
         recognize((
@@ -204,15 +214,25 @@ fn key(input: Input) -> IResult<Input, (Input, Option<(Input, Input, Input)>, In
 fn key_with_optional(
     input: Input,
 ) -> IResult<Input, (Input, Option<(Input, Input, Input)>, Input), ()> {
-    let (input, (key, r_backer, optional, l_backer, colon)) = (
-        alt((tag("CAPTION"), tag("RESULTS"))),
+    let (input, key) =
+        take_till(|c: char| c.is_ascii_whitespace() || matches!(c, ':' | '[')).parse(input)?;
+    if key.is_empty()
+        || input
+            .c
+            .dual_keywords
+            .iter()
+            .all(|word| !word.eq_ignore_ascii_case(&key))
+    {
+        return Err(nom::Err::Error(()));
+    }
+    let (input, (l_bracket, optional, r_bracket, colon)) = (
         tag("["),
         take_till(|c| c == '\r' || c == '\n' || c == ']'),
         tag("]"),
         tag(":"),
     )
         .parse(input)?;
-    Ok((input, (key, Some((r_backer, optional, l_backer)), colon)))
+    Ok((input, (key, Some((l_bracket, optional, r_bracket)), colon)))
 }
 
 #[test]
@@ -291,6 +311,20 @@ fn parse() {
     );
 
     insta::assert_debug_snapshot!(
+        to_keyword("#+results[hash]: output").syntax,
+        @r###"
+    KEYWORD@0..23
+      HASH_PLUS@0..2 "#+"
+      TEXT@2..9 "results"
+      L_BRACKET@9..10 "["
+      TEXT@10..14 "hash"
+      R_BRACKET@14..15 "]"
+      COLON@15..16 ":"
+      TEXT@16..23 " output"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
         to_keyword("#+ATTR_LATEX: :width 5cm\n").syntax,
         @r###"
     KEYWORD@0..25
@@ -308,6 +342,17 @@ fn parse() {
     BABEL_CALL@0..19
       HASH_PLUS@0..2 "#+"
       TEXT@2..6 "CALL"
+      COLON@6..7 ":"
+      TEXT@7..19 " double(n=4)"
+    "###
+    );
+
+    insta::assert_debug_snapshot!(
+        to_babel_call("#+call: double(n=4)").syntax,
+        @r###"
+    BABEL_CALL@0..19
+      HASH_PLUS@0..2 "#+"
+      TEXT@2..6 "call"
       COLON@6..7 ":"
       TEXT@7..19 " double(n=4)"
     "###

@@ -226,10 +226,7 @@ fn noweb_reference_name(raw: &str) -> Option<&str> {
 }
 
 fn babel_call_target(value: &str) -> Option<String> {
-    let value = value
-        .trim()
-        .strip_prefix("#+CALL:")
-        .or_else(|| value.trim().strip_prefix("#+call:"))
+    let value = strip_babel_call_prefix(value.trim())
         .unwrap_or_else(|| value.trim())
         .trim_start();
     let target = value
@@ -238,6 +235,14 @@ fn babel_call_target(value: &str) -> Option<String> {
         .unwrap_or_default()
         .trim();
     (!target.is_empty()).then(|| target.to_string())
+}
+
+fn strip_babel_call_prefix(value: &str) -> Option<&str> {
+    let prefix_len = "#+call:".len();
+    value
+        .get(..prefix_len)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("#+call:"))
+        .then(|| &value[prefix_len..])
 }
 
 fn header_var_reference_target(assignment: &str, names: &BTreeSet<String>) -> Option<String> {

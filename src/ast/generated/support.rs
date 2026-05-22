@@ -12,5 +12,8 @@ pub(crate) fn affiliated_keyword(
     node.children()
         .take_while(|node| node.kind() == SyntaxKind::AFFILIATED_KEYWORD)
         .filter_map(AffiliatedKeyword::cast)
-        .find(|keyword| filter(&keyword.key()))
+        .find(|keyword| {
+            let key = keyword.key();
+            filter(key.as_ref()) || filter(&key.to_ascii_uppercase())
+        })
 }

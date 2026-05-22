@@ -489,3 +489,100 @@ Inline call_load_data() and call_missing_inline().
         ]
     );
 }
+
+#[test]
+fn semantic_ast_projects_lowercase_babel_keywords_and_native_headers() {
+    let doc = Org::parse(
+        r#"#+name: prep
+#+begin_src sh :results file replace output :exports both :eval query :session work :var topic="org" :dir ./lab :cache yes :file "out.txt" :noweb yes
+echo "$topic"
+#+end_src
+#+results[sha1]: prep-output
+[[file:out.txt]]
+
+#+call: prep()
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let records = doc.source_block_records();
+    assert_eq!(records.len(), 1);
+
+    let record = &records[0];
+    assert_eq!(record.name.as_deref(), Some("prep"));
+    for key in [
+        "results", "exports", "eval", "session", "var", "dir", "cache", "file", "noweb",
+    ] {
+        assert!(
+            record.normalized_header_args.iter().any(|arg| {
+                arg.key.eq_ignore_ascii_case(key)
+                    && arg.source == SourceBlockHeaderArgSource::Explicit
+            }),
+            "missing explicit :{key} header arg"
+        );
+    }
+
+    assert_eq!(
+        record.result_options.collection,
+        Some(SourceBlockResultCollection::File)
+    );
+    assert_eq!(
+        record.result_options.handling,
+        SourceBlockResultHandling::Replace
+    );
+    assert_eq!(
+        record.result_options.value_type,
+        SourceBlockResultValueType::Output
+    );
+    assert_eq!(
+        record
+            .result_options
+            .file
+            .as_ref()
+            .map(|file| file.target.as_str()),
+        Some("out.txt")
+    );
+    assert_eq!(
+        record.execution.exports.policy,
+        SourceBlockExportsPolicy::Both
+    );
+    assert_eq!(record.execution.eval.policy, SourceBlockEvalPolicy::Query);
+    assert!(record.execution.cache.enabled);
+    assert_eq!(record.execution.session.name.as_deref(), Some("work"));
+    assert_eq!(
+        record
+            .execution
+            .directory
+            .as_ref()
+            .map(|directory| directory.target.as_str()),
+        Some("./lab")
+    );
+    assert_eq!(record.execution.noweb.eval, SourceBlockNowebAction::Expand);
+    assert_eq!(
+        record.execution.noweb.export,
+        SourceBlockNowebAction::Expand
+    );
+    assert_eq!(
+        record.execution.noweb.tangle,
+        SourceBlockNowebAction::Expand
+    );
+    assert!(record.normalized_header_args.iter().any(|arg| {
+        arg.kind == SourceBlockHeaderArgKind::Var
+            && arg.variable.as_ref().is_some_and(|var| {
+                var.name == "topic" && var.assignment.as_deref() == Some("\"org\"")
+            })
+    }));
+
+    let result = record.result.as_ref().expect("lowercase #+results");
+    assert_eq!(result.kind, SourceBlockResultKind::Keyword);
+    assert_eq!(result.hash.as_deref(), Some("sha1"));
+    assert_eq!(result.name.as_deref(), Some("prep-output"));
+    assert_eq!(result.value, "[[file:out.txt]]");
+
+    let references = doc.source_block_references();
+    assert_eq!(references.len(), 1);
+    assert_eq!(references[0].kind, SourceBlockReferenceKind::BabelCall);
+    assert_eq!(references[0].target, "prep");
+    assert!(references[0].resolved);
+}

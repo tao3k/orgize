@@ -1276,6 +1276,9 @@ Recommended implementation order for the next major PR train:
 - [X] Resolve =#+CALL: name(...)= targets after trimming Org's ordinary keyword
       spacing, covering a long-standing lint blind spot where =#+CALL: foo()=
       did not produce a missing-target warning.
+- [X] Treat native Babel keyword entry points case-insensitively so lowercase
+      =#+name=, =#+call=, and =#+results[...]= feed the same semantic source
+      block name, call-reference, and result-evidence projections.
 - [X] Expose source-block references through wasm =sourceBlocksJson= with
       =kind=, =target=, =resolved=, and source range fields.
 - [X] Split wasm source-block DTO tests into a dedicated owner so the harness
