@@ -182,6 +182,14 @@ impl Traverser for HtmlExport {
             Event::Enter(Container::ExampleBlock(_)) => self.output += "<pre class=\"example\">",
             Event::Leave(Container::ExampleBlock(_)) => self.output += "</pre>",
 
+            Event::Enter(Container::ExportBlock(block)) => {
+                if block.ty().is_some_and(|ty| ty.eq_ignore_ascii_case("html")) {
+                    self.output += &block.value();
+                }
+                ctx.skip();
+            }
+            Event::Leave(Container::ExportBlock(_)) => {}
+
             Event::Enter(Container::CenterBlock(_)) => self.output += "<div class=\"center\">",
             Event::Leave(Container::CenterBlock(_)) => self.output += "</div>",
 

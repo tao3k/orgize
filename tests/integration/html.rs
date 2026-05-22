@@ -86,6 +86,25 @@ fn snippet() {
 }
 
 #[test]
+fn html_export_block() {
+    let rendered = Org::parse(
+        r#"
+#+begin_export html
+<div class="videoWrapper"><iframe src="https://www.youtube.com/embed/vb1-lHR7kRM"></iframe></div>
+#+end_export
+
+#+begin_export latex
+\LaTeX{}
+#+end_export
+"#,
+    )
+    .to_html();
+
+    assert!(rendered.contains(r#"<div class="videoWrapper"><iframe src="https://www.youtube.com/embed/vb1-lHR7kRM"></iframe></div>"#));
+    assert!(!rendered.contains(r#"\LaTeX{}"#));
+}
+
+#[test]
 fn paragraphs() {
     insta::assert_snapshot!(
         Org::parse(r#"
