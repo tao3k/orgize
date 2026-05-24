@@ -19,6 +19,8 @@ mod agent_planning_model;
 mod attachment_inventory;
 mod attachment_inventory_model;
 mod attachment_model;
+mod babel_eval;
+mod babel_eval_model;
 mod block_metadata;
 mod block_model;
 mod block_syntax;
@@ -156,6 +158,10 @@ pub use attachment_inventory_model::{
 pub use attachment_model::{
     AttachmentDirectory, AttachmentDirectorySource, AttachmentIdPathLayout, AttachmentLink,
     AttachmentLinkSearch, AttachmentLinkSearchKind, AttachmentState,
+};
+pub use babel_eval_model::{
+    BabelEvalOutput, BabelEvalPlan, BabelEvalPlanError, BabelEvalResultPatch,
+    BabelEvalResultPatchKind, BabelEvalResultRange,
 };
 pub use block_model::{
     BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering,

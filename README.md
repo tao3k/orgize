@@ -270,10 +270,12 @@ assert_eq!(
 
 ## Command line
 
-The `orgize` binary exposes parser-backed `lint`, conservative `fmt`, and
-read-only SDD status commands:
+The `orgize` binary exposes parser-backed `lint`, conservative `fmt`, Org Babel
+eval-contract planning/patching, and read-only SDD status commands:
 
 ```sh
+orgize eval plan verify notes.org
+orgize eval patch --stdout-file result.txt --write verify notes.org
 orgize lint notes.org
 orgize lint --format text notes.org
 orgize lint --json notes.org
@@ -282,6 +284,16 @@ orgize fmt --check notes.org
 orgize fmt notes.org docs/
 orgize sdd status notes.org
 ```
+
+`eval plan` resolves one named `#+NAME:` source block and prints the parsed
+Babel contract without executing code. The contract includes source language,
+body, normalized header arguments, `:eval` policy, `:results` handling, and
+existing result range metadata. `eval patch` accepts host-supplied output
+through `--stdout`, `--stdout-file`, `--stderr`, or `--stderr-file`, renders the
+matching native `#+RESULTS:` replacement, and writes only when `--write` is
+passed. The command intentionally does not include a shell, Python, or remote
+runner; downstream tools own execution, sandboxing, timeout, and environment
+policy.
 
 `lint` reports semantic projection diagnostics, document-local target
 uniqueness issues such as duplicate `ID`/`CUSTOM_ID` targets, missing local

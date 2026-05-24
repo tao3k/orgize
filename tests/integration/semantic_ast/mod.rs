@@ -11,6 +11,7 @@ mod semantic_ast_projects_agenda_view_plan;
 mod semantic_ast_projects_agent_memory;
 mod semantic_ast_projects_agent_planning;
 mod semantic_ast_projects_attachments;
+mod semantic_ast_projects_babel_eval;
 mod semantic_ast_projects_block_code_refs;
 mod semantic_ast_projects_block_header_args;
 mod semantic_ast_projects_block_line_numbering;

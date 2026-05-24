@@ -1,3 +1,5 @@
+#[path = "integration/eval_cli.rs"]
+mod eval_cli;
 #[path = "integration/fmt_cli.rs"]
 mod fmt_cli;
 #[path = "integration/fmt_links.rs"]

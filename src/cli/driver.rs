@@ -36,6 +36,7 @@ fn run() -> Result<ExitCode, String> {
     };
 
     match command.as_str() {
+        "eval" => super::eval::run(args.collect()),
         "fmt" => run_fmt(args.collect()),
         "lint" => run_lint(args.collect()),
         "sdd" => run_sdd(args.collect()),
@@ -591,7 +592,7 @@ fn push_property_schema_alias(contract: &mut PropertySchemaContract, alias: Stri
 }
 
 fn print_usage() {
-    eprintln!("Usage: orgize <fmt|lint|sdd> [options] [PATH ...]");
+    eprintln!("Usage: orgize <eval|fmt|lint|sdd> [options] [PATH ...]");
 }
 
 fn print_fmt_usage() {
