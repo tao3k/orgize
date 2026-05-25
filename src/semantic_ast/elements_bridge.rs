@@ -9,8 +9,8 @@ use super::{
     Document, Element, ElementData, Keyword, ListItem, OrgElementSelector,
     OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
     OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, OrgElementsIndexQuery,
-    OrgElementsIndexRecord, ParsedAnnotation, PythonDirective, PythonDirectiveKind,
-    PythonExecutionOptions, Section,
+    OrgElementsIndexRecord, OrgElementsSqlRow, ParsedAnnotation, PythonDirective,
+    PythonDirectiveKind, PythonExecutionOptions, Section,
 };
 
 impl<A: Clone> Document<A> {
@@ -76,6 +76,29 @@ impl Document<ParsedAnnotation> {
             &self.query_org_elements_index(query),
         ))
         .expect("Org elements index query JSON serialization should not fail")
+    }
+
+    /// Returns SQL-friendly rows for the flat `org_elements` projection.
+    pub fn org_elements_sql_rows(&self) -> Vec<OrgElementsSqlRow> {
+        super::elements_bridge_sql::sql_rows(self)
+    }
+
+    /// Returns SQL-friendly rows for a filtered flat `org_elements` projection.
+    pub fn org_elements_index_query_sql_rows(
+        &self,
+        query: &OrgElementsIndexQuery,
+    ) -> Vec<OrgElementsSqlRow> {
+        super::elements_bridge_sql::sql_rows_from_records(&self.query_org_elements_index(query))
+    }
+
+    /// Serializes SQL-friendly rows for the flat `org_elements` projection.
+    pub fn org_elements_sql_rows_json(&self) -> String {
+        super::elements_bridge_sql::sql_rows_json(&self.org_elements_sql_rows())
+    }
+
+    /// Serializes SQL-friendly rows for a filtered flat `org_elements` projection.
+    pub fn org_elements_index_query_sql_rows_json(&self, query: &OrgElementsIndexQuery) -> String {
+        super::elements_bridge_sql::sql_rows_json(&self.org_elements_index_query_sql_rows(query))
     }
 
     /// Serializes a stable, compact Org elements payload for host consumers.

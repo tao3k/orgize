@@ -2,9 +2,9 @@ use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
     ast::{
-        OrgElementSelector, OrgElementSelectorParseError, OrgElementsHostExecutionOptions,
-        OrgElementsIndexCategory, OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
-        PythonDirectiveKind,
+        ORG_ELEMENTS_SQL_COLUMNS, OrgElementSelector, OrgElementSelectorParseError,
+        OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexQuery,
+        OrgElementsIndexSummaryValue, PythonDirectiveKind,
     },
 };
 use serde_json::Value;
@@ -154,6 +154,37 @@ print(topic)
             .expect("filtered index")
             .iter()
             .all(|node| node["kind"] == "timestamp")
+    );
+    let sql_rows = doc.org_elements_index_query_sql_rows(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Element)
+            .kind("src-block"),
+    );
+    assert!(
+        ORG_ELEMENTS_SQL_COLUMNS
+            .iter()
+            .any(|column| column.name == "affiliated_name")
+    );
+    assert_eq!(sql_rows.len(), 1);
+    assert_eq!(sql_rows[0].kind, "src-block");
+    assert_eq!(sql_rows[0].language.as_deref(), Some("python"));
+    assert!(sql_rows[0].summary_json.contains(r#""language":"python""#));
+    assert!(sql_rows[0].source_start_line > 0);
+    let sql_rows_json: Value = serde_json::from_str(
+        &doc.org_elements_index_query_sql_rows_json(
+            &OrgElementsIndexQuery::new()
+                .category(OrgElementsIndexCategory::Object)
+                .kind("link"),
+        ),
+    )
+    .expect("SQL rows JSON should parse");
+    assert!(
+        sql_rows_json
+            .as_array()
+            .expect("SQL row array")
+            .iter()
+            .any(|row| row["kind"] == "link"
+                && row["summaryJson"].as_str().unwrap().contains("example"))
     );
     let index = payload["index"].as_array().expect("flat node index");
     assert!(index.iter().any(|node| node["category"] == "section"

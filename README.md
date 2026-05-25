@@ -121,7 +121,11 @@ footnotes, metadata, source block side tables, and a flat `index` for
 `document.org_elements_index()` for typed index records and
 `document.query_org_elements_index(&OrgElementsIndexQuery::new().kind("link"))`
 for filtered views; the query can also match compact summary fields with
-`summary_eq` and `summary_contains` selectors. Wasm consumers can request
+`summary_eq` and `summary_contains` selectors. SQL-oriented consumers can call
+`document.org_elements_sql_rows()` or filtered
+`document.org_elements_index_query_sql_rows(...)` to register a stable
+`org_elements` table in DataFusion, Flight SQL, DuckDB, or another downstream
+engine without making the parser own a database runtime. Wasm consumers can request
 `orgElementsIndexJson()` or `orgElementsIndexQueryJson(...)` without
 materializing the full tree.
 Parsing alone never executes host tools or header directives. Python remains a

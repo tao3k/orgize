@@ -54,6 +54,7 @@ mod elements_bridge_index_json;
 mod elements_bridge_json;
 mod elements_bridge_model;
 mod elements_bridge_object_json;
+mod elements_bridge_sql;
 mod export_dependency_graph;
 mod export_dependency_graph_model;
 mod footnote_parts;
@@ -212,6 +213,7 @@ pub use elements_bridge_model::{
     OrgElementsIndexSummaryValue, PythonDirective, PythonDirectiveKind, PythonExecutionOptions,
     PythonExecutionProgram,
 };
+pub use elements_bridge_sql::{ORG_ELEMENTS_SQL_COLUMNS, OrgElementsSqlColumn, OrgElementsSqlRow};
 pub use export_dependency_graph::export_dependency_graph;
 pub use export_dependency_graph_model::{
     ExportDependencyDiagnostic, ExportDependencyDiagnosticKind, ExportDependencyEdge,
