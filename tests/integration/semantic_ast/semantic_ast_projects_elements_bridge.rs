@@ -9,6 +9,9 @@ use orgize::{
 };
 use serde_json::Value;
 
+#[cfg(feature = "datafusion-sql")]
+use datafusion::arrow::array::{Int64Array, StringArray};
+
 #[test]
 fn semantic_ast_projects_header_tags_and_org_elements_host_execution() {
     let doc = Org::parse(
@@ -331,4 +334,63 @@ fn semantic_ast_projects_org_element_selector_rejects_invalid_plists() {
             .unwrap_err(),
         OrgElementSelectorParseError::UnknownKey(":unknown".to_string())
     );
+}
+
+#[cfg(feature = "datafusion-sql")]
+#[tokio::test]
+async fn semantic_ast_projects_org_elements_sql_query_uses_datafusion() {
+    let doc = Org::parse(
+        r#"#+name: plan_contract_graph
+#+begin_src mermaid
+flowchart LR
+  P["PLAN_POLICY.org"] --> S["_sdd_template.org"]
+#+end_src
+
+* Policy Entry
+See [[https://example.test][example]].
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+
+    let batches = doc
+        .org_elements_sql_query(
+            r#"
+SELECT kind, affiliated_name, language, source_start_line
+FROM org_elements
+WHERE affiliated_name = 'plan_contract_graph'
+ORDER BY ordinal
+"#,
+        )
+        .await
+        .expect("DataFusion SQL query should run");
+    assert_eq!(batches.len(), 1);
+    let batch = &batches[0];
+    assert_eq!(batch.num_rows(), 1);
+
+    let kind = batch
+        .column(0)
+        .as_any()
+        .downcast_ref::<StringArray>()
+        .expect("kind should be a UTF-8 column");
+    let affiliated_name = batch
+        .column(1)
+        .as_any()
+        .downcast_ref::<StringArray>()
+        .expect("affiliated_name should be a UTF-8 column");
+    let language = batch
+        .column(2)
+        .as_any()
+        .downcast_ref::<StringArray>()
+        .expect("language should be a UTF-8 column");
+    let source_start_line = batch
+        .column(3)
+        .as_any()
+        .downcast_ref::<Int64Array>()
+        .expect("source_start_line should be an int64 column");
+    assert_eq!(kind.value(0), "src-block");
+    assert_eq!(affiliated_name.value(0), "plan_contract_graph");
+    assert_eq!(language.value(0), "mermaid");
+    assert_eq!(source_start_line.value(0), 1);
 }

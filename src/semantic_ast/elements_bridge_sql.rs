@@ -1,5 +1,19 @@
 //! SQL-friendly row projection for the flat Org elements index.
 
+#[cfg(feature = "datafusion-sql")]
+use std::sync::Arc;
+
+#[cfg(feature = "datafusion-sql")]
+use datafusion::{
+    arrow::{
+        array::{ArrayRef, Int64Array, StringArray},
+        datatypes::{DataType, Field, Schema, SchemaRef},
+        record_batch::RecordBatch,
+    },
+    datasource::MemTable,
+    error::{DataFusionError, Result as DataFusionResult},
+    prelude::SessionContext,
+};
 use serde_json::{Map, Value, json};
 
 use super::{
@@ -135,6 +149,87 @@ pub(super) fn sql_rows_json(rows: &[OrgElementsSqlRow]) -> String {
             .collect::<Vec<serde_json::Value>>(),
     )
     .expect("Org elements SQL rows JSON serialization should not fail")
+}
+
+#[cfg(feature = "datafusion-sql")]
+pub(super) fn sql_record_batch(rows: &[OrgElementsSqlRow]) -> DataFusionResult<RecordBatch> {
+    let schema = sql_schema();
+    let arrays: Vec<ArrayRef> = vec![
+        int_array(rows.iter().map(|row| row.ordinal)),
+        text_array(rows.iter().map(|row| row.category.as_str())),
+        text_array(rows.iter().map(|row| row.kind.as_str())),
+        nullable_text_array(rows.iter().map(|row| row.affiliated_name.as_deref())),
+        text_array(rows.iter().map(|row| row.outline_path_json.as_str())),
+        text_array(rows.iter().map(|row| row.context.as_str())),
+        text_array(rows.iter().map(|row| row.summary_json.as_str())),
+        nullable_text_array(rows.iter().map(|row| row.language.as_deref())),
+        int_array(rows.iter().map(|row| row.source_start_line)),
+        int_array(rows.iter().map(|row| row.source_start_column)),
+        int_array(rows.iter().map(|row| row.source_end_line)),
+        int_array(rows.iter().map(|row| row.source_end_column)),
+        int_array(rows.iter().map(|row| row.source_range_start as usize)),
+        int_array(rows.iter().map(|row| row.source_range_end as usize)),
+        text_array(rows.iter().map(|row| row.source_raw.as_str())),
+    ];
+    RecordBatch::try_new(schema, arrays)
+        .map_err(|error| DataFusionError::ArrowError(Box::new(error), None))
+}
+
+#[cfg(feature = "datafusion-sql")]
+pub(super) async fn query_sql_rows(
+    rows: &[OrgElementsSqlRow],
+    sql: &str,
+) -> DataFusionResult<Vec<RecordBatch>> {
+    let batch = sql_record_batch(rows)?;
+    let table = MemTable::try_new(batch.schema(), vec![vec![batch]])?;
+    let context = SessionContext::new();
+    context.register_table("org_elements", Arc::new(table))?;
+    context.sql(sql).await?.collect().await
+}
+
+#[cfg(feature = "datafusion-sql")]
+fn sql_schema() -> SchemaRef {
+    Arc::new(Schema::new(
+        ORG_ELEMENTS_SQL_COLUMNS
+            .iter()
+            .map(|column| {
+                Field::new(
+                    column.name,
+                    match column.sql_type {
+                        "BIGINT" => DataType::Int64,
+                        "TEXT" => DataType::Utf8,
+                        other => unreachable!("unsupported org_elements SQL type: {other}"),
+                    },
+                    column.nullable,
+                )
+            })
+            .collect::<Vec<_>>(),
+    ))
+}
+
+#[cfg(feature = "datafusion-sql")]
+fn int_array(values: impl Iterator<Item = usize>) -> ArrayRef {
+    Arc::new(Int64Array::from(
+        values.map(|value| value as i64).collect::<Vec<_>>(),
+    ))
+}
+
+#[cfg(feature = "datafusion-sql")]
+fn text_array<'a>(values: impl Iterator<Item = &'a str>) -> ArrayRef {
+    Arc::new(StringArray::from(
+        values
+            .map(|value| Some(value.to_string()))
+            .collect::<Vec<_>>(),
+    ))
+}
+
+#[cfg(feature = "datafusion-sql")]
+fn nullable_text_array<'a>(values: impl Iterator<Item = Option<&'a str>>) -> ArrayRef {
+    Arc::new(StringArray::from(
+        values
+            .map(|value| value.map(str::to_string))
+            .collect::<Vec<_>>(),
+    ))
 }
 
 fn sql_row(record: &OrgElementsIndexRecord<ParsedAnnotation>) -> OrgElementsSqlRow {

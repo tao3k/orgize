@@ -5,6 +5,9 @@ use std::{
     process::{Command, Stdio},
 };
 
+#[cfg(feature = "datafusion-sql")]
+use datafusion::{arrow::record_batch::RecordBatch, error::Result as DataFusionResult};
+
 use super::{
     Document, Element, ElementData, Keyword, ListItem, OrgElementSelector,
     OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
@@ -99,6 +102,24 @@ impl Document<ParsedAnnotation> {
     /// Serializes SQL-friendly rows for a filtered flat `org_elements` projection.
     pub fn org_elements_index_query_sql_rows_json(&self, query: &OrgElementsIndexQuery) -> String {
         super::elements_bridge_sql::sql_rows_json(&self.org_elements_index_query_sql_rows(query))
+    }
+
+    /// Builds an Arrow record batch for the flat `org_elements` SQL projection.
+    #[cfg(feature = "datafusion-sql")]
+    pub fn org_elements_sql_record_batch(&self) -> DataFusionResult<RecordBatch> {
+        super::elements_bridge_sql::sql_record_batch(&self.org_elements_sql_rows())
+    }
+
+    /// Runs a DataFusion SQL query over the flat `org_elements` projection.
+    ///
+    /// The query can reference the in-memory table as `org_elements`.
+    #[cfg(feature = "datafusion-sql")]
+    pub async fn org_elements_sql_query(
+        &self,
+        sql: impl AsRef<str>,
+    ) -> DataFusionResult<Vec<RecordBatch>> {
+        super::elements_bridge_sql::query_sql_rows(&self.org_elements_sql_rows(), sql.as_ref())
+            .await
     }
 
     /// Serializes a stable, compact Org elements payload for host consumers.
