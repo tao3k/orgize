@@ -6,10 +6,11 @@ use std::{
 };
 
 use super::{
-    Document, Element, ElementData, Keyword, ListItem, OrgElementsExecutionPlan,
-    OrgElementsHostExecutionError, OrgElementsHostExecutionOptions, OrgElementsHostExecutionOutput,
-    OrgElementsHostExecutionStatus, OrgElementsIndexQuery, OrgElementsIndexRecord,
-    ParsedAnnotation, PythonDirective, PythonDirectiveKind, PythonExecutionOptions, Section,
+    Document, Element, ElementData, Keyword, ListItem, OrgElementSelector,
+    OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
+    OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, OrgElementsIndexQuery,
+    OrgElementsIndexRecord, ParsedAnnotation, PythonDirective, PythonDirectiveKind,
+    PythonExecutionOptions, Section,
 };
 
 impl<A: Clone> Document<A> {
@@ -51,6 +52,14 @@ impl Document<ParsedAnnotation> {
             }
         }
         records
+    }
+
+    /// Selects element index records using an Org-mode-style element selector.
+    pub fn select_org_elements(
+        &self,
+        selector: &OrgElementSelector,
+    ) -> Vec<OrgElementsIndexRecord<ParsedAnnotation>> {
+        self.query_org_elements_index(&selector.to_index_query())
     }
 
     /// Serializes only the flat Org elements index, without the full tree.

@@ -4,8 +4,9 @@ use std::collections::BTreeMap;
 
 use super::{
     Checkbox, Citation, Document, Element, ElementData, Keyword, ListItem, MarkupKind, Object,
-    ObjectData, OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexRecord,
-    OrgElementsIndexSummary, OrgElementsIndexSummaryValue, ParsedAnnotation, Section, TargetKind,
+    ObjectData, OrgElementsAffiliatedProperties, OrgElementsIndexCategory, OrgElementsIndexKind,
+    OrgElementsIndexRecord, OrgElementsIndexSummary, OrgElementsIndexSummaryValue,
+    ParsedAnnotation, Section, TargetKind,
 };
 
 pub(super) fn index_records(
@@ -79,6 +80,27 @@ impl ElementIndex {
             ordinal: self.next_ordinal,
             category,
             kind: kind.into(),
+            affiliated: OrgElementsAffiliatedProperties::default(),
+            outline_path: outline_path.to_vec(),
+            context: context.into(),
+            summary,
+        });
+    }
+
+    fn push_element(
+        &mut self,
+        element: &Element<ParsedAnnotation>,
+        outline_path: &[String],
+        context: impl Into<String>,
+        summary: OrgElementsIndexSummary,
+    ) {
+        self.next_ordinal += 1;
+        self.records.push(OrgElementsIndexRecord {
+            ann: element.ann.clone(),
+            ordinal: self.next_ordinal,
+            category: OrgElementsIndexCategory::Element,
+            kind: element_kind(element).into(),
+            affiliated: element_affiliated_properties(element),
             outline_path: outline_path.to_vec(),
             context: context.into(),
             summary,
@@ -149,14 +171,7 @@ impl ElementIndex {
         for keyword in &element.affiliated_keywords {
             self.push_keyword(keyword, outline_path, "affiliatedKeyword");
         }
-        self.push(
-            OrgElementsIndexCategory::Element,
-            element_kind(element),
-            &element.ann,
-            outline_path,
-            context,
-            element_summary(element),
-        );
+        self.push_element(element, outline_path, context, element_summary(element));
         match &element.data {
             ElementData::Paragraph(objects) => {
                 self.collect_objects(objects, outline_path, "paragraph")
@@ -396,6 +411,14 @@ fn element_summary(element: &Element<ParsedAnnotation>) -> OrgElementsIndexSumma
     }
 }
 
+fn element_affiliated_properties(
+    element: &Element<ParsedAnnotation>,
+) -> OrgElementsAffiliatedProperties {
+    OrgElementsAffiliatedProperties {
+        name: affiliated_keyword_value(&element.affiliated_keywords, "NAME"),
+    }
+}
+
 fn object_kind(object: &Object<ParsedAnnotation>) -> &'static str {
     match &object.data {
         ObjectData::Plain(_) => "plain-text",
@@ -523,6 +546,14 @@ fn summary<const N: usize>(
 
 fn empty_summary() -> OrgElementsIndexSummary {
     BTreeMap::new()
+}
+
+fn affiliated_keyword_value(keywords: &[Keyword<ParsedAnnotation>], key: &str) -> Option<String> {
+    keywords
+        .iter()
+        .find(|keyword| keyword.key.eq_ignore_ascii_case(key))
+        .map(|keyword| keyword.value.trim().to_string())
+        .filter(|value| !value.is_empty())
 }
 
 fn optional_text(value: Option<&str>) -> OrgElementsIndexSummaryValue {

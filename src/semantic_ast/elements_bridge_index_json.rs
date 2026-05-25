@@ -25,6 +25,9 @@ fn record_json(record: &OrgElementsIndexRecord<ParsedAnnotation>) -> Value {
         "ordinal": record.ordinal,
         "category": record.category.as_str(),
         "kind": record.kind.as_str(),
+        "affiliated": {
+            "name": &record.affiliated.name,
+        },
         "source": super::elements_bridge_json::annotation_json(&record.ann),
         "outlinePath": record.outline_path,
         "context": record.context,

@@ -204,6 +204,7 @@ pub use dynamic_block_model::{
     DynamicBlockContentState, DynamicBlockParameter, DynamicBlockRecord, DynamicBlockWriterKind,
 };
 pub use elements_bridge_model::{
+    OrgElementSelector, OrgElementSelectorParseError, OrgElementsAffiliatedProperties,
     OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
     OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, OrgElementsIndexCategory,
     OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexRecord, OrgElementsIndexSummary,
