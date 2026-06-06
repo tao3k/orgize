@@ -3,6 +3,8 @@ use std::{
     process::{Command, Stdio},
 };
 
+use serde_json::Value;
+
 #[test]
 fn export_md_reads_stdin_and_writes_markdown() {
     let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
@@ -117,6 +119,67 @@ fn org_document_search_and_query_commands_run() {
     assert!(term_stdout.contains("[query] lang=org"), "{term_stdout}");
     assert!(term_stdout.contains("terms=1"), "{term_stdout}");
     assert!(term_stdout.contains("key=\"CUSTOM_ID\""), "{term_stdout}");
+
+    let json_search = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("search")
+        .arg("prime")
+        .arg("--view")
+        .arg("seeds")
+        .arg("--json")
+        .arg(&root)
+        .output()
+        .expect("run orgize search json");
+    assert!(
+        json_search.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&json_search.stderr)
+    );
+    let search_packet: Value =
+        serde_json::from_slice(&json_search.stdout).expect("parse search packet");
+    assert_eq!(
+        search_packet["schemaId"],
+        "agent.semantic-protocols.semantic-search-packet"
+    );
+    assert_eq!(search_packet["languageId"], "org");
+    assert_eq!(search_packet["method"], "search/prime");
+    assert!(
+        search_packet["nativeSyntaxFacts"]
+            .as_array()
+            .expect("native facts")
+            .iter()
+            .any(|fact| fact["kind"] == "property" && fact["fields"]["key"] == "CUSTOM_ID"),
+        "{search_packet:#}"
+    );
+
+    let json_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("query")
+        .arg("--term")
+        .arg("CUSTOM_ID")
+        .arg("--json")
+        .arg(&root)
+        .output()
+        .expect("run orgize query json");
+    assert!(
+        json_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&json_query.stderr)
+    );
+    let query_packet: Value =
+        serde_json::from_slice(&json_query.stdout).expect("parse query packet");
+    assert_eq!(
+        query_packet["schemaId"],
+        "agent.semantic-protocols.semantic-query-packet"
+    );
+    assert_eq!(query_packet["languageId"], "org");
+    assert_eq!(query_packet["method"], "query/document");
+    assert!(
+        query_packet["matches"]
+            .as_array()
+            .expect("matches")
+            .iter()
+            .any(|item| item["kind"] == "property" && item["fields"]["key"] == "CUSTOM_ID"),
+        "{query_packet:#}"
+    );
 }
 
 #[cfg(feature = "md")]
@@ -208,6 +271,69 @@ fn markdown_document_search_and_query_commands_run() {
     assert!(term_stdout.contains("[query] lang=md"), "{term_stdout}");
     assert!(term_stdout.contains("terms=1"), "{term_stdout}");
     assert!(term_stdout.contains("|heading"), "{term_stdout}");
+
+    let json_search = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("search")
+        .arg("prime")
+        .arg("--view")
+        .arg("seeds")
+        .arg("--json")
+        .arg(&root)
+        .output()
+        .expect("run orgize md search json");
+    assert!(
+        json_search.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&json_search.stderr)
+    );
+    let search_packet: Value =
+        serde_json::from_slice(&json_search.stdout).expect("parse search packet");
+    assert_eq!(
+        search_packet["schemaId"],
+        "agent.semantic-protocols.semantic-search-packet"
+    );
+    assert_eq!(search_packet["languageId"], "md");
+    assert_eq!(search_packet["method"], "search/prime");
+    assert!(
+        search_packet["nativeSyntaxFacts"]
+            .as_array()
+            .expect("native facts")
+            .iter()
+            .any(|fact| fact["kind"] == "heading" && fact["fields"]["title"] == "Project"),
+        "{search_packet:#}"
+    );
+
+    let json_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("query")
+        .arg("--term")
+        .arg("Project")
+        .arg("--json")
+        .arg(&root)
+        .output()
+        .expect("run orgize md query json");
+    assert!(
+        json_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&json_query.stderr)
+    );
+    let query_packet: Value =
+        serde_json::from_slice(&json_query.stdout).expect("parse query packet");
+    assert_eq!(
+        query_packet["schemaId"],
+        "agent.semantic-protocols.semantic-query-packet"
+    );
+    assert_eq!(query_packet["languageId"], "md");
+    assert_eq!(query_packet["method"], "query/document");
+    assert!(
+        query_packet["matches"]
+            .as_array()
+            .expect("matches")
+            .iter()
+            .any(|item| item["kind"] == "heading" && item["fields"]["title"] == "Project"),
+        "{query_packet:#}"
+    );
 }
 
 fn test_dir(name: &str) -> std::path::PathBuf {
