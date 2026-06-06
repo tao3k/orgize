@@ -86,6 +86,37 @@ fn org_document_search_and_query_commands_run() {
         query_stdout.contains(":CUSTOM_ID: task-1"),
         "{query_stdout}"
     );
+
+    let selector = format!("{}:1-4", path.display());
+    let selector_frontier = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("query")
+        .arg("--selector")
+        .arg(selector)
+        .output()
+        .expect("run orgize selector frontier query");
+    assert!(selector_frontier.status.success());
+    let selector_stdout = String::from_utf8(selector_frontier.stdout).expect("utf8 selector query");
+    assert!(
+        selector_stdout.contains("[query-selector] lang=org"),
+        "{selector_stdout}"
+    );
+    assert!(
+        selector_stdout.contains("code=\"orgize query --selector"),
+        "{selector_stdout}"
+    );
+
+    let term_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("query")
+        .arg("--term")
+        .arg("CUSTOM_ID")
+        .arg(&root)
+        .output()
+        .expect("run orgize term query");
+    assert!(term_query.status.success());
+    let term_stdout = String::from_utf8(term_query.stdout).expect("utf8 term query");
+    assert!(term_stdout.contains("[query] lang=org"), "{term_stdout}");
+    assert!(term_stdout.contains("terms=1"), "{term_stdout}");
+    assert!(term_stdout.contains("key=\"CUSTOM_ID\""), "{term_stdout}");
 }
 
 #[cfg(feature = "md")]
@@ -144,6 +175,39 @@ fn markdown_document_search_and_query_commands_run() {
     assert!(query.status.success());
     let query_stdout = String::from_utf8(query.stdout).expect("utf8 query");
     assert_eq!(query_stdout, "# Project\n");
+
+    let selector = format!("{}:1-1", path.display());
+    let selector_frontier = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("query")
+        .arg("--selector")
+        .arg(selector)
+        .output()
+        .expect("run orgize md selector frontier query");
+    assert!(selector_frontier.status.success());
+    let selector_stdout = String::from_utf8(selector_frontier.stdout).expect("utf8 selector query");
+    assert!(
+        selector_stdout.contains("[query-selector] lang=md"),
+        "{selector_stdout}"
+    );
+    assert!(
+        selector_stdout.contains("code=\"orgize md query --selector"),
+        "{selector_stdout}"
+    );
+
+    let term_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("query")
+        .arg("--term")
+        .arg("Project")
+        .arg(&root)
+        .output()
+        .expect("run orgize md term query");
+    assert!(term_query.status.success());
+    let term_stdout = String::from_utf8(term_query.stdout).expect("utf8 term query");
+    assert!(term_stdout.contains("[query] lang=md"), "{term_stdout}");
+    assert!(term_stdout.contains("terms=1"), "{term_stdout}");
+    assert!(term_stdout.contains("|heading"), "{term_stdout}");
 }
 
 fn test_dir(name: &str) -> std::path::PathBuf {
