@@ -4,7 +4,7 @@ use rowan::ast::AstNode;
 use std::cmp::min;
 use std::fmt::Write as _;
 
-use crate::syntax_ast::{OrgTable, OrgTableCell, OrgTableRow};
+use crate::syntax_ast::{OrgTable, OrgTableCell, OrgTableRow, PropertyDrawer};
 use crate::{SyntaxElement, SyntaxNode};
 
 use super::TraversalContext;
@@ -239,6 +239,12 @@ impl Traverser for MarkdownExport {
             }
             Event::Leave(Container::OrgTableCell(_)) => self.output += " |",
 
+            Event::Enter(Container::PropertyDrawer(drawer)) => {
+                self.push_property_drawer_table(&drawer);
+                ctx.skip();
+            }
+            Event::Leave(Container::PropertyDrawer(_)) => {}
+
             Event::Enter(Container::Link(link)) => {
                 let path = link.path();
                 let path = path.trim_start_matches("file:");
@@ -341,6 +347,37 @@ impl MarkdownExport {
 
     fn push_table_separator_cell(&mut self) {
         self.output += " --- |";
+    }
+
+    fn push_property_drawer_table(&mut self, drawer: &PropertyDrawer) {
+        let mut properties = drawer.iter().peekable();
+        if properties.peek().is_none() {
+            return;
+        }
+
+        self.follows_newline();
+        self.output += "| Key | Value |\n| --- | --- |\n";
+
+        for (key, value) in properties {
+            self.output += "| ";
+            self.push_table_cell_text(key.0.text());
+            self.output += " | ";
+            self.push_table_cell_text(value.0.text());
+            self.output += " |\n";
+        }
+
+        self.output += "\n";
+    }
+
+    fn push_table_cell_text(&mut self, text: &str) {
+        for ch in text.chars() {
+            match ch {
+                '|' => self.output += "\\|",
+                '\\' => self.output += "\\\\",
+                '\n' | '\r' => self.output += " ",
+                _ => self.output.push(ch),
+            }
+        }
     }
 }
 

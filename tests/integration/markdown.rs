@@ -65,6 +65,55 @@ fn main() {
 }
 
 #[test]
+fn markdown_export_renders_properties_as_key_value_table() {
+    let rendered = Org::parse(
+        r#"
+* Task
+:PROPERTIES:
+:CUSTOM_ID: task-1
+:Effort: 1:00
+:OWNER: tao|bar
+:END:
+
+Body.
+"#,
+    )
+    .to_markdown();
+
+    assert!(
+        rendered.contains(
+            "| Key | Value |\n\
+             | --- | --- |\n\
+             | CUSTOM_ID | task-1 |\n\
+             | Effort | 1:00 |\n\
+             | OWNER | tao\\|bar |"
+        ),
+        "{rendered}"
+    );
+    assert!(!rendered.contains(":PROPERTIES:"), "{rendered}");
+}
+
+#[cfg(feature = "md")]
+#[test]
+fn markdown_export_properties_parse_as_gfm_table() {
+    let rendered = Org::parse(
+        r#"
+* Task
+:PROPERTIES:
+:CUSTOM_ID: task-1
+:Effort: 1:00
+:END:
+"#,
+    )
+    .to_markdown();
+
+    let arena = comrak::Arena::new();
+    let mut options = comrak::Options::default();
+    options.extension.table = true;
+    let _ = comrak::parse_document(&arena, &rendered, &options);
+}
+
+#[test]
 fn markdown_export_can_render_subtrees() {
     let org = Org::parse("* /hello/ *world*");
     let bold = org.first_node::<orgize::syntax_ast::Bold>().unwrap();

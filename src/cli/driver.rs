@@ -37,6 +37,7 @@ fn run() -> Result<ExitCode, String> {
 
     match command.as_str() {
         "eval" => super::eval::run(args.collect()),
+        "export" => run_export(args.collect()),
         "fmt" => run_fmt(args.collect()),
         "lint" => run_lint(args.collect()),
         "sdd" => run_sdd(args.collect()),
@@ -46,6 +47,40 @@ fn run() -> Result<ExitCode, String> {
         }
         command => Err(format!("unknown command `{command}`")),
     }
+}
+
+fn run_export(args: Vec<String>) -> Result<ExitCode, String> {
+    let mut args = args.into_iter();
+    let Some(format) = args.next() else {
+        print_export_usage();
+        return Ok(ExitCode::from(2));
+    };
+
+    match format.as_str() {
+        "md" | "markdown" => run_export_markdown(args.collect()),
+        "-h" | "--help" | "help" => {
+            print_export_usage();
+            Ok(ExitCode::SUCCESS)
+        }
+        format => Err(format!("unknown export format `{format}`")),
+    }
+}
+
+fn run_export_markdown(paths: Vec<String>) -> Result<ExitCode, String> {
+    if paths.is_empty() {
+        let source = read_stdin()?;
+        print!("{}", Org::parse(source).to_markdown());
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    for path in collect_org_paths(&paths)? {
+        let display_path = path.display().to_string();
+        let source =
+            fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
+        print!("{}", Org::parse(source).to_markdown());
+    }
+
+    Ok(ExitCode::SUCCESS)
 }
 
 fn run_sdd(args: Vec<String>) -> Result<ExitCode, String> {
@@ -592,7 +627,11 @@ fn push_property_schema_alias(contract: &mut PropertySchemaContract, alias: Stri
 }
 
 fn print_usage() {
-    eprintln!("Usage: orgize <eval|fmt|lint|sdd> [options] [PATH ...]");
+    eprintln!("Usage: orgize <eval|export|fmt|lint|sdd> [options] [PATH ...]");
+}
+
+fn print_export_usage() {
+    eprintln!("Usage: orgize export <md|markdown> [PATH ...]");
 }
 
 fn print_fmt_usage() {
