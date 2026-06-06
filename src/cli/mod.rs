@@ -1,6 +1,6 @@
 //! Command-line interface boundary for the `orgize` binary.
 
-mod document;
+pub(crate) mod document;
 mod document_index;
 mod document_json;
 mod driver;

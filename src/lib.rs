@@ -1,5 +1,7 @@
 #![doc = include_str!("../README.md")]
 
+/// Agent-facing document command API.
+pub mod agent;
 /// Owned semantic AST projected from the lossless parser tree.
 #[path = "semantic_ast/mod.rs"]
 pub mod ast;
