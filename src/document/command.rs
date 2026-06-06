@@ -5,23 +5,26 @@ use std::{
 };
 
 use super::{
-    document_index::{
-        DocumentFact, DocumentLanguage, SourceSelector, count_kind, display_path, escape_field,
-        filter_facts, has_flag, index_path, index_project, last_existing_path, option_value,
+    elements::{
+        DocumentElement, DocumentLanguage, SourceSelector, count_kind, display_path, escape_field,
+        filter_elements, has_flag, index_path, index_project, last_existing_path, option_value,
         option_values, select_source,
     },
-    document_json::{print_query_json, print_search_json, print_selector_query_json},
+    packets::{print_query_json, print_search_json, print_selector_query_json},
 };
 
-pub(crate) fn run_org_command(args: Vec<String>) -> Result<ExitCode, String> {
+pub fn run_org_command(args: Vec<String>) -> Result<ExitCode, String> {
     run_document_command(DocumentLanguage::Org, args)
 }
 
-pub(crate) fn run_md_command(args: Vec<String>) -> Result<ExitCode, String> {
+pub fn run_md_command(args: Vec<String>) -> Result<ExitCode, String> {
     run_document_command(DocumentLanguage::Markdown, args)
 }
 
-fn run_document_command(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, String> {
+pub fn run_document_command(
+    language: DocumentLanguage,
+    args: Vec<String>,
+) -> Result<ExitCode, String> {
     let mut args = args.into_iter();
     let Some(command) = args.next() else {
         print_guide(language);
@@ -87,7 +90,7 @@ fn run_search(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode,
             };
             let root = last_existing_path(&args[2..]).unwrap_or_else(|| PathBuf::from("."));
             let facts = index_project(language, &root)?;
-            let matches = filter_facts(&facts, query);
+            let matches = filter_elements(&facts, query);
             if json_output {
                 print_search_json(language, "fzf", &root, &matches, Some(query))?;
             } else {
@@ -222,7 +225,7 @@ fn print_query_guide(language: DocumentLanguage) {
     );
 }
 
-fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentFact]) {
+fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) {
     println!(
         "[search-prime] lang={} root={} doc={} heading={} property={} planning={} table={} block={} list={} task={} link={} image={}",
         language.id(),
@@ -248,7 +251,7 @@ fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentFact]) 
     println!("|next search:fzf,search:owner,query:selector");
 }
 
-fn print_owner(language: DocumentLanguage, owner: &str, facts: &[DocumentFact]) {
+fn print_owner(language: DocumentLanguage, owner: &str, facts: &[DocumentElement]) {
     println!(
         "[search-owner] lang={} q={} item={}",
         language.id(),
@@ -260,7 +263,7 @@ fn print_owner(language: DocumentLanguage, owner: &str, facts: &[DocumentFact]) 
     }
 }
 
-fn print_fzf(language: DocumentLanguage, query: &str, root: &Path, facts: &[DocumentFact]) {
+fn print_fzf(language: DocumentLanguage, query: &str, root: &Path, facts: &[DocumentElement]) {
     println!(
         "[search-fzf] lang={} q={} root={} hit={}",
         language.id(),
@@ -277,7 +280,7 @@ fn print_query_matches(
     language: DocumentLanguage,
     terms: &[String],
     root: &Path,
-    facts: &[DocumentFact],
+    facts: &[DocumentElement],
 ) {
     println!(
         "[query] lang={} terms={} root={} hit={}",

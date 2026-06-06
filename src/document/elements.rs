@@ -13,31 +13,31 @@ use crate::{
 use rowan::ast::AstNode;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum DocumentLanguage {
+pub enum DocumentLanguage {
     Org,
     Markdown,
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct DocumentFact {
-    pub(super) kind: &'static str,
-    pub(super) source_kind: &'static str,
-    pub(super) path: String,
-    pub(super) line: usize,
-    pub(super) end_line: usize,
-    pub(super) fields: Vec<(String, String)>,
-    pub(super) text: String,
+pub struct DocumentElement {
+    pub kind: &'static str,
+    pub source_kind: &'static str,
+    pub path: String,
+    pub line: usize,
+    pub end_line: usize,
+    pub fields: Vec<(String, String)>,
+    pub text: String,
 }
 
-pub(super) struct SourceSelector {
-    pub(super) path: PathBuf,
-    pub(super) range: Option<(usize, usize)>,
+pub struct SourceSelector {
+    pub path: PathBuf,
+    pub range: Option<(usize, usize)>,
 }
 
-pub(super) fn index_project(
+pub fn index_project(
     language: DocumentLanguage,
     root: &Path,
-) -> Result<Vec<DocumentFact>, String> {
+) -> Result<Vec<DocumentElement>, String> {
     let mut files = Vec::new();
     collect_document_paths(language, root, &mut files)?;
     files.sort();
@@ -50,10 +50,7 @@ pub(super) fn index_project(
     Ok(facts)
 }
 
-pub(super) fn index_path(
-    language: DocumentLanguage,
-    path: &Path,
-) -> Result<Vec<DocumentFact>, String> {
+pub fn index_path(language: DocumentLanguage, path: &Path) -> Result<Vec<DocumentElement>, String> {
     let source =
         fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
     match language {
@@ -62,16 +59,19 @@ pub(super) fn index_path(
     }
 }
 
-pub(super) fn filter_facts(facts: &[DocumentFact], query: &str) -> Vec<DocumentFact> {
-    facts
+pub fn filter_elements(elements: &[DocumentElement], query: &str) -> Vec<DocumentElement> {
+    elements
         .iter()
-        .filter(|fact| fact.matches(query))
+        .filter(|element| element.matches(query))
         .cloned()
         .collect()
 }
 
-pub(super) fn count_kind(facts: &[DocumentFact], kind: &str) -> usize {
-    facts.iter().filter(|fact| fact.kind == kind).count()
+pub(super) fn count_kind(elements: &[DocumentElement], kind: &str) -> usize {
+    elements
+        .iter()
+        .filter(|element| element.kind == kind)
+        .count()
 }
 
 pub(super) fn last_existing_path(args: &[String]) -> Option<PathBuf> {
@@ -97,7 +97,7 @@ pub(super) fn has_flag(args: &[String], name: &str) -> bool {
     args.iter().any(|arg| arg == name)
 }
 
-pub(super) fn select_source(source: &str, range: Option<(usize, usize)>) -> String {
+pub fn select_source(source: &str, range: Option<(usize, usize)>) -> String {
     let Some((start, end)) = range else {
         return source.to_string();
     };
@@ -123,7 +123,7 @@ pub(super) fn escape_field(value: &str) -> String {
         .replace('\r', " ")
 }
 
-fn index_org(path: &Path, source: &str) -> Vec<DocumentFact> {
+fn index_org(path: &Path, source: &str) -> Vec<DocumentElement> {
     let org = Org::parse(source);
     let document = org.syntax_document();
     let mut facts = Vec::new();
@@ -301,7 +301,7 @@ fn planning_fields(node: &SyntaxNode) -> Vec<(String, String)> {
 }
 
 #[cfg(feature = "md")]
-fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentFact>, String> {
+fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, String> {
     use comrak::{Arena, Options, nodes::NodeValue};
 
     let arena = Arena::new();
@@ -438,13 +438,13 @@ fn fact(
     source: &str,
     node: &SyntaxNode,
     fields: Vec<(String, String)>,
-) -> DocumentFact {
+) -> DocumentElement {
     let range = node.text_range();
     let start = u32::from(range.start()) as usize;
     let end = u32::from(range.end()) as usize;
     let line = offset_to_line(source, start);
     let end_line = offset_to_line(source, end.saturating_sub(1));
-    DocumentFact {
+    DocumentElement {
         kind,
         source_kind,
         path: display_path(path),
@@ -469,8 +469,8 @@ fn markdown_fact(
     line: usize,
     end_line: usize,
     fields: Vec<(String, String)>,
-) -> DocumentFact {
-    DocumentFact {
+) -> DocumentElement {
+    DocumentElement {
         kind,
         source_kind,
         path: display_path(path),
@@ -538,7 +538,7 @@ fn offset_to_line(source: &str, offset: usize) -> usize {
         + 1
 }
 
-impl DocumentFact {
+impl DocumentElement {
     pub(super) fn render(&self) -> String {
         let mut output = format!(
             "|{} {}:{}-{}",
@@ -577,21 +577,21 @@ impl DocumentFact {
 }
 
 impl DocumentLanguage {
-    pub(super) fn id(self) -> &'static str {
+    pub fn id(self) -> &'static str {
         match self {
             Self::Org => "org",
             Self::Markdown => "md",
         }
     }
 
-    pub(super) fn command_prefix(self) -> &'static str {
+    pub fn command_prefix(self) -> &'static str {
         match self {
-            Self::Org => "orgize",
-            Self::Markdown => "orgize md",
+            Self::Org => "asp org",
+            Self::Markdown => "asp md",
         }
     }
 
-    pub(super) fn parser_authority(self) -> &'static str {
+    pub fn parser_authority(self) -> &'static str {
         match self {
             Self::Org => "orgize",
             Self::Markdown => "comrak",
@@ -610,7 +610,7 @@ impl DocumentLanguage {
 }
 
 impl SourceSelector {
-    pub(super) fn parse(selector: &str) -> Result<Self, String> {
+    pub fn parse(selector: &str) -> Result<Self, String> {
         let Some((path, range)) = selector.rsplit_once(':') else {
             return Ok(Self {
                 path: PathBuf::from(selector),

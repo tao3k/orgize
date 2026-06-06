@@ -2,15 +2,15 @@ use std::path::Path;
 
 use serde_json::{Value, json};
 
-use super::document_index::{
-    DocumentFact, DocumentLanguage, SourceSelector, display_path, select_source,
+use super::elements::{
+    DocumentElement, DocumentLanguage, SourceSelector, display_path, select_source,
 };
 
 pub(super) fn print_search_json(
     language: DocumentLanguage,
     view: &str,
     root: &Path,
-    facts: &[DocumentFact],
+    facts: &[DocumentElement],
     query: Option<&str>,
 ) -> Result<(), String> {
     let packet = json!({
@@ -20,7 +20,7 @@ pub(super) fn print_search_json(
         "protocolVersion": "1",
         "languageId": language.id(),
         "providerId": "orgize",
-        "binary": "orgize",
+        "binary": "asp",
         "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
         "method": format!("search/{view}"),
         "projectRoot": packet_project_root(root),
@@ -48,7 +48,7 @@ pub(super) fn print_query_json(
     language: DocumentLanguage,
     terms: &[String],
     root: &Path,
-    facts: &[DocumentFact],
+    facts: &[DocumentElement],
 ) -> Result<(), String> {
     let query_terms = if terms.is_empty() {
         vec!["*".to_string()]
@@ -62,7 +62,7 @@ pub(super) fn print_query_json(
         "protocolVersion": "1",
         "languageId": language.id(),
         "providerId": "orgize",
-        "binary": "orgize",
+        "binary": "asp",
         "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
         "method": "query/document",
         "projectRoot": packet_project_root(root),
@@ -100,7 +100,7 @@ pub(super) fn print_selector_query_json(
         "protocolVersion": "1",
         "languageId": language.id(),
         "providerId": "orgize",
-        "binary": "orgize",
+        "binary": "asp",
         "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
         "method": "query/document",
         "projectRoot": packet_project_root(root),
@@ -142,7 +142,7 @@ fn print_json(packet: &Value) -> Result<(), String> {
     Ok(())
 }
 
-fn document_count(facts: &[DocumentFact]) -> usize {
+fn document_count(facts: &[DocumentElement]) -> usize {
     facts
         .iter()
         .map(|fact| fact.path.as_str())
@@ -159,7 +159,7 @@ fn packet_project_root(root: &Path) -> String {
     }
 }
 
-fn owners_json(language: DocumentLanguage, root: &Path, facts: &[DocumentFact]) -> Vec<Value> {
+fn owners_json(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) -> Vec<Value> {
     facts
         .iter()
         .map(|fact| packet_path(root, &fact.path))
@@ -175,7 +175,7 @@ fn owners_json(language: DocumentLanguage, root: &Path, facts: &[DocumentFact]) 
         .collect()
 }
 
-fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentFact) -> Value {
+fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentElement) -> Value {
     let path = packet_path(root, &fact.path);
     let mut value = json!({
         "id": format!("{}:{}:{}:{}", fact.kind, path, fact.line, fact.end_line),
@@ -230,7 +230,7 @@ fn packet_path(root: &Path, path: &str) -> String {
     }
 }
 
-fn fact_fields_json(fact: &DocumentFact) -> Value {
+fn fact_fields_json(fact: &DocumentElement) -> Value {
     let mut fields = serde_json::Map::new();
     for (key, value) in &fact.fields {
         fields.insert(key.clone(), json!(value));
@@ -241,7 +241,7 @@ fn fact_fields_json(fact: &DocumentFact) -> Value {
     Value::Object(fields)
 }
 
-fn fact_name(fact: &DocumentFact) -> String {
+fn fact_name(fact: &DocumentElement) -> String {
     fact.fields
         .iter()
         .find(|(key, _)| matches!(key.as_str(), "title" | "key" | "target" | "lang"))
@@ -250,7 +250,7 @@ fn fact_name(fact: &DocumentFact) -> String {
         .unwrap_or_else(|| fact.kind.to_string())
 }
 
-fn query_keys(fact: &DocumentFact) -> Vec<String> {
+fn query_keys(fact: &DocumentElement) -> Vec<String> {
     let mut keys = std::collections::BTreeSet::new();
     keys.insert(fact.kind.to_string());
     keys.insert(fact_name(fact));

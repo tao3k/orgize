@@ -42,10 +42,10 @@ fn run() -> Result<ExitCode, String> {
         "guide" | "search" | "query" => {
             let mut command_args = vec![command.to_string()];
             command_args.extend(args);
-            super::document::run_org_command(command_args)
+            crate::document::run_org_command(command_args)
         }
         "lint" => run_lint(args.collect()),
-        "md" | "markdown" => super::document::run_md_command(args.collect()),
+        "md" | "markdown" => crate::document::run_md_command(args.collect()),
         "sdd" => run_sdd(args.collect()),
         "-h" | "--help" | "help" => {
             print_usage();

@@ -112,7 +112,7 @@ fn org_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout.contains("content=\"orgize query --selector"),
+        selector_stdout.contains("content=\"asp org query --selector"),
         "{selector_stdout}"
     );
 
@@ -150,6 +150,7 @@ fn org_document_search_and_query_commands_run() {
         "agent.semantic-protocols.semantic-document-search-packet"
     );
     assert_eq!(search_packet["languageId"], "org");
+    assert_eq!(search_packet["binary"], "asp");
     assert_eq!(search_packet["method"], "search/prime");
     assert_eq!(search_packet["documentMode"], "metadata");
     assert!(
@@ -193,6 +194,7 @@ fn org_document_search_and_query_commands_run() {
         "agent.semantic-protocols.semantic-document-query-packet"
     );
     assert_eq!(query_packet["languageId"], "org");
+    assert_eq!(query_packet["binary"], "asp");
     assert_eq!(query_packet["method"], "query/document");
     assert_eq!(query_packet["documentMode"], "metadata");
     assert_eq!(query_packet["queryKind"], "term");
@@ -360,7 +362,7 @@ fn markdown_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout.contains("content=\"orgize md query --selector"),
+        selector_stdout.contains("content=\"asp md query --selector"),
         "{selector_stdout}"
     );
 
@@ -400,6 +402,7 @@ fn markdown_document_search_and_query_commands_run() {
         "agent.semantic-protocols.semantic-document-search-packet"
     );
     assert_eq!(search_packet["languageId"], "md");
+    assert_eq!(search_packet["binary"], "asp");
     assert_eq!(search_packet["method"], "search/prime");
     assert_eq!(search_packet["documentMode"], "metadata");
     assert!(
@@ -442,6 +445,7 @@ fn markdown_document_search_and_query_commands_run() {
         "agent.semantic-protocols.semantic-document-query-packet"
     );
     assert_eq!(query_packet["languageId"], "md");
+    assert_eq!(query_packet["binary"], "asp");
     assert_eq!(query_packet["method"], "query/document");
     assert_eq!(query_packet["documentMode"], "metadata");
     assert_eq!(query_packet["queryKind"], "term");
