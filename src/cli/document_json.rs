@@ -115,6 +115,7 @@ pub(super) fn print_selector_query_json(
         "documentFacts": [{
             "id": format!("selector:{path}:{line}:{end_line}"),
             "kind": "selector",
+            "sourceKind": "selector",
             "name": "selector",
             "documentPath": path,
             "location": location_json(&path, line, end_line),
@@ -179,6 +180,7 @@ fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentFa
     let mut value = json!({
         "id": format!("{}:{}:{}:{}", fact.kind, path, fact.line, fact.end_line),
         "kind": fact.kind,
+        "sourceKind": fact.source_kind,
         "name": fact_name(fact),
         "documentPath": path,
         "location": location_json(&packet_path(root, &fact.path), fact.line, fact.end_line),

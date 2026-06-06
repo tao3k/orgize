@@ -179,6 +179,7 @@ fn print_guide(language: DocumentLanguage) {
     println!("|surface query purpose=selector-or-term output=metadata-frontier|pure-content");
     println!("|rule parser-authority={}", language.parser_authority());
     println!("|rule no=check,ast-patch,evidence reason=document-language");
+    println!("|element-map heading,property,planning,table,block,list,listItem,task,link,image");
     println!(
         "|cmd search-prime={} search prime --view seeds .",
         language.command_prefix()
@@ -202,7 +203,9 @@ fn print_search_guide(language: DocumentLanguage) {
         "[search-guide] lang={} provider=orgize protocol=search-guide.v1 root=.",
         language.id()
     );
-    println!("|view prime returns=headings,properties,tables,blocks");
+    println!(
+        "|view prime returns=headings,properties,planning,tables,blocks,lists,tasks,links,images"
+    );
     println!("|view fzf args=query returns=bounded-document-facts");
 }
 
@@ -221,7 +224,7 @@ fn print_query_guide(language: DocumentLanguage) {
 
 fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentFact]) {
     println!(
-        "[search-prime] lang={} root={} doc={} heading={} property={} table={} block={}",
+        "[search-prime] lang={} root={} doc={} heading={} property={} planning={} table={} block={} list={} task={} link={} image={}",
         language.id(),
         display_path(root),
         facts
@@ -231,8 +234,13 @@ fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentFact]) 
             .len(),
         count_kind(facts, "heading"),
         count_kind(facts, "property"),
+        count_kind(facts, "planning"),
         count_kind(facts, "table"),
-        count_kind(facts, "block")
+        count_kind(facts, "block"),
+        count_kind(facts, "list"),
+        count_kind(facts, "task"),
+        count_kind(facts, "link"),
+        count_kind(facts, "image")
     );
     for fact in facts.iter().take(80) {
         println!("{}", fact.render());

@@ -51,7 +51,7 @@ fn org_document_search_and_query_commands_run() {
     let path = root.join("plan.org");
     std::fs::write(
         &path,
-        "* Task\n:PROPERTIES:\n:CUSTOM_ID: task-1\n:END:\n\n#+begin_src rust\nfn main() {}\n#+end_src\n",
+        "* TODO [#A] Task :work:\nSCHEDULED: <2026-06-06 Sat>\n:PROPERTIES:\n:CUSTOM_ID: task-1\n:END:\n\n- [X] ship element map\n[[https://example.com][site]]\n[[file:diagram.png]]\n\n#+begin_src rust\nfn main() {}\n#+end_src\n",
     )
     .expect("write org fixture");
 
@@ -74,6 +74,14 @@ fn org_document_search_and_query_commands_run() {
         search_stdout.contains("key=\"CUSTOM_ID\""),
         "{search_stdout}"
     );
+    assert!(
+        search_stdout.contains("sourceKind=\"Headline\""),
+        "{search_stdout}"
+    );
+    assert!(search_stdout.contains("|planning"), "{search_stdout}");
+    assert!(search_stdout.contains("|task"), "{search_stdout}");
+    assert!(search_stdout.contains("|link"), "{search_stdout}");
+    assert!(search_stdout.contains("|image"), "{search_stdout}");
 
     let selector = format!("{}:1-4", path.display());
     let query = Command::new(env!("CARGO_BIN_EXE_orgize"))
@@ -149,7 +157,19 @@ fn org_document_search_and_query_commands_run() {
             .as_array()
             .expect("document facts")
             .iter()
-            .any(|fact| fact["kind"] == "property" && fact["attributes"]["key"] == "CUSTOM_ID"),
+            .any(|fact| fact["kind"] == "property"
+                && fact["sourceKind"] == "PropertyDrawer"
+                && fact["attributes"]["key"] == "CUSTOM_ID"),
+        "{search_packet:#}"
+    );
+    assert!(
+        search_packet["documentFacts"]
+            .as_array()
+            .expect("document facts")
+            .iter()
+            .any(|fact| fact["kind"] == "task"
+                && fact["sourceKind"] == "SyntaxListItem"
+                && fact["attributes"]["checked"] == "true"),
         "{search_packet:#}"
     );
 
@@ -260,7 +280,7 @@ fn markdown_document_search_and_query_commands_run() {
     let path = root.join("README.md");
     std::fs::write(
         &path,
-        "# Project\n\n[site](https://example.com)\n\n```rust\nfn main() {}\n```\n",
+        "# Project\n\n- [x] Write tests\n- item\n\n[site](https://example.com)\n![diagram](diagram.png)\n\n---\n\n```rust\nfn main() {}\n```\n",
     )
     .expect("write markdown fixture");
 
@@ -287,6 +307,30 @@ fn markdown_document_search_and_query_commands_run() {
         "{search_stdout}"
     );
     assert!(search_stdout.contains("|heading"), "{search_stdout}");
+    assert!(
+        search_stdout.contains("sourceKind=\"NodeValue::Heading\""),
+        "{search_stdout}"
+    );
+
+    let prime_search = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("search")
+        .arg("prime")
+        .arg("--view")
+        .arg("seeds")
+        .arg(&root)
+        .output()
+        .expect("run orgize md prime search");
+    assert!(
+        prime_search.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&prime_search.stderr)
+    );
+    let prime_stdout = String::from_utf8(prime_search.stdout).expect("utf8 prime search");
+    assert!(prime_stdout.contains("|task"), "{prime_stdout}");
+    assert!(prime_stdout.contains("|listItem"), "{prime_stdout}");
+    assert!(prime_stdout.contains("|image"), "{prime_stdout}");
+    assert!(prime_stdout.contains("|thematicBreak"), "{prime_stdout}");
 
     let selector = format!("{}:1-1", path.display());
     let query = Command::new(env!("CARGO_BIN_EXE_orgize"))
@@ -363,7 +407,17 @@ fn markdown_document_search_and_query_commands_run() {
             .as_array()
             .expect("document facts")
             .iter()
-            .any(|fact| fact["kind"] == "heading" && fact["attributes"]["title"] == "Project"),
+            .any(|fact| fact["kind"] == "heading"
+                && fact["sourceKind"] == "NodeValue::Heading"
+                && fact["attributes"]["title"] == "Project"),
+        "{search_packet:#}"
+    );
+    assert!(
+        search_packet["documentFacts"]
+            .as_array()
+            .expect("document facts")
+            .iter()
+            .any(|fact| fact["kind"] == "task" && fact["sourceKind"] == "NodeValue::TaskItem"),
         "{search_packet:#}"
     );
 

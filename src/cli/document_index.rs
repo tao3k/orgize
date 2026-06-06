@@ -5,7 +5,10 @@ use std::{
 
 use crate::{
     Org, SyntaxNode,
-    syntax_ast::{ExportBlock, Headline, OrgTable, PropertyDrawer, SourceBlock},
+    syntax_ast::{
+        ExportBlock, Headline, OrgTable, PropertyDrawer, SourceBlock, SyntaxLink, SyntaxList,
+        SyntaxListItem, SyntaxPlanning,
+    },
 };
 use rowan::ast::AstNode;
 
@@ -18,6 +21,7 @@ pub(super) enum DocumentLanguage {
 #[derive(Clone, Debug)]
 pub(super) struct DocumentFact {
     pub(super) kind: &'static str,
+    pub(super) source_kind: &'static str,
     pub(super) path: String,
     pub(super) line: usize,
     pub(super) end_line: usize,
@@ -133,37 +137,167 @@ fn index_org(path: &Path, source: &str) -> Vec<DocumentFact> {
             if let Some(todo) = headline.todo_keyword() {
                 fields.push(("todo".to_string(), todo.0.text().to_string()));
             }
+            if let Some(todo_type) = headline.todo_type() {
+                fields.push(("todoType".to_string(), format!("{todo_type:?}")));
+            }
+            if let Some(priority) = headline.priority() {
+                fields.push(("priority".to_string(), priority.0.text().to_string()));
+            }
             for tag in headline.tags() {
                 fields.push(("tag".to_string(), tag.0.text().to_string()));
             }
-            facts.push(fact("heading", path, source, headline.syntax(), fields));
+            facts.push(fact(
+                "heading",
+                "Headline",
+                path,
+                source,
+                headline.syntax(),
+                fields,
+            ));
         } else if let Some(drawer) = PropertyDrawer::cast(node.clone()) {
             for (key, value) in drawer.iter() {
                 let fields = vec![
                     ("key".to_string(), key.0.text().to_string()),
                     ("value".to_string(), value.0.text().to_string()),
                 ];
-                facts.push(fact("property", path, source, drawer.syntax(), fields));
+                facts.push(fact(
+                    "property",
+                    "PropertyDrawer",
+                    path,
+                    source,
+                    drawer.syntax(),
+                    fields,
+                ));
             }
+        } else if let Some(planning) = SyntaxPlanning::cast(node.clone()) {
+            facts.push(fact(
+                "planning",
+                "SyntaxPlanning",
+                path,
+                source,
+                planning.syntax(),
+                planning_fields(planning.syntax()),
+            ));
         } else if let Some(table) = OrgTable::cast(node.clone()) {
             let fields = vec![("header".to_string(), table.has_header().to_string())];
-            facts.push(fact("table", path, source, table.syntax(), fields));
+            facts.push(fact(
+                "table",
+                "OrgTable",
+                path,
+                source,
+                table.syntax(),
+                fields,
+            ));
         } else if let Some(block) = SourceBlock::cast(node.clone()) {
             let mut fields = vec![("kind".to_string(), "source".to_string())];
             if let Some(language) = block.language() {
                 fields.push(("lang".to_string(), language.to_string()));
             }
-            facts.push(fact("block", path, source, block.syntax(), fields));
+            facts.push(fact(
+                "block",
+                "SourceBlock",
+                path,
+                source,
+                block.syntax(),
+                fields,
+            ));
         } else if let Some(block) = ExportBlock::cast(node.clone()) {
             let mut fields = vec![("kind".to_string(), "export".to_string())];
             if let Some(backend) = block.ty() {
                 fields.push(("backend".to_string(), backend.to_string()));
             }
-            facts.push(fact("block", path, source, block.syntax(), fields));
+            facts.push(fact(
+                "block",
+                "ExportBlock",
+                path,
+                source,
+                block.syntax(),
+                fields,
+            ));
+        } else if let Some(list) = SyntaxList::cast(node.clone()) {
+            let fields = vec![
+                (
+                    "listKind".to_string(),
+                    if list.is_ordered() {
+                        "ordered"
+                    } else {
+                        "unordered"
+                    }
+                    .to_string(),
+                ),
+                ("descriptive".to_string(), list.is_descriptive().to_string()),
+            ];
+            facts.push(fact(
+                "list",
+                "SyntaxList",
+                path,
+                source,
+                list.syntax(),
+                fields,
+            ));
+        } else if let Some(item) = SyntaxListItem::cast(node.clone()) {
+            let checkbox = item
+                .checkbox()
+                .map(|checkbox| checkbox.0.text().to_string());
+            let mut fields = vec![
+                ("bullet".to_string(), item.bullet().0.text().to_string()),
+                ("indent".to_string(), item.indent().to_string()),
+            ];
+            if let Some(counter) = item.counter() {
+                fields.push(("counter".to_string(), counter.0.text().to_string()));
+            }
+            if let Some(checkbox) = checkbox.as_deref() {
+                fields.push(("checkbox".to_string(), checkbox.to_string()));
+                fields.push(("checked".to_string(), (checkbox == "X").to_string()));
+            }
+            let tag = item
+                .tag()
+                .map(|element| element.to_string())
+                .collect::<String>();
+            if !tag.trim().is_empty() {
+                fields.push(("tag".to_string(), tag.trim().to_string()));
+            }
+            facts.push(fact(
+                if checkbox.is_some() {
+                    "task"
+                } else {
+                    "listItem"
+                },
+                "SyntaxListItem",
+                path,
+                source,
+                item.syntax(),
+                fields,
+            ));
+        } else if let Some(link) = SyntaxLink::cast(node.clone()) {
+            let mut fields = vec![("target".to_string(), link.path().0.text().to_string())];
+            let description = link.description_raw();
+            if !description.is_empty() {
+                fields.push(("description".to_string(), description));
+            }
+            facts.push(fact(
+                if link.is_image() { "image" } else { "link" },
+                "SyntaxLink",
+                path,
+                source,
+                link.syntax(),
+                fields,
+            ));
         }
     }
 
     facts
+}
+
+fn planning_fields(node: &SyntaxNode) -> Vec<(String, String)> {
+    let raw = node.to_string();
+    let mut fields = Vec::new();
+    for marker in ["SCHEDULED", "DEADLINE", "CLOSED"] {
+        if raw.contains(marker) {
+            fields.push((marker.to_ascii_lowercase(), "true".to_string()));
+        }
+    }
+    fields
 }
 
 #[cfg(feature = "md")]
@@ -173,6 +307,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentFact>, String
     let arena = Arena::new();
     let mut options = Options::default();
     options.extension.table = true;
+    options.extension.tasklist = true;
     let root = comrak::parse_document(&arena, source, &options);
     let mut facts = Vec::new();
 
@@ -190,6 +325,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentFact>, String
                     .join(" ");
                 facts.push(markdown_fact(
                     "heading",
+                    "NodeValue::Heading",
                     path,
                     data.sourcepos.start.line,
                     data.sourcepos.end.line,
@@ -201,6 +337,15 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentFact>, String
             }
             NodeValue::Link(link) => facts.push(markdown_fact(
                 "link",
+                "NodeValue::Link",
+                path,
+                data.sourcepos.start.line,
+                data.sourcepos.end.line,
+                vec![("target".to_string(), link.url.clone())],
+            )),
+            NodeValue::Image(link) => facts.push(markdown_fact(
+                "image",
+                "NodeValue::Image",
                 path,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
@@ -208,6 +353,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentFact>, String
             )),
             NodeValue::CodeBlock(block) => facts.push(markdown_fact(
                 "block",
+                "NodeValue::CodeBlock",
                 path,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
@@ -218,6 +364,56 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentFact>, String
             )),
             NodeValue::Table(_) => facts.push(markdown_fact(
                 "table",
+                "NodeValue::Table",
+                path,
+                data.sourcepos.start.line,
+                data.sourcepos.end.line,
+                Vec::new(),
+            )),
+            NodeValue::List(list) => facts.push(markdown_fact(
+                "list",
+                "NodeValue::List",
+                path,
+                data.sourcepos.start.line,
+                data.sourcepos.end.line,
+                vec![
+                    ("listKind".to_string(), format!("{:?}", list.list_type)),
+                    ("start".to_string(), list.start.to_string()),
+                ],
+            )),
+            NodeValue::Item(_) => facts.push(markdown_fact(
+                "listItem",
+                "NodeValue::Item",
+                path,
+                data.sourcepos.start.line,
+                data.sourcepos.end.line,
+                Vec::new(),
+            )),
+            NodeValue::TaskItem(task) => {
+                let mut fields = vec![("checked".to_string(), task.symbol.is_some().to_string())];
+                if let Some(symbol) = task.symbol {
+                    fields.push(("checkbox".to_string(), symbol.to_string()));
+                }
+                facts.push(markdown_fact(
+                    "task",
+                    "NodeValue::TaskItem",
+                    path,
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    fields,
+                ));
+            }
+            NodeValue::FrontMatter(_) => facts.push(markdown_fact(
+                "frontMatter",
+                "NodeValue::FrontMatter",
+                path,
+                data.sourcepos.start.line,
+                data.sourcepos.end.line,
+                Vec::new(),
+            )),
+            NodeValue::ThematicBreak => facts.push(markdown_fact(
+                "thematicBreak",
+                "NodeValue::ThematicBreak",
                 path,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
@@ -237,6 +433,7 @@ fn index_markdown(_path: &Path, _source: &str) -> Result<Vec<DocumentFact>, Stri
 
 fn fact(
     kind: &'static str,
+    source_kind: &'static str,
     path: &Path,
     source: &str,
     node: &SyntaxNode,
@@ -249,6 +446,7 @@ fn fact(
     let end_line = offset_to_line(source, end.saturating_sub(1));
     DocumentFact {
         kind,
+        source_kind,
         path: display_path(path),
         line,
         end_line,
@@ -266,6 +464,7 @@ fn fact(
 #[cfg(feature = "md")]
 fn markdown_fact(
     kind: &'static str,
+    source_kind: &'static str,
     path: &Path,
     line: usize,
     end_line: usize,
@@ -273,6 +472,7 @@ fn markdown_fact(
 ) -> DocumentFact {
     DocumentFact {
         kind,
+        source_kind,
         path: display_path(path),
         line: line.max(1),
         end_line: end_line.max(line).max(1),
@@ -344,6 +544,9 @@ impl DocumentFact {
             "|{} {}:{}-{}",
             self.kind, self.path, self.line, self.end_line
         );
+        output.push_str(" sourceKind=\"");
+        output.push_str(self.source_kind);
+        output.push('"');
         for (key, value) in &self.fields {
             output.push(' ');
             output.push_str(key);
@@ -365,8 +568,8 @@ impl DocumentFact {
             return true;
         }
         let haystack = format!(
-            "{} {} {:?} {}",
-            self.kind, self.path, self.fields, self.text
+            "{} {} {} {:?} {}",
+            self.kind, self.source_kind, self.path, self.fields, self.text
         )
         .to_ascii_lowercase();
         query.split_whitespace().all(|term| haystack.contains(term))
