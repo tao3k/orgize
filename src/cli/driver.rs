@@ -39,7 +39,13 @@ fn run() -> Result<ExitCode, String> {
         "eval" => super::eval::run(args.collect()),
         "export" => run_export(args.collect()),
         "fmt" => run_fmt(args.collect()),
+        "guide" | "search" | "query" => {
+            let mut command_args = vec![command.to_string()];
+            command_args.extend(args);
+            super::document::run_org_command(command_args)
+        }
         "lint" => run_lint(args.collect()),
+        "md" | "markdown" => super::document::run_md_command(args.collect()),
         "sdd" => run_sdd(args.collect()),
         "-h" | "--help" | "help" => {
             print_usage();
@@ -627,7 +633,9 @@ fn push_property_schema_alias(contract: &mut PropertySchemaContract, alias: Stri
 }
 
 fn print_usage() {
-    eprintln!("Usage: orgize <eval|export|fmt|lint|sdd> [options] [PATH ...]");
+    eprintln!(
+        "Usage: orgize <eval|export|fmt|guide|lint|md|query|search|sdd> [options] [PATH ...]"
+    );
 }
 
 fn print_export_usage() {
