@@ -110,14 +110,28 @@ fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, 
 
     let json_output = has_flag(&args, "--json");
     let selector = option_value(&args, "--selector");
-    let content = args.iter().any(|arg| arg == "--content");
+    let view = option_value(&args, "--view").unwrap_or("metadata");
+    if !matches!(view, "metadata" | "content") {
+        return Err(format!(
+            "{} query: unsupported document view `{view}`",
+            language.id()
+        ));
+    }
+    let content_output = args.iter().any(|arg| arg == "--content");
+    let content = content_output || view == "content";
     if args.iter().any(|arg| arg == "--code") {
         return Err(format!(
             "{} query: document selectors use --content; --code is reserved for source-language providers",
             language.id()
         ));
     }
-    if json_output && content {
+    if content && selector.is_none() {
+        return Err(format!(
+            "{} query: --content or --view content requires --selector",
+            language.id()
+        ));
+    }
+    if json_output && content_output {
         return Err(format!(
             "{} query: --json cannot be combined with --content",
             language.id()
@@ -170,11 +184,15 @@ fn print_guide(language: DocumentLanguage) {
         language.command_prefix()
     );
     println!(
-        "|cmd search-fzf={} search fzf <query> owner tests --view seeds .",
+        "|cmd search-fzf={} search fzf <query> --view seeds .",
         language.command_prefix()
     );
     println!(
         "|cmd query-content={} query --selector <path:start-end> --content .",
+        language.command_prefix()
+    );
+    println!(
+        "|cmd query-metadata={} query --term <term> --view metadata .",
         language.command_prefix()
     );
 }
@@ -185,7 +203,6 @@ fn print_search_guide(language: DocumentLanguage) {
         language.id()
     );
     println!("|view prime returns=headings,properties,tables,blocks");
-    println!("|view owner args=path returns=document-local-facts");
     println!("|view fzf args=query returns=bounded-document-facts");
 }
 
@@ -197,7 +214,9 @@ fn print_query_guide(language: DocumentLanguage) {
     println!(
         "|mode content command=\"query --selector <path:start-end> --content\" output=pure-document-content"
     );
-    println!("|mode term command=\"query --term <term> .\" output=compact-frontier");
+    println!(
+        "|mode metadata command=\"query --term <term> --view metadata .\" output=compact-frontier"
+    );
 }
 
 fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentFact]) {

@@ -32,9 +32,9 @@ pub(super) fn print_search_json(
         "owners": owners_json(language, root, facts),
         "documentFacts": facts.iter().map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
         "nextActions": [{
-            "kind": "query",
+            "kind": "content",
             "target": "selector",
-            "command": format!("{} query --selector <path:start-end>", language.command_prefix())
+            "command": format!("{} query --selector <path:start-end> --content", language.command_prefix())
         }],
         "notes": [{
             "kind": "search-document",
@@ -68,6 +68,8 @@ pub(super) fn print_query_json(
         "projectRoot": packet_project_root(root),
         "query": query_terms.join(" "),
         "queryTerms": query_terms,
+        "queryKind": "term",
+        "querySurface": "metadata",
         "documentMode": "metadata",
         "matchCount": facts.len(),
         "matchLimit": 80,
@@ -104,6 +106,8 @@ pub(super) fn print_selector_query_json(
         "projectRoot": packet_project_root(root),
         "query": selector,
         "queryTerms": [selector],
+        "queryKind": "selector",
+        "querySurface": "content",
         "documentMode": "content",
         "matchCount": 1,
         "matchLimit": 1,

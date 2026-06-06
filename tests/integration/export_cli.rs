@@ -45,6 +45,7 @@ fn org_document_search_and_query_commands_run() {
     assert!(guide.status.success());
     let guide_stdout = String::from_utf8(guide.stdout).expect("utf8 guide");
     assert!(guide_stdout.contains("[guide] lang=org"), "{guide_stdout}");
+    assert!(!guide_stdout.contains("owner tests"), "{guide_stdout}");
 
     let root = test_dir("org-document-search");
     let path = root.join("plan.org");
@@ -174,6 +175,8 @@ fn org_document_search_and_query_commands_run() {
     assert_eq!(query_packet["languageId"], "org");
     assert_eq!(query_packet["method"], "query/document");
     assert_eq!(query_packet["documentMode"], "metadata");
+    assert_eq!(query_packet["queryKind"], "term");
+    assert_eq!(query_packet["querySurface"], "metadata");
     assert!(
         query_packet["documentFacts"]
             .as_array()
@@ -236,6 +239,8 @@ fn org_document_search_and_query_commands_run() {
         serde_json::from_slice(&dot_root_query.stdout).expect("parse dot-root query packet");
     assert_eq!(dot_root_packet["projectRoot"], ".");
     assert_eq!(dot_root_packet["documentMode"], "content");
+    assert_eq!(dot_root_packet["queryKind"], "selector");
+    assert_eq!(dot_root_packet["querySurface"], "content");
 }
 
 #[cfg(feature = "md")]
@@ -249,6 +254,7 @@ fn markdown_document_search_and_query_commands_run() {
     assert!(guide.status.success());
     let guide_stdout = String::from_utf8(guide.stdout).expect("utf8 guide");
     assert!(guide_stdout.contains("[guide] lang=md"), "{guide_stdout}");
+    assert!(!guide_stdout.contains("owner tests"), "{guide_stdout}");
 
     let root = test_dir("md-document-search");
     let path = root.join("README.md");
@@ -384,6 +390,8 @@ fn markdown_document_search_and_query_commands_run() {
     assert_eq!(query_packet["languageId"], "md");
     assert_eq!(query_packet["method"], "query/document");
     assert_eq!(query_packet["documentMode"], "metadata");
+    assert_eq!(query_packet["queryKind"], "term");
+    assert_eq!(query_packet["querySurface"], "metadata");
     assert!(
         query_packet["documentFacts"]
             .as_array()
