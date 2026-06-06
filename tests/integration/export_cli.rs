@@ -86,9 +86,10 @@ fn org_document_search_and_query_commands_run() {
     let selector = format!("{}:1-4", path.display());
     let query = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("query")
+        .arg("--from-hook")
+        .arg("direct-source-read")
         .arg("--selector")
         .arg(selector)
-        .arg("--content")
         .output()
         .expect("run orgize query");
     assert!(query.status.success());
@@ -112,7 +113,13 @@ fn org_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout.contains("content=\"asp org query --selector"),
+        selector_stdout
+            .contains("direct-read=\"asp org query --from-hook direct-source-read --selector"),
+        "{selector_stdout}"
+    );
+    assert!(selector_stdout.contains("|heading"), "{selector_stdout}");
+    assert!(
+        selector_stdout.contains("key=\"CUSTOM_ID\""),
         "{selector_stdout}"
     );
 
@@ -153,6 +160,27 @@ fn org_document_search_and_query_commands_run() {
     assert_eq!(search_packet["binary"], "asp");
     assert_eq!(search_packet["method"], "search/prime");
     assert_eq!(search_packet["documentMode"], "metadata");
+    assert!(
+        search_packet["nextActions"]
+            .as_array()
+            .expect("next actions")
+            .iter()
+            .any(|action| action["target"] == "selector"
+                && action["command"]
+                    == "asp org query --selector <path:start-end> --view metadata"),
+        "{search_packet:#}"
+    );
+    assert!(
+        search_packet["nextActions"]
+            .as_array()
+            .expect("next actions")
+            .iter()
+            .all(|action| !action["command"]
+                .as_str()
+                .unwrap_or_default()
+                .contains("--content")),
+        "{search_packet:#}"
+    );
     assert!(
         search_packet["documentFacts"]
             .as_array()
@@ -260,9 +288,17 @@ fn org_document_search_and_query_commands_run() {
     let dot_root_packet: Value =
         serde_json::from_slice(&dot_root_query.stdout).expect("parse dot-root query packet");
     assert_eq!(dot_root_packet["projectRoot"], ".");
-    assert_eq!(dot_root_packet["documentMode"], "content");
+    assert_eq!(dot_root_packet["documentMode"], "metadata");
     assert_eq!(dot_root_packet["queryKind"], "selector");
-    assert_eq!(dot_root_packet["querySurface"], "content");
+    assert_eq!(dot_root_packet["querySurface"], "metadata");
+    assert!(
+        dot_root_packet["documentFacts"]
+            .as_array()
+            .expect("document facts")
+            .iter()
+            .any(|fact| fact["documentPath"] == "plan.org"),
+        "{dot_root_packet:#}"
+    );
 }
 
 #[cfg(feature = "md")]
@@ -338,9 +374,10 @@ fn markdown_document_search_and_query_commands_run() {
     let query = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")
         .arg("query")
+        .arg("--from-hook")
+        .arg("direct-source-read")
         .arg("--selector")
         .arg(selector)
-        .arg("--content")
         .output()
         .expect("run orgize md query");
     assert!(query.status.success());
@@ -362,9 +399,11 @@ fn markdown_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout.contains("content=\"asp md query --selector"),
+        selector_stdout
+            .contains("direct-read=\"asp md query --from-hook direct-source-read --selector"),
         "{selector_stdout}"
     );
+    assert!(selector_stdout.contains("|heading"), "{selector_stdout}");
 
     let term_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")
@@ -405,6 +444,26 @@ fn markdown_document_search_and_query_commands_run() {
     assert_eq!(search_packet["binary"], "asp");
     assert_eq!(search_packet["method"], "search/prime");
     assert_eq!(search_packet["documentMode"], "metadata");
+    assert!(
+        search_packet["nextActions"]
+            .as_array()
+            .expect("next actions")
+            .iter()
+            .any(|action| action["target"] == "selector"
+                && action["command"] == "asp md query --selector <path:start-end> --view metadata"),
+        "{search_packet:#}"
+    );
+    assert!(
+        search_packet["nextActions"]
+            .as_array()
+            .expect("next actions")
+            .iter()
+            .all(|action| !action["command"]
+                .as_str()
+                .unwrap_or_default()
+                .contains("--content")),
+        "{search_packet:#}"
+    );
     assert!(
         search_packet["documentFacts"]
             .as_array()

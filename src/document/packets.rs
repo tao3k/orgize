@@ -2,9 +2,7 @@ use std::path::Path;
 
 use serde_json::{Value, json};
 
-use super::elements::{
-    DocumentElement, DocumentLanguage, SourceSelector, display_path, select_source,
-};
+use super::elements::{DocumentElement, DocumentLanguage, SourceSelector, display_path};
 
 pub(super) fn print_search_json(
     language: DocumentLanguage,
@@ -31,14 +29,26 @@ pub(super) fn print_search_json(
         "factCount": facts.len(),
         "owners": owners_json(language, root, facts),
         "documentFacts": facts.iter().map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
-        "nextActions": [{
-            "kind": "content",
-            "target": "selector",
-            "command": format!("{} query --selector <path:start-end> --content", language.command_prefix())
-        }],
+        "nextActions": [
+            {
+                "kind": "query",
+                "target": "term",
+                "command": format!("{} query --term <term> --view metadata", language.command_prefix())
+            },
+            {
+                "kind": "query",
+                "target": "selector",
+                "command": format!("{} query --selector <path:start-end> --view metadata", language.command_prefix())
+            },
+            {
+                "kind": "query",
+                "target": "direct-read",
+                "command": format!("{} query --from-hook direct-source-read --selector <path:start-end> .", language.command_prefix())
+            }
+        ],
         "notes": [{
             "kind": "search-document",
-            "message": "Document facts are parser-owned metadata and can be expanded with query --selector."
+            "message": "Document facts are parser-owned element metadata. Use direct-source-read only after an exact selector is selected."
         }]
     });
     print_json(&packet)
@@ -85,14 +95,9 @@ pub(super) fn print_selector_query_json(
     language: DocumentLanguage,
     selector: &str,
     selection: &SourceSelector,
-    source: &str,
+    facts: &[DocumentElement],
 ) -> Result<(), String> {
     let root = selection.path.parent().unwrap_or_else(|| Path::new("."));
-    let (line, end_line) = selection
-        .range
-        .unwrap_or_else(|| (1, source.lines().count().max(1)));
-    let path = packet_path(root, &display_path(&selection.path));
-    let selected = select_source(source, selection.range);
     let packet = json!({
         "schemaId": "agent.semantic-protocols.semantic-document-query-packet",
         "schemaVersion": "1",
@@ -107,30 +112,14 @@ pub(super) fn print_selector_query_json(
         "query": selector,
         "queryTerms": [selector],
         "queryKind": "selector",
-        "querySurface": "content",
-        "documentMode": "content",
-        "matchCount": 1,
-        "matchLimit": 1,
-        "matchesTruncated": false,
-        "documentFacts": [{
-            "id": format!("selector:{path}:{line}:{end_line}"),
-            "kind": "selector",
-            "sourceKind": "selector",
-            "name": "selector",
-            "documentPath": path,
-            "location": location_json(&path, line, end_line),
-            "parserAuthority": language.parser_authority(),
-            "queryKeys": [selector],
-            "attributes": { "bytes": selected.len().to_string(), "command": format!("{} query --selector {selector} --content", language.command_prefix()) }
-        }],
-        "contentBlocks": [{
-            "kind": "selector",
-            "documentPath": path,
-            "location": location_json(&path, line, end_line),
-            "parserAuthority": language.parser_authority(),
-            "content": selected
-        }],
-        "truncated": false
+        "querySurface": "metadata",
+        "documentMode": "metadata",
+        "matchCount": facts.len(),
+        "matchLimit": 80,
+        "matchesTruncated": facts.len() > 80,
+        "documentFacts": facts.iter().take(80).map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
+        "contentBlocks": [],
+        "truncated": facts.len() > 80
     });
     print_json(&packet)
 }

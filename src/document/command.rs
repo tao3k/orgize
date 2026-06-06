@@ -114,42 +114,50 @@ fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, 
     let json_output = has_flag(&args, "--json");
     let selector = option_value(&args, "--selector");
     let view = option_value(&args, "--view").unwrap_or("metadata");
-    if !matches!(view, "metadata" | "content") {
+    if view != "metadata" {
         return Err(format!(
             "{} query: unsupported document view `{view}`",
             language.id()
         ));
     }
-    let content_output = args.iter().any(|arg| arg == "--content");
-    let content = content_output || view == "content";
+    let from_hook = option_value(&args, "--from-hook");
+    let direct_read = from_hook.is_some_and(|value| value == "direct-source-read");
+    if args.iter().any(|arg| arg == "--content") {
+        return Err(format!(
+            "{} query: --content is unsupported; use --from-hook direct-source-read with --selector for direct reads",
+            language.id()
+        ));
+    }
     if args.iter().any(|arg| arg == "--code") {
         return Err(format!(
-            "{} query: document selectors use --content; --code is reserved for source-language providers",
+            "{} query: document direct reads use --from-hook direct-source-read; --code is reserved for source-language providers",
             language.id()
         ));
     }
-    if content && selector.is_none() {
+    if direct_read && selector.is_none() {
         return Err(format!(
-            "{} query: --content or --view content requires --selector",
+            "{} query: --from-hook direct-source-read requires --selector",
             language.id()
         ));
     }
-    if json_output && content_output {
+    if json_output && direct_read {
         return Err(format!(
-            "{} query: --json cannot be combined with --content",
+            "{} query: --json cannot be combined with --from-hook direct-source-read",
             language.id()
         ));
     }
     if let Some(selector) = selector {
         let selection = SourceSelector::parse(selector)?;
-        let source = fs::read_to_string(&selection.path)
-            .map_err(|error| format!("{}: {error}", selection.path.display()))?;
-        if content {
+        if direct_read {
+            let source = fs::read_to_string(&selection.path)
+                .map_err(|error| format!("{}: {error}", selection.path.display()))?;
             print!("{}", select_source(&source, selection.range));
         } else if json_output {
-            print_selector_query_json(language, selector, &selection, &source)?;
+            let facts = selector_elements(language, &selection)?;
+            print_selector_query_json(language, selector, &selection, &facts)?;
         } else {
-            print_selector_frontier(language, selector, &source, selection.range);
+            let facts = selector_elements(language, &selection)?;
+            print_selector_frontier(language, selector, &facts);
         }
         return Ok(ExitCode::SUCCESS);
     }
@@ -179,9 +187,13 @@ fn print_guide(language: DocumentLanguage) {
         language.id()
     );
     println!("|surface search purpose=document-structure output=compact-seeds content=false");
-    println!("|surface query purpose=selector-or-term output=metadata-frontier|pure-content");
+    println!(
+        "|surface query purpose=elements-by-selector-or-term output=metadata-frontier content=false"
+    );
+    println!("|surface direct-read purpose=hook-recovery output=pure-content content=true");
     println!("|rule parser-authority={}", language.parser_authority());
     println!("|rule no=check,ast-patch,evidence reason=document-language");
+    println!("|rule no=--content reason=direct-read-is-the-content-surface");
     println!("|element-map heading,property,planning,table,block,list,listItem,task,link,image");
     println!(
         "|cmd search-prime={} search prime --view seeds .",
@@ -192,11 +204,15 @@ fn print_guide(language: DocumentLanguage) {
         language.command_prefix()
     );
     println!(
-        "|cmd query-content={} query --selector <path:start-end> --content .",
+        "|cmd query-metadata={} query --term <term> --view metadata .",
         language.command_prefix()
     );
     println!(
-        "|cmd query-metadata={} query --term <term> --view metadata .",
+        "|cmd query-selector={} query --selector <path:start-end> --view metadata .",
+        language.command_prefix()
+    );
+    println!(
+        "|cmd direct-read={} query --from-hook direct-source-read --selector <path:start-end> .",
         language.command_prefix()
     );
 }
@@ -218,10 +234,13 @@ fn print_query_guide(language: DocumentLanguage) {
         language.id()
     );
     println!(
-        "|mode content command=\"query --selector <path:start-end> --content\" output=pure-document-content"
+        "|mode metadata command=\"query --term <term> --view metadata .\" output=element-frontier"
     );
     println!(
-        "|mode metadata command=\"query --term <term> --view metadata .\" output=compact-frontier"
+        "|mode selector command=\"query --selector <path:start-end> --view metadata .\" output=element-frontier"
+    );
+    println!(
+        "|mode direct-read command=\"query --from-hook direct-source-read --selector <path:start-end> .\" output=pure-document-content"
     );
 }
 
@@ -248,7 +267,7 @@ fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement
     for fact in facts.iter().take(80) {
         println!("{}", fact.render());
     }
-    println!("|next search:fzf,search:owner,query:selector");
+    println!("|next search:fzf,search:owner,query:term,query:selector");
 }
 
 fn print_owner(language: DocumentLanguage, owner: &str, facts: &[DocumentElement]) {
@@ -294,22 +313,33 @@ fn print_query_matches(
     }
 }
 
-fn print_selector_frontier(
-    language: DocumentLanguage,
-    selector: &str,
-    source: &str,
-    range: Option<(usize, usize)>,
-) {
-    let selected = select_source(source, range);
+fn print_selector_frontier(language: DocumentLanguage, selector: &str, facts: &[DocumentElement]) {
     println!(
-        "[query-selector] lang={} selector={} bytes={} content=false",
+        "[query-selector] lang={} selector={} hit={} content=false",
         language.id(),
         escape_field(selector),
-        selected.len()
+        facts.len()
     );
+    for fact in facts.iter().take(80) {
+        println!("{}", fact.render());
+    }
     println!(
-        "|next content=\"{} query --selector {} --content .\"",
+        "|next direct-read=\"{} query --from-hook direct-source-read --selector {} .\"",
         language.command_prefix(),
         escape_field(selector)
     );
+}
+
+fn selector_elements(
+    language: DocumentLanguage,
+    selection: &SourceSelector,
+) -> Result<Vec<DocumentElement>, String> {
+    let facts = index_path(language, &selection.path)?;
+    Ok(facts
+        .into_iter()
+        .filter(|fact| match selection.range {
+            Some((start, end)) => fact.line <= end && fact.end_line >= start,
+            None => true,
+        })
+        .collect())
 }
