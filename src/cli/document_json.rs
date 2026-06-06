@@ -14,7 +14,7 @@ pub(super) fn print_search_json(
     query: Option<&str>,
 ) -> Result<(), String> {
     let packet = json!({
-        "schemaId": "agent.semantic-protocols.semantic-search-packet",
+        "schemaId": "agent.semantic-protocols.semantic-document-search-packet",
         "schemaVersion": "1",
         "protocolId": "agent.semantic-protocols.semantic-language",
         "protocolVersion": "1",
@@ -23,34 +23,23 @@ pub(super) fn print_search_json(
         "binary": "orgize",
         "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
         "method": format!("search/{view}"),
-        "projectRoot": display_path(root),
+        "projectRoot": packet_project_root(root),
         "view": view,
-        "renderMode": "facts",
+        "documentMode": "metadata",
         "query": query.unwrap_or_default(),
-        "header": {
-            "kind": format!("search-{view}"),
-            "fields": {
-                "language": language.id(),
-                "provider": "orgize",
-                "documents": document_count(facts),
-                "facts": facts.len()
-            }
-        },
-        "nodes": [],
-        "edges": [],
-        "owners": owners_json(root, facts),
-        "hits": facts.iter().map(|fact| search_hit_json(root, fact)).collect::<Vec<_>>(),
-        "findings": [],
+        "documentCount": document_count(facts),
+        "factCount": facts.len(),
+        "owners": owners_json(language, root, facts),
+        "documentFacts": facts.iter().map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
         "nextActions": [{
             "kind": "query",
             "target": "selector",
-            "fields": { "command": format!("{} query --selector <path:start-end>", language.command_prefix()) }
+            "command": format!("{} query --selector <path:start-end>", language.command_prefix())
         }],
         "notes": [{
             "kind": "search-document",
-            "message": "Document facts are parser-owned and can be expanded with query --selector."
-        }],
-        "nativeSyntaxFacts": facts.iter().map(|fact| native_fact_json(root, fact)).collect::<Vec<_>>()
+            "message": "Document facts are parser-owned metadata and can be expanded with query --selector."
+        }]
     });
     print_json(&packet)
 }
@@ -67,7 +56,7 @@ pub(super) fn print_query_json(
         terms.to_vec()
     };
     let packet = json!({
-        "schemaId": "agent.semantic-protocols.semantic-query-packet",
+        "schemaId": "agent.semantic-protocols.semantic-document-query-packet",
         "schemaVersion": "1",
         "protocolId": "agent.semantic-protocols.semantic-language",
         "protocolVersion": "1",
@@ -76,15 +65,15 @@ pub(super) fn print_query_json(
         "binary": "orgize",
         "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
         "method": "query/document",
-        "projectRoot": display_path(root),
+        "projectRoot": packet_project_root(root),
         "query": query_terms.join(" "),
         "queryTerms": query_terms,
-        "outputMode": "outline",
+        "documentMode": "metadata",
         "matchCount": facts.len(),
         "matchLimit": 80,
         "matchesTruncated": facts.len() > 80,
-        "matches": facts.iter().take(80).map(|fact| query_match_json(root, fact)).collect::<Vec<_>>(),
-        "nativeSyntaxFacts": facts.iter().take(80).map(|fact| native_fact_json(root, fact)).collect::<Vec<_>>(),
+        "documentFacts": facts.iter().take(80).map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
+        "contentBlocks": [],
         "truncated": facts.len() > 80
     });
     print_json(&packet)
@@ -103,7 +92,7 @@ pub(super) fn print_selector_query_json(
     let path = packet_path(root, &display_path(&selection.path));
     let selected = select_source(source, selection.range);
     let packet = json!({
-        "schemaId": "agent.semantic-protocols.semantic-query-packet",
+        "schemaId": "agent.semantic-protocols.semantic-document-query-packet",
         "schemaVersion": "1",
         "protocolId": "agent.semantic-protocols.semantic-language",
         "protocolVersion": "1",
@@ -112,22 +101,30 @@ pub(super) fn print_selector_query_json(
         "binary": "orgize",
         "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
         "method": "query/document",
-        "projectRoot": display_path(root),
+        "projectRoot": packet_project_root(root),
         "query": selector,
         "queryTerms": [selector],
-        "outputMode": "outline",
+        "documentMode": "content",
         "matchCount": 1,
         "matchLimit": 1,
         "matchesTruncated": false,
-        "matches": [{
-            "name": "selector",
+        "documentFacts": [{
+            "id": format!("selector:{path}:{line}:{end_line}"),
             "kind": "selector",
+            "name": "selector",
+            "documentPath": path,
             "location": location_json(&path, line, end_line),
-            "read": format!("{path}:{line}:{end_line}"),
-            "truncated": false,
-            "fields": { "bytes": selected.len(), "command": format!("{} query --selector {selector} --code", language.command_prefix()) }
+            "parserAuthority": language.parser_authority(),
+            "queryKeys": [selector],
+            "attributes": { "bytes": selected.len().to_string(), "command": format!("{} query --selector {selector} --content", language.command_prefix()) }
         }],
-        "nativeSyntaxFacts": [],
+        "contentBlocks": [{
+            "kind": "selector",
+            "documentPath": path,
+            "location": location_json(&path, line, end_line),
+            "parserAuthority": language.parser_authority(),
+            "content": selected
+        }],
         "truncated": false
     });
     print_json(&packet)
@@ -148,7 +145,16 @@ fn document_count(facts: &[DocumentFact]) -> usize {
         .len()
 }
 
-fn owners_json(root: &Path, facts: &[DocumentFact]) -> Vec<Value> {
+fn packet_project_root(root: &Path) -> String {
+    let candidate = display_path(root).replace('\\', "/");
+    if candidate.is_empty() {
+        ".".to_string()
+    } else {
+        candidate
+    }
+}
+
+fn owners_json(language: DocumentLanguage, root: &Path, facts: &[DocumentFact]) -> Vec<Value> {
     facts
         .iter()
         .map(|fact| packet_path(root, &fact.path))
@@ -158,51 +164,28 @@ fn owners_json(root: &Path, facts: &[DocumentFact]) -> Vec<Value> {
             json!({
                 "path": path,
                 "role": "document",
-                "public": false,
-                "fields": {}
+                "parserAuthority": language.parser_authority()
             })
         })
         .collect()
 }
 
-fn search_hit_json(root: &Path, fact: &DocumentFact) -> Value {
+fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentFact) -> Value {
     let path = packet_path(root, &fact.path);
-    json!({
-        "kind": fact.kind,
-        "ownerPath": path,
-        "symbol": fact_name(fact),
-        "location": location_json(&packet_path(root, &fact.path), fact.line, fact.end_line),
-        "score": 1.0,
-        "reason": "document-fact",
-        "fields": fact_fields_json(fact)
-    })
-}
-
-fn query_match_json(root: &Path, fact: &DocumentFact) -> Value {
-    let path = packet_path(root, &fact.path);
-    json!({
-        "name": fact_name(fact),
-        "kind": fact.kind,
-        "location": location_json(&path, fact.line, fact.end_line),
-        "read": format!("{path}:{}:{}", fact.line, fact.end_line),
-        "truncated": false,
-        "fields": fact_fields_json(fact)
-    })
-}
-
-fn native_fact_json(root: &Path, fact: &DocumentFact) -> Value {
-    let path = packet_path(root, &fact.path);
-    json!({
+    let mut value = json!({
         "id": format!("{}:{}:{}:{}", fact.kind, path, fact.line, fact.end_line),
         "kind": fact.kind,
-        "source": "native-parser",
-        "languageKind": fact.kind,
         "name": fact_name(fact),
-        "ownerPath": path,
+        "documentPath": path,
         "location": location_json(&packet_path(root, &fact.path), fact.line, fact.end_line),
+        "parserAuthority": language.parser_authority(),
         "queryKeys": query_keys(fact),
-        "fields": fact_fields_json(fact)
-    })
+        "attributes": fact_fields_json(fact)
+    });
+    if !fact.text.is_empty() {
+        value["textSnippet"] = json!(fact.text);
+    }
+    value
 }
 
 fn location_json(path: &str, line: usize, end_line: usize) -> Value {
@@ -219,7 +202,7 @@ fn packet_path(root: &Path, path: &str) -> String {
     } else {
         Some(path)
     };
-    let candidate = relative
+    let mut candidate = relative
         .map(display_path)
         .or_else(|| {
             path.file_name()
@@ -228,6 +211,12 @@ fn packet_path(root: &Path, path: &str) -> String {
         })
         .unwrap_or_else(|| ".".to_string())
         .replace('\\', "/");
+    while let Some(stripped) = candidate.strip_prefix("./") {
+        if stripped.is_empty() {
+            break;
+        }
+        candidate = stripped.to_string();
+    }
     if candidate.is_empty() {
         ".".to_string()
     } else {

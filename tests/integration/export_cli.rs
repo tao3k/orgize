@@ -79,7 +79,7 @@ fn org_document_search_and_query_commands_run() {
         .arg("query")
         .arg("--selector")
         .arg(selector)
-        .arg("--code")
+        .arg("--content")
         .output()
         .expect("run orgize query");
     assert!(query.status.success());
@@ -103,7 +103,7 @@ fn org_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout.contains("code=\"orgize query --selector"),
+        selector_stdout.contains("content=\"orgize query --selector"),
         "{selector_stdout}"
     );
 
@@ -138,16 +138,17 @@ fn org_document_search_and_query_commands_run() {
         serde_json::from_slice(&json_search.stdout).expect("parse search packet");
     assert_eq!(
         search_packet["schemaId"],
-        "agent.semantic-protocols.semantic-search-packet"
+        "agent.semantic-protocols.semantic-document-search-packet"
     );
     assert_eq!(search_packet["languageId"], "org");
     assert_eq!(search_packet["method"], "search/prime");
+    assert_eq!(search_packet["documentMode"], "metadata");
     assert!(
-        search_packet["nativeSyntaxFacts"]
+        search_packet["documentFacts"]
             .as_array()
-            .expect("native facts")
+            .expect("document facts")
             .iter()
-            .any(|fact| fact["kind"] == "property" && fact["fields"]["key"] == "CUSTOM_ID"),
+            .any(|fact| fact["kind"] == "property" && fact["attributes"]["key"] == "CUSTOM_ID"),
         "{search_packet:#}"
     );
 
@@ -168,18 +169,73 @@ fn org_document_search_and_query_commands_run() {
         serde_json::from_slice(&json_query.stdout).expect("parse query packet");
     assert_eq!(
         query_packet["schemaId"],
-        "agent.semantic-protocols.semantic-query-packet"
+        "agent.semantic-protocols.semantic-document-query-packet"
     );
     assert_eq!(query_packet["languageId"], "org");
     assert_eq!(query_packet["method"], "query/document");
+    assert_eq!(query_packet["documentMode"], "metadata");
     assert!(
-        query_packet["matches"]
+        query_packet["documentFacts"]
             .as_array()
-            .expect("matches")
+            .expect("document facts")
             .iter()
-            .any(|item| item["kind"] == "property" && item["fields"]["key"] == "CUSTOM_ID"),
+            .any(|item| item["kind"] == "property" && item["attributes"]["key"] == "CUSTOM_ID"),
         "{query_packet:#}"
     );
+
+    let dot_root_search = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&root)
+        .arg("search")
+        .arg("prime")
+        .arg("--view")
+        .arg("seeds")
+        .arg("--json")
+        .arg(".")
+        .output()
+        .expect("run orgize dot-root search json");
+    assert!(
+        dot_root_search.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&dot_root_search.stderr)
+    );
+    let dot_root_search_packet: Value =
+        serde_json::from_slice(&dot_root_search.stdout).expect("parse dot-root search packet");
+    assert_eq!(dot_root_search_packet["projectRoot"], ".");
+    assert!(
+        dot_root_search_packet["owners"]
+            .as_array()
+            .expect("owners")
+            .iter()
+            .any(|owner| owner["path"] == "plan.org"),
+        "{dot_root_search_packet:#}"
+    );
+    assert!(
+        dot_root_search_packet["documentFacts"]
+            .as_array()
+            .expect("document facts")
+            .iter()
+            .any(|fact| fact["documentPath"] == "plan.org"),
+        "{dot_root_search_packet:#}"
+    );
+
+    let dot_root_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&root)
+        .arg("query")
+        .arg("--selector")
+        .arg("plan.org:1-4")
+        .arg("--json")
+        .arg(".")
+        .output()
+        .expect("run orgize relative selector json");
+    assert!(
+        dot_root_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&dot_root_query.stderr)
+    );
+    let dot_root_packet: Value =
+        serde_json::from_slice(&dot_root_query.stdout).expect("parse dot-root query packet");
+    assert_eq!(dot_root_packet["projectRoot"], ".");
+    assert_eq!(dot_root_packet["documentMode"], "content");
 }
 
 #[cfg(feature = "md")]
@@ -232,7 +288,7 @@ fn markdown_document_search_and_query_commands_run() {
         .arg("query")
         .arg("--selector")
         .arg(selector)
-        .arg("--code")
+        .arg("--content")
         .output()
         .expect("run orgize md query");
     assert!(query.status.success());
@@ -254,7 +310,7 @@ fn markdown_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout.contains("code=\"orgize md query --selector"),
+        selector_stdout.contains("content=\"orgize md query --selector"),
         "{selector_stdout}"
     );
 
@@ -291,16 +347,17 @@ fn markdown_document_search_and_query_commands_run() {
         serde_json::from_slice(&json_search.stdout).expect("parse search packet");
     assert_eq!(
         search_packet["schemaId"],
-        "agent.semantic-protocols.semantic-search-packet"
+        "agent.semantic-protocols.semantic-document-search-packet"
     );
     assert_eq!(search_packet["languageId"], "md");
     assert_eq!(search_packet["method"], "search/prime");
+    assert_eq!(search_packet["documentMode"], "metadata");
     assert!(
-        search_packet["nativeSyntaxFacts"]
+        search_packet["documentFacts"]
             .as_array()
-            .expect("native facts")
+            .expect("document facts")
             .iter()
-            .any(|fact| fact["kind"] == "heading" && fact["fields"]["title"] == "Project"),
+            .any(|fact| fact["kind"] == "heading" && fact["attributes"]["title"] == "Project"),
         "{search_packet:#}"
     );
 
@@ -322,16 +379,17 @@ fn markdown_document_search_and_query_commands_run() {
         serde_json::from_slice(&json_query.stdout).expect("parse query packet");
     assert_eq!(
         query_packet["schemaId"],
-        "agent.semantic-protocols.semantic-query-packet"
+        "agent.semantic-protocols.semantic-document-query-packet"
     );
     assert_eq!(query_packet["languageId"], "md");
     assert_eq!(query_packet["method"], "query/document");
+    assert_eq!(query_packet["documentMode"], "metadata");
     assert!(
-        query_packet["matches"]
+        query_packet["documentFacts"]
             .as_array()
-            .expect("matches")
+            .expect("document facts")
             .iter()
-            .any(|item| item["kind"] == "heading" && item["fields"]["title"] == "Project"),
+            .any(|item| item["kind"] == "heading" && item["attributes"]["title"] == "Project"),
         "{query_packet:#}"
     );
 }

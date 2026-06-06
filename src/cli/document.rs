@@ -110,10 +110,16 @@ fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, 
 
     let json_output = has_flag(&args, "--json");
     let selector = option_value(&args, "--selector");
-    let code = args.iter().any(|arg| arg == "--code");
-    if json_output && code {
+    let content = args.iter().any(|arg| arg == "--content");
+    if args.iter().any(|arg| arg == "--code") {
         return Err(format!(
-            "{} query: --json cannot be combined with --code",
+            "{} query: document selectors use --content; --code is reserved for source-language providers",
+            language.id()
+        ));
+    }
+    if json_output && content {
+        return Err(format!(
+            "{} query: --json cannot be combined with --content",
             language.id()
         ));
     }
@@ -121,7 +127,7 @@ fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, 
         let selection = SourceSelector::parse(selector)?;
         let source = fs::read_to_string(&selection.path)
             .map_err(|error| format!("{}: {error}", selection.path.display()))?;
-        if code {
+        if content {
             print!("{}", select_source(&source, selection.range));
         } else if json_output {
             print_selector_query_json(language, selector, &selection, &source)?;
@@ -155,8 +161,8 @@ fn print_guide(language: DocumentLanguage) {
         "[guide] lang={} provider=orgize protocol=guide.v1 root=.",
         language.id()
     );
-    println!("|surface search purpose=document-structure output=compact-seeds code=false");
-    println!("|surface query purpose=selector-or-term output=frontier|pure-source");
+    println!("|surface search purpose=document-structure output=compact-seeds content=false");
+    println!("|surface query purpose=selector-or-term output=metadata-frontier|pure-content");
     println!("|rule parser-authority={}", language.parser_authority());
     println!("|rule no=check,ast-patch,evidence reason=document-language");
     println!(
@@ -168,7 +174,7 @@ fn print_guide(language: DocumentLanguage) {
         language.command_prefix()
     );
     println!(
-        "|cmd query-code={} query --selector <path:start-end> --code .",
+        "|cmd query-content={} query --selector <path:start-end> --content .",
         language.command_prefix()
     );
 }
@@ -188,7 +194,9 @@ fn print_query_guide(language: DocumentLanguage) {
         "[query-guide] lang={} provider=orgize protocol=query-guide.v1 root=.",
         language.id()
     );
-    println!("|mode code command=\"query --selector <path:start-end> --code\" output=pure-source");
+    println!(
+        "|mode content command=\"query --selector <path:start-end> --content\" output=pure-document-content"
+    );
     println!("|mode term command=\"query --term <term> .\" output=compact-frontier");
 }
 
@@ -264,13 +272,13 @@ fn print_selector_frontier(
 ) {
     let selected = select_source(source, range);
     println!(
-        "[query-selector] lang={} selector={} bytes={} code=false",
+        "[query-selector] lang={} selector={} bytes={} content=false",
         language.id(),
         escape_field(selector),
         selected.len()
     );
     println!(
-        "|next code=\"{} query --selector {} --code .\"",
+        "|next content=\"{} query --selector {} --content .\"",
         language.command_prefix(),
         escape_field(selector)
     );
