@@ -42,6 +42,16 @@ pub(super) fn print_search_json(
             },
             {
                 "kind": "query",
+                "target": "kind",
+                "command": format!("{} query --kind <element-kind> --view metadata", language.command_prefix())
+            },
+            {
+                "kind": "query",
+                "target": "field",
+                "command": format!("{} query --field <key=value> --view metadata", language.command_prefix())
+            },
+            {
+                "kind": "query",
                 "target": "direct-read",
                 "command": format!("{} query --from-hook direct-source-read --selector <path:start-end> .", language.command_prefix())
             }

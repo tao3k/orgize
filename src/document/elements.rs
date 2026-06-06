@@ -67,6 +67,22 @@ pub fn filter_elements(elements: &[DocumentElement], query: &str) -> Vec<Documen
         .collect()
 }
 
+pub fn filter_elements_by_query(
+    elements: Vec<DocumentElement>,
+    terms: &[String],
+    kinds: &[String],
+    fields: &[String],
+) -> Vec<DocumentElement> {
+    elements
+        .into_iter()
+        .filter(|element| {
+            terms.iter().all(|term| element.matches(term))
+                && kinds.iter().all(|kind| element.kind_matches(kind))
+                && fields.iter().all(|field| element.field_matches(field))
+        })
+        .collect()
+}
+
 pub(super) fn count_kind(elements: &[DocumentElement], kind: &str) -> usize {
     elements
         .iter()
@@ -335,6 +351,18 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                     ],
                 ));
             }
+            NodeValue::Paragraph => {
+                let text = markdown_inline_text(node);
+                facts.push(markdown_fact_with_text(
+                    "paragraph",
+                    "NodeValue::Paragraph",
+                    path,
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    Vec::new(),
+                    text,
+                ));
+            }
             NodeValue::Link(link) => facts.push(markdown_fact(
                 "link",
                 "NodeValue::Link",
@@ -470,15 +498,59 @@ fn markdown_fact(
     end_line: usize,
     fields: Vec<(String, String)>,
 ) -> DocumentElement {
+    markdown_fact_with_text(
+        kind,
+        source_kind,
+        path,
+        line,
+        end_line,
+        fields,
+        String::new(),
+    )
+}
+
+#[cfg(feature = "md")]
+fn markdown_fact_with_text(
+    kind: &'static str,
+    source_kind: &'static str,
+    path: &Path,
+    line: usize,
+    end_line: usize,
+    fields: Vec<(String, String)>,
+    text: String,
+) -> DocumentElement {
     DocumentElement {
         kind,
         source_kind,
         path: display_path(path),
         line: line.max(1),
         end_line: end_line.max(line).max(1),
-        text: String::new(),
+        text,
         fields,
     }
+}
+
+#[cfg(feature = "md")]
+fn markdown_inline_text<'a>(node: &'a comrak::nodes::AstNode<'a>) -> String {
+    use comrak::nodes::NodeValue;
+
+    fn collect<'a>(node: &'a comrak::nodes::AstNode<'a>, output: &mut Vec<String>) {
+        match &node.data.borrow().value {
+            NodeValue::Text(text) => output.push(text.to_string()),
+            NodeValue::Code(code) => output.push(code.literal.clone()),
+            _ => {
+                for child in node.children() {
+                    collect(child, output);
+                }
+            }
+        }
+    }
+
+    let mut parts = Vec::new();
+    for child in node.children() {
+        collect(child, &mut parts);
+    }
+    parts.join(" ").trim().to_string()
 }
 
 fn collect_document_paths(
@@ -573,6 +645,31 @@ impl DocumentElement {
         )
         .to_ascii_lowercase();
         query.split_whitespace().all(|term| haystack.contains(term))
+    }
+
+    fn kind_matches(&self, kind: &str) -> bool {
+        self.kind.eq_ignore_ascii_case(kind.trim())
+    }
+
+    fn field_matches(&self, field: &str) -> bool {
+        let field = field.trim();
+        if field.is_empty() {
+            return true;
+        }
+        let Some((key, value)) = field.split_once('=') else {
+            return self
+                .fields
+                .iter()
+                .any(|(existing_key, _)| existing_key.eq_ignore_ascii_case(field));
+        };
+        let key = key.trim();
+        let value = value.trim();
+        if key.eq_ignore_ascii_case("text") {
+            return self.text.contains(value);
+        }
+        self.fields.iter().any(|(existing_key, existing_value)| {
+            existing_key.eq_ignore_ascii_case(key) && existing_value.contains(value)
+        })
     }
 }
 

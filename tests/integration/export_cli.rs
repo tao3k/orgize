@@ -318,7 +318,7 @@ fn markdown_document_search_and_query_commands_run() {
     let path = root.join("README.md");
     std::fs::write(
         &path,
-        "# Project\n\n- [x] Write tests\n- item\n\n[site](https://example.com)\n![diagram](diagram.png)\n\n---\n\n```rust\nfn main() {}\n```\n",
+        "# Project\n\nThis paragraph mentions repeat frontier behavior.\n\n- [x] Write tests\n- item\n\n[site](https://example.com)\n![diagram](diagram.png)\n\n---\n\n```rust\nfn main() {}\n```\n",
     )
     .expect("write markdown fixture");
 
@@ -365,6 +365,8 @@ fn markdown_document_search_and_query_commands_run() {
         String::from_utf8_lossy(&prime_search.stderr)
     );
     let prime_stdout = String::from_utf8(prime_search.stdout).expect("utf8 prime search");
+    assert!(prime_stdout.contains("paragraph="), "{prime_stdout}");
+    assert!(prime_stdout.contains("|paragraph"), "{prime_stdout}");
     assert!(prime_stdout.contains("|task"), "{prime_stdout}");
     assert!(prime_stdout.contains("|listItem"), "{prime_stdout}");
     assert!(prime_stdout.contains("|image"), "{prime_stdout}");
@@ -419,6 +421,33 @@ fn markdown_document_search_and_query_commands_run() {
     assert!(term_stdout.contains("terms=1"), "{term_stdout}");
     assert!(term_stdout.contains("|heading"), "{term_stdout}");
 
+    let paragraph_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("query")
+        .arg("--kind")
+        .arg("paragraph")
+        .arg("--term")
+        .arg("repeat frontier")
+        .arg("--view")
+        .arg("metadata")
+        .arg(&root)
+        .output()
+        .expect("run orgize md paragraph query");
+    assert!(paragraph_query.status.success());
+    let paragraph_stdout = String::from_utf8(paragraph_query.stdout).expect("utf8 paragraph query");
+    assert!(
+        paragraph_stdout.contains("[query] lang=md"),
+        "{paragraph_stdout}"
+    );
+    assert!(
+        paragraph_stdout.contains("|paragraph"),
+        "{paragraph_stdout}"
+    );
+    assert!(
+        paragraph_stdout.contains("repeat frontier behavior"),
+        "{paragraph_stdout}"
+    );
+
     let json_search = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")
         .arg("search")
@@ -472,6 +501,19 @@ fn markdown_document_search_and_query_commands_run() {
             .any(|fact| fact["kind"] == "heading"
                 && fact["sourceKind"] == "NodeValue::Heading"
                 && fact["attributes"]["title"] == "Project"),
+        "{search_packet:#}"
+    );
+    assert!(
+        search_packet["documentFacts"]
+            .as_array()
+            .expect("document facts")
+            .iter()
+            .any(|fact| fact["kind"] == "paragraph"
+                && fact["sourceKind"] == "NodeValue::Paragraph"
+                && fact["attributes"]["text"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .contains("repeat frontier behavior")),
         "{search_packet:#}"
     );
     assert!(

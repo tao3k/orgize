@@ -7,8 +7,8 @@ use std::{
 use super::{
     elements::{
         DocumentElement, DocumentLanguage, SourceSelector, count_kind, display_path, escape_field,
-        filter_elements, has_flag, index_path, index_project, last_existing_path, option_value,
-        option_values, select_source,
+        filter_elements, filter_elements_by_query, has_flag, index_path, index_project,
+        last_existing_path, option_value, option_values, select_source,
     },
     packets::{print_query_json, print_search_json, print_selector_query_json},
 };
@@ -113,6 +113,9 @@ fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, 
 
     let json_output = has_flag(&args, "--json");
     let selector = option_value(&args, "--selector");
+    let terms = option_values(&args, "--term");
+    let kinds = option_values(&args, "--kind");
+    let fields = option_values(&args, "--field");
     let view = option_value(&args, "--view").unwrap_or("metadata");
     if view != "metadata" {
         return Err(format!(
@@ -154,25 +157,19 @@ fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, 
             print!("{}", select_source(&source, selection.range));
         } else if json_output {
             let facts = selector_elements(language, &selection)?;
+            let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
             print_selector_query_json(language, selector, &selection, &facts)?;
         } else {
             let facts = selector_elements(language, &selection)?;
+            let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
             print_selector_frontier(language, selector, &facts);
         }
         return Ok(ExitCode::SUCCESS);
     }
 
-    let terms = option_values(&args, "--term");
     let root = last_existing_path(&args).unwrap_or_else(|| PathBuf::from("."));
     let facts = index_project(language, &root)?;
-    let matches = if terms.is_empty() {
-        facts
-    } else {
-        facts
-            .into_iter()
-            .filter(|fact| terms.iter().any(|term| fact.matches(term)))
-            .collect()
-    };
+    let matches = filter_elements_by_query(facts, &terms, &kinds, &fields);
     if json_output {
         print_query_json(language, &terms, &root, &matches)?;
     } else {
@@ -194,7 +191,9 @@ fn print_guide(language: DocumentLanguage) {
     println!("|rule parser-authority={}", language.parser_authority());
     println!("|rule no=check,ast-patch,evidence reason=document-language");
     println!("|rule no=--content reason=direct-read-is-the-content-surface");
-    println!("|element-map heading,property,planning,table,block,list,listItem,task,link,image");
+    println!(
+        "|element-map heading,paragraph,property,planning,table,block,list,listItem,task,link,image"
+    );
     println!(
         "|cmd search-prime={} search prime --view seeds .",
         language.command_prefix()
@@ -209,6 +208,14 @@ fn print_guide(language: DocumentLanguage) {
     );
     println!(
         "|cmd query-selector={} query --selector <path:start-end> --view metadata .",
+        language.command_prefix()
+    );
+    println!(
+        "|cmd query-kind={} query --kind <element-kind> --view metadata .",
+        language.command_prefix()
+    );
+    println!(
+        "|cmd query-field={} query --field <key=value> --view metadata .",
         language.command_prefix()
     );
     println!(
@@ -237,6 +244,12 @@ fn print_query_guide(language: DocumentLanguage) {
         "|mode metadata command=\"query --term <term> --view metadata .\" output=element-frontier"
     );
     println!(
+        "|mode kind command=\"query --kind <element-kind> --view metadata .\" output=element-frontier"
+    );
+    println!(
+        "|mode field command=\"query --field <key=value> --view metadata .\" output=element-frontier"
+    );
+    println!(
         "|mode selector command=\"query --selector <path:start-end> --view metadata .\" output=element-frontier"
     );
     println!(
@@ -246,7 +259,7 @@ fn print_query_guide(language: DocumentLanguage) {
 
 fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) {
     println!(
-        "[search-prime] lang={} root={} doc={} heading={} property={} planning={} table={} block={} list={} task={} link={} image={}",
+        "[search-prime] lang={} root={} doc={} heading={} paragraph={} property={} planning={} table={} block={} list={} task={} link={} image={}",
         language.id(),
         display_path(root),
         facts
@@ -255,6 +268,7 @@ fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement
             .collect::<std::collections::BTreeSet<_>>()
             .len(),
         count_kind(facts, "heading"),
+        count_kind(facts, "paragraph"),
         count_kind(facts, "property"),
         count_kind(facts, "planning"),
         count_kind(facts, "table"),
