@@ -6,9 +6,10 @@ use std::{
 
 use super::{
     elements::{
-        DocumentElement, DocumentLanguage, SourceSelector, count_kind, display_path, escape_field,
-        filter_elements, filter_elements_by_query, has_flag, index_path, index_project,
-        last_existing_path, option_value, option_values, select_source,
+        DocumentElement, DocumentLanguage, DocumentWalkConfig, SourceSelector, count_kind,
+        display_path, escape_field, filter_elements, filter_elements_by_query, has_flag,
+        index_path, index_project_with_config, last_existing_path, option_value, option_values,
+        select_source,
     },
     packets::{print_query_json, print_search_json, print_selector_query_json},
 };
@@ -25,6 +26,14 @@ pub fn run_document_command(
     language: DocumentLanguage,
     args: Vec<String>,
 ) -> Result<ExitCode, String> {
+    run_document_command_with_walk_config(language, args, DocumentWalkConfig::default())
+}
+
+pub fn run_document_command_with_walk_config(
+    language: DocumentLanguage,
+    args: Vec<String>,
+    walk_config: DocumentWalkConfig,
+) -> Result<ExitCode, String> {
     let mut args = args.into_iter();
     let Some(command) = args.next() else {
         print_guide(language);
@@ -36,8 +45,8 @@ pub fn run_document_command(
             print_guide(language);
             Ok(ExitCode::SUCCESS)
         }
-        "search" => run_search(language, args.collect()),
-        "query" => run_query(language, args.collect()),
+        "search" => run_search(language, args.collect(), &walk_config),
+        "query" => run_query(language, args.collect(), &walk_config),
         "-h" | "--help" | "help" => {
             print_guide(language);
             Ok(ExitCode::SUCCESS)
@@ -49,7 +58,11 @@ pub fn run_document_command(
     }
 }
 
-fn run_search(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, String> {
+fn run_search(
+    language: DocumentLanguage,
+    args: Vec<String>,
+    walk_config: &DocumentWalkConfig,
+) -> Result<ExitCode, String> {
     let json_output = has_flag(&args, "--json");
     let Some(view) = args.first().map(String::as_str) else {
         return Err(format!("{} search: expected view", language.id()));
@@ -62,11 +75,22 @@ fn run_search(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode,
         }
         "prime" => {
             let root = last_existing_path(&args[1..]).unwrap_or_else(|| PathBuf::from("."));
-            let facts = index_project(language, &root)?;
+            let facts = index_project_with_config(language, &root, walk_config)?;
             if json_output {
                 print_search_json(language, "prime", &root, &facts, None)?;
             } else {
                 print_prime(language, &root, &facts);
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        "toc" => {
+            let root = last_existing_path(&args[1..]).unwrap_or_else(|| PathBuf::from("."));
+            let facts = index_project_with_config(language, &root, walk_config)?;
+            let headings = heading_facts(&facts);
+            if json_output {
+                print_search_json(language, "toc", &root, &headings, None)?;
+            } else {
+                print_toc(language, &root, &headings);
             }
             Ok(ExitCode::SUCCESS)
         }
@@ -85,16 +109,36 @@ fn run_search(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode,
             Ok(ExitCode::SUCCESS)
         }
         "fzf" => {
-            let Some(query) = args.get(1) else {
+            let fzf_args = &args[1..];
+            let root_arg_index = last_existing_path_arg_index(fzf_args);
+            let terms = fzf_query_terms(fzf_args, root_arg_index);
+            if terms.is_empty() {
                 return Err(format!("{} search fzf: expected query", language.id()));
             };
-            let root = last_existing_path(&args[2..]).unwrap_or_else(|| PathBuf::from("."));
-            let facts = index_project(language, &root)?;
-            let matches = filter_elements(&facts, query);
-            if json_output {
-                print_search_json(language, "fzf", &root, &matches, Some(query))?;
+            let root = root_arg_index
+                .map(|index| PathBuf::from(&fzf_args[index]))
+                .unwrap_or_else(|| PathBuf::from("."));
+            let toc_output = fzf_toc_requested(fzf_args, root_arg_index);
+            let facts = index_project_with_config(language, &root, walk_config)?;
+            if toc_output {
+                let query = terms.join(" ");
+                let headings = heading_facts_for_matching_documents(&facts, &terms);
+                if json_output {
+                    print_search_json(language, "fzf-toc", &root, &headings, Some(&query))?;
+                } else {
+                    print_fzf_toc(language, &query, &root, &headings);
+                }
             } else {
-                print_fzf(language, query, &root, &matches);
+                let query = terms
+                    .first()
+                    .expect("terms is non-empty after earlier check")
+                    .as_str();
+                let matches = filter_elements(&facts, query);
+                if json_output {
+                    print_search_json(language, "fzf", &root, &matches, Some(query))?;
+                } else {
+                    print_fzf(language, query, &root, &matches);
+                }
             }
             Ok(ExitCode::SUCCESS)
         }
@@ -105,13 +149,18 @@ fn run_search(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode,
     }
 }
 
-fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, String> {
+fn run_query(
+    language: DocumentLanguage,
+    args: Vec<String>,
+    walk_config: &DocumentWalkConfig,
+) -> Result<ExitCode, String> {
     if args.first().is_some_and(|arg| arg == "guide") {
         print_query_guide(language);
         return Ok(ExitCode::SUCCESS);
     }
 
     let json_output = has_flag(&args, "--json");
+    let content_output = has_flag(&args, "--content");
     let selector = option_value(&args, "--selector");
     let terms = option_values(&args, "--term");
     let kinds = option_values(&args, "--kind");
@@ -125,9 +174,20 @@ fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, 
     }
     let from_hook = option_value(&args, "--from-hook");
     let direct_read = from_hook.is_some_and(|value| value == "direct-source-read");
-    if args.iter().any(|arg| arg == "--content") {
+    if content_output && direct_read {
         return Err(format!(
-            "{} query: --content is unsupported; use --from-hook direct-source-read with --selector for direct reads",
+            "{} query: --content is a document query projection and cannot be combined with --from-hook direct-source-read",
+            language.id()
+        ));
+    }
+    if content_output
+        && selector.is_none()
+        && terms.is_empty()
+        && kinds.is_empty()
+        && fields.is_empty()
+    {
+        return Err(format!(
+            "{} query: --content requires --selector, --term, --kind, or --field so it cannot read the whole document set",
             language.id()
         ));
     }
@@ -158,7 +218,11 @@ fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, 
         } else if json_output {
             let facts = selector_elements(language, &selection)?;
             let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
-            print_selector_query_json(language, selector, &selection, &facts)?;
+            print_selector_query_json(language, selector, &selection, &facts, content_output)?;
+        } else if content_output {
+            let facts = selector_elements(language, &selection)?;
+            let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
+            print_query_content(&facts);
         } else {
             let facts = selector_elements(language, &selection)?;
             let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
@@ -168,10 +232,12 @@ fn run_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, 
     }
 
     let root = last_existing_path(&args).unwrap_or_else(|| PathBuf::from("."));
-    let facts = index_project(language, &root)?;
+    let facts = index_project_with_config(language, &root, walk_config)?;
     let matches = filter_elements_by_query(facts, &terms, &kinds, &fields);
     if json_output {
-        print_query_json(language, &terms, &root, &matches)?;
+        print_query_json(language, &terms, &root, &matches, content_output)?;
+    } else if content_output {
+        print_query_content(&matches);
     } else {
         print_query_matches(language, &terms, &root, &matches);
     }
@@ -190,16 +256,20 @@ fn print_guide(language: DocumentLanguage) {
     println!("|surface direct-read purpose=hook-recovery output=pure-content content=true");
     println!("|rule parser-authority={}", language.parser_authority());
     println!("|rule no=check,ast-patch,evidence reason=document-language");
-    println!("|rule no=--content reason=direct-read-is-the-content-surface");
-    println!(
-        "|element-map heading,paragraph,property,planning,table,block,list,listItem,task,link,image"
-    );
+    println!("|rule content=query-projection reason=content-needs-selector-term-kind-or-field");
+    println!("|rule project-walk skip=hidden-dirs,target,node_modules,__pycache__,venv,dist,build");
+    print_element_guide(language);
     println!(
         "|cmd search-prime={} search prime --view seeds .",
         language.command_prefix()
     );
+    println!("|cmd search-toc={} search toc .", language.command_prefix());
     println!(
         "|cmd search-fzf={} search fzf <query> --view seeds .",
+        language.command_prefix()
+    );
+    println!(
+        "|cmd search-fzf-toc={} search fzf <query...> --view toc .",
         language.command_prefix()
     );
     println!(
@@ -219,9 +289,99 @@ fn print_guide(language: DocumentLanguage) {
         language.command_prefix()
     );
     println!(
+        "|cmd query-content={} query --term <term> --content .",
+        language.command_prefix()
+    );
+    println!(
+        "|cmd query-content-kind={} query --kind paragraph --term <term> --content .",
+        language.command_prefix()
+    );
+    println!(
+        "|cmd query-content-selector={} query --selector <path:start-end> --content .",
+        language.command_prefix()
+    );
+    println!(
         "|cmd direct-read={} query --from-hook direct-source-read --selector <path:start-end> .",
         language.command_prefix()
     );
+}
+
+fn print_element_guide(language: DocumentLanguage) {
+    println!(
+        "|query-axis term matches=kind,sourceKind,path,text,content,field-key,field-value combine=all-terms"
+    );
+    println!(
+        "|query-axis selector matches=elements-overlapping-path-range combine=term,kind,field"
+    );
+    println!("|query-axis kind matches=exact-element-kind combine=all-kinds");
+    println!("|query-axis field matches=key-or-key=value value-match=contains combine=all-fields");
+    println!(
+        "|query-axis content requires=selector|term|kind|field output=matched-element-content forbids=direct-source-read"
+    );
+    println!(
+        "|query-axis direct-read requires=from-hook+selector output=source-preserved-content use=hook-recovery-only"
+    );
+    match language {
+        DocumentLanguage::Org => {
+            println!(
+                "|element-map heading,paragraph,property,planning,table,block,list,listItem,task,link,image"
+            );
+            println!("|field-map heading fields=level,title,todo,todoType,priority,tag");
+            println!("|field-map paragraph fields=text content=raw-paragraph");
+            println!("|field-map property fields=key,value");
+            println!("|field-map planning fields=scheduled,deadline,closed");
+            println!("|field-map table fields=header");
+            println!("|field-map block fields=kind=source|export,lang,backend");
+            println!("|field-map list fields=listKind=ordered|unordered,descriptive");
+            println!("|field-map listItem fields=bullet,indent,counter,tag");
+            println!("|field-map task fields=bullet,indent,checkbox,checked,tag");
+            println!("|field-map link fields=target,description");
+            println!("|field-map image fields=target,description");
+            println!(
+                "|recipe todo-headings=asp org query --kind heading --field todo=TODO --view metadata ."
+            );
+            println!(
+                "|recipe checked-tasks=asp org query --kind task --field checked=true --view metadata ."
+            );
+            println!(
+                "|recipe property-value=asp org query --kind property --field key=<KEY> --view metadata ."
+            );
+            println!(
+                "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --view metadata ."
+            );
+            println!(
+                "|recipe paragraph-content=asp org query --kind paragraph --term <term> --content ."
+            );
+            println!(
+                "|recipe range-elements=asp org query --selector <path:start-end> --view metadata ."
+            );
+        }
+        DocumentLanguage::Markdown => {
+            println!(
+                "|element-map heading,paragraph,table,block,list,listItem,task,link,image,frontMatter,thematicBreak"
+            );
+            println!("|field-map heading fields=level,title");
+            println!("|field-map paragraph fields=text content=paragraph-text");
+            println!("|field-map block fields=kind=code,lang");
+            println!("|field-map list fields=listKind,start");
+            println!("|field-map task fields=checked,checkbox");
+            println!("|field-map link fields=target");
+            println!("|field-map image fields=target");
+            println!("|recipe headings=asp md query --kind heading --view metadata .");
+            println!(
+                "|recipe checked-tasks=asp md query --kind task --field checked=true --view metadata ."
+            );
+            println!(
+                "|recipe code-blocks=asp md query --kind block --field kind=code --view metadata ."
+            );
+            println!(
+                "|recipe paragraph-content=asp md query --kind paragraph --term <term> --content ."
+            );
+            println!(
+                "|recipe range-elements=asp md query --selector <path:start-end> --view metadata ."
+            );
+        }
+    }
 }
 
 fn print_search_guide(language: DocumentLanguage) {
@@ -232,7 +392,14 @@ fn print_search_guide(language: DocumentLanguage) {
     println!(
         "|view prime returns=headings,properties,planning,tables,blocks,lists,tasks,links,images"
     );
+    println!(
+        "|view toc returns=document-heading-outline fields=path,range,level,title,todo,priority,tag"
+    );
     println!("|view fzf args=query returns=bounded-document-facts");
+    println!(
+        "|view fzf-toc args=query command=\"{} search fzf <query...> --view toc .\" returns=matched-document-heading-outline combine=document-all-terms",
+        language.command_prefix()
+    );
 }
 
 fn print_query_guide(language: DocumentLanguage) {
@@ -252,9 +419,18 @@ fn print_query_guide(language: DocumentLanguage) {
     println!(
         "|mode selector command=\"query --selector <path:start-end> --view metadata .\" output=element-frontier"
     );
+    println!("|mode content command=\"query --term <term> --content .\" output=pure-query-content");
     println!(
         "|mode direct-read command=\"query --from-hook direct-source-read --selector <path:start-end> .\" output=pure-document-content"
     );
+    println!("|combine all=--selector+--term+--kind+--field semantics=intersection");
+    println!(
+        "|field-match key command=\"query --field <key> --view metadata .\" output=elements-with-field"
+    );
+    println!(
+        "|field-match value command=\"query --field <key=value> --view metadata .\" output=elements-with-containing-value"
+    );
+    println!("|content-rule requires=--selector|--term|--kind|--field forbids=--from-hook");
 }
 
 fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) {
@@ -282,6 +458,176 @@ fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement
         println!("{}", fact.render());
     }
     println!("|next search:fzf,search:owner,query:term,query:selector");
+}
+
+fn print_toc(language: DocumentLanguage, root: &Path, headings: &[DocumentElement]) {
+    print_toc_header(language, root, headings, "search-toc", None);
+    print_toc_rows(language, headings);
+}
+
+fn print_fzf_toc(
+    language: DocumentLanguage,
+    query: &str,
+    root: &Path,
+    headings: &[DocumentElement],
+) {
+    print_toc_header(language, root, headings, "search-fzf-toc", Some(query));
+    print_toc_rows(language, headings);
+}
+
+fn print_toc_header(
+    language: DocumentLanguage,
+    root: &Path,
+    headings: &[DocumentElement],
+    label: &str,
+    query: Option<&str>,
+) {
+    let document_paths = headings
+        .iter()
+        .map(|heading| heading.path.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    let max_level = headings
+        .iter()
+        .filter_map(|heading| heading_field(heading, "level")?.parse::<usize>().ok())
+        .max()
+        .unwrap_or(0);
+    if let Some(query) = query {
+        println!(
+            "[{label}] lang={} q={} root={} doc={} heading={} maxLevel={} alg=fd-fzf-doc-toc-v1",
+            language.id(),
+            escape_field(query),
+            display_path(root),
+            document_paths.len(),
+            headings.len(),
+            max_level
+        );
+    } else {
+        println!(
+            "[{label}] lang={} root={} doc={} heading={} maxLevel={}",
+            language.id(),
+            display_path(root),
+            document_paths.len(),
+            headings.len(),
+            max_level
+        );
+    }
+}
+
+fn print_toc_rows(language: DocumentLanguage, headings: &[DocumentElement]) {
+    let mut current_path = "";
+    for heading in headings.iter().take(200) {
+        if heading.path != current_path {
+            current_path = &heading.path;
+            let count = headings
+                .iter()
+                .filter(|candidate| candidate.path == heading.path)
+                .count();
+            println!(
+                "|doc path=\"{}\" heading={count}",
+                escape_field(current_path)
+            );
+        }
+        let level = heading_field(heading, "level").unwrap_or("0");
+        let title = heading_field(heading, "title").unwrap_or(heading.text.as_str());
+        let selector = format!("{}:{}-{}", heading.path, heading.line, heading.end_line);
+        let mut output = format!(
+            "|toc path=\"{}\" range=\"{}:{}\" level={} title=\"{}\"",
+            escape_field(&heading.path),
+            heading.line,
+            heading.end_line,
+            level,
+            escape_field(title)
+        );
+        for key in ["todo", "priority"] {
+            if let Some(value) = heading_field(heading, key) {
+                output.push(' ');
+                output.push_str(key);
+                output.push_str("=\"");
+                output.push_str(&escape_field(value));
+                output.push('"');
+            }
+        }
+        let tags = heading_fields(heading, "tag");
+        if !tags.is_empty() {
+            output.push_str(" tag=\"");
+            output.push_str(&escape_field(&tags.join(",")));
+            output.push('"');
+        }
+        output.push_str(" next=\"");
+        output.push_str(&escape_field(&format!(
+            "{} query --selector {selector} --view metadata",
+            language.command_prefix()
+        )));
+        output.push('"');
+        println!("{output}");
+    }
+    println!("|next query:selector,query:kind=heading,query:content,direct-read");
+}
+
+fn last_existing_path_arg_index(args: &[String]) -> Option<usize> {
+    args.iter()
+        .enumerate()
+        .rev()
+        .filter(|(_, arg)| !arg.starts_with('-'))
+        .find_map(|(index, arg)| PathBuf::from(arg).exists().then_some(index))
+}
+
+fn fzf_toc_requested(args: &[String], root_arg_index: Option<usize>) -> bool {
+    option_value(args, "--view") == Some("toc")
+        || args
+            .iter()
+            .enumerate()
+            .any(|(index, arg)| index > 0 && Some(index) != root_arg_index && arg == "toc")
+}
+
+fn fzf_query_terms(args: &[String], root_arg_index: Option<usize>) -> Vec<String> {
+    let mut terms = Vec::new();
+    let mut skip_next = false;
+    for (index, arg) in args.iter().enumerate() {
+        if skip_next {
+            skip_next = false;
+            continue;
+        }
+        if Some(index) == root_arg_index {
+            continue;
+        }
+        if arg == "--view" {
+            skip_next = true;
+            continue;
+        }
+        if arg.starts_with("--") || (index > 0 && arg == "toc") {
+            continue;
+        }
+        terms.push(arg.clone());
+    }
+    terms
+}
+
+fn heading_facts_for_matching_documents(
+    facts: &[DocumentElement],
+    terms: &[String],
+) -> Vec<DocumentElement> {
+    let paths = facts
+        .iter()
+        .map(|fact| fact.path.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    let matching_paths = paths
+        .into_iter()
+        .filter(|path| {
+            let document_facts = facts
+                .iter()
+                .filter(|candidate| candidate.path.as_str() == *path)
+                .collect::<Vec<_>>();
+            terms
+                .iter()
+                .all(|term| document_facts.iter().any(|fact| fact.matches(term)))
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    facts
+        .iter()
+        .filter(|fact| fact.kind == "heading" && matching_paths.contains(fact.path.as_str()))
+        .cloned()
+        .collect()
 }
 
 fn print_owner(language: DocumentLanguage, owner: &str, facts: &[DocumentElement]) {
@@ -325,6 +671,69 @@ fn print_query_matches(
     for fact in facts.iter().take(80) {
         println!("{}", fact.render());
     }
+    if facts.is_empty() {
+        print_query_no_hit(language, terms, root);
+    }
+}
+
+fn print_query_no_hit(language: DocumentLanguage, terms: &[String], root: &Path) {
+    let terms_display = if terms.is_empty() {
+        "-".to_string()
+    } else {
+        terms
+            .iter()
+            .map(|term| escape_field(term))
+            .collect::<Vec<_>>()
+            .join(",")
+    };
+    println!("|no-hit reason=empty-intersection combine=all-terms terms={terms_display}");
+
+    let prefix = language.command_prefix();
+    let root_arg = shell_arg(&display_path(root));
+    let first_term = terms.first().map(String::as_str).unwrap_or("<term>");
+    let first_term_arg = if terms.is_empty() {
+        "<term>".to_string()
+    } else {
+        shell_arg(first_term)
+    };
+    println!("|next search-fzf=\"{prefix} search fzf {first_term_arg} --view seeds {root_arg}\"");
+    println!(
+        "|next query-single-term=\"{prefix} query --term {first_term_arg} --view metadata {root_arg}\""
+    );
+    println!("|next query-guide=\"{prefix} query guide {root_arg}\"");
+    println!(
+        "|next direct-read-requires=\"{prefix} query --from-hook direct-source-read --selector <path:start-end> {root_arg}\""
+    );
+}
+
+fn shell_arg(value: &str) -> String {
+    if value.chars().all(|character| {
+        character.is_ascii_alphanumeric()
+            || matches!(
+                character,
+                '-' | '_' | '.' | '/' | ':' | '@' | '+' | '=' | '<' | '>'
+            )
+    }) {
+        return value.to_string();
+    }
+    format!("'{}'", value.replace('\'', "'\\''"))
+}
+
+fn print_query_content(facts: &[DocumentElement]) {
+    let mut first = true;
+    for content in facts
+        .iter()
+        .take(80)
+        .map(DocumentElement::content_text)
+        .filter(|content| !content.trim().is_empty())
+    {
+        if !first {
+            println!();
+        }
+        first = false;
+        print!("{}", content.trim_end());
+        println!();
+    }
 }
 
 fn print_selector_frontier(language: DocumentLanguage, selector: &str, facts: &[DocumentElement]) {
@@ -342,6 +751,30 @@ fn print_selector_frontier(language: DocumentLanguage, selector: &str, facts: &[
         language.command_prefix(),
         escape_field(selector)
     );
+}
+
+fn heading_facts(facts: &[DocumentElement]) -> Vec<DocumentElement> {
+    facts
+        .iter()
+        .filter(|fact| fact.kind == "heading")
+        .cloned()
+        .collect()
+}
+
+fn heading_field<'a>(heading: &'a DocumentElement, key: &str) -> Option<&'a str> {
+    heading
+        .fields
+        .iter()
+        .find(|(field_key, _)| field_key == key)
+        .map(|(_, value)| value.as_str())
+}
+
+fn heading_fields<'a>(heading: &'a DocumentElement, key: &str) -> Vec<&'a str> {
+    heading
+        .fields
+        .iter()
+        .filter_map(|(field_key, value)| (field_key == key).then_some(value.as_str()))
+        .collect()
 }
 
 fn selector_elements(

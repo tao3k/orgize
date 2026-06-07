@@ -4,8 +4,10 @@ mod command;
 mod elements;
 mod packets;
 
-pub use command::{run_document_command, run_md_command, run_org_command};
+pub use command::{
+    run_document_command, run_document_command_with_walk_config, run_md_command, run_org_command,
+};
 pub use elements::{
-    DocumentElement, DocumentLanguage, SourceSelector, filter_elements, index_path, index_project,
-    select_source,
+    DocumentElement, DocumentLanguage, DocumentWalkConfig, SourceSelector, filter_elements,
+    index_path, index_project, index_project_with_config, select_source,
 };

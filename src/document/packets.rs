@@ -52,6 +52,11 @@ pub(super) fn print_search_json(
             },
             {
                 "kind": "query",
+                "target": "content",
+                "command": format!("{} query --term <term> --content", language.command_prefix())
+            },
+            {
+                "kind": "query",
                 "target": "direct-read",
                 "command": format!("{} query --from-hook direct-source-read --selector <path:start-end> .", language.command_prefix())
             }
@@ -69,11 +74,17 @@ pub(super) fn print_query_json(
     terms: &[String],
     root: &Path,
     facts: &[DocumentElement],
+    content_output: bool,
 ) -> Result<(), String> {
     let query_terms = if terms.is_empty() {
         vec!["*".to_string()]
     } else {
         terms.to_vec()
+    };
+    let query_surface = if content_output {
+        "content"
+    } else {
+        "metadata"
     };
     let packet = json!({
         "schemaId": "agent.semantic-protocols.semantic-document-query-packet",
@@ -89,13 +100,13 @@ pub(super) fn print_query_json(
         "query": query_terms.join(" "),
         "queryTerms": query_terms,
         "queryKind": "term",
-        "querySurface": "metadata",
-        "documentMode": "metadata",
+        "querySurface": query_surface,
+        "documentMode": query_surface,
         "matchCount": facts.len(),
         "matchLimit": 80,
         "matchesTruncated": facts.len() > 80,
         "documentFacts": facts.iter().take(80).map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
-        "contentBlocks": [],
+        "contentBlocks": if content_output { content_blocks_json(language, root, facts) } else { Vec::new() },
         "truncated": facts.len() > 80
     });
     print_json(&packet)
@@ -106,8 +117,14 @@ pub(super) fn print_selector_query_json(
     selector: &str,
     selection: &SourceSelector,
     facts: &[DocumentElement],
+    content_output: bool,
 ) -> Result<(), String> {
     let root = selection.path.parent().unwrap_or_else(|| Path::new("."));
+    let query_surface = if content_output {
+        "content"
+    } else {
+        "metadata"
+    };
     let packet = json!({
         "schemaId": "agent.semantic-protocols.semantic-document-query-packet",
         "schemaVersion": "1",
@@ -122,13 +139,13 @@ pub(super) fn print_selector_query_json(
         "query": selector,
         "queryTerms": [selector],
         "queryKind": "selector",
-        "querySurface": "metadata",
-        "documentMode": "metadata",
+        "querySurface": query_surface,
+        "documentMode": query_surface,
         "matchCount": facts.len(),
         "matchLimit": 80,
         "matchesTruncated": facts.len() > 80,
         "documentFacts": facts.iter().take(80).map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
-        "contentBlocks": [],
+        "contentBlocks": if content_output { content_blocks_json(language, root, facts) } else { Vec::new() },
         "truncated": facts.len() > 80
     });
     print_json(&packet)
@@ -191,6 +208,30 @@ fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentEl
         value["textSnippet"] = json!(fact.text);
     }
     value
+}
+
+fn content_blocks_json(
+    language: DocumentLanguage,
+    root: &Path,
+    facts: &[DocumentElement],
+) -> Vec<Value> {
+    facts
+        .iter()
+        .take(80)
+        .filter_map(|fact| {
+            let content = fact.content_text();
+            (!content.trim().is_empty()).then(|| {
+                let path = packet_path(root, &fact.path);
+                json!({
+                    "kind": "element",
+                    "documentPath": path,
+                    "location": location_json(&packet_path(root, &fact.path), fact.line, fact.end_line),
+                    "parserAuthority": language.parser_authority(),
+                    "content": content
+                })
+            })
+        })
+        .collect()
 }
 
 fn location_json(path: &str, line: usize, end_line: usize) -> Value {

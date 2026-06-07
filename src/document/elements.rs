@@ -6,8 +6,8 @@ use std::{
 use crate::{
     Org, SyntaxNode,
     syntax_ast::{
-        ExportBlock, Headline, OrgTable, PropertyDrawer, SourceBlock, SyntaxLink, SyntaxList,
-        SyntaxListItem, SyntaxPlanning,
+        ExportBlock, Headline, OrgTable, Paragraph, PropertyDrawer, SourceBlock, SyntaxLink,
+        SyntaxList, SyntaxListItem, SyntaxPlanning,
     },
 };
 use rowan::ast::AstNode;
@@ -27,6 +27,7 @@ pub struct DocumentElement {
     pub end_line: usize,
     pub fields: Vec<(String, String)>,
     pub text: String,
+    pub content: String,
 }
 
 pub struct SourceSelector {
@@ -34,17 +35,55 @@ pub struct SourceSelector {
     pub range: Option<(usize, usize)>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DocumentWalkConfig {
+    pub ignore_dirs: Vec<String>,
+    pub include_hidden_dirs: Vec<String>,
+}
+
+impl Default for DocumentWalkConfig {
+    fn default() -> Self {
+        Self {
+            ignore_dirs: default_ignore_dirs()
+                .iter()
+                .map(|name| (*name).to_string())
+                .collect(),
+            include_hidden_dirs: Vec::new(),
+        }
+    }
+}
+
+impl DocumentWalkConfig {
+    pub fn new(ignore_dirs: Vec<String>, include_hidden_dirs: Vec<String>) -> Self {
+        Self {
+            ignore_dirs,
+            include_hidden_dirs,
+        }
+    }
+}
+
 pub fn index_project(
     language: DocumentLanguage,
     root: &Path,
 ) -> Result<Vec<DocumentElement>, String> {
+    index_project_with_config(language, root, &DocumentWalkConfig::default())
+}
+
+pub fn index_project_with_config(
+    language: DocumentLanguage,
+    root: &Path,
+    walk_config: &DocumentWalkConfig,
+) -> Result<Vec<DocumentElement>, String> {
     let mut files = Vec::new();
-    collect_document_paths(language, root, &mut files)?;
+    collect_document_paths(language, root, walk_config, &mut files)?;
     files.sort();
     files.dedup();
 
     let mut facts = Vec::new();
     for path in files {
+        if !path.exists() {
+            continue;
+        }
         facts.extend(index_path(language, &path)?);
     }
     Ok(facts)
@@ -135,8 +174,7 @@ pub(super) fn escape_field(value: &str) -> String {
     value
         .replace('\\', "\\\\")
         .replace('"', "\\\"")
-        .replace('\n', " ")
-        .replace('\r', " ")
+        .replace(['\n', '\r'], " ")
 }
 
 fn index_org(path: &Path, source: &str) -> Vec<DocumentElement> {
@@ -203,6 +241,20 @@ fn index_org(path: &Path, source: &str) -> Vec<DocumentElement> {
                 source,
                 table.syntax(),
                 fields,
+            ));
+        } else if let Some(paragraph) = Paragraph::cast(node.clone()) {
+            let content = paragraph.raw().trim().to_string();
+            facts.push(fact_with_text(
+                "paragraph",
+                "Paragraph",
+                path,
+                source,
+                paragraph.syntax(),
+                Vec::new(),
+                ElementText {
+                    text: normalize_inline_text(&content),
+                    content,
+                },
             ));
         } else if let Some(block) = SourceBlock::cast(node.clone()) {
             let mut fields = vec![("kind".to_string(), "source".to_string())];
@@ -324,6 +376,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
     let mut options = Options::default();
     options.extension.table = true;
     options.extension.tasklist = true;
+    options.extension.front_matter_delimiter = Some("---".to_string());
     let root = comrak::parse_document(&arena, source, &options);
     let mut facts = Vec::new();
 
@@ -455,7 +508,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
 }
 
 #[cfg(not(feature = "md"))]
-fn index_markdown(_path: &Path, _source: &str) -> Result<Vec<DocumentFact>, String> {
+fn index_markdown(_path: &Path, _source: &str) -> Result<Vec<DocumentElement>, String> {
     Err("orgize md requires the `md` feature".to_string())
 }
 
@@ -466,6 +519,39 @@ fn fact(
     source: &str,
     node: &SyntaxNode,
     fields: Vec<(String, String)>,
+) -> DocumentElement {
+    let text = node
+        .to_string()
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    let content = text.clone();
+    fact_with_text(
+        kind,
+        source_kind,
+        path,
+        source,
+        node,
+        fields,
+        ElementText { text, content },
+    )
+}
+
+struct ElementText {
+    text: String,
+    content: String,
+}
+
+fn fact_with_text(
+    kind: &'static str,
+    source_kind: &'static str,
+    path: &Path,
+    source: &str,
+    node: &SyntaxNode,
+    fields: Vec<(String, String)>,
+    element_text: ElementText,
 ) -> DocumentElement {
     let range = node.text_range();
     let start = u32::from(range.start()) as usize;
@@ -478,15 +564,14 @@ fn fact(
         path: display_path(path),
         line,
         end_line,
-        text: node
-            .to_string()
-            .lines()
-            .next()
-            .unwrap_or_default()
-            .trim()
-            .to_string(),
+        text: element_text.text,
+        content: element_text.content,
         fields,
     }
+}
+
+fn normalize_inline_text(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 #[cfg(feature = "md")]
@@ -525,6 +610,7 @@ fn markdown_fact_with_text(
         path: display_path(path),
         line: line.max(1),
         end_line: end_line.max(line).max(1),
+        content: text.clone(),
         text,
         fields,
     }
@@ -556,6 +642,7 @@ fn markdown_inline_text<'a>(node: &'a comrak::nodes::AstNode<'a>) -> String {
 fn collect_document_paths(
     language: DocumentLanguage,
     path: &Path,
+    walk_config: &DocumentWalkConfig,
     files: &mut Vec<PathBuf>,
 ) -> Result<(), String> {
     let metadata = fs::metadata(path).map_err(|error| format!("{}: {error}", path.display()))?;
@@ -585,19 +672,46 @@ fn collect_document_paths(
         let Some(name) = entry_path.file_name().and_then(|name| name.to_str()) else {
             continue;
         };
-        if matches!(name, ".git" | "target" | "node_modules" | ".venv") {
-            continue;
-        }
         let entry_type = entry
             .file_type()
             .map_err(|error| format!("{}: {error}", entry_path.display()))?;
         if entry_type.is_dir() {
-            collect_document_paths(language, &entry_path, files)?;
+            if should_skip_project_directory(name, walk_config) {
+                continue;
+            }
+            collect_document_paths(language, &entry_path, walk_config, files)?;
         } else if entry_type.is_file() && language.matches_path(&entry_path) {
             files.push(entry_path);
         }
     }
     Ok(())
+}
+
+fn should_skip_project_directory(name: &str, walk_config: &DocumentWalkConfig) -> bool {
+    if walk_config
+        .ignore_dirs
+        .iter()
+        .any(|ignored| ignored == name)
+    {
+        return true;
+    }
+    name.starts_with('.')
+        && !walk_config
+            .include_hidden_dirs
+            .iter()
+            .any(|included| included == name)
+}
+
+fn default_ignore_dirs() -> &'static [&'static str] {
+    &[
+        "target",
+        "node_modules",
+        "dist",
+        "build",
+        "__pycache__",
+        "venv",
+        "vendor",
+    ]
 }
 
 fn offset_to_line(source: &str, offset: usize) -> usize {
@@ -640,8 +754,8 @@ impl DocumentElement {
             return true;
         }
         let haystack = format!(
-            "{} {} {} {:?} {}",
-            self.kind, self.source_kind, self.path, self.fields, self.text
+            "{} {} {} {:?} {} {}",
+            self.kind, self.source_kind, self.path, self.fields, self.text, self.content
         )
         .to_ascii_lowercase();
         query.split_whitespace().all(|term| haystack.contains(term))
@@ -670,6 +784,25 @@ impl DocumentElement {
         self.fields.iter().any(|(existing_key, existing_value)| {
             existing_key.eq_ignore_ascii_case(key) && existing_value.contains(value)
         })
+    }
+
+    pub(super) fn content_text(&self) -> String {
+        if !self.content.trim().is_empty() {
+            return self.content.clone();
+        }
+        if !self.text.trim().is_empty() {
+            return self.text.clone();
+        }
+        self.fields
+            .iter()
+            .find(|(key, value)| {
+                matches!(
+                    key.as_str(),
+                    "title" | "value" | "description" | "target" | "lang"
+                ) && !value.trim().is_empty()
+            })
+            .map(|(_, value)| value.clone())
+            .unwrap_or_default()
     }
 }
 
