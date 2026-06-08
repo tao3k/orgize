@@ -721,7 +721,7 @@ fn shell_arg(value: &str) -> String {
 
 fn print_query_content(facts: &[DocumentElement]) {
     let mut first = true;
-    for content in facts
+    for content in projected_content_facts(facts)
         .iter()
         .take(80)
         .map(DocumentElement::content_text)
@@ -734,6 +734,61 @@ fn print_query_content(facts: &[DocumentElement]) {
         print!("{}", content.trim_end());
         println!();
     }
+}
+
+fn projected_content_facts(facts: &[DocumentElement]) -> Vec<DocumentElement> {
+    let mut selected = Vec::new();
+    for fact in facts {
+        if content_shadowed_by_selected_container(fact, facts) {
+            continue;
+        }
+        if selected
+            .iter()
+            .any(|existing: &DocumentElement| same_content_projection(existing, fact))
+        {
+            continue;
+        }
+        selected.push(fact.clone());
+    }
+    selected
+}
+
+fn content_shadowed_by_selected_container(
+    fact: &DocumentElement,
+    facts: &[DocumentElement],
+) -> bool {
+    if fact.kind == "paragraph" {
+        return facts.iter().any(|candidate| {
+            matches!(candidate.kind, "listItem" | "task")
+                && !candidate.content_text().trim().is_empty()
+                && contains_element_range(candidate, fact)
+        });
+    }
+    if fact.kind == "list" {
+        return facts.iter().any(|candidate| {
+            matches!(candidate.kind, "listItem" | "task")
+                && !candidate.content_text().trim().is_empty()
+                && contains_element_range(fact, candidate)
+        });
+    }
+    false
+}
+
+fn contains_element_range(container: &DocumentElement, nested: &DocumentElement) -> bool {
+    container.path == nested.path
+        && container.line <= nested.line
+        && container.end_line >= nested.end_line
+}
+
+fn same_content_projection(left: &DocumentElement, right: &DocumentElement) -> bool {
+    left.path == right.path
+        && element_ranges_overlap(left, right)
+        && left.content_text().trim() == right.content_text().trim()
+        && !left.content_text().trim().is_empty()
+}
+
+fn element_ranges_overlap(left: &DocumentElement, right: &DocumentElement) -> bool {
+    left.line <= right.end_line && right.line <= left.end_line
 }
 
 fn print_selector_frontier(language: DocumentLanguage, selector: &str, facts: &[DocumentElement]) {
