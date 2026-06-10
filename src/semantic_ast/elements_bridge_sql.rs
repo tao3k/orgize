@@ -17,8 +17,8 @@ use datafusion::{
 use serde_json::{Map, Value, json};
 
 use super::{
-    Document, OrgElementsIndexRecord, OrgElementsIndexSummary, OrgElementsIndexSummaryValue,
-    ParsedAnnotation,
+    Document, OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexRecord,
+    OrgElementsIndexSummary, OrgElementsIndexSummaryValue, ParsedAnnotation,
 };
 
 /// One column in the stable `org_elements` SQL projection.
@@ -33,8 +33,8 @@ pub struct OrgElementsSqlColumn {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OrgElementsSqlRow {
     pub ordinal: usize,
-    pub category: String,
-    pub kind: String,
+    pub category: OrgElementsIndexCategory,
+    pub kind: OrgElementsIndexKind,
     pub affiliated_name: Option<String>,
     pub outline_path_json: String,
     pub context: String,
@@ -235,8 +235,8 @@ fn nullable_text_array<'a>(values: impl Iterator<Item = Option<&'a str>>) -> Arr
 fn sql_row(record: &OrgElementsIndexRecord<ParsedAnnotation>) -> OrgElementsSqlRow {
     OrgElementsSqlRow {
         ordinal: record.ordinal,
-        category: record.category.as_str().to_string(),
-        kind: record.kind.as_str().to_string(),
+        category: record.category,
+        kind: record.kind.clone(),
         affiliated_name: record.affiliated.name.clone(),
         outline_path_json: serde_json::to_string(&record.outline_path)
             .expect("outline path JSON serialization should not fail"),
@@ -257,8 +257,8 @@ fn sql_row(record: &OrgElementsIndexRecord<ParsedAnnotation>) -> OrgElementsSqlR
 fn sql_row_json(row: &OrgElementsSqlRow) -> Value {
     json!({
         "ordinal": row.ordinal,
-        "category": row.category,
-        "kind": row.kind,
+        "category": row.category.as_str(),
+        "kind": row.kind.as_str(),
         "affiliatedName": row.affiliated_name,
         "outlinePathJson": row.outline_path_json,
         "context": row.context,

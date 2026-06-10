@@ -2,7 +2,10 @@ use std::path::Path;
 
 use serde_json::{Value, json};
 
-use super::elements::{DocumentElement, DocumentLanguage, SourceSelector, display_path};
+use super::{
+    elements::{DocumentElement, DocumentLanguage, display_path},
+    source_selection::SourceSelector,
+};
 
 pub(super) fn print_search_json(
     language: DocumentLanguage,

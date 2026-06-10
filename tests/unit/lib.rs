@@ -8,6 +8,9 @@ use crate::{
     syntax::{combinator::GreenElement, input::Input},
 };
 
+#[path = "document_source_selection.rs"]
+mod document_source_selection;
+
 pub fn to_ast<N: AstNode>(
     parser: impl Fn(Input) -> IResult<Input, GreenElement, ()>,
 ) -> impl Fn(&str) -> N {

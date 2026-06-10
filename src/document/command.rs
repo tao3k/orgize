@@ -6,12 +6,12 @@ use std::{
 
 use super::{
     elements::{
-        DocumentElement, DocumentLanguage, DocumentWalkConfig, SourceSelector, count_kind,
-        display_path, escape_field, filter_elements, filter_elements_by_query, has_flag,
-        index_path, index_project_with_config, last_existing_path, option_value, option_values,
-        select_source,
+        DocumentElement, DocumentLanguage, DocumentWalkConfig, count_kind, display_path,
+        escape_field, filter_elements, filter_elements_by_query, has_flag, index_path,
+        index_project_with_config, last_existing_path, option_value, option_values,
     },
     packets::{print_query_json, print_search_json, print_selector_query_json},
+    source_selection::{SourceSelector, select_source},
 };
 
 pub fn run_org_command(args: Vec<String>) -> Result<ExitCode, String> {
@@ -840,7 +840,7 @@ fn selector_elements(
     Ok(facts
         .into_iter()
         .filter(|fact| match selection.range {
-            Some((start, end)) => fact.line <= end && fact.end_line >= start,
+            Some(range) => fact.line <= range.end_line && fact.end_line >= range.start_line,
             None => true,
         })
         .collect())

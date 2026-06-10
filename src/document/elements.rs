@@ -32,11 +32,6 @@ pub struct DocumentElement {
     pub content: String,
 }
 
-pub struct SourceSelector {
-    pub path: PathBuf,
-    pub range: Option<(usize, usize)>,
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DocumentWalkConfig {
     pub ignore_dirs: Vec<String>,
@@ -152,20 +147,6 @@ pub(super) fn option_values(args: &[String], name: &str) -> Vec<String> {
 
 pub(super) fn has_flag(args: &[String], name: &str) -> bool {
     args.iter().any(|arg| arg == name)
-}
-
-pub fn select_source(source: &str, range: Option<(usize, usize)>) -> String {
-    let Some((start, end)) = range else {
-        return source.to_string();
-    };
-    let mut output = String::new();
-    for (index, line) in source.split_inclusive('\n').enumerate() {
-        let line_no = index + 1;
-        if line_no >= start && line_no <= end {
-            output.push_str(line);
-        }
-    }
-    output
 }
 
 pub(super) fn display_path(path: &Path) -> String {
@@ -839,34 +820,4 @@ impl DocumentLanguage {
             Self::Markdown => matches!(extension, "md" | "markdown"),
         }
     }
-}
-
-impl SourceSelector {
-    pub fn parse(selector: &str) -> Result<Self, String> {
-        let Some((path, range)) = selector.rsplit_once(':') else {
-            return Ok(Self {
-                path: PathBuf::from(selector),
-                range: None,
-            });
-        };
-        if path.is_empty() {
-            return Err(format!("invalid selector `{selector}`"));
-        }
-        let range = parse_line_range(range)?;
-        Ok(Self {
-            path: PathBuf::from(path),
-            range: Some(range),
-        })
-    }
-}
-
-fn parse_line_range(value: &str) -> Result<(usize, usize), String> {
-    let (start, end) = value.split_once('-').unwrap_or((value, value));
-    let start = start
-        .parse::<usize>()
-        .map_err(|_| format!("invalid selector line `{value}`"))?;
-    let end = end
-        .parse::<usize>()
-        .map_err(|_| format!("invalid selector line `{value}`"))?;
-    Ok((start, end.max(start)))
 }
