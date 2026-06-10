@@ -597,6 +597,7 @@ impl<A> Section<A> {
     {
         Section {
             ann: f(&self.ann),
+            body_ann: self.body_ann.as_ref().map(&mut *f),
             level: self.level,
             properties: self.properties.iter().map(|x| x.map_ann_with(f)).collect(),
             effective_properties: self
@@ -626,6 +627,7 @@ impl<A> Section<A> {
     {
         Ok(Section {
             ann: f(&self.ann)?,
+            body_ann: self.body_ann.as_ref().map(&mut *f).transpose()?,
             level: self.level,
             properties: self
                 .properties
@@ -2222,6 +2224,7 @@ impl<A> Citation<A> {
                 .references
                 .iter()
                 .map(|x| CiteReference {
+                    ann: f(&x.ann),
                     id: x.id.clone(),
                     prefix: x.prefix.iter().map(|o| o.map_ann_with(f)).collect(),
                     suffix: x.suffix.iter().map(|o| o.map_ann_with(f)).collect(),
@@ -2252,6 +2255,7 @@ impl<A> Citation<A> {
                 .iter()
                 .map(|x| {
                     Ok(CiteReference {
+                        ann: f(&x.ann)?,
                         id: x.id.clone(),
                         prefix: x
                             .prefix

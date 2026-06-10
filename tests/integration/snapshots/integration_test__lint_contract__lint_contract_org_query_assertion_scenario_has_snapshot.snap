@@ -1,0 +1,16 @@
+---
+source: tests/integration/lint_contract.rs
+expression: "format!(\"failure clean: {}\\n{}\\n\\\n         failure compact:\\n{}\\n\\\n         success clean: {}\\n{}\",\nfailure_report.is_clean(), failure_report.to_text(\"contract-failure.org\"),\nfailure_report.to_compact_text(\"contract-failure.org\", failure_source),\nsuccess_report.is_clean(), success_report.to_text(\"contract-success.org\"))"
+---
+failure clean: false
+contract-failure.org:1:1: error ORG044: Task `Task A` must contain a Goal section. (contract `agent.task.v1` assertion `task.has-goal` failed in section `Task A`: expected count >= 1, actual 0)
+
+failure compact:
+[ORG044] Error: Task `Task A` must contain a Goal section. (contract `agent.task.v1` assertion `task.has-goal` failed in section `Task A`: expected count >= 1, actual 0)
+@ contract-failure.org:1:1
+fix: load the referenced CONTRACT_ORG registry, repair the assertion query, or update the Org subtree to satisfy it
+line: 1 | * Task A
+Help: Task `Task A` must contain a Goal section. (contract `agent.task.v1` assertion `task.has-goal` failed in section `Task A`: expected count >= 1, actual 0)
+Contract: CONTRACT_ORG validation must be derived from host-loaded Org element query assertions over the parser-owned org_elements_index.
+
+success clean: true

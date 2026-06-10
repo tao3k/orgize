@@ -1,0 +1,5 @@
+---
+source: tests/integration/lint_contract.rs
+expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_text(\"selector-contract.org\"))"
+---
+clean: true

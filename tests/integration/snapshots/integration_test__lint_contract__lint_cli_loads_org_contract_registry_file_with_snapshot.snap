@@ -1,0 +1,9 @@
+---
+source: tests/integration/lint_contract.rs
+expression: command_snapshot(output)
+---
+status: 1
+stdout:
+notes.org:1:1: error ORG044: Task `Task A` must contain a Goal section. (contract `agent.task.v1` assertion `task.has-goal` failed in section `Task A`: expected count >= 1, actual 0)
+
+stderr:

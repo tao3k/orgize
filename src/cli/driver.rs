@@ -215,6 +215,7 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
     let mut priority_lowest = None;
     let mut priority_default = None;
     let mut property_schema_registry_paths = Vec::new();
+    let mut org_contract_registry_paths = Vec::new();
     let mut paths = Vec::new();
     let mut index = 0;
 
@@ -248,6 +249,13 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
                 };
                 property_schema_registry_paths.push(PathBuf::from(value));
             }
+            "--org-contract-registry" => {
+                index += 1;
+                let Some(value) = args.get(index) else {
+                    return Err("lint --org-contract-registry requires an Org path".to_string());
+                };
+                org_contract_registry_paths.push(PathBuf::from(value));
+            }
             "-h" | "--help" => {
                 print_lint_usage();
                 return Ok(ExitCode::SUCCESS);
@@ -262,9 +270,12 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
         priority_profile_from_flags(priority_highest, priority_lowest, priority_default)?;
     let property_schema_registry =
         load_property_schema_registries(&property_schema_registry_paths)?;
+    let org_contract_registry =
+        super::org_contract_registry::load_org_contract_registries(&org_contract_registry_paths)?;
     let base_lint_options = LintOptions {
         priority_profile,
         property_schema_registry,
+        org_contract_registry,
         ..LintOptions::default()
     };
 
@@ -648,7 +659,7 @@ fn print_fmt_usage() {
 
 fn print_lint_usage() {
     eprintln!(
-        "Usage: orgize lint [--format compact|text|json] [--priority-highest VALUE] [--priority-default VALUE] [--priority-lowest VALUE] [--property-schema-registry PATH.json] [PATH ...]"
+        "Usage: orgize lint [--format compact|text|json] [--priority-highest VALUE] [--priority-default VALUE] [--priority-lowest VALUE] [--property-schema-registry PATH.json] [--org-contract-registry PATH.org] [PATH ...]"
     );
 }
 

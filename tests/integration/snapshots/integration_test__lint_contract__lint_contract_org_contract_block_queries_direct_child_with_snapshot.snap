@@ -1,0 +1,8 @@
+---
+source: tests/integration/lint_contract.rs
+expression: "format!(\"nested clean: {}\\n{}\\ndirect clean: {}\\n{}\",\nnested_report.is_clean(),\nnested_report.to_text(\"contract-org-contract-nested.org\"),\ndirect_report.is_clean(),\ndirect_report.to_text(\"contract-org-contract-direct.org\"))"
+---
+nested clean: false
+contract-org-contract-nested.org:1:1: error ORG044: Task `Task A` must contain a direct Goal child. (contract `agent.org-contract-task.v1` assertion `task.has-direct-goal-child` failed in section `Task A`: expected exists, actual 0) Suggested fix: Insert a direct Goal child heading.
+
+direct clean: true

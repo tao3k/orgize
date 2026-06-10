@@ -1,5 +1,6 @@
 //! Document-level semantic prescan state and keyword routing.
 
+use super::org_contract_model::CONTRACT_ORG_PROPERTY;
 use super::settings::{
     apply_options_keyword, link_abbreviation, parse_tag_definitions, parse_tags, split_words,
 };
@@ -32,6 +33,9 @@ pub(super) fn collect_document_keyword(
     let key = keyword.key.to_ascii_uppercase();
     match key.as_str() {
         "TITLE" | "AUTHOR" | "DATE" | "CAPTION" | "PYTHON" | "PYTHON_FILE" | "PYTHON-FILE" => {
+            prescan.metadata.push(keyword);
+        }
+        key if key == CONTRACT_ORG_PROPERTY => {
             prescan.metadata.push(keyword);
         }
         "FILETAGS" => {

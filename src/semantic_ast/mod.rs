@@ -54,6 +54,8 @@ mod elements_bridge_index_json;
 mod elements_bridge_json;
 mod elements_bridge_model;
 mod elements_bridge_object_json;
+mod elements_bridge_query;
+mod elements_bridge_selector;
 mod elements_bridge_sql;
 mod export_dependency_graph;
 mod export_dependency_graph_model;
@@ -72,6 +74,8 @@ mod macro_expansion;
 mod memory;
 mod memory_model;
 mod model;
+mod org_contract;
+mod org_contract_model;
 mod postprocess;
 mod preprocessing;
 mod prescan;
@@ -205,14 +209,18 @@ pub use dynamic_block_model::{
     DynamicBlockContentState, DynamicBlockParameter, DynamicBlockRecord, DynamicBlockWriterKind,
 };
 pub use elements_bridge_model::{
-    OrgElementSelector, OrgElementSelectorParseError, OrgElementsAffiliatedProperties,
-    OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
-    OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, OrgElementsIndexCategory,
-    OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexRecord, OrgElementsIndexSummary,
-    OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
-    OrgElementsIndexSummaryValue, PythonDirective, PythonDirectiveKind, PythonExecutionOptions,
-    PythonExecutionProgram,
+    OrgElementGraph, OrgElementId, OrgElementProperties, OrgElementScope, OrgElementValue,
+    OrgElementsAffiliatedProperties, OrgElementsExecutionPlan, OrgElementsHostExecutionError,
+    OrgElementsHostExecutionOptions, OrgElementsHostExecutionOutput,
+    OrgElementsHostExecutionStatus, OrgElementsIndexCategory, OrgElementsIndexKind,
+    OrgElementsIndexRecord, OrgElementsIndexSummary, OrgElementsIndexSummaryValue, PythonDirective,
+    PythonDirectiveKind, PythonExecutionOptions, PythonExecutionProgram,
 };
+pub use elements_bridge_query::{
+    OrgElementsIndexQuery, OrgElementsIndexRelation, OrgElementsIndexSummaryPredicate,
+    OrgElementsIndexSummaryTextPredicate,
+};
+pub use elements_bridge_selector::{OrgElementSelector, OrgElementSelectorParseError};
 pub use elements_bridge_sql::{ORG_ELEMENTS_SQL_COLUMNS, OrgElementsSqlColumn, OrgElementsSqlRow};
 pub use export_dependency_graph::export_dependency_graph;
 pub use export_dependency_graph_model::{
@@ -250,6 +258,15 @@ pub use model::{
     Table, TableCell, TableColumnAlignment, TableFormula, TableFormulaAssignment,
     TableFormulaReference, TableFormulaReferenceKind, TableRow, TagDefinition, TagDefinitionGroup,
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
+};
+pub use org_contract::{parse_contract_reference, parse_contracts_from_document};
+pub use org_contract_model::{
+    ASSERT_ID_PROPERTY, ASSERT_SEVERITY_PROPERTY, CONTRACT_ALIAS_PROPERTY, CONTRACT_ID_PROPERTY,
+    CONTRACT_KIND_ORG_ELEMENTS, CONTRACT_KIND_ORG_ELEMENTS_ASSERTIONS, CONTRACT_KIND_PROPERTY,
+    CONTRACT_ORG_PROPERTY, CONTRACT_SCOPE_PROPERTY, OrgContract, OrgContractAssertion,
+    OrgContractBinding, OrgContractCompareOp, OrgContractExpectation, OrgContractKind,
+    OrgContractQuery, OrgContractReference, OrgContractRegistry, OrgContractRelativeScope,
+    OrgContractScope, OrgContractSeverity,
 };
 pub use progress_model::{
     ProgressCheckboxSummary, ProgressEffortSummary, ProgressStatisticCookie,

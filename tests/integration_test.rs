@@ -18,6 +18,8 @@ mod latex;
 mod lint_attachments;
 #[path = "integration/lint_babel.rs"]
 mod lint_babel;
+#[path = "integration/lint_contract.rs"]
+mod lint_contract;
 #[path = "integration/lint_crypt.rs"]
 mod lint_crypt;
 #[path = "integration/lint_file_links.rs"]

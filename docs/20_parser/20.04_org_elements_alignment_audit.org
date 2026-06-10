@@ -1,0 +1,169 @@
+* 20.04 Org Elements Alignment Audit
+
+This audit pins the current =org-elements= bridge against upstream
+=org-element.el= before using it as the durable substrate for =CONTRACT_ORG=.
+
+The upstream reference was cloned into =.data/org-mode= and audited at:
+
+#+begin_example
+bzg/org-mode b470d81 2026-06-10 16:08:54 +0200
+#+end_example
+
+The reference constants were extracted with Emacs by loading
+=.data/org-mode/lisp/org-element.el= and printing:
+
+- =org-element-all-elements=
+- =org-element-all-objects=
+- =org-element-greater-elements=
+- =org-element-recursive-objects=
+- =org-element-affiliated-keywords=
+- =org-element--standard-properties=
+
+** Upstream Baseline
+
+Upstream =org-element-all-elements= contains:
+
+#+begin_example
+babel-call center-block clock comment comment-block diary-sexp drawer
+dynamic-block example-block export-block fixed-width footnote-definition
+headline horizontal-rule inlinetask item keyword latex-environment
+node-property paragraph plain-list planning property-drawer quote-block
+section special-block src-block table table-row verse-block
+#+end_example
+
+Upstream =org-element-all-objects= contains:
+
+#+begin_example
+bold citation citation-reference code entity export-snippet footnote-reference
+inline-babel-call inline-src-block italic line-break latex-fragment link macro
+radio-target statistics-cookie strike-through subscript superscript table-cell
+target timestamp underline verbatim
+#+end_example
+
+Upstream affiliated keywords are:
+
+#+begin_example
+CAPTION DATA HEADER HEADERS LABEL NAME PLOT RESNAME RESULT RESULTS SOURCE
+SRCNAME TBLNAME
+#+end_example
+
+The standard Org property surface includes at least:
+
+#+begin_example
+:begin :post-affiliated :contents-begin :contents-end :end :post-blank
+:secondary :mode :granularity :cached :org-element--cache-sync-key
+:robust-begin :robust-end :true-level :buffer :deferred :structure :parent
+#+end_example
+
+** Current Bridge State
+
+The current bridge already provides a real graph substrate:
+
+- root record =org-data=
+- stable numeric =id=
+- =parentId= and =childIds=
+- =Document::org_elements_graph()=
+- graph traversal through =parent=, =children=, =descendants=, =ancestors=,
+  =lineage=, and =subtree=
+- typed queries over category, kind, context, outline path, summary predicates,
+  property predicates, affiliated =NAME=, graph relations, and limit
+
+Headline records are represented as =category= =section= and =kind=
+=headline=. Headline body content is represented through a =kind= =section=
+record, so body elements hang below =headline -> section=. Property drawers
+are represented as =kind= =property-drawer= records, with =node-property=
+records as their children. Planning lines are represented as =kind=
+=planning= children of their headline when at least one of =SCHEDULED=,
+=DEADLINE=, or =CLOSED= is present. Citation references are represented as
+=kind= =citation-reference= children of their containing =citation=. Table rows
+and cells are represented in the same graph.
+
+Current property maps are useful but not yet =org-element-property=
+compatible. They contain summary-derived keys plus headline-specific keys such
+as =:raw-value=, =:title=, =:level=, =:true-level=, =:todo-keyword=,
+=:todo-type=, =:priority=, =:tags=, =:scheduled=, =:deadline=, =:closed=, and
+effective property drawer keys.
+
+The first standard property layer is now projected into every record:
+=:begin=, =:end=, =:post-affiliated=, =:contents-begin=,
+=:contents-end=, =:post-blank=, and =:parent=. =:begin= and =:end= use the
+same byte offsets exposed by the JSON =source= annotation. =:parent= is the
+stable parent record id, or =null= for the root. Headline records now use the
+parser-owned body =section= range for =:contents-begin= and =:contents-end=;
+the body =section= record also exposes its body range as content. Remaining
+content boundaries stay =null= when the semantic model does not yet own an
+exact =org-element.el=-compatible boundary. =:post-blank= remains =null= until
+blank-line ownership is modeled per node kind.
+
+Graph relations are first-class query AST now. =OrgElementsIndexQuery= can
+filter with =child_of=, =descendant_of=, =ancestor_of=, and =at= predicates over
+stable graph ids. =CONTRACT_ORG= relation conditions compile through the same
+query AST after contract bindings resolve to graph ids.
+
+** Gap Matrix
+
+| Axis | Current bridge | Gap before complete alignment |
+|------+----------------+-------------------------------|
+| Kind set | Most parser-owned element/object kinds are emitted, including =section=, =planning=, =property-drawer=, and =citation-reference=. | =diary-sexp= is absent. |
+| Org root | =org-data= exists as the document root and carries the shared standard property layer. | Root content/post-blank boundaries still need exact Org-compatible ownership. |
+| Graph | Parent/child ids, traversal, and first-class relation predicates are available through =OrgElementsIndexQuery=. | Boolean query composition beyond conjunctive predicates is not modeled yet. |
+| Affiliated keywords | Raw affiliated keyword records are emitted; structured affiliated property exposes =name=. | The full upstream affiliated keyword property surface is not structured yet. |
+| Properties | Summary keys, headline properties, source offsets, parent id, and parser-owned headline body content ranges are queryable through =property_eq= and =property_contains=. | Exact =:contents-begin=, =:contents-end=, and =:post-blank= semantics still need per-kind parser-owned boundaries; internal cache properties remain intentionally absent. |
+| Org-specific extensions | =plain-text=, =unknown=, =cloze=, =table.el=, =target-definition=, and =footnote-entry= preserve orgize-owned facts. | These need explicit provider-owned extension status so callers do not confuse them with upstream Org element kinds. |
+
+** Closeout Standard
+
+Complete alignment means the =org-elements= bridge can answer the same class of
+questions as an =org-element-map= plus =org-element-property= workflow without
+forcing callers back to raw source reads.
+
+The closeout should land in this order:
+
+1. Add =diary-sexp= at the syntax and semantic model layer before adding its
+   bridge record. This is a parser-surface gap, not a bridge-only omission.
+2. Continue refining standard source-position properties so =:contents-begin=,
+   =:contents-end=, and =:post-blank= match =org-element.el= per node kind.
+3. Expand affiliated properties from =name= to the upstream keyword set while
+   preserving raw affiliated keyword records.
+4. Add boolean composition on top of the public query AST so conjunction,
+   disjunction, and negation are shared by =CONTRACT_ORG=, JSON query, and
+   future host bindings.
+5. Mark orgize-only kinds as provider-owned extensions in the JSON contract and
+   snapshot tests.
+
+** Stronger Improvements After Alignment
+
+After the compatibility surface is stable, the next improvements should be
+semantic rather than ad hoc:
+
+- expose a normalized =OrgElementQuery= AST that can compile to Rust predicates,
+  JSON query packets, and contract selectors;
+- add scenario snapshots for common =CONTRACT_ORG= patterns, including
+  existence, count, relation, property equality, and property containment;
+- add provenance for inherited headline properties so callers can distinguish
+  local drawer values from effective inherited values;
+- add stable extension namespaces for orgize-owned nodes instead of mixing
+  extensions into the upstream kind namespace silently.
+
+The runtime alignment snapshot is
+[[file:../../tests/integration/semantic_ast/snapshots/integration_test__semantic_ast__semantic_ast_projects_elements_bridge__semantic_ast_projects_org_element_alignment_gap_has_snapshot.snap][semantic_ast_projects_org_element_alignment_gap_has_snapshot]].
+
+** P0-P6 Landing Evidence
+
+- P0: upstream =org-element.el= baseline is pinned to
+  =bzg/org-mode b470d81= and guarded by the alignment snapshot.
+- P1: parser-owned bridge kinds now include =section=, =planning=,
+  =property-drawer=, and =citation-reference=. =diary-sexp= remains a syntax
+  and semantic model gap before it can be represented by the bridge.
+- P2: headline/body =:contents-begin= and =:contents-end= are snapshot-tested
+  against parser-owned body ranges.
+- P3: =OrgElementsIndexQuery= owns relation predicates and
+  =OrgElementGraph::query= applies them for host callers.
+- P4: scenario snapshots cover graph relations plus =CONTRACT_ORG= existence,
+  count, property equality, property containment, =child_of=, and
+  =descendant_of= patterns.
+- P5: host-facing semantics are documented here, including the remaining gaps
+  that must not be hidden behind bridge-only heuristics.
+- P6: focused gates were run against the real provider/runtime boundary:
+  =cargo test --test integration_test semantic_ast_projects_elements_bridge=
+  and =cargo test --test integration_test lint_contract=.

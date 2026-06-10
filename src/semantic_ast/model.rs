@@ -273,6 +273,7 @@ pub enum TargetKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Section<A = ()> {
     pub ann: A,
+    pub body_ann: Option<A>,
     pub level: usize,
     pub properties: Vec<Property<A>>,
     pub effective_properties: Vec<Property<A>>,
@@ -777,6 +778,7 @@ pub struct Citation<A = ()> {
 /// Single citation reference inside a citation object.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CiteReference<A = ()> {
+    pub ann: A,
     pub id: String,
     pub prefix: Vec<Object<A>>,
     pub suffix: Vec<Object<A>>,

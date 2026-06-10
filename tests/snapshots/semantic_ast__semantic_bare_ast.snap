@@ -94,6 +94,9 @@ Document {
     sections: [
         Section {
             ann: (),
+            body_ann: Some(
+                (),
+            ),
             level: 1,
             properties: [
                 Property {

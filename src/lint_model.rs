@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use rowan::TextRange;
 
-use crate::ast::{PriorityProfile, PropertySchemaRegistry, SourcePosition};
+use crate::ast::{OrgContractRegistry, PriorityProfile, PropertySchemaRegistry, SourcePosition};
 
 /// Lint configuration.
 ///
@@ -26,6 +26,8 @@ pub struct LintOptions {
     pub priority_profile: PriorityProfile,
     /// Host-loaded property schema contracts referenced by `PROPERTY_SCHEMA`.
     pub property_schema_registry: PropertySchemaRegistry,
+    /// Host-loaded Org semantic contracts referenced by `CONTRACT_ORG`.
+    pub org_contract_registry: OrgContractRegistry,
 }
 
 /// Lint result for one Org source string.

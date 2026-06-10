@@ -22,6 +22,9 @@ pub(super) fn index_json_from_records(
 
 fn record_json(record: &OrgElementsIndexRecord<ParsedAnnotation>) -> Value {
     json!({
+        "id": record.id.as_usize(),
+        "parentId": record.parent_id.map(|id| id.as_usize()),
+        "childIds": record.child_ids.iter().map(|id| id.as_usize()).collect::<Vec<_>>(),
         "ordinal": record.ordinal,
         "category": record.category.as_str(),
         "kind": record.kind.as_str(),
@@ -31,6 +34,7 @@ fn record_json(record: &OrgElementsIndexRecord<ParsedAnnotation>) -> Value {
         "source": super::elements_bridge_json::annotation_json(&record.ann),
         "outlinePath": record.outline_path,
         "context": record.context,
+        "properties": summary_json(&record.properties),
         "summary": summary_json(&record.summary),
     })
 }

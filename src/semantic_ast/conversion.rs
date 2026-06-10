@@ -213,8 +213,12 @@ impl<'a> Converter<'a> {
             .planning()
             .map(|planning| self.planning(&planning.syntax))
             .unwrap_or_default();
-        let children = legacy
-            .section()
+        let body_section = legacy.section();
+        let body_ann = body_section
+            .as_ref()
+            .map(|section| self.node_ann(&section.syntax));
+        let children = body_section
+            .as_ref()
             .map(|section| self.elements_from_container(&section.syntax))
             .unwrap_or_default();
         let subsections = node
@@ -233,6 +237,7 @@ impl<'a> Converter<'a> {
 
         Section {
             ann: self.node_ann(node),
+            body_ann,
             level: legacy.level(),
             properties,
             effective_properties: Vec::new(),
@@ -1130,6 +1135,10 @@ impl<'a> Converter<'a> {
             if let Some((key_start, key_end)) = citation_key_range(segment) {
                 saw_reference = true;
                 references.push(CiteReference {
+                    ann: self.ann(text_range(
+                        absolute_start + key_start - 1,
+                        absolute_start + key_end,
+                    )),
                     id: segment[key_start..key_end].to_string(),
                     prefix: self
                         .objects_from_raw_minimal(&segment[..key_start - 1], absolute_start),

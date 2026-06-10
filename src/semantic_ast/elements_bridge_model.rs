@@ -11,6 +11,9 @@ pub struct OrgElementsExecutionPlan<A = ()> {
 /// One flat, source-backed record in the Org elements index.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OrgElementsIndexRecord<A = ()> {
+    pub id: OrgElementId,
+    pub parent_id: Option<OrgElementId>,
+    pub child_ids: Vec<OrgElementId>,
     pub ann: A,
     pub ordinal: usize,
     pub category: OrgElementsIndexCategory,
@@ -18,7 +21,42 @@ pub struct OrgElementsIndexRecord<A = ()> {
     pub affiliated: OrgElementsAffiliatedProperties,
     pub outline_path: Vec<String>,
     pub context: String,
+    pub properties: OrgElementProperties,
     pub summary: OrgElementsIndexSummary,
+}
+
+/// Stable identifier for a record in the Org elements graph.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct OrgElementId(usize);
+
+impl OrgElementId {
+    pub fn new(value: usize) -> Self {
+        Self(value)
+    }
+
+    pub fn as_usize(self) -> usize {
+        self.0
+    }
+}
+
+/// Scope rooted at one Org element graph record.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct OrgElementScope {
+    pub root_id: OrgElementId,
+}
+
+/// Org-mode-style property value used by element queries.
+pub type OrgElementValue = OrgElementsIndexSummaryValue;
+
+/// Org-mode-style property map used by element queries.
+pub type OrgElementProperties = BTreeMap<String, OrgElementValue>;
+
+/// Parent/child graph over the same records returned by the flat index.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgElementGraph<A = ()> {
+    pub records: Vec<OrgElementsIndexRecord<A>>,
+    pub by_id: BTreeMap<OrgElementId, usize>,
+    pub root_id: OrgElementId,
 }
 
 /// Org-mode-style properties derived from affiliated keywords on an element.
@@ -41,227 +79,91 @@ impl OrgElementsIndexKind {
     }
 }
 
-/// Predicate for selecting records from `Document::org_elements_index()`.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct OrgElementsIndexQuery {
-    pub category: Option<OrgElementsIndexCategory>,
-    pub kind: Option<OrgElementsIndexKind>,
-    pub affiliated_name: Option<String>,
-    pub context: Option<String>,
-    pub outline_path_prefix: Vec<String>,
-    pub summary_equals: Vec<OrgElementsIndexSummaryPredicate>,
-    pub summary_contains: Vec<OrgElementsIndexSummaryTextPredicate>,
-    pub limit: Option<usize>,
-}
-
-impl OrgElementsIndexQuery {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn category(mut self, category: OrgElementsIndexCategory) -> Self {
-        self.category = Some(category);
-        self
-    }
-
-    pub fn kind(mut self, kind: impl Into<OrgElementsIndexKind>) -> Self {
-        self.kind = Some(kind.into());
-        self
-    }
-
-    pub fn affiliated_name(mut self, name: impl Into<String>) -> Self {
-        self.affiliated_name = Some(name.into());
-        self
-    }
-
-    pub fn context(mut self, context: impl Into<String>) -> Self {
-        self.context = Some(context.into());
-        self
-    }
-
-    pub fn outline_path_prefix(
-        mut self,
-        outline_path_prefix: impl IntoIterator<Item = impl Into<String>>,
-    ) -> Self {
-        self.outline_path_prefix = outline_path_prefix.into_iter().map(Into::into).collect();
-        self
-    }
-
-    pub fn summary_eq(
-        mut self,
-        key: impl Into<String>,
-        value: impl Into<OrgElementsIndexSummaryValue>,
-    ) -> Self {
-        self.summary_equals.push(OrgElementsIndexSummaryPredicate {
-            key: key.into(),
-            value: value.into(),
-        });
-        self
-    }
-
-    pub fn summary_contains(mut self, key: impl Into<String>, needle: impl Into<String>) -> Self {
-        self.summary_contains
-            .push(OrgElementsIndexSummaryTextPredicate {
-                key: key.into(),
-                needle: needle.into(),
-            });
-        self
-    }
-
-    pub fn limit(mut self, limit: usize) -> Self {
-        self.limit = Some(limit);
-        self
-    }
-
-    pub fn matches<A>(&self, record: &OrgElementsIndexRecord<A>) -> bool {
-        if let Some(category) = self.category
-            && record.category != category
-        {
-            return false;
-        }
-        if let Some(kind) = &self.kind
-            && record.kind != *kind
-        {
-            return false;
-        }
-        if let Some(name) = &self.affiliated_name
-            && record.affiliated.name.as_ref() != Some(name)
-        {
-            return false;
-        }
-        if let Some(context) = &self.context
-            && record.context != *context
-        {
-            return false;
-        }
-        if !self.outline_path_prefix.is_empty()
-            && !record.outline_path.starts_with(&self.outline_path_prefix)
-        {
-            return false;
-        }
-        self.summary_equals.iter().all(|predicate| {
-            record
-                .summary
-                .get(&predicate.key)
-                .is_some_and(|value| value == &predicate.value)
-        }) && self.summary_contains.iter().all(|predicate| {
-            record
-                .summary
-                .get(&predicate.key)
-                .is_some_and(|value| value.contains_text(&predicate.needle))
-        })
-    }
-}
-
-/// Org-mode-style selector for element records.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OrgElementSelector {
-    pub element_type: OrgElementsIndexKind,
-    pub name: Option<String>,
-    pub language: Option<String>,
-}
-
-impl OrgElementSelector {
-    pub fn new(element_type: impl Into<OrgElementsIndexKind>) -> Self {
+impl<A> OrgElementGraph<A> {
+    pub fn new(records: Vec<OrgElementsIndexRecord<A>>) -> Self {
+        let root_id = records
+            .first()
+            .map(|record| record.id)
+            .unwrap_or_else(|| OrgElementId::new(0));
+        let by_id = records
+            .iter()
+            .enumerate()
+            .map(|(index, record)| (record.id, index))
+            .collect();
         Self {
-            element_type: element_type.into(),
-            name: None,
-            language: None,
+            records,
+            by_id,
+            root_id,
         }
     }
 
-    pub fn name(mut self, name: impl Into<String>) -> Self {
-        self.name = Some(name.into());
-        self
+    pub fn record(&self, id: OrgElementId) -> Option<&OrgElementsIndexRecord<A>> {
+        self.by_id
+            .get(&id)
+            .and_then(|index| self.records.get(*index))
     }
 
-    pub fn language(mut self, language: impl Into<String>) -> Self {
-        self.language = Some(language.into());
-        self
+    pub fn parent(&self, id: OrgElementId) -> Option<&OrgElementsIndexRecord<A>> {
+        self.record(id)
+            .and_then(|record| record.parent_id)
+            .and_then(|parent_id| self.record(parent_id))
     }
 
-    pub fn parse_plist(input: &str) -> Result<Self, OrgElementSelectorParseError> {
-        let tokens = tokenize_selector_plist(input)?;
-        if tokens.len() < 6
-            || tokens.first().map(String::as_str) != Some("(")
-            || tokens.get(1).map(String::as_str) != Some(":org-element")
-            || tokens.get(2).map(String::as_str) != Some("(")
-            || tokens
-                .get(tokens.len().saturating_sub(2))
-                .map(String::as_str)
-                != Some(")")
-            || tokens.last().map(String::as_str) != Some(")")
-        {
-            return Err(OrgElementSelectorParseError::InvalidShape);
-        }
-        let properties = &tokens[3..tokens.len().saturating_sub(2)];
-        if properties.len() % 2 != 0 {
-            return Err(OrgElementSelectorParseError::OddPropertyList);
-        }
-
-        let mut element_type = None;
-        let mut name = None;
-        let mut language = None;
-        for pair in properties.chunks(2) {
-            let key = pair[0].as_str();
-            let value = pair[1].clone();
-            match key {
-                ":type" => element_type = Some(OrgElementsIndexKind::new(value)),
-                ":name" => name = Some(value),
-                ":language" => language = Some(value),
-                _ => return Err(OrgElementSelectorParseError::UnknownKey(pair[0].clone())),
-            }
-        }
-
-        let element_type = element_type.ok_or(OrgElementSelectorParseError::MissingType)?;
-        Ok(Self {
-            element_type,
-            name,
-            language,
-        })
+    pub fn children(&self, id: OrgElementId) -> Vec<&OrgElementsIndexRecord<A>> {
+        self.record(id)
+            .map(|record| {
+                record
+                    .child_ids
+                    .iter()
+                    .filter_map(|child_id| self.record(*child_id))
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
-    pub fn to_index_query(&self) -> OrgElementsIndexQuery {
-        let mut query = OrgElementsIndexQuery::new()
-            .category(OrgElementsIndexCategory::Element)
-            .kind(self.element_type.clone());
-        if let Some(name) = &self.name {
-            query = query.affiliated_name(name.clone());
-        }
-        if let Some(language) = &self.language {
-            query = query.summary_eq("language", language.clone());
-        }
-        query
+    pub fn descendants(&self, id: OrgElementId) -> Vec<&OrgElementsIndexRecord<A>> {
+        let mut descendants = Vec::new();
+        self.collect_descendants(id, &mut descendants);
+        descendants
     }
-}
 
-/// Parse error for a compact Org element selector plist.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum OrgElementSelectorParseError {
-    InvalidShape,
-    OddPropertyList,
-    UnterminatedString,
-    MissingType,
-    UnknownKey(String),
-}
+    pub fn ancestors(&self, id: OrgElementId) -> Vec<&OrgElementsIndexRecord<A>> {
+        let mut ancestors = Vec::new();
+        let mut cursor = self.record(id).and_then(|record| record.parent_id);
+        while let Some(parent_id) = cursor {
+            let Some(parent) = self.record(parent_id) else {
+                break;
+            };
+            ancestors.push(parent);
+            cursor = parent.parent_id;
+        }
+        ancestors
+    }
 
-impl fmt::Display for OrgElementSelectorParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::InvalidShape => {
-                write!(f, "selector must use `(:org-element (:type ...))`")
-            }
-            Self::OddPropertyList => {
-                write!(f, "selector property list must contain key/value pairs")
-            }
-            Self::UnterminatedString => write!(f, "selector contains an unterminated string"),
-            Self::MissingType => write!(f, "selector must include :type"),
-            Self::UnknownKey(key) => write!(f, "selector contains unsupported key `{key}`"),
+    pub fn lineage(&self, id: OrgElementId) -> Vec<&OrgElementsIndexRecord<A>> {
+        let mut lineage = self.ancestors(id);
+        lineage.reverse();
+        if let Some(record) = self.record(id) {
+            lineage.push(record);
+        }
+        lineage
+    }
+
+    pub fn subtree(&self, id: OrgElementId) -> OrgElementScope {
+        OrgElementScope { root_id: id }
+    }
+
+    fn collect_descendants<'a>(
+        &'a self,
+        id: OrgElementId,
+        descendants: &mut Vec<&'a OrgElementsIndexRecord<A>>,
+    ) {
+        for child in self.children(id) {
+            descendants.push(child);
+            self.collect_descendants(child.id, descendants);
         }
     }
 }
-
-impl std::error::Error for OrgElementSelectorParseError {}
 
 impl From<&str> for OrgElementsIndexKind {
     fn from(value: &str) -> Self {
@@ -330,30 +232,6 @@ pub enum OrgElementsIndexSummaryValue {
     StringList(Vec<String>),
 }
 
-impl OrgElementsIndexSummaryValue {
-    fn contains_text(&self, needle: &str) -> bool {
-        match self {
-            Self::Text(value) => value.contains(needle),
-            Self::StringList(values) => values.iter().any(|value| value.contains(needle)),
-            Self::Null | Self::Bool(_) | Self::Integer(_) => false,
-        }
-    }
-}
-
-/// Exact-match predicate over one compact Org elements index summary field.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OrgElementsIndexSummaryPredicate {
-    pub key: String,
-    pub value: OrgElementsIndexSummaryValue,
-}
-
-/// Text substring predicate over one compact Org elements index summary field.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OrgElementsIndexSummaryTextPredicate {
-    pub key: String,
-    pub needle: String,
-}
-
 impl From<bool> for OrgElementsIndexSummaryValue {
     fn from(value: bool) -> Self {
         Self::Bool(value)
@@ -394,46 +272,6 @@ impl From<Vec<String>> for OrgElementsIndexSummaryValue {
     fn from(value: Vec<String>) -> Self {
         Self::StringList(value)
     }
-}
-
-fn tokenize_selector_plist(input: &str) -> Result<Vec<String>, OrgElementSelectorParseError> {
-    let mut tokens = Vec::new();
-    let mut chars = input.chars().peekable();
-    while let Some(ch) = chars.next() {
-        match ch {
-            '(' | ')' => tokens.push(ch.to_string()),
-            '"' => {
-                let mut value = String::new();
-                loop {
-                    match chars.next() {
-                        Some('"') => break,
-                        Some('\\') => {
-                            let Some(escaped) = chars.next() else {
-                                return Err(OrgElementSelectorParseError::UnterminatedString);
-                            };
-                            value.push(escaped);
-                        }
-                        Some(next) => value.push(next),
-                        None => return Err(OrgElementSelectorParseError::UnterminatedString),
-                    }
-                }
-                tokens.push(value);
-            }
-            ch if ch.is_whitespace() => {}
-            _ => {
-                let mut value = String::from(ch);
-                while let Some(next) = chars.peek().copied() {
-                    if next.is_whitespace() || matches!(next, '(' | ')') {
-                        break;
-                    }
-                    value.push(next);
-                    chars.next();
-                }
-                tokens.push(value);
-            }
-        }
-    }
-    Ok(tokens)
 }
 
 /// One executable Python directive from `#+PYTHON:` or `#+PYTHON_FILE:`.

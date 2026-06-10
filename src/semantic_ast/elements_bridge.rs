@@ -9,7 +9,7 @@ use std::{
 use datafusion::{arrow::record_batch::RecordBatch, error::Result as DataFusionResult};
 
 use super::{
-    Document, Element, ElementData, Keyword, ListItem, OrgElementSelector,
+    Document, Element, ElementData, Keyword, ListItem, OrgElementGraph, OrgElementSelector,
     OrgElementsExecutionPlan, OrgElementsHostExecutionError, OrgElementsHostExecutionOptions,
     OrgElementsHostExecutionOutput, OrgElementsHostExecutionStatus, OrgElementsIndexQuery,
     OrgElementsIndexRecord, OrgElementsSqlRow, ParsedAnnotation, PythonDirective,
@@ -37,24 +37,21 @@ impl Document<ParsedAnnotation> {
         super::elements_bridge_index::index_records(self)
     }
 
+    /// Builds a parent/child graph over the same records as `org_elements_index()`.
+    pub fn org_elements_graph(&self) -> OrgElementGraph<ParsedAnnotation> {
+        OrgElementGraph::new(self.org_elements_index())
+    }
+
     /// Builds a typed flat index filtered by an `OrgElementsIndexQuery`.
     pub fn query_org_elements_index(
         &self,
         query: &OrgElementsIndexQuery,
     ) -> Vec<OrgElementsIndexRecord<ParsedAnnotation>> {
-        if query.limit == Some(0) {
-            return Vec::new();
-        }
-        let mut records = Vec::new();
-        for record in self.org_elements_index() {
-            if query.matches(&record) {
-                records.push(record);
-                if query.limit.is_some_and(|limit| records.len() >= limit) {
-                    break;
-                }
-            }
-        }
-        records
+        self.org_elements_graph()
+            .query(query)
+            .into_iter()
+            .cloned()
+            .collect()
     }
 
     /// Selects element index records using an Org-mode-style element selector.

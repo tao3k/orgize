@@ -8,6 +8,7 @@ use orgize::{
     },
 };
 use serde_json::Value;
+use std::collections::BTreeSet;
 
 #[cfg(feature = "datafusion-sql")]
 use datafusion::arrow::array::{Int64Array, StringArray};
@@ -99,6 +100,29 @@ print(topic)
     );
     let typed_index = doc.org_elements_index();
     assert_eq!(typed_index[0].category, OrgElementsIndexCategory::Document);
+    let graph = doc.org_elements_graph();
+    assert_eq!(graph.root_id, typed_index[0].id);
+    assert_eq!(
+        graph.children(graph.root_id).len(),
+        typed_index[0].child_ids.len()
+    );
+    let typed_headline = typed_index
+        .iter()
+        .find(|node| {
+            node.category == OrgElementsIndexCategory::Section && node.kind.as_str() == "headline"
+        })
+        .expect("typed headline index record");
+    assert_eq!(typed_headline.parent_id, Some(graph.root_id));
+    assert_eq!(
+        typed_headline.properties.get(":raw-value"),
+        Some(&OrgElementsIndexSummaryValue::Text(
+            "Learn parser bindings".to_string()
+        ))
+    );
+    assert_eq!(
+        typed_headline.properties.get(":EFFORT"),
+        Some(&OrgElementsIndexSummaryValue::Text("1:00".to_string()))
+    );
     let typed_link = typed_index
         .iter()
         .find(|node| {
@@ -111,6 +135,12 @@ print(topic)
         Some(&OrgElementsIndexSummaryValue::Text(
             "https://example.test".to_string()
         ))
+    );
+    assert_eq!(
+        graph
+            .parent(typed_link.id)
+            .map(|record| record.kind.as_str()),
+        Some("paragraph")
     );
     let filtered_index = doc.query_org_elements_index(
         &OrgElementsIndexQuery::new()
@@ -136,6 +166,16 @@ print(topic)
     assert_eq!(
         summary_contains_index[0].outline_path,
         vec!["Learn parser bindings".to_string()]
+    );
+    let property_eq_index = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Section)
+            .property_eq(":Effort", "1:00"),
+    );
+    assert_eq!(property_eq_index.len(), 1);
+    assert_eq!(
+        property_eq_index[0].properties.get(":todo-type"),
+        Some(&OrgElementsIndexSummaryValue::Text("todo".to_string()))
     );
     assert!(
         doc.query_org_elements_index(&OrgElementsIndexQuery::new().kind("link").limit(0))
@@ -193,6 +233,20 @@ print(topic)
     assert!(index.iter().any(|node| node["category"] == "section"
         && node["kind"] == "headline"
         && node["summary"]["title"] == "Learn parser bindings"));
+    let headline_node = index
+        .iter()
+        .find(|node| {
+            node["category"] == "section"
+                && node["kind"] == "headline"
+                && node["summary"]["title"] == "Learn parser bindings"
+        })
+        .expect("headline index JSON record");
+    assert!(headline_node["parentId"].as_u64().is_some());
+    assert_eq!(
+        headline_node["properties"][":raw-value"],
+        "Learn parser bindings"
+    );
+    assert_eq!(headline_node["properties"][":EFFORT"], "1:00");
     assert!(index.iter().any(|node| node["category"] == "object"
         && node["kind"] == "link"
         && node["summary"]["path"] == "https://example.test"));
@@ -252,6 +306,502 @@ print(json.dumps(result, sort_keys=True))
     assert_eq!(result["tagShortcuts"]["EXERCISE"], "ex");
     assert_eq!(result["pythonBlocks"][0], "python");
 }
+
+#[test]
+fn semantic_ast_projects_org_elements_graph_properties_have_snapshot() {
+    let doc = Org::parse(
+        r#"* TODO Task A :work:
+:PROPERTIES:
+:OWNER: alice
+:CUSTOM_ID: task-a
+:END:
+See [[https://example.test][example]].
+** Goal
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+
+    let graph = doc.org_elements_graph();
+    let headline = doc
+        .query_org_elements_index(
+            &OrgElementsIndexQuery::new()
+                .category(OrgElementsIndexCategory::Section)
+                .property_eq(":CUSTOM_ID", "task-a"),
+        )
+        .into_iter()
+        .next()
+        .expect("headline selected by inherited property");
+    let link = doc
+        .query_org_elements_index(
+            &OrgElementsIndexQuery::new()
+                .category(OrgElementsIndexCategory::Object)
+                .kind("link"),
+        )
+        .into_iter()
+        .next()
+        .expect("link selected");
+    let child_headlines = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Section)
+            .property_eq(":parent", graph.root_id.as_usize()),
+    );
+    assert_eq!(child_headlines.len(), 1);
+    let payload = serde_json::json!({
+        "headline": {
+            "id": headline.id.as_usize(),
+            "parentId": headline.parent_id.map(|id| id.as_usize()),
+            "childIds": headline.child_ids.iter().map(|id| id.as_usize()).collect::<Vec<_>>(),
+            "kind": headline.kind.as_str(),
+            "outlinePath": headline.outline_path,
+            "properties": {
+                ":begin": snapshot_summary_value(headline.properties.get(":begin")),
+                ":end": snapshot_summary_value(headline.properties.get(":end")),
+                ":contents-begin": snapshot_summary_value(headline.properties.get(":contents-begin")),
+                ":contents-end": snapshot_summary_value(headline.properties.get(":contents-end")),
+                ":post-affiliated": snapshot_summary_value(headline.properties.get(":post-affiliated")),
+                ":post-blank": snapshot_summary_value(headline.properties.get(":post-blank")),
+                ":parent": snapshot_summary_value(headline.properties.get(":parent")),
+                ":raw-value": snapshot_summary_value(headline.properties.get(":raw-value")),
+                ":todo-keyword": snapshot_summary_value(headline.properties.get(":todo-keyword")),
+                ":todo-type": snapshot_summary_value(headline.properties.get(":todo-type")),
+                ":tags": snapshot_summary_value(headline.properties.get(":tags")),
+                ":OWNER": snapshot_summary_value(headline.properties.get(":OWNER")),
+                ":CUSTOM_ID": snapshot_summary_value(headline.properties.get(":CUSTOM_ID")),
+            },
+        },
+        "linkLineage": graph
+            .lineage(link.id)
+            .into_iter()
+            .map(|record| serde_json::json!({
+                "id": record.id.as_usize(),
+                "kind": record.kind.as_str(),
+                "category": record.category.as_str(),
+            }))
+            .collect::<Vec<_>>(),
+    });
+
+    insta::assert_snapshot!(serde_json::to_string_pretty(&payload).unwrap());
+}
+
+#[test]
+fn semantic_ast_projects_org_elements_graph_relation_queries_have_snapshot() {
+    let doc = Org::parse(
+        r#"* Task
+** Evidence
+[[https://example.test][inside]]
+** Context
+[[https://example.test][outside]]
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+
+    let graph = doc.org_elements_graph();
+    let task = doc
+        .query_org_elements_index(
+            &OrgElementsIndexQuery::new()
+                .category(OrgElementsIndexCategory::Section)
+                .kind("headline")
+                .property_eq(":raw-value", "Task"),
+        )
+        .into_iter()
+        .next()
+        .expect("task headline");
+    let evidence = doc
+        .query_org_elements_index(
+            &OrgElementsIndexQuery::new()
+                .category(OrgElementsIndexCategory::Section)
+                .kind("headline")
+                .property_eq(":raw-value", "Evidence"),
+        )
+        .into_iter()
+        .next()
+        .expect("evidence headline");
+    let direct_headline_children = graph.query(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Section)
+            .kind("headline")
+            .child_of(task.id),
+    );
+    let evidence_links = graph.query(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Object)
+            .kind("link")
+            .descendant_of(evidence.id),
+    );
+    let inside_link_id = evidence_links.first().expect("evidence link").id;
+    let link_headline_ancestors = graph.query(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Section)
+            .kind("headline")
+            .ancestor_of(inside_link_id),
+    );
+    let evidence_at = graph.query(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Section)
+            .kind("headline")
+            .at(evidence.id),
+    );
+
+    let payload = serde_json::json!({
+        "directHeadlineChildren": graph_query_snapshot_records(direct_headline_children),
+        "evidenceLinks": graph_query_snapshot_records(evidence_links),
+        "linkHeadlineAncestors": graph_query_snapshot_records(link_headline_ancestors),
+        "evidenceAt": graph_query_snapshot_records(evidence_at),
+    });
+
+    insta::assert_snapshot!(serde_json::to_string_pretty(&payload).unwrap());
+}
+
+#[test]
+fn semantic_ast_projects_org_element_alignment_gap_has_snapshot() {
+    let doc = Org::parse(
+        r#"#+TITLE: Alignment Fixture
+
+#+CAPTION: Caption
+#+DATA: data
+#+HEADER: :var x=1
+#+HEADERS: :var y=2
+#+LABEL: lbl
+#+NAME: named-src
+#+PLOT: title
+#+RESNAME: res
+#+RESULT: old
+#+RESULTS: output
+#+SOURCE: source
+#+SRCNAME: srcname
+#+TBLNAME: tbl
+#+begin_src rust :results output
+fn main() {}
+#+end_src
+
+:PROPERTIES:
+:GLOBAL: yes
+:END:
+
+#+CALL: build()
+
+* TODO Root :audit:
+SCHEDULED: <2026-06-10 Wed> DEADLINE: <2026-06-11 Thu> CLOSED: [2026-06-09 Tue]
+:PROPERTIES:
+:CUSTOM_ID: root
+:OWNER: alice
+:END:
+:LOGBOOK:
+CLOCK: [2026-06-10 Wed 10:00]--[2026-06-10 Wed 10:30] =>  0:30
+:END:
+A paragraph with *bold* /italic/ _underline_ +strike+ H_2 x^2 =code= ~verb~ \alpha \(x+y\) @@html:<span>@@ [[https://example.test][link]] <<target>> <<<radio>>> {{{macro(arg)}}} [33%] <2026-06-10 Wed> src_python{print(1)} call_build() [cite:@doe] [fn:one].
+\\
+- [ ] item :: tag
+| A | B |
+|---+---|
+| 1 | 2 |
+[fn:one] Footnote body.
+# Comment line
+: fixed width line
+-----
+\begin{equation}
+x = y
+\end{equation}
+#+begin_example
+example
+#+end_example
+#+begin_export html
+<div></div>
+#+end_export
+#+begin_quote
+quote
+#+end_quote
+#+begin_verse
+verse
+#+end_verse
+#+begin_center
+center
+#+end_center
+#+begin_comment
+comment block
+#+end_comment
+#+BEGIN: clocktable
+#+END:
+#+begin_note
+special block
+#+end_note
+*************** TODO Inline Task
+Inline body.
+*************** END
+** Child
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+    let planning_records = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Element)
+            .kind("planning")
+            .property_contains(":scheduled", "2026-06-10"),
+    );
+    assert_eq!(planning_records.len(), 1);
+    let property_drawers = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Element)
+            .kind("property-drawer"),
+    );
+    assert_eq!(property_drawers.len(), 1);
+    assert!(property_drawers.iter().any(|record| {
+        record.context == "headline"
+            && record.summary.get("properties") == Some(&OrgElementsIndexSummaryValue::Integer(2))
+    }));
+    let citation_references = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Object)
+            .kind("citation-reference")
+            .property_eq(":key", "doe"),
+    );
+    assert_eq!(citation_references.len(), 1);
+    let section_records = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Element)
+            .kind("section"),
+    );
+    assert_eq!(section_records.len(), 1);
+
+    let records = doc.org_elements_index();
+    let mut official_element_like = string_set(UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS);
+    official_element_like.insert("org-data".to_string());
+    let official_objects = string_set(UPSTREAM_ORG_ELEMENT_ALL_OBJECTS);
+    let official_affiliated_keywords = string_set(UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS);
+    let official_standard_properties = string_set(UPSTREAM_ORG_ELEMENT_STANDARD_PROPERTIES);
+
+    let current_element_like = records
+        .iter()
+        .filter(|record| {
+            matches!(
+                record.category,
+                OrgElementsIndexCategory::Document
+                    | OrgElementsIndexCategory::Section
+                    | OrgElementsIndexCategory::Element
+                    | OrgElementsIndexCategory::Property
+                    | OrgElementsIndexCategory::Keyword
+            )
+        })
+        .map(|record| record.kind.as_str().to_string())
+        .collect::<BTreeSet<_>>();
+    let current_objects = records
+        .iter()
+        .filter(|record| record.category == OrgElementsIndexCategory::Object)
+        .map(|record| record.kind.as_str().to_string())
+        .collect::<BTreeSet<_>>();
+    let current_properties = records
+        .iter()
+        .flat_map(|record| record.properties.keys().cloned())
+        .collect::<BTreeSet<_>>();
+    let current_affiliated_keyword_keys = records
+        .iter()
+        .filter(|record| record.context == "affiliatedKeyword")
+        .filter_map(|record| match record.summary.get("key") {
+            Some(OrgElementsIndexSummaryValue::Text(key)) => Some(key.to_string()),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    let current_affiliated_fields = records
+        .iter()
+        .filter(|record| record.affiliated.name.is_some())
+        .map(|_| "name".to_string())
+        .collect::<BTreeSet<_>>();
+
+    let payload = serde_json::json!({
+        "baseline": {
+            "source": "bzg/org-mode b470d81 org-element.el",
+            "elements": UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS,
+            "objects": UPSTREAM_ORG_ELEMENT_ALL_OBJECTS,
+            "greaterElements": UPSTREAM_ORG_ELEMENT_GREATER_ELEMENTS,
+            "recursiveObjects": UPSTREAM_ORG_ELEMENT_RECURSIVE_OBJECTS,
+            "affiliatedKeywords": UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS,
+            "standardProperties": UPSTREAM_ORG_ELEMENT_STANDARD_PROPERTIES,
+        },
+        "current": {
+            "elementLikeKinds": current_element_like.iter().collect::<Vec<_>>(),
+            "objectKinds": current_objects.iter().collect::<Vec<_>>(),
+            "affiliatedFields": current_affiliated_fields.iter().collect::<Vec<_>>(),
+            "affiliatedKeywordRecords": current_affiliated_keyword_keys.iter().collect::<Vec<_>>(),
+            "propertyKeys": current_properties.iter().collect::<Vec<_>>(),
+        },
+        "gaps": {
+            "missingElementLikeKinds": difference(&official_element_like, &current_element_like),
+            "orgizeSpecificElementLikeKinds": difference(&current_element_like, &official_element_like),
+            "missingObjectKinds": difference(&official_objects, &current_objects),
+            "orgizeSpecificObjectKinds": difference(&current_objects, &official_objects),
+            "missingAffiliatedKeywordRecords": difference(
+                &official_affiliated_keywords,
+                &current_affiliated_keyword_keys
+            ),
+            "missingStandardProperties": difference(
+                &official_standard_properties,
+                &current_properties
+            ),
+        },
+    });
+
+    insta::assert_snapshot!(serde_json::to_string_pretty(&payload).unwrap());
+}
+
+fn graph_query_snapshot_records(
+    records: Vec<&orgize::ast::OrgElementsIndexRecord<orgize::ast::ParsedAnnotation>>,
+) -> Vec<Value> {
+    records
+        .into_iter()
+        .map(|record| {
+            serde_json::json!({
+                "id": record.id.as_usize(),
+                "parentId": record.parent_id.map(|id| id.as_usize()),
+                "category": record.category.as_str(),
+                "kind": record.kind.as_str(),
+                "rawValue": snapshot_summary_value(record.properties.get(":raw-value")),
+                "path": snapshot_summary_value(record.properties.get(":path")),
+                "outlinePath": record.outline_path,
+            })
+        })
+        .collect()
+}
+
+fn snapshot_summary_value(value: Option<&OrgElementsIndexSummaryValue>) -> Value {
+    match value {
+        Some(OrgElementsIndexSummaryValue::Null) | None => Value::Null,
+        Some(OrgElementsIndexSummaryValue::Bool(value)) => Value::Bool(*value),
+        Some(OrgElementsIndexSummaryValue::Integer(value)) => serde_json::json!(value),
+        Some(OrgElementsIndexSummaryValue::Text(value)) => serde_json::json!(value),
+        Some(OrgElementsIndexSummaryValue::StringList(value)) => serde_json::json!(value),
+    }
+}
+
+fn string_set(values: &[&str]) -> BTreeSet<String> {
+    values.iter().map(|value| value.to_string()).collect()
+}
+
+fn difference(left: &BTreeSet<String>, right: &BTreeSet<String>) -> Vec<String> {
+    left.difference(right).cloned().collect()
+}
+
+const UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS: &[&str] = &[
+    "babel-call",
+    "center-block",
+    "clock",
+    "comment",
+    "comment-block",
+    "diary-sexp",
+    "drawer",
+    "dynamic-block",
+    "example-block",
+    "export-block",
+    "fixed-width",
+    "footnote-definition",
+    "headline",
+    "horizontal-rule",
+    "inlinetask",
+    "item",
+    "keyword",
+    "latex-environment",
+    "node-property",
+    "paragraph",
+    "plain-list",
+    "planning",
+    "property-drawer",
+    "quote-block",
+    "section",
+    "special-block",
+    "src-block",
+    "table",
+    "table-row",
+    "verse-block",
+];
+
+const UPSTREAM_ORG_ELEMENT_ALL_OBJECTS: &[&str] = &[
+    "bold",
+    "citation",
+    "citation-reference",
+    "code",
+    "entity",
+    "export-snippet",
+    "footnote-reference",
+    "inline-babel-call",
+    "inline-src-block",
+    "italic",
+    "latex-fragment",
+    "line-break",
+    "link",
+    "macro",
+    "radio-target",
+    "statistics-cookie",
+    "strike-through",
+    "subscript",
+    "superscript",
+    "table-cell",
+    "target",
+    "timestamp",
+    "underline",
+    "verbatim",
+];
+
+const UPSTREAM_ORG_ELEMENT_GREATER_ELEMENTS: &[&str] = &[
+    "center-block",
+    "drawer",
+    "dynamic-block",
+    "footnote-definition",
+    "headline",
+    "inlinetask",
+    "item",
+    "plain-list",
+    "property-drawer",
+    "quote-block",
+    "section",
+    "special-block",
+    "table",
+    "org-data",
+];
+
+const UPSTREAM_ORG_ELEMENT_RECURSIVE_OBJECTS: &[&str] = &[
+    "bold",
+    "citation",
+    "footnote-reference",
+    "italic",
+    "link",
+    "subscript",
+    "radio-target",
+    "strike-through",
+    "superscript",
+    "table-cell",
+    "underline",
+];
+
+const UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS: &[&str] = &[
+    "CAPTION", "DATA", "HEADER", "HEADERS", "LABEL", "NAME", "PLOT", "RESNAME", "RESULT",
+    "RESULTS", "SOURCE", "SRCNAME", "TBLNAME",
+];
+
+const UPSTREAM_ORG_ELEMENT_STANDARD_PROPERTIES: &[&str] = &[
+    ":begin",
+    ":post-affiliated",
+    ":contents-begin",
+    ":contents-end",
+    ":end",
+    ":post-blank",
+    ":secondary",
+    ":mode",
+    ":granularity",
+    ":cached",
+    ":org-element--cache-sync-key",
+    ":robust-begin",
+    ":robust-end",
+    ":true-level",
+    ":buffer",
+    ":deferred",
+    ":structure",
+    ":parent",
+];
 
 #[test]
 fn semantic_ast_projects_org_element_selector_uses_affiliated_name() {

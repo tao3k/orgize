@@ -1,0 +1,8 @@
+---
+source: tests/integration/lint_contract.rs
+expression: "format!(\"sibling clean: {}\\n{}\\nevidence clean: {}\\n{}\",\nsibling_report.is_clean(),\nsibling_report.to_text(\"contract-evidence-link-sibling.org\"),\nevidence_report.is_clean(),\nevidence_report.to_text(\"contract-evidence-link-inside.org\"))"
+---
+sibling clean: false
+contract-evidence-link-sibling.org:1:1: warning ORG044: Task `Task A` must include at least one link under Evidence. (contract `agent.evidence-link-task.v1` assertion `task.evidence-has-link` failed in section `Task A`: expected count >= 1, actual 0)
+
+evidence clean: true

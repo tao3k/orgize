@@ -1,0 +1,8 @@
+---
+source: tests/integration/lint_contract.rs
+expression: "format!(\"failure clean: {}\\n{}\\nsuccess clean: {}\\n{}\",\nfailure_report.is_clean(),\nfailure_report.to_text(\"contract-owner-failure.org\"),\nsuccess_report.is_clean(),\nsuccess_report.to_text(\"contract-owner-success.org\"))"
+---
+failure clean: false
+contract-owner-failure.org:1:1: error ORG044: Task `Task A` must have OWNER `alice`. (contract `agent.owner-task.v1` assertion `task.has-owner` failed in section `Task A`: expected exists, actual 0)
+
+success clean: true

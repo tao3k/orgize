@@ -1,0 +1,85 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge.rs
+expression: "serde_json::to_string_pretty(&payload).unwrap()"
+---
+{
+  "directHeadlineChildren": [
+    {
+      "category": "section",
+      "id": 10,
+      "kind": "headline",
+      "outlinePath": [
+        "Task",
+        "Evidence"
+      ],
+      "parentId": 8,
+      "path": null,
+      "rawValue": "Evidence"
+    },
+    {
+      "category": "section",
+      "id": 17,
+      "kind": "headline",
+      "outlinePath": [
+        "Task",
+        "Context"
+      ],
+      "parentId": 8,
+      "path": null,
+      "rawValue": "Context"
+    }
+  ],
+  "evidenceAt": [
+    {
+      "category": "section",
+      "id": 10,
+      "kind": "headline",
+      "outlinePath": [
+        "Task",
+        "Evidence"
+      ],
+      "parentId": 8,
+      "path": null,
+      "rawValue": "Evidence"
+    }
+  ],
+  "evidenceLinks": [
+    {
+      "category": "object",
+      "id": 14,
+      "kind": "link",
+      "outlinePath": [
+        "Task",
+        "Evidence"
+      ],
+      "parentId": 13,
+      "path": "https://example.test",
+      "rawValue": null
+    }
+  ],
+  "linkHeadlineAncestors": [
+    {
+      "category": "section",
+      "id": 8,
+      "kind": "headline",
+      "outlinePath": [
+        "Task"
+      ],
+      "parentId": 1,
+      "path": null,
+      "rawValue": "Task"
+    },
+    {
+      "category": "section",
+      "id": 10,
+      "kind": "headline",
+      "outlinePath": [
+        "Task",
+        "Evidence"
+      ],
+      "parentId": 8,
+      "path": null,
+      "rawValue": "Evidence"
+    }
+  ]
+}

@@ -107,6 +107,7 @@ Document {
     sections: [
         Section {
             ann: (),
+            body_ann: None,
             level: 1,
             properties: [
                 Property {
@@ -189,6 +190,7 @@ Document {
             subsections: [
                 Section {
                     ann: (),
+                    body_ann: None,
                     level: 2,
                     properties: [],
                     effective_properties: [
@@ -280,6 +282,7 @@ Document {
         },
         Section {
             ann: (),
+            body_ann: None,
             level: 1,
             properties: [],
             effective_properties: [
