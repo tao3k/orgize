@@ -1,3 +1,5 @@
+//! Document element indexing, filtering, and source selection helpers.
+
 use std::{
     fs,
     path::{Path, PathBuf},

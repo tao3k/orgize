@@ -1,5 +1,9 @@
 fn main() {
     let mut config = rust_lang_project_harness::default_rust_harness_config()
+        .with_rule_severity(
+            "RUST-MOD-R002",
+            rust_lang_project_harness::RustDiagnosticSeverity::Info,
+        )
         .with_verification_profile_hint(
             rust_lang_project_harness::RustVerificationProfileHint::new(
                 "build.rs",
