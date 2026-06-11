@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches:
+      - main
       - v0.10
 
 jobs:
@@ -76,7 +77,7 @@ jobs:
         run: sccache --show-stats || true
 
   gh-pages:
-    if: github.ref == 'refs/heads/v0.10'
+    if: github.ref == 'refs/heads/main'
 
     permissions:
       contents: read
