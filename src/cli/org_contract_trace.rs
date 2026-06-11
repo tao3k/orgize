@@ -20,7 +20,7 @@ use crate::{
     },
 };
 
-pub(super) fn run(args: Vec<String>) -> Result<ExitCode, String> {
+pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     let mut args = args.into_iter();
     let Some(command) = args.next() else {
         print_usage();

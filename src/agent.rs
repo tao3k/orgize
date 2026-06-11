@@ -23,6 +23,11 @@ pub fn run_org_command(args: Vec<String>) -> Result<(), String> {
     run_document_command(DocumentLanguage::Org, args)
 }
 
+/// Run an Org contract command, such as `contract trace`.
+pub fn run_org_contract_command(args: Vec<String>) -> Result<(), String> {
+    crate::cli::org_contract_trace::run(args).map(|_| ())
+}
+
 /// Run a Markdown document command.
 pub fn run_md_command(args: Vec<String>) -> Result<(), String> {
     run_document_command(DocumentLanguage::Markdown, args)

@@ -3,6 +3,6 @@
 mod driver;
 mod eval;
 mod org_contract_registry;
-mod org_contract_trace;
+pub(crate) mod org_contract_trace;
 
 pub use driver::run_from_env;
