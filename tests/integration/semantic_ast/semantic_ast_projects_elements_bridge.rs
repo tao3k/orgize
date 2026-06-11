@@ -4,11 +4,12 @@ use orgize::{
     ast::{
         ORG_ELEMENTS_SQL_COLUMNS, OrgElementSelector, OrgElementSelectorParseError,
         OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexKind,
-        OrgElementsIndexQuery, OrgElementsIndexSummaryValue, PythonDirectiveKind,
+        OrgElementsIndexQuery, OrgElementsIndexRecord, OrgElementsIndexSummaryValue,
+        ParsedAnnotation, PythonDirectiveKind,
     },
 };
 use serde_json::Value;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "datafusion-sql")]
 use datafusion::arrow::array::{Int64Array, StringArray};
@@ -625,6 +626,45 @@ Inline body.
         .filter(|record| record.affiliated.name.is_some())
         .map(|_| "name".to_string())
         .collect::<BTreeSet<_>>();
+    let missing_element_like_kinds = difference(&official_element_like, &current_element_like);
+    let orgize_specific_element_like_kinds =
+        difference(&current_element_like, &official_element_like);
+    let missing_object_kinds = difference(&official_objects, &current_objects);
+    let orgize_specific_object_kinds = difference(&current_objects, &official_objects);
+    let missing_affiliated_keyword_records = difference(
+        &official_affiliated_keywords,
+        &current_affiliated_keyword_keys,
+    );
+    let missing_standard_properties =
+        difference(&official_standard_properties, &current_properties);
+    assert_eq!(
+        missing_standard_properties,
+        string_vec(ORG_ELEMENT_INTENTIONALLY_UNMAPPED_STANDARD_PROPERTIES)
+    );
+
+    insta::assert_snapshot!(
+        "org_element_kind_alignment",
+        serde_json::to_string_pretty(&serde_json::json!({
+            "missingElementLikeKinds": missing_element_like_kinds,
+            "orgizeSpecificElementLikeKinds": orgize_specific_element_like_kinds,
+            "missingObjectKinds": missing_object_kinds,
+            "orgizeSpecificObjectKinds": orgize_specific_object_kinds,
+            "missingAffiliatedKeywordRecords": missing_affiliated_keyword_records,
+        }))
+        .unwrap()
+    );
+
+    insta::assert_snapshot!(
+        "org_element_standard_property_gap",
+        serde_json::to_string_pretty(&serde_json::json!({
+            "presentStandardProperties": intersection(
+                &official_standard_properties,
+                &current_properties
+            ),
+            "intentionallyUnmappedStandardProperties": missing_standard_properties,
+        }))
+        .unwrap()
+    );
 
     let payload = serde_json::json!({
         "baseline": {
@@ -644,22 +684,98 @@ Inline body.
             "propertyKeys": current_properties.iter().collect::<Vec<_>>(),
         },
         "gaps": {
-            "missingElementLikeKinds": difference(&official_element_like, &current_element_like),
-            "orgizeSpecificElementLikeKinds": difference(&current_element_like, &official_element_like),
-            "missingObjectKinds": difference(&official_objects, &current_objects),
-            "orgizeSpecificObjectKinds": difference(&current_objects, &official_objects),
-            "missingAffiliatedKeywordRecords": difference(
-                &official_affiliated_keywords,
-                &current_affiliated_keyword_keys
-            ),
-            "missingStandardProperties": difference(
-                &official_standard_properties,
-                &current_properties
-            ),
+            "missingElementLikeKinds": missing_element_like_kinds,
+            "orgizeSpecificElementLikeKinds": orgize_specific_element_like_kinds,
+            "missingObjectKinds": missing_object_kinds,
+            "orgizeSpecificObjectKinds": orgize_specific_object_kinds,
+            "missingAffiliatedKeywordRecords": missing_affiliated_keyword_records,
+            "missingStandardProperties": missing_standard_properties,
         },
     });
 
     insta::assert_snapshot!(serde_json::to_string_pretty(&payload).unwrap());
+}
+
+#[test]
+fn semantic_ast_projects_upstream_org_element_defconsts_match_checked_in_baseline() {
+    let upstream = upstream_org_element_defconsts();
+    assert_eq!(
+        upstream.all_elements,
+        string_vec(UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS)
+    );
+    assert_eq!(
+        upstream.greater_elements,
+        string_vec(UPSTREAM_ORG_ELEMENT_GREATER_ELEMENTS)
+    );
+    assert_eq!(
+        upstream.all_objects,
+        string_vec(UPSTREAM_ORG_ELEMENT_ALL_OBJECTS)
+    );
+    assert_eq!(
+        upstream.recursive_objects,
+        string_vec(UPSTREAM_ORG_ELEMENT_RECURSIVE_OBJECTS)
+    );
+    assert_eq!(
+        upstream.affiliated_keywords,
+        string_vec(UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS)
+    );
+
+    insta::assert_snapshot!(
+        serde_json::to_string_pretty(&serde_json::json!({
+            "source": "bzg/org-mode .data/org-mode/lisp/org-element.el",
+            "allElements": upstream.all_elements,
+            "greaterElements": upstream.greater_elements,
+            "allObjects": upstream.all_objects,
+            "recursiveObjects": upstream.recursive_objects,
+            "affiliatedKeywords": upstream.affiliated_keywords,
+        }))
+        .unwrap()
+    );
+}
+
+#[test]
+fn semantic_ast_projects_org_guide_real_document_org_elements_regression_has_snapshot() {
+    let doc = Org::parse(include_str!("../../../.data/org-mode/doc/org-guide.org")).document();
+
+    assert_clean_projection(&doc);
+    let records = doc.org_elements_index();
+    let selected_kind_counts = selected_kind_counts(
+        &records,
+        &[
+            "org-data",
+            "headline",
+            "section",
+            "paragraph",
+            "src-block",
+            "plain-list",
+            "table",
+            "link",
+            "timestamp",
+        ],
+    );
+    let top_level_headlines = records
+        .iter()
+        .filter(|record| {
+            record.category == OrgElementsIndexCategory::Section
+                && record.kind.as_str() == "headline"
+                && record.outline_path.len() == 1
+        })
+        .filter_map(|record| match record.summary.get("title") {
+            Some(OrgElementsIndexSummaryValue::Text(title)) => Some(title.clone()),
+            _ => None,
+        })
+        .take(12)
+        .collect::<Vec<_>>();
+
+    insta::assert_snapshot!(
+        serde_json::to_string_pretty(&serde_json::json!({
+            "source": ".data/org-mode/doc/org-guide.org",
+            "recordCount": records.len(),
+            "selectedKindCounts": selected_kind_counts,
+            "topLevelHeadlines": top_level_headlines,
+        }))
+        .unwrap()
+    );
 }
 
 fn graph_query_snapshot_records(
@@ -695,8 +811,121 @@ fn string_set(values: &[&str]) -> BTreeSet<String> {
     values.iter().map(|value| value.to_string()).collect()
 }
 
+fn string_vec(values: &[&str]) -> Vec<String> {
+    values.iter().map(|value| value.to_string()).collect()
+}
+
 fn difference(left: &BTreeSet<String>, right: &BTreeSet<String>) -> Vec<String> {
     left.difference(right).cloned().collect()
+}
+
+fn intersection(left: &BTreeSet<String>, right: &BTreeSet<String>) -> Vec<String> {
+    left.intersection(right).cloned().collect()
+}
+
+fn selected_kind_counts(
+    records: &[OrgElementsIndexRecord<ParsedAnnotation>],
+    selected_kinds: &[&str],
+) -> BTreeMap<String, usize> {
+    selected_kinds
+        .iter()
+        .map(|kind| {
+            (
+                (*kind).to_string(),
+                records
+                    .iter()
+                    .filter(|record| record.kind.as_str() == *kind)
+                    .count(),
+            )
+        })
+        .collect()
+}
+
+#[derive(Debug)]
+struct UpstreamOrgElementDefconsts {
+    all_elements: Vec<String>,
+    greater_elements: Vec<String>,
+    all_objects: Vec<String>,
+    recursive_objects: Vec<String>,
+    affiliated_keywords: Vec<String>,
+}
+
+fn upstream_org_element_defconsts() -> UpstreamOrgElementDefconsts {
+    let source = include_str!("../../../.data/org-mode/lisp/org-element.el");
+    UpstreamOrgElementDefconsts {
+        all_elements: elisp_defconst_quoted_list(source, "org-element-all-elements"),
+        greater_elements: elisp_defconst_quoted_list(source, "org-element-greater-elements"),
+        all_objects: elisp_defconst_quoted_list(source, "org-element-all-objects"),
+        recursive_objects: elisp_defconst_quoted_list(source, "org-element-recursive-objects"),
+        affiliated_keywords: elisp_defconst_quoted_list(source, "org-element-affiliated-keywords"),
+    }
+}
+
+fn elisp_defconst_quoted_list(source: &str, name: &str) -> Vec<String> {
+    let marker = format!("(defconst {name}");
+    let defconst = source
+        .split_once(&marker)
+        .unwrap_or_else(|| panic!("missing upstream defconst `{name}`"))
+        .1;
+    let body_start = defconst
+        .find("'(")
+        .unwrap_or_else(|| panic!("missing quoted list for upstream defconst `{name}`"))
+        + 2;
+    let body = quoted_list_body(&defconst[body_start..]);
+    elisp_list_values(body)
+}
+
+fn quoted_list_body(source: &str) -> &str {
+    let mut depth = 1usize;
+    for (index, ch) in source.char_indices() {
+        match ch {
+            '(' => depth += 1,
+            ')' => {
+                depth -= 1;
+                if depth == 0 {
+                    return &source[..index];
+                }
+            }
+            _ => {}
+        }
+    }
+    source
+}
+
+fn elisp_list_values(source: &str) -> Vec<String> {
+    let mut values = Vec::new();
+    let mut chars = source.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch.is_whitespace() {
+            continue;
+        }
+        if ch == '"' {
+            let mut value = String::new();
+            while let Some(ch) = chars.next() {
+                match ch {
+                    '"' => break,
+                    '\\' => {
+                        if let Some(escaped) = chars.next() {
+                            value.push(escaped);
+                        }
+                    }
+                    _ => value.push(ch),
+                }
+            }
+            values.push(value);
+            continue;
+        }
+        let mut value = ch.to_string();
+        while let Some(next) = chars.peek().copied() {
+            if next.is_whitespace() || next == '(' || next == ')' {
+                break;
+            }
+            value.push(next);
+            chars.next();
+        }
+        values.push(value);
+    }
+    values
 }
 
 const UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS: &[&str] = &[
@@ -743,8 +972,8 @@ const UPSTREAM_ORG_ELEMENT_ALL_OBJECTS: &[&str] = &[
     "inline-babel-call",
     "inline-src-block",
     "italic",
-    "latex-fragment",
     "line-break",
+    "latex-fragment",
     "link",
     "macro",
     "radio-target",
@@ -814,6 +1043,19 @@ const UPSTREAM_ORG_ELEMENT_STANDARD_PROPERTIES: &[&str] = &[
     ":deferred",
     ":structure",
     ":parent",
+];
+
+const ORG_ELEMENT_INTENTIONALLY_UNMAPPED_STANDARD_PROPERTIES: &[&str] = &[
+    ":buffer",
+    ":cached",
+    ":deferred",
+    ":granularity",
+    ":mode",
+    ":org-element--cache-sync-key",
+    ":robust-begin",
+    ":robust-end",
+    ":secondary",
+    ":structure",
 ];
 
 #[test]

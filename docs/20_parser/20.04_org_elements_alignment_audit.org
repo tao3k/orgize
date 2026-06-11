@@ -133,37 +133,51 @@ The closeout should land in this order:
 
 ** Stronger Improvements After Alignment
 
-After the compatibility surface is stable, the next improvements should be
-semantic rather than ad hoc:
+After the compatibility surface is stable, the next improvements should stay
+semantic and contract-visible rather than ad hoc:
 
 - expose a normalized =OrgElementQuery= AST that can compile to Rust predicates,
-  JSON query packets, and contract selectors;
-- add scenario snapshots for common =CONTRACT_ORG= patterns, including
-  existence, count, relation, property equality, and property containment;
+  JSON query packets, and contract selectors without duplicating predicate
+  parsing in each caller;
+- extend scenario snapshots from the current existence, count, relation,
+  property, affiliated-name, and summary conditions to disjunction and explicit
+  negation once the query AST can represent them;
 - add provenance for inherited headline properties so callers can distinguish
   local drawer values from effective inherited values;
 - add stable extension namespaces for orgize-owned nodes instead of mixing
-  extensions into the upstream kind namespace silently.
+  extensions such as =plain-text= into the upstream kind namespace silently.
 
 The runtime alignment snapshot is
 [[file:../../tests/integration/semantic_ast/snapshots/integration_test__semantic_ast__semantic_ast_projects_elements_bridge__semantic_ast_projects_org_element_alignment_gap_has_snapshot.snap][semantic_ast_projects_org_element_alignment_gap_has_snapshot]].
+The split gap snapshots are
+[[file:../../tests/integration/semantic_ast/snapshots/integration_test__semantic_ast__semantic_ast_projects_elements_bridge__org_element_kind_alignment.snap][org_element_kind_alignment]]
+and
+[[file:../../tests/integration/semantic_ast/snapshots/integration_test__semantic_ast__semantic_ast_projects_elements_bridge__org_element_standard_property_gap.snap][org_element_standard_property_gap]].
+The real-document regression snapshot is
+[[file:../../tests/integration/semantic_ast/snapshots/integration_test__semantic_ast__semantic_ast_projects_elements_bridge__semantic_ast_projects_org_guide_real_document_org_elements_regression_has_snapshot.snap][semantic_ast_projects_org_guide_real_document_org_elements_regression_has_snapshot]].
 
 ** P0-P6 Landing Evidence
 
-- P0: upstream =org-element.el= baseline is pinned to
-  =bzg/org-mode b470d81= and guarded by the alignment snapshot.
-- P1: parser-owned bridge kinds now include =section=, =planning=,
-  =property-drawer=, and =citation-reference=. =diary-sexp= remains a syntax
-  and semantic model gap before it can be represented by the bridge.
-- P2: headline/body =:contents-begin= and =:contents-end= are snapshot-tested
-  against parser-owned body ranges.
-- P3: =OrgElementsIndexQuery= owns relation predicates and
-  =OrgElementGraph::query= applies them for host callers.
-- P4: scenario snapshots cover graph relations plus =CONTRACT_ORG= existence,
-  count, property equality, property containment, =child_of=, and
-  =descendant_of= patterns.
-- P5: host-facing semantics are documented here, including the remaining gaps
-  that must not be hidden behind bridge-only heuristics.
-- P6: focused gates were run against the real provider/runtime boundary:
+- P0: the root gitlink and nested orgize checkout are treated as separate
+  commit boundaries; root updates carry only the nested commit pointer.
+- P1: =org-element.el= element, object, greater-element, recursive-object, and
+  affiliated-keyword baselines are parsed from
+  =.data/org-mode/lisp/org-element.el= and compared against checked-in
+  constants. Element-like and object-like gaps are now empty except the
+  intentional orgize-owned =plain-text= object extension.
+- P2: alignment assertions are split into targeted snapshots for kind coverage
+  and standard-property coverage, so upstream drift and intentional unmapped
+  properties fail independently.
+- P3: =CONTRACT_ORG= selectors now cover affiliated fields and summary fields
+  in addition to count, relation, property equality, and property containment.
+- P4: upstream =defconst= extraction is automated in the integration suite; a
+  changed upstream list must update the checked-in baseline intentionally.
+- P5: =.data/org-mode/doc/org-guide.org= is parsed as a real document
+  regression and snapshots record count, selected kind counts, and first
+  top-level headlines.
+- P6: remaining stronger improvements are documented above and focused gates
+  plus closeout gates were run against the real provider/runtime boundary:
+  =cargo fmt --check=, =cargo check --message-format short=,
+  =cargo test --lib=,
   =cargo test --test integration_test semantic_ast_projects_elements_bridge=
-  and =cargo test --test integration_test lint_contract=.
+  and =cargo test --test integration_test=.

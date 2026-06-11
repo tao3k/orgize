@@ -302,6 +302,76 @@ print("ready")
     ));
 }
 
+#[test]
+fn lint_contract_org_contract_block_supports_summary_and_affiliated_conditions_with_snapshot() {
+    let document = Org::parse(summary_condition_contract_source()).document();
+    let registry = parse_contracts_from_document(&document, None);
+    let unnamed_python_source = r#"* Task A
+:PROPERTIES:
+:CONTRACT_ORG: agent.rich-task.v1
+:END:
+
+#+BEGIN_SRC python
+print("ready")
+#+END_SRC
+%%(org-anniversary 1956 5 14)
+"#;
+    let missing_diary_source = r#"* Task A
+:PROPERTIES:
+:CONTRACT_ORG: agent.rich-task.v1
+:END:
+
+#+NAME: task_runner
+#+BEGIN_SRC python
+print("ready")
+#+END_SRC
+"#;
+    let success_source = r#"* Task A
+:PROPERTIES:
+:CONTRACT_ORG: agent.rich-task.v1
+:END:
+
+#+NAME: task_runner
+#+BEGIN_SRC python
+print("ready")
+#+END_SRC
+%%(org-anniversary 1956 5 14)
+"#;
+    let unnamed_python_report = lint_org_with_options(
+        unnamed_python_source,
+        &LintOptions {
+            org_contract_registry: registry.clone(),
+            ..LintOptions::default()
+        },
+    );
+    let missing_diary_report = lint_org_with_options(
+        missing_diary_source,
+        &LintOptions {
+            org_contract_registry: registry.clone(),
+            ..LintOptions::default()
+        },
+    );
+    let success_report = lint_org_with_options(
+        success_source,
+        &LintOptions {
+            org_contract_registry: registry,
+            ..LintOptions::default()
+        },
+    );
+
+    insta::assert_snapshot!(format!(
+        "unnamed python clean: {}\n{}\n\
+         missing diary clean: {}\n{}\n\
+         success clean: {}\n{}",
+        unnamed_python_report.is_clean(),
+        unnamed_python_report.to_text("summary-affiliated-contract-unnamed-python.org"),
+        missing_diary_report.is_clean(),
+        missing_diary_report.to_text("summary-affiliated-contract-missing-diary.org"),
+        success_report.is_clean(),
+        success_report.to_text("summary-affiliated-contract-success.org")
+    ));
+}
+
 fn contract_registry() -> orgize::ast::OrgContractRegistry {
     let document = Org::parse(contract_source()).document();
     parse_contracts_from_document(&document, None)
@@ -466,6 +536,37 @@ fn selector_contract_source() -> &'static str {
 
 #+BEGIN_SRC org-elements-expect
 exists
+#+END_SRC
+"#
+}
+
+fn summary_condition_contract_source() -> &'static str {
+    r#"* rich-task-v1
+:PROPERTIES:
+:CONTRACT_ID: agent.rich-task.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+
+** has-named-python-block
+:PROPERTIES:
+:ASSERT_ID: task.has-named-python-block
+:SEVERITY: warning
+:END:
+
+#+BEGIN_SRC org-contract
+assert src-block where affiliated_name = "task_runner" and summary(language) = "python"
+#+END_SRC
+
+** has-diary-sexp
+:PROPERTIES:
+:ASSERT_ID: task.has-diary-sexp
+:SEVERITY: warning
+:END:
+
+#+BEGIN_SRC org-contract
+assert count diary-sexp where summary(raw) contains "org-anniversary"
+>= 1
 #+END_SRC
 "#
 }

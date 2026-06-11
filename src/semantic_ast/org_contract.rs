@@ -336,7 +336,7 @@ fn parse_org_contract_block(
             rest.trim(),
         )
     } else {
-        return None;
+        (OrgContractExpectation::Exists, assert_rest)
     };
 
     let (kind, inline_condition) = if let Some((kind, condition)) = rest.split_once(" where ") {
@@ -423,6 +423,8 @@ fn parse_org_contract_condition(
         return;
     }
     let _ = parse_org_contract_relation_condition(condition, query)
+        || parse_org_contract_header_condition(condition, query)
+        || parse_org_contract_summary_condition(condition, query)
         || parse_org_contract_property_condition(condition, query);
 }
 
@@ -463,7 +465,54 @@ fn parse_org_contract_relation_condition(condition: &str, query: &mut OrgContrac
 }
 
 fn parse_org_contract_property_condition(condition: &str, query: &mut OrgContractQuery) -> bool {
-    let Some(rest) = condition.strip_prefix("property(") else {
+    parse_org_contract_field_condition(
+        condition,
+        "property",
+        |query, key, value| query.property_equals.push((key.to_string(), value)),
+        |query, key, value| query.property_contains.push((key.to_string(), value)),
+        query,
+    )
+}
+
+fn parse_org_contract_summary_condition(condition: &str, query: &mut OrgContractQuery) -> bool {
+    parse_org_contract_field_condition(
+        condition,
+        "summary",
+        |query, key, value| query.summary_equals.push((key.to_string(), value)),
+        |query, key, value| query.summary_contains.push((key.to_string(), value)),
+        query,
+    )
+}
+
+fn parse_org_contract_header_condition(condition: &str, query: &mut OrgContractQuery) -> bool {
+    let Some((lhs, rhs)) = split_line(condition, "=") else {
+        return false;
+    };
+    let Some(value) = query_value(rhs) else {
+        return false;
+    };
+    match lhs {
+        "affiliated_name" => query.affiliated_name = Some(value),
+        "context" => query.context = Some(value),
+        "category" => {
+            query.category = OrgElementsIndexCategory::from_label(&value);
+            return query.category.is_some();
+        }
+        "kind" => query.kind = Some(OrgElementsIndexKind::new(value)),
+        _ => return false,
+    }
+    true
+}
+
+fn parse_org_contract_field_condition(
+    condition: &str,
+    field: &str,
+    mut push_equals: impl FnMut(&mut OrgContractQuery, &str, String),
+    mut push_contains: impl FnMut(&mut OrgContractQuery, &str, String),
+    query: &mut OrgContractQuery,
+) -> bool {
+    let prefix = format!("{field}(");
+    let Some(rest) = condition.strip_prefix(&prefix) else {
         return false;
     };
     let Some((key, rhs)) = rest.split_once(')') else {
@@ -474,16 +523,14 @@ fn parse_org_contract_property_condition(condition: &str, query: &mut OrgContrac
         .strip_prefix("contains")
         .and_then(|value| query_value(value.trim()))
     {
-        query
-            .property_contains
-            .push((key.trim().to_string(), value));
+        push_contains(query, key.trim(), value);
         return true;
     }
     if let Some(value) = rhs
         .strip_prefix('=')
         .and_then(|value| query_value(value.trim()))
     {
-        query.property_equals.push((key.trim().to_string(), value));
+        push_equals(query, key.trim(), value);
         return true;
     }
     false

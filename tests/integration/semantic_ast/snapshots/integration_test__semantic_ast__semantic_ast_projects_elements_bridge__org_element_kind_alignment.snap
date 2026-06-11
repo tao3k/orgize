@@ -1,0 +1,13 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge.rs
+expression: "serde_json::to_string_pretty(&serde_json::json!({\n    \"missingElementLikeKinds\": missing_element_like_kinds,\n    \"orgizeSpecificElementLikeKinds\": orgize_specific_element_like_kinds,\n    \"missingObjectKinds\": missing_object_kinds, \"orgizeSpecificObjectKinds\":\n    orgize_specific_object_kinds, \"missingAffiliatedKeywordRecords\":\n    missing_affiliated_keyword_records,\n})).unwrap()"
+---
+{
+  "missingAffiliatedKeywordRecords": [],
+  "missingElementLikeKinds": [],
+  "missingObjectKinds": [],
+  "orgizeSpecificElementLikeKinds": [],
+  "orgizeSpecificObjectKinds": [
+    "plain-text"
+  ]
+}

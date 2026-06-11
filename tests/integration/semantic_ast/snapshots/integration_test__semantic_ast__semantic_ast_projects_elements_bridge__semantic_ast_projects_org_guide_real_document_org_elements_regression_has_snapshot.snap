@@ -1,0 +1,33 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge.rs
+expression: "serde_json::to_string_pretty(&serde_json::json!({\n    \"source\": \".data/org-mode/doc/org-guide.org\", \"recordCount\":\n    records.len(), \"selectedKindCounts\": selected_kind_counts,\n    \"topLevelHeadlines\": top_level_headlines,\n})).unwrap()"
+---
+{
+  "recordCount": 4277,
+  "selectedKindCounts": {
+    "headline": 91,
+    "link": 50,
+    "org-data": 1,
+    "paragraph": 550,
+    "plain-list": 49,
+    "section": 90,
+    "src-block": 10,
+    "table": 4,
+    "timestamp": 0
+  },
+  "source": ".data/org-mode/doc/org-guide.org",
+  "topLevelHeadlines": [
+    "Copying",
+    "Introduction",
+    "Document Structure",
+    "Tables",
+    "Hyperlinks",
+    "Items",
+    "Tags",
+    "Properties",
+    "Dates and Times",
+    "Capture, Refile, Archive",
+    "Agenda Views",
+    "Markup for Rich Contents"
+  ]
+}
