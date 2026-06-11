@@ -298,6 +298,9 @@ fn print_guide(language: DocumentLanguage) {
         println!(
             "|surface elements-query purpose=org-elements-index-packet output=json content=false"
         );
+        println!(
+            "|surface contract-trace purpose=contract-org-evaluation-trace output=json content=false"
+        );
     }
     println!("|surface direct-read purpose=hook-recovery output=pure-content content=true");
     println!("|rule parser-authority={}", language.parser_authority());
@@ -337,6 +340,10 @@ fn print_guide(language: DocumentLanguage) {
     if language == DocumentLanguage::Org {
         println!(
             "|cmd elements-query={} elements-query --packet <json-query-packet> <org-file>",
+            language.command_prefix()
+        );
+        println!(
+            "|cmd contract-trace={} contract trace --org-contract-registry <contract.org> <target.org>",
             language.command_prefix()
         );
     }
