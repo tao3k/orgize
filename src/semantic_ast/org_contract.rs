@@ -490,8 +490,8 @@ fn parse_org_contract_property_predicate(condition: &str) -> Option<OrgElementQu
     parse_org_contract_field_predicate(
         condition,
         "property",
-        |key, value| OrgElementQueryPredicate::property_eq(key, value),
-        |key, value| OrgElementQueryPredicate::property_contains(key, value),
+        OrgElementQueryPredicate::property_eq,
+        OrgElementQueryPredicate::property_contains,
     )
 }
 
@@ -499,18 +499,14 @@ fn parse_org_contract_summary_predicate(condition: &str) -> Option<OrgElementQue
     parse_org_contract_field_predicate(
         condition,
         "summary",
-        |key, value| OrgElementQueryPredicate::summary_eq(key, value),
-        |key, value| OrgElementQueryPredicate::summary_contains(key, value),
+        OrgElementQueryPredicate::summary_eq,
+        OrgElementQueryPredicate::summary_contains,
     )
 }
 
 fn parse_org_contract_header_predicate(condition: &str) -> Option<OrgElementQueryPredicate> {
-    let Some((lhs, rhs)) = split_line(condition, "=") else {
-        return None;
-    };
-    let Some(value) = query_value(rhs) else {
-        return None;
-    };
+    let (lhs, rhs) = split_line(condition, "=")?;
+    let value = query_value(rhs)?;
     match lhs {
         "affiliated_name" => Some(OrgElementQueryPredicate::AffiliatedName(value)),
         "context" => Some(OrgElementQueryPredicate::Context(value)),
@@ -531,12 +527,8 @@ fn parse_org_contract_field_predicate(
     contains: impl Fn(String, String) -> OrgElementQueryPredicate,
 ) -> Option<OrgElementQueryPredicate> {
     let prefix = format!("{field}(");
-    let Some(rest) = condition.strip_prefix(&prefix) else {
-        return None;
-    };
-    let Some((key, rhs)) = rest.split_once(')') else {
-        return None;
-    };
+    let rest = condition.strip_prefix(&prefix)?;
+    let (key, rhs) = rest.split_once(')')?;
     let rhs = rhs.trim();
     if let Some(value) = rhs
         .strip_prefix("contains")
