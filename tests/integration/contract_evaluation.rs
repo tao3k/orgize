@@ -1,3 +1,5 @@
+use std::{fs, path::PathBuf, process::Command};
+
 use orgize::{
     Org,
     ast::{
@@ -84,6 +86,44 @@ fn json_exports_source_backed_trace() {
     assert!(json.get("verdict").is_none());
 }
 
+#[test]
+fn cli_trace_outputs_contract_evaluation_json_snapshot() {
+    let dir = test_dir("contract-trace");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("contract.org"), contract_source()).unwrap();
+    fs::write(
+        dir.join("notes.org"),
+        r#"* Task A
+:PROPERTIES:
+:CONTRACT_ORG: ./contract.org#agent.evidence-link-task.v1
+:END:
+** Evidence
+[[https://example.test][inside]]
+* Task B
+:PROPERTIES:
+:CONTRACT_ORG: ./contract.org#agent.evidence-link-task.v1
+:END:
+** Evidence
+No link here.
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args([
+            "contract",
+            "trace",
+            "--org-contract-registry",
+            "contract.org",
+            "notes.org",
+        ])
+        .output()
+        .unwrap();
+
+    insta::assert_snapshot!(command_snapshot(output));
+}
+
 fn contract_registry() -> OrgContractRegistry {
     let document = Org::parse(contract_source()).document();
     parse_contracts_from_document(&document, None)
@@ -125,4 +165,24 @@ fn contract_target_source() -> &'static str {
 ** Evidence
 [[https://example.test][inside]]
 "#
+}
+
+fn command_snapshot(output: std::process::Output) -> String {
+    format!(
+        "status: {}\nstdout:\n{}\nstderr:\n{}",
+        output.status.code().unwrap_or_default(),
+        String::from_utf8(output.stdout).unwrap(),
+        String::from_utf8(output.stderr).unwrap()
+    )
+}
+
+fn test_dir(name: &str) -> PathBuf {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("target")
+        .join("orgize-cli-tests")
+        .join(format!("{name}-{}", std::process::id()));
+    if path.exists() {
+        fs::remove_dir_all(&path).unwrap();
+    }
+    path
 }

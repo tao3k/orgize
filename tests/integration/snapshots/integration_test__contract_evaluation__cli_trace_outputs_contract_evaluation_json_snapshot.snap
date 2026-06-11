@@ -1,0 +1,91 @@
+---
+source: tests/integration/contract_evaluation.rs
+assertion_line: 124
+expression: command_snapshot(output)
+---
+status: 0
+stdout:
+{
+  "files": [
+    {
+      "evaluations": [
+        {
+          "assertions": [
+            {
+              "actualCount": 1,
+              "assertionId": "task.evidence-has-link",
+              "bindings": {
+                "evidence": [
+                  14
+                ]
+              },
+              "expectation": {
+                "count": 1,
+                "kind": "count",
+                "operator": ">="
+              },
+              "matchedIds": [
+                18
+              ],
+              "messageTemplate": "Task `{{ scope.title }}` must include at least one link under Evidence.\n",
+              "severity": "warning",
+              "status": "passed"
+            }
+          ],
+          "contractId": "agent.evidence-link-task.v1",
+          "schemaVersion": 1,
+          "scope": {
+            "kind": "section",
+            "outlinePath": [
+              "Task A"
+            ],
+            "range": {
+              "end": 131,
+              "start": 0
+            },
+            "title": "Task A"
+          }
+        },
+        {
+          "assertions": [
+            {
+              "actualCount": 0,
+              "assertionId": "task.evidence-has-link",
+              "bindings": {
+                "evidence": [
+                  25
+                ]
+              },
+              "expectation": {
+                "count": 1,
+                "kind": "count",
+                "operator": ">="
+              },
+              "matchedIds": [],
+              "messageTemplate": "Task `{{ scope.title }}` must include at least one link under Evidence.\n",
+              "severity": "warning",
+              "status": "failed"
+            }
+          ],
+          "contractId": "agent.evidence-link-task.v1",
+          "schemaVersion": 1,
+          "scope": {
+            "kind": "section",
+            "outlinePath": [
+              "Task B"
+            ],
+            "range": {
+              "end": 243,
+              "start": 131
+            },
+            "title": "Task B"
+          }
+        }
+      ],
+      "path": "notes.org"
+    }
+  ],
+  "schemaVersion": 1
+}
+
+stderr:

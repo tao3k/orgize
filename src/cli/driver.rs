@@ -36,6 +36,7 @@ fn run() -> Result<ExitCode, String> {
     };
 
     match command.as_str() {
+        "contract" => super::org_contract_trace::run(args.collect()),
         "eval" => super::eval::run(args.collect()),
         "export" => run_export(args.collect()),
         "fmt" => run_fmt(args.collect()),
@@ -645,7 +646,7 @@ fn push_property_schema_alias(contract: &mut PropertySchemaContract, alias: Stri
 
 fn print_usage() {
     eprintln!(
-        "Usage: orgize <elements-query|eval|export|fmt|guide|lint|md|query|search|sdd> [options] [PATH ...]"
+        "Usage: orgize <contract|elements-query|eval|export|fmt|guide|lint|md|query|search|sdd> [options] [PATH ...]"
     );
 }
 
