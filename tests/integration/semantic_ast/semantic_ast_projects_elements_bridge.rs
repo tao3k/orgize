@@ -6,7 +6,8 @@ use orgize::{
         OrgElementSelector, OrgElementSelectorParseError, OrgElementsHostExecutionOptions,
         OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexQuery,
         OrgElementsIndexRecord, OrgElementsIndexSummaryValue, ParsedAnnotation,
-        PythonDirectiveKind,
+        PythonDirectiveKind, org_elements_index_query_from_json_str,
+        org_elements_index_query_to_json_value,
     },
 };
 use serde_json::Value;
@@ -270,6 +271,31 @@ print(topic)
         "Learn parser bindings"
     );
     assert_eq!(headline_node["properties"][":EFFORT"], "1:00");
+    let plain_text_node = index
+        .iter()
+        .find(|node| node["kind"] == "plain-text")
+        .expect("plain-text index JSON record");
+    insta::assert_snapshot!(
+        "org_element_namespace_and_property_provenance",
+        serde_json::to_string_pretty(&serde_json::json!({
+            "headline": {
+                "kind": headline_node["kind"].clone(),
+                "kindNamespace": headline_node["kindNamespace"].clone(),
+                "extensionNamespace": headline_node["extensionNamespace"].clone(),
+                "propertyProvenance": {
+                    ":raw-value": headline_node["propertyProvenance"][":raw-value"].clone(),
+                    ":begin": headline_node["propertyProvenance"][":begin"].clone(),
+                    ":EFFORT": headline_node["propertyProvenance"][":EFFORT"].clone(),
+                },
+            },
+            "plainText": {
+                "kind": plain_text_node["kind"].clone(),
+                "kindNamespace": plain_text_node["kindNamespace"].clone(),
+                "extensionNamespace": plain_text_node["extensionNamespace"].clone(),
+            },
+        }))
+        .unwrap()
+    );
     assert!(index.iter().any(|node| node["category"] == "object"
         && node["kind"] == "link"
         && node["summary"]["path"] == "https://example.test"));
@@ -328,6 +354,75 @@ print(json.dumps(result, sort_keys=True))
     assert_eq!(result["firstTitle"], "Learn parser bindings");
     assert_eq!(result["tagShortcuts"]["EXERCISE"], "ex");
     assert_eq!(result["pythonBlocks"][0], "python");
+}
+
+#[test]
+fn semantic_ast_projects_org_elements_query_packet_has_snapshot() {
+    let doc = Org::parse(
+        r#"#+NAME: task_runner
+#+begin_src python
+print("run")
+#+end_src
+
+#+NAME: shell_runner
+#+begin_src shell
+echo run
+#+end_src
+"#,
+    )
+    .document();
+
+    assert_clean_projection(&doc);
+
+    let packet = serde_json::json!({
+        "schemaVersion": 1,
+        "predicate": {
+            "all": [
+                { "kind": "src-block" },
+                { "affiliatedName": "task_runner" },
+                {
+                    "any": [
+                        { "summary": { "key": "language", "equals": "python" } },
+                        { "summary": { "key": "language", "equals": "rust" } }
+                    ]
+                },
+                { "not": { "summary": { "key": "language", "equals": "shell" } } }
+            ]
+        },
+        "limit": 5,
+    })
+    .to_string();
+    let query = org_elements_index_query_from_json_str(&packet).expect("query packet should parse");
+    let records = doc.query_org_elements_index(&query);
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].kind.as_str(), "src-block");
+    assert_eq!(records[0].affiliated.name.as_deref(), Some("task_runner"));
+
+    let packet_json: Value =
+        serde_json::from_str(&doc.org_elements_index_query_packet_json(&packet).unwrap())
+            .expect("packet JSON should parse");
+    let payload = serde_json::json!({
+        "canonicalQuery": org_elements_index_query_to_json_value(&query),
+        "records": packet_json
+            .as_array()
+            .expect("packet result array")
+            .iter()
+            .map(|record| {
+                serde_json::json!({
+                    "kind": record["kind"].clone(),
+                    "affiliatedName": record["affiliated"]["name"].clone(),
+                    "summary": {
+                        "language": record["summary"]["language"].clone(),
+                    },
+                })
+            })
+            .collect::<Vec<_>>(),
+    });
+
+    insta::assert_snapshot!(
+        "org_elements_query_packet_contract",
+        serde_json::to_string_pretty(&payload).unwrap()
+    );
 }
 
 #[test]

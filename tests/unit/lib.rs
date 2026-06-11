@@ -10,6 +10,8 @@ use crate::{
 
 #[path = "document_source_selection.rs"]
 mod document_source_selection;
+#[path = "elements_bridge_query_json.rs"]
+mod elements_bridge_query_json;
 
 pub fn to_ast<N: AstNode>(
     parser: impl Fn(Input) -> IResult<Input, GreenElement, ()>,

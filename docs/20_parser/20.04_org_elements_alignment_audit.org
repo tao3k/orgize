@@ -184,6 +184,28 @@ The real-document regression snapshot is
   gated to explicit main-branch dispatches. Focused drift gates cover
   =CONTRACT_ORG= boolean predicates and org-elements alignment snapshots.
 - P7: remaining stronger improvements are documented above and closeout gates
+
+** Current P0-P7 Closeout Evidence
+
+- P0: release/sync scope stays explicit: nested =languages/orgize= carries the
+  implementation commit, while the parent repository should only stage the
+  orgize gitlink for this lane.
+- P1/P2: host-facing JSON query packets compile through the shared
+  =OrgElementsIndexQuery= and =OrgElementQueryPredicate= AST via
+  =org_elements_index_query_from_json_str= and
+  =Document::org_elements_index_query_packet_json=.
+- P3/P4: namespace and property-provenance policy is fixed by the
+  =org_element_namespace_and_property_provenance= snapshot, covering
+  org-mode-owned headline records and orgize extension objects.
+- P5: upstream drift remains guarded by =.data/org-mode/lisp/org-element.el=
+  defconst extraction and the fetched =.data/org-mode/doc/org-guide.org=
+  regression fixture.
+- P6: =CONTRACT_ORG= boolean assertion failures now include a compact predicate
+  summary so any/none failures can be diagnosed from the lint snapshot without
+  reopening the source fixture.
+- P7: closeout gates for this lane are =cargo fmt --check=, =cargo check=,
+  =cargo test --lib=, and the full =integration_test= suite from the nested
+  orgize checkout.
   must run against the real provider/runtime boundary:
   =cargo fmt --check=, =cargo check --message-format short=,
   =cargo test --lib=,

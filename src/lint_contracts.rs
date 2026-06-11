@@ -7,8 +7,10 @@ use rowan::TextRange;
 use crate::ast::{
     CONTRACT_ORG_PROPERTY, Keyword, OrgContract, OrgContractAssertion, OrgContractExpectation,
     OrgContractQuery, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
-    OrgElementGraph, OrgElementId, OrgElementsIndexQuery, ParsedAnnotation, ParsedAst, Property,
-    Section, parse_contract_reference,
+    OrgElementGraph, OrgElementId, OrgElementQueryPredicate, OrgElementsIndexQuery,
+    OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
+    OrgElementsIndexSummaryValue, ParsedAnnotation, ParsedAst, Property, Section,
+    parse_contract_reference,
 };
 
 use super::lint_model::{LintFinding, LintSeverity, location_for_range};
@@ -109,15 +111,16 @@ fn push_contract_findings(
                 crate::ast::OrgContractSeverity::Error => LintSeverity::Error,
                 crate::ast::OrgContractSeverity::Warning => LintSeverity::Warning,
             },
-            message: assertion_message(
-                contract.id.as_str(),
-                assertion.id.as_str(),
-                assertion.message.as_deref(),
-                assertion.fix.as_deref(),
-                &scope,
-                &assertion.expectation,
+            message: assertion_message(AssertionMessageContext {
+                contract_id: contract.id.as_str(),
+                assertion_id: assertion.id.as_str(),
+                template: assertion.message.as_deref(),
+                fix_template: assertion.fix.as_deref(),
+                scope: &scope,
+                query: &assertion.query,
+                expectation: &assertion.expectation,
                 actual,
-            ),
+            }),
             location: location_for_range(source, scope.range),
         });
     }
@@ -189,34 +192,168 @@ fn index_query_with_relative_scope(
     }
 }
 
-fn assertion_message(
-    contract_id: &str,
-    assertion_id: &str,
-    template: Option<&str>,
-    fix_template: Option<&str>,
-    scope: &ContractScopeInstance,
-    expectation: &OrgContractExpectation,
+struct AssertionMessageContext<'a> {
+    contract_id: &'a str,
+    assertion_id: &'a str,
+    template: Option<&'a str>,
+    fix_template: Option<&'a str>,
+    scope: &'a ContractScopeInstance,
+    query: &'a OrgContractQuery,
+    expectation: &'a OrgContractExpectation,
     actual: usize,
-) -> String {
-    let rendered = template
-        .map(|template| render_contract_template(template, scope, actual, expectation))
+}
+
+fn assertion_message(context: AssertionMessageContext<'_>) -> String {
+    let rendered = context
+        .template
+        .map(|template| {
+            render_contract_template(template, context.scope, context.actual, context.expectation)
+        })
+        .unwrap_or_default();
+    let predicate_detail = boolean_query_summary(context.query)
+        .map(|summary| format!("; predicate {summary}"))
         .unwrap_or_default();
     let detail = format!(
-        "contract `{contract_id}` assertion `{assertion_id}` failed in {} `{}`: expected {}, actual {actual}",
-        scope.kind.as_str(),
-        scope.title.as_deref().unwrap_or("<document>"),
-        expectation.expected_summary()
+        "contract `{contract_id}` assertion `{assertion_id}` failed in {} `{}`: expected {}, actual {actual}{predicate_detail}",
+        context.scope.kind.as_str(),
+        context.scope.title.as_deref().unwrap_or("<document>"),
+        context.expectation.expected_summary(),
+        contract_id = context.contract_id,
+        assertion_id = context.assertion_id,
+        actual = context.actual,
     );
     if rendered.trim().is_empty() {
-        append_rendered_fix(detail, fix_template, scope, actual, expectation)
+        append_rendered_fix(
+            detail,
+            context.fix_template,
+            context.scope,
+            context.actual,
+            context.expectation,
+        )
     } else {
         append_rendered_fix(
             format!("{} ({detail})", rendered.trim()),
-            fix_template,
-            scope,
-            actual,
-            expectation,
+            context.fix_template,
+            context.scope,
+            context.actual,
+            context.expectation,
         )
+    }
+}
+
+fn boolean_query_summary(query: &OrgContractQuery) -> Option<String> {
+    let summaries = query
+        .predicates
+        .iter()
+        .filter_map(boolean_predicate_summary)
+        .collect::<Vec<_>>();
+    (!summaries.is_empty()).then(|| summaries.join(", "))
+}
+
+fn boolean_predicate_summary(predicate: &OrgElementQueryPredicate) -> Option<String> {
+    match predicate {
+        OrgElementQueryPredicate::All(predicates) => {
+            if predicates.iter().any(|predicate| {
+                matches!(
+                    predicate,
+                    OrgElementQueryPredicate::Any(_)
+                        | OrgElementQueryPredicate::Not(_)
+                        | OrgElementQueryPredicate::All(_)
+                )
+            }) {
+                Some(predicate_summary(predicate))
+            } else {
+                None
+            }
+        }
+        OrgElementQueryPredicate::Any(_) | OrgElementQueryPredicate::Not(_) => {
+            Some(predicate_summary(predicate))
+        }
+        _ => None,
+    }
+}
+
+fn predicate_summary(predicate: &OrgElementQueryPredicate) -> String {
+    match predicate {
+        OrgElementQueryPredicate::All(predicates) => {
+            format!("all({})", predicate_list_summary(predicates))
+        }
+        OrgElementQueryPredicate::Any(predicates) => {
+            format!("any({})", predicate_list_summary(predicates))
+        }
+        OrgElementQueryPredicate::Not(predicate) => {
+            format!("not({})", predicate_summary(predicate))
+        }
+        OrgElementQueryPredicate::Category(category) => {
+            format!("category == {}", category.as_str())
+        }
+        OrgElementQueryPredicate::Kind(kind) => format!("kind == {}", kind.as_str()),
+        OrgElementQueryPredicate::AffiliatedName(name) => {
+            format!("affiliatedName == {name:?}")
+        }
+        OrgElementQueryPredicate::Context(context) => format!("context == {context:?}"),
+        OrgElementQueryPredicate::PropertyEquals(predicate) => {
+            summary_predicate_summary("property", "==", predicate)
+        }
+        OrgElementQueryPredicate::PropertyContains(predicate) => {
+            text_predicate_summary("property", "contains", predicate)
+        }
+        OrgElementQueryPredicate::SummaryEquals(predicate) => {
+            summary_predicate_summary("summary", "==", predicate)
+        }
+        OrgElementQueryPredicate::SummaryContains(predicate) => {
+            text_predicate_summary("summary", "contains", predicate)
+        }
+    }
+}
+
+fn predicate_list_summary(predicates: &[OrgElementQueryPredicate]) -> String {
+    predicates
+        .iter()
+        .map(predicate_summary)
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn summary_predicate_summary(
+    field: &str,
+    operator: &str,
+    predicate: &OrgElementsIndexSummaryPredicate,
+) -> String {
+    format!(
+        "{field}({}) {operator} {}",
+        predicate.key,
+        summary_value_summary(&predicate.value)
+    )
+}
+
+fn text_predicate_summary(
+    field: &str,
+    operator: &str,
+    predicate: &OrgElementsIndexSummaryTextPredicate,
+) -> String {
+    format!(
+        "{field}({}) {operator} {:?}",
+        predicate.key, predicate.needle
+    )
+}
+
+fn summary_value_summary(value: &OrgElementsIndexSummaryValue) -> String {
+    match value {
+        OrgElementsIndexSummaryValue::Null => "null".to_string(),
+        OrgElementsIndexSummaryValue::Bool(value) => value.to_string(),
+        OrgElementsIndexSummaryValue::Integer(value) => value.to_string(),
+        OrgElementsIndexSummaryValue::Text(value) => format!("{value:?}"),
+        OrgElementsIndexSummaryValue::StringList(values) => {
+            format!(
+                "[{}]",
+                values
+                    .iter()
+                    .map(|value| format!("{value:?}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        }
     }
 }
 

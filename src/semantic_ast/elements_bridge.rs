@@ -78,6 +78,15 @@ impl Document<ParsedAnnotation> {
         .expect("Org elements index query JSON serialization should not fail")
     }
 
+    /// Parses a host JSON query packet and serializes the filtered flat index.
+    pub fn org_elements_index_query_packet_json(
+        &self,
+        query_packet: impl AsRef<str>,
+    ) -> Result<String, super::elements_bridge_query_json::OrgElementsIndexQueryJsonError> {
+        let query = super::elements_bridge_query_json::query_from_json_str(query_packet.as_ref())?;
+        Ok(self.org_elements_index_query_json(&query))
+    }
+
     /// Returns SQL-friendly rows for the flat `org_elements` projection.
     pub fn org_elements_sql_rows(&self) -> Vec<OrgElementsSqlRow> {
         super::elements_bridge_sql::sql_rows(self)

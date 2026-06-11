@@ -55,6 +55,7 @@ mod elements_bridge_json;
 mod elements_bridge_model;
 mod elements_bridge_object_json;
 mod elements_bridge_query;
+mod elements_bridge_query_json;
 mod elements_bridge_selector;
 mod elements_bridge_sql;
 mod export_dependency_graph;
@@ -220,6 +221,11 @@ pub use elements_bridge_model::{
 pub use elements_bridge_query::{
     OrgElementQueryPredicate, OrgElementsIndexQuery, OrgElementsIndexRelation,
     OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
+};
+pub use elements_bridge_query_json::{
+    OrgElementsIndexQueryJsonError, query_from_json_str as org_elements_index_query_from_json_str,
+    query_from_json_value as org_elements_index_query_from_json_value,
+    query_to_json_value as org_elements_index_query_to_json_value,
 };
 pub use elements_bridge_selector::{OrgElementSelector, OrgElementSelectorParseError};
 pub use elements_bridge_sql::{ORG_ELEMENTS_SQL_COLUMNS, OrgElementsSqlColumn, OrgElementsSqlRow};
