@@ -193,7 +193,10 @@ The real-document regression snapshot is
 - P1/P2: host-facing JSON query packets compile through the shared
   =OrgElementsIndexQuery= and =OrgElementQueryPredicate= AST via
   =org_elements_index_query_from_json_str= and
-  =Document::org_elements_index_query_packet_json=.
+  =Document::org_elements_index_query_packet_json=. The executable boundary is
+  =orgize elements-query --packet <json-query-packet> <org-file>=, which
+  returns the filtered org-elements index JSON without routing through the
+  document-provider string query surface.
 - P3/P4: namespace and property-provenance policy is fixed by the
   =org_element_namespace_and_property_provenance= snapshot, covering
   org-mode-owned headline records and orgize extension objects.
