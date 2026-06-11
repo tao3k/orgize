@@ -18,6 +18,18 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Fetch Org mode fixture
+        run: |
+          set -euo pipefail
+          org_mode_rev=b470d813d19e55cb90020649ae076684f1494c3b
+          mkdir -p .data
+          git init .data/org-mode
+          git -C .data/org-mode remote add origin https://github.com/bzg/org-mode.git
+          git -C .data/org-mode fetch --depth=1 origin "$org_mode_rev"
+          git -C .data/org-mode checkout --detach FETCH_HEAD
+          test -f .data/org-mode/doc/org-guide.org
+          test -f .data/org-mode/lisp/org-element.el
+
       - name: Setup rust
         uses: dtolnay/rust-toolchain@stable
         with:
