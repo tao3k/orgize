@@ -209,16 +209,17 @@ pub use dynamic_block_model::{
     DynamicBlockContentState, DynamicBlockParameter, DynamicBlockRecord, DynamicBlockWriterKind,
 };
 pub use elements_bridge_model::{
-    OrgElementGraph, OrgElementId, OrgElementProperties, OrgElementScope, OrgElementValue,
-    OrgElementsAffiliatedProperties, OrgElementsExecutionPlan, OrgElementsHostExecutionError,
-    OrgElementsHostExecutionOptions, OrgElementsHostExecutionOutput,
+    ORGIZE_ORG_ELEMENT_EXTENSION_NAMESPACE, OrgElementGraph, OrgElementId, OrgElementKindNamespace,
+    OrgElementProperties, OrgElementPropertyProvenance, OrgElementPropertyProvenanceMap,
+    OrgElementScope, OrgElementValue, OrgElementsAffiliatedProperties, OrgElementsExecutionPlan,
+    OrgElementsHostExecutionError, OrgElementsHostExecutionOptions, OrgElementsHostExecutionOutput,
     OrgElementsHostExecutionStatus, OrgElementsIndexCategory, OrgElementsIndexKind,
     OrgElementsIndexRecord, OrgElementsIndexSummary, OrgElementsIndexSummaryValue, PythonDirective,
     PythonDirectiveKind, PythonExecutionOptions, PythonExecutionProgram,
 };
 pub use elements_bridge_query::{
-    OrgElementsIndexQuery, OrgElementsIndexRelation, OrgElementsIndexSummaryPredicate,
-    OrgElementsIndexSummaryTextPredicate,
+    OrgElementQueryPredicate, OrgElementsIndexQuery, OrgElementsIndexRelation,
+    OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
 };
 pub use elements_bridge_selector::{OrgElementSelector, OrgElementSelectorParseError};
 pub use elements_bridge_sql::{ORG_ELEMENTS_SQL_COLUMNS, OrgElementsSqlColumn, OrgElementsSqlRow};

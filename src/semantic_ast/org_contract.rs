@@ -8,8 +8,8 @@ use super::{
     OrgContract, OrgContractAssertion, OrgContractBinding, OrgContractCompareOp,
     OrgContractExpectation, OrgContractKind, OrgContractQuery, OrgContractReference,
     OrgContractRegistry, OrgContractRelativeScope, OrgContractScope, OrgContractSeverity,
-    OrgElementSelector, OrgElementsIndexCategory, OrgElementsIndexKind, ParsedAnnotation, Property,
-    Section, SourceBlockRecord, SourceBlockRecordKind,
+    OrgElementQueryPredicate, OrgElementSelector, OrgElementsIndexCategory, OrgElementsIndexKind,
+    ParsedAnnotation, Property, Section, SourceBlockRecord, SourceBlockRecordKind,
 };
 
 /// Parses a host-loaded Org contract registry from an Org document.
@@ -422,10 +422,12 @@ fn parse_org_contract_condition(
         *expectation = parsed_expectation;
         return;
     }
-    let _ = parse_org_contract_relation_condition(condition, query)
-        || parse_org_contract_header_condition(condition, query)
-        || parse_org_contract_summary_condition(condition, query)
-        || parse_org_contract_property_condition(condition, query);
+    if parse_org_contract_relation_condition(condition, query) {
+        return;
+    }
+    if let Some(predicate) = parse_org_contract_boolean_condition(condition) {
+        query.predicates.push(predicate);
+    }
 }
 
 fn parse_org_contract_relation_condition(condition: &str, query: &mut OrgContractQuery) -> bool {
@@ -464,76 +466,91 @@ fn parse_org_contract_relation_condition(condition: &str, query: &mut OrgContrac
     false
 }
 
-fn parse_org_contract_property_condition(condition: &str, query: &mut OrgContractQuery) -> bool {
-    parse_org_contract_field_condition(
+fn parse_org_contract_boolean_condition(condition: &str) -> Option<OrgElementQueryPredicate> {
+    let condition = condition.trim();
+    if let Some((left, right)) = condition.split_once(" or ") {
+        let mut predicates = vec![parse_org_contract_boolean_condition(left)?];
+        predicates.extend(
+            right
+                .split(" or ")
+                .map(parse_org_contract_boolean_condition)
+                .collect::<Option<Vec<_>>>()?,
+        );
+        return Some(OrgElementQueryPredicate::any(predicates));
+    }
+    if let Some(rest) = condition.strip_prefix("not ") {
+        return parse_org_contract_boolean_condition(rest).map(OrgElementQueryPredicate::negate);
+    }
+    parse_org_contract_header_predicate(condition)
+        .or_else(|| parse_org_contract_summary_predicate(condition))
+        .or_else(|| parse_org_contract_property_predicate(condition))
+}
+
+fn parse_org_contract_property_predicate(condition: &str) -> Option<OrgElementQueryPredicate> {
+    parse_org_contract_field_predicate(
         condition,
         "property",
-        |query, key, value| query.property_equals.push((key.to_string(), value)),
-        |query, key, value| query.property_contains.push((key.to_string(), value)),
-        query,
+        |key, value| OrgElementQueryPredicate::property_eq(key, value),
+        |key, value| OrgElementQueryPredicate::property_contains(key, value),
     )
 }
 
-fn parse_org_contract_summary_condition(condition: &str, query: &mut OrgContractQuery) -> bool {
-    parse_org_contract_field_condition(
+fn parse_org_contract_summary_predicate(condition: &str) -> Option<OrgElementQueryPredicate> {
+    parse_org_contract_field_predicate(
         condition,
         "summary",
-        |query, key, value| query.summary_equals.push((key.to_string(), value)),
-        |query, key, value| query.summary_contains.push((key.to_string(), value)),
-        query,
+        |key, value| OrgElementQueryPredicate::summary_eq(key, value),
+        |key, value| OrgElementQueryPredicate::summary_contains(key, value),
     )
 }
 
-fn parse_org_contract_header_condition(condition: &str, query: &mut OrgContractQuery) -> bool {
+fn parse_org_contract_header_predicate(condition: &str) -> Option<OrgElementQueryPredicate> {
     let Some((lhs, rhs)) = split_line(condition, "=") else {
-        return false;
+        return None;
     };
     let Some(value) = query_value(rhs) else {
-        return false;
+        return None;
     };
     match lhs {
-        "affiliated_name" => query.affiliated_name = Some(value),
-        "context" => query.context = Some(value),
+        "affiliated_name" => Some(OrgElementQueryPredicate::AffiliatedName(value)),
+        "context" => Some(OrgElementQueryPredicate::Context(value)),
         "category" => {
-            query.category = OrgElementsIndexCategory::from_label(&value);
-            return query.category.is_some();
+            OrgElementsIndexCategory::from_label(&value).map(OrgElementQueryPredicate::Category)
         }
-        "kind" => query.kind = Some(OrgElementsIndexKind::new(value)),
-        _ => return false,
+        "kind" => Some(OrgElementQueryPredicate::Kind(OrgElementsIndexKind::new(
+            value,
+        ))),
+        _ => None,
     }
-    true
 }
 
-fn parse_org_contract_field_condition(
+fn parse_org_contract_field_predicate(
     condition: &str,
     field: &str,
-    mut push_equals: impl FnMut(&mut OrgContractQuery, &str, String),
-    mut push_contains: impl FnMut(&mut OrgContractQuery, &str, String),
-    query: &mut OrgContractQuery,
-) -> bool {
+    equals: impl Fn(String, String) -> OrgElementQueryPredicate,
+    contains: impl Fn(String, String) -> OrgElementQueryPredicate,
+) -> Option<OrgElementQueryPredicate> {
     let prefix = format!("{field}(");
     let Some(rest) = condition.strip_prefix(&prefix) else {
-        return false;
+        return None;
     };
     let Some((key, rhs)) = rest.split_once(')') else {
-        return false;
+        return None;
     };
     let rhs = rhs.trim();
     if let Some(value) = rhs
         .strip_prefix("contains")
         .and_then(|value| query_value(value.trim()))
     {
-        push_contains(query, key.trim(), value);
-        return true;
+        return Some(contains(key.trim().to_string(), value));
     }
     if let Some(value) = rhs
         .strip_prefix('=')
         .and_then(|value| query_value(value.trim()))
     {
-        push_equals(query, key.trim(), value);
-        return true;
+        return Some(equals(key.trim().to_string(), value));
     }
-    false
+    None
 }
 
 fn function_argument<'a>(condition: &'a str, name: &str) -> Option<&'a str> {

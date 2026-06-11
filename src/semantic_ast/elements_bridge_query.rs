@@ -21,6 +21,7 @@ pub struct OrgElementsIndexQuery {
     pub summary_equals: Vec<OrgElementsIndexSummaryPredicate>,
     pub summary_contains: Vec<OrgElementsIndexSummaryTextPredicate>,
     pub relations: Vec<OrgElementsIndexRelation>,
+    pub predicate: OrgElementQueryPredicate,
     pub limit: Option<usize>,
 }
 
@@ -49,6 +50,28 @@ pub struct OrgElementsIndexSummaryPredicate {
 pub struct OrgElementsIndexSummaryTextPredicate {
     pub key: String,
     pub needle: String,
+}
+
+/// Shared boolean predicate AST over one Org elements index record.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OrgElementQueryPredicate {
+    All(Vec<OrgElementQueryPredicate>),
+    Any(Vec<OrgElementQueryPredicate>),
+    Not(Box<OrgElementQueryPredicate>),
+    Category(OrgElementsIndexCategory),
+    Kind(OrgElementsIndexKind),
+    AffiliatedName(String),
+    Context(String),
+    PropertyEquals(OrgElementsIndexSummaryPredicate),
+    PropertyContains(OrgElementsIndexSummaryTextPredicate),
+    SummaryEquals(OrgElementsIndexSummaryPredicate),
+    SummaryContains(OrgElementsIndexSummaryTextPredicate),
+}
+
+impl Default for OrgElementQueryPredicate {
+    fn default() -> Self {
+        Self::All(Vec::new())
+    }
 }
 
 impl OrgElementsIndexQuery {
@@ -148,6 +171,24 @@ impl OrgElementsIndexQuery {
         self
     }
 
+    /// Replaces the shared boolean predicate AST.
+    pub fn predicate(mut self, predicate: OrgElementQueryPredicate) -> Self {
+        self.predicate = predicate;
+        self
+    }
+
+    /// Adds one predicate to the shared boolean predicate AST.
+    pub fn and_predicate(mut self, predicate: OrgElementQueryPredicate) -> Self {
+        self.predicate = match self.predicate {
+            OrgElementQueryPredicate::All(mut predicates) => {
+                predicates.push(predicate);
+                OrgElementQueryPredicate::All(predicates)
+            }
+            previous => OrgElementQueryPredicate::All(vec![previous, predicate]),
+        };
+        self
+    }
+
     /// Restricts matches to records whose parent is the supplied id.
     pub fn child_of(mut self, parent_id: OrgElementId) -> Self {
         self.relations.push(OrgElementsIndexRelation::ChildOf(
@@ -230,6 +271,7 @@ impl OrgElementsIndexQuery {
             && self.matches_outline(record)
             && self.matches_properties(record)
             && self.matches_summary(record)
+            && self.predicate.matches(record)
     }
 
     fn matches_header<A>(&self, record: &OrgElementsIndexRecord<A>) -> bool {
@@ -291,6 +333,78 @@ impl OrgElementsIndexQuery {
                 .get(&predicate.key)
                 .is_some_and(|value| value.contains_text(&predicate.needle))
         })
+    }
+}
+
+impl OrgElementQueryPredicate {
+    pub fn all(predicates: impl IntoIterator<Item = OrgElementQueryPredicate>) -> Self {
+        Self::All(predicates.into_iter().collect())
+    }
+
+    pub fn any(predicates: impl IntoIterator<Item = OrgElementQueryPredicate>) -> Self {
+        Self::Any(predicates.into_iter().collect())
+    }
+
+    pub fn negate(predicate: OrgElementQueryPredicate) -> Self {
+        Self::Not(Box::new(predicate))
+    }
+
+    pub fn property_eq(
+        key: impl Into<String>,
+        value: impl Into<OrgElementsIndexSummaryValue>,
+    ) -> Self {
+        Self::PropertyEquals(OrgElementsIndexSummaryPredicate {
+            key: key.into(),
+            value: value.into(),
+        })
+    }
+
+    pub fn property_contains(key: impl Into<String>, needle: impl Into<String>) -> Self {
+        Self::PropertyContains(OrgElementsIndexSummaryTextPredicate {
+            key: key.into(),
+            needle: needle.into(),
+        })
+    }
+
+    pub fn summary_eq(
+        key: impl Into<String>,
+        value: impl Into<OrgElementsIndexSummaryValue>,
+    ) -> Self {
+        Self::SummaryEquals(OrgElementsIndexSummaryPredicate {
+            key: key.into(),
+            value: value.into(),
+        })
+    }
+
+    pub fn summary_contains(key: impl Into<String>, needle: impl Into<String>) -> Self {
+        Self::SummaryContains(OrgElementsIndexSummaryTextPredicate {
+            key: key.into(),
+            needle: needle.into(),
+        })
+    }
+
+    pub fn matches<A>(&self, record: &OrgElementsIndexRecord<A>) -> bool {
+        match self {
+            Self::All(predicates) => predicates.iter().all(|predicate| predicate.matches(record)),
+            Self::Any(predicates) => predicates.iter().any(|predicate| predicate.matches(record)),
+            Self::Not(predicate) => !predicate.matches(record),
+            Self::Category(category) => record.category == *category,
+            Self::Kind(kind) => record.kind == *kind,
+            Self::AffiliatedName(name) => record.affiliated.name.as_ref() == Some(name),
+            Self::Context(context) => record.context == *context,
+            Self::PropertyEquals(predicate) => record_property(record, &predicate.key)
+                .is_some_and(|value| value == &predicate.value),
+            Self::PropertyContains(predicate) => record_property(record, &predicate.key)
+                .is_some_and(|value| value.contains_text(&predicate.needle)),
+            Self::SummaryEquals(predicate) => record
+                .summary
+                .get(&predicate.key)
+                .is_some_and(|value| value == &predicate.value),
+            Self::SummaryContains(predicate) => record
+                .summary
+                .get(&predicate.key)
+                .is_some_and(|value| value.contains_text(&predicate.needle)),
+        }
     }
 }
 

@@ -2,10 +2,11 @@ use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
     ast::{
-        ORG_ELEMENTS_SQL_COLUMNS, OrgElementSelector, OrgElementSelectorParseError,
-        OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexKind,
-        OrgElementsIndexQuery, OrgElementsIndexRecord, OrgElementsIndexSummaryValue,
-        ParsedAnnotation, PythonDirectiveKind,
+        ORG_ELEMENTS_SQL_COLUMNS, OrgElementKindNamespace, OrgElementPropertyProvenance,
+        OrgElementSelector, OrgElementSelectorParseError, OrgElementsHostExecutionOptions,
+        OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexQuery,
+        OrgElementsIndexRecord, OrgElementsIndexSummaryValue, ParsedAnnotation,
+        PythonDirectiveKind,
     },
 };
 use serde_json::Value;
@@ -120,6 +121,27 @@ print(topic)
             "Learn parser bindings".to_string()
         ))
     );
+    assert_eq!(
+        typed_headline.property_provenance.get(":raw-value"),
+        Some(&OrgElementPropertyProvenance::Local)
+    );
+    assert_eq!(
+        typed_headline.property_provenance.get(":begin"),
+        Some(&OrgElementPropertyProvenance::Standard)
+    );
+    assert_eq!(
+        typed_headline.property_provenance.get(":EFFORT"),
+        Some(&OrgElementPropertyProvenance::Local)
+    );
+    let plain_text = typed_index
+        .iter()
+        .find(|node| node.kind.as_str() == "plain-text")
+        .expect("plain-text extension record");
+    assert_eq!(
+        plain_text.kind.namespace(),
+        OrgElementKindNamespace::OrgizeExtension
+    );
+    assert_eq!(plain_text.kind.extension_namespace(), Some("orgize"));
     assert_eq!(
         typed_headline.properties.get(":EFFORT"),
         Some(&OrgElementsIndexSummaryValue::Text("1:00".to_string()))

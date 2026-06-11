@@ -1,7 +1,8 @@
 //! Contract model for `CONTRACT_ORG` validation over Org element index records.
 
 use super::{
-    OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexQuery, SourceBlockSource,
+    OrgElementQueryPredicate, OrgElementsIndexCategory, OrgElementsIndexKind,
+    OrgElementsIndexQuery, SourceBlockSource,
 };
 
 /// File-level property naming a contract registry reference.
@@ -172,6 +173,7 @@ pub struct OrgContractQuery {
     pub property_contains: Vec<(String, String)>,
     pub summary_equals: Vec<(String, String)>,
     pub summary_contains: Vec<(String, String)>,
+    pub predicates: Vec<OrgElementQueryPredicate>,
     pub limit: Option<usize>,
     pub use_scope_outline_path: bool,
     pub has_outline_path_prefix: bool,
@@ -220,6 +222,9 @@ impl OrgContractQuery {
         }
         for (key, value) in &self.summary_contains {
             query = query.summary_contains(key.clone(), value.clone());
+        }
+        for predicate in &self.predicates {
+            query = query.and_predicate(predicate.clone());
         }
         if let Some(limit) = self.limit {
             query = query.limit(limit);

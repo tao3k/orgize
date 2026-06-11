@@ -22,6 +22,7 @@ pub struct OrgElementsIndexRecord<A = ()> {
     pub outline_path: Vec<String>,
     pub context: String,
     pub properties: OrgElementProperties,
+    pub property_provenance: OrgElementPropertyProvenanceMap,
     pub summary: OrgElementsIndexSummary,
 }
 
@@ -51,6 +52,31 @@ pub type OrgElementValue = OrgElementsIndexSummaryValue;
 /// Org-mode-style property map used by element queries.
 pub type OrgElementProperties = BTreeMap<String, OrgElementValue>;
 
+/// Provenance map for properties projected onto one Org elements index record.
+pub type OrgElementPropertyProvenanceMap = BTreeMap<String, OrgElementPropertyProvenance>;
+
+/// Parser-owned provenance for one projected Org element property.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OrgElementPropertyProvenance {
+    Summary,
+    Standard,
+    Local,
+    Effective,
+    Inherited,
+}
+
+impl OrgElementPropertyProvenance {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Summary => "summary",
+            Self::Standard => "standard",
+            Self::Local => "local",
+            Self::Effective => "effective",
+            Self::Inherited => "inherited",
+        }
+    }
+}
+
 /// Parent/child graph over the same records returned by the flat index.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OrgElementGraph<A = ()> {
@@ -69,6 +95,24 @@ pub struct OrgElementsAffiliatedProperties {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OrgElementsIndexKind(String);
 
+pub const ORGIZE_ORG_ELEMENT_EXTENSION_NAMESPACE: &str = "orgize";
+
+/// Namespace ownership for an Org elements index kind.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OrgElementKindNamespace {
+    Upstream,
+    OrgizeExtension,
+}
+
+impl OrgElementKindNamespace {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Upstream => "upstream",
+            Self::OrgizeExtension => "orgize-extension",
+        }
+    }
+}
+
 impl OrgElementsIndexKind {
     pub fn new(value: impl Into<String>) -> Self {
         Self(value.into())
@@ -76,6 +120,18 @@ impl OrgElementsIndexKind {
 
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    pub fn namespace(&self) -> OrgElementKindNamespace {
+        match self.as_str() {
+            "plain-text" => OrgElementKindNamespace::OrgizeExtension,
+            _ => OrgElementKindNamespace::Upstream,
+        }
+    }
+
+    pub fn extension_namespace(&self) -> Option<&'static str> {
+        (self.namespace() == OrgElementKindNamespace::OrgizeExtension)
+            .then_some(ORGIZE_ORG_ELEMENT_EXTENSION_NAMESPACE)
     }
 }
 

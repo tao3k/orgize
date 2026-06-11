@@ -326,6 +326,20 @@ print("ready")
 print("ready")
 #+END_SRC
 "#;
+    let mixed_language_source = r#"* Task A
+:PROPERTIES:
+:CONTRACT_ORG: agent.rich-task.v1
+:END:
+
+#+NAME: task_runner
+#+BEGIN_SRC python
+print("ready")
+#+END_SRC
+#+BEGIN_SRC shell
+echo ready
+#+END_SRC
+%%(org-anniversary 1956 5 14)
+"#;
     let success_source = r#"* Task A
 :PROPERTIES:
 :CONTRACT_ORG: agent.rich-task.v1
@@ -351,6 +365,13 @@ print("ready")
             ..LintOptions::default()
         },
     );
+    let mixed_language_report = lint_org_with_options(
+        mixed_language_source,
+        &LintOptions {
+            org_contract_registry: registry.clone(),
+            ..LintOptions::default()
+        },
+    );
     let success_report = lint_org_with_options(
         success_source,
         &LintOptions {
@@ -362,11 +383,14 @@ print("ready")
     insta::assert_snapshot!(format!(
         "unnamed python clean: {}\n{}\n\
          missing diary clean: {}\n{}\n\
+         mixed language clean: {}\n{}\n\
          success clean: {}\n{}",
         unnamed_python_report.is_clean(),
         unnamed_python_report.to_text("summary-affiliated-contract-unnamed-python.org"),
         missing_diary_report.is_clean(),
         missing_diary_report.to_text("summary-affiliated-contract-missing-diary.org"),
+        mixed_language_report.is_clean(),
+        mixed_language_report.to_text("summary-affiliated-contract-mixed-language.org"),
         success_report.is_clean(),
         success_report.to_text("summary-affiliated-contract-success.org")
     ));
@@ -555,7 +579,7 @@ fn summary_condition_contract_source() -> &'static str {
 :END:
 
 #+BEGIN_SRC org-contract
-assert src-block where affiliated_name = "task_runner" and summary(language) = "python"
+assert src-block where affiliated_name = "task_runner" and summary(language) = "python" or summary(language) = "rust"
 #+END_SRC
 
 ** has-diary-sexp
@@ -567,6 +591,16 @@ assert src-block where affiliated_name = "task_runner" and summary(language) = "
 #+BEGIN_SRC org-contract
 assert count diary-sexp where summary(raw) contains "org-anniversary"
 >= 1
+#+END_SRC
+
+** has-no-non-python-block
+:PROPERTIES:
+:ASSERT_ID: task.has-no-non-python-block
+:SEVERITY: warning
+:END:
+
+#+BEGIN_SRC org-contract
+assert not exists src-block where not summary(language) = "python"
 #+END_SRC
 "#
 }

@@ -3,8 +3,8 @@
 use serde_json::{Map, Value, json};
 
 use super::{
-    Document, OrgElementsIndexRecord, OrgElementsIndexSummary, OrgElementsIndexSummaryValue,
-    ParsedAnnotation,
+    Document, OrgElementPropertyProvenanceMap, OrgElementsIndexRecord, OrgElementsIndexSummary,
+    OrgElementsIndexSummaryValue, ParsedAnnotation,
 };
 
 pub(super) fn index_json(document: &Document<ParsedAnnotation>) -> Vec<Value> {
@@ -28,6 +28,8 @@ fn record_json(record: &OrgElementsIndexRecord<ParsedAnnotation>) -> Value {
         "ordinal": record.ordinal,
         "category": record.category.as_str(),
         "kind": record.kind.as_str(),
+        "kindNamespace": record.kind.namespace().as_str(),
+        "extensionNamespace": record.kind.extension_namespace(),
         "affiliated": {
             "name": &record.affiliated.name,
         },
@@ -35,8 +37,18 @@ fn record_json(record: &OrgElementsIndexRecord<ParsedAnnotation>) -> Value {
         "outlinePath": record.outline_path,
         "context": record.context,
         "properties": summary_json(&record.properties),
+        "propertyProvenance": provenance_json(&record.property_provenance),
         "summary": summary_json(&record.summary),
     })
+}
+
+fn provenance_json(provenance: &OrgElementPropertyProvenanceMap) -> Value {
+    Value::Object(
+        provenance
+            .iter()
+            .map(|(key, provenance)| (key.clone(), json!(provenance.as_str())))
+            .collect::<Map<_, _>>(),
+    )
 }
 
 fn summary_json(summary: &OrgElementsIndexSummary) -> Value {

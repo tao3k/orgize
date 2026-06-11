@@ -9,6 +9,10 @@ use super::{
     OrgElementsIndexSummaryValue, ParsedAnnotation, Section, TargetKind, TodoState,
 };
 
+use crate::ast::elements_bridge_model::{
+    OrgElementPropertyProvenance, OrgElementPropertyProvenanceMap,
+};
+
 pub(super) fn index_records(
     document: &Document<ParsedAnnotation>,
 ) -> Vec<OrgElementsIndexRecord<ParsedAnnotation>> {
@@ -76,6 +80,7 @@ struct ElementIndexRecordSpec<'a> {
     outline_path: &'a [String],
     context: &'a str,
     properties: OrgElementProperties,
+    property_provenance: OrgElementPropertyProvenanceMap,
     summary: OrgElementsIndexSummary,
     standard: StandardProperties,
 }
@@ -98,13 +103,24 @@ impl<'a> ElementIndexRecordSpec<'a> {
             outline_path,
             context,
             properties: properties_from_summary(&summary),
+            property_provenance: property_provenance_from_summary(&summary),
             summary,
             standard: StandardProperties::default(),
         }
     }
 
     fn with_properties(mut self, properties: OrgElementProperties) -> Self {
+        self.property_provenance =
+            property_provenance_from_properties(&properties, OrgElementPropertyProvenance::Summary);
         self.properties = properties;
+        self
+    }
+
+    fn with_property_provenance(
+        mut self,
+        property_provenance: OrgElementPropertyProvenanceMap,
+    ) -> Self {
+        self.property_provenance = property_provenance;
         self
     }
 
@@ -118,8 +134,10 @@ impl ElementIndex {
     fn push(&mut self, input: ElementIndexRecordSpec<'_>) -> OrgElementId {
         self.next_ordinal += 1;
         let id = OrgElementId::new(self.next_ordinal);
+        let mut property_provenance = input.property_provenance;
         let properties = properties_with_standard_properties(
             input.properties,
+            &mut property_provenance,
             input.ann,
             input.parent_id,
             input.standard,
@@ -136,6 +154,7 @@ impl ElementIndex {
             outline_path: input.outline_path.to_vec(),
             context: input.context.to_string(),
             properties,
+            property_provenance,
             summary: input.summary,
         });
         if let Some(parent_id) = input.parent_id
@@ -159,8 +178,10 @@ impl ElementIndex {
     ) -> OrgElementId {
         self.next_ordinal += 1;
         let id = OrgElementId::new(self.next_ordinal);
+        let mut property_provenance = property_provenance_from_summary(&summary);
         let properties = properties_with_standard_properties(
             properties_from_summary(&summary),
+            &mut property_provenance,
             &element.ann,
             Some(parent_id),
             StandardProperties::default(),
@@ -177,6 +198,7 @@ impl ElementIndex {
             outline_path: outline_path.to_vec(),
             context: context.into(),
             properties,
+            property_provenance,
             summary,
         });
         if let Some(parent) = self
@@ -213,7 +235,8 @@ impl ElementIndex {
                 .as_ref()
                 .map(StandardProperties::from_content_ann)
                 .unwrap_or_default();
-            let headline_properties = headline_properties(section, &headline_summary);
+            let (headline_properties, headline_property_provenance) =
+                headline_properties(section, &headline_summary);
             let section_id = self.push(
                 ElementIndexRecordSpec::new(
                     Some(parent_id),
@@ -225,6 +248,7 @@ impl ElementIndex {
                     headline_summary,
                 )
                 .with_properties(headline_properties)
+                .with_property_provenance(headline_property_provenance)
                 .with_standard_properties(headline_standard),
             );
             if has_planning(&section.planning) {
@@ -764,6 +788,25 @@ fn properties_from_summary(summary: &OrgElementsIndexSummary) -> OrgElementPrope
         .collect()
 }
 
+fn property_provenance_from_summary(
+    summary: &OrgElementsIndexSummary,
+) -> OrgElementPropertyProvenanceMap {
+    summary
+        .keys()
+        .map(|key| (org_property_key(key), OrgElementPropertyProvenance::Summary))
+        .collect()
+}
+
+fn property_provenance_from_properties(
+    properties: &OrgElementProperties,
+    provenance: OrgElementPropertyProvenance,
+) -> OrgElementPropertyProvenanceMap {
+    properties
+        .keys()
+        .map(|key| (org_property_key(key), provenance))
+        .collect()
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct StandardProperties {
     contents_begin: Option<usize>,
@@ -783,34 +826,61 @@ impl StandardProperties {
 
 fn properties_with_standard_properties(
     mut properties: OrgElementProperties,
+    property_provenance: &mut OrgElementPropertyProvenanceMap,
     ann: &ParsedAnnotation,
     parent_id: Option<OrgElementId>,
     standard: StandardProperties,
 ) -> OrgElementProperties {
     let begin = range_start(ann);
     let end = range_end(ann);
-    insert_property(&mut properties, ":begin", begin.into());
-    insert_property(&mut properties, ":end", end.into());
-    insert_property(&mut properties, ":post-affiliated", begin.into());
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        property_provenance,
+        ":begin",
+        begin.into(),
+        OrgElementPropertyProvenance::Standard,
+    );
+    insert_property_with_provenance(
+        &mut properties,
+        property_provenance,
+        ":end",
+        end.into(),
+        OrgElementPropertyProvenance::Standard,
+    );
+    insert_property_with_provenance(
+        &mut properties,
+        property_provenance,
+        ":post-affiliated",
+        begin.into(),
+        OrgElementPropertyProvenance::Standard,
+    );
+    insert_property_with_provenance(
+        &mut properties,
+        property_provenance,
         ":contents-begin",
         optional_usize(standard.contents_begin),
+        OrgElementPropertyProvenance::Standard,
     );
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        property_provenance,
         ":contents-end",
         optional_usize(standard.contents_end),
+        OrgElementPropertyProvenance::Standard,
     );
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        property_provenance,
         ":post-blank",
         optional_usize(standard.post_blank),
+        OrgElementPropertyProvenance::Standard,
     );
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        property_provenance,
         ":parent",
         optional_usize(parent_id.map(OrgElementId::as_usize)),
+        OrgElementPropertyProvenance::Standard,
     );
     properties
 }
@@ -862,27 +932,47 @@ fn planning_summary(planning: &super::Planning) -> OrgElementsIndexSummary {
 fn headline_properties(
     section: &Section<ParsedAnnotation>,
     summary: &OrgElementsIndexSummary,
-) -> OrgElementProperties {
+) -> (OrgElementProperties, OrgElementPropertyProvenanceMap) {
     let mut properties = properties_from_summary(summary);
-    insert_property(
+    let mut provenance = property_provenance_from_summary(summary);
+    insert_property_with_provenance(
         &mut properties,
+        &mut provenance,
         ":raw-value",
         section.raw_title.trim_end().into(),
+        OrgElementPropertyProvenance::Local,
     );
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        &mut provenance,
         ":title",
         section.raw_title.trim_end().into(),
+        OrgElementPropertyProvenance::Local,
     );
-    insert_property(&mut properties, ":level", section.level.into());
-    insert_property(&mut properties, ":true-level", section.level.into());
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        &mut provenance,
+        ":level",
+        section.level.into(),
+        OrgElementPropertyProvenance::Local,
+    );
+    insert_property_with_provenance(
+        &mut properties,
+        &mut provenance,
+        ":true-level",
+        section.level.into(),
+        OrgElementPropertyProvenance::Local,
+    );
+    insert_property_with_provenance(
+        &mut properties,
+        &mut provenance,
         ":todo-keyword",
         optional_text(section.todo.as_ref().map(|todo| todo.name.as_str())),
+        OrgElementPropertyProvenance::Local,
     );
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        &mut provenance,
         ":todo-type",
         optional_text(
             section
@@ -890,15 +980,25 @@ fn headline_properties(
                 .as_ref()
                 .map(|todo| todo_state_label(todo.state)),
         ),
+        OrgElementPropertyProvenance::Local,
     );
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        &mut provenance,
         ":priority",
         optional_text(section.priority.raw_cookie()),
+        OrgElementPropertyProvenance::Local,
     );
-    insert_property(&mut properties, ":tags", section.tags.clone().into());
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        &mut provenance,
+        ":tags",
+        section.tags.clone().into(),
+        OrgElementPropertyProvenance::Local,
+    );
+    insert_property_with_provenance(
+        &mut properties,
+        &mut provenance,
         ":scheduled",
         optional_text(
             section
@@ -907,9 +1007,11 @@ fn headline_properties(
                 .as_ref()
                 .map(|timestamp| timestamp.raw.as_str()),
         ),
+        OrgElementPropertyProvenance::Local,
     );
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        &mut provenance,
         ":deadline",
         optional_text(
             section
@@ -918,9 +1020,11 @@ fn headline_properties(
                 .as_ref()
                 .map(|timestamp| timestamp.raw.as_str()),
         ),
+        OrgElementPropertyProvenance::Local,
     );
-    insert_property(
+    insert_property_with_provenance(
         &mut properties,
+        &mut provenance,
         ":closed",
         optional_text(
             section
@@ -929,28 +1033,53 @@ fn headline_properties(
                 .as_ref()
                 .map(|timestamp| timestamp.raw.as_str()),
         ),
+        OrgElementPropertyProvenance::Local,
     );
+    let local_property_keys = section
+        .properties
+        .iter()
+        .flat_map(|property| {
+            [
+                org_property_key(&property.key),
+                org_property_key(&property.key.to_ascii_uppercase()),
+            ]
+        })
+        .collect::<std::collections::BTreeSet<_>>();
     for property in &section.effective_properties {
-        insert_property(
+        let property_provenance = if local_property_keys.contains(&org_property_key(&property.key))
+        {
+            OrgElementPropertyProvenance::Local
+        } else {
+            OrgElementPropertyProvenance::Inherited
+        };
+        insert_property_with_provenance(
             &mut properties,
+            &mut provenance,
             format!(":{}", property.key),
             property.value.clone().into(),
+            property_provenance,
         );
-        insert_property(
+        insert_property_with_provenance(
             &mut properties,
+            &mut provenance,
             format!(":{}", property.key.to_ascii_uppercase()),
             property.value.clone().into(),
+            property_provenance,
         );
     }
-    properties
+    (properties, provenance)
 }
 
-fn insert_property(
+fn insert_property_with_provenance(
     properties: &mut OrgElementProperties,
+    provenance: &mut OrgElementPropertyProvenanceMap,
     key: impl AsRef<str>,
     value: OrgElementsIndexSummaryValue,
+    property_provenance: OrgElementPropertyProvenance,
 ) {
-    properties.insert(org_property_key(key.as_ref()), value);
+    let key = org_property_key(key.as_ref());
+    properties.insert(key.clone(), value);
+    provenance.insert(key, property_provenance);
 }
 
 fn org_property_key(key: &str) -> String {
