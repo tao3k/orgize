@@ -133,18 +133,18 @@ The closeout should land in this order:
 
 ** Stronger Improvements After Alignment
 
-After the compatibility surface is stable, the next improvements should stay
+After the compatibility surface is stable, remaining improvements should stay
 semantic and contract-visible rather than ad hoc:
 
-- expose a normalized =OrgElementQuery= AST that can compile to Rust predicates,
-  JSON query packets, and contract selectors without duplicating predicate
-  parsing in each caller;
-- extend scenario snapshots from the current existence, count, relation,
-  property, affiliated-name, and summary conditions to disjunction and explicit
-  negation once the query AST can represent them;
-- add provenance for inherited headline properties so callers can distinguish
-  local drawer values from effective inherited values;
-- add stable extension namespaces for orgize-owned nodes instead of mixing
+- widen the shared =OrgElementQueryPredicate= AST only through parser-owned
+  predicates that can execute over =OrgElementGraph= records;
+- keep =CONTRACT_ORG=, host JSON query packets, and Rust predicates compiling
+  through the same predicate AST instead of adding caller-private string
+  condition parsing;
+- refine property provenance beyond the current =summary=, =standard=,
+  =local=, and =inherited= labels only when a downstream consumer needs a more
+  specific inheritance policy;
+- keep orgize-owned nodes in explicit extension namespaces instead of mixing
   extensions such as =plain-text= into the upstream kind namespace silently.
 
 The runtime alignment snapshot is
@@ -156,7 +156,7 @@ and
 The real-document regression snapshot is
 [[file:../../tests/integration/semantic_ast/snapshots/integration_test__semantic_ast__semantic_ast_projects_elements_bridge__semantic_ast_projects_org_guide_real_document_org_elements_regression_has_snapshot.snap][semantic_ast_projects_org_guide_real_document_org_elements_regression_has_snapshot]].
 
-** P0-P6 Landing Evidence
+** P0-P7 Landing Evidence
 
 - P0: the root gitlink and nested orgize checkout are treated as separate
   commit boundaries; root updates carry only the nested commit pointer.
@@ -167,16 +167,24 @@ The real-document regression snapshot is
   intentional orgize-owned =plain-text= object extension.
 - P2: alignment assertions are split into targeted snapshots for kind coverage
   and standard-property coverage, so upstream drift and intentional unmapped
-  properties fail independently.
-- P3: =CONTRACT_ORG= selectors now cover affiliated fields and summary fields
-  in addition to count, relation, property equality, and property containment.
+  properties fail independently. =OrgElementQueryPredicate= is now the shared
+  boolean predicate AST for graph-record conditions.
+- P3: =CONTRACT_ORG= selectors now cover affiliated fields, summary fields,
+  property fields, =or=, and =not= through the shared predicate AST in addition
+  to count and relation conditions.
 - P4: upstream =defconst= extraction is automated in the integration suite; a
   changed upstream list must update the checked-in baseline intentionally.
+  =OrgElementsIndexKind= also marks orgize-owned extensions such as
+  =plain-text= with the =orgize= extension namespace.
 - P5: =.data/org-mode/doc/org-guide.org= is parsed as a real document
   regression and snapshots record count, selected kind counts, and first
-  top-level headlines.
-- P6: remaining stronger improvements are documented above and focused gates
-  plus closeout gates were run against the real provider/runtime boundary:
+  top-level headlines. Index records now carry property provenance so callers
+  can distinguish standard, local, summary-derived, and inherited values.
+- P6: CI has a manual =workflow_dispatch= path while Pages publishing stays
+  gated to explicit main-branch dispatches. Focused drift gates cover
+  =CONTRACT_ORG= boolean predicates and org-elements alignment snapshots.
+- P7: remaining stronger improvements are documented above and closeout gates
+  must run against the real provider/runtime boundary:
   =cargo fmt --check=, =cargo check --message-format short=,
   =cargo test --lib=,
   =cargo test --test integration_test semantic_ast_projects_elements_bridge=
