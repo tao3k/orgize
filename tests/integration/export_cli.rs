@@ -68,6 +68,12 @@ fn org_document_search_and_query_commands_run() {
         guide_stdout.contains("|cmd search-toc=asp org search toc ."),
         "{guide_stdout}"
     );
+    assert!(
+        guide_stdout.contains(
+            "|cmd elements-query=asp org elements-query --packet <json-query-packet> <org-file>"
+        ),
+        "{guide_stdout}"
+    );
 
     let root = test_dir("org-document-search");
     let path = root.join("plan.org");
@@ -370,6 +376,37 @@ fn org_document_search_and_query_commands_run() {
             .any(|item| item["kind"] == "property" && item["attributes"]["key"] == "CUSTOM_ID"),
         "{query_packet:#}"
     );
+
+    let elements_query_packet = serde_json::json!({
+        "schemaVersion": 1,
+        "predicate": {
+            "all": [
+                { "kind": "src-block" },
+                { "summary": { "key": "language", "equals": "rust" } }
+            ]
+        },
+        "limit": 1
+    })
+    .to_string();
+    let elements_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("elements-query")
+        .arg("--packet")
+        .arg(elements_query_packet)
+        .arg(&path)
+        .output()
+        .expect("run orgize elements query packet");
+    assert!(
+        elements_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&elements_query.stderr)
+    );
+    let elements_records: Value =
+        serde_json::from_slice(&elements_query.stdout).expect("parse elements query records");
+    let elements_records = elements_records.as_array().expect("elements records");
+    assert_eq!(elements_records.len(), 1, "{elements_records:#?}");
+    assert_eq!(elements_records[0]["kind"], "src-block");
+    assert_eq!(elements_records[0]["summary"]["language"], "rust");
+    assert_eq!(elements_records[0]["kindNamespace"], "upstream");
 
     let json_paragraph_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("query")

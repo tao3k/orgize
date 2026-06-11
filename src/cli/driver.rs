@@ -39,7 +39,7 @@ fn run() -> Result<ExitCode, String> {
         "eval" => super::eval::run(args.collect()),
         "export" => run_export(args.collect()),
         "fmt" => run_fmt(args.collect()),
-        "guide" | "search" | "query" => {
+        "elements-query" | "guide" | "search" | "query" => {
             let mut command_args = vec![command.to_string()];
             command_args.extend(args);
             crate::document::run_org_command(command_args)
@@ -645,7 +645,7 @@ fn push_property_schema_alias(contract: &mut PropertySchemaContract, alias: Stri
 
 fn print_usage() {
     eprintln!(
-        "Usage: orgize <eval|export|fmt|guide|lint|md|query|search|sdd> [options] [PATH ...]"
+        "Usage: orgize <elements-query|eval|export|fmt|guide|lint|md|query|search|sdd> [options] [PATH ...]"
     );
 }
 

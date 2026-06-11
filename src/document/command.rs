@@ -4,6 +4,8 @@ use std::{
     process::ExitCode,
 };
 
+use crate::Org;
+
 use super::{
     elements::{
         DocumentElement, DocumentLanguage, DocumentWalkConfig, count_kind, display_path,
@@ -47,6 +49,7 @@ pub fn run_document_command_with_walk_config(
         }
         "search" => run_search(language, args.collect(), &walk_config),
         "query" => run_query(language, args.collect(), &walk_config),
+        "elements-query" => run_elements_query(language, args.collect()),
         "-h" | "--help" | "help" => {
             print_guide(language);
             Ok(ExitCode::SUCCESS)
@@ -244,6 +247,44 @@ fn run_query(
     Ok(ExitCode::SUCCESS)
 }
 
+fn run_elements_query(language: DocumentLanguage, args: Vec<String>) -> Result<ExitCode, String> {
+    if language != DocumentLanguage::Org {
+        return Err(format!(
+            "{} elements-query: Org elements packets are only supported for Org documents",
+            language.id()
+        ));
+    }
+
+    let packet = option_value(&args, "--packet").ok_or_else(|| {
+        format!(
+            "{} elements-query: expected --packet <json-query-packet>",
+            language.id()
+        )
+    })?;
+    let path = last_existing_path(&args).ok_or_else(|| {
+        format!(
+            "{} elements-query: expected an Org file path",
+            language.id()
+        )
+    })?;
+    if !path.is_file() {
+        return Err(format!(
+            "{} elements-query: expected an Org file path, got `{}`",
+            language.id(),
+            path.display()
+        ));
+    }
+
+    let source =
+        fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let document = Org::parse(&source).document();
+    let output = document
+        .org_elements_index_query_packet_json(packet)
+        .map_err(|error| format!("{} elements-query: {error}", language.id()))?;
+    println!("{output}");
+    Ok(ExitCode::SUCCESS)
+}
+
 fn print_guide(language: DocumentLanguage) {
     println!(
         "[guide] lang={} provider=orgize protocol=guide.v1 root=.",
@@ -253,6 +294,11 @@ fn print_guide(language: DocumentLanguage) {
     println!(
         "|surface query purpose=elements-by-selector-or-term output=metadata-frontier content=false"
     );
+    if language == DocumentLanguage::Org {
+        println!(
+            "|surface elements-query purpose=org-elements-index-packet output=json content=false"
+        );
+    }
     println!("|surface direct-read purpose=hook-recovery output=pure-content content=true");
     println!("|rule parser-authority={}", language.parser_authority());
     println!("|rule no=check,ast-patch,evidence reason=document-language");
@@ -288,6 +334,12 @@ fn print_guide(language: DocumentLanguage) {
         "|cmd query-field={} query --field <key=value> --view metadata .",
         language.command_prefix()
     );
+    if language == DocumentLanguage::Org {
+        println!(
+            "|cmd elements-query={} elements-query --packet <json-query-packet> <org-file>",
+            language.command_prefix()
+        );
+    }
     println!(
         "|cmd query-content={} query --term <term> --content .",
         language.command_prefix()
