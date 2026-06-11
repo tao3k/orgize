@@ -2,7 +2,10 @@ use std::{fs, path::PathBuf, process::Command};
 
 use orgize::{
     Org,
-    ast::parse_contracts_from_document,
+    ast::{
+        OrgContractAssertionStatus, OrgContractEvaluationScope, evaluate_org_contract,
+        parse_contract_reference, parse_contracts_from_document,
+    },
     lint::{LintOptions, lint_org_with_options},
 };
 
@@ -91,6 +94,40 @@ fn lint_reports_contract_org_query_assertion_failure_code() {
             .collect::<Vec<_>>(),
         ["ORG044"]
     );
+}
+
+#[test]
+fn contract_evaluation_exposes_matched_ids_and_bindings() {
+    let registry = contract_registry();
+    let contract = registry
+        .resolve(&parse_contract_reference("agent.evidence-link-task.v1"))
+        .expect("contract should resolve");
+    let source = r#"* Task A
+:PROPERTIES:
+:CONTRACT_ORG: agent.evidence-link-task.v1
+:END:
+** Evidence
+[[https://example.test][inside]]
+"#;
+    let document = Org::parse(source).document();
+    let scope = OrgContractEvaluationScope::section(
+        "Task A",
+        vec!["Task A".to_string()],
+        document.sections[0].ann.range,
+    );
+
+    let evaluation = evaluate_org_contract(&document, contract, scope);
+
+    assert_eq!(evaluation.contract_id, "agent.evidence-link-task.v1");
+    assert_eq!(evaluation.scope.kind_as_str(), "section");
+    assert_eq!(evaluation.assertions.len(), 1);
+    let assertion = &evaluation.assertions[0];
+    assert_eq!(assertion.assertion_id, "task.evidence-has-link");
+    assert_eq!(assertion.status, OrgContractAssertionStatus::Passed);
+    assert_eq!(assertion.actual_count, 1);
+    assert_eq!(assertion.matched_ids.len(), 1);
+    assert_eq!(assertion.bindings["evidence"].len(), 1);
+    assert!(assertion.message_template.is_some());
 }
 
 #[test]

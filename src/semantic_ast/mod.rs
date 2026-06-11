@@ -76,6 +76,7 @@ mod memory;
 mod memory_model;
 mod model;
 mod org_contract;
+mod org_contract_evaluation;
 mod org_contract_model;
 mod postprocess;
 mod preprocessing;
@@ -267,13 +268,15 @@ pub use model::{
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 pub use org_contract::{parse_contract_reference, parse_contracts_from_document};
+pub use org_contract_evaluation::evaluate_org_contract;
 pub use org_contract_model::{
     ASSERT_ID_PROPERTY, ASSERT_SEVERITY_PROPERTY, CONTRACT_ALIAS_PROPERTY, CONTRACT_ID_PROPERTY,
     CONTRACT_KIND_ORG_ELEMENTS, CONTRACT_KIND_ORG_ELEMENTS_ASSERTIONS, CONTRACT_KIND_PROPERTY,
     CONTRACT_ORG_PROPERTY, CONTRACT_SCOPE_PROPERTY, OrgContract, OrgContractAssertion,
-    OrgContractBinding, OrgContractCompareOp, OrgContractExpectation, OrgContractKind,
-    OrgContractQuery, OrgContractReference, OrgContractRegistry, OrgContractRelativeScope,
-    OrgContractScope, OrgContractSeverity,
+    OrgContractAssertionEvaluation, OrgContractAssertionStatus, OrgContractBinding,
+    OrgContractCompareOp, OrgContractEvaluation, OrgContractEvaluationScope,
+    OrgContractExpectation, OrgContractKind, OrgContractQuery, OrgContractReference,
+    OrgContractRegistry, OrgContractRelativeScope, OrgContractScope, OrgContractSeverity,
 };
 pub use progress_model::{
     ProgressCheckboxSummary, ProgressEffortSummary, ProgressStatisticCookie,

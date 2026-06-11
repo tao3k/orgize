@@ -1,7 +1,11 @@
 //! Contract model for `CONTRACT_ORG` validation over Org element index records.
 
+use std::collections::BTreeMap;
+
+use rowan::TextRange;
+
 use super::{
-    OrgElementQueryPredicate, OrgElementsIndexCategory, OrgElementsIndexKind,
+    OrgElementId, OrgElementQueryPredicate, OrgElementsIndexCategory, OrgElementsIndexKind,
     OrgElementsIndexQuery, SourceBlockSource,
 };
 
@@ -141,6 +145,97 @@ pub struct OrgContractAssertion {
 pub struct OrgContractBinding {
     pub name: String,
     pub query: OrgContractQuery,
+}
+
+/// Evaluation facts for one resolved `CONTRACT_ORG` contract in one scope.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractEvaluation {
+    pub contract_id: String,
+    pub scope: OrgContractEvaluationScope,
+    pub assertions: Vec<OrgContractAssertionEvaluation>,
+}
+
+/// Source-backed scope where a contract was evaluated.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OrgContractEvaluationScope {
+    Document {
+        range: TextRange,
+    },
+    Section {
+        title: String,
+        outline_path: Vec<String>,
+        range: TextRange,
+    },
+}
+
+impl OrgContractEvaluationScope {
+    pub fn document() -> Self {
+        Self::Document {
+            range: TextRange::new(0.into(), 0.into()),
+        }
+    }
+
+    pub fn section(title: impl Into<String>, outline_path: Vec<String>, range: TextRange) -> Self {
+        Self::Section {
+            title: title.into(),
+            outline_path,
+            range,
+        }
+    }
+
+    pub const fn kind_as_str(&self) -> &'static str {
+        match self {
+            Self::Document { .. } => "document",
+            Self::Section { .. } => "section",
+        }
+    }
+
+    pub fn title(&self) -> Option<&str> {
+        match self {
+            Self::Document { .. } => None,
+            Self::Section { title, .. } => Some(title.as_str()),
+        }
+    }
+
+    pub fn outline_path(&self) -> &[String] {
+        match self {
+            Self::Document { .. } => &[],
+            Self::Section { outline_path, .. } => outline_path,
+        }
+    }
+
+    pub const fn range(&self) -> TextRange {
+        match self {
+            Self::Document { range } | Self::Section { range, .. } => *range,
+        }
+    }
+}
+
+/// Evaluation facts for one assertion.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractAssertionEvaluation {
+    pub assertion_id: String,
+    pub severity: OrgContractSeverity,
+    pub expectation: OrgContractExpectation,
+    pub actual_count: usize,
+    pub status: OrgContractAssertionStatus,
+    pub matched_ids: Vec<OrgElementId>,
+    pub bindings: BTreeMap<String, Vec<OrgElementId>>,
+    pub message_template: Option<String>,
+    pub fix_template: Option<String>,
+}
+
+/// Result of checking one contract assertion.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OrgContractAssertionStatus {
+    Passed,
+    Failed,
+}
+
+impl OrgContractAssertionStatus {
+    pub const fn is_failed(self) -> bool {
+        matches!(self, Self::Failed)
+    }
 }
 
 /// Assertion severity declared in contract source.

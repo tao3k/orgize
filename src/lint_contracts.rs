@@ -1,16 +1,13 @@
 //! `CONTRACT_ORG` semantic assertion linting.
 
-use std::collections::{BTreeMap, BTreeSet};
-
 use rowan::TextRange;
 
 use crate::ast::{
-    CONTRACT_ORG_PROPERTY, Keyword, OrgContract, OrgContractAssertion, OrgContractExpectation,
-    OrgContractQuery, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
-    OrgElementGraph, OrgElementId, OrgElementQueryPredicate, OrgElementsIndexQuery,
-    OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
-    OrgElementsIndexSummaryValue, ParsedAnnotation, ParsedAst, Property, Section,
-    parse_contract_reference,
+    CONTRACT_ORG_PROPERTY, Keyword, OrgContract, OrgContractAssertionEvaluation,
+    OrgContractEvaluationScope, OrgContractQuery, OrgContractRegistry, OrgContractScope,
+    OrgElementQueryPredicate, OrgElementsIndexSummaryPredicate,
+    OrgElementsIndexSummaryTextPredicate, OrgElementsIndexSummaryValue, ParsedAnnotation,
+    ParsedAst, Property, Section, evaluate_org_contract, parse_contract_reference,
 };
 
 use super::lint_model::{LintFinding, LintSeverity, location_for_range};
@@ -99,96 +96,28 @@ fn push_contract_findings(
     scope: ContractScopeInstance,
     findings: &mut Vec<LintFinding>,
 ) {
-    let graph = document.org_elements_graph();
-    for assertion in &contract.assertions {
-        let actual = assertion_actual_count(&graph, assertion, &scope);
-        if assertion.expectation.check(actual) {
+    let evaluation = evaluate_org_contract(document, contract, scope.evaluation_scope());
+    for (assertion, assertion_evaluation) in contract.assertions.iter().zip(evaluation.assertions) {
+        if !assertion_evaluation.status.is_failed() {
             continue;
         }
         findings.push(LintFinding {
             code: "ORG044",
-            severity: match assertion.severity {
+            severity: match assertion_evaluation.severity {
                 crate::ast::OrgContractSeverity::Error => LintSeverity::Error,
                 crate::ast::OrgContractSeverity::Warning => LintSeverity::Warning,
             },
             message: assertion_message(AssertionMessageContext {
                 contract_id: contract.id.as_str(),
-                assertion_id: assertion.id.as_str(),
-                template: assertion.message.as_deref(),
-                fix_template: assertion.fix.as_deref(),
+                assertion_id: assertion_evaluation.assertion_id.as_str(),
+                template: assertion_evaluation.message_template.as_deref(),
+                fix_template: assertion_evaluation.fix_template.as_deref(),
                 scope: &scope,
                 query: &assertion.query,
-                expectation: &assertion.expectation,
-                actual,
+                evaluation: &assertion_evaluation,
             }),
             location: location_for_range(source, scope.range),
         });
-    }
-}
-
-fn assertion_actual_count(
-    graph: &OrgElementGraph<ParsedAnnotation>,
-    assertion: &OrgContractAssertion,
-    scope: &ContractScopeInstance,
-) -> usize {
-    let mut bindings = BTreeMap::<String, BTreeSet<OrgElementId>>::new();
-    for binding in &assertion.bindings {
-        let query = scoped_contract_query(&binding.query, scope);
-        bindings.insert(
-            binding.name.clone(),
-            query_graph_ids(graph, &query, &bindings),
-        );
-    }
-    let query = scoped_contract_query(&assertion.query, scope);
-    query_graph_ids(graph, &query, &bindings).len()
-}
-
-fn scoped_contract_query(
-    query: &OrgContractQuery,
-    scope: &ContractScopeInstance,
-) -> OrgContractQuery {
-    match scope.kind {
-        ContractScopeKind::Document => query.clone(),
-        ContractScopeKind::Section => query
-            .clone()
-            .apply_subtree_scope_prefix(scope.outline_path.clone()),
-    }
-}
-
-fn query_graph_ids(
-    graph: &OrgElementGraph<ParsedAnnotation>,
-    query: &OrgContractQuery,
-    bindings: &BTreeMap<String, BTreeSet<OrgElementId>>,
-) -> BTreeSet<OrgElementId> {
-    let Some(index_query) = index_query_with_relative_scope(query, bindings) else {
-        return BTreeSet::new();
-    };
-    graph
-        .query(&index_query)
-        .iter()
-        .map(|record| record.id)
-        .collect()
-}
-
-fn index_query_with_relative_scope(
-    query: &OrgContractQuery,
-    bindings: &BTreeMap<String, BTreeSet<OrgElementId>>,
-) -> Option<OrgElementsIndexQuery> {
-    let index_query = query.to_index_query();
-    match &query.relative_to {
-        None => Some(index_query),
-        Some(OrgContractRelativeScope::DescendantOfBinding(binding)) => {
-            let roots = bindings.get(binding)?;
-            (!roots.is_empty()).then(|| index_query.descendant_of_any(roots.iter().copied()))
-        }
-        Some(OrgContractRelativeScope::ChildOfBinding(binding)) => {
-            let roots = bindings.get(binding)?;
-            (!roots.is_empty()).then(|| index_query.child_of_any(roots.iter().copied()))
-        }
-        Some(OrgContractRelativeScope::AtBinding(binding)) => {
-            let roots = bindings.get(binding)?;
-            (!roots.is_empty()).then(|| index_query.at_any(roots.iter().copied()))
-        }
     }
 }
 
@@ -199,16 +128,13 @@ struct AssertionMessageContext<'a> {
     fix_template: Option<&'a str>,
     scope: &'a ContractScopeInstance,
     query: &'a OrgContractQuery,
-    expectation: &'a OrgContractExpectation,
-    actual: usize,
+    evaluation: &'a OrgContractAssertionEvaluation,
 }
 
 fn assertion_message(context: AssertionMessageContext<'_>) -> String {
     let rendered = context
         .template
-        .map(|template| {
-            render_contract_template(template, context.scope, context.actual, context.expectation)
-        })
+        .map(|template| render_contract_template(template, context.scope, context.evaluation))
         .unwrap_or_default();
     let predicate_detail = boolean_query_summary(context.query)
         .map(|summary| format!("; predicate {summary}"))
@@ -217,26 +143,24 @@ fn assertion_message(context: AssertionMessageContext<'_>) -> String {
         "contract `{contract_id}` assertion `{assertion_id}` failed in {} `{}`: expected {}, actual {actual}{predicate_detail}",
         context.scope.kind.as_str(),
         context.scope.title.as_deref().unwrap_or("<document>"),
-        context.expectation.expected_summary(),
+        context.evaluation.expectation.expected_summary(),
         contract_id = context.contract_id,
         assertion_id = context.assertion_id,
-        actual = context.actual,
+        actual = context.evaluation.actual_count,
     );
     if rendered.trim().is_empty() {
         append_rendered_fix(
             detail,
             context.fix_template,
             context.scope,
-            context.actual,
-            context.expectation,
+            context.evaluation,
         )
     } else {
         append_rendered_fix(
             format!("{} ({detail})", rendered.trim()),
             context.fix_template,
             context.scope,
-            context.actual,
-            context.expectation,
+            context.evaluation,
         )
     }
 }
@@ -361,11 +285,10 @@ fn append_rendered_fix(
     message: String,
     fix_template: Option<&str>,
     scope: &ContractScopeInstance,
-    actual: usize,
-    expectation: &OrgContractExpectation,
+    evaluation: &OrgContractAssertionEvaluation,
 ) -> String {
     let rendered_fix = fix_template
-        .map(|template| render_contract_template(template, scope, actual, expectation))
+        .map(|template| render_contract_template(template, scope, evaluation))
         .unwrap_or_default();
     let rendered_fix = rendered_fix
         .split_whitespace()
@@ -381,18 +304,17 @@ fn append_rendered_fix(
 fn render_contract_template(
     template: &str,
     scope: &ContractScopeInstance,
-    actual: usize,
-    expectation: &OrgContractExpectation,
+    evaluation: &OrgContractAssertionEvaluation,
 ) -> String {
     template
         .replace("{{ scope.title }}", scope.title.as_deref().unwrap_or(""))
         .replace("{{scope.title}}", scope.title.as_deref().unwrap_or(""))
         .replace("{{ scope.kind }}", scope.kind.as_str())
         .replace("{{scope.kind}}", scope.kind.as_str())
-        .replace("{{ result.count }}", &actual.to_string())
-        .replace("{{result.count}}", &actual.to_string())
-        .replace("{{ expected }}", &expectation.expected_summary())
-        .replace("{{expected}}", &expectation.expected_summary())
+        .replace("{{ result.count }}", &evaluation.actual_count.to_string())
+        .replace("{{result.count}}", &evaluation.actual_count.to_string())
+        .replace("{{ expected }}", &evaluation.expectation.expected_summary())
+        .replace("{{expected}}", &evaluation.expectation.expected_summary())
 }
 
 fn resolve_binding<'a>(
@@ -486,6 +408,17 @@ impl ContractScopeInstance {
             title: Some(section.raw_title.trim_end().to_string()),
             outline_path,
             range: section.ann.range,
+        }
+    }
+
+    fn evaluation_scope(&self) -> OrgContractEvaluationScope {
+        match self.kind {
+            ContractScopeKind::Document => OrgContractEvaluationScope::document(),
+            ContractScopeKind::Section => OrgContractEvaluationScope::section(
+                self.title.clone().unwrap_or_default(),
+                self.outline_path.clone(),
+                self.range,
+            ),
         }
     }
 }
