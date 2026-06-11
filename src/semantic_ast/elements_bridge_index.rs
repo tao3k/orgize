@@ -5,16 +5,15 @@ use std::collections::BTreeMap;
 use super::{
     Checkbox, Citation, Document, Element, ElementData, Keyword, ListItem, MarkupKind, Object,
     ObjectData, OrgElementId, OrgElementProperties, OrgElementsAffiliatedProperties,
-    OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexRecord,
-    OrgElementsIndexSummary, OrgElementsIndexSummaryValue, ParsedAnnotation, Section, TargetKind,
-    TodoState,
+    OrgElementsIndexCategory, OrgElementsIndexRecord, OrgElementsIndexSummary,
+    OrgElementsIndexSummaryValue, ParsedAnnotation, Section, TargetKind, TodoState,
 };
 
 pub(super) fn index_records(
     document: &Document<ParsedAnnotation>,
 ) -> Vec<OrgElementsIndexRecord<ParsedAnnotation>> {
     let mut index = ElementIndex::default();
-    let root_id = index.push(
+    let root_id = index.push(ElementIndexRecordSpec::new(
         None,
         OrgElementsIndexCategory::Document,
         "org-data",
@@ -26,13 +25,13 @@ pub(super) fn index_records(
             ("elements", document.children.len().into()),
             ("metadata", document.metadata.len().into()),
         ]),
-    );
+    ));
     for keyword in &document.metadata {
         index.push_keyword(keyword, &[], "metadata", root_id);
     }
     index.collect_property_drawer(&document.properties, &[], "document", root_id);
     for target in &document.targets {
-        index.push(
+        index.push(ElementIndexRecordSpec::new(
             Some(root_id),
             OrgElementsIndexCategory::TargetDefinition,
             "target-definition",
@@ -44,11 +43,11 @@ pub(super) fn index_records(
                 ("value", target.value.clone().into()),
                 ("targetKind", target_kind(target.kind).into()),
             ]),
-        );
+        ));
         index.collect_objects(&target.alias, &[], "targetAlias", root_id);
     }
     for footnote in &document.footnotes {
-        index.push(
+        index.push(ElementIndexRecordSpec::new(
             Some(root_id),
             OrgElementsIndexCategory::FootnoteEntry,
             "footnote-entry",
@@ -56,7 +55,7 @@ pub(super) fn index_records(
             &[],
             "sideTable",
             summary([("label", footnote.label.clone().into())]),
-        );
+        ));
     }
     index.collect_elements(&document.children, &[], "document", root_id);
     index.collect_sections(&document.sections, Vec::new(), root_id);
@@ -69,83 +68,77 @@ struct ElementIndex {
     records: Vec<OrgElementsIndexRecord<ParsedAnnotation>>,
 }
 
+struct ElementIndexRecordSpec<'a> {
+    parent_id: Option<OrgElementId>,
+    category: OrgElementsIndexCategory,
+    kind: &'a str,
+    ann: &'a ParsedAnnotation,
+    outline_path: &'a [String],
+    context: &'a str,
+    properties: OrgElementProperties,
+    summary: OrgElementsIndexSummary,
+    standard: StandardProperties,
+}
+
+impl<'a> ElementIndexRecordSpec<'a> {
+    fn new(
+        parent_id: Option<OrgElementId>,
+        category: OrgElementsIndexCategory,
+        kind: &'a str,
+        ann: &'a ParsedAnnotation,
+        outline_path: &'a [String],
+        context: &'a str,
+        summary: OrgElementsIndexSummary,
+    ) -> Self {
+        Self {
+            parent_id,
+            category,
+            kind,
+            ann,
+            outline_path,
+            context,
+            properties: properties_from_summary(&summary),
+            summary,
+            standard: StandardProperties::default(),
+        }
+    }
+
+    fn with_properties(mut self, properties: OrgElementProperties) -> Self {
+        self.properties = properties;
+        self
+    }
+
+    fn with_standard_properties(mut self, standard: StandardProperties) -> Self {
+        self.standard = standard;
+        self
+    }
+}
+
 impl ElementIndex {
-    fn push(
-        &mut self,
-        parent_id: Option<OrgElementId>,
-        category: OrgElementsIndexCategory,
-        kind: impl Into<OrgElementsIndexKind>,
-        ann: &ParsedAnnotation,
-        outline_path: &[String],
-        context: impl Into<String>,
-        summary: OrgElementsIndexSummary,
-    ) -> OrgElementId {
-        self.push_with_properties(
-            parent_id,
-            category,
-            kind,
-            ann,
-            outline_path,
-            context,
-            properties_from_summary(&summary),
-            summary,
-        )
-    }
-
-    fn push_with_properties(
-        &mut self,
-        parent_id: Option<OrgElementId>,
-        category: OrgElementsIndexCategory,
-        kind: impl Into<OrgElementsIndexKind>,
-        ann: &ParsedAnnotation,
-        outline_path: &[String],
-        context: impl Into<String>,
-        properties: OrgElementProperties,
-        summary: OrgElementsIndexSummary,
-    ) -> OrgElementId {
-        self.push_with_standard_properties(
-            parent_id,
-            category,
-            kind,
-            ann,
-            outline_path,
-            context,
-            properties,
-            summary,
-            StandardProperties::default(),
-        )
-    }
-
-    fn push_with_standard_properties(
-        &mut self,
-        parent_id: Option<OrgElementId>,
-        category: OrgElementsIndexCategory,
-        kind: impl Into<OrgElementsIndexKind>,
-        ann: &ParsedAnnotation,
-        outline_path: &[String],
-        context: impl Into<String>,
-        properties: OrgElementProperties,
-        summary: OrgElementsIndexSummary,
-        standard: StandardProperties,
-    ) -> OrgElementId {
+    fn push(&mut self, input: ElementIndexRecordSpec<'_>) -> OrgElementId {
         self.next_ordinal += 1;
         let id = OrgElementId::new(self.next_ordinal);
-        let properties = properties_with_standard_properties(properties, ann, parent_id, standard);
+        let properties = properties_with_standard_properties(
+            input.properties,
+            input.ann,
+            input.parent_id,
+            input.standard,
+        );
         self.records.push(OrgElementsIndexRecord {
             id,
-            parent_id,
+            parent_id: input.parent_id,
             child_ids: Vec::new(),
-            ann: ann.clone(),
+            ann: input.ann.clone(),
             ordinal: self.next_ordinal,
-            category,
-            kind: kind.into(),
+            category: input.category,
+            kind: input.kind.into(),
             affiliated: OrgElementsAffiliatedProperties::default(),
-            outline_path: outline_path.to_vec(),
-            context: context.into(),
+            outline_path: input.outline_path.to_vec(),
+            context: input.context.to_string(),
             properties,
-            summary,
+            summary: input.summary,
         });
-        if let Some(parent_id) = parent_id
+        if let Some(parent_id) = input.parent_id
             && let Some(parent) = self
                 .records
                 .iter_mut()
@@ -220,19 +213,22 @@ impl ElementIndex {
                 .as_ref()
                 .map(StandardProperties::from_content_ann)
                 .unwrap_or_default();
-            let section_id = self.push_with_standard_properties(
-                Some(parent_id),
-                OrgElementsIndexCategory::Section,
-                "headline",
-                &section.ann,
-                &path,
-                "outline",
-                headline_properties(section, &headline_summary),
-                headline_summary,
-                headline_standard,
+            let headline_properties = headline_properties(section, &headline_summary);
+            let section_id = self.push(
+                ElementIndexRecordSpec::new(
+                    Some(parent_id),
+                    OrgElementsIndexCategory::Section,
+                    "headline",
+                    &section.ann,
+                    &path,
+                    "outline",
+                    headline_summary,
+                )
+                .with_properties(headline_properties)
+                .with_standard_properties(headline_standard),
             );
             if has_planning(&section.planning) {
-                self.push(
+                self.push(ElementIndexRecordSpec::new(
                     Some(section_id),
                     OrgElementsIndexCategory::Element,
                     "planning",
@@ -240,22 +236,23 @@ impl ElementIndex {
                     &path,
                     "headline",
                     planning_summary(&section.planning),
-                );
+                ));
             }
             self.collect_objects(&section.title, &path, "headlineTitle", section_id);
             self.collect_property_drawer(&section.properties, &path, "headline", section_id);
             let body_parent_id = if let Some(body_ann) = &section.body_ann {
                 let body_summary = summary([("elements", section.children.len().into())]);
-                self.push_with_standard_properties(
-                    Some(section_id),
-                    OrgElementsIndexCategory::Element,
-                    "section",
-                    body_ann,
-                    &path,
-                    "headline",
-                    properties_from_summary(&body_summary),
-                    body_summary,
-                    StandardProperties::from_content_ann(body_ann),
+                self.push(
+                    ElementIndexRecordSpec::new(
+                        Some(section_id),
+                        OrgElementsIndexCategory::Element,
+                        "section",
+                        body_ann,
+                        &path,
+                        "headline",
+                        body_summary,
+                    )
+                    .with_standard_properties(StandardProperties::from_content_ann(body_ann)),
                 )
             } else {
                 section_id
@@ -275,7 +272,7 @@ impl ElementIndex {
         let Some(first_property) = properties.first() else {
             return;
         };
-        let drawer_id = self.push(
+        let drawer_id = self.push(ElementIndexRecordSpec::new(
             Some(parent_id),
             OrgElementsIndexCategory::Element,
             "property-drawer",
@@ -283,9 +280,9 @@ impl ElementIndex {
             outline_path,
             context,
             summary([("properties", properties.len().into())]),
-        );
+        ));
         for property in properties {
-            self.push(
+            self.push(ElementIndexRecordSpec::new(
                 Some(drawer_id),
                 OrgElementsIndexCategory::Property,
                 "node-property",
@@ -296,7 +293,7 @@ impl ElementIndex {
                     ("key", property.key.clone().into()),
                     ("value", property.value.clone().into()),
                 ]),
-            );
+            ));
         }
     }
 
@@ -346,7 +343,7 @@ impl ElementIndex {
             }
             ElementData::Table(table) => {
                 for row in &table.rows {
-                    let row_id = self.push(
+                    let row_id = self.push(ElementIndexRecordSpec::new(
                         Some(element_id),
                         OrgElementsIndexCategory::Element,
                         "table-row",
@@ -357,9 +354,9 @@ impl ElementIndex {
                             ("isRule", row.is_rule.into()),
                             ("cells", row.cells.len().into()),
                         ]),
-                    );
+                    ));
                     for cell in &row.cells {
-                        let cell_id = self.push(
+                        let cell_id = self.push(ElementIndexRecordSpec::new(
                             Some(row_id),
                             OrgElementsIndexCategory::Object,
                             "table-cell",
@@ -367,7 +364,7 @@ impl ElementIndex {
                             outline_path,
                             "tableRow",
                             summary([("objects", cell.objects.len().into())]),
-                        );
+                        ));
                         self.collect_objects(&cell.objects, outline_path, "tableCell", cell_id);
                     }
                 }
@@ -405,7 +402,7 @@ impl ElementIndex {
         outline_path: &[String],
         parent_id: OrgElementId,
     ) {
-        let item_id = self.push(
+        let item_id = self.push(ElementIndexRecordSpec::new(
             Some(parent_id),
             OrgElementsIndexCategory::Element,
             "item",
@@ -418,7 +415,7 @@ impl ElementIndex {
                 ("checkbox", optional_text(item.checkbox.map(checkbox))),
                 ("tagObjectCount", item.tag.len().into()),
             ]),
-        );
+        ));
         self.collect_objects(&item.tag, outline_path, "listItemTag", item_id);
         self.collect_elements(&item.children, outline_path, "listItem", item_id);
     }
@@ -442,7 +439,7 @@ impl ElementIndex {
         context: &str,
         parent_id: OrgElementId,
     ) {
-        let object_id = self.push(
+        let object_id = self.push(ElementIndexRecordSpec::new(
             Some(parent_id),
             OrgElementsIndexCategory::Object,
             object_kind(object),
@@ -450,7 +447,7 @@ impl ElementIndex {
             outline_path,
             context,
             object_summary(object),
-        );
+        ));
         match &object.data {
             ObjectData::Markup { children, .. } => {
                 self.collect_objects(children, outline_path, "markup", object_id)
@@ -508,7 +505,7 @@ impl ElementIndex {
         self.collect_objects(&citation.prefix, outline_path, "citationPrefix", parent_id);
         self.collect_objects(&citation.suffix, outline_path, "citationSuffix", parent_id);
         for reference in &citation.references {
-            let reference_id = self.push(
+            let reference_id = self.push(ElementIndexRecordSpec::new(
                 Some(parent_id),
                 OrgElementsIndexCategory::Object,
                 "citation-reference",
@@ -516,7 +513,7 @@ impl ElementIndex {
                 outline_path,
                 "citation",
                 summary([("key", reference.id.clone().into())]),
-            );
+            ));
             self.collect_objects(
                 &reference.prefix,
                 outline_path,
@@ -539,7 +536,7 @@ impl ElementIndex {
         context: &str,
         parent_id: OrgElementId,
     ) {
-        let keyword_id = self.push(
+        let keyword_id = self.push(ElementIndexRecordSpec::new(
             Some(parent_id),
             OrgElementsIndexCategory::Keyword,
             "keyword",
@@ -551,7 +548,7 @@ impl ElementIndex {
                 ("value", keyword.value.clone().into()),
                 ("optional", optional_text(keyword.optional.as_deref())),
             ]),
-        );
+        ));
         self.collect_objects(&keyword.parsed, outline_path, "keywordValue", keyword_id);
     }
 }

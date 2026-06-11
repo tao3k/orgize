@@ -93,7 +93,7 @@ fn parse_contract_section(
 
     let kind = section_property_value(&section.properties, CONTRACT_KIND_PROPERTY)
         .unwrap_or_else(|| CONTRACT_KIND_ORG_ELEMENTS.to_string());
-    let kind = OrgContractKind::from_str(&kind)?;
+    let kind = OrgContractKind::parse(&kind)?;
 
     let aliases = contract_aliases(
         source_path,
@@ -101,7 +101,7 @@ fn parse_contract_section(
         section_property_value(&section.properties, CONTRACT_ALIAS_PROPERTY),
     );
     let scope = section_property_value(&section.properties, CONTRACT_SCOPE_PROPERTY)
-        .and_then(|value| OrgContractScope::from_str(&value))
+        .and_then(|value| OrgContractScope::parse(&value))
         .unwrap_or_default();
 
     let mut assertions = Vec::new();
@@ -247,12 +247,12 @@ fn parse_query_block(value: &str) -> OrgContractQuery {
                 if let Some(value) = query_value(rhs) {
                     query.summary_contains.push((key.trim().to_string(), value));
                 }
-            } else if let Some(key) = lhs.strip_prefix("property.") {
-                if let Some(value) = query_value(rhs) {
-                    query
-                        .property_contains
-                        .push((key.trim().to_string(), value));
-                }
+            } else if let Some(key) = lhs.strip_prefix("property.")
+                && let Some(value) = query_value(rhs)
+            {
+                query
+                    .property_contains
+                    .push((key.trim().to_string(), value));
             }
             continue;
         }

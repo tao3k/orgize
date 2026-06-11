@@ -45,7 +45,7 @@ impl OrgContractKind {
         }
     }
 
-    pub fn from_str(value: &str) -> Option<Self> {
+    pub fn parse(value: &str) -> Option<Self> {
         match value.trim() {
             CONTRACT_KIND_ORG_ELEMENTS | CONTRACT_KIND_ORG_ELEMENTS_ASSERTIONS => {
                 Some(Self::OrgElementsAssertions)
@@ -85,18 +85,13 @@ pub struct OrgContractReference {
 }
 
 /// Host-owned assertion scope for applying a contract.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum OrgContractScope {
     /// Scope resolves to the full document.
     Document,
     /// Scope resolves to a subtree and applies `outline_path_prefix` implicitly.
+    #[default]
     Subtree,
-}
-
-impl Default for OrgContractScope {
-    fn default() -> Self {
-        Self::Subtree
-    }
 }
 
 impl OrgContractScope {
@@ -107,7 +102,7 @@ impl OrgContractScope {
         }
     }
 
-    pub fn from_str(value: &str) -> Option<Self> {
+    pub fn parse(value: &str) -> Option<Self> {
         match value.trim().to_ascii_lowercase().as_str() {
             "document" => Some(Self::Document),
             "subtree" => Some(Self::Subtree),
@@ -148,9 +143,10 @@ pub struct OrgContractBinding {
 }
 
 /// Assertion severity declared in contract source.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum OrgContractSeverity {
     Error,
+    #[default]
     Warning,
 }
 
@@ -160,12 +156,6 @@ impl OrgContractSeverity {
             Self::Error => "error",
             Self::Warning => "warning",
         }
-    }
-}
-
-impl Default for OrgContractSeverity {
-    fn default() -> Self {
-        Self::Warning
     }
 }
 
