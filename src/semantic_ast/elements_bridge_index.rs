@@ -391,6 +391,7 @@ impl ElementIndex {
             | ElementData::PropertyDrawer(_)
             | ElementData::TableEl { .. }
             | ElementData::Comment(_)
+            | ElementData::DiarySexp(_)
             | ElementData::FixedWidth(_)
             | ElementData::Rule
             | ElementData::LatexEnvironment(_)
@@ -580,6 +581,7 @@ fn element_kind(element: &Element<ParsedAnnotation>) -> &'static str {
         ElementData::FootnoteDef(_) => "footnote-definition",
         ElementData::Inlinetask(_) => "inlinetask",
         ElementData::Comment(_) => "comment",
+        ElementData::DiarySexp(_) => "diary-sexp",
         ElementData::FixedWidth(_) => "fixed-width",
         ElementData::Rule => "horizontal-rule",
         ElementData::LatexEnvironment(_) => "latex-environment",
@@ -612,6 +614,7 @@ fn element_summary(element: &Element<ParsedAnnotation>) -> OrgElementsIndexSumma
             summary([("properties", properties.len().into())])
         }
         ElementData::Comment(raw)
+        | ElementData::DiarySexp(raw)
         | ElementData::LatexEnvironment(raw)
         | ElementData::Unknown { raw, .. } => summary([("raw", raw.clone().into())]),
         ElementData::FixedWidth(fixed) => summary([("valueBytes", fixed.value.len().into())]),

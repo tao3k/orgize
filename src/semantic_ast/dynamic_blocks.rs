@@ -83,6 +83,7 @@ fn collect_dynamic_blocks_in_elements(
             | ElementData::Table(_)
             | ElementData::TableEl { .. }
             | ElementData::Comment(_)
+            | ElementData::DiarySexp(_)
             | ElementData::FixedWidth(_)
             | ElementData::Rule
             | ElementData::LatexEnvironment(_)

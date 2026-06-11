@@ -416,6 +416,8 @@ pub enum ElementData<A = ()> {
     Inlinetask(Box<Inlinetask<A>>),
     /// Comment element raw text.
     Comment(String),
+    /// Diary sexp element raw text.
+    DiarySexp(String),
     /// Fixed-width area with line-level metadata.
     FixedWidth(SemanticFixedWidth<A>),
     /// Horizontal rule.

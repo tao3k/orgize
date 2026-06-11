@@ -110,6 +110,7 @@ fn collect_nested_source_block_records(
         | ElementData::TableEl { .. }
         | ElementData::Block(_)
         | ElementData::Comment(_)
+        | ElementData::DiarySexp(_)
         | ElementData::FixedWidth(_)
         | ElementData::Rule
         | ElementData::LatexEnvironment(_)

@@ -165,6 +165,7 @@ fn collect_timestamp_in_element<A>(
         | ElementData::PropertyDrawer(_)
         | ElementData::TableEl { .. }
         | ElementData::Comment(_)
+        | ElementData::DiarySexp(_)
         | ElementData::FixedWidth(_)
         | ElementData::Rule
         | ElementData::LatexEnvironment(_)

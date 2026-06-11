@@ -443,6 +443,68 @@ impl Comment {
     }
 }
 
+/// Typed syntax wrapper for `DiarySexp` nodes.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct DiarySexp {
+    pub(crate) syntax: SyntaxNode,
+}
+impl AstNode for DiarySexp {
+    type Language = OrgLanguage;
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == SyntaxKind::DIARY_SEXP
+    }
+    fn cast(node: SyntaxNode) -> Option<DiarySexp> {
+        Self::can_cast(node.kind()).then(|| DiarySexp { syntax: node })
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+impl DiarySexp {
+    /// Beginning position of this element
+    pub fn start(&self) -> TextSize {
+        self.syntax.text_range().start()
+    }
+    /// Ending position of this element
+    pub fn end(&self) -> TextSize {
+        self.syntax.text_range().end()
+    }
+    /// Range of this element
+    pub fn text_range(&self) -> TextRange {
+        self.syntax.text_range()
+    }
+    /// Raw text of this element
+    pub fn raw(&self) -> String {
+        self.syntax.to_string()
+    }
+    pub fn text(&self) -> Option<super::Token> {
+        super::token(&self.syntax, SyntaxKind::TEXT)
+    }
+    pub fn post_blank(&self) -> usize {
+        super::blank_lines(&self.syntax)
+    }
+    pub fn caption(&self) -> Option<AffiliatedKeyword> {
+        affiliated_keyword(&self.syntax, |k| k == "CAPTION")
+    }
+    pub fn header(&self) -> Option<AffiliatedKeyword> {
+        affiliated_keyword(&self.syntax, |k| k == "HEADER")
+    }
+    pub fn name(&self) -> Option<AffiliatedKeyword> {
+        affiliated_keyword(&self.syntax, |k| k == "NAME")
+    }
+    pub fn plot(&self) -> Option<AffiliatedKeyword> {
+        affiliated_keyword(&self.syntax, |k| k == "PLOT")
+    }
+    pub fn results(&self) -> Option<AffiliatedKeyword> {
+        affiliated_keyword(&self.syntax, |k| k == "RESULTS")
+    }
+    pub fn attr(&self, backend: &str) -> Option<AffiliatedKeyword> {
+        affiliated_keyword(&self.syntax, |k| {
+            k.starts_with("ATTR_") && &k[5..] == backend
+        })
+    }
+}
+
 /// Typed syntax wrapper for `Rule` nodes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Rule {

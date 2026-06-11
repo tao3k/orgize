@@ -110,6 +110,7 @@ fn element_json(element: &Element<ParsedAnnotation>) -> Value {
             }),
         ),
         ElementData::Comment(raw) => ("comment", json!({ "raw": raw })),
+        ElementData::DiarySexp(raw) => ("diary-sexp", json!({ "raw": raw })),
         ElementData::FixedWidth(fixed) => (
             "fixed-width",
             json!({

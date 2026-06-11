@@ -299,6 +299,7 @@ fn collect_active_timestamps_in_element<A: Clone>(
         }
         ElementData::TableEl { .. }
         | ElementData::Comment(_)
+        | ElementData::DiarySexp(_)
         | ElementData::FixedWidth(_)
         | ElementData::Rule
         | ElementData::LatexEnvironment(_)

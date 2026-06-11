@@ -8,6 +8,7 @@ pub(crate) mod cloze;
 pub(crate) mod combinator;
 pub(crate) mod comment;
 pub(crate) mod cookie;
+pub(crate) mod diary_sexp;
 pub(crate) mod document;
 pub(crate) mod drawer;
 pub(crate) mod dyn_block;

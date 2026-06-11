@@ -159,6 +159,7 @@ fn collect_clock_summary_from_element(
         | ElementData::Table(_)
         | ElementData::TableEl { .. }
         | ElementData::Comment(_)
+        | ElementData::DiarySexp(_)
         | ElementData::FixedWidth(_)
         | ElementData::Rule
         | ElementData::LatexEnvironment(_)
@@ -341,6 +342,7 @@ fn collect_clock_table_plans_in_elements<'a>(
             | ElementData::Table(_)
             | ElementData::TableEl { .. }
             | ElementData::Comment(_)
+            | ElementData::DiarySexp(_)
             | ElementData::FixedWidth(_)
             | ElementData::Rule
             | ElementData::LatexEnvironment(_)

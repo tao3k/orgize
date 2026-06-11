@@ -132,6 +132,7 @@ pub enum SyntaxKind {
     CLOCK,
     FN_DEF,
     COMMENT,
+    DIARY_SEXP,
     RULE,
     FIXED_WIDTH,
     /* dyn block */
@@ -273,6 +274,7 @@ impl SyntaxKind {
                 | SyntaxKind::CLOCK
                 | SyntaxKind::PLANNING
                 | SyntaxKind::COMMENT
+                | SyntaxKind::DIARY_SEXP
                 | SyntaxKind::FIXED_WIDTH
                 | SyntaxKind::RULE
                 | SyntaxKind::KEYWORD

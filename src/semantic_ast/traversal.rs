@@ -1101,6 +1101,7 @@ impl<A> ElementData<A> {
                 ElementData::Inlinetask(Box::new(inlinetask.map_ann_with(f)))
             }
             ElementData::Comment(value) => ElementData::Comment(value.clone()),
+            ElementData::DiarySexp(value) => ElementData::DiarySexp(value.clone()),
             ElementData::FixedWidth(fixed_width) => {
                 ElementData::FixedWidth(fixed_width.map_ann_with(f))
             }
@@ -1158,6 +1159,7 @@ impl<A> ElementData<A> {
                 ElementData::Inlinetask(Box::new(inlinetask.try_map_ann_with(f)?))
             }
             ElementData::Comment(value) => ElementData::Comment(value.clone()),
+            ElementData::DiarySexp(value) => ElementData::DiarySexp(value.clone()),
             ElementData::FixedWidth(fixed_width) => {
                 ElementData::FixedWidth(fixed_width.try_map_ann_with(f)?)
             }

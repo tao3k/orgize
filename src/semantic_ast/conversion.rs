@@ -336,6 +336,7 @@ impl<'a> Converter<'a> {
             SyntaxKind::FN_DEF => ElementData::FootnoteDef(self.footnote_def(node)),
             SyntaxKind::INLINETASK => ElementData::Inlinetask(Box::new(self.inlinetask(node))),
             SyntaxKind::COMMENT => ElementData::Comment(node.to_string()),
+            SyntaxKind::DIARY_SEXP => ElementData::DiarySexp(node.to_string()),
             SyntaxKind::FIXED_WIDTH => ElementData::FixedWidth(self.fixed_width(node)),
             SyntaxKind::RULE => ElementData::Rule,
             SyntaxKind::LATEX_ENVIRONMENT => ElementData::LatexEnvironment(node.to_string()),

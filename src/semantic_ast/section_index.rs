@@ -329,6 +329,7 @@ fn collect_one_element_index_metadata(
         | ElementData::PropertyDrawer(_)
         | ElementData::TableEl { .. }
         | ElementData::Comment(_)
+        | ElementData::DiarySexp(_)
         | ElementData::FixedWidth(_)
         | ElementData::Rule
         | ElementData::LatexEnvironment(_)

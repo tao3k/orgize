@@ -128,6 +128,7 @@ fn collect_one_element_attachment_finding(
         | ElementData::PropertyDrawer(_)
         | ElementData::TableEl { .. }
         | ElementData::Comment(_)
+        | ElementData::DiarySexp(_)
         | ElementData::FixedWidth(_)
         | ElementData::Rule
         | ElementData::LatexEnvironment(_)

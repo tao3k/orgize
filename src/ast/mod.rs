@@ -32,14 +32,14 @@ use crate::syntax::SyntaxKind;
 #[cfg(feature = "syntax-org-fc")]
 pub use cloze::Cloze;
 pub use generated::{
-    AffiliatedKeyword, BabelCall, Bold, CenterBlock, Code, Comment, CommentBlock, Cookie, DynBlock,
-    Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef, FnRef, Headline, InlineCall, InlineSrc,
-    Italic, LatexEnvironment, LatexFragment, LineBreak, Macros, NodeProperty, OrgTable,
-    OrgTableCell, OrgTableRow, Paragraph, PropertyDrawer, QuoteBlock, RadioTarget, Rule, Snippet,
-    SourceBlock, SpecialBlock, Strike, Subscript, Superscript, SyntaxCitation, SyntaxClock,
-    SyntaxDocument, SyntaxDrawer, SyntaxInlinetask, SyntaxInlinetaskEnd, SyntaxKeyword, SyntaxLink,
-    SyntaxList, SyntaxListItem, SyntaxPlanning, SyntaxSection, SyntaxTimestamp, TableEl, Target,
-    Underline, Verbatim, VerseBlock,
+    AffiliatedKeyword, BabelCall, Bold, CenterBlock, Code, Comment, CommentBlock, Cookie,
+    DiarySexp, DynBlock, Entity, ExampleBlock, ExportBlock, FixedWidth, FnDef, FnRef, Headline,
+    InlineCall, InlineSrc, Italic, LatexEnvironment, LatexFragment, LineBreak, Macros,
+    NodeProperty, OrgTable, OrgTableCell, OrgTableRow, Paragraph, PropertyDrawer, QuoteBlock,
+    RadioTarget, Rule, Snippet, SourceBlock, SpecialBlock, Strike, Subscript, Superscript,
+    SyntaxCitation, SyntaxClock, SyntaxDocument, SyntaxDrawer, SyntaxInlinetask,
+    SyntaxInlinetaskEnd, SyntaxKeyword, SyntaxLink, SyntaxList, SyntaxListItem, SyntaxPlanning,
+    SyntaxSection, SyntaxTimestamp, TableEl, Target, Underline, Verbatim, VerseBlock,
 };
 pub use headline::TodoType;
 pub use support::Token;

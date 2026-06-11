@@ -89,6 +89,7 @@ impl TableVisualizationCollector {
                 | ElementData::Clock(_)
                 | ElementData::PropertyDrawer(_)
                 | ElementData::Comment(_)
+                | ElementData::DiarySexp(_)
                 | ElementData::FixedWidth(_)
                 | ElementData::Rule
                 | ElementData::LatexEnvironment(_)

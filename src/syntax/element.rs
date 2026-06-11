@@ -8,6 +8,7 @@ use super::{
     clock::clock_node,
     combinator::GreenElement,
     comment::comment_node,
+    diary_sexp::diary_sexp_node,
     drawer::drawer_node,
     dyn_block::dyn_block_node,
     fixed_width::fixed_width_node,
@@ -129,6 +130,7 @@ pub(crate) fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
             .or_else(|_| dyn_block_node(input))
             .or_else(|_| keyword_node(input))
             .or_else(|_| comment_node(input)),
+        Some(b'%') => diary_sexp_node(input),
         Some(b'\\') => latex_environment_node(input),
         _ => Err(nom::Err::Error(())),
     };
@@ -168,7 +170,7 @@ impl<'a> Iterator for ElementPositions<'a> {
 
             if matches!(
                 b,
-                b'[' | b'0'..=b'9' | b'*' | b'C' | b'-' | b':' | b'|' | b'+' | b'#' | b'\\'
+                b'[' | b'0'..=b'9' | b'*' | b'C' | b'-' | b':' | b'|' | b'+' | b'#' | b'%' | b'\\'
             ) {
                 let previous = self.pos;
                 self.pos = iter

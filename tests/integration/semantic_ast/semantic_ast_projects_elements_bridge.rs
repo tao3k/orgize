@@ -3,8 +3,8 @@ use orgize::{
     Org,
     ast::{
         ORG_ELEMENTS_SQL_COLUMNS, OrgElementSelector, OrgElementSelectorParseError,
-        OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexQuery,
-        OrgElementsIndexSummaryValue, PythonDirectiveKind,
+        OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexKind,
+        OrgElementsIndexQuery, OrgElementsIndexSummaryValue, PythonDirectiveKind,
     },
 };
 use serde_json::Value;
@@ -209,7 +209,7 @@ print(topic)
             .any(|column| column.name == "affiliated_name")
     );
     assert_eq!(sql_rows.len(), 1);
-    assert_eq!(sql_rows[0].kind, "src-block");
+    assert_eq!(sql_rows[0].kind, OrgElementsIndexKind::new("src-block"));
     assert_eq!(sql_rows[0].language.as_deref(), Some("python"));
     assert!(sql_rows[0].summary_json.contains(r#""language":"python""#));
     assert!(sql_rows[0].source_start_line > 0);
@@ -501,6 +501,7 @@ A paragraph with *bold* /italic/ _underline_ +strike+ H_2 x^2 =code= ~verb~ \alp
 | 1 | 2 |
 [fn:one] Footnote body.
 # Comment line
+%%(org-anniversary 1956 5 14)
 : fixed width line
 -----
 \begin{equation}
@@ -568,6 +569,18 @@ Inline body.
             .kind("section"),
     );
     assert_eq!(section_records.len(), 1);
+    let diary_sexps = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Element)
+            .kind("diary-sexp"),
+    );
+    assert_eq!(diary_sexps.len(), 1);
+    assert_eq!(
+        diary_sexps[0].summary.get("raw"),
+        Some(&OrgElementsIndexSummaryValue::Text(
+            "%%(org-anniversary 1956 5 14)\n".to_string()
+        ))
+    );
 
     let records = doc.org_elements_index();
     let mut official_element_like = string_set(UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS);

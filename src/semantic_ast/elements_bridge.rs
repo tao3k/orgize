@@ -212,6 +212,7 @@ fn collect_python_directives_in_elements<A: Clone>(
             | ElementData::Table(_)
             | ElementData::TableEl { .. }
             | ElementData::Comment(_)
+            | ElementData::DiarySexp(_)
             | ElementData::FixedWidth(_)
             | ElementData::Rule
             | ElementData::LatexEnvironment(_)

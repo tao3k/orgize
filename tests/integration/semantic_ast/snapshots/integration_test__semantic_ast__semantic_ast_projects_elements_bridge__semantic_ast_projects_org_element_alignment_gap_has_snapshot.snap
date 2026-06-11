@@ -153,6 +153,7 @@ expression: "serde_json::to_string_pretty(&payload).unwrap()"
       "clock",
       "comment",
       "comment-block",
+      "diary-sexp",
       "drawer",
       "dynamic-block",
       "example-block",
@@ -266,9 +267,7 @@ expression: "serde_json::to_string_pretty(&payload).unwrap()"
   },
   "gaps": {
     "missingAffiliatedKeywordRecords": [],
-    "missingElementLikeKinds": [
-      "diary-sexp"
-    ],
+    "missingElementLikeKinds": [],
     "missingObjectKinds": [],
     "missingStandardProperties": [
       ":buffer",

@@ -170,6 +170,7 @@ fn push_list_item_cookie_findings_from_element(
         | ElementData::Table(_)
         | ElementData::TableEl { .. }
         | ElementData::Comment(_)
+        | ElementData::DiarySexp(_)
         | ElementData::FixedWidth(_)
         | ElementData::Rule
         | ElementData::LatexEnvironment(_)

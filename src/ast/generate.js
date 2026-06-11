@@ -123,6 +123,13 @@ const nodes = [
     affiliated_keywords: true,
   },
   {
+    struct: "DiarySexp",
+    kind: ["DIARY_SEXP"],
+    post_blank: true,
+    token: [["text", "TEXT"]],
+    affiliated_keywords: true,
+  },
+  {
     struct: "Rule",
     kind: ["RULE"],
     post_blank: true,

@@ -360,6 +360,7 @@ fn collect_one_element_memory(
         | ElementData::PropertyDrawer(_)
         | ElementData::TableEl { .. }
         | ElementData::Comment(_)
+        | ElementData::DiarySexp(_)
         | ElementData::FixedWidth(_)
         | ElementData::Rule
         | ElementData::LatexEnvironment(_)

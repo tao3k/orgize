@@ -169,6 +169,7 @@ fn collect_table_formula_records_in_elements(
             | ElementData::PropertyDrawer(_)
             | ElementData::TableEl { .. }
             | ElementData::Comment(_)
+            | ElementData::DiarySexp(_)
             | ElementData::FixedWidth(_)
             | ElementData::Rule
             | ElementData::LatexEnvironment(_)

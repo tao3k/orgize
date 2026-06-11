@@ -136,6 +136,7 @@ fn collect_clock_issue_entries_from_elements(
             | ElementData::Table(_)
             | ElementData::TableEl { .. }
             | ElementData::Comment(_)
+            | ElementData::DiarySexp(_)
             | ElementData::FixedWidth(_)
             | ElementData::Rule
             | ElementData::LatexEnvironment(_)

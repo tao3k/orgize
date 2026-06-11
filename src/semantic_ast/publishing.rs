@@ -81,6 +81,7 @@ fn collect_publishing_from_element<A: Clone>(
         | ElementData::Table(_)
         | ElementData::TableEl { .. }
         | ElementData::Comment(_)
+        | ElementData::DiarySexp(_)
         | ElementData::FixedWidth(_)
         | ElementData::Rule
         | ElementData::LatexEnvironment(_)
