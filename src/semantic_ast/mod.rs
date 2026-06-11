@@ -77,6 +77,7 @@ mod memory_model;
 mod model;
 mod org_contract;
 mod org_contract_evaluation;
+mod org_contract_evaluation_json;
 mod org_contract_model;
 mod postprocess;
 mod preprocessing;
@@ -269,6 +270,10 @@ pub use model::{
 };
 pub use org_contract::{parse_contract_reference, parse_contracts_from_document};
 pub use org_contract_evaluation::evaluate_org_contract;
+pub use org_contract_evaluation_json::{
+    evaluation_to_json_value as org_contract_evaluation_to_json_value,
+    evaluations_to_json_value as org_contract_evaluations_to_json_value,
+};
 pub use org_contract_model::{
     ASSERT_ID_PROPERTY, ASSERT_SEVERITY_PROPERTY, CONTRACT_ALIAS_PROPERTY, CONTRACT_ID_PROPERTY,
     CONTRACT_KIND_ORG_ELEMENTS, CONTRACT_KIND_ORG_ELEMENTS_ASSERTIONS, CONTRACT_KIND_PROPERTY,

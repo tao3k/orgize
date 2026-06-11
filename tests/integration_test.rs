@@ -1,3 +1,5 @@
+#[path = "integration/contract_evaluation.rs"]
+mod contract_evaluation;
 #[path = "integration/eval_cli.rs"]
 mod eval_cli;
 #[path = "integration/export_cli.rs"]
