@@ -1,7 +1,10 @@
 ---
 source: tests/integration/lint_fmt.rs
+assertion_line: 130
 expression: "format!(\"clean: {}\\n{}\", report.is_clean(), report.to_text(\"fixture.org\"))"
 ---
 clean: false
+fixture.org:1:1: warning ORG044: document is missing a #+TITLE keyword (contract `orgize.builtin.document-metadata.v1` assertion `document.has-title-keyword` failed in document `<document>`: expected exists, actual 0) Suggested fix: add a non-empty #+TITLE keyword near the top of the document
+fixture.org:1:1: warning ORG044: document is missing document-level properties (contract `orgize.builtin.document-metadata.v1` assertion `document.has-properties` failed in document `<document>`: expected exists, actual 0) Suggested fix: add document-level properties with #+PROPERTY metadata
 fixture.org:2:1: warning ORG005: LINK keyword is missing an abbreviation name or replacement
 fixture.org:3:1: warning ORG006: link abbreviation `gh` is defined 2 times

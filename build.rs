@@ -1,4 +1,6 @@
 fn main() {
+    orgize_build_support::write_builtin_lint_contract_manifest();
+
     let mut config = rust_lang_project_harness::default_rust_harness_config()
         .with_rule_severity(
             "RUST-MOD-R002",

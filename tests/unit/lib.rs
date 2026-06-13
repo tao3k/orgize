@@ -12,6 +12,8 @@ use crate::{
 mod document_source_selection;
 #[path = "elements_bridge_query_json.rs"]
 mod elements_bridge_query_json;
+#[path = "lint_metadata.rs"]
+mod lint_metadata;
 
 pub fn to_ast<N: AstNode>(
     parser: impl Fn(Input) -> IResult<Input, GreenElement, ()>,

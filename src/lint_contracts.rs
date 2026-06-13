@@ -2,15 +2,68 @@
 
 use rowan::TextRange;
 
+use crate::Org;
 use crate::ast::{
-    CONTRACT_ORG_PROPERTY, Keyword, OrgContract, OrgContractAssertionEvaluation,
+    CONTRACT_ORG_PROPERTY, ElementData, Keyword, OrgContract, OrgContractAssertionEvaluation,
     OrgContractEvaluationScope, OrgContractQuery, OrgContractRegistry, OrgContractScope,
     OrgElementQueryPredicate, OrgElementsIndexSummaryPredicate,
     OrgElementsIndexSummaryTextPredicate, OrgElementsIndexSummaryValue, ParsedAnnotation,
     ParsedAst, Property, Section, evaluate_org_contract, parse_contract_reference,
+    parse_contracts_from_document,
 };
 
 use super::lint_model::{LintFinding, LintSeverity, location_for_range};
+
+#[path = "lint_contracts_builtin.rs"]
+mod builtin;
+
+pub(crate) fn builtin_contract_org_findings(
+    document: &ParsedAst,
+    source: &str,
+) -> Vec<LintFinding> {
+    if !has_top_level_body_text(document, source) {
+        return Vec::new();
+    }
+
+    let registry = builtin_lint_contract_registry();
+    let mut findings = Vec::new();
+    for contract in &registry.contracts {
+        if contract.scope != OrgContractScope::Document {
+            continue;
+        }
+        push_contract_findings(
+            document,
+            source,
+            contract,
+            ContractScopeInstance::document(),
+            &mut findings,
+        );
+    }
+    findings
+}
+
+fn builtin_lint_contract_registry() -> OrgContractRegistry {
+    let mut contracts = Vec::new();
+    for (_name, source) in builtin::BUILTIN_LINT_CONTRACT_SOURCES {
+        let document = Org::parse(source).document();
+        contracts.extend(parse_contracts_from_document(&document, None).contracts);
+    }
+    OrgContractRegistry::new(contracts)
+}
+
+fn has_top_level_body_text(document: &ParsedAst, source: &str) -> bool {
+    document.children.iter().any(|element| {
+        if !matches!(&element.data, ElementData::Paragraph(_)) {
+            return false;
+        }
+
+        let start = usize::from(element.ann.range.start());
+        let end = usize::from(element.ann.range.end());
+        source
+            .get(start..end)
+            .is_some_and(|text| text.chars().any(|ch| !ch.is_whitespace()))
+    })
+}
 
 pub(crate) fn contract_org_findings(
     document: &ParsedAst,

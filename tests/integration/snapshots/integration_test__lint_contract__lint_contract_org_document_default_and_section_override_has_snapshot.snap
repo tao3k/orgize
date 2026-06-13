@@ -1,5 +1,6 @@
 ---
 source: tests/integration/lint_contract.rs
+assertion_line: 116
 expression: "format!(\"clean: {}\\n{}\\ncompact:\\n{}\", report.is_clean(),\nreport.to_text(\"contract-default-override.org\"),\nreport.to_compact_text(\"contract-default-override.org\", source))"
 ---
 clean: false
@@ -9,14 +10,14 @@ contract-default-override.org:4:1: error ORG044: Research note `Research Note` m
 compact:
 [ORG044] Error: Task `Task A` must contain a Goal section. (contract `agent.task.v1` assertion `task.has-goal` failed in section `Task A`: expected count >= 1, actual 0)
 @ contract-default-override.org:2:1
-fix: load the referenced CONTRACT_ORG registry, repair the assertion query, or update the Org subtree to satisfy it
+fix: update the Org subtree to satisfy the failed CONTRACT_ORG assertion, or repair the contract query when the policy is wrong
 line: 2 | * Task A
 Help: Task `Task A` must contain a Goal section. (contract `agent.task.v1` assertion `task.has-goal` failed in section `Task A`: expected count >= 1, actual 0)
 Contract: CONTRACT_ORG validation must be derived from host-loaded Org element query assertions over the parser-owned org_elements_index.
 
 [ORG044] Error: Research note `Research Note` must contain an Evidence section. (contract `agent.research.v1` assertion `research.has-evidence` failed in section `Research Note`: expected count >= 1, actual 0)
 @ contract-default-override.org:4:1
-fix: load the referenced CONTRACT_ORG registry, repair the assertion query, or update the Org subtree to satisfy it
+fix: update the Org subtree to satisfy the failed CONTRACT_ORG assertion, or repair the contract query when the policy is wrong
 line: 4 | * Research Note
 Help: Research note `Research Note` must contain an Evidence section. (contract `agent.research.v1` assertion `research.has-evidence` failed in section `Research Note`: expected count >= 1, actual 0)
 Contract: CONTRACT_ORG validation must be derived from host-loaded Org element query assertions over the parser-owned org_elements_index.

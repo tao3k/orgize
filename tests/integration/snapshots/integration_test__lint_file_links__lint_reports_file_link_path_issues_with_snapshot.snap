@@ -1,8 +1,11 @@
 ---
 source: tests/integration/lint_file_links.rs
+assertion_line: 25
 expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_text(\"file-link-issues.org\"))"
 ---
 clean: false
+file-link-issues.org:1:1: warning ORG044: document is missing a #+TITLE keyword (contract `orgize.builtin.document-metadata.v1` assertion `document.has-title-keyword` failed in document `<document>`: expected exists, actual 0) Suggested fix: add a non-empty #+TITLE keyword near the top of the document
+file-link-issues.org:1:1: warning ORG044: document is missing document-level properties (contract `orgize.builtin.document-metadata.v1` assertion `document.has-properties` failed in document `<document>`: expected exists, actual 0) Suggested fix: add document-level properties with #+PROPERTY metadata
 file-link-issues.org:2:1: warning ORG017: file target `file:missing.org::*Heading` was not found
 file-link-issues.org:3:1: warning ORG017: file target `file:directory` points at a directory
 file-link-issues.org:4:1: warning ORG017: file link has no file path

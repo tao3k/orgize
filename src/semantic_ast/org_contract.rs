@@ -586,6 +586,10 @@ fn apply_org_contract_kind(kind: &str, query: &mut OrgContractQuery) {
             query.category = Some(OrgElementsIndexCategory::Property);
             query.kind = Some(OrgElementsIndexKind::new("node-property"));
         }
+        "keyword" => {
+            query.category = Some(OrgElementsIndexCategory::Keyword);
+            query.kind = Some(OrgElementsIndexKind::new("keyword"));
+        }
         "link" | "timestamp" | "bold" | "italic" | "underline" | "strike-through"
         | "superscript" | "subscript" | "code" | "verbatim" | "target" | "radio-target"
         | "footnote-reference" | "citation" | "inline-src-block" | "inline-babel-call"

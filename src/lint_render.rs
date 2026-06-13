@@ -195,7 +195,7 @@ impl LintFinding {
             }
             "ORG043" => "add an explicit :file target or remove the file result collection mode",
             "ORG044" => {
-                "load the referenced CONTRACT_ORG registry, repair the assertion query, or update the Org subtree to satisfy it"
+                "update the Org subtree to satisfy the failed CONTRACT_ORG assertion, or repair the contract query when the policy is wrong"
             }
             _ => "inspect the Org source near this location and repair the lint finding",
         }

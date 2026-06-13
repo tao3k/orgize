@@ -34,7 +34,7 @@ use std::{collections::BTreeMap, fs, io::ErrorKind, path::Path};
 use self::{
     lint_attachments::attachment_findings,
     lint_babel::babel_findings,
-    lint_contracts::contract_org_findings,
+    lint_contracts::{builtin_contract_org_findings, contract_org_findings},
     lint_crypt::crypt_findings,
     lint_file_links::file_link_findings,
     lint_lifecycle::lifecycle_findings,
@@ -124,6 +124,7 @@ fn collect_lint_findings(
     findings.extend(task_blocker_findings(document, source));
     findings.extend(sdd_findings(document, source));
     findings.extend(crypt_findings(document, source));
+    findings.extend(builtin_contract_org_findings(document, source));
     findings.extend(contract_org_findings(
         document,
         source,

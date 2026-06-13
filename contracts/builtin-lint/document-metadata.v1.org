@@ -1,0 +1,38 @@
+#+TITLE: Built-in Document Metadata Lint Contracts
+#+PROPERTY: CONTRACT_SET orgize.builtin-lint
+
+* Document metadata lint
+:PROPERTIES:
+:CONTRACT_ID: orgize.builtin.document-metadata.v1
+:CONTRACT_SCOPE: document
+:END:
+
+** Document title
+:PROPERTIES:
+:ASSERT_ID: document.has-title-keyword
+:SEVERITY: warning
+:END:
+#+begin_src org-contract
+assert exists keyword where context = "metadata" and summary(key) = "TITLE"
+#+end_src
+#+begin_src jinja2 :name message
+document is missing a #+TITLE keyword
+#+end_src
+#+begin_src jinja2 :name fix
+add a non-empty #+TITLE keyword near the top of the document
+#+end_src
+
+** Document properties
+:PROPERTIES:
+:ASSERT_ID: document.has-properties
+:SEVERITY: warning
+:END:
+#+begin_src org-contract
+assert exists property-drawer where context = "document"
+#+end_src
+#+begin_src jinja2 :name message
+document is missing document-level properties
+#+end_src
+#+begin_src jinja2 :name fix
+add document-level properties with #+PROPERTY metadata
+#+end_src
