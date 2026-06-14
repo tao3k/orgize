@@ -10,6 +10,8 @@ use crate::{
 
 #[path = "document_source_selection.rs"]
 mod document_source_selection;
+#[path = "document_command.rs"]
+mod document_command;
 #[path = "elements_bridge_query_json.rs"]
 mod elements_bridge_query_json;
 #[path = "lint_metadata.rs"]

@@ -13,3 +13,6 @@ pub use elements::{
     index_project, index_project_with_config,
 };
 pub use source_selection::{SourceLineRange, SourceSelector, select_source};
+
+#[cfg(test)]
+pub(crate) use command::compact_query_content;

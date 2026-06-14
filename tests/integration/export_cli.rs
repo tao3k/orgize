@@ -230,9 +230,22 @@ fn org_document_search_and_query_commands_run() {
         String::from_utf8(paragraph_content.stdout).expect("utf8 paragraph content query");
     assert_eq!(
         paragraph_content_stdout.trim(),
-        "Provider activation carries execution mode.\nDocument providers stay embedded inside ASP.",
+        "Provider activation carries execution mode. Document providers stay embedded inside ASP.",
         "{paragraph_content_stdout}"
     );
+
+    let missing_content = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("query")
+        .arg("--term")
+        .arg("missing-content")
+        .arg("--content")
+        .arg(&root)
+        .output()
+        .expect("run orgize missing content query");
+    assert!(missing_content.status.success());
+    let missing_content_stdout =
+        String::from_utf8(missing_content.stdout).expect("utf8 missing content query");
+    assert_eq!(missing_content_stdout, "", "{missing_content_stdout}");
 
     let broad_content = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("query")

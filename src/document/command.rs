@@ -779,20 +779,29 @@ fn shell_arg(value: &str) -> String {
 }
 
 fn print_query_content(facts: &[DocumentElement]) {
-    let mut first = true;
     for content in projected_content_facts(facts)
         .iter()
         .take(80)
         .map(DocumentElement::content_text)
-        .filter(|content| !content.trim().is_empty())
+        .map(|content| compact_query_content(&content))
+        .filter(|content| !content.is_empty())
     {
-        if !first {
-            println!();
-        }
-        first = false;
-        print!("{}", content.trim_end());
-        println!();
+        println!("{content}");
     }
+}
+
+pub(crate) fn compact_query_content(content: &str) -> String {
+    let mut words = content.split_whitespace();
+    let Some(first_word) = words.next() else {
+        return String::new();
+    };
+    let mut compacted = String::with_capacity(content.len());
+    compacted.push_str(first_word);
+    for word in words {
+        compacted.push(' ');
+        compacted.push_str(word);
+    }
+    compacted
 }
 
 fn projected_content_facts(facts: &[DocumentElement]) -> Vec<DocumentElement> {
