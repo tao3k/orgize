@@ -177,9 +177,21 @@ fn run_query(
     }
     let from_hook = option_value(&args, "--from-hook");
     let direct_read = from_hook.is_some_and(|value| value == "direct-source-read");
-    if content_output && direct_read {
+    if args.iter().any(|arg| arg == "--code") {
         return Err(format!(
-            "{} query: --content is a document query projection and cannot be combined with --from-hook direct-source-read",
+            "{} query: document providers use --content for query projection; --code is reserved for source-language providers",
+            language.id()
+        ));
+    }
+    if direct_read && selector.is_none() {
+        return Err(format!(
+            "{} query: --from-hook direct-source-read requires --selector <path:start-end>; add --content to project source text",
+            language.id()
+        ));
+    }
+    if json_output && direct_read {
+        return Err(format!(
+            "{} query: --json cannot be combined with --from-hook direct-source-read",
             language.id()
         ));
     }
@@ -191,24 +203,6 @@ fn run_query(
     {
         return Err(format!(
             "{} query: --content requires --selector, --term, --kind, or --field so it cannot read the whole document set",
-            language.id()
-        ));
-    }
-    if args.iter().any(|arg| arg == "--code") {
-        return Err(format!(
-            "{} query: document direct reads use --from-hook direct-source-read; --code is reserved for source-language providers",
-            language.id()
-        ));
-    }
-    if direct_read && selector.is_none() {
-        return Err(format!(
-            "{} query: --from-hook direct-source-read requires --selector",
-            language.id()
-        ));
-    }
-    if json_output && direct_read {
-        return Err(format!(
-            "{} query: --json cannot be combined with --from-hook direct-source-read",
             language.id()
         ));
     }
@@ -360,7 +354,7 @@ fn print_guide(language: DocumentLanguage) {
         language.command_prefix()
     );
     println!(
-        "|cmd direct-read={} query --from-hook direct-source-read --selector <path:start-end> .",
+        "|cmd direct-read={} query --from-hook direct-source-read --selector <path:start-end> --content .",
         language.command_prefix()
     );
 }
@@ -375,10 +369,10 @@ fn print_element_guide(language: DocumentLanguage) {
     println!("|query-axis kind matches=exact-element-kind combine=all-kinds");
     println!("|query-axis field matches=key-or-key=value value-match=contains combine=all-fields");
     println!(
-        "|query-axis content requires=selector|term|kind|field output=matched-element-content forbids=direct-source-read"
+        "|query-axis content requires=selector|term|kind|field output=matched-element-content"
     );
     println!(
-        "|query-axis direct-read requires=from-hook+selector output=source-preserved-content use=hook-recovery-only"
+        "|query-axis direct-read requires=from-hook+selector+content output=source-preserved-content use=hook-recovery-only"
     );
     match language {
         DocumentLanguage::Org => {
@@ -480,7 +474,7 @@ fn print_query_guide(language: DocumentLanguage) {
     );
     println!("|mode content command=\"query --term <term> --content .\" output=pure-query-content");
     println!(
-        "|mode direct-read command=\"query --from-hook direct-source-read --selector <path:start-end> .\" output=pure-document-content"
+        "|mode direct-read command=\"query --from-hook direct-source-read --selector <path:start-end> --content .\" output=pure-document-content"
     );
     println!("|combine all=--selector+--term+--kind+--field semantics=intersection");
     println!(
@@ -489,7 +483,8 @@ fn print_query_guide(language: DocumentLanguage) {
     println!(
         "|field-match value command=\"query --field <key=value> --view metadata .\" output=elements-with-containing-value"
     );
-    println!("|content-rule requires=--selector|--term|--kind|--field forbids=--from-hook");
+    println!("|content-rule requires=--selector|--term|--kind|--field");
+    println!("|direct-read-rule requires=--from-hook+--selector+--content forbids=--json");
 }
 
 fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) {

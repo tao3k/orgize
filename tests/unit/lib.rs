@@ -8,10 +8,10 @@ use crate::{
     syntax::{combinator::GreenElement, input::Input},
 };
 
-#[path = "document_source_selection.rs"]
-mod document_source_selection;
 #[path = "document_command.rs"]
 mod document_command;
+#[path = "document_source_selection.rs"]
+mod document_source_selection;
 #[path = "elements_bridge_query_json.rs"]
 mod elements_bridge_query_json;
 #[path = "lint_metadata.rs"]

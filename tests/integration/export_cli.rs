@@ -271,13 +271,16 @@ fn org_document_search_and_query_commands_run() {
         .arg("--content")
         .output()
         .expect("run orgize direct-read content query");
-    assert!(!direct_read_content.status.success());
-    let direct_read_content_stderr =
-        String::from_utf8(direct_read_content.stderr).expect("utf8 direct-read content stderr");
+    assert!(direct_read_content.status.success());
+    let direct_read_content_stdout =
+        String::from_utf8(direct_read_content.stdout).expect("utf8 direct-read content stdout");
     assert!(
-        direct_read_content_stderr
-            .contains("--content is a document query projection and cannot be combined"),
-        "{direct_read_content_stderr}"
+        direct_read_content_stdout.contains("* TODO [#A] Task :work:"),
+        "{direct_read_content_stdout}"
+    );
+    assert!(
+        direct_read_content_stdout.contains(":CUSTOM_ID: task-1"),
+        "{direct_read_content_stdout}"
     );
 
     let json_search = Command::new(env!("CARGO_BIN_EXE_orgize"))
