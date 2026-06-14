@@ -21,7 +21,7 @@ pub(crate) fn builtin_contract_org_findings(
     document: &ParsedAst,
     source: &str,
 ) -> Vec<LintFinding> {
-    if !has_top_level_body_text(document, source) {
+    if !has_top_level_body_text(document, source) || has_contract_org_override(document) {
         return Vec::new();
     }
 
@@ -63,6 +63,19 @@ fn has_top_level_body_text(document: &ParsedAst, source: &str) -> bool {
             .get(start..end)
             .is_some_and(|text| text.chars().any(|ch| !ch.is_whitespace()))
     })
+}
+
+fn has_contract_org_override(document: &ParsedAst) -> bool {
+    document_contract_binding(document).is_some()
+        || document.sections.iter().any(section_has_contract_override)
+}
+
+fn section_has_contract_override(section: &Section<ParsedAnnotation>) -> bool {
+    section_contract_binding(section).is_some()
+        || section
+            .subsections
+            .iter()
+            .any(section_has_contract_override)
 }
 
 pub(crate) fn contract_org_findings(
