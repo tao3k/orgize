@@ -74,12 +74,18 @@ fn org_document_search_and_query_commands_run() {
         ),
         "{guide_stdout}"
     );
+    assert!(
+        guide_stdout.contains(
+            "|recipe sdd-property=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
 
     let root = test_dir("org-document-search");
     let path = root.join("plan.org");
     std::fs::write(
         &path,
-        "* TODO [#A] Task :work:\nSCHEDULED: <2026-06-06 Sat>\n:PROPERTIES:\n:CUSTOM_ID: task-1\n:END:\n\nProvider activation carries execution mode.\nDocument providers stay embedded inside ASP.\n\n** Repository Map\n*** Docs\n- [X] ship element map\n[[https://example.com][site]]\n[[file:diagram.png]]\n\n#+begin_src rust\nfn main() {}\n#+end_src\n",
+        "* TODO [#A] Task :work:sdd:\nSCHEDULED: <2026-06-06 Sat>\n:PROPERTIES:\n:CUSTOM_ID: task-1\n:SDD_KIND: capability\n:SDD_STATUS: draft\n:END:\n\nProvider activation carries execution mode.\nDocument providers stay embedded inside ASP.\n\n** Repository Map\n*** Docs\n- [X] ship element map\n[[https://example.com][site]]\n[[file:diagram.png]]\n\n#+begin_src rust\nfn main() {}\n#+end_src\n",
     )
     .expect("write org fixture");
 
@@ -100,6 +106,14 @@ fn org_document_search_and_query_commands_run() {
     assert!(search_stdout.contains("|heading"), "{search_stdout}");
     assert!(
         search_stdout.contains("key=\"CUSTOM_ID\""),
+        "{search_stdout}"
+    );
+    assert!(
+        search_stdout.contains("key=\"SDD_KIND\" value=\"capability\""),
+        "{search_stdout}"
+    );
+    assert!(
+        search_stdout.contains("key=\"SDD_STATUS\" value=\"draft\""),
         "{search_stdout}"
     );
     assert!(
@@ -194,6 +208,47 @@ fn org_document_search_and_query_commands_run() {
     assert!(term_stdout.contains("[query] lang=org"), "{term_stdout}");
     assert!(term_stdout.contains("terms=1"), "{term_stdout}");
     assert!(term_stdout.contains("key=\"CUSTOM_ID\""), "{term_stdout}");
+
+    let sdd_kind_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("query")
+        .arg("--kind")
+        .arg("property")
+        .arg("--field")
+        .arg("key=SDD_KIND")
+        .arg(&root)
+        .output()
+        .expect("run orgize SDD property field query");
+    assert!(sdd_kind_query.status.success());
+    let sdd_kind_stdout =
+        String::from_utf8(sdd_kind_query.stdout).expect("utf8 SDD property query");
+    assert!(
+        sdd_kind_stdout.contains("[query] lang=org"),
+        "{sdd_kind_stdout}"
+    );
+    assert!(
+        sdd_kind_stdout.contains("key=\"SDD_KIND\" value=\"capability\""),
+        "{sdd_kind_stdout}"
+    );
+    assert!(!sdd_kind_stdout.contains("SDD_STATUS"), "{sdd_kind_stdout}");
+
+    let sdd_status_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("query")
+        .arg("--kind")
+        .arg("property")
+        .arg("--field")
+        .arg("key=SDD_STATUS")
+        .arg("--field")
+        .arg("value=draft")
+        .arg(&root)
+        .output()
+        .expect("run orgize SDD status property query");
+    assert!(sdd_status_query.status.success());
+    let sdd_status_stdout =
+        String::from_utf8(sdd_status_query.stdout).expect("utf8 SDD status query");
+    assert!(
+        sdd_status_stdout.contains("key=\"SDD_STATUS\" value=\"draft\""),
+        "{sdd_status_stdout}"
+    );
 
     let paragraph_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("query")

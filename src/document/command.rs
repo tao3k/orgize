@@ -403,6 +403,9 @@ fn print_element_guide(language: DocumentLanguage) {
                 "|recipe property-value=asp org query --kind property --field key=<KEY> --workspace . --view metadata"
             );
             println!(
+                "|recipe sdd-property=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
+            );
+            println!(
                 "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"
             );
             println!(
