@@ -233,35 +233,6 @@ fn capture_properties(
     if request.memory_policy != AgentCaptureMemoryPolicy::None {
         properties.push(property("MEMORY_POLICY", request.memory_policy.as_str()));
     }
-    if request.kind == super::AgentCaptureKind::AgentPlan {
-        push_default_property(
-            request,
-            &mut properties,
-            "PLAN_CONTRACT",
-            "agent.execplan.v1",
-        );
-        push_default_property(
-            request,
-            &mut properties,
-            "CONTRACT_ORG",
-            "[[languages/org/contracts/agent.execplan.v1.org][agent.execplan.v1]]",
-        );
-        push_default_property(request, &mut properties, "PLAN_PROJECT", "current-project");
-        push_default_property(request, &mut properties, "PLAN_SESSION", "current-session");
-        push_default_property(request, &mut properties, "PLAN_ID", "agent-plan-id");
-        push_default_property(request, &mut properties, "PLAN_BRANCH", "main");
-        push_default_property(request, &mut properties, "PLAN_SHARING", "session");
-        push_default_property(request, &mut properties, "PLAN_STATUS", "draft");
-        push_default_property(request, &mut properties, "PLAN_INTERFACE", "asp org query");
-        let memory_scope = default_memory_scope(request);
-        push_default_property(request, &mut properties, "MEMORY_SCOPE", memory_scope);
-        push_default_property(request, &mut properties, "MEMORY_RECALL_K1", "20");
-        push_default_property(request, &mut properties, "MEMORY_RECALL_K2", "5");
-        push_default_property(request, &mut properties, "MEMORY_RECALL_LAMBDA", "0.30");
-        push_default_property(request, &mut properties, "MEMORY_MIN_SCORE", "0.12");
-        push_default_property(request, &mut properties, "MEMORY_MAX_CONTEXT_CHARS", "1200");
-        push_default_property(request, &mut properties, "MEMORY_FEEDBACK_BIAS", "0.0");
-    }
 
     for property in &request.properties {
         let key = sanitize_property_key(property.key.as_str());
@@ -284,77 +255,12 @@ fn capture_properties(
     properties
 }
 
-fn push_property_if_missing(
-    properties: &mut Vec<AgentCaptureProperty>,
-    key: impl Into<String>,
-    value: impl Into<String>,
-) {
-    let key = key.into();
-    if properties.iter().any(|property| property.key == key) {
-        return;
-    }
-    properties.push(property(key, value));
-}
-
-fn push_default_property(
-    request: &AgentCaptureRequest,
-    properties: &mut Vec<AgentCaptureProperty>,
-    key: impl Into<String>,
-    value: impl Into<String>,
-) {
-    let key = key.into();
-    if request_property_value(request, key.as_str()).is_some() {
-        return;
-    }
-    push_property_if_missing(properties, key, value);
-}
-
-fn request_property_value(request: &AgentCaptureRequest, key: &str) -> Option<String> {
-    request
-        .properties
-        .iter()
-        .find(|property| sanitize_property_key(property.key.as_str()) == key)
-        .map(|property| single_line(property.value.as_str()))
-        .filter(|value| !value.trim().is_empty())
-}
-
-fn default_memory_scope(request: &AgentCaptureRequest) -> String {
-    let project = request_property_value(request, "PLAN_PROJECT")
-        .unwrap_or_else(|| "current-project".to_string());
-    let session = request_property_value(request, "PLAN_SESSION")
-        .unwrap_or_else(|| "current-session".to_string());
-    let plan =
-        request_property_value(request, "PLAN_ID").unwrap_or_else(|| "agent-plan-id".to_string());
-    let branch =
-        request_property_value(request, "PLAN_BRANCH").unwrap_or_else(|| "main".to_string());
-    format!("project={project};session={session};plan={plan};branch={branch}")
-}
-
 fn rendered_capture_body(request: &AgentCaptureRequest) -> Option<String> {
-    if request.kind == super::AgentCaptureKind::AgentPlan {
-        Some(render_agent_plan_template(request))
-    } else {
-        request.body.clone()
-    }
+    request.body.clone()
 }
 
-fn uses_template_body(kind: super::AgentCaptureKind) -> bool {
-    kind == super::AgentCaptureKind::AgentPlan
-}
-
-fn render_agent_plan_template(request: &AgentCaptureRequest) -> String {
-    let objective = request
-        .body
-        .as_ref()
-        .map(|body| body.trim())
-        .filter(|body| !body.is_empty())
-        .unwrap_or("State the concrete objective before execution.");
-    let plan_id =
-        request_property_value(request, "PLAN_ID").unwrap_or_else(|| "agent-plan-id".to_string());
-
-    format!(
-        "** Goal\n{objective}\n\n** Memory Context\n- PLAN_PROJECT maps to =PlanMemoryContext.project_id=.\n- PLAN_SESSION maps to =PlanMemoryContext.session_id=.\n- PLAN_ID maps to =PlanMemoryContext.plan_id=.\n- PLAN_BRANCH maps to =PlanMemoryContext.branch_id=.\n- PLAN_SHARING controls recall visibility: =isolated=, =plan=, =session=, =branch=, =project=, or =global=.\n- MEMORY_SCOPE is the recall scope key derived from project/session/plan/branch.\n- MEMORY_RECALL_K1, MEMORY_RECALL_K2, MEMORY_RECALL_LAMBDA, MEMORY_MIN_SCORE, and MEMORY_MAX_CONTEXT_CHARS map to =RecallPlanTuning=.\n- MEMORY_FEEDBACK_BIAS is applied with =apply_feedback_to_plan_tuning= before recall.\n\n** Plan\n*** TODO P0 Contract and template are explicit.\n:PROPERTIES:\n:STEP_ID: P0\n:STEP_STATUS: pending\n:END:\n*** TODO P1 Evidence queries are recorded before edits.\n:PROPERTIES:\n:STEP_ID: P1\n:STEP_STATUS: pending\n:END:\n*** TODO P2 Implementation is applied in the declared owner boundary.\n:PROPERTIES:\n:STEP_ID: P2\n:STEP_STATUS: pending\n:END:\n*** TODO P3 Verification receipts are attached.\n:PROPERTIES:\n:STEP_ID: P3\n:STEP_STATUS: pending\n:END:\n\n** Evidence\n- Locate plan state with =asp org query --kind property --field key=PLAN_ID --field value={plan_id} --workspace . --view metadata=.\n- List current-session plans with =asp org query --kind property --field key=PLAN_SESSION --field value=<SESSION_ID> --workspace . --view metadata=.\n- List branch-shared plans with =asp org query --kind property --field key=PLAN_BRANCH --field value=<BRANCH_ID> --workspace . --view metadata=.\n- List project-shared plans with =asp org query --kind property --field key=PLAN_SHARING --field value=project --workspace . --view metadata=.\n- Inspect recall scope with =asp org query --kind property --field key=MEMORY_SCOPE --workspace . --view metadata=.\n- Inspect feedback bias with =asp org query --kind property --field key=MEMORY_FEEDBACK_BIAS --workspace . --view metadata=.\n- Record source-backed commands, selectors, and hook outcomes as child list items.\n\n** Receipts\n*** TODO search-prime and search-pipe receipt recorded before source inspection.\n:PROPERTIES:\n:RECEIPT_KIND: search\n:RECEIPT_STATUS: pending\n:END:\n*** TODO implementation command receipts recorded near the affected step.\n:PROPERTIES:\n:RECEIPT_KIND: implementation\n:RECEIPT_STATUS: pending\n:END:\n*** TODO test and snapshot receipts recorded before closing the plan.\n:PROPERTIES:\n:RECEIPT_KIND: verification\n:RECEIPT_STATUS: pending\n:END:\n\n** State Query\n#+begin_src shell\nasp org query --kind property --field key=PLAN_ID --field value={plan_id} --workspace . --view metadata\nasp org query --kind property --field key=PLAN_SESSION --field value=<SESSION_ID> --workspace . --view metadata\nasp org query --kind property --field key=PLAN_BRANCH --field value=<BRANCH_ID> --workspace . --view metadata\nasp org query --kind property --field key=PLAN_SHARING --field value=project --workspace . --view metadata\nasp org query --kind property --field key=MEMORY_SCOPE --workspace . --view metadata\nasp org query --kind property --field key=MEMORY_FEEDBACK_BIAS --workspace . --view metadata\nasp org query --kind property --field key=MEMORY_RECALL_K1 --workspace . --view metadata\nasp org query --kind property --field key=STEP_STATUS --field value=pending --workspace . --view metadata\nasp org query --kind property --field key=RECEIPT_STATUS --field value=pending --workspace . --view metadata\n#+end_src\n"
-    )
+fn uses_template_body(_kind: super::AgentCaptureKind) -> bool {
+    false
 }
 
 fn capture_receipts(request: &AgentCaptureRequest) -> Vec<AgentCaptureReceipt> {

@@ -61,7 +61,7 @@ fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
 }
 
 #[test]
-fn capture_plan_renders_agent_plan_template_contract() {
+fn capture_plan_rejects_domain_specific_agent_plan_kind() {
     let dir = test_dir("agent-plan-template");
     let plan_path = dir.join("PLANS.org");
 
@@ -87,111 +87,16 @@ fn capture_plan_renders_agent_plan_template_contract() {
         .output()
         .unwrap();
 
-    assert_success(&output);
-    let stdout = stdout(&output);
-    assert!(
-        stdout.contains("org-entry:\n* TODO Close Org plan recording loop :plan:"),
-        "{stdout}"
+    assert_ne!(
+        output.status.code(),
+        Some(0),
+        "agent-plan must not be a built-in capture kind"
     );
-    assert!(stdout.contains(":CAPTURE_KIND: agentPlan"), "{stdout}");
+    let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stdout.contains(":PLAN_CONTRACT: agent.execplan.v1"),
-        "{stdout}"
+        stderr.contains("unsupported capture kind `agent-plan`"),
+        "{stderr}"
     );
-    assert!(
-        stdout.contains(
-            ":CONTRACT_ORG: [[languages/org/contracts/agent.execplan.v1.org][agent.execplan.v1]]"
-        ),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains(":PLAN_PROJECT: current-project"),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains(":PLAN_SESSION: current-session"),
-        "{stdout}"
-    );
-    assert!(stdout.contains(":PLAN_BRANCH: main"), "{stdout}");
-    assert!(stdout.contains(":PLAN_SHARING: session"), "{stdout}");
-    assert!(stdout.contains(":PLAN_STATUS: draft"), "{stdout}");
-    assert!(
-        stdout.contains(":PLAN_INTERFACE: asp org query"),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains(":MEMORY_SCOPE: project=current-project;session=current-session;plan=org-plan-recording;branch=main"),
-        "{stdout}"
-    );
-    assert!(stdout.contains(":MEMORY_RECALL_K1: 20"), "{stdout}");
-    assert!(stdout.contains(":MEMORY_RECALL_K2: 5"), "{stdout}");
-    assert!(stdout.contains(":MEMORY_RECALL_LAMBDA: 0.30"), "{stdout}");
-    assert!(stdout.contains(":MEMORY_MIN_SCORE: 0.12"), "{stdout}");
-    assert!(
-        stdout.contains(":MEMORY_MAX_CONTEXT_CHARS: 1200"),
-        "{stdout}"
-    );
-    assert!(stdout.contains(":MEMORY_FEEDBACK_BIAS: 0.0"), "{stdout}");
-    assert!(!stdout.contains(":MEMORY_ENGINE:"), "{stdout}");
-    assert!(stdout.contains(":PLAN_ID: org-plan-recording"), "{stdout}");
-    assert!(stdout.contains("** Goal"), "{stdout}");
-    assert!(
-        stdout.contains("Use Org as the source of truth for agent execution state."),
-        "{stdout}"
-    );
-    assert!(stdout.contains("** Memory Context"), "{stdout}");
-    assert!(
-        stdout.contains("PLAN_SHARING controls recall visibility"),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains("MEMORY_RECALL_K1, MEMORY_RECALL_K2, MEMORY_RECALL_LAMBDA"),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains("MEMORY_FEEDBACK_BIAS is applied"),
-        "{stdout}"
-    );
-    assert!(stdout.contains("** Plan"), "{stdout}");
-    assert!(
-        stdout.contains("*** TODO P0 Contract and template are explicit."),
-        "{stdout}"
-    );
-    assert!(stdout.contains(":STEP_ID: P0"), "{stdout}");
-    assert!(stdout.contains(":STEP_STATUS: pending"), "{stdout}");
-    assert!(stdout.contains("** Evidence"), "{stdout}");
-    assert!(
-        stdout.contains(
-            "asp org query --kind property --field key=PLAN_ID --field value=org-plan-recording --workspace . --view metadata"
-        ),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains(
-            "asp org query --kind property --field key=PLAN_SESSION --field value=<SESSION_ID> --workspace . --view metadata"
-        ),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains(
-            "asp org query --kind property --field key=PLAN_BRANCH --field value=<BRANCH_ID> --workspace . --view metadata"
-        ),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains(
-            "asp org query --kind property --field key=PLAN_SHARING --field value=project --workspace . --view metadata"
-        ),
-        "{stdout}"
-    );
-    assert!(
-        stdout.contains(
-            "asp org query --kind property --field key=STEP_STATUS --field value=pending --workspace . --view metadata"
-        ),
-        "{stdout}"
-    );
-    assert!(stdout.contains("** Receipts"), "{stdout}");
-    assert!(stdout.contains("** State Query"), "{stdout}");
     assert!(
         !plan_path.exists(),
         "capture-plan must not create {}",

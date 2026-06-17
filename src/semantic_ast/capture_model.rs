@@ -111,7 +111,6 @@ pub enum AgentCaptureKind {
     Correction,
     MemoryCandidate,
     Evidence,
-    AgentPlan,
     Note,
 }
 
@@ -127,14 +126,13 @@ impl AgentCaptureKind {
             Self::Correction => "correction",
             Self::MemoryCandidate => "memoryCandidate",
             Self::Evidence => "evidence",
-            Self::AgentPlan => "agentPlan",
             Self::Note => "note",
         }
     }
 
     pub(crate) const fn todo_keyword(self) -> Option<&'static str> {
         match self {
-            Self::Task | Self::AgentPlan => Some("TODO"),
+            Self::Task => Some("TODO"),
             _ => None,
         }
     }

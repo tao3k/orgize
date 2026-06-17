@@ -354,7 +354,6 @@ fn parse_capture_kind(value: &str) -> Result<AgentCaptureKind, String> {
         "correction" => Ok(AgentCaptureKind::Correction),
         "memory-candidate" | "memorycandidate" => Ok(AgentCaptureKind::MemoryCandidate),
         "evidence" => Ok(AgentCaptureKind::Evidence),
-        "agent-plan" | "agentplan" => Ok(AgentCaptureKind::AgentPlan),
         "note" => Ok(AgentCaptureKind::Note),
         _ => Err(format!("unsupported capture kind `{value}`")),
     }

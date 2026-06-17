@@ -347,11 +347,7 @@ fn print_guide(language: DocumentLanguage) {
             language.command_prefix()
         );
         println!(
-            "|cmd capture-plan={} capture-plan --kind task --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --body <TEXT>",
-            language.command_prefix()
-        );
-        println!(
-            "|cmd agent-plan-template={} capture-plan --kind agent-plan --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --property PLAN_ID=<ID> --body <OBJECTIVE>",
+            "|cmd capture-plan={} capture-plan --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --body <TEXT>",
             language.command_prefix()
         );
     }
@@ -419,58 +415,19 @@ fn print_element_guide(language: DocumentLanguage) {
                 "|recipe property-value=asp org query --kind property --field key=<KEY> --workspace . --view metadata"
             );
             println!(
-                "|recipe sdd-property=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
+                "|recipe sdd-kind-properties=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
             );
             println!(
-                "|recipe wendao-task-probe=asp org query --kind task --term <TEXT> --field tag=<TAG> --workspace . --view metadata"
+                "|recipe org-id-properties=asp org query --kind property --field key=ID --field value=<ID> --workspace . --view metadata"
             );
             println!(
-                "|recipe wendao-orgid-locate=asp org query --kind property --field key=ID --field value=<ID> --workspace . --view metadata"
+                "|recipe tagged-tasks=asp org query --kind task --term <TEXT> --field tag=<TAG> --workspace . --view metadata"
             );
             println!(
-                "|recipe wendao-orgid-content=asp org query --selector <path:start-end> --workspace . --content"
+                "|recipe done-tasks=asp org query --kind task --field todo=DONE --workspace . --view metadata"
             );
             println!(
-                "|recipe wendao-task-sdd=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
-            );
-            println!(
-                "|recipe wendao-task-archive-plan=asp org query --kind task --field todo=DONE --workspace . --view metadata"
-            );
-            println!(
-                "|recipe plan-record=asp org capture-plan --kind task --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --body <TEXT>"
-            );
-            println!(
-                "|recipe agent-plan-template=asp org capture-plan --kind agent-plan --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --property PLAN_ID=<ID> --body <OBJECTIVE>"
-            );
-            println!(
-                "|recipe agent-plan-state=asp org query --kind property --field key=PLAN_ID --field value=<ID> --workspace . --view metadata"
-            );
-            println!(
-                "|recipe agent-plan-session=asp org query --kind property --field key=PLAN_SESSION --field value=<SESSION_ID> --workspace . --view metadata"
-            );
-            println!(
-                "|recipe agent-plan-branch=asp org query --kind property --field key=PLAN_BRANCH --field value=<BRANCH_ID> --workspace . --view metadata"
-            );
-            println!(
-                "|recipe agent-plan-shared=asp org query --kind property --field key=PLAN_SHARING --field value=project --workspace . --view metadata"
-            );
-            println!(
-                "|recipe agent-plan-isolated=asp org query --kind property --field key=PLAN_SHARING --field value=isolated --workspace . --view metadata"
-            );
-            println!(
-                "|recipe agent-plan-memory-scope=asp org query --kind property --field key=MEMORY_SCOPE --workspace . --view metadata"
-            );
-            println!(
-                "|recipe agent-plan-memory-feedback=asp org query --kind property --field key=MEMORY_FEEDBACK_BIAS --workspace . --view metadata"
-            );
-            println!(
-                "|recipe agent-plan-memory-recall=asp org query --kind property --field key=MEMORY_RECALL_K1 --workspace . --view metadata"
-            );
-            println!(
-                "|recipe agent-plan-pending-steps=asp org query --kind property --field key=STEP_STATUS --field value=pending --workspace . --view metadata"
-            );
-            println!(
-                "|recipe agent-plan-pending-receipts=asp org query --kind property --field key=RECEIPT_STATUS --field value=pending --workspace . --view metadata"
+                "|recipe capture-task=asp org capture-plan --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --property <KEY=VALUE> --body <TEXT>"
             );
             println!(
                 "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"
