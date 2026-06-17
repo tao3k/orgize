@@ -8,7 +8,9 @@ use std::{
 
 use crate::ast::{AstRef, FileLinkPathKind, ObjectData, ParsedAst};
 
-use super::lint_model::{LintFinding, LintOptions, LintSeverity, location_for_range};
+use super::lint_model::{
+    LintFinding, LintOptions, LintSeverity, location_for_range, location_for_range_bounds,
+};
 
 pub(crate) fn file_link_findings(
     document: &ParsedAst,
@@ -70,7 +72,69 @@ pub(crate) fn file_link_findings(
             });
         }
     });
+    findings.extend(skill_package_relative_path_findings(source, options));
     findings
+}
+
+fn skill_package_relative_path_findings(source: &str, options: &LintOptions) -> Vec<LintFinding> {
+    let Some(base_dir) = &options.file_base_dir else {
+        return Vec::new();
+    };
+    if base_dir.file_name().and_then(|name| name.to_str()) != Some("skills") {
+        return Vec::new();
+    }
+
+    ["contracts/", "templates/"]
+        .into_iter()
+        .flat_map(|directory| {
+            source
+                .match_indices(directory)
+                .filter_map(move |(start, _)| skill_package_path_finding(source, start, directory))
+        })
+        .collect()
+}
+
+fn skill_package_path_finding(
+    source: &str,
+    directory_start: usize,
+    directory: &str,
+) -> Option<LintFinding> {
+    let path_start = skill_package_path_start(source, directory_start);
+    let path = skill_package_path_token(source, path_start);
+    if !path.contains(".org") {
+        return None;
+    }
+    if path.starts_with("../") {
+        return None;
+    }
+    if !(path.starts_with(directory)
+        || path.starts_with("<ASP_ORG_ROOT>/")
+        || path.starts_with("languages/org/"))
+    {
+        return None;
+    }
+
+    Some(LintFinding {
+        code: "ORG018",
+        severity: LintSeverity::Warning,
+        message: format!(
+            "skill package path `{path}` should use sibling-relative style `../{directory}...`"
+        ),
+        location: location_for_range_bounds(source, path_start, path_start + path.len()),
+    })
+}
+
+fn skill_package_path_start(source: &str, directory_start: usize) -> usize {
+    source[..directory_start]
+        .rfind(|ch: char| ch.is_whitespace() || matches!(ch, '[' | '(' | '"' | '\'' | '='))
+        .map_or(0, |index| index + 1)
+}
+
+fn skill_package_path_token(source: &str, start: usize) -> &str {
+    let relative_end = source[start..]
+        .find(|ch: char| ch.is_whitespace() || matches!(ch, ']' | ')' | '"' | '\'' | '='))
+        .unwrap_or_else(|| source.len() - start);
+    &source[start..start + relative_end]
 }
 
 fn resolve_file_link_path(base_dir: &Path, path: &str, kind: FileLinkPathKind) -> Option<PathBuf> {
