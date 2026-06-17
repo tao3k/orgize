@@ -189,8 +189,18 @@ fn index_org(path: &Path, source: &str) -> Vec<DocumentElement> {
                 path,
                 source,
                 headline.syntax(),
-                fields,
+                fields.clone(),
             ));
+            if headline.todo_keyword().is_some() {
+                facts.push(fact(
+                    "task",
+                    "Headline",
+                    path,
+                    source,
+                    headline.syntax(),
+                    fields,
+                ));
+            }
         } else if let Some(drawer) = PropertyDrawer::cast(node.clone()) {
             for (key, value) in drawer.iter() {
                 let fields = vec![
@@ -310,7 +320,7 @@ fn index_org(path: &Path, source: &str) -> Vec<DocumentElement> {
             }
             facts.push(fact(
                 if checkbox.is_some() {
-                    "task"
+                    "checklistItem"
                 } else {
                     "listItem"
                 },
@@ -379,6 +389,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                     "heading",
                     "NodeValue::Heading",
                     path,
+                    source,
                     data.sourcepos.start.line,
                     data.sourcepos.end.line,
                     vec![
@@ -393,6 +404,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                     "paragraph",
                     "NodeValue::Paragraph",
                     path,
+                    source,
                     data.sourcepos.start.line,
                     data.sourcepos.end.line,
                     Vec::new(),
@@ -403,6 +415,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                 "link",
                 "NodeValue::Link",
                 path,
+                source,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
                 vec![("target".to_string(), link.url.clone())],
@@ -411,6 +424,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                 "image",
                 "NodeValue::Image",
                 path,
+                source,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
                 vec![("target".to_string(), link.url.clone())],
@@ -419,6 +433,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                 "block",
                 "NodeValue::CodeBlock",
                 path,
+                source,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
                 vec![
@@ -430,6 +445,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                 "table",
                 "NodeValue::Table",
                 path,
+                source,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
                 Vec::new(),
@@ -438,6 +454,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                 "list",
                 "NodeValue::List",
                 path,
+                source,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
                 vec![
@@ -449,6 +466,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                 "listItem",
                 "NodeValue::Item",
                 path,
+                source,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
                 Vec::new(),
@@ -459,9 +477,10 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                     fields.push(("checkbox".to_string(), symbol.to_string()));
                 }
                 facts.push(markdown_fact(
-                    "task",
+                    "checklistItem",
                     "NodeValue::TaskItem",
                     path,
+                    source,
                     data.sourcepos.start.line,
                     data.sourcepos.end.line,
                     fields,
@@ -471,6 +490,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                 "frontMatter",
                 "NodeValue::FrontMatter",
                 path,
+                source,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
                 Vec::new(),
@@ -479,6 +499,7 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                 "thematicBreak",
                 "NodeValue::ThematicBreak",
                 path,
+                source,
                 data.sourcepos.start.line,
                 data.sourcepos.end.line,
                 Vec::new(),
@@ -503,14 +524,18 @@ fn fact(
     node: &SyntaxNode,
     fields: Vec<(String, String)>,
 ) -> DocumentElement {
-    let text = node
-        .to_string()
+    let node_text = node.to_string();
+    let text = node_text
         .lines()
         .next()
         .unwrap_or_default()
         .trim()
         .to_string();
-    let content = text.clone();
+    let content = if uses_source_backed_content(kind, source_kind) {
+        source_node_content(source, node).unwrap_or_else(|| text.clone())
+    } else {
+        text.clone()
+    };
     fact_with_text(
         kind,
         source_kind,
@@ -520,6 +545,28 @@ fn fact(
         fields,
         ElementText { text, content },
     )
+}
+
+fn uses_source_backed_content(kind: &str, source_kind: &str) -> bool {
+    matches!(
+        (kind, source_kind),
+        ("block", "SourceBlock")
+            | ("block", "ExportBlock")
+            | ("list", "SyntaxList")
+            | ("listItem", "SyntaxListItem")
+            | ("checklistItem", "SyntaxListItem")
+    )
+}
+
+fn source_node_content(source: &str, node: &SyntaxNode) -> Option<String> {
+    let range = node.text_range();
+    let start = u32::from(range.start()) as usize;
+    let end = u32::from(range.end()) as usize;
+    source
+        .get(start..end)
+        .map(str::trim)
+        .filter(|content| !content.is_empty())
+        .map(str::to_string)
 }
 
 struct ElementText {
@@ -539,8 +586,8 @@ fn fact_with_text(
     let range = node.text_range();
     let start = u32::from(range.start()) as usize;
     let end = u32::from(range.end()) as usize;
-    let line = offset_to_line(source, start);
-    let end_line = offset_to_line(source, end.saturating_sub(1));
+    let line = position_to_line(source, start);
+    let end_line = position_to_line(source, end.saturating_sub(1));
     DocumentElement {
         kind,
         source_kind,
@@ -562,6 +609,7 @@ fn markdown_fact(
     kind: &'static str,
     source_kind: &'static str,
     path: &Path,
+    source: &str,
     line: usize,
     end_line: usize,
     fields: Vec<(String, String)>,
@@ -570,6 +618,7 @@ fn markdown_fact(
         kind,
         source_kind,
         path,
+        source,
         line,
         end_line,
         fields,
@@ -582,6 +631,7 @@ fn markdown_fact_with_text(
     kind: &'static str,
     source_kind: &'static str,
     path: &Path,
+    source: &str,
     line: usize,
     end_line: usize,
     fields: Vec<(String, String)>,
@@ -593,10 +643,24 @@ fn markdown_fact_with_text(
         path: display_path(path),
         line: line.max(1),
         end_line: end_line.max(line).max(1),
-        content: text.clone(),
+        content: markdown_source_content(source, line, end_line).unwrap_or_else(|| text.clone()),
         text,
         fields,
     }
+}
+
+#[cfg(feature = "md")]
+fn markdown_source_content(source: &str, line: usize, end_line: usize) -> Option<String> {
+    let start_line = line.max(1);
+    let end_line = end_line.max(start_line);
+    let mut output = String::new();
+    for (index, source_line) in source.split_inclusive('\n').enumerate() {
+        let line_no = index + 1;
+        if line_no >= start_line && line_no <= end_line {
+            output.push_str(source_line);
+        }
+    }
+    (!output.is_empty()).then_some(output)
 }
 
 #[cfg(feature = "md")]
@@ -697,11 +761,11 @@ fn default_ignore_dirs() -> &'static [&'static str] {
     ]
 }
 
-fn offset_to_line(source: &str, offset: usize) -> usize {
+fn position_to_line(source: &str, byte_index: usize) -> usize {
     source
         .as_bytes()
         .iter()
-        .take(offset.min(source.len()))
+        .take(byte_index.min(source.len()))
         .filter(|byte| **byte == b'\n')
         .count()
         + 1

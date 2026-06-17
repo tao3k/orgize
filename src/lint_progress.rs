@@ -5,7 +5,7 @@ use crate::ast::{
     ProgressCheckboxSummary, ProgressTodoSummary, Section, TodoState,
 };
 
-use super::lint_model::{LintFinding, LintSeverity, location_for_offsets};
+use super::lint_model::{LintFinding, LintSeverity, location_for_range_bounds};
 
 pub(crate) fn progress_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
     let progress_records = document.progress_stats_records();
@@ -400,7 +400,7 @@ fn ambiguous_cookie_finding(cookie: &StatisticCookie, source: &str) -> LintFindi
         code: "ORG027",
         severity: LintSeverity::Warning,
         message: "statistics cookie is ambiguous because this heading has both TODO children and checkboxes; set COOKIE_DATA to todo, checkbox, or direct".to_string(),
-        location: location_for_offsets(source, cookie.range_start, cookie.range_end),
+        location: location_for_range_bounds(source, cookie.range_start, cookie.range_end),
     }
 }
 
@@ -418,7 +418,7 @@ fn stale_cookie_finding(
             cookie.raw,
             domain.as_str()
         ),
-        location: location_for_offsets(source, cookie.range_start, cookie.range_end),
+        location: location_for_range_bounds(source, cookie.range_start, cookie.range_end),
     }
 }
 

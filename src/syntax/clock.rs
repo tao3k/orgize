@@ -1,9 +1,9 @@
 use nom::{
-    IResult,
+    IResult, Parser,
     branch::alt,
     bytes::complete::tag,
     character::complete::{digit1, space0},
-    combinator::{map, opt, recognize},
+    combinator::{map, opt},
 };
 
 use super::{
@@ -26,12 +26,7 @@ pub(crate) fn clock_node(input: Input) -> IResult<Input, GreenElement, ()> {
             tag("CLOCK:"),
             space0,
             alt((timestamp_inactive_node, timestamp_active_node)),
-            opt((
-                space0,
-                double_arrow_token,
-                space0,
-                recognize((digit1, colon_token, digit1)),
-            )),
+            opt((space0, double_arrow_token, space0, clock_duration)),
             space0,
             eol_or_eof,
             blank_lines,
@@ -56,6 +51,13 @@ pub(crate) fn clock_node(input: Input) -> IResult<Input, GreenElement, ()> {
         },
     );
     crate::lossless_parser!(parser, input)
+}
+
+fn clock_duration(input: Input) -> IResult<Input, Input, ()> {
+    let source = input;
+    let (rest, _) = (digit1, colon_token, digit1).parse(input)?;
+    let consumed = source.len() - rest.len();
+    Ok((rest, source.take(consumed)))
 }
 
 #[test]

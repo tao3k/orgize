@@ -147,7 +147,7 @@ fn skip_timestamp_like(bytes: &[u8], index: usize) -> usize {
     bytes[index + 1..]
         .iter()
         .position(|byte| *byte == closing)
-        .map_or(index + 1, |offset| index + offset + 2)
+        .map_or(index + 1, |position| index + position + 2)
 }
 
 fn is_ascii_word_boundary_before(bytes: &[u8], index: usize) -> bool {

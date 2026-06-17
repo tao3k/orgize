@@ -36,7 +36,7 @@ pub(super) fn text_range(start: usize, end: usize) -> TextRange {
     TextRange::new(TextSize::new(start as u32), TextSize::new(end as u32))
 }
 
-pub(super) fn offset_range(range: TextRange, base: usize) -> TextRange {
+pub(super) fn position_range(range: TextRange, base: usize) -> TextRange {
     text_range(
         base + usize::from(range.start()),
         base + usize::from(range.end()),

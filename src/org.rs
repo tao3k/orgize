@@ -120,41 +120,41 @@ impl Org {
         find(SyntaxNode::new_root(self.green.clone()))
     }
 
-    /// Returns node in given offset
+    /// Returns node at the given text position.
     ///
     /// ```rust
     /// use orgize::{Org, syntax_ast::Headline};
     ///
     /// let org = Org::parse("\n\n* foo\n* bar");
     ///
-    /// assert!(org.node_at_offset::<Headline>(0).is_none());
+    /// assert!(org.node_at_position::<Headline>(0).is_none());
     ///
-    /// let hdl = org.node_at_offset::<Headline>(2).unwrap();
+    /// let hdl = org.node_at_position::<Headline>(2).unwrap();
     /// assert_eq!(hdl.title_raw(), "foo");
     ///
-    /// let hdl = org.node_at_offset::<Headline>(9).unwrap();
+    /// let hdl = org.node_at_position::<Headline>(9).unwrap();
     /// assert_eq!(hdl.title_raw(), "bar");
     ///
-    /// assert!(org.node_at_offset::<Headline>(999).is_none());
+    /// assert!(org.node_at_position::<Headline>(999).is_none());
     /// ```
-    pub fn node_at_offset<N: AstNode<Language = OrgLanguage>>(
+    pub fn node_at_position<N: AstNode<Language = OrgLanguage>>(
         &self,
-        offset: impl Into<TextSize>,
+        position: impl Into<TextSize>,
     ) -> Option<N> {
-        let offset = offset.into();
+        let position = position.into();
         fn find<N: AstNode<Language = OrgLanguage>>(
             node: SyntaxNode,
-            offset: TextSize,
+            position: TextSize,
         ) -> Option<N> {
-            if !node.text_range().contains(offset) {
+            if !node.text_range().contains(position) {
                 None
             } else if N::can_cast(node.kind()) {
                 N::cast(node)
             } else {
-                node.children().find_map(|node| find(node, offset))
+                node.children().find_map(|node| find(node, position))
             }
         }
-        find(SyntaxNode::new_root(self.green.clone()), offset)
+        find(SyntaxNode::new_root(self.green.clone()), position)
     }
 }
 

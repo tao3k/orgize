@@ -84,13 +84,13 @@ impl BabelEvalPlan {
                 message: None,
             }
         } else {
-            let offset = self.record.source.range_end;
-            let prefix = insertion_prefix(source, offset);
+            let position = self.record.source.range_end;
+            let prefix = insertion_prefix(source, position);
             BabelEvalResultPatch {
                 kind: BabelEvalResultPatchKind::Insert,
                 range: Some(BabelEvalResultRange {
-                    start: offset,
-                    end: offset,
+                    start: position,
+                    end: position,
                 }),
                 replacement: format!("{prefix}{rendered}"),
                 handling,
@@ -159,11 +159,11 @@ fn render_result_block(name: &str, record: &SourceBlockRecord, value: &str) -> S
     rendered
 }
 
-fn insertion_prefix(source: &str, offset: u32) -> &'static str {
-    let offset = usize::try_from(offset)
+fn insertion_prefix(source: &str, position: u32) -> &'static str {
+    let position = usize::try_from(position)
         .unwrap_or(usize::MAX)
         .min(source.len());
-    let prefix = &source[..offset];
+    let prefix = &source[..position];
     if prefix.ends_with("\n\n") {
         ""
     } else if prefix.ends_with('\n') {

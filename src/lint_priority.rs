@@ -2,7 +2,7 @@
 
 use crate::ast::{PriorityProfile, PriorityRangeStatus, PriorityValue};
 
-use super::lint_model::{LintFinding, LintSeverity, location_for_offsets};
+use super::lint_model::{LintFinding, LintSeverity, location_for_range_bounds};
 
 pub(crate) fn priority_cookie_findings(
     source: &str,
@@ -10,18 +10,20 @@ pub(crate) fn priority_cookie_findings(
 ) -> Vec<LintFinding> {
     source
         .split_inclusive('\n')
-        .scan(0, |offset, segment| {
-            let current = *offset;
-            *offset += segment.len();
+        .scan(0, |position, segment| {
+            let current = *position;
+            *position += segment.len();
             Some((current, segment))
         })
-        .filter_map(|(offset, segment)| priority_cookie_finding(source, offset, segment, profile))
+        .filter_map(|(position, segment)| {
+            priority_cookie_finding(source, position, segment, profile)
+        })
         .collect()
 }
 
 fn priority_cookie_finding(
     source: &str,
-    offset: usize,
+    position: usize,
     segment: &str,
     profile: &PriorityProfile,
 ) -> Option<LintFinding> {
@@ -33,10 +35,10 @@ fn priority_cookie_finding(
         code: "ORG010",
         severity: LintSeverity::Warning,
         message,
-        location: location_for_offsets(
+        location: location_for_range_bounds(
             source,
-            offset + trimmed_start + start,
-            offset + trimmed_start + end,
+            position + trimmed_start + start,
+            position + trimmed_start + end,
         ),
     })
 }
@@ -112,10 +114,10 @@ fn malformed_priority_token(
 fn next_token(line: &str, start: usize) -> Option<(usize, usize)> {
     let token_start = line[start..]
         .char_indices()
-        .find_map(|(offset, ch)| (!ch.is_whitespace()).then_some(start + offset))?;
+        .find_map(|(position, ch)| (!ch.is_whitespace()).then_some(start + position))?;
     let token_end = line[token_start..]
         .char_indices()
         .find(|(_, ch)| ch.is_whitespace())
-        .map_or(line.len(), |(offset, _)| token_start + offset);
+        .map_or(line.len(), |(position, _)| token_start + position);
     Some((token_start, token_end))
 }

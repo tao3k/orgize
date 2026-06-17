@@ -1,18 +1,16 @@
 use memchr::{memchr, memchr2};
 use nom::{
     IResult, Parser,
-    branch::alt,
-    bytes::complete::{tag, take},
-    character::complete::{alphanumeric1, digit1, space0, space1},
-    combinator::{cond, map, opt, recognize, verify},
-    sequence::preceded,
+    bytes::complete::take,
+    character::complete::{alphanumeric1, space0},
+    combinator::{cond, map, opt, verify},
 };
 
 use super::{
     SyntaxKind,
     combinator::{
-        GreenElement, at_token, blank_lines, colon2_token, eol_or_eof, l_bracket_token,
-        line_starts_iter, node, r_bracket_token,
+        GreenElement, at_token, blank_lines, colon2_token, l_bracket_token, line_starts_iter, node,
+        r_bracket_token,
     },
     input::Input,
     keyword::affiliated_keyword_nodes,
@@ -89,17 +87,7 @@ fn list_item_node<'a>(
     input: Input<'a>,
     element_node: ElementNodeParser,
 ) -> IResult<Input<'a>, (bool, GreenElement), ()> {
-    let (input, bullet) = recognize((
-        alt((
-            tag("+"),
-            tag("*"),
-            tag("-"),
-            preceded(digit1, tag(".")),
-            preceded(digit1, tag(")")),
-        )),
-        alt((space1, eol_or_eof)),
-    ))
-    .parse(input)?;
+    let (input, bullet) = list_item_bullet(input)?;
 
     // list item cannot have an asterisk at the beginning of line
     if indent.is_empty() && bullet.s.starts_with('*') {
@@ -157,6 +145,40 @@ fn list_item_node<'a>(
             node(SyntaxKind::LIST_ITEM, children),
         ),
     ))
+}
+
+fn list_item_bullet(input: Input) -> IResult<Input, Input, ()> {
+    let source = input.as_str();
+    let marker_end = if source.starts_with(['+', '*', '-']) {
+        1
+    } else {
+        let digit_len = source
+            .bytes()
+            .take_while(|byte| byte.is_ascii_digit())
+            .count();
+        if digit_len == 0 || !source[digit_len..].starts_with(['.', ')']) {
+            return Err(nom::Err::Error(()));
+        }
+        digit_len + 1
+    };
+    let rest = &source[marker_end..];
+    let trailing_space_len = rest
+        .bytes()
+        .take_while(|byte| matches!(byte, b' ' | b'\t'))
+        .count();
+    let consumed = if trailing_space_len > 0 {
+        marker_end + trailing_space_len
+    } else if rest.starts_with("\r\n") {
+        marker_end + 2
+    } else if rest.starts_with(['\n', '\r']) {
+        marker_end + 1
+    } else if rest.is_empty() {
+        marker_end
+    } else {
+        return Err(nom::Err::Error(()));
+    };
+    let (rest, bullet) = input.take_split(consumed);
+    Ok((rest, bullet))
 }
 
 #[cfg_attr(
@@ -299,13 +321,13 @@ impl<'a> ListItemContentParser<'a> {
         }
 
         let cursor = self.cursor;
-        let offsets = line_starts_iter(cursor.as_str())
+        let positions = line_starts_iter(cursor.as_str())
             // The first line in list item content is always a paragraph, so the
             // first scan skips it.
             .skip(usize::from(self.skip_one))
             .collect::<Vec<_>>();
 
-        for (input, head) in offsets.into_iter().map(|idx| cursor.take_split(idx)) {
+        for (input, head) in positions.into_iter().map(|idx| cursor.take_split(idx)) {
             let previous_cursor_len = self.cursor.len();
             match self.step_at_line(input, head) {
                 ListItemContentStep::Continue if self.cursor.len() == previous_cursor_len => {

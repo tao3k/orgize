@@ -104,7 +104,7 @@ impl<A> AttachmentDirectory<A> {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AttachmentDirectorySource {
     DirProperty,
-    LegacyAttachDirProperty,
+    AttachDirProperty,
     IdDerived {
         id: String,
         layout: AttachmentIdPathLayout,
@@ -116,7 +116,7 @@ impl AttachmentDirectorySource {
         if key.eq_ignore_ascii_case("DIR") {
             Some(Self::DirProperty)
         } else if key.eq_ignore_ascii_case("ATTACH_DIR") {
-            Some(Self::LegacyAttachDirProperty)
+            Some(Self::AttachDirProperty)
         } else {
             None
         }

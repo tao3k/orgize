@@ -2,7 +2,7 @@
 
 use crate::ast::{ParsedAst, TaskBlockerRecord};
 
-use super::lint_model::{LintFinding, LintSeverity, location_for_offsets};
+use super::lint_model::{LintFinding, LintSeverity, location_for_range_bounds};
 
 pub(crate) fn task_blocker_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
     document
@@ -20,7 +20,7 @@ fn task_blocker_finding(record: &TaskBlockerRecord, source: &str) -> LintFinding
             "task `{}` is blocked by previous open sibling `{}` because parent `{}` has local ORDERED property",
             record.blocked.title, record.blocker.title, record.parent.title
         ),
-        location: location_for_offsets(
+        location: location_for_range_bounds(
             source,
             record.blocked.source.range_start as usize,
             record.blocked.source.range_end as usize,

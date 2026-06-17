@@ -1,5 +1,5 @@
 use rowan::{
-    SyntaxNode, TextRange, TextSize, TokenAtOffset,
+    SyntaxNode, TextRange, TextSize,
     ast::{AstNode, support},
 };
 
@@ -185,12 +185,15 @@ impl Org {
                     .unwrap(),
             );
         } else {
-            let offset: usize = headline.syntax.text_range().start().into();
+            let headline_start: usize = headline.syntax.text_range().start().into();
             let start: usize = range.start().into();
             let end: usize = range.end().into();
 
             let mut text = headline.syntax.to_string();
-            text.replace_range((start - offset)..(end - offset), replace_with);
+            text.replace_range(
+                (start - headline_start)..(end - headline_start),
+                replace_with,
+            );
 
             let input = (text.as_ref(), &self.config).into();
 
@@ -205,15 +208,18 @@ impl Org {
     }
 }
 
-fn follows_newline(syntax: &SyntaxNode<OrgLanguage>, offset: TextSize) -> bool {
-    match syntax.token_at_offset(offset) {
-        TokenAtOffset::None => false,
-        TokenAtOffset::Single(t) => {
-            let offset: usize = (offset - t.text_range().start()).into();
-            t.text()[offset..].ends_with('\n') || t.text()[offset..].ends_with('\r')
-        }
-        TokenAtOffset::Between(t, _) => t.text().ends_with('\n') || t.text().ends_with('\r'),
-    }
+fn follows_newline(syntax: &SyntaxNode<OrgLanguage>, position: TextSize) -> bool {
+    let text = syntax.to_string();
+    let node_start: usize = syntax.text_range().start().into();
+    let position: usize = position.into();
+    let local = position.saturating_sub(node_start).min(text.len());
+    text.as_bytes()
+        .get(local.wrapping_sub(1))
+        .is_some_and(|byte| matches!(byte, b'\n' | b'\r'))
+        || text
+            .as_bytes()
+            .get(local)
+            .is_some_and(|byte| matches!(byte, b'\n' | b'\r'))
 }
 
 #[test]

@@ -8,7 +8,7 @@ use crate::ast::{
     SourceBlockTangleMode,
 };
 
-use super::lint_model::{LintFinding, LintLocation, LintSeverity, location_for_offsets};
+use super::lint_model::{LintFinding, LintLocation, LintSeverity, location_for_range_bounds};
 
 pub(crate) fn babel_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
     let records = document.source_block_records();
@@ -209,7 +209,7 @@ fn missing_source_reference_findings(document: &ParsedAst, source: &str) -> Vec<
                     )
                 }
             },
-            location: location_for_offsets(
+            location: location_for_range_bounds(
                 source,
                 reference.source.range_start as usize,
                 reference.source.range_end as usize,
@@ -219,7 +219,7 @@ fn missing_source_reference_findings(document: &ParsedAst, source: &str) -> Vec<
 }
 
 fn location_for_source_record(source: &str, record: &SourceBlockRecord) -> LintLocation {
-    location_for_offsets(
+    location_for_range_bounds(
         source,
         record.source.range_start as usize,
         record.source.range_end as usize,

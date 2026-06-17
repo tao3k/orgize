@@ -25,7 +25,7 @@ impl AgendaMatchQuery {
 
         let clauses = split_top_level(source, b'|')
             .into_iter()
-            .map(|(offset, clause)| parse_clause(clause, offset))
+            .map(|(position, clause)| parse_clause(clause, position))
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(Self {
@@ -51,14 +51,14 @@ impl FromStr for AgendaMatchQuery {
 /// Error returned when parsing an agenda match expression fails.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AgendaMatchParseError {
-    pub offset: usize,
+    pub position: usize,
     pub message: String,
 }
 
 impl AgendaMatchParseError {
-    fn new(offset: usize, message: impl Into<String>) -> Self {
+    fn new(position: usize, message: impl Into<String>) -> Self {
         Self {
-            offset,
+            position,
             message: message.into(),
         }
     }
@@ -69,7 +69,7 @@ impl fmt::Display for AgendaMatchParseError {
         write!(
             f,
             "invalid agenda match expression at byte {}: {}",
-            self.offset, self.message
+            self.position, self.message
         )
     }
 }
@@ -129,7 +129,7 @@ impl AgendaMatchValue {
 
 fn parse_clause(
     clause: &str,
-    base_offset: usize,
+    base_position: usize,
 ) -> Result<AgendaMatchClause, AgendaMatchParseError> {
     let bytes = clause.as_bytes();
     let mut terms = Vec::new();
@@ -163,20 +163,20 @@ fn parse_clause(
         let raw = clause[start..cursor].trim();
         if raw.is_empty() {
             return Err(AgendaMatchParseError::new(
-                base_offset + start,
+                base_position + start,
                 "empty match term",
             ));
         }
 
         terms.push(AgendaMatchTerm {
             positive,
-            predicate: parse_predicate(raw, base_offset + start)?,
+            predicate: parse_predicate(raw, base_position + start)?,
         });
     }
 
     if terms.is_empty() {
         Err(AgendaMatchParseError::new(
-            base_offset,
+            base_position,
             "match clause is empty",
         ))
     } else {
@@ -186,7 +186,7 @@ fn parse_clause(
 
 fn parse_predicate(
     raw: &str,
-    offset: usize,
+    position: usize,
 ) -> Result<AgendaMatchPredicate, AgendaMatchParseError> {
     if let Some((operator_start, operator, operator_len)) = find_property_operator(raw) {
         let key = raw[..operator_start].trim();
@@ -194,13 +194,13 @@ fn parse_predicate(
         let value = raw[value_start..].trim();
         if key.is_empty() {
             return Err(AgendaMatchParseError::new(
-                offset,
+                position,
                 "property match is missing a key",
             ));
         }
         if value.is_empty() {
             return Err(AgendaMatchParseError::new(
-                offset + value_start,
+                position + value_start,
                 "property match is missing a value",
             ));
         }

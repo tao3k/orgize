@@ -15,7 +15,7 @@ pub(super) fn citation_key_range(reference: &str) -> Option<(usize, usize)> {
     let start = at + 1;
     let end = reference[start..]
         .find(char::is_whitespace)
-        .map(|offset| start + offset)
+        .map(|position| start + position)
         .unwrap_or(reference.len());
 
     (start < end).then_some((start, end))

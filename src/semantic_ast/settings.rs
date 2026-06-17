@@ -347,7 +347,7 @@ fn next_shellish_token_start(value: &str, cursor: usize) -> Option<usize> {
     value[cursor..]
         .char_indices()
         .find(|(_, ch)| !ch.is_whitespace())
-        .map(|(offset, _)| cursor + offset)
+        .map(|(position, _)| cursor + position)
 }
 
 fn shellish_token(value: &str, start: usize) -> (ShellishToken, usize) {

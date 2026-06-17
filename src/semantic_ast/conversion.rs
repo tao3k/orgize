@@ -23,7 +23,7 @@ use super::block_syntax::{
 };
 use super::citation_metadata::{citation_key_range, citation_style};
 use super::conversion_util::{
-    offset_range, range_from_elements, strip_pair, strip_wrapping, text_range, trimmed_range,
+    position_range, range_from_elements, strip_pair, strip_wrapping, text_range, trimmed_range,
 };
 use super::footnote_parts::{FootnoteDefParts, FootnoteRefParts};
 use super::headline_metadata::{
@@ -200,8 +200,8 @@ impl<'a> Converter<'a> {
     }
 
     fn section(&mut self, node: &SyntaxNode) -> Section<ParsedAnnotation> {
-        let legacy = syntax_ast::Headline::cast(node.clone()).expect("headline node");
-        let properties = legacy
+        let syntax = syntax_ast::Headline::cast(node.clone()).expect("headline node");
+        let properties = syntax
             .properties()
             .map(|drawer| self.properties(&drawer.syntax))
             .unwrap_or_default();
@@ -209,11 +209,11 @@ impl<'a> Converter<'a> {
             .iter()
             .find(|property| property.key.eq_ignore_ascii_case("CUSTOM_ID"))
             .map(|property| property.value.clone());
-        let planning = legacy
+        let planning = syntax
             .planning()
             .map(|planning| self.planning(&planning.syntax))
             .unwrap_or_default();
-        let body_section = legacy.section();
+        let body_section = syntax.section();
         let body_ann = body_section
             .as_ref()
             .map(|section| self.node_ann(&section.syntax));
@@ -226,31 +226,31 @@ impl<'a> Converter<'a> {
             .filter(|child| child.kind() == SyntaxKind::HEADLINE)
             .map(|child| self.section(&child))
             .collect();
-        let todo = legacy.todo_keyword().map(|name| TodoKeyword {
-            state: match legacy.todo_type() {
+        let todo = syntax.todo_keyword().map(|name| TodoKeyword {
+            state: match syntax.todo_type() {
                 Some(syntax_ast::TodoType::Done) => TodoState::Done,
                 _ => TodoState::Todo,
             },
             name: name.to_string(),
         });
-        let title = legacy.title().collect::<Vec<_>>();
+        let title = syntax.title().collect::<Vec<_>>();
 
         Section {
             ann: self.node_ann(node),
             body_ann,
-            level: legacy.level(),
+            level: syntax.level(),
             properties,
             effective_properties: Vec::new(),
             archive: Default::default(),
             attachment: Default::default(),
             todo,
-            is_comment: legacy.is_commented(),
-            priority: Priority::from_cookie(legacy.priority().map(|x| x.to_string())),
+            is_comment: syntax.is_commented(),
+            priority: Priority::from_cookie(syntax.priority().map(|x| x.to_string())),
             title: self.objects_from_elements(title),
-            raw_title: legacy.title_raw(),
+            raw_title: syntax.title_raw(),
             anchor,
-            tags: legacy.tags().map(|x| x.to_string()).collect(),
-            effective_tags: legacy.tags().map(|x| x.to_string()).collect(),
+            tags: syntax.tags().map(|x| x.to_string()).collect(),
+            effective_tags: syntax.tags().map(|x| x.to_string()).collect(),
             planning,
             children,
             subsections,
@@ -369,22 +369,22 @@ impl<'a> Converter<'a> {
 
     fn keyword(&mut self, node: &SyntaxNode, affiliated: bool) -> Keyword<ParsedAnnotation> {
         if affiliated {
-            let legacy = syntax_ast::AffiliatedKeyword::cast(node.clone()).expect("keyword node");
-            let key = legacy.key().to_string();
-            let value = legacy.value().map(|x| x.to_string()).unwrap_or_default();
+            let syntax = syntax_ast::AffiliatedKeyword::cast(node.clone()).expect("keyword node");
+            let key = syntax.key().to_string();
+            let value = syntax.value().map(|x| x.to_string()).unwrap_or_default();
             Keyword {
                 ann: self.node_ann(node),
                 key: key.clone(),
-                optional: legacy.optional().map(|x| x.to_string()),
+                optional: syntax.optional().map(|x| x.to_string()),
                 parsed: self.keyword_parsed_objects(node, &key, &value),
                 attributes: keyword_attributes(&key, &value),
                 value,
             }
         } else {
-            let legacy = syntax_ast::SyntaxKeyword::cast(node.clone());
-            if let Some(legacy) = legacy {
-                let key = legacy.key().to_string();
-                let value = legacy.value().to_string();
+            let syntax = syntax_ast::SyntaxKeyword::cast(node.clone());
+            if let Some(syntax) = syntax {
+                let key = syntax.key().to_string();
+                let value = syntax.value().to_string();
                 Keyword {
                     ann: self.node_ann(node),
                     key: key.clone(),
@@ -420,7 +420,7 @@ impl<'a> Converter<'a> {
         let raw = node.to_string();
         let value_start = raw
             .find(value)
-            .map_or(node_start, |offset| node_start + offset);
+            .map_or(node_start, |position| node_start + position);
         self.objects_from_raw(value, value_start)
     }
 
@@ -455,15 +455,15 @@ impl<'a> Converter<'a> {
     }
 
     fn clock(&self, node: &SyntaxNode) -> Clock {
-        let legacy = syntax_ast::SyntaxClock::cast(node.clone()).expect("clock node");
+        let syntax = syntax_ast::SyntaxClock::cast(node.clone()).expect("clock node");
         let value = node
             .children()
             .find_map(|child| self.timestamp_node(&child));
 
         Clock {
             value,
-            duration: legacy.duration().map(|token| token.to_string()),
-            parsed_duration: legacy
+            duration: syntax.duration().map(|token| token.to_string()),
+            parsed_duration: syntax
                 .duration()
                 .and_then(|token| OrgDuration::parse(token.to_string())),
             raw: node.to_string(),
@@ -488,16 +488,16 @@ impl<'a> Converter<'a> {
     }
 
     fn list(&mut self, node: &SyntaxNode) -> List<ParsedAnnotation> {
-        let legacy = syntax_ast::SyntaxList::cast(node.clone()).expect("list node");
+        let syntax = syntax_ast::SyntaxList::cast(node.clone()).expect("list node");
         let has_descriptive_item = node.children().any(|item| {
             item.kind() == SyntaxKind::LIST_ITEM
                 && item
                     .children()
                     .any(|child| child.kind() == SyntaxKind::LIST_ITEM_TAG)
         });
-        let list_type = if has_descriptive_item || legacy.is_descriptive() {
+        let list_type = if has_descriptive_item || syntax.is_descriptive() {
             ListType::Descriptive
-        } else if legacy.is_ordered() {
+        } else if syntax.is_ordered() {
             ListType::Ordered
         } else {
             ListType::Unordered
@@ -512,14 +512,14 @@ impl<'a> Converter<'a> {
     }
 
     fn list_item(&mut self, node: &SyntaxNode) -> ListItem<ParsedAnnotation> {
-        let legacy = syntax_ast::SyntaxListItem::cast(node.clone()).expect("list item node");
-        let tag = legacy.tag().collect::<Vec<_>>();
+        let syntax = syntax_ast::SyntaxListItem::cast(node.clone()).expect("list item node");
+        let tag = syntax.tag().collect::<Vec<_>>();
         let children = node
             .children()
             .find(|child| child.kind() == SyntaxKind::LIST_ITEM_CONTENT)
             .map(|child| self.elements_from_container(&child))
             .unwrap_or_default();
-        let checkbox = legacy.checkbox().and_then(|token| match token.as_ref() {
+        let checkbox = syntax.checkbox().and_then(|token| match token.as_ref() {
             "X" => Some(Checkbox::On),
             " " => Some(Checkbox::Off),
             "-" => Some(Checkbox::Trans),
@@ -528,8 +528,8 @@ impl<'a> Converter<'a> {
 
         ListItem {
             ann: self.node_ann(node),
-            bullet: legacy.bullet().to_string(),
-            counter: legacy.counter().map(|x| x.to_string()),
+            bullet: syntax.bullet().to_string(),
+            counter: syntax.counter().map(|x| x.to_string()),
             checkbox,
             tag: self.objects_from_elements(tag),
             children,
@@ -1061,8 +1061,8 @@ impl<'a> Converter<'a> {
             SyntaxKind::TIMESTAMP_DIARY => TimestampKind::Diary,
             _ => return None,
         };
-        let legacy = syntax_ast::SyntaxTimestamp::cast(node.clone()).expect("timestamp node");
-        let is_range = legacy.is_range();
+        let syntax = syntax_ast::SyntaxTimestamp::cast(node.clone()).expect("timestamp node");
+        let is_range = syntax.is_range();
         let (start, end) = timestamp_moment_range(node, is_range);
         Some(Timestamp {
             kind,
@@ -1070,8 +1070,8 @@ impl<'a> Converter<'a> {
             is_range,
             start,
             end,
-            repeater: timestamp_repeater(&legacy),
-            warning: timestamp_warning(&legacy),
+            repeater: timestamp_repeater(&syntax),
+            warning: timestamp_warning(&syntax),
         })
     }
 
@@ -1186,49 +1186,49 @@ impl<'a> Converter<'a> {
 
     #[cfg(feature = "syntax-org-fc")]
     fn cloze(&mut self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
-        let legacy = syntax_ast::Cloze::cast(node.clone()).expect("cloze node");
-        let text = legacy.text().collect::<Vec<_>>();
+        let syntax = syntax_ast::Cloze::cast(node.clone()).expect("cloze node");
+        let text = syntax.text().collect::<Vec<_>>();
         ObjectData::Cloze {
             text: self.objects_from_elements(text),
-            raw_text: legacy.text_raw(),
-            hint: legacy.hint().map(|token| token.to_string()),
-            id: legacy.id().map(|token| token.to_string()),
-            raw: legacy.raw(),
+            raw_text: syntax.text_raw(),
+            hint: syntax.hint().map(|token| token.to_string()),
+            id: syntax.id().map(|token| token.to_string()),
+            raw: syntax.raw(),
         }
     }
 
     fn inline_call(&self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
-        let legacy = syntax_ast::InlineCall::cast(node.clone()).expect("inline call node");
+        let syntax = syntax_ast::InlineCall::cast(node.clone()).expect("inline call node");
         let raw = node.to_string();
         ObjectData::InlineCall {
-            name: legacy.call().to_string(),
-            arguments: legacy.arguments().to_string(),
-            header: legacy.inside_header().map(|token| token.to_string()),
-            end_header: legacy.end_header().map(|token| token.to_string()),
+            name: syntax.call().to_string(),
+            arguments: syntax.arguments().to_string(),
+            header: syntax.inside_header().map(|token| token.to_string()),
+            end_header: syntax.end_header().map(|token| token.to_string()),
             raw,
         }
     }
 
     fn inline_src(&self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
-        let legacy = syntax_ast::InlineSrc::cast(node.clone()).expect("inline src node");
+        let syntax = syntax_ast::InlineSrc::cast(node.clone()).expect("inline src node");
         let raw = node.to_string();
         ObjectData::InlineSrc {
-            language: legacy.language().to_string(),
-            parameters: legacy.parameters().map(|token| token.to_string()),
-            value: legacy.value().to_string(),
+            language: syntax.language().to_string(),
+            parameters: syntax.parameters().map(|token| token.to_string()),
+            value: syntax.value().to_string(),
             raw,
         }
     }
 
     fn link(&mut self, node: &SyntaxNode) -> ObjectData<ParsedAnnotation> {
-        let legacy = syntax_ast::SyntaxLink::cast(node.clone()).expect("link node");
-        let path = legacy.path().to_string();
+        let syntax = syntax_ast::SyntaxLink::cast(node.clone()).expect("link node");
+        let path = syntax.path().to_string();
         let target = self.link_target(&path, node.text_range());
         let search = link_search(&path);
         let attachment = attachment_link_from_path(&path).map(Box::new);
         let file = file_link(&path, search.clone()).map(Box::new);
-        let description = legacy.description().collect::<Vec<_>>();
-        let caption = legacy
+        let description = syntax.description().collect::<Vec<_>>();
+        let caption = syntax
             .caption()
             .map(|caption| self.keyword(&caption.syntax, true));
 
@@ -1236,13 +1236,13 @@ impl<'a> Converter<'a> {
             path: LinkPath::new(path),
             target,
             default_description: Vec::new(),
-            raw_description: legacy.description_raw(),
-            description_state: if legacy.has_description() {
+            raw_description: syntax.description_raw(),
+            description_state: if syntax.has_description() {
                 LinkDescriptionState::Explicit
             } else {
                 LinkDescriptionState::None
             },
-            media_kind: if legacy.is_image() {
+            media_kind: if syntax.is_image() {
                 LinkMediaKind::Image
             } else {
                 LinkMediaKind::Normal
@@ -1384,12 +1384,12 @@ impl<'a> Converter<'a> {
                 .diagnostics
                 .into_iter()
                 .map(|diagnostic| Diagnostic {
-                    range: offset_range(diagnostic.range, base),
+                    range: position_range(diagnostic.range, base),
                     kind: diagnostic.kind,
                     message: diagnostic.message,
                 }),
         );
-        let mut map_ann = |ann: &ParsedAnnotation| self.ann(offset_range(ann.range, base));
+        let mut map_ann = |ann: &ParsedAnnotation| self.ann(position_range(ann.range, base));
 
         objects
             .iter()

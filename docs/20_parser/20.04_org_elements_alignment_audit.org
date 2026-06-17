@@ -87,7 +87,7 @@ effective property drawer keys.
 The first standard property layer is now projected into every record:
 =:begin=, =:end=, =:post-affiliated=, =:contents-begin=,
 =:contents-end=, =:post-blank=, and =:parent=. =:begin= and =:end= use the
-same byte offsets exposed by the JSON =source= annotation. =:parent= is the
+same byte positions exposed by the JSON =source= annotation. =:parent= is the
 stable parent record id, or =null= for the root. Headline records now use the
 parser-owned body =section= range for =:contents-begin= and =:contents-end=;
 the body =section= record also exposes its body range as content. Remaining
@@ -108,7 +108,7 @@ query AST after contract bindings resolve to graph ids.
 | Org root | =org-data= exists as the document root and carries the shared standard property layer. | Root content/post-blank boundaries still need exact Org-compatible ownership. |
 | Graph | Parent/child ids, traversal, and first-class relation predicates are available through =OrgElementsIndexQuery=. | Boolean query composition beyond conjunctive predicates is not modeled yet. |
 | Affiliated keywords | Raw affiliated keyword records are emitted; structured affiliated property exposes =name=. | The full upstream affiliated keyword property surface is not structured yet. |
-| Properties | Summary keys, headline properties, source offsets, parent id, and parser-owned headline body content ranges are queryable through =property_eq= and =property_contains=. | Exact =:contents-begin=, =:contents-end=, and =:post-blank= semantics still need per-kind parser-owned boundaries; internal cache properties remain intentionally absent. |
+| Properties | Summary keys, headline properties, source positions, parent id, and parser-owned headline body content ranges are queryable through =property_eq= and =property_contains=. | Exact =:contents-begin=, =:contents-end=, and =:post-blank= semantics still need per-kind parser-owned boundaries; internal cache properties remain intentionally absent. |
 | Org-specific extensions | =plain-text=, =unknown=, =cloze=, =table.el=, =target-definition=, and =footnote-entry= preserve orgize-owned facts. | These need explicit provider-owned extension status so callers do not confuse them with upstream Org element kinds. |
 
 ** Closeout Standard

@@ -38,7 +38,7 @@ use self::{
     lint_crypt::crypt_findings,
     lint_file_links::file_link_findings,
     lint_lifecycle::lifecycle_findings,
-    lint_model::{location_for_offsets, location_for_range},
+    lint_model::{location_for_range, location_for_range_bounds},
     lint_priority::priority_cookie_findings,
     lint_progress::progress_findings,
     lint_properties::property_drawer_findings,
@@ -394,7 +394,7 @@ fn todo_declaration_duplicate_finding(
         code: "ORG009",
         severity: LintSeverity::Warning,
         message: todo_declaration_duplicate_message(&declaration, previous),
-        location: location_for_offsets(source, line.range_start, line.range_end),
+        location: location_for_range_bounds(source, line.range_start, line.range_end),
     })
 }
 
@@ -422,7 +422,7 @@ fn todo_declaration_duplicate_message(
 fn todo_declaration_lines(source: &str) -> Vec<TodoDeclarationLine<'_>> {
     let mut lines = Vec::new();
     let mut in_block = false;
-    let mut offset = 0;
+    let mut position = 0;
 
     for segment in source.split_inclusive('\n') {
         let line = segment.trim_end_matches('\n').trim_end_matches('\r');
@@ -431,28 +431,28 @@ fn todo_declaration_lines(source: &str) -> Vec<TodoDeclarationLine<'_>> {
             if is_lint_keyword_line_with_prefix(trimmed, "end_") {
                 in_block = false;
             }
-            offset += segment.len();
+            position += segment.len();
             continue;
         }
 
         if is_lint_keyword_line_with_prefix(trimmed, "begin_") {
             in_block = true;
-            offset += segment.len();
+            position += segment.len();
             continue;
         }
 
         let Some(value) = todo_declaration_line_value(trimmed) else {
-            offset += segment.len();
+            position += segment.len();
             continue;
         };
 
         lines.push(TodoDeclarationLine {
             value,
-            range_start: offset + line.len() - trimmed.len(),
-            range_end: offset + line.len(),
+            range_start: position + line.len() - trimmed.len(),
+            range_end: position + line.len(),
         });
 
-        offset += segment.len();
+        position += segment.len();
     }
 
     lines

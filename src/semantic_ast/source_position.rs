@@ -30,7 +30,7 @@ impl<'a> LineIndex<'a> {
                 } else {
                     slice
                         .char_indices()
-                        .map(|(offset, _)| *start + offset)
+                        .map(|(position, _)| *start + position)
                         .collect()
                 };
 
@@ -44,19 +44,22 @@ impl<'a> LineIndex<'a> {
         Self { source, lines }
     }
 
-    pub(super) fn position(&self, offset: TextSize) -> SourcePosition {
-        let offset = usize::from(offset).min(self.source.len());
-        let line = match self.lines.binary_search_by_key(&offset, |line| line.start) {
+    pub(super) fn position(&self, position: TextSize) -> SourcePosition {
+        let position = usize::from(position).min(self.source.len());
+        let line = match self
+            .lines
+            .binary_search_by_key(&position, |line| line.start)
+        {
             Ok(idx) => idx,
             Err(idx) => idx.saturating_sub(1),
         };
         let line_info = &self.lines[line];
         let column = if line_info.char_starts.is_empty() {
-            offset - line_info.start + 1
+            position - line_info.start + 1
         } else {
             line_info
                 .char_starts
-                .partition_point(|char_start| *char_start < offset)
+                .partition_point(|char_start| *char_start < position)
                 + 1
         };
 

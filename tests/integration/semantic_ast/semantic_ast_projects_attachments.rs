@@ -27,9 +27,9 @@ See [[attachment:child.txt::*Heading]].
 :ID: 95d50008-c12e-479f-a4f2-cc0238205319
 :END:
 See [[attachment:info.org::#custom]].
-* Legacy
+* Attach Dir
 :PROPERTIES:
-:ATTACH_DIR: legacy
+:ATTACH_DIR: attach-dir
 :END:
 See [[attachment:old.pdf::/needle/]].
 "#;
@@ -120,20 +120,17 @@ fn semantic_ast_projects_attachment_directories_and_links() {
         } if id == "95d50008-c12e-479f-a4f2-cc0238205319"
     ));
 
-    let legacy = &doc.sections[2];
+    let attach_dir = &doc.sections[2];
     assert_eq!(
-        legacy
+        attach_dir
             .attachment
             .directory
             .as_ref()
             .map(|directory| (&directory.source, directory.path.as_str())),
-        Some((
-            &AttachmentDirectorySource::LegacyAttachDirProperty,
-            "legacy"
-        ))
+        Some((&AttachmentDirectorySource::AttachDirProperty, "attach-dir"))
     );
     assert_eq!(
-        first_section_link(legacy)
+        first_section_link(attach_dir)
             .attachment
             .as_ref()
             .and_then(|attachment| attachment.search.as_ref())

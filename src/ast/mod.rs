@@ -1,6 +1,6 @@
 //! Lossless typed syntax wrappers projected from the rowan syntax tree.
 //!
-//! This module owns the legacy wrapper surface re-exported as `orgize::syntax_ast`.
+//! This module owns typed wrapper re-exports exposed through `orgize::syntax_ast`.
 
 mod generated;
 

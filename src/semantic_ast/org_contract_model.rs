@@ -401,19 +401,18 @@ impl OrgContractCompareOp {
 }
 
 fn reference_matches_contract(contract: &OrgContract, reference: &OrgContractReference) -> bool {
+    if let (Some(path), Some(contract_id)) = (&reference.path, &reference.contract_id) {
+        return contract_id_matches(contract, contract_id) && contract_path_matches(contract, path);
+    }
+
     if let Some(contract_id) = &reference.contract_id
-        && (contract.id == *contract_id
-            || contract.aliases.iter().any(|alias| alias == contract_id))
+        && contract_id_matches(contract, contract_id)
     {
         return true;
     }
 
     if let Some(path) = &reference.path {
-        if contract
-            .aliases
-            .iter()
-            .any(|alias| alias == path || alias == &reference.raw)
-        {
+        if contract_path_matches(contract, path) {
             return true;
         }
         let prefixed = format!("{path}#{}", contract.id);
@@ -432,4 +431,15 @@ fn reference_matches_contract(contract: &OrgContract, reference: &OrgContractRef
     }
 
     false
+}
+
+fn contract_id_matches(contract: &OrgContract, contract_id: &str) -> bool {
+    contract.id == contract_id || contract.aliases.iter().any(|alias| alias == contract_id)
+}
+
+fn contract_path_matches(contract: &OrgContract, path: &str) -> bool {
+    contract
+        .aliases
+        .iter()
+        .any(|alias| alias == path || alias == &format!("file:{path}"))
 }

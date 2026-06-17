@@ -350,8 +350,9 @@ fn attachment_directory_path(
             options.attach_id_dir.as_str(),
             attachment_id_suffix(id, *layout).as_str(),
         ),
-        AttachmentDirectorySource::DirProperty
-        | AttachmentDirectorySource::LegacyAttachDirProperty => path.to_string(),
+        AttachmentDirectorySource::DirProperty | AttachmentDirectorySource::AttachDirProperty => {
+            path.to_string()
+        }
     }
 }
 

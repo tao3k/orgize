@@ -3,9 +3,8 @@
 use nom::{
     IResult, Parser,
     branch::alt,
-    bytes::complete::{tag, take_till, take_while1},
+    bytes::complete::{tag, take_till},
     character::complete::space0,
-    combinator::{recognize, verify},
 };
 
 use super::{
@@ -199,14 +198,22 @@ fn is_affiliated_keyword_key(input: Input<'_>, key: &str) -> bool {
 }
 
 fn key(input: Input) -> IResult<Input, (Input, Option<(Input, Input, Input)>, Input), ()> {
-    let (input, output) = verify(
-        recognize((
-            take_till(|c: char| c.is_ascii_whitespace() || c == ':'),
-            take_while1(|c: char| c == ':'),
-        )),
-        |i: &Input| i.len() >= 2,
-    )
-    .parse(input)?;
+    let source = input.as_str();
+    let key_end = source
+        .find(|c: char| c.is_ascii_whitespace() || c == ':')
+        .ok_or(nom::Err::Error(()))?;
+    if !source[key_end..].starts_with(':') {
+        return Err(nom::Err::Error(()));
+    }
+    let colon_len = source[key_end..]
+        .bytes()
+        .take_while(|byte| *byte == b':')
+        .count();
+    let output_len = key_end + colon_len;
+    if output_len < 2 {
+        return Err(nom::Err::Error(()));
+    }
+    let (input, output) = input.take_split(output_len);
     let (colon, key) = output.take_split(output.len() - 1);
     Ok((input, (key, None, colon)))
 }

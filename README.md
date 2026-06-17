@@ -56,7 +56,7 @@ Radio links keep the lightweight plain-text projection by default. Set
 the opt-in semantic pass that can link parsed object spans such as
 `<<<*Radio*>>>` against `*Radio*`.
 Semantic source/example blocks include parsed line-numbering metadata for
-`-n` and `+n` switches, optional starting offsets, preserve-indentation
+`-n` and `+n` switches, optional starting positions, preserve-indentation
 metadata for `-i`, code-reference cookies from the default `(ref:name)` format
 or custom `-l` label formats, line-level source/value/normalized-value records,
 typed `-k`/`-r`/`-l` switch metadata, and structured source block header
@@ -347,7 +347,7 @@ normal local validation. All gates use the current standalone harness repository
 instead of the retired monorepo-local `xiuxian-testing` crate. No rule pack or
 rule severity is downgraded:
 `RUST-MOD-*` and project layout findings stay blocking. `AGENT-*` `info`
-findings remain visible as repair advice while this legacy crate burns them down
+findings remain visible as repair advice while this retired crate burns them down
 separately. New tests should still use explicit imports: `RUST-MOD-R010`
 reports parent-scope glob imports.
 The build-time gate ignores generated environment/data roots such as `.devenv/`

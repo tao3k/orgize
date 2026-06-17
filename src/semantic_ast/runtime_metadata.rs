@@ -63,12 +63,12 @@ fn collect_mobile_marker_lines(
     document: &Document<ParsedAnnotation>,
     plan: &mut RuntimeMetadataPlan,
 ) {
-    let mut offset = 0usize;
+    let mut position = 0usize;
     for (line_index, raw_line) in document.ann.raw.split_inclusive('\n').enumerate() {
         let line = raw_line.trim_end_matches(['\r', '\n']);
         let leading = line.len() - line.trim_start().len();
         let trimmed = line.trim();
-        let source = source_for_line(line_index, leading, trimmed.len(), offset);
+        let source = source_for_line(line_index, leading, trimmed.len(), position);
         if plan.mobile.readonly.is_empty() && trimmed.eq_ignore_ascii_case("#+READONLY") {
             plan.mobile.readonly.push(MobileReadonlyKeyword {
                 source,
@@ -86,7 +86,7 @@ fn collect_mobile_marker_lines(
                 raw: value.trim().to_string(),
             });
         }
-        offset += raw_line.len();
+        position += raw_line.len();
     }
 }
 
@@ -94,9 +94,9 @@ fn source_for_line(
     line_index: usize,
     leading: usize,
     trimmed_len: usize,
-    offset: usize,
+    position: usize,
 ) -> SectionIndexSource {
-    let range_start = offset + leading;
+    let range_start = position + leading;
     let range_end = range_start + trimmed_len;
     SectionIndexSource {
         start: SourcePosition {

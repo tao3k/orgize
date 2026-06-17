@@ -77,11 +77,11 @@ fn inlinetask_node_base(
     let (input, property_drawer) = opt(property_drawer_node).parse(input)?;
     b.push_opt(property_drawer);
 
-    let Some(end_offset) = inlinetask_end_offset(input) else {
+    let Some(end_position) = inlinetask_end_position(input) else {
         return Ok((input, b.finish(SyntaxKind::INLINETASK)));
     };
 
-    let (end_input, body) = input.take_split(end_offset);
+    let (end_input, body) = input.take_split(end_position);
     if !body.is_empty() {
         b.push(node(SyntaxKind::SECTION, element_nodes(body)?));
     }
@@ -92,8 +92,8 @@ fn inlinetask_node_base(
     Ok((input, b.finish(SyntaxKind::INLINETASK)))
 }
 
-fn inlinetask_end_offset(input: Input) -> Option<usize> {
-    line_starts_iter(input.as_str()).find(|&offset| is_inlinetask_end(input.slice(offset..)))
+fn inlinetask_end_position(input: Input) -> Option<usize> {
+    line_starts_iter(input.as_str()).find(|&position| is_inlinetask_end(input.slice(position..)))
 }
 
 fn is_inlinetask_end(input: Input) -> bool {

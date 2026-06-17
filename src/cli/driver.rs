@@ -10,8 +10,8 @@ use std::{
 use crate::{
     Org,
     ast::{
-        AgendaDate, AgendaQuery, AgentPlanningQuery, PriorityProfile, PriorityValue,
-        PropertySchemaContract, PropertySchemaField, PropertySchemaRegistry,
+        AgendaDate, AgendaQuery, AgentPlanningQuery, OrgCapturePlanCommandOutput, PriorityProfile,
+        PriorityValue, PropertySchemaContract, PropertySchemaField, PropertySchemaRegistry,
         PropertySchemaValueRule, SddNodeRecord, SparseTreeQuery,
     },
     fmt::{FormatOptions, format_org},
@@ -42,6 +42,7 @@ pub(crate) fn run_args(args: Vec<String>) -> Result<ExitCode, String> {
 
     match command.as_str() {
         "agent-planning" => run_agent_planning(args.collect()),
+        "capture-plan" => run_capture_plan(args.collect()),
         "contract" => super::org_contract_trace::run(args.collect()),
         "eval" => super::eval::run(args.collect()),
         "export" => run_export(args.collect()),
@@ -61,6 +62,19 @@ pub(crate) fn run_args(args: Vec<String>) -> Result<ExitCode, String> {
             Ok(ExitCode::SUCCESS)
         }
         command => Err(format!("unknown command `{command}`")),
+    }
+}
+
+fn run_capture_plan(args: Vec<String>) -> Result<ExitCode, String> {
+    match crate::ast::org_capture_plan_command(args)? {
+        OrgCapturePlanCommandOutput::Help(usage) => {
+            eprintln!("{usage}");
+            Ok(ExitCode::SUCCESS)
+        }
+        OrgCapturePlanCommandOutput::Plan(plan) => {
+            print!("{plan}");
+            Ok(ExitCode::SUCCESS)
+        }
     }
 }
 
@@ -879,25 +893,7 @@ fn parse_required_agenda_date(
 }
 
 fn parse_agenda_date(value: &str, label: &'static str) -> Result<AgendaDate, String> {
-    let mut parts = value.split('-');
-    let year = parts
-        .next()
-        .and_then(|part| part.parse::<u16>().ok())
-        .ok_or_else(|| format!("{label} expects YYYY-MM-DD, got `{value}`"))?;
-    let month = parts
-        .next()
-        .and_then(|part| part.parse::<u8>().ok())
-        .filter(|month| (1..=12).contains(month))
-        .ok_or_else(|| format!("{label} expects YYYY-MM-DD, got `{value}`"))?;
-    let day = parts
-        .next()
-        .and_then(|part| part.parse::<u8>().ok())
-        .filter(|day| (1..=31).contains(day))
-        .ok_or_else(|| format!("{label} expects YYYY-MM-DD, got `{value}`"))?;
-    if parts.next().is_some() {
-        return Err(format!("{label} expects YYYY-MM-DD, got `{value}`"));
-    }
-    Ok(AgendaDate::new(year, month, day))
+    AgendaDate::parse_ymd(value).ok_or_else(|| format!("{label} expects YYYY-MM-DD, got `{value}`"))
 }
 
 fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
@@ -1407,7 +1403,7 @@ fn push_property_schema_alias(contract: &mut PropertySchemaContract, alias: Stri
 
 fn print_usage() {
     eprintln!(
-        "Usage: orgize <agent-planning|contract|elements-query|eval|export|fmt|guide|lint|md|query|search|sdd|sparse-tree|task-list> [options] [PATH ...]"
+        "Usage: orgize <agent-planning|capture-plan|contract|elements-query|eval|export|fmt|guide|lint|md|query|search|sdd|sparse-tree|task-list> [options] [PATH ...]"
     );
 }
 

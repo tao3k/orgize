@@ -1,4 +1,4 @@
-use nom::{Compare, CompareResult, FindSubstring, Input as NomInput, Needed, Offset};
+use nom::{Compare, CompareResult, FindSubstring, Input as NomInput, Needed};
 use std::{
     ops::{Bound, Deref, RangeBounds},
     str::{CharIndices, Chars},
@@ -171,11 +171,5 @@ impl<'a> NomInput for Input<'a> {
             .chain(std::iter::once(self.s.len()))
             .nth(count)
             .ok_or(Needed::Unknown)
-    }
-}
-
-impl<'a> Offset for Input<'a> {
-    fn offset(&self, second: &Self) -> usize {
-        self.s.offset(second.s)
     }
 }

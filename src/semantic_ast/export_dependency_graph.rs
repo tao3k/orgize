@@ -382,7 +382,7 @@ fn canonical_cycle_key(cycle: &[String]) -> String {
         .map(|(index, _)| index)
         .unwrap_or(0);
     (0..nodes.len())
-        .map(|offset| nodes[(min_index + offset) % nodes.len()].as_str())
+        .map(|position| nodes[(min_index + position) % nodes.len()].as_str())
         .collect::<Vec<_>>()
         .join(" -> ")
 }

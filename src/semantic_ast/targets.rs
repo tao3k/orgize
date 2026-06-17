@@ -130,8 +130,8 @@ fn collect_headline_targets(
     node_ann: &impl Fn(&SyntaxNode) -> ParsedAnnotation,
     token_ann: &impl Fn(&SyntaxToken) -> ParsedAnnotation,
 ) {
-    let legacy = syntax_ast::Headline::cast(node.clone()).expect("headline node");
-    let title = legacy.title_raw().trim().to_string();
+    let syntax = syntax_ast::Headline::cast(node.clone()).expect("headline node");
+    let title = syntax.title_raw().trim().to_string();
     if !title.is_empty() {
         index.push(TargetDefinition {
             ann: node_ann(node),
@@ -143,7 +143,7 @@ fn collect_headline_targets(
         });
     }
 
-    if let Some(drawer) = legacy.properties() {
+    if let Some(drawer) = syntax.properties() {
         for (key, value) in drawer.iter() {
             if key.eq_ignore_ascii_case("CUSTOM_ID") {
                 let ann = token_ann(value.syntax());

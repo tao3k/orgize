@@ -25,6 +25,7 @@ mod block_metadata;
 mod block_model;
 mod block_syntax;
 mod capture;
+mod capture_command;
 mod capture_model;
 mod citation_export;
 mod citation_export_model;
@@ -176,6 +177,7 @@ pub use block_model::{
     BlockSwitches, SemanticFixedWidth,
 };
 pub use capture::agent_capture_plan;
+pub use capture_command::{OrgCapturePlanCommandOutput, org_capture_plan_command};
 pub use capture_model::{
     AgentCaptureApplication, AgentCaptureApplicationAction, AgentCaptureApplicationPrecondition,
     AgentCaptureApplicationPreconditionKind, AgentCaptureInsertPosition, AgentCaptureKind,

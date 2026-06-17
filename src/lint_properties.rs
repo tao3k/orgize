@@ -7,7 +7,7 @@ use crate::ast::{
     Section, is_allowed_value_descriptor, property_allowed_values,
 };
 
-use super::lint_model::{LintFinding, LintSeverity, location_for_offsets, location_for_range};
+use super::lint_model::{LintFinding, LintSeverity, location_for_range, location_for_range_bounds};
 
 pub(crate) fn property_drawer_findings(
     document: &ParsedAst,
@@ -141,7 +141,7 @@ fn push_property_schema_findings(
                 code: "ORG040",
                 severity: LintSeverity::Warning,
                 message: finding.message.clone(),
-                location: location_for_offsets(
+                location: location_for_range_bounds(
                     source,
                     finding.source.range_start as usize,
                     finding.source.range_end as usize,

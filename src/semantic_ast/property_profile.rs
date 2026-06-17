@@ -176,7 +176,7 @@ fn next_token_start(value: &str, cursor: usize) -> Option<usize> {
     value[cursor..]
         .char_indices()
         .find(|(_, ch)| !ch.is_whitespace())
-        .map(|(offset, _)| cursor + offset)
+        .map(|(position, _)| cursor + position)
 }
 
 fn allowed_value_token(value: &str, start: usize) -> (String, usize) {

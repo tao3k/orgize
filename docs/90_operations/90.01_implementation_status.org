@@ -171,7 +171,7 @@ this repository.
 - [X] Merge target indexing and preprocessing directive collection into one
       semantic pre-scan.
 - [X] Scan each radio-link object run once and prefer the longest target at a
-      shared start offset.
+      shared start position.
 - [X] Precompute object-run spans so radio-link prefix/description/suffix
       slicing does not rescan the whole run from the first object.
 - [X] Return unmatched plain-text radio-link objects without cloning their
@@ -245,7 +245,7 @@ this repository.
 - [X] Verify the cargo-test gate now fails on current advisory findings instead
       of hiding them behind passing test output.
 - [X] Close `AGENT-R004` public namespace conflicts between semantic AST and
-      legacy `syntax_ast` wrappers without weakening the v2 public API boundary.
+      retired `syntax_ast` wrappers without weakening the v2 public API boundary.
 - [X] Close `AGENT-R009` syntax parser owner-cycle findings by moving shared
       parser contracts behind clearer owner boundaries.
 - [X] Close semantic AST model advice for primitive/stringly public state
@@ -1304,7 +1304,7 @@ Recommended implementation order for the next major PR train:
 - [X] Merge native =#+HEADER:= affiliated keywords into source-block semantic
       header arguments before the =#+BEGIN_SRC= line arguments, matching Org's
       code-block-specific header argument precedence without executing Babel.
-- [X] Accept the legacy plural =#+HEADERS:= spelling as an affiliated header
+- [X] Accept the retired plural =#+HEADERS:= spelling as an affiliated header
       source because Org-mode still accepts it for backward compatibility.
 - [X] Reuse the existing structured header-arg parser so =:var=, =:results=,
       =:tangle=, =:noweb-ref=, and other header arguments have the same

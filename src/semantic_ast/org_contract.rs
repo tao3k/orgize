@@ -36,9 +36,11 @@ pub fn parse_contract_reference(value: &str) -> OrgContractReference {
         };
     }
 
-    let normalized = org_file_link_target(&raw)
-        .or_else(|| macro_reference_argument(&raw))
-        .unwrap_or_else(|| raw.clone());
+    if let Some(reference) = org_link_contract_reference(&raw) {
+        return reference;
+    }
+
+    let normalized = macro_reference_argument(&raw).unwrap_or_else(|| raw.clone());
 
     let without_file = normalized
         .strip_prefix("file:")
@@ -47,7 +49,7 @@ pub fn parse_contract_reference(value: &str) -> OrgContractReference {
     if let Some((path, contract_id)) = without_file.split_once('#') {
         return OrgContractReference {
             raw,
-            path: (!path.trim().is_empty()).then(|| path.trim().to_string()),
+            path: contract_reference_path(path),
             contract_id: (!contract_id.trim().is_empty()).then(|| contract_id.trim().to_string()),
         };
     }
@@ -736,8 +738,14 @@ fn contract_aliases(
 
 fn contract_path_alias_bases(path: &Path) -> Vec<String> {
     let mut bases = vec![normalize_path(path)];
-    if let Ok(canonical) = path.canonicalize() {
-        bases.push(normalize_path(canonical.as_path()));
+    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+        bases.push(file_name.to_string());
+    }
+    if path.is_absolute()
+        && let Ok(current_dir) = std::env::current_dir()
+        && let Ok(relative) = path.strip_prefix(current_dir)
+    {
+        bases.push(normalize_path(relative));
     }
     bases.sort();
     bases.dedup();
@@ -755,13 +763,43 @@ fn normalize_path(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }
 
-fn org_file_link_target(value: &str) -> Option<String> {
+fn org_link_contract_reference(value: &str) -> Option<OrgContractReference> {
     let inner = value.strip_prefix("[[")?.strip_suffix("]]")?;
-    let target = inner.split("][").next().unwrap_or(inner).trim();
-    target
-        .starts_with("file:")
-        .then(|| target.to_string())
-        .filter(|target| !target.is_empty())
+    let (target, description) = inner
+        .split_once("][")
+        .map_or((inner.trim(), None), |(target, description)| {
+            (target.trim(), Some(description.trim()))
+        });
+    if target.is_empty() {
+        return None;
+    }
+
+    let without_file = target.strip_prefix("file:").unwrap_or(target).trim();
+    if let Some((path, contract_id)) = without_file.split_once('#') {
+        return Some(OrgContractReference {
+            raw: value.to_string(),
+            path: contract_reference_path(path),
+            contract_id: (!contract_id.trim().is_empty()).then(|| contract_id.trim().to_string()),
+        });
+    }
+
+    if looks_like_file_reference(without_file) {
+        return Some(OrgContractReference {
+            raw: value.to_string(),
+            path: contract_reference_path(without_file),
+            contract_id: description
+                .filter(|description| !description.is_empty())
+                .map(str::to_string),
+        });
+    }
+
+    None
+}
+
+fn contract_reference_path(value: &str) -> Option<String> {
+    let value = value.trim();
+    let value = value.strip_prefix("./").unwrap_or(value);
+    (!value.is_empty() && !value.starts_with('/')).then(|| value.to_string())
 }
 
 fn macro_reference_argument(value: &str) -> Option<String> {

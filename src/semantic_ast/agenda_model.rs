@@ -193,6 +193,25 @@ impl AgendaDate {
         Self { year, month, day }
     }
 
+    /// Parses a strict `YYYY-MM-DD` date.
+    pub fn parse_ymd(value: &str) -> Option<Self> {
+        let mut parts = value.split('-');
+        let year = parts.next()?.parse::<u16>().ok()?;
+        let month = parts
+            .next()?
+            .parse::<u8>()
+            .ok()
+            .filter(|month| (1..=12).contains(month))?;
+        let day =
+            parts.next()?.parse::<u8>().ok().filter(|day| {
+                (1..=days_in_month(i32::from(year), i32::from(month))).contains(day)
+            })?;
+        if parts.next().is_some() {
+            return None;
+        }
+        Some(Self::new(year, month, day))
+    }
+
     pub(crate) fn from_moment(moment: &TimestampMoment) -> Self {
         Self::new(moment.year, moment.month, moment.day)
     }

@@ -206,12 +206,12 @@ fn is_supported_lhs(lhs: &str) -> bool {
 
 fn malformed_remote_messages(value: &str) -> Vec<String> {
     let mut messages = Vec::new();
-    let mut offset = 0usize;
-    while let Some(relative) = value[offset..].find("remote(") {
-        let start = offset + relative;
+    let mut position = 0usize;
+    while let Some(relative) = value[position..].find("remote(") {
+        let start = position + relative;
         let rest = &value[start..];
         if let Some(end) = remote_reference_end(rest) {
-            offset = start + end;
+            position = start + end;
         } else {
             messages.push("remote table reference is missing a closing `)`".to_string());
             break;

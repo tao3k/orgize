@@ -295,6 +295,9 @@ fn print_guide(language: DocumentLanguage) {
         println!(
             "|surface contract-trace purpose=contract-org-evaluation-trace output=json content=false"
         );
+        println!(
+            "|surface capture-plan purpose=non-mutating-org-entry-plan output=compact-plan content=false"
+        );
     }
     println!("|surface direct-read purpose=hook-recovery output=pure-content content=true");
     println!("|rule parser-authority={}", language.parser_authority());
@@ -343,6 +346,14 @@ fn print_guide(language: DocumentLanguage) {
             "|cmd contract-trace={} contract trace --org-contract-registry <contract.org> <target.org>",
             language.command_prefix()
         );
+        println!(
+            "|cmd capture-plan={} capture-plan --kind task --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --body <TEXT>",
+            language.command_prefix()
+        );
+        println!(
+            "|cmd agent-plan-template={} capture-plan --kind agent-plan --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --property PLAN_ID=<ID> --body <OBJECTIVE>",
+            language.command_prefix()
+        );
     }
     println!(
         "|cmd query-content={} query --term <term> --workspace . --content",
@@ -380,9 +391,12 @@ fn print_element_guide(language: DocumentLanguage) {
     match language {
         DocumentLanguage::Org => {
             println!(
-                "|element-map heading,paragraph,property,planning,table,block,list,listItem,task,link,image"
+                "|element-map heading,task,paragraph,property,planning,table,block,list,listItem,checklistItem,link,image"
             );
             println!("|field-map heading fields=level,title,todo,todoType,priority,tag");
+            println!(
+                "|field-map task source=Headline fields=level,title,todo,todoType,priority,tag"
+            );
             println!("|field-map paragraph fields=text content=raw-paragraph");
             println!("|field-map property fields=key,value");
             println!("|field-map planning fields=scheduled,deadline,closed");
@@ -390,20 +404,73 @@ fn print_element_guide(language: DocumentLanguage) {
             println!("|field-map block fields=kind=source|export,lang,backend");
             println!("|field-map list fields=listKind=ordered|unordered,descriptive");
             println!("|field-map listItem fields=bullet,indent,counter,tag");
-            println!("|field-map task fields=bullet,indent,checkbox,checked,tag");
+            println!(
+                "|field-map checklistItem source=SyntaxListItem fields=bullet,indent,checkbox,checked,tag"
+            );
             println!("|field-map link fields=target,description");
             println!("|field-map image fields=target,description");
             println!(
-                "|recipe todo-headings=asp org query --kind heading --field todo=TODO --workspace . --view metadata"
+                "|recipe todo-tasks=asp org query --kind task --field todo=TODO --workspace . --view metadata"
             );
             println!(
-                "|recipe checked-tasks=asp org query --kind task --field checked=true --workspace . --view metadata"
+                "|recipe checked-checklist-items=asp org query --kind checklistItem --field checked=true --workspace . --view metadata"
             );
             println!(
                 "|recipe property-value=asp org query --kind property --field key=<KEY> --workspace . --view metadata"
             );
             println!(
                 "|recipe sdd-property=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
+            );
+            println!(
+                "|recipe wendao-task-probe=asp org query --kind task --term <TEXT> --field tag=<TAG> --workspace . --view metadata"
+            );
+            println!(
+                "|recipe wendao-orgid-locate=asp org query --kind property --field key=ID --field value=<ID> --workspace . --view metadata"
+            );
+            println!(
+                "|recipe wendao-orgid-content=asp org query --selector <path:start-end> --workspace . --content"
+            );
+            println!(
+                "|recipe wendao-task-sdd=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
+            );
+            println!(
+                "|recipe wendao-task-archive-plan=asp org query --kind task --field todo=DONE --workspace . --view metadata"
+            );
+            println!(
+                "|recipe plan-record=asp org capture-plan --kind task --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --body <TEXT>"
+            );
+            println!(
+                "|recipe agent-plan-template=asp org capture-plan --kind agent-plan --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --property PLAN_ID=<ID> --body <OBJECTIVE>"
+            );
+            println!(
+                "|recipe agent-plan-state=asp org query --kind property --field key=PLAN_ID --field value=<ID> --workspace . --view metadata"
+            );
+            println!(
+                "|recipe agent-plan-session=asp org query --kind property --field key=PLAN_SESSION --field value=<SESSION_ID> --workspace . --view metadata"
+            );
+            println!(
+                "|recipe agent-plan-branch=asp org query --kind property --field key=PLAN_BRANCH --field value=<BRANCH_ID> --workspace . --view metadata"
+            );
+            println!(
+                "|recipe agent-plan-shared=asp org query --kind property --field key=PLAN_SHARING --field value=project --workspace . --view metadata"
+            );
+            println!(
+                "|recipe agent-plan-isolated=asp org query --kind property --field key=PLAN_SHARING --field value=isolated --workspace . --view metadata"
+            );
+            println!(
+                "|recipe agent-plan-memory-scope=asp org query --kind property --field key=MEMORY_SCOPE --workspace . --view metadata"
+            );
+            println!(
+                "|recipe agent-plan-memory-feedback=asp org query --kind property --field key=MEMORY_FEEDBACK_BIAS --workspace . --view metadata"
+            );
+            println!(
+                "|recipe agent-plan-memory-recall=asp org query --kind property --field key=MEMORY_RECALL_K1 --workspace . --view metadata"
+            );
+            println!(
+                "|recipe agent-plan-pending-steps=asp org query --kind property --field key=STEP_STATUS --field value=pending --workspace . --view metadata"
+            );
+            println!(
+                "|recipe agent-plan-pending-receipts=asp org query --kind property --field key=RECEIPT_STATUS --field value=pending --workspace . --view metadata"
             );
             println!(
                 "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"
@@ -417,18 +484,18 @@ fn print_element_guide(language: DocumentLanguage) {
         }
         DocumentLanguage::Markdown => {
             println!(
-                "|element-map heading,paragraph,table,block,list,listItem,task,link,image,frontMatter,thematicBreak"
+                "|element-map heading,paragraph,table,block,list,listItem,checklistItem,link,image,frontMatter,thematicBreak"
             );
             println!("|field-map heading fields=level,title");
             println!("|field-map paragraph fields=text content=paragraph-text");
             println!("|field-map block fields=kind=code,lang");
             println!("|field-map list fields=listKind,start");
-            println!("|field-map task fields=checked,checkbox");
+            println!("|field-map checklistItem fields=checked,checkbox");
             println!("|field-map link fields=target");
             println!("|field-map image fields=target");
             println!("|recipe headings=asp md query --kind heading --workspace . --view metadata");
             println!(
-                "|recipe checked-tasks=asp md query --kind task --field checked=true --workspace . --view metadata"
+                "|recipe checked-checklist-items=asp md query --kind checklistItem --field checked=true --workspace . --view metadata"
             );
             println!(
                 "|recipe code-blocks=asp md query --kind block --field kind=code --workspace . --view metadata"
@@ -449,7 +516,7 @@ fn print_search_guide(language: DocumentLanguage) {
         language.id()
     );
     println!(
-        "|view prime returns=headings,properties,planning,tables,blocks,lists,tasks,links,images"
+        "|view prime returns=headings,tasks,properties,planning,tables,blocks,lists,checklistItems,links,images"
     );
     println!(
         "|view toc returns=document-heading-outline fields=path,range,level,title,todo,priority,tag"
@@ -796,17 +863,76 @@ fn print_query_content(facts: &[DocumentElement]) {
 }
 
 pub(crate) fn compact_query_content(content: &str) -> String {
-    let mut words = content.split_whitespace();
+    let mut compacted = String::with_capacity(content.len());
+    let mut previous_blank = false;
+    let mut inside_preserved_block = false;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            if !compacted.is_empty() {
+                previous_blank = true;
+            }
+            continue;
+        }
+
+        if previous_blank && !compacted.ends_with('\n') {
+            compacted.push('\n');
+        }
+        if !compacted.is_empty() && !compacted.ends_with('\n') {
+            compacted.push('\n');
+        }
+
+        if inside_preserved_block {
+            compacted.push_str(line.trim_end());
+            if ends_preserved_content_block(trimmed) {
+                inside_preserved_block = false;
+            }
+        } else {
+            compacted.push_str(&compact_query_content_line(trimmed));
+            if starts_preserved_content_block(trimmed) {
+                inside_preserved_block = true;
+            }
+        }
+        previous_blank = false;
+    }
+    compacted
+}
+
+fn compact_query_content_line(line: &str) -> String {
+    let mut words = line.split_whitespace();
     let Some(first_word) = words.next() else {
         return String::new();
     };
-    let mut compacted = String::with_capacity(content.len());
+    let mut compacted = String::with_capacity(line.len());
     compacted.push_str(first_word);
     for word in words {
         compacted.push(' ');
         compacted.push_str(word);
     }
     compacted
+}
+
+fn starts_preserved_content_block(line: &str) -> bool {
+    is_markdown_fence(line) || is_org_preserved_block_start(line)
+}
+
+fn ends_preserved_content_block(line: &str) -> bool {
+    is_markdown_fence(line) || is_org_preserved_block_end(line)
+}
+
+fn is_markdown_fence(line: &str) -> bool {
+    line.starts_with("```") || line.starts_with("~~~")
+}
+
+fn is_org_preserved_block_start(line: &str) -> bool {
+    let line = line.to_ascii_lowercase();
+    line.starts_with("#+begin_src") || line.starts_with("#+begin_example")
+}
+
+fn is_org_preserved_block_end(line: &str) -> bool {
+    let line = line.to_ascii_lowercase();
+    line.starts_with("#+end_src") || line.starts_with("#+end_example")
 }
 
 fn projected_content_facts(facts: &[DocumentElement]) -> Vec<DocumentElement> {
@@ -832,14 +958,14 @@ fn content_shadowed_by_selected_container(
 ) -> bool {
     if fact.kind == "paragraph" {
         return facts.iter().any(|candidate| {
-            matches!(candidate.kind, "listItem" | "task")
+            matches!(candidate.kind, "listItem" | "checklistItem")
                 && !candidate.content_text().trim().is_empty()
                 && contains_element_range(candidate, fact)
         });
     }
     if fact.kind == "list" {
         return facts.iter().any(|candidate| {
-            matches!(candidate.kind, "listItem" | "task")
+            matches!(candidate.kind, "listItem" | "checklistItem")
                 && !candidate.content_text().trim().is_empty()
                 && contains_element_range(fact, candidate)
         });

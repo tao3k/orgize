@@ -2,7 +2,7 @@
 
 use crate::ast::{CryptWarningKind, ParsedAst};
 
-use super::lint_model::{LintFinding, LintSeverity, location_for_offsets};
+use super::lint_model::{LintFinding, LintSeverity, location_for_range_bounds};
 
 pub(crate) fn crypt_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
     let mut findings = Vec::new();
@@ -15,7 +15,7 @@ pub(crate) fn crypt_findings(document: &ParsedAst, source: &str) -> Vec<LintFind
                     "crypt-tagged section `{}` has an opaque body; orgize exposes headline/properties but does not decrypt Org Crypt payloads",
                     state.title
                 ),
-                location: location_for_offsets(
+                location: location_for_range_bounds(
                     source,
                     state.source.range_start as usize,
                     state.source.range_end as usize,
@@ -31,7 +31,7 @@ pub(crate) fn crypt_findings(document: &ParsedAst, source: &str) -> Vec<LintFind
                         "section `{}` sets CRYPTKEY but has no visible crypt tag",
                         state.title
                     ),
-                    location: location_for_offsets(
+                    location: location_for_range_bounds(
                         source,
                         state.source.range_start as usize,
                         state.source.range_end as usize,

@@ -55,6 +55,12 @@ fn org_document_search_and_query_commands_run() {
         "{guide_stdout}"
     );
     assert!(
+        guide_stdout.contains(
+            "|field-map task source=Headline fields=level,title,todo,todoType,priority,tag"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
         guide_stdout.contains("|field-map block fields=kind=source|export,lang,backend"),
         "{guide_stdout}"
     );
@@ -76,8 +82,126 @@ fn org_document_search_and_query_commands_run() {
     );
     assert!(
         guide_stdout.contains(
+            "|surface capture-plan purpose=non-mutating-org-entry-plan output=compact-plan content=false"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|cmd capture-plan=asp org capture-plan --kind task --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --body <TEXT>"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|cmd agent-plan-template=asp org capture-plan --kind agent-plan --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --property PLAN_ID=<ID> --body <OBJECTIVE>"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-template=asp org capture-plan --kind agent-plan --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --property PLAN_ID=<ID> --body <OBJECTIVE>"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-state=asp org query --kind property --field key=PLAN_ID --field value=<ID> --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-session=asp org query --kind property --field key=PLAN_SESSION --field value=<SESSION_ID> --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-branch=asp org query --kind property --field key=PLAN_BRANCH --field value=<BRANCH_ID> --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-shared=asp org query --kind property --field key=PLAN_SHARING --field value=project --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-isolated=asp org query --kind property --field key=PLAN_SHARING --field value=isolated --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-memory-scope=asp org query --kind property --field key=MEMORY_SCOPE --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-memory-feedback=asp org query --kind property --field key=MEMORY_FEEDBACK_BIAS --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-memory-recall=asp org query --kind property --field key=MEMORY_RECALL_K1 --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-pending-steps=asp org query --kind property --field key=STEP_STATUS --field value=pending --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe agent-plan-pending-receipts=asp org query --kind property --field key=RECEIPT_STATUS --field value=pending --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
             "|recipe sdd-property=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
         ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe wendao-task-probe=asp org query --kind task --term <TEXT> --field tag=<TAG> --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe wendao-orgid-locate=asp org query --kind property --field key=ID --field value=<ID> --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe wendao-orgid-content=asp org query --selector <path:start-end> --workspace . --content"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe wendao-task-archive-plan=asp org query --kind task --field todo=DONE --workspace . --view metadata"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        guide_stdout.contains(
+            "|recipe plan-record=asp org capture-plan --kind task --title <TITLE> --target-file PLANS.org --outline Plans/Active --tag plan --body <TEXT>"
+        ),
+        "{guide_stdout}"
+    );
+    assert!(
+        !guide_stdout.contains("orgize task-probe"),
         "{guide_stdout}"
     );
 
@@ -85,7 +209,7 @@ fn org_document_search_and_query_commands_run() {
     let path = root.join("plan.org");
     std::fs::write(
         &path,
-        "* TODO [#A] Task :work:sdd:\nSCHEDULED: <2026-06-06 Sat>\n:PROPERTIES:\n:CUSTOM_ID: task-1\n:SDD_KIND: capability\n:SDD_STATUS: draft\n:END:\n\nProvider activation carries execution mode.\nDocument providers stay embedded inside ASP.\n\n** Repository Map\n*** Docs\n- [X] ship element map\n[[https://example.com][site]]\n[[file:diagram.png]]\n\n#+begin_src rust\nfn main() {}\n#+end_src\n",
+        "* TODO [#A] Task :work:sdd:\nSCHEDULED: <2026-06-06 Sat>\n:PROPERTIES:\n:CUSTOM_ID: task-1\n:SDD_KIND: capability\n:SDD_STATUS: draft\n:END:\n\nProvider activation carries execution mode.\nDocument providers stay embedded inside ASP.\n\n** Repository Map\n*** Docs\n- [X] ship element map\n[[https://example.com][site]]\n[[file:diagram.png]]\n\n#+begin_src rust\nfn main() {\n  println!(  \"x\");\n}\n#+end_src\n",
     )
     .expect("write org fixture");
 
@@ -124,6 +248,7 @@ fn org_document_search_and_query_commands_run() {
     assert!(search_stdout.contains("|paragraph"), "{search_stdout}");
     assert!(search_stdout.contains("execution mode"), "{search_stdout}");
     assert!(search_stdout.contains("|task"), "{search_stdout}");
+    assert!(search_stdout.contains("|checklistItem"), "{search_stdout}");
     assert!(search_stdout.contains("|link"), "{search_stdout}");
     assert!(search_stdout.contains("|image"), "{search_stdout}");
 
@@ -285,8 +410,27 @@ fn org_document_search_and_query_commands_run() {
         String::from_utf8(paragraph_content.stdout).expect("utf8 paragraph content query");
     assert_eq!(
         paragraph_content_stdout.trim(),
-        "Provider activation carries execution mode. Document providers stay embedded inside ASP.",
+        "Provider activation carries execution mode.\nDocument providers stay embedded inside ASP.",
         "{paragraph_content_stdout}"
+    );
+
+    let source_block_content = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("query")
+        .arg("--kind")
+        .arg("block")
+        .arg("--field")
+        .arg("lang=rust")
+        .arg("--content")
+        .arg(&root)
+        .output()
+        .expect("run orgize source block content query");
+    assert!(source_block_content.status.success());
+    let source_block_content_stdout =
+        String::from_utf8(source_block_content.stdout).expect("utf8 source block content query");
+    assert_eq!(
+        source_block_content_stdout.trim(),
+        "#+begin_src rust\nfn main() {\n  println!(  \"x\");\n}\n#+end_src",
+        "{source_block_content_stdout}"
     );
 
     let missing_content = Command::new(env!("CARGO_BIN_EXE_orgize"))
@@ -397,6 +541,16 @@ fn org_document_search_and_query_commands_run() {
             .expect("document facts")
             .iter()
             .any(|fact| fact["kind"] == "task"
+                && fact["sourceKind"] == "Headline"
+                && fact["attributes"]["todo"] == "TODO"),
+        "{search_packet:#}"
+    );
+    assert!(
+        search_packet["documentFacts"]
+            .as_array()
+            .expect("document facts")
+            .iter()
+            .any(|fact| fact["kind"] == "checklistItem"
                 && fact["sourceKind"] == "SyntaxListItem"
                 && fact["attributes"]["checked"] == "true"),
         "{search_packet:#}"
@@ -667,7 +821,7 @@ fn markdown_document_search_and_query_commands_run() {
     let prime_stdout = String::from_utf8(prime_search.stdout).expect("utf8 prime search");
     assert!(prime_stdout.contains("paragraph="), "{prime_stdout}");
     assert!(prime_stdout.contains("|paragraph"), "{prime_stdout}");
-    assert!(prime_stdout.contains("|task"), "{prime_stdout}");
+    assert!(prime_stdout.contains("|checklistItem"), "{prime_stdout}");
     assert!(prime_stdout.contains("|listItem"), "{prime_stdout}");
     assert!(prime_stdout.contains("|image"), "{prime_stdout}");
     assert!(prime_stdout.contains("|thematicBreak"), "{prime_stdout}");
@@ -740,6 +894,35 @@ fn markdown_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(selector_stdout.contains("|heading"), "{selector_stdout}");
+
+    let selector = format!("{}:6-12", path.display());
+    let selector_content = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("query")
+        .arg("--selector")
+        .arg(selector)
+        .arg("--content")
+        .output()
+        .expect("run orgize md selector content query");
+    assert!(selector_content.status.success());
+    let selector_content_stdout =
+        String::from_utf8(selector_content.stdout).expect("utf8 selector content query");
+    assert!(
+        selector_content_stdout.contains("# Project\n"),
+        "{selector_content_stdout}"
+    );
+    assert!(
+        selector_content_stdout.contains("## Overview\n"),
+        "{selector_content_stdout}"
+    );
+    assert!(
+        selector_content_stdout.contains("### Details\n"),
+        "{selector_content_stdout}"
+    );
+    assert!(
+        !selector_content_stdout.contains("# Project ## Overview"),
+        "{selector_content_stdout}"
+    );
 
     let term_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")
@@ -873,7 +1056,8 @@ fn markdown_document_search_and_query_commands_run() {
             .as_array()
             .expect("document facts")
             .iter()
-            .any(|fact| fact["kind"] == "task" && fact["sourceKind"] == "NodeValue::TaskItem"),
+            .any(|fact| fact["kind"] == "checklistItem"
+                && fact["sourceKind"] == "NodeValue::TaskItem"),
         "{search_packet:#}"
     );
 

@@ -235,7 +235,7 @@ fn next_keyword_token_start(value: &str, cursor: usize) -> Option<usize> {
     value[cursor..]
         .char_indices()
         .find(|(_, ch)| !ch.is_whitespace())
-        .map(|(offset, _)| cursor + offset)
+        .map(|(position, _)| cursor + position)
 }
 
 fn keyword_token(value: &str, start: usize) -> (KeywordToken, usize) {
@@ -399,16 +399,16 @@ fn code_ref_in_line(line: &str, label: &CodeRefLabel) -> Option<CodeRefMatch> {
 
 fn code_ref_at(line: &str, index: usize, label: &CodeRefLabel) -> Option<CodeRefMatch> {
     let after_prefix = line.get(index + label.prefix.len()..)?;
-    let suffix_offset = if label.suffix.is_empty() {
+    let suffix_position = if label.suffix.is_empty() {
         after_prefix
             .char_indices()
             .find(|(_, ch)| ch.is_whitespace())
-            .map(|(offset, _)| offset)
+            .map(|(position, _)| position)
             .unwrap_or(after_prefix.len())
     } else {
         after_prefix.find(&label.suffix)?
     };
-    let name = &after_prefix[..suffix_offset];
+    let name = &after_prefix[..suffix_position];
     if name.is_empty()
         || !name
             .chars()
@@ -417,7 +417,7 @@ fn code_ref_at(line: &str, index: usize, label: &CodeRefLabel) -> Option<CodeRef
         return None;
     }
 
-    let end = index + label.prefix.len() + suffix_offset + label.suffix.len();
+    let end = index + label.prefix.len() + suffix_position + label.suffix.len();
     let mut before = line[..index].char_indices().rev();
     let remove_start = before
         .find_map(|(byte_index, ch)| (!ch.is_whitespace()).then_some(byte_index + ch.len_utf8()))

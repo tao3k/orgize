@@ -82,10 +82,10 @@ pub enum PriorityValue {
     Letter(char),
     /// Numeric priority. Org's numeric priority custom variables use `0..=64`.
     Numeric(u8),
-    /// Legacy extension value outside official Org priority grammar.
+    /// Custom extension value outside official Org priority grammar.
     ///
     /// Native parsing and lint no longer produce this variant, but it remains
-    /// in the public model so older consumers do not need an enum-shape break.
+    /// in the public model so current consumers keep a stable enum shape.
     Custom(String),
 }
 
