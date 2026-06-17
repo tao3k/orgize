@@ -16,6 +16,16 @@ fn main() {
                 "orgize parser-v2 mounts the Rust project harness during build-script execution so filtered cargo test runs cannot bypass blocking policy",
             ),
         )
+        .with_verification_profile_hint(
+            rust_lang_project_harness::RustVerificationProfileHint::new(
+                "src/lint_file_links.rs",
+                [rust_lang_project_harness::RustOwnerResponsibility::PureDomainLogic],
+            )
+            .without_verification_tasks()
+            .with_rationale(
+                "orgize file-link lint owns local Org AST and path-token policy, including portable skill-package references; integration tests cover the rule without external verification skills",
+            ),
+        )
         .with_cargo_check_advice_allow_explanation(
             "orgize keeps existing parser-v2 public row and selector internals stable during dependency rev bumps; agent-policy advisory repairs require a dedicated API-compatible slice",
         );
