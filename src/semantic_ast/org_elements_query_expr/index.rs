@@ -71,8 +71,13 @@ fn compile_index_query_expression(expression: &QueryExpr) -> Option<OrgElementsI
         }
         "relation" => compile_index_relation_query(items.get(1)?.as_atom()?, &items[2..]),
         "child-of" => compile_index_relation_query("child-of", &items[1..]),
+        "contents-of" => compile_index_relation_query("child-of", &items[1..]),
         "descendant-of" | "within" => compile_index_relation_query("descendant-of", &items[1..]),
+        "within-contents-of" | "in-contents-of" => {
+            compile_index_relation_query("descendant-of", &items[1..])
+        }
         "ancestor-of" => compile_index_relation_query("ancestor-of", &items[1..]),
+        "lineage-of" => compile_index_relation_query("ancestor-of", &items[1..]),
         "at" => compile_index_relation_query("at", &items[1..]),
         "limit" => {
             let limit = items.get(1)?.as_text()?.parse::<usize>().ok()?;
@@ -147,9 +152,14 @@ fn compile_index_relation_query(
     let ids = id_set(arguments)?;
     let mut query = OrgElementsIndexQuery::new();
     query.relations.push(match relation {
-        "child-of" | "childOf" => OrgElementsIndexRelation::ChildOf(ids),
-        "descendant-of" | "descendantOf" | "within" => OrgElementsIndexRelation::DescendantOf(ids),
-        "ancestor-of" | "ancestorOf" => OrgElementsIndexRelation::AncestorOf(ids),
+        "child-of" | "childOf" | "contents-of" | "contentsOf" => {
+            OrgElementsIndexRelation::ChildOf(ids)
+        }
+        "descendant-of" | "descendantOf" | "within" | "within-contents-of" | "withinContentsOf"
+        | "in-contents-of" | "inContentsOf" => OrgElementsIndexRelation::DescendantOf(ids),
+        "ancestor-of" | "ancestorOf" | "lineage-of" | "lineageOf" => {
+            OrgElementsIndexRelation::AncestorOf(ids)
+        }
         "at" => OrgElementsIndexRelation::At(ids),
         _ => return None,
     });
@@ -217,6 +227,13 @@ fn apply_index_keyword_argument(
             .push(OrgElementsIndexRelation::ChildOf(id_set(
                 std::slice::from_ref(value),
             )?)),
+        ":contents-of" | ":contentsOf" => {
+            query
+                .relations
+                .push(OrgElementsIndexRelation::ChildOf(id_set(
+                    std::slice::from_ref(value),
+                )?))
+        }
         ":descendant-of" | ":within" => {
             query
                 .relations
@@ -224,11 +241,23 @@ fn apply_index_keyword_argument(
                     std::slice::from_ref(value),
                 )?))
         }
+        ":within-contents-of" | ":withinContentsOf" | ":in-contents-of" | ":inContentsOf" => query
+            .relations
+            .push(OrgElementsIndexRelation::DescendantOf(id_set(
+                std::slice::from_ref(value),
+            )?)),
         ":ancestor-of" => query
             .relations
             .push(OrgElementsIndexRelation::AncestorOf(id_set(
                 std::slice::from_ref(value),
             )?)),
+        ":lineage-of" | ":lineageOf" => {
+            query
+                .relations
+                .push(OrgElementsIndexRelation::AncestorOf(id_set(
+                    std::slice::from_ref(value),
+                )?))
+        }
         ":at" => query
             .relations
             .push(OrgElementsIndexRelation::At(id_set(std::slice::from_ref(

@@ -2,8 +2,9 @@
 //!
 //! The expression surface is calibrated against
 //! `.data/org-mode/lisp/org-element-ast.el`: Org syntax nodes are selected by
-//! node type plus plist-like properties, and traversal follows contents,
-//! secondary properties, and lineage.
+//! node type plus plist-like properties, and traversal follows contents and
+//! lineage. Secondary property contents are queryable when the parser projects
+//! them into summary or property facts.
 
 mod core;
 mod index;

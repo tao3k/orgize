@@ -64,3 +64,47 @@ fn parses_complete_index_query_expression_surface() {
     assert!(matches!(query.predicate, OrgElementQueryPredicate::Any(_)));
     assert_eq!(query.limit, Some(7));
 }
+
+#[test]
+fn parses_org_element_ast_relation_aliases() {
+    let query = org_elements_index_query_from_expr_str(
+        r#"
+(org-elements-query
+  (contents-of 1)
+  (within-contents-of 2)
+  (lineage-of 3)
+  (headline :contents-of 4 :within-contents-of 5 :lineage-of 6))
+"#,
+    )
+    .expect("Org Element API relation aliases should parse");
+
+    assert_eq!(
+        query.kind.as_ref().map(|kind| kind.as_str()),
+        Some("headline")
+    );
+    assert_eq!(query.relations.len(), 6);
+    assert!(matches!(
+        query.relations[0],
+        OrgElementsIndexRelation::ChildOf(_)
+    ));
+    assert!(matches!(
+        query.relations[1],
+        OrgElementsIndexRelation::DescendantOf(_)
+    ));
+    assert!(matches!(
+        query.relations[2],
+        OrgElementsIndexRelation::AncestorOf(_)
+    ));
+    assert!(matches!(
+        query.relations[3],
+        OrgElementsIndexRelation::ChildOf(_)
+    ));
+    assert!(matches!(
+        query.relations[4],
+        OrgElementsIndexRelation::DescendantOf(_)
+    ));
+    assert!(matches!(
+        query.relations[5],
+        OrgElementsIndexRelation::AncestorOf(_)
+    ));
+}
