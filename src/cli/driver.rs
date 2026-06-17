@@ -2,7 +2,7 @@
 
 use std::{
     env, fs,
-    io::Read,
+    io::{ErrorKind, Read},
     path::{Path, PathBuf},
     process::ExitCode,
 };
@@ -103,9 +103,7 @@ fn run_export_markdown(paths: Vec<String>) -> Result<ExitCode, String> {
     }
 
     for path in collect_org_paths(&paths)? {
-        let display_path = path.display().to_string();
-        let source =
-            fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
+        let source = fs::read_to_string(&path).map_err(|error| format_path_error(&path, error))?;
         print!("{}", Org::parse(source).to_markdown());
     }
 
@@ -254,9 +252,9 @@ fn collect_org_sources(paths: &[String]) -> Result<Vec<OrgSource>, String> {
     collect_org_paths(paths)?
         .into_iter()
         .map(|path| {
-            let display_path = path.display().to_string();
+            let display_path = display_path(&path);
             let source =
-                fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
+                fs::read_to_string(&path).map_err(|error| format_path_error(&path, error))?;
             Ok(OrgSource {
                 display_path,
                 source,
@@ -929,9 +927,9 @@ fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
         }
     } else {
         for path in collect_org_paths(&paths)? {
-            let display_path = path.display().to_string();
+            let display_path = display_path(&path);
             let source =
-                fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
+                fs::read_to_string(&path).map_err(|error| format_path_error(&path, error))?;
             let formatted = format_org(&source, &options);
             changed |= formatted.changed;
             if check {
@@ -941,7 +939,7 @@ fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
             } else {
                 if formatted.changed {
                     fs::write(&path, formatted.output)
-                        .map_err(|error| format!("{display_path}: {error}"))?;
+                        .map_err(|error| format_path_error(&path, error))?;
                 }
             }
         }
@@ -1040,14 +1038,14 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
         });
     } else {
         for path in collect_org_paths(&paths)? {
-            let display_path = path.display().to_string();
+            let display_path = display_path(&path);
             let mut source =
-                fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
+                fs::read_to_string(&path).map_err(|error| format_path_error(&path, error))?;
             if fix {
                 let formatted = format_org(&source, &FormatOptions::default());
                 if formatted.changed {
                     fs::write(&path, &formatted.output)
-                        .map_err(|error| format!("{display_path}: {error}"))?;
+                        .map_err(|error| format_path_error(&path, error))?;
                     source = formatted.output;
                 }
             }
@@ -1180,12 +1178,11 @@ fn load_property_schema_registries(paths: &[PathBuf]) -> Result<PropertySchemaRe
 }
 
 fn load_property_schema_registry(path: &Path) -> Result<PropertySchemaRegistry, String> {
-    let source =
-        fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let source = fs::read_to_string(path).map_err(|error| format_path_error(path, error))?;
     let value = serde_json::from_str::<serde_json::Value>(&source)
-        .map_err(|error| format!("{}: invalid JSON: {error}", path.display()))?;
+        .map_err(|error| format!("{}: invalid JSON: {error}", display_path(path)))?;
     let mut registry = property_schema_registry_from_json(&value)
-        .map_err(|error| format!("{}: {error}", path.display()))?;
+        .map_err(|error| format!("{}: {error}", display_path(path)))?;
     add_property_schema_file_aliases(&mut registry, path);
     Ok(registry)
 }
@@ -1388,7 +1385,7 @@ fn push_property_schema_alias_base(bases: &mut Vec<String>, path: &Path) {
 }
 
 fn normalize_property_schema_path(path: &Path) -> String {
-    path.to_string_lossy().replace('\\', "/")
+    display_path(path)
 }
 
 fn push_property_schema_alias(contract: &mut PropertySchemaContract, alias: String) {
@@ -1462,29 +1459,29 @@ fn collect_org_paths(paths: &[String]) -> Result<Vec<PathBuf>, String> {
 }
 
 fn collect_org_path(path: &Path, files: &mut Vec<PathBuf>) -> Result<(), String> {
-    let metadata = fs::metadata(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let metadata = fs::metadata(path).map_err(|error| format_path_error(path, error))?;
     if metadata.is_file() {
         if !is_org_file(path) {
-            return Err(format!("{}: expected .org file", path.display()));
+            return Err(format!("{}: expected .org file", display_path(path)));
         }
         files.push(path.to_path_buf());
         return Ok(());
     }
     if !metadata.is_dir() {
-        return Err(format!("{}: unsupported path type", path.display()));
+        return Err(format!("{}: unsupported path type", display_path(path)));
     }
 
     let mut entries = fs::read_dir(path)
-        .map_err(|error| format!("{}: {error}", path.display()))?
+        .map_err(|error| format_path_error(path, error))?
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|error| format!("{}: {error}", path.display()))?;
+        .map_err(|error| format_path_error(path, error))?;
     entries.sort_by_key(|entry| entry.path());
 
     for entry in entries {
         let entry_path = entry.path();
         let entry_type = entry
             .file_type()
-            .map_err(|error| format!("{}: {error}", entry_path.display()))?;
+            .map_err(|error| format_path_error(&entry_path, error))?;
         if entry_type.is_dir() {
             collect_org_path(&entry_path, files)?;
         } else if entry_type.is_file() && is_org_file(&entry_path) {
@@ -1498,4 +1495,19 @@ fn is_org_file(path: &Path) -> bool {
     path.extension()
         .and_then(|extension| extension.to_str())
         .is_some_and(|extension| extension.eq_ignore_ascii_case("org"))
+}
+
+fn display_path(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
+}
+
+fn format_path_error(path: &Path, error: std::io::Error) -> String {
+    format!("{}: {}", display_path(path), stable_io_error(&error))
+}
+
+fn stable_io_error(error: &std::io::Error) -> String {
+    match error.kind() {
+        ErrorKind::NotFound => "No such file or directory (os error 2)".to_string(),
+        _ => error.to_string(),
+    }
 }

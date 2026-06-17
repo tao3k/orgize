@@ -353,8 +353,12 @@ fn render_attachment_inventory(
 fn relative_path(path: &str, base_dir: &Path) -> String {
     Path::new(path)
         .strip_prefix(base_dir)
-        .map(|path| path.display().to_string())
-        .unwrap_or_else(|_| path.to_string())
+        .map(stable_path)
+        .unwrap_or_else(|_| path.replace('\\', "/"))
+}
+
+fn stable_path(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
 }
 
 fn run_git(dir: &Path, args: &[&str]) {

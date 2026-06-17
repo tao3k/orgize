@@ -54,7 +54,7 @@ fn build_attachment_inventory(
                 exists,
                 &section,
                 path.as_str(),
-                Some(absolute_path.display().to_string()),
+                Some(display_path(&absolute_path)),
             );
             push_archive_delete_advice(&mut inventory, options, &section, path.as_str());
             directory_scan_records
@@ -73,7 +73,7 @@ fn build_attachment_inventory(
                     source: directory.source.clone(),
                 },
                 path,
-                absolute_path: absolute_path.display().to_string(),
+                absolute_path: display_path(&absolute_path),
                 exists,
                 vcs,
             });
@@ -97,7 +97,7 @@ fn build_attachment_inventory(
                     exists,
                     &section,
                     path.as_str(),
-                    absolute_path.display().to_string(),
+                    display_path(&absolute_path),
                 );
                 directory_links
                     .entry(directory_path.clone())
@@ -114,9 +114,7 @@ fn build_attachment_inventory(
                     attachment_id: attachment_id(&section),
                     directory_path: AttachmentDisplayDirectoryPath::new(directory_path.clone()),
                     link_path: AttachmentDisplayLinkPath::new(path.clone()),
-                    absolute_path: AttachmentDisplayAbsolutePath::new(
-                        absolute_path.display().to_string(),
-                    ),
+                    absolute_path: AttachmentDisplayAbsolutePath::new(display_path(&absolute_path)),
                     exists,
                     media_kind: media_kind(path.as_str()),
                 });
@@ -135,7 +133,7 @@ fn build_attachment_inventory(
                 section_title: section.title.clone(),
                 kind: AttachmentInventoryEntryKind::Link { link: link.clone() },
                 path,
-                absolute_path: absolute_path.display().to_string(),
+                absolute_path: display_path(&absolute_path),
                 exists,
                 vcs,
             });
@@ -298,7 +296,7 @@ fn push_directory_sync_actions(
             if linked.is_some_and(|linked| linked.contains(name.as_str())) {
                 continue;
             }
-            let absolute_path = entry.path().display().to_string();
+            let absolute_path = display_path(&entry.path());
             inventory.sync_plan.actions.push(AttachmentSyncAction {
                 kind: AttachmentSyncActionKind::OrphanFile,
                 source: directory.source.clone(),
@@ -317,7 +315,7 @@ fn push_directory_sync_actions(
                 source: directory.source.clone(),
                 section_title: directory.section_title.clone(),
                 path: directory.path.clone(),
-                absolute_path: Some(directory.absolute_path.display().to_string()),
+                absolute_path: Some(display_path(&directory.absolute_path)),
                 message: format!(
                     "attachment directory `{}` has no direct files",
                     directory.path
@@ -329,7 +327,7 @@ fn push_directory_sync_actions(
                     source: directory.source.clone(),
                     section_title: directory.section_title.clone(),
                     path: directory.path.clone(),
-                    absolute_path: Some(directory.absolute_path.display().to_string()),
+                    absolute_path: Some(display_path(&directory.absolute_path)),
                     message: format!(
                         "section `{}` keeps :ATTACH: but `{}` has no direct files",
                         directory.section_title, directory.path
@@ -429,6 +427,10 @@ fn absolute_path(base_dir: &str, path: &str) -> PathBuf {
     } else {
         Path::new(base_dir).join(path)
     }
+}
+
+fn display_path(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
 }
 
 fn vcs_evidence(options: &AttachmentInventoryOptions, path: &Path) -> AttachmentVcsEvidence {
