@@ -286,6 +286,9 @@ pub use org_contract_model::{
     OrgContractExpectation, OrgContractKind, OrgContractQuery, OrgContractReference,
     OrgContractRegistry, OrgContractRelativeScope, OrgContractScope, OrgContractSeverity,
 };
+pub use org_elements_query_expr::{
+    OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str,
+};
 pub use progress_model::{
     ProgressCheckboxSummary, ProgressEffortSummary, ProgressStatisticCookie,
     ProgressStatisticCookieKind, ProgressStatsRecord, ProgressTodoState, ProgressTodoSummary,

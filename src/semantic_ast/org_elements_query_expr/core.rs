@@ -1,39 +1,64 @@
-//! Elisp-style Org elements query expressions.
+//! Parser and contract lowering for Elisp-style Org elements query expressions.
 //!
-//! It accepts the query IR shape used by Org contracts, first projects it into a
-//! lossless rowan tree, and then lowers that tree into `OrgContractQuery`.
+//! The same parsed expression tree can lower either into `OrgContractQuery` for
+//! contract assertions or into `OrgElementsIndexQuery` for reusable index/search
+//! calls.
+
+use std::{error::Error, fmt};
 
 use rowan::{GreenNodeBuilder, Language, NodeOrToken, SyntaxKind, SyntaxNode};
 
-use super::{
+use crate::ast::{
     OrgContractBinding, OrgContractCompareOp, OrgContractExpectation, OrgContractQuery,
     OrgContractRelativeScope, OrgElementQueryPredicate, OrgElementsIndexCategory,
-    OrgElementsIndexKind, OrgElementsIndexSummaryValue,
+    OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
 };
 
+/// Error returned when an Org elements query expression cannot be lowered.
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum QueryExpr {
+pub struct OrgElementsQueryExpressionError {
+    message: String,
+}
+
+impl OrgElementsQueryExpressionError {
+    fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+        }
+    }
+}
+
+impl fmt::Display for OrgElementsQueryExpressionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl Error for OrgElementsQueryExpressionError {}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) enum QueryExpr {
     Atom(String),
     String(String),
     List(Vec<QueryExpr>),
 }
 
 impl QueryExpr {
-    fn as_atom(&self) -> Option<&str> {
+    pub(super) fn as_atom(&self) -> Option<&str> {
         match self {
             Self::Atom(value) => Some(value),
             Self::String(_) | Self::List(_) => None,
         }
     }
 
-    fn as_text(&self) -> Option<String> {
+    pub(super) fn as_text(&self) -> Option<String> {
         match self {
             Self::Atom(value) | Self::String(value) => Some(value.clone()),
             Self::List(_) => None,
         }
     }
 
-    fn as_bool(&self) -> Option<bool> {
+    pub(super) fn as_bool(&self) -> Option<bool> {
         match self {
             Self::Atom(value) => match value.as_str() {
                 "t" | "true" => Some(true),
@@ -45,8 +70,23 @@ impl QueryExpr {
     }
 }
 
+/// Parses an elisp-style Org elements query expression into the shared index
+/// query model.
+pub fn org_elements_index_query_from_expr_str(
+    value: &str,
+) -> Result<OrgElementsIndexQuery, OrgElementsQueryExpressionError> {
+    let expressions = parse_expressions(value).ok_or_else(|| {
+        OrgElementsQueryExpressionError::new("invalid Org elements query expression syntax")
+    })?;
+    super::index::compile_index_query_expressions(&expressions).ok_or_else(|| {
+        OrgElementsQueryExpressionError::new("unsupported Org elements query expression")
+    })
+}
+
 /// Parses one expression block as a query-only Org elements IR.
-pub(super) fn parse_org_elements_query_expression_block(value: &str) -> Option<OrgContractQuery> {
+pub(in crate::ast) fn parse_org_elements_query_expression_block(
+    value: &str,
+) -> Option<OrgContractQuery> {
     let expressions = parse_expressions(value)?;
     match expressions.as_slice() {
         [expression] => compile_query_expression(expression),
@@ -62,7 +102,7 @@ pub(super) fn parse_org_elements_query_expression_block(value: &str) -> Option<O
 }
 
 /// Parses one expression block as a contract assertion.
-pub(super) fn parse_org_contract_expression_block(
+pub(in crate::ast) fn parse_org_contract_expression_block(
     value: &str,
 ) -> Option<(
     Vec<OrgContractBinding>,
@@ -76,7 +116,7 @@ pub(super) fn parse_org_contract_expression_block(
     }
 }
 
-pub(super) fn apply_org_elements_query_kind(kind: &str, query: &mut OrgContractQuery) {
+pub(in crate::ast) fn apply_org_elements_query_kind(kind: &str, query: &mut OrgContractQuery) {
     let kind = kind.trim().trim_matches('"');
     match kind {
         "org-data" => {
@@ -109,7 +149,9 @@ pub(super) fn apply_org_elements_query_kind(kind: &str, query: &mut OrgContractQ
     }
 }
 
-pub(super) fn org_elements_query_summary_value(value: &str) -> OrgElementsIndexSummaryValue {
+pub(in crate::ast) fn org_elements_query_summary_value(
+    value: &str,
+) -> OrgElementsIndexSummaryValue {
     match value {
         "t" | "true" => OrgElementsIndexSummaryValue::Bool(true),
         "nil" | "false" => OrgElementsIndexSummaryValue::Bool(false),
@@ -299,14 +341,10 @@ impl<'a> QueryExpressionParser<'a> {
     }
 
     fn take_while(&self, predicate: impl Fn(char) -> bool) -> usize {
-        let mut end = self.position;
-        for ch in self.input[self.position..].chars() {
-            if !predicate(ch) {
-                break;
-            }
-            end += ch.len_utf8();
-        }
-        end
+        self.input[self.position..]
+            .char_indices()
+            .find_map(|(offset, ch)| (!predicate(ch)).then_some(self.position + offset))
+            .unwrap_or(self.input.len())
     }
 
     fn current_char(&self) -> Option<char> {
@@ -344,13 +382,13 @@ fn lower_list(node: &QuerySyntaxNode) -> Option<QueryExpr> {
 }
 
 fn lower_children(node: &QuerySyntaxNode) -> Option<Vec<QueryExpr>> {
-    let mut expressions = Vec::new();
-    for child in node.children_with_tokens() {
-        if let Some(expression) = lower_child(child)? {
-            expressions.push(expression);
-        }
-    }
-    Some(expressions)
+    node.children_with_tokens()
+        .try_fold(Vec::new(), |mut expressions, child| {
+            if let Some(expression) = lower_child(child)? {
+                expressions.push(expression);
+            }
+            Some(expressions)
+        })
 }
 
 fn lower_child(
@@ -714,7 +752,9 @@ fn apply_plist_field_argument(
     Some(())
 }
 
-fn compile_predicate_expression(expression: &QueryExpr) -> Option<OrgElementQueryPredicate> {
+pub(super) fn compile_predicate_expression(
+    expression: &QueryExpr,
+) -> Option<OrgElementQueryPredicate> {
     let QueryExpr::List(items) = expression else {
         return None;
     };
@@ -806,7 +846,7 @@ fn compile_field_shorthand_predicate(
     }
 }
 
-fn parse_field_ref(expression: &QueryExpr) -> Option<FieldRef> {
+pub(super) fn parse_field_ref(expression: &QueryExpr) -> Option<FieldRef> {
     let QueryExpr::List(items) = expression else {
         return None;
     };
@@ -821,7 +861,9 @@ fn parse_field_ref(expression: &QueryExpr) -> Option<FieldRef> {
     })
 }
 
-fn expression_summary_value(expression: &QueryExpr) -> Option<OrgElementsIndexSummaryValue> {
+pub(super) fn expression_summary_value(
+    expression: &QueryExpr,
+) -> Option<OrgElementsIndexSummaryValue> {
     match expression {
         QueryExpr::String(value) => Some(OrgElementsIndexSummaryValue::Text(value.clone())),
         QueryExpr::Atom(value) => Some(org_elements_query_summary_value(value)),
@@ -885,20 +927,20 @@ fn merge_query(target: &mut OrgContractQuery, source: OrgContractQuery) {
     }
 }
 
-fn list_head(items: &[QueryExpr]) -> Option<&str> {
+pub(super) fn list_head(items: &[QueryExpr]) -> Option<&str> {
     items.first()?.as_atom()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum FieldKind {
+pub(super) enum FieldKind {
     Summary,
     Property,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct FieldRef {
-    kind: FieldKind,
-    key: String,
+pub(super) struct FieldRef {
+    pub(super) kind: FieldKind,
+    pub(super) key: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

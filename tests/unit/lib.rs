@@ -16,6 +16,8 @@ mod document_source_selection;
 mod elements_bridge_query_json;
 #[path = "lint_metadata.rs"]
 mod lint_metadata;
+#[path = "org_elements_query_expr.rs"]
+mod org_elements_query_expr;
 
 pub fn to_ast<N: AstNode>(
     parser: impl Fn(Input) -> IResult<Input, GreenElement, ()>,
