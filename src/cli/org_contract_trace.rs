@@ -13,7 +13,8 @@ use serde_json::json;
 use crate::{
     Org,
     ast::{
-        CONTRACT_ORG_PROPERTY, Keyword, OrgContract, OrgContractEvaluation,
+        CONTRACT_ORG_PROPERTY, Keyword, ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES,
+        ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE, OrgContract, OrgContractEvaluation,
         OrgContractEvaluationScope, OrgContractRegistry, OrgContractScope, ParsedAnnotation,
         ParsedAst, Property, Section, evaluate_org_contract,
         org_contract_evaluations_to_json_value, parse_contract_reference,
@@ -29,6 +30,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
 
     match command.as_str() {
         "trace" => run_trace(args.collect()),
+        "query-surface" | "surface" | "guide" => run_query_surface(args.collect()),
         "-h" | "--help" | "help" => {
             print_usage();
             Ok(ExitCode::SUCCESS)
@@ -93,6 +95,53 @@ fn run_trace(args: Vec<String>) -> Result<ExitCode, String> {
         }))
         .expect("contract trace JSON should serialize")
     );
+    Ok(ExitCode::SUCCESS)
+}
+
+fn run_query_surface(args: Vec<String>) -> Result<ExitCode, String> {
+    let mut json_output = false;
+
+    for arg in args {
+        match arg.as_str() {
+            "--json" => json_output = true,
+            "-h" | "--help" => {
+                print_query_surface_usage();
+                return Ok(ExitCode::SUCCESS);
+            }
+            _ if arg.starts_with('-') => {
+                return Err(format!("unknown contract query-surface flag `{arg}`"));
+            }
+            _ => {
+                return Err(format!(
+                    "contract query-surface does not accept path `{arg}`"
+                ));
+            }
+        }
+    }
+
+    if json_output {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&json!({
+                "schemaVersion": 1,
+                "kind": "org-elements-query-expression-surface",
+                "guide": ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,
+                "examples": ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES,
+            }))
+            .expect("contract query-surface JSON should serialize")
+        );
+    } else {
+        println!("orgize contract query-surface");
+        println!("guide:");
+        for entry in ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE {
+            println!("- {entry}");
+        }
+        println!("examples:");
+        for example in ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES {
+            println!("- {example}");
+        }
+    }
+
     Ok(ExitCode::SUCCESS)
 }
 
@@ -303,11 +352,15 @@ fn is_org_file(path: &Path) -> bool {
 }
 
 fn print_usage() {
-    eprintln!("Usage: orgize contract <trace> [options] [PATH ...]");
+    eprintln!("Usage: orgize contract <trace|query-surface> [options] [PATH ...]");
 }
 
 fn print_trace_usage() {
     eprintln!(
         "Usage: orgize contract trace [--json] --org-contract-registry PATH.org [--org-contract-registry PATH.org ...] [PATH ...]"
     );
+}
+
+fn print_query_surface_usage() {
+    eprintln!("Usage: orgize contract query-surface [--json]");
 }
