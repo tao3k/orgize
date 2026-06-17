@@ -78,6 +78,49 @@ asp org contract trace --org-contract-registry <ASP_ORG_ROOT>/contracts/agent.ex
     );
 }
 
+#[test]
+fn lint_enforces_template_package_relative_paths() {
+    let root = test_dir("lint-template-package-relative-paths");
+    let templates = root.join("templates");
+    fs::create_dir_all(&templates).unwrap();
+
+    let source = r#"#+TITLE: Org Templates
+#+PROPERTY: TEMPLATE_INDEX org.templates.v1
+
+* Templates
+- Template: [[languages/org/templates/agent.execplan.v1.org][agent.execplan.v1.org]]
+- Contract: [[languages/org/contracts/agent.execplan.v1.org][agent.execplan.v1]]
+:TEMPLATE_CONTRACT_ORG: [[languages/org/contracts/agent.execplan.v1.org][agent.execplan.v1]]
+"#;
+
+    let report = lint_org_with_options(
+        source,
+        &LintOptions {
+            file_base_dir: Some(templates),
+            ..LintOptions::default()
+        },
+    );
+
+    let findings = report
+        .findings
+        .iter()
+        .filter(|finding| finding.code == "ORG018")
+        .collect::<Vec<_>>();
+    assert_eq!(findings.len(), 3, "{:#?}", report.findings);
+    assert!(
+        findings.iter().any(|finding| finding
+            .message
+            .contains("languages/org/templates/agent.execplan.v1.org")),
+        "{findings:#?}"
+    );
+    assert!(
+        findings.iter().any(|finding| finding
+            .message
+            .contains("languages/org/contracts/agent.execplan.v1.org")),
+        "{findings:#?}"
+    );
+}
+
 fn test_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("orgize-{name}-{}", std::process::id()));
     let _ = fs::remove_dir_all(&dir);
