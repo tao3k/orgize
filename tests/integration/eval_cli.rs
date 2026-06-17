@@ -67,6 +67,73 @@ echo should-not-run
     );
 }
 
+#[test]
+fn eval_cli_run_executes_shell_block_and_writes_results() {
+    let dir = test_dir("eval-run-write");
+    fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("notes.org");
+    fs::write(
+        &path,
+        r#"#+NAME: verify
+#+BEGIN_SRC sh :results output replace
+printf real-eval
+#+END_SRC
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["eval", "run", "--write", "verify", "notes.org"])
+        .output()
+        .unwrap();
+
+    assert_success(&output);
+    let stdout = stdout(&output);
+    assert!(stdout.contains("orgize eval run"), "stdout: {stdout}");
+    assert!(stdout.contains("exit-code: 0"), "stdout: {stdout}");
+    assert!(stdout.contains("written: true"), "stdout: {stdout}");
+    assert_eq!(
+        fs::read_to_string(path).unwrap(),
+        r#"#+NAME: verify
+#+BEGIN_SRC sh :results output replace
+printf real-eval
+#+END_SRC
+
+#+RESULTS: verify
+: real-eval
+"#
+    );
+}
+
+#[test]
+fn eval_cli_run_rejects_non_shell_blocks() {
+    let dir = test_dir("eval-run-non-shell");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(
+        dir.join("notes.org"),
+        r#"#+NAME: verify
+#+BEGIN_SRC python :results output replace
+print("no")
+#+END_SRC
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["eval", "run", "verify", "notes.org"])
+        .output()
+        .unwrap();
+
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("eval run only supports shell source blocks"),
+        "stderr: {stderr}"
+    );
+}
+
 fn eval_fixture() -> &'static str {
     r#"#+NAME: verify
 #+BEGIN_SRC bash :results output replace

@@ -1,4 +1,9 @@
-use std::{fs, io::Read, path::PathBuf, process::ExitCode};
+use std::{
+    fs,
+    io::Read,
+    path::PathBuf,
+    process::{Command, ExitCode},
+};
 
 use crate::{
     Org,
@@ -19,6 +24,7 @@ pub(super) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     match command.as_str() {
         "plan" => run_plan(args.collect()),
         "patch" => run_patch(args.collect()),
+        "run" => run_run(args.collect()),
         "-h" | "--help" | "help" => {
             print_usage();
             Ok(ExitCode::SUCCESS)
@@ -85,12 +91,106 @@ fn run_patch(args: Vec<String>) -> Result<ExitCode, String> {
     Ok(ExitCode::SUCCESS)
 }
 
+fn run_run(args: Vec<String>) -> Result<ExitCode, String> {
+    let args = parse_run_args(args)?;
+    if args.help {
+        print_run_usage();
+        return Ok(ExitCode::SUCCESS);
+    }
+    let path = args
+        .path
+        .as_ref()
+        .ok_or_else(|| "eval run requires PATH".to_string())?;
+    let display_path = path.display().to_string();
+    let source = fs::read_to_string(path).map_err(|error| format!("{display_path}: {error}"))?;
+    let document = Org::parse(&source).document();
+    let plan = document
+        .babel_eval_plan(args.name.as_str())
+        .map_err(render_plan_error)?;
+    if !args.force && !eval_policy_allows_run(plan.record.execution.eval.policy) {
+        return Err(format!(
+            "eval block `{}` has :eval {} (use --force to run anyway)",
+            plan.name,
+            eval_policy_label(plan.record.execution.eval.policy)
+        ));
+    }
+    let output = execute_eval_plan(&plan, args.shell.as_deref(), path)?;
+    let patch = plan.result_patch(&source, &output);
+    if args.write {
+        let next = patch.apply_to(&source);
+        if next != source {
+            fs::write(path, next).map_err(|error| format!("{display_path}: {error}"))?;
+        }
+    }
+    if args.json {
+        println!(
+            "{}",
+            run_json(&plan, &patch, &output, &display_path, args.write)
+        );
+    } else {
+        print!(
+            "{}",
+            run_compact(&plan, &patch, &output, &display_path, args.write)
+        );
+    }
+    Ok(if output.exit_code == Some(0) {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::from(1)
+    })
+}
+
 #[derive(Default)]
 struct PlanArgs {
     help: bool,
     json: bool,
     name: String,
     path: Option<PathBuf>,
+}
+
+#[derive(Default)]
+struct RunArgs {
+    help: bool,
+    json: bool,
+    write: bool,
+    force: bool,
+    shell: Option<String>,
+    name: String,
+    path: Option<PathBuf>,
+}
+
+fn parse_run_args(args: Vec<String>) -> Result<RunArgs, String> {
+    let mut parsed = RunArgs::default();
+    let mut positional = Vec::new();
+    let mut index = 0usize;
+    while index < args.len() {
+        let arg = &args[index];
+        match arg.as_str() {
+            "--json" => parsed.json = true,
+            "--write" => parsed.write = true,
+            "--force" => parsed.force = true,
+            "--shell" => {
+                index += 1;
+                parsed.shell = Some(required_arg(&args, index, "--shell")?.to_string());
+            }
+            "-h" | "--help" => parsed.help = true,
+            _ if arg.starts_with('-') => return Err(format!("unknown eval run flag `{arg}`")),
+            _ => positional.push(arg.clone()),
+        }
+        index += 1;
+    }
+    if parsed.help {
+        return Ok(parsed);
+    }
+    parsed.name = positional
+        .first()
+        .cloned()
+        .ok_or_else(|| "eval run requires NAME".to_string())?;
+    parsed.path = positional.get(1).map(PathBuf::from);
+    if positional.len() > 2 {
+        return Err("eval run accepts at most NAME and PATH".to_string());
+    }
+    Ok(parsed)
 }
 
 fn parse_plan_args(args: Vec<String>) -> Result<PlanArgs, String> {
@@ -232,6 +332,67 @@ fn render_plan_error(error: BabelEvalPlanError) -> String {
     }
 }
 
+fn execute_eval_plan(
+    plan: &BabelEvalPlan,
+    shell_override: Option<&str>,
+    path: &PathBuf,
+) -> Result<BabelEvalOutput, String> {
+    let language = plan
+        .record
+        .language
+        .as_deref()
+        .unwrap_or("sh")
+        .to_ascii_lowercase();
+    let shell = shell_override
+        .map(str::to_string)
+        .unwrap_or_else(|| default_shell_for_language(&language).to_string());
+    let shell_arg = shell_arg_for_language(&language)?;
+    let mut command = Command::new(&shell);
+    command.arg(shell_arg).arg(plan.record.value.as_str());
+    if let Some(parent) = path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        command.current_dir(parent);
+    }
+    let output = command.output().map_err(|error| {
+        format!(
+            "failed to run `{shell}` for eval block `{}`: {error}",
+            plan.name
+        )
+    })?;
+    Ok(BabelEvalOutput {
+        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+        exit_code: output.status.code(),
+    })
+}
+
+fn default_shell_for_language(language: &str) -> &'static str {
+    match language {
+        "bash" => "bash",
+        _ => "sh",
+    }
+}
+
+fn shell_arg_for_language(language: &str) -> Result<&'static str, String> {
+    match language {
+        "bash" => Ok("-lc"),
+        "sh" | "shell" | "shell-script" => Ok("-c"),
+        other => Err(format!(
+            "eval run only supports shell source blocks, got `{other}`"
+        )),
+    }
+}
+
+fn eval_policy_allows_run(policy: SourceBlockEvalPolicy) -> bool {
+    !matches!(
+        policy,
+        SourceBlockEvalPolicy::No
+            | SourceBlockEvalPolicy::Never
+            | SourceBlockEvalPolicy::NeverExport
+    )
+}
+
 fn plan_compact(plan: &BabelEvalPlan, path: &str) -> String {
     let record = &plan.record;
     let mut rendered = String::new();
@@ -265,6 +426,39 @@ fn plan_compact(plan: &BabelEvalPlan, path: &str) -> String {
     rendered
 }
 
+fn run_compact(
+    plan: &BabelEvalPlan,
+    patch: &BabelEvalResultPatch,
+    output: &BabelEvalOutput,
+    path: &str,
+    written: bool,
+) -> String {
+    let mut rendered = String::new();
+    rendered.push_str("orgize eval run\n");
+    rendered.push_str(&format!("source: {path}\n"));
+    rendered.push_str(&format!("name: {}\n", plan.name));
+    rendered.push_str(&format!(
+        "language: {}\n",
+        plan.record.language.as_deref().unwrap_or("sh")
+    ));
+    rendered.push_str(&format!(
+        "exit-code: {}\n",
+        output
+            .exit_code
+            .map(|code| code.to_string())
+            .unwrap_or_else(|| "<signal>".to_string())
+    ));
+    rendered.push_str(&format!("stdout-bytes: {}\n", output.stdout.len()));
+    rendered.push_str(&format!("stderr-bytes: {}\n", output.stderr.len()));
+    rendered.push_str(&format!("kind: {}\n", patch_kind_label(patch.kind)));
+    rendered.push_str(&format!("written: {written}\n"));
+    if !written && !patch.replacement.is_empty() {
+        rendered.push_str("replacement:\n");
+        rendered.push_str(&patch.replacement);
+    }
+    rendered
+}
+
 fn patch_compact(
     plan: &BabelEvalPlan,
     patch: &BabelEvalResultPatch,
@@ -294,6 +488,24 @@ fn patch_compact(
         rendered.push_str(&patch.replacement);
     }
     rendered
+}
+
+fn run_json(
+    plan: &BabelEvalPlan,
+    patch: &BabelEvalResultPatch,
+    output: &BabelEvalOutput,
+    path: &str,
+    written: bool,
+) -> serde_json::Value {
+    serde_json::json!({
+        "source": path,
+        "name": plan.name,
+        "language": plan.record.language,
+        "exitCode": output.exit_code,
+        "stdout": output.stdout,
+        "stderr": output.stderr,
+        "patch": patch_json(plan, patch, path, written),
+    })
 }
 
 fn plan_json(plan: &BabelEvalPlan, path: &str) -> serde_json::Value {
@@ -410,7 +622,7 @@ fn patch_kind_label(kind: BabelEvalResultPatchKind) -> &'static str {
 }
 
 fn print_usage() {
-    eprintln!("Usage: orgize eval <plan|patch> [options]");
+    eprintln!("Usage: orgize eval <plan|patch|run> [options]");
 }
 
 fn print_plan_usage() {
@@ -421,4 +633,8 @@ fn print_patch_usage() {
     eprintln!(
         "Usage: orgize eval patch [--json] [--write] [--stdout TEXT|--stdout-file PATH] [--stderr TEXT|--stderr-file PATH] [--exit-code CODE] NAME PATH"
     );
+}
+
+fn print_run_usage() {
+    eprintln!("Usage: orgize eval run [--json] [--write] [--force] [--shell PATH] NAME PATH");
 }

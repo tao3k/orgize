@@ -80,6 +80,7 @@ mod org_contract;
 mod org_contract_evaluation;
 mod org_contract_evaluation_json;
 mod org_contract_model;
+mod org_elements_query_expr;
 mod postprocess;
 mod preprocessing;
 mod prescan;

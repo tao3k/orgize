@@ -183,6 +183,89 @@ fn execplan_template_satisfies_language_contract() {
     assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
 }
 
+#[test]
+fn reflection_answer_contract_requires_nonempty_value_cell() {
+    let registry = {
+        let document = Org::parse(reflection_answer_contract_source()).document();
+        parse_contracts_from_document(&document, None)
+    };
+    let contract = registry
+        .resolve(&parse_contract_reference("agent.reflection-answers.v1"))
+        .expect("contract should resolve");
+
+    let answered_document = Org::parse(reflection_answered_source()).document();
+    let answered = evaluate_org_contract(
+        &answered_document,
+        contract,
+        OrgContractEvaluationScope::section(
+            "Reflection Questions",
+            vec!["Reflection Questions".to_string()],
+            answered_document.sections[0].ann.range,
+        ),
+    );
+    assert!(
+        answered
+            .assertions
+            .iter()
+            .all(|assertion| assertion.status == OrgContractAssertionStatus::Passed),
+        "{answered:?}"
+    );
+    let answered_value = answered
+        .assertions
+        .iter()
+        .find(|assertion| assertion.assertion_id == "reflection-has-nonempty-answer")
+        .expect("nonempty assertion");
+    assert_eq!(answered_value.actual_count, 1);
+
+    let empty_document = Org::parse(reflection_empty_value_source()).document();
+    let empty = evaluate_org_contract(
+        &empty_document,
+        contract,
+        OrgContractEvaluationScope::section(
+            "Reflection Questions",
+            vec!["Reflection Questions".to_string()],
+            empty_document.sections[0].ann.range,
+        ),
+    );
+    let empty_value = empty
+        .assertions
+        .iter()
+        .find(|assertion| assertion.assertion_id == "reflection-has-nonempty-answer")
+        .expect("nonempty assertion");
+    assert_eq!(empty_value.status, OrgContractAssertionStatus::Failed);
+    assert_eq!(empty_value.actual_count, 0);
+}
+
+#[test]
+fn org_contract_accepts_elisp_style_query_expression_with_binding() {
+    let registry = {
+        let document = Org::parse(query_expression_contract_source()).document();
+        parse_contracts_from_document(&document, None)
+    };
+    let contract = registry
+        .resolve(&parse_contract_reference("agent.query-expression.v1"))
+        .expect("contract should resolve");
+    let document = Org::parse(query_expression_target_source()).document();
+    let evaluation = evaluate_org_contract(
+        &document,
+        contract,
+        OrgContractEvaluationScope::section(
+            "Evidence Loop",
+            vec!["Evidence Loop".to_string()],
+            document.sections[0].ann.range,
+        ),
+    );
+
+    let assertion = evaluation
+        .assertions
+        .iter()
+        .find(|assertion| assertion.assertion_id == "evidence-link-from-cell")
+        .expect("evidence-link assertion");
+    assert_eq!(assertion.status, OrgContractAssertionStatus::Passed);
+    assert_eq!(assertion.actual_count, 1);
+    assert_eq!(assertion.bindings["evidence"].len(), 1);
+}
+
 fn contract_registry() -> OrgContractRegistry {
     let document = Org::parse(contract_source()).document();
     parse_contracts_from_document(&document, None)
@@ -223,6 +306,116 @@ fn contract_target_source() -> &'static str {
 :END:
 ** Evidence
 [[https://example.test][inside]]
+"#
+}
+
+fn reflection_answer_contract_source() -> &'static str {
+    r#"* reflection-answers
+:PROPERTIES:
+:CONTRACT_ID: agent.reflection-answers.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+
+** has-question-table
+:PROPERTIES:
+:ASSERT_ID: reflection-has-question-table
+:SEVERITY: error
+:END:
+
+#+BEGIN_SRC org-contract
+assert exists table where descendant_of($scope)
+#+END_SRC
+
+** has-question-column
+:PROPERTIES:
+:ASSERT_ID: reflection-has-question-column
+:SEVERITY: error
+:END:
+
+#+BEGIN_SRC org-contract
+assert exists table-cell where descendant_of($scope) and summary(text) = "Question"
+#+END_SRC
+
+** has-value-column
+:PROPERTIES:
+:ASSERT_ID: reflection-has-value-column
+:SEVERITY: error
+:END:
+
+#+BEGIN_SRC org-contract
+assert exists table-cell where descendant_of($scope) and summary(text) = "Value"
+#+END_SRC
+
+** has-nonempty-answer
+:PROPERTIES:
+:ASSERT_ID: reflection-has-nonempty-answer
+:SEVERITY: error
+:END:
+
+#+BEGIN_SRC org-contract
+(assert exists
+  (table-cell :descendant-of $scope :column "Value" :header nil :nonempty t))
+#+END_SRC
+"#
+}
+
+fn reflection_answered_source() -> &'static str {
+    r#"* Reflection Questions
+:PROPERTIES:
+:CONTRACT_ORG: agent.reflection-answers.v1
+:END:
+
+| Question | Value |
+|----------+-------|
+| What should reflection record? | It must answer with a nonempty Value cell. |
+"#
+}
+
+fn reflection_empty_value_source() -> &'static str {
+    r#"* Reflection Questions
+:PROPERTIES:
+:CONTRACT_ORG: agent.reflection-answers.v1
+:END:
+
+| Question | Value |
+|----------+-------|
+| What should reflection record? | |
+"#
+}
+
+fn query_expression_contract_source() -> &'static str {
+    r#"* query-expression-contract
+:PROPERTIES:
+:CONTRACT_ID: agent.query-expression.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+
+** evidence-link-from-cell
+:PROPERTIES:
+:ASSERT_ID: evidence-link-from-cell
+:SEVERITY: error
+:END:
+
+#+BEGIN_SRC org-contract
+(let ((evidence
+       (table-cell :descendant-of $scope :column "Evidence" :header nil :nonempty t)))
+  (assert count >= 1
+    (link :descendant-of evidence)))
+#+END_SRC
+"#
+}
+
+fn query_expression_target_source() -> &'static str {
+    r#"* Evidence Loop
+:PROPERTIES:
+:CONTRACT_ORG: agent.query-expression.v1
+:END:
+
+| Claim | Evidence |
+|-------+----------|
+| Ready | [[https://example.test][trace]] |
 "#
 }
 

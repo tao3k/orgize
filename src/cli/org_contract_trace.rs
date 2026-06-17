@@ -307,5 +307,7 @@ fn print_usage() {
 }
 
 fn print_trace_usage() {
-    eprintln!("Usage: orgize contract trace [--json] --org-contract-registry PATH.org [PATH ...]");
+    eprintln!(
+        "Usage: orgize contract trace [--json] --org-contract-registry PATH.org [--org-contract-registry PATH.org ...] [PATH ...]"
+    );
 }

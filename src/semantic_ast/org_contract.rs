@@ -2,6 +2,10 @@
 
 use std::{collections::HashSet, path::Path};
 
+use super::org_elements_query_expr::{
+    apply_org_elements_query_kind, org_elements_query_summary_value,
+    parse_org_contract_expression_block, parse_org_elements_query_expression_block,
+};
 use super::{
     ASSERT_ID_PROPERTY, ASSERT_SEVERITY_PROPERTY, CONTRACT_ALIAS_PROPERTY, CONTRACT_ID_PROPERTY,
     CONTRACT_KIND_ORG_ELEMENTS, CONTRACT_KIND_PROPERTY, CONTRACT_SCOPE_PROPERTY, Document,
@@ -9,7 +13,8 @@ use super::{
     OrgContractExpectation, OrgContractKind, OrgContractQuery, OrgContractReference,
     OrgContractRegistry, OrgContractRelativeScope, OrgContractScope, OrgContractSeverity,
     OrgElementQueryPredicate, OrgElementSelector, OrgElementsIndexCategory, OrgElementsIndexKind,
-    ParsedAnnotation, Property, Section, SourceBlockRecord, SourceBlockRecordKind,
+    OrgElementsIndexSummaryPredicate, ParsedAnnotation, Property, Section, SourceBlockRecord,
+    SourceBlockRecordKind,
 };
 
 /// Parses a host-loaded Org contract registry from an Org document.
@@ -158,15 +163,27 @@ fn parse_assertion(
     for block in section_source_blocks(section, source_blocks) {
         let language = block.language.as_deref().unwrap_or_default().trim();
         if language.eq_ignore_ascii_case("org-elements-query") {
-            query = Some(parse_query_block(&block.value));
+            query = if block.value.trim_start().starts_with('(') {
+                parse_org_elements_query_expression_block(&block.value)
+            } else {
+                Some(parse_query_block(&block.value))
+            };
+            query_source = Some(block.source.clone());
+        } else if language.eq_ignore_ascii_case("org-elements-query-expr")
+            || language.eq_ignore_ascii_case("org-elements-expr")
+        {
+            query = parse_org_elements_query_expression_block(&block.value);
             query_source = Some(block.source.clone());
         } else if language.eq_ignore_ascii_case("org-elements-selector") {
             query = parse_selector_block(&block.value);
             query_source = Some(block.source.clone());
         } else if language.eq_ignore_ascii_case("org-contract") {
-            if let Some((parsed_bindings, parsed_query, parsed_expectation)) =
+            let parsed = if block.value.trim_start().starts_with('(') {
+                parse_org_contract_expression_block(&block.value)
+            } else {
                 parse_org_contract_block(&block.value)
-            {
+            };
+            if let Some((parsed_bindings, parsed_query, parsed_expectation)) = parsed {
                 bindings = parsed_bindings;
                 query = Some(parsed_query);
                 expectation = Some(parsed_expectation);
@@ -498,12 +515,31 @@ fn parse_org_contract_property_predicate(condition: &str) -> Option<OrgElementQu
 }
 
 fn parse_org_contract_summary_predicate(condition: &str) -> Option<OrgElementQueryPredicate> {
-    parse_org_contract_field_predicate(
-        condition,
-        "summary",
-        OrgElementQueryPredicate::summary_eq,
-        OrgElementQueryPredicate::summary_contains,
-    )
+    let prefix = "summary(";
+    let rest = condition.strip_prefix(prefix)?;
+    let (key, rhs) = rest.split_once(')')?;
+    let rhs = rhs.trim();
+    if let Some(value) = rhs
+        .strip_prefix("contains")
+        .and_then(|value| query_value(value.trim()))
+    {
+        return Some(OrgElementQueryPredicate::summary_contains(
+            key.trim().to_string(),
+            value,
+        ));
+    }
+    if let Some(value) = rhs
+        .strip_prefix('=')
+        .and_then(|value| query_value(value.trim()))
+    {
+        return Some(OrgElementQueryPredicate::SummaryEquals(
+            OrgElementsIndexSummaryPredicate {
+                key: key.trim().to_string(),
+                value: org_elements_query_summary_value(&value),
+            },
+        ));
+    }
+    None
 }
 
 fn parse_org_contract_header_predicate(condition: &str) -> Option<OrgElementQueryPredicate> {
@@ -574,36 +610,7 @@ fn parse_count_comparison(condition: &str) -> Option<OrgContractExpectation> {
 }
 
 fn apply_org_contract_kind(kind: &str, query: &mut OrgContractQuery) {
-    let kind = kind.trim().trim_matches('"');
-    match kind {
-        "org-data" => {
-            query.category = Some(OrgElementsIndexCategory::Document);
-            query.kind = Some(OrgElementsIndexKind::new("org-data"));
-        }
-        "headline" => {
-            query.category = Some(OrgElementsIndexCategory::Section);
-            query.kind = Some(OrgElementsIndexKind::new("headline"));
-        }
-        "node-property" => {
-            query.category = Some(OrgElementsIndexCategory::Property);
-            query.kind = Some(OrgElementsIndexKind::new("node-property"));
-        }
-        "keyword" => {
-            query.category = Some(OrgElementsIndexCategory::Keyword);
-            query.kind = Some(OrgElementsIndexKind::new("keyword"));
-        }
-        "link" | "timestamp" | "bold" | "italic" | "underline" | "strike-through"
-        | "superscript" | "subscript" | "code" | "verbatim" | "target" | "radio-target"
-        | "footnote-reference" | "citation" | "inline-src-block" | "inline-babel-call"
-        | "macro" | "plain-text" => {
-            query.category = Some(OrgElementsIndexCategory::Object);
-            query.kind = Some(OrgElementsIndexKind::new(kind));
-        }
-        _ => {
-            query.category = Some(OrgElementsIndexCategory::Element);
-            query.kind = Some(OrgElementsIndexKind::new(kind));
-        }
-    }
+    apply_org_elements_query_kind(kind, query);
 }
 
 fn parse_selector_block(value: &str) -> Option<OrgContractQuery> {

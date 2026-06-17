@@ -366,7 +366,18 @@ impl ElementIndex {
                 }
             }
             ElementData::Table(table) => {
-                for row in &table.rows {
+                let header_row_index = table.rows.iter().position(|row| !row.is_rule);
+                let header_cells = header_row_index
+                    .and_then(|index| table.rows.get(index))
+                    .map(|row| {
+                        row.cells
+                            .iter()
+                            .map(|cell| objects_text(&cell.objects))
+                            .collect()
+                    })
+                    .unwrap_or_else(Vec::new);
+                for (row_index, row) in table.rows.iter().enumerate() {
+                    let is_header = Some(row_index) == header_row_index;
                     let row_id = self.push(ElementIndexRecordSpec::new(
                         Some(element_id),
                         OrgElementsIndexCategory::Element,
@@ -375,11 +386,14 @@ impl ElementIndex {
                         outline_path,
                         "table",
                         summary([
+                            ("rowIndex", (row_index + 1).into()),
                             ("isRule", row.is_rule.into()),
+                            ("isHeader", is_header.into()),
                             ("cells", row.cells.len().into()),
                         ]),
                     ));
-                    for cell in &row.cells {
+                    for (column_index, cell) in row.cells.iter().enumerate() {
+                        let text = objects_text(&cell.objects);
                         let cell_id = self.push(ElementIndexRecordSpec::new(
                             Some(row_id),
                             OrgElementsIndexCategory::Object,
@@ -387,7 +401,20 @@ impl ElementIndex {
                             &cell.ann,
                             outline_path,
                             "tableRow",
-                            summary([("objects", cell.objects.len().into())]),
+                            summary([
+                                ("rowIndex", (row_index + 1).into()),
+                                ("columnIndex", (column_index + 1).into()),
+                                (
+                                    "columnName",
+                                    optional_text(
+                                        header_cells.get(column_index).map(|value| value.as_str()),
+                                    ),
+                                ),
+                                ("isHeader", is_header.into()),
+                                ("objects", cell.objects.len().into()),
+                                ("text", text.clone().into()),
+                                ("hasText", (!text.trim().is_empty()).into()),
+                            ]),
                         ));
                         self.collect_objects(&cell.objects, outline_path, "tableCell", cell_id);
                     }
@@ -734,6 +761,71 @@ fn object_summary(object: &Object<ParsedAnnotation>) -> OrgElementsIndexSummary 
         ]),
         ObjectData::Markup { children, .. } => summary([("children", children.len().into())]),
         ObjectData::LineBreak => empty_summary(),
+    }
+}
+
+fn objects_text(objects: &[Object<ParsedAnnotation>]) -> String {
+    objects.iter().map(object_text).collect::<Vec<_>>().join("")
+}
+
+fn object_text(object: &Object<ParsedAnnotation>) -> String {
+    match &object.data {
+        ObjectData::Plain(value)
+        | ObjectData::Code(value)
+        | ObjectData::Verbatim(value)
+        | ObjectData::Entity(value)
+        | ObjectData::LatexFragment(value)
+        | ObjectData::Target(value)
+        | ObjectData::RadioTarget(value)
+        | ObjectData::StatisticCookie(value) => value.clone(),
+        ObjectData::Timestamp(timestamp) => timestamp.raw.clone(),
+        ObjectData::LineBreak => "\n".to_string(),
+        ObjectData::InlineSrc { value, .. } | ObjectData::ExportSnippet { value, .. } => {
+            value.clone()
+        }
+        ObjectData::InlineCall {
+            name, arguments, ..
+        } => {
+            if arguments.is_empty() {
+                name.clone()
+            } else {
+                format!("{name}({arguments})")
+            }
+        }
+        ObjectData::FootnoteRef {
+            label,
+            resolved_label,
+            definition,
+            ..
+        } => label
+            .as_ref()
+            .or(resolved_label.as_ref())
+            .cloned()
+            .unwrap_or_else(|| objects_text(definition)),
+        ObjectData::Citation(citation) => citation
+            .references
+            .iter()
+            .map(|reference| reference.id.as_str())
+            .collect::<Vec<_>>()
+            .join(","),
+        ObjectData::Cloze { text, .. } | ObjectData::Markup { children: text, .. } => {
+            objects_text(text)
+        }
+        ObjectData::Link(link) => {
+            if link.has_description() {
+                objects_text(&link.description)
+            } else {
+                objects_text(&link.default_description)
+            }
+        }
+        ObjectData::Macro { name, arguments } => {
+            if arguments.is_empty() {
+                name.clone()
+            } else {
+                format!("{name}({})", arguments.join(","))
+            }
+        }
+        ObjectData::Unknown { raw, .. } => raw.clone(),
     }
 }
 

@@ -1414,7 +1414,7 @@ fn print_fmt_usage() {
 
 fn print_lint_usage() {
     eprintln!(
-        "Usage: orgize lint [--fix] [--format compact|text|json] [--priority-highest VALUE] [--priority-default VALUE] [--priority-lowest VALUE] [--property-schema-registry PATH.json] [--org-contract-registry PATH.org] [PATH ...]"
+        "Usage: orgize lint [--fix] [--format compact|text|json] [--priority-highest VALUE] [--priority-default VALUE] [--priority-lowest VALUE] [--property-schema-registry PATH.json] [--property-schema-registry PATH.json ...] [--org-contract-registry PATH.org] [--org-contract-registry PATH.org ...] [PATH ...]"
     );
 }
 
