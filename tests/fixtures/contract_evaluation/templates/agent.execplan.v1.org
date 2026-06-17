@@ -1,0 +1,61 @@
+#+CONTRACT_ORG: agent.execplan.v1
+
+* TODO ExecPlan Title [0/8] [0%] :execplan:
+:PROPERTIES:
+:END:
+** Purpose / Big Picture
+Describe the user-visible outcome, why this slice exists, and the boundary it
+is meant to improve.
+** Scope and Boundaries
+*** Files or Dirs to Read
+- [ ] List only task-local target files and directories.
+*** Commands or Tools to Run
+- [ ] List exact validation and inspection commands.
+*** Expected Outputs
+- [ ] Define concrete implementation, documentation, and evidence outputs.
+*** Stop Conditions
+- [ ] Define conditions that should stop implementation or require replanning.
+** TODO Plan Self Check [0/7] [0%]
+- [ ] Scope matches the request and risk level.
+- [ ] Files or dirs to read are complete and minimal.
+- [ ] Commands or tools to run are complete and safe.
+- [ ] Expected outputs are concrete and testable.
+- [ ] Stop conditions are clear.
+- [ ] Dependencies and constraints are recorded.
+- [ ] Validation plan is adequate for risk.
+** Context and Orientation
+Record the current state, relevant package boundaries, and why this work needs
+an ExecPlan instead of a short in-message plan.
+** Plan of Work
+Summarize the sequence at a level that another agent can execute without chat
+history.
+** TODO Concrete Steps [0/4]
+:PROPERTIES:
+- [ ] Research complete.
+- [ ] Implementation complete.
+- [ ] Tests or lint checks complete.
+- [ ] Evidence and recovery notes updated.
+** TODO Validation and Acceptance [0/3]
+:PROPERTIES:
+- [ ] Functional acceptance criteria satisfied.
+- [ ] Regression tests or equivalent focused checks passed.
+- [ ] Documentation or tracking surfaces updated.
+** TODO Reflection and Quality Audit [0/3]
+- [ ] Code audit recorded.
+- [ ] Plan audit recorded.
+- [ ] Verification audit recorded.
+** TODO Final Validation Gate [0/3]
+- [ ] Validation and Acceptance is complete.
+- [ ] Reflection and Quality Audit is complete.
+- [ ] Final go or no-go decision is recorded.
+** Progress
+- Initial plan created.
+** Decision Log
+- Record decisions and tradeoffs here.
+** Recovery Commands
+#+begin_src shell
+asp org query --kind property --field key=PLAN_ID --field value=<PLAN_ID> --workspace . --view metadata
+asp org query --kind property --field key=STEP_STATUS --field value=pending --workspace . --view metadata
+asp org query --kind property --field key=RECEIPT_STATUS --field value=pending --workspace . --view metadata
+asp org contract trace --org-contract-registry languages/org/contracts/agent.execplan.v1.org languages/org/templates/agent.execplan.v1.org
+#+end_src

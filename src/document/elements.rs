@@ -405,10 +405,12 @@ fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentElement>, Str
                     "NodeValue::Paragraph",
                     path,
                     source,
-                    data.sourcepos.start.line,
-                    data.sourcepos.end.line,
-                    Vec::new(),
-                    text,
+                    MarkdownFactPayload::new(
+                        data.sourcepos.start.line,
+                        data.sourcepos.end.line,
+                        Vec::new(),
+                        text,
+                    ),
                 ));
             }
             NodeValue::Link(link) => facts.push(markdown_fact(
@@ -619,11 +621,28 @@ fn markdown_fact(
         source_kind,
         path,
         source,
-        line,
-        end_line,
-        fields,
-        String::new(),
+        MarkdownFactPayload::new(line, end_line, fields, String::new()),
     )
+}
+
+#[cfg(feature = "md")]
+struct MarkdownFactPayload {
+    line: usize,
+    end_line: usize,
+    fields: Vec<(String, String)>,
+    text: String,
+}
+
+#[cfg(feature = "md")]
+impl MarkdownFactPayload {
+    fn new(line: usize, end_line: usize, fields: Vec<(String, String)>, text: String) -> Self {
+        Self {
+            line,
+            end_line,
+            fields,
+            text,
+        }
+    }
 }
 
 #[cfg(feature = "md")]
@@ -632,20 +651,18 @@ fn markdown_fact_with_text(
     source_kind: &'static str,
     path: &Path,
     source: &str,
-    line: usize,
-    end_line: usize,
-    fields: Vec<(String, String)>,
-    text: String,
+    payload: MarkdownFactPayload,
 ) -> DocumentElement {
     DocumentElement {
         kind,
         source_kind,
         path: display_path(path),
-        line: line.max(1),
-        end_line: end_line.max(line).max(1),
-        content: markdown_source_content(source, line, end_line).unwrap_or_else(|| text.clone()),
-        text,
-        fields,
+        line: payload.line.max(1),
+        end_line: payload.end_line.max(payload.line).max(1),
+        content: markdown_source_content(source, payload.line, payload.end_line)
+            .unwrap_or_else(|| payload.text.clone()),
+        text: payload.text,
+        fields: payload.fields,
     }
 }
 

@@ -1,0 +1,86 @@
+* agent.execplan.v1
+:PROPERTIES:
+:CONTRACT_ID: agent.execplan.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+
+** execplan-has-root
+:PROPERTIES:
+:ASSERT_ID: execplan.has-root
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "ExecPlan"
+#+END_SRC
+
+** execplan-has-purpose
+:PROPERTIES:
+:ASSERT_ID: execplan.has-purpose
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "Purpose"
+#+END_SRC
+
+** execplan-has-scope
+:PROPERTIES:
+:ASSERT_ID: execplan.has-scope
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "Scope"
+#+END_SRC
+
+** execplan-has-self-check
+:PROPERTIES:
+:ASSERT_ID: execplan.has-self-check
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "Self Check"
+#+END_SRC
+
+** execplan-has-context
+:PROPERTIES:
+:ASSERT_ID: execplan.has-context
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "Context"
+#+END_SRC
+
+** execplan-has-work-plan
+:PROPERTIES:
+:ASSERT_ID: execplan.has-work-plan
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "Plan of Work"
+#+END_SRC
+
+** execplan-has-steps
+:PROPERTIES:
+:ASSERT_ID: execplan.has-steps
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "Concrete Steps"
+#+END_SRC
+
+** execplan-has-validation
+:PROPERTIES:
+:ASSERT_ID: execplan.has-validation
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "Validation"
+#+END_SRC
+
+** execplan-has-audit
+:PROPERTIES:
+:ASSERT_ID: execplan.has-audit
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "Audit"
+#+END_SRC
+
+** execplan-has-final-gate
+:PROPERTIES:
+:ASSERT_ID: execplan.has-final-gate
+:END:
+#+BEGIN_SRC org-contract
+assert exists headline where summary(title) contains "Final"
+#+END_SRC

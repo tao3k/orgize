@@ -161,20 +161,14 @@ fn org_link_reference_uses_relative_path_and_display_contract_id() {
 #[test]
 fn execplan_template_satisfies_language_contract() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let repo_root = manifest_dir
-        .parent()
-        .expect("orgize manifest has languages parent")
-        .parent()
-        .expect("languages has repository parent")
-        .to_path_buf();
     let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .current_dir(&repo_root)
+        .current_dir(&manifest_dir)
         .args([
             "contract",
             "trace",
             "--org-contract-registry",
-            "languages/org/contracts/agent.execplan.v1.org",
-            "languages/org/templates/agent.execplan.v1.org",
+            "tests/fixtures/contract_evaluation/contracts/agent.execplan.v1.org",
+            "tests/fixtures/contract_evaluation/templates/agent.execplan.v1.org",
         ])
         .output()
         .unwrap();

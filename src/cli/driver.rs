@@ -149,7 +149,7 @@ fn run_sdd_status(args: Vec<String>) -> Result<ExitCode, String> {
             .expect("sdd status JSON should serialize")
         );
     } else if files.is_empty() {
-        print!("[ok] orgize sdd status: no SDD issues\n");
+        println!("[ok] orgize sdd status: no SDD issues");
     } else {
         for file in &files {
             print!("{}", sdd_status_text(file));
@@ -199,7 +199,7 @@ fn run_sdd_graph_diff(args: Vec<String>) -> Result<ExitCode, String> {
     let files = collect_sdd_graph_diff_files(&args.paths)?;
     let drift_count = files.iter().map(|file| file.drifts.len()).sum::<usize>();
     if drift_count == 0 {
-        print!("[ok] orgize sdd graph-diff\n");
+        println!("[ok] orgize sdd graph-diff");
     } else {
         for file in &files {
             if file.drifts.is_empty() {
@@ -601,7 +601,7 @@ fn run_task_list(args: Vec<String>) -> Result<ExitCode, String> {
     }
 
     if rendered.is_empty() {
-        print!("[ok] orgize task-list\n");
+        println!("[ok] orgize task-list");
     } else {
         print!("{rendered}");
     }
