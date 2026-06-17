@@ -287,6 +287,7 @@ pub use org_contract_model::{
     OrgContractRegistry, OrgContractRelativeScope, OrgContractScope, OrgContractSeverity,
 };
 pub use org_elements_query_expr::{
+    ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,
     OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str,
 };
 pub use progress_model::{

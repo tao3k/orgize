@@ -8,6 +8,7 @@
 
 mod core;
 mod index;
+mod surface;
 
 use core::{
     FieldKind, QueryExpr, compile_predicate_expression, expression_summary_value, list_head,
@@ -17,4 +18,7 @@ pub use core::{OrgElementsQueryExpressionError, org_elements_index_query_from_ex
 pub(in crate::ast) use core::{
     apply_org_elements_query_kind, org_elements_query_summary_value,
     parse_org_contract_expression_block, parse_org_elements_query_expression_block,
+};
+pub use surface::{
+    ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,
 };
