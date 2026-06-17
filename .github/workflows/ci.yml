@@ -34,6 +34,15 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Configure Windows cargo git paths
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global core.longpaths true
+          echo "CARGO_HOME=D:/c" >> "$GITHUB_ENV"
+          echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
+
       - name: Restore Org mode fixture cache
         id: org-mode-cache
         uses: actions/cache/restore@v5
