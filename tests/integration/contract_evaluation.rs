@@ -326,11 +326,10 @@ fn contract_source() -> &'static str {
 :END:
 
 #+BEGIN_SRC org-contract
-let evidence = headline where child_of($scope) and property(:raw-value) = "Evidence"
-
-assert count link where
-  descendant_of(evidence)
->= 1
+(let ((evidence
+       (headline :child-of $scope :property (:raw-value "Evidence"))))
+  (assert count >= 1
+    (link :descendant-of evidence)))
 #+END_SRC
 
 #+BEGIN_SRC jinja2 :name message
@@ -364,7 +363,8 @@ fn reflection_answer_contract_source() -> &'static str {
 :END:
 
 #+BEGIN_SRC org-contract
-assert exists table where descendant_of($scope)
+(assert exists
+  (table :descendant-of $scope))
 #+END_SRC
 
 ** has-question-column
@@ -374,7 +374,8 @@ assert exists table where descendant_of($scope)
 :END:
 
 #+BEGIN_SRC org-contract
-assert exists table-cell where descendant_of($scope) and summary(text) = "Question"
+(assert exists
+  (table-cell :descendant-of $scope :text "Question"))
 #+END_SRC
 
 ** has-value-column
@@ -384,7 +385,8 @@ assert exists table-cell where descendant_of($scope) and summary(text) = "Questi
 :END:
 
 #+BEGIN_SRC org-contract
-assert exists table-cell where descendant_of($scope) and summary(text) = "Value"
+(assert exists
+  (table-cell :descendant-of $scope :text "Value"))
 #+END_SRC
 
 ** has-nonempty-answer

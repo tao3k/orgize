@@ -16,8 +16,8 @@ use core::{
 };
 pub use core::{OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str};
 pub(in crate::ast) use core::{
-    apply_org_elements_query_kind, org_elements_query_summary_value,
-    parse_org_contract_expression_block, parse_org_elements_query_expression_block,
+    apply_org_elements_query_kind, parse_org_contract_expression_block,
+    parse_org_elements_query_expression_block,
 };
 pub use surface::{
     ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,

@@ -279,12 +279,12 @@ pub use org_contract_evaluation_json::{
 };
 pub use org_contract_model::{
     ASSERT_ID_PROPERTY, ASSERT_SEVERITY_PROPERTY, CONTRACT_ALIAS_PROPERTY, CONTRACT_ID_PROPERTY,
-    CONTRACT_KIND_ORG_ELEMENTS, CONTRACT_KIND_ORG_ELEMENTS_ASSERTIONS, CONTRACT_KIND_PROPERTY,
-    CONTRACT_ORG_PROPERTY, CONTRACT_SCOPE_PROPERTY, OrgContract, OrgContractAssertion,
-    OrgContractAssertionEvaluation, OrgContractAssertionStatus, OrgContractBinding,
-    OrgContractCompareOp, OrgContractEvaluation, OrgContractEvaluationScope,
-    OrgContractExpectation, OrgContractKind, OrgContractQuery, OrgContractReference,
-    OrgContractRegistry, OrgContractRelativeScope, OrgContractScope, OrgContractSeverity,
+    CONTRACT_KIND_ORG_ELEMENTS, CONTRACT_KIND_PROPERTY, CONTRACT_ORG_PROPERTY,
+    CONTRACT_SCOPE_PROPERTY, OrgContract, OrgContractAssertion, OrgContractAssertionEvaluation,
+    OrgContractAssertionStatus, OrgContractBinding, OrgContractCompareOp, OrgContractEvaluation,
+    OrgContractEvaluationScope, OrgContractExpectation, OrgContractKind, OrgContractQuery,
+    OrgContractReference, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
+    OrgContractSeverity,
 };
 pub use org_elements_query_expr::{
     ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,

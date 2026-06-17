@@ -101,7 +101,8 @@ fn document_contract_source() -> &'static str {
 :END:
 
 #+BEGIN_SRC org-contract
-assert exists headline
+(assert exists
+  (headline))
 #+END_SRC
 "#
 }

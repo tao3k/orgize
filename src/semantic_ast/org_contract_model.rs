@@ -33,9 +33,6 @@ pub const ASSERT_SEVERITY_PROPERTY: &str = "SEVERITY";
 /// Supported contract kind for this feature.
 pub const CONTRACT_KIND_ORG_ELEMENTS: &str = "org-elements";
 
-/// Backward-compatible contract kind accepted by the first contract prototype.
-pub const CONTRACT_KIND_ORG_ELEMENTS_ASSERTIONS: &str = "org-elements-assertions";
-
 /// Typed contract kind for `CONTRACT_ORG` documents.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OrgContractKind {
@@ -52,9 +49,7 @@ impl OrgContractKind {
 
     pub fn parse(value: &str) -> Option<Self> {
         match value.trim() {
-            CONTRACT_KIND_ORG_ELEMENTS | CONTRACT_KIND_ORG_ELEMENTS_ASSERTIONS => {
-                Some(Self::OrgElementsAssertions)
-            }
+            CONTRACT_KIND_ORG_ELEMENTS => Some(Self::OrgElementsAssertions),
             _ => None,
         }
     }

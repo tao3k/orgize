@@ -3,18 +3,15 @@
 use std::{collections::HashSet, path::Path};
 
 use super::org_elements_query_expr::{
-    apply_org_elements_query_kind, org_elements_query_summary_value,
     parse_org_contract_expression_block, parse_org_elements_query_expression_block,
 };
 use super::{
     ASSERT_ID_PROPERTY, ASSERT_SEVERITY_PROPERTY, CONTRACT_ALIAS_PROPERTY, CONTRACT_ID_PROPERTY,
     CONTRACT_KIND_ORG_ELEMENTS, CONTRACT_KIND_PROPERTY, CONTRACT_SCOPE_PROPERTY, Document,
-    OrgContract, OrgContractAssertion, OrgContractBinding, OrgContractCompareOp,
-    OrgContractExpectation, OrgContractKind, OrgContractQuery, OrgContractReference,
-    OrgContractRegistry, OrgContractRelativeScope, OrgContractScope, OrgContractSeverity,
-    OrgElementQueryPredicate, OrgElementSelector, OrgElementsIndexCategory, OrgElementsIndexKind,
-    OrgElementsIndexSummaryPredicate, ParsedAnnotation, Property, Section, SourceBlockRecord,
-    SourceBlockRecordKind,
+    OrgContract, OrgContractAssertion, OrgContractCompareOp, OrgContractExpectation,
+    OrgContractKind, OrgContractQuery, OrgContractReference, OrgContractRegistry, OrgContractScope,
+    OrgContractSeverity, OrgElementSelector, OrgElementsIndexCategory, ParsedAnnotation, Property,
+    Section, SourceBlockRecord, SourceBlockRecordKind,
 };
 
 /// Parses a host-loaded Org contract registry from an Org document.
@@ -163,11 +160,7 @@ fn parse_assertion(
     for block in section_source_blocks(section, source_blocks) {
         let language = block.language.as_deref().unwrap_or_default().trim();
         if language.eq_ignore_ascii_case("org-elements-query") {
-            query = if block.value.trim_start().starts_with('(') {
-                parse_org_elements_query_expression_block(&block.value)
-            } else {
-                Some(parse_query_block(&block.value))
-            };
+            query = parse_org_elements_query_expression_block(&block.value);
             query_source = Some(block.source.clone());
         } else if language.eq_ignore_ascii_case("org-elements-query-expr")
             || language.eq_ignore_ascii_case("org-elements-expr")
@@ -178,12 +171,9 @@ fn parse_assertion(
             query = parse_selector_block(&block.value);
             query_source = Some(block.source.clone());
         } else if language.eq_ignore_ascii_case("org-contract") {
-            let parsed = if block.value.trim_start().starts_with('(') {
+            if let Some((parsed_bindings, parsed_query, parsed_expectation)) =
                 parse_org_contract_expression_block(&block.value)
-            } else {
-                parse_org_contract_block(&block.value)
-            };
-            if let Some((parsed_bindings, parsed_query, parsed_expectation)) = parsed {
+            {
                 bindings = parsed_bindings;
                 query = Some(parsed_query);
                 expectation = Some(parsed_expectation);
@@ -242,377 +232,6 @@ fn block_parameter_name(block: &SourceBlockRecord) -> Option<String> {
     None
 }
 
-fn parse_query_block(value: &str) -> OrgContractQuery {
-    let mut query = OrgContractQuery::default();
-    for raw_line in value.lines() {
-        let line = strip_query_comment(raw_line);
-        if line.is_empty() {
-            continue;
-        }
-
-        if let Some(rest) = line.strip_prefix("outline_path starts_with") {
-            let rhs = rest.trim();
-            if rhs == "$scope.outline_path" {
-                query.use_scope_outline_path = true;
-            } else if let Some(value) = query_value(rhs) {
-                query.outline_path_prefix = outline_path_value(&value);
-                query.has_outline_path_prefix = true;
-            }
-            continue;
-        }
-
-        if let Some((lhs, rhs)) = split_line(&line, " contains ") {
-            if let Some(key) = lhs.strip_prefix("summary.") {
-                if let Some(value) = query_value(rhs) {
-                    query.summary_contains.push((key.trim().to_string(), value));
-                }
-            } else if let Some(key) = lhs.strip_prefix("property.")
-                && let Some(value) = query_value(rhs)
-            {
-                query
-                    .property_contains
-                    .push((key.trim().to_string(), value));
-            }
-            continue;
-        }
-
-        let Some((lhs, rhs)) = split_line(&line, "=") else {
-            continue;
-        };
-        match lhs {
-            "category" => {
-                query.category =
-                    query_value(rhs).and_then(|value| OrgElementsIndexCategory::from_label(&value));
-            }
-            "kind" => query.kind = query_value(rhs).map(OrgElementsIndexKind::new),
-            "affiliated_name" => query.affiliated_name = query_value(rhs),
-            "context" => query.context = query_value(rhs),
-            "limit" => query.limit = query_value(rhs).and_then(|value| value.parse().ok()),
-            "within" if rhs == "\"$scope\"" || rhs == "$scope" => {
-                query.use_scope_outline_path = true;
-            }
-            "outline_path_prefix" => {
-                if let Some(value) = query_value(rhs) {
-                    if value == "$scope.outline_path" {
-                        query.use_scope_outline_path = true;
-                    } else {
-                        query.outline_path_prefix = outline_path_value(&value);
-                        query.has_outline_path_prefix = true;
-                    }
-                }
-            }
-            key if key.starts_with("summary.") => {
-                if let Some(value) = query_value(rhs) {
-                    query
-                        .summary_equals
-                        .push((key.trim_start_matches("summary.").to_string(), value));
-                }
-            }
-            key if key.starts_with("property.") => {
-                if let Some(value) = query_value(rhs) {
-                    query
-                        .property_equals
-                        .push((key.trim_start_matches("property.").to_string(), value));
-                }
-            }
-            _ => {}
-        }
-    }
-    query
-}
-
-fn parse_org_contract_block(
-    value: &str,
-) -> Option<(
-    Vec<OrgContractBinding>,
-    OrgContractQuery,
-    OrgContractExpectation,
-)> {
-    let mut lines = value
-        .lines()
-        .map(strip_query_comment)
-        .filter(|line| !line.is_empty())
-        .collect::<Vec<_>>()
-        .into_iter()
-        .peekable();
-    let mut bindings = Vec::new();
-    while let Some(line) = lines.peek() {
-        let Some(binding) = parse_org_contract_binding(line) else {
-            break;
-        };
-        bindings.push(binding);
-        lines.next();
-    }
-    let assert_line = lines.next()?;
-    let assert_rest = assert_line.strip_prefix("assert")?.trim();
-    let (expectation, rest) = if let Some(rest) = assert_rest.strip_prefix("not exists") {
-        (OrgContractExpectation::NotExists, rest.trim())
-    } else if let Some(rest) = assert_rest.strip_prefix("exists") {
-        (OrgContractExpectation::Exists, rest.trim())
-    } else if let Some(rest) = assert_rest.strip_prefix("count") {
-        (
-            OrgContractExpectation::Count(OrgContractCompareOp::Ge, 1),
-            rest.trim(),
-        )
-    } else {
-        (OrgContractExpectation::Exists, assert_rest)
-    };
-
-    let (kind, inline_condition) = if let Some((kind, condition)) = rest.split_once(" where ") {
-        (kind.trim(), Some(condition.trim()))
-    } else if let Some(kind) = rest.strip_suffix(" where") {
-        (kind.trim(), None)
-    } else {
-        (rest.trim(), None)
-    };
-    if kind.is_empty() {
-        return None;
-    }
-
-    let mut query = OrgContractQuery::default();
-    apply_org_contract_kind(kind, &mut query);
-    let mut expectation = expectation;
-    if let Some(condition) = inline_condition {
-        parse_org_contract_conditions(condition, &mut query, &mut expectation);
-    }
-    for line in lines {
-        parse_org_contract_conditions(&line, &mut query, &mut expectation);
-    }
-    Some((bindings, query, expectation))
-}
-
-fn parse_org_contract_binding(line: &str) -> Option<OrgContractBinding> {
-    let rest = line.strip_prefix("let ")?.trim();
-    let (name, query_source) = rest.split_once('=')?;
-    let name = name.trim();
-    if name.is_empty() {
-        return None;
-    }
-    let query = parse_org_contract_query_source(query_source.trim())?;
-    Some(OrgContractBinding {
-        name: name.to_string(),
-        query,
-    })
-}
-
-fn parse_org_contract_query_source(value: &str) -> Option<OrgContractQuery> {
-    let (kind, inline_condition) = if let Some((kind, condition)) = value.split_once(" where ") {
-        (kind.trim(), Some(condition.trim()))
-    } else if let Some(kind) = value.strip_suffix(" where") {
-        (kind.trim(), None)
-    } else {
-        (value.trim(), None)
-    };
-    if kind.is_empty() {
-        return None;
-    }
-    let mut query = OrgContractQuery::default();
-    apply_org_contract_kind(kind, &mut query);
-    if let Some(condition) = inline_condition {
-        parse_org_contract_conditions(condition, &mut query, &mut OrgContractExpectation::Exists);
-    }
-    Some(query)
-}
-
-fn parse_org_contract_conditions(
-    conditions: &str,
-    query: &mut OrgContractQuery,
-    expectation: &mut OrgContractExpectation,
-) {
-    for condition in conditions.split(" and ") {
-        parse_org_contract_condition(condition, query, expectation);
-    }
-}
-
-fn parse_org_contract_condition(
-    condition: &str,
-    query: &mut OrgContractQuery,
-    expectation: &mut OrgContractExpectation,
-) {
-    let condition = condition
-        .trim()
-        .strip_prefix("and ")
-        .unwrap_or(condition.trim())
-        .trim();
-    if condition.is_empty() || condition == "where" {
-        return;
-    }
-    if let Some(parsed_expectation) = parse_count_comparison(condition) {
-        *expectation = parsed_expectation;
-        return;
-    }
-    if parse_org_contract_relation_condition(condition, query) {
-        return;
-    }
-    if let Some(predicate) = parse_org_contract_boolean_condition(condition) {
-        query.predicates.push(predicate);
-    }
-}
-
-fn parse_org_contract_relation_condition(condition: &str, query: &mut OrgContractQuery) -> bool {
-    if let Some(argument) = function_argument(condition, "within")
-        .or_else(|| function_argument(condition, "descendant_of"))
-    {
-        if argument == "$scope" {
-            query.use_scope_outline_path = true;
-        } else {
-            query.relative_to = Some(OrgContractRelativeScope::DescendantOfBinding(
-                argument.to_string(),
-            ));
-        }
-        return true;
-    }
-    if let Some(argument) = function_argument(condition, "child_of") {
-        if argument == "$scope" {
-            query.use_scope_outline_path = true;
-            query.scope_outline_depth = Some(1);
-        } else {
-            query.relative_to = Some(OrgContractRelativeScope::ChildOfBinding(
-                argument.to_string(),
-            ));
-        }
-        return true;
-    }
-    if let Some(argument) = function_argument(condition, "at") {
-        if argument == "$scope" {
-            query.use_scope_outline_path = true;
-            query.scope_outline_depth = Some(0);
-        } else {
-            query.relative_to = Some(OrgContractRelativeScope::AtBinding(argument.to_string()));
-        }
-        return true;
-    }
-    false
-}
-
-fn parse_org_contract_boolean_condition(condition: &str) -> Option<OrgElementQueryPredicate> {
-    let condition = condition.trim();
-    if let Some((left, right)) = condition.split_once(" or ") {
-        let mut predicates = vec![parse_org_contract_boolean_condition(left)?];
-        predicates.extend(
-            right
-                .split(" or ")
-                .map(parse_org_contract_boolean_condition)
-                .collect::<Option<Vec<_>>>()?,
-        );
-        return Some(OrgElementQueryPredicate::any(predicates));
-    }
-    if let Some(rest) = condition.strip_prefix("not ") {
-        return parse_org_contract_boolean_condition(rest).map(OrgElementQueryPredicate::negate);
-    }
-    parse_org_contract_header_predicate(condition)
-        .or_else(|| parse_org_contract_summary_predicate(condition))
-        .or_else(|| parse_org_contract_property_predicate(condition))
-}
-
-fn parse_org_contract_property_predicate(condition: &str) -> Option<OrgElementQueryPredicate> {
-    parse_org_contract_field_predicate(
-        condition,
-        "property",
-        OrgElementQueryPredicate::property_eq,
-        OrgElementQueryPredicate::property_contains,
-    )
-}
-
-fn parse_org_contract_summary_predicate(condition: &str) -> Option<OrgElementQueryPredicate> {
-    let prefix = "summary(";
-    let rest = condition.strip_prefix(prefix)?;
-    let (key, rhs) = rest.split_once(')')?;
-    let rhs = rhs.trim();
-    if let Some(value) = rhs
-        .strip_prefix("contains")
-        .and_then(|value| query_value(value.trim()))
-    {
-        return Some(OrgElementQueryPredicate::summary_contains(
-            key.trim().to_string(),
-            value,
-        ));
-    }
-    if let Some(value) = rhs
-        .strip_prefix('=')
-        .and_then(|value| query_value(value.trim()))
-    {
-        return Some(OrgElementQueryPredicate::SummaryEquals(
-            OrgElementsIndexSummaryPredicate {
-                key: key.trim().to_string(),
-                value: org_elements_query_summary_value(&value),
-            },
-        ));
-    }
-    None
-}
-
-fn parse_org_contract_header_predicate(condition: &str) -> Option<OrgElementQueryPredicate> {
-    let (lhs, rhs) = split_line(condition, "=")?;
-    let value = query_value(rhs)?;
-    match lhs {
-        "affiliated_name" => Some(OrgElementQueryPredicate::AffiliatedName(value)),
-        "context" => Some(OrgElementQueryPredicate::Context(value)),
-        "category" => {
-            OrgElementsIndexCategory::from_label(&value).map(OrgElementQueryPredicate::Category)
-        }
-        "kind" => Some(OrgElementQueryPredicate::Kind(OrgElementsIndexKind::new(
-            value,
-        ))),
-        _ => None,
-    }
-}
-
-fn parse_org_contract_field_predicate(
-    condition: &str,
-    field: &str,
-    equals: impl Fn(String, String) -> OrgElementQueryPredicate,
-    contains: impl Fn(String, String) -> OrgElementQueryPredicate,
-) -> Option<OrgElementQueryPredicate> {
-    let prefix = format!("{field}(");
-    let rest = condition.strip_prefix(&prefix)?;
-    let (key, rhs) = rest.split_once(')')?;
-    let rhs = rhs.trim();
-    if let Some(value) = rhs
-        .strip_prefix("contains")
-        .and_then(|value| query_value(value.trim()))
-    {
-        return Some(contains(key.trim().to_string(), value));
-    }
-    if let Some(value) = rhs
-        .strip_prefix('=')
-        .and_then(|value| query_value(value.trim()))
-    {
-        return Some(equals(key.trim().to_string(), value));
-    }
-    None
-}
-
-fn function_argument<'a>(condition: &'a str, name: &str) -> Option<&'a str> {
-    let rest = condition.trim().strip_prefix(name)?.trim();
-    let rest = rest.strip_prefix('(')?;
-    let (argument, tail) = rest.split_once(')')?;
-    tail.trim().is_empty().then_some(argument.trim())
-}
-
-fn parse_count_comparison(condition: &str) -> Option<OrgContractExpectation> {
-    for op in [
-        OrgContractCompareOp::Le,
-        OrgContractCompareOp::Lt,
-        OrgContractCompareOp::Ge,
-        OrgContractCompareOp::Gt,
-        OrgContractCompareOp::Eq,
-        OrgContractCompareOp::Ne,
-    ] {
-        if let Some(count) = condition
-            .strip_prefix(op.as_str())
-            .and_then(|value| value.trim().parse::<usize>().ok())
-        {
-            return Some(OrgContractExpectation::Count(op, count));
-        }
-    }
-    None
-}
-
-fn apply_org_contract_kind(kind: &str, query: &mut OrgContractQuery) {
-    apply_org_elements_query_kind(kind, query);
-}
-
 fn parse_selector_block(value: &str) -> Option<OrgContractQuery> {
     let selector = OrgElementSelector::parse_plist(value.trim()).ok()?;
     let mut query = OrgContractQuery {
@@ -632,7 +251,7 @@ fn parse_selector_block(value: &str) -> Option<OrgContractQuery> {
 fn parse_expectation(value: &str) -> Option<OrgContractExpectation> {
     let line = value
         .lines()
-        .map(strip_query_comment)
+        .map(strip_block_comment)
         .find(|line| !line.is_empty())?;
 
     if line == "exists" {
@@ -676,12 +295,7 @@ fn section_property_value(properties: &[Property<ParsedAnnotation>], key: &str) 
         .map(|property| property.value.trim().to_string())
 }
 
-fn split_line<'a>(line: &'a str, separator: &str) -> Option<(&'a str, &'a str)> {
-    line.split_once(separator)
-        .map(|(left, right)| (left.trim(), right.trim()))
-}
-
-fn strip_query_comment(line: &str) -> String {
+fn strip_block_comment(line: &str) -> String {
     let trimmed = line.trim();
     if trimmed.starts_with('#') {
         return String::new();
@@ -691,25 +305,6 @@ fn strip_query_comment(line: &str) -> String {
         .map_or(trimmed, |(before, _)| before)
         .trim()
         .to_string()
-}
-
-fn query_value(value: &str) -> Option<String> {
-    let value = value
-        .trim()
-        .trim_end_matches(',')
-        .trim_matches('"')
-        .trim_matches('\'')
-        .trim();
-    (!value.is_empty()).then(|| value.to_string())
-}
-
-fn outline_path_value(value: &str) -> Vec<String> {
-    value
-        .split('/')
-        .map(str::trim)
-        .filter(|part| !part.is_empty())
-        .map(str::to_string)
-        .collect()
 }
 
 fn contract_aliases(

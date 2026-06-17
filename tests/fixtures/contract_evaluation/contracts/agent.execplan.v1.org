@@ -10,7 +10,8 @@
 :ASSERT_ID: execplan.has-root
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "ExecPlan"
+(assert exists
+  (headline :summary-contains (title "ExecPlan")))
 #+END_SRC
 
 ** execplan-has-purpose
@@ -18,7 +19,8 @@ assert exists headline where summary(title) contains "ExecPlan"
 :ASSERT_ID: execplan.has-purpose
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "Purpose"
+(assert exists
+  (headline :summary-contains (title "Purpose")))
 #+END_SRC
 
 ** execplan-has-scope
@@ -26,7 +28,8 @@ assert exists headline where summary(title) contains "Purpose"
 :ASSERT_ID: execplan.has-scope
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "Scope"
+(assert exists
+  (headline :summary-contains (title "Scope")))
 #+END_SRC
 
 ** execplan-has-self-check
@@ -34,7 +37,8 @@ assert exists headline where summary(title) contains "Scope"
 :ASSERT_ID: execplan.has-self-check
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "Self Check"
+(assert exists
+  (headline :summary-contains (title "Self Check")))
 #+END_SRC
 
 ** execplan-has-context
@@ -42,7 +46,8 @@ assert exists headline where summary(title) contains "Self Check"
 :ASSERT_ID: execplan.has-context
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "Context"
+(assert exists
+  (headline :summary-contains (title "Context")))
 #+END_SRC
 
 ** execplan-has-work-plan
@@ -50,7 +55,8 @@ assert exists headline where summary(title) contains "Context"
 :ASSERT_ID: execplan.has-work-plan
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "Plan of Work"
+(assert exists
+  (headline :summary-contains (title "Plan of Work")))
 #+END_SRC
 
 ** execplan-has-steps
@@ -58,7 +64,8 @@ assert exists headline where summary(title) contains "Plan of Work"
 :ASSERT_ID: execplan.has-steps
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "Concrete Steps"
+(assert exists
+  (headline :summary-contains (title "Concrete Steps")))
 #+END_SRC
 
 ** execplan-has-validation
@@ -66,7 +73,8 @@ assert exists headline where summary(title) contains "Concrete Steps"
 :ASSERT_ID: execplan.has-validation
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "Validation"
+(assert exists
+  (headline :summary-contains (title "Validation")))
 #+END_SRC
 
 ** execplan-has-audit
@@ -74,7 +82,8 @@ assert exists headline where summary(title) contains "Validation"
 :ASSERT_ID: execplan.has-audit
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "Audit"
+(assert exists
+  (headline :summary-contains (title "Audit")))
 #+END_SRC
 
 ** execplan-has-final-gate
@@ -82,5 +91,6 @@ assert exists headline where summary(title) contains "Audit"
 :ASSERT_ID: execplan.has-final-gate
 :END:
 #+BEGIN_SRC org-contract
-assert exists headline where summary(title) contains "Final"
+(assert exists
+  (headline :summary-contains (title "Final")))
 #+END_SRC

@@ -416,10 +416,7 @@ fn contract_source() -> &'static str {
 :END:
 
 #+BEGIN_SRC org-elements-query
-category = "section"
-kind = "headline"
-within = "$scope"
-summary.title = "Goal"
+(headline :descendant-of $scope :summary (title "Goal"))
 #+END_SRC
 
 #+BEGIN_SRC org-elements-expect
@@ -444,10 +441,7 @@ Task `{{ scope.title }}` must contain a Goal section.
 :END:
 
 #+BEGIN_SRC org-elements-query
-category = "section"
-kind = "headline"
-within = "$scope"
-summary.title = "Evidence"
+(headline :descendant-of $scope :summary (title "Evidence"))
 #+END_SRC
 
 #+BEGIN_SRC org-elements-expect
@@ -472,10 +466,7 @@ Research note `{{ scope.title }}` must contain an Evidence section.
 :END:
 
 #+BEGIN_SRC org-elements-query
-category = "section"
-kind = "headline"
-within = "$scope"
-property.:OWNER = "alice"
+(headline :descendant-of $scope :property (:OWNER "alice"))
 #+END_SRC
 
 #+BEGIN_SRC org-elements-expect
@@ -500,9 +491,8 @@ Task `{{ scope.title }}` must have OWNER `alice`.
 :END:
 
 #+BEGIN_SRC org-contract
-assert exists headline where
-  child_of($scope)
-  and property(:raw-value) = "Goal"
+(assert exists
+  (headline :child-of $scope :property (:raw-value "Goal")))
 #+END_SRC
 
 #+BEGIN_SRC jinja2 :name message
@@ -527,11 +517,10 @@ Insert a direct Goal child heading.
 :END:
 
 #+BEGIN_SRC org-contract
-let evidence = headline where child_of($scope) and property(:raw-value) = "Evidence"
-
-assert count link where
-  descendant_of(evidence)
->= 1
+(let ((evidence
+       (headline :child-of $scope :property (:raw-value "Evidence"))))
+  (assert count >= 1
+    (link :descendant-of evidence)))
 #+END_SRC
 
 #+BEGIN_SRC jinja2 :name message
@@ -579,7 +568,12 @@ fn summary_condition_contract_source() -> &'static str {
 :END:
 
 #+BEGIN_SRC org-contract
-assert src-block where affiliated_name = "task_runner" and summary(language) = "python" or summary(language) = "rust"
+(assert exists
+  (and
+    (src-block :name "task_runner")
+    (or
+      (= (summary language) "python")
+      (= (summary language) "rust"))))
 #+END_SRC
 
 ** has-diary-sexp
@@ -589,8 +583,8 @@ assert src-block where affiliated_name = "task_runner" and summary(language) = "
 :END:
 
 #+BEGIN_SRC org-contract
-assert count diary-sexp where summary(raw) contains "org-anniversary"
->= 1
+(assert count >= 1
+  (diary-sexp :summary-contains (raw "org-anniversary")))
 #+END_SRC
 
 ** has-no-non-python-block
@@ -600,7 +594,10 @@ assert count diary-sexp where summary(raw) contains "org-anniversary"
 :END:
 
 #+BEGIN_SRC org-contract
-assert not exists src-block where not summary(language) = "python"
+(assert not-exists
+  (and
+    (src-block)
+    (not (= (summary language) "python"))))
 #+END_SRC
 "#
 }

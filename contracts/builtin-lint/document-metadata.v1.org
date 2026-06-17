@@ -13,7 +13,10 @@
 :SEVERITY: warning
 :END:
 #+begin_src org-contract
-assert exists keyword where context = "metadata" and summary(key) = "TITLE"
+(assert exists
+  (and
+    (keyword :context "metadata")
+    (= (summary key) "TITLE")))
 #+end_src
 #+begin_src jinja2 :name message
 document is missing a #+TITLE keyword
@@ -28,7 +31,8 @@ add a non-empty #+TITLE keyword near the top of the document
 :SEVERITY: warning
 :END:
 #+begin_src org-contract
-assert exists property-drawer where context = "document"
+(assert exists
+  (property-drawer :context "document"))
 #+end_src
 #+begin_src jinja2 :name message
 document is missing document-level properties
