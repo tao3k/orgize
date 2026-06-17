@@ -194,7 +194,7 @@ fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
     );
 
     let tracked = inventory_entry(&inventory, "tracked.txt");
-    assert!(tracked.absolute_path.ends_with("assets/tracked.txt"));
+    assert!(Path::new(&tracked.absolute_path).ends_with(Path::new("assets").join("tracked.txt")));
     assert!(tracked.exists);
     assert_eq!(tracked.vcs.status, AttachmentVcsStatus::Clean);
     assert_eq!(
@@ -233,7 +233,11 @@ fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
             && action.path == "missing-id.jpg"
     }));
     assert!(inventory.sync_plan.actions.iter().any(|action| {
-        action.kind == AttachmentSyncActionKind::OrphanFile && action.path.ends_with("/orphan.jpg")
+        action.kind == AttachmentSyncActionKind::OrphanFile
+            && Path::new(&action.path)
+                .file_name()
+                .and_then(|name| name.to_str())
+                == Some("orphan.jpg")
     }));
     assert!(inventory.sync_plan.actions.iter().any(|action| {
         action.kind == AttachmentSyncActionKind::EmptyDirectory
