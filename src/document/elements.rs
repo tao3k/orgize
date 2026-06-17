@@ -753,6 +753,13 @@ fn collect_document_paths(
 
 fn should_skip_project_directory(name: &str, walk_config: &DocumentWalkConfig) -> bool {
     if walk_config
+        .include_hidden_dirs
+        .iter()
+        .any(|included| included == name)
+    {
+        return false;
+    }
+    if walk_config
         .ignore_dirs
         .iter()
         .any(|ignored| ignored == name)
@@ -760,10 +767,6 @@ fn should_skip_project_directory(name: &str, walk_config: &DocumentWalkConfig) -
         return true;
     }
     name.starts_with('.')
-        && !walk_config
-            .include_hidden_dirs
-            .iter()
-            .any(|included| included == name)
 }
 
 fn default_ignore_dirs() -> &'static [&'static str] {

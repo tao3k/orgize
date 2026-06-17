@@ -866,6 +866,7 @@ pub(crate) fn compact_query_content(content: &str) -> String {
     let mut compacted = String::with_capacity(content.len());
     let mut previous_blank = false;
     let mut inside_preserved_block = false;
+    let mut after_preserved_block = false;
 
     for line in content.lines() {
         let trimmed = line.trim();
@@ -876,23 +877,29 @@ pub(crate) fn compact_query_content(content: &str) -> String {
             continue;
         }
 
-        if previous_blank && !compacted.ends_with('\n') {
-            compacted.push('\n');
-        }
-        if !compacted.is_empty() && !compacted.ends_with('\n') {
-            compacted.push('\n');
-        }
-
         if inside_preserved_block {
+            if !compacted.is_empty() && !compacted.ends_with('\n') {
+                compacted.push('\n');
+            }
             compacted.push_str(line.trim_end());
             if ends_preserved_content_block(trimmed) {
                 inside_preserved_block = false;
+                after_preserved_block = true;
             }
         } else {
-            compacted.push_str(&compact_query_content_line(trimmed));
+            if previous_blank || after_preserved_block || starts_preserved_content_block(trimmed) {
+                if !compacted.is_empty() && !compacted.ends_with('\n') {
+                    compacted.push('\n');
+                }
+            } else if !compacted.is_empty() && !compacted.ends_with('\n') {
+                compacted.push(' ');
+            }
+            let compacted_line = compact_query_content_line(trimmed);
+            compacted.push_str(&compacted_line);
             if starts_preserved_content_block(trimmed) {
                 inside_preserved_block = true;
             }
+            after_preserved_block = false;
         }
         previous_blank = false;
     }
