@@ -1,3 +1,5 @@
+#[path = "integration/agent_cli.rs"]
+mod agent_cli;
 #[path = "integration/contract_evaluation.rs"]
 mod contract_evaluation;
 #[path = "integration/eval_cli.rs"]
@@ -28,6 +30,8 @@ mod lint_contract;
 mod lint_crypt;
 #[path = "integration/lint_file_links.rs"]
 mod lint_file_links;
+#[path = "integration/lint_fix_cli.rs"]
+mod lint_fix_cli;
 #[path = "integration/lint_fmt.rs"]
 mod lint_fmt;
 #[path = "integration/lint_lifecycle.rs"]
@@ -48,3 +52,5 @@ mod parse;
 mod sdd;
 #[path = "integration/semantic_ast/mod.rs"]
 mod semantic_ast;
+#[path = "integration/task_cli.rs"]
+mod task_cli;

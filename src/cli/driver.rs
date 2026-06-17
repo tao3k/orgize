@@ -10,8 +10,9 @@ use std::{
 use crate::{
     Org,
     ast::{
-        PriorityProfile, PriorityValue, PropertySchemaContract, PropertySchemaField,
-        PropertySchemaRegistry, PropertySchemaValueRule,
+        AgendaDate, AgendaQuery, AgentPlanningQuery, PriorityProfile, PriorityValue,
+        PropertySchemaContract, PropertySchemaField, PropertySchemaRegistry,
+        PropertySchemaValueRule, SddNodeRecord, SparseTreeQuery,
     },
     fmt::{FormatOptions, format_org},
     lint::{LintOptions, lint_org_with_options},
@@ -29,13 +30,18 @@ pub fn run_from_env() -> ExitCode {
 }
 
 fn run() -> Result<ExitCode, String> {
-    let mut args = env::args().skip(1);
+    run_args(env::args().skip(1).collect())
+}
+
+pub(crate) fn run_args(args: Vec<String>) -> Result<ExitCode, String> {
+    let mut args = args.into_iter();
     let Some(command) = args.next() else {
         print_usage();
         return Ok(ExitCode::from(2));
     };
 
     match command.as_str() {
+        "agent-planning" => run_agent_planning(args.collect()),
         "contract" => super::org_contract_trace::run(args.collect()),
         "eval" => super::eval::run(args.collect()),
         "export" => run_export(args.collect()),
@@ -48,6 +54,8 @@ fn run() -> Result<ExitCode, String> {
         "lint" => run_lint(args.collect()),
         "md" | "markdown" => crate::document::run_md_command(args.collect()),
         "sdd" => run_sdd(args.collect()),
+        "sparse-tree" => run_sparse_tree(args.collect()),
+        "task-list" => run_task_list(args.collect()),
         "-h" | "--help" | "help" => {
             print_usage();
             Ok(ExitCode::SUCCESS)
@@ -99,6 +107,7 @@ fn run_sdd(args: Vec<String>) -> Result<ExitCode, String> {
 
     match command.as_str() {
         "status" => run_sdd_status(args.collect()),
+        "graph-diff" => run_sdd_graph_diff(args.collect()),
         "-h" | "--help" | "help" => {
             print_sdd_usage();
             Ok(ExitCode::SUCCESS)
@@ -114,27 +123,38 @@ fn run_sdd_status(args: Vec<String>) -> Result<ExitCode, String> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    if args.paths.is_empty() {
-        let source = read_stdin()?;
-        let document = Org::parse(&source).document();
-        print!("{}", document.sdd_status().to_compact_text("<stdin>"));
-        return Ok(ExitCode::SUCCESS);
+    let files = collect_sdd_status_files(&args.paths, args.issues_only)?;
+    let issue_count = files.iter().map(|file| file.issue_count).sum::<usize>();
+    if args.json {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "schemaVersion": 1,
+                "files": files.iter().map(sdd_status_file_to_json).collect::<Vec<_>>(),
+            }))
+            .expect("sdd status JSON should serialize")
+        );
+    } else if files.is_empty() {
+        print!("[ok] orgize sdd status: no SDD issues\n");
+    } else {
+        for file in &files {
+            print!("{}", sdd_status_text(file));
+        }
     }
 
-    for path in collect_org_paths(&args.paths)? {
-        let display_path = path.display().to_string();
-        let source =
-            fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
-        let document = Org::parse(&source).document();
-        print!("{}", document.sdd_status().to_compact_text(&display_path));
-    }
-
-    Ok(ExitCode::SUCCESS)
+    Ok(if args.fail_on_issues && issue_count > 0 {
+        ExitCode::from(1)
+    } else {
+        ExitCode::SUCCESS
+    })
 }
 
 #[derive(Default)]
 struct SddStatusArgs {
     help: bool,
+    json: bool,
+    issues_only: bool,
+    fail_on_issues: bool,
     paths: Vec<String>,
 }
 
@@ -143,6 +163,9 @@ fn parse_sdd_status_args(args: Vec<String>) -> Result<SddStatusArgs, String> {
         .try_fold(SddStatusArgs::default(), |mut parsed, arg| {
             match arg.as_str() {
                 "-h" | "--help" => parsed.help = true,
+                "--json" => parsed.json = true,
+                "--issues-only" => parsed.issues_only = true,
+                "--fail-on-issues" => parsed.fail_on_issues = true,
                 _ if arg.starts_with('-') => {
                     return Err(format!("unknown sdd status flag `{arg}`"));
                 }
@@ -150,6 +173,731 @@ fn parse_sdd_status_args(args: Vec<String>) -> Result<SddStatusArgs, String> {
             }
             Ok(parsed)
         })
+}
+
+fn run_sdd_graph_diff(args: Vec<String>) -> Result<ExitCode, String> {
+    let args = parse_sdd_graph_diff_args(args)?;
+    if args.help {
+        print_sdd_graph_diff_usage();
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    let files = collect_sdd_graph_diff_files(&args.paths)?;
+    let drift_count = files.iter().map(|file| file.drifts.len()).sum::<usize>();
+    if drift_count == 0 {
+        print!("[ok] orgize sdd graph-diff\n");
+    } else {
+        for file in &files {
+            if file.drifts.is_empty() {
+                continue;
+            }
+            print!("{}", sdd_graph_diff_text(file));
+        }
+    }
+
+    Ok(if args.fail_on_drift && drift_count > 0 {
+        ExitCode::from(1)
+    } else {
+        ExitCode::SUCCESS
+    })
+}
+
+#[derive(Default)]
+struct SddGraphDiffArgs {
+    help: bool,
+    fail_on_drift: bool,
+    paths: Vec<String>,
+}
+
+fn parse_sdd_graph_diff_args(args: Vec<String>) -> Result<SddGraphDiffArgs, String> {
+    args.into_iter()
+        .try_fold(SddGraphDiffArgs::default(), |mut parsed, arg| {
+            match arg.as_str() {
+                "-h" | "--help" => parsed.help = true,
+                "--fail-on-drift" => parsed.fail_on_drift = true,
+                _ if arg.starts_with('-') => {
+                    return Err(format!("unknown sdd graph-diff flag `{arg}`"));
+                }
+                _ => parsed.paths.push(arg),
+            }
+            Ok(parsed)
+        })
+}
+
+struct OrgSource {
+    display_path: String,
+    source: String,
+}
+
+fn collect_org_sources(paths: &[String]) -> Result<Vec<OrgSource>, String> {
+    if paths.is_empty() {
+        return Ok(vec![OrgSource {
+            display_path: "<stdin>".to_string(),
+            source: read_stdin()?,
+        }]);
+    }
+
+    collect_org_paths(paths)?
+        .into_iter()
+        .map(|path| {
+            let display_path = path.display().to_string();
+            let source =
+                fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
+            Ok(OrgSource {
+                display_path,
+                source,
+            })
+        })
+        .collect()
+}
+
+struct SddStatusFile {
+    path: String,
+    records: Vec<SddNodeRecord>,
+    issue_count: usize,
+}
+
+fn collect_sdd_status_files(
+    paths: &[String],
+    issues_only: bool,
+) -> Result<Vec<SddStatusFile>, String> {
+    Ok(collect_org_sources(paths)?
+        .into_iter()
+        .filter_map(|source| {
+            let document = Org::parse(&source.source).document();
+            let issue_count = count_sdd_issues(&source.source);
+            (!issues_only || issue_count > 0).then_some(SddStatusFile {
+                path: source.display_path,
+                records: document.sdd_node_records(),
+                issue_count,
+            })
+        })
+        .collect::<Vec<_>>())
+}
+
+fn sdd_status_text(file: &SddStatusFile) -> String {
+    let mut output = crate::ast::SddStatus {
+        records: file.records.clone(),
+    }
+    .to_compact_text(&file.path);
+    if file.issue_count > 0 {
+        output.push_str("issues: ");
+        output.push_str(&file.issue_count.to_string());
+        output.push('\n');
+    }
+    output
+}
+
+fn sdd_status_file_to_json(file: &SddStatusFile) -> serde_json::Value {
+    serde_json::json!({
+        "path": file.path,
+        "issueCount": file.issue_count,
+        "records": file.records.iter().map(sdd_record_to_json).collect::<Vec<_>>(),
+    })
+}
+
+fn sdd_record_to_json(record: &SddNodeRecord) -> serde_json::Value {
+    serde_json::json!({
+        "title": &record.title,
+        "kind": record.kind.as_str(),
+        "id": record.id.as_deref(),
+        "parent": record.parent.as_ref().map(|parent| serde_json::json!({
+            "raw": &parent.raw,
+            "targetId": parent.target_id.as_deref(),
+            "label": parent.label.as_deref(),
+        })),
+        "status": record.status.as_ref().map(|status| status.as_str()),
+        "outlinePath": &record.outline_path,
+        "source": {
+            "line": record.source.start.line,
+            "column": record.source.start.column,
+            "rangeStart": record.source.range_start,
+            "rangeEnd": record.source.range_end,
+        },
+        "capability": record.capability.as_deref(),
+        "viewpoint": record.viewpoint.as_deref(),
+        "concern": record.concern.as_deref(),
+        "quality": record.quality.as_deref(),
+        "rationale": record.rationale.as_deref(),
+        "slug": record.slug.as_deref(),
+    })
+}
+
+fn count_sdd_issues(source: &str) -> usize {
+    lint_org_with_options(source, &LintOptions::default())
+        .findings
+        .iter()
+        .filter(|finding| is_sdd_lint_code(finding.code))
+        .count()
+}
+
+fn is_sdd_lint_code(code: &str) -> bool {
+    matches!(
+        code,
+        "ORG031" | "ORG032" | "ORG033" | "ORG034" | "ORG035" | "ORG036" | "ORG037"
+    )
+}
+
+struct SddGraphDiffFile {
+    path: String,
+    drifts: Vec<SddGraphDrift>,
+}
+
+struct SddGraphDrift {
+    title: String,
+    line: usize,
+    column: usize,
+    semantic_parent: Option<String>,
+    outline_parent: Option<String>,
+    outline_parent_title: Option<String>,
+}
+
+fn collect_sdd_graph_diff_files(paths: &[String]) -> Result<Vec<SddGraphDiffFile>, String> {
+    collect_org_sources(paths)?
+        .into_iter()
+        .map(|source| {
+            let document = Org::parse(&source.source).document();
+            let records = document.sdd_node_records();
+            Ok(SddGraphDiffFile {
+                path: source.display_path,
+                drifts: sdd_graph_drifts(&records),
+            })
+        })
+        .collect()
+}
+
+fn sdd_graph_drifts(records: &[SddNodeRecord]) -> Vec<SddGraphDrift> {
+    records
+        .iter()
+        .filter_map(|record| {
+            let semantic_parent_id = record
+                .parent
+                .as_ref()
+                .and_then(|parent| parent.target_id.as_deref());
+            let semantic_parent_display = record.parent.as_ref().map(|parent| {
+                parent
+                    .target_id
+                    .as_deref()
+                    .unwrap_or(parent.raw.as_str())
+                    .to_string()
+            });
+            let outline_parent = nearest_sdd_outline_parent(records, record);
+            let outline_parent_id = outline_parent.and_then(|parent| parent.id.as_deref());
+            if semantic_parent_id == outline_parent_id {
+                return None;
+            }
+
+            Some(SddGraphDrift {
+                title: record.title.clone(),
+                line: record.source.start.line,
+                column: record.source.start.column,
+                semantic_parent: semantic_parent_display,
+                outline_parent: outline_parent_id.map(str::to_string),
+                outline_parent_title: outline_parent.map(|parent| parent.title.clone()),
+            })
+        })
+        .collect()
+}
+
+fn nearest_sdd_outline_parent<'a>(
+    records: &'a [SddNodeRecord],
+    record: &SddNodeRecord,
+) -> Option<&'a SddNodeRecord> {
+    records
+        .iter()
+        .filter(|candidate| {
+            candidate.outline_path.len() < record.outline_path.len()
+                && record.outline_path.starts_with(&candidate.outline_path)
+        })
+        .max_by_key(|candidate| candidate.outline_path.len())
+}
+
+fn sdd_graph_diff_text(file: &SddGraphDiffFile) -> String {
+    let mut output = String::new();
+    output.push_str("[SDD_GRAPH_DRIFT] ");
+    output.push_str(&file.path);
+    output.push('\n');
+    for drift in &file.drifts {
+        output.push_str("- ");
+        output.push_str(&drift.title);
+        output.push_str(" @ ");
+        output.push_str(&drift.line.to_string());
+        output.push(':');
+        output.push_str(&drift.column.to_string());
+        output.push('\n');
+        output.push_str("  semantic-parent: ");
+        output.push_str(drift.semantic_parent.as_deref().unwrap_or("<none>"));
+        output.push('\n');
+        output.push_str("  outline-parent: ");
+        output.push_str(drift.outline_parent.as_deref().unwrap_or("<none>"));
+        if let Some(title) = &drift.outline_parent_title {
+            output.push_str(" (");
+            output.push_str(title);
+            output.push(')');
+        }
+        output.push('\n');
+    }
+    output
+}
+
+fn run_agent_planning(args: Vec<String>) -> Result<ExitCode, String> {
+    let args = parse_agent_planning_args(args)?;
+    if args.help {
+        print_agent_planning_usage();
+        return Ok(ExitCode::SUCCESS);
+    }
+    let start = parse_required_agenda_date(args.date.as_deref(), "agent-planning --date")?;
+    let end = args
+        .end
+        .as_deref()
+        .map(|value| parse_agenda_date(value, "agent-planning --end"))
+        .transpose()?
+        .unwrap_or(start);
+
+    for source in collect_org_sources(&args.paths)? {
+        let document = Org::parse(&source.source).document();
+        let mut agenda_query = AgendaQuery::new(start, end)
+            .include_done(args.include_done)
+            .include_archived(args.include_archived)
+            .include_comments(args.include_comments);
+        if let Some(expression) = &args.match_expression {
+            agenda_query = agenda_query
+                .match_expression(expression)
+                .map_err(|error| error.to_string())?;
+        }
+        let query = AgentPlanningQuery::new(agenda_query);
+        print!(
+            "{}",
+            document
+                .agent_planning_snapshot(&query)
+                .to_compact_text(&source.display_path)
+        );
+    }
+
+    Ok(ExitCode::SUCCESS)
+}
+
+#[derive(Default)]
+struct AgentPlanningArgs {
+    help: bool,
+    date: Option<String>,
+    end: Option<String>,
+    include_done: bool,
+    include_archived: bool,
+    include_comments: bool,
+    match_expression: Option<String>,
+    paths: Vec<String>,
+}
+
+fn parse_agent_planning_args(args: Vec<String>) -> Result<AgentPlanningArgs, String> {
+    let mut parsed = AgentPlanningArgs::default();
+    let mut index = 0;
+    while index < args.len() {
+        let arg = &args[index];
+        match arg.as_str() {
+            "-h" | "--help" => parsed.help = true,
+            "--date" => {
+                index += 1;
+                parsed.date = Some(required_flag_value(&args, index, "--date")?.to_string());
+            }
+            "--end" => {
+                index += 1;
+                parsed.end = Some(required_flag_value(&args, index, "--end")?.to_string());
+            }
+            "--include-done" => parsed.include_done = true,
+            "--include-archived" => parsed.include_archived = true,
+            "--include-comments" => parsed.include_comments = true,
+            "--match" => {
+                index += 1;
+                parsed.match_expression =
+                    Some(required_flag_value(&args, index, "--match")?.to_string());
+            }
+            _ if arg.starts_with('-') => {
+                return Err(format!("unknown agent-planning flag `{arg}`"));
+            }
+            _ => parsed.paths.push(arg.clone()),
+        }
+        index += 1;
+    }
+    Ok(parsed)
+}
+
+fn run_sparse_tree(args: Vec<String>) -> Result<ExitCode, String> {
+    let args = parse_sparse_tree_args(args)?;
+    if args.help {
+        print_sparse_tree_usage();
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    for source in collect_org_sources(&args.paths)? {
+        let document = Org::parse(&source.source).document();
+        let mut query = SparseTreeQuery::new()
+            .include_done(!args.exclude_done)
+            .include_archived(!args.exclude_archived)
+            .include_comments(args.include_comments)
+            .explain_skips(args.explain_skips)
+            .source_file(source.display_path.clone());
+        if let Some(expression) = &args.match_expression {
+            query = query
+                .match_expression(expression)
+                .map_err(|error| error.to_string())?;
+        }
+        if let Some(text) = &args.text {
+            query = query.text(text);
+        }
+        print!(
+            "{}",
+            document
+                .sparse_tree_projection(&query)
+                .to_compact_text(&source.display_path)
+        );
+    }
+
+    Ok(ExitCode::SUCCESS)
+}
+
+fn run_task_list(args: Vec<String>) -> Result<ExitCode, String> {
+    let args = parse_task_list_args(args)?;
+    if args.help {
+        print_task_list_usage();
+        return Ok(ExitCode::SUCCESS);
+    }
+    let _cache_requested = args.cached;
+
+    let mut rendered = String::new();
+    let mut remaining = args.limit;
+    for source in collect_org_sources(&args.paths)? {
+        if remaining == 0 {
+            break;
+        }
+        let document = Org::parse(&source.source).document();
+        let query = SparseTreeQuery::new()
+            .include_done(true)
+            .include_archived(true)
+            .source_file(source.display_path.clone());
+        let projection = document.sparse_tree_projection(&query);
+        let cards = projection
+            .cards
+            .iter()
+            .filter(|card| task_list_card_matches(card, &args))
+            .take(remaining)
+            .collect::<Vec<_>>();
+        remaining = remaining.saturating_sub(cards.len());
+        rendered.push_str(&render_task_list_cards(&source.display_path, &cards));
+    }
+
+    if rendered.is_empty() {
+        print!("[ok] orgize task-list\n");
+    } else {
+        print!("{rendered}");
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
+#[derive(Default)]
+struct TaskListArgs {
+    help: bool,
+    cached: bool,
+    view: TaskListView,
+    text: Option<String>,
+    tags: Vec<String>,
+    include_done: bool,
+    include_archived: bool,
+    limit: usize,
+    paths: Vec<String>,
+}
+
+#[derive(Clone, Copy, Default, Eq, PartialEq)]
+enum TaskListView {
+    #[default]
+    Active,
+    Done,
+    Archived,
+    Achievement,
+    ArchiveCandidate,
+    ClosureNeeded,
+    Repeating,
+}
+
+fn parse_task_list_args(args: Vec<String>) -> Result<TaskListArgs, String> {
+    let mut parsed = TaskListArgs {
+        limit: 20,
+        ..TaskListArgs::default()
+    };
+    let mut index = 0;
+    while index < args.len() {
+        let arg = &args[index];
+        match arg.as_str() {
+            "-h" | "--help" => parsed.help = true,
+            "--cached" => parsed.cached = true,
+            "--view" => {
+                index += 1;
+                parsed.view = parse_task_list_view(required_flag_value(&args, index, "--view")?)?;
+            }
+            "--text" => {
+                index += 1;
+                parsed.text = Some(required_flag_value(&args, index, "--text")?.to_string());
+            }
+            "--tag" => {
+                index += 1;
+                parsed
+                    .tags
+                    .push(required_flag_value(&args, index, "--tag")?.to_string());
+            }
+            "--include-done" => parsed.include_done = true,
+            "--include-archived" => parsed.include_archived = true,
+            "--limit" => {
+                index += 1;
+                parsed.limit = required_flag_value(&args, index, "--limit")?
+                    .parse::<usize>()
+                    .map_err(|_| "task-list --limit requires a non-negative integer".to_string())?;
+            }
+            _ if arg.starts_with('-') => {
+                return Err(format!("unknown task-list flag `{arg}`"));
+            }
+            _ => parsed.paths.push(arg.clone()),
+        }
+        index += 1;
+    }
+    Ok(parsed)
+}
+
+fn parse_task_list_view(value: &str) -> Result<TaskListView, String> {
+    match value {
+        "active" => Ok(TaskListView::Active),
+        "done" => Ok(TaskListView::Done),
+        "archived" => Ok(TaskListView::Archived),
+        "achievement" => Ok(TaskListView::Achievement),
+        "archive-candidate" => Ok(TaskListView::ArchiveCandidate),
+        "closure-needed" => Ok(TaskListView::ClosureNeeded),
+        "repeating" => Ok(TaskListView::Repeating),
+        _ => Err(format!("unsupported task-list view `{value}`")),
+    }
+}
+
+fn task_list_card_matches(card: &crate::ast::SparseTreeCard, args: &TaskListArgs) -> bool {
+    let Some(todo) = &card.todo else {
+        return false;
+    };
+    if !args.tags.iter().all(|tag| {
+        card.effective_tags
+            .iter()
+            .any(|candidate| candidate.eq_ignore_ascii_case(tag))
+    }) {
+        return false;
+    }
+    if let Some(text) = &args.text
+        && !task_card_contains_text(card, text)
+    {
+        return false;
+    }
+
+    let done = matches!(todo.state, crate::ast::TodoState::Done);
+    match args.view {
+        TaskListView::Active => {
+            (!done || args.include_done) && (!card.archive.archived || args.include_archived)
+        }
+        TaskListView::Done => done && (!card.archive.archived || args.include_archived),
+        TaskListView::Archived => card.archive.archived,
+        TaskListView::Achievement => card
+            .effective_tags
+            .iter()
+            .any(|tag| tag.eq_ignore_ascii_case("achievement")),
+        TaskListView::ArchiveCandidate => done && !card.archive.archived,
+        TaskListView::ClosureNeeded => !done && title_has_complete_cookie(&card.title),
+        TaskListView::Repeating => task_card_has_repeater(card),
+    }
+}
+
+fn task_card_contains_text(card: &crate::ast::SparseTreeCard, text: &str) -> bool {
+    let needle = text.to_ascii_lowercase();
+    card.title.to_ascii_lowercase().contains(&needle)
+        || card
+            .outline_path
+            .iter()
+            .any(|part| part.to_ascii_lowercase().contains(&needle))
+        || card
+            .preview
+            .as_ref()
+            .is_some_and(|preview| preview.to_ascii_lowercase().contains(&needle))
+        || card.properties.iter().any(|property| {
+            property.key.to_ascii_lowercase().contains(&needle)
+                || property.value.to_ascii_lowercase().contains(&needle)
+        })
+}
+
+fn title_has_complete_cookie(title: &str) -> bool {
+    title
+        .split_whitespace()
+        .any(|part| part == "[100%]" || complete_fraction_cookie(part))
+}
+
+fn complete_fraction_cookie(value: &str) -> bool {
+    let Some(inner) = value
+        .strip_prefix('[')
+        .and_then(|value| value.strip_suffix(']'))
+    else {
+        return false;
+    };
+    let Some((done, total)) = inner.split_once('/') else {
+        return false;
+    };
+    let Ok(done) = done.parse::<usize>() else {
+        return false;
+    };
+    let Ok(total) = total.parse::<usize>() else {
+        return false;
+    };
+    total > 0 && done == total
+}
+
+fn task_card_has_repeater(card: &crate::ast::SparseTreeCard) -> bool {
+    task_timestamp_has_repeater(card.planning.scheduled.as_ref())
+        || task_timestamp_has_repeater(card.planning.deadline.as_ref())
+}
+
+fn task_timestamp_has_repeater(timestamp: Option<&crate::ast::Timestamp>) -> bool {
+    timestamp.is_some_and(|timestamp| timestamp.raw.contains("+") || timestamp.raw.contains(".+"))
+}
+
+fn render_task_list_cards(path: &str, cards: &[&crate::ast::SparseTreeCard]) -> String {
+    if cards.is_empty() {
+        return String::new();
+    }
+
+    let mut output = String::new();
+    output.push_str("[TASK_LIST] ");
+    output.push_str(path);
+    output.push('\n');
+    output.push_str("rows: ");
+    output.push_str(&cards.len().to_string());
+    output.push('\n');
+    for card in cards {
+        output.push_str("- ");
+        if let Some(todo) = &card.todo {
+            output.push_str(&todo.name);
+            output.push(' ');
+        }
+        output.push_str(&card.title);
+        output.push('\n');
+        output.push_str("  @ ");
+        output.push_str(path);
+        output.push(':');
+        output.push_str(&card.source.start.line.to_string());
+        output.push(':');
+        output.push_str(&card.source.start.column.to_string());
+        output.push('\n');
+        output.push_str("  outline: ");
+        output.push_str(&card.outline_path.join(" / "));
+        output.push('\n');
+        if !card.effective_tags.is_empty() {
+            output.push_str("  tags: ");
+            output.push_str(&card.effective_tags.join(":"));
+            output.push('\n');
+        }
+        push_task_timestamp(&mut output, "scheduled", card.planning.scheduled.as_ref());
+        push_task_timestamp(&mut output, "deadline", card.planning.deadline.as_ref());
+        push_task_timestamp(&mut output, "closed", card.planning.closed.as_ref());
+    }
+    output
+}
+
+fn push_task_timestamp(
+    output: &mut String,
+    label: &str,
+    timestamp: Option<&crate::ast::Timestamp>,
+) {
+    if let Some(timestamp) = timestamp {
+        output.push_str("  ");
+        output.push_str(label);
+        output.push_str(": ");
+        output.push_str(&timestamp.raw);
+        output.push('\n');
+    }
+}
+
+#[derive(Default)]
+struct SparseTreeArgs {
+    help: bool,
+    text: Option<String>,
+    match_expression: Option<String>,
+    exclude_done: bool,
+    exclude_archived: bool,
+    include_comments: bool,
+    explain_skips: bool,
+    paths: Vec<String>,
+}
+
+fn parse_sparse_tree_args(args: Vec<String>) -> Result<SparseTreeArgs, String> {
+    let mut parsed = SparseTreeArgs::default();
+    let mut index = 0;
+    while index < args.len() {
+        let arg = &args[index];
+        match arg.as_str() {
+            "-h" | "--help" => parsed.help = true,
+            "--text" => {
+                index += 1;
+                parsed.text = Some(required_flag_value(&args, index, "--text")?.to_string());
+            }
+            "--match" => {
+                index += 1;
+                parsed.match_expression =
+                    Some(required_flag_value(&args, index, "--match")?.to_string());
+            }
+            "--exclude-done" => parsed.exclude_done = true,
+            "--exclude-archived" => parsed.exclude_archived = true,
+            "--include-comments" => parsed.include_comments = true,
+            "--explain-skips" => parsed.explain_skips = true,
+            _ if arg.starts_with('-') => {
+                return Err(format!("unknown sparse-tree flag `{arg}`"));
+            }
+            _ => parsed.paths.push(arg.clone()),
+        }
+        index += 1;
+    }
+    Ok(parsed)
+}
+
+fn required_flag_value<'a>(
+    args: &'a [String],
+    index: usize,
+    flag: &'static str,
+) -> Result<&'a str, String> {
+    args.get(index)
+        .map(String::as_str)
+        .ok_or_else(|| format!("{flag} requires a value"))
+}
+
+fn parse_required_agenda_date(
+    value: Option<&str>,
+    label: &'static str,
+) -> Result<AgendaDate, String> {
+    parse_agenda_date(
+        value.ok_or_else(|| format!("{label} requires YYYY-MM-DD"))?,
+        label,
+    )
+}
+
+fn parse_agenda_date(value: &str, label: &'static str) -> Result<AgendaDate, String> {
+    let mut parts = value.split('-');
+    let year = parts
+        .next()
+        .and_then(|part| part.parse::<u16>().ok())
+        .ok_or_else(|| format!("{label} expects YYYY-MM-DD, got `{value}`"))?;
+    let month = parts
+        .next()
+        .and_then(|part| part.parse::<u8>().ok())
+        .filter(|month| (1..=12).contains(month))
+        .ok_or_else(|| format!("{label} expects YYYY-MM-DD, got `{value}`"))?;
+    let day = parts
+        .next()
+        .and_then(|part| part.parse::<u8>().ok())
+        .filter(|day| (1..=31).contains(day))
+        .ok_or_else(|| format!("{label} expects YYYY-MM-DD, got `{value}`"))?;
+    if parts.next().is_some() {
+        return Err(format!("{label} expects YYYY-MM-DD, got `{value}`"));
+    }
+    Ok(AgendaDate::new(year, month, day))
 }
 
 fn run_fmt(args: Vec<String>) -> Result<ExitCode, String> {
@@ -217,6 +965,7 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
     let mut priority_default = None;
     let mut property_schema_registry_paths = Vec::new();
     let mut org_contract_registry_paths = Vec::new();
+    let mut fix = false;
     let mut paths = Vec::new();
     let mut index = 0;
 
@@ -257,6 +1006,7 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
                 };
                 org_contract_registry_paths.push(PathBuf::from(value));
             }
+            "--fix" => fix = true,
             "-h" | "--help" => {
                 print_lint_usage();
                 return Ok(ExitCode::SUCCESS);
@@ -282,6 +1032,9 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
 
     let mut reports = Vec::new();
     if paths.is_empty() {
+        if fix {
+            return Err("lint --fix requires at least one Org file or directory path".to_string());
+        }
         let source = read_stdin()?;
         let report = lint_org_with_options(&source, &base_lint_options);
         reports.push(LintFileReport {
@@ -292,8 +1045,16 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
     } else {
         for path in collect_org_paths(&paths)? {
             let display_path = path.display().to_string();
-            let source =
+            let mut source =
                 fs::read_to_string(&path).map_err(|error| format!("{display_path}: {error}"))?;
+            if fix {
+                let formatted = format_org(&source, &FormatOptions::default());
+                if formatted.changed {
+                    fs::write(&path, &formatted.output)
+                        .map_err(|error| format!("{display_path}: {error}"))?;
+                    source = formatted.output;
+                }
+            }
             let lint_options = LintOptions {
                 include_base_dir: path.parent().map(Path::to_path_buf),
                 attachment_base_dir: path.parent().map(Path::to_path_buf),
@@ -646,7 +1407,7 @@ fn push_property_schema_alias(contract: &mut PropertySchemaContract, alias: Stri
 
 fn print_usage() {
     eprintln!(
-        "Usage: orgize <contract|elements-query|eval|export|fmt|guide|lint|md|query|search|sdd> [options] [PATH ...]"
+        "Usage: orgize <agent-planning|contract|elements-query|eval|export|fmt|guide|lint|md|query|search|sdd|sparse-tree|task-list> [options] [PATH ...]"
     );
 }
 
@@ -660,16 +1421,38 @@ fn print_fmt_usage() {
 
 fn print_lint_usage() {
     eprintln!(
-        "Usage: orgize lint [--format compact|text|json] [--priority-highest VALUE] [--priority-default VALUE] [--priority-lowest VALUE] [--property-schema-registry PATH.json] [--org-contract-registry PATH.org] [PATH ...]"
+        "Usage: orgize lint [--fix] [--format compact|text|json] [--priority-highest VALUE] [--priority-default VALUE] [--priority-lowest VALUE] [--property-schema-registry PATH.json] [--org-contract-registry PATH.org] [PATH ...]"
     );
 }
 
 fn print_sdd_usage() {
-    eprintln!("Usage: orgize sdd <status> [options] [PATH ...]");
+    eprintln!("Usage: orgize sdd <status|graph-diff> [options] [PATH ...]");
 }
 
 fn print_sdd_status_usage() {
-    eprintln!("Usage: orgize sdd status [PATH ...]");
+    eprintln!("Usage: orgize sdd status [--json] [--issues-only] [--fail-on-issues] [PATH ...]");
+}
+
+fn print_sdd_graph_diff_usage() {
+    eprintln!("Usage: orgize sdd graph-diff [--fail-on-drift] [PATH ...]");
+}
+
+fn print_agent_planning_usage() {
+    eprintln!(
+        "Usage: orgize agent-planning --date YYYY-MM-DD [--end YYYY-MM-DD] [--include-done] [--include-archived] [--include-comments] [--match EXPR] [PATH ...]"
+    );
+}
+
+fn print_sparse_tree_usage() {
+    eprintln!(
+        "Usage: orgize sparse-tree [--text TEXT] [--match EXPR] [--exclude-done] [--exclude-archived] [--include-comments] [--explain-skips] [PATH ...]"
+    );
+}
+
+fn print_task_list_usage() {
+    eprintln!(
+        "Usage: orgize task-list [--cached] [--view active|done|archived|achievement|archive-candidate|closure-needed|repeating] [--text TEXT] [--tag TAG] [--include-done] [--include-archived] [--limit N] [PATH ...]"
+    );
 }
 
 fn collect_org_paths(paths: &[String]) -> Result<Vec<PathBuf>, String> {

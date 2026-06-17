@@ -60,12 +60,12 @@ fn org_document_search_and_query_commands_run() {
     );
     assert!(
         guide_stdout.contains(
-            "|recipe paragraph-content=asp org query --kind paragraph --term <term> --content ."
+            "|recipe paragraph-content=asp org query --kind paragraph --term <term> --workspace . --content"
         ),
         "{guide_stdout}"
     );
     assert!(
-        guide_stdout.contains("|cmd search-toc=asp org search toc ."),
+        guide_stdout.contains("|cmd search-toc=asp org search toc --workspace ."),
         "{guide_stdout}"
     );
     assert!(

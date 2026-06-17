@@ -102,6 +102,42 @@ fn cli_sdd_status_renders_compact_projection() {
     assert!(stdout.contains("- audit review: Precision Audit"));
 }
 
+#[test]
+fn cli_sdd_graph_diff_reports_semantic_outline_drift() {
+    let dir = test_dir("sdd-graph-diff");
+    let path = dir.join("sdd.org");
+    fs::write(&path, valid_sdd_fixture()).unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .args(["sdd", "graph-diff", path.to_str().unwrap()])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("[SDD_GRAPH_DRIFT]"), "{stdout}");
+    assert!(stdout.contains("Runtime View @"), "{stdout}");
+    assert!(
+        stdout.contains("semantic-parent: 018f3f9c-7a91-73b4-b3f2-12c4c4d80d77"),
+        "{stdout}"
+    );
+    assert!(
+        stdout.contains("outline-parent: 018f3f9c-8d3e-7b2a-9c91-4f5b2e7a2c11 (System SDD)"),
+        "{stdout}"
+    );
+
+    let fail_output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .args([
+            "sdd",
+            "graph-diff",
+            "--fail-on-drift",
+            path.to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(fail_output.status.code(), Some(1));
+}
+
 fn valid_sdd_fixture() -> &'static str {
     r#"* System SDD :sdd:
 :PROPERTIES:

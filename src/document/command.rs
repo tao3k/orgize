@@ -303,32 +303,35 @@ fn print_guide(language: DocumentLanguage) {
     println!("|rule project-walk skip=hidden-dirs,target,node_modules,__pycache__,venv,dist,build");
     print_element_guide(language);
     println!(
-        "|cmd search-prime={} search prime --view seeds .",
-        language.command_prefix()
-    );
-    println!("|cmd search-toc={} search toc .", language.command_prefix());
-    println!(
-        "|cmd search-fzf={} search fzf <query> --view seeds .",
+        "|cmd search-prime={} search prime --workspace . --view seeds",
         language.command_prefix()
     );
     println!(
-        "|cmd search-fzf-toc={} search fzf <query...> --view toc .",
+        "|cmd search-toc={} search toc --workspace .",
         language.command_prefix()
     );
     println!(
-        "|cmd query-metadata={} query --term <term> --view metadata .",
+        "|cmd search-fzf={} search fzf <query> --workspace . --view seeds",
         language.command_prefix()
     );
     println!(
-        "|cmd query-selector={} query --selector <path:start-end> --view metadata .",
+        "|cmd search-fzf-toc={} search fzf <query...> --workspace . --view toc",
         language.command_prefix()
     );
     println!(
-        "|cmd query-kind={} query --kind <element-kind> --view metadata .",
+        "|cmd query-metadata={} query --term <term> --workspace . --view metadata",
         language.command_prefix()
     );
     println!(
-        "|cmd query-field={} query --field <key=value> --view metadata .",
+        "|cmd query-selector={} query --selector <path:start-end> --workspace . --view metadata",
+        language.command_prefix()
+    );
+    println!(
+        "|cmd query-kind={} query --kind <element-kind> --workspace . --view metadata",
+        language.command_prefix()
+    );
+    println!(
+        "|cmd query-field={} query --field <key=value> --workspace . --view metadata",
         language.command_prefix()
     );
     if language == DocumentLanguage::Org {
@@ -342,19 +345,19 @@ fn print_guide(language: DocumentLanguage) {
         );
     }
     println!(
-        "|cmd query-content={} query --term <term> --content .",
+        "|cmd query-content={} query --term <term> --workspace . --content",
         language.command_prefix()
     );
     println!(
-        "|cmd query-content-kind={} query --kind paragraph --term <term> --content .",
+        "|cmd query-content-kind={} query --kind paragraph --term <term> --workspace . --content",
         language.command_prefix()
     );
     println!(
-        "|cmd query-content-selector={} query --selector <path:start-end> --content .",
+        "|cmd query-content-selector={} query --selector <path:start-end> --workspace . --content",
         language.command_prefix()
     );
     println!(
-        "|cmd direct-read={} query --from-hook direct-source-read --selector <path:start-end> --content .",
+        "|cmd direct-read={} query --from-hook direct-source-read --selector <path:start-end> --workspace . --content",
         language.command_prefix()
     );
 }
@@ -391,22 +394,22 @@ fn print_element_guide(language: DocumentLanguage) {
             println!("|field-map link fields=target,description");
             println!("|field-map image fields=target,description");
             println!(
-                "|recipe todo-headings=asp org query --kind heading --field todo=TODO --view metadata ."
+                "|recipe todo-headings=asp org query --kind heading --field todo=TODO --workspace . --view metadata"
             );
             println!(
-                "|recipe checked-tasks=asp org query --kind task --field checked=true --view metadata ."
+                "|recipe checked-tasks=asp org query --kind task --field checked=true --workspace . --view metadata"
             );
             println!(
-                "|recipe property-value=asp org query --kind property --field key=<KEY> --view metadata ."
+                "|recipe property-value=asp org query --kind property --field key=<KEY> --workspace . --view metadata"
             );
             println!(
-                "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --view metadata ."
+                "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"
             );
             println!(
-                "|recipe paragraph-content=asp org query --kind paragraph --term <term> --content ."
+                "|recipe paragraph-content=asp org query --kind paragraph --term <term> --workspace . --content"
             );
             println!(
-                "|recipe range-elements=asp org query --selector <path:start-end> --view metadata ."
+                "|recipe range-elements=asp org query --selector <path:start-end> --workspace . --view metadata"
             );
         }
         DocumentLanguage::Markdown => {
@@ -420,18 +423,18 @@ fn print_element_guide(language: DocumentLanguage) {
             println!("|field-map task fields=checked,checkbox");
             println!("|field-map link fields=target");
             println!("|field-map image fields=target");
-            println!("|recipe headings=asp md query --kind heading --view metadata .");
+            println!("|recipe headings=asp md query --kind heading --workspace . --view metadata");
             println!(
-                "|recipe checked-tasks=asp md query --kind task --field checked=true --view metadata ."
+                "|recipe checked-tasks=asp md query --kind task --field checked=true --workspace . --view metadata"
             );
             println!(
-                "|recipe code-blocks=asp md query --kind block --field kind=code --view metadata ."
+                "|recipe code-blocks=asp md query --kind block --field kind=code --workspace . --view metadata"
             );
             println!(
-                "|recipe paragraph-content=asp md query --kind paragraph --term <term> --content ."
+                "|recipe paragraph-content=asp md query --kind paragraph --term <term> --workspace . --content"
             );
             println!(
-                "|recipe range-elements=asp md query --selector <path:start-end> --view metadata ."
+                "|recipe range-elements=asp md query --selector <path:start-end> --workspace . --view metadata"
             );
         }
     }
@@ -450,7 +453,7 @@ fn print_search_guide(language: DocumentLanguage) {
     );
     println!("|view fzf args=query returns=bounded-document-facts");
     println!(
-        "|view fzf-toc args=query command=\"{} search fzf <query...> --view toc .\" returns=matched-document-heading-outline combine=document-all-terms",
+        "|view fzf-toc args=query command=\"{} search fzf <query...> --workspace . --view toc\" returns=matched-document-heading-outline combine=document-all-terms",
         language.command_prefix()
     );
 }
@@ -461,27 +464,29 @@ fn print_query_guide(language: DocumentLanguage) {
         language.id()
     );
     println!(
-        "|mode metadata command=\"query --term <term> --view metadata .\" output=element-frontier"
+        "|mode metadata command=\"query --term <term> --workspace . --view metadata\" output=element-frontier"
     );
     println!(
-        "|mode kind command=\"query --kind <element-kind> --view metadata .\" output=element-frontier"
+        "|mode kind command=\"query --kind <element-kind> --workspace . --view metadata\" output=element-frontier"
     );
     println!(
-        "|mode field command=\"query --field <key=value> --view metadata .\" output=element-frontier"
+        "|mode field command=\"query --field <key=value> --workspace . --view metadata\" output=element-frontier"
     );
     println!(
-        "|mode selector command=\"query --selector <path:start-end> --view metadata .\" output=element-frontier"
+        "|mode selector command=\"query --selector <path:start-end> --workspace . --view metadata\" output=element-frontier"
     );
-    println!("|mode content command=\"query --term <term> --content .\" output=pure-query-content");
     println!(
-        "|mode direct-read command=\"query --from-hook direct-source-read --selector <path:start-end> --content .\" output=pure-document-content"
+        "|mode content command=\"query --term <term> --workspace . --content\" output=pure-query-content"
+    );
+    println!(
+        "|mode direct-read command=\"query --from-hook direct-source-read --selector <path:start-end> --workspace . --content\" output=pure-document-content"
     );
     println!("|combine all=--selector+--term+--kind+--field semantics=intersection");
     println!(
-        "|field-match key command=\"query --field <key> --view metadata .\" output=elements-with-field"
+        "|field-match key command=\"query --field <key> --workspace . --view metadata\" output=elements-with-field"
     );
     println!(
-        "|field-match value command=\"query --field <key=value> --view metadata .\" output=elements-with-containing-value"
+        "|field-match value command=\"query --field <key=value> --workspace . --view metadata\" output=elements-with-containing-value"
     );
     println!("|content-rule requires=--selector|--term|--kind|--field");
     println!("|direct-read-rule requires=--from-hook+--selector+--content forbids=--json");
@@ -750,13 +755,15 @@ fn print_query_no_hit(language: DocumentLanguage, terms: &[String], root: &Path)
     } else {
         shell_arg(first_term)
     };
-    println!("|next search-fzf=\"{prefix} search fzf {first_term_arg} --view seeds {root_arg}\"");
     println!(
-        "|next query-single-term=\"{prefix} query --term {first_term_arg} --view metadata {root_arg}\""
+        "|next search-fzf=\"{prefix} search fzf {first_term_arg} --workspace {root_arg} --view seeds\""
     );
-    println!("|next query-guide=\"{prefix} query guide {root_arg}\"");
     println!(
-        "|next direct-read-requires=\"{prefix} query --from-hook direct-source-read --selector <path:start-end> {root_arg}\""
+        "|next query-single-term=\"{prefix} query --term {first_term_arg} --workspace {root_arg} --view metadata\""
+    );
+    println!("|next query-guide=\"{prefix} query guide --workspace {root_arg}\"");
+    println!(
+        "|next direct-read-requires=\"{prefix} query --from-hook direct-source-read --selector <path:start-end> --workspace {root_arg}\""
     );
 }
 
@@ -865,7 +872,7 @@ fn print_selector_frontier(language: DocumentLanguage, selector: &str, facts: &[
         println!("{}", fact.render());
     }
     println!(
-        "|next direct-read=\"{} query --from-hook direct-source-read --selector {} .\"",
+        "|next direct-read=\"{} query --from-hook direct-source-read --selector {} --workspace .\"",
         language.command_prefix(),
         escape_field(selector)
     );
