@@ -866,7 +866,7 @@ pub(crate) fn compact_query_content(content: &str) -> String {
     let mut compacted = String::with_capacity(content.len());
     let mut previous_blank = false;
     let mut inside_preserved_block = false;
-    let mut after_preserved_block = false;
+    let mut after_forced_boundary = false;
 
     for line in content.lines() {
         let trimmed = line.trim();
@@ -884,10 +884,11 @@ pub(crate) fn compact_query_content(content: &str) -> String {
             compacted.push_str(line.trim_end());
             if ends_preserved_content_block(trimmed) {
                 inside_preserved_block = false;
-                after_preserved_block = true;
+                after_forced_boundary = true;
             }
         } else {
-            if previous_blank || after_preserved_block || starts_preserved_content_block(trimmed) {
+            let forces_boundary = forces_compacted_content_boundary(trimmed);
+            if previous_blank || after_forced_boundary || forces_boundary {
                 if !compacted.is_empty() && !compacted.ends_with('\n') {
                     compacted.push('\n');
                 }
@@ -899,7 +900,7 @@ pub(crate) fn compact_query_content(content: &str) -> String {
             if starts_preserved_content_block(trimmed) {
                 inside_preserved_block = true;
             }
-            after_preserved_block = false;
+            after_forced_boundary = forces_boundary;
         }
         previous_blank = false;
     }
@@ -924,12 +925,27 @@ fn starts_preserved_content_block(line: &str) -> bool {
     is_markdown_fence(line) || is_org_preserved_block_start(line)
 }
 
+fn forces_compacted_content_boundary(line: &str) -> bool {
+    starts_preserved_content_block(line) || is_markdown_thematic_break(line)
+}
+
 fn ends_preserved_content_block(line: &str) -> bool {
     is_markdown_fence(line) || is_org_preserved_block_end(line)
 }
 
 fn is_markdown_fence(line: &str) -> bool {
     line.starts_with("```") || line.starts_with("~~~")
+}
+
+fn is_markdown_thematic_break(line: &str) -> bool {
+    if line.len() < 3 {
+        return false;
+    }
+    let mut chars = line.chars().filter(|character| !character.is_whitespace());
+    let Some(marker) = chars.next() else {
+        return false;
+    };
+    matches!(marker, '-' | '_' | '*') && chars.all(|character| character == marker)
 }
 
 fn is_org_preserved_block_start(line: &str) -> bool {

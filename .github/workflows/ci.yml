@@ -8,9 +8,25 @@ on:
       - main
       - v0.10
 
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  # External parser fixture lock. Update intentionally when refreshing Org mode
+  # compatibility coverage; do not track upstream main in CI.
+  ORG_MODE_FIXTURE_REV: b470d813d19e55cb90020649ae076684f1494c3b
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: test / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
 
     steps:
       - name: Checkout code
@@ -18,17 +34,38 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Restore Org mode fixture cache
+        id: org-mode-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: .data/org-mode
+          key: orgize-org-mode-${{ runner.os }}-${{ env.ORG_MODE_FIXTURE_REV }}
+
       - name: Fetch Org mode fixture
+        if: ${{ steps.org-mode-cache.outputs.cache-hit != 'true' }}
+        shell: bash
         run: |
           set -euo pipefail
-          org_mode_rev=b470d813d19e55cb90020649ae076684f1494c3b
           mkdir -p .data
           git init .data/org-mode
           git -C .data/org-mode remote add origin https://github.com/bzg/org-mode.git
-          git -C .data/org-mode fetch --depth=1 origin "$org_mode_rev"
+          git -C .data/org-mode fetch --depth=1 origin "$ORG_MODE_FIXTURE_REV"
           git -C .data/org-mode checkout --detach FETCH_HEAD
+
+      - name: Validate Org mode fixture
+        shell: bash
+        run: |
+          set -euo pipefail
           test -f .data/org-mode/doc/org-guide.org
           test -f .data/org-mode/lisp/org-element.el
+
+      - name: Save Org mode fixture cache
+        if: ${{ steps.org-mode-cache.outputs.cache-hit != 'true' }}
+        continue-on-error: true
+        uses: actions/cache/save@v5
+        with:
+          path: .data/org-mode
+          key: orgize-org-mode-${{ runner.os }}-${{ env.ORG_MODE_FIXTURE_REV }}
 
       - name: Setup rust
         uses: dtolnay/rust-toolchain@stable
@@ -41,6 +78,7 @@ jobs:
           tool: sccache
 
       - name: Configure sccache backend
+        shell: bash
         run: |
           set -euo pipefail
           if [[ -n "${ACTIONS_CACHE_URL:-}" && -n "${ACTIONS_RUNTIME_TOKEN:-}" ]]; then
@@ -73,10 +111,16 @@ jobs:
       - name: Fetch cargo dependencies
         run: cargo fetch
 
-      - run: |
-          cargo fmt --all -- --check
-          cargo test --workspace --all-targets --all-features
-          cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Check formatting
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: cargo fmt --all -- --check
+
+      - name: Run tests
+        run: cargo test --workspace --all-targets --all-features
+
+      - name: Run clippy
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
       - name: Save sccache cache (fallback)
         if: ${{ always() && !cancelled() && env.SCCACHE_GHA_ENABLED != 'true' }}

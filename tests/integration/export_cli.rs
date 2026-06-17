@@ -410,7 +410,7 @@ fn org_document_search_and_query_commands_run() {
         String::from_utf8(paragraph_content.stdout).expect("utf8 paragraph content query");
     assert_eq!(
         paragraph_content_stdout.trim(),
-        "Provider activation carries execution mode.\nDocument providers stay embedded inside ASP.",
+        "Provider activation carries execution mode. Document providers stay embedded inside ASP.",
         "{paragraph_content_stdout}"
     );
 
