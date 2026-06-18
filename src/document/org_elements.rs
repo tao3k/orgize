@@ -463,10 +463,10 @@ fn org_node_path(node: &SyntaxNode) -> String {
 
 fn structural_field_suffix(fields: &[(String, String)]) -> Option<String> {
     for key in ["key", "target", "title", "tag", "lang"] {
-        if let Some((_, value)) = fields.iter().find(|(field, _)| field == key) {
-            if !value.trim().is_empty() {
-                return Some(format!("{}={}", key, selector_component(value)));
-            }
+        if let Some((_, value)) = fields.iter().find(|(field, _)| field == key)
+            && !value.trim().is_empty()
+        {
+            return Some(format!("{}={}", key, selector_component(value)));
         }
     }
     None

@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::Read,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, ExitCode},
 };
 
@@ -335,7 +335,7 @@ fn render_plan_error(error: BabelEvalPlanError) -> String {
 fn execute_eval_plan(
     plan: &BabelEvalPlan,
     shell_override: Option<&str>,
-    path: &PathBuf,
+    path: &Path,
 ) -> Result<BabelEvalOutput, String> {
     let language = plan
         .record

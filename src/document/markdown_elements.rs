@@ -42,13 +42,15 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                     "NodeValue::Heading",
                     path,
                     source,
-                    structural_selector,
-                    data.sourcepos.start.line,
-                    data.sourcepos.end.line,
-                    vec![
-                        ("level".to_string(), heading.level.to_string()),
-                        ("title".to_string(), title),
-                    ],
+                    MarkdownFactPayload::metadata(
+                        structural_selector,
+                        data.sourcepos.start.line,
+                        data.sourcepos.end.line,
+                        vec![
+                            ("level".to_string(), heading.level.to_string()),
+                            ("title".to_string(), title),
+                        ],
+                    ),
                 ));
             }
             NodeValue::Paragraph => {
@@ -78,71 +80,98 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                 "NodeValue::Link",
                 path,
                 source,
-                next_markdown_selector(path, "link", "NodeValue::Link", &mut structural_counts),
-                data.sourcepos.start.line,
-                data.sourcepos.end.line,
-                vec![("target".to_string(), link.url.clone())],
+                MarkdownFactPayload::metadata(
+                    next_markdown_selector(path, "link", "NodeValue::Link", &mut structural_counts),
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    vec![("target".to_string(), link.url.clone())],
+                ),
             )),
             NodeValue::Image(link) => facts.push(markdown_fact(
                 "image",
                 "NodeValue::Image",
                 path,
                 source,
-                next_markdown_selector(path, "image", "NodeValue::Image", &mut structural_counts),
-                data.sourcepos.start.line,
-                data.sourcepos.end.line,
-                vec![("target".to_string(), link.url.clone())],
+                MarkdownFactPayload::metadata(
+                    next_markdown_selector(
+                        path,
+                        "image",
+                        "NodeValue::Image",
+                        &mut structural_counts,
+                    ),
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    vec![("target".to_string(), link.url.clone())],
+                ),
             )),
             NodeValue::CodeBlock(block) => facts.push(markdown_fact(
                 "block",
                 "NodeValue::CodeBlock",
                 path,
                 source,
-                next_markdown_selector(
-                    path,
-                    "block",
-                    "NodeValue::CodeBlock",
-                    &mut structural_counts,
+                MarkdownFactPayload::metadata(
+                    next_markdown_selector(
+                        path,
+                        "block",
+                        "NodeValue::CodeBlock",
+                        &mut structural_counts,
+                    ),
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    vec![
+                        ("kind".to_string(), "code".to_string()),
+                        ("lang".to_string(), block.info.clone()),
+                    ],
                 ),
-                data.sourcepos.start.line,
-                data.sourcepos.end.line,
-                vec![
-                    ("kind".to_string(), "code".to_string()),
-                    ("lang".to_string(), block.info.clone()),
-                ],
             )),
             NodeValue::Table(_) => facts.push(markdown_fact(
                 "table",
                 "NodeValue::Table",
                 path,
                 source,
-                next_markdown_selector(path, "table", "NodeValue::Table", &mut structural_counts),
-                data.sourcepos.start.line,
-                data.sourcepos.end.line,
-                Vec::new(),
+                MarkdownFactPayload::metadata(
+                    next_markdown_selector(
+                        path,
+                        "table",
+                        "NodeValue::Table",
+                        &mut structural_counts,
+                    ),
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    Vec::new(),
+                ),
             )),
             NodeValue::List(list) => facts.push(markdown_fact(
                 "list",
                 "NodeValue::List",
                 path,
                 source,
-                next_markdown_selector(path, "list", "NodeValue::List", &mut structural_counts),
-                data.sourcepos.start.line,
-                data.sourcepos.end.line,
-                vec![
-                    ("listKind".to_string(), format!("{:?}", list.list_type)),
-                    ("start".to_string(), list.start.to_string()),
-                ],
+                MarkdownFactPayload::metadata(
+                    next_markdown_selector(path, "list", "NodeValue::List", &mut structural_counts),
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    vec![
+                        ("listKind".to_string(), format!("{:?}", list.list_type)),
+                        ("start".to_string(), list.start.to_string()),
+                    ],
+                ),
             )),
             NodeValue::Item(_) => facts.push(markdown_fact(
                 "listItem",
                 "NodeValue::Item",
                 path,
                 source,
-                next_markdown_selector(path, "listItem", "NodeValue::Item", &mut structural_counts),
-                data.sourcepos.start.line,
-                data.sourcepos.end.line,
-                Vec::new(),
+                MarkdownFactPayload::metadata(
+                    next_markdown_selector(
+                        path,
+                        "listItem",
+                        "NodeValue::Item",
+                        &mut structural_counts,
+                    ),
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    Vec::new(),
+                ),
             )),
             NodeValue::TaskItem(task) => {
                 let mut fields = vec![("checked".to_string(), task.symbol.is_some().to_string())];
@@ -154,15 +183,17 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                     "NodeValue::TaskItem",
                     path,
                     source,
-                    next_markdown_selector(
-                        path,
-                        "checklistItem",
-                        "NodeValue::TaskItem",
-                        &mut structural_counts,
+                    MarkdownFactPayload::metadata(
+                        next_markdown_selector(
+                            path,
+                            "checklistItem",
+                            "NodeValue::TaskItem",
+                            &mut structural_counts,
+                        ),
+                        data.sourcepos.start.line,
+                        data.sourcepos.end.line,
+                        fields,
                     ),
-                    data.sourcepos.start.line,
-                    data.sourcepos.end.line,
-                    fields,
                 ));
             }
             NodeValue::FrontMatter(_) => facts.push(markdown_fact(
@@ -170,30 +201,34 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                 "NodeValue::FrontMatter",
                 path,
                 source,
-                next_markdown_selector(
-                    path,
-                    "frontMatter",
-                    "NodeValue::FrontMatter",
-                    &mut structural_counts,
+                MarkdownFactPayload::metadata(
+                    next_markdown_selector(
+                        path,
+                        "frontMatter",
+                        "NodeValue::FrontMatter",
+                        &mut structural_counts,
+                    ),
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    Vec::new(),
                 ),
-                data.sourcepos.start.line,
-                data.sourcepos.end.line,
-                Vec::new(),
             )),
             NodeValue::ThematicBreak => facts.push(markdown_fact(
                 "thematicBreak",
                 "NodeValue::ThematicBreak",
                 path,
                 source,
-                next_markdown_selector(
-                    path,
-                    "thematicBreak",
-                    "NodeValue::ThematicBreak",
-                    &mut structural_counts,
+                MarkdownFactPayload::metadata(
+                    next_markdown_selector(
+                        path,
+                        "thematicBreak",
+                        "NodeValue::ThematicBreak",
+                        &mut structural_counts,
+                    ),
+                    data.sourcepos.start.line,
+                    data.sourcepos.end.line,
+                    Vec::new(),
                 ),
-                data.sourcepos.start.line,
-                data.sourcepos.end.line,
-                Vec::new(),
             )),
             _ => {}
         }
@@ -213,18 +248,9 @@ fn markdown_fact(
     source_kind: &'static str,
     path: &Path,
     source: &str,
-    structural_selector: String,
-    line: usize,
-    end_line: usize,
-    fields: Vec<(String, String)>,
+    payload: MarkdownFactPayload,
 ) -> DocumentElement {
-    markdown_fact_with_text(
-        kind,
-        source_kind,
-        path,
-        source,
-        MarkdownFactPayload::new(structural_selector, line, end_line, fields, String::new()),
-    )
+    markdown_fact_with_text(kind, source_kind, path, source, payload)
 }
 
 #[cfg(feature = "md")]
@@ -238,6 +264,15 @@ struct MarkdownFactPayload {
 
 #[cfg(feature = "md")]
 impl MarkdownFactPayload {
+    fn metadata(
+        structural_selector: String,
+        line: usize,
+        end_line: usize,
+        fields: Vec<(String, String)>,
+    ) -> Self {
+        Self::new(structural_selector, line, end_line, fields, String::new())
+    }
+
     fn new(
         structural_selector: String,
         line: usize,

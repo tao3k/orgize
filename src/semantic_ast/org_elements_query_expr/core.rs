@@ -574,11 +574,10 @@ fn compile_query_expression(expression: &QueryExpr) -> Option<OrgContractQuery> 
             apply_org_elements_query_kind(&items.get(1)?.as_text()?, &mut query);
             Some(query)
         }
-        "category" => {
-            let mut query = OrgContractQuery::default();
-            query.category = OrgElementsIndexCategory::from_label(&items.get(1)?.as_text()?);
-            Some(query)
-        }
+        "category" => Some(OrgContractQuery {
+            category: OrgElementsIndexCategory::from_label(&items.get(1)?.as_text()?),
+            ..Default::default()
+        }),
         "summary" => compile_field_shorthand_query(items, FieldKind::Summary, false),
         "summary-contains" => compile_field_shorthand_query(items, FieldKind::Summary, true),
         "property" => compile_field_shorthand_query(items, FieldKind::Property, false),
@@ -586,11 +585,10 @@ fn compile_query_expression(expression: &QueryExpr) -> Option<OrgContractQuery> 
         "descendant-of" | "within" => compile_relative_query(items, RelativeKind::Descendant),
         "child-of" => compile_relative_query(items, RelativeKind::Child),
         "at" => compile_relative_query(items, RelativeKind::At),
-        "limit" => {
-            let mut query = OrgContractQuery::default();
-            query.limit = items.get(1)?.as_text()?.parse::<usize>().ok();
-            Some(query)
-        }
+        "limit" => Some(OrgContractQuery {
+            limit: items.get(1)?.as_text()?.parse::<usize>().ok(),
+            ..Default::default()
+        }),
         _ => compile_kind_sugar_query(head, &items[1..]),
     }
 }

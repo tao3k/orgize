@@ -825,8 +825,11 @@ fn markdown_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout
-            .contains("direct-read=\"asp md query --from-hook direct-source-read --selector"),
+        selector_stdout.contains("content-query=\"asp md query --selector"),
+        "{selector_stdout}"
+    );
+    assert!(
+        selector_stdout.contains("--content --workspace .\""),
         "{selector_stdout}"
     );
     assert!(selector_stdout.contains("|heading"), "{selector_stdout}");
@@ -952,7 +955,8 @@ fn markdown_document_search_and_query_commands_run() {
             .expect("next actions")
             .iter()
             .any(|action| action["target"] == "selector"
-                && action["command"] == "asp md query --selector <path:start-end> --view metadata"),
+                && action["command"]
+                    == "asp md query --selector <structural-selector> --view metadata"),
         "{search_packet:#}"
     );
     assert!(

@@ -159,10 +159,8 @@ fn parse_assertion(
 
     for block in section_source_blocks(section, source_blocks) {
         let language = block.language.as_deref().unwrap_or_default().trim();
-        if language.eq_ignore_ascii_case("org-elements-query") {
-            query = parse_org_elements_query_expression_block(&block.value);
-            query_source = Some(block.source.clone());
-        } else if language.eq_ignore_ascii_case("org-elements-query-expr")
+        if language.eq_ignore_ascii_case("org-elements-query")
+            || language.eq_ignore_ascii_case("org-elements-query-expr")
             || language.eq_ignore_ascii_case("org-elements-expr")
         {
             query = parse_org_elements_query_expression_block(&block.value);
