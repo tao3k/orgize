@@ -248,8 +248,7 @@ fn org_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout
-            .contains("direct-read=\"asp org query --from-hook direct-source-read --selector"),
+        selector_stdout.contains("content-query=\"asp org query --selector"),
         "{selector_stdout}"
     );
     assert!(selector_stdout.contains("|heading"), "{selector_stdout}");
@@ -450,7 +449,7 @@ fn org_document_search_and_query_commands_run() {
             .iter()
             .any(|action| action["target"] == "selector"
                 && action["command"]
-                    == "asp org query --selector <path:start-end> --view metadata"),
+                    == "asp org query --selector <structural-selector> --view metadata"),
         "{search_packet:#}"
     );
     assert!(

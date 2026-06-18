@@ -1,5 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge.rs
+assertion_line: 813
 expression: "serde_json::to_string_pretty(&payload).unwrap()"
 ---
 {
@@ -219,6 +220,8 @@ expression: "serde_json::to_string_pretty(&payload).unwrap()"
       ":checkbox",
       ":children",
       ":closed",
+      ":columnIndex",
+      ":columnName",
       ":contents-begin",
       ":contents-end",
       ":counter",
@@ -227,6 +230,8 @@ expression: "serde_json::to_string_pretty(&payload).unwrap()"
       ":elements",
       ":end",
       ":hasDescription",
+      ":hasText",
+      ":isHeader",
       ":isImage",
       ":isRule",
       ":items",
@@ -249,6 +254,7 @@ expression: "serde_json::to_string_pretty(&payload).unwrap()"
       ":raw-value",
       ":references",
       ":resolvedLabel",
+      ":rowIndex",
       ":rows",
       ":scheduled",
       ":sections",
@@ -256,6 +262,7 @@ expression: "serde_json::to_string_pretty(&payload).unwrap()"
       ":tagObjectCount",
       ":tags",
       ":targetKind",
+      ":text",
       ":title",
       ":todo",
       ":todo-keyword",
