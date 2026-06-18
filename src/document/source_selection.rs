@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 
 /// Source file plus an optional inclusive 1-based line range.
+#[derive(Debug)]
 pub struct SourceSelector {
     pub path: PathBuf,
     pub range: Option<SourceLineRange>,
@@ -27,7 +28,7 @@ impl SourceLineRange {
 }
 
 impl SourceSelector {
-    pub fn parse(selector: &str) -> Result<Self, String> {
+    pub fn parse_structural(selector: &str) -> Result<Self, String> {
         if let Some((scheme, rest)) = selector.split_once("://") {
             if !matches!(scheme, "org" | "md") {
                 return Err(format!("invalid document selector scheme `{scheme}`"));
@@ -44,6 +45,17 @@ impl SourceSelector {
                 structural_selector: Some(selector.to_string()),
                 structural_fragment: Some(fragment.to_string()),
             });
+        }
+        Err(format!(
+            "document query selector `{selector}` is not structural; use a selector emitted by search/query metadata, for example org://path#structure"
+        ))
+    }
+
+    pub fn parse_direct_read(selector: &str) -> Result<Self, String> {
+        if selector.contains("://") {
+            return Err(format!(
+                "direct-source-read selector `{selector}` is structural; use normal query --selector with --content"
+            ));
         }
         let Some((path, range)) = selector.rsplit_once(':') else {
             return Ok(Self {

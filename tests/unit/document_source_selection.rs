@@ -4,7 +4,7 @@ use crate::document::{SourceLineRange, SourceSelector, select_source};
 
 #[test]
 fn parses_selector_without_range() {
-    let selector = SourceSelector::parse("notes.org").expect("selector should parse");
+    let selector = SourceSelector::parse_direct_read("notes.org").expect("selector should parse");
 
     assert_eq!(selector.path, PathBuf::from("notes.org"));
     assert_eq!(selector.range, None);
@@ -12,7 +12,8 @@ fn parses_selector_without_range() {
 
 #[test]
 fn parses_selector_with_inclusive_line_range() {
-    let selector = SourceSelector::parse("notes.org:2-4").expect("selector should parse");
+    let selector =
+        SourceSelector::parse_direct_read("notes.org:2-4").expect("selector should parse");
 
     assert_eq!(selector.path, PathBuf::from("notes.org"));
     assert_eq!(selector.range, Some(SourceLineRange::new(2, 4)));
@@ -20,9 +21,30 @@ fn parses_selector_with_inclusive_line_range() {
 
 #[test]
 fn normalizes_reversed_selector_range() {
-    let selector = SourceSelector::parse("notes.org:4-2").expect("selector should parse");
+    let selector =
+        SourceSelector::parse_direct_read("notes.org:4-2").expect("selector should parse");
 
     assert_eq!(selector.range, Some(SourceLineRange::new(4, 4)));
+}
+
+#[test]
+fn parses_structural_selector() {
+    let selector = SourceSelector::parse_structural("org://notes.org#headline/heading/document[1]")
+        .expect("selector should parse");
+
+    assert_eq!(selector.path, PathBuf::from("notes.org"));
+    assert_eq!(selector.range, None);
+    assert_eq!(
+        selector.structural_fragment.as_deref(),
+        Some("headline/heading/document[1]")
+    );
+}
+
+#[test]
+fn rejects_line_range_for_structural_query_selector() {
+    let error = SourceSelector::parse_structural("notes.org:2-4").expect_err("line selector");
+
+    assert!(error.contains("not structural"));
 }
 
 #[test]
