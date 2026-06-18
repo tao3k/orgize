@@ -20,6 +20,9 @@ pub struct DocumentElement {
     pub source_kind: &'static str,
     /// Display path for the source document.
     pub path: String,
+    /// Parser-owned structural selector. This is the element identity; line
+    /// ranges are only display and compatibility hints.
+    pub structural_selector: String,
     /// One-based start line.
     pub line: usize,
     /// One-based inclusive end line.
@@ -60,6 +63,36 @@ impl DocumentWalkConfig {
             ignore_dirs,
             include_hidden_dirs,
         }
+    }
+}
+
+pub(super) fn document_structural_selector(
+    language: &str,
+    path: &Path,
+    parts: &[String],
+) -> String {
+    let path = path
+        .components()
+        .map(|component| selector_component(&component.as_os_str().to_string_lossy()))
+        .collect::<Vec<_>>()
+        .join("/");
+    format!("{language}://{path}#{}", parts.join("/"))
+}
+
+pub(super) fn selector_component(input: &str) -> String {
+    let mut output = String::new();
+    for ch in input.chars() {
+        if ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.') {
+            output.push(ch.to_ascii_lowercase());
+        } else if !output.ends_with('-') {
+            output.push('-');
+        }
+    }
+    let trimmed = output.trim_matches('-');
+    if trimmed.is_empty() {
+        "_".to_string()
+    } else {
+        trimmed.to_string()
     }
 }
 

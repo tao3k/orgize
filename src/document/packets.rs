@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use super::{
     elements::display_path,
     model::{DocumentElement, DocumentLanguage},
-    source_selection::SourceSelector,
+    source_selection::{SourceSelector, structural_selector_fragment},
 };
 
 pub(super) fn print_search_json(
@@ -42,7 +42,7 @@ pub(super) fn print_search_json(
             {
                 "kind": "query",
                 "target": "selector",
-                "command": format!("{} query --selector <path:start-end> --view metadata", language.command_prefix())
+                "command": format!("{} query --selector <structural-selector> --view metadata", language.command_prefix())
             },
             {
                 "kind": "query",
@@ -62,7 +62,7 @@ pub(super) fn print_search_json(
             {
                 "kind": "query",
                 "target": "direct-read",
-                "command": format!("{} query --from-hook direct-source-read --selector <path:start-end> .", language.command_prefix())
+                "command": format!("{} query --from-hook direct-source-read --selector <structural-selector>", language.command_prefix())
             }
         ],
         "notes": [{
@@ -123,7 +123,11 @@ pub(super) fn print_selector_query_json(
     facts: &[DocumentElement],
     content_output: bool,
 ) -> Result<(), String> {
-    let root = selection.path.parent().unwrap_or_else(|| Path::new("."));
+    let root = if selection.structural_selector.is_some() {
+        Path::new(".")
+    } else {
+        selection.path.parent().unwrap_or_else(|| Path::new("."))
+    };
     let query_surface = if content_output {
         "content"
     } else {
@@ -197,12 +201,14 @@ fn owners_json(language: DocumentLanguage, root: &Path, facts: &[DocumentElement
 
 fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentElement) -> Value {
     let path = packet_path(root, &fact.path);
+    let structural_selector = packet_structural_selector(language, &path, fact);
     let mut value = json!({
-        "id": format!("{}:{}:{}:{}", fact.kind, path, fact.line, fact.end_line),
+        "id": structural_selector.as_str(),
         "kind": fact.kind,
         "sourceKind": fact.source_kind,
         "name": fact_name(fact),
         "documentPath": path,
+        "structuralSelector": structural_selector.as_str(),
         "location": location_json(&packet_path(root, &fact.path), fact.line, fact.end_line),
         "parserAuthority": language.parser_authority(),
         "queryKeys": query_keys(fact),
@@ -226,9 +232,11 @@ fn content_blocks_json(
             let content = fact.content_text();
             (!content.trim().is_empty()).then(|| {
                 let path = packet_path(root, &fact.path);
+                let structural_selector = packet_structural_selector(language, &path, fact);
                 json!({
                     "kind": "element",
                     "documentPath": path,
+                    "structuralSelector": structural_selector.as_str(),
                     "location": location_json(&packet_path(root, &fact.path), fact.line, fact.end_line),
                     "parserAuthority": language.parser_authority(),
                     "content": content
@@ -243,6 +251,19 @@ fn location_json(path: &str, line: usize, end_line: usize) -> Value {
         "path": path,
         "lineRange": format!("{}:{}", line.max(1), end_line.max(line).max(1))
     })
+}
+
+fn packet_structural_selector(
+    language: DocumentLanguage,
+    packet_path: &str,
+    fact: &DocumentElement,
+) -> String {
+    format!(
+        "{}://{}#{}",
+        language.id(),
+        packet_path,
+        structural_selector_fragment(&fact.structural_selector)
+    )
 }
 
 fn packet_path(root: &Path, path: &str) -> String {

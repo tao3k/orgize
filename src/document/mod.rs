@@ -7,7 +7,6 @@ mod markdown_elements;
 mod model;
 mod org_elements;
 mod packets;
-mod source_prefilter;
 mod source_selection;
 
 pub use command::{
@@ -23,7 +22,3 @@ pub(crate) use command::compact_query_content;
 #[cfg(test)]
 #[path = "../../tests/unit/document_line_index.rs"]
 mod line_index_tests;
-
-#[cfg(test)]
-#[path = "../../tests/unit/document_source_prefilter.rs"]
-mod source_prefilter_tests;

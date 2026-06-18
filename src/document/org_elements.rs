@@ -12,7 +12,10 @@ use crate::{
     },
 };
 
-use super::{line_index::LineIndex, model::DocumentElement};
+use super::{
+    line_index::LineIndex,
+    model::{DocumentElement, document_structural_selector, selector_component},
+};
 
 pub(super) fn index_org(path: &Path, source: &str) -> Vec<DocumentElement> {
     let org = Org::parse(source);
@@ -398,16 +401,75 @@ fn fact_with_text(
     let end = u32::from(range.end()) as usize;
     let line = line_index.line_for(start);
     let end_line = line_index.line_for(end.saturating_sub(1));
+    let structural_selector = org_structural_selector(path, kind, source_kind, node, &fields);
     DocumentElement {
         kind,
         source_kind,
         path: path.display().to_string(),
+        structural_selector,
         line,
         end_line,
         text: element_text.text,
         content: element_text.content,
         fields,
     }
+}
+
+fn org_structural_selector(
+    path: &Path,
+    kind: &str,
+    source_kind: &str,
+    node: &SyntaxNode,
+    fields: &[(String, String)],
+) -> String {
+    let mut parts = vec![
+        selector_component(source_kind),
+        selector_component(kind),
+        org_node_path(node),
+    ];
+    if let Some(field_suffix) = structural_field_suffix(fields) {
+        parts.push(field_suffix);
+    }
+    document_structural_selector("org", path, &parts)
+}
+
+fn org_node_path(node: &SyntaxNode) -> String {
+    let mut current = node.clone();
+    let mut parts = Vec::new();
+    loop {
+        let ordinal = current
+            .parent()
+            .and_then(|parent| {
+                parent
+                    .children()
+                    .filter(|sibling| sibling.kind() == current.kind())
+                    .position(|sibling| sibling == current)
+            })
+            .map(|index| index + 1)
+            .unwrap_or(1);
+        parts.push(format!(
+            "{}[{}]",
+            selector_component(&format!("{:?}", current.kind())),
+            ordinal
+        ));
+        let Some(parent) = current.parent() else {
+            break;
+        };
+        current = parent;
+    }
+    parts.reverse();
+    parts.join("/")
+}
+
+fn structural_field_suffix(fields: &[(String, String)]) -> Option<String> {
+    for key in ["key", "target", "title", "tag", "lang"] {
+        if let Some((_, value)) = fields.iter().find(|(field, _)| field == key) {
+            if !value.trim().is_empty() {
+                return Some(format!("{}={}", key, selector_component(value)));
+            }
+        }
+    }
+    None
 }
 
 fn normalize_inline_text(text: &str) -> String {

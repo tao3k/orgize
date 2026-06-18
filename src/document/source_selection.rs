@@ -6,6 +6,8 @@ use std::path::PathBuf;
 pub struct SourceSelector {
     pub path: PathBuf,
     pub range: Option<SourceLineRange>,
+    pub structural_selector: Option<String>,
+    pub structural_fragment: Option<String>,
 }
 
 /// Inclusive 1-based line range selected from one source file.
@@ -26,10 +28,29 @@ impl SourceLineRange {
 
 impl SourceSelector {
     pub fn parse(selector: &str) -> Result<Self, String> {
+        if let Some((scheme, rest)) = selector.split_once("://") {
+            if !matches!(scheme, "org" | "md") {
+                return Err(format!("invalid document selector scheme `{scheme}`"));
+            }
+            let Some((path, fragment)) = rest.split_once('#') else {
+                return Err(format!("invalid structural selector `{selector}`"));
+            };
+            if path.is_empty() || fragment.is_empty() {
+                return Err(format!("invalid structural selector `{selector}`"));
+            }
+            return Ok(Self {
+                path: PathBuf::from(path),
+                range: None,
+                structural_selector: Some(selector.to_string()),
+                structural_fragment: Some(fragment.to_string()),
+            });
+        }
         let Some((path, range)) = selector.rsplit_once(':') else {
             return Ok(Self {
                 path: PathBuf::from(selector),
                 range: None,
+                structural_selector: None,
+                structural_fragment: None,
             });
         };
         if path.is_empty() {
@@ -38,8 +59,17 @@ impl SourceSelector {
         Ok(Self {
             path: PathBuf::from(path),
             range: Some(parse_line_range(range)?),
+            structural_selector: None,
+            structural_fragment: None,
         })
     }
+}
+
+pub fn structural_selector_fragment(selector: &str) -> &str {
+    selector
+        .split_once('#')
+        .map(|(_, fragment)| fragment)
+        .unwrap_or(selector)
 }
 
 /// Select the requested inclusive line range from source text.

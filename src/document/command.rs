@@ -16,7 +16,7 @@ use super::{
     },
     model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
     packets::{print_query_json, print_search_json, print_selector_query_json},
-    source_selection::{SourceSelector, select_source},
+    source_selection::{SourceSelector, select_source, structural_selector_fragment},
 };
 
 /// Run an `asp org` document command.
@@ -192,7 +192,7 @@ fn run_query(
     }
     if direct_read && selector.is_none() {
         return Err(format!(
-            "{} query: --from-hook direct-source-read requires --selector <path:start-end>; add --content to project source text",
+            "{} query: --from-hook direct-source-read requires --selector <path:start-end>; structural selectors use normal query --selector with --content",
             language.id()
         ));
     }
@@ -216,6 +216,12 @@ fn run_query(
     if let Some(selector) = selector {
         let selection = SourceSelector::parse(selector)?;
         if direct_read {
+            if selection.structural_selector.is_some() {
+                return Err(format!(
+                    "{} query: structural selectors are parser fact selectors; direct-source-read requires a legacy path line-range selector",
+                    language.id()
+                ));
+            }
             let source = fs::read_to_string(&selection.path)
                 .map_err(|error| format!("{}: {error}", selection.path.display()))?;
             print!("{}", select_source(&source, selection.range));
@@ -333,7 +339,7 @@ fn print_guide(language: DocumentLanguage) {
         language.command_prefix()
     );
     println!(
-        "|cmd query-selector={} query --selector <path:start-end> --workspace . --view metadata",
+        "|cmd query-selector={} query --selector <structural-selector> --workspace . --view metadata",
         language.command_prefix()
     );
     println!(
@@ -367,7 +373,7 @@ fn print_guide(language: DocumentLanguage) {
         language.command_prefix()
     );
     println!(
-        "|cmd query-content-selector={} query --selector <path:start-end> --workspace . --content",
+        "|cmd query-content-selector={} query --selector <structural-selector> --workspace . --content",
         language.command_prefix()
     );
     println!(
@@ -380,9 +386,7 @@ fn print_element_guide(language: DocumentLanguage) {
     println!(
         "|query-axis term matches=kind,sourceKind,path,text,content,field-key,field-value combine=all-terms"
     );
-    println!(
-        "|query-axis selector matches=elements-overlapping-path-range combine=term,kind,field"
-    );
+    println!("|query-axis selector matches=parser-structural-selector combine=term,kind,field");
     println!("|query-axis kind matches=exact-element-kind combine=all-kinds");
     println!("|query-axis field matches=key-or-key=value value-match=contains combine=all-fields");
     println!(
@@ -443,7 +447,7 @@ fn print_element_guide(language: DocumentLanguage) {
                 "|recipe paragraph-content=asp org query --kind paragraph --term <term> --workspace . --content"
             );
             println!(
-                "|recipe range-elements=asp org query --selector <path:start-end> --workspace . --view metadata"
+                "|recipe structural-selector=asp org query --selector <structural-selector> --workspace . --view metadata"
             );
         }
         DocumentLanguage::Markdown => {
@@ -468,7 +472,7 @@ fn print_element_guide(language: DocumentLanguage) {
                 "|recipe paragraph-content=asp md query --kind paragraph --term <term> --workspace . --content"
             );
             println!(
-                "|recipe range-elements=asp md query --selector <path:start-end> --workspace . --view metadata"
+                "|recipe structural-selector=asp md query --selector <structural-selector> --workspace . --view metadata"
             );
         }
     }
@@ -507,7 +511,7 @@ fn print_query_guide(language: DocumentLanguage) {
         "|mode field command=\"query --field <key=value> --workspace . --view metadata\" output=element-frontier"
     );
     println!(
-        "|mode selector command=\"query --selector <path:start-end> --workspace . --view metadata\" output=element-frontier"
+        "|mode selector command=\"query --selector <structural-selector> --workspace . --view metadata\" output=element-frontier"
     );
     println!(
         "|mode content command=\"query --term <term> --workspace . --content\" output=pure-query-content"
@@ -622,7 +626,7 @@ fn print_toc_rows(language: DocumentLanguage, headings: &[DocumentElement]) {
         }
         let level = heading_field(heading, "level").unwrap_or("0");
         let title = heading_field(heading, "title").unwrap_or(heading.text.as_str());
-        let selector = format!("{}:{}-{}", heading.path, heading.line, heading.end_line);
+        let selector = heading.structural_selector.as_str();
         let mut output = format!(
             "|toc path=\"{}\" range=\"{}:{}\" level={} title=\"{}\"",
             escape_field(&heading.path),
@@ -988,7 +992,7 @@ fn print_selector_frontier(language: DocumentLanguage, selector: &str, facts: &[
         println!("{}", fact.render());
     }
     println!(
-        "|next direct-read=\"{} query --from-hook direct-source-read --selector {} --workspace .\"",
+        "|next content-query=\"{} query --selector {} --content --workspace .\"",
         language.command_prefix(),
         escape_field(selector)
     );
@@ -1027,6 +1031,10 @@ fn selector_elements(
         .into_iter()
         .filter(|fact| match selection.range {
             Some(range) => fact.line <= range.end_line && fact.end_line >= range.start_line,
+            None => true,
+        })
+        .filter(|fact| match selection.structural_fragment.as_deref() {
+            Some(fragment) => structural_selector_fragment(&fact.structural_selector) == fragment,
             None => true,
         })
         .collect())

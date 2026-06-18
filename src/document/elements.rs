@@ -9,7 +9,6 @@ use super::{
     markdown_elements::index_markdown,
     model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
     org_elements::index_org,
-    source_prefilter::SourcePrefilter,
 };
 
 /// Index all document files under `root` with the default walk policy.
@@ -55,16 +54,9 @@ pub(super) fn query_project_with_config(
     terms: &[String],
     fields: &[String],
 ) -> Result<Vec<DocumentElement>, String> {
-    let prefilter = SourcePrefilter::new(terms, fields);
-    let candidate_files = prefilter.candidate_paths(language, root, walk_config);
-    let source_check_required = candidate_files.is_none();
-    let mut files = if let Some(files) = candidate_files {
-        files
-    } else {
-        let mut files = Vec::new();
-        collect_document_paths(language, root, walk_config, &mut files)?;
-        files
-    };
+    let _ = (terms, fields);
+    let mut files = Vec::new();
+    collect_document_paths(language, root, walk_config, &mut files)?;
     files.sort();
     files.dedup();
 
@@ -75,9 +67,6 @@ pub(super) fn query_project_with_config(
         }
         let source =
             fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-        if source_check_required && !prefilter.matches_path_or_source(&path, &source) {
-            continue;
-        }
         facts.extend(index_source(language, &path, &source)?);
     }
     Ok(facts)
