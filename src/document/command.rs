@@ -1,3 +1,5 @@
+//! CLI command routing for `asp org` and `asp md` document providers.
+
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -8,22 +10,26 @@ use crate::Org;
 
 use super::{
     elements::{
-        DocumentElement, DocumentLanguage, DocumentWalkConfig, count_kind, display_path,
-        escape_field, filter_elements, filter_elements_by_query, has_flag, index_path,
-        index_project_with_config, last_existing_path, option_value, option_values,
+        count_kind, display_path, escape_field, filter_elements, filter_elements_by_query,
+        has_flag, index_path, index_project_with_config, last_existing_path, option_value,
+        option_values, query_project_with_config,
     },
+    model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
     packets::{print_query_json, print_search_json, print_selector_query_json},
     source_selection::{SourceSelector, select_source},
 };
 
+/// Run an `asp org` document command.
 pub fn run_org_command(args: Vec<String>) -> Result<ExitCode, String> {
     run_document_command(DocumentLanguage::Org, args)
 }
 
+/// Run an `asp md` document command.
 pub fn run_md_command(args: Vec<String>) -> Result<ExitCode, String> {
     run_document_command(DocumentLanguage::Markdown, args)
 }
 
+/// Route a document command using the default project walk policy.
 pub fn run_document_command(
     language: DocumentLanguage,
     args: Vec<String>,
@@ -31,6 +37,7 @@ pub fn run_document_command(
     run_document_command_with_walk_config(language, args, DocumentWalkConfig::default())
 }
 
+/// Route a document command using caller-provided project walk policy.
 pub fn run_document_command_with_walk_config(
     language: DocumentLanguage,
     args: Vec<String>,
@@ -229,7 +236,7 @@ fn run_query(
     }
 
     let root = last_existing_path(&args).unwrap_or_else(|| PathBuf::from("."));
-    let facts = index_project_with_config(language, &root, walk_config)?;
+    let facts = query_project_with_config(language, &root, walk_config, &terms, &fields)?;
     let matches = filter_elements_by_query(facts, &terms, &kinds, &fields);
     if json_output {
         print_query_json(language, &terms, &root, &matches, content_output)?;

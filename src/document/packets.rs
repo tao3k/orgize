@@ -3,7 +3,8 @@ use std::path::Path;
 use serde_json::{Value, json};
 
 use super::{
-    elements::{DocumentElement, DocumentLanguage, display_path},
+    elements::display_path,
+    model::{DocumentElement, DocumentLanguage},
     source_selection::SourceSelector,
 };
 

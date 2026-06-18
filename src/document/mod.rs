@@ -2,17 +2,28 @@
 
 mod command;
 mod elements;
+mod line_index;
+mod markdown_elements;
+mod model;
+mod org_elements;
 mod packets;
+mod source_prefilter;
 mod source_selection;
 
 pub use command::{
     run_document_command, run_document_command_with_walk_config, run_md_command, run_org_command,
 };
-pub use elements::{
-    DocumentElement, DocumentLanguage, DocumentWalkConfig, filter_elements, index_path,
-    index_project, index_project_with_config,
-};
+pub use elements::{filter_elements, index_path, index_project, index_project_with_config};
+pub use model::{DocumentElement, DocumentLanguage, DocumentWalkConfig};
 pub use source_selection::{SourceLineRange, SourceSelector, select_source};
 
 #[cfg(test)]
 pub(crate) use command::compact_query_content;
+
+#[cfg(test)]
+#[path = "../../tests/unit/document_line_index.rs"]
+mod line_index_tests;
+
+#[cfg(test)]
+#[path = "../../tests/unit/document_source_prefilter.rs"]
+mod source_prefilter_tests;
