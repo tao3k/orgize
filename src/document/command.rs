@@ -315,7 +315,6 @@ fn print_guide(language: DocumentLanguage) {
             "|surface capture-plan purpose=non-mutating-org-entry-plan output=compact-plan content=false"
         );
     }
-    println!("|surface direct-read purpose=hook-recovery output=pure-content content=true");
     println!("|rule parser-authority={}", language.parser_authority());
     println!("|rule no=check,ast-patch,evidence reason=document-language");
     println!("|rule content=query-projection reason=content-needs-selector-term-kind-or-field");
@@ -379,10 +378,6 @@ fn print_guide(language: DocumentLanguage) {
         "|cmd query-content-selector={} query --selector <structural-selector> --workspace . --content",
         language.command_prefix()
     );
-    println!(
-        "|cmd direct-read={} query --from-hook direct-source-read --selector <path:start-end> --workspace . --content",
-        language.command_prefix()
-    );
 }
 
 fn print_element_guide(language: DocumentLanguage) {
@@ -394,9 +389,6 @@ fn print_element_guide(language: DocumentLanguage) {
     println!("|query-axis field matches=key-or-key=value value-match=contains combine=all-fields");
     println!(
         "|query-axis content requires=selector|term|kind|field output=matched-element-content"
-    );
-    println!(
-        "|query-axis direct-read requires=from-hook+selector+content output=source-preserved-content use=hook-recovery-only"
     );
     match language {
         DocumentLanguage::Org => {
@@ -519,9 +511,6 @@ fn print_query_guide(language: DocumentLanguage) {
     println!(
         "|mode content command=\"query --term <term> --workspace . --content\" output=pure-query-content"
     );
-    println!(
-        "|mode direct-read command=\"query --from-hook direct-source-read --selector <path:start-end> --workspace . --content\" output=pure-document-content"
-    );
     println!("|combine all=--selector+--term+--kind+--field semantics=intersection");
     println!(
         "|field-match key command=\"query --field <key> --workspace . --view metadata\" output=elements-with-field"
@@ -530,7 +519,6 @@ fn print_query_guide(language: DocumentLanguage) {
         "|field-match value command=\"query --field <key=value> --workspace . --view metadata\" output=elements-with-containing-value"
     );
     println!("|content-rule requires=--selector|--term|--kind|--field");
-    println!("|direct-read-rule requires=--from-hook+--selector+--content forbids=--json");
 }
 
 fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) {
@@ -804,7 +792,7 @@ fn print_query_no_hit(language: DocumentLanguage, terms: &[String], root: &Path)
     );
     println!("|next query-guide=\"{prefix} query guide --workspace {root_arg}\"");
     println!(
-        "|next direct-read-requires=\"{prefix} query --from-hook direct-source-read --selector <path:start-end> --workspace {root_arg}\""
+        "|next selector-source=\"rerun metadata query and use an emitted structuralSelector\""
     );
 }
 

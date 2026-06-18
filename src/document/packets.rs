@@ -58,16 +58,11 @@ pub(super) fn print_search_json(
                 "kind": "query",
                 "target": "content",
                 "command": format!("{} query --term <term> --content", language.command_prefix())
-            },
-            {
-                "kind": "query",
-                "target": "direct-read",
-                "command": format!("{} query --from-hook direct-source-read --selector <structural-selector>", language.command_prefix())
             }
         ],
         "notes": [{
             "kind": "search-document",
-            "message": "Document facts are parser-owned element metadata. Use direct-source-read only after an exact selector is selected."
+            "message": "Document facts are parser-owned element metadata. Use emitted structuralSelector values for query --selector and --content."
         }]
     });
     print_json(&packet)
