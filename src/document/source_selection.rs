@@ -28,6 +28,14 @@ impl SourceLineRange {
 }
 
 impl SourceSelector {
+    pub fn parse_query(selector: &str) -> Result<Self, String> {
+        if selector.contains("://") {
+            SourceSelector::parse_structural(selector)
+        } else {
+            SourceSelector::parse_direct_read(selector)
+        }
+    }
+
     pub fn parse_structural(selector: &str) -> Result<Self, String> {
         if let Some((scheme, rest)) = selector.split_once("://") {
             if !matches!(scheme, "org" | "md") {

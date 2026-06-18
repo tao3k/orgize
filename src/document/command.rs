@@ -226,17 +226,17 @@ fn run_query(
                 .map_err(|error| format!("{}: {error}", selection.path.display()))?;
             print!("{}", select_source(&source, selection.range));
         } else if json_output {
-            let selection = SourceSelector::parse_structural(selector)?;
+            let selection = SourceSelector::parse_query(selector)?;
             let facts = selector_elements(language, &selection)?;
             let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
             print_selector_query_json(language, selector, &selection, &facts, content_output)?;
         } else if content_output {
-            let selection = SourceSelector::parse_structural(selector)?;
+            let selection = SourceSelector::parse_query(selector)?;
             let facts = selector_elements(language, &selection)?;
             let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
             print_query_content(&facts);
         } else {
-            let selection = SourceSelector::parse_structural(selector)?;
+            let selection = SourceSelector::parse_query(selector)?;
             let facts = selector_elements(language, &selection)?;
             let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
             print_selector_frontier(language, selector, &facts);
