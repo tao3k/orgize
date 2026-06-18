@@ -5,7 +5,7 @@ use super::source_prefilter::SourcePrefilter;
 #[test]
 fn uses_text_terms_and_preserves_metadata_terms() {
     let text_filter = SourcePrefilter::new(&["capture init".to_string()], &[]);
-    assert!(text_filter.matches_path_or_source(Path::new("notes.org"), "capture point init"));
+    assert!(text_filter.matches_path_or_source(Path::new("notes.org"), "capture init point"));
     assert!(!text_filter.matches_path_or_source(Path::new("notes.org"), "capture only"));
 
     let metadata_filter = SourcePrefilter::new(&["task".to_string()], &[]);
