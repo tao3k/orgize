@@ -1,9 +1,9 @@
 use std::hint::black_box;
 
-use criterion::{Criterion, Throughput, criterion_group, criterion_main};
+use criterion::{BatchSize, Criterion, Throughput, criterion_group, criterion_main};
 
 use orgize::{
-    Org, ParseConfig,
+    Org, ParseConfig, TextRange, TextSize,
     ast::{AgendaDate, AgendaQuery, ExportProjectionOptions, IncludeExpansionOptions},
     config::RadioLinkProjection,
 };
@@ -66,6 +66,29 @@ pub fn bench_parse(c: &mut Criterion) {
         group.throughput(Throughput::Bytes(org.len() as u64));
         group.bench_with_input(id, org, |b, i| {
             b.iter(|| black_box(Org::parse(black_box(i))))
+        });
+    }
+
+    group.finish();
+}
+
+pub fn bench_replace_range(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::replace_range");
+
+    for &(id, org) in INPUT {
+        let end = TextSize::from(org.len() as u32);
+        let range = TextRange::new(end, end);
+
+        group.throughput(Throughput::Bytes(org.len() as u64));
+        group.bench_with_input(id, org, |b, i| {
+            b.iter_batched(
+                || Org::parse(black_box(i)),
+                |mut parsed| {
+                    parsed.replace_range(range, black_box("\n# sync-edit\n"));
+                    black_box(parsed)
+                },
+                BatchSize::SmallInput,
+            )
         });
     }
 
@@ -505,6 +528,7 @@ fn dense_include_dated_projection_fixture() -> String {
 criterion_group!(
     benches,
     bench_parse,
+    bench_replace_range,
     bench_document,
     bench_to_html,
     bench_to_markdown,

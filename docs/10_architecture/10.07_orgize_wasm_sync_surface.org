@@ -109,6 +109,22 @@ Mutation rules:
 This revision model is intentionally local to the worker. It is not a CRDT and
 does not attempt multi-writer conflict resolution.
 
+** Performance Budget
+The sync path is performance-critical. A `sync` request must not encode, decode,
+diff, clone, or reparse the full Org source in JavaScript. The worker may keep
+the current source byte length and validate numeric patch bounds, but the text
+mutation must be delegated to wasm `replaceRange`.
+
+The expected worker-side complexity is:
+- `O(patches + sum(patch.text byte length))` before entering wasm;
+- no full-document JavaScript copy on a valid sync request;
+- one wasm `replaceRange` call per patch;
+- no full-source `update` unless the caller explicitly sends `update`.
+
+Native parser performance is tracked by Criterion. `benches/parse.rs` includes
+an `Org::replace_range` benchmark so the incremental edit path can be compared
+against `Org::parse` on the same fixture corpus.
+
 ** TypeScript Surface
 The declarations add:
 - `OrgizeTextPatch`;
