@@ -145,7 +145,8 @@ jobs:
         run: sccache --show-stats || true
 
   gh-pages:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: test
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 
     permissions:
       contents: read
