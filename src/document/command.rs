@@ -1,6 +1,7 @@
 //! CLI command routing for `asp org` and `asp md` document providers.
 
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
     process::ExitCode,
@@ -18,6 +19,8 @@ use super::{
     packets::{print_query_json, print_search_json, print_selector_query_json},
     source_selection::{SourceSelector, select_source, structural_selector_fragment},
 };
+
+const DOCUMENT_PRIME_OWNER_LIMIT: usize = 12;
 
 /// Run an `asp org` document command.
 pub fn run_org_command(args: Vec<String>) -> Result<ExitCode, String> {
@@ -522,15 +525,12 @@ fn print_query_guide(language: DocumentLanguage) {
 }
 
 fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) {
+    let document_owners = document_prime_owners(root, facts);
     println!(
         "[search-prime] lang={} root={} doc={} heading={} paragraph={} property={} planning={} table={} block={} list={} task={} link={} image={}",
         language.id(),
         display_path(root),
-        facts
-            .iter()
-            .map(|fact| fact.path.as_str())
-            .collect::<std::collections::BTreeSet<_>>()
-            .len(),
+        document_owners.len(),
         count_kind(facts, "heading"),
         count_kind(facts, "paragraph"),
         count_kind(facts, "property"),
@@ -542,10 +542,76 @@ fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement
         count_kind(facts, "link"),
         count_kind(facts, "image")
     );
+    print_prime_owner_frontier(&document_owners);
     for fact in facts.iter().take(80) {
         println!("{}", fact.render());
     }
     println!("|next search:fzf,search:owner,query:term,query:selector");
+}
+
+fn document_prime_owners(root: &Path, facts: &[DocumentElement]) -> Vec<String> {
+    facts
+        .iter()
+        .map(|fact| document_prime_owner_path(root, &fact.path))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .take(DOCUMENT_PRIME_OWNER_LIMIT)
+        .collect()
+}
+
+fn document_prime_owner_path(root: &Path, path: &str) -> String {
+    let path = Path::new(path);
+    let owner = path.strip_prefix(root).unwrap_or(path);
+    owner.to_string_lossy().replace('\\', "/")
+}
+
+fn print_prime_owner_frontier(owners: &[String]) {
+    println!(
+        "legend: ID=kind:role(value)!next; entries profile(selectors=>returns); frontier ID.next"
+    );
+    println!("aliases: graph:{{G=search,O=owner}}");
+    let owner_ids = owners
+        .iter()
+        .enumerate()
+        .map(|(index, _)| {
+            if index == 0 {
+                "O".to_string()
+            } else {
+                format!("O{}", index + 1)
+            }
+        })
+        .collect::<Vec<_>>();
+    if owners.is_empty() {
+        println!("G>{{}}");
+    } else {
+        println!(
+            "{}",
+            owners
+                .iter()
+                .zip(owner_ids.iter())
+                .map(|(owner, owner_id)| format!("{owner_id}=owner:path({owner})!owner"))
+                .collect::<Vec<_>>()
+                .join(";")
+        );
+        println!(
+            "G>{{{}}}",
+            owner_ids
+                .iter()
+                .map(|owner_id| format!("{owner_id}:selects"))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+    }
+    println!(
+        "rank={} frontier={}",
+        owner_ids.join(","),
+        owner_ids
+            .iter()
+            .map(|owner_id| format!("{owner_id}.owner"))
+            .collect::<Vec<_>>()
+            .join(",")
+    );
+    println!("entries=owner-elements(O=>headings+metadata+query-selectors)");
 }
 
 fn print_toc(language: DocumentLanguage, root: &Path, headings: &[DocumentElement]) {

@@ -164,6 +164,15 @@ fn org_document_search_and_query_commands_run() {
         search_stdout.contains("[search-prime] lang=org"),
         "{search_stdout}"
     );
+    assert!(
+        search_stdout.contains("O=owner:path(plan.org)!owner"),
+        "{search_stdout}"
+    );
+    assert!(search_stdout.contains("G>{O:selects}"), "{search_stdout}");
+    assert!(
+        search_stdout.contains("frontier=O.owner"),
+        "{search_stdout}"
+    );
     assert!(search_stdout.contains("|heading"), "{search_stdout}");
     assert!(
         search_stdout.contains("key=\"CUSTOM_ID\""),
@@ -755,6 +764,12 @@ fn markdown_document_search_and_query_commands_run() {
         String::from_utf8_lossy(&prime_search.stderr)
     );
     let prime_stdout = String::from_utf8(prime_search.stdout).expect("utf8 prime search");
+    assert!(
+        prime_stdout.contains("O=owner:path(guide.md)!owner"),
+        "{prime_stdout}"
+    );
+    assert!(prime_stdout.contains("G>{O:selects}"), "{prime_stdout}");
+    assert!(prime_stdout.contains("frontier=O.owner"), "{prime_stdout}");
     assert!(prime_stdout.contains("paragraph="), "{prime_stdout}");
     assert!(prime_stdout.contains("|paragraph"), "{prime_stdout}");
     assert!(prime_stdout.contains("|checklistItem"), "{prime_stdout}");
