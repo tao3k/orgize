@@ -765,7 +765,7 @@ fn markdown_document_search_and_query_commands_run() {
     );
     let prime_stdout = String::from_utf8(prime_search.stdout).expect("utf8 prime search");
     assert!(
-        prime_stdout.contains("O=owner:path(guide.md)!owner"),
+        prime_stdout.contains("O=owner:path(README.md)!owner"),
         "{prime_stdout}"
     );
     assert!(prime_stdout.contains("G>{O:selects}"), "{prime_stdout}");
