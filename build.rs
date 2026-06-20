@@ -27,7 +27,7 @@ fn main() {
             ),
         )
         .with_cargo_check_advice_allow_explanation(
-            "orgize keeps existing parser-v2 public row and selector internals stable during dependency rev bumps; agent-policy advisory repairs require a dedicated API-compatible slice",
+            "scope=orgize parser-v2 build.rs cargo-check advisory findings; owner=orgize build harness; finding_category=agent-policy advisory findings; why_safe_now=blocking compiler errors still fail and this slice only aligns rust harness dependency revisions; cleanup_trigger=dedicated orgize parser-v2 API-compatible lint cleanup slice before promoting advisory findings",
         );
     config.ignored_dir_names.insert(".devenv".to_string());
     config.ignored_dir_names.insert(".data".to_string());
