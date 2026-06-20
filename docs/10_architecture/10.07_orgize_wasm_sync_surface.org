@@ -1,0 +1,144 @@
+* 10.07 Orgize Wasm Sync Surface
+This record defines the wasm synchronization surface for orgize. It covers
+editor range patching, wasm exposure of native document operations, and worker
+session state coherence. The goal is to make browser and worker clients update a
+parsed Org document without reparsing from a stale or ambiguous state.
+
+** Current Boundary
+The wasm package already exposes a session-oriented surface:
+- Rust `Org` bindings parse a source string, cache a semantic document, and
+  provide export, render, and JSON projection methods.
+- The worker supports `parse`, `update`, `projection`, `render`, `dispose`, and
+  `disposeAll`.
+- `update` replaces the full source for a session and then returns a projection.
+- TypeScript declarations model worker requests and render/projection names.
+
+The native crate already owns the operations that the sync surface should reuse:
+- `Org::replace_range` performs range replacement and reparses through the
+  existing incremental path when possible.
+- `format_org` performs conservative source-preserving formatting.
+
+Therefore wasm sync should be a thin binding and worker protocol layer, not a
+new parser, diff engine, or provider-private projection format.
+
+** Requirements
+- A browser client can apply one or more ordered text patches to an existing
+  wasm worker session.
+- A patch request fails if the client revision does not match the worker
+  session revision.
+- Full-source `update` remains available and participates in the same revision
+  model.
+- `parse`, `update`, and `sync` can return the same projection shapes already
+  accepted by the worker.
+- Existing `parse` and `update` consumers keep receiving their projection in
+  `result`; session metadata is added outside `result` in the worker success
+  envelope.
+- Wasm exposes conservative formatting so clients do not need a separate native
+  path for source normalization.
+- Public TypeScript declarations stay in sync with worker commands and wasm
+  binding methods.
+
+** Sync Command
+The worker adds a `sync` command:
+
+#+begin_src typescript
+type OrgizeTextPatch = {
+  /** UTF-8 byte offset in the current Org source. */
+  start: number;
+  /** UTF-8 byte offset in the current Org source. */
+  end: number;
+  text: string;
+};
+
+type OrgizeWorkerSyncRequest = OrgizeWorkerBaseRequest & {
+  command: "sync";
+  revision: number;
+  patches: OrgizeTextPatch[];
+  sourceFile?: string;
+  includeBaseDir?: string;
+  projection?: OrgizeProjectionName;
+};
+#+end_src
+
+Patch offsets are byte offsets in the current UTF-8 source. The worker validates
+that `start <= end`, that each range is within the current source byte length,
+and that patches are applied in request order. If the request revision does not
+equal the session revision, the worker returns a structured error and does not
+mutate the session.
+
+The worker keeps the existing `result` projection shape. Successful mutation
+responses add session metadata at the worker message envelope level:
+
+#+begin_src typescript
+{
+  revision: number;
+  changed: boolean;
+  sourceLengthBytes: number;
+}
+#+end_src
+
+** Wasm Binding Additions
+The Rust wasm `Org` binding adds:
+
+#+begin_src rust
+pub fn replace_range(&mut self, start: u32, end: u32, text: &str) -> Result<(), JsValue>;
+pub fn format(&self, request_json: Option<String>) -> Result<String, JsValue>;
+pub fn source_len_bytes(&self) -> u32;
+#+end_src
+
+`replace_range` converts offsets to `rowan::TextRange`, calls native
+`replace_range`, updates the cached source, and clears the cached semantic
+document. `format` accepts optional formatter options and returns JSON with the
+formatted source and `changed` flag. `source_len_bytes` gives the worker an
+unambiguous validation and response value for the UTF-8 source length.
+
+** Session Revision Model
+Each worker session stores:
+- the wasm `Org` instance;
+- `revision`, starting at `1` after `parse`;
+- the latest UTF-8 source byte length.
+
+Mutation rules:
+- `parse` replaces any existing session and sets revision `1`;
+- `update` reparses full source and increments revision when replacing an
+  existing session;
+- `sync` requires an existing session and increments revision exactly once after
+  all patches succeed;
+- failed mutations do not change revision.
+
+This revision model is intentionally local to the worker. It is not a CRDT and
+does not attempt multi-writer conflict resolution.
+
+** TypeScript Surface
+The declarations add:
+- `OrgizeTextPatch`;
+- `OrgizeWorkerSyncRequest`;
+- optional `revision`, `changed`, and `sourceLengthBytes` metadata on worker
+  success responses;
+- format request/response DTOs;
+- `"sync"` in the worker request union.
+
+No client feature flag is required. Clients that do not use `sync` can continue
+using `parse` and `update`.
+
+** Error Handling
+The worker reports:
+- `orgize sync requires an existing session` when no session exists;
+- `orgize sync revision mismatch` when request and session revisions differ;
+- `orgize sync patch range out of bounds` for invalid offsets;
+- `orgize sync patch start must be <= end` for malformed ranges.
+
+Errors use the existing worker error envelope and must not partially apply later
+patches after a failed validation.
+
+** Testing
+Add focused tests for:
+- wasm `replaceRange` applying a headline or body edit and invalidating cached
+  projections;
+- wasm `format` preserving conservative formatter behavior;
+- worker `sync` applying ordered patches and returning the requested projection;
+- worker `sync` rejecting stale revisions and leaving the session unchanged;
+- TypeScript declarations covering `sync`, patch DTOs, and format DTOs.
+
+Run the wasm unit test target first, then the package build path that regenerates
+or checks generated declarations.
