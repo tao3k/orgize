@@ -270,7 +270,7 @@ impl OrgCapturePlanArgs {
 
 fn render_org_capture_plan(plan: &AgentCapturePlan) -> String {
     let mut output = String::new();
-    output.push_str("[CAPTURE_PLAN] orgize capture-plan\n");
+    output.push_str("[CAPTURE] asp org capture\n");
     output.push_str("target: ");
     output.push_str(plan.target.kind.as_str());
     output.push('\n');

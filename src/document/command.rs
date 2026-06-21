@@ -315,7 +315,7 @@ fn print_guide(language: DocumentLanguage) {
             "|surface contract-trace purpose=contract-org-evaluation-trace output=json content=false"
         );
         println!(
-            "|surface capture-plan purpose=non-mutating-org-entry-plan output=compact-plan content=false"
+            "|surface capture purpose=state-init-and-non-mutating-org-entry-plan output=compact-plan content=false"
         );
     }
     println!("|rule parser-authority={}", language.parser_authority());
@@ -365,7 +365,11 @@ fn print_guide(language: DocumentLanguage) {
             language.command_prefix()
         );
         println!(
-            "|cmd capture-plan={} capture-plan --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --body <TEXT>",
+            "|cmd capture-init={} capture init --state-root <STATE_ROOT> --source-dir <LANGUAGES_ORG_DIR>",
+            language.command_prefix()
+        );
+        println!(
+            "|cmd capture={} capture --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --body <TEXT>",
             language.command_prefix()
         );
     }
@@ -436,7 +440,7 @@ fn print_element_guide(language: DocumentLanguage) {
                 "|recipe done-tasks=asp org query --kind task --field todo=DONE --workspace . --view metadata"
             );
             println!(
-                "|recipe capture-task=asp org capture-plan --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --property <KEY=VALUE> --body <TEXT>"
+                "|recipe capture-task=asp org capture --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --property <KEY=VALUE> --body <TEXT>"
             );
             println!(
                 "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"

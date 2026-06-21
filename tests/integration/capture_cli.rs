@@ -14,7 +14,7 @@ fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
             "--title",
             "Record ASP org plan",
             "--body",
-            "Use asp org capture-plan before applying an Org edit.",
+            "Use asp org capture before applying an Org edit.",
             "--target-file",
             "PLANS.org",
             "--outline",
@@ -29,10 +29,7 @@ fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
 
     assert_success(&output);
     let stdout = stdout(&output);
-    assert!(
-        stdout.contains("[CAPTURE_PLAN] orgize capture-plan"),
-        "{stdout}"
-    );
+    assert!(stdout.contains("[CAPTURE] asp org capture"), "{stdout}");
     assert!(stdout.contains("target: outlinePath"), "{stdout}");
     assert!(stdout.contains("target-file: PLANS.org"), "{stdout}");
     assert!(stdout.contains("outline: Plans / Active"), "{stdout}");
