@@ -19,10 +19,14 @@ use super::{
     input::Input,
 };
 
-pub(crate) fn superscript_node(
-    input: Input,
+pub(crate) fn superscript_node<'a>(
+    input: Input<'a>,
+    pre: Input<'a>,
     standard_object_nodes: ObjectNodesParser,
-) -> IResult<Input, GreenElement, ()> {
+) -> IResult<Input<'a>, GreenElement, ()> {
+    if is_upper_identifier_marker(pre, input) {
+        return Err(nom::Err::Error(()));
+    }
     let (input, caret) = caret_token(input)?;
 
     let mut children = vec![caret];
@@ -44,10 +48,14 @@ pub(crate) fn superscript_node(
     Ok((input, node(SyntaxKind::SUPERSCRIPT, children)))
 }
 
-pub(crate) fn subscript_node(
-    input: Input,
+pub(crate) fn subscript_node<'a>(
+    input: Input<'a>,
+    pre: Input<'a>,
     standard_object_nodes: ObjectNodesParser,
-) -> IResult<Input, GreenElement, ()> {
+) -> IResult<Input<'a>, GreenElement, ()> {
+    if is_upper_identifier_marker(pre, input) {
+        return Err(nom::Err::Error(()));
+    }
     let (input, underscore) = underscore_token(input)?;
 
     let mut children = vec![underscore];
@@ -110,6 +118,37 @@ fn template2(input: Input) -> IResult<Input, Vec<GreenElement>, ()> {
     Ok((input, children))
 }
 
+fn is_upper_identifier_marker(pre: Input, input: Input) -> bool {
+    prior_upper_identifier_len(pre.s) >= 2 && marker_tail_is_upper_identifier(input.s)
+}
+
+fn prior_upper_identifier_len(value: &str) -> usize {
+    let mut len = 0;
+    for c in value.chars().rev() {
+        if c.is_ascii_uppercase() || c.is_ascii_digit() {
+            len += 1;
+        } else {
+            break;
+        }
+    }
+    len
+}
+
+fn marker_tail_is_upper_identifier(value: &str) -> bool {
+    let Some(rest) = value.strip_prefix('_').or_else(|| value.strip_prefix('^')) else {
+        return false;
+    };
+    let token = rest
+        .chars()
+        .take_while(|c| c.is_ascii_alphanumeric())
+        .collect::<String>();
+    !token.is_empty()
+        && token
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
+        && token.chars().any(|c| c.is_ascii_uppercase())
+}
+
 fn balanced_brackets(input: Input) -> IResult<Input, Input, ()> {
     let mut pairs = 1;
     let bytes = input.as_bytes();
@@ -144,7 +183,11 @@ fn parse() {
     use crate::tests::to_ast;
 
     let to_subscript = to_ast::<Subscript>(|input| {
-        subscript_node(input, crate::syntax::object::standard_object_nodes)
+        subscript_node(
+            input,
+            ("", input.c).into(),
+            crate::syntax::object::standard_object_nodes,
+        )
     });
 
     insta::assert_debug_snapshot!(
@@ -189,6 +232,23 @@ fn parse() {
     "###
     );
 
+    debug_assert!(
+        subscript_node(
+            ("_ID", &ParseConfig::default()).into(),
+            ("CONTRACT", &ParseConfig::default()).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_err()
+    );
+    debug_assert!(
+        subscript_node(
+            ("_2O", &ParseConfig::default()).into(),
+            ("H", &ParseConfig::default()).into(),
+            crate::syntax::object::standard_object_nodes
+        )
+        .is_ok()
+    );
+
     let with_brace = ParseConfig {
         use_sub_superscript: UseSubSuperscript::Brace,
         ..Default::default()
@@ -197,6 +257,7 @@ fn parse() {
     debug_assert!(
         subscript_node(
             ("_*", &with_brace).into(),
+            ("", &with_brace).into(),
             crate::syntax::object::standard_object_nodes
         )
         .is_err()
@@ -204,6 +265,7 @@ fn parse() {
     debug_assert!(
         subscript_node(
             ("_abc", &with_brace).into(),
+            ("", &with_brace).into(),
             crate::syntax::object::standard_object_nodes
         )
         .is_err()
@@ -211,6 +273,7 @@ fn parse() {
     debug_assert!(
         subscript_node(
             ("_+123", &with_brace).into(),
+            ("", &with_brace).into(),
             crate::syntax::object::standard_object_nodes
         )
         .is_err()
@@ -218,6 +281,7 @@ fn parse() {
     debug_assert!(
         subscript_node(
             ("_{*bo\nld*}", &with_brace).into(),
+            ("", &with_brace).into(),
             crate::syntax::object::standard_object_nodes
         )
         .is_ok()

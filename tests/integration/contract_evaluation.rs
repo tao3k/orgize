@@ -91,6 +91,50 @@ fn json_exports_source_backed_trace() {
 }
 
 #[test]
+fn plain_text_summary_contains_matches_inline_rendered_text_split_by_subscript() {
+    let contract_document = Org::parse(
+        r#"
+* skill-contract
+:PROPERTIES:
+:CONTRACT_ID: asp.skill.test.v1
+:CONTRACT_SCOPE: document
+:END:
+
+** Explicit capture command
+:PROPERTIES:
+:ASSERT_ID: asp.skill.capture.explicit-contract
+:SEVERITY: error
+:END:
+
+#+BEGIN_SRC org-contract
+(assert exists
+  (plain-text :descendant-of $scope :summary-contains (value "asp org capture --contract CONTRACT_ID")))
+#+END_SRC
+"#,
+    )
+    .document();
+    let registry = parse_contracts_from_document(&contract_document, None);
+    let contract = registry
+        .resolve(&parse_contract_reference("asp.skill.test.v1"))
+        .expect("contract should resolve");
+    let target = Org::parse(
+        r#"
+* Skill
+Use asp org capture --contract CONTRACT_ID before writing.
+"#,
+    )
+    .document();
+
+    let evaluation =
+        evaluate_org_contract(&target, contract, OrgContractEvaluationScope::document());
+
+    assert_eq!(evaluation.assertions.len(), 1);
+    let assertion = &evaluation.assertions[0];
+    assert_eq!(assertion.status, OrgContractAssertionStatus::Passed);
+    assert_eq!(assertion.actual_count, 1);
+}
+
+#[test]
 fn cli_trace_outputs_contract_evaluation_json_snapshot() {
     let dir = test_dir("contract-trace");
     fs::create_dir_all(&dir).unwrap();

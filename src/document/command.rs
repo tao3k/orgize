@@ -7,13 +7,16 @@ use std::{
     process::ExitCode,
 };
 
-use crate::Org;
+use crate::{
+    Org,
+    ast::{MemoryQuery, MemoryRecord, MemoryRecordState},
+};
 
 use super::{
     elements::{
-        count_kind, display_path, escape_field, filter_elements, filter_elements_by_query,
-        has_flag, index_path, index_project_with_config, last_existing_path, option_value,
-        option_values, query_project_with_config,
+        collect_document_paths, count_kind, display_path, escape_field, filter_elements,
+        filter_elements_by_query, has_flag, index_path, index_project_with_config,
+        last_existing_path, option_value, option_values, query_project_with_config,
     },
     model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
     packets::{print_query_json, print_search_json, print_selector_query_json},
@@ -21,6 +24,11 @@ use super::{
 };
 
 const DOCUMENT_PRIME_OWNER_LIMIT: usize = 12;
+
+struct DocumentMemoryRecord {
+    path: PathBuf,
+    record: MemoryRecord,
+}
 
 /// Run an `asp org` document command.
 pub fn run_org_command(args: Vec<String>) -> Result<ExitCode, String> {
@@ -88,7 +96,8 @@ fn run_search(
         }
         "prime" => {
             let root = last_existing_path(&args[1..]).unwrap_or_else(|| PathBuf::from("."));
-            let facts = index_project_with_config(language, &root, walk_config)?;
+            let walk_config = walk_config_with_cli_excludes(walk_config, &args);
+            let facts = index_project_with_config(language, &root, &walk_config)?;
             if json_output {
                 print_search_json(language, "prime", &root, &facts, None)?;
             } else {
@@ -98,7 +107,8 @@ fn run_search(
         }
         "toc" => {
             let root = last_existing_path(&args[1..]).unwrap_or_else(|| PathBuf::from("."));
-            let facts = index_project_with_config(language, &root, walk_config)?;
+            let walk_config = walk_config_with_cli_excludes(walk_config, &args);
+            let facts = index_project_with_config(language, &root, &walk_config)?;
             let headings = heading_facts(&facts);
             if json_output {
                 print_search_json(language, "toc", &root, &headings, None)?;
@@ -132,7 +142,8 @@ fn run_search(
                 .map(|index| PathBuf::from(&fzf_args[index]))
                 .unwrap_or_else(|| PathBuf::from("."));
             let toc_output = fzf_toc_requested(fzf_args, root_arg_index);
-            let facts = index_project_with_config(language, &root, walk_config)?;
+            let walk_config = walk_config_with_cli_excludes(walk_config, &args);
+            let facts = index_project_with_config(language, &root, &walk_config)?;
             if toc_output {
                 let query = terms.join(" ");
                 let headings = heading_facts_for_matching_documents(&facts, &terms);
@@ -155,6 +166,7 @@ fn run_search(
             }
             Ok(ExitCode::SUCCESS)
         }
+        "memory" => run_memory_search(language, &args[1..], walk_config),
         view => Err(format!(
             "{} search: unsupported view `{view}`",
             language.id()
@@ -248,7 +260,8 @@ fn run_query(
     }
 
     let root = last_existing_path(&args).unwrap_or_else(|| PathBuf::from("."));
-    let facts = query_project_with_config(language, &root, walk_config, &terms, &fields)?;
+    let walk_config = walk_config_with_cli_excludes(walk_config, &args);
+    let facts = query_project_with_config(language, &root, &walk_config, &terms, &fields)?;
     let matches = filter_elements_by_query(facts, &terms, &kinds, &fields);
     if json_output {
         print_query_json(language, &terms, &root, &matches, content_output)?;
@@ -339,6 +352,12 @@ fn print_guide(language: DocumentLanguage) {
         "|cmd search-fzf-toc={} search fzf <query...> --workspace . --view toc",
         language.command_prefix()
     );
+    if language == DocumentLanguage::Org {
+        println!(
+            "|cmd search-memory={} search memory --workspace . --view seeds",
+            language.command_prefix()
+        );
+    }
     println!(
         "|cmd query-metadata={} query --term <term> --workspace . --view metadata",
         language.command_prefix()
@@ -369,7 +388,7 @@ fn print_guide(language: DocumentLanguage) {
             language.command_prefix()
         );
         println!(
-            "|cmd capture={} capture --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --body <TEXT>",
+            "|cmd capture={} capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>",
             language.command_prefix()
         );
     }
@@ -440,7 +459,13 @@ fn print_element_guide(language: DocumentLanguage) {
                 "|recipe done-tasks=asp org query --kind task --field todo=DONE --workspace . --view metadata"
             );
             println!(
-                "|recipe capture-task=asp org capture --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --property <KEY=VALUE> --body <TEXT>"
+                "|recipe active-done-artifacts=asp org query --kind task --field todo=DONE --exclude-dir archives --workspace <ORG_ARTIFACTS_ABS_PATH> --content"
+            );
+            println!(
+                "|recipe current-session-tasks=asp org search memory --session <SESSION_ID> --workspace <ORG_ARTIFACTS_ABS_PATH> --view seeds"
+            );
+            println!(
+                "|recipe capture-task=asp org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
             );
             println!(
                 "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"
@@ -492,6 +517,9 @@ fn print_search_guide(language: DocumentLanguage) {
         "|view toc returns=document-heading-outline fields=path,range,level,title,todo,priority,tag"
     );
     println!("|view fzf args=query returns=bounded-document-facts");
+    if language == DocumentLanguage::Org {
+        println!("|view memory args=--session?,--plan?,--term? returns=current-org-memory-cards");
+    }
     println!(
         "|view fzf-toc args=query command=\"{} search fzf <query...> --workspace . --view toc\" returns=matched-document-heading-outline combine=document-all-terms",
         language.command_prefix()
@@ -525,7 +553,192 @@ fn print_query_guide(language: DocumentLanguage) {
     println!(
         "|field-match value command=\"query --field <key=value> --workspace . --view metadata\" output=elements-with-containing-value"
     );
+    println!("|walk-filter exclude-dir command=\"query --exclude-dir <DIR> --workspace .\"");
     println!("|content-rule requires=--selector|--term|--kind|--field");
+}
+
+fn walk_config_with_cli_excludes(
+    walk_config: &DocumentWalkConfig,
+    args: &[String],
+) -> DocumentWalkConfig {
+    let mut walk_config = walk_config.clone();
+    for dir in option_values(args, "--exclude-dir") {
+        if !dir.trim().is_empty() && !walk_config.ignore_dirs.iter().any(|item| item == &dir) {
+            walk_config.ignore_dirs.push(dir);
+        }
+    }
+    walk_config
+}
+
+fn run_memory_search(
+    language: DocumentLanguage,
+    args: &[String],
+    walk_config: &DocumentWalkConfig,
+) -> Result<ExitCode, String> {
+    if language != DocumentLanguage::Org {
+        return Err(format!(
+            "{} search memory: Org memory projection is only supported for Org documents",
+            language.id()
+        ));
+    }
+    let root = last_existing_path(args).unwrap_or_else(|| PathBuf::from("."));
+    let walk_config = walk_config_with_cli_excludes(walk_config, args);
+    let session = option_value(args, "--session");
+    let plan = option_value(args, "--plan");
+    let terms = option_values(args, "--term");
+    let records = current_memory_records(&root, &walk_config, session, plan, &terms)?;
+    print_memory_search(language, &root, session, plan, &terms, &records);
+    Ok(ExitCode::SUCCESS)
+}
+
+fn current_memory_records(
+    root: &Path,
+    walk_config: &DocumentWalkConfig,
+    session: Option<&str>,
+    plan: Option<&str>,
+    terms: &[String],
+) -> Result<Vec<DocumentMemoryRecord>, String> {
+    let mut files = Vec::new();
+    collect_document_paths(DocumentLanguage::Org, root, walk_config, &mut files)?;
+    files.sort();
+    files.dedup();
+
+    let query = MemoryQuery::new()
+        .include_closed(false)
+        .include_archived(false);
+    let mut records = Vec::new();
+    for path in files {
+        let source =
+            fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
+        let document = Org::parse(&source).document();
+        records.extend(
+            document
+                .memory_records(&query)
+                .into_iter()
+                .filter_map(|record| {
+                    (record.state == MemoryRecordState::Current
+                        && memory_record_matches_scope(&record, session, plan)
+                        && memory_record_matches_terms(&record, terms))
+                    .then_some(DocumentMemoryRecord {
+                        path: path.clone(),
+                        record,
+                    })
+                }),
+        );
+    }
+    Ok(records)
+}
+
+fn memory_record_matches_scope(
+    record: &MemoryRecord,
+    session: Option<&str>,
+    plan: Option<&str>,
+) -> bool {
+    session.is_none_or(|expected| memory_record_property_eq(record, "PLAN_SESSION", expected))
+        && plan.is_none_or(|expected| memory_record_property_eq(record, "PLAN_ID", expected))
+}
+
+fn memory_record_property_eq(record: &MemoryRecord, key: &str, expected: &str) -> bool {
+    record
+        .properties
+        .iter()
+        .any(|property| property.key.eq_ignore_ascii_case(key) && property.value == expected)
+}
+
+fn memory_record_matches_terms(record: &MemoryRecord, terms: &[String]) -> bool {
+    terms.iter().all(|term| {
+        let term = term.trim().to_ascii_lowercase();
+        term.is_empty()
+            || record.title.to_ascii_lowercase().contains(&term)
+            || record
+                .todo
+                .as_ref()
+                .is_some_and(|todo| todo.name.to_ascii_lowercase().contains(&term))
+            || record.properties.iter().any(|property| {
+                property.key.to_ascii_lowercase().contains(&term)
+                    || property.value.to_ascii_lowercase().contains(&term)
+            })
+            || record.links.iter().any(|link| {
+                link.path.to_ascii_lowercase().contains(&term)
+                    || link.description.to_ascii_lowercase().contains(&term)
+            })
+    })
+}
+
+fn print_memory_search(
+    language: DocumentLanguage,
+    root: &Path,
+    session: Option<&str>,
+    plan: Option<&str>,
+    terms: &[String],
+    records: &[DocumentMemoryRecord],
+) {
+    println!(
+        "[search-memory] lang={} root={} current={} session={} plan={} terms={}",
+        language.id(),
+        display_path(root),
+        records.len(),
+        session.unwrap_or("-"),
+        plan.unwrap_or("-"),
+        if terms.is_empty() {
+            "-".to_string()
+        } else {
+            terms.join(",")
+        }
+    );
+    for record in records.iter().take(80) {
+        println!("{}", render_memory_record(record));
+    }
+    println!(
+        "|next current-session=asp org search memory --session <SESSION_ID> --workspace {} --view seeds",
+        display_path(root)
+    );
+    if let Some(session) = session {
+        let intent = if terms.is_empty() {
+            "unfinished org task".to_string()
+        } else {
+            terms.join(" ")
+        };
+        let mut command = format!(
+            "asp-memory-engine recall-plan --state .data/omni-memory/state.json --intent {} --session {}",
+            shell_arg(&intent),
+            shell_arg(session)
+        );
+        if let Some(plan) = plan {
+            command.push_str(" --plan ");
+            command.push_str(&shell_arg(plan));
+        }
+        println!("|python-memory-engine next={}", command);
+    }
+}
+
+fn render_memory_record(item: &DocumentMemoryRecord) -> String {
+    let record = &item.record;
+    let todo = record
+        .todo
+        .as_ref()
+        .map(|todo| todo.name.as_str())
+        .unwrap_or("-");
+    let session = memory_record_property(record, "PLAN_SESSION").unwrap_or("-");
+    let plan = memory_record_property(record, "PLAN_ID").unwrap_or("-");
+    format!(
+        "|memory {}:{}-{} state=current todo=\"{}\" session=\"{}\" plan=\"{}\" title=\"{}\"",
+        display_path(&item.path),
+        record.source.start.line,
+        record.source.end.line,
+        escape_field(todo),
+        escape_field(session),
+        escape_field(plan),
+        escape_field(&record.title)
+    )
+}
+
+fn memory_record_property<'a>(record: &'a MemoryRecord, key: &str) -> Option<&'a str> {
+    record
+        .properties
+        .iter()
+        .find(|property| property.key.eq_ignore_ascii_case(key))
+        .map(|property| property.value.as_str())
 }
 
 fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) {

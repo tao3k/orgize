@@ -82,19 +82,19 @@ fn org_document_search_and_query_commands_run() {
     );
     assert!(
         guide_stdout.contains(
-            "|surface capture-plan purpose=non-mutating-org-entry-plan output=compact-plan content=false"
+            "|surface capture purpose=state-init-and-non-mutating-org-entry-plan output=compact-plan content=false"
         ),
         "{guide_stdout}"
     );
     assert!(
         guide_stdout.contains(
-            "|cmd capture-plan=asp org capture-plan --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --body <TEXT>"
+            "|cmd capture=asp org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
         ),
         "{guide_stdout}"
     );
     assert!(
         guide_stdout.contains(
-            "|recipe capture-task=asp org capture-plan --kind task --title <TITLE> --target-file <ORG_FILE> --outline <OUTLINE> --tag <TAG> --property <KEY=VALUE> --body <TEXT>"
+            "|recipe capture-task=asp org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
         ),
         "{guide_stdout}"
     );

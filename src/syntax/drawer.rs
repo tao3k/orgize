@@ -192,11 +192,7 @@ fn parse() {
         NEW_LINE@8..9 "\n"
       DRAWER_CONTENT@9..26
         PARAGRAPH@9..26
-          TEXT@9..18 "  :CUSTOM"
-          SUBSCRIPT@18..21
-            UNDERSCORE@18..19 "_"
-            TEXT@19..21 "ID"
-          TEXT@21..26 ": id\n"
+          TEXT@9..26 "  :CUSTOM_ID: id\n"
       DRAWER_END@26..33
         WHITESPACE@26..28 "  "
         COLON@28..29 ":"

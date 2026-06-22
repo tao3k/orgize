@@ -150,7 +150,7 @@ pub(super) fn escape_field(value: &str) -> String {
         .replace(['\n', '\r'], " ")
 }
 
-fn collect_document_paths(
+pub(super) fn collect_document_paths(
     language: DocumentLanguage,
     path: &Path,
     walk_config: &DocumentWalkConfig,

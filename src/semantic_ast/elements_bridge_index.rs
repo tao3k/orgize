@@ -649,6 +649,7 @@ fn element_summary(element: &Element<ParsedAnnotation>) -> OrgElementsIndexSumma
         ElementData::Block(block) => summary([
             ("name", optional_text(block.name.as_deref())),
             ("language", optional_text(block.language.as_deref())),
+            ("value", block.value.clone().into()),
             ("valueBytes", block.value.len().into()),
         ]),
         ElementData::FootnoteDef(footnote) => summary([("label", footnote.label.clone().into())]),

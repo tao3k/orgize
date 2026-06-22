@@ -191,6 +191,17 @@ print(topic)
         summary_contains_index[0].outline_path,
         vec!["Learn parser bindings".to_string()]
     );
+    let source_block_value_index = doc.query_org_elements_index(
+        &OrgElementsIndexQuery::new()
+            .category(OrgElementsIndexCategory::Element)
+            .kind("src-block")
+            .summary_contains("value", "print(topic)"),
+    );
+    assert_eq!(source_block_value_index.len(), 1);
+    assert_eq!(
+        source_block_value_index[0].summary.get("language"),
+        Some(&OrgElementsIndexSummaryValue::Text("python".to_string()))
+    );
     let property_eq_index = doc.query_org_elements_index(
         &OrgElementsIndexQuery::new()
             .category(OrgElementsIndexCategory::Section)
@@ -236,6 +247,7 @@ print(topic)
     assert_eq!(sql_rows[0].kind, OrgElementsIndexKind::new("src-block"));
     assert_eq!(sql_rows[0].language.as_deref(), Some("python"));
     assert!(sql_rows[0].summary_json.contains(r#""language":"python""#));
+    assert!(sql_rows[0].summary_json.contains("print(topic)"));
     assert!(sql_rows[0].source_start_line > 0);
     let sql_rows_json: Value = serde_json::from_str(
         &doc.org_elements_index_query_sql_rows_json(
@@ -302,9 +314,14 @@ print(topic)
     assert!(index.iter().any(|node| node["category"] == "object"
         && node["kind"] == "timestamp"
         && node["context"] == "paragraph"));
-    assert!(index.iter().any(|node| node["category"] == "element"
-        && node["kind"] == "src-block"
-        && node["summary"]["language"] == "python"));
+    assert!(index.iter().any(|node| {
+        node["category"] == "element"
+            && node["kind"] == "src-block"
+            && node["summary"]["language"] == "python"
+            && node["summary"]["value"]
+                .as_str()
+                .is_some_and(|value| value.contains("print(topic)"))
+    }));
     assert!(
         payload["sourceBlocks"]
             .as_array()

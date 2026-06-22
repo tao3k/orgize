@@ -150,10 +150,10 @@ pub(crate) fn minimal_object_nodes(input: Input) -> Vec<GreenElement> {
             b'$' => latex_fragment_node(i),
             b'\\' => entity_node(i).or_else(|_| latex_fragment_node(i)),
             b'^' if subscript_superscript::verify_pre(&pre) => {
-                superscript_node(i, standard_object_nodes)
+                superscript_node(i, pre, standard_object_nodes)
             }
             b'_' if subscript_superscript::verify_pre(&pre) => {
-                subscript_node(i, standard_object_nodes)
+                subscript_node(i, pre, standard_object_nodes)
             }
             _ => Err(nom::Err::Error(())),
         },
@@ -218,10 +218,10 @@ pub(crate) fn standard_object_nodes(input: Input) -> Vec<GreenElement> {
             b'\\' if !pre.s.ends_with('\\') && i.as_bytes()[1] == b'\\' => line_break_node(i),
             b'\\' => entity_node(i).or_else(|_| latex_fragment_node(i)),
             b'^' if subscript_superscript::verify_pre(&pre) => {
-                superscript_node(i, standard_object_nodes)
+                superscript_node(i, pre, standard_object_nodes)
             }
             b'_' if subscript_superscript::verify_pre(&pre) => {
-                subscript_node(i, standard_object_nodes)
+                subscript_node(i, pre, standard_object_nodes)
             }
             _ => Err(nom::Err::Error(())),
         },
@@ -247,10 +247,10 @@ pub(crate) fn link_description_object_nodes(input: Input) -> Vec<GreenElement> {
             b'$' => latex_fragment_node(i),
             b'\\' => entity_node(i).or_else(|_| latex_fragment_node(i)),
             b'^' if subscript_superscript::verify_pre(&pre) => {
-                superscript_node(i, standard_object_nodes)
+                superscript_node(i, pre, standard_object_nodes)
             }
             b'_' if subscript_superscript::verify_pre(&pre) => {
-                subscript_node(i, standard_object_nodes)
+                subscript_node(i, pre, standard_object_nodes)
             }
             _ => Err(nom::Err::Error(())),
         },

@@ -1,10 +1,15 @@
-//! Capture-plan command service for native Org entry plans.
+//! Capture command service for native Org entry plans.
+
+use std::{fs, path::PathBuf};
 
 use super::{
     AgendaDate, AgentCaptureInsertPosition, AgentCaptureKind, AgentCaptureMemoryPolicy,
     AgentCapturePlan, AgentCaptureReceipt, AgentCaptureReceiptKind, AgentCaptureRequest,
-    AgentCaptureSource, AgentCaptureTarget,
+    AgentCaptureSource, AgentCaptureTarget, CONTRACT_ORG_PROPERTY, OrgContractEvaluation,
+    OrgContractEvaluationScope, OrgContractRegistry, OrgContractScope, evaluate_org_contract,
+    parse_contract_reference, parse_contracts_from_document,
 };
+use crate::Org;
 
 pub enum OrgCapturePlanCommandOutput {
     Help(&'static str),
@@ -17,8 +22,12 @@ pub fn org_capture_plan_command(args: Vec<String>) -> Result<OrgCapturePlanComma
         return Ok(OrgCapturePlanCommandOutput::Help(CAPTURE_PLAN_USAGE));
     }
 
+    let contract_check_args = args.contract_check_args()?;
+    let plan = args.into_request()?.plan();
+    let contract_check = capture_contract_check(&plan.org_entry, contract_check_args)?;
     Ok(OrgCapturePlanCommandOutput::Plan(render_org_capture_plan(
-        &args.into_request()?.plan(),
+        &plan,
+        contract_check.as_ref(),
     )))
 }
 
@@ -31,6 +40,8 @@ struct OrgCapturePlanArgs {
     target_kind: Option<OrgCapturePlanTargetKind>,
     target_file: Option<String>,
     outline_path: Vec<String>,
+    contract_id: Option<String>,
+    contract_registry_paths: Vec<PathBuf>,
     date: Option<AgendaDate>,
     insert_position: Option<AgentCaptureInsertPosition>,
     tags: Vec<String>,
@@ -61,6 +72,8 @@ impl Default for OrgCapturePlanArgs {
             target_kind: None,
             target_file: None,
             outline_path: Vec::new(),
+            contract_id: None,
+            contract_registry_paths: Vec::new(),
             date: None,
             insert_position: None,
             tags: Vec::new(),
@@ -116,6 +129,21 @@ impl OrgCapturePlanArgs {
                     parsed.outline_path =
                         parse_outline_path(required_flag_value(&args, index, "--outline")?);
                 }
+                "--contract" => {
+                    index += 1;
+                    parsed.contract_id =
+                        Some(required_flag_value(&args, index, "--contract")?.to_string());
+                }
+                "--org-contract-registry" | "--contract-registry" => {
+                    index += 1;
+                    parsed
+                        .contract_registry_paths
+                        .push(PathBuf::from(required_flag_value(
+                            &args,
+                            index,
+                            arg.as_str(),
+                        )?));
+                }
                 "--date" => {
                     index += 1;
                     parsed.date = Some(parse_capture_date(required_flag_value(
@@ -168,11 +196,11 @@ impl OrgCapturePlanArgs {
                 }
                 "--no-confirm" => parsed.requires_confirmation = false,
                 _ if arg.starts_with('-') => {
-                    return Err(format!("unknown capture-plan flag `{arg}`"));
+                    return Err(format!("unknown asp org capture flag `{arg}`"));
                 }
                 _ => {
                     return Err(format!(
-                        "unexpected capture-plan positional argument `{arg}`; use --target-file for paths"
+                        "unexpected asp org capture positional argument `{arg}`; use --target-file for paths"
                     ));
                 }
             }
@@ -182,10 +210,21 @@ impl OrgCapturePlanArgs {
     }
 
     fn into_request(self) -> Result<AgentCaptureRequest, String> {
+        if self.contract_id.is_some()
+            && self
+                .properties
+                .iter()
+                .any(|(key, _)| key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
+        {
+            return Err(
+                "asp org capture --contract cannot be combined with --property CONTRACT_ORG=..."
+                    .to_string(),
+            );
+        }
         let target = self.capture_target()?;
         let source = self.capture_source();
         let title = self.title.ok_or_else(|| {
-            "capture-plan --title is required; pass the plan headline explicitly".to_string()
+            "asp org capture --title is required; pass the plan headline explicitly".to_string()
         })?;
         let mut request =
             AgentCaptureRequest::new(self.kind.unwrap_or(AgentCaptureKind::Task), title)
@@ -200,6 +239,9 @@ impl OrgCapturePlanArgs {
         }
         if let Some(memory_policy) = self.memory_policy {
             request = request.memory_policy(memory_policy);
+        }
+        if let Some(contract_id) = self.contract_id {
+            request = request.property(CONTRACT_ORG_PROPERTY, contract_id);
         }
         for tag in self.tags {
             request = request.tag(tag);
@@ -225,7 +267,7 @@ impl OrgCapturePlanArgs {
             OrgCapturePlanTargetKind::Datetree => {
                 let Some(date) = self.date else {
                     return Err(
-                        "capture-plan --target datetree requires --date YYYY-MM-DD".to_string()
+                        "asp org capture --target datetree requires --date YYYY-MM-DD".to_string(),
                     );
                 };
                 AgentCaptureTarget::datetree(date)
@@ -233,7 +275,7 @@ impl OrgCapturePlanArgs {
             OrgCapturePlanTargetKind::OutlinePath => {
                 if self.outline_path.is_empty() {
                     return Err(
-                        "capture-plan --target outline requires --outline <PATH>".to_string()
+                        "asp org capture --target outline requires --outline <PATH>".to_string()
                     );
                 }
                 AgentCaptureTarget::outline_path(self.outline_path.clone())
@@ -266,9 +308,43 @@ impl OrgCapturePlanArgs {
         }
         source
     }
+
+    fn contract_check_args(&self) -> Result<Option<OrgCaptureContractCheckArgs>, String> {
+        let Some(contract_id) = self.contract_id.clone() else {
+            return Err("asp org capture requires --contract CONTRACT_ID".to_string());
+        };
+        if contract_id.trim().is_empty() {
+            return Err("asp org capture --contract requires a non-empty contract id".to_string());
+        }
+        if self.contract_registry_paths.is_empty() {
+            return Err(
+                "asp org capture --contract requires --org-contract-registry PATH.org".to_string(),
+            );
+        }
+        Ok(Some(OrgCaptureContractCheckArgs {
+            contract_id,
+            registry_paths: self.contract_registry_paths.clone(),
+        }))
+    }
 }
 
-fn render_org_capture_plan(plan: &AgentCapturePlan) -> String {
+#[derive(Clone, Debug)]
+struct OrgCaptureContractCheckArgs {
+    contract_id: String,
+    registry_paths: Vec<PathBuf>,
+}
+
+#[derive(Clone, Debug)]
+struct OrgCaptureContractCheck {
+    contract_id: String,
+    registry_paths: Vec<PathBuf>,
+    evaluation: OrgContractEvaluation,
+}
+
+fn render_org_capture_plan(
+    plan: &AgentCapturePlan,
+    contract_check: Option<&OrgCaptureContractCheck>,
+) -> String {
     let mut output = String::new();
     output.push_str("[CAPTURE] asp org capture\n");
     output.push_str("target: ");
@@ -333,15 +409,99 @@ fn render_org_capture_plan(plan: &AgentCapturePlan) -> String {
             output.push('\n');
         }
     }
+    if let Some(check) = contract_check {
+        output.push_str("contract-check:\n");
+        output.push_str("- contract: ");
+        output.push_str(&check.contract_id);
+        output.push('\n');
+        output.push_str("- status: passed\n");
+        output.push_str("- assertions: ");
+        output.push_str(&check.evaluation.assertions.len().to_string());
+        output.push('\n');
+        output.push_str("- registries:");
+        for path in &check.registry_paths {
+            output.push(' ');
+            output.push_str(&path.display().to_string());
+        }
+        output.push('\n');
+    }
     output.push_str("org-entry:\n");
     output.push_str(&plan.org_entry);
     if !plan.org_entry.ends_with('\n') {
         output.push('\n');
     }
     output.push_str(
-        "next: review org-entry, then apply through AST-patch/edit-plan; capture-plan performed no write\n",
+        "next: review org-entry, then apply through AST-patch/edit-plan; asp org capture performed no write\n",
     );
     output
+}
+
+fn capture_contract_check(
+    org_entry: &str,
+    args: Option<OrgCaptureContractCheckArgs>,
+) -> Result<Option<OrgCaptureContractCheck>, String> {
+    let Some(args) = args else {
+        return Ok(None);
+    };
+    let registry = load_capture_contract_registry(&args.registry_paths)?;
+    let reference = parse_contract_reference(args.contract_id.as_str());
+    let contract = registry.resolve(&reference).ok_or_else(|| {
+        format!(
+            "asp org capture --contract `{}` was not found in the loaded Org contract registry",
+            args.contract_id
+        )
+    })?;
+    let document = Org::parse(org_entry).document();
+    let evaluation = match contract.scope {
+        OrgContractScope::Document => {
+            evaluate_org_contract(&document, contract, OrgContractEvaluationScope::document())
+        }
+        OrgContractScope::Subtree => {
+            let section = document
+                .sections
+                .first()
+                .ok_or_else(|| "asp org capture rendered no Org section to check".to_string())?;
+            evaluate_org_contract(
+                &document,
+                contract,
+                OrgContractEvaluationScope::section(
+                    section.raw_title.trim_end(),
+                    vec![section.raw_title.trim_end().to_string()],
+                    section.ann.range,
+                ),
+            )
+        }
+    };
+    let failed_assertions = evaluation
+        .assertions
+        .iter()
+        .filter(|assertion| assertion.status.is_failed())
+        .map(|assertion| assertion.assertion_id.as_str())
+        .collect::<Vec<_>>();
+    if !failed_assertions.is_empty() {
+        return Err(format!(
+            "asp org capture contract check failed for `{}`: {}",
+            args.contract_id,
+            failed_assertions.join(", ")
+        ));
+    }
+    Ok(Some(OrgCaptureContractCheck {
+        contract_id: args.contract_id,
+        registry_paths: args.registry_paths,
+        evaluation,
+    }))
+}
+
+fn load_capture_contract_registry(paths: &[PathBuf]) -> Result<OrgContractRegistry, String> {
+    let mut registry = OrgContractRegistry::default();
+    for path in paths {
+        let source =
+            fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+        let document = Org::parse(&source).document();
+        let loaded = parse_contracts_from_document(&document, Some(path.as_path()));
+        registry.contracts.extend(loaded.contracts);
+    }
+    Ok(registry)
 }
 
 fn parse_capture_kind(value: &str) -> Result<AgentCaptureKind, String> {
@@ -369,7 +529,7 @@ fn org_capture_receipt_label(kind: AgentCaptureReceiptKind) -> &'static str {
 fn org_capture_receipt_message(receipt: &AgentCaptureReceipt) -> String {
     match receipt.kind {
         AgentCaptureReceiptKind::AgentInterpreted => {
-            "capture kind is supplied by the caller, not inferred from Org templates".to_string()
+            "capture arguments carry an explicit kind; Org templates do not infer it".to_string()
         }
         _ => receipt.message.clone(),
     }
@@ -409,7 +569,7 @@ fn parse_memory_policy(value: &str) -> Result<AgentCaptureMemoryPolicy, String> 
 
 fn parse_capture_date(value: &str) -> Result<AgendaDate, String> {
     AgendaDate::parse_ymd(value)
-        .ok_or_else(|| format!("capture-plan --date expects YYYY-MM-DD, got `{value}`"))
+        .ok_or_else(|| format!("asp org capture --date expects YYYY-MM-DD, got `{value}`"))
 }
 
 fn parse_outline_path(value: &str) -> Vec<String> {
@@ -424,11 +584,11 @@ fn parse_outline_path(value: &str) -> Vec<String> {
 fn parse_property(value: &str) -> Result<(String, String), String> {
     let Some((key, property_value)) = value.split_once('=') else {
         return Err(format!(
-            "capture-plan --property expects KEY=VALUE, got `{value}`"
+            "asp org capture --property expects KEY=VALUE, got `{value}`"
         ));
     };
     if key.trim().is_empty() {
-        return Err("capture-plan --property key cannot be empty".to_string());
+        return Err("asp org capture --property key cannot be empty".to_string());
     }
     Ok((key.trim().to_string(), property_value.trim().to_string()))
 }
@@ -447,4 +607,4 @@ fn normalized(value: &str) -> String {
     value.trim().to_ascii_lowercase().replace('_', "-")
 }
 
-const CAPTURE_PLAN_USAGE: &str = "Usage: orgize capture-plan --title TITLE [--kind task|note|decision|idea|evidence|preference|correction|memory-candidate|article-note] [--body TEXT] [--quote TEXT] [--target inbox|datetree|outline|current-section] [--target-file PATH] [--outline A/B] [--date YYYY-MM-DD] [--insert append|prepend|first-child|last-child] [--tag TAG] [--property KEY=VALUE] [--source-url URL] [--source-label LABEL] [--actor ACTOR] [--memory-policy none|candidate|background|decision|transient|supersedes] [--no-confirm]";
+const CAPTURE_PLAN_USAGE: &str = "Usage: orgize capture-plan --title TITLE [--contract CONTRACT_ID --org-contract-registry PATH.org] [--kind task|note|decision|idea|evidence|preference|correction|memory-candidate|article-note] [--body TEXT] [--quote TEXT] [--target inbox|datetree|outline|current-section] [--target-file PATH] [--outline A/B] [--date YYYY-MM-DD] [--insert append|prepend|first-child|last-child] [--tag TAG] [--property KEY=VALUE] [--source-url URL] [--source-label LABEL] [--actor ACTOR] [--memory-policy none|candidate|background|decision|transient|supersedes] [--no-confirm]";
