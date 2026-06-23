@@ -272,7 +272,7 @@ pub use model::{
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 pub use org_contract::{parse_contract_reference, parse_contracts_from_document};
-pub use org_contract_evaluation::evaluate_org_contract;
+pub use org_contract_evaluation::{evaluate_org_contract, evaluate_org_contract_with_context};
 pub use org_contract_evaluation_json::{
     evaluation_to_json_value as org_contract_evaluation_to_json_value,
     evaluations_to_json_value as org_contract_evaluations_to_json_value,
@@ -281,7 +281,8 @@ pub use org_contract_model::{
     ASSERT_ID_PROPERTY, ASSERT_SEVERITY_PROPERTY, CONTRACT_ALIAS_PROPERTY, CONTRACT_ID_PROPERTY,
     CONTRACT_KIND_ORG_ELEMENTS, CONTRACT_KIND_PROPERTY, CONTRACT_ORG_PROPERTY,
     CONTRACT_SCOPE_PROPERTY, OrgContract, OrgContractAssertion, OrgContractAssertionEvaluation,
-    OrgContractAssertionStatus, OrgContractBinding, OrgContractCompareOp, OrgContractEvaluation,
+    OrgContractAssertionStatus, OrgContractBinding, OrgContractCompareOp,
+    OrgContractDocumentPredicate, OrgContractEvaluation, OrgContractEvaluationContext,
     OrgContractEvaluationScope, OrgContractExpectation, OrgContractKind, OrgContractQuery,
     OrgContractReference, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
     OrgContractSeverity,

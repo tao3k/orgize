@@ -9,6 +9,8 @@ use crate::ast::{OrgContractRegistry, PriorityProfile, PropertySchemaRegistry, S
 /// Lint configuration.
 ///
 /// The default keeps linting pure over the provided source string. Set
+/// [`source_path`](Self::source_path) when source-backed linting should expose
+/// host filename facts to `CONTRACT_ORG` document predicates. Set
 /// [`include_base_dir`](Self::include_base_dir) when checking `#+INCLUDE:`
 /// directives against the filesystem. Set
 /// [`attachment_base_dir`](Self::attachment_base_dir) when checking
@@ -16,6 +18,8 @@ use crate::ast::{OrgContractRegistry, PriorityProfile, PropertySchemaRegistry, S
 /// [`file_base_dir`](Self::file_base_dir) when checking ordinary `file:` links.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct LintOptions {
+    /// Host path for the source document being linted.
+    pub source_path: Option<PathBuf>,
     /// Base directory used to resolve relative `#+INCLUDE:` paths.
     pub include_base_dir: Option<PathBuf>,
     /// Base directory used to resolve relative Org attachment directories.

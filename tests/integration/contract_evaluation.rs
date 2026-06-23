@@ -173,6 +173,120 @@ No link here.
 }
 
 #[test]
+fn cli_trace_evaluates_multiple_contract_org_bindings_on_same_scope() {
+    let dir = test_dir("contract-trace-multiple-contracts");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(
+        dir.join("contracts.org"),
+        r#"* generic-skill-v1
+:PROPERTIES:
+:CONTRACT_ID: skill.generic.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+** has-root-heading
+:PROPERTIES:
+:ASSERT_ID: skill.has-root-heading
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (headline :at $scope))
+#+END_SRC
+* asp-skill-v1
+:PROPERTIES:
+:CONTRACT_ID: asp.skill.test.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+** has-evidence-section
+:PROPERTIES:
+:ASSERT_ID: asp.skill.has-evidence-section
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (headline :child-of $scope :summary (title "Evidence")))
+#+END_SRC
+"#,
+    )
+    .unwrap();
+    fs::write(
+        dir.join("skill.org"),
+        r#"* ASP Org
+:PROPERTIES:
+:CONTRACT_ORG: skill.generic.v1
+:CONTRACT_ORG: asp.skill.test.v1
+:END:
+** Evidence
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args([
+            "contract",
+            "trace",
+            "--org-contract-registry",
+            "contracts.org",
+            "skill.org",
+        ])
+        .output()
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("utf8 stdout");
+    assert!(stdout.contains(r#""contractId": "skill.generic.v1""#), "{stdout}");
+    assert!(stdout.contains(r#""contractId": "asp.skill.test.v1""#), "{stdout}");
+    assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
+}
+
+#[test]
+fn cli_trace_resolves_org_link_contract_reference_relative_to_source_file() {
+    let dir = test_dir("contract-trace-relative-org-link");
+    fs::create_dir_all(dir.join("contracts")).unwrap();
+    fs::create_dir_all(dir.join("templates")).unwrap();
+    fs::write(dir.join("contracts").join("contract.org"), contract_source()).unwrap();
+    fs::write(
+        dir.join("templates").join("skill.org"),
+        r#"* Task A
+:PROPERTIES:
+:CONTRACT_ORG: [[../contracts/contract.org][agent.evidence-link-task.v1]]
+:END:
+** Evidence
+[[https://example.test][inside]]
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args([
+            "contract",
+            "trace",
+            "--org-contract-registry",
+            "contracts/contract.org",
+            "templates/skill.org",
+        ])
+        .output()
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("utf8 stdout");
+    assert!(stdout.contains(r#""contractId": "agent.evidence-link-task.v1""#), "{stdout}");
+    assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
+}
+
+#[test]
 fn cli_query_surface_outputs_agent_facing_json() {
     let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .args(["contract", "query-surface", "--json"])

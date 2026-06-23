@@ -1,14 +1,16 @@
 //! `CONTRACT_ORG` semantic assertion linting.
 
+use std::path::Path;
+
 use rowan::TextRange;
 
 use crate::Org;
 use crate::ast::{
     CONTRACT_ORG_PROPERTY, ElementData, Keyword, OrgContract, OrgContractAssertionEvaluation,
-    OrgContractEvaluationScope, OrgContractQuery, OrgContractRegistry, OrgContractScope,
-    OrgElementQueryPredicate, OrgElementsIndexSummaryPredicate,
+    OrgContractEvaluationContext, OrgContractEvaluationScope, OrgContractQuery,
+    OrgContractRegistry, OrgContractScope, OrgElementQueryPredicate, OrgElementsIndexSummaryPredicate,
     OrgElementsIndexSummaryTextPredicate, OrgElementsIndexSummaryValue, ParsedAnnotation,
-    ParsedAst, Property, Section, evaluate_org_contract, parse_contract_reference,
+    ParsedAst, Property, Section, evaluate_org_contract_with_context, parse_contract_reference,
     parse_contracts_from_document,
 };
 
@@ -26,6 +28,7 @@ pub(crate) fn builtin_contract_org_findings(
     }
 
     let registry = builtin_lint_contract_registry();
+    let context = OrgContractEvaluationContext::default();
     let mut findings = Vec::new();
     for contract in &registry.contracts {
         if contract.scope != OrgContractScope::Document {
@@ -36,6 +39,7 @@ pub(crate) fn builtin_contract_org_findings(
             source,
             contract,
             ContractScopeInstance::document(),
+            &context,
             &mut findings,
         );
     }
@@ -66,12 +70,12 @@ fn has_top_level_body_text(document: &ParsedAst, source: &str) -> bool {
 }
 
 fn has_contract_org_override(document: &ParsedAst) -> bool {
-    document_contract_binding(document).is_some()
+    !document_contract_bindings(document).is_empty()
         || document.sections.iter().any(section_has_contract_override)
 }
 
 fn section_has_contract_override(section: &Section<ParsedAnnotation>) -> bool {
-    section_contract_binding(section).is_some()
+    !section_contract_bindings(section).is_empty()
         || section
             .subsections
             .iter()
@@ -82,24 +86,31 @@ pub(crate) fn contract_org_findings(
     document: &ParsedAst,
     source: &str,
     registry: &OrgContractRegistry,
+    context: &OrgContractEvaluationContext,
 ) -> Vec<LintFinding> {
     let mut findings = Vec::new();
-    let document_contract = document_contract_binding(document)
-        .and_then(|binding| resolve_binding(binding, registry, source, &mut findings));
-    let document_default_contract = match document_contract {
-        Some(contract) if contract.scope == OrgContractScope::Document => {
+    let document_contracts = resolve_bindings(
+        document_contract_bindings(document),
+        registry,
+        source,
+        context.source_path(),
+        &mut findings,
+    );
+    let mut document_default_contracts = Vec::new();
+    for contract in document_contracts {
+        if contract.scope == OrgContractScope::Document {
             push_contract_findings(
                 document,
                 source,
                 contract,
                 ContractScopeInstance::document(),
+                context,
                 &mut findings,
             );
-            None
+        } else if contract.scope == OrgContractScope::Subtree {
+            document_default_contracts.push(contract);
         }
-        Some(contract) if contract.scope == OrgContractScope::Subtree => Some(contract),
-        _ => None,
-    };
+    }
 
     for section in &document.sections {
         collect_section_contract_findings(
@@ -108,7 +119,8 @@ pub(crate) fn contract_org_findings(
             registry,
             section,
             Vec::new(),
-            document_default_contract,
+            &document_default_contracts,
+            context,
             &mut findings,
         );
     }
@@ -121,23 +133,35 @@ fn collect_section_contract_findings<'a>(
     registry: &'a OrgContractRegistry,
     section: &Section<ParsedAnnotation>,
     mut outline_path: Vec<String>,
-    inherited_contract: Option<&'a OrgContract>,
+    inherited_contracts: &[&'a OrgContract],
+    context: &OrgContractEvaluationContext,
     findings: &mut Vec<LintFinding>,
 ) {
     outline_path.push(section.raw_title.trim_end().to_string());
 
-    let section_contract = match section_contract_binding(section) {
-        Some(binding) => resolve_binding(binding, registry, source, findings)
-            .filter(|contract| contract.scope == OrgContractScope::Subtree),
-        None => inherited_contract,
+    let section_bindings = section_contract_bindings(section);
+    let section_contracts = if section_bindings.is_empty() {
+        inherited_contracts.to_vec()
+    } else {
+        resolve_bindings(
+            section_bindings,
+            registry,
+            source,
+            context.source_path(),
+            findings,
+        )
+            .into_iter()
+            .filter(|contract| contract.scope == OrgContractScope::Subtree)
+            .collect()
     };
 
-    if let Some(contract) = section_contract {
+    for contract in section_contracts {
         push_contract_findings(
             document,
             source,
             contract,
             ContractScopeInstance::section(section, outline_path.clone()),
+            context,
             findings,
         );
     }
@@ -149,7 +173,8 @@ fn collect_section_contract_findings<'a>(
             registry,
             child,
             outline_path.clone(),
-            None,
+            &[],
+            context,
             findings,
         );
     }
@@ -160,9 +185,11 @@ fn push_contract_findings(
     source: &str,
     contract: &OrgContract,
     scope: ContractScopeInstance,
+    context: &OrgContractEvaluationContext,
     findings: &mut Vec<LintFinding>,
 ) {
-    let evaluation = evaluate_org_contract(document, contract, scope.evaluation_scope());
+    let evaluation =
+        evaluate_org_contract_with_context(document, contract, scope.evaluation_scope(), context);
     for (assertion, assertion_evaluation) in contract.assertions.iter().zip(evaluation.assertions) {
         if !assertion_evaluation.status.is_failed() {
             continue;
@@ -387,6 +414,7 @@ fn resolve_binding<'a>(
     binding: ContractBinding,
     registry: &'a OrgContractRegistry,
     source: &str,
+    source_path: Option<&Path>,
     findings: &mut Vec<LintFinding>,
 ) -> Option<&'a OrgContract> {
     if binding.reference.raw.trim().is_empty() {
@@ -398,7 +426,11 @@ fn resolve_binding<'a>(
         });
         return None;
     }
-    let Some(contract) = registry.resolve(&binding.reference) else {
+    let reference = binding.reference.with_source_relative_path(source_path);
+    let Some(contract) = registry
+        .resolve(&reference)
+        .or_else(|| registry.resolve(&binding.reference))
+    else {
         findings.push(LintFinding {
             code: "ORG044",
             severity: LintSeverity::Warning,
@@ -413,35 +445,52 @@ fn resolve_binding<'a>(
     Some(contract)
 }
 
-fn document_contract_binding(document: &ParsedAst) -> Option<ContractBinding> {
-    property_contract_binding(&document.properties)
-        .or_else(|| keyword_contract_binding(&document.metadata))
+fn resolve_bindings<'a>(
+    bindings: Vec<ContractBinding>,
+    registry: &'a OrgContractRegistry,
+    source: &str,
+    source_path: Option<&Path>,
+    findings: &mut Vec<LintFinding>,
+) -> Vec<&'a OrgContract> {
+    bindings
+        .into_iter()
+        .filter_map(|binding| resolve_binding(binding, registry, source, source_path, findings))
+        .collect()
 }
 
-fn section_contract_binding(section: &Section<ParsedAnnotation>) -> Option<ContractBinding> {
-    property_contract_binding(&section.properties)
+fn document_contract_bindings(document: &ParsedAst) -> Vec<ContractBinding> {
+    let properties = property_contract_bindings(&document.properties);
+    if properties.is_empty() {
+        keyword_contract_bindings(&document.metadata)
+    } else {
+        properties
+    }
 }
 
-fn property_contract_binding(properties: &[Property<ParsedAnnotation>]) -> Option<ContractBinding> {
+fn section_contract_bindings(section: &Section<ParsedAnnotation>) -> Vec<ContractBinding> {
+    property_contract_bindings(&section.properties)
+}
+
+fn property_contract_bindings(properties: &[Property<ParsedAnnotation>]) -> Vec<ContractBinding> {
     properties
         .iter()
-        .rev()
-        .find(|property| property.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
+        .filter(|property| property.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
         .map(|property| ContractBinding {
             reference: parse_contract_reference(property.value.as_str()),
             range: property.ann.range,
         })
+        .collect()
 }
 
-fn keyword_contract_binding(keywords: &[Keyword<ParsedAnnotation>]) -> Option<ContractBinding> {
+fn keyword_contract_bindings(keywords: &[Keyword<ParsedAnnotation>]) -> Vec<ContractBinding> {
     keywords
         .iter()
-        .rev()
-        .find(|keyword| keyword.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
+        .filter(|keyword| keyword.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
         .map(|keyword| ContractBinding {
             reference: parse_contract_reference(keyword.value.as_str()),
             range: keyword.ann.range,
         })
+        .collect()
 }
 
 #[derive(Clone, Debug)]

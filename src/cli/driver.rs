@@ -1050,6 +1050,7 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
                 }
             }
             let lint_options = LintOptions {
+                source_path: Some(path.clone()),
                 include_base_dir: path.parent().map(Path::to_path_buf),
                 attachment_base_dir: path.parent().map(Path::to_path_buf),
                 file_base_dir: path.parent().map(Path::to_path_buf),

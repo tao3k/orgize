@@ -9,9 +9,10 @@ use std::{error::Error, fmt};
 use rowan::{GreenNodeBuilder, Language, NodeOrToken, SyntaxKind, SyntaxNode};
 
 use crate::ast::{
-    OrgContractBinding, OrgContractCompareOp, OrgContractExpectation, OrgContractQuery,
-    OrgContractRelativeScope, OrgElementQueryPredicate, OrgElementsIndexCategory,
-    OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
+    OrgContractBinding, OrgContractCompareOp, OrgContractDocumentPredicate,
+    OrgContractExpectation, OrgContractQuery, OrgContractRelativeScope, OrgElementQueryPredicate,
+    OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexQuery,
+    OrgElementsIndexSummaryValue,
 };
 
 /// Error returned when an Org elements query expression cannot be lowered.
@@ -582,6 +583,23 @@ fn compile_query_expression(expression: &QueryExpr) -> Option<OrgContractQuery> 
         "summary-contains" => compile_field_shorthand_query(items, FieldKind::Summary, true),
         "property" => compile_field_shorthand_query(items, FieldKind::Property, false),
         "property-contains" => compile_field_shorthand_query(items, FieldKind::Property, true),
+        "source-path" => compile_document_text_query(items, DocumentTextPredicateKind::PathEquals),
+        "source-path-contains" => {
+            compile_document_text_query(items, DocumentTextPredicateKind::PathContains)
+        }
+        "source-filename" => {
+            compile_document_text_query(items, DocumentTextPredicateKind::FilenameEquals)
+        }
+        "source-filename-prefix" => {
+            compile_document_text_query(items, DocumentTextPredicateKind::FilenamePrefix)
+        }
+        "source-filename-suffix" => {
+            compile_document_text_query(items, DocumentTextPredicateKind::FilenameSuffix)
+        }
+        "source-filename-stem-uppercase" => compile_document_bool_query(
+            items,
+            DocumentBoolPredicateKind::FilenameStemUppercase,
+        ),
         "descendant-of" | "within" => compile_relative_query(items, RelativeKind::Descendant),
         "child-of" => compile_relative_query(items, RelativeKind::Child),
         "at" => compile_relative_query(items, RelativeKind::At),
@@ -713,12 +731,88 @@ fn apply_keyword_argument(
         ":property-contains" => {
             apply_plist_field_argument(query, FieldKind::Property, value, true)?
         }
+        ":path" | ":source-path" => query
+            .document_predicates
+            .push(OrgContractDocumentPredicate::SourcePathEquals(
+                value.as_text()?,
+            )),
+        ":path-contains" | ":source-path-contains" => {
+            query
+                .document_predicates
+                .push(OrgContractDocumentPredicate::SourcePathContains(
+                    value.as_text()?,
+                ))
+        }
+        ":filename" | ":source-filename" => query
+            .document_predicates
+            .push(OrgContractDocumentPredicate::SourceFilenameEquals(
+                value.as_text()?,
+            )),
+        ":filename-prefix" | ":source-filename-prefix" => {
+            query
+                .document_predicates
+                .push(OrgContractDocumentPredicate::SourceFilenamePrefix(
+                    value.as_text()?,
+                ))
+        }
+        ":filename-suffix" | ":source-filename-suffix" => {
+            query
+                .document_predicates
+                .push(OrgContractDocumentPredicate::SourceFilenameSuffix(
+                    value.as_text()?,
+                ))
+        }
+        ":filename-stem-uppercase" | ":source-filename-stem-uppercase" => {
+            query.document_predicates.push(
+                OrgContractDocumentPredicate::SourceFilenameStemUppercase(value.as_bool()?),
+            )
+        }
         ":name" | ":affiliated-name" => query.affiliated_name = Some(value.as_text()?),
         ":context" => query.context = Some(value.as_text()?),
         ":limit" => query.limit = value.as_text()?.parse::<usize>().ok(),
         _ => return None,
     }
     Some(())
+}
+
+fn compile_document_text_query(
+    items: &[QueryExpr],
+    kind: DocumentTextPredicateKind,
+) -> Option<OrgContractQuery> {
+    let value = items.get(1)?.as_text()?;
+    let mut query = OrgContractQuery::default();
+    query.document_predicates.push(match kind {
+        DocumentTextPredicateKind::PathEquals => {
+            OrgContractDocumentPredicate::SourcePathEquals(value)
+        }
+        DocumentTextPredicateKind::PathContains => {
+            OrgContractDocumentPredicate::SourcePathContains(value)
+        }
+        DocumentTextPredicateKind::FilenameEquals => {
+            OrgContractDocumentPredicate::SourceFilenameEquals(value)
+        }
+        DocumentTextPredicateKind::FilenamePrefix => {
+            OrgContractDocumentPredicate::SourceFilenamePrefix(value)
+        }
+        DocumentTextPredicateKind::FilenameSuffix => {
+            OrgContractDocumentPredicate::SourceFilenameSuffix(value)
+        }
+    });
+    Some(query)
+}
+
+fn compile_document_bool_query(
+    items: &[QueryExpr],
+    kind: DocumentBoolPredicateKind,
+) -> Option<OrgContractQuery> {
+    let value = items.get(1)?.as_bool()?;
+    let mut query = OrgContractQuery::default();
+    query.document_predicates.push(match kind {
+        DocumentBoolPredicateKind::FilenameStemUppercase => {
+            OrgContractDocumentPredicate::SourceFilenameStemUppercase(value)
+        }
+    });
+    Some(query)
 }
 
 fn apply_plist_field_argument(
@@ -912,6 +1006,7 @@ fn merge_query(target: &mut OrgContractQuery, source: OrgContractQuery) {
     target.summary_equals.extend(source.summary_equals);
     target.summary_contains.extend(source.summary_contains);
     target.predicates.extend(source.predicates);
+    target.document_predicates.extend(source.document_predicates);
     if source.limit.is_some() {
         target.limit = source.limit;
     }
@@ -946,4 +1041,18 @@ enum RelativeKind {
     Descendant,
     Child,
     At,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum DocumentTextPredicateKind {
+    PathEquals,
+    PathContains,
+    FilenameEquals,
+    FilenamePrefix,
+    FilenameSuffix,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum DocumentBoolPredicateKind {
+    FilenameStemUppercase,
 }

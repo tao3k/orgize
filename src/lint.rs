@@ -51,7 +51,7 @@ use crate::{
     Org,
     ast::{
         Diagnostic, IncludeDirective, Keyword, MacroDefinition, MacroExpansionStatus,
-        ParsedAnnotation, ParsedAst, TargetDefinition, TargetKind,
+        OrgContractEvaluationContext, ParsedAnnotation, ParsedAst, TargetDefinition, TargetKind,
     },
 };
 
@@ -125,10 +125,15 @@ fn collect_lint_findings(
     findings.extend(sdd_findings(document, source));
     findings.extend(crypt_findings(document, source));
     findings.extend(builtin_contract_org_findings(document, source));
+    let org_contract_context = OrgContractEvaluationContext {
+        source_path: options.source_path.clone(),
+        dir_scope: None,
+    };
     findings.extend(contract_org_findings(
         document,
         source,
         &options.org_contract_registry,
+        &org_contract_context,
     ));
     findings.extend(todo_declaration_findings(source));
 

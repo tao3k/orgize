@@ -16,6 +16,7 @@ pub const ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE: &[&str] = &[
     "lineage: (lineage-of ID) maps to ancestor lineage, matching Org element lineage traversal",
     "secondary: secondary property contents are queryable only after parser projection into summary or property facts",
     "predicate: (predicate (and ...)), (predicate (or ...)), (predicate (not ...)), (= (summary KEY) VALUE), and (contains (property KEY) TEXT)",
+    "document: source path predicates use (source-path TEXT), (source-path-contains TEXT), (source-filename-suffix TEXT), or :path-contains/:filename-suffix on an org-data query",
     "json index: expression lowering produces OrgElementsIndexQuery, the same query model used by JSON index packets",
 ];
 
