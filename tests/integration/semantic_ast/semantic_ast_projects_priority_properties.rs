@@ -126,6 +126,37 @@ fn semantic_ast_projects_two_digit_numeric_priority() {
 }
 
 #[test]
+fn semantic_ast_projects_letter_priority_outside_default_profile() {
+    let doc = Org::parse("* TODO [#D] Outside default profile\n").document();
+    assert_clean_projection(&doc);
+
+    let section = &doc.sections[0];
+    assert_eq!(section.priority.raw_cookie(), Some("D"));
+    assert_eq!(section.priority.effective_text(), "D");
+    assert_eq!(section.priority.org_priority_score(), Some(-1_000));
+    assert_eq!(
+        section.priority.range_status(),
+        PriorityRangeStatus::OutOfRange
+    );
+}
+
+#[test]
+fn semantic_ast_ignores_invalid_priority_cookie_shapes() {
+    for invalid_cookie in ["[#a]", "[#xx]", "[#65]"] {
+        let input = format!("* TODO {invalid_cookie} Not a priority\n");
+        let doc = Org::parse(input.as_str()).document();
+        assert_clean_projection(&doc);
+
+        let section = &doc.sections[0];
+        assert!(section.priority.is_default());
+        assert_eq!(section.priority.raw_cookie(), None);
+        assert_eq!(section.priority.effective_text(), "B");
+        assert_eq!(section.priority.org_priority_score(), Some(1_000));
+        assert_eq!(section.priority.range_status(), PriorityRangeStatus::InRange);
+    }
+}
+
+#[test]
 fn semantic_ast_projects_property_profile_allowed_values() {
     let doc = Org::parse(
         r#"#+PROPERTY: Effort_ALL 0 0:30 "1 hour"
