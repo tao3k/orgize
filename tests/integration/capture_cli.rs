@@ -56,10 +56,8 @@ fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
     assert!(stdout.contains("contract-check:"), "{stdout}");
     assert!(stdout.contains("- contract: agent.task.v1"), "{stdout}");
     assert!(stdout.contains("- status: passed"), "{stdout}");
-    assert!(
-        stdout.contains("asp org capture performed no write"),
-        "{stdout}"
-    );
+    assert!(stdout.contains("orgize rendered a plan without inserting or editing source"), "{stdout}");
+    assert!(!stdout.contains("next:"), "{stdout}");
     assert!(
         !plan_path.exists(),
         "capture must not create {}",

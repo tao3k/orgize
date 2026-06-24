@@ -430,9 +430,6 @@ fn render_org_capture_plan(
     if !plan.org_entry.ends_with('\n') {
         output.push('\n');
     }
-    output.push_str(
-        "next: review org-entry, then apply through AST-patch/edit-plan; asp org capture performed no write\n",
-    );
     output
 }
 
