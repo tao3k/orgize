@@ -207,9 +207,8 @@ fn native_dir_property_value_expands_environment_variables_and_org_macros() {
 "#,
     )
     .document();
-    let env_context = OrgContractEvaluationContext::with_source_path(format!(
-        "{home}/asp-dir-scope/README.org"
-    ));
+    let env_context =
+        OrgContractEvaluationContext::with_source_path(format!("{home}/asp-dir-scope/README.org"));
     let env_result = evaluate_org_contract_with_context(
         &env_document,
         &contract,
@@ -228,9 +227,8 @@ fn native_dir_property_value_expands_environment_variables_and_org_macros() {
 "#,
     )
     .document();
-    let macro_context = OrgContractEvaluationContext::with_source_path(
-        "/workspace/project/alpha/README.org",
-    );
+    let macro_context =
+        OrgContractEvaluationContext::with_source_path("/workspace/project/alpha/README.org");
     let macro_result = evaluate_org_contract_with_context(
         &macro_document,
         &contract,
@@ -270,8 +268,7 @@ fn native_dir_property_value_expands_command_substitution() {
 "#,
     )
     .document();
-    let context =
-        OrgContractEvaluationContext::with_source_path("/workspace/generated/README.org");
+    let context = OrgContractEvaluationContext::with_source_path("/workspace/generated/README.org");
     let result = evaluate_org_contract_with_context(
         &document,
         &contract,

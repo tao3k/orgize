@@ -241,8 +241,14 @@ fn cli_trace_evaluates_multiple_contract_org_bindings_on_same_scope() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8(output.stdout).expect("utf8 stdout");
-    assert!(stdout.contains(r#""contractId": "skill.generic.v1""#), "{stdout}");
-    assert!(stdout.contains(r#""contractId": "asp.skill.test.v1""#), "{stdout}");
+    assert!(
+        stdout.contains(r#""contractId": "skill.generic.v1""#),
+        "{stdout}"
+    );
+    assert!(
+        stdout.contains(r#""contractId": "asp.skill.test.v1""#),
+        "{stdout}"
+    );
     assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
 }
 
@@ -251,7 +257,11 @@ fn cli_trace_resolves_org_link_contract_reference_relative_to_source_file() {
     let dir = test_dir("contract-trace-relative-org-link");
     fs::create_dir_all(dir.join("contracts")).unwrap();
     fs::create_dir_all(dir.join("templates")).unwrap();
-    fs::write(dir.join("contracts").join("contract.org"), contract_source()).unwrap();
+    fs::write(
+        dir.join("contracts").join("contract.org"),
+        contract_source(),
+    )
+    .unwrap();
     fs::write(
         dir.join("templates").join("skill.org"),
         r#"* Task A
@@ -282,7 +292,10 @@ fn cli_trace_resolves_org_link_contract_reference_relative_to_source_file() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8(output.stdout).expect("utf8 stdout");
-    assert!(stdout.contains(r#""contractId": "agent.evidence-link-task.v1""#), "{stdout}");
+    assert!(
+        stdout.contains(r#""contractId": "agent.evidence-link-task.v1""#),
+        "{stdout}"
+    );
     assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
 }
 

@@ -9,10 +9,9 @@ use std::{error::Error, fmt};
 use rowan::{GreenNodeBuilder, Language, NodeOrToken, SyntaxKind, SyntaxNode};
 
 use crate::ast::{
-    OrgContractBinding, OrgContractCompareOp, OrgContractDocumentPredicate,
-    OrgContractExpectation, OrgContractQuery, OrgContractRelativeScope, OrgElementQueryPredicate,
-    OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexQuery,
-    OrgElementsIndexSummaryValue,
+    OrgContractBinding, OrgContractCompareOp, OrgContractDocumentPredicate, OrgContractExpectation,
+    OrgContractQuery, OrgContractRelativeScope, OrgElementQueryPredicate, OrgElementsIndexCategory,
+    OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
 };
 
 /// Error returned when an Org elements query expression cannot be lowered.
@@ -596,10 +595,9 @@ fn compile_query_expression(expression: &QueryExpr) -> Option<OrgContractQuery> 
         "source-filename-suffix" => {
             compile_document_text_query(items, DocumentTextPredicateKind::FilenameSuffix)
         }
-        "source-filename-stem-uppercase" => compile_document_bool_query(
-            items,
-            DocumentBoolPredicateKind::FilenameStemUppercase,
-        ),
+        "source-filename-stem-uppercase" => {
+            compile_document_bool_query(items, DocumentBoolPredicateKind::FilenameStemUppercase)
+        }
         "descendant-of" | "within" => compile_relative_query(items, RelativeKind::Descendant),
         "child-of" => compile_relative_query(items, RelativeKind::Child),
         "at" => compile_relative_query(items, RelativeKind::At),
@@ -731,11 +729,13 @@ fn apply_keyword_argument(
         ":property-contains" => {
             apply_plist_field_argument(query, FieldKind::Property, value, true)?
         }
-        ":path" | ":source-path" => query
-            .document_predicates
-            .push(OrgContractDocumentPredicate::SourcePathEquals(
-                value.as_text()?,
-            )),
+        ":path" | ":source-path" => {
+            query
+                .document_predicates
+                .push(OrgContractDocumentPredicate::SourcePathEquals(
+                    value.as_text()?,
+                ))
+        }
         ":path-contains" | ":source-path-contains" => {
             query
                 .document_predicates
@@ -743,11 +743,13 @@ fn apply_keyword_argument(
                     value.as_text()?,
                 ))
         }
-        ":filename" | ":source-filename" => query
-            .document_predicates
-            .push(OrgContractDocumentPredicate::SourceFilenameEquals(
-                value.as_text()?,
-            )),
+        ":filename" | ":source-filename" => {
+            query
+                .document_predicates
+                .push(OrgContractDocumentPredicate::SourceFilenameEquals(
+                    value.as_text()?,
+                ))
+        }
         ":filename-prefix" | ":source-filename-prefix" => {
             query
                 .document_predicates
@@ -1006,7 +1008,9 @@ fn merge_query(target: &mut OrgContractQuery, source: OrgContractQuery) {
     target.summary_equals.extend(source.summary_equals);
     target.summary_contains.extend(source.summary_contains);
     target.predicates.extend(source.predicates);
-    target.document_predicates.extend(source.document_predicates);
+    target
+        .document_predicates
+        .extend(source.document_predicates);
     if source.limit.is_some() {
         target.limit = source.limit;
     }

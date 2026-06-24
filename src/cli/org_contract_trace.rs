@@ -17,8 +17,8 @@ use crate::{
         ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE, OrgContract, OrgContractEvaluation,
         OrgContractEvaluationContext, OrgContractEvaluationScope, OrgContractRegistry,
         OrgContractScope, ParsedAnnotation, ParsedAst, Property, Section,
-        evaluate_org_contract_with_context,
-        org_contract_evaluations_to_json_value, parse_contract_reference,
+        evaluate_org_contract_with_context, org_contract_evaluations_to_json_value,
+        parse_contract_reference,
     },
 };
 
@@ -166,7 +166,8 @@ fn collect_contract_evaluations(
 ) -> Result<Vec<OrgContractEvaluation>, String> {
     let mut evaluations = Vec::new();
     let context = OrgContractEvaluationContext::with_source_path(path);
-    let document_contracts = resolve_bindings(document_contract_bindings(document), registry, path)?;
+    let document_contracts =
+        resolve_bindings(document_contract_bindings(document), registry, path)?;
     let mut document_default_contracts = Vec::new();
     for contract in document_contracts {
         if contract.scope == OrgContractScope::Document {

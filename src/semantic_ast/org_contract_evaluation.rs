@@ -167,12 +167,11 @@ fn effective_dir_for_scope(
         OrgContractEvaluationScope::Document { .. } => {
             property_value(&document.properties, DIR_PROPERTY)
         }
-        OrgContractEvaluationScope::Section { outline_path, .. } => find_section_by_outline_path(
-            &document.sections,
-            outline_path,
-        )
-        .and_then(|section| property_value(&section.effective_properties, DIR_PROPERTY))
-        .or_else(|| property_value(&document.properties, DIR_PROPERTY)),
+        OrgContractEvaluationScope::Section { outline_path, .. } => {
+            find_section_by_outline_path(&document.sections, outline_path)
+                .and_then(|section| property_value(&section.effective_properties, DIR_PROPERTY))
+                .or_else(|| property_value(&document.properties, DIR_PROPERTY))
+        }
     }
 }
 
@@ -358,11 +357,7 @@ fn run_command_substitution(command: &str) -> Option<String> {
         return None;
     }
 
-    let output = Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .output()
-        .ok()?;
+    let output = Command::new("sh").arg("-c").arg(command).output().ok()?;
     if !output.status.success() {
         return None;
     }

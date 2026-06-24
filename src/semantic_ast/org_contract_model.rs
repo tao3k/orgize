@@ -358,8 +358,9 @@ impl OrgContractDocumentPredicate {
                 .source_path()
                 .map(path_to_string)
                 .is_some_and(|path| path.contains(needle)),
-            Self::SourceFilenameEquals(expected) => source_file_name(context)
-                .is_some_and(|filename| filename == *expected),
+            Self::SourceFilenameEquals(expected) => {
+                source_file_name(context).is_some_and(|filename| filename == *expected)
+            }
             Self::SourceFilenamePrefix(prefix) => {
                 source_file_name(context).is_some_and(|filename| filename.starts_with(prefix))
             }
@@ -385,10 +386,7 @@ fn normalize_lexical_path(path: &Path) -> String {
                 let last = normalized.components().next_back();
                 if matches!(last, Some(Component::Normal(_))) {
                     normalized.pop();
-                } else if !matches!(
-                    last,
-                    Some(Component::RootDir) | Some(Component::Prefix(_))
-                ) {
+                } else if !matches!(last, Some(Component::RootDir) | Some(Component::Prefix(_))) {
                     normalized.push("..");
                 }
             }

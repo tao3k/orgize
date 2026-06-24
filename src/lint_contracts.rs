@@ -8,10 +8,10 @@ use crate::Org;
 use crate::ast::{
     CONTRACT_ORG_PROPERTY, ElementData, Keyword, OrgContract, OrgContractAssertionEvaluation,
     OrgContractEvaluationContext, OrgContractEvaluationScope, OrgContractQuery,
-    OrgContractRegistry, OrgContractScope, OrgElementQueryPredicate, OrgElementsIndexSummaryPredicate,
-    OrgElementsIndexSummaryTextPredicate, OrgElementsIndexSummaryValue, ParsedAnnotation,
-    ParsedAst, Property, Section, evaluate_org_contract_with_context, parse_contract_reference,
-    parse_contracts_from_document,
+    OrgContractRegistry, OrgContractScope, OrgElementQueryPredicate,
+    OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
+    OrgElementsIndexSummaryValue, ParsedAnnotation, ParsedAst, Property, Section,
+    evaluate_org_contract_with_context, parse_contract_reference, parse_contracts_from_document,
 };
 
 use super::lint_model::{LintFinding, LintSeverity, location_for_range};
@@ -150,9 +150,9 @@ fn collect_section_contract_findings<'a>(
             context.source_path(),
             findings,
         )
-            .into_iter()
-            .filter(|contract| contract.scope == OrgContractScope::Subtree)
-            .collect()
+        .into_iter()
+        .filter(|contract| contract.scope == OrgContractScope::Subtree)
+        .collect()
     };
 
     for contract in section_contracts {

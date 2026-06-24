@@ -152,7 +152,10 @@ fn semantic_ast_ignores_invalid_priority_cookie_shapes() {
         assert_eq!(section.priority.raw_cookie(), None);
         assert_eq!(section.priority.effective_text(), "B");
         assert_eq!(section.priority.org_priority_score(), Some(1_000));
-        assert_eq!(section.priority.range_status(), PriorityRangeStatus::InRange);
+        assert_eq!(
+            section.priority.range_status(),
+            PriorityRangeStatus::InRange
+        );
     }
 }
 
