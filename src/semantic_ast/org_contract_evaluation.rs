@@ -151,10 +151,10 @@ fn context_with_effective_dir(
     context: &OrgContractEvaluationContext,
 ) -> OrgContractEvaluationContext {
     let mut scoped = context.clone();
-    if scoped.dir_scope().is_none() {
-        if let Some(dir) = effective_dir_for_scope(document, scope) {
-            scoped = scoped.with_dir_scope(expand_dir_path(&dir, document));
-        }
+    if scoped.dir_scope().is_none()
+        && let Some(dir) = effective_dir_for_scope(document, scope)
+    {
+        scoped = scoped.with_dir_scope(expand_dir_path(&dir, document));
     }
     scoped
 }

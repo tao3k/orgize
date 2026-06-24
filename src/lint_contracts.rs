@@ -112,71 +112,68 @@ pub(crate) fn contract_org_findings(
         }
     }
 
-    for section in &document.sections {
-        collect_section_contract_findings(
+    {
+        let mut collector = SectionContractFindingCollector {
             document,
             source,
             registry,
-            section,
-            Vec::new(),
-            &document_default_contracts,
             context,
-            &mut findings,
-        );
+            findings: &mut findings,
+        };
+        for section in &document.sections {
+            collector.collect(section, Vec::new(), &document_default_contracts);
+        }
     }
     findings
 }
 
-fn collect_section_contract_findings<'a>(
-    document: &ParsedAst,
-    source: &str,
+struct SectionContractFindingCollector<'a> {
+    document: &'a ParsedAst,
+    source: &'a str,
     registry: &'a OrgContractRegistry,
-    section: &Section<ParsedAnnotation>,
-    mut outline_path: Vec<String>,
-    inherited_contracts: &[&'a OrgContract],
-    context: &OrgContractEvaluationContext,
-    findings: &mut Vec<LintFinding>,
-) {
-    outline_path.push(section.raw_title.trim_end().to_string());
+    context: &'a OrgContractEvaluationContext,
+    findings: &'a mut Vec<LintFinding>,
+}
 
-    let section_bindings = section_contract_bindings(section);
-    let section_contracts = if section_bindings.is_empty() {
-        inherited_contracts.to_vec()
-    } else {
-        resolve_bindings(
-            section_bindings,
-            registry,
-            source,
-            context.source_path(),
-            findings,
-        )
-        .into_iter()
-        .filter(|contract| contract.scope == OrgContractScope::Subtree)
-        .collect()
-    };
+impl<'a> SectionContractFindingCollector<'a> {
+    fn collect(
+        &mut self,
+        section: &Section<ParsedAnnotation>,
+        mut outline_path: Vec<String>,
+        inherited_contracts: &[&'a OrgContract],
+    ) {
+        outline_path.push(section.raw_title.trim_end().to_string());
 
-    for contract in section_contracts {
-        push_contract_findings(
-            document,
-            source,
-            contract,
-            ContractScopeInstance::section(section, outline_path.clone()),
-            context,
-            findings,
-        );
-    }
+        let section_bindings = section_contract_bindings(section);
+        let section_contracts = if section_bindings.is_empty() {
+            inherited_contracts.to_vec()
+        } else {
+            resolve_bindings(
+                section_bindings,
+                self.registry,
+                self.source,
+                self.context.source_path(),
+                self.findings,
+            )
+            .into_iter()
+            .filter(|contract| contract.scope == OrgContractScope::Subtree)
+            .collect()
+        };
 
-    for child in &section.subsections {
-        collect_section_contract_findings(
-            document,
-            source,
-            registry,
-            child,
-            outline_path.clone(),
-            &[],
-            context,
-            findings,
-        );
+        for contract in section_contracts {
+            push_contract_findings(
+                self.document,
+                self.source,
+                contract,
+                ContractScopeInstance::section(section, outline_path.clone()),
+                self.context,
+                self.findings,
+            );
+        }
+
+        for child in &section.subsections {
+            self.collect(child, outline_path.clone(), &[]);
+        }
     }
 }
 

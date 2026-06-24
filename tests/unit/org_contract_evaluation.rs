@@ -200,13 +200,12 @@ fn native_dir_property_value_expands_environment_variables_and_org_macros() {
 #+END_SRC
 "#,
     );
-    let home = std::env::var("HOME").expect("HOME available for env expansion test");
-    let env_document = Org::parse(
-        r#"#+PROPERTY: DIR ${HOME}/asp-dir-scope/
-* Env scope
-"#,
-    )
-    .document();
+    let (home_var, home) = std::env::var("HOME")
+        .map(|home| ("HOME", home))
+        .or_else(|_| std::env::var("USERPROFILE").map(|home| ("USERPROFILE", home)))
+        .expect("HOME or USERPROFILE available for env expansion test");
+    let env_source = format!("#+PROPERTY: DIR ${{{home_var}}}/asp-dir-scope/\n* Env scope\n");
+    let env_document = Org::parse(&env_source).document();
     let env_context =
         OrgContractEvaluationContext::with_source_path(format!("{home}/asp-dir-scope/README.org"));
     let env_result = evaluate_org_contract_with_context(

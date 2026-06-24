@@ -182,68 +182,65 @@ fn collect_contract_evaluations(
         }
     }
 
-    for section in &document.sections {
-        collect_section_contract_evaluations(
+    {
+        let mut collector = SectionContractEvaluationCollector {
             document,
             registry,
             path,
-            section,
-            Vec::new(),
-            &document_default_contracts,
-            &context,
-            &mut evaluations,
-        )?;
+            context: &context,
+            evaluations: &mut evaluations,
+        };
+        for section in &document.sections {
+            collector.collect(section, Vec::new(), &document_default_contracts)?;
+        }
     }
     Ok(evaluations)
 }
 
-fn collect_section_contract_evaluations<'a>(
-    document: &ParsedAst,
+struct SectionContractEvaluationCollector<'a> {
+    document: &'a ParsedAst,
     registry: &'a OrgContractRegistry,
-    path: &str,
-    section: &Section<ParsedAnnotation>,
-    mut outline_path: Vec<String>,
-    inherited_contracts: &[&'a OrgContract],
-    context: &OrgContractEvaluationContext,
-    evaluations: &mut Vec<OrgContractEvaluation>,
-) -> Result<(), String> {
-    outline_path.push(section.raw_title.trim_end().to_string());
-    let section_bindings = section_contract_bindings(section);
-    let section_contracts = if section_bindings.is_empty() {
-        inherited_contracts.to_vec()
-    } else {
-        resolve_bindings(section_bindings, registry, path)?
-            .into_iter()
-            .filter(|contract| contract.scope == OrgContractScope::Subtree)
-            .collect()
-    };
+    path: &'a str,
+    context: &'a OrgContractEvaluationContext,
+    evaluations: &'a mut Vec<OrgContractEvaluation>,
+}
 
-    for contract in section_contracts {
-        evaluations.push(evaluate_org_contract_with_context(
-            document,
-            contract,
-            OrgContractEvaluationScope::section(
-                section.raw_title.trim_end(),
-                outline_path.clone(),
-                section.ann.range,
-            ),
-            context,
-        ));
-    }
+impl<'a> SectionContractEvaluationCollector<'a> {
+    fn collect(
+        &mut self,
+        section: &Section<ParsedAnnotation>,
+        mut outline_path: Vec<String>,
+        inherited_contracts: &[&'a OrgContract],
+    ) -> Result<(), String> {
+        outline_path.push(section.raw_title.trim_end().to_string());
+        let section_bindings = section_contract_bindings(section);
+        let section_contracts = if section_bindings.is_empty() {
+            inherited_contracts.to_vec()
+        } else {
+            resolve_bindings(section_bindings, self.registry, self.path)?
+                .into_iter()
+                .filter(|contract| contract.scope == OrgContractScope::Subtree)
+                .collect()
+        };
 
-    for child in &section.subsections {
-        collect_section_contract_evaluations(
-            document,
-            registry,
-            path,
-            child,
-            outline_path.clone(),
-            &[],
-            context,
-            evaluations,
-        )?;
+        for contract in section_contracts {
+            self.evaluations.push(evaluate_org_contract_with_context(
+                self.document,
+                contract,
+                OrgContractEvaluationScope::section(
+                    section.raw_title.trim_end(),
+                    outline_path.clone(),
+                    section.ann.range,
+                ),
+                self.context,
+            ));
+        }
+
+        for child in &section.subsections {
+            self.collect(child, outline_path.clone(), &[])?;
+        }
+        Ok(())
     }
-    Ok(())
 }
 
 fn resolve_binding<'a>(
