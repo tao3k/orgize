@@ -399,7 +399,7 @@ fn org_link_contract_reference(value: &str) -> Option<OrgContractReference> {
 fn contract_reference_path(value: &str) -> Option<String> {
     let value = value.trim();
     let value = value.strip_prefix("./").unwrap_or(value);
-    (!value.is_empty() && !value.starts_with('/')).then(|| value.to_string())
+    (!value.is_empty() && !value.starts_with('/')).then(|| value.replace('\\', "/"))
 }
 
 fn macro_reference_argument(value: &str) -> Option<String> {
@@ -417,4 +417,5 @@ fn looks_like_file_reference(value: &str) -> bool {
         || value.starts_with('/')
         || value.ends_with(".org")
         || value.contains('/')
+        || value.contains('\\')
 }

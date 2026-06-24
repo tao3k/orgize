@@ -2,10 +2,12 @@ use crate::{
     Org,
     ast::{
         OrgContractAssertionStatus, OrgContractEvaluationContext, OrgContractEvaluationScope,
-        evaluate_org_contract_with_context, parse_contracts_from_document,
+        evaluate_org_contract_with_context, parse_contract_reference,
+        parse_contracts_from_document,
     },
 };
 use rowan::TextRange;
+use std::path::Path;
 
 #[test]
 fn document_predicates_filter_contract_assertions_by_source_path() {
@@ -278,6 +280,39 @@ fn native_dir_property_value_expands_command_substitution() {
         result.assertions[0].status,
         OrgContractAssertionStatus::Passed
     );
+}
+
+#[test]
+fn contract_reference_paths_match_windows_style_relative_org_links() {
+    let contract_document = Org::parse(
+        r#"
+* Contract
+:PROPERTIES:
+:CONTRACT_ID: agent.evidence-link-task.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+** Evidence
+:PROPERTIES:
+:ASSERT_ID: evidence.required
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (link :scheme "https"))
+#+END_SRC
+"#,
+    )
+    .document();
+    let registry = parse_contracts_from_document(
+        &contract_document,
+        Some(Path::new("contracts/contract.org")),
+    );
+    let reference =
+        parse_contract_reference(r"[[..\contracts\contract.org][agent.evidence-link-task.v1]]")
+            .with_source_relative_path(Some(Path::new("templates/skill.org")));
+
+    assert!(registry.resolve(&reference).is_some());
 }
 
 fn parse_single_contract(source: &str) -> crate::ast::OrgContract {

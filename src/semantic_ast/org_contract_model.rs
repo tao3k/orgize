@@ -374,7 +374,7 @@ impl OrgContractDocumentPredicate {
 }
 
 fn path_to_string(path: &Path) -> String {
-    path.to_string_lossy().into_owned()
+    path.to_string_lossy().replace('\\', "/")
 }
 
 fn normalize_lexical_path(path: &Path) -> String {
