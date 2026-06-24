@@ -282,6 +282,7 @@ impl OrgContractSeverity {
 /// Parsed query for contract execution.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OrgContractQuery {
+    pub alternatives: Vec<OrgContractQuery>,
     pub category: Option<OrgElementsIndexCategory>,
     pub kind: Option<OrgElementsIndexKind>,
     pub affiliated_name: Option<String>,
@@ -471,6 +472,11 @@ impl OrgContractQuery {
     }
 
     pub fn apply_subtree_scope_prefix(mut self, outline_path: Vec<String>) -> Self {
+        self.alternatives = self
+            .alternatives
+            .into_iter()
+            .map(|query| query.apply_subtree_scope_prefix(outline_path.clone()))
+            .collect();
         if self.use_scope_outline_path || !self.has_outline_path_prefix {
             if let Some(depth) = self.scope_outline_depth {
                 self.outline_path_exact_len = Some(outline_path.len() + depth);

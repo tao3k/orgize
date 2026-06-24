@@ -315,6 +315,53 @@ fn contract_reference_paths_match_windows_style_relative_org_links() {
     assert!(registry.resolve(&reference).is_some());
 }
 
+#[test]
+fn query_level_or_matches_node_property_branches() {
+    let contract = parse_single_contract(
+        r#"
+* Plan lifecycle state contract
+:PROPERTIES:
+:CONTRACT_ID: plan.lifecycle-state.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Status is active or complete
+:PROPERTIES:
+:ASSERT_ID: plan.status-is-lifecycle-state
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (or
+    (node-property :summary (key "STATUS") :summary (value "active"))
+    (node-property :summary (key "STATUS") :summary (value "complete"))))
+#+END_SRC
+"#,
+    );
+    let document = Org::parse(
+        r#"
+* TODO Plan
+:PROPERTIES:
+:STATUS: active
+:END:
+"#,
+    )
+    .document();
+    let evaluation = evaluate_org_contract_with_context(
+        &document,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &OrgContractEvaluationContext::with_source_path("plans/agent-plan-example.org"),
+    );
+
+    assert_eq!(evaluation.assertions.len(), 1);
+    assert_eq!(
+        evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(evaluation.assertions[0].actual_count, 1);
+}
+
 fn parse_single_contract(source: &str) -> crate::ast::OrgContract {
     let contract_document = Org::parse(source).document();
     let registry = parse_contracts_from_document(&contract_document, None);

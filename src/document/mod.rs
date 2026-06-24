@@ -4,6 +4,7 @@ mod command;
 mod elements;
 mod line_index;
 mod markdown_elements;
+mod memory_projection;
 mod model;
 mod org_elements;
 mod packets;
@@ -13,6 +14,9 @@ pub use command::{
     run_document_command, run_document_command_with_walk_config, run_md_command, run_org_command,
 };
 pub use elements::{filter_elements, index_path, index_project, index_project_with_config};
+pub use memory_projection::{
+    OrgMemorySearchOptions, OrgMemorySearchRecord, query_org_memory_records,
+};
 pub use model::{DocumentElement, DocumentLanguage, DocumentWalkConfig};
 pub use source_selection::{SourceLineRange, SourceSelector, select_source};
 

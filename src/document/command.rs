@@ -7,28 +7,21 @@ use std::{
     process::ExitCode,
 };
 
-use crate::{
-    Org,
-    ast::{MemoryQuery, MemoryRecord, MemoryRecordState},
-};
+use crate::{Org, ast::MemoryRecordState};
 
 use super::{
     elements::{
-        collect_document_paths, count_kind, display_path, escape_field, filter_elements,
-        filter_elements_by_query, has_flag, index_path, index_project_with_config,
-        last_existing_path, option_value, option_values, query_project_with_config,
+        count_kind, display_path, escape_field, filter_elements, filter_elements_by_query,
+        has_flag, index_path, index_project_with_config, last_existing_path, option_value,
+        option_values, query_project_with_config,
     },
+    memory_projection::{OrgMemorySearchOptions, OrgMemorySearchRecord, query_org_memory_records},
     model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
     packets::{print_query_json, print_search_json, print_selector_query_json},
     source_selection::{SourceSelector, select_source, structural_selector_fragment},
 };
 
 const DOCUMENT_PRIME_OWNER_LIMIT: usize = 12;
-
-struct DocumentMemoryRecord {
-    path: PathBuf,
-    record: MemoryRecord,
-}
 
 /// Run an `asp org` document command.
 pub fn run_org_command(args: Vec<String>) -> Result<ExitCode, String> {
@@ -586,125 +579,87 @@ fn run_memory_search(
     let session = option_value(args, "--session");
     let plan = option_value(args, "--plan");
     let terms = option_values(args, "--term");
-    let records = current_memory_records(&root, &walk_config, session, plan, &terms)?;
-    print_memory_search(language, &root, session, plan, &terms, &records);
+    let options = memory_search_options(args, session, plan, &terms);
+    let records = query_org_memory_records(&root, &walk_config, &options)?;
+    print_memory_search(
+        language,
+        &root,
+        &options,
+        memory_search_limit(args),
+        &records,
+    );
     Ok(ExitCode::SUCCESS)
 }
 
-fn current_memory_records(
-    root: &Path,
-    walk_config: &DocumentWalkConfig,
+fn memory_search_options(
+    args: &[String],
     session: Option<&str>,
     plan: Option<&str>,
     terms: &[String],
-) -> Result<Vec<DocumentMemoryRecord>, String> {
-    let mut files = Vec::new();
-    collect_document_paths(DocumentLanguage::Org, root, walk_config, &mut files)?;
-    files.sort();
-    files.dedup();
-
-    let query = MemoryQuery::new()
-        .include_closed(false)
-        .include_archived(false);
-    let mut records = Vec::new();
-    for path in files {
-        let source =
-            fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-        let document = Org::parse(&source).document();
-        records.extend(
-            document
-                .memory_records(&query)
-                .into_iter()
-                .filter_map(|record| {
-                    (record.state == MemoryRecordState::Current
-                        && memory_record_matches_scope(&record, session, plan)
-                        && memory_record_matches_terms(&record, terms))
-                    .then_some(DocumentMemoryRecord {
-                        path: path.clone(),
-                        record,
-                    })
-                }),
-        );
+) -> OrgMemorySearchOptions {
+    let mut options = if has_flag(args, "--plan-ledgers") {
+        OrgMemorySearchOptions::plan_ledgers()
+    } else {
+        OrgMemorySearchOptions::default()
+    };
+    options.session = session.map(str::to_string);
+    options.plan = plan.map(str::to_string);
+    options.terms = terms.to_vec();
+    options.include_closed = has_flag(args, "--include-closed") || has_flag(args, "--include-done");
+    options.include_archived = has_flag(args, "--include-archived");
+    if let Some(contract) = option_value(args, "--contract") {
+        options.contract = Some(contract.to_string());
     }
-    Ok(records)
-}
-
-fn memory_record_matches_scope(
-    record: &MemoryRecord,
-    session: Option<&str>,
-    plan: Option<&str>,
-) -> bool {
-    session.is_none_or(|expected| memory_record_property_eq(record, "PLAN_SESSION", expected))
-        && plan.is_none_or(|expected| memory_record_property_eq(record, "PLAN_ID", expected))
-}
-
-fn memory_record_property_eq(record: &MemoryRecord, key: &str, expected: &str) -> bool {
-    record
-        .properties
-        .iter()
-        .any(|property| property.key.eq_ignore_ascii_case(key) && property.value == expected)
-}
-
-fn memory_record_matches_terms(record: &MemoryRecord, terms: &[String]) -> bool {
-    terms.iter().all(|term| {
-        let term = term.trim().to_ascii_lowercase();
-        term.is_empty()
-            || record.title.to_ascii_lowercase().contains(&term)
-            || record
-                .todo
-                .as_ref()
-                .is_some_and(|todo| todo.name.to_ascii_lowercase().contains(&term))
-            || record.properties.iter().any(|property| {
-                property.key.to_ascii_lowercase().contains(&term)
-                    || property.value.to_ascii_lowercase().contains(&term)
-            })
-            || record.links.iter().any(|link| {
-                link.path.to_ascii_lowercase().contains(&term)
-                    || link.description.to_ascii_lowercase().contains(&term)
-            })
-    })
+    if let Some(file_prefix) = option_value(args, "--file-prefix") {
+        options.file_prefix = Some(file_prefix.to_string());
+    }
+    if has_flag(args, "--root-only") {
+        options.root_only = true;
+    }
+    options
 }
 
 fn print_memory_search(
     language: DocumentLanguage,
     root: &Path,
-    session: Option<&str>,
-    plan: Option<&str>,
-    terms: &[String],
-    records: &[DocumentMemoryRecord],
+    options: &OrgMemorySearchOptions,
+    limit: usize,
+    records: &[OrgMemorySearchRecord],
 ) {
     println!(
-        "[search-memory] lang={} root={} current={} session={} plan={} terms={}",
+        "[search-memory] lang={} root={} current={} shown={} session={} plan={} terms={} planLedgers={}",
         language.id(),
         display_path(root),
         records.len(),
-        session.unwrap_or("-"),
-        plan.unwrap_or("-"),
-        if terms.is_empty() {
+        records.len().min(limit),
+        options.session.as_deref().unwrap_or("-"),
+        options.plan.as_deref().unwrap_or("-"),
+        if options.terms.is_empty() {
             "-".to_string()
         } else {
-            terms.join(",")
-        }
+            options.terms.join(",")
+        },
+        options.plan_ledgers
     );
-    for record in records.iter().take(80) {
+    for record in records.iter().take(limit) {
         println!("{}", render_memory_record(record));
     }
     println!(
         "|next current-session=asp org search memory --session <SESSION_ID> --workspace {} --view seeds",
         display_path(root)
     );
-    if let Some(session) = session {
-        let intent = if terms.is_empty() {
+    if let Some(session) = &options.session {
+        let intent = if options.terms.is_empty() {
             "unfinished org task".to_string()
         } else {
-            terms.join(" ")
+            options.terms.join(" ")
         };
         let mut command = format!(
             "asp-memory-engine recall-plan --state .data/omni-memory/state.json --intent {} --session {}",
             shell_arg(&intent),
             shell_arg(session)
         );
-        if let Some(plan) = plan {
+        if let Some(plan) = &options.plan {
             command.push_str(" --plan ");
             command.push_str(&shell_arg(plan));
         }
@@ -712,33 +667,44 @@ fn print_memory_search(
     }
 }
 
-fn render_memory_record(item: &DocumentMemoryRecord) -> String {
-    let record = &item.record;
-    let todo = record
-        .todo
-        .as_ref()
-        .map(|todo| todo.name.as_str())
+fn memory_search_limit(args: &[String]) -> usize {
+    option_value(args, "--limit")
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(12)
+}
+
+fn render_memory_record(record: &OrgMemorySearchRecord) -> String {
+    let todo = record.todo.as_deref().unwrap_or("-");
+    let session = record
+        .properties
+        .get("PLAN_SESSION")
+        .map(String::as_str)
         .unwrap_or("-");
-    let session = memory_record_property(record, "PLAN_SESSION").unwrap_or("-");
-    let plan = memory_record_property(record, "PLAN_ID").unwrap_or("-");
+    let plan = record
+        .properties
+        .get("PLAN_ID")
+        .map(String::as_str)
+        .unwrap_or("-");
     format!(
-        "|memory {}:{}-{} state=current todo=\"{}\" session=\"{}\" plan=\"{}\" title=\"{}\"",
-        display_path(&item.path),
-        record.source.start.line,
-        record.source.end.line,
+        "|memory {}:{}-{} state={} todo=\"{}\" session=\"{}\" plan=\"{}\" title=\"{}\"",
+        display_path(&record.path),
+        record.start_line,
+        record.end_line,
+        memory_record_state(record.state),
         escape_field(todo),
         escape_field(session),
         escape_field(plan),
-        escape_field(&record.title)
+        escape_field(&record.title),
     )
 }
 
-fn memory_record_property<'a>(record: &'a MemoryRecord, key: &str) -> Option<&'a str> {
-    record
-        .properties
-        .iter()
-        .find(|property| property.key.eq_ignore_ascii_case(key))
-        .map(|property| property.value.as_str())
+fn memory_record_state(state: MemoryRecordState) -> &'static str {
+    match state {
+        MemoryRecordState::Current => "current",
+        MemoryRecordState::Closed => "closed",
+        MemoryRecordState::Archived => "archived",
+        MemoryRecordState::Background => "background",
+    }
 }
 
 fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) {

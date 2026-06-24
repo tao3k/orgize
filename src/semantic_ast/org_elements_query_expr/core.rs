@@ -558,12 +558,13 @@ fn compile_query_expression(expression: &QueryExpr) -> Option<OrgContractQuery> 
     let head = list_head(items)?;
     match head {
         "and" => compile_and_query(&items[1..]),
-        "or" => compile_predicate_query(OrgElementQueryPredicate::any(
-            items[1..]
+        "or" => Some(OrgContractQuery {
+            alternatives: items[1..]
                 .iter()
-                .map(compile_predicate_expression)
+                .map(compile_query_expression)
                 .collect::<Option<Vec<_>>>()?,
-        )),
+            ..Default::default()
+        }),
         "not" => compile_predicate_query(OrgElementQueryPredicate::negate(
             compile_predicate_expression(items.get(1)?)?,
         )),
@@ -985,6 +986,7 @@ fn apply_relative_scope(query: &mut OrgContractQuery, kind: RelativeKind, target
 }
 
 fn merge_query(target: &mut OrgContractQuery, source: OrgContractQuery) {
+    target.alternatives.extend(source.alternatives);
     if source.category.is_some() {
         target.category = source.category;
     }

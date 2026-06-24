@@ -3,6 +3,9 @@
 use std::process::ExitCode;
 
 pub use crate::document::{DocumentLanguage, DocumentWalkConfig};
+pub use crate::document::{
+    OrgMemorySearchOptions, OrgMemorySearchRecord, query_org_memory_records,
+};
 
 /// Run a document command with the same arguments accepted by the `asp org` or
 /// `asp md` document facade after the language id.

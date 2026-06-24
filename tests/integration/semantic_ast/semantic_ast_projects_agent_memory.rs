@@ -5,6 +5,12 @@ use orgize::{
         AgentMemoryDecision, AgentMemoryQuery, AgentMemorySeverity, MemoryAuthorityKind,
         MemoryEvidenceKind, MemoryQuery, MemoryRecordState,
     },
+    document::{DocumentWalkConfig, OrgMemorySearchOptions, query_org_memory_records},
+};
+use std::{
+    fs,
+    path::PathBuf,
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 const SOURCE: &str = r#"* TODO Current preference :agent:
@@ -259,4 +265,66 @@ fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
     assert!(rendered.contains(
         "contract: Derived from official Org memory-bearing constructs; no custom source syntax is required."
     ));
+}
+
+#[test]
+fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
+    let root = temp_test_dir("orgize-plan-ledger-projection-gate");
+    let artifacts = root.join("artifacts").join("org");
+    let plans = artifacts.join("flow").join("plans");
+    fs::create_dir_all(&plans).expect("create plans dir");
+    for index in 0..2_000 {
+        let plan_id = if index == 777 {
+            "memory-engine-hot-path".to_string()
+        } else {
+            format!("noise-plan-{index:05}")
+        };
+        fs::write(
+            plans.join(format!("agent-plan-{plan_id}.org")),
+            format!(
+                "* TODO Plan {index} [1/8] [12%] :agent:plan:\n\
+                 :PROPERTIES:\n\
+                 :CONTRACT_ORG: agent.plan.v1\n\
+                 :ID: {plan_id}\n\
+                 :PLAN_ID: {plan_id}\n\
+                 :PLAN_SESSION: session-a\n\
+                 :OBJECTIVE: Stabilize memory engine recall flow {index}\n\
+                 :NEXT_ACTION: continue checkpoint {index}\n\
+                 :END:\n\
+                 ** Evidence\n\
+                 - receipt {index}\n",
+            ),
+        )
+        .expect("write plan");
+    }
+
+    let started_at = Instant::now();
+    let records = query_org_memory_records(
+        &artifacts,
+        &DocumentWalkConfig::default(),
+        &OrgMemorySearchOptions::plan_ledgers(),
+    )
+    .expect("query plan ledgers");
+    let elapsed = started_at.elapsed();
+
+    assert_eq!(records.len(), 2_000);
+    assert!(records.iter().any(
+        |record| record.properties.get("PLAN_ID").map(String::as_str)
+            == Some("memory-engine-hot-path")
+    ));
+    assert!(
+        elapsed < Duration::from_millis(250),
+        "plan ledger projection exceeded 250ms gate: {elapsed:?}"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+fn temp_test_dir(prefix: &str) -> PathBuf {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("time")
+        .as_nanos();
+    let path = std::env::temp_dir().join(format!("{prefix}-{nanos}"));
+    fs::create_dir_all(&path).expect("create temp dir");
+    path
 }

@@ -113,6 +113,13 @@ fn query_graph_ids(
     if !document_predicates_match(&query.document_predicates, context) {
         return BTreeSet::new();
     }
+    if !query.alternatives.is_empty() {
+        let mut ids = BTreeSet::new();
+        for alternative in &query.alternatives {
+            ids.extend(query_graph_ids(graph, alternative, bindings, context));
+        }
+        return ids;
+    }
     let Some(index_query) = index_query_with_relative_scope(query, bindings) else {
         return BTreeSet::new();
     };
