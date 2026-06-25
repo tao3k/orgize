@@ -313,8 +313,8 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
             == Some("memory-engine-hot-path")
     ));
     assert!(
-        elapsed < Duration::from_millis(250),
-        "plan ledger projection exceeded 250ms gate: {elapsed:?}"
+        elapsed < Duration::from_millis(100),
+        "plan ledger projection exceeded 100ms gate: {elapsed:?}"
     );
     let _ = fs::remove_dir_all(root);
 }

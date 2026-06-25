@@ -1,0 +1,63 @@
+* 20.05 Parser Surface Map
+This document owns the long-form parser and semantic projection overview that
+does not belong in the crate README.
+
+The README should stay a short crate entrypoint: badges, parser identity, small
+usage examples, feature flags, and links into docs. Detailed semantic surface
+notes live here so they can evolve under the Johnny.Decimal documentation
+topology.
+
+** Public Entry Points
+- `Org::parse` parses an Org source string with default parser settings.
+- `ParseConfig::parse` parses with document-local settings such as TODO keyword
+  declarations and inlinetask level.
+- `Org::document()` returns the owned semantic AST with source annotations and
+  projection diagnostics.
+- `Org::syntax_document()` returns the lossless rowan-backed syntax tree.
+- `document.to_bare()` drops source ranges for tests, snapshots, and compact
+  serialization.
+
+** Source-Grounded Semantic Projections
+Orgize projects Org behavior into data records without executing host actions by
+default. The semantic document exposes:
+
+- headlines, planning, tags, properties, drawers, blocks, objects, timestamps,
+  links, targets, footnotes, and metadata;
+- source and example block metadata, including line numbering, code references,
+  header arguments, result planning, tangle planning, and noweb references;
+- document-level side tables for includes, macros, metadata keywords, filetags,
+  tag vocabulary, link abbreviations, export settings, and footnotes;
+- Org elements index records for `org-element-map`-style filtering and stable
+  SQL row projection;
+- agenda rows, agent planning snapshots, capture previews, publishing graphs,
+  export dependency graphs, attachment inventories, citation plans, table
+  visualization plans, and runtime metadata records.
+
+** Execution Boundary
+Parsing alone never executes source blocks, opens links, decrypts content,
+performs filesystem sync, dispatches Org protocol handlers, or contacts network
+resources. Runtime-adjacent Org features are represented as evidence and plans.
+Hosts that need execution must opt in through explicit host APIs and policy
+objects.
+
+** Query Surfaces
+- `document.org_elements_index()` returns typed index records.
+- `document.query_org_elements_index(...)` filters index records by kind and
+  compact summary fields.
+- `document.org_elements_sql_rows()` exposes stable table rows for external SQL
+  engines.
+- With `datafusion-sql`, `document.org_elements_sql_query(...)` runs in-process
+  SQL over that table projection.
+- Wasm consumers can request JSON projections without materializing the full
+  Rust tree.
+
+** Export and Presentation
+`Org::to_html()`, `Org::to_markdown()`, and `Org::to_latex()` keep stable default
+output. The corresponding `*_with_options` methods expose opt-in behavior such
+as special-string and entity handling, while exporter-oriented pruning belongs
+behind `document.project_for_export(...)`.
+
+** Documentation Rule
+When a parser feature needs long-form explanation, add or update a numbered Org
+document under `docs/20_parser/` and link it from `docs/index.org`. Do not grow
+the root README into a feature ledger.

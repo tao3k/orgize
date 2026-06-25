@@ -20,5 +20,7 @@ declared category and an unused `AC.ID` coordinate before adding a file.
 - [[file:20_parser/20.02_parser_v2_performance_closeout.org][20.02 Parser v2 Performance Closeout]]
 - [[file:20_parser/20.03_property_schema_registry_contract.org][20.03 Property Schema Registry Contract]]
 - [[file:20_parser/20.04_org_elements_alignment_audit.org][20.04 Org Elements Alignment Audit]]
+- [[file:20_parser/20.05_parser_surface_map.org][20.05 Parser Surface Map]]
+[[file:20_parser/20.05_parser_surface_map.org][20.05 Parser Surface Map]]
 - [[file:90_operations/90.01_implementation_status.org][90.01 Implementation Status]]
 - [[file:90_operations/90.02_verification_report_consumption.org][90.02 Verification Report Consumption]]

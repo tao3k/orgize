@@ -4,6 +4,7 @@ use std::{
     collections::BTreeMap,
     fs,
     path::{Path, PathBuf},
+    thread,
     time::UNIX_EPOCH,
 };
 
@@ -61,6 +62,10 @@ pub fn query_org_memory_records(
     walk_config: &DocumentWalkConfig,
     options: &OrgMemorySearchOptions,
 ) -> Result<Vec<OrgMemorySearchRecord>, String> {
+    if options.plan_ledgers {
+        return query_plan_ledger_records(root, walk_config, options);
+    }
+
     let mut files = Vec::new();
     collect_document_paths(
         DocumentLanguage::Org,
@@ -81,12 +86,6 @@ pub fn query_org_memory_records(
     {
         let source =
             fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-        if options.plan_ledgers {
-            if let Some(record) = plan_ledger_record_from_source(&path, &source, options) {
-                records.push(record);
-            }
-            continue;
-        }
         let document = Org::parse(&source).document();
         records.extend(
             document
@@ -104,30 +103,159 @@ pub fn query_org_memory_records(
     Ok(records)
 }
 
+fn query_plan_ledger_records(
+    root: &Path,
+    walk_config: &DocumentWalkConfig,
+    options: &OrgMemorySearchOptions,
+) -> Result<Vec<OrgMemorySearchRecord>, String> {
+    let root = memory_search_root(root, options);
+    let mut files = Vec::new();
+    collect_plan_ledger_paths(&root, walk_config, options, &mut files)?;
+    let mut records = plan_ledger_records_from_paths(&files, options)?;
+    records.sort_by(|left, right| {
+        left.path
+            .cmp(&right.path)
+            .then(left.start_line.cmp(&right.start_line))
+    });
+    Ok(records)
+}
+
+fn collect_plan_ledger_paths(
+    root: &Path,
+    walk_config: &DocumentWalkConfig,
+    options: &OrgMemorySearchOptions,
+    files: &mut Vec<PathBuf>,
+) -> Result<(), String> {
+    let metadata = fs::metadata(root).map_err(|error| format!("{}: {error}", root.display()))?;
+    if metadata.is_file() {
+        if DocumentLanguage::Org.matches_path(root) && file_matches_options(root, options) {
+            files.push(root.to_path_buf());
+        }
+        return Ok(());
+    }
+    if !metadata.is_dir() {
+        return Err(format!("{}: unsupported path type", root.display()));
+    }
+
+    for entry in fs::read_dir(root).map_err(|error| format!("{}: {error}", root.display()))? {
+        let entry = entry.map_err(|error| format!("{}: {error}", root.display()))?;
+        let path = entry.path();
+        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        let file_type = entry
+            .file_type()
+            .map_err(|error| format!("{}: {error}", path.display()))?;
+        if file_type.is_dir() {
+            if should_skip_plan_ledger_directory(name, walk_config) {
+                continue;
+            }
+            collect_plan_ledger_paths(&path, walk_config, options, files)?;
+        } else if file_type.is_file()
+            && DocumentLanguage::Org.matches_path(&path)
+            && file_matches_options(&path, options)
+        {
+            files.push(path);
+        }
+    }
+    Ok(())
+}
+
+fn plan_ledger_records_from_paths(
+    paths: &[PathBuf],
+    options: &OrgMemorySearchOptions,
+) -> Result<Vec<OrgMemorySearchRecord>, String> {
+    if paths.len() < 64 {
+        let mut records = Vec::new();
+        for path in paths {
+            collect_plan_ledger_file(path, options, &mut records)?;
+        }
+        return Ok(records);
+    }
+
+    let worker_count = thread::available_parallelism()
+        .map(|count| count.get())
+        .unwrap_or(1)
+        .min(4)
+        .min(paths.len());
+    let chunk_size = paths.len().div_ceil(worker_count);
+    thread::scope(|scope| {
+        let mut handles = Vec::new();
+        for chunk in paths.chunks(chunk_size) {
+            handles.push(scope.spawn(move || {
+                let mut records = Vec::new();
+                for path in chunk {
+                    collect_plan_ledger_file(path, options, &mut records)?;
+                }
+                Ok::<_, String>(records)
+            }));
+        }
+
+        let mut records = Vec::new();
+        for handle in handles {
+            records.extend(
+                handle
+                    .join()
+                    .map_err(|_| "plan ledger worker panicked".to_string())??,
+            );
+        }
+        Ok(records)
+    })
+}
+
+fn collect_plan_ledger_file(
+    path: &Path,
+    options: &OrgMemorySearchOptions,
+    records: &mut Vec<OrgMemorySearchRecord>,
+) -> Result<(), String> {
+    let source =
+        fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    if let Some(record) = plan_ledger_record_from_source(path, &source, options) {
+        records.push(record);
+    }
+    Ok(())
+}
+
+fn should_skip_plan_ledger_directory(name: &str, walk_config: &DocumentWalkConfig) -> bool {
+    if walk_config
+        .include_hidden_dirs
+        .iter()
+        .any(|included| included == name)
+    {
+        return false;
+    }
+    walk_config
+        .ignore_dirs
+        .iter()
+        .any(|ignored| ignored == name)
+        || (name.starts_with('.') && !name.starts_with(".org"))
+}
+
 fn plan_ledger_record_from_source(
     path: &Path,
     source: &str,
     options: &OrgMemorySearchOptions,
 ) -> Option<OrgMemorySearchRecord> {
-    let first_line = source.lines().next()?.trim_end();
+    let mut lines = source.lines();
+    let first_line = lines.next()?.trim_end();
     let (todo, title, tags) = root_headline_parts(first_line)?;
     let state = if todo.as_deref() == Some("DONE") {
         MemoryRecordState::Closed
     } else {
         MemoryRecordState::Current
     };
-    let properties = root_properties(source);
+    let (properties, end_line) = root_property_drawer_and_end_line(lines);
     let record = OrgMemorySearchRecord {
         path: path.to_path_buf(),
         start_line: 1,
-        end_line: root_section_end_line(source),
+        end_line,
         state,
         level: 1,
         title,
         todo,
         tags,
         properties,
-        mtime: modified_seconds(path),
+        mtime: 0.0,
     };
     memory_search_record_matches_options(&record, options).then_some(record)
 }
@@ -167,25 +295,40 @@ fn split_headline_todo(rest: &str) -> (Option<&str>, &str) {
     }
 }
 
-fn root_properties(source: &str) -> BTreeMap<String, String> {
+fn root_property_drawer_and_end_line<'a>(
+    lines: impl Iterator<Item = &'a str>,
+) -> (BTreeMap<String, String>, usize) {
     let mut in_drawer = false;
+    let mut scan_properties = true;
     let mut properties = BTreeMap::new();
-    for line in source.lines().skip(1) {
-        if !in_drawer && line.starts_with("** ") {
+    let mut end_line = 1;
+    for (offset, line) in lines.enumerate() {
+        let line_number = offset + 2;
+        if line.starts_with("* ") {
+            end_line = line_number - 1;
             break;
+        }
+        end_line = line_number;
+        if !scan_properties {
+            continue;
+        }
+        if !in_drawer && line.starts_with("** ") {
+            scan_properties = false;
+            continue;
         }
         if line.trim() == ":PROPERTIES:" {
             in_drawer = true;
             continue;
         }
         if line.trim() == ":END:" {
-            break;
+            scan_properties = false;
+            continue;
         }
         if in_drawer && let Some((key, value)) = property_line(line) {
             properties.insert(key, value);
         }
     }
-    properties
+    (properties, end_line)
 }
 
 fn property_line(line: &str) -> Option<(String, String)> {
@@ -193,15 +336,6 @@ fn property_line(line: &str) -> Option<(String, String)> {
     let rest = trimmed.strip_prefix(':')?;
     let (key, value) = rest.split_once(':')?;
     Some((key.trim().to_string(), value.trim().to_string()))
-}
-
-fn root_section_end_line(source: &str) -> usize {
-    source
-        .lines()
-        .enumerate()
-        .skip(1)
-        .find_map(|(index, line)| line.starts_with("* ").then_some(index))
-        .unwrap_or_else(|| source.lines().count().max(1))
 }
 
 fn memory_search_root(root: &Path, options: &OrgMemorySearchOptions) -> PathBuf {
@@ -356,7 +490,12 @@ fn modified_seconds(path: &Path) -> f64 {
     path.metadata()
         .and_then(|metadata| metadata.modified())
         .ok()
+        .and_then(|mtime| modified_seconds_from_time(Some(mtime)))
+        .unwrap_or_default()
+}
+
+fn modified_seconds_from_time(modified: Option<std::time::SystemTime>) -> Option<f64> {
+    modified
         .and_then(|mtime| mtime.duration_since(UNIX_EPOCH).ok())
         .map(|duration| duration.as_secs_f64())
-        .unwrap_or_default()
 }
