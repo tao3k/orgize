@@ -1,0 +1,10 @@
+#+TITLE: Orgize Query Assertion Scenario
+
+* Query assertion
+:PROPERTIES:
+:CONTRACT_ORG: orgize.lint.contract.v1
+:END:
+
+#+begin_src org
+* TODO Bound scenario fixture
+#+end_src

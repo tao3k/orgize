@@ -50,6 +50,8 @@ mod lint_task_blockers;
 mod markdown;
 #[path = "integration/parse.rs"]
 mod parse;
+#[path = "integration/scenario_benchmark.rs"]
+mod scenario_benchmark;
 #[path = "integration/sdd.rs"]
 mod sdd;
 #[path = "integration/semantic_ast/mod.rs"]
