@@ -1,4 +1,6 @@
-#+CONTRACT_ORG: agent.execplan.v1
+:PROPERTIES:
+:CONTRACT_ORG: agent.execplan.v1
+:END:
 
 * TODO ExecPlan Title [0/8] [0%] :execplan:
 :PROPERTIES:

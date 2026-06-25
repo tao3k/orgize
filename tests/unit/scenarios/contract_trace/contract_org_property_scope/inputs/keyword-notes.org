@@ -1,0 +1,5 @@
+#+CONTRACT_ORG: document.scope.v1
+* Task A
+** Evidence
+[[https://example.test][inside]]
+

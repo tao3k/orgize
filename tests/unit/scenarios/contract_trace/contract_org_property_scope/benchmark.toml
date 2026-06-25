@@ -1,0 +1,11 @@
+bench_command = "cargo test --test integration_test contract_org_property_scope_fixture_stays_in_millisecond_budget"
+target_total_ms = 5
+max_total_ms = 25
+observed_total_ms = 5
+regression_budget_ms = 10
+memory_budget_bytes = 8388608
+observed_memory_bytes = 4194304
+target_rationale = "Small Orgize contract evaluation fixture should stay bounded in the library path while validating CONTRACT_ORG property drawer scope semantics."
+
+[observed_timings]
+fixture_ms = 5

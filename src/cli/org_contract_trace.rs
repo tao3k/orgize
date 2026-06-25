@@ -1,6 +1,7 @@
 //! CLI trace export for source-backed `CONTRACT_ORG` evaluations.
 
 use std::{
+    collections::BTreeSet,
     fs,
     io::Read,
     path::{Path, PathBuf},
@@ -167,7 +168,7 @@ fn collect_contract_evaluations(
     let mut evaluations = Vec::new();
     let context = OrgContractEvaluationContext::with_source_path(path);
     let document_contracts =
-        resolve_bindings(document_contract_bindings(document), registry, path)?;
+        resolve_bindings(document_contract_bindings(document, path)?, registry, path)?;
     let mut document_default_contracts = Vec::new();
     for contract in document_contracts {
         if contract.scope == OrgContractScope::Document {
@@ -223,7 +224,7 @@ impl<'a> SectionContractEvaluationCollector<'a> {
                 .collect()
         };
 
-        for contract in section_contracts {
+        for contract in &section_contracts {
             self.evaluations.push(evaluate_org_contract_with_context(
                 self.document,
                 contract,
@@ -271,20 +272,40 @@ fn resolve_bindings<'a>(
     registry: &'a OrgContractRegistry,
     path: &str,
 ) -> Result<Vec<&'a OrgContract>, String> {
-    bindings
+    let contracts = bindings
         .into_iter()
         .map(|binding| resolve_binding(binding, registry, path))
         .collect::<Result<Vec<_>, _>>()
-        .map(|contracts| contracts.into_iter().flatten().collect())
+        .map(|contracts| contracts.into_iter().flatten().collect::<Vec<_>>())?;
+    reject_duplicate_contracts(&contracts, path)?;
+    Ok(contracts)
 }
 
-fn document_contract_bindings(document: &ParsedAst) -> Vec<ContractBinding> {
-    let properties = property_contract_bindings(&document.properties);
-    if properties.is_empty() {
-        keyword_contract_bindings(&document.metadata)
-    } else {
-        properties
+fn reject_duplicate_contracts(contracts: &[&OrgContract], path: &str) -> Result<(), String> {
+    let mut seen = BTreeSet::new();
+    for contract in contracts {
+        if !seen.insert(contract.id.as_str()) {
+            return Err(format!(
+                "{path}: duplicate CONTRACT_ORG `{}` on the same scope is ambiguous",
+                contract.id
+            ));
+        }
     }
+    Ok(())
+}
+
+fn document_contract_bindings(
+    document: &ParsedAst,
+    path: &str,
+) -> Result<Vec<ContractBinding>, String> {
+    let keyword_bindings = keyword_contract_bindings(&document.metadata);
+    if !keyword_bindings.is_empty() {
+        return Err(format!(
+            "{path}: CONTRACT_ORG must be declared in a property drawer, not as #+CONTRACT_ORG metadata"
+        ));
+    }
+
+    Ok(property_contract_bindings(&document.properties))
 }
 
 fn section_contract_bindings(section: &Section<ParsedAnnotation>) -> Vec<ContractBinding> {

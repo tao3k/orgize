@@ -1,0 +1,8 @@
+:PROPERTIES:
+:CONTRACT_ORG: document.scope.v1
+:CONTRACT_ORG: document.scope.v1
+:END:
+* Task A
+** Evidence
+[[https://example.test][inside]]
+

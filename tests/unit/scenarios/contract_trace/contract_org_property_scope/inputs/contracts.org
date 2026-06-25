@@ -1,0 +1,62 @@
+* document-contract
+:PROPERTIES:
+:CONTRACT_ID: document.scope.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** has-top-level-tasks
+:PROPERTIES:
+:ASSERT_ID: document.has-top-level-tasks
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert count >= 2
+  (headline))
+#+END_SRC
+* document-contract-binding
+:PROPERTIES:
+:CONTRACT_ID: document.contract-binding.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** has-contract-org-node-property
+:PROPERTIES:
+:ASSERT_ID: document.has-contract-org-node-property
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (node-property :summary (key "CONTRACT_ORG")))
+#+END_SRC
+* section-contract
+:PROPERTIES:
+:CONTRACT_ID: section.scope.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+** has-evidence-link
+:PROPERTIES:
+:ASSERT_ID: section.has-evidence-link
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(let ((evidence
+       (headline :child-of $scope :property (:raw-value "Evidence"))))
+  (assert count >= 1
+    (link :descendant-of evidence)))
+#+END_SRC
+* override-title-contract
+:PROPERTIES:
+:CONTRACT_ID: section.override-title.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+** title-has-override
+:PROPERTIES:
+:ASSERT_ID: section.title-has-override
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert count >= 1
+  (headline :at $scope :summary-contains (title "Override")))
+#+END_SRC

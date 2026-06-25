@@ -2,6 +2,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
+    time::{Duration, Instant},
 };
 
 use orgize::{
@@ -12,6 +13,18 @@ use orgize::{
         parse_contracts_from_document,
     },
 };
+
+const CONTRACT_ORG_SCOPE_CONTRACTS: &str = include_str!(
+    "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/contracts.org"
+);
+const CONTRACT_ORG_SCOPE_NOTES: &str =
+    include_str!("../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org");
+const CONTRACT_ORG_SCOPE_KEYWORD_NOTES: &str = include_str!(
+    "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/keyword-notes.org"
+);
+const CONTRACT_ORG_SCOPE_DUPLICATE_NOTES: &str = include_str!(
+    "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/duplicate-notes.org"
+);
 
 #[test]
 fn exposes_matched_ids_and_bindings() {
@@ -250,6 +263,240 @@ fn cli_trace_evaluates_multiple_contract_org_bindings_on_same_scope() {
         "{stdout}"
     );
     assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
+}
+
+#[test]
+fn cli_trace_distinguishes_document_and_heading_contract_org_property_scope() {
+    let dir = test_dir("contract-trace-document-heading-scope");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("contracts.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
+    fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_NOTES).unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args([
+            "contract",
+            "trace",
+            "--org-contract-registry",
+            "contracts.org",
+            "notes.org",
+        ])
+        .output()
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("utf8 stdout");
+    let json: serde_json::Value = serde_json::from_str(&stdout).expect("trace JSON");
+    let evaluations = json["files"][0]["evaluations"]
+        .as_array()
+        .expect("evaluations array");
+    let actual_order = evaluations
+        .iter()
+        .map(|evaluation| {
+            (
+                evaluation["contractId"].as_str().unwrap_or_default(),
+                evaluation["scope"]["kind"].as_str().unwrap_or_default(),
+                evaluation["scope"]["title"].as_str().unwrap_or_default(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        actual_order,
+        vec![
+            ("document.scope.v1", "document", ""),
+            ("document.contract-binding.v1", "document", ""),
+            ("section.scope.v1", "section", "Task A"),
+            ("section.scope.v1", "section", "Task A Child"),
+            ("section.scope.v1", "section", "Task B"),
+            ("section.override-title.v1", "section", "Override Parent"),
+            ("section.override-title.v1", "section", "Override Child"),
+        ],
+        "{stdout}"
+    );
+    assert!(
+        evaluations
+            .iter()
+            .flat_map(|evaluation| evaluation["assertions"].as_array().unwrap())
+            .all(|assertion| assertion["status"] == "passed"),
+        "{stdout}"
+    );
+}
+
+#[test]
+fn contract_org_property_scope_fixture_stays_in_millisecond_budget() {
+    let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("unit")
+        .join("scenarios")
+        .join("contract_trace")
+        .join("contract_org_property_scope");
+    let benchmark = rust_lang_project_harness::validate_rust_scenario_benchmark(&scenario_root)
+        .expect("validate contract trace property scope scenario benchmark");
+    assert_eq!(
+        benchmark.status,
+        rust_lang_project_harness::RustScenarioBenchmarkStatus::Pass,
+        "{:?}",
+        benchmark.violations
+    );
+    let max_total = Duration::from_millis(benchmark.benchmark.max_total_ms.as_u64());
+
+    let started_at = Instant::now();
+    let contract_document = Org::parse(CONTRACT_ORG_SCOPE_CONTRACTS).document();
+    let registry = parse_contracts_from_document(&contract_document, None);
+    let notes_document = Org::parse(CONTRACT_ORG_SCOPE_NOTES).document();
+    let document_contract = registry
+        .resolve(&parse_contract_reference("document.scope.v1"))
+        .expect("document contract");
+    let document_binding_contract = registry
+        .resolve(&parse_contract_reference("document.contract-binding.v1"))
+        .expect("document binding contract");
+    let section_contract = registry
+        .resolve(&parse_contract_reference("section.scope.v1"))
+        .expect("section contract");
+    let override_contract = registry
+        .resolve(&parse_contract_reference("section.override-title.v1"))
+        .expect("override contract");
+    let task_a = &notes_document.sections[0];
+    let task_a_child = &task_a.subsections[1];
+    let task_b = &notes_document.sections[1];
+    let override_parent = &notes_document.sections[2];
+    let override_child = &override_parent.subsections[0];
+    let evaluations = vec![
+        evaluate_org_contract(
+            &notes_document,
+            document_contract,
+            OrgContractEvaluationScope::document(),
+        ),
+        evaluate_org_contract(
+            &notes_document,
+            document_binding_contract,
+            OrgContractEvaluationScope::document(),
+        ),
+        evaluate_org_contract(
+            &notes_document,
+            section_contract,
+            OrgContractEvaluationScope::section(
+                "Task A",
+                vec!["Task A".to_string()],
+                task_a.ann.range,
+            ),
+        ),
+        evaluate_org_contract(
+            &notes_document,
+            section_contract,
+            OrgContractEvaluationScope::section(
+                "Task A Child",
+                vec!["Task A".to_string(), "Task A Child".to_string()],
+                task_a_child.ann.range,
+            ),
+        ),
+        evaluate_org_contract(
+            &notes_document,
+            section_contract,
+            OrgContractEvaluationScope::section(
+                "Task B",
+                vec!["Task B".to_string()],
+                task_b.ann.range,
+            ),
+        ),
+        evaluate_org_contract(
+            &notes_document,
+            override_contract,
+            OrgContractEvaluationScope::section(
+                "Override Parent",
+                vec!["Override Parent".to_string()],
+                override_parent.ann.range,
+            ),
+        ),
+        evaluate_org_contract(
+            &notes_document,
+            override_contract,
+            OrgContractEvaluationScope::section(
+                "Override Child",
+                vec!["Override Parent".to_string(), "Override Child".to_string()],
+                override_child.ann.range,
+            ),
+        ),
+    ];
+    let elapsed = started_at.elapsed();
+
+    assert!(
+        elapsed < max_total,
+        "contract property scope fixture exceeded {}ms gate: {elapsed:?}",
+        benchmark.benchmark.max_total_ms
+    );
+    let failed_assertions = evaluations
+        .iter()
+        .flat_map(|evaluation| &evaluation.assertions)
+        .filter(|assertion| assertion.status == OrgContractAssertionStatus::Failed)
+        .count();
+    assert_eq!(failed_assertions, 0, "{evaluations:?}");
+}
+
+#[test]
+fn cli_trace_rejects_contract_org_metadata_keyword_declarations() {
+    let dir = test_dir("contract-trace-rejects-contract-org-keyword");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("contract.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
+    fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_KEYWORD_NOTES).unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args([
+            "contract",
+            "trace",
+            "--org-contract-registry",
+            "contract.org",
+            "notes.org",
+        ])
+        .output()
+        .unwrap();
+
+    assert!(
+        !output.status.success(),
+        "stdout: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    let stderr = String::from_utf8(output.stderr).expect("utf8 stderr");
+    assert!(
+        stderr.contains("CONTRACT_ORG must be declared in a property drawer"),
+        "{stderr}"
+    );
+}
+
+#[test]
+fn cli_trace_rejects_duplicate_contract_org_bindings_on_same_scope() {
+    let dir = test_dir("contract-trace-rejects-duplicate-contract-org");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("contract.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
+    fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_DUPLICATE_NOTES).unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args([
+            "contract",
+            "trace",
+            "--org-contract-registry",
+            "contract.org",
+            "notes.org",
+        ])
+        .output()
+        .unwrap();
+
+    assert!(
+        !output.status.success(),
+        "stdout: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    let stderr = String::from_utf8(output.stderr).expect("utf8 stderr");
+    assert!(
+        stderr.contains("duplicate CONTRACT_ORG `document.scope.v1` on the same scope"),
+        "{stderr}"
+    );
 }
 
 #[test]

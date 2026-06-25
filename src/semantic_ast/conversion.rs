@@ -138,6 +138,9 @@ impl<'a> Converter<'a> {
 
     fn push_document_child(&mut self, parts: &mut DocumentParts, node: &SyntaxNode) {
         match node.kind() {
+            SyntaxKind::PROPERTY_DRAWER => {
+                parts.properties.extend(self.properties(node));
+            }
             SyntaxKind::SECTION => {
                 let section_children = self.elements_from_container(node);
                 parts.properties.extend(

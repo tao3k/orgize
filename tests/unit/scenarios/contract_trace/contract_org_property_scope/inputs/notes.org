@@ -1,0 +1,25 @@
+:PROPERTIES:
+:CONTRACT_ORG: document.scope.v1
+:CONTRACT_ORG: document.contract-binding.v1
+:CONTRACT_ORG: section.scope.v1
+:END:
+* Task A
+** Evidence
+[[https://example.test][inside]]
+** Task A Child
+:PROPERTIES:
+:CONTRACT_ORG: section.scope.v1
+:END:
+*** Evidence
+[[https://example.test][child]]
+* Task B
+** Evidence
+[[https://example.test][task-b]]
+* Override Parent
+:PROPERTIES:
+:CONTRACT_ORG: section.override-title.v1
+:END:
+** Override Child
+:PROPERTIES:
+:CONTRACT_ORG: section.override-title.v1
+:END:
