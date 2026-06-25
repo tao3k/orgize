@@ -1,10 +1,24 @@
-#+TITLE: Orgize Query Assertion Scenario
-
-* Query assertion
+* agent-task-v1
 :PROPERTIES:
-:CONTRACT_ORG: orgize.lint.contract.v1
+:CONTRACT_ID: agent.task.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
 :END:
 
-#+begin_src org
-* TODO Bound scenario fixture
-#+end_src
+** must-have-goal-section
+:PROPERTIES:
+:ASSERT_ID: task.has-goal
+:SEVERITY: error
+:END:
+
+#+BEGIN_SRC org-elements-query
+(headline :descendant-of $scope :summary (title "Goal"))
+#+END_SRC
+
+#+BEGIN_SRC org-elements-expect
+count >= 1
+#+END_SRC
+
+#+BEGIN_SRC jinja2 :name message
+Task `{{ scope.title }}` must contain a Goal section.
+#+END_SRC

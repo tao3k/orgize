@@ -1,11 +1,11 @@
-bench_command = "cargo test --test integration_test orgize_rule_fixtures_have_scenario_benchmarks"
-target_total_ms = 25
-max_total_ms = 100
-observed_total_ms = 25
-regression_budget_ms = 20
+bench_command = "cargo test --test integration_test lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget"
+target_total_ms = 10
+max_total_ms = 25
+observed_total_ms = 10
+regression_budget_ms = 10
 memory_budget_bytes = 8388608
 observed_memory_bytes = 4194304
-target_rationale = "Small Orgize lint-contract fixture should stay bounded."
+target_rationale = "Small Orgize lint-contract query assertion fixture should stay bounded in the library path."
 
 [observed_timings]
-fixture_ms = 25
+fixture_ms = 10

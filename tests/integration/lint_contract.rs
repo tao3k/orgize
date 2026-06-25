@@ -1,4 +1,9 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{
+    fs,
+    path::PathBuf,
+    process::Command,
+    time::{Duration, Instant},
+};
 
 use orgize::{
     Org,
@@ -90,6 +95,58 @@ fn lint_reports_contract_org_query_assertion_failure_code() {
             .map(|finding| finding.code)
             .collect::<Vec<_>>(),
         ["ORG044"]
+    );
+}
+
+#[test]
+fn lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget() {
+    let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("unit")
+        .join("scenarios")
+        .join("lint_contract")
+        .join("org_query_assertion");
+    let benchmark = rust_lang_project_harness::validate_rust_scenario_benchmark(&scenario_root)
+        .expect("validate org query assertion scenario benchmark");
+    assert_eq!(
+        benchmark.status,
+        rust_lang_project_harness::RustScenarioBenchmarkStatus::Pass,
+        "{:?}",
+        benchmark.violations
+    );
+    let max_total = Duration::from_millis(benchmark.benchmark.max_total_ms.as_u64());
+    let contract_fixture =
+        include_str!("../unit/scenarios/lint_contract/org_query_assertion/inputs/contract.org");
+
+    let started_at = Instant::now();
+    let document = Org::parse(contract_fixture).document();
+    let registry = parse_contracts_from_document(&document, None);
+    let failure_report = lint_org_with_options(
+        r#"* Task A
+:PROPERTIES:
+:CONTRACT_ORG: agent.task.v1
+:END:
+** Context
+"#,
+        &LintOptions {
+            org_contract_registry: registry.clone(),
+            ..LintOptions::default()
+        },
+    );
+    let elapsed = started_at.elapsed();
+
+    assert_eq!(
+        failure_report
+            .findings
+            .iter()
+            .map(|finding| finding.code)
+            .collect::<Vec<_>>(),
+        ["ORG044"]
+    );
+    assert!(
+        elapsed < max_total,
+        "org query assertion fixture exceeded {}ms gate: {elapsed:?}",
+        benchmark.benchmark.max_total_ms
     );
 }
 
