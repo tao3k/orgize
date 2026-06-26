@@ -73,6 +73,41 @@ fn parse_contracts_preserves_split_query_and_expect_blocks() {
 }
 
 #[test]
+fn parse_contracts_accepts_legacy_key_value_query_blocks() {
+    let contract_fixture = r#"* agent-task-v1
+:PROPERTIES:
+:CONTRACT_ID: agent.task.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+
+** must-have-goal-section
+:PROPERTIES:
+:ASSERT_ID: task.has-goal
+:SEVERITY: error
+:END:
+
+#+BEGIN_SRC org-elements-query
+category = "section"
+kind = "headline"
+within = "$scope"
+summary.title = "Goal"
+#+END_SRC
+
+#+BEGIN_SRC org-elements-expect
+count >= 1
+#+END_SRC
+"#;
+    let document = Org::parse(contract_fixture).document();
+    let registry = parse_contracts_from_document(&document, None);
+
+    assert_eq!(registry.contracts.len(), 1);
+    let contract = &registry.contracts[0];
+    assert_eq!(contract.assertions.len(), 1);
+    assert_eq!(contract.assertions[0].id, "task.has-goal");
+}
+
+#[test]
 fn lint_accepts_contract_org_when_assertion_query_matches() {
     let registry = contract_registry();
     let report = lint_org_with_options(
