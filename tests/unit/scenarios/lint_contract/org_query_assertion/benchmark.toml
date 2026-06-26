@@ -1,11 +1,12 @@
-bench_command = "cargo test --test integration_test lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget"
-target_total_ms = 10
-max_total_ms = 25
-observed_total_ms = 10
-regression_budget_ms = 10
+harness = "libtest"
+test = "lint_contract::lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget"
+target_total = "10ms"
+max_total = "25ms"
+observed_total = "10ms"
+regression_budget = "10ms"
 memory_budget_bytes = 8388608
 observed_memory_bytes = 4194304
 target_rationale = "Small Orgize lint-contract query assertion fixture should stay bounded in the library path."
 
 [observed_timings]
-fixture_ms = 10
+fixture_ms = "10ms"

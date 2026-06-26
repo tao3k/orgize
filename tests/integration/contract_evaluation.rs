@@ -2,7 +2,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 use orgize::{
@@ -342,7 +342,7 @@ fn contract_org_property_scope_fixture_stays_in_millisecond_budget() {
         "{:?}",
         benchmark.violations
     );
-    let max_total = Duration::from_millis(benchmark.benchmark.max_total_ms.as_u64());
+    let max_total = benchmark.benchmark.max_total.as_duration();
 
     let started_at = Instant::now();
     let contract_document = Org::parse(CONTRACT_ORG_SCOPE_CONTRACTS).document();
@@ -427,7 +427,7 @@ fn contract_org_property_scope_fixture_stays_in_millisecond_budget() {
     assert!(
         elapsed < max_total,
         "contract property scope fixture exceeded {}ms gate: {elapsed:?}",
-        benchmark.benchmark.max_total_ms
+        max_total.as_millis()
     );
     let failed_assertions = evaluations
         .iter()

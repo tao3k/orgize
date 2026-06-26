@@ -1,9 +1,4 @@
-use std::{
-    fs,
-    path::PathBuf,
-    process::Command,
-    time::{Duration, Instant},
-};
+use std::{fs, path::PathBuf, process::Command, time::Instant};
 
 use orgize::{
     Org,
@@ -227,7 +222,7 @@ fn lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget() {
         "{:?}",
         benchmark.violations
     );
-    let max_total = Duration::from_millis(benchmark.benchmark.max_total_ms.as_u64());
+    let max_total = benchmark.benchmark.max_total.as_duration();
     let contract_fixture =
         include_str!("../unit/scenarios/lint_contract/org_query_assertion/inputs/contract.org");
 
@@ -259,7 +254,7 @@ fn lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget() {
     assert!(
         elapsed < max_total,
         "org query assertion fixture exceeded {}ms gate: {elapsed:?}",
-        benchmark.benchmark.max_total_ms
+        max_total.as_millis()
     );
 }
 
