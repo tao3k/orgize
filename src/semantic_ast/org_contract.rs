@@ -21,8 +21,14 @@ pub fn parse_contracts_from_document(
 ) -> OrgContractRegistry {
     let source_blocks = document.source_block_records();
     let mut contracts = Vec::new();
-    for section in &document.sections {
-        collect_contract_sections(section, &source_blocks, source_path, &mut contracts);
+    for (index, section) in document.sections.iter().enumerate() {
+        collect_contract_sections(
+            section,
+            bounded_section_end(&document.sections, index, usize::MAX),
+            &source_blocks,
+            source_path,
+            &mut contracts,
+        );
     }
     OrgContractRegistry::new(contracts)
 }
@@ -73,20 +79,28 @@ pub fn parse_contract_reference(value: &str) -> OrgContractReference {
 
 fn collect_contract_sections(
     section: &Section<ParsedAnnotation>,
+    end: usize,
     source_blocks: &[SourceBlockRecord],
     source_path: Option<&Path>,
     contracts: &mut Vec<OrgContract>,
 ) {
-    if let Some(contract) = parse_contract_section(section, source_blocks, source_path) {
+    if let Some(contract) = parse_contract_section(section, end, source_blocks, source_path) {
         contracts.push(contract);
     }
-    for child in &section.subsections {
-        collect_contract_sections(child, source_blocks, source_path, contracts);
+    for (index, child) in section.subsections.iter().enumerate() {
+        collect_contract_sections(
+            child,
+            bounded_section_end(&section.subsections, index, end),
+            source_blocks,
+            source_path,
+            contracts,
+        );
     }
 }
 
 fn parse_contract_section(
     section: &Section<ParsedAnnotation>,
+    end: usize,
     source_blocks: &[SourceBlockRecord],
     source_path: Option<&Path>,
 ) -> Option<OrgContract> {
@@ -109,8 +123,13 @@ fn parse_contract_section(
         .unwrap_or_default();
 
     let mut assertions = Vec::new();
-    for child in &section.subsections {
-        collect_assertions(child, source_blocks, &mut assertions);
+    for (index, child) in section.subsections.iter().enumerate() {
+        collect_assertions(
+            child,
+            bounded_section_end(&section.subsections, index, end),
+            source_blocks,
+            &mut assertions,
+        );
     }
 
     Some(OrgContract {
@@ -124,20 +143,27 @@ fn parse_contract_section(
 
 fn collect_assertions(
     section: &Section<ParsedAnnotation>,
+    end: usize,
     source_blocks: &[SourceBlockRecord],
     assertions: &mut Vec<OrgContractAssertion>,
 ) {
-    if let Some(assertion) = parse_assertion(section, source_blocks) {
+    if let Some(assertion) = parse_assertion(section, end, source_blocks) {
         assertions.push(assertion);
         return;
     }
-    for child in &section.subsections {
-        collect_assertions(child, source_blocks, assertions);
+    for (index, child) in section.subsections.iter().enumerate() {
+        collect_assertions(
+            child,
+            bounded_section_end(&section.subsections, index, end),
+            source_blocks,
+            assertions,
+        );
     }
 }
 
 fn parse_assertion(
     section: &Section<ParsedAnnotation>,
+    end: usize,
     source_blocks: &[SourceBlockRecord],
 ) -> Option<OrgContractAssertion> {
     let id = section_property_value(&section.properties, ASSERT_ID_PROPERTY)?;
@@ -157,7 +183,7 @@ fn parse_assertion(
     let mut query_source = None;
     let mut expect_source = None;
 
-    for block in section_source_blocks(section, source_blocks) {
+    for block in section_source_blocks(section, end, source_blocks) {
         let language = block.language.as_deref().unwrap_or_default().trim();
         if language.eq_ignore_ascii_case("org-elements-query")
             || language.eq_ignore_ascii_case("org-elements-query-expr")
@@ -205,10 +231,10 @@ fn parse_assertion(
 
 fn section_source_blocks<'a>(
     section: &Section<ParsedAnnotation>,
+    end: usize,
     source_blocks: &'a [SourceBlockRecord],
 ) -> Vec<&'a SourceBlockRecord> {
     let start = usize::from(section.ann.range.start());
-    let end = usize::from(section.ann.range.end());
     source_blocks
         .iter()
         .filter(|record| {
@@ -217,6 +243,21 @@ fn section_source_blocks<'a>(
                 && (record.source.range_end as usize) <= end
         })
         .collect()
+}
+
+fn bounded_section_end(
+    siblings: &[Section<ParsedAnnotation>],
+    index: usize,
+    parent_end: usize,
+) -> usize {
+    siblings
+        .get(index + 1)
+        .map(section_start)
+        .unwrap_or(parent_end)
+}
+
+fn section_start(section: &Section<ParsedAnnotation>) -> usize {
+    usize::from(section.ann.range.start())
 }
 
 fn block_parameter_name(block: &SourceBlockRecord) -> Option<String> {

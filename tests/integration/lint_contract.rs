@@ -54,6 +54,25 @@ fn lint_contract_org_query_assertion_scenario_has_snapshot() {
 }
 
 #[test]
+fn parse_contracts_preserves_split_query_and_expect_blocks() {
+    let contract_fixture =
+        include_str!("../unit/scenarios/lint_contract/org_query_assertion/inputs/contract.org");
+    let document = Org::parse(contract_fixture).document();
+    let registry = parse_contracts_from_document(&document, None);
+
+    assert_eq!(registry.contracts.len(), 1);
+    let contract = &registry.contracts[0];
+    assert_eq!(contract.id, "agent.task.v1");
+    assert_eq!(contract.assertions.len(), 1);
+    let assertion = &contract.assertions[0];
+    assert_eq!(assertion.id, "task.has-goal");
+    assert_eq!(
+        assertion.message.as_deref().map(str::trim),
+        Some("Task `{{ scope.title }}` must contain a Goal section.")
+    );
+}
+
+#[test]
 fn lint_accepts_contract_org_when_assertion_query_matches() {
     let registry = contract_registry();
     let report = lint_org_with_options(
