@@ -115,8 +115,14 @@ fn query_graph_ids(
     }
     if !query.alternatives.is_empty() {
         let mut ids = BTreeSet::new();
+        let base_query = query_without_alternatives(query);
         for alternative in &query.alternatives {
-            ids.extend(query_graph_ids(graph, alternative, bindings, context));
+            ids.extend(query_graph_ids(
+                graph,
+                &combine_contract_queries(base_query.clone(), alternative),
+                bindings,
+                context,
+            ));
         }
         return ids;
     }
@@ -150,6 +156,63 @@ fn index_query_with_relative_scope(
             (!roots.is_empty()).then(|| index_query.at_any(roots.iter().copied()))
         }
     }
+}
+
+fn query_without_alternatives(query: &OrgContractQuery) -> OrgContractQuery {
+    let mut query = query.clone();
+    query.alternatives.clear();
+    query
+}
+
+fn combine_contract_queries(
+    mut target: OrgContractQuery,
+    source: &OrgContractQuery,
+) -> OrgContractQuery {
+    target.alternatives.extend(source.alternatives.clone());
+    if source.category.is_some() {
+        target.category = source.category;
+    }
+    if source.kind.is_some() {
+        target.kind = source.kind.clone();
+    }
+    if source.affiliated_name.is_some() {
+        target.affiliated_name = source.affiliated_name.clone();
+    }
+    if source.context.is_some() {
+        target.context = source.context.clone();
+    }
+    if !source.outline_path_prefix.is_empty() {
+        target.outline_path_prefix = source.outline_path_prefix.clone();
+    }
+    if source.outline_path_exact_len.is_some() {
+        target.outline_path_exact_len = source.outline_path_exact_len;
+    }
+    target
+        .property_equals
+        .extend(source.property_equals.clone());
+    target
+        .property_contains
+        .extend(source.property_contains.clone());
+    target.summary_equals.extend(source.summary_equals.clone());
+    target
+        .summary_contains
+        .extend(source.summary_contains.clone());
+    target.predicates.extend(source.predicates.clone());
+    target
+        .document_predicates
+        .extend(source.document_predicates.clone());
+    if source.limit.is_some() {
+        target.limit = source.limit;
+    }
+    target.use_scope_outline_path |= source.use_scope_outline_path;
+    target.has_outline_path_prefix |= source.has_outline_path_prefix;
+    if source.scope_outline_depth.is_some() {
+        target.scope_outline_depth = source.scope_outline_depth;
+    }
+    if source.relative_to.is_some() {
+        target.relative_to = source.relative_to.clone();
+    }
+    target
 }
 
 fn context_with_effective_dir(

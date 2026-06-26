@@ -1,9 +1,9 @@
 ---
 source: tests/integration/lint_contract.rs
-assertion_line: 383
 expression: "format!(\"unnamed python clean: {}\\n{}\\n\\\n         missing diary clean: {}\\n{}\\n\\\n         mixed language clean: {}\\n{}\\n\\\n         success clean: {}\\n{}\",\nunnamed_python_report.is_clean(),\nunnamed_python_report.to_text(\"summary-affiliated-contract-unnamed-python.org\"),\nmissing_diary_report.is_clean(),\nmissing_diary_report.to_text(\"summary-affiliated-contract-missing-diary.org\"),\nmixed_language_report.is_clean(),\nmixed_language_report.to_text(\"summary-affiliated-contract-mixed-language.org\"),\nsuccess_report.is_clean(),\nsuccess_report.to_text(\"summary-affiliated-contract-success.org\"))"
 ---
-unnamed python clean: true
+unnamed python clean: false
+summary-affiliated-contract-unnamed-python.org:1:1: warning ORG044: contract `agent.rich-task.v1` assertion `task.has-named-python-block` failed in section `Task A`: expected exists, actual 0
 
 missing diary clean: false
 summary-affiliated-contract-missing-diary.org:1:1: warning ORG044: contract `agent.rich-task.v1` assertion `task.has-diary-sexp` failed in section `Task A`: expected count >= 1, actual 0

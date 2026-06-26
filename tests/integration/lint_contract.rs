@@ -108,6 +108,65 @@ count >= 1
 }
 
 #[test]
+fn lint_contract_binding_descendant_does_not_match_sibling_section() {
+    let document = Org::parse(
+        r#"* task-v1
+:PROPERTIES:
+:CONTRACT_ID: task.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+
+** acceptance-has-checklist
+:PROPERTIES:
+:ASSERT_ID: task.acceptance-has-checklist
+:SEVERITY: error
+:END:
+
+#+BEGIN_SRC org-contract
+(let ((acceptance
+       (headline :child-of $scope :summary (title "Acceptance"))))
+  (assert count >= 1
+    (and
+      (item :descendant-of acceptance)
+      (or
+        (= (summary checkbox) "off")
+        (= (summary checkbox) "on")
+        (= (summary checkbox) "trans")))))
+#+END_SRC
+"#,
+    )
+    .document();
+    let registry = parse_contracts_from_document(&document, None);
+    let report = lint_org_with_options(
+        r#"* TODO Task
+:PROPERTIES:
+:CONTRACT_ORG: task.v1
+:END:
+
+** Acceptance
+No checklist here.
+
+** Progress
+- [ ] This sibling checklist must not satisfy Acceptance.
+"#,
+        &LintOptions {
+            org_contract_registry: registry,
+            ..LintOptions::default()
+        },
+    );
+
+    assert_eq!(
+        report
+            .findings
+            .iter()
+            .map(|finding| finding.code)
+            .collect::<Vec<_>>(),
+        ["ORG044"]
+    );
+}
+
+#[test]
 fn lint_accepts_contract_org_when_assertion_query_matches() {
     let registry = contract_registry();
     let report = lint_org_with_options(
