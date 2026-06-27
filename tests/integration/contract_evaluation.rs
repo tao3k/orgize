@@ -553,6 +553,99 @@ fn cli_trace_resolves_org_link_contract_reference_relative_to_source_file() {
 }
 
 #[test]
+fn cli_trace_loads_registry_dependencies_declared_by_contract_source() {
+    let dir = test_dir("contract-trace-source-declared-registry-dependencies");
+    fs::create_dir_all(dir.join("contracts")).unwrap();
+    fs::create_dir_all(dir.join("templates")).unwrap();
+    fs::write(
+        dir.join("contracts").join("basic.org"),
+        r#"* basic-template-v1
+:PROPERTIES:
+:CONTRACT_ID: basic.template.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** has-heading
+:PROPERTIES:
+:ASSERT_ID: basic-template.has-heading
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (headline))
+#+END_SRC
+"#,
+    )
+    .unwrap();
+    fs::write(
+        dir.join("contracts").join("plan.org"),
+        r#":PROPERTIES:
+:CONTRACT_ORG: [[./basic.org][basic.template.v1]]
+:END:
+
+* agent-plan-v1
+:PROPERTIES:
+:CONTRACT_ID: agent.plan.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_KIND: org-elements
+:END:
+** has-evidence
+:PROPERTIES:
+:ASSERT_ID: plan.has-evidence
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (headline :child-of $scope :summary (title "Evidence")))
+#+END_SRC
+"#,
+    )
+    .unwrap();
+    fs::write(
+        dir.join("templates").join("plan.org"),
+        r#":PROPERTIES:
+:CONTRACT_ORG: [[../contracts/basic.org][basic.template.v1]]
+:END:
+
+* TODO Plan
+:PROPERTIES:
+:CONTRACT_ORG: [[../contracts/plan.org][agent.plan.v1]]
+:END:
+** Evidence
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args([
+            "contract",
+            "trace",
+            "--org-contract-registry",
+            "contracts/plan.org",
+            "templates/plan.org",
+        ])
+        .output()
+        .unwrap();
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("utf8 stdout");
+    assert!(
+        stdout.contains(r#""contractId": "basic.template.v1""#),
+        "{stdout}"
+    );
+    assert!(
+        stdout.contains(r#""contractId": "agent.plan.v1""#),
+        "{stdout}"
+    );
+    assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
+}
+
+#[test]
 fn cli_query_surface_outputs_agent_facing_json() {
     let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .args(["contract", "query-surface", "--json"])
