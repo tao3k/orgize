@@ -412,7 +412,7 @@ Task must include a replayable evidence link.
     .document();
     let evaluation = evaluate_org_contract_with_context(
         &document,
-        &contract,
+        contract,
         OrgContractEvaluationScope::document(),
         &OrgContractEvaluationContext::with_source_path("notes.org"),
     );

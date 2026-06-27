@@ -344,29 +344,30 @@ fn contract_org_property_scope_fixture_stays_in_millisecond_budget() {
     );
     let max_total = benchmark.benchmark.max_total.as_duration();
 
+    let contract_document = Org::parse(CONTRACT_ORG_SCOPE_CONTRACTS).document();
+    let registry = parse_contracts_from_document(&contract_document, None);
+    let notes_document = Org::parse(CONTRACT_ORG_SCOPE_NOTES).document();
+    let document_contract = registry
+        .resolve(&parse_contract_reference("document.scope.v1"))
+        .expect("document contract");
+    let document_binding_contract = registry
+        .resolve(&parse_contract_reference("document.contract-binding.v1"))
+        .expect("document binding contract");
+    let section_contract = registry
+        .resolve(&parse_contract_reference("section.scope.v1"))
+        .expect("section contract");
+    let override_contract = registry
+        .resolve(&parse_contract_reference("section.override-title.v1"))
+        .expect("override contract");
+    let task_a = &notes_document.sections[0];
+    let task_a_child = &task_a.subsections[1];
+    let task_b = &notes_document.sections[1];
+    let override_parent = &notes_document.sections[2];
+    let override_child = &override_parent.subsections[0];
+
     let (elapsed, evaluations) = (0..5)
         .map(|_| {
             let started_at = Instant::now();
-            let contract_document = Org::parse(CONTRACT_ORG_SCOPE_CONTRACTS).document();
-            let registry = parse_contracts_from_document(&contract_document, None);
-            let notes_document = Org::parse(CONTRACT_ORG_SCOPE_NOTES).document();
-            let document_contract = registry
-                .resolve(&parse_contract_reference("document.scope.v1"))
-                .expect("document contract");
-            let document_binding_contract = registry
-                .resolve(&parse_contract_reference("document.contract-binding.v1"))
-                .expect("document binding contract");
-            let section_contract = registry
-                .resolve(&parse_contract_reference("section.scope.v1"))
-                .expect("section contract");
-            let override_contract = registry
-                .resolve(&parse_contract_reference("section.override-title.v1"))
-                .expect("override contract");
-            let task_a = &notes_document.sections[0];
-            let task_a_child = &task_a.subsections[1];
-            let task_b = &notes_document.sections[1];
-            let override_parent = &notes_document.sections[2];
-            let override_child = &override_parent.subsections[0];
             let evaluations = vec![
                 evaluate_org_contract(
                     &notes_document,
