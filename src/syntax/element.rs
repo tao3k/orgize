@@ -9,7 +9,7 @@ use super::{
     combinator::GreenElement,
     comment::comment_node,
     diary_sexp::diary_sexp_node,
-    drawer::drawer_node,
+    drawer::{drawer_node, property_drawer_node},
     dyn_block::dyn_block_node,
     fixed_width::fixed_width_node,
     fn_def::fn_def_node,
@@ -123,7 +123,9 @@ pub(crate) fn element_node(input: Input) -> IResult<Input, GreenElement, ()> {
         // clock doesn't have affiliated keywords
         Some(b'C') if !has_affiliated_keyword => clock_node(input),
         Some(b'-') => rule_node(input).or_else(|_| list_node(input, element_node)),
-        Some(b':') => drawer_node(input, element_nodes).or_else(|_| fixed_width_node(input)),
+        Some(b':') => property_drawer_node(input)
+            .or_else(|_| drawer_node(input, element_nodes))
+            .or_else(|_| fixed_width_node(input)),
         Some(b'|') => org_table_node(input),
         Some(b'+') => table_el_node(input).or_else(|_| list_node(input, element_node)),
         Some(b'#') => block_node(input, element_nodes)

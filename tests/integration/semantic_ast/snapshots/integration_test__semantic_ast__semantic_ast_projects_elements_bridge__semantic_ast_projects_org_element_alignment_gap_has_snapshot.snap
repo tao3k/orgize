@@ -1,6 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge.rs
-assertion_line: 813
+assertion_line: 834
 expression: "serde_json::to_string_pretty(&payload).unwrap()"
 ---
 {
@@ -210,6 +210,7 @@ expression: "serde_json::to_string_pretty(&payload).unwrap()"
     ],
     "propertyKeys": [
       ":CUSTOM_ID",
+      ":GLOBAL",
       ":OWNER",
       ":anchor",
       ":arguments",

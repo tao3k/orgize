@@ -20,6 +20,7 @@ pub fn parse_contracts_from_document(
     source_path: Option<&Path>,
 ) -> OrgContractRegistry {
     let source_blocks = document.source_block_records();
+    let has_named_assertion_blocks = source_blocks.iter().any(is_named_assertion_block);
     let mut contracts = Vec::new();
     for (index, section) in document.sections.iter().enumerate() {
         collect_contract_sections(
@@ -27,6 +28,7 @@ pub fn parse_contracts_from_document(
             bounded_section_end(&document.sections, index, usize::MAX),
             &source_blocks,
             source_path,
+            has_named_assertion_blocks,
             &mut contracts,
         );
     }
@@ -82,9 +84,16 @@ fn collect_contract_sections(
     end: usize,
     source_blocks: &[SourceBlockRecord],
     source_path: Option<&Path>,
+    has_named_assertion_blocks: bool,
     contracts: &mut Vec<OrgContract>,
 ) {
-    if let Some(contract) = parse_contract_section(section, end, source_blocks, source_path) {
+    if let Some(contract) = parse_contract_section(
+        section,
+        end,
+        source_blocks,
+        source_path,
+        has_named_assertion_blocks,
+    ) {
         contracts.push(contract);
     }
     for (index, child) in section.subsections.iter().enumerate() {
@@ -93,6 +102,7 @@ fn collect_contract_sections(
             bounded_section_end(&section.subsections, index, end),
             source_blocks,
             source_path,
+            has_named_assertion_blocks,
             contracts,
         );
     }
@@ -103,6 +113,7 @@ fn parse_contract_section(
     end: usize,
     source_blocks: &[SourceBlockRecord],
     source_path: Option<&Path>,
+    has_named_assertion_blocks: bool,
 ) -> Option<OrgContract> {
     let id = section_property_value(&section.properties, CONTRACT_ID_PROPERTY)?;
     if id.trim().is_empty() {
@@ -122,15 +133,12 @@ fn parse_contract_section(
         .and_then(|value| OrgContractScope::parse(&value))
         .unwrap_or_default();
 
-    let mut assertions = Vec::new();
-    for (index, child) in section.subsections.iter().enumerate() {
-        collect_assertions(
-            child,
-            bounded_section_end(&section.subsections, index, end),
-            source_blocks,
-            &mut assertions,
-        );
-    }
+    let mut assertions = if has_named_assertion_blocks {
+        parse_named_assertions(&section_source_blocks(section, end, source_blocks))
+    } else {
+        Vec::new()
+    };
+    collect_assertions(section, end, source_blocks, &mut assertions);
 
     Some(OrgContract {
         id,
@@ -151,6 +159,7 @@ fn collect_assertions(
         assertions.push(assertion);
         return;
     }
+
     for (index, child) in section.subsections.iter().enumerate() {
         collect_assertions(
             child,
@@ -229,6 +238,68 @@ fn parse_assertion(
     })
 }
 
+fn parse_named_assertions(blocks: &[&SourceBlockRecord]) -> Vec<OrgContractAssertion> {
+    blocks
+        .iter()
+        .filter_map(|block| parse_named_assertion(block, blocks))
+        .collect()
+}
+
+fn is_named_assertion_block(block: &SourceBlockRecord) -> bool {
+    block_language_is(block, "org-contract")
+        && block.name.as_deref().map(str::trim).is_some_and(|name| {
+            !name.is_empty() && !name.ends_with(".message") && !name.ends_with(".fix")
+        })
+}
+
+fn parse_named_assertion(
+    block: &SourceBlockRecord,
+    blocks: &[&SourceBlockRecord],
+) -> Option<OrgContractAssertion> {
+    if !is_named_assertion_block(block) {
+        return None;
+    }
+
+    let id = block
+        .name
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())?;
+
+    let (bindings, query, expectation) = parse_org_contract_expression_block(&block.value)?;
+    let severity = block_parameter_value(block, ":severity")
+        .and_then(|value| parse_severity(&value))
+        .unwrap_or_default();
+    let message = named_block_value(blocks, &format!("{id}.message"), "jinja2");
+    let fix = named_block_value(blocks, &format!("{id}.fix"), "jinja2");
+
+    Some(OrgContractAssertion {
+        id: id.to_string(),
+        severity,
+        bindings,
+        query,
+        expectation,
+        message,
+        fix,
+        query_source: Some(block.source.clone()),
+        expect_source: Some(block.source.clone()),
+    })
+}
+
+fn named_block_value(blocks: &[&SourceBlockRecord], name: &str, language: &str) -> Option<String> {
+    blocks
+        .iter()
+        .find(|block| {
+            block_language_is(block, language)
+                && block
+                    .name
+                    .as_deref()
+                    .map(str::trim)
+                    .is_some_and(|block_name| block_name == name)
+        })
+        .map(|block| block.value.clone())
+}
+
 fn section_source_blocks<'a>(
     section: &Section<ParsedAnnotation>,
     end: usize,
@@ -237,12 +308,14 @@ fn section_source_blocks<'a>(
     let start = usize::from(section.ann.range.start());
     source_blocks
         .iter()
-        .filter(|record| {
-            matches!(record.kind, SourceBlockRecordKind::Block)
-                && (record.source.range_start as usize) >= start
-                && (record.source.range_end as usize) <= end
-        })
+        .filter(|record| source_block_in_range(record, start, end))
         .collect()
+}
+
+fn source_block_in_range(record: &SourceBlockRecord, start: usize, end: usize) -> bool {
+    matches!(record.kind, SourceBlockRecordKind::Block)
+        && (record.source.range_start as usize) >= start
+        && (record.source.range_end as usize) <= end
 }
 
 fn bounded_section_end(
@@ -261,14 +334,27 @@ fn section_start(section: &Section<ParsedAnnotation>) -> usize {
 }
 
 fn block_parameter_name(block: &SourceBlockRecord) -> Option<String> {
+    block_parameter_value(block, ":name")
+}
+
+fn block_parameter_value(block: &SourceBlockRecord, key: &str) -> Option<String> {
     let parameters = block.parameters.as_deref()?;
     let mut parts = parameters.split_whitespace();
     while let Some(part) = parts.next() {
-        if part == ":name" {
+        if part == key {
             return parts.next().map(str::to_string);
         }
     }
     None
+}
+
+fn block_language_is(block: &SourceBlockRecord, language: &str) -> bool {
+    block
+        .language
+        .as_deref()
+        .unwrap_or_default()
+        .trim()
+        .eq_ignore_ascii_case(language)
 }
 
 fn parse_selector_block(value: &str) -> Option<OrgContractQuery> {

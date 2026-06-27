@@ -686,7 +686,11 @@ Inline body.
             .category(OrgElementsIndexCategory::Element)
             .kind("property-drawer"),
     );
-    assert_eq!(property_drawers.len(), 1);
+    assert!(
+        property_drawers
+            .iter()
+            .any(|record| record.context == "document")
+    );
     assert!(property_drawers.iter().any(|record| {
         record.context == "headline"
             && record.summary.get("properties") == Some(&OrgElementsIndexSummaryValue::Integer(2))

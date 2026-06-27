@@ -69,9 +69,22 @@ impl SyntaxDocument {
     /// let properties = org.syntax_document().properties().unwrap();
     /// assert_eq!(properties.to_hash_map().len(), 1);
     /// assert_eq!(properties.get("ID").unwrap(), "20220718T085035.042592");
+    ///
+    /// let org = Org::parse(r#"#+TITLE: Complete Computing
+    /// :PROPERTIES:
+    /// :ID:       20220718T085035.042592
+    /// :END:
+    /// * Heading"#);
+    ///
+    /// let properties = org.syntax_document().properties().unwrap();
+    /// assert_eq!(properties.to_hash_map().len(), 1);
+    /// assert_eq!(properties.get("ID").unwrap(), "20220718T085035.042592");
     /// ```
     pub fn properties(&self) -> Option<PropertyDrawer> {
-        rowan::ast::support::child(&self.syntax)
+        rowan::ast::support::child(&self.syntax).or_else(|| {
+            self.section()
+                .and_then(|section| rowan::ast::support::child(&section.syntax))
+        })
     }
 }
 

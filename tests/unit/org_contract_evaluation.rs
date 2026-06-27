@@ -2,7 +2,7 @@ use crate::{
     Org,
     ast::{
         OrgContractAssertionStatus, OrgContractEvaluationContext, OrgContractEvaluationScope,
-        evaluate_org_contract_with_context, parse_contract_reference,
+        OrgContractSeverity, evaluate_org_contract_with_context, parse_contract_reference,
         parse_contracts_from_document,
     },
 };
@@ -352,6 +352,69 @@ fn query_level_or_matches_node_property_branches() {
         &contract,
         OrgContractEvaluationScope::document(),
         &OrgContractEvaluationContext::with_source_path("plans/agent-plan-example.org"),
+    );
+
+    assert_eq!(evaluation.assertions.len(), 1);
+    assert_eq!(
+        evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(evaluation.assertions[0].actual_count, 1);
+}
+
+#[test]
+fn named_org_contract_blocks_define_assertions_without_heading_properties() {
+    let contract_source = r#"
+* Evidence link contract
+:PROPERTIES:
+:CONTRACT_ID: task.evidence-link.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+
+#+NAME: task.evidence-has-link
+#+BEGIN_SRC org-contract :severity warning
+(assert count >= 1
+  (headline :summary (title "Task")))
+#+END_SRC
+
+#+NAME: task.evidence-has-link.message
+#+BEGIN_SRC jinja2
+Task must include a replayable evidence link.
+#+END_SRC
+"#;
+    let contract_document = Org::parse(contract_source).document();
+    let source_blocks = contract_document.source_block_records();
+    assert_eq!(
+        source_blocks[0].name.as_deref(),
+        Some("task.evidence-has-link")
+    );
+
+    let registry = parse_contracts_from_document(&contract_document, None);
+    let contract = registry.contracts.first().expect("contract parsed");
+    assert_eq!(contract.assertions.len(), 1);
+    assert_eq!(contract.assertions[0].id, "task.evidence-has-link");
+    assert_eq!(
+        contract.assertions[0].severity,
+        OrgContractSeverity::Warning
+    );
+    assert_eq!(
+        contract.assertions[0].message.as_deref().map(str::trim),
+        Some("Task must include a replayable evidence link.")
+    );
+
+    let document = Org::parse(
+        r#"
+* Task
+[[https://example.test][evidence]]
+"#,
+    )
+    .document();
+    let evaluation = evaluate_org_contract_with_context(
+        &document,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &OrgContractEvaluationContext::with_source_path("notes.org"),
     );
 
     assert_eq!(evaluation.assertions.len(), 1);
