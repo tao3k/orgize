@@ -1,7 +1,6 @@
 id = "contract-org-property-scope"
 title = "CONTRACT_ORG property drawer scope stays bounded"
-policy_ids = ["ORGIZE-CONTRACT-TRACE-SCENARIO"]
+policy_ids = ["ORGIZE-AGENT-CONTRACT-TRACE-001"]
 agent_goal = "Keep contract trace behavior stable for document-level CONTRACT_ORG property drawers, heading-level overrides, and metadata keyword rejection."
 inputs = "inputs"
 expected = "expected"
-

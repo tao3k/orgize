@@ -1,6 +1,6 @@
 id = "org-query-assertion"
 title = "Org query assertion contract stays bounded"
-policy_ids = ["ORGIZE-LINT-CONTRACT-SCENARIO"]
+policy_ids = ["ORGIZE-AGENT-LINT-CONTRACT-001"]
 agent_goal = "Keep the lint contract query assertion scenario bounded before changing Org contract behavior."
 inputs = "inputs"
 expected = "expected"
