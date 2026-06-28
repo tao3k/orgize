@@ -576,7 +576,12 @@ fn run_memory_search(
     }
     let root = last_existing_path(args).unwrap_or_else(|| PathBuf::from("."));
     let walk_config = walk_config_with_cli_excludes(walk_config, args);
-    let session = option_value(args, "--session");
+    let explicit_session = option_value(args, "--session");
+    let current_session = explicit_session
+        .is_none()
+        .then(current_agent_session_id)
+        .flatten();
+    let session = explicit_session.or(current_session.as_deref());
     let plan = option_value(args, "--plan");
     let terms = option_values(args, "--term");
     let options = memory_search_options(args, session, plan, &terms);
@@ -617,6 +622,27 @@ fn memory_search_options(
         options.root_only = true;
     }
     options
+}
+
+fn current_agent_session_id() -> Option<String> {
+    env_value("CODEX_THREAD_ID")
+        .or_else(|| env_value("CLAUDE_CODE_SESSION_ID"))
+        .or_else(|| env_value("CLAUDE_CODE_REMOTE_SESSION_ID"))
+        .or_else(|| env_value("AGENT_SESSION_ID"))
+        .or_else(|| env_value("SESSION_ID"))
+}
+
+fn env_value(name: &str) -> Option<String> {
+    std::env::var(name).ok().and_then(non_empty_value)
+}
+
+fn non_empty_value(value: String) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
 }
 
 fn print_memory_search(
@@ -677,7 +703,7 @@ fn render_memory_record(record: &OrgMemorySearchRecord) -> String {
     let todo = record.todo.as_deref().unwrap_or("-");
     let session = record
         .properties
-        .get("PLAN_SESSION")
+        .get("SESSION_ID")
         .map(String::as_str)
         .unwrap_or("-");
     let plan = record

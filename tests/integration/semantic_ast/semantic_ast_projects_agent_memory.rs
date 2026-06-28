@@ -287,7 +287,7 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
                  :CONTRACT_ORG: agent.plan.v1\n\
                  :ID: {plan_id}\n\
                  :PLAN_ID: {plan_id}\n\
-                 :PLAN_SESSION: session-a\n\
+                 :SESSION_ID: session-a\n\
                  :OBJECTIVE: Stabilize memory engine recall flow {index}\n\
                  :NEXT_ACTION: continue checkpoint {index}\n\
                  :END:\n\

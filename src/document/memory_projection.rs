@@ -382,7 +382,7 @@ fn memory_search_record_matches_scope(
     options.session.as_deref().is_none_or(|expected| {
         record
             .properties
-            .get("PLAN_SESSION")
+            .get("SESSION_ID")
             .is_some_and(|value| value == expected)
     }) && options.plan.as_deref().is_none_or(|expected| {
         record
@@ -429,7 +429,7 @@ fn memory_record_matches_scope(record: &MemoryRecord, options: &OrgMemorySearchO
     options
         .session
         .as_deref()
-        .is_none_or(|expected| memory_record_property_eq(record, "PLAN_SESSION", expected))
+        .is_none_or(|expected| memory_record_property_eq(record, "SESSION_ID", expected))
         && options
             .plan
             .as_deref()
