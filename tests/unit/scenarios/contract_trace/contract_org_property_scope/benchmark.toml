@@ -6,6 +6,10 @@ observed_total = "5ms"
 regression_budget = "10ms"
 memory_budget_bytes = 8388608
 observed_memory_bytes = 4194304
+route_source = "parser-scenario"
+max_provider_process_count = 0
+max_stdout_bytes = 8192
+fallback_reason = "none"
 target_rationale = "Small Orgize contract evaluation fixture should stay bounded in the library path while validating CONTRACT_ORG property drawer scope semantics."
 
 [observed_timings]

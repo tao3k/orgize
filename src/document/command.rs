@@ -1060,7 +1060,7 @@ fn print_query_no_hit(language: DocumentLanguage, terms: &[String], root: &Path)
         shell_arg(first_term)
     };
     println!(
-        "|next search-fzf=\"{prefix} search fzf {first_term_arg} --workspace {root_arg} --view seeds\""
+        "|next search-lexical=\"{prefix} search lexical {first_term_arg} --workspace {root_arg} --view seeds\""
     );
     println!(
         "|next query-single-term=\"{prefix} query --term {first_term_arg} --workspace {root_arg} --view metadata\""
