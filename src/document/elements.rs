@@ -67,9 +67,134 @@ pub(super) fn query_project_with_config(
         }
         let source =
             fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
+        if document_query_lexical_prefilter_miss(language, &path, &source, terms, fields) {
+            continue;
+        }
         facts.extend(index_source(language, &path, &source)?);
     }
     Ok(facts)
+}
+
+pub(crate) fn document_query_lexical_prefilter_miss(
+    language: DocumentLanguage,
+    path: &Path,
+    source: &str,
+    terms: &[String],
+    fields: &[String],
+) -> bool {
+    if terms.is_empty() && fields.is_empty() {
+        return false;
+    }
+
+    let haystack = document_query_lexical_haystack(path, source);
+    for term in terms {
+        for needle in term
+            .split_whitespace()
+            .map(str::trim)
+            .filter(|part| !part.is_empty())
+            .map(str::to_ascii_lowercase)
+        {
+            if document_query_parser_only_term(language, &needle) {
+                continue;
+            }
+            if !haystack.contains(&needle) {
+                return true;
+            }
+        }
+    }
+
+    for field in fields {
+        let Some((key, value)) = field.split_once('=') else {
+            continue;
+        };
+        if !key.trim().eq_ignore_ascii_case("text") {
+            continue;
+        }
+        let value = value.trim().to_ascii_lowercase();
+        if !value.is_empty() && !haystack.contains(&value) {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn document_query_lexical_haystack(path: &Path, source: &str) -> String {
+    let mut haystack = String::with_capacity(source.len() + path.as_os_str().len() + 1);
+    haystack.push_str(&source.to_ascii_lowercase());
+    haystack.push('\n');
+    haystack.push_str(&path.display().to_string().to_ascii_lowercase());
+    haystack
+}
+
+fn document_query_parser_only_term(language: DocumentLanguage, term: &str) -> bool {
+    matches!(
+        term,
+        "heading"
+            | "task"
+            | "paragraph"
+            | "property"
+            | "planning"
+            | "table"
+            | "block"
+            | "list"
+            | "listitem"
+            | "checklistitem"
+            | "link"
+            | "image"
+            | "headline"
+            | "propertydrawer"
+            | "syntaxplanning"
+            | "orgtable"
+            | "sourceblock"
+            | "syntaxlist"
+            | "syntaxlistitem"
+            | "syntaxlink"
+            | "level"
+            | "title"
+            | "todo"
+            | "todotype"
+            | "priority"
+            | "tag"
+            | "text"
+            | "key"
+            | "value"
+            | "scheduled"
+            | "deadline"
+            | "closed"
+            | "header"
+            | "kind"
+            | "lang"
+            | "backend"
+            | "listkind"
+            | "descriptive"
+            | "bullet"
+            | "indent"
+            | "counter"
+            | "checkbox"
+            | "checked"
+            | "target"
+            | "description"
+            | "code"
+            | "start"
+            | "open"
+            | "true"
+            | "false"
+            | "source"
+            | "export"
+            | "ordered"
+            | "unordered"
+    ) || matches!(language, DocumentLanguage::Markdown)
+        && matches!(
+            term,
+            "codeblock"
+                | "taskitem"
+                | "frontmatter"
+                | "thematicbreak"
+                | "markdownheading"
+                | "markdownparagraph"
+        )
+        || matches!(language, DocumentLanguage::Markdown) && term.starts_with("nodevalue::")
 }
 
 fn index_source(

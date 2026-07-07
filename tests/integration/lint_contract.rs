@@ -441,6 +441,42 @@ fn lint_cli_loads_org_contract_registry_file_with_snapshot() {
 }
 
 #[test]
+fn lint_cli_builds_org_contract_registry_from_directory_inputs() {
+    let dir = test_dir("lint-contract-directory-registry");
+    let contracts_dir = dir.join("contracts");
+    fs::create_dir_all(&contracts_dir).unwrap();
+    fs::write(contracts_dir.join("contract.org"), contract_source()).unwrap();
+    fs::write(
+        contracts_dir.join("notes.org"),
+        r#"* Task A
+:PROPERTIES:
+:CONTRACT_ORG: [[./contract.org][agent.task.v1]]
+:END:
+** Context
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&dir)
+        .args(["lint", "--format", "text", "contracts"])
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+
+    assert_eq!(output.status.code(), Some(1), "{stdout}\n{stderr}");
+    assert!(
+        stdout.contains("Task `Task A` must contain a Goal section."),
+        "{stdout}\n{stderr}"
+    );
+    assert!(
+        !stdout.contains("was not found in the loaded Org contract registry"),
+        "{stdout}\n{stderr}"
+    );
+}
+
+#[test]
 fn lint_accepts_org_elements_selector_contract_query_with_snapshot() {
     let document = Org::parse(selector_contract_source()).document();
     let registry = parse_contracts_from_document(&document, None);

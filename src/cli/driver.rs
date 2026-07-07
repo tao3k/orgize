@@ -1015,8 +1015,15 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
         priority_profile_from_flags(priority_highest, priority_lowest, priority_default)?;
     let property_schema_registry =
         load_property_schema_registries(&property_schema_registry_paths)?;
-    let org_contract_registry =
-        super::org_contract_registry::load_org_contract_registries(&org_contract_registry_paths)?;
+    let lint_paths = if paths.is_empty() {
+        Vec::new()
+    } else {
+        collect_org_paths(&paths)?
+    };
+    let org_contract_registry = super::org_contract_registry::load_org_contract_registry_for_lint(
+        &org_contract_registry_paths,
+        &lint_paths,
+    )?;
     let base_lint_options = LintOptions {
         priority_profile,
         property_schema_registry,
@@ -1037,7 +1044,7 @@ fn run_lint(args: Vec<String>) -> Result<ExitCode, String> {
             report,
         });
     } else {
-        for path in collect_org_paths(&paths)? {
+        for path in lint_paths {
             let display_path = display_path(&path);
             let mut source =
                 fs::read_to_string(&path).map_err(|error| format_path_error(&path, error))?;

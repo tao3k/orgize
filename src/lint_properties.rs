@@ -196,6 +196,9 @@ fn push_duplicate_property_findings(
         if definitions.len() < 2 {
             continue;
         }
+        if is_repeatable_property_key(&key) {
+            continue;
+        }
         let duplicate = definitions[1];
         findings.push(LintFinding {
             code: "ORG012",
@@ -207,6 +210,10 @@ fn push_duplicate_property_findings(
             location: location_for_range(source, duplicate.ann.range),
         });
     }
+}
+
+fn is_repeatable_property_key(key: &str) -> bool {
+    matches!(key.to_ascii_uppercase().as_str(), "CONTRACT_ORG")
 }
 
 fn common_property_typo(key: &str) -> Option<&'static str> {

@@ -1,0 +1,15 @@
+id = "document-query-lexical-prefilter-warm-path"
+title = "Org document query uses lexical prefilter before parser indexing"
+policy_ids = [
+  "ORGIZE-AGENT-ASP-PERF-SUBCOMMAND-QUERY-LEXICAL-PREFILTER-001",
+]
+agent_goal = "Keep project-wide `asp org query --term <literal> --view metadata` on the document lexical prefilter path so no-hit metadata queries do not parse every Org document before filtering."
+reference_repositories = ["tao3k/agent-semantic-protocols"]
+reference_patterns = [
+  "asp org query --term document_query_absent_fixture --view metadata .",
+  "query_project_with_config",
+  "document_query_lexical_prefilter_miss",
+]
+inputs = "inputs"
+expected = "expected"
+command = "orgize::document::query_project_with_config(DocumentLanguage::Org, terms=[document_query_absent_fixture])"

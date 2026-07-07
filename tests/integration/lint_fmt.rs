@@ -81,6 +81,21 @@ fn lint_reports_semantic_and_uniqueness_findings_as_json_snapshot() {
 }
 
 #[test]
+fn lint_allows_repeatable_contract_org_properties() {
+    let report = lint_org(
+        r#"* ASP Org
+:PROPERTIES:
+:CONTRACT_ORG: [[../contracts/skill.v1.org][skill.v1]]
+:CONTRACT_ORG: [[../contracts/asp.skill.v1.org][asp.skill.v1]]
+:END:
+"#,
+    );
+    let rendered = report.to_text("fixture.org");
+
+    assert!(!rendered.contains("ORG012"), "{rendered}");
+}
+
+#[test]
 fn lint_checks_include_paths_with_snapshot() {
     let dir = test_dir("lint-include-paths");
     fs::create_dir_all(dir.join("folder")).unwrap();

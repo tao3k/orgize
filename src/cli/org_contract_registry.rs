@@ -24,6 +24,20 @@ pub(super) fn load_org_contract_registries(
     Ok(loader.registry)
 }
 
+pub(super) fn load_org_contract_registry_for_lint(
+    explicit_registry_paths: &[PathBuf],
+    lint_source_paths: &[PathBuf],
+) -> Result<OrgContractRegistry, String> {
+    let mut loader = OrgContractRegistryLoader::default();
+    for path in explicit_registry_paths {
+        loader.load_path(path)?;
+    }
+    for path in lint_source_paths {
+        loader.load_path(path)?;
+    }
+    Ok(loader.registry)
+}
+
 #[derive(Default)]
 struct OrgContractRegistryLoader {
     registry: OrgContractRegistry,
