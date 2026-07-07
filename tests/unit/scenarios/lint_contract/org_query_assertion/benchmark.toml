@@ -1,7 +1,12 @@
 harness = "libtest"
 test = "lint_contract::lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget"
+phase = "cold"
+route_source = "lint-contract"
 target_total = "10ms"
 max_total = "25ms"
+max_provider_process_count = 0
+max_stdout_bytes = 4096
+fallback_reason = "none"
 observed_total = "10ms"
 regression_budget = "10ms"
 memory_budget_bytes = 8388608

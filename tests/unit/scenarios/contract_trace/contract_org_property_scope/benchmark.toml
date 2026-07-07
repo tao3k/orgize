@@ -1,7 +1,12 @@
 harness = "libtest"
 test = "contract_evaluation::contract_org_property_scope_fixture_stays_in_millisecond_budget"
+phase = "cold"
+route_source = "contract-trace"
 target_total = "5ms"
 max_total = "25ms"
+max_provider_process_count = 0
+max_stdout_bytes = 4096
+fallback_reason = "none"
 observed_total = "5ms"
 regression_budget = "10ms"
 memory_budget_bytes = 8388608

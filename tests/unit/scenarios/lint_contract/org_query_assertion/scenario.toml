@@ -2,5 +2,11 @@ id = "org-query-assertion"
 title = "Org query assertion contract stays bounded"
 policy_ids = ["ORGIZE-AGENT-LINT-CONTRACT-001"]
 agent_goal = "Keep the lint contract query assertion scenario bounded before changing Org contract behavior."
+reference_repositories = ["tao3k/agent-semantic-protocols"]
+reference_patterns = [
+  "asp org lint contract",
+  "org query assertion",
+  "lint_contract_org_query_assertion",
+]
 inputs = "inputs"
 expected = "expected"

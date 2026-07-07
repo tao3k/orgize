@@ -42,14 +42,14 @@ tracing = { version = "0.1", optional = true }
 [dev-dependencies]
 criterion = "0.8"
 insta = "1"
-rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "715c45335784bdd54110508cd4837663b913a3bc", version = "0.1" }
+rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "8f23f6cd211c02f4b0146d842025f3c639fcf1cc", version = "0.1" }
 slugify = "0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = { version = "0.3", features = ["fmt"] }
 
 [build-dependencies]
 orgize-build-support = { path = "build-support" }
-rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "715c45335784bdd54110508cd4837663b913a3bc", version = "0.1" }
+rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "8f23f6cd211c02f4b0146d842025f3c639fcf1cc", version = "0.1" }
 
 [[bench]]
 name = "parse"

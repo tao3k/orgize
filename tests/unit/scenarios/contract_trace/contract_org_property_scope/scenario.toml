@@ -2,5 +2,11 @@ id = "contract-org-property-scope"
 title = "CONTRACT_ORG property drawer scope stays bounded"
 policy_ids = ["ORGIZE-AGENT-CONTRACT-TRACE-001"]
 agent_goal = "Keep contract trace behavior stable for document-level CONTRACT_ORG property drawers, heading-level overrides, and metadata keyword rejection."
+reference_repositories = ["tao3k/agent-semantic-protocols"]
+reference_patterns = [
+  "asp org contract trace",
+  "CONTRACT_ORG property drawer",
+  "contract_org_property_scope",
+]
 inputs = "inputs"
 expected = "expected"

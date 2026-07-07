@@ -1,7 +1,12 @@
 harness = "libtest"
 test = "document_query_lexical_prefilter_warm_path_stays_inside_scenario_gate"
+phase = "cold"
+route_source = "lexical-prefilter"
 target_total = "5ms"
 max_total = "45ms"
+max_provider_process_count = 0
+max_stdout_bytes = 2048
+fallback_reason = "none"
 observed_total = "1us"
 regression_budget = "40ms"
 memory_budget_bytes = 8388608
