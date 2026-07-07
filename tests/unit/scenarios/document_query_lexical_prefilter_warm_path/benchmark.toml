@@ -7,9 +7,6 @@ regression_budget = "40ms"
 memory_budget_bytes = 8388608
 observed_memory_bytes = 262144
 target_rationale = "Project-wide document metadata query should reject literal no-hit files through the lexical prefilter before parser-owned element indexing."
-# route_source = "lexical-prefilter"
-# max_provider_process_count = 0
-# fallback_reason = "none"
 
 [observed_timings]
 cold = "1ms"

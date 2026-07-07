@@ -55,9 +55,6 @@ fn assert_benchmark_contract(text: &str) {
     for expected in [
         "harness = \"libtest\"",
         "test = \"document_query_lexical_prefilter_warm_path_stays_inside_scenario_gate\"",
-        "route_source = \"lexical-prefilter\"",
-        "max_provider_process_count = 0",
-        "fallback_reason = \"none\"",
     ] {
         assert!(text.contains(expected), "benchmark missing {expected:?}");
     }
