@@ -64,6 +64,28 @@ pub struct OrgContractRegistry {
     pub contracts: Vec<OrgContract>,
 }
 
+/// Stable diagnostic emitted while validating an Org contract source file.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractSourceDiagnostic {
+    pub code: &'static str,
+    pub path: Option<String>,
+    pub contract_id: Option<String>,
+    pub message: String,
+}
+
+/// Parsed contracts together with source-level diagnostics.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractSourceValidation {
+    pub registry: OrgContractRegistry,
+    pub diagnostics: Vec<OrgContractSourceDiagnostic>,
+}
+
+impl OrgContractSourceValidation {
+    pub fn is_valid(&self) -> bool {
+        self.diagnostics.is_empty()
+    }
+}
+
 impl OrgContractRegistry {
     pub fn new(contracts: impl IntoIterator<Item = OrgContract>) -> Self {
         Self {
@@ -85,6 +107,19 @@ pub struct OrgContractReference {
     pub raw: String,
     pub path: Option<String>,
     pub contract_id: Option<String>,
+}
+
+impl OrgContractReference {
+    /// Returns whether this reference is an Org link with both a file path and contract id.
+    pub fn is_path_qualified_org_link(&self) -> bool {
+        self.raw.starts_with("[[")
+            && self.raw.ends_with("]]")
+            && self.path.as_ref().is_some_and(|path| !path.is_empty())
+            && self
+                .contract_id
+                .as_ref()
+                .is_some_and(|contract_id| !contract_id.is_empty())
+    }
 }
 
 impl OrgContractReference {
@@ -306,6 +341,7 @@ pub struct OrgContractQuery {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OrgContractEvaluationContext {
     pub source_path: Option<PathBuf>,
+    pub metadata_keys: Vec<String>,
     /// Effective path scope derived from the native Org DIR property.
     ///
     /// Contract evaluation resolves DIR values as path syntax, including Org
@@ -319,6 +355,7 @@ impl OrgContractEvaluationContext {
     pub fn with_source_path(path: impl Into<PathBuf>) -> Self {
         Self {
             source_path: Some(path.into()),
+            metadata_keys: Vec::new(),
             dir_scope: None,
         }
     }
@@ -340,6 +377,7 @@ impl OrgContractEvaluationContext {
 /// Predicate over host-owned document context rather than an Org AST element.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OrgContractDocumentPredicate {
+    MetadataExists(String),
     SourcePathEquals(String),
     SourcePathContains(String),
     SourceFilenameEquals(String),
@@ -351,6 +389,10 @@ pub enum OrgContractDocumentPredicate {
 impl OrgContractDocumentPredicate {
     pub fn matches_context(&self, context: &OrgContractEvaluationContext) -> bool {
         match self {
+            Self::MetadataExists(expected) => context
+                .metadata_keys
+                .iter()
+                .any(|key| key.eq_ignore_ascii_case(expected)),
             Self::SourcePathEquals(expected) => context
                 .source_path()
                 .map(path_to_string)

@@ -35,6 +35,261 @@ pub fn parse_contracts_from_document(
     OrgContractRegistry::new(contracts)
 }
 
+/// Parses and validates a file that is explicitly registered as an Org contract source.
+///
+/// Unlike `parse_contracts_from_document`, this entry point never treats an empty
+/// registry or a contract without assertions as a successful parse. Consumers such
+/// as WASM deployment gates should use this function for `[contracts].sources`.
+pub fn validate_contract_source(
+    document: &Document<ParsedAnnotation>,
+    source_path: Option<&Path>,
+) -> super::OrgContractSourceValidation {
+    let registry = parse_contracts_from_document(document, source_path);
+    let path = source_path.map(|path| path.display().to_string());
+    let display_path = path.as_deref().unwrap_or("<memory>");
+    let mut diagnostics = Vec::new();
+    let source_blocks = document.source_block_records();
+    let has_named_assertion_blocks = source_blocks.iter().any(is_named_assertion_block);
+
+    for (index, section) in document.sections.iter().enumerate() {
+        collect_contract_source_diagnostics(
+            section,
+            bounded_section_end(&document.sections, index, usize::MAX),
+            &source_blocks,
+            has_named_assertion_blocks,
+            path.as_deref(),
+            &mut diagnostics,
+        );
+    }
+
+    if registry.contracts.is_empty() {
+        diagnostics.push(super::OrgContractSourceDiagnostic {
+            code: "CONTRACT-E001",
+            path: path.clone(),
+            contract_id: None,
+            message: format!(
+                "{display_path}: contract source contains no valid CONTRACT_ID definitions"
+            ),
+        });
+    }
+
+    let mut origins = std::collections::BTreeSet::new();
+    for contract in &registry.contracts {
+        if !origins.insert(contract.id.as_str()) {
+            diagnostics.push(super::OrgContractSourceDiagnostic {
+                code: "CONTRACT-E002",
+                path: path.clone(),
+                contract_id: Some(contract.id.clone()),
+                message: format!(
+                    "{display_path}: duplicate CONTRACT_ID `{}` in contract source",
+                    contract.id
+                ),
+            });
+        }
+        if contract.assertions.is_empty() {
+            diagnostics.push(super::OrgContractSourceDiagnostic {
+                code: "CONTRACT-E003",
+                path: path.clone(),
+                contract_id: Some(contract.id.clone()),
+                message: format!(
+                    "{display_path}: CONTRACT_ID `{}` contains no valid assertions",
+                    contract.id
+                ),
+            });
+        }
+    }
+
+    super::OrgContractSourceValidation {
+        registry,
+        diagnostics,
+    }
+}
+
+fn collect_contract_source_diagnostics(
+    section: &Section<ParsedAnnotation>,
+    end: usize,
+    source_blocks: &[SourceBlockRecord],
+    has_named_assertion_blocks: bool,
+    path: Option<&str>,
+    diagnostics: &mut Vec<super::OrgContractSourceDiagnostic>,
+) {
+    let contract_id = section_property_value(&section.properties, CONTRACT_ID_PROPERTY);
+    let contract_kind = section_property_value(&section.properties, CONTRACT_KIND_PROPERTY);
+    let contract_scope = section_property_value(&section.properties, CONTRACT_SCOPE_PROPERTY);
+    let contract_alias = section_property_value(&section.properties, CONTRACT_ALIAS_PROPERTY);
+    let is_contract_section = contract_id.is_some()
+        || contract_kind.is_some()
+        || contract_scope.is_some()
+        || contract_alias.is_some();
+
+    if is_contract_section {
+        let normalized_id = contract_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
+        if normalized_id.is_none() {
+            push_contract_source_diagnostic(
+                diagnostics,
+                "CONTRACT-E004",
+                path,
+                None,
+                "contract section is missing a non-empty CONTRACT_ID",
+            );
+        }
+        if let Some(kind) = contract_kind.as_deref()
+            && OrgContractKind::parse(kind).is_none()
+        {
+            push_contract_source_diagnostic(
+                diagnostics,
+                "CONTRACT-E005",
+                path,
+                normalized_id,
+                format!(
+                    "CONTRACT_ID uses unsupported CONTRACT_KIND `{}`",
+                    kind.trim()
+                ),
+            );
+        }
+        if let Some(scope) = contract_scope.as_deref()
+            && OrgContractScope::parse(scope).is_none()
+        {
+            push_contract_source_diagnostic(
+                diagnostics,
+                "CONTRACT-E006",
+                path,
+                normalized_id,
+                format!(
+                    "CONTRACT_ID uses unsupported CONTRACT_SCOPE `{}`",
+                    scope.trim()
+                ),
+            );
+        }
+        collect_assertion_source_diagnostics(
+            section,
+            end,
+            source_blocks,
+            has_named_assertion_blocks,
+            normalized_id,
+            path,
+            diagnostics,
+        );
+    }
+
+    for (index, child) in section.subsections.iter().enumerate() {
+        collect_contract_source_diagnostics(
+            child,
+            bounded_section_end(&section.subsections, index, end),
+            source_blocks,
+            has_named_assertion_blocks,
+            path,
+            diagnostics,
+        );
+    }
+}
+
+fn collect_assertion_source_diagnostics(
+    section: &Section<ParsedAnnotation>,
+    end: usize,
+    source_blocks: &[SourceBlockRecord],
+    has_named_assertion_blocks: bool,
+    contract_id: Option<&str>,
+    path: Option<&str>,
+    diagnostics: &mut Vec<super::OrgContractSourceDiagnostic>,
+) {
+    let direct_end = section
+        .subsections
+        .first()
+        .map(section_start)
+        .unwrap_or(end);
+    let direct_blocks = section_source_blocks(section, direct_end, source_blocks);
+    let assertion_id = section_property_value(&section.properties, ASSERT_ID_PROPERTY);
+    let assertion_severity = section_property_value(&section.properties, ASSERT_SEVERITY_PROPERTY);
+    let has_unnamed_query = direct_blocks.iter().any(|block| {
+        let language = block.language.as_deref().unwrap_or_default().trim();
+        let is_query = language.eq_ignore_ascii_case("org-elements-query")
+            || language.eq_ignore_ascii_case("org-elements-query-expr")
+            || language.eq_ignore_ascii_case("org-elements-expr")
+            || language.eq_ignore_ascii_case("org-elements-selector")
+            || language.eq_ignore_ascii_case("org-contract");
+        is_query && (!has_named_assertion_blocks || !is_named_assertion_block(block))
+    });
+    let is_assertion_section =
+        assertion_id.is_some() || assertion_severity.is_some() || has_unnamed_query;
+
+    if is_assertion_section {
+        let normalized_assertion_id = assertion_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
+        if normalized_assertion_id.is_none() {
+            push_contract_source_diagnostic(
+                diagnostics,
+                "CONTRACT-E007",
+                path,
+                contract_id,
+                "assertion section is missing a non-empty ASSERT_ID",
+            );
+        }
+        if let Some(severity) = assertion_severity.as_deref()
+            && parse_severity(severity).is_none()
+        {
+            push_contract_source_diagnostic(
+                diagnostics,
+                "CONTRACT-E008",
+                path,
+                contract_id,
+                format!(
+                    "ASSERT_ID uses unsupported ASSERT_SEVERITY `{}`",
+                    severity.trim()
+                ),
+            );
+        }
+        if normalized_assertion_id.is_some()
+            && parse_assertion(section, direct_end, source_blocks).is_none()
+        {
+            push_contract_source_diagnostic(
+                diagnostics,
+                "CONTRACT-E009",
+                path,
+                contract_id,
+                format!(
+                    "ASSERT_ID `{}` has no valid contract query",
+                    normalized_assertion_id.unwrap_or_default()
+                ),
+            );
+        }
+    }
+
+    for (index, child) in section.subsections.iter().enumerate() {
+        collect_assertion_source_diagnostics(
+            child,
+            bounded_section_end(&section.subsections, index, end),
+            source_blocks,
+            has_named_assertion_blocks,
+            contract_id,
+            path,
+            diagnostics,
+        );
+    }
+}
+
+fn push_contract_source_diagnostic(
+    diagnostics: &mut Vec<super::OrgContractSourceDiagnostic>,
+    code: &'static str,
+    path: Option<&str>,
+    contract_id: Option<&str>,
+    message: impl Into<String>,
+) {
+    let message = message.into();
+    let display_path = path.unwrap_or("<memory>");
+    diagnostics.push(super::OrgContractSourceDiagnostic {
+        code,
+        path: path.map(str::to_string),
+        contract_id: contract_id.map(str::to_string),
+        message: format!("{display_path}: {message}"),
+    });
+}
+
 /// Parses a `CONTRACT_ORG` property/keyword value.
 pub fn parse_contract_reference(value: &str) -> OrgContractReference {
     let raw = value.trim().to_string();
@@ -77,6 +332,44 @@ pub fn parse_contract_reference(value: &str) -> OrgContractReference {
         path: None,
         contract_id: Some(normalized),
     }
+}
+
+/// Parses a `CONTRACT_ORG` value and resolves a relative file target from its owning Org file.
+pub fn parse_contract_reference_from_source(
+    value: &str,
+    source_path: Option<&Path>,
+) -> OrgContractReference {
+    let mut reference = parse_contract_reference(value);
+    let Some(path) = reference.path.as_deref() else {
+        return reference;
+    };
+    let path = Path::new(path);
+    if path.is_absolute() {
+        return reference;
+    }
+    let Some(parent) = source_path.and_then(Path::parent) else {
+        return reference;
+    };
+    reference.path = Some(normalize_lexical_path(&parent.join(path)));
+    reference
+}
+
+fn normalize_lexical_path(path: &Path) -> String {
+    let mut components = Vec::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                if components.last().is_some_and(|component| component != "..") {
+                    components.pop();
+                } else {
+                    components.push("..".into());
+                }
+            }
+            component => components.push(component.as_os_str().to_os_string()),
+        }
+    }
+    normalize_path(&components.iter().collect::<std::path::PathBuf>())
 }
 
 fn collect_contract_sections(
@@ -359,6 +652,14 @@ fn block_language_is(block: &SourceBlockRecord, language: &str) -> bool {
 
 fn parse_selector_block(value: &str) -> Option<OrgContractQuery> {
     let selector = OrgElementSelector::parse_plist(value.trim()).ok()?;
+    if selector.element_type == crate::ast::OrgElementsIndexKind::new("keyword") {
+        return Some(OrgContractQuery {
+            document_predicates: vec![crate::ast::OrgContractDocumentPredicate::MetadataExists(
+                selector.name?,
+            )],
+            ..OrgContractQuery::default()
+        });
+    }
     let mut query = OrgContractQuery {
         category: Some(OrgElementsIndexCategory::Element),
         kind: Some(selector.element_type),

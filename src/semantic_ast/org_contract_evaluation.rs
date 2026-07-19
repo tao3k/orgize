@@ -8,10 +8,11 @@ use std::{
 };
 
 use super::{
-    OrgContract, OrgContractAssertion, OrgContractAssertionEvaluation, OrgContractAssertionStatus,
-    OrgContractDocumentPredicate, OrgContractEvaluation, OrgContractEvaluationContext,
-    OrgContractEvaluationScope, OrgContractQuery, OrgContractRelativeScope, OrgElementGraph,
-    OrgElementId, OrgElementsIndexQuery, ParsedAnnotation, ParsedAst, Property, Section,
+    AstRef, OrgContract, OrgContractAssertion, OrgContractAssertionEvaluation,
+    OrgContractAssertionStatus, OrgContractDocumentPredicate, OrgContractEvaluation,
+    OrgContractEvaluationContext, OrgContractEvaluationScope, OrgContractQuery,
+    OrgContractRelativeScope, OrgElementGraph, OrgElementId, OrgElementsIndexQuery,
+    ParsedAnnotation, ParsedAst, Property, Section,
 };
 
 const DIR_PROPERTY: &str = "DIR";
@@ -38,7 +39,9 @@ pub fn evaluate_org_contract_with_context(
     context: &OrgContractEvaluationContext,
 ) -> OrgContractEvaluation {
     let graph = document.org_elements_graph();
-    let scoped_context = context_with_effective_dir(document, &scope, context);
+    let mut document_context = context.clone();
+    document_context.metadata_keys = document_keyword_keys(document);
+    let scoped_context = context_with_effective_dir(document, &scope, &document_context);
     let assertions = contract
         .assertions
         .iter()
@@ -49,6 +52,16 @@ pub fn evaluate_org_contract_with_context(
         scope,
         assertions,
     }
+}
+
+fn document_keyword_keys(document: &ParsedAst) -> Vec<String> {
+    let mut keys = BTreeSet::new();
+    document.visit(|node| {
+        if let AstRef::Keyword(keyword) = node {
+            keys.insert(keyword.key.to_ascii_uppercase());
+        }
+    });
+    keys.into_iter().collect()
 }
 
 fn evaluate_assertion(

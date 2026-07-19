@@ -425,6 +425,55 @@ Task must include a replayable evidence link.
     assert_eq!(evaluation.assertions[0].actual_count, 1);
 }
 
+#[test]
+fn custom_document_keywords_are_queryable_case_insensitively() {
+    let contract = parse_single_contract(
+        r#"
+* Document status contract
+:PROPERTIES:
+:CONTRACT_ID: document.status
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Status keyword
+:PROPERTIES:
+:ASSERT_ID: document.status.keyword
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-elements-selector
+(:org-element (:type keyword :name status))
+#+END_SRC
+"#,
+    );
+    assert_eq!(contract.assertions.len(), 1, "contract assertion parsed");
+    let context = OrgContractEvaluationContext::default();
+
+    let matching_document = Org::parse("#+STATUS: active\n").document();
+    let matching = evaluate_org_contract_with_context(
+        &matching_document,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    assert_eq!(
+        matching.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+
+    let missing_document = Org::parse("#+TITLE: No status\n").document();
+    let missing = evaluate_org_contract_with_context(
+        &missing_document,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    assert_eq!(
+        missing.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+    assert_eq!(missing.assertions[0].actual_count, 0);
+}
+
 fn parse_single_contract(source: &str) -> crate::ast::OrgContract {
     let contract_document = Org::parse(source).document();
     let registry = parse_contracts_from_document(&contract_document, None);

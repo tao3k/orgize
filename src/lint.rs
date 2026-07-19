@@ -127,6 +127,7 @@ fn collect_lint_findings(
     findings.extend(builtin_contract_org_findings(document, source));
     let org_contract_context = OrgContractEvaluationContext {
         source_path: options.source_path.clone(),
+        metadata_keys: Vec::new(),
         dir_scope: None,
     };
     findings.extend(contract_org_findings(
