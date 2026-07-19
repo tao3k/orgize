@@ -207,13 +207,12 @@ fn parse_clocktable_block_window(raw: &str) -> Option<ClockTableWindowFilter> {
             date_bound(year, month, 1)?,
             add_months_to_month_start(year, month, 1)?,
         )
-    } else if let Some(year) = parse_year_block(value) {
+    } else {
+        let year = parse_year_block(value)?;
         (
             date_bound(year, 1, 1)?,
             date_bound(year.checked_add(1)?, 1, 1)?,
         )
-    } else {
-        return None;
     };
 
     Some(ClockTableWindowFilter {

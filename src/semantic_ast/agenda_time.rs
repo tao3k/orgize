@@ -90,11 +90,10 @@ fn parse_time_at(bytes: &[u8], index: usize) -> Option<(AgendaTime, usize)> {
             am_pm = Some(marker.0);
             cursor = marker.1;
         }
-    } else if let Some(marker) = parse_am_pm(bytes, cursor) {
+    } else {
+        let marker = parse_am_pm(bytes, cursor)?;
         am_pm = Some(marker.0);
         cursor = marker.1;
-    } else {
-        return None;
     }
 
     if !is_ascii_word_boundary_after(bytes, cursor) {

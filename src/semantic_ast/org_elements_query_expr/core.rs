@@ -226,15 +226,13 @@ fn apply_legacy_query_assignment(
                 query
                     .property_equals
                     .push((field.to_string(), value.to_string()));
-            } else if let Some(field) = key
-                .strip_prefix("property_contains.")
-                .or_else(|| key.strip_prefix("property-contains."))
-            {
+            } else {
+                let field = key
+                    .strip_prefix("property_contains.")
+                    .or_else(|| key.strip_prefix("property-contains."))?;
                 query
                     .property_contains
                     .push((field.to_string(), value.to_string()));
-            } else {
-                return None;
             }
         }
     }
