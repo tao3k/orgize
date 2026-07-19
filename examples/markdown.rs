@@ -14,11 +14,7 @@ fn main() {
 
     let content = fs::read_to_string(&args[1]).unwrap();
 
-    fs::write(
-        format!("{}.md", &args[1]),
-        Org::parse(content).to_markdown(),
-    )
-    .unwrap();
+    fs::write(format!("{}.md", args[1]), Org::parse(content).to_markdown()).unwrap();
 
-    println!("Wrote to {}.md", &args[1]);
+    println!("Wrote to {}.md", args[1]);
 }

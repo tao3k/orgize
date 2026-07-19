@@ -369,10 +369,10 @@ impl Traverser for HtmlExport {
             }
 
             Event::LatexFragment(latex) => {
-                let _ = write!(&mut self.output, "{}", &latex.syntax);
+                let _ = write!(&mut self.output, "{}", latex.syntax);
             }
             Event::LatexEnvironment(latex) => {
-                let _ = write!(&mut self.output, "{}", &latex.syntax);
+                let _ = write!(&mut self.output, "{}", latex.syntax);
             }
 
             // ignores keyword

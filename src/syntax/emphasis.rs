@@ -140,11 +140,7 @@ fn validate_marker(pos: usize, text: Input) -> bool {
     if text.as_bytes()[pos - 1].is_ascii_whitespace() {
         false
     } else if let Some(post) = text.as_bytes().get(pos + 1) {
-        [
-            b' ', b'\t', b'\r', b'\n', b'-', b'.', b',', b';', b':', b'!', b'?', b'\'', b')', b'}',
-            b'[', b'"', b'\\',
-        ]
-        .contains(post)
+        b" \t\r\n-.,;:!?')}[\"\\".contains(post)
     } else {
         true
     }

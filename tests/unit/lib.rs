@@ -20,6 +20,10 @@ mod elements_bridge_query_json;
 mod lint_metadata;
 #[path = "org_contract_evaluation.rs"]
 mod org_contract_evaluation;
+#[path = "org_contract_reference.rs"]
+mod org_contract_reference;
+#[path = "org_contract_source_validation.rs"]
+mod org_contract_source_validation;
 #[path = "org_elements_query_expr.rs"]
 mod org_elements_query_expr;
 

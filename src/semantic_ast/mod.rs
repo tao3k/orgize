@@ -271,7 +271,10 @@ pub use model::{
     TableFormulaReference, TableFormulaReferenceKind, TableRow, TagDefinition, TagDefinitionGroup,
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
-pub use org_contract::{parse_contract_reference, parse_contracts_from_document};
+pub use org_contract::{
+    parse_contract_reference, parse_contract_reference_from_source, parse_contracts_from_document,
+    validate_contract_source,
+};
 pub use org_contract_evaluation::{evaluate_org_contract, evaluate_org_contract_with_context};
 pub use org_contract_evaluation_json::{
     evaluation_to_json_value as org_contract_evaluation_to_json_value,
@@ -285,7 +288,7 @@ pub use org_contract_model::{
     OrgContractDocumentPredicate, OrgContractEvaluation, OrgContractEvaluationContext,
     OrgContractEvaluationScope, OrgContractExpectation, OrgContractKind, OrgContractQuery,
     OrgContractReference, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
-    OrgContractSeverity,
+    OrgContractSeverity, OrgContractSourceDiagnostic, OrgContractSourceValidation,
 };
 pub use org_elements_query_expr::{
     ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,
