@@ -1,0 +1,28 @@
+{
+  "schemaId": "agent.semantic-protocols.provider-workspace-install",
+  "schemaVersion": "1",
+  "schemaAuthority": "https://tao3k.github.io/agent-semantic-protocols/schemas/",
+  "providerId": "orgize",
+  "binary": "orgize",
+  "workspaceArtifact": {
+    "root": "target/release/orgize",
+    "entrypoint": "."
+  },
+  "workspaceBuild": {
+    "program": "cargo",
+    "args": [
+      "build",
+      "--locked",
+      "--release",
+      "-p",
+      "orgize",
+      "--bin",
+      "orgize"
+    ],
+    "workingDirectory": ".",
+    "derivedPaths": [
+      "target"
+    ],
+    "env": {}
+  }
+}

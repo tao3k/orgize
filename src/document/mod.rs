@@ -1,6 +1,10 @@
 //! Library-owned document element mapping and command surfaces.
 
 mod command;
+mod command_format;
+mod command_query;
+mod command_render;
+mod command_search;
 mod elements;
 mod line_index;
 mod markdown_elements;
@@ -21,7 +25,7 @@ pub use model::{DocumentElement, DocumentLanguage, DocumentWalkConfig};
 pub use source_selection::{SourceLineRange, SourceSelector, select_source};
 
 #[cfg(test)]
-pub(crate) use command::compact_query_content;
+pub(crate) use command_query::compact_query_content;
 #[cfg(test)]
 pub(crate) use elements::document_query_lexical_prefilter_miss;
 

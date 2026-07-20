@@ -1,0 +1,53 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge_query_cases.rs
+expression: "serde_json::to_string_pretty(&payload).unwrap()"
+---
+{
+  "canonicalQuery": {
+    "limit": 5,
+    "predicate": {
+      "all": [
+        {
+          "kind": "src-block"
+        },
+        {
+          "affiliatedName": "task_runner"
+        },
+        {
+          "any": [
+            {
+              "summary": {
+                "equals": "python",
+                "key": "language"
+              }
+            },
+            {
+              "summary": {
+                "equals": "rust",
+                "key": "language"
+              }
+            }
+          ]
+        },
+        {
+          "not": {
+            "summary": {
+              "equals": "shell",
+              "key": "language"
+            }
+          }
+        }
+      ]
+    },
+    "schemaVersion": 1
+  },
+  "records": [
+    {
+      "affiliatedName": "task_runner",
+      "kind": "src-block",
+      "summary": {
+        "language": "python"
+      }
+    }
+  ]
+}

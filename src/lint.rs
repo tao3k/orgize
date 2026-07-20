@@ -13,7 +13,7 @@ mod lint_file_links;
 #[path = "lint_lifecycle.rs"]
 mod lint_lifecycle;
 #[path = "lint_model.rs"]
-mod lint_model;
+pub(crate) mod lint_model;
 #[path = "lint_priority.rs"]
 mod lint_priority;
 #[path = "lint_progress.rs"]
@@ -38,7 +38,7 @@ use self::{
     lint_crypt::crypt_findings,
     lint_file_links::file_link_findings,
     lint_lifecycle::lifecycle_findings,
-    lint_model::{location_for_range, location_for_range_bounds},
+    lint_model::location_for_range_bounds,
     lint_priority::priority_cookie_findings,
     lint_progress::progress_findings,
     lint_properties::property_drawer_findings,
@@ -55,6 +55,7 @@ use crate::{
     },
 };
 
+pub(crate) use self::lint_model::location_for_range;
 pub use self::lint_model::{LintFinding, LintLocation, LintOptions, LintReport, LintSeverity};
 
 /// Lints Org source with the default parser configuration.

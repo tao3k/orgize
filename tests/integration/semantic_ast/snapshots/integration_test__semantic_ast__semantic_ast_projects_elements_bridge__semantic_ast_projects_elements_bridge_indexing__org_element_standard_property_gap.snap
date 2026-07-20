@@ -1,0 +1,28 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge_indexing.rs
+expression: "serde_json::to_string_pretty(&serde_json::json!({\n    \"presentStandardProperties\":\n    intersection(&official_standard_properties, &current_properties),\n    \"intentionallyUnmappedStandardProperties\": missing_standard_properties,\n})).unwrap()"
+---
+{
+  "intentionallyUnmappedStandardProperties": [
+    ":buffer",
+    ":cached",
+    ":deferred",
+    ":granularity",
+    ":mode",
+    ":org-element--cache-sync-key",
+    ":robust-begin",
+    ":robust-end",
+    ":secondary",
+    ":structure"
+  ],
+  "presentStandardProperties": [
+    ":begin",
+    ":contents-begin",
+    ":contents-end",
+    ":end",
+    ":parent",
+    ":post-affiliated",
+    ":post-blank",
+    ":true-level"
+  ]
+}
