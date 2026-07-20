@@ -1,0 +1,21 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge_indexing.rs
+expression: "serde_json::to_string_pretty(&serde_json::json!({\n    \"headline\":\n    {\n        \"kind\": headline_node[\"kind\"].clone(), \"kindNamespace\":\n        headline_node[\"kindNamespace\"].clone(), \"extensionNamespace\":\n        headline_node[\"extensionNamespace\"].clone(), \"propertyProvenance\":\n        {\n            \":raw-value\":\n            headline_node[\"propertyProvenance\"][\":raw-value\"].clone(),\n            \":begin\": headline_node[\"propertyProvenance\"][\":begin\"].clone(),\n            \":EFFORT\": headline_node[\"propertyProvenance\"][\":EFFORT\"].clone(),\n        },\n    }, \"plainText\":\n    {\n        \"kind\": plain_text_node[\"kind\"].clone(), \"kindNamespace\":\n        plain_text_node[\"kindNamespace\"].clone(), \"extensionNamespace\":\n        plain_text_node[\"extensionNamespace\"].clone(),\n    },\n})).unwrap()"
+---
+{
+  "headline": {
+    "extensionNamespace": null,
+    "kind": "headline",
+    "kindNamespace": "upstream",
+    "propertyProvenance": {
+      ":EFFORT": "local",
+      ":begin": "standard",
+      ":raw-value": "local"
+    }
+  },
+  "plainText": {
+    "extensionNamespace": "orgize",
+    "kind": "plain-text",
+    "kindNamespace": "orgize-extension"
+  }
+}

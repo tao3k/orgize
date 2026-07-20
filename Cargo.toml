@@ -61,7 +61,6 @@ required-features = ["tracing"]
 
 [profile.dev.package]
 insta.opt-level = 3
-similar.opt-level = 3
 
 [profile.release]
 # Thin LTO keeps useful cross-crate optimization without the full monolithic

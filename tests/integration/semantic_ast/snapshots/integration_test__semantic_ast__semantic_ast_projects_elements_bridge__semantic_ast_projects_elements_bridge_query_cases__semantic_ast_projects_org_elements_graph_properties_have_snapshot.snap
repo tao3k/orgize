@@ -1,0 +1,64 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge_query_cases.rs
+expression: "serde_json::to_string_pretty(&payload).unwrap()"
+---
+{
+  "headline": {
+    "childIds": [
+      9,
+      10,
+      13,
+      19
+    ],
+    "id": 8,
+    "kind": "headline",
+    "outlinePath": [
+      "Task A"
+    ],
+    "parentId": 1,
+    "properties": {
+      ":CUSTOM_ID": "task-a",
+      ":OWNER": "alice",
+      ":begin": 0,
+      ":contents-begin": 73,
+      ":contents-end": 112,
+      ":end": 120,
+      ":parent": 1,
+      ":post-affiliated": 0,
+      ":post-blank": null,
+      ":raw-value": "Task A",
+      ":tags": [
+        "work"
+      ],
+      ":todo-keyword": "TODO",
+      ":todo-type": "todo"
+    }
+  },
+  "linkLineage": [
+    {
+      "category": "document",
+      "id": 1,
+      "kind": "org-data"
+    },
+    {
+      "category": "section",
+      "id": 8,
+      "kind": "headline"
+    },
+    {
+      "category": "element",
+      "id": 13,
+      "kind": "section"
+    },
+    {
+      "category": "element",
+      "id": 14,
+      "kind": "paragraph"
+    },
+    {
+      "category": "object",
+      "id": 16,
+      "kind": "link"
+    }
+  ]
+}
