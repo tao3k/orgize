@@ -39,6 +39,7 @@ mod semantic_ast_projects_link_protocols;
 mod semantic_ast_projects_m15_alignment;
 mod semantic_ast_projects_m25_alignment;
 mod semantic_ast_projects_object_gap_repairs;
+mod semantic_ast_projects_org_interactive;
 mod semantic_ast_projects_org_table_formulas;
 mod semantic_ast_projects_preprocessing_directives;
 mod semantic_ast_projects_priority_properties;

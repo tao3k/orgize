@@ -81,6 +81,8 @@ mod org_contract_evaluation;
 mod org_contract_evaluation_json;
 mod org_contract_model;
 mod org_elements_query_expr;
+mod org_interactive;
+mod org_interactive_model;
 mod postprocess;
 mod preprocessing;
 mod prescan;
@@ -293,6 +295,10 @@ pub use org_contract_model::{
 pub use org_elements_query_expr::{
     ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,
     OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str,
+};
+pub use org_interactive_model::{
+    OrgInteractiveCategory, OrgInteractiveChoice, OrgInteractiveChoiceEntry,
+    OrgInteractiveParseError,
 };
 pub use progress_model::{
     ProgressCheckboxSummary, ProgressEffortSummary, ProgressStatisticCookie,
