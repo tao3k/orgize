@@ -20,6 +20,10 @@
       "orgize"
     ],
     "workingDirectory": ".",
+    "sourceSnapshotAnchors": [
+      "Cargo.toml",
+      "Cargo.lock"
+    ],
     "derivedPaths": [
       "target"
     ],
