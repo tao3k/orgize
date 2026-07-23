@@ -18,6 +18,32 @@ use super::{
     source_selection::{SourceSelector, select_source, structural_selector_fragment},
 };
 
+fn print_selector_query_content(
+    selection: &SourceSelector,
+    facts: &[DocumentElement],
+) -> Result<(), String> {
+    let source = fs::read_to_string(&selection.path)
+        .map_err(|error| format!("{}: {error}", selection.path.display()))?;
+    for content in facts
+        .iter()
+        .take(80)
+        .map(|fact| {
+            select_source(
+                &source,
+                super::source_selection::SourceLineRange {
+                    start_line: fact.line,
+                    end_line: fact.end_line,
+                },
+            )
+        })
+        .map(|content| compact_query_content(&content))
+        .filter(|content| !content.is_empty())
+    {
+        println!("{content}");
+    }
+    Ok(())
+}
+
 pub(crate) fn run_query(
     language: DocumentLanguage,
     args: Vec<String>,
@@ -126,7 +152,7 @@ pub(crate) fn run_query(
             let selection = SourceSelector::parse_query(selector)?;
             let facts = selector_elements(language, &selection)?;
             let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
-            print_query_content(&facts);
+            print_selector_query_content(&selection, &facts)?;
         } else {
             let selection = SourceSelector::parse_query(selector)?;
             let facts = selector_elements(language, &selection)?;

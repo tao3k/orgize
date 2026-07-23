@@ -722,6 +722,40 @@ fn org_document_search_and_query_commands_run() {
             .any(|fact| fact["documentPath"] == "plan.org"),
         "{dot_root_packet:#}"
     );
+
+    for kind in ["heading", "task"] {
+        let selector = dot_root_search_packet["documentFacts"]
+            .as_array()
+            .expect("document facts")
+            .iter()
+            .find(|fact| fact["kind"] == kind && fact["attributes"]["title"] == "Task")
+            .and_then(|fact| fact["structuralSelector"].as_str())
+            .unwrap_or_else(|| panic!("{kind} structural selector"));
+        let content = orgize_command()
+            .current_dir(&root)
+            .arg("query")
+            .arg("--selector")
+            .arg(selector)
+            .arg("--content")
+            .arg(".")
+            .output()
+            .unwrap_or_else(|error| panic!("run {kind} content query: {error}"));
+        assert!(
+            content.status.success(),
+            "{kind} content query failed: {}",
+            String::from_utf8_lossy(&content.stderr)
+        );
+        let content = String::from_utf8(content.stdout).expect("utf8 headline content");
+        assert!(content.contains("* TODO [#A] Task :work:sdd:"), "{content}");
+        assert!(content.contains(":CUSTOM_ID: task-1"), "{content}");
+        assert!(
+            content.contains("Provider activation carries execution mode."),
+            "{content}"
+        );
+        assert!(content.contains("** Repository Map"), "{content}");
+        assert!(content.contains("- [X] ship element map"), "{content}");
+        assert!(content.contains("#+begin_src rust"), "{content}");
+    }
 }
 fn orgize_command() -> Command {
     let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_orgize"));
