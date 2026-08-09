@@ -4,6 +4,8 @@ mod agent_cli;
 mod capture_cli;
 #[path = "integration/contract_evaluation.rs"]
 mod contract_evaluation;
+#[path = "integration/document_git_scope.rs"]
+mod document_git_scope;
 #[path = "integration/eval_cli.rs"]
 mod eval_cli;
 #[path = "integration/export_cli.rs"]
@@ -20,6 +22,8 @@ mod harness_report_consumer;
 mod html;
 #[path = "integration/latex.rs"]
 mod latex;
+#[path = "integration/library_cli.rs"]
+mod library_cli;
 #[path = "integration/lint_attachments.rs"]
 mod lint_attachments;
 #[path = "integration/lint_babel.rs"]

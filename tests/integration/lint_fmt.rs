@@ -16,22 +16,22 @@ fn cli_rejects_invalid_path_arguments_with_snapshot() {
     fs::create_dir_all(&dir).unwrap();
     fs::write(dir.join("notes.txt"), skip_text_fmt_fixture()).unwrap();
 
-    let missing_fmt = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let missing_fmt = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["fmt", "missing.org"])
         .output()
         .unwrap();
-    let non_org_fmt = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let non_org_fmt = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["fmt", "notes.txt"])
         .output()
         .unwrap();
-    let missing_lint = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let missing_lint = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["lint", "missing.org"])
         .output()
         .unwrap();
-    let non_org_lint = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let non_org_lint = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["lint", "notes.txt"])
         .output()
@@ -210,7 +210,7 @@ fn lint_reports_priority_profile_issues_with_snapshot() {
 
 #[test]
 fn lint_cli_accepts_priority_profile_flags_with_snapshot() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let mut child = crate::library_cli::orgize_cli_command()
         .args([
             "lint",
             "--format",
@@ -241,7 +241,7 @@ fn lint_cli_accepts_priority_profile_flags_with_snapshot() {
 
 #[test]
 fn lint_cli_compact_stdin_output_is_snapshotted() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let mut child = crate::library_cli::orgize_cli_command()
         .args(["lint"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -262,7 +262,7 @@ fn lint_cli_compact_stdin_output_is_snapshotted() {
 
 #[test]
 fn lint_cli_text_stdin_output_is_snapshotted() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let mut child = crate::library_cli::orgize_cli_command()
         .args(["lint", "--format", "text"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -283,7 +283,7 @@ fn lint_cli_text_stdin_output_is_snapshotted() {
 
 #[test]
 fn lint_cli_json_stdin_output_is_snapshotted() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let mut child = crate::library_cli::orgize_cli_command()
         .args(["lint", "--json"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -309,7 +309,7 @@ fn lint_cli_checks_include_paths_relative_to_file_with_snapshot() {
     fs::write(dir.join("notes/present.org"), "* Present\n").unwrap();
     fs::write(dir.join("notes/main.org"), include_paths_lint_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["lint", "--json", "notes/main.org"])
         .output()
@@ -330,7 +330,7 @@ fn lint_cli_directory_path_output_is_snapshotted() {
     fs::write(dir.join("notes/nested/clean.org"), "* Clean\n").unwrap();
     fs::write(dir.join("notes/skip.txt"), "[[fn:missing]]\n").unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["lint", "--json", "notes"])
         .output()

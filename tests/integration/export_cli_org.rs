@@ -6,7 +6,7 @@ use crate::export_cli::export_cli_common::test_dir;
 
 #[test]
 fn org_document_search_and_query_commands_run() {
-    let guide = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let guide = crate::library_cli::orgize_cli_command()
         .arg("guide")
         .output()
         .expect("run orgize guide");
@@ -118,7 +118,7 @@ fn org_document_search_and_query_commands_run() {
     )
     .expect("write org fixture");
 
-    let search = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let search = crate::library_cli::orgize_cli_command()
         .arg("search")
         .arg("prime")
         .arg("--view")
@@ -166,7 +166,7 @@ fn org_document_search_and_query_commands_run() {
     assert!(search_stdout.contains("|link"), "{search_stdout}");
     assert!(search_stdout.contains("|image"), "{search_stdout}");
 
-    let toc = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let toc = crate::library_cli::orgize_cli_command()
         .arg("search")
         .arg("toc")
         .arg(&root)
@@ -220,7 +220,7 @@ fn org_document_search_and_query_commands_run() {
         .and_then(|fact| fact["structuralSelector"].as_str())
         .expect("CUSTOM_ID structural selector")
         .to_string();
-    let query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let query = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--selector")
         .arg(&selector)
@@ -239,7 +239,7 @@ fn org_document_search_and_query_commands_run() {
         "{query_stdout}"
     );
 
-    let selector_frontier = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let selector_frontier = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--selector")
         .arg(&selector)
@@ -266,7 +266,7 @@ fn org_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
 
-    let term_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let term_query = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--term")
         .arg("CUSTOM_ID")
@@ -279,7 +279,7 @@ fn org_document_search_and_query_commands_run() {
     assert!(term_stdout.contains("terms=1"), "{term_stdout}");
     assert!(term_stdout.contains("key=\"CUSTOM_ID\""), "{term_stdout}");
 
-    let sdd_kind_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let sdd_kind_query = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--kind")
         .arg("property")
@@ -301,7 +301,7 @@ fn org_document_search_and_query_commands_run() {
     );
     assert!(!sdd_kind_stdout.contains("SDD_STATUS"), "{sdd_kind_stdout}");
 
-    let sdd_status_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let sdd_status_query = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--kind")
         .arg("property")
@@ -320,7 +320,7 @@ fn org_document_search_and_query_commands_run() {
         "{sdd_status_stdout}"
     );
 
-    let paragraph_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let paragraph_query = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--term")
         .arg("embedded")
@@ -342,7 +342,7 @@ fn org_document_search_and_query_commands_run() {
         "{paragraph_stdout}"
     );
 
-    let paragraph_content = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let paragraph_content = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--term")
         .arg("embedded")
@@ -359,7 +359,7 @@ fn org_document_search_and_query_commands_run() {
         "{paragraph_content_stdout}"
     );
 
-    let source_block_content = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let source_block_content = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--kind")
         .arg("block")
@@ -374,11 +374,11 @@ fn org_document_search_and_query_commands_run() {
         String::from_utf8(source_block_content.stdout).expect("utf8 source block content query");
     assert_eq!(
         source_block_content_stdout.trim(),
-        "#+begin_src rust\nfn main() {\n  println!(  \"x\");\n}\n#+end_src",
+        "fn main() {\n  println!(  \"x\");\n}",
         "{source_block_content_stdout}"
     );
 
-    let missing_content = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let missing_content = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--term")
         .arg("missing-content")
@@ -391,7 +391,7 @@ fn org_document_search_and_query_commands_run() {
         String::from_utf8(missing_content.stdout).expect("utf8 missing content query");
     assert_eq!(missing_content_stdout, "", "{missing_content_stdout}");
 
-    let broad_content = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let broad_content = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--content")
         .arg(&root)
@@ -423,7 +423,7 @@ fn org_document_search_and_query_commands_run() {
         .find(|fact| fact["kind"] == "paragraph")
         .and_then(|fact| fact["structuralSelector"].as_str())
         .expect("paragraph structural selector");
-    let verbatim_paragraph = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let verbatim_paragraph = crate::library_cli::orgize_cli_command()
         .arg("query")
         .arg("--selector")
         .arg(paragraph_selector)
@@ -574,7 +574,7 @@ fn org_document_search_and_query_commands_run() {
         "limit": 1
     })
     .to_string();
-    let elements_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let elements_query = crate::library_cli::orgize_cli_command()
         .arg("elements-query")
         .arg("--packet")
         .arg(elements_query_packet)
@@ -746,19 +746,11 @@ fn org_document_search_and_query_commands_run() {
             String::from_utf8_lossy(&content.stderr)
         );
         let content = String::from_utf8(content.stdout).expect("utf8 headline content");
-        assert!(content.contains("* TODO [#A] Task :work:sdd:"), "{content}");
-        assert!(content.contains(":CUSTOM_ID: task-1"), "{content}");
-        assert!(
-            content.contains("Provider activation carries execution mode."),
-            "{content}"
-        );
-        assert!(content.contains("** Repository Map"), "{content}");
-        assert!(content.contains("- [X] ship element map"), "{content}");
-        assert!(content.contains("#+begin_src rust"), "{content}");
+        assert_eq!(content, "* TODO [#A] Task :work:sdd:\n");
     }
 }
-fn orgize_command() -> Command {
-    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_orgize"));
+fn orgize_command() -> crate::library_cli::OrgizeLibraryCliCommand {
+    let mut command = crate::library_cli::orgize_cli_command();
     command.env(
         "ASP_PROVIDER_EXECUTION_COMMAND_DIGEST",
         "sha256:0000000000000000000000000000000000000000000000000000000000000000",

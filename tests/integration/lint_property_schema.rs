@@ -51,7 +51,7 @@ fn lint_reports_property_schema_contract_issues() {
 fn lint_cli_loads_property_schema_registry_file_with_snapshot() {
     let fixture_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/lint");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&fixture_dir)
         .args([
             "lint",
@@ -127,7 +127,7 @@ fn lint_cli_reports_invalid_property_schema_registry_with_snapshot() {
     .unwrap();
     fs::write(dir.join("notes.org"), "* Notes\n").unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "lint",

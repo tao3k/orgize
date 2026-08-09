@@ -171,7 +171,9 @@ fn print_element_guide(language: DocumentLanguage) {
             println!("|field-map property fields=key,value");
             println!("|field-map planning fields=scheduled,deadline,closed");
             println!("|field-map table fields=header");
-            println!("|field-map block fields=kind=source|export,lang,backend");
+            println!(
+                "|field-map block fields=kind=source|export,lang,backend content=parser-owned-body"
+            );
             println!("|field-map list fields=listKind=ordered|unordered,descriptive");
             println!("|field-map listItem fields=bullet,indent,counter,tag");
             println!(
@@ -211,6 +213,9 @@ fn print_element_guide(language: DocumentLanguage) {
             );
             println!(
                 "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"
+            );
+            println!(
+                "|recipe source-block-content=asp org query --kind block --field kind=source --field lang=<LANG> --workspace <PATH> --content"
             );
             println!(
                 "|recipe paragraph-content=asp org query --kind paragraph --term <term> --workspace . --content"

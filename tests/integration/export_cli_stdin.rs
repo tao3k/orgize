@@ -5,7 +5,7 @@ use std::{
 
 #[test]
 fn export_md_reads_stdin_and_writes_markdown() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let mut child = crate::library_cli::orgize_cli_command()
         .arg("export")
         .arg("md")
         .stdin(Stdio::piped())

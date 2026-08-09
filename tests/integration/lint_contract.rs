@@ -424,7 +424,7 @@ fn lint_cli_loads_org_contract_registry_file_with_snapshot() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "lint",
@@ -457,7 +457,7 @@ fn lint_cli_builds_org_contract_registry_from_directory_inputs() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["lint", "--format", "text", "contracts"])
         .output()

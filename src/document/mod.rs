@@ -30,6 +30,9 @@ pub(crate) use command_query::compact_query_content;
 pub(crate) use elements::document_query_lexical_prefilter_miss;
 
 #[cfg(test)]
+#[path = "../../tests/unit/document_block_body.rs"]
+mod block_body_tests;
+#[cfg(test)]
 #[path = "../../tests/unit/document_line_index.rs"]
 mod line_index_tests;
 #[cfg(test)]

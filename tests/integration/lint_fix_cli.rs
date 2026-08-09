@@ -6,7 +6,7 @@ fn lint_fix_formats_org_files_before_linting() {
     let path = dir.join("notes.org");
     fs::write(&path, "* Table\n|a|bb|\n|long|c|\n").unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["lint", "--fix", path.to_str().unwrap()])
         .output()
         .unwrap();
@@ -29,7 +29,7 @@ fn lint_fix_formats_org_files_before_linting() {
 
 #[test]
 fn lint_fix_rejects_stdin() {
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["lint", "--fix"])
         .output()
         .unwrap();

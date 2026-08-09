@@ -170,7 +170,7 @@ No link here.
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -236,7 +236,7 @@ fn cli_trace_evaluates_multiple_contract_org_bindings_on_same_scope() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -272,7 +272,7 @@ fn cli_trace_distinguishes_document_and_heading_contract_org_property_scope() {
     fs::write(dir.join("contracts.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
     fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_NOTES).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -450,7 +450,7 @@ fn cli_trace_rejects_contract_org_metadata_keyword_declarations() {
     fs::write(dir.join("contract.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
     fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_KEYWORD_NOTES).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -481,7 +481,7 @@ fn cli_trace_rejects_duplicate_contract_org_bindings_on_same_scope() {
     fs::write(dir.join("contract.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
     fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_DUPLICATE_NOTES).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -527,7 +527,7 @@ fn cli_trace_resolves_org_link_contract_reference_relative_to_source_file() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -616,7 +616,7 @@ fn cli_trace_loads_registry_dependencies_declared_by_contract_source() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -647,7 +647,7 @@ fn cli_trace_loads_registry_dependencies_declared_by_contract_source() {
 
 #[test]
 fn cli_query_surface_outputs_agent_facing_json() {
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["contract", "query-surface", "--json"])
         .output()
         .unwrap();
@@ -718,7 +718,7 @@ fn org_link_reference_uses_relative_path_and_display_contract_id() {
 #[test]
 fn execplan_template_satisfies_language_contract() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&manifest_dir)
         .args([
             "contract",

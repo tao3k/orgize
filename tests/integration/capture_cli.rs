@@ -7,7 +7,7 @@ fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
     let contract_path = dir.join("task-contract.org");
     fs::write(&contract_path, task_contract_source()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "capture-plan",
@@ -73,7 +73,7 @@ fn capture_plan_requires_contract() {
     let dir = test_dir("capture-plan-requires-contract");
     let plan_path = dir.join("PLANS.org");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "capture-plan",
@@ -107,7 +107,7 @@ fn capture_plan_rejects_domain_specific_agent_plan_kind() {
     let dir = test_dir("agent-plan-template");
     let plan_path = dir.join("PLANS.org");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "capture-plan",

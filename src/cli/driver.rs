@@ -27,7 +27,11 @@ fn run() -> Result<ExitCode, String> {
     run_args(env::args().skip(1).collect())
 }
 
-pub(crate) fn run_args(args: Vec<String>) -> Result<ExitCode, String> {
+/// Runs one Orgize command from already-tokenized arguments.
+///
+/// Embedders such as ASP use this entrypoint directly so command dispatch does
+/// not depend on a separately installed `orgize` executable.
+pub fn run_args(args: Vec<String>) -> Result<ExitCode, String> {
     let mut args = args.into_iter();
     let Some(command) = args.next() else {
         print_usage();

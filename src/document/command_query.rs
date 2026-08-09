@@ -19,28 +19,10 @@ use super::{
 };
 
 fn print_selector_query_content(
-    selection: &SourceSelector,
+    _selection: &SourceSelector,
     facts: &[DocumentElement],
 ) -> Result<(), String> {
-    let source = fs::read_to_string(&selection.path)
-        .map_err(|error| format!("{}: {error}", selection.path.display()))?;
-    for content in facts
-        .iter()
-        .take(80)
-        .map(|fact| {
-            select_source(
-                &source,
-                super::source_selection::SourceLineRange {
-                    start_line: fact.line,
-                    end_line: fact.end_line,
-                },
-            )
-        })
-        .map(|content| compact_query_content(&content))
-        .filter(|content| !content.is_empty())
-    {
-        println!("{content}");
-    }
+    print_query_content(facts);
     Ok(())
 }
 
@@ -83,12 +65,6 @@ pub(crate) fn run_query(
     if verbatim_output && selector.is_none() {
         return Err(format!(
             "{} query: --verbatim requires one exact structural --selector",
-            language.id()
-        ));
-    }
-    if args.iter().any(|arg| arg == "--code") {
-        return Err(format!(
-            "{} query: document providers use --content for query projection; --code is reserved for source-language providers",
             language.id()
         ));
     }
@@ -258,14 +234,24 @@ pub(super) fn shell_arg(value: &str) -> String {
 }
 
 fn print_query_content(facts: &[DocumentElement]) {
-    for content in projected_content_facts(facts)
-        .iter()
-        .take(80)
-        .map(DocumentElement::content_text)
-        .map(|content| compact_query_content(&content))
-        .filter(|content| !content.is_empty())
-    {
-        println!("{content}");
+    for fact in projected_content_facts(facts).iter().take(80) {
+        let content = project_query_content(fact);
+        if content.is_empty() {
+            continue;
+        }
+        print!("{content}");
+        if !content.ends_with('\n') {
+            println!();
+        }
+    }
+}
+
+pub(super) fn project_query_content(fact: &DocumentElement) -> String {
+    let content = fact.content_text();
+    if fact.kind == "block" {
+        content
+    } else {
+        compact_query_content(&content)
     }
 }
 

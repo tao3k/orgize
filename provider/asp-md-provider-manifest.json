@@ -8,41 +8,31 @@
   "languageId": "md",
   "providerId": "orgize",
   "namespace": "agent.semantic-protocols.languages.md.orgize",
-  "binary": "orgize",
-  "execution": "external-process",
-  "source": {
-    "defaultExtensions": [
+    "binary": "asp",
+  "development": {
+    "schemaId": "agent.semantic-protocols.provider-development-descriptor",
+    "schemaVersion": "1",
+    "sourceRoot": "languages/orgize",
+    "buildBinding": "root-development-installer-v1",
+    "artifactDomain": "checkout"
+  },
+    "execution": "embedded",
+  "documentResolution": {
+    "schemaId": "agent.semantic-protocols.provider-document-resolution-descriptor",
+    "schemaVersion": "1",
+    "capabilityId": "document-resolution",
+    "extensions": [
       ".md",
       ".markdown"
     ],
-    "defaultSourceRoots": [
-      "docs"
-    ],
-    "defaultProjectMarkers": [],
-    "defaultDependencyMarkers": [],
-    "defaultConfigFiles": [],
-    "defaultIgnoredPathPrefixes": [
-      "target",
-      ".cache",
-      ".codex/harness-state",
-      ".codex/rs-harness",
-      ".data",
-      ".devenv",
-      ".direnv",
-      ".git",
-      ".idea",
-      ".jj",
-      ".run",
-      ".vscode",
-      "node_modules"
-    ]
+    "parserId": "orgize.markdown",
+    "supportsGitCandidates": true
   },
   "searchCapabilities": {
     "dependencyTopology": false,
     "dependencyTopologyMetadata": false,
     "ownerItems": true,
     "semanticFacts": false,
-    "workspaceScope": false,
     "sourceSnapshot": {
       "descriptorId": "md.source-snapshot",
       "descriptorVersion": "1",

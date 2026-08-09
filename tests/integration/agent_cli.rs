@@ -10,7 +10,7 @@ fn cli_agent_planning_renders_planning_cards() {
     let path = dir.join("agent.org");
     fs::write(&path, agent_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args([
             "agent-planning",
             "--date",
@@ -35,7 +35,7 @@ fn cli_sparse_tree_renders_match_cards() {
     let path = dir.join("agent.org");
     fs::write(&path, agent_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["sparse-tree", "--text", "routing", path.to_str().unwrap()])
         .output()
         .unwrap();
