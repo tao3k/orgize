@@ -2,7 +2,7 @@ use std::{
     fs,
     io::Write,
     path::PathBuf,
-    process::{Command, Stdio},
+    process::Stdio,
 };
 
 #[test]

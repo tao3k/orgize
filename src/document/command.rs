@@ -1,4 +1,4 @@
-//! CLI command routing for `asp org` and `asp md` document providers.
+//! CLI command routing for `orgize org` and `orgize md` document providers.
 
 use std::process::ExitCode;
 
@@ -13,7 +13,7 @@ pub fn run_org_command(args: Vec<String>) -> Result<ExitCode, String> {
     run_document_command(DocumentLanguage::Org, args)
 }
 
-/// Run an `asp md` document command.
+/// Run an `orgize md` document command.
 pub fn run_md_command(args: Vec<String>) -> Result<ExitCode, String> {
     run_document_command(DocumentLanguage::Markdown, args)
 }

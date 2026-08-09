@@ -1,4 +1,3 @@
-use std::{fs, process::Command};
 
 use serde_json::Value;
 
@@ -34,17 +33,17 @@ fn org_document_search_and_query_commands_run() {
     );
     assert!(
         guide_stdout.contains(
-            "|recipe paragraph-content=asp org query --kind paragraph --term <term> --workspace . --content"
+            "|recipe paragraph-content=orgize org query --kind paragraph --term <term> --workspace . --content"
         ),
         "{guide_stdout}"
     );
     assert!(
-        guide_stdout.contains("|cmd search-toc=asp org search toc --workspace ."),
+        guide_stdout.contains("|cmd search-toc=orgize org search toc --workspace ."),
         "{guide_stdout}"
     );
     assert!(
         guide_stdout.contains(
-            "|cmd elements-query=asp org elements-query --packet <json-query-packet> <org-file>"
+            "|cmd elements-query=orgize org elements-query --packet <json-query-packet> <org-file>"
         ),
         "{guide_stdout}"
     );
@@ -56,37 +55,37 @@ fn org_document_search_and_query_commands_run() {
     );
     assert!(
         guide_stdout.contains(
-            "|cmd capture=asp org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
+            "|cmd capture=orgize org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
         ),
         "{guide_stdout}"
     );
     assert!(
         guide_stdout.contains(
-            "|recipe capture-task=asp org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
+            "|recipe capture-task=orgize org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
         ),
         "{guide_stdout}"
     );
     assert!(
         guide_stdout.contains(
-            "|recipe sdd-kind-properties=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
+            "|recipe sdd-kind-properties=orgize org query --kind property --field key=SDD_KIND --workspace . --view metadata"
         ),
         "{guide_stdout}"
     );
     assert!(
         guide_stdout.contains(
-            "|recipe org-id-properties=asp org query --kind property --field key=ID --field value=<ID> --workspace . --view metadata"
+            "|recipe org-id-properties=orgize org query --kind property --field key=ID --field value=<ID> --workspace . --view metadata"
         ),
         "{guide_stdout}"
     );
     assert!(
         guide_stdout.contains(
-            "|recipe tagged-tasks=asp org query --kind task --term <TEXT> --field tag=<TAG> --workspace . --view metadata"
+            "|recipe tagged-tasks=orgize org query --kind task --term <TEXT> --field tag=<TAG> --workspace . --view metadata"
         ),
         "{guide_stdout}"
     );
     assert!(
         guide_stdout.contains(
-            "|recipe done-tasks=asp org query --kind task --field todo=DONE --workspace . --view metadata"
+            "|recipe done-tasks=orgize org query --kind task --field todo=DONE --workspace . --view metadata"
         ),
         "{guide_stdout}"
     );
@@ -191,7 +190,7 @@ fn org_document_search_and_query_commands_run() {
         "{toc_stdout}"
     );
     assert!(
-        toc_stdout.contains("next=\"asp org query --selector"),
+        toc_stdout.contains("next=\"orgize org query --selector"),
         "{toc_stdout}"
     );
 
@@ -257,7 +256,7 @@ fn org_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout.contains("content-query=\"asp org query --selector"),
+        selector_stdout.contains("content-query=\"orgize org query --selector"),
         "{selector_stdout}"
     );
     assert!(selector_stdout.contains("|property"), "{selector_stdout}");
@@ -464,7 +463,7 @@ fn org_document_search_and_query_commands_run() {
         "agent.semantic-protocols.semantic-document-search-packet"
     );
     assert_eq!(search_packet["languageId"], "org");
-    assert_eq!(search_packet["binary"], "asp");
+    assert_eq!(search_packet["binary"], "orgize");
     assert_eq!(search_packet["method"], "search/prime");
     assert_eq!(search_packet["documentMode"], "metadata");
     assert!(
@@ -474,7 +473,7 @@ fn org_document_search_and_query_commands_run() {
             .iter()
             .any(|action| action["target"] == "selector"
                 && action["command"]
-                    == "asp org query --selector <structural-selector> --view metadata"),
+                    == "orgize org query --selector <structural-selector> --view metadata"),
         "{search_packet:#}"
     );
     assert!(
@@ -483,7 +482,7 @@ fn org_document_search_and_query_commands_run() {
             .expect("next actions")
             .iter()
             .any(|action| action["target"] == "content"
-                && action["command"] == "asp org query --term <term> --content"),
+                && action["command"] == "orgize org query --term <term> --content"),
         "{search_packet:#}"
     );
     assert!(
@@ -750,10 +749,5 @@ fn org_document_search_and_query_commands_run() {
     }
 }
 fn orgize_command() -> crate::library_cli::OrgizeLibraryCliCommand {
-    let mut command = crate::library_cli::orgize_cli_command();
-    command.env(
-        "ASP_PROVIDER_EXECUTION_COMMAND_DIGEST",
-        "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-    );
-    command
+    crate::library_cli::orgize_cli_command()
 }

@@ -108,8 +108,8 @@ impl DocumentLanguage {
     /// Public command prefix for the language document provider.
     pub fn command_prefix(self) -> &'static str {
         match self {
-            Self::Org => "asp org",
-            Self::Markdown => "asp md",
+            Self::Org => "orgize org",
+            Self::Markdown => "orgize md",
         }
     }
 

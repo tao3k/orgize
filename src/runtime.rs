@@ -87,7 +87,7 @@ pub(crate) fn resolve_eval_binding(
                 body_transport: EvalBodyTransport::TypstMarkupEvalArgument,
             })
         }
-        known if matches!(known, "bash" | "sh" | "shell" | "shell-script" | "typst") => {
+        "bash" | "sh" | "shell" | "shell-script" | "typst" => {
             Err(format!(
                 "registered runtime `{runtime}` is incompatible with source block language `{language}`"
             ))
@@ -250,6 +250,19 @@ pub(crate) fn execute_runtime_observed(
             let _ = join_stdin(stdin_writer);
             let stdout = join_stream(stdout_reader, "stdout");
             let stderr = join_stream(stderr_reader, "stderr");
+            if output_overflowed.load(Ordering::Acquire) {
+                return observation_from_streams(
+                    started,
+                    stdout,
+                    stderr,
+                    RuntimeTerminationOutcome::OutputBudgetExceeded,
+                    None,
+                    child_reaped,
+                    Some(format!(
+                        "combined runtime output exceeded {output_byte_budget} bytes"
+                    )),
+                );
+            }
             return observation_from_streams(
                 started,
                 stdout,
@@ -310,7 +323,8 @@ fn runtime_command(
     body: &str,
     current_dir: Option<&Path>,
 ) -> Command {
-    let mut command = Command::new(&binding.program);
+    let program = absolute_program_path(&binding.program);
+    let mut command = Command::new(program);
     command
         .args(&binding.args)
         .stdout(Stdio::piped())
@@ -334,6 +348,21 @@ fn runtime_command(
         command.current_dir(current_dir);
     }
     command
+}
+
+/// Resolves explicit relative program paths before changing the child working
+/// directory. Bare program names deliberately retain PATH lookup semantics.
+fn absolute_program_path(program: &str) -> std::path::PathBuf {
+    let path = Path::new(program);
+    let has_directory = path
+        .parent()
+        .is_some_and(|parent| !parent.as_os_str().is_empty());
+    if path.is_absolute() || !has_directory {
+        return path.to_path_buf();
+    }
+    std::env::current_dir()
+        .map(|directory| directory.join(path))
+        .unwrap_or_else(|_| path.to_path_buf())
 }
 
 fn spawn_runtime(mut command: Command, program: &str) -> Result<Child, String> {

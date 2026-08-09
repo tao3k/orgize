@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 use super::{
     elements::display_path,
@@ -22,7 +23,7 @@ pub(super) fn print_search_json(
         "protocolVersion": "1",
         "languageId": language.id(),
         "providerId": "orgize",
-        "binary": "asp",
+        "binary": env!("CARGO_PKG_NAME"),
         "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
         "method": format!("search/{view}"),
         "projectRoot": packet_project_root(root),
@@ -247,7 +248,7 @@ fn owners_json(language: DocumentLanguage, root: &Path, facts: &[DocumentElement
 
 fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentElement) -> Value {
     let path = packet_path(root, &fact.path);
-    let structural_selector = packet_structural_selector(language, &path, fact);
+    let structural_selector = packet_structural_selector(language, &fact.path, fact);
     let mut value = json!({
         "id": structural_selector.as_str(),
         "kind": fact.kind,
@@ -294,26 +295,20 @@ fn content_blocks_json(
 }
 
 fn provider_execution_command_digest() -> Result<String, String> {
-    parse_provider_execution_command_digest(
-        std::env::var("ASP_PROVIDER_EXECUTION_COMMAND_DIGEST").ok(),
-    )
+    let executable = std::env::current_exe().map_err(|error| {
+        format!("could not resolve current executable for JSON query evidence: {error}")
+    })?;
+    let mut hasher = Sha256::new();
+    hash_command_component(&mut hasher, executable.as_os_str().as_encoded_bytes());
+    for argument in std::env::args_os() {
+        hash_command_component(&mut hasher, argument.as_encoded_bytes());
+    }
+    Ok(format!("sha256:{:x}", hasher.finalize()))
 }
 
-fn parse_provider_execution_command_digest(digest: Option<String>) -> Result<String, String> {
-    let digest = digest.ok_or_else(|| {
-        "ASP_PROVIDER_EXECUTION_COMMAND_DIGEST is required for JSON document queries".to_string()
-    })?;
-    let Some(hex) = digest.strip_prefix("sha256:") else {
-        return Err("ASP_PROVIDER_EXECUTION_COMMAND_DIGEST must use sha256:<64hex>".to_string());
-    };
-    if hex.len() != 64
-        || !hex
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'))
-    {
-        return Err("ASP_PROVIDER_EXECUTION_COMMAND_DIGEST must use sha256:<64hex>".to_string());
-    }
-    Ok(digest)
+fn hash_command_component(hasher: &mut Sha256, component: &[u8]) {
+    hasher.update((component.len() as u64).to_be_bytes());
+    hasher.update(component);
 }
 
 fn location_json(path: &str, line: usize, end_line: usize) -> Value {
@@ -325,13 +320,21 @@ fn location_json(path: &str, line: usize, end_line: usize) -> Value {
 
 fn packet_structural_selector(
     language: DocumentLanguage,
-    packet_path: &str,
+    source_path: &str,
     fact: &DocumentElement,
 ) -> String {
+    let source_path = Path::new(source_path);
+    let source_path = if source_path.is_absolute() {
+        source_path.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map(|directory| directory.join(source_path))
+            .unwrap_or_else(|_| source_path.to_path_buf())
+    };
     format!(
         "{}://{}#{}",
         language.id(),
-        packet_path,
+        source_path.display(),
         structural_selector_fragment(&fact.structural_selector)
     )
 }

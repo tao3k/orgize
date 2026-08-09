@@ -1,6 +1,6 @@
 use std::{
     io::Write,
-    process::{Command, Stdio},
+    process::Stdio,
 };
 
 #[test]

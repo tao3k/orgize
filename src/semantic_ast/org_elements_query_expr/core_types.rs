@@ -58,7 +58,6 @@ impl QueryExpr {
 }
 
 /// Parses an elisp-style Org elements query expression into the shared index
-
 pub(super) fn list_head(items: &[QueryExpr]) -> Option<&str> {
     items.first()?.as_atom()
 }

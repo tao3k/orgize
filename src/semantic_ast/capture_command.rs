@@ -196,11 +196,11 @@ impl OrgCapturePlanArgs {
                 }
                 "--no-confirm" => parsed.requires_confirmation = false,
                 _ if arg.starts_with('-') => {
-                    return Err(format!("unknown asp org capture flag `{arg}`"));
+                    return Err(format!("unknown orgize org capture flag `{arg}`"));
                 }
                 _ => {
                     return Err(format!(
-                        "unexpected asp org capture positional argument `{arg}`; use --target-file for paths"
+                        "unexpected orgize org capture positional argument `{arg}`; use --target-file for paths"
                     ));
                 }
             }
@@ -217,14 +217,14 @@ impl OrgCapturePlanArgs {
                 .any(|(key, _)| key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
         {
             return Err(
-                "asp org capture --contract cannot be combined with --property CONTRACT_ORG=..."
+                "orgize org capture --contract cannot be combined with --property CONTRACT_ORG=..."
                     .to_string(),
             );
         }
         let target = self.capture_target()?;
         let source = self.capture_source();
         let title = self.title.ok_or_else(|| {
-            "asp org capture --title is required; pass the plan headline explicitly".to_string()
+            "orgize org capture --title is required; pass the plan headline explicitly".to_string()
         })?;
         let mut request =
             AgentCaptureRequest::new(self.kind.unwrap_or(AgentCaptureKind::Task), title)
@@ -267,7 +267,7 @@ impl OrgCapturePlanArgs {
             OrgCapturePlanTargetKind::Datetree => {
                 let Some(date) = self.date else {
                     return Err(
-                        "asp org capture --target datetree requires --date YYYY-MM-DD".to_string(),
+                        "orgize org capture --target datetree requires --date YYYY-MM-DD".to_string(),
                     );
                 };
                 AgentCaptureTarget::datetree(date)
@@ -275,7 +275,7 @@ impl OrgCapturePlanArgs {
             OrgCapturePlanTargetKind::OutlinePath => {
                 if self.outline_path.is_empty() {
                     return Err(
-                        "asp org capture --target outline requires --outline <PATH>".to_string()
+                        "orgize org capture --target outline requires --outline <PATH>".to_string()
                     );
                 }
                 AgentCaptureTarget::outline_path(self.outline_path.clone())
@@ -311,14 +311,14 @@ impl OrgCapturePlanArgs {
 
     fn contract_check_args(&self) -> Result<Option<OrgCaptureContractCheckArgs>, String> {
         let Some(contract_id) = self.contract_id.clone() else {
-            return Err("asp org capture requires --contract CONTRACT_ID".to_string());
+            return Err("orgize org capture requires --contract CONTRACT_ID".to_string());
         };
         if contract_id.trim().is_empty() {
-            return Err("asp org capture --contract requires a non-empty contract id".to_string());
+            return Err("orgize org capture --contract requires a non-empty contract id".to_string());
         }
         if self.contract_registry_paths.is_empty() {
             return Err(
-                "asp org capture --contract requires --org-contract-registry PATH.org".to_string(),
+                "orgize org capture --contract requires --org-contract-registry PATH.org".to_string(),
             );
         }
         Ok(Some(OrgCaptureContractCheckArgs {
@@ -346,7 +346,7 @@ fn render_org_capture_plan(
     contract_check: Option<&OrgCaptureContractCheck>,
 ) -> String {
     let mut output = String::new();
-    output.push_str("[CAPTURE] asp org capture\n");
+    output.push_str("[CAPTURE] orgize org capture\n");
     output.push_str("target: ");
     output.push_str(plan.target.kind.as_str());
     output.push('\n');
@@ -444,7 +444,7 @@ fn capture_contract_check(
     let reference = parse_contract_reference(args.contract_id.as_str());
     let contract = registry.resolve(&reference).ok_or_else(|| {
         format!(
-            "asp org capture --contract `{}` was not found in the loaded Org contract registry",
+            "orgize org capture --contract `{}` was not found in the loaded Org contract registry",
             args.contract_id
         )
     })?;
@@ -457,7 +457,7 @@ fn capture_contract_check(
             let section = document
                 .sections
                 .first()
-                .ok_or_else(|| "asp org capture rendered no Org section to check".to_string())?;
+                .ok_or_else(|| "orgize org capture rendered no Org section to check".to_string())?;
             evaluate_org_contract(
                 &document,
                 contract,
@@ -477,7 +477,7 @@ fn capture_contract_check(
         .collect::<Vec<_>>();
     if !failed_assertions.is_empty() {
         return Err(format!(
-            "asp org capture contract check failed for `{}`: {}",
+            "orgize org capture contract check failed for `{}`: {}",
             args.contract_id,
             failed_assertions.join(", ")
         ));
@@ -566,7 +566,7 @@ fn parse_memory_policy(value: &str) -> Result<AgentCaptureMemoryPolicy, String> 
 
 fn parse_capture_date(value: &str) -> Result<AgendaDate, String> {
     AgendaDate::parse_ymd(value)
-        .ok_or_else(|| format!("asp org capture --date expects YYYY-MM-DD, got `{value}`"))
+        .ok_or_else(|| format!("orgize org capture --date expects YYYY-MM-DD, got `{value}`"))
 }
 
 fn parse_outline_path(value: &str) -> Vec<String> {
@@ -581,11 +581,11 @@ fn parse_outline_path(value: &str) -> Vec<String> {
 fn parse_property(value: &str) -> Result<(String, String), String> {
     let Some((key, property_value)) = value.split_once('=') else {
         return Err(format!(
-            "asp org capture --property expects KEY=VALUE, got `{value}`"
+            "orgize org capture --property expects KEY=VALUE, got `{value}`"
         ));
     };
     if key.trim().is_empty() {
-        return Err("asp org capture --property key cannot be empty".to_string());
+        return Err("orgize org capture --property key cannot be empty".to_string());
     }
     Ok((key.trim().to_string(), property_value.trim().to_string()))
 }

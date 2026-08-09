@@ -182,46 +182,46 @@ fn print_element_guide(language: DocumentLanguage) {
             println!("|field-map link fields=target,description");
             println!("|field-map image fields=target,description");
             println!(
-                "|recipe todo-tasks=asp org query --kind task --field todo=TODO --workspace . --view metadata"
+                "|recipe todo-tasks=orgize org query --kind task --field todo=TODO --workspace . --view metadata"
             );
             println!(
-                "|recipe checked-checklist-items=asp org query --kind checklistItem --field checked=true --workspace . --view metadata"
+                "|recipe checked-checklist-items=orgize org query --kind checklistItem --field checked=true --workspace . --view metadata"
             );
             println!(
-                "|recipe property-value=asp org query --kind property --field key=<KEY> --workspace . --view metadata"
+                "|recipe property-value=orgize org query --kind property --field key=<KEY> --workspace . --view metadata"
             );
             println!(
-                "|recipe sdd-kind-properties=asp org query --kind property --field key=SDD_KIND --workspace . --view metadata"
+                "|recipe sdd-kind-properties=orgize org query --kind property --field key=SDD_KIND --workspace . --view metadata"
             );
             println!(
-                "|recipe org-id-properties=asp org query --kind property --field key=ID --field value=<ID> --workspace . --view metadata"
+                "|recipe org-id-properties=orgize org query --kind property --field key=ID --field value=<ID> --workspace . --view metadata"
             );
             println!(
-                "|recipe tagged-tasks=asp org query --kind task --term <TEXT> --field tag=<TAG> --workspace . --view metadata"
+                "|recipe tagged-tasks=orgize org query --kind task --term <TEXT> --field tag=<TAG> --workspace . --view metadata"
             );
             println!(
-                "|recipe done-tasks=asp org query --kind task --field todo=DONE --workspace . --view metadata"
+                "|recipe done-tasks=orgize org query --kind task --field todo=DONE --workspace . --view metadata"
             );
             println!(
-                "|recipe active-done-artifacts=asp org query --kind task --field todo=DONE --exclude-dir archives --workspace <ORG_ARTIFACTS_ABS_PATH> --content"
+                "|recipe active-done-artifacts=orgize org query --kind task --field todo=DONE --exclude-dir archives --workspace <ORG_ARTIFACTS_ABS_PATH> --content"
             );
             println!(
-                "|recipe current-session-tasks=asp org search memory --session <SESSION_ID> --workspace <ORG_ARTIFACTS_ABS_PATH> --view seeds"
+                "|recipe current-session-tasks=orgize org search memory --session <SESSION_ID> --workspace <ORG_ARTIFACTS_ABS_PATH> --view seeds"
             );
             println!(
-                "|recipe capture-task=asp org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
+                "|recipe capture-task=orgize org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
             );
             println!(
-                "|recipe rust-blocks=asp org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"
+                "|recipe rust-blocks=orgize org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"
             );
             println!(
-                "|recipe source-block-content=asp org query --kind block --field kind=source --field lang=<LANG> --workspace <PATH> --content"
+                "|recipe source-block-content=orgize org query --kind block --field kind=source --field lang=<LANG> --workspace <PATH> --content"
             );
             println!(
-                "|recipe paragraph-content=asp org query --kind paragraph --term <term> --workspace . --content"
+                "|recipe paragraph-content=orgize org query --kind paragraph --term <term> --workspace . --content"
             );
             println!(
-                "|recipe structural-selector=asp org query --selector <structural-selector> --workspace . --view metadata"
+                "|recipe structural-selector=orgize org query --selector <structural-selector> --workspace . --view metadata"
             );
         }
         DocumentLanguage::Markdown => {
@@ -235,18 +235,18 @@ fn print_element_guide(language: DocumentLanguage) {
             println!("|field-map checklistItem fields=checked,checkbox");
             println!("|field-map link fields=target");
             println!("|field-map image fields=target");
-            println!("|recipe headings=asp md query --kind heading --workspace . --view metadata");
+            println!("|recipe headings=orgize md query --kind heading --workspace . --view metadata");
             println!(
-                "|recipe checked-checklist-items=asp md query --kind checklistItem --field checked=true --workspace . --view metadata"
+                "|recipe checked-checklist-items=orgize md query --kind checklistItem --field checked=true --workspace . --view metadata"
             );
             println!(
-                "|recipe code-blocks=asp md query --kind block --field kind=code --workspace . --view metadata"
+                "|recipe code-blocks=orgize md query --kind block --field kind=code --workspace . --view metadata"
             );
             println!(
-                "|recipe paragraph-content=asp md query --kind paragraph --term <term> --workspace . --content"
+                "|recipe paragraph-content=orgize md query --kind paragraph --term <term> --workspace . --content"
             );
             println!(
-                "|recipe structural-selector=asp md query --selector <structural-selector> --workspace . --view metadata"
+                "|recipe structural-selector=orgize md query --selector <structural-selector> --workspace . --view metadata"
             );
         }
     }

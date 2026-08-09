@@ -1,4 +1,4 @@
-use std::{fs, process::Command};
+use std::process::Command;
 
 use serde_json::Value;
 
@@ -111,7 +111,7 @@ fn markdown_document_search_and_query_commands_run() {
         "{toc_stdout}"
     );
     assert!(
-        toc_stdout.contains("next=\"asp md query --selector"),
+        toc_stdout.contains("next=\"orgize md query --selector"),
         "{toc_stdout}"
     );
 
@@ -161,7 +161,7 @@ fn markdown_document_search_and_query_commands_run() {
         "{selector_stdout}"
     );
     assert!(
-        selector_stdout.contains("content-query=\"asp md query --selector"),
+        selector_stdout.contains("content-query=\"orgize md query --selector"),
         "{selector_stdout}"
     );
     assert!(
@@ -269,7 +269,7 @@ fn markdown_document_search_and_query_commands_run() {
         "agent.semantic-protocols.semantic-document-search-packet"
     );
     assert_eq!(search_packet["languageId"], "md");
-    assert_eq!(search_packet["binary"], "asp");
+    assert_eq!(search_packet["binary"], "orgize");
     assert_eq!(search_packet["method"], "search/prime");
     assert_eq!(search_packet["documentMode"], "metadata");
     assert!(
@@ -279,7 +279,7 @@ fn markdown_document_search_and_query_commands_run() {
             .iter()
             .any(|action| action["target"] == "selector"
                 && action["command"]
-                    == "asp md query --selector <structural-selector> --view metadata"),
+                    == "orgize md query --selector <structural-selector> --view metadata"),
         "{search_packet:#}"
     );
     assert!(
@@ -288,7 +288,7 @@ fn markdown_document_search_and_query_commands_run() {
             .expect("next actions")
             .iter()
             .any(|action| action["target"] == "content"
-                && action["command"] == "asp md query --term <term> --content"),
+                && action["command"] == "orgize md query --term <term> --content"),
         "{search_packet:#}"
     );
     assert!(
@@ -345,7 +345,7 @@ fn markdown_document_search_and_query_commands_run() {
         "agent.semantic-protocols.semantic-document-query-packet"
     );
     assert_eq!(query_packet["languageId"], "md");
-    assert_eq!(query_packet["binary"], "asp");
+    assert_eq!(query_packet["binary"], "orgize");
     assert_eq!(query_packet["method"], "query/document");
     assert_eq!(query_packet["documentMode"], "metadata");
     assert_eq!(query_packet["queryKind"], "term");

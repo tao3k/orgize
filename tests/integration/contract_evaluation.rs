@@ -1,7 +1,6 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::Command,
     time::Instant,
 };
 
@@ -121,7 +120,7 @@ fn plain_text_summary_contains_matches_inline_rendered_text_split_by_subscript()
 
 #+BEGIN_SRC org-contract
 (assert exists
-  (plain-text :descendant-of $scope :summary-contains (value "asp org capture --contract CONTRACT_ID")))
+  (plain-text :descendant-of $scope :summary-contains (value "orgize org capture --contract CONTRACT_ID")))
 #+END_SRC
 "#,
     )
@@ -133,7 +132,7 @@ fn plain_text_summary_contains_matches_inline_rendered_text_split_by_subscript()
     let target = Org::parse(
         r#"
 * Skill
-Use asp org capture --contract CONTRACT_ID before writing.
+Use orgize org capture --contract CONTRACT_ID before writing.
 "#,
     )
     .document();

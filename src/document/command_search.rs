@@ -236,7 +236,7 @@ fn print_memory_search(
         println!("{}", render_memory_record(record));
     }
     println!(
-        "|next current-session=asp org search memory --session <SESSION_ID> --workspace {} --view seeds",
+        "|next current-session=orgize org search memory --session <SESSION_ID> --workspace {} --view seeds",
         display_path(root)
     );
     if let Some(session) = &options.session {
@@ -246,7 +246,7 @@ fn print_memory_search(
             options.terms.join(" ")
         };
         let mut command = format!(
-            "asp-memory-engine recall-plan --state .data/omni-memory/state.json --intent {} --session {}",
+            "configured-memory-engine recall-plan --state .data/omni-memory/state.json --intent {} --session {}",
             shell_arg(&intent),
             shell_arg(session)
         );

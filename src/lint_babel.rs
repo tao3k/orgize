@@ -198,11 +198,19 @@ fn runtime_lint_finding(
         .unwrap_or(&language);
     let binding = match crate::runtime::resolve_eval_binding(&language, runtime, None) {
         Ok(mut binding) => {
-            binding.program = runtime_policy
-                .runtime_program()
-                .as_os_str()
-                .to_string_lossy()
-                .into_owned();
+            let program = runtime_policy.runtime_program();
+            binding.program = if runtime_policy.binding_kind()
+                == crate::lint::RuntimeValidationBindingKind::ExactPath
+            {
+                program
+                    .canonicalize()
+                    .unwrap_or_else(|_| program.to_path_buf())
+                    .as_os_str()
+                    .to_string_lossy()
+                    .into_owned()
+            } else {
+                program.as_os_str().to_string_lossy().into_owned()
+            };
             binding
         }
         Err(error) => {

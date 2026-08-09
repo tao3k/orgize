@@ -1,7 +1,7 @@
 use std::{
     fs,
     path::PathBuf,
-    process::{Command, Output},
+    process::Output,
 };
 
 #[test]

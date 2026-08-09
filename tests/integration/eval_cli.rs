@@ -377,7 +377,7 @@ while :; do :; done
         ..orgize::lint::LintOptions::default()
     };
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_millis(250),
+        std::time::Duration::from_secs(2),
         1_048_576,
     )
     .unwrap()
@@ -695,7 +695,7 @@ while :; do :; done
     let context =
         orgize::lint::RuntimeValidationSourceContext::new(source_path, docs.clone(), dir).unwrap();
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_millis(250),
+        std::time::Duration::from_secs(2),
         1_048_576,
     )
     .unwrap()
@@ -837,5 +837,6 @@ fn test_dir(name: &str) -> PathBuf {
     if path.exists() {
         fs::remove_dir_all(&path).unwrap();
     }
-    path
+    fs::create_dir_all(&path).unwrap();
+    fs::canonicalize(path).unwrap()
 }

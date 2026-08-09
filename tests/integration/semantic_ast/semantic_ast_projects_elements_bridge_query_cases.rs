@@ -2,16 +2,11 @@ use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
     ast::{
-        ORG_ELEMENTS_SQL_COLUMNS, OrgElementKindNamespace, OrgElementPropertyProvenance,
-        OrgElementSelector, OrgElementSelectorParseError, OrgElementsHostExecutionOptions,
-        OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexQuery,
-        OrgElementsIndexRecord, OrgElementsIndexSummaryValue, ParsedAnnotation,
-        PythonDirectiveKind, org_elements_index_query_from_json_str,
+        OrgElementsIndexCategory, OrgElementsIndexQuery, org_elements_index_query_from_json_str,
         org_elements_index_query_to_json_value,
     },
 };
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "datafusion-sql")]
 use datafusion::arrow::array::{Int64Array, StringArray};

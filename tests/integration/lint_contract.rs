@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, process::Command, time::Instant};
+use std::{fs, path::PathBuf, time::Instant};
 
 use orgize::{
     Org,
