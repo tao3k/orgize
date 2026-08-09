@@ -2,14 +2,13 @@ use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
     ast::{
-        ORG_ELEMENTS_SQL_COLUMNS, OrgElementKindNamespace, OrgElementPropertyProvenance, OrgElementsHostExecutionOptions,
-        OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
-        PythonDirectiveKind,
+        ORG_ELEMENTS_SQL_COLUMNS, OrgElementKindNamespace, OrgElementPropertyProvenance,
+        OrgElementsHostExecutionOptions, OrgElementsIndexCategory, OrgElementsIndexKind,
+        OrgElementsIndexQuery, OrgElementsIndexSummaryValue, PythonDirectiveKind,
     },
 };
 use serde_json::Value;
 use std::collections::BTreeSet;
-
 
 use super::semantic_ast_projects_elements_bridge_fixtures::{
     ORG_ELEMENT_INTENTIONALLY_UNMAPPED_STANDARD_PROPERTIES, difference, string_set, string_vec,

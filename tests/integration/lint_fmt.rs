@@ -1,9 +1,4 @@
-use std::{
-    fs,
-    io::Write,
-    path::PathBuf,
-    process::Stdio,
-};
+use std::{fs, io::Write, path::PathBuf, process::Stdio};
 
 use orgize::{
     ast::{PriorityProfile, PriorityValue},

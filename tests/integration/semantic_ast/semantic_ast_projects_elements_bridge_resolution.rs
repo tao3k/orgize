@@ -2,12 +2,11 @@ use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
     ast::{
-        OrgElementSelector, OrgElementSelectorParseError,
-        OrgElementsIndexCategory, OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
+        OrgElementSelector, OrgElementSelectorParseError, OrgElementsIndexCategory,
+        OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
     },
 };
 use serde_json::Value;
-
 
 #[test]
 fn semantic_ast_projects_org_guide_real_document_org_elements_regression_has_snapshot() {

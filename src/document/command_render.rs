@@ -235,7 +235,9 @@ fn print_element_guide(language: DocumentLanguage) {
             println!("|field-map checklistItem fields=checked,checkbox");
             println!("|field-map link fields=target");
             println!("|field-map image fields=target");
-            println!("|recipe headings=orgize md query --kind heading --workspace . --view metadata");
+            println!(
+                "|recipe headings=orgize md query --kind heading --workspace . --view metadata"
+            );
             println!(
                 "|recipe checked-checklist-items=orgize md query --kind checklistItem --field checked=true --workspace . --view metadata"
             );

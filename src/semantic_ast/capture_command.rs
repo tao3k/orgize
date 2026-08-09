@@ -267,7 +267,8 @@ impl OrgCapturePlanArgs {
             OrgCapturePlanTargetKind::Datetree => {
                 let Some(date) = self.date else {
                     return Err(
-                        "orgize org capture --target datetree requires --date YYYY-MM-DD".to_string(),
+                        "orgize org capture --target datetree requires --date YYYY-MM-DD"
+                            .to_string(),
                     );
                 };
                 AgentCaptureTarget::datetree(date)
@@ -275,7 +276,7 @@ impl OrgCapturePlanArgs {
             OrgCapturePlanTargetKind::OutlinePath => {
                 if self.outline_path.is_empty() {
                     return Err(
-                        "orgize org capture --target outline requires --outline <PATH>".to_string()
+                        "orgize org capture --target outline requires --outline <PATH>".to_string(),
                     );
                 }
                 AgentCaptureTarget::outline_path(self.outline_path.clone())
@@ -314,11 +315,14 @@ impl OrgCapturePlanArgs {
             return Err("orgize org capture requires --contract CONTRACT_ID".to_string());
         };
         if contract_id.trim().is_empty() {
-            return Err("orgize org capture --contract requires a non-empty contract id".to_string());
+            return Err(
+                "orgize org capture --contract requires a non-empty contract id".to_string(),
+            );
         }
         if self.contract_registry_paths.is_empty() {
             return Err(
-                "orgize org capture --contract requires --org-contract-registry PATH.org".to_string(),
+                "orgize org capture --contract requires --org-contract-registry PATH.org"
+                    .to_string(),
             );
         }
         Ok(Some(OrgCaptureContractCheckArgs {

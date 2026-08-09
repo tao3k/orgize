@@ -1,9 +1,6 @@
-use orgize::ast::{
-        OrgElementsIndexRecord, OrgElementsIndexSummaryValue, ParsedAnnotation,
-    };
+use orgize::ast::{OrgElementsIndexRecord, OrgElementsIndexSummaryValue, ParsedAnnotation};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
-
 
 #[test]
 fn semantic_ast_projects_upstream_org_element_defconsts_match_checked_in_baseline() {

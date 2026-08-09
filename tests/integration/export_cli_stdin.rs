@@ -1,7 +1,4 @@
-use std::{
-    io::Write,
-    process::Stdio,
-};
+use std::{io::Write, process::Stdio};
 
 #[test]
 fn export_md_reads_stdin_and_writes_markdown() {

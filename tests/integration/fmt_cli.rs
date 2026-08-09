@@ -1,9 +1,4 @@
-use std::{
-    fs,
-    io::Write,
-    path::PathBuf,
-    process::Stdio,
-};
+use std::{fs, io::Write, path::PathBuf, process::Stdio};
 
 #[test]
 fn fmt_cli_check_output_is_snapshotted() {

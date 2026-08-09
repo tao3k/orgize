@@ -1,8 +1,4 @@
-use std::{
-    fs,
-    path::PathBuf,
-    process::Output,
-};
+use std::{fs, path::PathBuf, process::Output};
 
 #[test]
 fn cli_agent_planning_renders_planning_cards() {

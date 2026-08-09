@@ -87,11 +87,9 @@ pub(crate) fn resolve_eval_binding(
                 body_transport: EvalBodyTransport::TypstMarkupEvalArgument,
             })
         }
-        "bash" | "sh" | "shell" | "shell-script" | "typst" => {
-            Err(format!(
-                "registered runtime `{runtime}` is incompatible with source block language `{language}`"
-            ))
-        }
+        "bash" | "sh" | "shell" | "shell-script" | "typst" => Err(format!(
+            "registered runtime `{runtime}` is incompatible with source block language `{language}`"
+        )),
         _ => Err(format!(
             "source block language `{language}` has no registered eval runtime `{runtime}`"
         )),
