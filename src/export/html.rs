@@ -1,6 +1,7 @@
 //! HTML exporter for the lossless syntax traversal API.
 
 use rowan::NodeOrToken;
+use rowan::ast::AstNode;
 use std::cmp::min;
 use std::fmt;
 use std::fmt::Write as _;
@@ -120,6 +121,46 @@ impl HtmlExport {
     }
 }
 
+fn safe_source_block_data_attributes(source: &str) -> Vec<(&str, &str)> {
+    let mut attributes = Vec::new();
+    for line in source.lines() {
+        let line = line.trim_start();
+        let prefix = "#+attr_html:";
+        let Some(candidate) = line.get(..prefix.len()) else {
+            continue;
+        };
+        if !candidate.eq_ignore_ascii_case(prefix) {
+            continue;
+        }
+
+        let tokens = line[prefix.len()..].split_whitespace().collect::<Vec<_>>();
+        let mut index = 0;
+        while index < tokens.len() {
+            let Some(name) = tokens[index].strip_prefix(':') else {
+                index += 1;
+                continue;
+            };
+            let value = tokens
+                .get(index + 1)
+                .filter(|value| !value.starts_with(':'))
+                .copied()
+                .unwrap_or("");
+            if name.strip_prefix("data-").is_some_and(|suffix| {
+                !suffix.is_empty()
+                    && suffix.bytes().all(|byte| {
+                        byte.is_ascii_lowercase()
+                            || byte.is_ascii_digit()
+                            || matches!(byte, b'-' | b'_' | b'.' | b':')
+                    })
+            }) {
+                attributes.push((name, value.trim_matches(['\'', '"'])));
+            }
+            index += if value.is_empty() { 1 } else { 2 };
+        }
+    }
+    attributes
+}
+
 impl Traverser for HtmlExport {
     fn event(&mut self, event: Event, ctx: &mut TraversalContext) {
         match event {
@@ -161,14 +202,27 @@ impl Traverser for HtmlExport {
             Event::Leave(Container::Code(_)) => self.output += "</code>",
 
             Event::Enter(Container::SourceBlock(block)) => {
+                let source = block.syntax().to_string();
                 if let Some(language) = block.language() {
                     let _ = write!(
                         &mut self.output,
-                        r#"<pre><code class="language-{}">"#,
+                        r#"<pre class="src src-{}""#,
+                        HtmlEscape(&language)
+                    );
+                    for (name, value) in safe_source_block_data_attributes(&source) {
+                        let _ = write!(&mut self.output, r#" {}="{}""#, name, HtmlEscape(value));
+                    }
+                    let _ = write!(
+                        &mut self.output,
+                        r#"><code class="language-{}">"#,
                         HtmlEscape(&language)
                     );
                 } else {
-                    self.output += r#"<pre><code>"#
+                    self.output += r#"<pre"#;
+                    for (name, value) in safe_source_block_data_attributes(&source) {
+                        let _ = write!(&mut self.output, r#" {}="{}""#, name, HtmlEscape(value));
+                    }
+                    self.output += r#"><code>"#
                 }
             }
             Event::Leave(Container::SourceBlock(_)) => self.output += "</code></pre>",
