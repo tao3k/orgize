@@ -105,6 +105,26 @@ fn html_export_block() {
 }
 
 #[test]
+fn html_source_block_preserves_language_and_safe_data_attributes() {
+    let rendered = Org::parse(
+        r#"
+#+name: browser-contribution
+#+attr_html: :data-poo-flow browser-contribution :onclick alert(1) :style display:none
+#+begin_src scheme
+(display 1)
+#+end_src
+"#,
+    )
+    .to_html();
+
+    assert!(rendered.contains(
+        r#"<pre class="src src-scheme" data-poo-flow="browser-contribution"><code class="language-scheme">"#,
+    ));
+    assert!(!rendered.contains("onclick="));
+    assert!(!rendered.contains("style="));
+}
+
+#[test]
 fn paragraphs() {
     insta::assert_snapshot!(
         Org::parse(r#"
