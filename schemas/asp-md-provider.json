@@ -3,12 +3,18 @@
   "schemaVersion": "1",
   "protocolId": "agent.semantic-protocols.hook",
   "protocolVersion": "1",
-  "manifestId": "agent.semantic-protocols.providers.org.orgize",
+  "manifestId": "agent.semantic-protocols.providers.md.asp-md",
   "manifestVersion": "0.1.0",
-  "languageId": "org",
-  "providerId": "orgize",
-  "namespace": "agent.semantic-protocols.languages.org.orgize",
-    "binary": "asp",
+  "languageId": "md",
+  "providerId": "asp-md",
+  "namespace": "agent.semantic-protocols.languages.md.asp-md",
+  "binary": "asp",
+  "runtimeContract": {
+    "transport": "in-process",
+    "operations": [
+      { "operation": "provider-search", "requestSchemaId": "agent.semantic-protocols.runtime-provider-search-request", "responseSchemaId": "agent.semantic-protocols.runtime-provider-search-receipt" }
+    ]
+  },
   "development": {
     "schemaId": "agent.semantic-protocols.provider-development-descriptor",
     "schemaVersion": "1",
@@ -22,10 +28,10 @@
     "schemaVersion": "1",
     "capabilityId": "document-resolution",
     "extensions": [
-      ".org",
-      ".org_archive"
+      ".md",
+      ".markdown"
     ],
-    "parserId": "orgize.org",
+    "parserId": "orgize.markdown",
     "supportsGitCandidates": true
   },
   "searchCapabilities": {
@@ -34,9 +40,9 @@
     "ownerItems": true,
     "semanticFacts": false,
     "sourceSnapshot": {
-      "descriptorId": "org.source-snapshot",
+      "descriptorId": "md.source-snapshot",
       "descriptorVersion": "1",
-      "languageId": "org",
+      "languageId": "md",
       "authority": "live-parser",
       "algorithm": "blake3-merkle-v1",
       "overlayMode": "merkle-delta",
@@ -49,77 +55,60 @@
     }
   },
   "queryPackDescriptor": {
-    "descriptorId": "org.query-pack",
+    "descriptorId": "md.query-pack",
     "descriptorVersion": "1",
-    "languageId": "org",
+    "languageId": "md",
     "termRoleOverrides": [
       {
-        "term": "heading",
+        "term": "markdownheading",
         "role": "concept",
         "caseSensitive": false
       },
       {
-        "term": "task",
+        "term": "markdownparagraph",
         "role": "concept",
         "caseSensitive": false
       },
       {
-        "term": "property",
+        "term": "codeblock",
         "role": "concept",
         "caseSensitive": false
       },
       {
-        "term": "planning",
+        "term": "taskitem",
         "role": "concept",
         "caseSensitive": false
       },
       {
-        "term": "table",
+        "term": "frontmatter",
         "role": "concept",
         "caseSensitive": false
       },
       {
-        "term": "block",
-        "role": "concept",
-        "caseSensitive": false
-      },
-      {
-        "term": "list",
-        "role": "concept",
-        "caseSensitive": false
-      },
-      {
-        "term": "link",
-        "role": "concept",
-        "caseSensitive": false
-      },
-      {
-        "term": "image",
+        "term": "thematicbreak",
         "role": "concept",
         "caseSensitive": false
       }
     ],
     "recipes": [
       {
-        "recipeId": "org-task-planning",
+        "recipeId": "md-document-structure",
         "trigger": {
           "terms": [
-            "task",
-            "planning",
-            "scheduled",
-            "deadline",
-            "closed"
+            "markdownheading",
+            "markdownparagraph",
+            "frontmatter",
+            "thematicbreak"
           ],
           "match": "any"
         },
         "clauses": [
           {
             "terms": [
-              "task",
-              "planning",
-              "scheduled",
-              "deadline",
-              "closed"
+              "markdownheading",
+              "markdownparagraph",
+              "frontmatter",
+              "thematicbreak"
             ],
             "roles": [
               "concept"
@@ -129,23 +118,25 @@
         ]
       },
       {
-        "recipeId": "org-document-structure",
+        "recipeId": "md-task-content",
         "trigger": {
           "terms": [
-            "heading",
-            "property",
-            "tag",
-            "title"
+            "taskitem",
+            "checklistitem",
+            "link",
+            "image",
+            "codeblock"
           ],
           "match": "any"
         },
         "clauses": [
           {
             "terms": [
-              "heading",
-              "property",
-              "tag",
-              "title"
+              "taskitem",
+              "checklistitem",
+              "link",
+              "image",
+              "codeblock"
             ],
             "roles": [
               "concept"

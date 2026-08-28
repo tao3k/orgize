@@ -12,7 +12,6 @@ use std::time::{Duration, Instant};
 pub(crate) enum EvalBodyTransport {
     Argument,
     Stdin,
-    TypstMarkupEvalArgument,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -27,7 +26,6 @@ impl EvalCommandBinding {
         match self.body_transport {
             EvalBodyTransport::Argument => "argument",
             EvalBodyTransport::Stdin => "stdin",
-            EvalBodyTransport::TypstMarkupEvalArgument => "typst-markup-eval-argument",
         }
     }
 
@@ -83,8 +81,14 @@ pub(crate) fn resolve_eval_binding(
             }
             Ok(EvalCommandBinding {
                 program: "typst".to_string(),
-                args: vec!["eval".to_string()],
-                body_transport: EvalBodyTransport::TypstMarkupEvalArgument,
+                args: vec![
+                    "compile".to_string(),
+                    "--format".to_string(),
+                    "svg".to_string(),
+                    "-".to_string(),
+                    "-".to_string(),
+                ],
+                body_transport: EvalBodyTransport::Stdin,
             })
         }
         "bash" | "sh" | "shell" | "shell-script" | "typst" => Err(format!(
@@ -333,11 +337,6 @@ fn runtime_command(
         }
         EvalBodyTransport::Stdin => {
             command.stdin(Stdio::piped());
-        }
-        EvalBodyTransport::TypstMarkupEvalArgument => {
-            let body =
-                serde_json::to_string(body).expect("serializing a Rust string as JSON cannot fail");
-            command.arg(format!("eval({body}, mode: \"markup\")"));
         }
     }
     if let Some(current_dir) = current_dir

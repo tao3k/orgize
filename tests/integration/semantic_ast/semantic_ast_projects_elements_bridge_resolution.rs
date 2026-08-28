@@ -43,6 +43,7 @@ fn semantic_ast_projects_org_guide_real_document_org_elements_regression_has_sna
         .collect::<Vec<_>>();
 
     insta::assert_snapshot!(
+        "org_guide_elements",
         serde_json::to_string_pretty(&serde_json::json!({
             "source": ".data/org-mode/doc/org-guide.org",
             "recordCount": records.len(),

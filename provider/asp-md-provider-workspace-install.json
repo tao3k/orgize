@@ -1,0 +1,28 @@
+{
+  "$schema": "md/schemas/provider-workspace-install.schema.json",
+  "schemaId": "agent.semantic-protocols.provider-workspace-install",
+  "schemaVersion": "1",
+  "schemaAuthority": "https://tao3k.github.io/agent-semantic-protocols/schemas/",
+  "languageId": "md",
+  "providerId": "asp-md",
+  "binary": "asp-md",
+  "providerRegistration": "asp-md-provider-registration.json",
+  "schemaBundleReceipt": "md/schemas/.asp-schema-manager-receipt.json",
+  "workspaceArtifact": {"root": "target/release", "entrypoint": "orgize"},
+  "workspaceBuild": {
+    "program": "cargo",
+    "args": ["build", "--locked", "--release", "-p", "orgize", "--bin", "orgize"],
+    "workingDirectory": ".",
+    "sourceSnapshotAnchors": [
+      "Cargo.toml",
+      "Cargo.lock",
+      "languages/orgize/Cargo.toml",
+      "languages/orgize/src/lib.rs",
+      "languages/orgize/src/main.rs",
+      "languages/orgize/provider/asp-md-provider-registration.json",
+      "languages/orgize/provider/asp-md-provider-workspace-install.json"
+    ],
+    "derivedPaths": ["target/release"],
+    "env": {}
+  }
+}

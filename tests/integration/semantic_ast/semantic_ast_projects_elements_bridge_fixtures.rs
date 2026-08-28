@@ -27,6 +27,7 @@ fn semantic_ast_projects_upstream_org_element_defconsts_match_checked_in_baselin
     );
 
     insta::assert_snapshot!(
+        "upstream_defconsts",
         serde_json::to_string_pretty(&serde_json::json!({
             "source": "bzg/org-mode .data/org-mode/lisp/org-element.el",
             "allElements": upstream.all_elements,

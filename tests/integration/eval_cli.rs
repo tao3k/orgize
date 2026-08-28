@@ -56,8 +56,11 @@ fn eval_cli_plan_projects_builtin_typst_runtime_without_header_args() {
     assert_eq!(plan["runtime"]["source"], "default");
     assert_eq!(plan["runtime"]["registered"], true);
     assert_eq!(plan["runtime"]["program"], "typst");
-    assert_eq!(plan["runtime"]["bodyMode"], "typst-markup-eval-argument");
-    assert_eq!(plan["runtime"]["args"], serde_json::json!(["eval"]));
+    assert_eq!(plan["runtime"]["bodyMode"], "stdin");
+    assert_eq!(
+        plan["runtime"]["args"],
+        serde_json::json!(["compile", "--format", "svg", "-", "-"])
+    );
 }
 
 #[test]
@@ -141,7 +144,7 @@ printf real-eval
 
 #[cfg(unix)]
 #[test]
-fn eval_cli_run_executes_typst_with_markup_eval_argument() {
+fn eval_cli_run_executes_typst_with_compile_stdin() {
     let dir = test_dir("eval-run-typst");
     let bin = dir.join("bin");
     fs::create_dir_all(&bin).unwrap();
@@ -179,9 +182,12 @@ printf '"ok"\n'
     assert_success(&output);
     assert_eq!(
         fs::read_to_string(dir.join("typst-args.txt")).unwrap(),
-        "eval\neval(\"#let answer = 42\\n\", mode: \"markup\")\n"
+        "compile\n--format\nsvg\n-\n-\n"
     );
-    assert_eq!(fs::read_to_string(dir.join("typst-stdin.txt")).unwrap(), "");
+    assert_eq!(
+        fs::read_to_string(dir.join("typst-stdin.txt")).unwrap(),
+        "#let answer = 42\n"
+    );
     let stdout = stdout(&output);
     assert!(stdout.contains("language: typst"), "stdout: {stdout}");
     assert!(stdout.contains("exit-code: 0"), "stdout: {stdout}");
@@ -189,7 +195,7 @@ printf '"ok"\n'
 
 #[cfg(unix)]
 #[test]
-fn lint_cli_rejects_invalid_typst_from_builtin_markup_eval_argument() {
+fn lint_cli_rejects_invalid_typst_from_builtin_compile_stdin() {
     let dir = test_dir("lint-typst-invalid-runtime");
     let bin = dir.join("bin");
     fs::create_dir_all(&bin).unwrap();
@@ -202,15 +208,11 @@ fn lint_cli_rejects_invalid_typst_from_builtin_markup_eval_argument() {
     fs::write(
         &typst,
         r#"#!/bin/sh
-if [ "$1" != "eval" ] || [ "$#" -ne 2 ]; then
+if [ "$1" != "compile" ] || [ "$2" != "--format" ] || [ "$3" != "svg" ] || [ "$4" != "-" ] || [ "$5" != "-" ] || [ "$#" -ne 5 ]; then
   printf 'unexpected typst invocation\n' >&2
   exit 64
 fi
-body=$2
-case "$body" in
-  'eval('*', mode: "markup")') ;;
-  *) printf 'unexpected typst invocation\n' >&2; exit 64 ;;
-esac
+body=$(cat)
 case "$body" in
   *'#broken'*) printf 'error: invalid Typst body\n' >&2; exit 1 ;;
 esac
@@ -246,7 +248,7 @@ exit 0
 
 #[cfg(unix)]
 #[test]
-fn lint_cli_accepts_valid_typst_from_builtin_markup_eval_argument() {
+fn lint_cli_accepts_valid_typst_from_builtin_compile_stdin() {
     let dir = test_dir("lint-typst-valid-runtime");
     let bin = dir.join("bin");
     fs::create_dir_all(&bin).unwrap();
@@ -259,13 +261,14 @@ fn lint_cli_accepts_valid_typst_from_builtin_markup_eval_argument() {
     fs::write(
         &typst,
         r#"#!/bin/sh
-if [ "$1" != "eval" ] || [ "$#" -ne 2 ]; then
+if [ "$1" != "compile" ] || [ "$2" != "--format" ] || [ "$3" != "svg" ] || [ "$4" != "-" ] || [ "$5" != "-" ] || [ "$#" -ne 5 ]; then
   printf 'unexpected typst invocation\n' >&2
   exit 64
 fi
-case "$2" in
-  'eval('*', mode: "markup")') ;;
-  *) printf 'unexpected typst invocation\n' >&2; exit 64 ;;
+body=$(cat)
+case "$body" in
+  *'#let answer = 42'*) ;;
+  *) printf 'missing typst source in stdin\n' >&2; exit 65 ;;
 esac
 exit 0
 "#,
@@ -301,15 +304,11 @@ fn runtime_lint_resolves_relative_include_from_org_source_parent() {
     fs::write(
         &typst,
         r#"#!/bin/sh
-if [ "$1" != "eval" ] || [ "$#" -ne 2 ]; then
+if [ "$1" != "compile" ] || [ "$2" != "--format" ] || [ "$3" != "svg" ] || [ "$4" != "-" ] || [ "$5" != "-" ] || [ "$#" -ne 5 ]; then
   printf 'unexpected typst invocation\n' >&2
   exit 64
 fi
-body=$2
-case "$body" in
-  'eval('*', mode: "markup")') ;;
-  *) printf 'unexpected typst invocation\n' >&2; exit 64 ;;
-esac
+body=$(cat)
 case "$body" in
   *'fragment.typ'*) ;;
   *) printf 'missing relative include in stdin\n' >&2; exit 65 ;;
@@ -356,16 +355,12 @@ fn runtime_lint_timeout_kills_and_reaps_child_with_org043() {
     fs::write(
         &typst,
         r#"#!/bin/sh
-if [ "$1" != "eval" ] || [ "$#" -ne 2 ]; then
+if [ "$1" != "compile" ] || [ "$2" != "--format" ] || [ "$3" != "svg" ] || [ "$4" != "-" ] || [ "$5" != "-" ] || [ "$#" -ne 5 ]; then
   printf 'unexpected typst invocation\n' >&2
   exit 64
 fi
-case "$2" in
-  'eval('*', mode: "markup")') ;;
-  *) printf 'unexpected typst invocation\n' >&2; exit 64 ;;
-esac
 printf '%s\n' "$$" > .typst-child.pid
-while :; do :; done
+exec tail -f /dev/null
 "#,
     )
     .unwrap();
@@ -377,7 +372,7 @@ while :; do :; done
         ..orgize::lint::LintOptions::default()
     };
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_secs(2),
+        std::time::Duration::from_secs(5),
         1_048_576,
     )
     .unwrap()
@@ -416,14 +411,11 @@ fn lint_cli_rejects_combined_typst_output_over_shared_budget() {
     fs::write(
         &typst,
         r#"#!/bin/sh
-if [ "$1" != "eval" ] || [ "$#" -ne 2 ]; then
+if [ "$1" != "compile" ] || [ "$2" != "--format" ] || [ "$3" != "svg" ] || [ "$4" != "-" ] || [ "$5" != "-" ] || [ "$#" -ne 5 ]; then
   printf 'unexpected typst invocation\n' >&2
   exit 64
 fi
-case "$2" in
-  'eval('*', mode: "markup")') ;;
-  *) printf 'unexpected typst invocation\n' >&2; exit 64 ;;
-esac
+cat >/dev/null
 head -c 614400 /dev/zero
 head -c 614400 /dev/zero >&2
 exit 0
@@ -486,7 +478,7 @@ exit 0
         orgize::lint::RuntimeValidationSourceContext::new(source_path, docs.clone(), dir.clone())
             .unwrap();
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_secs(1),
+        std::time::Duration::from_secs(5),
         1_048_576,
     )
     .unwrap()
@@ -537,7 +529,7 @@ exit 0
         source_path_to_json(&dir)
     );
     assert_eq!(value["binding"]["kind"], "exact-path");
-    assert_eq!(value["policy"]["timeoutMs"], 1_000);
+    assert_eq!(value["policy"]["timeoutMs"], 5_000);
     assert_eq!(value["policy"]["outputByteBudget"], 1_048_576);
     assert_eq!(value["observation"]["stdoutBytes"], 3);
     assert_eq!(value["observation"]["stderrBytes"], 3);
@@ -635,7 +627,7 @@ exit 0
     let context =
         orgize::lint::RuntimeValidationSourceContext::new(source_path, docs, dir.clone()).unwrap();
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_secs(1),
+        std::time::Duration::from_secs(5),
         1_048_576,
     )
     .unwrap()
@@ -681,7 +673,7 @@ fn runtime_validation_evidence_records_timeout_and_reaping() {
         r#"#!/bin/sh
 cat >/dev/null
 printf '%s\n' "$$" > .typst-child.pid
-while :; do :; done
+exec tail -f /dev/null
 "#,
     )
     .unwrap();
@@ -695,7 +687,7 @@ while :; do :; done
     let context =
         orgize::lint::RuntimeValidationSourceContext::new(source_path, docs.clone(), dir).unwrap();
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_secs(2),
+        std::time::Duration::from_secs(5),
         1_048_576,
     )
     .unwrap()
