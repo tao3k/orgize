@@ -1,0 +1,165 @@
+{
+  "schemaId": "agent.semantic-protocols.hook.provider-manifest",
+  "schemaVersion": "1",
+  "protocolId": "agent.semantic-protocols.hook",
+  "protocolVersion": "1",
+  "manifestId": "agent.semantic-protocols.providers.md.asp-md",
+  "manifestVersion": "0.1.0",
+  "languageId": "md",
+  "providerId": "asp-md",
+  "namespace": "agent.semantic-protocols.languages.md.asp-md",
+  "binary": "asp",
+  "runtimeContract": {
+    "transport": "in-process",
+    "operations": [
+      { "operation": "provider-search", "requestSchema": { "schemaId": "agent.semantic-protocols.runtime-provider-search-request", "schemaVersion": "1" }, "responseSchema": { "schemaId": "agent.semantic-protocols.runtime-provider-search-receipt", "schemaVersion": "1" } }
+    ]
+  },
+  "development": {
+    "schemaId": "agent.semantic-protocols.provider-development-descriptor",
+    "schemaVersion": "1",
+    "sourceRoot": "languages/orgize",
+    "buildBinding": "root-development-installer-v1",
+    "artifactDomain": "checkout"
+  },
+    "execution": "embedded",
+  "documentResolution": {
+    "schemaId": "agent.semantic-protocols.provider-document-resolution-descriptor",
+    "schemaVersion": "1",
+    "capabilityId": "document-resolution",
+    "extensions": [
+      ".md",
+      ".markdown"
+    ],
+    "parserId": "orgize.markdown",
+    "supportsGitCandidates": true
+  },
+  "searchCapabilities": {
+    "dependencyTopology": false,
+    "dependencyTopologyMetadata": false,
+    "ownerItems": true,
+    "semanticFacts": false,
+    "sourceSnapshot": {
+      "descriptorId": "md.source-snapshot",
+      "descriptorVersion": "1",
+      "languageId": "md",
+      "authority": "live-parser",
+      "algorithm": "blake3-merkle-v1",
+      "overlayMode": "merkle-delta",
+      "exactSelectorResolution": "pinned-live-module-graph",
+      "packetSchemaId": "asp.source-snapshot.v1",
+      "sourceSnapshotEnvelopeSchemaId": "asp.exact-source-snapshot-envelope.v1",
+      "derivedArtifactEvidenceSchemaId": "asp.derived-source-artifact-evidence.v1",
+      "exactSourcePacketSchemaId": "asp.exact-source-query-result.v1",
+      "canonicalItemSelectorSchemaId": "asp.canonical-item-selector.v1"
+    }
+  },
+  "queryPackDescriptor": {
+    "descriptorId": "md.query-pack",
+    "descriptorVersion": "1",
+    "languageId": "md",
+    "termRoleOverrides": [
+      {
+        "term": "markdownheading",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "markdownparagraph",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "codeblock",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "taskitem",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "frontmatter",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "thematicbreak",
+        "role": "concept",
+        "caseSensitive": false
+      }
+    ],
+    "recipes": [
+      {
+        "recipeId": "md-document-structure",
+        "trigger": {
+          "terms": [
+            "markdownheading",
+            "markdownparagraph",
+            "frontmatter",
+            "thematicbreak"
+          ],
+          "match": "any"
+        },
+        "clauses": [
+          {
+            "terms": [
+              "markdownheading",
+              "markdownparagraph",
+              "frontmatter",
+              "thematicbreak"
+            ],
+            "roles": [
+              "concept"
+            ],
+            "intentAxes": []
+          }
+        ]
+      },
+      {
+        "recipeId": "md-task-content",
+        "trigger": {
+          "terms": [
+            "taskitem",
+            "checklistitem",
+            "link",
+            "image",
+            "codeblock"
+          ],
+          "match": "any"
+        },
+        "clauses": [
+          {
+            "terms": [
+              "taskitem",
+              "checklistitem",
+              "link",
+              "image",
+              "codeblock"
+            ],
+            "roles": [
+              "concept"
+            ],
+            "intentAxes": []
+          }
+        ]
+      }
+    ]
+  },
+  "policy": {
+    "directSourceRead": "block",
+    "rawSourceSearch": "block",
+    "bulkSourceDump": "block",
+    "agentSearchJson": "block"
+  },
+  "routeBindings": {
+    "prime": "search/prime",
+    "owner": "search/toc",
+    "lexical": "search/lexical",
+    "query": "query/exact-selector",
+    "ingest": "search/ingest",
+    "checkChanged": "search/prime",
+    "guide": "guide"
+  }
+}

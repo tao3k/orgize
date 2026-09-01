@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 use super::{
     elements::display_path,
@@ -22,7 +23,7 @@ pub(super) fn print_search_json(
         "protocolVersion": "1",
         "languageId": language.id(),
         "providerId": "orgize",
-        "binary": "asp",
+        "binary": env!("CARGO_PKG_NAME"),
         "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
         "method": format!("search/{view}"),
         "projectRoot": packet_project_root(root),
@@ -68,46 +69,58 @@ pub(super) fn print_search_json(
     print_json(&packet)
 }
 
+const DOCUMENT_QUERY_PACKET_SCHEMA_ID: &str =
+    "agent.semantic-protocols.semantic-document-query-packet";
+const DOCUMENT_QUERY_PACKET_SCHEMA_VERSION: &str = "1";
+const DOCUMENT_QUERY_PACKET_SCHEMA_AUTHORITY: &str =
+    "https://tao3k.github.io/agent-semantic-protocols/schemas/";
+
+pub(super) struct DocumentQueryEvidence {
+    execution_command_digest: String,
+}
+
+struct DocumentQueryPacketInput<'a> {
+    language: DocumentLanguage,
+    query: String,
+    query_terms: Vec<String>,
+    query_kind: &'static str,
+    root: &'a Path,
+    facts: &'a [DocumentElement],
+    content_output: bool,
+    evidence: DocumentQueryEvidence,
+}
+
+pub(super) fn document_query_evidence(
+    paths: impl IntoIterator<Item = std::path::PathBuf>,
+    owner_path: Option<&Path>,
+) -> Result<DocumentQueryEvidence, String> {
+    let execution_command_digest = provider_execution_command_digest()?;
+    document_query_evidence_with_digest(paths, owner_path, execution_command_digest)
+}
+
 pub(super) fn print_query_json(
     language: DocumentLanguage,
     terms: &[String],
     root: &Path,
     facts: &[DocumentElement],
     content_output: bool,
+    evidence: DocumentQueryEvidence,
 ) -> Result<(), String> {
     let query_terms = if terms.is_empty() {
         vec!["*".to_string()]
     } else {
         terms.to_vec()
     };
-    let query_surface = if content_output {
-        "content"
-    } else {
-        "metadata"
-    };
-    let packet = json!({
-        "schemaId": "agent.semantic-protocols.semantic-document-query-packet",
-        "schemaVersion": "1",
-        "protocolId": "agent.semantic-protocols.semantic-language",
-        "protocolVersion": "1",
-        "languageId": language.id(),
-        "providerId": "orgize",
-        "binary": "asp",
-        "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
-        "method": "query/document",
-        "projectRoot": packet_project_root(root),
-        "query": query_terms.join(" "),
-        "queryTerms": query_terms,
-        "queryKind": "term",
-        "querySurface": query_surface,
-        "documentMode": query_surface,
-        "matchCount": facts.len(),
-        "matchLimit": 80,
-        "matchesTruncated": facts.len() > 80,
-        "documentFacts": facts.iter().take(80).map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
-        "contentBlocks": if content_output { content_blocks_json(language, root, facts) } else { Vec::new() },
-        "truncated": facts.len() > 80
-    });
+    let packet = build_document_query_packet(DocumentQueryPacketInput {
+        language,
+        query: query_terms.join(" "),
+        query_terms,
+        query_kind: "term",
+        root,
+        facts,
+        content_output,
+        evidence,
+    })?;
     print_json(&packet)
 }
 
@@ -117,41 +130,80 @@ pub(super) fn print_selector_query_json(
     selection: &SourceSelector,
     facts: &[DocumentElement],
     content_output: bool,
+    evidence: DocumentQueryEvidence,
 ) -> Result<(), String> {
     let root = if selection.structural_selector.is_some() {
         Path::new(".")
     } else {
         selection.path.parent().unwrap_or_else(|| Path::new("."))
     };
-    let query_surface = if content_output {
+    let packet = build_document_query_packet(DocumentQueryPacketInput {
+        language,
+        query: selector.to_string(),
+        query_terms: vec![selector.to_string()],
+        query_kind: "selector",
+        root,
+        facts,
+        content_output,
+        evidence,
+    })?;
+    print_json(&packet)
+}
+
+fn document_query_evidence_with_digest(
+    paths: impl IntoIterator<Item = std::path::PathBuf>,
+    owner_path: Option<&Path>,
+    execution_command_digest: String,
+) -> Result<DocumentQueryEvidence, String> {
+    let _ = (paths.into_iter(), owner_path);
+    Ok(DocumentQueryEvidence {
+        execution_command_digest,
+    })
+}
+
+fn build_document_query_packet(input: DocumentQueryPacketInput<'_>) -> Result<Value, String> {
+    let execution_command_digest = input.evidence.execution_command_digest.clone();
+    let query_surface = if input.content_output {
         "content"
     } else {
         "metadata"
     };
-    let packet = json!({
-        "schemaId": "agent.semantic-protocols.semantic-document-query-packet",
-        "schemaVersion": "1",
+    let document_facts = input
+        .facts
+        .iter()
+        .take(80)
+        .map(|fact| document_fact_json(input.language, input.root, fact))
+        .collect::<Vec<_>>();
+    let content_blocks = if input.content_output {
+        content_blocks_json(input.language, input.root, input.facts)?
+    } else {
+        Vec::new()
+    };
+    Ok(json!({
+        "schemaId": DOCUMENT_QUERY_PACKET_SCHEMA_ID,
+        "schemaVersion": DOCUMENT_QUERY_PACKET_SCHEMA_VERSION,
+        "schemaAuthority": DOCUMENT_QUERY_PACKET_SCHEMA_AUTHORITY,
         "protocolId": "agent.semantic-protocols.semantic-language",
         "protocolVersion": "1",
-        "languageId": language.id(),
+        "languageId": input.language.id(),
         "providerId": "orgize",
-        "binary": "asp",
-        "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
+        "binary": env!("CARGO_PKG_NAME"),
+        "namespace": format!("agent.semantic-protocols.languages.{}.orgize", input.language.id()),
         "method": "query/document",
-        "projectRoot": packet_project_root(root),
-        "query": selector,
-        "queryTerms": [selector],
-        "queryKind": "selector",
+        "projectRoot": packet_project_root(input.root),
+        "query": input.query,
+        "queryTerms": input.query_terms,
+        "queryKind": input.query_kind,
         "querySurface": query_surface,
         "documentMode": query_surface,
-        "matchCount": facts.len(),
+        "matchCount": input.facts.len(),
         "matchLimit": 80,
-        "matchesTruncated": facts.len() > 80,
-        "documentFacts": facts.iter().take(80).map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
-        "contentBlocks": if content_output { content_blocks_json(language, root, facts) } else { Vec::new() },
-        "truncated": facts.len() > 80
-    });
-    print_json(&packet)
+        "matchesTruncated": input.facts.len() > 80,
+        "documentFacts": document_facts,
+        "contentBlocks": content_blocks,
+        "executionCommandDigest": execution_command_digest,
+        "truncated": input.facts.len() > 80
+    }))
 }
 
 fn print_json(packet: &Value) -> Result<(), String> {
@@ -196,7 +248,7 @@ fn owners_json(language: DocumentLanguage, root: &Path, facts: &[DocumentElement
 
 fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentElement) -> Value {
     let path = packet_path(root, &fact.path);
-    let structural_selector = packet_structural_selector(language, &path, fact);
+    let structural_selector = packet_structural_selector(language, &fact.path, fact);
     let mut value = json!({
         "id": structural_selector.as_str(),
         "kind": fact.kind,
@@ -219,7 +271,7 @@ fn content_blocks_json(
     language: DocumentLanguage,
     root: &Path,
     facts: &[DocumentElement],
-) -> Vec<Value> {
+) -> Result<Vec<Value>, String> {
     facts
         .iter()
         .take(80)
@@ -228,17 +280,35 @@ fn content_blocks_json(
             (!content.trim().is_empty()).then(|| {
                 let path = packet_path(root, &fact.path);
                 let structural_selector = packet_structural_selector(language, &path, fact);
-                json!({
+                let block = json!({
                     "kind": "element",
                     "documentPath": path,
                     "structuralSelector": structural_selector.as_str(),
                     "location": location_json(&packet_path(root, &fact.path), fact.line, fact.end_line),
                     "parserAuthority": language.parser_authority(),
                     "content": content
-                })
+                });
+                Ok(block)
             })
         })
         .collect()
+}
+
+fn provider_execution_command_digest() -> Result<String, String> {
+    let executable = std::env::current_exe().map_err(|error| {
+        format!("could not resolve current executable for JSON query evidence: {error}")
+    })?;
+    let mut hasher = Sha256::new();
+    hash_command_component(&mut hasher, executable.as_os_str().as_encoded_bytes());
+    for argument in std::env::args_os() {
+        hash_command_component(&mut hasher, argument.as_encoded_bytes());
+    }
+    Ok(format!("sha256:{:x}", hasher.finalize()))
+}
+
+fn hash_command_component(hasher: &mut Sha256, component: &[u8]) {
+    hasher.update((component.len() as u64).to_be_bytes());
+    hasher.update(component);
 }
 
 fn location_json(path: &str, line: usize, end_line: usize) -> Value {
@@ -250,13 +320,21 @@ fn location_json(path: &str, line: usize, end_line: usize) -> Value {
 
 fn packet_structural_selector(
     language: DocumentLanguage,
-    packet_path: &str,
+    source_path: &str,
     fact: &DocumentElement,
 ) -> String {
+    let source_path = Path::new(source_path);
+    let source_path = if source_path.is_absolute() {
+        source_path.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map(|directory| directory.join(source_path))
+            .unwrap_or_else(|_| source_path.to_path_buf())
+    };
     format!(
         "{}://{}#{}",
         language.id(),
-        packet_path,
+        source_path.display(),
         structural_selector_fragment(&fact.structural_selector)
     )
 }

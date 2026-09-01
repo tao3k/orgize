@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{fs, path::PathBuf};
 
 #[test]
 fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
@@ -7,7 +7,7 @@ fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
     let contract_path = dir.join("task-contract.org");
     fs::write(&contract_path, task_contract_source()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "capture-plan",
@@ -20,7 +20,7 @@ fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
             "--title",
             "Record ASP org plan",
             "--body",
-            "** Goal\nUse asp org capture before applying an Org edit.",
+            "** Goal\nUse orgize org capture before applying an Org edit.",
             "--target-file",
             "PLANS.org",
             "--outline",
@@ -35,7 +35,7 @@ fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
 
     assert_success(&output);
     let stdout = stdout(&output);
-    assert!(stdout.contains("[CAPTURE] asp org capture"), "{stdout}");
+    assert!(stdout.contains("[CAPTURE] orgize org capture"), "{stdout}");
     assert!(stdout.contains("target: outlinePath"), "{stdout}");
     assert!(stdout.contains("target-file: PLANS.org"), "{stdout}");
     assert!(stdout.contains("outline: Plans / Active"), "{stdout}");
@@ -73,7 +73,7 @@ fn capture_plan_requires_contract() {
     let dir = test_dir("capture-plan-requires-contract");
     let plan_path = dir.join("PLANS.org");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "capture-plan",
@@ -82,7 +82,7 @@ fn capture_plan_requires_contract() {
             "--title",
             "Record ASP org plan",
             "--body",
-            "** Goal\nUse asp org capture before applying an Org edit.",
+            "** Goal\nUse orgize org capture before applying an Org edit.",
             "--target-file",
             "PLANS.org",
         ])
@@ -92,7 +92,7 @@ fn capture_plan_requires_contract() {
     assert_ne!(output.status.code(), Some(0));
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("asp org capture requires --contract CONTRACT_ID"),
+        stderr.contains("orgize org capture requires --contract CONTRACT_ID"),
         "{stderr}"
     );
     assert!(
@@ -107,7 +107,7 @@ fn capture_plan_rejects_domain_specific_agent_plan_kind() {
     let dir = test_dir("agent-plan-template");
     let plan_path = dir.join("PLANS.org");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "capture-plan",

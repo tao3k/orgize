@@ -297,48 +297,42 @@ pub(super) fn collect_document_paths(
         return Err(format!("{}: unsupported path type", path.display()));
     }
 
-    let mut entries = fs::read_dir(path)
-        .map_err(|error| format!("{}: {error}", path.display()))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|error| format!("{}: {error}", path.display()))?;
-    entries.sort_by_key(|entry| entry.path());
-
-    for entry in entries {
-        let entry_path = entry.path();
-        let Some(name) = entry_path.file_name().and_then(|name| name.to_str()) else {
-            continue;
-        };
-        let entry_type = entry
-            .file_type()
-            .map_err(|error| format!("{}: {error}", entry_path.display()))?;
-        if entry_type.is_dir() {
-            if should_skip_project_directory(name, walk_config) {
-                continue;
+    let ignored_directories = walk_config.ignore_dirs.clone();
+    let included_hidden_directories = walk_config.include_hidden_dirs.clone();
+    let mut builder = ignore::WalkBuilder::new(path);
+    builder
+        .standard_filters(true)
+        .hidden(false)
+        .follow_links(false)
+        .filter_entry(move |entry| {
+            if entry.depth() == 0 || !entry.file_type().is_some_and(|kind| kind.is_dir()) {
+                return true;
             }
-            collect_document_paths(language, &entry_path, walk_config, files)?;
-        } else if entry_type.is_file() && language.matches_path(&entry_path) {
-            files.push(entry_path);
+            let name = entry.file_name().to_string_lossy();
+            if ignored_directories
+                .iter()
+                .any(|ignored| ignored == name.as_ref())
+            {
+                return false;
+            }
+            !name.starts_with('.')
+                || included_hidden_directories
+                    .iter()
+                    .any(|included| included == name.as_ref())
+        });
+    for entry in builder.build() {
+        let entry = entry.map_err(|error| format!("{}: {error}", path.display()))?;
+        if entry.depth() == 0 {
+            continue;
+        }
+        if entry.file_type().is_some_and(|kind| kind.is_file())
+            && language.matches_path(entry.path())
+        {
+            files.push(entry.into_path());
         }
     }
+    files.sort();
     Ok(())
-}
-
-fn should_skip_project_directory(name: &str, walk_config: &DocumentWalkConfig) -> bool {
-    if walk_config
-        .include_hidden_dirs
-        .iter()
-        .any(|included| included == name)
-    {
-        return false;
-    }
-    if walk_config
-        .ignore_dirs
-        .iter()
-        .any(|ignored| ignored == name)
-    {
-        return true;
-    }
-    name.starts_with('.')
 }
 
 impl DocumentElement {

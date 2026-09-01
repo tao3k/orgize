@@ -2,13 +2,43 @@
 
 use std::path::PathBuf;
 
-/// Source file plus an optional inclusive 1-based line range.
+/// Source file plus its parser-owned structural selector.
 #[derive(Debug)]
 pub struct SourceSelector {
     pub path: PathBuf,
     pub range: Option<SourceLineRange>,
     pub structural_selector: Option<String>,
     pub structural_fragment: Option<String>,
+}
+
+impl SourceSelector {
+    /// Parse the legacy direct-read `path[:start-end]` selector.
+    pub fn parse_direct_read(value: &str) -> Result<Self, String> {
+        let (path, range) = match value.rsplit_once(':') {
+            Some((path, candidate)) => match candidate.split_once('-') {
+                Some((start, end)) => {
+                    let start_line = start
+                        .parse::<usize>()
+                        .map_err(|_| format!("invalid source line range `{candidate}`"))?;
+                    let end_line = end
+                        .parse::<usize>()
+                        .map_err(|_| format!("invalid source line range `{candidate}`"))?;
+                    (path, Some(SourceLineRange::new(start_line, end_line)))
+                }
+                None => (value, None),
+            },
+            None => (value, None),
+        };
+        if path.is_empty() {
+            return Err("source selector path must not be empty".to_owned());
+        }
+        Ok(Self {
+            path: PathBuf::from(path),
+            range,
+            structural_selector: None,
+            structural_fragment: None,
+        })
+    }
 }
 
 /// Inclusive 1-based line range selected from one source file.
@@ -29,11 +59,12 @@ impl SourceLineRange {
 
 impl SourceSelector {
     pub fn parse_query(selector: &str) -> Result<Self, String> {
-        if selector.contains("://") {
-            SourceSelector::parse_structural(selector)
-        } else {
-            SourceSelector::parse_direct_read(selector)
+        if !selector.contains("://") {
+            return Err(format!(
+                "query selector `{selector}` is not a parser-owned structural selector"
+            ));
         }
+        SourceSelector::parse_structural(selector)
     }
 
     pub fn parse_structural(selector: &str) -> Result<Self, String> {
@@ -58,31 +89,6 @@ impl SourceSelector {
             "document query selector `{selector}` is not structural; use a selector emitted by search/query metadata, for example org://path#structure"
         ))
     }
-
-    pub fn parse_direct_read(selector: &str) -> Result<Self, String> {
-        if selector.contains("://") {
-            return Err(format!(
-                "direct-source-read selector `{selector}` is structural; use normal query --selector with --content"
-            ));
-        }
-        let Some((path, range)) = selector.rsplit_once(':') else {
-            return Ok(Self {
-                path: PathBuf::from(selector),
-                range: None,
-                structural_selector: None,
-                structural_fragment: None,
-            });
-        };
-        if path.is_empty() {
-            return Err(format!("invalid selector `{selector}`"));
-        }
-        Ok(Self {
-            path: PathBuf::from(path),
-            range: Some(parse_line_range(range)?),
-            structural_selector: None,
-            structural_fragment: None,
-        })
-    }
 }
 
 pub fn structural_selector_fragment(selector: &str) -> &str {
@@ -92,10 +98,10 @@ pub fn structural_selector_fragment(selector: &str) -> &str {
         .unwrap_or(selector)
 }
 
-/// Select the requested inclusive line range from source text.
-pub fn select_source(source: &str, range: Option<SourceLineRange>) -> String {
-    let Some(range) = range else {
-        return source.to_string();
+/// Select an optional inclusive line range from source text.
+pub fn select_source(source: &str, range: impl Into<Option<SourceLineRange>>) -> String {
+    let Some(range) = range.into() else {
+        return source.to_owned();
     };
     let mut output = String::new();
     for (index, line) in source.split_inclusive('\n').enumerate() {
@@ -105,15 +111,4 @@ pub fn select_source(source: &str, range: Option<SourceLineRange>) -> String {
         }
     }
     output
-}
-
-fn parse_line_range(value: &str) -> Result<SourceLineRange, String> {
-    let (start, end) = value.split_once('-').unwrap_or((value, value));
-    let start = start
-        .parse::<usize>()
-        .map_err(|_| format!("invalid selector line `{value}`"))?;
-    let end = end
-        .parse::<usize>()
-        .map_err(|_| format!("invalid selector line `{value}`"))?;
-    Ok(SourceLineRange::new(start, end))
 }

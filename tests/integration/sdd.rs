@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{fs, path::PathBuf};
 
 use orgize::{Org, lint::lint_org};
 
@@ -90,7 +90,7 @@ fn cli_sdd_status_renders_compact_projection() {
     let path = dir.join("sdd.org");
     fs::write(&path, valid_sdd_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["sdd", "status", path.to_str().unwrap()])
         .output()
         .unwrap();
@@ -108,7 +108,7 @@ fn cli_sdd_graph_diff_reports_semantic_outline_drift() {
     let path = dir.join("sdd.org");
     fs::write(&path, valid_sdd_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["sdd", "graph-diff", path.to_str().unwrap()])
         .output()
         .unwrap();
@@ -126,7 +126,7 @@ fn cli_sdd_graph_diff_reports_semantic_outline_drift() {
         "{stdout}"
     );
 
-    let fail_output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let fail_output = crate::library_cli::orgize_cli_command()
         .args([
             "sdd",
             "graph-diff",

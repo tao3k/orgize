@@ -2,7 +2,7 @@ use std::{
     fs,
     io::Read,
     path::{Path, PathBuf},
-    process::{Command, ExitCode},
+    process::ExitCode,
 };
 
 use crate::{
@@ -343,45 +343,43 @@ fn execute_eval_plan(
         .as_deref()
         .unwrap_or("sh")
         .to_ascii_lowercase();
-    let shell = shell_override
-        .map(str::to_string)
-        .unwrap_or_else(|| default_shell_for_language(&language).to_string());
-    let shell_arg = shell_arg_for_language(&language)?;
-    let mut command = Command::new(&shell);
-    command.arg(shell_arg).arg(plan.record.value.as_str());
-    if let Some(parent) = path.parent()
-        && !parent.as_os_str().is_empty()
-    {
-        command.current_dir(parent);
-    }
-    let output = command.output().map_err(|error| {
+    let (runtime, _) = effective_runtime(plan, &language);
+    let binding = crate::runtime::resolve_eval_binding(&language, runtime, shell_override)?;
+    let output = crate::runtime::execute_runtime(
+        &binding,
+        plan.record.value.as_str(),
+        path.parent(),
+        std::time::Duration::from_secs(30),
+        1_048_576,
+    )
+    .map_err(|error| {
         format!(
-            "failed to run `{shell}` for eval block `{}`: {error}",
+            "failed to execute registered runtime `{runtime}` for eval block `{}`: {error}",
             plan.name
         )
     })?;
     Ok(BabelEvalOutput {
-        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
-        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-        exit_code: output.status.code(),
+        stdout: output.stdout,
+        stderr: output.stderr,
+        exit_code: output.exit_code,
     })
 }
 
-fn default_shell_for_language(language: &str) -> &'static str {
-    match language {
-        "bash" => "bash",
-        _ => "sh",
-    }
-}
-
-fn shell_arg_for_language(language: &str) -> Result<&'static str, String> {
-    match language {
-        "bash" => Ok("-lc"),
-        "sh" | "shell" | "shell-script" => Ok("-c"),
-        other => Err(format!(
-            "eval run only supports shell source blocks, got `{other}`"
-        )),
-    }
+fn effective_runtime<'a>(
+    plan: &'a BabelEvalPlan,
+    language: &'a str,
+) -> (&'a str, SourceBlockHeaderArgSource) {
+    plan.record
+        .normalized_header_args
+        .iter()
+        .rev()
+        .find(|arg| arg.key.eq_ignore_ascii_case("runtime"))
+        .and_then(|arg| {
+            arg.value
+                .as_deref()
+                .map(|value| (value, SourceBlockHeaderArgSource::Explicit))
+        })
+        .unwrap_or((language, SourceBlockHeaderArgSource::Default))
 }
 
 fn eval_policy_allows_run(policy: SourceBlockEvalPolicy) -> bool {
@@ -395,6 +393,12 @@ fn eval_policy_allows_run(policy: SourceBlockEvalPolicy) -> bool {
 
 fn plan_compact(plan: &BabelEvalPlan, path: &str) -> String {
     let record = &plan.record;
+    let language = record
+        .language
+        .as_deref()
+        .unwrap_or("sh")
+        .to_ascii_lowercase();
+    let (runtime, source) = effective_runtime(plan, &language);
     let mut rendered = String::new();
     rendered.push_str("orgize eval plan\n");
     rendered.push_str(&format!("source: {path}\n"));
@@ -405,6 +409,10 @@ fn plan_compact(plan: &BabelEvalPlan, path: &str) -> String {
     rendered.push_str(&format!(
         "eval: {}\n",
         eval_policy_label(record.execution.eval.policy)
+    ));
+    rendered.push_str(&format!(
+        "runtime: {runtime} ({})\n",
+        header_source_label(source)
     ));
     rendered.push_str(&format!(
         "results: {} {}\n",
@@ -521,6 +529,7 @@ fn plan_json(plan: &BabelEvalPlan, path: &str) -> serde_json::Value {
             "policy": eval_policy_label(record.execution.eval.policy),
             "source": header_source_label(record.execution.eval.source),
         },
+        "runtime": eval_runtime_json(plan),
         "results": {
             "raw": record.result_options.raw,
             "handling": result_handling_label(record.result_options.handling),
@@ -537,6 +546,32 @@ fn plan_json(plan: &BabelEvalPlan, path: &str) -> serde_json::Value {
             "end": result.source.range_end,
         })),
     })
+}
+
+fn eval_runtime_json(plan: &BabelEvalPlan) -> serde_json::Value {
+    let language = plan
+        .record
+        .language
+        .as_deref()
+        .unwrap_or("sh")
+        .to_ascii_lowercase();
+    let (runtime, source) = effective_runtime(plan, &language);
+    match crate::runtime::resolve_eval_binding(&language, runtime, None) {
+        Ok(binding) => serde_json::json!({
+            "id": runtime,
+            "source": header_source_label(source),
+            "registered": true,
+            "program": binding.program,
+            "args": binding.args,
+            "bodyMode": binding.body_mode_label(),
+        }),
+        Err(error) => serde_json::json!({
+            "id": runtime,
+            "source": header_source_label(source),
+            "registered": false,
+            "error": error,
+        }),
+    }
 }
 
 fn patch_json(

@@ -110,14 +110,14 @@ direnv exec . cargo fmt --all -- --check
 direnv exec . cargo test --workspace --all-targets --all-features
 direnv exec . cargo clippy --workspace --all-targets --all-features -- -D warnings
 direnv exec . cargo test --doc --all-features
-direnv exec . cargo run --quiet --manifest-path /Users/guangtao/ghq/github.com/tao3k/rust-lang-project-harness/Cargo.toml -- --json /Users/guangtao/ghq/github.com/tao3k/orgize
+direnv exec . cargo test --locked --test integration_test harness_report_consumer::git_locked_asp_rust_report_exposes_actionable_performance_gaps -- --exact
 git diff --check
 rg -n "<foreign-reference-and-policy-boundary-pattern>" Cargo.toml Cargo.lock src tests README.md .github wasm examples build.rs benches docs --glob '!target/**'
 #+end_src
 
 The final boundary grep should use the repository's current forbidden
 reference/toolchain and policy-bypass pattern, and it should return no matches.
-The Rust project harness JSON should report zero findings. The local `.data/`
+The ASP Rust API-backed policy tests should report zero findings. The local `.data/`
 directory may remain untracked as a research checkout, but it must not enter
 Cargo, CI, the release package, tests, or generated artifacts.
 
@@ -128,8 +128,7 @@ Cargo, CI, the release package, tests, or generated artifacts.
 - `gh-pages` may be skipped on parser-only pushes.
 - Treat unresolved review threads as blocking until resolved or explicitly
   marked non-actionable.
-- Do not downgrade or disable harness policy to land this lane.
-- Keep the Rust project harness mounted from root `build.rs` and the
-  `src/lib.rs` cargo-test gate for the parser workspace. The `wasm/build.rs`
-  gate now lives in the `tao3k/orgize-wasm` submodule so browser-package policy
-  is enforced at its own repository boundary.
+- Do not downgrade or disable ASP Rust policy to land this lane.
+- Keep root and WASM build scripts thin by mounting only
+  `asp-rust-build-support`; run full ASP Rust source policy from cargo-test
+  gates at each repository boundary.

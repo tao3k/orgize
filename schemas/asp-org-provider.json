@@ -1,0 +1,180 @@
+{
+  "schemaId": "agent.semantic-protocols.hook.provider-manifest",
+  "schemaVersion": "1",
+  "protocolId": "agent.semantic-protocols.hook",
+  "protocolVersion": "1",
+  "manifestId": "agent.semantic-protocols.providers.org.asp-org",
+  "manifestVersion": "0.1.0",
+  "languageId": "org",
+  "providerId": "asp-org",
+  "namespace": "agent.semantic-protocols.languages.org.asp-org",
+  "binary": "asp",
+  "runtimeContract": {
+    "transport": "in-process",
+    "operations": [
+      { "operation": "provider-search", "requestSchema": { "schemaId": "agent.semantic-protocols.runtime-provider-search-request", "schemaVersion": "1" }, "responseSchema": { "schemaId": "agent.semantic-protocols.runtime-provider-search-receipt", "schemaVersion": "1" } }
+    ]
+  },
+  "development": {
+    "schemaId": "agent.semantic-protocols.provider-development-descriptor",
+    "schemaVersion": "1",
+    "sourceRoot": "languages/orgize",
+    "buildBinding": "root-development-installer-v1",
+    "artifactDomain": "checkout"
+  },
+    "execution": "embedded",
+  "documentResolution": {
+    "schemaId": "agent.semantic-protocols.provider-document-resolution-descriptor",
+    "schemaVersion": "1",
+    "capabilityId": "document-resolution",
+    "extensions": [
+      ".org",
+      ".org_archive"
+    ],
+    "parserId": "orgize.org",
+    "supportsGitCandidates": true
+  },
+  "searchCapabilities": {
+    "dependencyTopology": false,
+    "dependencyTopologyMetadata": false,
+    "ownerItems": true,
+    "semanticFacts": false,
+    "sourceSnapshot": {
+      "descriptorId": "org.source-snapshot",
+      "descriptorVersion": "1",
+      "languageId": "org",
+      "authority": "live-parser",
+      "algorithm": "blake3-merkle-v1",
+      "overlayMode": "merkle-delta",
+      "exactSelectorResolution": "pinned-live-module-graph",
+      "packetSchemaId": "asp.source-snapshot.v1",
+      "sourceSnapshotEnvelopeSchemaId": "asp.exact-source-snapshot-envelope.v1",
+      "derivedArtifactEvidenceSchemaId": "asp.derived-source-artifact-evidence.v1",
+      "exactSourcePacketSchemaId": "asp.exact-source-query-result.v1",
+      "canonicalItemSelectorSchemaId": "asp.canonical-item-selector.v1"
+    }
+  },
+  "queryPackDescriptor": {
+    "descriptorId": "org.query-pack",
+    "descriptorVersion": "1",
+    "languageId": "org",
+    "termRoleOverrides": [
+      {
+        "term": "heading",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "task",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "property",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "planning",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "table",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "block",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "list",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "link",
+        "role": "concept",
+        "caseSensitive": false
+      },
+      {
+        "term": "image",
+        "role": "concept",
+        "caseSensitive": false
+      }
+    ],
+    "recipes": [
+      {
+        "recipeId": "org-task-planning",
+        "trigger": {
+          "terms": [
+            "task",
+            "planning",
+            "scheduled",
+            "deadline",
+            "closed"
+          ],
+          "match": "any"
+        },
+        "clauses": [
+          {
+            "terms": [
+              "task",
+              "planning",
+              "scheduled",
+              "deadline",
+              "closed"
+            ],
+            "roles": [
+              "concept"
+            ],
+            "intentAxes": []
+          }
+        ]
+      },
+      {
+        "recipeId": "org-document-structure",
+        "trigger": {
+          "terms": [
+            "heading",
+            "property",
+            "tag",
+            "title"
+          ],
+          "match": "any"
+        },
+        "clauses": [
+          {
+            "terms": [
+              "heading",
+              "property",
+              "tag",
+              "title"
+            ],
+            "roles": [
+              "concept"
+            ],
+            "intentAxes": []
+          }
+        ]
+      }
+    ]
+  },
+  "policy": {
+    "directSourceRead": "block",
+    "rawSourceSearch": "block",
+    "bulkSourceDump": "block",
+    "agentSearchJson": "block"
+  },
+  "routeBindings": {
+    "prime": "search/prime",
+    "owner": "search/toc",
+    "lexical": "search/lexical",
+    "query": "query/exact-selector",
+    "ingest": "search/ingest",
+    "checkChanged": "search/prime",
+    "guide": "guide"
+  }
+}

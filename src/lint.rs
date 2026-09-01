@@ -13,7 +13,7 @@ mod lint_file_links;
 #[path = "lint_lifecycle.rs"]
 mod lint_lifecycle;
 #[path = "lint_model.rs"]
-mod lint_model;
+pub(crate) mod lint_model;
 #[path = "lint_priority.rs"]
 mod lint_priority;
 #[path = "lint_progress.rs"]
@@ -33,12 +33,11 @@ use std::{collections::BTreeMap, fs, io::ErrorKind, path::Path};
 
 use self::{
     lint_attachments::attachment_findings,
-    lint_babel::babel_findings,
     lint_contracts::{builtin_contract_org_findings, contract_org_findings},
     lint_crypt::crypt_findings,
     lint_file_links::file_link_findings,
     lint_lifecycle::lifecycle_findings,
-    lint_model::{location_for_range, location_for_range_bounds},
+    lint_model::location_for_range_bounds,
     lint_priority::priority_cookie_findings,
     lint_progress::progress_findings,
     lint_properties::property_drawer_findings,
@@ -55,17 +54,120 @@ use crate::{
     },
 };
 
+pub(crate) use self::lint_model::location_for_range;
 pub use self::lint_model::{LintFinding, LintLocation, LintOptions, LintReport, LintSeverity};
+pub use crate::lint_runtime_validation::{
+    RuntimeValidationBinding, RuntimeValidationBindingKind, RuntimeValidationByteCount,
+    RuntimeValidationChildLifecycle, RuntimeValidationDiagnosticCode, RuntimeValidationElapsed,
+    RuntimeValidationEvidenceReport, RuntimeValidationExitStatus, RuntimeValidationObservation,
+    RuntimeValidationPolicy, RuntimeValidationReceipt, RuntimeValidationSourceContext,
+    RuntimeValidationStatus, RuntimeValidationStreamBytes, RuntimeValidationTerminationOutcome,
+    lint_org_with_runtime_validation_evidence,
+};
 
 /// Lints Org source with the default parser configuration.
 pub fn lint_org(source: &str) -> LintReport {
     lint_org_with_options(source, &LintOptions::default())
 }
 
+/// Bounded execution policy for source-block runtime linting.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeLintExecutionPolicy {
+    timeout: std::time::Duration,
+    output_byte_budget: std::num::NonZeroUsize,
+    runtime_program: RuntimeLintProgramBinding,
+}
+
+/// Exact executable selected for runtime linting; no alternate is attempted.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum RuntimeLintProgramBinding {
+    /// Resolve the one `typst` PATH lookup token through the process environment.
+    ///
+    /// The resulting receipt records `typst-path`; it does not claim a resolved
+    /// executable path or executable digest.
+    Typst,
+    /// Execute one caller-supplied path, primarily for hermetic dependency injection.
+    ///
+    /// The resulting receipt records `exact-path`; it still does not claim an
+    /// executable digest.
+    Exact(std::path::PathBuf),
+}
+
+impl RuntimeLintExecutionPolicy {
+    /// Creates a runtime lint policy with strictly positive execution bounds.
+    pub fn bounded(
+        timeout: std::time::Duration,
+        output_byte_budget: usize,
+    ) -> Result<Self, String> {
+        if timeout.is_zero() {
+            return Err("runtime lint timeout must be greater than zero".to_string());
+        }
+        let output_byte_budget =
+            std::num::NonZeroUsize::new(output_byte_budget).ok_or_else(|| {
+                "runtime lint output byte budget must be greater than zero".to_string()
+            })?;
+        Ok(Self {
+            timeout,
+            output_byte_budget,
+            runtime_program: RuntimeLintProgramBinding::Typst,
+        })
+    }
+
+    /// Selects exactly one runtime executable binding; no alternate is attempted.
+    pub fn with_program_binding(mut self, binding: RuntimeLintProgramBinding) -> Self {
+        self.runtime_program = binding;
+        self
+    }
+
+    pub(crate) fn timeout(&self) -> std::time::Duration {
+        self.timeout
+    }
+
+    pub(crate) fn output_byte_budget(&self) -> usize {
+        self.output_byte_budget.get()
+    }
+
+    pub(crate) fn runtime_program(&self) -> &std::path::Path {
+        match &self.runtime_program {
+            RuntimeLintProgramBinding::Typst => std::path::Path::new("typst"),
+            RuntimeLintProgramBinding::Exact(program) => program,
+        }
+    }
+
+    /// Receipt binding classification. Neither classification is an executable
+    /// identity or digest proof.
+    pub(crate) fn binding_kind(&self) -> RuntimeValidationBindingKind {
+        match self.runtime_program {
+            RuntimeLintProgramBinding::Typst => RuntimeValidationBindingKind::TypstPath,
+            RuntimeLintProgramBinding::Exact(_) => RuntimeValidationBindingKind::ExactPath,
+        }
+    }
+}
+
+impl Default for RuntimeLintExecutionPolicy {
+    fn default() -> Self {
+        Self::bounded(std::time::Duration::from_secs(30), 1_048_576)
+            .expect("default runtime lint execution policy must be bounded")
+    }
+}
+
 /// Lints Org source with explicit lint options.
 pub fn lint_org_with_options(source: &str, options: &LintOptions) -> LintReport {
+    lint_org_with_options_and_runtime_policy(
+        source,
+        options,
+        &RuntimeLintExecutionPolicy::default(),
+    )
+}
+
+/// Lints Org source with explicit lint options and runtime execution policy.
+pub fn lint_org_with_options_and_runtime_policy(
+    source: &str,
+    options: &LintOptions,
+    runtime_policy: &RuntimeLintExecutionPolicy,
+) -> LintReport {
     let org = Org::parse(source);
-    lint_document_with_options(&org.document(), source, options)
+    lint_document_with_options_and_runtime_policy(&org.document(), source, options, runtime_policy)
 }
 
 /// Lints an already projected semantic document.
@@ -79,16 +181,33 @@ pub fn lint_document_with_options(
     source: &str,
     options: &LintOptions,
 ) -> LintReport {
-    let mut findings = collect_lint_findings(document, source, options);
+    lint_document_with_options_and_runtime_policy(
+        document,
+        source,
+        options,
+        &RuntimeLintExecutionPolicy::default(),
+    )
+}
+
+/// Lints an already projected document with an explicit runtime execution policy.
+pub fn lint_document_with_options_and_runtime_policy(
+    document: &ParsedAst,
+    source: &str,
+    options: &LintOptions,
+    runtime_policy: &RuntimeLintExecutionPolicy,
+) -> LintReport {
+    let (mut findings, _) = collect_lint_findings(document, source, options, runtime_policy, None);
     sort_lint_findings(&mut findings);
     LintReport { findings }
 }
 
-fn collect_lint_findings(
+pub(crate) fn collect_lint_findings(
     document: &ParsedAst,
     source: &str,
     options: &LintOptions,
-) -> Vec<LintFinding> {
+    runtime_policy: &RuntimeLintExecutionPolicy,
+    source_context: Option<&RuntimeValidationSourceContext>,
+) -> (Vec<LintFinding>, Vec<RuntimeValidationReceipt>) {
     let mut findings = Vec::new();
 
     findings.extend(
@@ -117,7 +236,14 @@ fn collect_lint_findings(
     ));
     findings.extend(progress_findings(document, source));
     findings.extend(attachment_findings(document, source, options));
-    findings.extend(babel_findings(document, source));
+    let babel = lint_babel::babel_findings_with_runtime_receipts(
+        document,
+        source,
+        options.source_path.as_deref(),
+        runtime_policy,
+        source_context,
+    );
+    findings.extend(babel.findings);
     findings.extend(file_link_findings(document, source, options));
     findings.extend(lifecycle_findings(document, source, options));
     findings.extend(table_formula_findings(document, source));
@@ -138,10 +264,10 @@ fn collect_lint_findings(
     ));
     findings.extend(todo_declaration_findings(source));
 
-    findings
+    (findings, babel.receipts)
 }
 
-fn sort_lint_findings(findings: &mut [LintFinding]) {
+pub(crate) fn sort_lint_findings(findings: &mut [LintFinding]) {
     findings.sort_by(|left, right| {
         left.location
             .range_start

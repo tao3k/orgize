@@ -41,6 +41,12 @@ mod column_summary_model;
 mod column_view_model;
 mod column_views;
 mod conversion;
+mod conversion_helpers;
+mod conversion_nodes;
+mod conversion_objects;
+mod conversion_properties;
+mod conversion_radio;
+mod conversion_traversal;
 mod conversion_util;
 mod crypt;
 mod crypt_model;
@@ -51,7 +57,10 @@ mod dynamic_blocks;
 mod elements_bridge;
 mod elements_bridge_element_json;
 mod elements_bridge_index;
+mod elements_bridge_index_collect;
 mod elements_bridge_index_json;
+mod elements_bridge_index_properties;
+mod elements_bridge_index_summary;
 mod elements_bridge_json;
 mod elements_bridge_model;
 mod elements_bridge_object_json;
@@ -76,6 +85,7 @@ mod macro_expansion;
 mod memory;
 mod memory_model;
 mod model;
+mod named_source_block_template;
 mod org_contract;
 mod org_contract_evaluation;
 mod org_contract_evaluation_json;
@@ -128,7 +138,12 @@ mod task_blocker_model;
 mod task_blockers;
 mod timestamp_metadata;
 mod timestamp_model;
-mod traversal;
+mod traversal_collect;
+mod traversal_cursor;
+mod traversal_elements;
+mod traversal_filters;
+mod traversal_objects;
+mod traversal_ranges;
 mod workspace_index;
 mod workspace_index_model;
 
@@ -273,6 +288,7 @@ pub use model::{
     TableFormulaReference, TableFormulaReferenceKind, TableRow, TagDefinition, TagDefinitionGroup,
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
+pub use named_source_block_template::{NamedSourceBlockTemplate, NamedSourceBlockTemplateError};
 pub use org_contract::{
     parse_contract_reference, parse_contract_reference_from_source, parse_contracts_from_document,
     validate_contract_source,

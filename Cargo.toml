@@ -37,19 +37,21 @@ memchr = "2"
 nom = { version = "8", default-features = false, features = ["std"] }
 rowan = "0.16"
 serde_json = "1"
+sha2 = "0.10"
+ignore = "0.4"
 tracing = { version = "0.1", optional = true }
 
 [dev-dependencies]
 criterion = "0.8"
 insta = "1"
-rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "8f23f6cd211c02f4b0146d842025f3c639fcf1cc", version = "0.1" }
+asp-rust = { git = "https://github.com/tao3k/asp-rust", rev = "77fb11ea7e9b767320fb9f7706bcd63d182110da", version = "0.1.2" }
 slugify = "0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = { version = "0.3", features = ["fmt"] }
 
 [build-dependencies]
+asp-rust-build-support = { git = "https://github.com/tao3k/asp-rust", rev = "77fb11ea7e9b767320fb9f7706bcd63d182110da", version = "0.1.0" }
 orgize-build-support = { path = "build-support" }
-rust-lang-project-harness = { git = "https://github.com/tao3k/rust-lang-project-harness", rev = "8f23f6cd211c02f4b0146d842025f3c639fcf1cc", version = "0.1" }
 
 [[bench]]
 name = "parse"
@@ -61,7 +63,6 @@ required-features = ["tracing"]
 
 [profile.dev.package]
 insta.opt-level = 3
-similar.opt-level = 3
 
 [profile.release]
 # Thin LTO keeps useful cross-crate optimization without the full monolithic
