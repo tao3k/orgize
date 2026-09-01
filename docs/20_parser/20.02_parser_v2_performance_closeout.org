@@ -82,11 +82,11 @@ direnv exec . cargo bench --bench parse dense-m15 -- --test
 direnv exec . cargo bench --bench parse dense-agenda -- --test
 direnv exec . cargo bench --bench parse include-datetree -- --test
 direnv exec . cargo bench --bench parse "dense-|macro_expansions/dense" -- --sample-size 10 --warm-up-time 1 --measurement-time 2
-direnv exec . cargo run --quiet --manifest-path /Users/guangtao/ghq/github.com/tao3k/rust-lang-project-harness/Cargo.toml -- --json /Users/guangtao/ghq/github.com/tao3k/orgize
+direnv exec . cargo test --locked --test integration_test harness_report_consumer::git_locked_asp_rust_report_exposes_actionable_performance_gaps -- --exact
 git diff --check
 rg -n "<policy-and-foreign-reference-boundary-pattern>" Cargo.toml Cargo.lock src tests README.md .github wasm examples docs build.rs benches --glob '!target/**'
 #+end_src
 
-The harness JSON must report zero findings. The boundary grep must return no
+The ASP Rust API-backed policy test must report zero findings. The boundary grep must return no
 matches. PR #4 remains ready only when GitHub `test` is green and review threads
 are resolved or explicitly non-actionable.

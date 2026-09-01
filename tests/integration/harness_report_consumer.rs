@@ -2,23 +2,23 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use rust_lang_project_harness::{
+use asp_rust::{
     RustOwnerResponsibility, RustVerificationProfileHint, RustVerificationReportBundle,
     RustVerificationReportEntryAction, RustVerificationReportEntryArtifact,
     RustVerificationReportOptions, RustVerificationReportWriteConfig,
     RustVerificationReportWriteReceipt, RustVerificationSkillBinding, RustVerificationTaskKind,
     build_rust_verification_analysis_profile_with_config,
-    build_rust_verification_report_entry_advice_with_receipt, default_rust_harness_config,
+    build_rust_verification_report_entry_advice_with_receipt, default_asp_rust_config,
     plan_rust_project_verification_with_config, render_rust_verification_report_write_receipt_json,
     write_rust_verification_reports_with_options,
 };
 
 #[test]
-fn git_locked_harness_report_exposes_actionable_performance_gaps() {
-    let temp = TempProject::new("orgize-harness-report-consumer");
+fn git_locked_asp_rust_report_exposes_actionable_performance_gaps() {
+    let temp = TempProject::new("orgize-asp-rust-report-consumer");
     write_sample_project(temp.path());
 
-    let config = default_rust_harness_config()
+    let config = default_asp_rust_config()
         .with_verification_profile_hint(RustVerificationProfileHint::new(
             "src/api.rs",
             [RustOwnerResponsibility::LatencySensitive],

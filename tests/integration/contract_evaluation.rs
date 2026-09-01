@@ -333,11 +333,11 @@ fn contract_org_property_scope_fixture_stays_in_millisecond_budget() {
         .join("scenarios")
         .join("contract_trace")
         .join("contract_org_property_scope");
-    let benchmark = rust_lang_project_harness::validate_rust_scenario_benchmark(&scenario_root)
+    let benchmark = asp_rust::validate_rust_scenario_benchmark(&scenario_root)
         .expect("validate contract trace property scope scenario benchmark");
     assert_eq!(
         benchmark.status,
-        rust_lang_project_harness::RustScenarioBenchmarkStatus::Pass,
+        asp_rust::RustScenarioBenchmarkStatus::Pass,
         "{:?}",
         benchmark.violations
     );
