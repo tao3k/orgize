@@ -12,7 +12,7 @@
   "runtimeContract": {
     "transport": "in-process",
     "operations": [
-      { "operation": "provider-search", "requestSchemaId": "agent.semantic-protocols.runtime-provider-search-request", "responseSchemaId": "agent.semantic-protocols.runtime-provider-search-receipt" }
+      { "operation": "provider-search", "requestSchema": { "schemaId": "agent.semantic-protocols.runtime-provider-search-request", "schemaVersion": "1" }, "responseSchema": { "schemaId": "agent.semantic-protocols.runtime-provider-search-receipt", "schemaVersion": "1" } }
     ]
   },
   "development": {

@@ -1,7 +1,10 @@
+#[cfg(feature = "md")]
 use std::process::Command;
 
+#[cfg(feature = "md")]
 use serde_json::Value;
 
+#[cfg(feature = "md")]
 use crate::export_cli::export_cli_common::test_dir;
 
 #[cfg(feature = "md")]

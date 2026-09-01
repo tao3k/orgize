@@ -85,6 +85,7 @@ mod macro_expansion;
 mod memory;
 mod memory_model;
 mod model;
+mod named_source_block_template;
 mod org_contract;
 mod org_contract_evaluation;
 mod org_contract_evaluation_json;
@@ -287,6 +288,7 @@ pub use model::{
     TableFormulaReference, TableFormulaReferenceKind, TableRow, TagDefinition, TagDefinitionGroup,
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
+pub use named_source_block_template::{NamedSourceBlockTemplate, NamedSourceBlockTemplateError};
 pub use org_contract::{
     parse_contract_reference, parse_contract_reference_from_source, parse_contracts_from_document,
     validate_contract_source,

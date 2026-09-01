@@ -52,6 +52,8 @@ mod lint_table_formulas;
 mod lint_task_blockers;
 #[path = "integration/markdown.rs"]
 mod markdown;
+#[path = "integration/named_source_block_template.rs"]
+mod named_source_block_template;
 #[path = "integration/parse.rs"]
 mod parse;
 #[path = "integration/scenario_benchmark.rs"]
