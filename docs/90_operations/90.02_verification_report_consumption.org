@@ -11,12 +11,12 @@ through one pinned git revision, not a parent-checkout path dependency.
 
 | Surface | Location | Rev |
 |---------+----------+-----|
-| Root `asp-rust` dev dependency | `Cargo.toml` | `078be718fe8284520bc7d8ab3f66bfa4643f1daf` |
-| Root `asp-rust-build-support` build dependency | `Cargo.toml` | `078be718fe8284520bc7d8ab3f66bfa4643f1daf` |
-| Wasm dev/build-support dependencies | `wasm/Cargo.toml` in `tao3k/orgize-wasm` | `078be718fe8284520bc7d8ab3f66bfa4643f1daf` |
+| Root `asp-rust` dev dependency | `Cargo.toml` | `77fb11ea7e9b767320fb9f7706bcd63d182110da` |
+| Root `asp-rust-build-support` build dependency | `Cargo.toml` | `77fb11ea7e9b767320fb9f7706bcd63d182110da` |
+| Wasm dev/build-support dependencies | `wasm/Cargo.toml` in `tao3k/orgize-wasm` | `77fb11ea7e9b767320fb9f7706bcd63d182110da` |
 
 Local `Cargo.lock` resolution records the same source as
-`git+https://github.com/tao3k/asp-rust?rev=078be718fe8284520bc7d8ab3f66bfa4643f1daf#078be718fe8284520bc7d8ab3f66bfa4643f1daf`.
+`git+https://github.com/tao3k/asp-rust?rev=77fb11ea7e9b767320fb9f7706bcd63d182110da#77fb11ea7e9b767320fb9f7706bcd63d182110da`.
 The manifest rev is the durable contract for clean checkouts; the lockfile is
 the local reproduction receipt when present.
 

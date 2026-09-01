@@ -44,13 +44,13 @@ tracing = { version = "0.1", optional = true }
 [dev-dependencies]
 criterion = "0.8"
 insta = "1"
-asp-rust = { git = "https://github.com/tao3k/asp-rust", rev = "078be718fe8284520bc7d8ab3f66bfa4643f1daf", version = "0.1.2" }
+asp-rust = { git = "https://github.com/tao3k/asp-rust", rev = "77fb11ea7e9b767320fb9f7706bcd63d182110da", version = "0.1.2" }
 slugify = "0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = { version = "0.3", features = ["fmt"] }
 
 [build-dependencies]
-asp-rust-build-support = { git = "https://github.com/tao3k/asp-rust", rev = "078be718fe8284520bc7d8ab3f66bfa4643f1daf", version = "0.1.0" }
+asp-rust-build-support = { git = "https://github.com/tao3k/asp-rust", rev = "77fb11ea7e9b767320fb9f7706bcd63d182110da", version = "0.1.0" }
 orgize-build-support = { path = "build-support" }
 
 [[bench]]
