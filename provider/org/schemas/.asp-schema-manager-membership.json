@@ -1,7 +1,7 @@
 {
   "languageId": "org",
   "profileDigest": "blake3-256:59d688e3866b1adbe02e95d214591de39b6e0bdb31e4fd808dec74c18de2473e",
-  "bundleDigest": "blake3-256:1cf8d9993f310402828717b21e1f4abf81e08bee0a5d9d0d945f46a5ed1aed5c",
+  "bundleDigest": "blake3-256:ceff4bc67afc17bf75132aba2acf7f0becd28436e1812b3529827da0d706ae5a",
   "schemas": [
     {
       "name": "asp-client-cancellation-probe-request.schema.json",
@@ -129,7 +129,7 @@
     },
     {
       "name": "large-search-playbook-performance-receipt.v1.schema.json",
-      "digest": "blake3-256:951cee907a77fd2bc695a19b977a50508dc216eb3fe1e51f10195572880b4377"
+      "digest": "blake3-256:06a8a9c3fdcd7394b11eef3b7a00c4fd3f1d8a582a19ad6955efda59284e4db2"
     },
     {
       "name": "lexical-postings-work-reduction-receipt.schema.json",
