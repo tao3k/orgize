@@ -62,5 +62,7 @@ mod scenario_benchmark;
 mod sdd;
 #[path = "integration/semantic_ast/mod.rs"]
 mod semantic_ast;
+#[path = "integration/source_block_document.rs"]
+mod source_block_document;
 #[path = "integration/task_cli.rs"]
 mod task_cli;

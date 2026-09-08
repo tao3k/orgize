@@ -118,6 +118,7 @@ mod sdd_model;
 mod section_index;
 mod section_index_model;
 mod settings;
+mod source_block_document;
 mod source_block_execution;
 mod source_block_headers;
 mod source_block_model;
@@ -364,6 +365,10 @@ pub use section_index_model::{
     SectionIndexCategory, SectionIndexLifecycleRecord, SectionIndexLink, SectionIndexProperty,
     SectionIndexRecord, SectionIndexSource, SectionIndexSpecialProperty, SectionIndexTarget,
     SectionIndexTextSlice,
+};
+pub use source_block_document::{
+    OrgSourceBlock, OrgSourceBlockDocument, OrgSourceBlockDocumentError, OrgSourceBlockHeader,
+    OrgSourceBlockHeaderValue, OrgSourceBlockKeyword,
 };
 pub use source_block_model::{
     SourceBlockBooleanHeader, SourceBlockCache, SourceBlockDirectory, SourceBlockDirectoryKind,
