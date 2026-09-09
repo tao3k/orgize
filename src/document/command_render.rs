@@ -1,16 +1,13 @@
-//! Document guide, prime, table-of-contents, and frontier renderers.
+//! Document guide and Query frontier renderers.
 
-use std::{collections::BTreeSet, fs, path::Path, process::ExitCode};
+use std::{fs, process::ExitCode};
 
 use crate::org::Org;
 
 use super::{
-    command_format::{heading_field, heading_fields},
-    elements::{count_kind, display_path, escape_field, last_existing_path, option_value},
+    elements::{escape_field, last_existing_path, option_value},
     model::{DocumentElement, DocumentLanguage},
 };
-
-const DOCUMENT_PRIME_OWNER_LIMIT: usize = 12;
 
 pub(crate) fn run_elements_query(
     language: DocumentLanguage,
@@ -58,7 +55,6 @@ pub(crate) fn print_guide(language: DocumentLanguage) {
         "[guide] lang={} provider=orgize protocol=guide.v1 root=.",
         language.id()
     );
-    println!("|surface search purpose=document-structure output=compact-seeds content=false");
     println!(
         "|surface query purpose=elements-by-selector-or-term output=metadata-frontier content=false"
     );
@@ -78,28 +74,6 @@ pub(crate) fn print_guide(language: DocumentLanguage) {
     println!("|rule content=query-projection reason=content-needs-selector-term-kind-or-field");
     println!("|rule project-walk skip=hidden-dirs,target,node_modules,__pycache__,venv,dist,build");
     print_element_guide(language);
-    println!(
-        "|cmd search-prime={} search prime --workspace . --view seeds",
-        language.command_prefix()
-    );
-    println!(
-        "|cmd search-toc={} search toc --workspace .",
-        language.command_prefix()
-    );
-    println!(
-        "|cmd search-fzf={} search fzf <query> --workspace . --view seeds",
-        language.command_prefix()
-    );
-    println!(
-        "|cmd search-fzf-toc={} search fzf <query...> --workspace . --view toc",
-        language.command_prefix()
-    );
-    if language == DocumentLanguage::Org {
-        println!(
-            "|cmd search-memory={} search memory --workspace . --view seeds",
-            language.command_prefix()
-        );
-    }
     println!(
         "|cmd query-metadata={} query --term <term> --workspace . --view metadata",
         language.command_prefix()
@@ -206,9 +180,6 @@ fn print_element_guide(language: DocumentLanguage) {
                 "|recipe active-done-artifacts=orgize org query --kind task --field todo=DONE --exclude-dir archives --workspace <ORG_ARTIFACTS_ABS_PATH> --content"
             );
             println!(
-                "|recipe current-session-tasks=orgize org search memory --session <SESSION_ID> --workspace <ORG_ARTIFACTS_ABS_PATH> --view seeds"
-            );
-            println!(
                 "|recipe capture-task=orgize org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
             );
             println!(
@@ -254,27 +225,6 @@ fn print_element_guide(language: DocumentLanguage) {
     }
 }
 
-pub(super) fn print_search_guide(language: DocumentLanguage) {
-    println!(
-        "[search-guide] lang={} provider=orgize protocol=search-guide.v1 root=.",
-        language.id()
-    );
-    println!(
-        "|view prime returns=headings,tasks,properties,planning,tables,blocks,lists,checklistItems,links,images"
-    );
-    println!(
-        "|view toc returns=document-heading-outline fields=path,range,level,title,todo,priority,tag"
-    );
-    println!("|view fzf args=query returns=bounded-document-facts");
-    if language == DocumentLanguage::Org {
-        println!("|view memory args=--session?,--plan?,--term? returns=current-org-memory-cards");
-    }
-    println!(
-        "|view fzf-toc args=query command=\"{} search fzf <query...> --workspace . --view toc\" returns=matched-document-heading-outline combine=document-all-terms",
-        language.command_prefix()
-    );
-}
-
 pub(super) fn print_query_guide(language: DocumentLanguage) {
     println!(
         "[query-guide] lang={} provider=orgize protocol=query-guide.v1 root=.",
@@ -308,230 +258,6 @@ pub(super) fn print_query_guide(language: DocumentLanguage) {
     println!("|walk-filter exclude-dir command=\"query --exclude-dir <DIR> --workspace .\"");
     println!("|content-rule requires=--selector|--term|--kind|--field");
 }
-pub(crate) fn print_prime(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) {
-    let document_owners = document_prime_owners(root, facts);
-    println!(
-        "[search-prime] lang={} root={} doc={} heading={} paragraph={} property={} planning={} table={} block={} list={} task={} link={} image={}",
-        language.id(),
-        display_path(root),
-        document_owners.len(),
-        count_kind(facts, "heading"),
-        count_kind(facts, "paragraph"),
-        count_kind(facts, "property"),
-        count_kind(facts, "planning"),
-        count_kind(facts, "table"),
-        count_kind(facts, "block"),
-        count_kind(facts, "list"),
-        count_kind(facts, "task"),
-        count_kind(facts, "link"),
-        count_kind(facts, "image")
-    );
-    print_prime_owner_frontier(&document_owners);
-    for fact in facts.iter().take(80) {
-        println!("{}", fact.render());
-    }
-    println!("|next search:fzf,search:owner,query:term,query:selector");
-}
-
-fn document_prime_owners(root: &Path, facts: &[DocumentElement]) -> Vec<String> {
-    facts
-        .iter()
-        .map(|fact| document_prime_owner_path(root, &fact.path))
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .take(DOCUMENT_PRIME_OWNER_LIMIT)
-        .collect()
-}
-
-fn document_prime_owner_path(root: &Path, path: &str) -> String {
-    let path = Path::new(path);
-    let owner = path.strip_prefix(root).unwrap_or(path);
-    owner.to_string_lossy().replace('\\', "/")
-}
-
-fn print_prime_owner_frontier(owners: &[String]) {
-    println!(
-        "legend: ID=kind:role(value)!next; entries profile(selectors=>returns); frontier ID.next"
-    );
-    println!("aliases: graph:{{G=search,O=owner}}");
-    let owner_ids = owners
-        .iter()
-        .enumerate()
-        .map(|(index, _)| {
-            if index == 0 {
-                "O".to_string()
-            } else {
-                format!("O{}", index + 1)
-            }
-        })
-        .collect::<Vec<_>>();
-    if owners.is_empty() {
-        println!("G>{{}}");
-    } else {
-        println!(
-            "{}",
-            owners
-                .iter()
-                .zip(owner_ids.iter())
-                .map(|(owner, owner_id)| format!("{owner_id}=owner:path({owner})!owner"))
-                .collect::<Vec<_>>()
-                .join(";")
-        );
-        println!(
-            "G>{{{}}}",
-            owner_ids
-                .iter()
-                .map(|owner_id| format!("{owner_id}:selects"))
-                .collect::<Vec<_>>()
-                .join(",")
-        );
-    }
-    println!(
-        "rank={} frontier={}",
-        owner_ids.join(","),
-        owner_ids
-            .iter()
-            .map(|owner_id| format!("{owner_id}.owner"))
-            .collect::<Vec<_>>()
-            .join(",")
-    );
-    println!("entries=owner-elements(O=>headings+metadata+query-selectors)");
-}
-
-pub(crate) fn print_toc(language: DocumentLanguage, root: &Path, headings: &[DocumentElement]) {
-    print_toc_header(language, root, headings, "search-toc", None);
-    print_toc_rows(language, headings);
-}
-
-pub(crate) fn print_fzf_toc(
-    language: DocumentLanguage,
-    query: &str,
-    root: &Path,
-    headings: &[DocumentElement],
-) {
-    print_toc_header(language, root, headings, "search-fzf-toc", Some(query));
-    print_toc_rows(language, headings);
-}
-
-fn print_toc_header(
-    language: DocumentLanguage,
-    root: &Path,
-    headings: &[DocumentElement],
-    label: &str,
-    query: Option<&str>,
-) {
-    let document_paths = headings
-        .iter()
-        .map(|heading| heading.path.as_str())
-        .collect::<std::collections::BTreeSet<_>>();
-    let max_level = headings
-        .iter()
-        .filter_map(|heading| heading_field(heading, "level")?.parse::<usize>().ok())
-        .max()
-        .unwrap_or(0);
-    if let Some(query) = query {
-        println!(
-            "[{label}] lang={} q={} root={} doc={} heading={} maxLevel={} alg=fd-fzf-doc-toc-v1",
-            language.id(),
-            escape_field(query),
-            display_path(root),
-            document_paths.len(),
-            headings.len(),
-            max_level
-        );
-    } else {
-        println!(
-            "[{label}] lang={} root={} doc={} heading={} maxLevel={}",
-            language.id(),
-            display_path(root),
-            document_paths.len(),
-            headings.len(),
-            max_level
-        );
-    }
-}
-
-fn print_toc_rows(language: DocumentLanguage, headings: &[DocumentElement]) {
-    let mut current_path = "";
-    for heading in headings.iter().take(200) {
-        if heading.path != current_path {
-            current_path = &heading.path;
-            let count = headings
-                .iter()
-                .filter(|candidate| candidate.path == heading.path)
-                .count();
-            println!(
-                "|doc path=\"{}\" heading={count}",
-                escape_field(current_path)
-            );
-        }
-        let level = heading_field(heading, "level").unwrap_or("0");
-        let title = heading_field(heading, "title").unwrap_or(heading.text.as_str());
-        let selector = heading.structural_selector.as_str();
-        let mut output = format!(
-            "|toc path=\"{}\" range=\"{}:{}\" level={} title=\"{}\"",
-            escape_field(&heading.path),
-            heading.line,
-            heading.end_line,
-            level,
-            escape_field(title)
-        );
-        for key in ["todo", "priority"] {
-            if let Some(value) = heading_field(heading, key) {
-                output.push(' ');
-                output.push_str(key);
-                output.push_str("=\"");
-                output.push_str(&escape_field(value));
-                output.push('"');
-            }
-        }
-        let tags = heading_fields(heading, "tag");
-        if !tags.is_empty() {
-            output.push_str(" tag=\"");
-            output.push_str(&escape_field(&tags.join(",")));
-            output.push('"');
-        }
-        output.push_str(" next=\"");
-        output.push_str(&escape_field(&format!(
-            "{} query --selector {selector} --view metadata",
-            language.command_prefix()
-        )));
-        output.push('"');
-        println!("{output}");
-    }
-    println!("|next query:selector,query:kind=heading,query:content,direct-read");
-}
-
-pub(crate) fn print_owner(language: DocumentLanguage, owner: &str, facts: &[DocumentElement]) {
-    println!(
-        "[search-owner] lang={} q={} item={}",
-        language.id(),
-        owner,
-        facts.len()
-    );
-    for fact in facts.iter().take(80) {
-        println!("{}", fact.render());
-    }
-}
-
-pub(crate) fn print_fzf(
-    language: DocumentLanguage,
-    query: &str,
-    root: &Path,
-    facts: &[DocumentElement],
-) {
-    println!(
-        "[search-fzf] lang={} q={} root={} hit={}",
-        language.id(),
-        escape_field(query),
-        display_path(root),
-        facts.len()
-    );
-    for fact in facts.iter().take(80) {
-        println!("{}", fact.render());
-    }
-}
-
 pub(crate) fn print_selector_frontier(
     language: DocumentLanguage,
     selector: &str,

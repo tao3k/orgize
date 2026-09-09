@@ -5,7 +5,6 @@ use std::process::ExitCode;
 use super::{
     command_query::run_query,
     command_render::{print_guide, run_elements_query},
-    command_search::run_search,
     model::{DocumentLanguage, DocumentWalkConfig},
 };
 
@@ -43,7 +42,6 @@ pub fn run_document_command_with_walk_config(
             print_guide(language);
             Ok(ExitCode::SUCCESS)
         }
-        "search" => run_search(language, args.collect(), &walk_config),
         "query" => run_query(language, args.collect(), &walk_config),
         "elements-query" => run_elements_query(language, args.collect()),
         "-h" | "--help" | "help" => {

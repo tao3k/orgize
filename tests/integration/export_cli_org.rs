@@ -1,9 +1,11 @@
 use serde_json::Value;
 
-use crate::export_cli::export_cli_common::test_dir;
+use crate::export_cli::export_cli_common::{
+    assert_document_query_evidence, assert_document_selector_query_evidence, test_dir,
+};
 
 #[test]
-fn org_document_search_and_query_commands_run() {
+fn org_document_query_commands_run() {
     let guide = crate::library_cli::orgize_cli_command()
         .arg("guide")
         .output()
@@ -34,10 +36,6 @@ fn org_document_search_and_query_commands_run() {
         guide_stdout.contains(
             "|recipe paragraph-content=orgize org query --kind paragraph --term <term> --workspace . --content"
         ),
-        "{guide_stdout}"
-    );
-    assert!(
-        guide_stdout.contains("|cmd search-toc=orgize org search toc --workspace ."),
         "{guide_stdout}"
     );
     assert!(
@@ -108,90 +106,13 @@ fn org_document_search_and_query_commands_run() {
         "{guide_stdout}"
     );
 
-    let root = test_dir("org-document-search");
+    let root = test_dir("org-document-query");
     let path = root.join("plan.org");
     std::fs::write(
         &path,
         "* TODO [#A] Task :work:sdd:\nSCHEDULED: <2026-06-06 Sat>\n:PROPERTIES:\n:CUSTOM_ID: task-1\n:SDD_KIND: capability\n:SDD_STATUS: draft\n:END:\n\nProvider activation carries execution mode.\nDocument providers stay embedded inside ASP.\n\n** Repository Map\n*** Docs\n- [X] ship element map\n[[https://example.com][site]]\n[[file:diagram.png]]\n\n#+begin_src rust\nfn main() {\n  println!(  \"x\");\n}\n#+end_src\n",
     )
     .expect("write org fixture");
-
-    let search = crate::library_cli::orgize_cli_command()
-        .arg("search")
-        .arg("prime")
-        .arg("--view")
-        .arg("seeds")
-        .arg(&root)
-        .output()
-        .expect("run orgize search");
-    assert!(search.status.success());
-    let search_stdout = String::from_utf8(search.stdout).expect("utf8 search");
-    assert!(
-        search_stdout.contains("[search-prime] lang=org"),
-        "{search_stdout}"
-    );
-    assert!(
-        search_stdout.contains("O=owner:path(plan.org)!owner"),
-        "{search_stdout}"
-    );
-    assert!(search_stdout.contains("G>{O:selects}"), "{search_stdout}");
-    assert!(
-        search_stdout.contains("frontier=O.owner"),
-        "{search_stdout}"
-    );
-    assert!(search_stdout.contains("|heading"), "{search_stdout}");
-    assert!(
-        search_stdout.contains("key=\"CUSTOM_ID\""),
-        "{search_stdout}"
-    );
-    assert!(
-        search_stdout.contains("key=\"SDD_KIND\" value=\"capability\""),
-        "{search_stdout}"
-    );
-    assert!(
-        search_stdout.contains("key=\"SDD_STATUS\" value=\"draft\""),
-        "{search_stdout}"
-    );
-    assert!(
-        search_stdout.contains("sourceKind=\"Headline\""),
-        "{search_stdout}"
-    );
-    assert!(search_stdout.contains("|planning"), "{search_stdout}");
-    assert!(search_stdout.contains("|paragraph"), "{search_stdout}");
-    assert!(search_stdout.contains("execution mode"), "{search_stdout}");
-    assert!(search_stdout.contains("|task"), "{search_stdout}");
-    assert!(search_stdout.contains("|checklistItem"), "{search_stdout}");
-    assert!(search_stdout.contains("|link"), "{search_stdout}");
-    assert!(search_stdout.contains("|image"), "{search_stdout}");
-
-    let toc = crate::library_cli::orgize_cli_command()
-        .arg("search")
-        .arg("toc")
-        .arg(&root)
-        .output()
-        .expect("run orgize toc search");
-    assert!(toc.status.success());
-    let toc_stdout = String::from_utf8(toc.stdout).expect("utf8 toc");
-    assert!(toc_stdout.contains("[search-toc] lang=org"), "{toc_stdout}");
-    assert!(toc_stdout.contains("heading=3"), "{toc_stdout}");
-    assert!(toc_stdout.contains("maxLevel=3"), "{toc_stdout}");
-    assert!(toc_stdout.contains("|doc path="), "{toc_stdout}");
-    assert!(
-        toc_stdout.contains("level=1 title=\"Task\" todo=\"TODO\""),
-        "{toc_stdout}"
-    );
-    assert!(
-        toc_stdout.contains("level=2 title=\"Repository Map\""),
-        "{toc_stdout}"
-    );
-    assert!(
-        toc_stdout.contains("level=3 title=\"Docs\""),
-        "{toc_stdout}"
-    );
-    assert!(
-        toc_stdout.contains("next=\"orgize org query --selector"),
-        "{toc_stdout}"
-    );
 
     let selector_query = orgize_command()
         .arg("query")
@@ -441,92 +362,6 @@ fn org_document_search_and_query_commands_run() {
         "Provider activation carries execution mode.\nDocument providers stay embedded inside ASP.\n\n"
     );
 
-    let json_search = orgize_command()
-        .arg("search")
-        .arg("prime")
-        .arg("--view")
-        .arg("seeds")
-        .arg("--json")
-        .arg(&root)
-        .output()
-        .expect("run orgize search json");
-    assert!(
-        json_search.status.success(),
-        "stderr: {}",
-        String::from_utf8_lossy(&json_search.stderr)
-    );
-    let search_packet: Value =
-        serde_json::from_slice(&json_search.stdout).expect("parse search packet");
-    assert_eq!(
-        search_packet["schemaId"],
-        "agent.semantic-protocols.semantic-document-search-packet"
-    );
-    assert_eq!(search_packet["languageId"], "org");
-    assert_eq!(search_packet["binary"], "orgize");
-    assert_eq!(search_packet["method"], "search/prime");
-    assert_eq!(search_packet["documentMode"], "metadata");
-    assert!(
-        search_packet["nextActions"]
-            .as_array()
-            .expect("next actions")
-            .iter()
-            .any(|action| action["target"] == "selector"
-                && action["command"]
-                    == "orgize org query --selector <structural-selector> --view metadata"),
-        "{search_packet:#}"
-    );
-    assert!(
-        search_packet["nextActions"]
-            .as_array()
-            .expect("next actions")
-            .iter()
-            .any(|action| action["target"] == "content"
-                && action["command"] == "orgize org query --term <term> --content"),
-        "{search_packet:#}"
-    );
-    assert!(
-        search_packet["documentFacts"]
-            .as_array()
-            .expect("document facts")
-            .iter()
-            .any(|fact| fact["kind"] == "property"
-                && fact["sourceKind"] == "PropertyDrawer"
-                && fact["attributes"]["key"] == "CUSTOM_ID"),
-        "{search_packet:#}"
-    );
-    assert!(
-        search_packet["documentFacts"]
-            .as_array()
-            .expect("document facts")
-            .iter()
-            .any(|fact| fact["kind"] == "task"
-                && fact["sourceKind"] == "Headline"
-                && fact["attributes"]["todo"] == "TODO"),
-        "{search_packet:#}"
-    );
-    assert!(
-        search_packet["documentFacts"]
-            .as_array()
-            .expect("document facts")
-            .iter()
-            .any(|fact| fact["kind"] == "checklistItem"
-                && fact["sourceKind"] == "SyntaxListItem"
-                && fact["attributes"]["checked"] == "true"),
-        "{search_packet:#}"
-    );
-    assert!(
-        search_packet["documentFacts"]
-            .as_array()
-            .expect("document facts")
-            .iter()
-            .any(|fact| fact["kind"] == "paragraph"
-                && fact["sourceKind"] == "Paragraph"
-                && fact["attributes"]["text"]
-                    .as_str()
-                    .is_some_and(|text| text.contains("execution mode"))),
-        "{search_packet:#}"
-    );
-
     let json_query = orgize_command()
         .arg("query")
         .arg("--term")
@@ -547,11 +382,17 @@ fn org_document_search_and_query_commands_run() {
         "agent.semantic-protocols.semantic-document-query-packet"
     );
     assert_eq!(query_packet["languageId"], "org");
+    assert_eq!(query_packet["providerId"], "asp-org");
     assert_eq!(query_packet["binary"], "orgize");
+    assert_eq!(
+        query_packet["namespace"],
+        "agent.semantic-protocols.languages.org.asp-org"
+    );
     assert_eq!(query_packet["method"], "query/document");
     assert_eq!(query_packet["documentMode"], "metadata");
     assert_eq!(query_packet["queryKind"], "term");
     assert_eq!(query_packet["querySurface"], "metadata");
+    assert_document_query_evidence(&query_packet);
     assert!(
         query_packet["documentFacts"]
             .as_array()
@@ -637,6 +478,7 @@ fn org_document_search_and_query_commands_run() {
         serde_json::from_slice(&json_content_query.stdout).expect("parse content query packet");
     assert_eq!(content_query_packet["querySurface"], "content");
     assert_eq!(content_query_packet["documentMode"], "content");
+    assert_document_query_evidence(&content_query_packet);
     assert!(
         content_query_packet["contentBlocks"]
             .as_array()
@@ -649,39 +491,28 @@ fn org_document_search_and_query_commands_run() {
         "{content_query_packet:#}"
     );
 
-    let dot_root_search = orgize_command()
+    let dot_root_inventory = orgize_command()
         .current_dir(&root)
-        .arg("search")
-        .arg("prime")
-        .arg("--view")
-        .arg("seeds")
+        .arg("query")
         .arg("--json")
         .arg(".")
         .output()
-        .expect("run orgize dot-root search json");
+        .expect("run orgize dot-root query inventory json");
     assert!(
-        dot_root_search.status.success(),
+        dot_root_inventory.status.success(),
         "stderr: {}",
-        String::from_utf8_lossy(&dot_root_search.stderr)
+        String::from_utf8_lossy(&dot_root_inventory.stderr)
     );
-    let dot_root_search_packet: Value =
-        serde_json::from_slice(&dot_root_search.stdout).expect("parse dot-root search packet");
-    assert_eq!(dot_root_search_packet["projectRoot"], ".");
+    let dot_root_inventory_packet: Value = serde_json::from_slice(&dot_root_inventory.stdout)
+        .expect("parse dot-root query inventory packet");
+    assert_eq!(dot_root_inventory_packet["projectRoot"], ".");
     assert!(
-        dot_root_search_packet["owners"]
-            .as_array()
-            .expect("owners")
-            .iter()
-            .any(|owner| owner["path"] == "plan.org"),
-        "{dot_root_search_packet:#}"
-    );
-    assert!(
-        dot_root_search_packet["documentFacts"]
+        dot_root_inventory_packet["documentFacts"]
             .as_array()
             .expect("document facts")
             .iter()
             .any(|fact| fact["documentPath"] == "plan.org"),
-        "{dot_root_search_packet:#}"
+        "{dot_root_inventory_packet:#}"
     );
 
     let dot_root_query = orgize_command()
@@ -689,7 +520,7 @@ fn org_document_search_and_query_commands_run() {
         .arg("query")
         .arg("--selector")
         .arg(
-            dot_root_search_packet["documentFacts"]
+            dot_root_inventory_packet["documentFacts"]
                 .as_array()
                 .expect("document facts")
                 .iter()
@@ -712,6 +543,7 @@ fn org_document_search_and_query_commands_run() {
     assert_eq!(dot_root_packet["documentMode"], "metadata");
     assert_eq!(dot_root_packet["queryKind"], "selector");
     assert_eq!(dot_root_packet["querySurface"], "metadata");
+    assert_document_selector_query_evidence(&dot_root_packet, "plan.org");
     assert!(
         dot_root_packet["documentFacts"]
             .as_array()
@@ -722,7 +554,7 @@ fn org_document_search_and_query_commands_run() {
     );
 
     for kind in ["heading", "task"] {
-        let selector = dot_root_search_packet["documentFacts"]
+        let selector = dot_root_inventory_packet["documentFacts"]
             .as_array()
             .expect("document facts")
             .iter()

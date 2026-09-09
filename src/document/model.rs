@@ -105,6 +105,23 @@ impl DocumentLanguage {
         }
     }
 
+    /// Protocol identity for the language provider. This is independent from
+    /// the shared `orgize` implementation package and parser authorities.
+    pub fn provider_id(self) -> &'static str {
+        match self {
+            Self::Org => "asp-org",
+            Self::Markdown => "asp-md",
+        }
+    }
+
+    /// Canonical language/provider namespace carried by protocol packets.
+    pub fn provider_namespace(self) -> &'static str {
+        match self {
+            Self::Org => "agent.semantic-protocols.languages.org.asp-org",
+            Self::Markdown => "agent.semantic-protocols.languages.md.asp-md",
+        }
+    }
+
     /// Public command prefix for the language document provider.
     pub fn command_prefix(self) -> &'static str {
         match self {

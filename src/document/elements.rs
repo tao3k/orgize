@@ -40,6 +40,19 @@ pub fn index_project_with_config(
     Ok(facts)
 }
 
+pub(super) fn walk_config_with_cli_excludes(
+    walk_config: &DocumentWalkConfig,
+    args: &[String],
+) -> DocumentWalkConfig {
+    let mut walk_config = walk_config.clone();
+    for dir in option_values(args, "--exclude-dir") {
+        if !dir.trim().is_empty() && !walk_config.ignore_dirs.iter().any(|item| item == &dir) {
+            walk_config.ignore_dirs.push(dir);
+        }
+    }
+    walk_config
+}
+
 /// Index a single document path into parser-owned document elements.
 pub fn index_path(language: DocumentLanguage, path: &Path) -> Result<Vec<DocumentElement>, String> {
     let source =
@@ -232,13 +245,6 @@ pub fn filter_elements_by_query(
                 && fields.iter().all(|field| element.field_matches(field))
         })
         .collect()
-}
-
-pub(super) fn count_kind(elements: &[DocumentElement], kind: &str) -> usize {
-    elements
-        .iter()
-        .filter(|element| element.kind == kind)
-        .count()
 }
 
 pub(super) fn last_existing_path(args: &[String]) -> Option<PathBuf> {

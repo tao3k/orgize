@@ -8,10 +8,10 @@ use std::{
 
 use super::{
     command_render::{print_query_guide, print_selector_frontier},
-    command_search::walk_config_with_cli_excludes,
     elements::{
         display_path, escape_field, filter_elements_by_query, has_flag, index_path,
         last_existing_path, option_value, option_values, query_project_with_config,
+        walk_config_with_cli_excludes,
     },
     model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
     packets::{print_query_json, print_selector_query_json},
@@ -111,8 +111,10 @@ pub(crate) fn run_query(
         } else if json_output {
             let selection = SourceSelector::parse_query(selector)?;
             let evidence = super::packets::document_query_evidence(
+                language,
                 [selection.path.clone()],
                 Some(&selection.path),
+                selection.path.parent().unwrap_or_else(|| Path::new(".")),
             )?;
             let facts = selector_elements(language, &selection)?;
             let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
@@ -145,7 +147,12 @@ pub(crate) fn run_query(
         super::elements::collect_document_paths(language, &root, &walk_config, &mut source_paths)?;
         source_paths.sort();
         source_paths.dedup();
-        Some(super::packets::document_query_evidence(source_paths, None)?)
+        Some(super::packets::document_query_evidence(
+            language,
+            source_paths,
+            None,
+            &root,
+        )?)
     } else {
         None
     };
@@ -209,7 +216,8 @@ fn print_query_no_hit(language: DocumentLanguage, terms: &[String], root: &Path)
         shell_arg(first_term)
     };
     println!(
-        "|next search-lexical=\"{prefix} search lexical {first_term_arg} --workspace {root_arg} --view seeds\""
+        "|next search-playbook=\"asp search playbook --documents {} --rg -n -e {first_term_arg} {root_arg} --tantivy term {first_term_arg}\"",
+        language.id()
     );
     println!(
         "|next query-single-term=\"{prefix} query --term {first_term_arg} --workspace {root_arg} --view metadata\""
@@ -405,14 +413,6 @@ fn same_content_projection(left: &DocumentElement, right: &DocumentElement) -> b
 fn element_ranges_overlap(left: &DocumentElement, right: &DocumentElement) -> bool {
     left.line <= right.end_line && right.line <= left.end_line
 }
-pub(super) fn heading_facts(facts: &[DocumentElement]) -> Vec<DocumentElement> {
-    facts
-        .iter()
-        .filter(|fact| fact.kind == "heading")
-        .cloned()
-        .collect()
-}
-
 fn selector_elements(
     language: DocumentLanguage,
     selection: &SourceSelector,

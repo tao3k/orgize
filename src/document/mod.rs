@@ -1,10 +1,8 @@
 //! Library-owned document element mapping and command surfaces.
 
 mod command;
-mod command_format;
 mod command_query;
 mod command_render;
-mod command_search;
 mod elements;
 mod line_index;
 mod markdown_elements;

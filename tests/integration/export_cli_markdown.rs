@@ -5,11 +5,13 @@ use std::process::Command;
 use serde_json::Value;
 
 #[cfg(feature = "md")]
-use crate::export_cli::export_cli_common::test_dir;
+use crate::export_cli::export_cli_common::{
+    assert_document_query_evidence, assert_document_selector_query_evidence, test_dir,
+};
 
 #[cfg(feature = "md")]
 #[test]
-fn markdown_document_search_and_query_commands_run() {
+fn markdown_document_query_commands_run() {
     let guide = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")
         .arg("guide")
@@ -20,103 +22,13 @@ fn markdown_document_search_and_query_commands_run() {
     assert!(guide_stdout.contains("[guide] lang=md"), "{guide_stdout}");
     assert!(!guide_stdout.contains("owner tests"), "{guide_stdout}");
 
-    let root = test_dir("md-document-search");
+    let root = test_dir("md-document-query");
     let path = root.join("README.md");
     std::fs::write(
         &path,
         "---\nname: project-doc\ndescription: Document map\n---\n\n# Project\n\n## Overview\n\n### Details\n\nThis paragraph mentions repeat frontier behavior.\n\n- [x] Write tests\n- item\n\n[site](https://example.com)\n![diagram](diagram.png)\n\n---\n\n```rust\nfn main() {}\n```\n",
     )
     .expect("write markdown fixture");
-
-    let search = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .arg("md")
-        .arg("search")
-        .arg("fzf")
-        .arg("Project")
-        .arg("owner")
-        .arg("tests")
-        .arg("--view")
-        .arg("seeds")
-        .arg(&root)
-        .output()
-        .expect("run orgize md search");
-    assert!(
-        search.status.success(),
-        "stderr: {}",
-        String::from_utf8_lossy(&search.stderr)
-    );
-    let search_stdout = String::from_utf8(search.stdout).expect("utf8 search");
-    assert!(
-        search_stdout.contains("[search-fzf] lang=md"),
-        "{search_stdout}"
-    );
-    assert!(search_stdout.contains("|heading"), "{search_stdout}");
-    assert!(
-        search_stdout.contains("sourceKind=\"NodeValue::Heading\""),
-        "{search_stdout}"
-    );
-
-    let prime_search = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .arg("md")
-        .arg("search")
-        .arg("prime")
-        .arg("--view")
-        .arg("seeds")
-        .arg(&root)
-        .output()
-        .expect("run orgize md prime search");
-    assert!(
-        prime_search.status.success(),
-        "stderr: {}",
-        String::from_utf8_lossy(&prime_search.stderr)
-    );
-    let prime_stdout = String::from_utf8(prime_search.stdout).expect("utf8 prime search");
-    assert!(
-        prime_stdout.contains("O=owner:path(README.md)!owner"),
-        "{prime_stdout}"
-    );
-    assert!(prime_stdout.contains("G>{O:selects}"), "{prime_stdout}");
-    assert!(prime_stdout.contains("frontier=O.owner"), "{prime_stdout}");
-    assert!(prime_stdout.contains("paragraph="), "{prime_stdout}");
-    assert!(prime_stdout.contains("|paragraph"), "{prime_stdout}");
-    assert!(prime_stdout.contains("|checklistItem"), "{prime_stdout}");
-    assert!(prime_stdout.contains("|listItem"), "{prime_stdout}");
-    assert!(prime_stdout.contains("|image"), "{prime_stdout}");
-    assert!(prime_stdout.contains("|thematicBreak"), "{prime_stdout}");
-
-    let toc = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .arg("md")
-        .arg("search")
-        .arg("toc")
-        .arg(&root)
-        .output()
-        .expect("run orgize md toc search");
-    assert!(
-        toc.status.success(),
-        "stderr: {}",
-        String::from_utf8_lossy(&toc.stderr)
-    );
-    let toc_stdout = String::from_utf8(toc.stdout).expect("utf8 md toc");
-    assert!(toc_stdout.contains("[search-toc] lang=md"), "{toc_stdout}");
-    assert!(toc_stdout.contains("heading=3"), "{toc_stdout}");
-    assert!(toc_stdout.contains("maxLevel=3"), "{toc_stdout}");
-    assert!(
-        toc_stdout.contains("level=1 title=\"Project\""),
-        "{toc_stdout}"
-    );
-    assert!(!toc_stdout.contains("project-doc"), "{toc_stdout}");
-    assert!(
-        toc_stdout.contains("level=2 title=\"Overview\""),
-        "{toc_stdout}"
-    );
-    assert!(
-        toc_stdout.contains("level=3 title=\"Details\""),
-        "{toc_stdout}"
-    );
-    assert!(
-        toc_stdout.contains("next=\"orgize md query --selector"),
-        "{toc_stdout}"
-    );
 
     let selector_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")
@@ -138,6 +50,23 @@ fn markdown_document_search_and_query_commands_run() {
         .and_then(|fact| fact["structuralSelector"].as_str())
         .expect("Project heading selector")
         .to_string();
+    let selector_json_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("query")
+        .arg("--selector")
+        .arg(&selector)
+        .arg("--json")
+        .output()
+        .expect("run orgize md selector JSON query");
+    assert!(
+        selector_json_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&selector_json_query.stderr)
+    );
+    let selector_json_packet: Value =
+        serde_json::from_slice(&selector_json_query.stdout).expect("parse md selector JSON packet");
+    assert_eq!(selector_json_packet["queryKind"], "selector");
+    assert_document_selector_query_evidence(&selector_json_packet, "README.md");
     let query = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")
         .arg("query")
@@ -250,83 +179,6 @@ fn markdown_document_search_and_query_commands_run() {
         "{paragraph_content_stdout}"
     );
 
-    let json_search = Command::new(env!("CARGO_BIN_EXE_orgize"))
-        .arg("md")
-        .arg("search")
-        .arg("prime")
-        .arg("--view")
-        .arg("seeds")
-        .arg("--json")
-        .arg(&root)
-        .output()
-        .expect("run orgize md search json");
-    assert!(
-        json_search.status.success(),
-        "stderr: {}",
-        String::from_utf8_lossy(&json_search.stderr)
-    );
-    let search_packet: Value =
-        serde_json::from_slice(&json_search.stdout).expect("parse search packet");
-    assert_eq!(
-        search_packet["schemaId"],
-        "agent.semantic-protocols.semantic-document-search-packet"
-    );
-    assert_eq!(search_packet["languageId"], "md");
-    assert_eq!(search_packet["binary"], "orgize");
-    assert_eq!(search_packet["method"], "search/prime");
-    assert_eq!(search_packet["documentMode"], "metadata");
-    assert!(
-        search_packet["nextActions"]
-            .as_array()
-            .expect("next actions")
-            .iter()
-            .any(|action| action["target"] == "selector"
-                && action["command"]
-                    == "orgize md query --selector <structural-selector> --view metadata"),
-        "{search_packet:#}"
-    );
-    assert!(
-        search_packet["nextActions"]
-            .as_array()
-            .expect("next actions")
-            .iter()
-            .any(|action| action["target"] == "content"
-                && action["command"] == "orgize md query --term <term> --content"),
-        "{search_packet:#}"
-    );
-    assert!(
-        search_packet["documentFacts"]
-            .as_array()
-            .expect("document facts")
-            .iter()
-            .any(|fact| fact["kind"] == "heading"
-                && fact["sourceKind"] == "NodeValue::Heading"
-                && fact["attributes"]["title"] == "Project"),
-        "{search_packet:#}"
-    );
-    assert!(
-        search_packet["documentFacts"]
-            .as_array()
-            .expect("document facts")
-            .iter()
-            .any(|fact| fact["kind"] == "paragraph"
-                && fact["sourceKind"] == "NodeValue::Paragraph"
-                && fact["attributes"]["text"]
-                    .as_str()
-                    .unwrap_or_default()
-                    .contains("repeat frontier behavior")),
-        "{search_packet:#}"
-    );
-    assert!(
-        search_packet["documentFacts"]
-            .as_array()
-            .expect("document facts")
-            .iter()
-            .any(|fact| fact["kind"] == "checklistItem"
-                && fact["sourceKind"] == "NodeValue::TaskItem"),
-        "{search_packet:#}"
-    );
-
     let json_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")
         .arg("query")
@@ -348,11 +200,17 @@ fn markdown_document_search_and_query_commands_run() {
         "agent.semantic-protocols.semantic-document-query-packet"
     );
     assert_eq!(query_packet["languageId"], "md");
+    assert_eq!(query_packet["providerId"], "asp-md");
     assert_eq!(query_packet["binary"], "orgize");
+    assert_eq!(
+        query_packet["namespace"],
+        "agent.semantic-protocols.languages.md.asp-md"
+    );
     assert_eq!(query_packet["method"], "query/document");
     assert_eq!(query_packet["documentMode"], "metadata");
     assert_eq!(query_packet["queryKind"], "term");
     assert_eq!(query_packet["querySurface"], "metadata");
+    assert_document_query_evidence(&query_packet);
     assert!(
         query_packet["documentFacts"]
             .as_array()
@@ -381,6 +239,7 @@ fn markdown_document_search_and_query_commands_run() {
         serde_json::from_slice(&json_content_query.stdout).expect("parse md content query packet");
     assert_eq!(content_query_packet["querySurface"], "content");
     assert_eq!(content_query_packet["documentMode"], "content");
+    assert_document_query_evidence(&content_query_packet);
     assert!(
         content_query_packet["contentBlocks"]
             .as_array()
@@ -392,4 +251,24 @@ fn markdown_document_search_and_query_commands_run() {
                     .is_some_and(|text| text.contains("repeat frontier behavior"))),
         "{content_query_packet:#}"
     );
+
+    let relative_file_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&root)
+        .arg("md")
+        .arg("query")
+        .arg("--term")
+        .arg("Project")
+        .arg("--json")
+        .arg("README.md")
+        .output()
+        .expect("run orgize md relative-file query JSON");
+    assert!(
+        relative_file_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&relative_file_query.stderr)
+    );
+    let relative_file_packet: Value = serde_json::from_slice(&relative_file_query.stdout)
+        .expect("parse md relative-file query packet");
+    assert_eq!(relative_file_packet["sourceSnapshot"]["leafCount"], 1);
+    assert_document_query_evidence(&relative_file_packet);
 }
