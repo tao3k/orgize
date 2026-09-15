@@ -1,7 +1,7 @@
 {
   "languageId": "md",
   "profileDigest": "blake3-256:52e29482ac98b4bbd050a574f572e76dec2f3f0b874b64bd87b88fae961abcc3",
-  "bundleDigest": "blake3-256:818bd66a2310e5f37fff079e661aa8bc50050a45bb3593fbe9f6a4f4aec440a7",
+  "bundleDigest": "blake3-256:57281136b94fe3cd485b8d5eeb26e5e489c806c1fd575b7d7de35e601838c93a",
   "schemas": [
     {
       "name": "asp-client-cancellation-probe-request.schema.json",
@@ -73,7 +73,7 @@
     },
     {
       "name": "asp-client-workspace-search-playbook-request.v1.schema.json",
-      "digest": "blake3-256:f32ea2abb85995ed2e2b5cbc9182de75b6e6b59228851184d80407d7fca4fa06"
+      "digest": "blake3-256:8d51558ac91f2ddb75d95bc5c573bbef884edd802e66cf5afd64f4a7d257498d"
     },
     {
       "name": "asp-client-workspace-source-mutation.schema.json",
@@ -197,7 +197,7 @@
     },
     {
       "name": "query-playbook-materialization-receipt.v1.schema.json",
-      "digest": "blake3-256:05d6793b11c3b2643bf394b8773c1b9131aa17cf9ddcc588f3f592542553d83c"
+      "digest": "blake3-256:d0c2135e238a90638a025a42947f769dd7083e5494f44bdb7a2f91362aecfa1b"
     },
     {
       "name": "query-playbook-materialization-request.v1.schema.json",
