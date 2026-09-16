@@ -1,7 +1,6 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::Command,
     time::Instant,
 };
 
@@ -121,7 +120,7 @@ fn plain_text_summary_contains_matches_inline_rendered_text_split_by_subscript()
 
 #+BEGIN_SRC org-contract
 (assert exists
-  (plain-text :descendant-of $scope :summary-contains (value "asp org capture --contract CONTRACT_ID")))
+  (plain-text :descendant-of $scope :summary-contains (value "orgize org capture --contract CONTRACT_ID")))
 #+END_SRC
 "#,
     )
@@ -133,7 +132,7 @@ fn plain_text_summary_contains_matches_inline_rendered_text_split_by_subscript()
     let target = Org::parse(
         r#"
 * Skill
-Use asp org capture --contract CONTRACT_ID before writing.
+Use orgize org capture --contract CONTRACT_ID before writing.
 "#,
     )
     .document();
@@ -170,7 +169,7 @@ No link here.
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -236,7 +235,7 @@ fn cli_trace_evaluates_multiple_contract_org_bindings_on_same_scope() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -272,7 +271,7 @@ fn cli_trace_distinguishes_document_and_heading_contract_org_property_scope() {
     fs::write(dir.join("contracts.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
     fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_NOTES).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -334,11 +333,11 @@ fn contract_org_property_scope_fixture_stays_in_millisecond_budget() {
         .join("scenarios")
         .join("contract_trace")
         .join("contract_org_property_scope");
-    let benchmark = rust_lang_project_harness::validate_rust_scenario_benchmark(&scenario_root)
+    let benchmark = asp_rust::validate_rust_scenario_benchmark(&scenario_root)
         .expect("validate contract trace property scope scenario benchmark");
     assert_eq!(
         benchmark.status,
-        rust_lang_project_harness::RustScenarioBenchmarkStatus::Pass,
+        asp_rust::RustScenarioBenchmarkStatus::Pass,
         "{:?}",
         benchmark.violations
     );
@@ -450,7 +449,7 @@ fn cli_trace_rejects_contract_org_metadata_keyword_declarations() {
     fs::write(dir.join("contract.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
     fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_KEYWORD_NOTES).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -481,7 +480,7 @@ fn cli_trace_rejects_duplicate_contract_org_bindings_on_same_scope() {
     fs::write(dir.join("contract.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
     fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_DUPLICATE_NOTES).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -527,7 +526,7 @@ fn cli_trace_resolves_org_link_contract_reference_relative_to_source_file() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -616,7 +615,7 @@ fn cli_trace_loads_registry_dependencies_declared_by_contract_source() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -647,7 +646,7 @@ fn cli_trace_loads_registry_dependencies_declared_by_contract_source() {
 
 #[test]
 fn cli_query_surface_outputs_agent_facing_json() {
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["contract", "query-surface", "--json"])
         .output()
         .unwrap();
@@ -718,7 +717,7 @@ fn org_link_reference_uses_relative_path_and_display_contract_id() {
 #[test]
 fn execplan_template_satisfies_language_contract() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&manifest_dir)
         .args([
             "contract",

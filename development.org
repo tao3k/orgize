@@ -18,7 +18,9 @@ agree. If a new category is needed, update `docs/topology.toml` explicitly
 instead of silently inventing category meaning.
 
 #+begin_src sh
-direnv exec . cargo run --quiet -- lint docs development.org
+.devenv/devenv-profile-exec cargo run --quiet \
+  --manifest-path languages/orgize/Cargo.toml -- \
+  lint languages/orgize/docs languages/orgize/development.org
 #+end_src
 
 ** Update snapshot testing

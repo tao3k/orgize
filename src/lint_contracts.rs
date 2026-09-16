@@ -14,7 +14,7 @@ use crate::ast::{
     evaluate_org_contract_with_context, parse_contract_reference, parse_contracts_from_document,
 };
 
-use super::lint_model::{LintFinding, LintSeverity, location_for_range};
+use super::{LintFinding, LintSeverity, location_for_range};
 
 #[path = "lint_contracts_builtin.rs"]
 mod builtin;

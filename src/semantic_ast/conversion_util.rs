@@ -2,7 +2,9 @@
 
 use rowan::{TextRange, TextSize};
 
-use crate::syntax::SyntaxElement;
+use crate::syntax::{SyntaxElement, SyntaxNode};
+
+use super::block_metadata::split_block_lines;
 
 pub(super) fn parse_token<T>(value: &str) -> Option<T>
 where
@@ -34,6 +36,17 @@ pub(super) fn strip_pair(value: &str) -> &str {
 
 pub(super) fn text_range(start: usize, end: usize) -> TextRange {
     TextRange::new(TextSize::new(start as u32), TextSize::new(end as u32))
+}
+
+pub(super) fn block_content_line_ranges(content: &SyntaxNode, source: &str) -> Vec<TextRange> {
+    source_line_ranges(usize::from(content.text_range().start()), source)
+}
+
+pub(super) fn source_line_ranges(base: usize, source: &str) -> Vec<TextRange> {
+    split_block_lines(source)
+        .into_iter()
+        .map(|line| text_range(base + line.start, base + line.end))
+        .collect()
 }
 
 pub(super) fn position_range(range: TextRange, base: usize) -> TextRange {

@@ -231,12 +231,12 @@ this repository.
 - [X] Add Criterion smoke coverage for `Org::to_markdown()` and
       `Org::to_latex()` alongside parse, semantic projection, and HTML export.
 
-*** M11 Harness Build-Time Coverage
+*** M11 ASP Rust Policy Coverage
 
-- [X] Keep root `build.rs` mounted as a filter-proof Rust project harness gate.
-- [X] Add `rust-lang-project-harness` to `orgize-wasm` `[build-dependencies]`.
-- [X] Mount the same build-time harness gate from `wasm/build.rs` before the
-      existing wasm build metadata emission.
+- [X] Keep root `build.rs` thin with `asp-rust-build-support` contract evidence.
+- [X] Add full `asp-rust` to root and `orgize-wasm` `[dev-dependencies]`.
+- [X] Add lightweight `asp-rust-build-support` to both build scripts while
+      running full source policy only from cargo-test gates.
 
 *** M12 Harness Advice Enforcement
 

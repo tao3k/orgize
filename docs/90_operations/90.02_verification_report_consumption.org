@@ -1,22 +1,22 @@
 * 90.02 Verification Report Consumption
 
-This record keeps the harness report evidence durable inside Orgize. It exists
+This record keeps ASP Rust report evidence durable inside Orgize. It exists
 because a temporary downstream crate can prove compilation, but it cannot teach
 future Agents which optimization work the report exposed.
 
-** Git-Locked Harness Source
+** Git-Locked ASP Rust Source
 
-Orgize consumes `rust-lang-project-harness` through a pinned git dependency, not
-a local path dependency.
+Orgize consumes `asp-rust` and its lightweight `asp-rust-build-support`
+through one pinned git revision, not a parent-checkout path dependency.
 
 | Surface | Location | Rev |
 |---------+----------+-----|
-| Root dev dependency | `Cargo.toml` | `acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67` |
-| Root build dependency | `Cargo.toml` | `acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67` |
-| Wasm submodule build dependency | `wasm/Cargo.toml` in `tao3k/orgize-wasm` | `acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67` |
+| Root `asp-rust` dev dependency | `Cargo.toml` | `77fb11ea7e9b767320fb9f7706bcd63d182110da` |
+| Root `asp-rust-build-support` build dependency | `Cargo.toml` | `77fb11ea7e9b767320fb9f7706bcd63d182110da` |
+| Wasm dev/build-support dependencies | `wasm/Cargo.toml` in `tao3k/orgize-wasm` | `77fb11ea7e9b767320fb9f7706bcd63d182110da` |
 
 Local `Cargo.lock` resolution records the same source as
-`git+https://github.com/tao3k/rust-lang-project-harness?rev=acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67#acf9295ef9ef03caeb7ffa85c5e0b2389abe7d67`.
+`git+https://github.com/tao3k/asp-rust?rev=77fb11ea7e9b767320fb9f7706bcd63d182110da#77fb11ea7e9b767320fb9f7706bcd63d182110da`.
 The manifest rev is the durable contract for clean checkouts; the lockfile is
 the local reproduction receipt when present.
 
@@ -25,11 +25,11 @@ the local reproduction receipt when present.
 The durable downstream test is:
 
 #+begin_src sh
-direnv exec . cargo test --locked --test integration_test git_locked_harness_report_exposes_actionable_performance_gaps
+direnv exec . cargo test --locked --test integration_test harness_report_consumer::git_locked_asp_rust_report_exposes_actionable_performance_gaps -- --exact
 #+end_src
 
 The test builds a small latency-sensitive Rust crate through Orgize's
-git-locked harness dependency, writes modular verification reports, reloads the
+git-locked ASP Rust dependency, writes modular verification reports, reloads the
 runtime manifest and receipt JSON, then opens the selected first artifact from
 `RustVerificationReportEntryAdvice`.
 
@@ -53,11 +53,10 @@ called optimized.
 
 1. Preserve the current structural gate as a clean baseline.
 
-   `rust-project-harness --json` currently reports no blocking findings for the
-   checked Orgize parser workspace. The wasm package keeps the same build gate
-   in the `tao3k/orgize-wasm` submodule, so parser and browser package policy
-   remain enforced at their own repository boundaries; it does not mean
-   performance work is complete.
+   ASP Rust cargo-test policy currently reports no blocking findings for the
+   checked Orgize parser workspace. The wasm package runs the same full policy
+   from its own tests, while both build scripts use only lightweight contract
+   evidence; it does not mean performance work is complete.
 
 2. Promote dense parser paths into explicit performance evidence.
 
@@ -130,9 +129,9 @@ Current validation commands:
 
 #+begin_src sh
 direnv exec . cargo test --locked --lib
-direnv exec . cargo test --locked --test integration_test git_locked_harness_report_exposes_actionable_performance_gaps
+direnv exec . cargo test --locked --test integration_test harness_report_consumer::git_locked_asp_rust_report_exposes_actionable_performance_gaps -- --exact
 direnv exec . cargo test --locked --workspace --all-targets --all-features
-direnv exec . cargo run --quiet --manifest-path /Users/guangtao/ghq/github.com/tao3k/rust-lang-project-harness/Cargo.toml -- --json /Users/guangtao/ghq/github.com/tao3k/orgize
+direnv exec . cargo test --locked --test integration_test scenario_benchmark::orgize_rule_fixtures_have_scenario_benchmarks -- --exact
 direnv exec . cargo run --quiet -- lint docs
 direnv exec . cargo fmt --all -- --check
 git submodule update --init --recursive wasm
@@ -144,5 +143,5 @@ The first parser commands prove Orgize compiles and report consumption stays
 inside the repository instead of a temporary crate. The full workspace command
 now covers the parser workspace; the wasm commands initialize the submodule and
 prove the browser package still compiles against the parent parser checkout. The
-harness command remains the broad structural policy check, and the final checks
+ASP Rust tests remain the broad structural policy check, and the final checks
 keep docs, formatting, and whitespace suitable for downstream consumption.

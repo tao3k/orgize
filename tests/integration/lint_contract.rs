@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, process::Command, time::Instant};
+use std::{fs, path::PathBuf, time::Instant};
 
 use orgize::{
     Org,
@@ -214,11 +214,11 @@ fn lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget() {
         .join("scenarios")
         .join("lint_contract")
         .join("org_query_assertion");
-    let benchmark = rust_lang_project_harness::validate_rust_scenario_benchmark(&scenario_root)
+    let benchmark = asp_rust::validate_rust_scenario_benchmark(&scenario_root)
         .expect("validate org query assertion scenario benchmark");
     assert_eq!(
         benchmark.status,
-        rust_lang_project_harness::RustScenarioBenchmarkStatus::Pass,
+        asp_rust::RustScenarioBenchmarkStatus::Pass,
         "{:?}",
         benchmark.violations
     );
@@ -424,7 +424,7 @@ fn lint_cli_loads_org_contract_registry_file_with_snapshot() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "lint",
@@ -457,7 +457,7 @@ fn lint_cli_builds_org_contract_registry_from_directory_inputs() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["lint", "--format", "text", "contracts"])
         .output()

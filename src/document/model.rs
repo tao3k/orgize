@@ -97,6 +97,9 @@ pub(super) fn selector_component(input: &str) -> String {
 }
 
 impl DocumentLanguage {
+    /// Document languages compiled into the shared ASP binary.
+    pub const ALL: [Self; 2] = [Self::Org, Self::Markdown];
+
     /// Stable language id used by CLI and packet output.
     pub fn id(self) -> &'static str {
         match self {
@@ -105,11 +108,28 @@ impl DocumentLanguage {
         }
     }
 
+    /// Protocol identity for the language provider. This is independent from
+    /// the shared `orgize` implementation package and parser authorities.
+    pub fn provider_id(self) -> &'static str {
+        match self {
+            Self::Org => "asp-org",
+            Self::Markdown => "asp-md",
+        }
+    }
+
+    /// Canonical language/provider namespace carried by protocol packets.
+    pub fn provider_namespace(self) -> &'static str {
+        match self {
+            Self::Org => "agent.semantic-protocols.languages.org.asp-org",
+            Self::Markdown => "agent.semantic-protocols.languages.md.asp-md",
+        }
+    }
+
     /// Public command prefix for the language document provider.
     pub fn command_prefix(self) -> &'static str {
         match self {
-            Self::Org => "asp org",
-            Self::Markdown => "asp md",
+            Self::Org => "orgize org",
+            Self::Markdown => "orgize md",
         }
     }
 
@@ -121,14 +141,21 @@ impl DocumentLanguage {
         }
     }
 
-    pub(super) fn matches_path(self, path: &Path) -> bool {
+    /// Source suffixes owned by the embedded document producer.
+    pub fn source_extensions(self) -> &'static [&'static str] {
+        match self {
+            Self::Org => &[".org", ".org_archive"],
+            Self::Markdown => &[".md", ".markdown"],
+        }
+    }
+
+    pub fn matches_path(self, path: &Path) -> bool {
         let Some(extension) = path.extension().and_then(|extension| extension.to_str()) else {
             return false;
         };
-        match self {
-            Self::Org => matches!(extension, "org" | "org_archive"),
-            Self::Markdown => matches!(extension, "md" | "markdown"),
-        }
+        self.source_extensions()
+            .iter()
+            .any(|candidate| candidate.trim_start_matches('.') == extension)
     }
 }
 
