@@ -222,6 +222,8 @@ expression: "serde_json::to_string_pretty(&payload).unwrap()"
       ":closed",
       ":columnIndex",
       ":columnName",
+      ":columnNonempty:A",
+      ":columnNonempty:B",
       ":contents-begin",
       ":contents-end",
       ":counter",

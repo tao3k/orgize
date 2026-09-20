@@ -69,11 +69,19 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     let mut discovered = Vec::new();
     collect_org_files(&root, &root, &policy.ignored_dirs, &mut discovered)?;
     discovered.sort();
+    let discovered_sources = discovered
+        .into_iter()
+        .map(|path| {
+            let source = fs::read_to_string(&path)
+                .map_err(|error| format!("{}: {error}", path.display()))?;
+            Ok((path, source))
+        })
+        .collect::<Result<Vec<_>, String>>()?;
 
     let mut findings = Vec::new();
-    let mut admissions = Vec::with_capacity(discovered.len());
-    for path in discovered {
-        let relative = relative_path(&root, &path)?;
+    let mut admissions = Vec::with_capacity(discovered_sources.len());
+    for (path, source) in &discovered_sources {
+        let relative = relative_path(&root, path)?;
         let matching_routes = policy.matching_routes(&relative);
         if matching_routes.len() != 1 {
             findings.push(format!(
@@ -88,9 +96,10 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
             continue;
         }
         admissions.push(MaintainedAdmission {
-            path,
+            path: path.clone(),
             relative,
             route_index,
+            source: source.clone(),
         });
     }
     let maintained = load_maintained_documents(&admissions)?;
@@ -247,6 +256,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
             &root,
             (&policy_path, &policy_source),
             &registry_sources,
+            &discovered_sources,
             &maintained,
         )?;
         let mut receipt = json!({
@@ -293,36 +303,52 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
 fn workspace_digest(
     root: &Path,
     policy: (&Path, &str),
-    registries: &BTreeMap<PathBuf, String>,
+    registries: &[(PathBuf, String)],
+    inventory: &[(PathBuf, String)],
     documents: &[MaintainedDocument],
 ) -> Result<String, String> {
-    let mut sources = vec![("policy", receipt_source_label(root, policy.0), policy.1)];
-    sources.extend(registries.iter().map(|(path, source)| {
-        (
-            "registry",
-            receipt_source_label(root, path),
-            source.as_str(),
-        )
-    }));
-    sources.extend(documents.iter().map(|document| {
-        (
-            "document",
-            receipt_source_label(root, &document.path),
-            document.source.as_str(),
-        )
-    }));
-    sources.sort_by(|left, right| (left.0, &left.1).cmp(&(right.0, &right.1)));
     let mut hasher = blake3::Hasher::new();
     hasher.update(b"orgize.workspace-receipt.v1\0");
-    for (role, label, source) in sources {
-        hasher.update(&(role.len() as u64).to_be_bytes());
-        hasher.update(role.as_bytes());
-        hasher.update(&(label.len() as u64).to_be_bytes());
-        hasher.update(label.as_bytes());
-        hasher.update(&(source.len() as u64).to_be_bytes());
-        hasher.update(source.as_bytes());
+    hash_receipt_source(
+        &mut hasher,
+        "policy",
+        &receipt_source_label(root, policy.0),
+        policy.1,
+    );
+    for (path, source) in registries {
+        hash_receipt_source(
+            &mut hasher,
+            "registry",
+            &receipt_source_label(root, path),
+            source,
+        );
+    }
+    for (path, source) in inventory {
+        hash_receipt_source(
+            &mut hasher,
+            "inventory",
+            &receipt_source_label(root, path),
+            source,
+        );
+    }
+    for document in documents {
+        hash_receipt_source(
+            &mut hasher,
+            "document",
+            &receipt_source_label(root, &document.path),
+            &document.source,
+        );
     }
     Ok(format!("blake3:{}", hasher.finalize().to_hex()))
+}
+
+fn hash_receipt_source(hasher: &mut blake3::Hasher, role: &str, label: &str, source: &str) {
+    hasher.update(&(role.len() as u64).to_be_bytes());
+    hasher.update(role.as_bytes());
+    hasher.update(&(label.len() as u64).to_be_bytes());
+    hasher.update(label.as_bytes());
+    hasher.update(&(source.len() as u64).to_be_bytes());
+    hasher.update(source.as_bytes());
 }
 
 fn receipt_source_label(root: &Path, path: &Path) -> String {
@@ -621,6 +647,7 @@ struct MaintainedAdmission {
     path: PathBuf,
     relative: String,
     route_index: usize,
+    source: String,
 }
 
 fn load_maintained_documents(
@@ -662,8 +689,7 @@ fn load_maintained_documents(
 }
 
 fn load_maintained_document(admission: &MaintainedAdmission) -> Result<MaintainedDocument, String> {
-    let source = fs::read_to_string(&admission.path)
-        .map_err(|error| format!("{}: {error}", admission.path.display()))?;
+    let source = admission.source.clone();
     let document = Org::parse(&source).document();
     let diagnostic_count = document.diagnostics.len();
     Ok(MaintainedDocument {

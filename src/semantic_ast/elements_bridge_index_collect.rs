@@ -175,6 +175,20 @@ impl ElementIndex {
                     .unwrap_or_else(Vec::new);
                 for (row_index, row) in table.rows.iter().enumerate() {
                     let is_header = Some(row_index) == header_row_index;
+                    let mut row_summary = summary([
+                        ("rowIndex", (row_index + 1).into()),
+                        ("isRule", row.is_rule.into()),
+                        ("isHeader", is_header.into()),
+                        ("cells", row.cells.len().into()),
+                    ]);
+                    for (column_index, column_name) in header_cells.iter().enumerate() {
+                        let has_text = row
+                            .cells
+                            .get(column_index)
+                            .is_some_and(|cell| !objects_text(&cell.objects).trim().is_empty());
+                        row_summary
+                            .insert(format!("columnNonempty:{column_name}"), has_text.into());
+                    }
                     let row_id = self.push(ElementIndexRecordSpec::new(
                         Some(element_id),
                         OrgElementsIndexCategory::Element,
@@ -182,12 +196,7 @@ impl ElementIndex {
                         &row.ann,
                         outline_path,
                         "table",
-                        summary([
-                            ("rowIndex", (row_index + 1).into()),
-                            ("isRule", row.is_rule.into()),
-                            ("isHeader", is_header.into()),
-                            ("cells", row.cells.len().into()),
-                        ]),
+                        row_summary,
                     ));
                     for (column_index, cell) in row.cells.iter().enumerate() {
                         let text = objects_text(&cell.objects);

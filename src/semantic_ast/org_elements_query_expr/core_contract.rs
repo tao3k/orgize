@@ -542,6 +542,10 @@ fn apply_keyword_argument(
             "columnName",
             expression_summary_value(value)?,
         )),
+        ":column-nonempty" => query.predicates.push(OrgElementQueryPredicate::summary_eq(
+            format!("columnNonempty:{}", value.as_text()?),
+            OrgElementsIndexSummaryValue::Bool(true),
+        )),
         ":text" => query.predicates.push(OrgElementQueryPredicate::summary_eq(
             "text",
             expression_summary_value(value)?,

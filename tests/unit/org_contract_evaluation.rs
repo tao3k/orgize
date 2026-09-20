@@ -769,6 +769,64 @@ fn contract_value_sets_can_require_exact_trace_coverage() {
 }
 
 #[test]
+fn contract_table_rows_can_require_named_columns_on_the_same_row() {
+    let contract = parse_single_contract(
+        r#"
+* Trace rows
+:PROPERTIES:
+:CONTRACT_ID: trace.rows.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Every trace row is complete
+:PROPERTIES:
+:ASSERT_ID: trace.rows.complete
+:SEVERITY: error
+:END:
+#+begin_src org-contract
+(let ((principles
+       (headline :property-contains ("PRINCIPLE_ID" ""))))
+  (assert count == $principles
+    (table-row
+      :header false
+      :column-nonempty "Principle ID"
+      :column-nonempty "Engineering direction"
+      :column-nonempty "Downstream owner")))
+#+end_src
+"#,
+    );
+    let complete = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:END:\n| Principle ID | Engineering direction | Downstream owner |\n|--------------+-----------------------+------------------|\n| P-001        | Query from AST        | Orgize           |\n",
+    )
+    .document();
+    let compensated = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:END:\n| Principle ID | Engineering direction | Downstream owner |\n|--------------+-----------------------+------------------|\n| P-001        |                       | Orgize           |\n|              | Query from AST        | Orgize           |\n",
+    )
+    .document();
+    let context = OrgContractEvaluationContext::default();
+    let complete = evaluate_org_contract_with_context(
+        &complete,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    let compensated = evaluate_org_contract_with_context(
+        &compensated,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    assert_eq!(
+        complete.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(
+        compensated.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+}
+
+#[test]
 fn contract_positive_integer_predicate_rejects_noncanonical_and_nonpositive_values() {
     let contract = parse_single_contract(
         r#"
