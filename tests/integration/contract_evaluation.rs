@@ -147,6 +147,66 @@ Use orgize org capture --contract CONTRACT_ID before writing.
 }
 
 #[test]
+fn paragraph_nonempty_distinguishes_prose_from_blank_section_body() {
+    let contract_document = Org::parse(
+        r#"
+* prose-contract
+:PROPERTIES:
+:CONTRACT_ID: document.prose.v1
+:CONTRACT_SCOPE: document
+:END:
+
+** Filled section
+:PROPERTIES:
+:ASSERT_ID: document.prose.filled
+:END:
+#+BEGIN_SRC org-contract
+(let ((heading (headline :summary (title "Filled")))
+      (body (section :child-of $heading)))
+  (assert exists (paragraph :within $body :nonempty t)))
+#+END_SRC
+
+** Empty section
+:PROPERTIES:
+:ASSERT_ID: document.prose.empty
+:END:
+#+BEGIN_SRC org-contract
+(let ((heading (headline :summary (title "Empty")))
+      (body (section :child-of $heading)))
+  (assert exists (paragraph :within $body :nonempty t)))
+#+END_SRC
+"#,
+    )
+    .document();
+    let registry = parse_contracts_from_document(&contract_document, None);
+    let contract = registry
+        .resolve(&parse_contract_reference("document.prose.v1"))
+        .expect("contract should resolve");
+    let target = Org::parse(
+        r#"
+* Filled
+Substantive prose.
+* Empty
+
+"#,
+    )
+    .document();
+
+    let evaluation =
+        evaluate_org_contract(&target, contract, OrgContractEvaluationScope::document());
+
+    assert_eq!(evaluation.assertions.len(), 2);
+    assert_eq!(
+        evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(
+        evaluation.assertions[1].status,
+        OrgContractAssertionStatus::Failed
+    );
+}
+
+#[test]
 fn cli_trace_outputs_contract_evaluation_json_snapshot() {
     let dir = test_dir("contract-trace");
     fs::create_dir_all(&dir).unwrap();

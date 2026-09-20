@@ -64,7 +64,13 @@ pub(super) fn element_summary(element: &Element<ParsedAnnotation>) -> OrgElement
             ("raw", clock.raw.clone().into()),
             ("duration", optional_text(clock.duration.as_deref())),
         ]),
-        ElementData::Paragraph(objects) => summary([("objects", objects.len().into())]),
+        ElementData::Paragraph(objects) => {
+            let text = objects_text(objects);
+            summary([
+                ("objects", objects.len().into()),
+                ("hasText", (!text.trim().is_empty()).into()),
+            ])
+        }
         ElementData::PropertyDrawer(properties) => {
             summary([("properties", properties.len().into())])
         }
