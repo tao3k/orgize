@@ -312,6 +312,50 @@ fn workspace_contract_rejects_mismatched_paired_document_metadata_from_contract_
 }
 
 #[test]
+fn workspace_contract_resolves_document_property_values_to_node_identities() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    fixture.add_reference_fixture("P-001", "none");
+
+    let admitted = fixture.run();
+    assert!(admitted.status.success(), "{}", receipt(&admitted));
+
+    let cn_path = fixture.root.join("cn/docs/doc.org");
+    fs::write(
+        &cn_path,
+        fs::read_to_string(&cn_path)
+            .unwrap()
+            .replace(":PRINCIPLE_REF: P-001", ":PRINCIPLE_REF: P-404"),
+    )
+    .unwrap();
+    fixture.assert_failure(
+        "document property PRINCIPLE_REF reference `P-404` does not resolve to node identity PRINCIPLE_ID",
+    );
+}
+
+#[test]
+fn workspace_contract_resolves_node_property_values_and_allows_declared_sentinels() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    fixture.add_reference_fixture("P-001", "none");
+
+    let admitted = fixture.run();
+    assert!(admitted.status.success(), "{}", receipt(&admitted));
+
+    let en_path = fixture.root.join("en/docs/doc.org");
+    fs::write(
+        &en_path,
+        fs::read_to_string(&en_path)
+            .unwrap()
+            .replace(":REFINES: none", ":REFINES: P-404"),
+    )
+    .unwrap();
+    fixture.assert_failure(
+        "node property REFINES reference `P-404` does not resolve to node identity PRINCIPLE_ID",
+    );
+}
+
+#[test]
 fn workspace_contract_rejects_an_invalid_route_contract_expression() {
     let fixture = WorkspaceFixture::new();
     let policy = POLICY.replace(
@@ -504,6 +548,49 @@ impl WorkspaceFixture {
             "expected `{expected}`\n{}",
             receipt(&output)
         );
+    }
+
+    fn install_reference_policy(&self) {
+        let document_rule = r#"#+begin_src org-contract
+(assert document-property-values-resolve-node-identities
+  (property "PRINCIPLE_REF")
+  (identity "PRINCIPLE_ID"))
+#+end_src"#;
+        let node_rule = r#"#+begin_src org-contract
+(assert node-property-values-resolve-node-identities
+  (property "REFINES")
+  (identity "PRINCIPLE_ID")
+  (allow "none"))
+#+end_src"#;
+        let policy = POLICY
+            .replace(
+                ":LANGUAGE_VALUE: zh-CN\n:END:",
+                &format!(":LANGUAGE_VALUE: zh-CN\n:END:\n{document_rule}\n{node_rule}"),
+            )
+            .replace(
+                ":LANGUAGE_VALUE: en\n:END:",
+                &format!(":LANGUAGE_VALUE: en\n:END:\n{document_rule}\n{node_rule}"),
+            );
+        fs::write(self.root.join("policy.org"), policy).unwrap();
+    }
+
+    fn add_reference_fixture(&self, principle_ref: &str, refines: &str) {
+        for language in ["cn", "en"] {
+            let path = self.root.join(language).join("docs/doc.org");
+            let source = fs::read_to_string(&path).unwrap();
+            let source = source
+                .replace(
+                    ":LANGUAGE:",
+                    &format!(":PRINCIPLE_REF: {principle_ref}\n:LANGUAGE:"),
+                )
+                .replace(
+                    "* Required\n",
+                    &format!(
+                        "* Required\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:REFINES: {refines}\n:END:\n"
+                    ),
+                );
+            fs::write(path, source).unwrap();
+        }
     }
 }
 

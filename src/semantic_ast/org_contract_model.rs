@@ -576,6 +576,22 @@ pub struct OrgContractPairDocumentEquality {
     pub properties: Vec<String>,
 }
 
+/// Workspace reference projection from root document properties to node identities.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractDocumentReferenceResolution {
+    pub property: String,
+    pub identity_property: String,
+    pub allowed_values: Vec<String>,
+}
+
+/// Workspace reference projection from node properties to node identities.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractNodeReferenceResolution {
+    pub property: String,
+    pub identity_property: String,
+    pub allowed_values: Vec<String>,
+}
+
 /// Comparison operator for a `count` expectation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OrgContractCompareOp {

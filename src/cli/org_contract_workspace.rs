@@ -12,9 +12,12 @@ use serde_json::json;
 use crate::{
     Org,
     ast::{
-        BlockKind, ElementData, OrgContractAssertionStatus, OrgContractPairDocumentEquality,
+        BlockKind, ElementData, OrgContractAssertionStatus, OrgContractDocumentReferenceResolution,
+        OrgContractNodeReferenceResolution, OrgContractPairDocumentEquality,
         OrgContractPairNodeEquality, ParsedAst, Property, Section,
         org_contract_evaluations_to_json_value, parse_contract_references,
+        parse_org_contract_document_reference_resolution_block,
+        parse_org_contract_node_reference_resolution_block,
         parse_org_contract_pair_document_equality_block,
         parse_org_contract_pair_node_equality_block,
     },
@@ -230,6 +233,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     }
 
     validate_pairs(&root, &paired, &mut findings);
+    validate_references(&maintained, &policy, &mut findings);
 
     if options.json {
         let receipt = json!({
@@ -398,9 +402,11 @@ impl WorkspacePolicy {
                     section.raw_title
                 ));
             }
+            let workspace_rules = section_workspace_rules(section)?;
             let pair_group = optional_policy_property(&section.properties, "PAIR_GROUP");
             let pair = if let Some(group) = pair_group {
-                let (node_equality, document_equality) = section_pair_equalities(section)?;
+                let node_equality = workspace_rules.node_equality.clone();
+                let document_equality = workspace_rules.document_equality.clone();
                 let declared_identity =
                     optional_policy_property(&section.properties, "PAIR_NODE_ID_PROPERTY");
                 if let (Some(declared), Some(rule)) = (&declared_identity, &node_equality)
@@ -451,6 +457,8 @@ impl WorkspacePolicy {
                 role,
                 contracts,
                 pair,
+                document_references: workspace_rules.document_references,
+                node_references: workspace_rules.node_references,
             });
         }
         if routes.is_empty() {
@@ -487,6 +495,16 @@ struct WorkspaceRoute {
     role: RouteRole,
     contracts: Vec<String>,
     pair: Option<PairRoute>,
+    document_references: Vec<OrgContractDocumentReferenceResolution>,
+    node_references: Vec<OrgContractNodeReferenceResolution>,
+}
+
+#[derive(Default)]
+struct WorkspaceRules {
+    node_equality: Option<OrgContractPairNodeEquality>,
+    document_equality: Option<OrgContractPairDocumentEquality>,
+    document_references: Vec<OrgContractDocumentReferenceResolution>,
+    node_references: Vec<OrgContractNodeReferenceResolution>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -658,6 +676,116 @@ fn validate_pairs(root: &Path, documents: &[PairedDocument], findings: &mut Vec<
     }
 }
 
+fn validate_references(
+    documents: &[MaintainedDocument],
+    policy: &WorkspacePolicy,
+    findings: &mut Vec<String>,
+) {
+    let identity_properties = policy
+        .routes
+        .iter()
+        .flat_map(|route| {
+            route
+                .document_references
+                .iter()
+                .map(|rule| rule.identity_property.as_str())
+                .chain(
+                    route
+                        .node_references
+                        .iter()
+                        .map(|rule| rule.identity_property.as_str()),
+                )
+        })
+        .collect::<BTreeSet<_>>();
+    let identities = identity_properties
+        .into_iter()
+        .map(|property| {
+            let mut values = Vec::new();
+            for document in documents {
+                collect_section_property_values(&document.document.sections, property, &mut values);
+            }
+            (property, values.into_iter().collect::<BTreeSet<_>>())
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    for document in documents {
+        let route = &policy.routes[document.route_index];
+        for rule in &route.document_references {
+            for value in property_values(&document.document.properties, &rule.property) {
+                validate_reference_tokens(
+                    value,
+                    &rule.property,
+                    &rule.identity_property,
+                    &rule.allowed_values,
+                    identities
+                        .get(rule.identity_property.as_str())
+                        .expect("identity property was collected"),
+                    &document.relative,
+                    "document",
+                    findings,
+                );
+            }
+        }
+        for rule in &route.node_references {
+            validate_node_references(
+                &document.document.sections,
+                rule,
+                identities
+                    .get(rule.identity_property.as_str())
+                    .expect("identity property was collected"),
+                &document.relative,
+                findings,
+            );
+        }
+    }
+}
+
+fn validate_node_references<A>(
+    sections: &[Section<A>],
+    rule: &OrgContractNodeReferenceResolution,
+    identities: &BTreeSet<String>,
+    path: &str,
+    findings: &mut Vec<String>,
+) {
+    for section in sections {
+        for value in property_values(&section.properties, &rule.property) {
+            validate_reference_tokens(
+                value,
+                &rule.property,
+                &rule.identity_property,
+                &rule.allowed_values,
+                identities,
+                path,
+                "node",
+                findings,
+            );
+        }
+        validate_node_references(&section.subsections, rule, identities, path, findings);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_reference_tokens(
+    value: &str,
+    property: &str,
+    identity_property: &str,
+    allowed_values: &[String],
+    identities: &BTreeSet<String>,
+    path: &str,
+    scope: &str,
+    findings: &mut Vec<String>,
+) {
+    for reference in value.split_whitespace() {
+        if !allowed_values.iter().any(|allowed| allowed == reference)
+            && !identities.contains(reference)
+        {
+            findings.push(format!(
+                "{path}: {scope} property {property} reference `{reference}` does not resolve to node identity {identity_property}"
+            ));
+        }
+    }
+}
+
 fn resolve_counterpart(owner: &Path, value: &str) -> Result<PathBuf, String> {
     let joined = owner.parent().unwrap_or_else(|| Path::new(".")).join(value);
     lexical_normalize(&joined)
@@ -809,17 +937,11 @@ fn collect_node_metadata<A>(
     }
 }
 
-fn section_pair_equalities<A>(
-    section: &Section<A>,
-) -> Result<
-    (
-        Option<OrgContractPairNodeEquality>,
-        Option<OrgContractPairDocumentEquality>,
-    ),
-    String,
-> {
+fn section_workspace_rules<A>(section: &Section<A>) -> Result<WorkspaceRules, String> {
     let mut node_rules = Vec::new();
     let mut document_rules = Vec::new();
+    let mut document_references = Vec::new();
+    let mut node_references = Vec::new();
     for element in &section.children {
         match &element.data {
             ElementData::Block(block)
@@ -835,6 +957,14 @@ fn section_pair_equalities<A>(
                     parse_org_contract_pair_document_equality_block(&block.value)
                 {
                     document_rules.push(rule);
+                } else if let Some(rule) =
+                    parse_org_contract_document_reference_resolution_block(&block.value)
+                {
+                    document_references.push(rule);
+                } else if let Some(rule) =
+                    parse_org_contract_node_reference_resolution_block(&block.value)
+                {
+                    node_references.push(rule);
                 } else {
                     return Err(format!(
                         "workspace policy route `{}` contains an unsupported org-contract expression",
@@ -875,7 +1005,39 @@ fn section_pair_equalities<A>(
             section.raw_title
         ));
     }
-    Ok((node_rule, document_rule))
+    for rule in document_references
+        .iter()
+        .map(|rule| {
+            (
+                &rule.property,
+                &rule.identity_property,
+                &rule.allowed_values,
+                "document",
+            )
+        })
+        .chain(node_references.iter().map(|rule| {
+            (
+                &rule.property,
+                &rule.identity_property,
+                &rule.allowed_values,
+                "node",
+            )
+        }))
+    {
+        if rule.2.iter().collect::<BTreeSet<_>>().len() != rule.2.len() {
+            return Err(format!(
+                "workspace policy route `{}` {scope} reference allowed values must be unique",
+                section.raw_title,
+                scope = rule.3,
+            ));
+        }
+    }
+    Ok(WorkspaceRules {
+        node_equality: node_rule,
+        document_equality: document_rule,
+        document_references,
+        node_references,
+    })
 }
 
 fn single_property<A>(

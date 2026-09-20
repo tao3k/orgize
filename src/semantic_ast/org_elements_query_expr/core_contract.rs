@@ -6,9 +6,10 @@ use super::core_types::{
     list_head,
 };
 use crate::ast::{
-    OrgContractBinding, OrgContractCompareOp, OrgContractExpectation,
-    OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
-    OrgElementQueryPredicate, OrgElementsIndexCategory,
+    OrgContractBinding, OrgContractCompareOp, OrgContractDocumentReferenceResolution,
+    OrgContractExpectation, OrgContractNodeReferenceResolution, OrgContractPairDocumentEquality,
+    OrgContractPairNodeEquality, OrgContractQuery, OrgElementQueryPredicate,
+    OrgElementsIndexCategory,
 };
 use crate::ast::{
     OrgContractDocumentPredicate, OrgContractRelativeScope, OrgElementsIndexSummaryValue,
@@ -188,6 +189,70 @@ pub(super) fn compile_pair_document_equality(
         return None;
     }
     Some(OrgContractPairDocumentEquality { properties })
+}
+
+pub(super) fn compile_document_reference_resolution(
+    expression: &QueryExpr,
+) -> Option<OrgContractDocumentReferenceResolution> {
+    let (property, identity_property, allowed_values) = compile_reference_resolution(
+        expression,
+        "document-property-values-resolve-node-identities",
+    )?;
+    Some(OrgContractDocumentReferenceResolution {
+        property,
+        identity_property,
+        allowed_values,
+    })
+}
+
+pub(super) fn compile_node_reference_resolution(
+    expression: &QueryExpr,
+) -> Option<OrgContractNodeReferenceResolution> {
+    let (property, identity_property, allowed_values) =
+        compile_reference_resolution(expression, "node-property-values-resolve-node-identities")?;
+    Some(OrgContractNodeReferenceResolution {
+        property,
+        identity_property,
+        allowed_values,
+    })
+}
+
+fn compile_reference_resolution(
+    expression: &QueryExpr,
+    assertion: &str,
+) -> Option<(String, String, Vec<String>)> {
+    let QueryExpr::List(items) = expression else {
+        return None;
+    };
+    if list_head(items)? != "assert" || items.get(1)?.as_atom()? != assertion {
+        return None;
+    }
+    let QueryExpr::List(property) = items.get(2)? else {
+        return None;
+    };
+    if list_head(property)? != "property" {
+        return None;
+    }
+    let property = property.get(1)?.as_text()?;
+    let QueryExpr::List(identity) = items.get(3)? else {
+        return None;
+    };
+    if list_head(identity)? != "identity" {
+        return None;
+    }
+    let identity_property = identity.get(1)?.as_text()?;
+    let allowed_values = match items.get(4) {
+        Some(QueryExpr::List(allowed)) if list_head(allowed)? == "allow" => allowed[1..]
+            .iter()
+            .map(QueryExpr::as_text)
+            .collect::<Option<Vec<_>>>()?,
+        Some(_) => return None,
+        None => Vec::new(),
+    };
+    if items.len() > 5 || property.is_empty() || identity_property.is_empty() {
+        return None;
+    }
+    Some((property, identity_property, allowed_values))
 }
 
 fn parse_compare_op(value: &str) -> Option<OrgContractCompareOp> {

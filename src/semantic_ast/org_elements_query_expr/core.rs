@@ -1,14 +1,16 @@
 //! Core facade for Org elements query expression parsing and compilation.
 
 use super::core_contract::{
-    apply_relative_scope, compile_contract_sequence, compile_pair_document_equality,
-    compile_pair_node_equality, compile_query_expression,
+    apply_relative_scope, compile_contract_sequence, compile_document_reference_resolution,
+    compile_node_reference_resolution, compile_pair_document_equality, compile_pair_node_equality,
+    compile_query_expression,
 };
 use super::core_parser::{lower_root, parse_query_expression_syntax, unquote_query_string};
 pub use super::core_types::OrgElementsQueryExpressionError;
 pub(super) use super::core_types::{FieldKind, QueryExpr, RelativeKind, list_head};
 use crate::ast::{
-    OrgContractBinding, OrgContractExpectation, OrgContractPairDocumentEquality,
+    OrgContractBinding, OrgContractDocumentReferenceResolution, OrgContractExpectation,
+    OrgContractNodeReferenceResolution, OrgContractPairDocumentEquality,
     OrgContractPairNodeEquality, OrgContractQuery, OrgElementsIndexCategory, OrgElementsIndexKind,
     OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
 };
@@ -73,6 +75,26 @@ pub(crate) fn parse_org_contract_pair_document_equality_block(
     let expressions = parse_expressions(value)?;
     match expressions.as_slice() {
         [expression] => compile_pair_document_equality(expression),
+        _ => None,
+    }
+}
+
+pub(crate) fn parse_org_contract_document_reference_resolution_block(
+    value: &str,
+) -> Option<OrgContractDocumentReferenceResolution> {
+    let expressions = parse_expressions(value)?;
+    match expressions.as_slice() {
+        [expression] => compile_document_reference_resolution(expression),
+        _ => None,
+    }
+}
+
+pub(crate) fn parse_org_contract_node_reference_resolution_block(
+    value: &str,
+) -> Option<OrgContractNodeReferenceResolution> {
+    let expressions = parse_expressions(value)?;
+    match expressions.as_slice() {
+        [expression] => compile_node_reference_resolution(expression),
         _ => None,
     }
 }

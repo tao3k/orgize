@@ -21,6 +21,8 @@ pub(in crate::ast) use core::{
     parse_org_elements_query_expression_block,
 };
 pub(crate) use core::{
+    parse_org_contract_document_reference_resolution_block,
+    parse_org_contract_node_reference_resolution_block,
     parse_org_contract_pair_document_equality_block, parse_org_contract_pair_node_equality_block,
 };
 use core_predicate::{compile_predicate_expression, expression_summary_value, parse_field_ref};
