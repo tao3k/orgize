@@ -472,23 +472,14 @@ fn validate_pairs(root: &Path, documents: &[PairedDocument], findings: &mut Vec<
             .entry((&document.pair.group, &document.semantic_id))
             .or_default()
             .push(document);
-        let counterpart = match canonical_counterpart(&document.path, &document.counterpart) {
+        let counterpart = match resolve_counterpart(&document.path, &document.counterpart) {
             Ok(path) => path,
             Err(error) => {
                 findings.push(format!("{}: {error}", document.relative));
                 continue;
             }
         };
-        let expected_root = match root.join(&document.pair.counterpart_root).canonicalize() {
-            Ok(path) => path,
-            Err(error) => {
-                findings.push(format!(
-                    "{}: counterpart root `{}` cannot be resolved: {error}",
-                    document.relative, document.pair.counterpart_root
-                ));
-                continue;
-            }
-        };
+        let expected_root = root.join(&document.pair.counterpart_root);
         if !counterpart.starts_with(&expected_root) {
             findings.push(format!(
                 "{}: counterpart escapes `{}`: {}",
@@ -509,7 +500,7 @@ fn validate_pairs(root: &Path, documents: &[PairedDocument], findings: &mut Vec<
                 document.relative, other.semantic_id, document.semantic_id
             ));
         }
-        match canonical_counterpart(&other.path, &other.counterpart) {
+        match resolve_counterpart(&other.path, &other.counterpart) {
             Ok(reciprocal) if reciprocal == document.path => {}
             _ => findings.push(format!(
                 "{}: counterpart relation is not reciprocal",
@@ -558,13 +549,28 @@ fn validate_pairs(root: &Path, documents: &[PairedDocument], findings: &mut Vec<
     }
 }
 
-fn canonical_counterpart(owner: &Path, value: &str) -> Result<PathBuf, String> {
-    owner
-        .parent()
-        .unwrap_or_else(|| Path::new("."))
-        .join(value)
-        .canonicalize()
-        .map_err(|error| format!("counterpart `{value}` cannot be resolved: {error}"))
+fn resolve_counterpart(owner: &Path, value: &str) -> Result<PathBuf, String> {
+    let joined = owner.parent().unwrap_or_else(|| Path::new(".")).join(value);
+    lexical_normalize(&joined)
+        .ok_or_else(|| format!("counterpart `{value}` escapes the filesystem root"))
+}
+
+fn lexical_normalize(path: &Path) -> Option<PathBuf> {
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::Prefix(prefix) => normalized.push(prefix.as_os_str()),
+            std::path::Component::RootDir => normalized.push(component.as_os_str()),
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                if !normalized.pop() {
+                    return None;
+                }
+            }
+            std::path::Component::Normal(part) => normalized.push(part),
+        }
+    }
+    Some(normalized)
 }
 
 fn collect_org_files(
@@ -594,10 +600,7 @@ fn collect_org_files(
                 .and_then(|extension| extension.to_str())
                 .is_some_and(|extension| extension.eq_ignore_ascii_case("org"))
         {
-            files.push(
-                path.canonicalize()
-                    .map_err(|error| format!("{}: {error}", path.display()))?,
-            );
+            files.push(path);
         }
     }
     Ok(())
