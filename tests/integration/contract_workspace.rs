@@ -182,6 +182,79 @@ fn workspace_contract_rejects_mismatched_paired_node_identities() {
 }
 
 #[test]
+fn workspace_contract_rejects_mismatched_paired_node_metadata_from_contract_expression() {
+    let fixture = WorkspaceFixture::new();
+    let pair_contract = r#"
+#+begin_src org-contract
+(assert pair-node-properties-equal
+  (identity "PRINCIPLE_ID")
+  (properties "PRINCIPLE_STATUS" "REVISION"))
+#+end_src"#;
+    let policy = POLICY
+        .replace(
+            ":LANGUAGE_VALUE: zh-CN\n:END:",
+            &format!(":LANGUAGE_VALUE: zh-CN\n:END:\n{pair_contract}"),
+        )
+        .replace(
+            ":LANGUAGE_VALUE: en\n:END:",
+            &format!(":LANGUAGE_VALUE: en\n:END:\n{pair_contract}"),
+        );
+    fs::write(fixture.root.join("policy.org"), policy).unwrap();
+    for (directory, language, counterpart, status) in [
+        ("cn", "zh-CN", "../../en/docs/doc.org", "proposed"),
+        ("en", "en", "../../cn/docs/doc.org", "proposed"),
+    ] {
+        fs::write(
+            fixture.root.join(format!("{directory}/docs/doc.org")),
+            complete_document(
+                directory,
+                language,
+                "test.semantic",
+                counterpart,
+                &format!("test.base.v1 test.purpose.{directory}.v1"),
+            )
+            .replace(
+                "* Required\n",
+                &format!("* Required\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:PRINCIPLE_STATUS: {status}\n:REVISION: 1\n:END:\n"),
+            ),
+        )
+        .unwrap();
+    }
+
+    let admitted = fixture.run();
+    assert!(admitted.status.success(), "{}", receipt(&admitted));
+    fs::write(
+        fixture.root.join("en/docs/doc.org"),
+        complete_document(
+            "en",
+            "en",
+            "test.semantic",
+            "../../cn/docs/doc.org",
+            "test.base.v1 test.purpose.en.v1",
+        )
+        .replace(
+            "* Required\n",
+            "* Required\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:PRINCIPLE_STATUS: accepted\n:REVISION: 1\n:END:\n",
+        ),
+    )
+    .unwrap();
+
+    fixture.assert_failure("paired node `P-001` must have equal PRINCIPLE_STATUS metadata");
+}
+
+#[test]
+fn workspace_contract_rejects_an_invalid_route_contract_expression() {
+    let fixture = WorkspaceFixture::new();
+    let policy = POLICY.replace(
+        ":LANGUAGE_VALUE: zh-CN\n:END:",
+        ":LANGUAGE_VALUE: zh-CN\n:END:\n#+begin_src org-contract\n(assert pair-node-properties-equal (identity \"PRINCIPLE_ID\"))\n#+end_src",
+    );
+    fs::write(fixture.root.join("policy.org"), policy).unwrap();
+
+    fixture.assert_failure("contains an unsupported org-contract expression");
+}
+
+#[test]
 fn workspace_contract_scale_scenario_stays_in_budget() {
     let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/unit/scenarios/contract_workspace/workspace_admission_scale");

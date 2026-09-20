@@ -14,6 +14,7 @@ mod core_types;
 mod index;
 mod surface;
 
+pub(crate) use core::parse_org_contract_pair_node_equality_block;
 use core::{FieldKind, QueryExpr, list_head};
 pub use core::{OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str};
 pub(in crate::ast) use core::{

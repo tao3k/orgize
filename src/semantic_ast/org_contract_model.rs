@@ -536,6 +536,7 @@ pub enum OrgContractExpectation {
     Exists,
     NotExists,
     Count(OrgContractCompareOp, usize),
+    CountBinding(OrgContractCompareOp, String),
 }
 
 impl OrgContractExpectation {
@@ -544,16 +545,29 @@ impl OrgContractExpectation {
             Self::Exists => "exists".to_string(),
             Self::NotExists => "not exists".to_string(),
             Self::Count(op, count) => format!("count {} {}", op.as_str(), count),
+            Self::CountBinding(op, binding) => {
+                format!("count {} ${binding}", op.as_str())
+            }
         }
     }
 
-    pub fn check(&self, actual: usize) -> bool {
+    pub fn check(&self, actual: usize, binding_counts: &BTreeMap<String, usize>) -> bool {
         match self {
             Self::Exists => actual > 0,
             Self::NotExists => actual == 0,
             Self::Count(op, expected) => op.matches(actual, *expected),
+            Self::CountBinding(op, binding) => binding_counts
+                .get(binding)
+                .is_some_and(|expected| op.matches(actual, *expected)),
         }
     }
+}
+
+/// Cross-document equality projection declared by an `org-contract` S-expression.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractPairNodeEquality {
+    pub identity_property: String,
+    pub properties: Vec<String>,
 }
 
 /// Comparison operator for a `count` expectation.

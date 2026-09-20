@@ -12,8 +12,9 @@ use serde_json::json;
 use crate::{
     Org,
     ast::{
-        OrgContractAssertionStatus, ParsedAst, Property, Section,
-        org_contract_evaluations_to_json_value, parse_contract_references,
+        BlockKind, ElementData, OrgContractAssertionStatus, OrgContractPairNodeEquality, ParsedAst,
+        Property, Section, org_contract_evaluations_to_json_value, parse_contract_references,
+        parse_org_contract_pair_node_equality_block,
     },
 };
 
@@ -143,6 +144,16 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
                         values
                     })
                     .unwrap_or_default();
+                let mut node_metadata = BTreeMap::new();
+                if let Some(rule) = pair.node_equality.as_ref() {
+                    collect_node_metadata(
+                        &item.document.sections,
+                        rule,
+                        &item.relative,
+                        &mut node_metadata,
+                        &mut findings,
+                    );
+                }
                 paired.push(PairedDocument {
                     relative: item.relative.clone(),
                     path: item.path.clone(),
@@ -150,6 +161,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
                     counterpart,
                     pair: pair.clone(),
                     node_identities,
+                    node_metadata,
                 });
             }
         }
@@ -347,6 +359,17 @@ impl WorkspacePolicy {
             }
             let pair_group = optional_policy_property(&section.properties, "PAIR_GROUP");
             let pair = if let Some(group) = pair_group {
+                let node_equality = section_pair_node_equality(section)?;
+                let declared_identity =
+                    optional_policy_property(&section.properties, "PAIR_NODE_ID_PROPERTY");
+                if let (Some(declared), Some(rule)) = (&declared_identity, &node_equality)
+                    && declared != &rule.identity_property
+                {
+                    return Err(format!(
+                        "workspace policy route `{}` declares conflicting paired node identity properties",
+                        section.raw_title
+                    ));
+                }
                 Some(PairRoute {
                     group,
                     language_root: required_policy_property(&section.properties, "LANGUAGE_ROOT")?,
@@ -358,10 +381,12 @@ impl WorkspacePolicy {
                         &section.properties,
                         "LANGUAGE_VALUE",
                     )?,
-                    node_identity_property: optional_policy_property(
-                        &section.properties,
-                        "PAIR_NODE_ID_PROPERTY",
-                    ),
+                    node_identity_property: declared_identity.or_else(|| {
+                        node_equality
+                            .as_ref()
+                            .map(|rule| rule.identity_property.clone())
+                    }),
+                    node_equality,
                 })
             } else {
                 None
@@ -441,6 +466,7 @@ struct PairRoute {
     counterpart_root: String,
     language_value: String,
     node_identity_property: Option<String>,
+    node_equality: Option<OrgContractPairNodeEquality>,
 }
 
 struct MaintainedDocument {
@@ -458,6 +484,7 @@ struct PairedDocument {
     counterpart: String,
     pair: PairRoute,
     node_identities: Vec<String>,
+    node_metadata: BTreeMap<String, BTreeMap<String, String>>,
 }
 
 fn validate_pairs(root: &Path, documents: &[PairedDocument], findings: &mut Vec<String>) {
@@ -544,6 +571,29 @@ fn validate_pairs(root: &Path, documents: &[PairedDocument], findings: &mut Vec<
                 findings.push(format!(
                     "pair group `{group}` SEMANTIC_ID `{semantic_id}` must have identical unique paired node identities in {property}"
                 ));
+            }
+        }
+        if members[0].pair.node_equality != members[1].pair.node_equality {
+            findings.push(format!(
+                "pair group `{group}` SEMANTIC_ID `{semantic_id}` must declare identical pair-node equality contracts"
+            ));
+        } else if let Some(rule) = members[0].pair.node_equality.as_ref() {
+            for identity in members[0].node_metadata.keys() {
+                for property in &rule.properties {
+                    let left = members[0]
+                        .node_metadata
+                        .get(identity)
+                        .and_then(|values| values.get(property));
+                    let right = members[1]
+                        .node_metadata
+                        .get(identity)
+                        .and_then(|values| values.get(property));
+                    if left != right {
+                        findings.push(format!(
+                            "pair group `{group}` SEMANTIC_ID `{semantic_id}` paired node `{identity}` must have equal {property} metadata"
+                        ));
+                    }
+                }
             }
         }
     }
@@ -669,6 +719,79 @@ fn collect_section_property_values<A>(
         );
         collect_section_property_values(&section.subsections, key, values);
     }
+}
+
+fn collect_node_metadata<A>(
+    sections: &[Section<A>],
+    rule: &OrgContractPairNodeEquality,
+    path: &str,
+    metadata: &mut BTreeMap<String, BTreeMap<String, String>>,
+    findings: &mut Vec<String>,
+) {
+    for section in sections {
+        let identities = property_values(&section.properties, &rule.identity_property);
+        if identities.len() == 1 && !identities[0].is_empty() {
+            let identity = identities[0].to_string();
+            let mut values = BTreeMap::new();
+            for key in &rule.properties {
+                let properties = property_values(&section.properties, key);
+                if properties.len() != 1 || properties[0].is_empty() {
+                    findings.push(format!(
+                        "{path}: paired node `{identity}` must declare one non-empty {key} property; found {}",
+                        properties.len()
+                    ));
+                    continue;
+                }
+                values.insert(key.clone(), properties[0].to_string());
+            }
+            metadata.insert(identity, values);
+        }
+        collect_node_metadata(&section.subsections, rule, path, metadata, findings);
+    }
+}
+
+fn section_pair_node_equality<A>(
+    section: &Section<A>,
+) -> Result<Option<OrgContractPairNodeEquality>, String> {
+    let mut rules = Vec::new();
+    for element in &section.children {
+        match &element.data {
+            ElementData::Block(block)
+                if block.kind == BlockKind::Source
+                    && block
+                        .language
+                        .as_deref()
+                        .is_some_and(|language| language.eq_ignore_ascii_case("org-contract")) =>
+            {
+                let rule = parse_org_contract_pair_node_equality_block(&block.value).ok_or_else(
+                    || {
+                        format!(
+                            "workspace policy route `{}` contains an unsupported org-contract expression",
+                            section.raw_title
+                        )
+                    },
+                )?;
+                rules.push(rule);
+            }
+            _ => {}
+        }
+    }
+    if rules.len() > 1 {
+        return Err(format!(
+            "workspace policy route `{}` declares more than one pair-node equality contract",
+            section.raw_title
+        ));
+    }
+    let rule = rules.into_iter().next();
+    if let Some(rule) = &rule
+        && rule.properties.iter().collect::<BTreeSet<_>>().len() != rule.properties.len()
+    {
+        return Err(format!(
+            "workspace policy route `{}` pair-node equality properties must be unique",
+            section.raw_title
+        ));
+    }
+    Ok(rule)
 }
 
 fn single_property<A>(

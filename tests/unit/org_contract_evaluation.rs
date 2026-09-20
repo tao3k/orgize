@@ -483,3 +483,64 @@ fn parse_single_contract(source: &str) -> crate::ast::OrgContract {
         .next()
         .expect("contract parsed")
 }
+
+#[test]
+fn contract_count_can_match_a_binding_to_require_complete_nodes() {
+    let contract = parse_single_contract(
+        r#"
+* Principle nodes
+:PROPERTIES:
+:CONTRACT_ID: principle.nodes.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Complete metadata on every principle
+:PROPERTIES:
+:ASSERT_ID: principle.nodes.complete
+:SEVERITY: error
+:END:
+#+begin_src org-contract
+(let ((principles
+       (headline :property-contains ("PRINCIPLE_ID" ""))))
+  (assert count == $principles
+    (and
+      (headline
+        :property-contains ("PRINCIPLE_ID" "")
+        :property-contains ("PRINCIPLE_STATUS" "")
+        :property-contains ("REVISION" ""))
+      (not (= (property "PRINCIPLE_ID") ""))
+      (not (= (property "PRINCIPLE_STATUS") ""))
+      (not (= (property "REVISION") "")))))
+#+end_src
+"#,
+    );
+    let complete = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:PRINCIPLE_STATUS: proposed\n:REVISION: 1\n:END:\n* B\n:PROPERTIES:\n:PRINCIPLE_ID: P-002\n:PRINCIPLE_STATUS: draft\n:REVISION: 1\n:END:\n",
+    )
+    .document();
+    let incomplete = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:PRINCIPLE_STATUS: proposed\n:REVISION: 1\n:END:\n* B\n:PROPERTIES:\n:PRINCIPLE_ID: P-002\n:PRINCIPLE_STATUS: draft\n:END:\n",
+    )
+    .document();
+    let context = OrgContractEvaluationContext::default();
+    let complete = evaluate_org_contract_with_context(
+        &complete,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    let incomplete = evaluate_org_contract_with_context(
+        &incomplete,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    assert_eq!(
+        complete.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(
+        incomplete.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+}

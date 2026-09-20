@@ -81,6 +81,10 @@ fn evaluate_assertion(
     let query = scoped_contract_query(&assertion.query, scope);
     let matched = query_graph_ids(graph, &query, &binding_sets, context);
     let actual_count = matched.len();
+    let binding_counts = binding_sets
+        .iter()
+        .map(|(name, ids)| (name.clone(), ids.len()))
+        .collect::<BTreeMap<_, _>>();
     let bindings = binding_sets
         .into_iter()
         .map(|(name, ids)| (name, ids.into_iter().collect()))
@@ -90,7 +94,7 @@ fn evaluate_assertion(
         severity: assertion.severity,
         expectation: assertion.expectation.clone(),
         actual_count,
-        status: if assertion.expectation.check(actual_count) {
+        status: if assertion.expectation.check(actual_count, &binding_counts) {
             OrgContractAssertionStatus::Passed
         } else {
             OrgContractAssertionStatus::Failed

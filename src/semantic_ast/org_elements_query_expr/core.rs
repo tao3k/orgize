@@ -1,14 +1,16 @@
 //! Core facade for Org elements query expression parsing and compilation.
 
 use super::core_contract::{
-    apply_relative_scope, compile_contract_sequence, compile_query_expression,
+    apply_relative_scope, compile_contract_sequence, compile_pair_node_equality,
+    compile_query_expression,
 };
 use super::core_parser::{lower_root, parse_query_expression_syntax, unquote_query_string};
 pub use super::core_types::OrgElementsQueryExpressionError;
 pub(super) use super::core_types::{FieldKind, QueryExpr, RelativeKind, list_head};
 use crate::ast::{
-    OrgContractBinding, OrgContractExpectation, OrgContractQuery, OrgElementsIndexCategory,
-    OrgElementsIndexKind, OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
+    OrgContractBinding, OrgContractExpectation, OrgContractPairNodeEquality, OrgContractQuery,
+    OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexQuery,
+    OrgElementsIndexSummaryValue,
 };
 
 pub fn org_elements_index_query_from_expr_str(
@@ -52,6 +54,16 @@ pub(in crate::ast) fn parse_org_contract_expression_block(
     match expressions.as_slice() {
         [expression] => compile_contract_expression(expression),
         _ => compile_contract_sequence(&expressions),
+    }
+}
+
+pub(crate) fn parse_org_contract_pair_node_equality_block(
+    value: &str,
+) -> Option<OrgContractPairNodeEquality> {
+    let expressions = parse_expressions(value)?;
+    match expressions.as_slice() {
+        [expression] => compile_pair_node_equality(expression),
+        _ => None,
     }
 }
 

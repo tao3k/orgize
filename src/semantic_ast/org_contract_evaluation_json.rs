@@ -105,6 +105,11 @@ fn expectation_to_json_value(expectation: &OrgContractExpectation) -> Value {
             "operator": operator.as_str(),
             "count": count,
         }),
+        OrgContractExpectation::CountBinding(operator, binding) => json!({
+            "kind": "countBinding",
+            "operator": operator.as_str(),
+            "binding": binding,
+        }),
     }
 }
 

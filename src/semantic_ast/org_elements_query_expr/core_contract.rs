@@ -6,8 +6,8 @@ use super::core_types::{
     list_head,
 };
 use crate::ast::{
-    OrgContractBinding, OrgContractCompareOp, OrgContractExpectation, OrgContractQuery,
-    OrgElementQueryPredicate, OrgElementsIndexCategory,
+    OrgContractBinding, OrgContractCompareOp, OrgContractExpectation, OrgContractPairNodeEquality,
+    OrgContractQuery, OrgElementQueryPredicate, OrgElementsIndexCategory,
 };
 use crate::ast::{
     OrgContractDocumentPredicate, OrgContractRelativeScope, OrgElementsIndexSummaryValue,
@@ -107,8 +107,17 @@ fn compile_assertion(
         "not-exists" => (OrgContractExpectation::NotExists, items.get(2)?),
         "count" => {
             let op = parse_compare_op(items.get(2)?.as_atom()?)?;
-            let count = items.get(3)?.as_text()?.parse::<usize>().ok()?;
-            (OrgContractExpectation::Count(op, count), items.get(4)?)
+            let expected = items.get(3)?.as_text()?;
+            let expectation = if let Ok(count) = expected.parse::<usize>() {
+                OrgContractExpectation::Count(op, count)
+            } else {
+                let binding = expected.strip_prefix('$')?;
+                if binding.is_empty() {
+                    return None;
+                }
+                OrgContractExpectation::CountBinding(op, binding.to_string())
+            };
+            (expectation, items.get(4)?)
         }
         _ => return None,
     };
@@ -117,6 +126,41 @@ fn compile_assertion(
         compile_query_expression(query_expression)?,
         expectation,
     ))
+}
+
+pub(super) fn compile_pair_node_equality(
+    expression: &QueryExpr,
+) -> Option<OrgContractPairNodeEquality> {
+    let QueryExpr::List(items) = expression else {
+        return None;
+    };
+    if list_head(items)? != "assert" || items.get(1)?.as_atom()? != "pair-node-properties-equal" {
+        return None;
+    }
+    let QueryExpr::List(identity) = items.get(2)? else {
+        return None;
+    };
+    if list_head(identity)? != "identity" {
+        return None;
+    }
+    let identity_property = identity.get(1)?.as_text()?;
+    let QueryExpr::List(properties) = items.get(3)? else {
+        return None;
+    };
+    if list_head(properties)? != "properties" {
+        return None;
+    }
+    let properties = properties[1..]
+        .iter()
+        .map(QueryExpr::as_text)
+        .collect::<Option<Vec<_>>>()?;
+    if identity_property.is_empty() || properties.is_empty() {
+        return None;
+    }
+    Some(OrgContractPairNodeEquality {
+        identity_property,
+        properties,
+    })
 }
 
 fn parse_compare_op(value: &str) -> Option<OrgContractCompareOp> {
