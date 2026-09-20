@@ -10,6 +10,7 @@ mod eval;
 mod org_contract_registry;
 pub(crate) mod org_contract_trace;
 mod org_contract_workspace;
+mod org_contract_workspace_validation;
 
 pub use driver::run_args;
 pub use driver::run_from_env;

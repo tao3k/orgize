@@ -1,15 +1,17 @@
 //! Contract and query expression compilation.
 
+use std::collections::BTreeSet;
+
 use super::core_predicate::{compile_predicate_expression, parse_field_ref};
 use super::core_types::{
     DocumentBoolPredicateKind, DocumentTextPredicateKind, FieldKind, QueryExpr, RelativeKind,
     list_head,
 };
 use crate::ast::{
-    OrgContractBinding, OrgContractCompareOp, OrgContractDocumentReferenceResolution,
-    OrgContractExpectation, OrgContractNodeReciprocalReference, OrgContractNodeReferenceResolution,
+    OrgContractBinding, OrgContractCompareOp, OrgContractExpectation,
     OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
-    OrgElementQueryPredicate, OrgElementsIndexCategory,
+    OrgContractWorkspaceReference, OrgContractWorkspaceReferenceSource, OrgElementQueryPredicate,
+    OrgElementsIndexCategory,
 };
 use crate::ast::{
     OrgContractDocumentPredicate, OrgContractRelativeScope, OrgElementsIndexSummaryValue,
@@ -191,123 +193,91 @@ pub(super) fn compile_pair_document_equality(
     Some(OrgContractPairDocumentEquality { properties })
 }
 
-pub(super) fn compile_document_reference_resolution(
+pub(super) fn compile_workspace_reference(
     expression: &QueryExpr,
-) -> Option<OrgContractDocumentReferenceResolution> {
-    let (property, identity_property, allowed_values) = compile_reference_resolution(
-        expression,
-        "document-property-values-resolve-node-identities",
-    )?;
-    Some(OrgContractDocumentReferenceResolution {
-        property,
-        identity_property,
-        allowed_values,
-    })
-}
-
-pub(super) fn compile_node_reference_resolution(
-    expression: &QueryExpr,
-) -> Option<OrgContractNodeReferenceResolution> {
-    let (property, identity_property, allowed_values) =
-        compile_reference_resolution(expression, "node-property-values-resolve-node-identities")?;
-    Some(OrgContractNodeReferenceResolution {
-        property,
-        identity_property,
-        allowed_values,
-    })
-}
-
-pub(super) fn compile_node_reciprocal_reference(
-    expression: &QueryExpr,
-) -> Option<OrgContractNodeReciprocalReference> {
+) -> Option<OrgContractWorkspaceReference> {
     let QueryExpr::List(items) = expression else {
         return None;
     };
-    if list_head(items)? != "assert"
-        || items.get(1)?.as_atom()? != "node-property-values-have-reciprocal-node-property"
+    if list_head(items)? != "assert" || items.get(1)?.as_atom()? != "workspace-reference" {
+        return None;
+    }
+    let QueryExpr::List(source) = items.get(2)? else {
+        return None;
+    };
+    let [source_head, source_kind, source_property] = source.as_slice() else {
+        return None;
+    };
+    if source_head.as_atom()? != "source" {
+        return None;
+    }
+    let source = match source_kind.as_atom()? {
+        "document-property" => OrgContractWorkspaceReferenceSource::DocumentProperty,
+        "node-property" => OrgContractWorkspaceReferenceSource::NodeProperty,
+        _ => return None,
+    };
+    let property = source_property.as_text()?;
+    let QueryExpr::List(target) = items.get(3)? else {
+        return None;
+    };
+    let [target_head, target_kind, target_property] = target.as_slice() else {
+        return None;
+    };
+    if target_head.as_atom()? != "target" || target_kind.as_atom()? != "node-identity" {
+        return None;
+    }
+    let identity_property = target_property.as_text()?;
+    let mut allowed_values = None;
+    let mut exclude_self = None;
+    let mut reciprocal_property = None;
+    for clause in &items[4..] {
+        let QueryExpr::List(clause) = clause else {
+            return None;
+        };
+        match list_head(clause)? {
+            "allow" if allowed_values.is_none() => {
+                let values = clause[1..]
+                    .iter()
+                    .map(QueryExpr::as_text)
+                    .collect::<Option<Vec<_>>>()?;
+                let unique = values.iter().cloned().collect::<BTreeSet<_>>();
+                if unique.len() != values.len() {
+                    return None;
+                }
+                allowed_values = Some(unique);
+            }
+            "exclude-self" if exclude_self.is_none() => {
+                let [_, value] = clause.as_slice() else {
+                    return None;
+                };
+                exclude_self = Some(value.as_bool()?);
+            }
+            "reciprocal" if reciprocal_property.is_none() => {
+                let [_, property] = clause.as_slice() else {
+                    return None;
+                };
+                reciprocal_property = Some(property.as_text()?);
+            }
+            _ => return None,
+        }
+    }
+    if property.is_empty() || identity_property.is_empty() {
+        return None;
+    }
+    let exclude_self = exclude_self.unwrap_or(false);
+    if source == OrgContractWorkspaceReferenceSource::DocumentProperty
+        && (exclude_self || reciprocal_property.is_some())
     {
         return None;
     }
-    let QueryExpr::List(property) = items.get(2)? else {
-        return None;
-    };
-    if list_head(property)? != "property" {
-        return None;
-    }
-    let property = property.get(1)?.as_text()?;
-    let QueryExpr::List(identity) = items.get(3)? else {
-        return None;
-    };
-    if list_head(identity)? != "identity" {
-        return None;
-    }
-    let identity_property = identity.get(1)?.as_text()?;
-    let QueryExpr::List(reciprocal) = items.get(4)? else {
-        return None;
-    };
-    if list_head(reciprocal)? != "reciprocal" {
-        return None;
-    }
-    let reciprocal_property = reciprocal.get(1)?.as_text()?;
-    let allowed_values = match items.get(5) {
-        Some(QueryExpr::List(allowed)) if list_head(allowed)? == "allow" => allowed[1..]
-            .iter()
-            .map(QueryExpr::as_text)
-            .collect::<Option<Vec<_>>>()?,
-        Some(_) => return None,
-        None => Vec::new(),
-    };
-    if items.len() > 6
-        || property.is_empty()
-        || identity_property.is_empty()
-        || reciprocal_property.is_empty()
-    {
-        return None;
-    }
-    Some(OrgContractNodeReciprocalReference {
+    Some(OrgContractWorkspaceReference {
+        source,
         property,
         identity_property,
+        allowed_values: allowed_values.unwrap_or_default(),
+        exclude_self,
         reciprocal_property,
-        allowed_values,
     })
-}
-
-fn compile_reference_resolution(
-    expression: &QueryExpr,
-    assertion: &str,
-) -> Option<(String, String, Vec<String>)> {
-    let QueryExpr::List(items) = expression else {
-        return None;
-    };
-    if list_head(items)? != "assert" || items.get(1)?.as_atom()? != assertion {
-        return None;
-    }
-    let QueryExpr::List(property) = items.get(2)? else {
-        return None;
-    };
-    if list_head(property)? != "property" {
-        return None;
-    }
-    let property = property.get(1)?.as_text()?;
-    let QueryExpr::List(identity) = items.get(3)? else {
-        return None;
-    };
-    if list_head(identity)? != "identity" {
-        return None;
-    }
-    let identity_property = identity.get(1)?.as_text()?;
-    let allowed_values = match items.get(4) {
-        Some(QueryExpr::List(allowed)) if list_head(allowed)? == "allow" => allowed[1..]
-            .iter()
-            .map(QueryExpr::as_text)
-            .collect::<Option<Vec<_>>>()?,
-        Some(_) => return None,
-        None => Vec::new(),
-    };
-    if items.len() > 5 || property.is_empty() || identity_property.is_empty() {
-        return None;
-    }
-    Some((property, identity_property, allowed_values))
 }
 
 fn parse_compare_op(value: &str) -> Option<OrgContractCompareOp> {

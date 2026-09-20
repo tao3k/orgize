@@ -305,22 +305,20 @@ pub use org_contract_model::{
     CONTRACT_KIND_ORG_ELEMENTS, CONTRACT_KIND_PROPERTY, CONTRACT_ORG_PROPERTY,
     CONTRACT_SCOPE_PROPERTY, OrgContract, OrgContractAssertion, OrgContractAssertionEvaluation,
     OrgContractAssertionStatus, OrgContractBinding, OrgContractCompareOp,
-    OrgContractDocumentPredicate, OrgContractDocumentReferenceResolution, OrgContractEvaluation,
-    OrgContractEvaluationContext, OrgContractEvaluationScope, OrgContractExpectation,
-    OrgContractKind, OrgContractNodeReciprocalReference, OrgContractNodeReferenceResolution,
+    OrgContractDocumentPredicate, OrgContractEvaluation, OrgContractEvaluationContext,
+    OrgContractEvaluationScope, OrgContractExpectation, OrgContractKind,
     OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
     OrgContractReference, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
     OrgContractSeverity, OrgContractSourceDiagnostic, OrgContractSourceValidation,
+    OrgContractWorkspaceReference, OrgContractWorkspaceReferenceSource,
 };
 pub use org_elements_query_expr::{
     ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,
     OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str,
 };
 pub(crate) use org_elements_query_expr::{
-    parse_org_contract_document_reference_resolution_block,
-    parse_org_contract_node_reciprocal_reference_block,
-    parse_org_contract_node_reference_resolution_block,
     parse_org_contract_pair_document_equality_block, parse_org_contract_pair_node_equality_block,
+    parse_org_contract_workspace_reference_block,
 };
 pub use org_interactive_model::{
     OrgInteractiveCategory, OrgInteractiveChoice, OrgInteractiveChoiceEntry,

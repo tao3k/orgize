@@ -49,7 +49,6 @@ asp_rust::asp_rust_cargo_test_gate!(
     advice = allow,
     config = {
         let mut config = asp_rust::default_asp_rust_config()
-            .with_rule_severity("RUST-MOD-R002", asp_rust::RustDiagnosticSeverity::Info)
             .with_verification_profile_hint(
                 asp_rust::RustVerificationProfileHint::new(
                     "src/lib.rs",
@@ -71,7 +70,7 @@ asp_rust::asp_rust_cargo_test_gate!(
                 ),
             )
             .with_cargo_test_advice_allow_explanation(
-                "scope=orgize cargo-test advice during ASP Rust Dev Gate alignment; owner=orgize dev gate; finding_category=agent-policy advisory findings; why_safe_now=existing public row and selector internals remain API-compatible while warning and error findings still fail the test gate; cleanup_trigger=repair the advisory backlog in a dedicated API-compatible slice and remove this allowance",
+                "scope=orgize cargo-test informational advice; owner=orgize dev gate; finding_category=agent-policy Info findings only; why_safe_now=Warning and Error remain blocking severities with no severity overrides; cleanup_trigger=repair the pre-existing Info backlog under its owning API slices",
             );
         config.ignored_dir_names.insert(".devenv".to_string());
         config.ignored_dir_names.insert(".data".to_string());

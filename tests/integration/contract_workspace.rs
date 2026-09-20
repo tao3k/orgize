@@ -356,6 +356,15 @@ fn workspace_contract_resolves_node_property_values_and_allows_declared_sentinel
 }
 
 #[test]
+fn workspace_contract_can_reject_self_references() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    fixture.add_reference_fixture("P-001", "P-001");
+
+    fixture.assert_failure("node `P-001` property REFINES must not reference its own identity");
+}
+
+#[test]
 fn workspace_contract_requires_reciprocal_node_references() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -387,6 +396,41 @@ fn workspace_contract_rejects_an_invalid_route_contract_expression() {
         ":LANGUAGE_VALUE: zh-CN\n:END:\n#+begin_src org-contract\n(assert pair-node-properties-equal (identity \"PRINCIPLE_ID\"))\n#+end_src",
     );
     fs::write(fixture.root.join("policy.org"), policy).unwrap();
+
+    fixture.assert_failure("contains an unsupported org-contract expression");
+}
+
+#[test]
+fn workspace_contract_rejects_node_only_options_on_document_references() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    let path = fixture.root.join("policy.org");
+    fs::write(
+        &path,
+        fs::read_to_string(&path).unwrap().replace(
+            "(target node-identity \"PRINCIPLE_ID\"))",
+            "(target node-identity \"PRINCIPLE_ID\")\n  (exclude-self true))",
+        ),
+    )
+    .unwrap();
+
+    fixture.assert_failure("contains an unsupported org-contract expression");
+}
+
+#[test]
+fn workspace_contract_rejects_duplicate_reference_options() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    let path = fixture.root.join("policy.org");
+    fs::write(
+        &path,
+        fs::read_to_string(&path).unwrap().replacen(
+            "(allow \"none\")\n  (exclude-self true)",
+            "(allow \"none\")\n  (allow \"unknown\")\n  (exclude-self true)",
+            1,
+        ),
+    )
+    .unwrap();
 
     fixture.assert_failure("contains an unsupported org-contract expression");
 }
@@ -576,22 +620,23 @@ impl WorkspaceFixture {
 
     fn install_reference_policy(&self) {
         let document_rule = r#"#+begin_src org-contract
-(assert document-property-values-resolve-node-identities
-  (property "PRINCIPLE_REF")
-  (identity "PRINCIPLE_ID"))
+(assert workspace-reference
+  (source document-property "PRINCIPLE_REF")
+  (target node-identity "PRINCIPLE_ID"))
 #+end_src"#;
         let node_rule = r#"#+begin_src org-contract
-(assert node-property-values-resolve-node-identities
-  (property "REFINES")
-  (identity "PRINCIPLE_ID")
-  (allow "none"))
+(assert workspace-reference
+  (source node-property "REFINES")
+  (target node-identity "PRINCIPLE_ID")
+  (allow "none")
+  (exclude-self true))
 #+end_src"#;
         let reciprocal_rule = r#"#+begin_src org-contract
-(assert node-property-values-have-reciprocal-node-property
-  (property "SUPERSEDES")
-  (identity "PRINCIPLE_ID")
-  (reciprocal "SUPERSEDED_BY")
-  (allow "none"))
+(assert workspace-reference
+  (source node-property "SUPERSEDES")
+  (target node-identity "PRINCIPLE_ID")
+  (allow "none")
+  (reciprocal "SUPERSEDED_BY"))
 #+end_src"#;
         let policy = POLICY
             .replace(

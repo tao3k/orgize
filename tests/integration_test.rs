@@ -6,6 +6,8 @@ mod capture_cli;
 mod contract_composition;
 #[path = "integration/contract_evaluation.rs"]
 mod contract_evaluation;
+#[path = "integration/contract_evaluation_fixtures.rs"]
+mod contract_evaluation_fixtures;
 #[path = "integration/contract_workspace.rs"]
 mod contract_workspace;
 #[path = "integration/document_git_scope.rs"]

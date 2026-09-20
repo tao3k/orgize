@@ -1,7 +1,7 @@
 //! Contract model for `CONTRACT_ORG` validation over Org element index records.
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     path::{Component, Path, PathBuf},
 };
 
@@ -576,29 +576,22 @@ pub struct OrgContractPairDocumentEquality {
     pub properties: Vec<String>,
 }
 
-/// Workspace reference projection from root document properties to node identities.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OrgContractDocumentReferenceResolution {
-    pub property: String,
-    pub identity_property: String,
-    pub allowed_values: Vec<String>,
+/// Source scope for a workspace property-reference relation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OrgContractWorkspaceReferenceSource {
+    DocumentProperty,
+    NodeProperty,
 }
 
-/// Workspace reference projection from node properties to node identities.
+/// Generic workspace relation from property tokens to node identities.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OrgContractNodeReferenceResolution {
+pub struct OrgContractWorkspaceReference {
+    pub source: OrgContractWorkspaceReferenceSource,
     pub property: String,
     pub identity_property: String,
-    pub allowed_values: Vec<String>,
-}
-
-/// Workspace node reference whose target must name the source through a reciprocal property.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OrgContractNodeReciprocalReference {
-    pub property: String,
-    pub identity_property: String,
-    pub reciprocal_property: String,
-    pub allowed_values: Vec<String>,
+    pub allowed_values: BTreeSet<String>,
+    pub exclude_self: bool,
+    pub reciprocal_property: Option<String>,
 }
 
 /// Comparison operator for a `count` expectation.

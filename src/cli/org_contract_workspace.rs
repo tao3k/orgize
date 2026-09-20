@@ -12,15 +12,11 @@ use serde_json::json;
 use crate::{
     Org,
     ast::{
-        BlockKind, ElementData, OrgContractAssertionStatus, OrgContractDocumentReferenceResolution,
-        OrgContractNodeReciprocalReference, OrgContractNodeReferenceResolution,
-        OrgContractPairDocumentEquality, OrgContractPairNodeEquality, ParsedAst, Property, Section,
+        BlockKind, ElementData, OrgContractAssertionStatus, OrgContractPairDocumentEquality,
+        OrgContractPairNodeEquality, OrgContractWorkspaceReference, ParsedAst, Property, Section,
         org_contract_evaluations_to_json_value, parse_contract_references,
-        parse_org_contract_document_reference_resolution_block,
-        parse_org_contract_node_reciprocal_reference_block,
-        parse_org_contract_node_reference_resolution_block,
         parse_org_contract_pair_document_equality_block,
-        parse_org_contract_pair_node_equality_block,
+        parse_org_contract_pair_node_equality_block, parse_org_contract_workspace_reference_block,
     },
 };
 
@@ -233,8 +229,12 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
         }
     }
 
-    validate_pairs(&root, &paired, &mut findings);
-    validate_references(&maintained, &policy, &mut findings);
+    super::org_contract_workspace_validation::validate_pairs(&root, &paired, &mut findings);
+    super::org_contract_workspace_validation::validate_references(
+        &maintained,
+        &policy,
+        &mut findings,
+    );
 
     if options.json {
         let receipt = json!({
@@ -329,10 +329,10 @@ fn next_path(args: &[String], index: &mut usize, flag: &str) -> Result<PathBuf, 
 }
 
 #[derive(Debug)]
-struct WorkspacePolicy {
+pub(super) struct WorkspacePolicy {
     id: String,
     ignored_dirs: BTreeSet<String>,
-    routes: Vec<WorkspaceRoute>,
+    pub(super) routes: Vec<WorkspaceRoute>,
     file_routes: BTreeMap<String, usize>,
     directory_routes: BTreeMap<String, usize>,
 }
@@ -458,9 +458,7 @@ impl WorkspacePolicy {
                 role,
                 contracts,
                 pair,
-                document_references: workspace_rules.document_references,
-                node_references: workspace_rules.node_references,
-                reciprocal_references: workspace_rules.reciprocal_references,
+                references: workspace_rules.references,
             });
         }
         if routes.is_empty() {
@@ -492,23 +490,19 @@ impl WorkspacePolicy {
 }
 
 #[derive(Debug)]
-struct WorkspaceRoute {
+pub(super) struct WorkspaceRoute {
     name: String,
     role: RouteRole,
     contracts: Vec<String>,
     pair: Option<PairRoute>,
-    document_references: Vec<OrgContractDocumentReferenceResolution>,
-    node_references: Vec<OrgContractNodeReferenceResolution>,
-    reciprocal_references: Vec<OrgContractNodeReciprocalReference>,
+    pub(super) references: Vec<OrgContractWorkspaceReference>,
 }
 
 #[derive(Default)]
 struct WorkspaceRules {
     node_equality: Option<OrgContractPairNodeEquality>,
     document_equality: Option<OrgContractPairDocumentEquality>,
-    document_references: Vec<OrgContractDocumentReferenceResolution>,
-    node_references: Vec<OrgContractNodeReferenceResolution>,
-    reciprocal_references: Vec<OrgContractNodeReciprocalReference>,
+    references: Vec<OrgContractWorkspaceReference>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -524,407 +518,33 @@ enum RoutePathKind {
 }
 
 #[derive(Clone, Debug)]
-struct PairRoute {
-    group: String,
-    language_root: String,
-    counterpart_root: String,
+pub(super) struct PairRoute {
+    pub(super) group: String,
+    pub(super) language_root: String,
+    pub(super) counterpart_root: String,
     language_value: String,
-    node_identity_property: Option<String>,
-    node_equality: Option<OrgContractPairNodeEquality>,
-    document_equality: Option<OrgContractPairDocumentEquality>,
+    pub(super) node_identity_property: Option<String>,
+    pub(super) node_equality: Option<OrgContractPairNodeEquality>,
+    pub(super) document_equality: Option<OrgContractPairDocumentEquality>,
 }
 
-struct MaintainedDocument {
+pub(super) struct MaintainedDocument {
     path: PathBuf,
-    relative: String,
-    route_index: usize,
-    document: ParsedAst,
+    pub(super) relative: String,
+    pub(super) route_index: usize,
+    pub(super) document: ParsedAst,
 }
 
 #[derive(Clone)]
-struct PairedDocument {
-    relative: String,
-    path: PathBuf,
-    semantic_id: String,
-    counterpart: String,
-    pair: PairRoute,
-    node_identities: Vec<String>,
-    node_metadata: BTreeMap<String, BTreeMap<String, String>>,
-    document_metadata: BTreeMap<String, String>,
-}
-
-fn validate_pairs(root: &Path, documents: &[PairedDocument], findings: &mut Vec<String>) {
-    let by_path = documents
-        .iter()
-        .map(|document| (document.path.clone(), document))
-        .collect::<BTreeMap<_, _>>();
-    let mut by_identity: BTreeMap<(&str, &str), Vec<&PairedDocument>> = BTreeMap::new();
-
-    for document in documents {
-        by_identity
-            .entry((&document.pair.group, &document.semantic_id))
-            .or_default()
-            .push(document);
-        let counterpart = match resolve_counterpart(&document.path, &document.counterpart) {
-            Ok(path) => path,
-            Err(error) => {
-                findings.push(format!("{}: {error}", document.relative));
-                continue;
-            }
-        };
-        let expected_root = root.join(&document.pair.counterpart_root);
-        if !counterpart.starts_with(&expected_root) {
-            findings.push(format!(
-                "{}: counterpart escapes `{}`: {}",
-                document.relative, document.pair.counterpart_root, document.counterpart
-            ));
-            continue;
-        }
-        let Some(other) = by_path.get(&counterpart) else {
-            findings.push(format!(
-                "{}: counterpart is not a maintained paired document: {}",
-                document.relative, document.counterpart
-            ));
-            continue;
-        };
-        if other.semantic_id != document.semantic_id {
-            findings.push(format!(
-                "{}: counterpart has SEMANTIC_ID `{}` instead of `{}`",
-                document.relative, other.semantic_id, document.semantic_id
-            ));
-        }
-        match resolve_counterpart(&other.path, &other.counterpart) {
-            Ok(reciprocal) if reciprocal == document.path => {}
-            _ => findings.push(format!(
-                "{}: counterpart relation is not reciprocal",
-                document.relative
-            )),
-        }
-    }
-
-    for ((group, semantic_id), members) in by_identity {
-        if members.len() != 2 {
-            findings.push(format!(
-                "pair group `{group}` SEMANTIC_ID `{semantic_id}` must identify exactly two documents; found {}",
-                members.len()
-            ));
-            continue;
-        }
-        for member in &members {
-            let own_root = format!("{}/", member.pair.language_root.trim_end_matches('/'));
-            let counterpart_root =
-                format!("{}/", member.pair.counterpart_root.trim_end_matches('/'));
-            if !member.relative.starts_with(&own_root)
-                || !members
-                    .iter()
-                    .any(|candidate| candidate.relative.starts_with(&counterpart_root))
-            {
-                findings.push(format!(
-                    "pair group `{group}` SEMANTIC_ID `{semantic_id}` does not contain one document in each declared language root"
-                ));
-                break;
-            }
-        }
-        if let Some(property) = members[0].pair.node_identity_property.as_deref() {
-            let left = members[0].node_identities.iter().collect::<BTreeSet<_>>();
-            let right = members[1].node_identities.iter().collect::<BTreeSet<_>>();
-            if left.is_empty()
-                || right.is_empty()
-                || left.len() != members[0].node_identities.len()
-                || right.len() != members[1].node_identities.len()
-                || left != right
-            {
-                findings.push(format!(
-                    "pair group `{group}` SEMANTIC_ID `{semantic_id}` must have identical unique paired node identities in {property}"
-                ));
-            }
-        }
-        if members[0].pair.node_equality != members[1].pair.node_equality {
-            findings.push(format!(
-                "pair group `{group}` SEMANTIC_ID `{semantic_id}` must declare identical pair-node equality contracts"
-            ));
-        } else if let Some(rule) = members[0].pair.node_equality.as_ref() {
-            for identity in members[0].node_metadata.keys() {
-                for property in &rule.properties {
-                    let left = members[0]
-                        .node_metadata
-                        .get(identity)
-                        .and_then(|values| values.get(property));
-                    let right = members[1]
-                        .node_metadata
-                        .get(identity)
-                        .and_then(|values| values.get(property));
-                    if left != right {
-                        findings.push(format!(
-                            "pair group `{group}` SEMANTIC_ID `{semantic_id}` paired node `{identity}` must have equal {property} metadata"
-                        ));
-                    }
-                }
-            }
-        }
-        if members[0].pair.document_equality != members[1].pair.document_equality {
-            findings.push(format!(
-                "pair group `{group}` SEMANTIC_ID `{semantic_id}` must declare identical pair-document equality contracts"
-            ));
-        } else if let Some(rule) = members[0].pair.document_equality.as_ref() {
-            for property in &rule.properties {
-                let left = members[0].document_metadata.get(property);
-                let right = members[1].document_metadata.get(property);
-                if left != right {
-                    findings.push(format!(
-                        "pair group `{group}` SEMANTIC_ID `{semantic_id}` must have equal document property {property}"
-                    ));
-                }
-            }
-        }
-    }
-}
-
-fn validate_references(
-    documents: &[MaintainedDocument],
-    policy: &WorkspacePolicy,
-    findings: &mut Vec<String>,
-) {
-    let identity_properties = policy
-        .routes
-        .iter()
-        .flat_map(|route| {
-            route
-                .document_references
-                .iter()
-                .map(|rule| rule.identity_property.as_str())
-                .chain(
-                    route
-                        .node_references
-                        .iter()
-                        .map(|rule| rule.identity_property.as_str()),
-                )
-                .chain(
-                    route
-                        .reciprocal_references
-                        .iter()
-                        .map(|rule| rule.identity_property.as_str()),
-                )
-        })
-        .collect::<BTreeSet<_>>();
-    let identities = identity_properties
-        .into_iter()
-        .map(|property| {
-            let mut values = Vec::new();
-            for document in documents {
-                collect_section_property_values(&document.document.sections, property, &mut values);
-            }
-            (property, values.into_iter().collect::<BTreeSet<_>>())
-        })
-        .collect::<BTreeMap<_, _>>();
-    let reciprocal_projections = policy
-        .routes
-        .iter()
-        .flat_map(|route| &route.reciprocal_references)
-        .map(|rule| {
-            (
-                rule.identity_property.clone(),
-                rule.reciprocal_property.clone(),
-            )
-        })
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .map(|projection| {
-            let mut values = BTreeMap::new();
-            for document in documents {
-                collect_identity_property_tokens(
-                    &document.document.sections,
-                    &projection.0,
-                    &projection.1,
-                    &mut values,
-                );
-            }
-            (projection, values)
-        })
-        .collect::<BTreeMap<_, _>>();
-
-    for document in documents {
-        let route = &policy.routes[document.route_index];
-        for rule in &route.document_references {
-            for value in property_values(&document.document.properties, &rule.property) {
-                validate_reference_tokens(
-                    value,
-                    &rule.property,
-                    &rule.identity_property,
-                    &rule.allowed_values,
-                    identities
-                        .get(rule.identity_property.as_str())
-                        .expect("identity property was collected"),
-                    &document.relative,
-                    "document",
-                    findings,
-                );
-            }
-        }
-        for rule in &route.node_references {
-            validate_node_references(
-                &document.document.sections,
-                rule,
-                identities
-                    .get(rule.identity_property.as_str())
-                    .expect("identity property was collected"),
-                &document.relative,
-                findings,
-            );
-        }
-        for rule in &route.reciprocal_references {
-            validate_node_reciprocal_references(
-                &document.document.sections,
-                rule,
-                reciprocal_projections
-                    .get(&(
-                        rule.identity_property.clone(),
-                        rule.reciprocal_property.clone(),
-                    ))
-                    .expect("reciprocal projection was collected"),
-                &document.relative,
-                findings,
-            );
-        }
-    }
-}
-
-fn collect_identity_property_tokens<A>(
-    sections: &[Section<A>],
-    identity_property: &str,
-    value_property: &str,
-    values: &mut BTreeMap<String, BTreeSet<String>>,
-) {
-    for section in sections {
-        let identities = property_values(&section.properties, identity_property);
-        if let [identity] = identities.as_slice()
-            && !identity.is_empty()
-        {
-            let target = values.entry((*identity).to_string()).or_default();
-            for value in property_values(&section.properties, value_property) {
-                target.extend(value.split_whitespace().map(str::to_string));
-            }
-        }
-        collect_identity_property_tokens(
-            &section.subsections,
-            identity_property,
-            value_property,
-            values,
-        );
-    }
-}
-
-fn validate_node_reciprocal_references<A>(
-    sections: &[Section<A>],
-    rule: &OrgContractNodeReciprocalReference,
-    reciprocal_values: &BTreeMap<String, BTreeSet<String>>,
-    path: &str,
-    findings: &mut Vec<String>,
-) {
-    for section in sections {
-        let identities = property_values(&section.properties, &rule.identity_property);
-        if let [identity] = identities.as_slice()
-            && !identity.is_empty()
-        {
-            for value in property_values(&section.properties, &rule.property) {
-                for reference in value.split_whitespace() {
-                    if rule
-                        .allowed_values
-                        .iter()
-                        .any(|allowed| allowed == reference)
-                    {
-                        continue;
-                    }
-                    if !reciprocal_values
-                        .get(reference)
-                        .is_some_and(|values| values.contains(*identity))
-                    {
-                        findings.push(format!(
-                            "{path}: node `{identity}` property {} reference `{reference}` must be reciprocated by target property {}",
-                            rule.property, rule.reciprocal_property
-                        ));
-                    }
-                }
-            }
-        }
-        validate_node_reciprocal_references(
-            &section.subsections,
-            rule,
-            reciprocal_values,
-            path,
-            findings,
-        );
-    }
-}
-
-fn validate_node_references<A>(
-    sections: &[Section<A>],
-    rule: &OrgContractNodeReferenceResolution,
-    identities: &BTreeSet<String>,
-    path: &str,
-    findings: &mut Vec<String>,
-) {
-    for section in sections {
-        for value in property_values(&section.properties, &rule.property) {
-            validate_reference_tokens(
-                value,
-                &rule.property,
-                &rule.identity_property,
-                &rule.allowed_values,
-                identities,
-                path,
-                "node",
-                findings,
-            );
-        }
-        validate_node_references(&section.subsections, rule, identities, path, findings);
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn validate_reference_tokens(
-    value: &str,
-    property: &str,
-    identity_property: &str,
-    allowed_values: &[String],
-    identities: &BTreeSet<String>,
-    path: &str,
-    scope: &str,
-    findings: &mut Vec<String>,
-) {
-    for reference in value.split_whitespace() {
-        if !allowed_values.iter().any(|allowed| allowed == reference)
-            && !identities.contains(reference)
-        {
-            findings.push(format!(
-                "{path}: {scope} property {property} reference `{reference}` does not resolve to node identity {identity_property}"
-            ));
-        }
-    }
-}
-
-fn resolve_counterpart(owner: &Path, value: &str) -> Result<PathBuf, String> {
-    let joined = owner.parent().unwrap_or_else(|| Path::new(".")).join(value);
-    lexical_normalize(&joined)
-        .ok_or_else(|| format!("counterpart `{value}` escapes the filesystem root"))
-}
-
-fn lexical_normalize(path: &Path) -> Option<PathBuf> {
-    let mut normalized = PathBuf::new();
-    for component in path.components() {
-        match component {
-            std::path::Component::Prefix(prefix) => normalized.push(prefix.as_os_str()),
-            std::path::Component::RootDir => normalized.push(component.as_os_str()),
-            std::path::Component::CurDir => {}
-            std::path::Component::ParentDir => {
-                if !normalized.pop() {
-                    return None;
-                }
-            }
-            std::path::Component::Normal(part) => normalized.push(part),
-        }
-    }
-    Some(normalized)
+pub(super) struct PairedDocument {
+    pub(super) relative: String,
+    pub(super) path: PathBuf,
+    pub(super) semantic_id: String,
+    pub(super) counterpart: String,
+    pub(super) pair: PairRoute,
+    pub(super) node_identities: Vec<String>,
+    pub(super) node_metadata: BTreeMap<String, BTreeMap<String, String>>,
+    pub(super) document_metadata: BTreeMap<String, String>,
 }
 
 fn collect_org_files(
@@ -1001,7 +621,7 @@ fn path_to_policy_string(path: &Path) -> String {
         .join("/")
 }
 
-fn property_values<'a, A>(properties: &'a [Property<A>], key: &str) -> Vec<&'a str> {
+pub(super) fn property_values<'a, A>(properties: &'a [Property<A>], key: &str) -> Vec<&'a str> {
     properties
         .iter()
         .filter(|property| property.key.eq_ignore_ascii_case(key))
@@ -1009,7 +629,7 @@ fn property_values<'a, A>(properties: &'a [Property<A>], key: &str) -> Vec<&'a s
         .collect()
 }
 
-fn collect_section_property_values<A>(
+pub(super) fn collect_section_property_values<A>(
     sections: &[Section<A>],
     key: &str,
     values: &mut Vec<String>,
@@ -1057,9 +677,7 @@ fn collect_node_metadata<A>(
 fn section_workspace_rules<A>(section: &Section<A>) -> Result<WorkspaceRules, String> {
     let mut node_rules = Vec::new();
     let mut document_rules = Vec::new();
-    let mut document_references = Vec::new();
-    let mut node_references = Vec::new();
-    let mut reciprocal_references = Vec::new();
+    let mut references = Vec::new();
     for element in &section.children {
         match &element.data {
             ElementData::Block(block)
@@ -1076,17 +694,9 @@ fn section_workspace_rules<A>(section: &Section<A>) -> Result<WorkspaceRules, St
                 {
                     document_rules.push(rule);
                 } else if let Some(rule) =
-                    parse_org_contract_document_reference_resolution_block(&block.value)
+                    parse_org_contract_workspace_reference_block(&block.value)
                 {
-                    document_references.push(rule);
-                } else if let Some(rule) =
-                    parse_org_contract_node_reference_resolution_block(&block.value)
-                {
-                    node_references.push(rule);
-                } else if let Some(rule) =
-                    parse_org_contract_node_reciprocal_reference_block(&block.value)
-                {
-                    reciprocal_references.push(rule);
+                    references.push(rule);
                 } else {
                     return Err(format!(
                         "workspace policy route `{}` contains an unsupported org-contract expression",
@@ -1127,47 +737,10 @@ fn section_workspace_rules<A>(section: &Section<A>) -> Result<WorkspaceRules, St
             section.raw_title
         ));
     }
-    for rule in document_references
-        .iter()
-        .map(|rule| {
-            (
-                &rule.property,
-                &rule.identity_property,
-                &rule.allowed_values,
-                "document",
-            )
-        })
-        .chain(node_references.iter().map(|rule| {
-            (
-                &rule.property,
-                &rule.identity_property,
-                &rule.allowed_values,
-                "node",
-            )
-        }))
-    {
-        if rule.2.iter().collect::<BTreeSet<_>>().len() != rule.2.len() {
-            return Err(format!(
-                "workspace policy route `{}` {scope} reference allowed values must be unique",
-                section.raw_title,
-                scope = rule.3,
-            ));
-        }
-    }
-    for rule in &reciprocal_references {
-        if rule.allowed_values.iter().collect::<BTreeSet<_>>().len() != rule.allowed_values.len() {
-            return Err(format!(
-                "workspace policy route `{}` reciprocal reference allowed values must be unique",
-                section.raw_title,
-            ));
-        }
-    }
     Ok(WorkspaceRules {
         node_equality: node_rule,
         document_equality: document_rule,
-        document_references,
-        node_references,
-        reciprocal_references,
+        references,
     })
 }
 
