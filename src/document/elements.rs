@@ -104,9 +104,7 @@ fn index_paths(
 ) -> Result<Vec<DocumentElement>, String> {
     if paths.len() < 16 {
         return paths.iter().try_fold(Vec::new(), |mut facts, path| {
-            if path.exists() {
-                facts.extend(index_path(language, path)?);
-            }
+            facts.extend(index_path(language, path)?);
             Ok(facts)
         });
     }
@@ -123,9 +121,7 @@ fn index_paths(
             .map(|chunk| {
                 scope.spawn(move || {
                     chunk.iter().try_fold(Vec::new(), |mut facts, path| {
-                        if path.exists() {
-                            facts.extend(index_path(language, path)?);
-                        }
+                        facts.extend(index_path(language, path)?);
                         Ok::<_, String>(facts)
                     })
                 })
