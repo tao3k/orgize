@@ -41,6 +41,22 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     let policy_source = fs::read_to_string(&options.policy)
         .map_err(|error| format!("{}: {error}", options.policy.display()))?;
     let policy = WorkspacePolicy::parse(&policy_source)?;
+    if let Some(required) = options.require_maintained.as_ref() {
+        let target = if required.is_absolute() {
+            required.clone()
+        } else {
+            root.join(required)
+        }
+        .canonicalize()
+        .map_err(|error| format!("{}: {error}", required.display()))?;
+        let relative = relative_path(&root, &target)?;
+        let routes = policy.matching_routes(&relative);
+        if routes.len() != 1 || policy.routes[routes[0]].role != RouteRole::Maintained {
+            return Err(format!(
+                "{relative}: required trace target must match exactly one maintained workspace route"
+            ));
+        }
+    }
     let registry =
         super::org_contract_registry::load_org_contract_registries(&options.registry_paths)?;
 
@@ -255,6 +271,7 @@ struct WorkspaceOptions {
     root: PathBuf,
     policy: PathBuf,
     registry_paths: Vec<PathBuf>,
+    require_maintained: Option<PathBuf>,
     json: bool,
 }
 
@@ -263,6 +280,7 @@ impl WorkspaceOptions {
         let mut root = None;
         let mut policy = None;
         let mut registry_paths = Vec::new();
+        let mut require_maintained = None;
         let mut json = false;
         let mut index = 0;
         while index < args.len() {
@@ -271,6 +289,9 @@ impl WorkspaceOptions {
                 "--policy" => policy = Some(next_path(&args, &mut index, "--policy")?),
                 "--org-contract-registry" => {
                     registry_paths.push(next_path(&args, &mut index, "--org-contract-registry")?)
+                }
+                "--require-maintained" => {
+                    require_maintained = Some(next_path(&args, &mut index, "--require-maintained")?)
                 }
                 "--json" => json = true,
                 flag if flag.starts_with('-') => {
@@ -288,6 +309,7 @@ impl WorkspaceOptions {
             policy: policy
                 .ok_or_else(|| "contract workspace requires --policy PATH.org".to_string())?,
             registry_paths,
+            require_maintained,
             json,
         })
     }
@@ -884,6 +906,6 @@ fn optional_policy_property<A>(properties: &[Property<A>], key: &str) -> Option<
 
 fn print_usage() {
     eprintln!(
-        "Usage: orgize contract workspace --root DIR --policy POLICY.org --org-contract-registry REGISTRY.org [--json]"
+        "Usage: orgize contract workspace --root DIR --policy POLICY.org --org-contract-registry REGISTRY.org [--require-maintained PATH.org] [--json]"
     );
 }

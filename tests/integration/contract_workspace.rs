@@ -20,6 +20,25 @@ fn workspace_contract_admits_exact_reciprocal_pair() {
 }
 
 #[test]
+fn workspace_contract_requires_trace_target_to_be_maintained() {
+    let fixture = WorkspaceFixture::new();
+    let admitted = fixture.run_requiring(&fixture.root.join("cn/docs/doc.org"));
+    assert!(admitted.status.success(), "{}", receipt(&admitted));
+
+    let rejected = fixture.run_requiring(&fixture.root.join("contracts.org"));
+    assert!(
+        !rejected.status.success(),
+        "support target must be rejected"
+    );
+    assert!(
+        String::from_utf8_lossy(&rejected.stderr)
+            .contains("must match exactly one maintained workspace route"),
+        "{}",
+        receipt(&rejected)
+    );
+}
+
+#[test]
 fn workspace_contract_rejects_unrouted_nested_org_file() {
     let fixture = WorkspaceFixture::new();
     fs::create_dir_all(fixture.root.join("cn/docs/nested")).unwrap();
@@ -427,6 +446,24 @@ impl WorkspaceFixture {
                 path(&self.root.join("policy.org")),
                 "--org-contract-registry",
                 path(&self.root.join("contracts.org")),
+            ])
+            .output()
+            .unwrap()
+    }
+
+    fn run_requiring(&self, target: &Path) -> Output {
+        Command::new(env!("CARGO_BIN_EXE_orgize"))
+            .args([
+                "contract",
+                "workspace",
+                "--root",
+                path(&self.root),
+                "--policy",
+                path(&self.root.join("policy.org")),
+                "--org-contract-registry",
+                path(&self.root.join("contracts.org")),
+                "--require-maintained",
+                path(target),
             ])
             .output()
             .unwrap()
