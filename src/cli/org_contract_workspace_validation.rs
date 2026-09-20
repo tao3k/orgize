@@ -212,15 +212,16 @@ pub(super) fn validate_references(
                 .expect("identity property was collected");
             match rule.source {
                 OrgContractWorkspaceReferenceSource::DocumentProperty => {
-                    for value in property_values(&document.document.properties, &rule.property) {
-                        validate_reference_tokens(
-                            value,
-                            rule,
-                            identity_values,
-                            &document.relative,
-                            "document",
-                            findings,
-                        );
+                    let values = property_values(&document.document.properties, &rule.property);
+                    validate_reference_tokens(
+                        &values,
+                        rule,
+                        identity_values,
+                        &document.relative,
+                        "document",
+                        findings,
+                    );
+                    for value in values {
                         validate_target_property_tokens(
                             value,
                             rule,
@@ -379,7 +380,16 @@ fn validate_node_references<A>(
 ) {
     for section in sections {
         let source_identities = property_values(&section.properties, &rule.identity_property);
-        for value in property_values(&section.properties, &rule.property) {
+        let values = property_values(&section.properties, &rule.property);
+        validate_reference_tokens(
+            values.as_slice(),
+            rule,
+            identity_values,
+            path,
+            "node",
+            findings,
+        );
+        for value in values {
             if rule.exclude_self
                 && let [identity] = source_identities.as_slice()
             {
@@ -392,7 +402,6 @@ fn validate_node_references<A>(
                     }
                 }
             }
-            validate_reference_tokens(value, rule, identity_values, path, "node", findings);
             validate_target_property_tokens(
                 value,
                 rule,
@@ -482,14 +491,17 @@ fn validate_target_property_tokens(
 }
 
 fn validate_reference_tokens(
-    value: &str,
+    values: &[&str],
     rule: &OrgContractWorkspaceReference,
     identities: &BTreeSet<String>,
     path: &str,
     scope: &str,
     findings: &mut Vec<String>,
 ) {
-    let references = value.split_whitespace().collect::<Vec<_>>();
+    let references = values
+        .iter()
+        .flat_map(|value| value.split_whitespace())
+        .collect::<Vec<_>>();
     let has_allowed_value = references
         .iter()
         .any(|reference| rule.allowed_values.contains(*reference));
