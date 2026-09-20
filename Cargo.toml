@@ -62,9 +62,6 @@ harness = false
 name = "parse"
 required-features = ["tracing"]
 
-[profile.dev.package]
-insta.opt-level = 3
-
 [profile.release]
 # Thin LTO keeps useful cross-crate optimization without the full monolithic
 # link cost of fat LTO. This is the right default for CI and open-source
