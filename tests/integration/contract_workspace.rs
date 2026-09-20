@@ -5,6 +5,8 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
+#[path = "contract_workspace_reference_sentinel.rs"]
+mod reference_sentinel;
 #[path = "contract_workspace_required_target.rs"]
 mod required_target;
 
@@ -662,8 +664,8 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
     .expect("measure workspace admission through the ASP Rust Scenario macro");
 
     assert!(
-        measurement.observed_total < benchmark.benchmark.max_total.as_duration(),
-        "workspace admission exceeded {}ms gate for 256 documents: p50={:?}, p95={:?}, max={:?}",
+        measurement.total_max < benchmark.benchmark.max_total.as_duration(),
+        "workspace admission cold-sample max exceeded {}ms gate for 256 documents: p50={:?}, p95={:?}, max={:?}",
         benchmark.benchmark.max_total.as_duration().as_millis(),
         measurement.total_p50,
         measurement.observed_total,

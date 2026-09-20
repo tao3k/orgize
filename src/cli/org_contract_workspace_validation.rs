@@ -489,7 +489,21 @@ fn validate_reference_tokens(
     scope: &str,
     findings: &mut Vec<String>,
 ) {
-    for reference in value.split_whitespace() {
+    let references = value.split_whitespace().collect::<Vec<_>>();
+    let has_allowed_value = references
+        .iter()
+        .any(|reference| rule.allowed_values.contains(*reference));
+    let has_identity_reference = references
+        .iter()
+        .any(|reference| !rule.allowed_values.contains(*reference));
+    if has_allowed_value && has_identity_reference {
+        findings.push(format!(
+            "{path}: {scope} property {} must not mix allowed sentinel values with identity references",
+            rule.property
+        ));
+    }
+
+    for reference in references {
         if !rule.allowed_values.contains(reference) && !identities.contains(reference) {
             findings.push(format!(
                 "{path}: {scope} property {} reference `{reference}` does not resolve to node identity {}",
