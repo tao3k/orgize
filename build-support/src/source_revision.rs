@@ -11,11 +11,19 @@ pub fn write_source_revision() {
     let dirty = git_output(root, &["status", "--porcelain", "--untracked-files=no"])
         .is_some_and(|output| !output.is_empty());
     println!("cargo:rerun-if-env-changed=ORGIZE_SOURCE_REVISION");
-    println!(
-        "cargo:rustc-env=ORGIZE_SOURCE_REVISION={}",
-        env::var("ORGIZE_SOURCE_REVISION").unwrap_or(revision)
-    );
+    let revision = env::var("ORGIZE_SOURCE_REVISION").unwrap_or(revision);
+    println!("cargo:rustc-env=ORGIZE_SOURCE_REVISION={revision}");
     println!("cargo:rustc-env=ORGIZE_SOURCE_DIRTY={dirty}");
+    let mut features = env::vars()
+        .filter_map(|(key, _)| key.strip_prefix("CARGO_FEATURE_").map(str::to_owned))
+        .collect::<Vec<_>>();
+    features.sort();
+    let target = env::var("TARGET").unwrap_or_else(|_| "unknown".to_string());
+    let profile = env::var("PROFILE").unwrap_or_else(|_| "unknown".to_string());
+    println!(
+        "cargo:rustc-env=ORGIZE_BUILD_IDENTITY=revision={revision};dirty={dirty};target={target};profile={profile};features={}",
+        features.join(",")
+    );
 }
 
 fn emit_git_rerun_inputs(root: &Path) {

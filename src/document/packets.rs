@@ -1,10 +1,12 @@
 use std::{
     collections::BTreeMap,
     fs,
-    io::Read,
     path::{Component, Path},
     sync::OnceLock,
 };
+
+#[cfg(target_os = "linux")]
+use std::io::Read;
 
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -394,10 +396,20 @@ fn document_provider_digest(language: DocumentLanguage) -> Result<String, String
 
 fn current_executable_digest() -> Result<String, String> {
     #[cfg(target_os = "linux")]
-    let executable = Path::new("/proc/self/exe").to_path_buf();
+    {
+        return digest_executable(Path::new("/proc/self/exe"));
+    }
     #[cfg(not(target_os = "linux"))]
-    let executable = std::env::current_exe()
-        .map_err(|error| format!("could not resolve parser executable artifact: {error}"))?;
+    {
+        Ok(canonical_blake3_digest(
+            b"asp.semantic-document-parser-build.v1",
+            &[env!("ORGIZE_BUILD_IDENTITY").as_bytes()],
+        ))
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn digest_executable(executable: &Path) -> Result<String, String> {
     let mut file = fs::File::open(&executable).map_err(|error| {
         format!(
             "could not open parser executable artifact {}: {error}",

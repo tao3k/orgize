@@ -169,10 +169,18 @@ impl ElementIndex {
                     .skip_while(|row| row.is_rule)
                     .skip_while(|row| !row.is_rule)
                     .any(|row| !row.is_rule);
-                let header_row_index = has_header
-                    .then(|| table.rows.iter().position(|row| !row.is_rule))
-                    .flatten();
-                let header_cells = header_row_index
+                let first_standard_row = table.rows.iter().position(|row| !row.is_rule);
+                let header_separator = has_header.then(|| {
+                    table
+                        .rows
+                        .iter()
+                        .enumerate()
+                        .skip(first_standard_row.unwrap_or(0))
+                        .find_map(|(index, row)| row.is_rule.then_some(index))
+                        .expect("header table has a separating rule")
+                });
+                let header_cells = first_standard_row
+                    .filter(|_| has_header)
                     .and_then(|index| table.rows.get(index))
                     .map(|row| {
                         row.cells
@@ -182,7 +190,9 @@ impl ElementIndex {
                     })
                     .unwrap_or_else(Vec::new);
                 for (row_index, row) in table.rows.iter().enumerate() {
-                    let is_header = Some(row_index) == header_row_index;
+                    let is_header = has_header
+                        && first_standard_row.is_some_and(|start| row_index >= start)
+                        && header_separator.is_some_and(|end| row_index < end);
                     let mut row_summary = summary([
                         ("rowIndex", (row_index + 1).into()),
                         ("isRule", row.is_rule.into()),

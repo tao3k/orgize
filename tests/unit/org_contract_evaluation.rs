@@ -807,6 +807,10 @@ fn contract_table_rows_can_require_named_columns_on_the_same_row() {
         "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:END:\n| Principle ID | Engineering direction | Downstream owner |\n| P-001        | Query from AST        | Orgize           |\n",
     )
     .document();
+    let multirow_header = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:END:\n| Principle ID | Engineering direction | Downstream owner |\n| P-001        | Header explanation    | Header owner     |\n|--------------+------------------------+------------------|\n| P-001        |                        | Orgize           |\n",
+    )
+    .document();
     let context = OrgContractEvaluationContext::default();
     let complete = evaluate_org_contract_with_context(
         &complete,
@@ -826,6 +830,12 @@ fn contract_table_rows_can_require_named_columns_on_the_same_row() {
         OrgContractEvaluationScope::document(),
         &context,
     );
+    let multirow_header = evaluate_org_contract_with_context(
+        &multirow_header,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
     assert_eq!(
         complete.assertions[0].status,
         OrgContractAssertionStatus::Passed
@@ -836,6 +846,10 @@ fn contract_table_rows_can_require_named_columns_on_the_same_row() {
     );
     assert_eq!(
         headerless.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+    assert_eq!(
+        multirow_header.assertions[0].status,
         OrgContractAssertionStatus::Failed
     );
 }
