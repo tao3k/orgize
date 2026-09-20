@@ -389,6 +389,25 @@ fn validate_node_references<A>(
             "node",
             findings,
         );
+        let reciprocal_identity = if rule.reciprocal_property.is_some()
+            && values
+                .iter()
+                .flat_map(|value| value.split_whitespace())
+                .any(|reference| !rule.allowed_values.contains(reference))
+        {
+            match source_identities.as_slice() {
+                [identity] if !identity.is_empty() => Some(*identity),
+                _ => {
+                    findings.push(format!(
+                        "{path}: node property {} with reciprocal constraint requires exactly one nonempty {} source identity",
+                        rule.property, rule.identity_property
+                    ));
+                    None
+                }
+            }
+        } else {
+            None
+        };
         for value in values {
             if rule.exclude_self
                 && let [identity] = source_identities.as_slice()
@@ -411,7 +430,7 @@ fn validate_node_references<A>(
                 findings,
             );
             if let Some(reciprocal_property) = rule.reciprocal_property.as_ref()
-                && let [identity] = source_identities.as_slice()
+                && let Some(identity) = reciprocal_identity
             {
                 let reciprocal_values = target_projections
                     .get(&(rule.identity_property.clone(), reciprocal_property.clone()))
@@ -424,7 +443,7 @@ fn validate_node_references<A>(
                         !instances.is_empty()
                             && instances.iter().all(|values| {
                                 values.iter().any(|value| {
-                                    value.split_whitespace().any(|token| token == *identity)
+                                    value.split_whitespace().any(|token| token == identity)
                                 })
                             })
                     }) {

@@ -14,6 +14,8 @@ mod contract_registry;
 mod contract_workspace;
 #[path = "integration/contract_workspace_receipt.rs"]
 mod contract_workspace_receipt;
+#[path = "integration/contract_workspace_reciprocal.rs"]
+mod contract_workspace_reciprocal;
 #[path = "integration/document_git_scope.rs"]
 mod document_git_scope;
 #[path = "integration/eval_cli.rs"]

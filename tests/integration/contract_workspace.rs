@@ -673,12 +673,12 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
     );
 }
 
-struct WorkspaceFixture {
-    root: PathBuf,
+pub(super) struct WorkspaceFixture {
+    pub(super) root: PathBuf,
 }
 
 impl WorkspaceFixture {
-    fn new() -> Self {
+    pub(super) fn new() -> Self {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("target")
             .join("orgize-cli-tests")
@@ -719,7 +719,7 @@ impl WorkspaceFixture {
         Self { root }
     }
 
-    fn run(&self) -> Output {
+    pub(super) fn run(&self) -> Output {
         Command::new(env!("CARGO_BIN_EXE_orgize"))
             .args([
                 "contract",
@@ -790,7 +790,7 @@ impl WorkspaceFixture {
         );
     }
 
-    fn install_reference_policy(&self) {
+    pub(super) fn install_reference_policy(&self) {
         let document_rule = r#"#+begin_src org-contract
 (assert workspace-reference
   (source document-property "PRINCIPLE_REF")
@@ -846,7 +846,7 @@ impl WorkspaceFixture {
         }
     }
 
-    fn add_reciprocal_fixture(&self) {
+    pub(super) fn add_reciprocal_fixture(&self) {
         for language in ["cn", "en"] {
             let path = self.root.join(language).join("docs/doc.org");
             let source = fs::read_to_string(&path).unwrap().replace(
