@@ -365,6 +365,15 @@ fn workspace_contract_can_reject_self_references() {
 }
 
 #[test]
+fn workspace_contract_can_reject_reference_cycles() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    fixture.add_reference_cycle_fixture();
+
+    fixture.assert_failure("property REFINES must be acyclic; cycle: P-001 -> P-002 -> P-001");
+}
+
+#[test]
 fn workspace_contract_requires_reciprocal_node_references() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -402,19 +411,25 @@ fn workspace_contract_rejects_an_invalid_route_contract_expression() {
 
 #[test]
 fn workspace_contract_rejects_node_only_options_on_document_references() {
-    let fixture = WorkspaceFixture::new();
-    fixture.install_reference_policy();
-    let path = fixture.root.join("policy.org");
-    fs::write(
-        &path,
-        fs::read_to_string(&path).unwrap().replace(
-            "(target node-identity \"PRINCIPLE_ID\"))",
-            "(target node-identity \"PRINCIPLE_ID\")\n  (exclude-self true))",
-        ),
-    )
-    .unwrap();
+    for option in [
+        "(exclude-self true)",
+        "(acyclic true)",
+        "(reciprocal \"REFINES\")",
+    ] {
+        let fixture = WorkspaceFixture::new();
+        fixture.install_reference_policy();
+        let path = fixture.root.join("policy.org");
+        fs::write(
+            &path,
+            fs::read_to_string(&path).unwrap().replace(
+                "(target node-identity \"PRINCIPLE_ID\"))",
+                &format!("(target node-identity \"PRINCIPLE_ID\")\n  {option})"),
+            ),
+        )
+        .unwrap();
 
-    fixture.assert_failure("contains an unsupported org-contract expression");
+        fixture.assert_failure("contains an unsupported org-contract expression");
+    }
 }
 
 #[test]
@@ -629,7 +644,8 @@ impl WorkspaceFixture {
   (source node-property "REFINES")
   (target node-identity "PRINCIPLE_ID")
   (allow "none")
-  (exclude-self true))
+  (exclude-self true)
+  (acyclic true))
 #+end_src"#;
         let reciprocal_rule = r#"#+begin_src org-contract
 (assert workspace-reference
@@ -679,6 +695,19 @@ impl WorkspaceFixture {
             let source = fs::read_to_string(&path).unwrap().replace(
                 "* Required\n",
                 "* Required\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:SUPERSEDES: none\n:SUPERSEDED_BY: P-002\n:END:\n* Other\n:PROPERTIES:\n:PRINCIPLE_ID: P-002\n:SUPERSEDES: P-001\n:SUPERSEDED_BY: none\n:END:\n",
+            );
+            fs::write(path, source).unwrap();
+        }
+    }
+
+    fn add_reference_cycle_fixture(&self) {
+        for (language, identity, target) in [("cn", "P-001", "P-002"), ("en", "P-002", "P-001")] {
+            let path = self.root.join(language).join("docs/doc.org");
+            let source = fs::read_to_string(&path).unwrap().replace(
+                "* Required\n",
+                &format!(
+                    "* Required\n:PROPERTIES:\n:PRINCIPLE_ID: {identity}\n:REFINES: {target}\n:END:\n"
+                ),
             );
             fs::write(path, source).unwrap();
         }

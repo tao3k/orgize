@@ -273,6 +273,7 @@ pub(super) fn compile_workspace_reference(
     let identity_property = target_property.as_text()?;
     let mut allowed_values = None;
     let mut exclude_self = None;
+    let mut acyclic = None;
     let mut reciprocal_property = None;
     for clause in &items[4..] {
         let QueryExpr::List(clause) = clause else {
@@ -296,6 +297,12 @@ pub(super) fn compile_workspace_reference(
                 };
                 exclude_self = Some(value.as_bool()?);
             }
+            "acyclic" if acyclic.is_none() => {
+                let [_, value] = clause.as_slice() else {
+                    return None;
+                };
+                acyclic = Some(value.as_bool()?);
+            }
             "reciprocal" if reciprocal_property.is_none() => {
                 let [_, property] = clause.as_slice() else {
                     return None;
@@ -309,8 +316,9 @@ pub(super) fn compile_workspace_reference(
         return None;
     }
     let exclude_self = exclude_self.unwrap_or(false);
+    let acyclic = acyclic.unwrap_or(false);
     if source == OrgContractWorkspaceReferenceSource::DocumentProperty
-        && (exclude_self || reciprocal_property.is_some())
+        && (exclude_self || acyclic || reciprocal_property.is_some())
     {
         return None;
     }
@@ -320,6 +328,7 @@ pub(super) fn compile_workspace_reference(
         identity_property,
         allowed_values: allowed_values.unwrap_or_default(),
         exclude_self,
+        acyclic,
         reciprocal_property,
     })
 }

@@ -221,6 +221,98 @@ pub(super) fn validate_references(
             }
         }
     }
+
+    let mut acyclic_routes = BTreeMap::<OrgContractWorkspaceReference, BTreeSet<usize>>::new();
+    for (route_index, route) in policy.routes.iter().enumerate() {
+        for rule in route.references.iter().filter(|rule| rule.acyclic) {
+            acyclic_routes
+                .entry(rule.clone())
+                .or_default()
+                .insert(route_index);
+        }
+    }
+    for (rule, route_indexes) in acyclic_routes {
+        let mut graph = BTreeMap::<String, BTreeSet<String>>::new();
+        for document in documents
+            .iter()
+            .filter(|document| route_indexes.contains(&document.route_index))
+        {
+            collect_reference_edges(&document.document.sections, &rule, &mut graph);
+        }
+        if let Some(cycle) = find_reference_cycle(&graph) {
+            findings.push(format!(
+                "node property {} must be acyclic; cycle: {}",
+                rule.property,
+                cycle.join(" -> ")
+            ));
+        }
+    }
+}
+
+fn collect_reference_edges<A>(
+    sections: &[Section<A>],
+    rule: &OrgContractWorkspaceReference,
+    graph: &mut BTreeMap<String, BTreeSet<String>>,
+) {
+    for section in sections {
+        let identities = property_values(&section.properties, &rule.identity_property);
+        if let [identity] = identities.as_slice() {
+            let edges = graph.entry((*identity).to_string()).or_default();
+            for value in property_values(&section.properties, &rule.property) {
+                edges.extend(
+                    value
+                        .split_whitespace()
+                        .filter(|target| !rule.allowed_values.contains(*target))
+                        .map(str::to_string),
+                );
+            }
+        }
+        collect_reference_edges(&section.subsections, rule, graph);
+    }
+}
+
+fn find_reference_cycle(graph: &BTreeMap<String, BTreeSet<String>>) -> Option<Vec<String>> {
+    let mut visited = BTreeSet::new();
+    let mut active = BTreeSet::new();
+    let mut path = Vec::new();
+    for node in graph.keys() {
+        if let Some(cycle) = visit_reference_node(node, graph, &mut visited, &mut active, &mut path)
+        {
+            return Some(cycle);
+        }
+    }
+    None
+}
+
+fn visit_reference_node(
+    node: &str,
+    graph: &BTreeMap<String, BTreeSet<String>>,
+    visited: &mut BTreeSet<String>,
+    active: &mut BTreeSet<String>,
+    path: &mut Vec<String>,
+) -> Option<Vec<String>> {
+    if visited.contains(node) {
+        return None;
+    }
+    active.insert(node.to_string());
+    path.push(node.to_string());
+    if let Some(targets) = graph.get(node) {
+        for target in targets {
+            if active.contains(target) {
+                let start = path.iter().position(|entry| entry == target)?;
+                let mut cycle = path[start..].to_vec();
+                cycle.push(target.clone());
+                return Some(cycle);
+            }
+            if let Some(cycle) = visit_reference_node(target, graph, visited, active, path) {
+                return Some(cycle);
+            }
+        }
+    }
+    path.pop();
+    active.remove(node);
+    visited.insert(node.to_string());
+    None
 }
 
 fn collect_identity_property_tokens<A>(

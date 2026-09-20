@@ -607,20 +607,21 @@ pub struct OrgContractPairDocumentEquality {
 }
 
 /// Source scope for a workspace property-reference relation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum OrgContractWorkspaceReferenceSource {
     DocumentProperty,
     NodeProperty,
 }
 
 /// Generic workspace relation from property tokens to node identities.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct OrgContractWorkspaceReference {
     pub source: OrgContractWorkspaceReferenceSource,
     pub property: String,
     pub identity_property: String,
     pub allowed_values: BTreeSet<String>,
     pub exclude_self: bool,
+    pub acyclic: bool,
     pub reciprocal_property: Option<String>,
 }
 
