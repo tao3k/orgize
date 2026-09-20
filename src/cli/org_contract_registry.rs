@@ -9,8 +9,8 @@ use std::{
 use crate::{
     Org,
     ast::{
-        CONTRACT_ORG_PROPERTY, OrgContractRegistry, parse_contract_reference,
-        parse_contracts_from_document,
+        CONTRACT_ORG_PROPERTY, OrgContractReference, OrgContractRegistry,
+        parse_contract_references, parse_contracts_from_document,
     },
 };
 
@@ -56,8 +56,12 @@ impl OrgContractRegistryLoader {
         let source =
             fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
         let document = Org::parse(&source).document();
-        let dependency_paths = registry_dependency_paths(path, &document)?;
         let loaded = parse_contracts_from_document(&document, Some(path));
+        let dependency_paths = if loaded.contracts.is_empty() {
+            Vec::new()
+        } else {
+            registry_dependency_paths(path, &document)?
+        };
         self.registry.contracts.extend(loaded.contracts);
 
         for dependency_path in dependency_paths {
@@ -86,12 +90,15 @@ fn registry_dependency_paths(
         .properties
         .iter()
         .filter(|property| property.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
-        .map(|property| registry_dependency_path(source_path, property.value.as_str()))
+        .flat_map(|property| parse_contract_references(property.value.as_str()))
+        .map(|reference| registry_dependency_path(source_path, reference))
         .collect()
 }
 
-fn registry_dependency_path(source_path: &Path, value: &str) -> Result<PathBuf, String> {
-    let reference = parse_contract_reference(value);
+fn registry_dependency_path(
+    source_path: &Path,
+    reference: OrgContractReference,
+) -> Result<PathBuf, String> {
     if reference.raw.trim().is_empty() {
         return Err(format!(
             "{}: registry CONTRACT_ORG dependency is empty",

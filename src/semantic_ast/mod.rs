@@ -291,8 +291,8 @@ pub use model::{
 };
 pub use named_source_block_template::{NamedSourceBlockTemplate, NamedSourceBlockTemplateError};
 pub use org_contract::{
-    parse_contract_reference, parse_contract_reference_from_source, parse_contracts_from_document,
-    validate_contract_source,
+    parse_contract_reference, parse_contract_reference_from_source, parse_contract_references,
+    parse_contracts_from_document, validate_contract_source,
 };
 pub use org_contract_evaluation::{evaluate_org_contract, evaluate_org_contract_with_context};
 pub use org_contract_evaluation_json::{

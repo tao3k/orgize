@@ -2,6 +2,8 @@
 mod agent_cli;
 #[path = "integration/capture_cli.rs"]
 mod capture_cli;
+#[path = "integration/contract_composition.rs"]
+mod contract_composition;
 #[path = "integration/contract_evaluation.rs"]
 mod contract_evaluation;
 #[path = "integration/document_git_scope.rs"]

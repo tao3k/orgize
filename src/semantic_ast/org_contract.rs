@@ -334,6 +334,53 @@ pub fn parse_contract_reference(value: &str) -> OrgContractReference {
     }
 }
 
+/// Parses one or more contract references from a single `CONTRACT_ORG` value.
+///
+/// References are separated by ASCII whitespace or commas at the top level.
+/// Whitespace inside Org links and macro references remains part of that
+/// reference, so display labels such as `[[file:contract.org][Plan contract]]`
+/// stay intact.
+pub fn parse_contract_references(value: &str) -> Vec<OrgContractReference> {
+    let values = split_contract_reference_values(value);
+    if values.is_empty() {
+        return vec![parse_contract_reference(value)];
+    }
+    values.into_iter().map(parse_contract_reference).collect()
+}
+
+fn split_contract_reference_values(value: &str) -> Vec<&str> {
+    let mut values = Vec::new();
+    let mut start = None;
+    let mut square_depth = 0_u32;
+    let mut brace_depth = 0_u32;
+
+    for (index, character) in value.char_indices() {
+        let top_level_separator = square_depth == 0
+            && brace_depth == 0
+            && (character.is_ascii_whitespace() || character == ',');
+        if top_level_separator {
+            if let Some(value_start) = start.take() {
+                values.push(&value[value_start..index]);
+            }
+            continue;
+        }
+
+        start.get_or_insert(index);
+        match character {
+            '[' => square_depth = square_depth.saturating_add(1),
+            ']' => square_depth = square_depth.saturating_sub(1),
+            '{' => brace_depth = brace_depth.saturating_add(1),
+            '}' => brace_depth = brace_depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+
+    if let Some(value_start) = start {
+        values.push(&value[value_start..]);
+    }
+    values
+}
+
 /// Parses a `CONTRACT_ORG` value and resolves a relative file target from its owning Org file.
 pub fn parse_contract_reference_from_source(
     value: &str,

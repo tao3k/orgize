@@ -11,7 +11,7 @@ use crate::ast::{
     OrgContractRegistry, OrgContractScope, OrgElementQueryPredicate,
     OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
     OrgElementsIndexSummaryValue, ParsedAnnotation, ParsedAst, Property, Section,
-    evaluate_org_contract_with_context, parse_contract_reference, parse_contracts_from_document,
+    evaluate_org_contract_with_context, parse_contract_references, parse_contracts_from_document,
 };
 
 use super::{LintFinding, LintSeverity, location_for_range};
@@ -472,9 +472,13 @@ fn property_contract_bindings(properties: &[Property<ParsedAnnotation>]) -> Vec<
     properties
         .iter()
         .filter(|property| property.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
-        .map(|property| ContractBinding {
-            reference: parse_contract_reference(property.value.as_str()),
-            range: property.ann.range,
+        .flat_map(|property| {
+            parse_contract_references(property.value.as_str())
+                .into_iter()
+                .map(|reference| ContractBinding {
+                    reference,
+                    range: property.ann.range,
+                })
         })
         .collect()
 }
@@ -483,9 +487,13 @@ fn keyword_contract_bindings(keywords: &[Keyword<ParsedAnnotation>]) -> Vec<Cont
     keywords
         .iter()
         .filter(|keyword| keyword.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
-        .map(|keyword| ContractBinding {
-            reference: parse_contract_reference(keyword.value.as_str()),
-            range: keyword.ann.range,
+        .flat_map(|keyword| {
+            parse_contract_references(keyword.value.as_str())
+                .into_iter()
+                .map(|reference| ContractBinding {
+                    reference,
+                    range: keyword.ann.range,
+                })
         })
         .collect()
 }
