@@ -9,8 +9,8 @@ use std::{
 use super::{
     command_render::{print_query_guide, print_selector_frontier},
     elements::{
-        display_path, escape_field, filter_elements_by_query, has_flag, index_path, index_paths,
-        last_existing_path, option_value, option_values, query_project_with_config,
+        display_path, escape_field, filter_elements_by_query, has_flag, index_path, index_sources,
+        last_existing_path, load_sources, option_value, option_values, query_project_with_config,
         walk_config_with_cli_excludes,
     },
     model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
@@ -110,27 +110,15 @@ pub(crate) fn run_query(
             print!("{selected}");
         } else if json_output {
             let selection = SourceSelector::parse_query(selector)?;
+            let sources = load_sources(std::slice::from_ref(&selection.path))?;
             let evidence = super::packets::document_query_evidence(
                 language,
-                [selection.path.clone()],
+                &sources,
                 Some(&selection.path),
-                selection.parent_root(),
+                selection.packet_root(),
                 &args,
             )?;
-            let facts = selector_elements(language, &selection)?;
-            let verified_evidence = super::packets::document_query_evidence(
-                language,
-                [selection.path.clone()],
-                Some(&selection.path),
-                selection.parent_root(),
-                &args,
-            )?;
-            if evidence.source_snapshot != verified_evidence.source_snapshot {
-                return Err(format!(
-                    "{} query: source changed while parser facts were being built",
-                    language.id()
-                ));
-            }
+            let facts = select_elements(index_sources(language, &sources)?, &selection);
             let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
             print_selector_query_json(
                 language,
@@ -138,7 +126,7 @@ pub(crate) fn run_query(
                 &selection,
                 &facts,
                 content_output,
-                verified_evidence,
+                evidence,
             )?;
         } else if content_output {
             let selection = SourceSelector::parse_query(selector)?;
@@ -165,42 +153,32 @@ pub(crate) fn run_query(
     } else {
         Vec::new()
     };
+    let sources = if json_output {
+        load_sources(&source_paths)?
+    } else {
+        Vec::new()
+    };
     let evidence = if json_output {
         Some(super::packets::document_query_evidence(
-            language,
-            source_paths.clone(),
-            None,
-            &root,
-            &args,
+            language, &sources, None, &root, &args,
         )?)
     } else {
         None
     };
     let facts = if json_output {
-        index_paths(language, &source_paths)?
+        index_sources(language, &sources)?
     } else {
         query_project_with_config(language, &root, &walk_config, &terms, &fields)?
     };
     let matches = filter_elements_by_query(facts, &terms, &kinds, &fields);
     if json_output {
-        let verified_evidence =
-            super::packets::document_query_evidence(language, source_paths, None, &root, &args)?;
-        if evidence
-            .as_ref()
-            .is_some_and(|before| before.source_snapshot != verified_evidence.source_snapshot)
-        {
-            return Err(format!(
-                "{} query: source changed while parser facts were being built",
-                language.id()
-            ));
-        }
         print_query_json(
             language,
             &terms,
             &root,
             &matches,
             content_output,
-            verified_evidence,
+            evidence.expect("JSON query evidence"),
         )?;
     } else if content_output {
         print_query_content(&matches);
@@ -452,12 +430,21 @@ fn selector_elements(
     language: DocumentLanguage,
     selection: &SourceSelector,
 ) -> Result<Vec<DocumentElement>, String> {
-    let facts = index_path(language, &selection.path)?;
-    Ok(facts
+    Ok(select_elements(
+        index_path(language, &selection.path)?,
+        selection,
+    ))
+}
+
+fn select_elements(
+    facts: Vec<DocumentElement>,
+    selection: &SourceSelector,
+) -> Vec<DocumentElement> {
+    facts
         .into_iter()
         .filter(|fact| match selection.structural_fragment.as_deref() {
             Some(fragment) => structural_selector_fragment(&fact.structural_selector) == fragment,
             None => true,
         })
-        .collect())
+        .collect()
 }

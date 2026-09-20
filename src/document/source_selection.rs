@@ -20,6 +20,15 @@ impl SourceSelector {
             .unwrap_or_else(|| Path::new("."))
     }
 
+    /// Returns the packet root without duplicating a nested relative selector path.
+    pub fn packet_root(&self) -> &Path {
+        if self.path.is_absolute() {
+            self.parent_root()
+        } else {
+            Path::new(".")
+        }
+    }
+
     /// Parse the legacy direct-read `path[:start-end]` selector.
     pub fn parse_direct_read(value: &str) -> Result<Self, String> {
         let (path, range) = match value.rsplit_once(':') {

@@ -658,6 +658,51 @@ fn org_document_query_commands_run() {
         .expect("parse relative selector packet");
     assert_eq!(relative_selector_packet["projectRoot"], ".");
 
+    let nested_dir = root.join("sub");
+    std::fs::create_dir_all(&nested_dir).expect("create nested query fixture");
+    std::fs::write(nested_dir.join("plan.org"), "* Nested plan\n")
+        .expect("write nested query fixture");
+    let nested_inventory = orgize_command()
+        .current_dir(&root)
+        .args(["query", "--json", "sub/plan.org"])
+        .output()
+        .expect("run nested relative inventory");
+    assert!(nested_inventory.status.success());
+    let nested_inventory: Value =
+        serde_json::from_slice(&nested_inventory.stdout).expect("parse nested inventory");
+    let nested_fragment = nested_inventory["documentFacts"]
+        .as_array()
+        .expect("nested document facts")
+        .iter()
+        .find(|fact| fact["kind"] == "heading")
+        .and_then(|fact| fact["structuralSelector"].as_str())
+        .and_then(|selector| selector.split_once('#'))
+        .map(|(_, fragment)| fragment)
+        .expect("nested heading fragment");
+    let nested_selector = format!("org://sub/plan.org#{nested_fragment}");
+    let nested_query = orgize_command()
+        .current_dir(&root)
+        .args(["query", "--selector", &nested_selector, "--json"])
+        .output()
+        .expect("run nested relative selector query");
+    assert!(
+        nested_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&nested_query.stderr)
+    );
+    let nested_packet: Value =
+        serde_json::from_slice(&nested_query.stdout).expect("parse nested selector packet");
+    assert_eq!(nested_packet["projectRoot"], ".");
+    assert_document_selector_query_evidence(&nested_packet, "sub/plan.org");
+    assert!(
+        nested_packet["documentFacts"]
+            .as_array()
+            .expect("nested selector facts")
+            .iter()
+            .all(|fact| fact["documentPath"] == "sub/plan.org"),
+        "{nested_packet:#}"
+    );
+
     for kind in ["heading", "task"] {
         let selector = dot_root_inventory_packet["documentFacts"]
             .as_array()

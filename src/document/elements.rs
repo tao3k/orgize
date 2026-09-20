@@ -11,6 +11,11 @@ use super::{
     org_elements::index_org,
 };
 
+pub(super) struct DocumentSource {
+    pub(super) path: PathBuf,
+    pub(super) source: String,
+}
+
 /// Index all document files under `root` with the default walk policy.
 pub fn index_project(
     language: DocumentLanguage,
@@ -60,12 +65,26 @@ pub fn index_path(language: DocumentLanguage, path: &Path) -> Result<Vec<Documen
     index_source(language, path, &source)
 }
 
-pub(super) fn index_paths(
+pub(super) fn load_sources(paths: &[PathBuf]) -> Result<Vec<DocumentSource>, String> {
+    paths
+        .iter()
+        .map(|path| {
+            let source =
+                fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+            Ok(DocumentSource {
+                path: path.clone(),
+                source,
+            })
+        })
+        .collect()
+}
+
+pub(super) fn index_sources(
     language: DocumentLanguage,
-    paths: &[PathBuf],
+    sources: &[DocumentSource],
 ) -> Result<Vec<DocumentElement>, String> {
-    paths.iter().try_fold(Vec::new(), |mut facts, path| {
-        facts.extend(index_path(language, path)?);
+    sources.iter().try_fold(Vec::new(), |mut facts, source| {
+        facts.extend(index_source(language, &source.path, &source.source)?);
         Ok(facts)
     })
 }

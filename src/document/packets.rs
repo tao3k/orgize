@@ -2,7 +2,7 @@ use std::{
     collections::BTreeMap,
     fs,
     io::Read,
-    path::{Component, Path, PathBuf},
+    path::{Component, Path},
     sync::OnceLock,
 };
 
@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use super::{
-    elements::display_path,
+    elements::{DocumentSource, display_path},
     model::{DocumentElement, DocumentLanguage},
     source_selection::{SourceSelector, structural_selector_fragment},
 };
@@ -23,7 +23,7 @@ const DOCUMENT_QUERY_PACKET_SCHEMA_AUTHORITY: &str =
 
 pub(super) struct DocumentQueryEvidence {
     pub(super) source_snapshot: Value,
-    resolution_evidence: Value,
+    pub(super) resolution_evidence: Value,
     snapshot_root: String,
     execution_command_digest: String,
 }
@@ -41,7 +41,7 @@ struct DocumentQueryPacketInput<'a> {
 
 pub(super) fn document_query_evidence(
     language: DocumentLanguage,
-    paths: impl IntoIterator<Item = PathBuf>,
+    sources: &[DocumentSource],
     owner_path: Option<&Path>,
     project_root: &Path,
     logical_args: &[String],
@@ -49,7 +49,7 @@ pub(super) fn document_query_evidence(
     let execution_command_digest = provider_execution_command_digest(language, logical_args)?;
     document_query_evidence_with_digest(
         language,
-        paths,
+        sources,
         owner_path,
         project_root,
         execution_command_digest,
@@ -90,7 +90,7 @@ pub(super) fn print_selector_query_json(
     content_output: bool,
     evidence: DocumentQueryEvidence,
 ) -> Result<(), String> {
-    let selected_parent = selection.parent_root();
+    let selected_parent = selection.packet_root();
     let current_directory = std::env::current_dir()
         .ok()
         .and_then(|path| fs::canonicalize(path).ok());
@@ -114,7 +114,7 @@ pub(super) fn print_selector_query_json(
 
 fn document_query_evidence_with_digest(
     language: DocumentLanguage,
-    paths: impl IntoIterator<Item = PathBuf>,
+    sources: &[DocumentSource],
     owner_path: Option<&Path>,
     project_root: &Path,
     execution_command_digest: String,
@@ -134,21 +134,15 @@ fn document_query_evidence_with_digest(
         )
     })?;
     let mut leaves = BTreeMap::new();
-    for path in paths {
-        let absolute_path = fs::canonicalize(&path).map_err(|error| {
+    for source in sources {
+        let absolute_path = fs::canonicalize(&source.path).map_err(|error| {
             format!(
                 "could not resolve document query source {}: {error}",
-                path.display()
+                source.path.display()
             )
         })?;
         let snapshot_path = relative_snapshot_path(&snapshot_base, &absolute_path)?;
-        let bytes = fs::read(&absolute_path).map_err(|error| {
-            format!(
-                "could not read document query source {}: {error}",
-                absolute_path.display()
-            )
-        })?;
-        let source_digest = blake3::hash(&bytes).to_hex().to_string();
+        let source_digest = blake3::hash(source.source.as_bytes()).to_hex().to_string();
         if leaves
             .insert(snapshot_path.clone(), source_digest)
             .is_some()
@@ -399,6 +393,9 @@ fn document_provider_digest(language: DocumentLanguage) -> Result<String, String
 }
 
 fn current_executable_digest() -> Result<String, String> {
+    #[cfg(target_os = "linux")]
+    let executable = Path::new("/proc/self/exe").to_path_buf();
+    #[cfg(not(target_os = "linux"))]
     let executable = std::env::current_exe()
         .map_err(|error| format!("could not resolve parser executable artifact: {error}"))?;
     let mut file = fs::File::open(&executable).map_err(|error| {

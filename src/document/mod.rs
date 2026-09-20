@@ -34,3 +34,6 @@ mod line_index_tests;
 #[cfg(test)]
 #[path = "../../tests/unit/document_org_elements_query_project.rs"]
 mod org_elements_query_project_tests;
+#[cfg(test)]
+#[path = "../../tests/unit/document_packets.rs"]
+mod packets_tests;
