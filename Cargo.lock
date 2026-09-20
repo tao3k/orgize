@@ -2188,9 +2188,6 @@ dependencies = [
 [[package]]
 name = "orgize-build-support"
 version = "0.1.0"
-dependencies = [
- "blake3",
-]
 
 [[package]]
 name = "page_size"

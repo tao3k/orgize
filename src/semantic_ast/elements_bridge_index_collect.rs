@@ -2,7 +2,7 @@
 
 use super::{
     Citation, Element, ElementData, Keyword, ListItem, Object, ObjectData, OrgElementId,
-    OrgElementsIndexCategory, ParsedAnnotation, Section,
+    OrgElementsIndexCategory, OrgElementsIndexSummaryValue, ParsedAnnotation, Section,
 };
 
 use super::elements_bridge_index::{ElementIndex, ElementIndexRecordSpec};
@@ -204,8 +204,14 @@ impl ElementIndex {
                             .cells
                             .get(column_index)
                             .is_some_and(|cell| !objects_text(&cell.objects).trim().is_empty());
-                        row_summary
-                            .insert(format!("columnNonempty:{column_name}"), has_text.into());
+                        let key = format!("columnNonempty:{column_name}");
+                        let all_matching_columns_nonempty = match row_summary.get(&key) {
+                            Some(OrgElementsIndexSummaryValue::Bool(previous)) => {
+                                *previous && has_text
+                            }
+                            _ => has_text,
+                        };
+                        row_summary.insert(key, all_matching_columns_nonempty.into());
                     }
                     let row_id = self.push(ElementIndexRecordSpec::new(
                         Some(element_id),

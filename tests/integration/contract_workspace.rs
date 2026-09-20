@@ -5,6 +5,9 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
+#[path = "contract_workspace_required_target.rs"]
+mod required_target;
+
 use asp_rust_build_support::{
     AspRustScenarioObservation, asp_rust_scenario, measure_asp_rust_scenario,
 };
@@ -17,25 +20,6 @@ fn workspace_contract_admits_exact_reciprocal_pair() {
     let output = fixture.run();
     assert!(output.status.success(), "{}", receipt(&output));
     assert!(String::from_utf8_lossy(&output.stdout).contains("2 documents, 4 evaluations"));
-}
-
-#[test]
-fn workspace_contract_requires_trace_target_to_be_maintained() {
-    let fixture = WorkspaceFixture::new();
-    let admitted = fixture.run_requiring(&fixture.root.join("cn/docs/doc.org"));
-    assert!(admitted.status.success(), "{}", receipt(&admitted));
-
-    let rejected = fixture.run_requiring(&fixture.root.join("contracts.org"));
-    assert!(
-        !rejected.status.success(),
-        "support target must be rejected"
-    );
-    assert!(
-        String::from_utf8_lossy(&rejected.stderr)
-            .contains("must match exactly one maintained workspace route"),
-        "{}",
-        receipt(&rejected)
-    );
 }
 
 #[test]

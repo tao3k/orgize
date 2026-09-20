@@ -45,7 +45,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     let policy_source = fs::read_to_string(&policy_path)
         .map_err(|error| format!("{}: {error}", policy_path.display()))?;
     let policy = WorkspacePolicy::parse(&policy_source)?;
-    if let Some(required) = options.require_maintained.as_ref() {
+    let required_maintained = if let Some(required) = options.require_maintained.as_ref() {
         let target = if required.is_absolute() {
             required.clone()
         } else {
@@ -60,7 +60,10 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
                 "{relative}: required trace target must match exactly one maintained workspace route"
             ));
         }
-    }
+        Some((target, relative))
+    } else {
+        None
+    };
     let (registry, registry_sources) =
         super::org_contract_registry::load_org_contract_registries_with_sources(
             &options.registry_paths,
@@ -77,6 +80,13 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
             Ok((path, source))
         })
         .collect::<Result<Vec<_>, String>>()?;
+    if let Some((target, required)) = required_maintained.as_ref()
+        && !discovered_sources.iter().any(|(path, _)| path == target)
+    {
+        return Err(format!(
+            "{required}: required trace target must be an admitted Org document"
+        ));
+    }
 
     let mut findings = Vec::new();
     let mut admissions = Vec::with_capacity(discovered_sources.len());
