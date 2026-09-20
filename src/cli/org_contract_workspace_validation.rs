@@ -19,16 +19,21 @@ pub(super) fn validate_pairs(
 ) {
     let by_path = documents
         .iter()
-        .map(|document| (document.path.clone(), document))
+        .enumerate()
+        .map(|(index, document)| (document.path.as_path(), index))
         .collect::<HashMap<_, _>>();
+    let resolved_counterparts = documents
+        .iter()
+        .map(|document| resolve_counterpart(&document.path, &document.counterpart))
+        .collect::<Vec<_>>();
     let mut by_identity: BTreeMap<(&str, &str), Vec<&PairedDocument>> = BTreeMap::new();
 
-    for document in documents {
+    for (document_index, document) in documents.iter().enumerate() {
         by_identity
             .entry((&document.pair.group, &document.semantic_id))
             .or_default()
             .push(document);
-        let counterpart = match resolve_counterpart(&document.path, &document.counterpart) {
+        let counterpart = match &resolved_counterparts[document_index] {
             Ok(path) => path,
             Err(error) => {
                 findings.push(format!("{}: {error}", document.relative));
@@ -43,13 +48,14 @@ pub(super) fn validate_pairs(
             ));
             continue;
         }
-        let Some(other) = by_path.get(&counterpart) else {
+        let Some(other_index) = by_path.get(counterpart.as_path()) else {
             findings.push(format!(
                 "{}: counterpart is not a maintained paired document: {}",
                 document.relative, document.counterpart
             ));
             continue;
         };
+        let other = &documents[*other_index];
         if other.semantic_id != document.semantic_id {
             findings.push(format!(
                 "{}: counterpart has SEMANTIC_ID `{}` instead of `{}`",
@@ -62,8 +68,8 @@ pub(super) fn validate_pairs(
                 document.relative, other.pair.group, document.pair.group
             ));
         }
-        match resolve_counterpart(&other.path, &other.counterpart) {
-            Ok(reciprocal) if reciprocal == document.path => {}
+        match &resolved_counterparts[*other_index] {
+            Ok(reciprocal) if reciprocal == &document.path => {}
             _ => findings.push(format!(
                 "{}: counterpart relation is not reciprocal",
                 document.relative

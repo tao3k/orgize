@@ -71,7 +71,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     discovered.sort();
 
     let mut findings = Vec::new();
-    let mut maintained = Vec::with_capacity(discovered.len());
+    let mut admissions = Vec::with_capacity(discovered.len());
     for path in discovered {
         let relative = relative_path(&root, &path)?;
         let matching_routes = policy.matching_routes(&relative);
@@ -87,22 +87,21 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
         if route.role == RouteRole::Support {
             continue;
         }
-        let source =
-            fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-        let document = Org::parse(&source).document();
-        if !document.diagnostics.is_empty() {
-            findings.push(format!(
-                "{relative}: parser produced {} diagnostic(s)",
-                document.diagnostics.len()
-            ));
-        }
-        maintained.push(MaintainedDocument {
+        admissions.push(MaintainedAdmission {
             path,
             relative,
             route_index,
-            document,
-            source,
         });
+    }
+    let maintained = load_maintained_documents(&admissions)?;
+    for document in &maintained {
+        if document.diagnostic_count != 0 {
+            findings.push(format!(
+                "{relative}: parser produced {} diagnostic(s)",
+                document.diagnostic_count,
+                relative = document.relative,
+            ));
+        }
     }
 
     let mut paired = Vec::with_capacity(maintained.len());
@@ -604,6 +603,66 @@ pub(super) struct MaintainedDocument {
     pub(super) route_index: usize,
     pub(super) document: ParsedAst,
     source: String,
+    diagnostic_count: usize,
+}
+
+struct MaintainedAdmission {
+    path: PathBuf,
+    relative: String,
+    route_index: usize,
+}
+
+fn load_maintained_documents(
+    admissions: &[MaintainedAdmission],
+) -> Result<Vec<MaintainedDocument>, String> {
+    if admissions.is_empty() {
+        return Ok(Vec::new());
+    }
+    let worker_count = std::thread::available_parallelism()
+        .map(usize::from)
+        .unwrap_or(1)
+        .min(4)
+        .min(admissions.len());
+    let chunk_size = admissions.len().div_ceil(worker_count);
+    std::thread::scope(|scope| {
+        admissions
+            .chunks(chunk_size)
+            .map(|chunk| {
+                scope.spawn(move || {
+                    chunk
+                        .iter()
+                        .map(load_maintained_document)
+                        .collect::<Result<Vec<_>, _>>()
+                })
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .try_fold(
+                Vec::with_capacity(admissions.len()),
+                |mut documents, task| {
+                    documents.extend(
+                        task.join()
+                            .map_err(|_| "workspace parser worker panicked".to_string())??,
+                    );
+                    Ok(documents)
+                },
+            )
+    })
+}
+
+fn load_maintained_document(admission: &MaintainedAdmission) -> Result<MaintainedDocument, String> {
+    let source = fs::read_to_string(&admission.path)
+        .map_err(|error| format!("{}: {error}", admission.path.display()))?;
+    let document = Org::parse(&source).document();
+    let diagnostic_count = document.diagnostics.len();
+    Ok(MaintainedDocument {
+        path: admission.path.clone(),
+        relative: admission.relative.clone(),
+        route_index: admission.route_index,
+        document,
+        source,
+        diagnostic_count,
+    })
 }
 
 #[derive(Clone)]
