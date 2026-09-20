@@ -296,22 +296,27 @@ fn workspace_digest(
     registries: &BTreeMap<PathBuf, String>,
     documents: &[MaintainedDocument],
 ) -> Result<String, String> {
-    let mut sources = BTreeMap::new();
-    sources.insert(policy.0.to_path_buf(), policy.1);
-    sources.extend(
-        registries
-            .iter()
-            .map(|(path, source)| (path.clone(), source.as_str())),
-    );
-    sources.extend(
-        documents
-            .iter()
-            .map(|document| (document.path.clone(), document.source.as_str())),
-    );
+    let mut sources = vec![("policy", receipt_source_label(root, policy.0), policy.1)];
+    sources.extend(registries.iter().map(|(path, source)| {
+        (
+            "registry",
+            receipt_source_label(root, path),
+            source.as_str(),
+        )
+    }));
+    sources.extend(documents.iter().map(|document| {
+        (
+            "document",
+            receipt_source_label(root, &document.path),
+            document.source.as_str(),
+        )
+    }));
+    sources.sort_by(|left, right| (left.0, &left.1).cmp(&(right.0, &right.1)));
     let mut hasher = blake3::Hasher::new();
     hasher.update(b"orgize.workspace-receipt.v1\0");
-    for (path, source) in sources {
-        let label = receipt_source_label(root, &path);
+    for (role, label, source) in sources {
+        hasher.update(&(role.len() as u64).to_be_bytes());
+        hasher.update(role.as_bytes());
         hasher.update(&(label.len() as u64).to_be_bytes());
         hasher.update(label.as_bytes());
         hasher.update(&(source.len() as u64).to_be_bytes());
