@@ -684,8 +684,8 @@ fn runtime_validation_evidence_records_timeout_and_reaping() {
     fs::write(
         &typst,
         r#"#!/bin/sh
-cat >/dev/null
 printf '%s\n' "$$" > .typst-child.pid
+cat >/dev/null
 exec tail -f /dev/null
 "#,
     )

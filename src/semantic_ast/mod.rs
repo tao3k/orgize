@@ -310,7 +310,7 @@ pub use org_contract_model::{
     OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
     OrgContractReference, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
     OrgContractSeverity, OrgContractSourceDiagnostic, OrgContractSourceValidation,
-    OrgContractWorkspaceReference, OrgContractWorkspaceReferenceSource,
+    OrgContractValueField, OrgContractWorkspaceReference, OrgContractWorkspaceReferenceSource,
 };
 pub use org_elements_query_expr::{
     ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,

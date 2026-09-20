@@ -537,6 +537,18 @@ pub enum OrgContractExpectation {
     NotExists,
     Count(OrgContractCompareOp, usize),
     CountBinding(OrgContractCompareOp, String),
+    ValueSetEqual {
+        binding: String,
+        source_field: OrgContractValueField,
+        target_field: OrgContractValueField,
+    },
+}
+
+/// Field projection used by generic ContractORG value-set relations.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OrgContractValueField {
+    Property(String),
+    Summary(String),
 }
 
 impl OrgContractExpectation {
@@ -548,6 +560,15 @@ impl OrgContractExpectation {
             Self::CountBinding(op, binding) => {
                 format!("count {} ${binding}", op.as_str())
             }
+            Self::ValueSetEqual {
+                binding,
+                source_field,
+                target_field,
+            } => format!(
+                "value-set == ${binding}.{} target.{}",
+                source_field.key(),
+                target_field.key()
+            ),
         }
     }
 
@@ -559,6 +580,15 @@ impl OrgContractExpectation {
             Self::CountBinding(op, binding) => binding_counts
                 .get(binding)
                 .is_some_and(|expected| op.matches(actual, *expected)),
+            Self::ValueSetEqual { .. } => false,
+        }
+    }
+}
+
+impl OrgContractValueField {
+    pub fn key(&self) -> &str {
+        match self {
+            Self::Property(key) | Self::Summary(key) => key,
         }
     }
 }

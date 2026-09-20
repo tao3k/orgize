@@ -590,3 +590,85 @@ fn contract_count_can_match_a_binding_to_require_complete_nodes() {
         OrgContractAssertionStatus::Failed
     );
 }
+
+#[test]
+fn contract_value_sets_can_require_exact_trace_coverage() {
+    let contract = parse_single_contract(
+        r#"
+* Trace coverage
+:PROPERTIES:
+:CONTRACT_ID: trace.coverage.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Every principle is traced
+:PROPERTIES:
+:ASSERT_ID: trace.covers-principles
+:SEVERITY: error
+:END:
+#+begin_src org-contract
+(let ((principles
+       (headline :property-contains ("PRINCIPLE_ID" ""))))
+  (assert value-set ==
+    (source $principles (property "PRINCIPLE_ID"))
+    (target
+      (table-cell :column "Principle ID" :header false :nonempty true)
+      (summary "text"))))
+#+end_src
+"#,
+    );
+    let complete = Org::parse(
+        r#"* A
+:PROPERTIES:
+:PRINCIPLE_ID: P-001
+:END:
+* B
+:PROPERTIES:
+:PRINCIPLE_ID: P-002
+:END:
+| Principle ID | Evidence |
+|--------------+----------|
+| P-001        | one      |
+| P-002        | two      |
+"#,
+    )
+    .document();
+    let missing = Org::parse(
+        r#"* A
+:PROPERTIES:
+:PRINCIPLE_ID: P-001
+:END:
+* B
+:PROPERTIES:
+:PRINCIPLE_ID: P-002
+:END:
+| Principle ID | Evidence |
+|--------------+----------|
+| P-001        | one      |
+| P-001        | duplicate |
+"#,
+    )
+    .document();
+
+    let context = OrgContractEvaluationContext::default();
+    let complete_evaluation = evaluate_org_contract_with_context(
+        &complete,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    let missing_evaluation = evaluate_org_contract_with_context(
+        &missing,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    assert_eq!(
+        complete_evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(
+        missing_evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+}

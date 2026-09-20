@@ -10,8 +10,8 @@ use super::core_types::{
 use crate::ast::{
     OrgContractBinding, OrgContractCompareOp, OrgContractExpectation,
     OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
-    OrgContractWorkspaceReference, OrgContractWorkspaceReferenceSource, OrgElementQueryPredicate,
-    OrgElementsIndexCategory,
+    OrgContractValueField, OrgContractWorkspaceReference, OrgContractWorkspaceReferenceSource,
+    OrgElementQueryPredicate, OrgElementsIndexCategory,
 };
 use crate::ast::{
     OrgContractDocumentPredicate, OrgContractRelativeScope, OrgElementsIndexSummaryValue,
@@ -123,6 +123,42 @@ fn compile_assertion(
             };
             (expectation, items.get(4)?)
         }
+        "value-set" => {
+            if items.get(2)?.as_atom()? != "==" {
+                return None;
+            }
+            let QueryExpr::List(source) = items.get(3)? else {
+                return None;
+            };
+            let [source_head, binding, source_field] = source.as_slice() else {
+                return None;
+            };
+            if source_head.as_atom()? != "source" {
+                return None;
+            }
+            let binding = binding.as_atom()?.strip_prefix('$')?.to_string();
+            if binding.is_empty() {
+                return None;
+            }
+            let QueryExpr::List(target) = items.get(4)? else {
+                return None;
+            };
+            let [target_head, target_query, target_field] = target.as_slice() else {
+                return None;
+            };
+            if target_head.as_atom()? != "target" {
+                return None;
+            }
+            return Some((
+                Vec::new(),
+                compile_query_expression(target_query)?,
+                OrgContractExpectation::ValueSetEqual {
+                    binding,
+                    source_field: compile_value_field(source_field)?,
+                    target_field: compile_value_field(target_field)?,
+                },
+            ));
+        }
         _ => return None,
     };
     Some((
@@ -130,6 +166,14 @@ fn compile_assertion(
         compile_query_expression(query_expression)?,
         expectation,
     ))
+}
+
+fn compile_value_field(expression: &QueryExpr) -> Option<OrgContractValueField> {
+    let field = parse_field_ref(expression)?;
+    Some(match field.kind {
+        FieldKind::Property => OrgContractValueField::Property(field.key),
+        FieldKind::Summary => OrgContractValueField::Summary(field.key),
+    })
 }
 
 pub(super) fn compile_pair_node_equality(

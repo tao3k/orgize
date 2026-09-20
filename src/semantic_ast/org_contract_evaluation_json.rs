@@ -110,6 +110,32 @@ fn expectation_to_json_value(expectation: &OrgContractExpectation) -> Value {
             "operator": operator.as_str(),
             "binding": binding,
         }),
+        OrgContractExpectation::ValueSetEqual {
+            binding,
+            source_field,
+            target_field,
+        } => json!({
+            "kind": "valueSet",
+            "operator": "==",
+            "source": {
+                "binding": binding,
+                "field": value_field_to_json_value(source_field),
+            },
+            "target": {
+                "field": value_field_to_json_value(target_field),
+            },
+        }),
+    }
+}
+
+fn value_field_to_json_value(field: &crate::ast::OrgContractValueField) -> Value {
+    match field {
+        crate::ast::OrgContractValueField::Property(key) => {
+            json!({"kind": "property", "key": key})
+        }
+        crate::ast::OrgContractValueField::Summary(key) => {
+            json!({"kind": "summary", "key": key})
+        }
     }
 }
 
