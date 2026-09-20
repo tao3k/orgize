@@ -17,8 +17,8 @@ use crate::{
         CONTRACT_ORG_PROPERTY, Keyword, ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES,
         ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE, OrgContract, OrgContractEvaluation,
         OrgContractEvaluationContext, OrgContractEvaluationScope, OrgContractRegistry,
-        OrgContractScope, ParsedAnnotation, ParsedAst, Property, Section,
-        evaluate_org_contract_with_context, org_contract_evaluations_to_json_value,
+        OrgContractScope, OrgElementGraph, ParsedAnnotation, ParsedAst, Property, Section,
+        evaluate_org_contract_with_graph_context, org_contract_evaluations_to_json_value,
         parse_contract_references,
     },
 };
@@ -168,13 +168,15 @@ pub(super) fn collect_contract_evaluations(
 ) -> Result<Vec<OrgContractEvaluation>, String> {
     let mut evaluations = Vec::new();
     let context = OrgContractEvaluationContext::with_source_path(path);
+    let graph = document.org_elements_graph();
     let document_contracts =
         resolve_bindings(document_contract_bindings(document, path)?, registry, path)?;
     let mut document_default_contracts = Vec::new();
     for contract in document_contracts {
         if contract.scope == OrgContractScope::Document {
-            evaluations.push(evaluate_org_contract_with_context(
+            evaluations.push(evaluate_org_contract_with_graph_context(
                 document,
+                &graph,
                 contract,
                 OrgContractEvaluationScope::document(),
                 &context,
@@ -187,6 +189,7 @@ pub(super) fn collect_contract_evaluations(
     {
         let mut collector = SectionContractEvaluationCollector {
             document,
+            graph: &graph,
             registry,
             path,
             context: &context,
@@ -201,6 +204,7 @@ pub(super) fn collect_contract_evaluations(
 
 struct SectionContractEvaluationCollector<'a> {
     document: &'a ParsedAst,
+    graph: &'a OrgElementGraph<ParsedAnnotation>,
     registry: &'a OrgContractRegistry,
     path: &'a str,
     context: &'a OrgContractEvaluationContext,
@@ -226,16 +230,18 @@ impl<'a> SectionContractEvaluationCollector<'a> {
         };
 
         for contract in &section_contracts {
-            self.evaluations.push(evaluate_org_contract_with_context(
-                self.document,
-                contract,
-                OrgContractEvaluationScope::section(
-                    section.raw_title.trim_end(),
-                    outline_path.clone(),
-                    section.ann.range,
-                ),
-                self.context,
-            ));
+            self.evaluations
+                .push(evaluate_org_contract_with_graph_context(
+                    self.document,
+                    self.graph,
+                    contract,
+                    OrgContractEvaluationScope::section(
+                        section.raw_title.trim_end(),
+                        outline_path.clone(),
+                        section.ann.range,
+                    ),
+                    self.context,
+                ));
         }
 
         for child in &section.subsections {

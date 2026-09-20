@@ -294,6 +294,7 @@ pub use org_contract::{
     parse_contract_reference, parse_contract_reference_from_source, parse_contract_references,
     parse_contracts_from_document, validate_contract_source,
 };
+pub(crate) use org_contract_evaluation::evaluate_org_contract_with_graph_context;
 pub use org_contract_evaluation::{evaluate_org_contract, evaluate_org_contract_with_context};
 pub use org_contract_evaluation_json::{
     evaluation_to_json_value as org_contract_evaluation_to_json_value,

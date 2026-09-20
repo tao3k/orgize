@@ -39,13 +39,23 @@ pub fn evaluate_org_contract_with_context(
     context: &OrgContractEvaluationContext,
 ) -> OrgContractEvaluation {
     let graph = document.org_elements_graph();
+    evaluate_org_contract_with_graph_context(document, &graph, contract, scope, context)
+}
+
+pub(crate) fn evaluate_org_contract_with_graph_context(
+    document: &ParsedAst,
+    graph: &OrgElementGraph<ParsedAnnotation>,
+    contract: &OrgContract,
+    scope: OrgContractEvaluationScope,
+    context: &OrgContractEvaluationContext,
+) -> OrgContractEvaluation {
     let mut document_context = context.clone();
     document_context.metadata_keys = document_keyword_keys(document);
     let scoped_context = context_with_effective_dir(document, &scope, &document_context);
     let assertions = contract
         .assertions
         .iter()
-        .map(|assertion| evaluate_assertion(&graph, assertion, &scope, &scoped_context))
+        .map(|assertion| evaluate_assertion(graph, assertion, &scope, &scoped_context))
         .collect();
     OrgContractEvaluation {
         contract_id: contract.id.clone(),
