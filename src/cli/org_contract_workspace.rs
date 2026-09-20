@@ -220,27 +220,28 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
                 }
             }
         }
-        file_receipts.push(json!({
-            "path": item.relative,
-            "route": route.name,
-            "evaluations": org_contract_evaluations_to_json_value(&evaluations),
-        }));
+        if options.json {
+            file_receipts.push(json!({
+                "path": item.relative,
+                "route": route.name,
+                "evaluations": org_contract_evaluations_to_json_value(&evaluations),
+            }));
+        }
     }
 
     validate_pairs(&root, &paired, &mut findings);
 
-    let receipt = json!({
-        "schemaVersion": 1,
-        "workspaceContractId": policy.id,
-        "root": root,
-        "status": if findings.is_empty() { "passed" } else { "failed" },
-        "files": file_receipts,
-        "evaluationCount": evaluation_count,
-        "assertionCount": assertion_count,
-        "findings": findings,
-    });
-
     if options.json {
+        let receipt = json!({
+            "schemaVersion": 1,
+            "workspaceContractId": policy.id,
+            "root": root,
+            "status": if findings.is_empty() { "passed" } else { "failed" },
+            "files": file_receipts,
+            "evaluationCount": evaluation_count,
+            "assertionCount": assertion_count,
+            "findings": findings,
+        });
         println!(
             "{}",
             serde_json::to_string_pretty(&receipt)
