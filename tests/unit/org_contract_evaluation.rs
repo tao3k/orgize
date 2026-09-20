@@ -363,6 +363,57 @@ fn query_level_or_matches_node_property_branches() {
 }
 
 #[test]
+fn contract_kind_sugar_can_restrict_properties_to_document_root() {
+    let contract = parse_single_contract(
+        r#"
+* Root source kind contract
+:PROPERTIES:
+:CONTRACT_ID: source.root-kind.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Source kind is primary
+:PROPERTIES:
+:ASSERT_ID: source.has-root-kind
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (node-property
+    :outline-depth 0
+    :summary (key "SOURCE_KIND")
+    :summary (value "PRIMARY")))
+#+END_SRC
+"#,
+    );
+    let document = Org::parse(
+        r#"
+:PROPERTIES:
+:SOURCE_KIND: INTERPRETATION
+:END:
+* Masking child
+:PROPERTIES:
+:SOURCE_KIND: PRIMARY
+:END:
+"#,
+    )
+    .document();
+    let evaluation = evaluate_org_contract_with_context(
+        &document,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &OrgContractEvaluationContext::with_source_path("sources/example.org"),
+    );
+
+    assert_eq!(evaluation.assertions.len(), 1);
+    assert_eq!(
+        evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+    assert_eq!(evaluation.assertions[0].actual_count, 0);
+}
+
+#[test]
 fn predicate_or_groups_inside_and_are_intersected() {
     let contract = parse_single_contract(
         r#"

@@ -311,13 +311,19 @@ fn workspace_digest(
     let mut hasher = blake3::Hasher::new();
     hasher.update(b"orgize.workspace-receipt.v1\0");
     for (path, source) in sources {
-        let label = relative_path(root, &path)?;
+        let label = receipt_source_label(root, &path);
         hasher.update(&(label.len() as u64).to_be_bytes());
         hasher.update(label.as_bytes());
         hasher.update(&(source.len() as u64).to_be_bytes());
         hasher.update(source.as_bytes());
     }
     Ok(format!("blake3:{}", hasher.finalize().to_hex()))
+}
+
+fn receipt_source_label(root: &Path, path: &Path) -> String {
+    path.strip_prefix(root)
+        .map(path_to_policy_string)
+        .unwrap_or_else(|_| format!("external:{}", path_to_policy_string(path)))
 }
 
 #[derive(Debug)]

@@ -90,7 +90,7 @@ pub(super) fn print_selector_query_json(
     content_output: bool,
     evidence: DocumentQueryEvidence,
 ) -> Result<(), String> {
-    let selected_parent = selection.packet_root();
+    let selected_parent = selection.packet_root()?;
     let current_directory = std::env::current_dir()
         .ok()
         .and_then(|path| fs::canonicalize(path).ok());

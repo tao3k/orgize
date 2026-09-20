@@ -535,6 +535,9 @@ fn apply_keyword_argument(
         ":at" => {
             apply_relative_scope(query, RelativeKind::At, &value.as_text()?);
         }
+        ":outline-path-exact-len" | ":outlinePathExactLen" | ":outline-depth" => {
+            query.outline_path_exact_len = Some(value.as_text()?.parse::<usize>().ok()?);
+        }
         ":column" => query.predicates.push(OrgElementQueryPredicate::summary_eq(
             "columnName",
             expression_summary_value(value)?,

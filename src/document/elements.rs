@@ -3,6 +3,7 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    thread,
 };
 
 use super::{
@@ -35,14 +36,7 @@ pub fn index_project_with_config(
     files.sort();
     files.dedup();
 
-    let mut facts = Vec::new();
-    for path in files {
-        if !path.exists() {
-            continue;
-        }
-        facts.extend(index_path(language, &path)?);
-    }
-    Ok(facts)
+    index_paths(language, &files)
 }
 
 pub(super) fn walk_config_with_cli_excludes(
@@ -101,16 +95,51 @@ pub(super) fn query_project_with_config(
     files.sort();
     files.dedup();
 
-    let mut facts = Vec::new();
-    for path in files {
-        if !path.exists() {
-            continue;
-        }
-        let source =
-            fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-        facts.extend(index_source(language, &path, &source)?);
+    index_paths(language, &files)
+}
+
+fn index_paths(
+    language: DocumentLanguage,
+    paths: &[PathBuf],
+) -> Result<Vec<DocumentElement>, String> {
+    if paths.len() < 16 {
+        return paths.iter().try_fold(Vec::new(), |mut facts, path| {
+            if path.exists() {
+                facts.extend(index_path(language, path)?);
+            }
+            Ok(facts)
+        });
     }
-    Ok(facts)
+
+    let worker_count = thread::available_parallelism()
+        .map(usize::from)
+        .unwrap_or(1)
+        .min(4)
+        .min(paths.len());
+    let chunk_size = paths.len().div_ceil(worker_count);
+    thread::scope(|scope| {
+        paths
+            .chunks(chunk_size)
+            .map(|chunk| {
+                scope.spawn(move || {
+                    chunk.iter().try_fold(Vec::new(), |mut facts, path| {
+                        if path.exists() {
+                            facts.extend(index_path(language, path)?);
+                        }
+                        Ok::<_, String>(facts)
+                    })
+                })
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .try_fold(Vec::new(), |mut facts, task| {
+                facts.extend(
+                    task.join()
+                        .map_err(|_| "document parser worker panicked".to_string())??,
+                );
+                Ok(facts)
+            })
+    })
 }
 
 fn index_source(

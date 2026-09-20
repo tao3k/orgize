@@ -733,6 +733,26 @@ fn org_document_query_commands_run() {
         "{parent_relative_packet:#}"
     );
 
+    let normalized_parent_query = orgize_command()
+        .current_dir(&relative_parent_dir)
+        .args([
+            "query",
+            "--selector",
+            &format!("org://sub/../../plan.org#{nested_fragment}"),
+            "--json",
+        ])
+        .output()
+        .expect("run normalized parent-relative selector query");
+    assert!(
+        normalized_parent_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&normalized_parent_query.stderr)
+    );
+    let normalized_parent_packet: Value = serde_json::from_slice(&normalized_parent_query.stdout)
+        .expect("parse normalized parent-relative selector packet");
+    assert_eq!(normalized_parent_packet["projectRoot"], "..");
+    assert_document_selector_query_evidence(&normalized_parent_packet, "plan.org");
+
     for kind in ["heading", "task"] {
         let selector = dot_root_inventory_packet["documentFacts"]
             .as_array()

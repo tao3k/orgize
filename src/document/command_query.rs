@@ -111,7 +111,7 @@ pub(crate) fn run_query(
         } else if json_output {
             let selection = SourceSelector::parse_query(selector)?;
             let sources = load_sources(std::slice::from_ref(&selection.path))?;
-            let packet_root = selection.packet_root();
+            let packet_root = selection.packet_root()?;
             let evidence = super::packets::document_query_evidence(
                 language,
                 &sources,

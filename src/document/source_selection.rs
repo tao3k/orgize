@@ -21,23 +21,40 @@ impl SourceSelector {
     }
 
     /// Returns the packet root without duplicating a nested relative selector path.
-    pub fn packet_root(&self) -> PathBuf {
+    pub fn packet_root(&self) -> Result<PathBuf, String> {
         if self.path.is_absolute() {
-            return self.parent_root().to_path_buf();
+            return Ok(self.parent_root().to_path_buf());
         }
-        let mut root = PathBuf::new();
+        let mut depth = 0_usize;
+        let mut parent_depth = 0_usize;
         for component in self.path.components() {
             match component {
                 Component::CurDir => {}
-                Component::ParentDir => root.push(".."),
-                Component::Normal(_) => break,
-                Component::RootDir | Component::Prefix(_) => unreachable!("relative path"),
+                Component::Normal(_) => depth += 1,
+                Component::ParentDir if depth != 0 => depth -= 1,
+                Component::ParentDir => parent_depth += 1,
+                Component::Prefix(_) => {
+                    return Err(format!(
+                        "drive-relative document selector paths are unsupported: {}",
+                        self.path.display()
+                    ));
+                }
+                Component::RootDir => {
+                    return Err(format!(
+                        "document selector path has an invalid relative root: {}",
+                        self.path.display()
+                    ));
+                }
             }
         }
+        let mut root = PathBuf::new();
+        for _ in 0..parent_depth {
+            root.push("..");
+        }
         if root.as_os_str().is_empty() {
-            PathBuf::from(".")
+            Ok(PathBuf::from("."))
         } else {
-            root
+            Ok(root)
         }
     }
 
@@ -107,8 +124,14 @@ impl SourceSelector {
             if path.is_empty() || fragment.is_empty() {
                 return Err(format!("invalid structural selector `{selector}`"));
             }
+            let path = PathBuf::from(path);
+            let path = if path.is_absolute() {
+                path
+            } else {
+                normalize_relative_selector_path(&path)?
+            };
             return Ok(Self {
-                path: PathBuf::from(path),
+                path,
                 range: None,
                 structural_selector: Some(selector.to_string()),
                 structural_fragment: Some(fragment.to_string()),
@@ -117,6 +140,42 @@ impl SourceSelector {
         Err(format!(
             "document query selector `{selector}` is not structural; use a selector emitted by search/query metadata, for example org://path#structure"
         ))
+    }
+}
+
+fn normalize_relative_selector_path(path: &Path) -> Result<PathBuf, String> {
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::Normal(value) => normalized.push(value),
+            Component::ParentDir
+                if matches!(
+                    normalized.components().next_back(),
+                    Some(Component::Normal(_))
+                ) =>
+            {
+                normalized.pop();
+            }
+            Component::ParentDir => normalized.push(".."),
+            Component::Prefix(_) => {
+                return Err(format!(
+                    "drive-relative document selector paths are unsupported: {}",
+                    path.display()
+                ));
+            }
+            Component::RootDir => {
+                return Err(format!(
+                    "document selector path has an invalid relative root: {}",
+                    path.display()
+                ));
+            }
+        }
+    }
+    if normalized.as_os_str().is_empty() {
+        Ok(PathBuf::from("."))
+    } else {
+        Ok(normalized)
     }
 }
 

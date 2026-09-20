@@ -69,5 +69,50 @@ fn workspace_contract_json_emits_qualification_receipt() {
         relative_receipt["workspaceDigest"], receipt["workspaceDigest"],
         "equivalent canonical workspace inputs must produce one digest"
     );
+    let external_root = root.with_file_name(format!(
+        "{}-external",
+        root.file_name().unwrap().to_string_lossy()
+    ));
+    let _ = fs::remove_dir_all(&external_root);
+    fs::create_dir_all(&external_root).unwrap();
+    let external_registry = external_root.join("contracts.org");
+    fs::copy(root.join("contracts.org"), &external_registry).unwrap();
+    let external_absolute = workspace_receipt(&root, &external_registry);
+    let external_relative = workspace_receipt(
+        &root,
+        &std::path::PathBuf::from("..")
+            .join(external_root.file_name().unwrap())
+            .join("contracts.org"),
+    );
+    assert_eq!(
+        external_absolute["workspaceDigest"], external_relative["workspaceDigest"],
+        "external registry labels must be canonical"
+    );
+    fs::remove_dir_all(external_root).unwrap();
     fs::remove_dir_all(root).unwrap();
+}
+
+fn workspace_receipt(root: &std::path::Path, registry: &std::path::Path) -> serde_json::Value {
+    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(root)
+        .args([
+            "contract",
+            "workspace",
+            "--root",
+            ".",
+            "--policy",
+            "policy.org",
+        ])
+        .arg("--org-contract-registry")
+        .arg(registry)
+        .arg("--summary-json")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "stderr={} stdout={}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout)
+    );
+    serde_json::from_slice(&output.stdout).unwrap()
 }
