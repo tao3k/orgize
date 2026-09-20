@@ -312,11 +312,17 @@ fn predicate_summary(predicate: &OrgElementQueryPredicate) -> String {
         OrgElementQueryPredicate::PropertyContains(predicate) => {
             text_predicate_summary("property", "contains", predicate)
         }
+        OrgElementQueryPredicate::PropertyPositiveInteger(key) => {
+            format!("property {key:?} is a positive integer")
+        }
         OrgElementQueryPredicate::SummaryEquals(predicate) => {
             summary_predicate_summary("summary", "==", predicate)
         }
         OrgElementQueryPredicate::SummaryContains(predicate) => {
             text_predicate_summary("summary", "contains", predicate)
+        }
+        OrgElementQueryPredicate::SummaryPositiveInteger(key) => {
+            format!("summary {key:?} is a positive integer")
         }
     }
 }

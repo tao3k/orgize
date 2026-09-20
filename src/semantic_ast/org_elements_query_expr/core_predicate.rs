@@ -31,6 +31,7 @@ pub(super) fn compile_predicate_expression(
         )),
         "=" => compile_field_comparison_predicate(items, false),
         "contains" => compile_field_comparison_predicate(items, true),
+        "positive-integer" => compile_positive_integer_predicate(items),
         "kind" => Some(OrgElementQueryPredicate::Kind(OrgElementsIndexKind::new(
             items.get(1)?.as_text()?,
         ))),
@@ -45,6 +46,17 @@ pub(super) fn compile_predicate_expression(
         ))),
         _ => None,
     }
+}
+
+fn compile_positive_integer_predicate(items: &[QueryExpr]) -> Option<OrgElementQueryPredicate> {
+    let field = parse_field_ref(items.get(1)?)?;
+    if items.len() != 2 {
+        return None;
+    }
+    Some(match field.kind {
+        FieldKind::Summary => OrgElementQueryPredicate::summary_positive_integer(field.key),
+        FieldKind::Property => OrgElementQueryPredicate::property_positive_integer(field.key),
+    })
 }
 
 fn compile_field_comparison_predicate(

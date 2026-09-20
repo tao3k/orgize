@@ -41,6 +41,9 @@ fn compile_index_query_expression(expression: &QueryExpr) -> Option<OrgElementsI
         )),
         "=" => compile_index_comparison_query(items, false),
         "contains" => compile_index_comparison_query(items, true),
+        "positive-integer" => {
+            compile_index_predicate_query(compile_predicate_expression(expression)?)
+        }
         "category" => {
             let mut query = OrgElementsIndexQuery::new();
             query.category = OrgElementsIndexCategory::from_label(&items.get(1)?.as_text()?);

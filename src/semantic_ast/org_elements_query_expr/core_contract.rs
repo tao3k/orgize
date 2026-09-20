@@ -364,6 +364,7 @@ pub(super) fn compile_query_expression(expression: &QueryExpr) -> Option<OrgCont
         )),
         "=" => compile_comparison_query(items, false),
         "contains" => compile_comparison_query(items, true),
+        "positive-integer" => compile_predicate_query(compile_predicate_expression(expression)?),
         "kind" => {
             let mut query = OrgContractQuery::default();
             apply_org_elements_query_kind(&items.get(1)?.as_text()?, &mut query);

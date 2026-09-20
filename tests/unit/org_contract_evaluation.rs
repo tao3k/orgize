@@ -672,3 +672,52 @@ fn contract_value_sets_can_require_exact_trace_coverage() {
         OrgContractAssertionStatus::Failed
     );
 }
+
+#[test]
+fn contract_positive_integer_predicate_rejects_noncanonical_and_nonpositive_values() {
+    let contract = parse_single_contract(
+        r#"
+* Revision contract
+:PROPERTIES:
+:CONTRACT_ID: revision.positive-integer.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Positive revision
+:PROPERTIES:
+:ASSERT_ID: revision.is-positive-integer
+:SEVERITY: error
+:END:
+#+begin_src org-contract
+(assert count == 1
+  (and
+    (headline :property-contains ("PRINCIPLE_ID" ""))
+    (positive-integer (property "REVISION"))))
+#+end_src
+"#,
+    );
+
+    for (revision, expected) in [
+        ("1", OrgContractAssertionStatus::Passed),
+        ("42", OrgContractAssertionStatus::Passed),
+        ("0", OrgContractAssertionStatus::Failed),
+        ("-1", OrgContractAssertionStatus::Failed),
+        ("latest", OrgContractAssertionStatus::Failed),
+        ("+1", OrgContractAssertionStatus::Failed),
+    ] {
+        let document = Org::parse(format!(
+            "* Principle\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:REVISION: {revision}\n:END:\n"
+        ))
+        .document();
+        let evaluation = evaluate_org_contract_with_context(
+            &document,
+            &contract,
+            OrgContractEvaluationScope::document(),
+            &OrgContractEvaluationContext::default(),
+        );
+        assert_eq!(
+            evaluation.assertions[0].status, expected,
+            "unexpected status for revision {revision:?}"
+        );
+    }
+}

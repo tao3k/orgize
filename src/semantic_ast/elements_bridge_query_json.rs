@@ -324,8 +324,20 @@ fn field_predicate(
             _ => unreachable!("field predicate caller controls field"),
         };
     }
+    if let Some(positive_integer) = object.get("positiveInteger") {
+        if positive_integer != &Value::Bool(true) {
+            return Err(OrgElementsIndexQueryJsonError::new(format!(
+                "`{field}.positiveInteger` must be true",
+            )));
+        }
+        return match field {
+            "property" => Ok(OrgElementQueryPredicate::property_positive_integer(key)),
+            "summary" => Ok(OrgElementQueryPredicate::summary_positive_integer(key)),
+            _ => unreachable!("field predicate caller controls field"),
+        };
+    }
     Err(OrgElementsIndexQueryJsonError::new(format!(
-        "`{field}` predicate must contain `equals` or `contains`",
+        "`{field}` predicate must contain `equals`, `contains`, or `positiveInteger`",
     )))
 }
 
@@ -450,6 +462,12 @@ fn predicate_json(predicate: &OrgElementQueryPredicate) -> Value {
                 "contains": &predicate.needle,
             }
         }),
+        OrgElementQueryPredicate::PropertyPositiveInteger(key) => json!({
+            "property": {
+                "key": key,
+                "positiveInteger": true,
+            }
+        }),
         OrgElementQueryPredicate::SummaryEquals(predicate) => json!({
             "summary": {
                 "key": &predicate.key,
@@ -460,6 +478,12 @@ fn predicate_json(predicate: &OrgElementQueryPredicate) -> Value {
             "summary": {
                 "key": &predicate.key,
                 "contains": &predicate.needle,
+            }
+        }),
+        OrgElementQueryPredicate::SummaryPositiveInteger(key) => json!({
+            "summary": {
+                "key": key,
+                "positiveInteger": true,
             }
         }),
     }
