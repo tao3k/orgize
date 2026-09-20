@@ -3,7 +3,10 @@ use std::{
     path::{Path, PathBuf},
     process::{Command, Output},
     sync::atomic::{AtomicUsize, Ordering},
-    time::Instant,
+};
+
+use asp_rust_build_support::{
+    AspRustScenarioObservation, asp_rust_scenario, measure_asp_rust_scenario,
 };
 
 static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
@@ -195,21 +198,52 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
     for index in 1..128 {
         fixture.write_pair(index);
     }
-    let (elapsed, output) = (0..3)
-        .map(|_| {
-            let started_at = Instant::now();
-            let output = fixture.run();
-            (started_at.elapsed(), output)
-        })
-        .min_by_key(|(elapsed, _)| *elapsed)
-        .expect("workspace admission benchmark sample");
+    let scenario = asp_rust_scenario! {
+        name: "workspace-admission-scale",
+        package: "orgize",
+        description: "A pure Org AST policy admits 256 bilingual documents through one exact-path workspace scan",
+        fixture_root: "tests/unit/scenarios/contract_workspace/workspace_admission_scale",
+        tags: ["org-contract", "workspace", "performance"],
+        commands: [
+            { label: "focused", argv: ["cargo", "test", "workspace_contract_scale_scenario_stays_in_budget"] }
+        ],
+        benchmark: {
+            harness: "libtest",
+            test: "contract_workspace::workspace_contract_scale_scenario_stays_in_budget",
+            snapshot: "workspace_admission_scale",
+            target_total: "200ms",
+            max_total: "400ms",
+            regression_budget: "80ms",
+            memory_budget_bytes: 33_554_432,
+            target_rationale: "A 256-document bilingual repository must remain below the ASP Rust sub-500ms hard ceiling.",
+            warmup_iterations: 1,
+            measure_iterations: 3,
+            metrics: [
+                { name: "document_count", unit: "count", kind: Exact, target: 256 },
+                { name: "contract_evaluation_count", unit: "count", kind: Exact, target: 512 },
+                { name: "provider_process_count", unit: "count", kind: Exact, target: 0 }
+            ]
+        }
+    };
+    let mut last_output = None;
+    let measurement = measure_asp_rust_scenario(&scenario, || {
+        let output = fixture.run();
+        assert!(output.status.success(), "{}", receipt(&output));
+        last_output = Some(output);
+        AspRustScenarioObservation::default()
+            .with_metric("document_count", 256)
+            .with_metric("contract_evaluation_count", 512)
+            .with_metric("provider_process_count", 0)
+    })
+    .expect("measure workspace admission through the ASP Rust Scenario macro");
 
-    assert!(output.status.success(), "{}", receipt(&output));
     assert!(
-        elapsed < benchmark.benchmark.max_total.as_duration(),
-        "workspace admission exceeded {}ms gate for 256 documents: {elapsed:?}",
-        benchmark.benchmark.max_total.as_duration().as_millis()
+        measurement.observed_total < benchmark.benchmark.max_total.as_duration(),
+        "workspace admission exceeded {}ms gate for 256 documents: {:?}",
+        benchmark.benchmark.max_total.as_duration().as_millis(),
+        measurement.observed_total,
     );
+    let output = last_output.expect("Scenario macro records the last workspace receipt");
     assert!(String::from_utf8_lossy(&output.stdout).contains("256 documents, 512 evaluations"));
 }
 
