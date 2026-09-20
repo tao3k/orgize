@@ -414,6 +414,50 @@ fn contract_kind_sugar_can_restrict_properties_to_document_root() {
 }
 
 #[test]
+fn table_column_nonempty_does_not_shift_across_an_empty_cell() {
+    let contract = parse_single_contract(
+        r#"
+* Engineering column contract
+:PROPERTIES:
+:CONTRACT_ID: engineering.column.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Engineering property is substantive
+:PROPERTIES:
+:ASSERT_ID: engineering.has-property
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (table-cell :column "Engineering property" :header false :nonempty true))
+#+END_SRC
+"#,
+    );
+    let document = Org::parse(
+        r#"
+| Principle | Engineering property | Owner |
+|-----------+----------------------+-------|
+| P-001     |                      | ASP   |
+"#,
+    )
+    .document();
+    let evaluation = evaluate_org_contract_with_context(
+        &document,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &OrgContractEvaluationContext::default(),
+    );
+
+    assert_eq!(evaluation.assertions.len(), 1);
+    assert_eq!(
+        evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+    assert_eq!(evaluation.assertions[0].actual_count, 0);
+}
+
+#[test]
 fn predicate_or_groups_inside_and_are_intersected() {
     let contract = parse_single_contract(
         r#"
