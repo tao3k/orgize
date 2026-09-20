@@ -197,6 +197,9 @@ impl LintFinding {
             "ORG044" => {
                 "update the Org subtree to satisfy the failed CONTRACT_ORG assertion, or repair the contract query when the policy is wrong"
             }
+            "ORG045" => {
+                "repair the configured Typst runtime or source so bounded runtime validation completes successfully"
+            }
             _ => "inspect the Org source near this location and repair the lint finding",
         }
     }
@@ -332,6 +335,9 @@ impl LintFinding {
             }
             "ORG044" => {
                 "CONTRACT_ORG validation must be derived from host-loaded Org element query assertions over the parser-owned org_elements_index."
+            }
+            "ORG045" => {
+                "Typst runtime validation failures must remain distinct from static source metadata findings so structured consumers receive the correct remediation."
             }
             _ => {
                 "Org lint findings should be fixed in source or intentionally reviewed before downstream use."

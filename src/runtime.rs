@@ -205,7 +205,7 @@ pub(crate) fn execute_runtime_observed(
     };
 
     let deadline = Instant::now() + timeout;
-    let status = loop {
+    let (status, child_reaped) = loop {
         if output_overflowed.load(Ordering::Acquire) {
             let child_reaped = terminate_and_reap(&mut child);
             let _ = join_stdin(stdin_writer);
@@ -245,7 +245,8 @@ pub(crate) fn execute_runtime_observed(
             }
         };
         if let Some(status) = polled {
-            break status;
+            let child_reaped = terminate_and_reap(&mut child);
+            break (status, child_reaped);
         }
         if Instant::now() >= deadline {
             let child_reaped = terminate_and_reap(&mut child);
@@ -292,7 +293,7 @@ pub(crate) fn execute_runtime_observed(
             stderr,
             RuntimeTerminationOutcome::OutputBudgetExceeded,
             status.code(),
-            true,
+            child_reaped,
             Some(format!(
                 "combined runtime output exceeded {output_byte_budget} bytes"
             )),
@@ -305,7 +306,7 @@ pub(crate) fn execute_runtime_observed(
             stderr,
             RuntimeTerminationOutcome::IoFailed,
             status.code(),
-            true,
+            child_reaped,
             Some(error),
         );
     }
@@ -315,7 +316,7 @@ pub(crate) fn execute_runtime_observed(
         stderr,
         RuntimeTerminationOutcome::Exited,
         status.code(),
-        true,
+        child_reaped,
         None,
     )
 }
@@ -363,6 +364,7 @@ fn absolute_program_path(program: &str) -> std::path::PathBuf {
 }
 
 fn spawn_runtime(mut command: Command, program: &str) -> Result<Child, String> {
+    configure_runtime_process_group(&mut command);
     command
         .spawn()
         .map_err(|error| format!("failed to run registered runtime `{program}`: {error}"))
@@ -431,9 +433,52 @@ fn join_stdin(writer: Option<thread::JoinHandle<Result<(), String>>>) -> Result<
 }
 
 fn terminate_and_reap(child: &mut Child) -> bool {
+    terminate_runtime_process_tree(child);
     let _ = child.kill();
     child.wait().is_ok()
 }
+
+#[cfg(unix)]
+fn configure_runtime_process_group(command: &mut Command) {
+    use std::os::unix::process::CommandExt;
+
+    command.process_group(0);
+}
+
+#[cfg(windows)]
+fn configure_runtime_process_group(command: &mut Command) {
+    use std::os::windows::process::CommandExt;
+
+    const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+    command.creation_flags(CREATE_NEW_PROCESS_GROUP);
+}
+
+#[cfg(not(any(unix, windows)))]
+fn configure_runtime_process_group(_command: &mut Command) {}
+
+#[cfg(unix)]
+fn terminate_runtime_process_tree(child: &Child) {
+    let process_group = i32::try_from(child.id()).unwrap_or(i32::MAX);
+    // SAFETY: the child is spawned into a process group whose id equals its pid.
+    // A negative pid targets only that dedicated group; ESRCH is harmless when
+    // the group has already exited.
+    unsafe {
+        libc::kill(-process_group, libc::SIGKILL);
+    }
+}
+
+#[cfg(windows)]
+fn terminate_runtime_process_tree(child: &Child) {
+    let pid = child.id().to_string();
+    let _ = Command::new("taskkill")
+        .args(["/PID", pid.as_str(), "/T", "/F"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+}
+
+#[cfg(not(any(unix, windows)))]
+fn terminate_runtime_process_tree(_child: &Child) {}
 
 fn failed_observation(
     started: Instant,

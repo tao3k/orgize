@@ -256,7 +256,7 @@ pub enum RuntimeValidationTerminationOutcome {
 /// Stable diagnostic code, intentionally distinct from human-readable text.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeValidationDiagnosticCode {
-    Org043,
+    Org045,
 }
 
 impl RuntimeValidationReceipt {
@@ -302,7 +302,7 @@ impl RuntimeValidationReceipt {
                 RuntimeValidationStatus::Rejected => "rejected",
             },
             "diagnosticCode": self.diagnostic_code.map(|code| match code {
-                RuntimeValidationDiagnosticCode::Org043 => "ORG043",
+                RuntimeValidationDiagnosticCode::Org045 => "ORG045",
             }),
         })
     }

@@ -232,12 +232,12 @@ fn runtime_lint_finding(
                     None,
                     false,
                     crate::lint::RuntimeValidationStatus::Rejected,
-                    Some(crate::lint::RuntimeValidationDiagnosticCode::Org043),
+                    Some(crate::lint::RuntimeValidationDiagnosticCode::Org045),
                 )
             });
             return Some(RuntimeLintFinding {
                 finding: Some(LintFinding {
-                    code: "ORG043",
+                    code: "ORG045",
                     severity: LintSeverity::Error,
                     message: format!("Typst runtime lint failed: {error}"),
                     location: location_for_source_record(source, record),
@@ -276,7 +276,7 @@ fn runtime_lint_finding(
             } else {
                 crate::lint::RuntimeValidationStatus::Rejected
             },
-            (!accepted).then_some(crate::lint::RuntimeValidationDiagnosticCode::Org043),
+            (!accepted).then_some(crate::lint::RuntimeValidationDiagnosticCode::Org045),
         )
     });
     if accepted {
@@ -307,7 +307,7 @@ fn runtime_lint_finding(
     };
     Some(RuntimeLintFinding {
         finding: Some(LintFinding {
-            code: "ORG043",
+            code: "ORG045",
             severity: LintSeverity::Error,
             message,
             location: location_for_source_record(source, record),

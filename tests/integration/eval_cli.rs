@@ -238,7 +238,7 @@ exit 0
         stdout(&output),
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(rendered.contains("ORG043"), "output: {rendered}");
+    assert!(rendered.contains("ORG045"), "output: {rendered}");
     assert!(
         rendered.contains("invalid Typst body"),
         "output: {rendered}"
@@ -344,7 +344,7 @@ exit 0
 
 #[cfg(unix)]
 #[test]
-fn runtime_lint_timeout_kills_and_reaps_child_with_org043() {
+fn runtime_lint_timeout_kills_and_reaps_process_group_with_org045() {
     let dir = test_dir("lint-typst-timeout-reap");
     let docs = dir.join("docs");
     fs::create_dir_all(&docs).unwrap();
@@ -360,7 +360,9 @@ if [ "$1" != "compile" ] || [ "$2" != "--format" ] || [ "$3" != "svg" ] || [ "$4
   exit 64
 fi
 printf '%s\n' "$$" > .typst-child.pid
-exec tail -f /dev/null
+tail -f /dev/null &
+printf '%s\n' "$!" > .typst-descendant.pid
+wait
 "#,
     )
     .unwrap();
@@ -383,7 +385,7 @@ exec tail -f /dev/null
     let report = orgize::lint::lint_org_with_options_and_runtime_policy(source, &options, &policy);
 
     let rendered = report.to_compact_text("docs/notes.org", source);
-    assert!(rendered.contains("ORG043"), "report: {rendered}");
+    assert!(rendered.contains("ORG045"), "report: {rendered}");
     assert!(rendered.contains("timed out"), "report: {rendered}");
     let pid = fs::read_to_string(docs.join(".typst-child.pid")).unwrap();
     let alive = Command::new("kill")
@@ -393,6 +395,17 @@ exec tail -f /dev/null
         .status()
         .unwrap();
     assert!(!alive.success(), "timed-out child {pid} is still alive");
+    let descendant_pid = fs::read_to_string(docs.join(".typst-descendant.pid")).unwrap();
+    let descendant_alive = Command::new("kill")
+        .args(["-0", descendant_pid.trim()])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .unwrap();
+    assert!(
+        !descendant_alive.success(),
+        "timed-out descendant {descendant_pid} is still alive"
+    );
     assert_no_typst_artifact(&dir);
 }
 
@@ -652,7 +665,7 @@ exit 0
     );
     assert_eq!(
         receipt.diagnostic_code,
-        Some(orgize::lint::RuntimeValidationDiagnosticCode::Org043)
+        Some(orgize::lint::RuntimeValidationDiagnosticCode::Org045)
     );
     assert!(receipt.observation.output_bytes.combined() > receipt.policy.output_byte_budget);
     assert!(receipt.observation.child_lifecycle.child_reaped());

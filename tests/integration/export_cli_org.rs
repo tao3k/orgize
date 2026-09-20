@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use serde_json::Value;
 
 use crate::export_cli::export_cli_common::{
@@ -479,6 +481,23 @@ fn org_document_query_commands_run() {
     assert_eq!(content_query_packet["querySurface"], "content");
     assert_eq!(content_query_packet["documentMode"], "content");
     assert_document_query_evidence(&content_query_packet);
+    for block in content_query_packet["contentBlocks"]
+        .as_array()
+        .expect("content blocks")
+    {
+        let selector = block["structuralSelector"]
+            .as_str()
+            .expect("content structural selector");
+        let source_path = selector
+            .strip_prefix("org://")
+            .and_then(|selector| selector.split_once('#'))
+            .map(|(path, _)| path)
+            .expect("replayable Org structural selector");
+        assert!(
+            Path::new(source_path).is_file(),
+            "content selector source must be replayable: {selector}"
+        );
+    }
     assert!(
         content_query_packet["contentBlocks"]
             .as_array()

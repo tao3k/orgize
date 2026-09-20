@@ -296,7 +296,7 @@ fn content_blocks_json(
             let content = fact.content_text();
             (!content.trim().is_empty()).then(|| {
                 let path = packet_path(root, &fact.path);
-                let structural_selector = packet_structural_selector(language, &path, fact);
+                let structural_selector = packet_structural_selector(language, &fact.path, fact);
                 let item_digest = content_block_digest(
                     language,
                     structural_selector.as_str(),
