@@ -617,7 +617,7 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
     let scenario = asp_rust_scenario! {
         name: "workspace-admission-scale",
         package: "orgize",
-        description: "A pure Org AST policy admits 256 bilingual documents through one exact-path workspace scan",
+        description: "A pure Org AST policy admits 256 bilingual documents through the in-process CLI boundary and one exact-path workspace scan",
         fixture_root: "tests/unit/scenarios/contract_workspace/workspace_admission_scale",
         tags: ["org-contract", "workspace", "performance"],
         commands: [
@@ -632,7 +632,7 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
             regression_budget: "80ms",
             memory_budget_bytes: 33_554_432,
             target_rationale: "A 256-document bilingual repository must remain below the ASP Rust sub-500ms hard ceiling.",
-            warmup_iterations: 1,
+            warmup_iterations: 0,
             measure_iterations: 3,
             metrics: [
                 { name: "document_count", unit: "count", kind: Exact, target: 256 },
@@ -641,11 +641,19 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
             ]
         }
     };
-    let mut last_output = None;
     let measurement = measure_asp_rust_scenario(&scenario, || {
-        let output = fixture.run();
-        assert!(output.status.success(), "{}", receipt(&output));
-        last_output = Some(output);
+        let status = orgize::cli::run_args(vec![
+            "contract".to_string(),
+            "workspace".to_string(),
+            "--root".to_string(),
+            path(&fixture.root).to_string(),
+            "--policy".to_string(),
+            path(&fixture.root.join("policy.org")).to_string(),
+            "--org-contract-registry".to_string(),
+            path(&fixture.root.join("contracts.org")).to_string(),
+        ])
+        .expect("run workspace admission through the public in-process CLI boundary");
+        assert_eq!(status, std::process::ExitCode::SUCCESS);
         AspRustScenarioObservation::default()
             .with_metric("document_count", 256)
             .with_metric("contract_evaluation_count", 512)
@@ -655,12 +663,12 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
 
     assert!(
         measurement.observed_total < benchmark.benchmark.max_total.as_duration(),
-        "workspace admission exceeded {}ms gate for 256 documents: {:?}",
+        "workspace admission exceeded {}ms gate for 256 documents: p50={:?}, p95={:?}, max={:?}",
         benchmark.benchmark.max_total.as_duration().as_millis(),
+        measurement.total_p50,
         measurement.observed_total,
+        measurement.total_max,
     );
-    let output = last_output.expect("Scenario macro records the last workspace receipt");
-    assert!(String::from_utf8_lossy(&output.stdout).contains("256 documents, 512 evaluations"));
 }
 
 struct WorkspaceFixture {

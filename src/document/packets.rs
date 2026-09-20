@@ -1,10 +1,12 @@
 use std::{
     collections::BTreeMap,
     fs,
-    io::Read,
     path::{Component, Path},
     sync::OnceLock,
 };
+
+#[cfg(not(target_os = "macos"))]
+use std::io::Read;
 
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -397,7 +399,12 @@ fn current_executable_digest() -> Result<String, String> {
     {
         digest_executable(Path::new("/proc/self/exe"))
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "macos")]
+    {
+        loaded_macho_uuid()
+            .map(|uuid| canonical_blake3_digest(b"asp.semantic-document-parser-macho.v1", &[&uuid]))
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     {
         let executable = std::env::current_exe().map_err(|error| {
             format!("could not resolve current parser executable artifact: {error}")
@@ -406,6 +413,66 @@ fn current_executable_digest() -> Result<String, String> {
     }
 }
 
+#[cfg(target_os = "macos")]
+fn loaded_macho_uuid() -> Result<[u8; 16], String> {
+    const MH_MAGIC: u32 = 0xfeed_face;
+    const MH_MAGIC_64: u32 = 0xfeed_facf;
+    const LC_UUID: u32 = 0x1b;
+
+    unsafe extern "C" {
+        fn _dyld_get_image_header(image_index: u32) -> *const u8;
+    }
+
+    // SAFETY: dyld owns image zero for the lifetime of the process. We only
+    // inspect its fixed Mach-O header and bounds-checked load-command bytes.
+    let header = unsafe { _dyld_get_image_header(0) };
+    if header.is_null() {
+        return Err("dyld did not expose the running parser image".to_string());
+    }
+    // SAFETY: a non-null dyld image begins with a complete Mach-O header.
+    let magic = unsafe { (header.cast::<u32>()).read_unaligned() };
+    let header_size = match magic {
+        MH_MAGIC => 28_usize,
+        MH_MAGIC_64 => 32_usize,
+        _ => {
+            return Err(format!(
+                "running parser image has unknown Mach-O magic {magic:#x}"
+            ));
+        }
+    };
+    // SAFETY: ncmds and sizeofcmds are fixed u32 fields in both Mach-O headers.
+    let command_count = unsafe { (header.add(16).cast::<u32>()).read_unaligned() } as usize;
+    // SAFETY: see the preceding header-field justification.
+    let command_bytes = unsafe { (header.add(20).cast::<u32>()).read_unaligned() } as usize;
+    // SAFETY: header_size is the validated size for the observed Mach-O magic.
+    let commands = unsafe { header.add(header_size) };
+    let mut offset = 0_usize;
+    for _ in 0..command_count {
+        if command_bytes.saturating_sub(offset) < 8 {
+            break;
+        }
+        // SAFETY: offset has at least one complete load_command remaining.
+        let command = unsafe { (commands.add(offset).cast::<u32>()).read_unaligned() };
+        // SAFETY: the same bounds check covers the cmdsize field at byte four.
+        let command_size =
+            unsafe { (commands.add(offset + 4).cast::<u32>()).read_unaligned() } as usize;
+        if command_size < 8 || command_size > command_bytes - offset {
+            break;
+        }
+        if command == LC_UUID && command_size >= 24 {
+            let mut uuid = [0_u8; 16];
+            // SAFETY: LC_UUID with cmdsize >= 24 owns sixteen UUID bytes at offset eight.
+            unsafe {
+                std::ptr::copy_nonoverlapping(commands.add(offset + 8), uuid.as_mut_ptr(), 16);
+            }
+            return Ok(uuid);
+        }
+        offset += command_size;
+    }
+    Err("running parser Mach-O image has no LC_UUID build identity".to_string())
+}
+
+#[cfg(not(target_os = "macos"))]
 fn digest_executable(executable: &Path) -> Result<String, String> {
     let mut file = fs::File::open(executable).map_err(|error| {
         format!(
