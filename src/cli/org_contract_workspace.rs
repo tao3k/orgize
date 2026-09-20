@@ -13,10 +13,11 @@ use crate::{
     Org,
     ast::{
         BlockKind, ElementData, OrgContractAssertionStatus, OrgContractDocumentReferenceResolution,
-        OrgContractNodeReferenceResolution, OrgContractPairDocumentEquality,
-        OrgContractPairNodeEquality, ParsedAst, Property, Section,
+        OrgContractNodeReciprocalReference, OrgContractNodeReferenceResolution,
+        OrgContractPairDocumentEquality, OrgContractPairNodeEquality, ParsedAst, Property, Section,
         org_contract_evaluations_to_json_value, parse_contract_references,
         parse_org_contract_document_reference_resolution_block,
+        parse_org_contract_node_reciprocal_reference_block,
         parse_org_contract_node_reference_resolution_block,
         parse_org_contract_pair_document_equality_block,
         parse_org_contract_pair_node_equality_block,
@@ -459,6 +460,7 @@ impl WorkspacePolicy {
                 pair,
                 document_references: workspace_rules.document_references,
                 node_references: workspace_rules.node_references,
+                reciprocal_references: workspace_rules.reciprocal_references,
             });
         }
         if routes.is_empty() {
@@ -497,6 +499,7 @@ struct WorkspaceRoute {
     pair: Option<PairRoute>,
     document_references: Vec<OrgContractDocumentReferenceResolution>,
     node_references: Vec<OrgContractNodeReferenceResolution>,
+    reciprocal_references: Vec<OrgContractNodeReciprocalReference>,
 }
 
 #[derive(Default)]
@@ -505,6 +508,7 @@ struct WorkspaceRules {
     document_equality: Option<OrgContractPairDocumentEquality>,
     document_references: Vec<OrgContractDocumentReferenceResolution>,
     node_references: Vec<OrgContractNodeReferenceResolution>,
+    reciprocal_references: Vec<OrgContractNodeReciprocalReference>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -695,6 +699,12 @@ fn validate_references(
                         .iter()
                         .map(|rule| rule.identity_property.as_str()),
                 )
+                .chain(
+                    route
+                        .reciprocal_references
+                        .iter()
+                        .map(|rule| rule.identity_property.as_str()),
+                )
         })
         .collect::<BTreeSet<_>>();
     let identities = identity_properties
@@ -705,6 +715,31 @@ fn validate_references(
                 collect_section_property_values(&document.document.sections, property, &mut values);
             }
             (property, values.into_iter().collect::<BTreeSet<_>>())
+        })
+        .collect::<BTreeMap<_, _>>();
+    let reciprocal_projections = policy
+        .routes
+        .iter()
+        .flat_map(|route| &route.reciprocal_references)
+        .map(|rule| {
+            (
+                rule.identity_property.clone(),
+                rule.reciprocal_property.clone(),
+            )
+        })
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .map(|projection| {
+            let mut values = BTreeMap::new();
+            for document in documents {
+                collect_identity_property_tokens(
+                    &document.document.sections,
+                    &projection.0,
+                    &projection.1,
+                    &mut values,
+                );
+            }
+            (projection, values)
         })
         .collect::<BTreeMap<_, _>>();
 
@@ -737,6 +772,88 @@ fn validate_references(
                 findings,
             );
         }
+        for rule in &route.reciprocal_references {
+            validate_node_reciprocal_references(
+                &document.document.sections,
+                rule,
+                reciprocal_projections
+                    .get(&(
+                        rule.identity_property.clone(),
+                        rule.reciprocal_property.clone(),
+                    ))
+                    .expect("reciprocal projection was collected"),
+                &document.relative,
+                findings,
+            );
+        }
+    }
+}
+
+fn collect_identity_property_tokens<A>(
+    sections: &[Section<A>],
+    identity_property: &str,
+    value_property: &str,
+    values: &mut BTreeMap<String, BTreeSet<String>>,
+) {
+    for section in sections {
+        let identities = property_values(&section.properties, identity_property);
+        if let [identity] = identities.as_slice()
+            && !identity.is_empty()
+        {
+            let target = values.entry((*identity).to_string()).or_default();
+            for value in property_values(&section.properties, value_property) {
+                target.extend(value.split_whitespace().map(str::to_string));
+            }
+        }
+        collect_identity_property_tokens(
+            &section.subsections,
+            identity_property,
+            value_property,
+            values,
+        );
+    }
+}
+
+fn validate_node_reciprocal_references<A>(
+    sections: &[Section<A>],
+    rule: &OrgContractNodeReciprocalReference,
+    reciprocal_values: &BTreeMap<String, BTreeSet<String>>,
+    path: &str,
+    findings: &mut Vec<String>,
+) {
+    for section in sections {
+        let identities = property_values(&section.properties, &rule.identity_property);
+        if let [identity] = identities.as_slice()
+            && !identity.is_empty()
+        {
+            for value in property_values(&section.properties, &rule.property) {
+                for reference in value.split_whitespace() {
+                    if rule
+                        .allowed_values
+                        .iter()
+                        .any(|allowed| allowed == reference)
+                    {
+                        continue;
+                    }
+                    if !reciprocal_values
+                        .get(reference)
+                        .is_some_and(|values| values.contains(*identity))
+                    {
+                        findings.push(format!(
+                            "{path}: node `{identity}` property {} reference `{reference}` must be reciprocated by target property {}",
+                            rule.property, rule.reciprocal_property
+                        ));
+                    }
+                }
+            }
+        }
+        validate_node_reciprocal_references(
+            &section.subsections,
+            rule,
+            reciprocal_values,
+            path,
+            findings,
+        );
     }
 }
 
@@ -942,6 +1059,7 @@ fn section_workspace_rules<A>(section: &Section<A>) -> Result<WorkspaceRules, St
     let mut document_rules = Vec::new();
     let mut document_references = Vec::new();
     let mut node_references = Vec::new();
+    let mut reciprocal_references = Vec::new();
     for element in &section.children {
         match &element.data {
             ElementData::Block(block)
@@ -965,6 +1083,10 @@ fn section_workspace_rules<A>(section: &Section<A>) -> Result<WorkspaceRules, St
                     parse_org_contract_node_reference_resolution_block(&block.value)
                 {
                     node_references.push(rule);
+                } else if let Some(rule) =
+                    parse_org_contract_node_reciprocal_reference_block(&block.value)
+                {
+                    reciprocal_references.push(rule);
                 } else {
                     return Err(format!(
                         "workspace policy route `{}` contains an unsupported org-contract expression",
@@ -1032,11 +1154,20 @@ fn section_workspace_rules<A>(section: &Section<A>) -> Result<WorkspaceRules, St
             ));
         }
     }
+    for rule in &reciprocal_references {
+        if rule.allowed_values.iter().collect::<BTreeSet<_>>().len() != rule.allowed_values.len() {
+            return Err(format!(
+                "workspace policy route `{}` reciprocal reference allowed values must be unique",
+                section.raw_title,
+            ));
+        }
+    }
     Ok(WorkspaceRules {
         node_equality: node_rule,
         document_equality: document_rule,
         document_references,
         node_references,
+        reciprocal_references,
     })
 }
 

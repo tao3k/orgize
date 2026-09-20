@@ -7,9 +7,9 @@ use super::core_types::{
 };
 use crate::ast::{
     OrgContractBinding, OrgContractCompareOp, OrgContractDocumentReferenceResolution,
-    OrgContractExpectation, OrgContractNodeReferenceResolution, OrgContractPairDocumentEquality,
-    OrgContractPairNodeEquality, OrgContractQuery, OrgElementQueryPredicate,
-    OrgElementsIndexCategory,
+    OrgContractExpectation, OrgContractNodeReciprocalReference, OrgContractNodeReferenceResolution,
+    OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
+    OrgElementQueryPredicate, OrgElementsIndexCategory,
 };
 use crate::ast::{
     OrgContractDocumentPredicate, OrgContractRelativeScope, OrgElementsIndexSummaryValue,
@@ -213,6 +213,61 @@ pub(super) fn compile_node_reference_resolution(
     Some(OrgContractNodeReferenceResolution {
         property,
         identity_property,
+        allowed_values,
+    })
+}
+
+pub(super) fn compile_node_reciprocal_reference(
+    expression: &QueryExpr,
+) -> Option<OrgContractNodeReciprocalReference> {
+    let QueryExpr::List(items) = expression else {
+        return None;
+    };
+    if list_head(items)? != "assert"
+        || items.get(1)?.as_atom()? != "node-property-values-have-reciprocal-node-property"
+    {
+        return None;
+    }
+    let QueryExpr::List(property) = items.get(2)? else {
+        return None;
+    };
+    if list_head(property)? != "property" {
+        return None;
+    }
+    let property = property.get(1)?.as_text()?;
+    let QueryExpr::List(identity) = items.get(3)? else {
+        return None;
+    };
+    if list_head(identity)? != "identity" {
+        return None;
+    }
+    let identity_property = identity.get(1)?.as_text()?;
+    let QueryExpr::List(reciprocal) = items.get(4)? else {
+        return None;
+    };
+    if list_head(reciprocal)? != "reciprocal" {
+        return None;
+    }
+    let reciprocal_property = reciprocal.get(1)?.as_text()?;
+    let allowed_values = match items.get(5) {
+        Some(QueryExpr::List(allowed)) if list_head(allowed)? == "allow" => allowed[1..]
+            .iter()
+            .map(QueryExpr::as_text)
+            .collect::<Option<Vec<_>>>()?,
+        Some(_) => return None,
+        None => Vec::new(),
+    };
+    if items.len() > 6
+        || property.is_empty()
+        || identity_property.is_empty()
+        || reciprocal_property.is_empty()
+    {
+        return None;
+    }
+    Some(OrgContractNodeReciprocalReference {
+        property,
+        identity_property,
+        reciprocal_property,
         allowed_values,
     })
 }

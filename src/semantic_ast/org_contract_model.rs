@@ -592,6 +592,15 @@ pub struct OrgContractNodeReferenceResolution {
     pub allowed_values: Vec<String>,
 }
 
+/// Workspace node reference whose target must name the source through a reciprocal property.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractNodeReciprocalReference {
+    pub property: String,
+    pub identity_property: String,
+    pub reciprocal_property: String,
+    pub allowed_values: Vec<String>,
+}
+
 /// Comparison operator for a `count` expectation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OrgContractCompareOp {

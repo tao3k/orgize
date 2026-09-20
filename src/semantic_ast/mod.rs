@@ -307,10 +307,10 @@ pub use org_contract_model::{
     OrgContractAssertionStatus, OrgContractBinding, OrgContractCompareOp,
     OrgContractDocumentPredicate, OrgContractDocumentReferenceResolution, OrgContractEvaluation,
     OrgContractEvaluationContext, OrgContractEvaluationScope, OrgContractExpectation,
-    OrgContractKind, OrgContractNodeReferenceResolution, OrgContractPairDocumentEquality,
-    OrgContractPairNodeEquality, OrgContractQuery, OrgContractReference, OrgContractRegistry,
-    OrgContractRelativeScope, OrgContractScope, OrgContractSeverity, OrgContractSourceDiagnostic,
-    OrgContractSourceValidation,
+    OrgContractKind, OrgContractNodeReciprocalReference, OrgContractNodeReferenceResolution,
+    OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
+    OrgContractReference, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
+    OrgContractSeverity, OrgContractSourceDiagnostic, OrgContractSourceValidation,
 };
 pub use org_elements_query_expr::{
     ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,
@@ -318,6 +318,7 @@ pub use org_elements_query_expr::{
 };
 pub(crate) use org_elements_query_expr::{
     parse_org_contract_document_reference_resolution_block,
+    parse_org_contract_node_reciprocal_reference_block,
     parse_org_contract_node_reference_resolution_block,
     parse_org_contract_pair_document_equality_block, parse_org_contract_pair_node_equality_block,
 };

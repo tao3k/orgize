@@ -22,6 +22,7 @@ pub(in crate::ast) use core::{
 };
 pub(crate) use core::{
     parse_org_contract_document_reference_resolution_block,
+    parse_org_contract_node_reciprocal_reference_block,
     parse_org_contract_node_reference_resolution_block,
     parse_org_contract_pair_document_equality_block, parse_org_contract_pair_node_equality_block,
 };

@@ -2,17 +2,18 @@
 
 use super::core_contract::{
     apply_relative_scope, compile_contract_sequence, compile_document_reference_resolution,
-    compile_node_reference_resolution, compile_pair_document_equality, compile_pair_node_equality,
-    compile_query_expression,
+    compile_node_reciprocal_reference, compile_node_reference_resolution,
+    compile_pair_document_equality, compile_pair_node_equality, compile_query_expression,
 };
 use super::core_parser::{lower_root, parse_query_expression_syntax, unquote_query_string};
 pub use super::core_types::OrgElementsQueryExpressionError;
 pub(super) use super::core_types::{FieldKind, QueryExpr, RelativeKind, list_head};
 use crate::ast::{
     OrgContractBinding, OrgContractDocumentReferenceResolution, OrgContractExpectation,
-    OrgContractNodeReferenceResolution, OrgContractPairDocumentEquality,
-    OrgContractPairNodeEquality, OrgContractQuery, OrgElementsIndexCategory, OrgElementsIndexKind,
-    OrgElementsIndexQuery, OrgElementsIndexSummaryValue,
+    OrgContractNodeReciprocalReference, OrgContractNodeReferenceResolution,
+    OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
+    OrgElementsIndexCategory, OrgElementsIndexKind, OrgElementsIndexQuery,
+    OrgElementsIndexSummaryValue,
 };
 
 pub fn org_elements_index_query_from_expr_str(
@@ -95,6 +96,16 @@ pub(crate) fn parse_org_contract_node_reference_resolution_block(
     let expressions = parse_expressions(value)?;
     match expressions.as_slice() {
         [expression] => compile_node_reference_resolution(expression),
+        _ => None,
+    }
+}
+
+pub(crate) fn parse_org_contract_node_reciprocal_reference_block(
+    value: &str,
+) -> Option<OrgContractNodeReciprocalReference> {
+    let expressions = parse_expressions(value)?;
+    match expressions.as_slice() {
+        [expression] => compile_node_reciprocal_reference(expression),
         _ => None,
     }
 }
