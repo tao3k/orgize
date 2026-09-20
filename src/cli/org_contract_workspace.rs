@@ -388,7 +388,14 @@ impl WorkspacePolicy {
                     ));
                 }
             };
-            let contracts = property_values(&section.properties, "CONTRACT_ORG_EXACT")
+            let exact_contract_values = property_values(&section.properties, "CONTRACT_ORG_EXACT");
+            if exact_contract_values.len() > 1 {
+                return Err(format!(
+                    "workspace policy route `{}` must declare CONTRACT_ORG_EXACT exactly once",
+                    section.raw_title
+                ));
+            }
+            let contracts = exact_contract_values
                 .first()
                 .map(|value| {
                     parse_contract_references(value)

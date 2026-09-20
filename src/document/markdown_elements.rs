@@ -45,7 +45,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                     MarkdownFactPayload::metadata(
                         structural_selector,
                         data.sourcepos.start.line,
+                        data.sourcepos.start.column,
                         data.sourcepos.end.line,
+                        data.sourcepos.end.column,
                         vec![
                             ("level".to_string(), heading.level.to_string()),
                             ("title".to_string(), title),
@@ -69,7 +71,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                     MarkdownFactPayload::new(
                         structural_selector,
                         data.sourcepos.start.line,
+                        data.sourcepos.start.column,
                         data.sourcepos.end.line,
+                        data.sourcepos.end.column,
                         Vec::new(),
                         text,
                     ),
@@ -83,7 +87,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                 MarkdownFactPayload::metadata(
                     next_markdown_selector(path, "link", "NodeValue::Link", &mut structural_counts),
                     data.sourcepos.start.line,
+                    data.sourcepos.start.column,
                     data.sourcepos.end.line,
+                    data.sourcepos.end.column,
                     vec![("target".to_string(), link.url.clone())],
                 ),
             )),
@@ -100,7 +106,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                         &mut structural_counts,
                     ),
                     data.sourcepos.start.line,
+                    data.sourcepos.start.column,
                     data.sourcepos.end.line,
+                    data.sourcepos.end.column,
                     vec![("target".to_string(), link.url.clone())],
                 ),
             )),
@@ -117,7 +125,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                         &mut structural_counts,
                     ),
                     data.sourcepos.start.line,
+                    data.sourcepos.start.column,
                     data.sourcepos.end.line,
+                    data.sourcepos.end.column,
                     vec![
                         ("kind".to_string(), "code".to_string()),
                         ("lang".to_string(), block.info.clone()),
@@ -137,7 +147,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                         &mut structural_counts,
                     ),
                     data.sourcepos.start.line,
+                    data.sourcepos.start.column,
                     data.sourcepos.end.line,
+                    data.sourcepos.end.column,
                     Vec::new(),
                 ),
             )),
@@ -149,7 +161,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                 MarkdownFactPayload::metadata(
                     next_markdown_selector(path, "list", "NodeValue::List", &mut structural_counts),
                     data.sourcepos.start.line,
+                    data.sourcepos.start.column,
                     data.sourcepos.end.line,
+                    data.sourcepos.end.column,
                     vec![
                         ("listKind".to_string(), format!("{:?}", list.list_type)),
                         ("start".to_string(), list.start.to_string()),
@@ -169,7 +183,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                         &mut structural_counts,
                     ),
                     data.sourcepos.start.line,
+                    data.sourcepos.start.column,
                     data.sourcepos.end.line,
+                    data.sourcepos.end.column,
                     Vec::new(),
                 ),
             )),
@@ -191,7 +207,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                             &mut structural_counts,
                         ),
                         data.sourcepos.start.line,
+                        data.sourcepos.start.column,
                         data.sourcepos.end.line,
+                        data.sourcepos.end.column,
                         fields,
                     ),
                 ));
@@ -209,7 +227,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                         &mut structural_counts,
                     ),
                     data.sourcepos.start.line,
+                    data.sourcepos.start.column,
                     data.sourcepos.end.line,
+                    data.sourcepos.end.column,
                     Vec::new(),
                 ),
             )),
@@ -226,7 +246,9 @@ pub(super) fn index_markdown(path: &Path, source: &str) -> Result<Vec<DocumentEl
                         &mut structural_counts,
                     ),
                     data.sourcepos.start.line,
+                    data.sourcepos.start.column,
                     data.sourcepos.end.line,
+                    data.sourcepos.end.column,
                     Vec::new(),
                 ),
             )),
@@ -257,7 +279,9 @@ fn markdown_fact(
 struct MarkdownFactPayload {
     structural_selector: String,
     line: usize,
+    start_column: usize,
     end_line: usize,
+    end_column: usize,
     fields: Vec<(String, String)>,
     text: String,
 }
@@ -267,23 +291,37 @@ impl MarkdownFactPayload {
     fn metadata(
         structural_selector: String,
         line: usize,
+        start_column: usize,
         end_line: usize,
+        end_column: usize,
         fields: Vec<(String, String)>,
     ) -> Self {
-        Self::new(structural_selector, line, end_line, fields, String::new())
+        Self::new(
+            structural_selector,
+            line,
+            start_column,
+            end_line,
+            end_column,
+            fields,
+            String::new(),
+        )
     }
 
     fn new(
         structural_selector: String,
         line: usize,
+        start_column: usize,
         end_line: usize,
+        end_column: usize,
         fields: Vec<(String, String)>,
         text: String,
     ) -> Self {
         Self {
             structural_selector,
             line,
+            start_column,
             end_line,
+            end_column,
             fields,
             text,
         }
@@ -298,6 +336,13 @@ fn markdown_fact_with_text(
     source: &str,
     payload: MarkdownFactPayload,
 ) -> DocumentElement {
+    let (start_byte, end_byte) = markdown_source_byte_range(
+        source,
+        payload.line,
+        payload.start_column,
+        payload.end_line,
+        payload.end_column,
+    );
     DocumentElement {
         kind,
         source_kind,
@@ -305,11 +350,38 @@ fn markdown_fact_with_text(
         structural_selector: payload.structural_selector,
         line: payload.line.max(1),
         end_line: payload.end_line.max(payload.line).max(1),
+        start_byte,
+        end_byte,
         content: markdown_source_content(source, payload.line, payload.end_line)
             .unwrap_or_else(|| payload.text.clone()),
         text: payload.text,
         fields: payload.fields,
     }
+}
+
+#[cfg(feature = "md")]
+fn markdown_source_byte_range(
+    source: &str,
+    start_line: usize,
+    start_column: usize,
+    end_line: usize,
+    end_column: usize,
+) -> (usize, usize) {
+    let start = markdown_source_offset(source, start_line, start_column.saturating_sub(1));
+    let end = markdown_source_offset(source, end_line, end_column);
+    (start.min(end), end)
+}
+
+#[cfg(feature = "md")]
+fn markdown_source_offset(source: &str, line: usize, column_offset: usize) -> usize {
+    let mut line_start = 0;
+    for (index, current) in source.split_inclusive('\n').enumerate() {
+        if index + 1 == line.max(1) {
+            return line_start + column_offset.min(current.trim_end_matches('\n').len());
+        }
+        line_start += current.len();
+    }
+    source.len()
 }
 
 #[cfg(feature = "md")]

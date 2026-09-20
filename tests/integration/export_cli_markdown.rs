@@ -26,7 +26,7 @@ fn markdown_document_query_commands_run() {
     let path = root.join("README.md");
     std::fs::write(
         &path,
-        "---\nname: project-doc\ndescription: Document map\n---\n\n# Project\n\n## Overview\n\n### Details\n\nThis paragraph mentions repeat frontier behavior.\n\n- [x] Write tests\n- item\n\n[site](https://example.com)\n![diagram](diagram.png)\n\n---\n\n```rust\nfn main() {}\n```\n",
+        "---\nname: project-doc\ndescription: Document map\n---\n\n# Project\n\n## Overview\n\n### Details\n\nThis paragraph mentions repeat frontier behavior.\n\n- [x] Write tests\n- item\n\nBefore [site](https://example.com) after\n![diagram](diagram.png)\n\n---\n\n```rust\nfn main() {}\n```\n",
     )
     .expect("write markdown fixture");
 
@@ -77,7 +77,40 @@ fn markdown_document_query_commands_run() {
         .expect("run orgize md query");
     assert!(query.status.success());
     let query_stdout = String::from_utf8(query.stdout).expect("utf8 query");
-    assert_eq!(query_stdout, "# Project\n");
+    assert_eq!(query_stdout, "# Project");
+
+    let link_query = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("query")
+        .arg("--kind")
+        .arg("link")
+        .arg("--json")
+        .arg(&root)
+        .output()
+        .expect("run orgize md link query");
+    assert!(link_query.status.success());
+    let link_packet: Value =
+        serde_json::from_slice(&link_query.stdout).expect("parse md link packet");
+    let link_selector = link_packet["documentFacts"]
+        .as_array()
+        .expect("document facts")
+        .iter()
+        .find(|fact| fact["attributes"]["target"] == "https://example.com")
+        .and_then(|fact| fact["structuralSelector"].as_str())
+        .expect("site link selector");
+    let verbatim_link = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .arg("md")
+        .arg("query")
+        .arg("--selector")
+        .arg(link_selector)
+        .arg("--verbatim")
+        .output()
+        .expect("run orgize md verbatim link query");
+    assert!(verbatim_link.status.success());
+    assert_eq!(
+        String::from_utf8(verbatim_link.stdout).expect("utf8 md verbatim link"),
+        "[site](https://example.com)"
+    );
 
     let selector_frontier = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")

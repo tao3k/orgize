@@ -15,7 +15,7 @@ use super::{
     },
     model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
     packets::{print_query_json, print_selector_query_json},
-    source_selection::{SourceSelector, select_source, structural_selector_fragment},
+    source_selection::{SourceSelector, structural_selector_fragment},
 };
 
 fn print_selector_query_content(
@@ -98,16 +98,16 @@ pub(crate) fn run_query(
             };
             let source = fs::read_to_string(&selection.path)
                 .map_err(|error| format!("{}: {error}", selection.path.display()))?;
-            print!(
-                "{}",
-                select_source(
-                    &source,
-                    super::source_selection::SourceLineRange {
-                        start_line: fact.line,
-                        end_line: fact.end_line,
-                    },
+            let selected = source.get(fact.start_byte..fact.end_byte).ok_or_else(|| {
+                format!(
+                    "{} query: parser byte range {}..{} is outside source length {}",
+                    language.id(),
+                    fact.start_byte,
+                    fact.end_byte,
+                    source.len()
                 )
-            );
+            })?;
+            print!("{selected}");
         } else if json_output {
             let selection = SourceSelector::parse_query(selector)?;
             let evidence = super::packets::document_query_evidence(

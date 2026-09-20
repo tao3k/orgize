@@ -410,6 +410,18 @@ fn workspace_contract_rejects_an_invalid_route_contract_expression() {
 }
 
 #[test]
+fn workspace_contract_rejects_duplicate_exact_contract_declarations() {
+    let fixture = WorkspaceFixture::new();
+    let policy = POLICY.replace(
+        ":CONTRACT_ORG_EXACT: test.base.v1 test.purpose.cn.v1",
+        ":CONTRACT_ORG_EXACT: test.base.v1 test.purpose.cn.v1\n:CONTRACT_ORG_EXACT: test.base.v1",
+    );
+    fs::write(fixture.root.join("policy.org"), policy).unwrap();
+
+    fixture.assert_failure("must declare CONTRACT_ORG_EXACT exactly once");
+}
+
+#[test]
 fn workspace_contract_rejects_node_only_options_on_document_references() {
     for option in [
         "(exclude-self true)",

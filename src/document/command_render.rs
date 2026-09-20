@@ -100,10 +100,6 @@ pub(crate) fn print_guide(language: DocumentLanguage) {
             language.command_prefix()
         );
         println!(
-            "|cmd capture-init={} capture init --state-root <STATE_ROOT> --source-dir <LANGUAGES_ORG_DIR>",
-            language.command_prefix()
-        );
-        println!(
             "|cmd capture={} capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>",
             language.command_prefix()
         );

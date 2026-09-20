@@ -50,6 +50,7 @@ pub fn run_args(args: Vec<String>) -> Result<ExitCode, String> {
             command_args.extend(args);
             crate::document::run_org_command(command_args)
         }
+        "org" => crate::document::run_org_command(args.collect()),
         "lint" => run_lint(args.collect()),
         "md" | "markdown" => crate::document::run_md_command(args.collect()),
         "sdd" => run_sdd(args.collect()),

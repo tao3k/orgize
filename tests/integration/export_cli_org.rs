@@ -58,6 +58,7 @@ fn org_document_query_commands_run() {
         ),
         "{guide_stdout}"
     );
+    assert!(!guide_stdout.contains("capture init"), "{guide_stdout}");
     assert!(
         guide_stdout.contains(
             "|recipe capture-task=orgize org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
@@ -108,11 +109,24 @@ fn org_document_query_commands_run() {
         "{guide_stdout}"
     );
 
+    let capture_help = crate::library_cli::orgize_cli_command()
+        .arg("org")
+        .arg("capture")
+        .arg("--help")
+        .output()
+        .expect("run orgize org capture help");
+    assert!(capture_help.status.success());
+    assert!(
+        String::from_utf8_lossy(&capture_help.stderr).contains("orgize org capture"),
+        "{}",
+        String::from_utf8_lossy(&capture_help.stderr)
+    );
+
     let root = test_dir("org-document-query");
     let path = root.join("plan.org");
     std::fs::write(
         &path,
-        "* TODO [#A] Task :work:sdd:\nSCHEDULED: <2026-06-06 Sat>\n:PROPERTIES:\n:CUSTOM_ID: task-1\n:SDD_KIND: capability\n:SDD_STATUS: draft\n:END:\n\nProvider activation carries execution mode.\nDocument providers stay embedded inside ASP.\n\n** Repository Map\n*** Docs\n- [X] ship element map\n[[https://example.com][site]]\n[[file:diagram.png]]\n\n#+begin_src rust\nfn main() {\n  println!(  \"x\");\n}\n#+end_src\n",
+        "* TODO [#A] Task :work:sdd:\nSCHEDULED: <2026-06-06 Sat>\n:PROPERTIES:\n:CUSTOM_ID: task-1\n:SDD_KIND: capability\n:SDD_STATUS: draft\n:END:\n\nProvider activation carries execution mode.\nDocument providers stay embedded inside ASP.\n\n** Repository Map\n*** Docs\n- [X] ship element map\nBefore [[https://example.com][site]] after\n[[file:diagram.png]]\n\n#+begin_src rust\nfn main() {\n  println!(  \"x\");\n}\n#+end_src\n",
     )
     .expect("write org fixture");
 
@@ -158,6 +172,44 @@ fn org_document_query_commands_run() {
     assert!(
         query_stdout.contains(":CUSTOM_ID: task-1"),
         "{query_stdout}"
+    );
+
+    let link_query = crate::library_cli::orgize_cli_command()
+        .arg("org")
+        .arg("query")
+        .arg("--kind")
+        .arg("link")
+        .arg("--json")
+        .arg(&root)
+        .output()
+        .expect("run orgize org link query");
+    assert!(
+        link_query.status.success(),
+        "org facade link query failed: {}",
+        String::from_utf8_lossy(&link_query.stderr)
+    );
+    let link_packet: Value =
+        serde_json::from_slice(&link_query.stdout).expect("parse org facade link packet");
+    let link_selector = link_packet["documentFacts"]
+        .as_array()
+        .expect("document facts")
+        .iter()
+        .find(|fact| fact["attributes"]["target"] == "https://example.com")
+        .and_then(|fact| fact["structuralSelector"].as_str())
+        .expect("site link selector");
+    let verbatim_link = crate::library_cli::orgize_cli_command()
+        .arg("org")
+        .arg("query")
+        .arg("--selector")
+        .arg(link_selector)
+        .arg("--verbatim")
+        .current_dir(&root)
+        .output()
+        .expect("run orgize org verbatim link query");
+    assert!(verbatim_link.status.success());
+    assert_eq!(
+        String::from_utf8(verbatim_link.stdout).expect("utf8 verbatim link"),
+        "[[https://example.com][site]]"
     );
 
     let selector_frontier = crate::library_cli::orgize_cli_command()

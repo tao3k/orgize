@@ -27,6 +27,10 @@ pub struct DocumentElement {
     pub line: usize,
     /// One-based inclusive end line.
     pub end_line: usize,
+    /// Parser-owned inclusive start byte in the source document.
+    pub start_byte: usize,
+    /// Parser-owned exclusive end byte in the source document.
+    pub end_byte: usize,
     /// Provider-owned key/value facts for the element.
     pub fields: Vec<(String, String)>,
     /// Compact display text for seed and metadata views.

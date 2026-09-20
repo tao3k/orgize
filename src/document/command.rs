@@ -38,6 +38,10 @@ pub fn run_document_command_with_walk_config(
     };
 
     match command.as_str() {
+        "capture" if language == DocumentLanguage::Org => run_org_capture(args.collect()),
+        "contract" if language == DocumentLanguage::Org => {
+            crate::cli::org_contract_trace::run(args.collect())
+        }
         "guide" => {
             print_guide(language);
             Ok(ExitCode::SUCCESS)
@@ -52,5 +56,18 @@ pub fn run_document_command_with_walk_config(
             "{}: unsupported document command `{command}`",
             language.id()
         )),
+    }
+}
+
+fn run_org_capture(args: Vec<String>) -> Result<ExitCode, String> {
+    match crate::ast::org_capture_plan_command(args)? {
+        crate::ast::OrgCapturePlanCommandOutput::Help(usage) => {
+            eprintln!("{usage}");
+            Ok(ExitCode::SUCCESS)
+        }
+        crate::ast::OrgCapturePlanCommandOutput::Plan(plan) => {
+            print!("{plan}");
+            Ok(ExitCode::SUCCESS)
+        }
     }
 }

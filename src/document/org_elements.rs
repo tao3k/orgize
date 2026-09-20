@@ -413,6 +413,8 @@ fn fact_with_text(
         structural_selector,
         line,
         end_line,
+        start_byte: start,
+        end_byte: end,
         text: element_text.text,
         content: element_text.content,
         fields,
