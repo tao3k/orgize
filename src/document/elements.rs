@@ -102,7 +102,10 @@ fn index_paths(
     language: DocumentLanguage,
     paths: &[PathBuf],
 ) -> Result<Vec<DocumentElement>, String> {
-    if paths.len() < 16 {
+    // Small Org files are dominated by worker creation and scheduling; keep
+    // that latency out of ordinary project queries and parallelize larger sets.
+    const PARALLEL_INDEX_MIN_PATHS: usize = 64;
+    if paths.len() < PARALLEL_INDEX_MIN_PATHS {
         return paths.iter().try_fold(Vec::new(), |mut facts, path| {
             facts.extend(index_path(language, path)?);
             Ok(facts)

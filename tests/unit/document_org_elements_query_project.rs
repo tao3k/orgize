@@ -1,27 +1,50 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    time::{Duration, Instant},
+use std::{fs, path::PathBuf};
+
+use asp_rust_build_support::{
+    AspRustScenarioObservation, asp_rust_scenario, measure_asp_rust_scenario,
 };
 
 use super::elements::{filter_elements_by_query, query_project_with_config};
 use super::model::{DocumentLanguage, DocumentWalkConfig};
 
-const SCENARIO_ID: &str = "document-query-org-elements-ast";
-const SCENARIO_ROOT: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tests/unit/scenarios/document_query_org_elements_ast"
-);
-
 #[test]
 fn document_query_org_elements_ast_stays_inside_scenario_gate() {
-    let scenario = fs::read_to_string(Path::new(SCENARIO_ROOT).join("scenario.toml"))
-        .expect("read scenario manifest");
-    let benchmark = fs::read_to_string(Path::new(SCENARIO_ROOT).join("benchmark.toml"))
-        .expect("read benchmark manifest");
-    assert!(scenario.contains(&format!("id = \"{SCENARIO_ID}\"")));
-    assert!(scenario.contains("ORGIZE-AGENT-ASP-PERF-SUBCOMMAND-QUERY-ORG-ELEMENTS-001"));
-    let max_total = duration_from_manifest(&benchmark, "max_total");
+    let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/unit/scenarios/document_query_org_elements_ast");
+    let benchmark = asp_rust::validate_rust_scenario_benchmark(&scenario_root)
+        .expect("validate Org element query scenario benchmark");
+    assert_eq!(
+        benchmark.status,
+        asp_rust::RustScenarioBenchmarkStatus::Pass,
+        "{:?}",
+        benchmark.violations
+    );
+    let scenario = asp_rust_scenario! {
+        name: "document-query-org-elements-ast",
+        package: "orgize",
+        description: "Forty-eight Org documents parse to one parser-owned element projection and answer a no-hit query",
+        fixture_root: "tests/unit/scenarios/document_query_org_elements_ast",
+        tags: ["org-elements", "query", "performance"],
+        commands: [
+            { label: "focused", argv: ["cargo", "test", "document_query_org_elements_ast_stays_inside_scenario_gate"] }
+        ],
+        benchmark: {
+            harness: "libtest",
+            test: "document_query_org_elements_ast_stays_inside_scenario_gate",
+            snapshot: "org_elements_ast_query",
+            target_total: "5ms",
+            max_total: "45ms",
+            regression_budget: "40ms",
+            memory_budget_bytes: 8_388_608,
+            target_rationale: "Forty-eight Org documents must parse to one parser-owned element projection and answer a no-hit query inside the strict gate.",
+            warmup_iterations: 0,
+            measure_iterations: 3,
+            metrics: [
+                { name: "document_count", unit: "count", kind: Exact, target: 48 },
+                { name: "provider_process_count", unit: "count", kind: Exact, target: 0 }
+            ]
+        }
+    };
 
     let root = temp_document_root("orgize-query-org-elements");
     for index in 0..48 {
@@ -35,41 +58,37 @@ fn document_query_org_elements_ast_stays_inside_scenario_gate() {
         .expect("write Org fixture");
     }
 
-    let started_at = Instant::now();
-    let facts = query_project_with_config(
-        DocumentLanguage::Org,
-        &root,
-        &DocumentWalkConfig::default(),
-        &["document_query_absent_fixture".to_string()],
-        &[],
-    )
-    .expect("index parser-owned Org elements");
-    let matches = filter_elements_by_query(
-        facts,
-        &["document_query_absent_fixture".to_string()],
-        &[],
-        &[],
-    );
-    let elapsed = started_at.elapsed();
-    assert!(matches.is_empty(), "matches={matches:#?}");
+    let measurement = measure_asp_rust_scenario(&scenario, || {
+        let facts = query_project_with_config(
+            DocumentLanguage::Org,
+            &root,
+            &DocumentWalkConfig::default(),
+            &["document_query_absent_fixture".to_string()],
+            &[],
+        )
+        .expect("index parser-owned Org elements");
+        let matches = filter_elements_by_query(
+            facts,
+            &["document_query_absent_fixture".to_string()],
+            &[],
+            &[],
+        );
+        assert!(matches.is_empty(), "matches={matches:#?}");
+        AspRustScenarioObservation::default()
+            .with_metric("document_count", 48)
+            .with_metric("provider_process_count", 0)
+    })
+    .expect("measure parser-owned Org element query through ASP Rust");
+
     assert!(
-        elapsed <= max_total,
-        "Org AST query exceeded max_total={max_total:?} observed={elapsed:?}"
+        measurement.total_max <= benchmark.benchmark.max_total.as_duration(),
+        "Org AST query exceeded max_total={:?}: p50={:?}, p95={:?}, max={:?}",
+        benchmark.benchmark.max_total.as_duration(),
+        measurement.total_p50,
+        measurement.observed_total,
+        measurement.total_max,
     );
     fs::remove_dir_all(root).expect("remove query fixture");
-}
-
-fn duration_from_manifest(text: &str, field: &str) -> Duration {
-    let prefix = format!("{field} = \"");
-    let value = text
-        .lines()
-        .find_map(|line| line.trim().strip_prefix(&prefix))
-        .and_then(|value| value.strip_suffix('"'))
-        .unwrap_or_else(|| panic!("benchmark missing duration field {field}"));
-    if let Some(value) = value.strip_suffix("ms") {
-        return Duration::from_millis(value.parse().expect("parse ms duration"));
-    }
-    panic!("unsupported benchmark duration {value:?}");
 }
 
 fn temp_document_root(prefix: &str) -> PathBuf {
