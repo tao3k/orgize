@@ -163,7 +163,15 @@ impl ElementIndex {
                 }
             }
             ElementData::Table(table) => {
-                let header_row_index = table.rows.iter().position(|row| !row.is_rule);
+                let has_header = table
+                    .rows
+                    .iter()
+                    .skip_while(|row| row.is_rule)
+                    .skip_while(|row| !row.is_rule)
+                    .any(|row| !row.is_rule);
+                let header_row_index = has_header
+                    .then(|| table.rows.iter().position(|row| !row.is_rule))
+                    .flatten();
                 let header_cells = header_row_index
                     .and_then(|index| table.rows.get(index))
                     .map(|row| {
