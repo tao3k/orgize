@@ -1,0 +1,12 @@
+id = "workspace-admission-scale"
+title = "Workspace contract admission remains bounded at repository scale"
+policy_ids = ["ORGIZE-AGENT-CONTRACT-WORKSPACE-001"]
+agent_goal = "Admit a governed bilingual Org workspace from one Org AST policy, one scan, exact path indexes, ordered contract composition, and reciprocal semantic pairing."
+reference_repositories = ["tao3k/agent-semantic-protocols"]
+reference_patterns = [
+  "asp rust scenario benchmark",
+  "orgize contract workspace",
+  "workspace admission scale",
+]
+inputs = "inputs"
+expected = "expected"

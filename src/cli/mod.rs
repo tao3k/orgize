@@ -9,6 +9,7 @@ mod driver_usage;
 mod eval;
 mod org_contract_registry;
 pub(crate) mod org_contract_trace;
+mod org_contract_workspace;
 
 pub use driver::run_args;
 pub use driver::run_from_env;

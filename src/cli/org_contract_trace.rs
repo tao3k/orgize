@@ -32,6 +32,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
 
     match command.as_str() {
         "trace" => run_trace(args.collect()),
+        "workspace" => super::org_contract_workspace::run(args.collect()),
         "query-surface" | "surface" | "guide" => run_query_surface(args.collect()),
         "-h" | "--help" | "help" => {
             print_usage();
@@ -160,7 +161,7 @@ fn trace_file(
     }))
 }
 
-fn collect_contract_evaluations(
+pub(super) fn collect_contract_evaluations(
     document: &ParsedAst,
     registry: &OrgContractRegistry,
     path: &str,
@@ -407,7 +408,7 @@ fn is_org_file(path: &Path) -> bool {
 }
 
 fn print_usage() {
-    eprintln!("Usage: orgize contract <trace|query-surface> [options] [PATH ...]");
+    eprintln!("Usage: orgize contract <trace|workspace|query-surface> [options] [PATH ...]");
 }
 
 fn print_trace_usage() {
