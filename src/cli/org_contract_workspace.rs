@@ -239,13 +239,11 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     if options.json {
         let workspace_digest =
             workspace_digest(&root, &options.policy, &options.registry_paths, &maintained)?;
-        let receipt = json!({
+        let mut receipt = json!({
             "schemaVersion": 1,
             "workspaceContractId": policy.id,
-            "root": root,
             "status": if findings.is_empty() { "passed" } else { "failed" },
             "documentCount": maintained.len(),
-            "files": file_receipts,
             "evaluationCount": evaluation_count,
             "assertionCount": assertion_count,
             "orgizeRevision": env!("ORGIZE_SOURCE_REVISION"),
@@ -253,6 +251,10 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
             "workspaceDigest": workspace_digest,
             "findings": findings,
         });
+        if !options.summary_json {
+            receipt["root"] = json!(root);
+            receipt["files"] = json!(file_receipts);
+        }
         println!(
             "{}",
             serde_json::to_string_pretty(&receipt)
@@ -309,6 +311,7 @@ struct WorkspaceOptions {
     registry_paths: Vec<PathBuf>,
     require_maintained: Option<PathBuf>,
     json: bool,
+    summary_json: bool,
 }
 
 impl WorkspaceOptions {
@@ -318,6 +321,7 @@ impl WorkspaceOptions {
         let mut registry_paths = Vec::new();
         let mut require_maintained = None;
         let mut json = false;
+        let mut summary_json = false;
         let mut index = 0;
         while index < args.len() {
             match args[index].as_str() {
@@ -330,6 +334,10 @@ impl WorkspaceOptions {
                     require_maintained = Some(next_path(&args, &mut index, "--require-maintained")?)
                 }
                 "--json" => json = true,
+                "--summary-json" => {
+                    json = true;
+                    summary_json = true;
+                }
                 flag if flag.starts_with('-') => {
                     return Err(format!("unknown contract workspace flag `{flag}`"));
                 }
@@ -347,6 +355,7 @@ impl WorkspaceOptions {
             registry_paths,
             require_maintained,
             json,
+            summary_json,
         })
     }
 }
@@ -817,6 +826,6 @@ fn optional_policy_property<A>(properties: &[Property<A>], key: &str) -> Option<
 
 fn print_usage() {
     eprintln!(
-        "Usage: orgize contract workspace --root DIR --policy POLICY.org --org-contract-registry REGISTRY.org [--require-maintained PATH.org] [--json]"
+        "Usage: orgize contract workspace --root DIR --policy POLICY.org --org-contract-registry REGISTRY.org [--require-maintained PATH.org] [--json|--summary-json]"
     );
 }

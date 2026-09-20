@@ -20,7 +20,7 @@ fn workspace_contract_json_emits_qualification_receipt() {
         .arg(root.join("policy.org"))
         .arg("--org-contract-registry")
         .arg(root.join("contracts.org"))
-        .arg("--json")
+        .arg("--summary-json")
         .output()
         .unwrap();
     assert!(
@@ -33,6 +33,8 @@ fn workspace_contract_json_emits_qualification_receipt() {
     assert_eq!(receipt["status"], "passed");
     assert_eq!(receipt["documentCount"], 1);
     assert_eq!(receipt["evaluationCount"], 1);
+    assert!(receipt.get("root").is_none());
+    assert!(receipt.get("files").is_none());
     assert_eq!(receipt["orgizeRevision"].as_str().unwrap().len(), 40);
     assert!(
         receipt["workspaceDigest"]
