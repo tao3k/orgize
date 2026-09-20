@@ -1,7 +1,6 @@
 //! Document query execution and compact content rendering.
 
 use std::{
-    fs,
     path::{Path, PathBuf},
     process::ExitCode,
 };
@@ -88,7 +87,8 @@ pub(crate) fn run_query(
                     language.id()
                 ));
             }
-            let facts = selector_elements(language, &selection)?;
+            let sources = load_sources(std::slice::from_ref(&selection.path))?;
+            let facts = select_elements(index_sources(language, &sources)?, &selection);
             let [fact] = facts.as_slice() else {
                 return Err(format!(
                     "{} query: --verbatim selector must resolve to exactly one parser fact, found {}",
@@ -96,8 +96,7 @@ pub(crate) fn run_query(
                     facts.len()
                 ));
             };
-            let source = fs::read_to_string(&selection.path)
-                .map_err(|error| format!("{}: {error}", selection.path.display()))?;
+            let source = &sources[0].source;
             let selected = source.get(fact.start_byte..fact.end_byte).ok_or_else(|| {
                 format!(
                     "{} query: parser byte range {}..{} is outside source length {}",
