@@ -65,7 +65,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     discovered.sort();
 
     let mut findings = Vec::new();
-    let mut maintained = Vec::new();
+    let mut maintained = Vec::with_capacity(discovered.len());
     for path in discovered {
         let relative = relative_path(&root, &path)?;
         let matching_routes = policy.matching_routes(&relative);
@@ -98,7 +98,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
         });
     }
 
-    let mut paired = Vec::new();
+    let mut paired = Vec::with_capacity(maintained.len());
     let mut file_receipts = Vec::new();
     let mut evaluation_count = 0_usize;
     let mut assertion_count = 0_usize;

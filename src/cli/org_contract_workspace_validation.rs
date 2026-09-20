@@ -1,7 +1,7 @@
 //! Pairing and reference validation for workspace-level Org contracts.
 
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
 };
 
@@ -20,7 +20,7 @@ pub(super) fn validate_pairs(
     let by_path = documents
         .iter()
         .map(|document| (document.path.clone(), document))
-        .collect::<BTreeMap<_, _>>();
+        .collect::<HashMap<_, _>>();
     let mut by_identity: BTreeMap<(&str, &str), Vec<&PairedDocument>> = BTreeMap::new();
 
     for document in documents {
