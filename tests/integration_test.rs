@@ -12,6 +12,8 @@ mod contract_evaluation_fixtures;
 mod contract_registry;
 #[path = "integration/contract_workspace.rs"]
 mod contract_workspace;
+#[path = "integration/contract_workspace_receipt.rs"]
+mod contract_workspace_receipt;
 #[path = "integration/document_git_scope.rs"]
 mod document_git_scope;
 #[path = "integration/eval_cli.rs"]
