@@ -379,20 +379,13 @@ fn workspace_merkle_root(leaves: &BTreeMap<String, String>) -> String {
 }
 
 fn document_provider_digest(language: DocumentLanguage) -> Result<String, String> {
-    let parser_source: &[u8] = match language {
-        DocumentLanguage::Org => include_bytes!("org_elements.rs"),
-        DocumentLanguage::Markdown => include_bytes!("markdown_elements.rs"),
-    };
     Ok(format!(
         "blake3:{}",
         canonical_blake3_digest(
             b"asp.semantic-document-parser-artifact.v1",
             &[
                 language.provider_id().as_bytes(),
-                env!("CARGO_PKG_VERSION").as_bytes(),
-                include_bytes!("model.rs"),
-                include_bytes!("elements.rs"),
-                parser_source,
+                env!("ORGIZE_PARSER_ARTIFACT_DIGEST").as_bytes(),
             ],
         )
     ))

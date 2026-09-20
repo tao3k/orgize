@@ -179,8 +179,28 @@ pub(crate) fn run_query(
     let facts = query_project_with_config(language, &root, &walk_config, &terms, &fields)?;
     let matches = filter_elements_by_query(facts, &terms, &kinds, &fields);
     if json_output {
-        let verified_evidence =
-            super::packets::document_query_evidence(language, source_paths, None, &root, &args)?;
+        let mut verified_source_paths = Vec::new();
+        super::elements::collect_document_paths(
+            language,
+            &root,
+            &walk_config,
+            &mut verified_source_paths,
+        )?;
+        verified_source_paths.sort();
+        verified_source_paths.dedup();
+        if source_paths != verified_source_paths {
+            return Err(format!(
+                "{} query: admitted source set changed while parser facts were being built",
+                language.id()
+            ));
+        }
+        let verified_evidence = super::packets::document_query_evidence(
+            language,
+            verified_source_paths,
+            None,
+            &root,
+            &args,
+        )?;
         if evidence
             .as_ref()
             .is_some_and(|before| before.source_snapshot != verified_evidence.source_snapshot)
