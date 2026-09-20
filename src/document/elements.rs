@@ -102,10 +102,7 @@ fn index_paths(
     language: DocumentLanguage,
     paths: &[PathBuf],
 ) -> Result<Vec<DocumentElement>, String> {
-    // Small Org files are dominated by worker creation and scheduling; keep
-    // that latency out of ordinary project queries and parallelize larger sets.
-    const PARALLEL_INDEX_MIN_PATHS: usize = 64;
-    if paths.len() < PARALLEL_INDEX_MIN_PATHS {
+    if should_index_sequentially(language, paths) {
         return paths.iter().try_fold(Vec::new(), |mut facts, path| {
             facts.extend(index_path(language, path)?);
             Ok(facts)
@@ -139,6 +136,31 @@ fn index_paths(
                 Ok(facts)
             })
     })
+}
+
+pub(super) fn should_index_sequentially(language: DocumentLanguage, paths: &[PathBuf]) -> bool {
+    const PARALLEL_INDEX_MIN_PATHS: usize = 16;
+    const SMALL_ORG_BATCH_MAX_PATHS: usize = 63;
+    const SMALL_ORG_BATCH_MAX_BYTES: u64 = 64 * 1024;
+
+    if paths.len() < PARALLEL_INDEX_MIN_PATHS {
+        return true;
+    }
+    if language != DocumentLanguage::Org || paths.len() > SMALL_ORG_BATCH_MAX_PATHS {
+        return false;
+    }
+
+    let mut total_bytes = 0_u64;
+    for path in paths {
+        let Ok(metadata) = fs::metadata(path) else {
+            return false;
+        };
+        total_bytes = total_bytes.saturating_add(metadata.len());
+        if total_bytes > SMALL_ORG_BATCH_MAX_BYTES {
+            return false;
+        }
+    }
+    true
 }
 
 fn index_source(

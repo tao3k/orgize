@@ -4,7 +4,9 @@ use asp_rust_build_support::{
     AspRustScenarioObservation, asp_rust_scenario, measure_asp_rust_scenario,
 };
 
-use super::elements::{filter_elements_by_query, query_project_with_config};
+use super::elements::{
+    filter_elements_by_query, query_project_with_config, should_index_sequentially,
+};
 use super::model::{DocumentLanguage, DocumentWalkConfig};
 
 #[test]
@@ -47,16 +49,20 @@ fn document_query_org_elements_ast_stays_inside_scenario_gate() {
     };
 
     let root = temp_document_root("orgize-query-org-elements");
+    let mut paths = Vec::new();
     for index in 0..48 {
+        let path = root.join(format!("note-{index}.org"));
         fs::write(
-            root.join(format!("note-{index}.org")),
+            &path,
             format!(
                 "* Note {index}\n:PROPERTIES:\n:REVISION: {}\n:END:\nParser-owned body.\n",
                 index + 1
             ),
         )
         .expect("write Org fixture");
+        paths.push(path);
     }
+    assert!(should_index_sequentially(DocumentLanguage::Org, &paths));
 
     let measurement = measure_asp_rust_scenario(&scenario, || {
         let facts = query_project_with_config(
@@ -89,6 +95,25 @@ fn document_query_org_elements_ast_stays_inside_scenario_gate() {
         measurement.total_max,
     );
     fs::remove_dir_all(root).expect("remove query fixture");
+}
+
+#[test]
+fn document_query_parallelizes_sizable_org_and_markdown_batches() {
+    let root = temp_document_root("orgize-query-large-elements");
+    let payload = "x".repeat(4097);
+    let mut paths = Vec::new();
+    for index in 0..16 {
+        let path = root.join(format!("note-{index}.org"));
+        fs::write(&path, &payload).expect("write large document fixture");
+        paths.push(path);
+    }
+
+    assert!(!should_index_sequentially(DocumentLanguage::Org, &paths));
+    assert!(!should_index_sequentially(
+        DocumentLanguage::Markdown,
+        &paths
+    ));
+    fs::remove_dir_all(root).expect("remove large query fixture");
 }
 
 fn temp_document_root(prefix: &str) -> PathBuf {
