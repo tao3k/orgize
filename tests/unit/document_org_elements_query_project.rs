@@ -62,7 +62,11 @@ fn document_query_org_elements_ast_stays_inside_scenario_gate() {
         .expect("write Org fixture");
         paths.push(path);
     }
-    assert!(should_index_sequentially(DocumentLanguage::Org, &paths));
+    assert!(should_index_sequentially(
+        DocumentLanguage::Org,
+        paths.len(),
+        48 * 96,
+    ));
 
     let measurement = measure_asp_rust_scenario(&scenario, || {
         let facts = query_project_with_config(
@@ -99,21 +103,16 @@ fn document_query_org_elements_ast_stays_inside_scenario_gate() {
 
 #[test]
 fn document_query_parallelizes_sizable_org_and_markdown_batches() {
-    let root = temp_document_root("orgize-query-large-elements");
-    let payload = "x".repeat(4097);
-    let mut paths = Vec::new();
-    for index in 0..16 {
-        let path = root.join(format!("note-{index}.org"));
-        fs::write(&path, &payload).expect("write large document fixture");
-        paths.push(path);
-    }
-
-    assert!(!should_index_sequentially(DocumentLanguage::Org, &paths));
+    assert!(!should_index_sequentially(
+        DocumentLanguage::Org,
+        16,
+        64 * 1024 + 1,
+    ));
     assert!(!should_index_sequentially(
         DocumentLanguage::Markdown,
-        &paths
+        16,
+        1,
     ));
-    fs::remove_dir_all(root).expect("remove large query fixture");
 }
 
 fn temp_document_root(prefix: &str) -> PathBuf {

@@ -102,26 +102,28 @@ fn index_paths(
     language: DocumentLanguage,
     paths: &[PathBuf],
 ) -> Result<Vec<DocumentElement>, String> {
-    if should_index_sequentially(language, paths) {
-        return paths.iter().try_fold(Vec::new(), |mut facts, path| {
-            facts.extend(index_path(language, path)?);
-            Ok(facts)
-        });
+    let sources = load_sources(paths)?;
+    let total_bytes = sources
+        .iter()
+        .map(|source| source.source.len() as u64)
+        .sum();
+    if should_index_sequentially(language, sources.len(), total_bytes) {
+        return index_sources(language, &sources);
     }
 
     let worker_count = thread::available_parallelism()
         .map(usize::from)
         .unwrap_or(1)
         .min(4)
-        .min(paths.len());
-    let chunk_size = paths.len().div_ceil(worker_count);
+        .min(sources.len());
+    let chunk_size = sources.len().div_ceil(worker_count);
     thread::scope(|scope| {
-        paths
+        sources
             .chunks(chunk_size)
             .map(|chunk| {
                 scope.spawn(move || {
-                    chunk.iter().try_fold(Vec::new(), |mut facts, path| {
-                        facts.extend(index_path(language, path)?);
+                    chunk.iter().try_fold(Vec::new(), |mut facts, source| {
+                        facts.extend(index_source(language, &source.path, &source.source)?);
                         Ok::<_, String>(facts)
                     })
                 })
@@ -138,29 +140,22 @@ fn index_paths(
     })
 }
 
-pub(super) fn should_index_sequentially(language: DocumentLanguage, paths: &[PathBuf]) -> bool {
+pub(super) fn should_index_sequentially(
+    language: DocumentLanguage,
+    path_count: usize,
+    total_bytes: u64,
+) -> bool {
     const PARALLEL_INDEX_MIN_PATHS: usize = 16;
     const SMALL_ORG_BATCH_MAX_PATHS: usize = 63;
     const SMALL_ORG_BATCH_MAX_BYTES: u64 = 64 * 1024;
 
-    if paths.len() < PARALLEL_INDEX_MIN_PATHS {
+    if path_count < PARALLEL_INDEX_MIN_PATHS {
         return true;
     }
-    if language != DocumentLanguage::Org || paths.len() > SMALL_ORG_BATCH_MAX_PATHS {
+    if language != DocumentLanguage::Org || path_count > SMALL_ORG_BATCH_MAX_PATHS {
         return false;
     }
-
-    let mut total_bytes = 0_u64;
-    for path in paths {
-        let Ok(metadata) = fs::metadata(path) else {
-            return false;
-        };
-        total_bytes = total_bytes.saturating_add(metadata.len());
-        if total_bytes > SMALL_ORG_BATCH_MAX_BYTES {
-            return false;
-        }
-    }
-    true
+    total_bytes <= SMALL_ORG_BATCH_MAX_BYTES
 }
 
 fn index_source(
