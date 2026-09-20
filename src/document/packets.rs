@@ -397,7 +397,7 @@ fn document_provider_digest(language: DocumentLanguage) -> Result<String, String
 fn current_executable_digest() -> Result<String, String> {
     #[cfg(target_os = "linux")]
     {
-        return digest_executable(Path::new("/proc/self/exe"));
+        digest_executable(Path::new("/proc/self/exe"))
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -410,7 +410,7 @@ fn current_executable_digest() -> Result<String, String> {
 
 #[cfg(target_os = "linux")]
 fn digest_executable(executable: &Path) -> Result<String, String> {
-    let mut file = fs::File::open(&executable).map_err(|error| {
+    let mut file = fs::File::open(executable).map_err(|error| {
         format!(
             "could not open parser executable artifact {}: {error}",
             executable.display()
