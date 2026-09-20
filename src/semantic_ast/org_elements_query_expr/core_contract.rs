@@ -264,6 +264,13 @@ pub(super) fn compile_query_expression(expression: &QueryExpr) -> Option<OrgCont
 fn compile_and_query(expressions: &[QueryExpr]) -> Option<OrgContractQuery> {
     let mut query = OrgContractQuery::default();
     for expression in expressions {
+        if let QueryExpr::List(items) = expression
+            && list_head(items) == Some("or")
+            && let Some(predicate) = compile_predicate_expression(expression)
+        {
+            query.predicates.push(predicate);
+            continue;
+        }
         merge_query(&mut query, compile_query_expression(expression)?);
     }
     Some(query)

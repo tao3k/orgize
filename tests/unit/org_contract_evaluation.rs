@@ -363,6 +363,52 @@ fn query_level_or_matches_node_property_branches() {
 }
 
 #[test]
+fn predicate_or_groups_inside_and_are_intersected() {
+    let contract = parse_single_contract(
+        r#"
+* Principle classification contract
+:PROPERTIES:
+:CONTRACT_ID: principle.classification.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Status and kind enums
+:PROPERTIES:
+:ASSERT_ID: principle.has-valid-status-and-kind
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (and
+    (headline)
+    (or
+      (= (property "STATUS") "draft")
+      (= (property "STATUS") "accepted"))
+    (or
+      (= (property "KIND") "foundational")
+      (= (property "KIND") "refinement"))))
+#+END_SRC
+"#,
+    );
+    for (kind, expected) in [
+        ("foundational", OrgContractAssertionStatus::Passed),
+        ("unclassified", OrgContractAssertionStatus::Failed),
+    ] {
+        let document = Org::parse(format!(
+            "* Principle\n:PROPERTIES:\n:STATUS: draft\n:KIND: {kind}\n:END:\n"
+        ))
+        .document();
+        let evaluation = evaluate_org_contract_with_context(
+            &document,
+            &contract,
+            OrgContractEvaluationScope::document(),
+            &OrgContractEvaluationContext::with_source_path("principles/test.org"),
+        );
+        assert_eq!(evaluation.assertions[0].status, expected, "kind={kind}");
+    }
+}
+
+#[test]
 fn named_org_contract_blocks_define_assertions_without_heading_properties() {
     let contract_source = r#"
 * Evidence link contract
