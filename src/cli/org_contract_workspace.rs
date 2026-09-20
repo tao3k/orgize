@@ -38,8 +38,12 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
         .root
         .canonicalize()
         .map_err(|error| format!("{}: {error}", options.root.display()))?;
-    let policy_source = fs::read_to_string(&options.policy)
+    let policy_path = options
+        .policy
+        .canonicalize()
         .map_err(|error| format!("{}: {error}", options.policy.display()))?;
+    let policy_source = fs::read_to_string(&policy_path)
+        .map_err(|error| format!("{}: {error}", policy_path.display()))?;
     let policy = WorkspacePolicy::parse(&policy_source)?;
     if let Some(required) = options.require_maintained.as_ref() {
         let target = if required.is_absolute() {
@@ -57,8 +61,10 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
             ));
         }
     }
-    let registry =
-        super::org_contract_registry::load_org_contract_registries(&options.registry_paths)?;
+    let (registry, registry_sources) =
+        super::org_contract_registry::load_org_contract_registries_with_sources(
+            &options.registry_paths,
+        )?;
 
     let mut discovered = Vec::new();
     collect_org_files(&root, &root, &policy.ignored_dirs, &mut discovered)?;
@@ -83,7 +89,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
         }
         let source =
             fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-        let document = Org::parse(source).document();
+        let document = Org::parse(&source).document();
         if !document.diagnostics.is_empty() {
             findings.push(format!(
                 "{relative}: parser produced {} diagnostic(s)",
@@ -95,6 +101,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
             relative,
             route_index,
             document,
+            source,
         });
     }
 
@@ -237,8 +244,12 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     );
 
     if options.json {
-        let workspace_digest =
-            workspace_digest(&root, &options.policy, &options.registry_paths, &maintained)?;
+        let workspace_digest = workspace_digest(
+            &root,
+            (&policy_path, &policy_source),
+            &registry_sources,
+            &maintained,
+        )?;
         let mut receipt = json!({
             "schemaVersion": 1,
             "workspaceContractId": policy.id,
@@ -282,24 +293,30 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
 
 fn workspace_digest(
     root: &Path,
-    policy: &Path,
-    registries: &[PathBuf],
+    policy: (&Path, &str),
+    registries: &BTreeMap<PathBuf, String>,
     documents: &[MaintainedDocument],
 ) -> Result<String, String> {
-    let mut paths = registries.to_vec();
-    paths.push(policy.to_path_buf());
-    paths.extend(documents.iter().map(|document| document.path.clone()));
-    paths.sort();
-    paths.dedup();
+    let mut sources = BTreeMap::new();
+    sources.insert(policy.0.to_path_buf(), policy.1);
+    sources.extend(
+        registries
+            .iter()
+            .map(|(path, source)| (path.clone(), source.as_str())),
+    );
+    sources.extend(
+        documents
+            .iter()
+            .map(|document| (document.path.clone(), document.source.as_str())),
+    );
     let mut hasher = blake3::Hasher::new();
     hasher.update(b"orgize.workspace-receipt.v1\0");
-    for path in paths {
-        let label = path.strip_prefix(root).unwrap_or(&path).to_string_lossy();
-        let source = fs::read(&path).map_err(|error| format!("{}: {error}", path.display()))?;
+    for (path, source) in sources {
+        let label = relative_path(root, &path)?;
         hasher.update(&(label.len() as u64).to_be_bytes());
         hasher.update(label.as_bytes());
         hasher.update(&(source.len() as u64).to_be_bytes());
-        hasher.update(&source);
+        hasher.update(source.as_bytes());
     }
     Ok(format!("blake3:{}", hasher.finalize().to_hex()))
 }
@@ -586,6 +603,7 @@ pub(super) struct MaintainedDocument {
     pub(super) relative: String,
     pub(super) route_index: usize,
     pub(super) document: ParsedAst,
+    source: String,
 }
 
 #[derive(Clone)]

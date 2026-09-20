@@ -1,6 +1,6 @@
 //! Source selector parsing and bounded line extraction for document commands.
 
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 /// Source file plus its parser-owned structural selector.
 #[derive(Debug)]
@@ -21,11 +21,23 @@ impl SourceSelector {
     }
 
     /// Returns the packet root without duplicating a nested relative selector path.
-    pub fn packet_root(&self) -> &Path {
+    pub fn packet_root(&self) -> PathBuf {
         if self.path.is_absolute() {
-            self.parent_root()
+            return self.parent_root().to_path_buf();
+        }
+        let mut root = PathBuf::new();
+        for component in self.path.components() {
+            match component {
+                Component::CurDir => {}
+                Component::ParentDir => root.push(".."),
+                Component::Normal(_) => break,
+                Component::RootDir | Component::Prefix(_) => unreachable!("relative path"),
+            }
+        }
+        if root.as_os_str().is_empty() {
+            PathBuf::from(".")
         } else {
-            Path::new(".")
+            root
         }
     }
 

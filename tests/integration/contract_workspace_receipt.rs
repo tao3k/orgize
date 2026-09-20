@@ -42,5 +42,32 @@ fn workspace_contract_json_emits_qualification_receipt() {
             .unwrap()
             .starts_with("blake3:")
     );
+    let relative_output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+        .current_dir(&root)
+        .args([
+            "contract",
+            "workspace",
+            "--root",
+            ".",
+            "--policy",
+            "./policy.org",
+            "--org-contract-registry",
+            "./contracts.org",
+            "--summary-json",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        relative_output.status.success(),
+        "stderr={} stdout={}",
+        String::from_utf8_lossy(&relative_output.stderr),
+        String::from_utf8_lossy(&relative_output.stdout)
+    );
+    let relative_receipt: serde_json::Value =
+        serde_json::from_slice(&relative_output.stdout).unwrap();
+    assert_eq!(
+        relative_receipt["workspaceDigest"], receipt["workspaceDigest"],
+        "equivalent canonical workspace inputs must produce one digest"
+    );
     fs::remove_dir_all(root).unwrap();
 }

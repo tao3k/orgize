@@ -703,6 +703,36 @@ fn org_document_query_commands_run() {
         "{nested_packet:#}"
     );
 
+    let relative_parent_dir = root.join("selector-client");
+    std::fs::create_dir_all(&relative_parent_dir).expect("create parent-relative client");
+    let parent_relative_query = orgize_command()
+        .current_dir(&relative_parent_dir)
+        .args([
+            "query",
+            "--selector",
+            &format!("org://../plan.org#{nested_fragment}"),
+            "--json",
+        ])
+        .output()
+        .expect("run parent-relative selector query");
+    assert!(
+        parent_relative_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&parent_relative_query.stderr)
+    );
+    let parent_relative_packet: Value = serde_json::from_slice(&parent_relative_query.stdout)
+        .expect("parse parent-relative selector packet");
+    assert_eq!(parent_relative_packet["projectRoot"], "..");
+    assert_document_selector_query_evidence(&parent_relative_packet, "plan.org");
+    assert!(
+        parent_relative_packet["documentFacts"]
+            .as_array()
+            .expect("parent-relative selector facts")
+            .iter()
+            .all(|fact| fact["documentPath"] == "plan.org"),
+        "{parent_relative_packet:#}"
+    );
+
     for kind in ["heading", "task"] {
         let selector = dot_root_inventory_packet["documentFacts"]
             .as_array()

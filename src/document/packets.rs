@@ -94,10 +94,10 @@ pub(super) fn print_selector_query_json(
     let current_directory = std::env::current_dir()
         .ok()
         .and_then(|path| fs::canonicalize(path).ok());
-    let root = if fs::canonicalize(selected_parent).ok() == current_directory {
+    let root = if fs::canonicalize(&selected_parent).ok() == current_directory {
         Path::new(".")
     } else {
-        selected_parent
+        &selected_parent
     };
     let packet = build_document_query_packet(DocumentQueryPacketInput {
         language,
@@ -531,11 +531,20 @@ fn packet_structural_selector(
 
 fn packet_path(root: &Path, path: &str) -> String {
     let path = Path::new(path);
-    let relative = if path.is_absolute() {
-        path.strip_prefix(root).ok()
+    let current_directory = std::env::current_dir().ok();
+    let absolute_root = fs::canonicalize(root).ok();
+    let absolute_path = if path.is_absolute() {
+        fs::canonicalize(path).ok()
     } else {
-        Some(path)
+        current_directory
+            .as_ref()
+            .and_then(|directory| fs::canonicalize(directory.join(path)).ok())
     };
+    let relative = absolute_root
+        .as_ref()
+        .zip(absolute_path.as_ref())
+        .and_then(|(root, path)| path.strip_prefix(root).ok())
+        .or_else(|| path.is_relative().then_some(path));
     let mut candidate = relative
         .map(display_path)
         .or_else(|| {

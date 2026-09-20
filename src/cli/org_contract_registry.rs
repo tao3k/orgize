@@ -1,7 +1,7 @@
 //! CLI loading for host-owned `CONTRACT_ORG` registries.
 
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
 };
@@ -17,11 +17,17 @@ use crate::{
 pub(super) fn load_org_contract_registries(
     paths: &[PathBuf],
 ) -> Result<OrgContractRegistry, String> {
+    Ok(load_org_contract_registries_with_sources(paths)?.0)
+}
+
+pub(super) fn load_org_contract_registries_with_sources(
+    paths: &[PathBuf],
+) -> Result<(OrgContractRegistry, BTreeMap<PathBuf, String>), String> {
     let mut loader = OrgContractRegistryLoader::default();
     for path in paths {
         loader.load_path(path, true)?;
     }
-    Ok(loader.registry)
+    Ok((loader.registry, loader.loaded_sources))
 }
 
 pub(super) fn load_org_contract_registry_for_lint(
@@ -42,6 +48,7 @@ pub(super) fn load_org_contract_registry_for_lint(
 struct OrgContractRegistryLoader {
     registry: OrgContractRegistry,
     loaded_paths: BTreeSet<PathBuf>,
+    loaded_sources: BTreeMap<PathBuf, String>,
 }
 
 impl OrgContractRegistryLoader {
@@ -49,7 +56,7 @@ impl OrgContractRegistryLoader {
         let load_key = path
             .canonicalize()
             .unwrap_or_else(|_| normalize_lexical_path(path));
-        if !self.loaded_paths.insert(load_key) {
+        if !self.loaded_paths.insert(load_key.clone()) {
             return Ok(());
         }
 
@@ -63,6 +70,7 @@ impl OrgContractRegistryLoader {
             Vec::new()
         };
         self.registry.contracts.extend(loaded.contracts);
+        self.loaded_sources.insert(load_key, source);
 
         for dependency_path in dependency_paths {
             self.load_path(&dependency_path, true)?;
