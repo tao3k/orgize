@@ -301,6 +301,15 @@ fn field_predicate(
 ) -> Result<OrgElementQueryPredicate, OrgElementsIndexQueryJsonError> {
     let object = expect_object(value, field)?;
     let key = required_string(object, "key")?;
+    let operators = ["equals", "contains", "positiveInteger"]
+        .into_iter()
+        .filter(|operator| object.contains_key(*operator))
+        .collect::<Vec<_>>();
+    if operators.len() != 1 {
+        return Err(OrgElementsIndexQueryJsonError::new(format!(
+            "`{field}` predicate must contain exactly one of `equals`, `contains`, or `positiveInteger`",
+        )));
+    }
     if let Some(value) = object.get("equals") {
         let value = summary_value(value)?;
         return match field {

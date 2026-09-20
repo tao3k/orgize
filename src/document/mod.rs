@@ -24,8 +24,6 @@ pub use source_selection::{SourceLineRange, SourceSelector, select_source};
 
 #[cfg(test)]
 pub(crate) use command_query::compact_query_content;
-#[cfg(test)]
-pub(crate) use elements::document_query_lexical_prefilter_miss;
 
 #[cfg(test)]
 #[path = "../../tests/unit/document_block_body.rs"]
@@ -34,5 +32,5 @@ mod block_body_tests;
 #[path = "../../tests/unit/document_line_index.rs"]
 mod line_index_tests;
 #[cfg(test)]
-#[path = "../../tests/unit/document_query_prefilter_project.rs"]
-mod query_prefilter_project_tests;
+#[path = "../../tests/unit/document_org_elements_query_project.rs"]
+mod org_elements_query_project_tests;

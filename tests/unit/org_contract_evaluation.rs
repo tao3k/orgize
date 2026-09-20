@@ -701,6 +701,7 @@ fn contract_positive_integer_predicate_rejects_noncanonical_and_nonpositive_valu
         ("1", OrgContractAssertionStatus::Passed),
         ("42", OrgContractAssertionStatus::Passed),
         ("0", OrgContractAssertionStatus::Failed),
+        ("01", OrgContractAssertionStatus::Failed),
         ("-1", OrgContractAssertionStatus::Failed),
         ("latest", OrgContractAssertionStatus::Failed),
         ("+1", OrgContractAssertionStatus::Failed),

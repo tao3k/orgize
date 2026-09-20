@@ -11,7 +11,7 @@ pub enum DocumentLanguage {
     Markdown,
 }
 
-/// Parser-emitted document element used by search and query output.
+/// Parser-emitted document element used by query output.
 #[derive(Clone, Debug)]
 pub struct DocumentElement {
     /// Agent-facing semantic kind, such as `heading`, `task`, or `checklistItem`.

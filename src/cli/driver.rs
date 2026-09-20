@@ -45,7 +45,7 @@ pub fn run_args(args: Vec<String>) -> Result<ExitCode, String> {
         "eval" => super::eval::run(args.collect()),
         "export" => run_export(args.collect()),
         "fmt" => run_fmt(args.collect()),
-        "elements-query" | "guide" | "search" | "query" => {
+        "elements-query" | "guide" | "query" => {
             let mut command_args = vec![command.to_string()];
             command_args.extend(args);
             crate::document::run_org_command(command_args)

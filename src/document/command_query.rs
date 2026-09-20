@@ -115,8 +115,22 @@ pub(crate) fn run_query(
                 [selection.path.clone()],
                 Some(&selection.path),
                 selection.path.parent().unwrap_or_else(|| Path::new(".")),
+                &args,
             )?;
             let facts = selector_elements(language, &selection)?;
+            let verified_evidence = super::packets::document_query_evidence(
+                language,
+                [selection.path.clone()],
+                Some(&selection.path),
+                selection.path.parent().unwrap_or_else(|| Path::new(".")),
+                &args,
+            )?;
+            if evidence.source_snapshot != verified_evidence.source_snapshot {
+                return Err(format!(
+                    "{} query: source changed while parser facts were being built",
+                    language.id()
+                ));
+            }
             let facts = filter_elements_by_query(facts, &terms, &kinds, &fields);
             print_selector_query_json(
                 language,
@@ -124,7 +138,7 @@ pub(crate) fn run_query(
                 &selection,
                 &facts,
                 content_output,
-                evidence,
+                verified_evidence,
             )?;
         } else if content_output {
             let selection = SourceSelector::parse_query(selector)?;
@@ -142,16 +156,22 @@ pub(crate) fn run_query(
 
     let root = last_existing_path(&args).unwrap_or_else(|| PathBuf::from("."));
     let walk_config = walk_config_with_cli_excludes(walk_config, &args);
-    let evidence = if json_output {
+    let source_paths = if json_output {
         let mut source_paths = Vec::new();
         super::elements::collect_document_paths(language, &root, &walk_config, &mut source_paths)?;
         source_paths.sort();
         source_paths.dedup();
+        source_paths
+    } else {
+        Vec::new()
+    };
+    let evidence = if json_output {
         Some(super::packets::document_query_evidence(
             language,
-            source_paths,
+            source_paths.clone(),
             None,
             &root,
+            &args,
         )?)
     } else {
         None
@@ -159,13 +179,24 @@ pub(crate) fn run_query(
     let facts = query_project_with_config(language, &root, &walk_config, &terms, &fields)?;
     let matches = filter_elements_by_query(facts, &terms, &kinds, &fields);
     if json_output {
+        let verified_evidence =
+            super::packets::document_query_evidence(language, source_paths, None, &root, &args)?;
+        if evidence
+            .as_ref()
+            .is_some_and(|before| before.source_snapshot != verified_evidence.source_snapshot)
+        {
+            return Err(format!(
+                "{} query: source changed while parser facts were being built",
+                language.id()
+            ));
+        }
         print_query_json(
             language,
             &terms,
             &root,
             &matches,
             content_output,
-            evidence.ok_or_else(|| "missing semantic document query evidence".to_string())?,
+            verified_evidence,
         )?;
     } else if content_output {
         print_query_content(&matches);

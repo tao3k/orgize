@@ -19,7 +19,7 @@ pub(super) fn load_org_contract_registries(
 ) -> Result<OrgContractRegistry, String> {
     let mut loader = OrgContractRegistryLoader::default();
     for path in paths {
-        loader.load_path(path)?;
+        loader.load_path(path, true)?;
     }
     Ok(loader.registry)
 }
@@ -30,10 +30,10 @@ pub(super) fn load_org_contract_registry_for_lint(
 ) -> Result<OrgContractRegistry, String> {
     let mut loader = OrgContractRegistryLoader::default();
     for path in explicit_registry_paths {
-        loader.load_path(path)?;
+        loader.load_path(path, true)?;
     }
     for path in lint_source_paths {
-        loader.load_path(path)?;
+        loader.load_path(path, false)?;
     }
     Ok(loader.registry)
 }
@@ -45,7 +45,7 @@ struct OrgContractRegistryLoader {
 }
 
 impl OrgContractRegistryLoader {
-    fn load_path(&mut self, path: &Path) -> Result<(), String> {
+    fn load_path(&mut self, path: &Path, load_dependencies: bool) -> Result<(), String> {
         let load_key = path
             .canonicalize()
             .unwrap_or_else(|_| normalize_lexical_path(path));
@@ -57,15 +57,15 @@ impl OrgContractRegistryLoader {
             fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
         let document = Org::parse(&source).document();
         let loaded = parse_contracts_from_document(&document, Some(path));
-        let dependency_paths = if loaded.contracts.is_empty() {
-            Vec::new()
-        } else {
+        let dependency_paths = if load_dependencies {
             registry_dependency_paths(path, &document)?
+        } else {
+            Vec::new()
         };
         self.registry.contracts.extend(loaded.contracts);
 
         for dependency_path in dependency_paths {
-            self.load_path(&dependency_path)?;
+            self.load_path(&dependency_path, true)?;
         }
         Ok(())
     }

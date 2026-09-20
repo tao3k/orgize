@@ -430,9 +430,12 @@ fn summary_value_is_positive_integer(value: &OrgElementsIndexSummaryValue) -> bo
         OrgElementsIndexSummaryValue::Integer(value) => *value > 0,
         OrgElementsIndexSummaryValue::Text(value) => {
             let value = value.trim();
-            !value.is_empty()
+            value
+                .as_bytes()
+                .first()
+                .is_some_and(|byte| matches!(byte, b'1'..=b'9'))
                 && value.bytes().all(|byte| byte.is_ascii_digit())
-                && value.parse::<u64>().is_ok_and(|value| value > 0)
+                && value.parse::<u64>().is_ok()
         }
         OrgElementsIndexSummaryValue::Null
         | OrgElementsIndexSummaryValue::Bool(_)

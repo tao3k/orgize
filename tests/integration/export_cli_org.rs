@@ -54,14 +54,14 @@ fn org_document_query_commands_run() {
     );
     assert!(
         guide_stdout.contains(
-            "|cmd capture=orgize org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
+            "|cmd capture=orgize org capture --org-contract-registry <contract.org> --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
         ),
         "{guide_stdout}"
     );
     assert!(!guide_stdout.contains("capture init"), "{guide_stdout}");
     assert!(
         guide_stdout.contains(
-            "|recipe capture-task=orgize org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
+            "|recipe capture-task=orgize org capture --org-contract-registry <contract.org> --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
         ),
         "{guide_stdout}"
     );
@@ -652,4 +652,16 @@ fn org_document_query_commands_run() {
 }
 fn orgize_command() -> crate::library_cli::OrgizeLibraryCliCommand {
     crate::library_cli::orgize_cli_command()
+}
+
+#[test]
+fn org_document_legacy_search_facade_is_rejected() {
+    for view in ["prime", "toc", "owner", "fzf", "memory"] {
+        let output = orgize_command().args(["search", view]).output().unwrap();
+        assert!(
+            !output.status.success(),
+            "legacy search view {view} was admitted"
+        );
+        assert!(String::from_utf8_lossy(&output.stderr).contains("unknown command `search`"));
+    }
 }

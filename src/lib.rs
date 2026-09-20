@@ -10,7 +10,7 @@ pub mod ast;
 pub mod cli;
 /// Parser configuration.
 pub mod config;
-/// Document element mapping and search/query API.
+/// Document element mapping and parser-owned query API.
 pub mod document;
 mod entities;
 /// Event traversal and export helpers built on the lossless syntax tree.

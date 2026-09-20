@@ -56,6 +56,12 @@ pub(super) fn validate_pairs(
                 document.relative, other.semantic_id, document.semantic_id
             ));
         }
+        if other.pair.group != document.pair.group {
+            findings.push(format!(
+                "{}: counterpart belongs to pair group `{}` instead of `{}`",
+                document.relative, other.pair.group, document.pair.group
+            ));
+        }
         match resolve_counterpart(&other.path, &other.counterpart) {
             Ok(reciprocal) if reciprocal == document.path => {}
             _ => findings.push(format!(
@@ -181,7 +187,7 @@ pub(super) fn validate_references(
         .map(|projection| {
             let mut values = BTreeMap::new();
             for document in documents {
-                collect_identity_property_tokens(
+                collect_identity_property_values(
                     &document.document.sections,
                     &projection.0,
                     &projection.1,
@@ -326,23 +332,29 @@ fn visit_reference_node(
     None
 }
 
-fn collect_identity_property_tokens<A>(
+type TargetProjections = BTreeMap<(String, String), BTreeMap<String, Vec<BTreeSet<String>>>>;
+
+fn collect_identity_property_values<A>(
     sections: &[Section<A>],
     identity_property: &str,
     value_property: &str,
-    values: &mut BTreeMap<String, BTreeSet<String>>,
+    values: &mut BTreeMap<String, Vec<BTreeSet<String>>>,
 ) {
     for section in sections {
         let identities = property_values(&section.properties, identity_property);
         if let [identity] = identities.as_slice()
             && !identity.is_empty()
         {
-            let target = values.entry((*identity).to_string()).or_default();
-            for value in property_values(&section.properties, value_property) {
-                target.extend(value.split_whitespace().map(str::to_string));
-            }
+            let target = property_values(&section.properties, value_property)
+                .into_iter()
+                .map(str::to_string)
+                .collect::<BTreeSet<_>>();
+            values
+                .entry((*identity).to_string())
+                .or_default()
+                .push(target);
         }
-        collect_identity_property_tokens(
+        collect_identity_property_values(
             &section.subsections,
             identity_property,
             value_property,
@@ -355,7 +367,7 @@ fn validate_node_references<A>(
     sections: &[Section<A>],
     rule: &OrgContractWorkspaceReference,
     identity_values: &BTreeSet<String>,
-    target_projections: &BTreeMap<(String, String), BTreeMap<String, BTreeSet<String>>>,
+    target_projections: &TargetProjections,
     path: &str,
     findings: &mut Vec<String>,
 ) {
@@ -393,10 +405,14 @@ fn validate_node_references<A>(
                     if rule.allowed_values.contains(reference) {
                         continue;
                     }
-                    if !reciprocal_values
-                        .get(reference)
-                        .is_some_and(|values| values.contains(*identity))
-                    {
+                    if !reciprocal_values.get(reference).is_some_and(|instances| {
+                        !instances.is_empty()
+                            && instances.iter().all(|values| {
+                                values.iter().any(|value| {
+                                    value.split_whitespace().any(|token| token == *identity)
+                                })
+                            })
+                    }) {
                         findings.push(format!(
                             "{path}: node `{identity}` property {} reference `{reference}` must be reciprocated by target property {reciprocal_property}",
                             rule.property
@@ -419,7 +435,7 @@ fn validate_node_references<A>(
 fn validate_target_property_tokens(
     value: &str,
     rule: &OrgContractWorkspaceReference,
-    target_projections: &BTreeMap<(String, String), BTreeMap<String, BTreeSet<String>>>,
+    target_projections: &TargetProjections,
     path: &str,
     scope: &str,
     findings: &mut Vec<String>,
@@ -434,10 +450,14 @@ fn validate_target_property_tokens(
         if rule.allowed_values.contains(reference) {
             continue;
         }
-        let satisfies = target_values.get(reference).is_some_and(|values| {
-            values
-                .iter()
-                .any(|value| constraint.allowed_values.contains(value))
+        let satisfies = target_values.get(reference).is_some_and(|instances| {
+            !instances.is_empty()
+                && instances.iter().all(|values| {
+                    !values.is_empty()
+                        && values
+                            .iter()
+                            .all(|value| constraint.allowed_values.contains(value))
+                })
         });
         if !satisfies {
             findings.push(format!(

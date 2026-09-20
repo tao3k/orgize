@@ -8,6 +8,8 @@ mod contract_composition;
 mod contract_evaluation;
 #[path = "integration/contract_evaluation_fixtures.rs"]
 mod contract_evaluation_fixtures;
+#[path = "integration/contract_registry.rs"]
+mod contract_registry;
 #[path = "integration/contract_workspace.rs"]
 mod contract_workspace;
 #[path = "integration/document_git_scope.rs"]

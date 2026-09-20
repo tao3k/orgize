@@ -100,7 +100,7 @@ pub(crate) fn print_guide(language: DocumentLanguage) {
             language.command_prefix()
         );
         println!(
-            "|cmd capture={} capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>",
+            "|cmd capture={} capture --org-contract-registry <contract.org> --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>",
             language.command_prefix()
         );
     }
@@ -176,7 +176,7 @@ fn print_element_guide(language: DocumentLanguage) {
                 "|recipe active-done-artifacts=orgize org query --kind task --field todo=DONE --exclude-dir archives --workspace <ORG_ARTIFACTS_ABS_PATH> --content"
             );
             println!(
-                "|recipe capture-task=orgize org capture --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
+                "|recipe capture-task=orgize org capture --org-contract-registry <contract.org> --contract agent.task.v1 --title <TITLE> --target-file <ORG_FILE>"
             );
             println!(
                 "|recipe rust-blocks=orgize org query --kind block --field kind=source --field lang=rust --workspace . --view metadata"

@@ -411,7 +411,14 @@ impl WorkspacePolicy {
                 ));
             }
             let workspace_rules = section_workspace_rules(section)?;
-            let pair_group = optional_policy_property(&section.properties, "PAIR_GROUP");
+            let pair_group_values = property_values(&section.properties, "PAIR_GROUP");
+            if pair_group_values.len() > 1 {
+                return Err(format!(
+                    "workspace policy route `{}` must declare PAIR_GROUP at most once",
+                    section.raw_title
+                ));
+            }
+            let pair_group = pair_group_values.first().map(|value| (*value).to_string());
             let pair = if let Some(group) = pair_group {
                 let node_equality = workspace_rules.node_equality.clone();
                 let document_equality = workspace_rules.document_equality.clone();

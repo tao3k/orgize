@@ -78,3 +78,15 @@ fn typed_source_block_document_rejects_org_end_marker_in_source() {
     let error = OrgSourceBlock::new("rust", vec![], vec![], "#+end_src\nnot source").unwrap_err();
     assert_eq!(error.reason_kind(), "org-source-block-input-invalid");
 }
+
+#[test]
+fn typed_source_block_document_rejects_case_variant_header_duplicates() {
+    let headers = vec![
+        OrgSourceBlockHeader::new("runtime", OrgSourceBlockHeaderValue::text("bash").unwrap())
+            .unwrap(),
+        OrgSourceBlockHeader::new("RUNTIME", OrgSourceBlockHeaderValue::text("sh").unwrap())
+            .unwrap(),
+    ];
+    let error = OrgSourceBlock::new("sh", headers, vec![], "true").unwrap_err();
+    assert_eq!(error.reason_kind(), "org-source-block-input-invalid");
+}

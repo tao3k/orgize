@@ -20,7 +20,7 @@ const DOCUMENT_QUERY_PACKET_SCHEMA_AUTHORITY: &str =
     "https://tao3k.github.io/agent-semantic-protocols/schemas/";
 
 pub(super) struct DocumentQueryEvidence {
-    source_snapshot: Value,
+    pub(super) source_snapshot: Value,
     resolution_evidence: Value,
     snapshot_root: String,
     execution_command_digest: String,
@@ -42,8 +42,9 @@ pub(super) fn document_query_evidence(
     paths: impl IntoIterator<Item = PathBuf>,
     owner_path: Option<&Path>,
     project_root: &Path,
+    logical_args: &[String],
 ) -> Result<DocumentQueryEvidence, String> {
-    let execution_command_digest = provider_execution_command_digest()?;
+    let execution_command_digest = provider_execution_command_digest(language, logical_args)?;
     document_query_evidence_with_digest(
         language,
         paths,
@@ -87,10 +88,11 @@ pub(super) fn print_selector_query_json(
     content_output: bool,
     evidence: DocumentQueryEvidence,
 ) -> Result<(), String> {
-    let root = if selection.structural_selector.is_some() {
+    let selected_parent = selection.path.parent().unwrap_or_else(|| Path::new("."));
+    let root = if fs::canonicalize(selected_parent).ok() == std::env::current_dir().ok() {
         Path::new(".")
     } else {
-        selection.path.parent().unwrap_or_else(|| Path::new("."))
+        selected_parent
     };
     let packet = build_document_query_packet(DocumentQueryPacketInput {
         language,
@@ -152,7 +154,7 @@ fn document_query_evidence_with_digest(
         }
     }
     let snapshot_root = workspace_merkle_root(&leaves);
-    let provider_digest = document_provider_digest(language);
+    let provider_digest = document_provider_digest(language)?;
     let owner_evidence = owner_path
         .map(|path| {
             let absolute_path = fs::canonicalize(path).map_err(|error| {
@@ -373,15 +375,24 @@ fn workspace_merkle_root(leaves: &BTreeMap<String, String>) -> String {
     level.pop().expect("non-empty Merkle level")
 }
 
-fn document_provider_digest(language: DocumentLanguage) -> String {
-    let identity = format!(
-        "{}\0{}\0{}\0{}",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION"),
-        language.provider_id(),
-        language.parser_authority()
-    );
-    format!("blake3:{}", blake3::hash(identity.as_bytes()).to_hex())
+fn document_provider_digest(language: DocumentLanguage) -> Result<String, String> {
+    let parser_source: &[u8] = match language {
+        DocumentLanguage::Org => include_bytes!("org_elements.rs"),
+        DocumentLanguage::Markdown => include_bytes!("markdown_elements.rs"),
+    };
+    Ok(format!(
+        "blake3:{}",
+        canonical_blake3_digest(
+            b"asp.semantic-document-parser-artifact.v1",
+            &[
+                language.provider_id().as_bytes(),
+                env!("CARGO_PKG_VERSION").as_bytes(),
+                include_bytes!("model.rs"),
+                include_bytes!("elements.rs"),
+                parser_source,
+            ],
+        )
+    ))
 }
 
 fn content_block_digest(
@@ -442,14 +453,19 @@ fn canonical_blake3_digest(domain: &[u8], parts: &[&[u8]]) -> String {
     hasher.finalize().to_hex().to_string()
 }
 
-fn provider_execution_command_digest() -> Result<String, String> {
+fn provider_execution_command_digest(
+    language: DocumentLanguage,
+    logical_args: &[String],
+) -> Result<String, String> {
     let executable = std::env::current_exe().map_err(|error| {
         format!("could not resolve current executable for JSON query evidence: {error}")
     })?;
     let mut hasher = Sha256::new();
     hash_command_component(&mut hasher, executable.as_os_str().as_encoded_bytes());
-    for argument in std::env::args_os() {
-        hash_command_component(&mut hasher, argument.as_encoded_bytes());
+    hash_command_component(&mut hasher, language.id().as_bytes());
+    hash_command_component(&mut hasher, b"query");
+    for argument in logical_args {
+        hash_command_component(&mut hasher, argument.as_bytes());
     }
     Ok(format!("sha256:{:x}", hasher.finalize()))
 }

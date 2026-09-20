@@ -143,11 +143,11 @@ impl OrgSourceBlock {
         {
             return Err(invalid("source-block language is invalid"));
         }
-        if headers
-            .iter()
-            .enumerate()
-            .any(|(index, header)| headers[..index].iter().any(|prior| prior.key == header.key))
-        {
+        if headers.iter().enumerate().any(|(index, header)| {
+            headers[..index]
+                .iter()
+                .any(|prior| prior.key.eq_ignore_ascii_case(&header.key))
+        }) {
             return Err(invalid("source-block header keys must be unique"));
         }
         if preamble_keywords

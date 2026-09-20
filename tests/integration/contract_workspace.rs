@@ -201,6 +201,25 @@ fn workspace_contract_rejects_mismatched_paired_node_identities() {
 }
 
 #[test]
+fn workspace_contract_rejects_duplicate_pair_group_declarations() {
+    let fixture = WorkspaceFixture::new();
+    let policy = POLICY.replace(
+        ":PAIR_GROUP: test.cn-en",
+        ":PAIR_GROUP: test.cn-en\n:PAIR_GROUP: test.other",
+    );
+    fs::write(fixture.root.join("policy.org"), policy).unwrap();
+    fixture.assert_failure("must declare PAIR_GROUP at most once");
+}
+
+#[test]
+fn workspace_contract_rejects_cross_group_counterparts() {
+    let fixture = WorkspaceFixture::new();
+    let policy = POLICY.replacen(":PAIR_GROUP: test.cn-en", ":PAIR_GROUP: test.other", 1);
+    fs::write(fixture.root.join("policy.org"), policy).unwrap();
+    fixture.assert_failure("counterpart belongs to pair group");
+}
+
+#[test]
 fn workspace_contract_rejects_mismatched_paired_node_metadata_from_contract_expression() {
     let fixture = WorkspaceFixture::new();
     let pair_contract = r#"
@@ -438,6 +457,95 @@ fn workspace_contract_requires_allowed_properties_on_reference_targets() {
     fixture.assert_failure(
         "node property SUPERSEDED_BY reference `P-002` target property PRINCIPLE_STATUS must be one of accepted, superseded",
     );
+}
+
+#[test]
+fn workspace_contract_checks_target_property_on_every_projection() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    let target_rule = r#"#+begin_src org-contract
+(assert workspace-reference
+  (source node-property "SUPERSEDED_BY")
+  (target node-identity "PRINCIPLE_ID")
+  (allow "none")
+  (target-property "PRINCIPLE_STATUS" (allow "accepted" "superseded")))
+#+end_src"#;
+    let path = fixture.root.join("policy.org");
+    let policy = fs::read_to_string(&path)
+        .unwrap()
+        .replace(
+            ":LANGUAGE_VALUE: zh-CN\n:END:",
+            &format!(":LANGUAGE_VALUE: zh-CN\n:END:\n{target_rule}"),
+        )
+        .replace(
+            ":LANGUAGE_VALUE: en\n:END:",
+            &format!(":LANGUAGE_VALUE: en\n:END:\n{target_rule}"),
+        );
+    fs::write(path, policy).unwrap();
+    fixture.add_reciprocal_fixture();
+    let cn = fixture.root.join("cn/docs/doc.org");
+    fs::write(
+        &cn,
+        fs::read_to_string(&cn)
+            .unwrap()
+            .replace(":PRINCIPLE_STATUS: accepted", ":PRINCIPLE_STATUS: draft"),
+    )
+    .unwrap();
+    fixture.assert_failure("target property PRINCIPLE_STATUS must be one of accepted, superseded");
+}
+
+#[test]
+fn workspace_contract_compares_complete_target_property_values() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    let target_rule = r#"#+begin_src org-contract
+(assert workspace-reference
+  (source node-property "SUPERSEDED_BY")
+  (target node-identity "PRINCIPLE_ID")
+  (allow "none")
+  (target-property "PRINCIPLE_STATUS" (allow "accepted" "superseded")))
+#+end_src"#;
+    let path = fixture.root.join("policy.org");
+    let policy = fs::read_to_string(&path)
+        .unwrap()
+        .replace(
+            ":LANGUAGE_VALUE: zh-CN\n:END:",
+            &format!(":LANGUAGE_VALUE: zh-CN\n:END:\n{target_rule}"),
+        )
+        .replace(
+            ":LANGUAGE_VALUE: en\n:END:",
+            &format!(":LANGUAGE_VALUE: en\n:END:\n{target_rule}"),
+        );
+    fs::write(path, policy).unwrap();
+    fixture.add_reciprocal_fixture();
+    for language in ["cn", "en"] {
+        let document = fixture.root.join(language).join("docs/doc.org");
+        fs::write(
+            &document,
+            fs::read_to_string(&document).unwrap().replace(
+                ":PRINCIPLE_STATUS: accepted",
+                ":PRINCIPLE_STATUS: accepted draft",
+            ),
+        )
+        .unwrap();
+    }
+    fixture.assert_failure("target property PRINCIPLE_STATUS must be one of accepted, superseded");
+}
+
+#[test]
+fn workspace_contract_checks_reciprocal_property_on_every_projection() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    fixture.add_reciprocal_fixture();
+    let en = fixture.root.join("en/docs/doc.org");
+    fs::write(
+        &en,
+        fs::read_to_string(&en)
+            .unwrap()
+            .replace(":SUPERSEDED_BY: P-002", ":SUPERSEDED_BY: none"),
+    )
+    .unwrap();
+    fixture.assert_failure("must be reciprocated by target property SUPERSEDED_BY");
 }
 
 #[test]
