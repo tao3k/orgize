@@ -89,7 +89,10 @@ pub(super) fn print_selector_query_json(
     evidence: DocumentQueryEvidence,
 ) -> Result<(), String> {
     let selected_parent = selection.path.parent().unwrap_or_else(|| Path::new("."));
-    let root = if fs::canonicalize(selected_parent).ok() == std::env::current_dir().ok() {
+    let current_directory = std::env::current_dir()
+        .ok()
+        .and_then(|path| fs::canonicalize(path).ok());
+    let root = if fs::canonicalize(selected_parent).ok() == current_directory {
         Path::new(".")
     } else {
         selected_parent
