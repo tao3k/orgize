@@ -164,14 +164,17 @@ pub(super) fn validate_references(
             (property, values.into_iter().collect::<BTreeSet<_>>())
         })
         .collect::<BTreeMap<_, _>>();
-    let reciprocal_projections = policy
+    let target_projections = policy
         .routes
         .iter()
         .flat_map(|route| &route.references)
-        .filter_map(|rule| {
+        .flat_map(|rule| {
             rule.reciprocal_property
-                .as_ref()
+                .iter()
                 .map(|property| (rule.identity_property.clone(), property.clone()))
+                .chain(rule.target_property.iter().map(|constraint| {
+                    (rule.identity_property.clone(), constraint.property.clone())
+                }))
         })
         .collect::<BTreeSet<_>>()
         .into_iter()
@@ -206,6 +209,14 @@ pub(super) fn validate_references(
                             "document",
                             findings,
                         );
+                        validate_target_property_tokens(
+                            value,
+                            rule,
+                            &target_projections,
+                            &document.relative,
+                            "document",
+                            findings,
+                        );
                     }
                 }
                 OrgContractWorkspaceReferenceSource::NodeProperty => {
@@ -213,7 +224,7 @@ pub(super) fn validate_references(
                         &document.document.sections,
                         rule,
                         identity_values,
-                        &reciprocal_projections,
+                        &target_projections,
                         &document.relative,
                         findings,
                     );
@@ -344,7 +355,7 @@ fn validate_node_references<A>(
     sections: &[Section<A>],
     rule: &OrgContractWorkspaceReference,
     identity_values: &BTreeSet<String>,
-    reciprocal_projections: &BTreeMap<(String, String), BTreeMap<String, BTreeSet<String>>>,
+    target_projections: &BTreeMap<(String, String), BTreeMap<String, BTreeSet<String>>>,
     path: &str,
     findings: &mut Vec<String>,
 ) {
@@ -364,10 +375,18 @@ fn validate_node_references<A>(
                 }
             }
             validate_reference_tokens(value, rule, identity_values, path, "node", findings);
+            validate_target_property_tokens(
+                value,
+                rule,
+                target_projections,
+                path,
+                "node",
+                findings,
+            );
             if let Some(reciprocal_property) = rule.reciprocal_property.as_ref()
                 && let [identity] = source_identities.as_slice()
             {
-                let reciprocal_values = reciprocal_projections
+                let reciprocal_values = target_projections
                     .get(&(rule.identity_property.clone(), reciprocal_property.clone()))
                     .expect("reciprocal projection was collected");
                 for reference in value.split_whitespace() {
@@ -390,10 +409,49 @@ fn validate_node_references<A>(
             &section.subsections,
             rule,
             identity_values,
-            reciprocal_projections,
+            target_projections,
             path,
             findings,
         );
+    }
+}
+
+fn validate_target_property_tokens(
+    value: &str,
+    rule: &OrgContractWorkspaceReference,
+    target_projections: &BTreeMap<(String, String), BTreeMap<String, BTreeSet<String>>>,
+    path: &str,
+    scope: &str,
+    findings: &mut Vec<String>,
+) {
+    let Some(constraint) = rule.target_property.as_ref() else {
+        return;
+    };
+    let target_values = target_projections
+        .get(&(rule.identity_property.clone(), constraint.property.clone()))
+        .expect("target property projection was collected");
+    for reference in value.split_whitespace() {
+        if rule.allowed_values.contains(reference) {
+            continue;
+        }
+        let satisfies = target_values.get(reference).is_some_and(|values| {
+            values
+                .iter()
+                .any(|value| constraint.allowed_values.contains(value))
+        });
+        if !satisfies {
+            findings.push(format!(
+                "{path}: {scope} property {} reference `{reference}` target property {} must be one of {}",
+                rule.property,
+                constraint.property,
+                constraint
+                    .allowed_values
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
     }
 }
 

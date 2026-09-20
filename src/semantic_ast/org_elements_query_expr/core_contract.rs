@@ -11,7 +11,7 @@ use crate::ast::{
     OrgContractBinding, OrgContractCompareOp, OrgContractExpectation,
     OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
     OrgContractValueField, OrgContractWorkspaceReference, OrgContractWorkspaceReferenceSource,
-    OrgElementQueryPredicate, OrgElementsIndexCategory,
+    OrgContractWorkspaceTargetProperty, OrgElementQueryPredicate, OrgElementsIndexCategory,
 };
 use crate::ast::{
     OrgContractDocumentPredicate, OrgContractRelativeScope, OrgElementsIndexSummaryValue,
@@ -275,6 +275,7 @@ pub(super) fn compile_workspace_reference(
     let mut exclude_self = None;
     let mut acyclic = None;
     let mut reciprocal_property = None;
+    let mut target_property = None;
     for clause in &items[4..] {
         let QueryExpr::List(clause) = clause else {
             return None;
@@ -309,6 +310,33 @@ pub(super) fn compile_workspace_reference(
                 };
                 reciprocal_property = Some(property.as_text()?);
             }
+            "target-property" if target_property.is_none() => {
+                let [_, property, allow] = clause.as_slice() else {
+                    return None;
+                };
+                let QueryExpr::List(allow) = allow else {
+                    return None;
+                };
+                if list_head(allow)? != "allow" {
+                    return None;
+                }
+                let values = allow[1..]
+                    .iter()
+                    .map(QueryExpr::as_text)
+                    .collect::<Option<Vec<_>>>()?;
+                let allowed_values = values.iter().cloned().collect::<BTreeSet<_>>();
+                let property = property.as_text()?;
+                if property.is_empty()
+                    || allowed_values.is_empty()
+                    || allowed_values.len() != values.len()
+                {
+                    return None;
+                }
+                target_property = Some(OrgContractWorkspaceTargetProperty {
+                    property,
+                    allowed_values,
+                });
+            }
             _ => return None,
         }
     }
@@ -330,6 +358,7 @@ pub(super) fn compile_workspace_reference(
         exclude_self,
         acyclic,
         reciprocal_property,
+        target_property,
     })
 }
 

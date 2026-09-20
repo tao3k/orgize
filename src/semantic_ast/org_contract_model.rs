@@ -623,6 +623,14 @@ pub struct OrgContractWorkspaceReference {
     pub exclude_self: bool,
     pub acyclic: bool,
     pub reciprocal_property: Option<String>,
+    pub target_property: Option<OrgContractWorkspaceTargetProperty>,
+}
+
+/// Required property values on the node resolved by a workspace reference.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct OrgContractWorkspaceTargetProperty {
+    pub property: String,
+    pub allowed_values: BTreeSet<String>,
 }
 
 /// Comparison operator for a `count` expectation.

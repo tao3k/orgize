@@ -398,6 +398,49 @@ fn workspace_contract_requires_reciprocal_node_references() {
 }
 
 #[test]
+fn workspace_contract_requires_allowed_properties_on_reference_targets() {
+    let fixture = WorkspaceFixture::new();
+    fixture.install_reference_policy();
+    let target_rule = r#"#+begin_src org-contract
+(assert workspace-reference
+  (source node-property "SUPERSEDED_BY")
+  (target node-identity "PRINCIPLE_ID")
+  (allow "none")
+  (target-property "PRINCIPLE_STATUS" (allow "accepted" "superseded")))
+#+end_src"#;
+    let path = fixture.root.join("policy.org");
+    let policy = fs::read_to_string(&path)
+        .unwrap()
+        .replace(
+            ":LANGUAGE_VALUE: zh-CN\n:END:",
+            &format!(":LANGUAGE_VALUE: zh-CN\n:END:\n{target_rule}"),
+        )
+        .replace(
+            ":LANGUAGE_VALUE: en\n:END:",
+            &format!(":LANGUAGE_VALUE: en\n:END:\n{target_rule}"),
+        );
+    fs::write(path, policy).unwrap();
+    fixture.add_reciprocal_fixture();
+
+    let admitted = fixture.run();
+    assert!(admitted.status.success(), "{}", receipt(&admitted));
+
+    for language in ["cn", "en"] {
+        let path = fixture.root.join(language).join("docs/doc.org");
+        fs::write(
+            &path,
+            fs::read_to_string(&path)
+                .unwrap()
+                .replace(":PRINCIPLE_STATUS: accepted", ":PRINCIPLE_STATUS: draft"),
+        )
+        .unwrap();
+    }
+    fixture.assert_failure(
+        "node property SUPERSEDED_BY reference `P-002` target property PRINCIPLE_STATUS must be one of accepted, superseded",
+    );
+}
+
+#[test]
 fn workspace_contract_rejects_an_invalid_route_contract_expression() {
     let fixture = WorkspaceFixture::new();
     let policy = POLICY.replace(
@@ -706,7 +749,7 @@ impl WorkspaceFixture {
             let path = self.root.join(language).join("docs/doc.org");
             let source = fs::read_to_string(&path).unwrap().replace(
                 "* Required\n",
-                "* Required\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:SUPERSEDES: none\n:SUPERSEDED_BY: P-002\n:END:\n* Other\n:PROPERTIES:\n:PRINCIPLE_ID: P-002\n:SUPERSEDES: P-001\n:SUPERSEDED_BY: none\n:END:\n",
+                "* Required\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:PRINCIPLE_STATUS: superseded\n:SUPERSEDES: none\n:SUPERSEDED_BY: P-002\n:END:\n* Other\n:PROPERTIES:\n:PRINCIPLE_ID: P-002\n:PRINCIPLE_STATUS: accepted\n:SUPERSEDES: P-001\n:SUPERSEDED_BY: none\n:END:\n",
             );
             fs::write(path, source).unwrap();
         }
