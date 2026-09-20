@@ -6,8 +6,9 @@ use super::core_types::{
     list_head,
 };
 use crate::ast::{
-    OrgContractBinding, OrgContractCompareOp, OrgContractExpectation, OrgContractPairNodeEquality,
-    OrgContractQuery, OrgElementQueryPredicate, OrgElementsIndexCategory,
+    OrgContractBinding, OrgContractCompareOp, OrgContractExpectation,
+    OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
+    OrgElementQueryPredicate, OrgElementsIndexCategory,
 };
 use crate::ast::{
     OrgContractDocumentPredicate, OrgContractRelativeScope, OrgElementsIndexSummaryValue,
@@ -161,6 +162,32 @@ pub(super) fn compile_pair_node_equality(
         identity_property,
         properties,
     })
+}
+
+pub(super) fn compile_pair_document_equality(
+    expression: &QueryExpr,
+) -> Option<OrgContractPairDocumentEquality> {
+    let QueryExpr::List(items) = expression else {
+        return None;
+    };
+    if list_head(items)? != "assert" || items.get(1)?.as_atom()? != "pair-document-properties-equal"
+    {
+        return None;
+    }
+    let QueryExpr::List(properties) = items.get(2)? else {
+        return None;
+    };
+    if list_head(properties)? != "properties" {
+        return None;
+    }
+    let properties = properties[1..]
+        .iter()
+        .map(QueryExpr::as_text)
+        .collect::<Option<Vec<_>>>()?;
+    if properties.is_empty() {
+        return None;
+    }
+    Some(OrgContractPairDocumentEquality { properties })
 }
 
 fn parse_compare_op(value: &str) -> Option<OrgContractCompareOp> {

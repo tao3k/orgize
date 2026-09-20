@@ -12,8 +12,10 @@ use serde_json::json;
 use crate::{
     Org,
     ast::{
-        BlockKind, ElementData, OrgContractAssertionStatus, OrgContractPairNodeEquality, ParsedAst,
-        Property, Section, org_contract_evaluations_to_json_value, parse_contract_references,
+        BlockKind, ElementData, OrgContractAssertionStatus, OrgContractPairDocumentEquality,
+        OrgContractPairNodeEquality, ParsedAst, Property, Section,
+        org_contract_evaluations_to_json_value, parse_contract_references,
+        parse_org_contract_pair_document_equality_block,
         parse_org_contract_pair_node_equality_block,
     },
 };
@@ -154,6 +156,21 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
                         &mut findings,
                     );
                 }
+                let mut document_metadata = BTreeMap::new();
+                if let Some(rule) = pair.document_equality.as_ref() {
+                    for key in &rule.properties {
+                        let values = property_values(&item.document.properties, key);
+                        if values.len() != 1 || values[0].is_empty() {
+                            findings.push(format!(
+                                "{}: paired document must declare one non-empty {key} property; found {}",
+                                item.relative,
+                                values.len()
+                            ));
+                            continue;
+                        }
+                        document_metadata.insert(key.clone(), values[0].to_string());
+                    }
+                }
                 paired.push(PairedDocument {
                     relative: item.relative.clone(),
                     path: item.path.clone(),
@@ -162,6 +179,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
                     pair: pair.clone(),
                     node_identities,
                     node_metadata,
+                    document_metadata,
                 });
             }
         }
@@ -359,7 +377,7 @@ impl WorkspacePolicy {
             }
             let pair_group = optional_policy_property(&section.properties, "PAIR_GROUP");
             let pair = if let Some(group) = pair_group {
-                let node_equality = section_pair_node_equality(section)?;
+                let (node_equality, document_equality) = section_pair_equalities(section)?;
                 let declared_identity =
                     optional_policy_property(&section.properties, "PAIR_NODE_ID_PROPERTY");
                 if let (Some(declared), Some(rule)) = (&declared_identity, &node_equality)
@@ -387,6 +405,7 @@ impl WorkspacePolicy {
                             .map(|rule| rule.identity_property.clone())
                     }),
                     node_equality,
+                    document_equality,
                 })
             } else {
                 None
@@ -467,6 +486,7 @@ struct PairRoute {
     language_value: String,
     node_identity_property: Option<String>,
     node_equality: Option<OrgContractPairNodeEquality>,
+    document_equality: Option<OrgContractPairDocumentEquality>,
 }
 
 struct MaintainedDocument {
@@ -485,6 +505,7 @@ struct PairedDocument {
     pair: PairRoute,
     node_identities: Vec<String>,
     node_metadata: BTreeMap<String, BTreeMap<String, String>>,
+    document_metadata: BTreeMap<String, String>,
 }
 
 fn validate_pairs(root: &Path, documents: &[PairedDocument], findings: &mut Vec<String>) {
@@ -593,6 +614,21 @@ fn validate_pairs(root: &Path, documents: &[PairedDocument], findings: &mut Vec<
                             "pair group `{group}` SEMANTIC_ID `{semantic_id}` paired node `{identity}` must have equal {property} metadata"
                         ));
                     }
+                }
+            }
+        }
+        if members[0].pair.document_equality != members[1].pair.document_equality {
+            findings.push(format!(
+                "pair group `{group}` SEMANTIC_ID `{semantic_id}` must declare identical pair-document equality contracts"
+            ));
+        } else if let Some(rule) = members[0].pair.document_equality.as_ref() {
+            for property in &rule.properties {
+                let left = members[0].document_metadata.get(property);
+                let right = members[1].document_metadata.get(property);
+                if left != right {
+                    findings.push(format!(
+                        "pair group `{group}` SEMANTIC_ID `{semantic_id}` must have equal document property {property}"
+                    ));
                 }
             }
         }
@@ -750,10 +786,17 @@ fn collect_node_metadata<A>(
     }
 }
 
-fn section_pair_node_equality<A>(
+fn section_pair_equalities<A>(
     section: &Section<A>,
-) -> Result<Option<OrgContractPairNodeEquality>, String> {
-    let mut rules = Vec::new();
+) -> Result<
+    (
+        Option<OrgContractPairNodeEquality>,
+        Option<OrgContractPairDocumentEquality>,
+    ),
+    String,
+> {
+    let mut node_rules = Vec::new();
+    let mut document_rules = Vec::new();
     for element in &section.children {
         match &element.data {
             ElementData::Block(block)
@@ -763,27 +806,36 @@ fn section_pair_node_equality<A>(
                         .as_deref()
                         .is_some_and(|language| language.eq_ignore_ascii_case("org-contract")) =>
             {
-                let rule = parse_org_contract_pair_node_equality_block(&block.value).ok_or_else(
-                    || {
-                        format!(
-                            "workspace policy route `{}` contains an unsupported org-contract expression",
-                            section.raw_title
-                        )
-                    },
-                )?;
-                rules.push(rule);
+                if let Some(rule) = parse_org_contract_pair_node_equality_block(&block.value) {
+                    node_rules.push(rule);
+                } else if let Some(rule) =
+                    parse_org_contract_pair_document_equality_block(&block.value)
+                {
+                    document_rules.push(rule);
+                } else {
+                    return Err(format!(
+                        "workspace policy route `{}` contains an unsupported org-contract expression",
+                        section.raw_title
+                    ));
+                }
             }
             _ => {}
         }
     }
-    if rules.len() > 1 {
+    if node_rules.len() > 1 {
         return Err(format!(
             "workspace policy route `{}` declares more than one pair-node equality contract",
             section.raw_title
         ));
     }
-    let rule = rules.into_iter().next();
-    if let Some(rule) = &rule
+    if document_rules.len() > 1 {
+        return Err(format!(
+            "workspace policy route `{}` declares more than one pair-document equality contract",
+            section.raw_title
+        ));
+    }
+    let node_rule = node_rules.into_iter().next();
+    if let Some(rule) = &node_rule
         && rule.properties.iter().collect::<BTreeSet<_>>().len() != rule.properties.len()
     {
         return Err(format!(
@@ -791,7 +843,16 @@ fn section_pair_node_equality<A>(
             section.raw_title
         ));
     }
-    Ok(rule)
+    let document_rule = document_rules.into_iter().next();
+    if let Some(rule) = &document_rule
+        && rule.properties.iter().collect::<BTreeSet<_>>().len() != rule.properties.len()
+    {
+        return Err(format!(
+            "workspace policy route `{}` pair-document equality properties must be unique",
+            section.raw_title
+        ));
+    }
+    Ok((node_rule, document_rule))
 }
 
 fn single_property<A>(

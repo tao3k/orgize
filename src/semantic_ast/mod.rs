@@ -306,14 +306,16 @@ pub use org_contract_model::{
     OrgContractAssertionStatus, OrgContractBinding, OrgContractCompareOp,
     OrgContractDocumentPredicate, OrgContractEvaluation, OrgContractEvaluationContext,
     OrgContractEvaluationScope, OrgContractExpectation, OrgContractKind,
-    OrgContractPairNodeEquality, OrgContractQuery, OrgContractReference, OrgContractRegistry,
-    OrgContractRelativeScope, OrgContractScope, OrgContractSeverity, OrgContractSourceDiagnostic,
-    OrgContractSourceValidation,
+    OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
+    OrgContractReference, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
+    OrgContractSeverity, OrgContractSourceDiagnostic, OrgContractSourceValidation,
 };
-pub(crate) use org_elements_query_expr::parse_org_contract_pair_node_equality_block;
 pub use org_elements_query_expr::{
     ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,
     OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str,
+};
+pub(crate) use org_elements_query_expr::{
+    parse_org_contract_pair_document_equality_block, parse_org_contract_pair_node_equality_block,
 };
 pub use org_interactive_model::{
     OrgInteractiveCategory, OrgInteractiveChoice, OrgInteractiveChoiceEntry,

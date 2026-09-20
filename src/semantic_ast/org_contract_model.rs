@@ -570,6 +570,12 @@ pub struct OrgContractPairNodeEquality {
     pub properties: Vec<String>,
 }
 
+/// Cross-document equality projection for root document properties.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractPairDocumentEquality {
+    pub properties: Vec<String>,
+}
+
 /// Comparison operator for a `count` expectation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OrgContractCompareOp {

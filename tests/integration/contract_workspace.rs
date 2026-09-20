@@ -243,6 +243,56 @@ fn workspace_contract_rejects_mismatched_paired_node_metadata_from_contract_expr
 }
 
 #[test]
+fn workspace_contract_rejects_mismatched_paired_document_metadata_from_contract_expression() {
+    let fixture = WorkspaceFixture::new();
+    let pair_contract = r#"
+#+begin_src org-contract
+(assert pair-document-properties-equal
+  (properties "PRINCIPLE_REF"))
+#+end_src"#;
+    let policy = POLICY
+        .replace(
+            ":LANGUAGE_VALUE: zh-CN\n:END:",
+            &format!(":LANGUAGE_VALUE: zh-CN\n:END:\n{pair_contract}"),
+        )
+        .replace(
+            ":LANGUAGE_VALUE: en\n:END:",
+            &format!(":LANGUAGE_VALUE: en\n:END:\n{pair_contract}"),
+        );
+    fs::write(fixture.root.join("policy.org"), policy).unwrap();
+    for (directory, language, counterpart) in [
+        ("cn", "zh-CN", "../../en/docs/doc.org"),
+        ("en", "en", "../../cn/docs/doc.org"),
+    ] {
+        fs::write(
+            fixture.root.join(format!("{directory}/docs/doc.org")),
+            complete_document(
+                directory,
+                language,
+                "test.semantic",
+                counterpart,
+                &format!("test.base.v1 test.purpose.{directory}.v1"),
+            )
+            .replace(":LANGUAGE:", ":PRINCIPLE_REF: P-001\n:LANGUAGE:"),
+        )
+        .unwrap();
+    }
+
+    let admitted = fixture.run();
+    assert!(admitted.status.success(), "{}", receipt(&admitted));
+    let en_path = fixture.root.join("en/docs/doc.org");
+    fs::write(
+        &en_path,
+        fs::read_to_string(&en_path)
+            .unwrap()
+            .replace(":PRINCIPLE_REF: P-001", ":PRINCIPLE_REF: P-002"),
+    )
+    .unwrap();
+
+    fixture.assert_failure("must have equal document property PRINCIPLE_REF");
+}
+
+#[test]
 fn workspace_contract_rejects_an_invalid_route_contract_expression() {
     let fixture = WorkspaceFixture::new();
     let policy = POLICY.replace(

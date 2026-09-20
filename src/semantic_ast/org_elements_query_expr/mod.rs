@@ -14,12 +14,14 @@ mod core_types;
 mod index;
 mod surface;
 
-pub(crate) use core::parse_org_contract_pair_node_equality_block;
 use core::{FieldKind, QueryExpr, list_head};
 pub use core::{OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str};
 pub(in crate::ast) use core::{
     apply_org_elements_query_kind, parse_org_contract_expression_block,
     parse_org_elements_query_expression_block,
+};
+pub(crate) use core::{
+    parse_org_contract_pair_document_equality_block, parse_org_contract_pair_node_equality_block,
 };
 use core_predicate::{compile_predicate_expression, expression_summary_value, parse_field_ref};
 pub use surface::{
