@@ -60,6 +60,16 @@ pub fn index_path(language: DocumentLanguage, path: &Path) -> Result<Vec<Documen
     index_source(language, path, &source)
 }
 
+pub(super) fn index_paths(
+    language: DocumentLanguage,
+    paths: &[PathBuf],
+) -> Result<Vec<DocumentElement>, String> {
+    paths.iter().try_fold(Vec::new(), |mut facts, path| {
+        facts.extend(index_path(language, path)?);
+        Ok(facts)
+    })
+}
+
 pub(super) fn query_project_with_config(
     language: DocumentLanguage,
     root: &Path,

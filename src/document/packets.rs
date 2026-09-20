@@ -1,7 +1,9 @@
 use std::{
     collections::BTreeMap,
     fs,
+    io::Read,
     path::{Component, Path, PathBuf},
+    sync::OnceLock,
 };
 
 use serde_json::{Value, json};
@@ -88,7 +90,7 @@ pub(super) fn print_selector_query_json(
     content_output: bool,
     evidence: DocumentQueryEvidence,
 ) -> Result<(), String> {
-    let selected_parent = selection.path.parent().unwrap_or_else(|| Path::new("."));
+    let selected_parent = selection.parent_root();
     let current_directory = std::env::current_dir()
         .ok()
         .and_then(|path| fs::canonicalize(path).ok());
@@ -379,16 +381,47 @@ fn workspace_merkle_root(leaves: &BTreeMap<String, String>) -> String {
 }
 
 fn document_provider_digest(language: DocumentLanguage) -> Result<String, String> {
+    static EXECUTABLE_DIGEST: OnceLock<Result<String, String>> = OnceLock::new();
+    let executable_digest = EXECUTABLE_DIGEST
+        .get_or_init(current_executable_digest)
+        .as_ref()
+        .map_err(Clone::clone)?;
     Ok(format!(
         "blake3:{}",
         canonical_blake3_digest(
             b"asp.semantic-document-parser-artifact.v1",
             &[
                 language.provider_id().as_bytes(),
-                env!("ORGIZE_PARSER_ARTIFACT_DIGEST").as_bytes(),
+                executable_digest.as_bytes(),
             ],
         )
     ))
+}
+
+fn current_executable_digest() -> Result<String, String> {
+    let executable = std::env::current_exe()
+        .map_err(|error| format!("could not resolve parser executable artifact: {error}"))?;
+    let mut file = fs::File::open(&executable).map_err(|error| {
+        format!(
+            "could not open parser executable artifact {}: {error}",
+            executable.display()
+        )
+    })?;
+    let mut hasher = blake3::Hasher::new();
+    let mut buffer = [0_u8; 64 * 1024];
+    loop {
+        let read = file.read(&mut buffer).map_err(|error| {
+            format!(
+                "could not hash parser executable artifact {}: {error}",
+                executable.display()
+            )
+        })?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(hasher.finalize().to_hex().to_string())
 }
 
 fn content_block_digest(

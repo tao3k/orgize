@@ -9,7 +9,7 @@ use std::{
 use super::{
     command_render::{print_query_guide, print_selector_frontier},
     elements::{
-        display_path, escape_field, filter_elements_by_query, has_flag, index_path,
+        display_path, escape_field, filter_elements_by_query, has_flag, index_path, index_paths,
         last_existing_path, option_value, option_values, query_project_with_config,
         walk_config_with_cli_excludes,
     },
@@ -114,7 +114,7 @@ pub(crate) fn run_query(
                 language,
                 [selection.path.clone()],
                 Some(&selection.path),
-                selection.path.parent().unwrap_or_else(|| Path::new(".")),
+                selection.parent_root(),
                 &args,
             )?;
             let facts = selector_elements(language, &selection)?;
@@ -122,7 +122,7 @@ pub(crate) fn run_query(
                 language,
                 [selection.path.clone()],
                 Some(&selection.path),
-                selection.path.parent().unwrap_or_else(|| Path::new(".")),
+                selection.parent_root(),
                 &args,
             )?;
             if evidence.source_snapshot != verified_evidence.source_snapshot {
@@ -176,31 +176,15 @@ pub(crate) fn run_query(
     } else {
         None
     };
-    let facts = query_project_with_config(language, &root, &walk_config, &terms, &fields)?;
+    let facts = if json_output {
+        index_paths(language, &source_paths)?
+    } else {
+        query_project_with_config(language, &root, &walk_config, &terms, &fields)?
+    };
     let matches = filter_elements_by_query(facts, &terms, &kinds, &fields);
     if json_output {
-        let mut verified_source_paths = Vec::new();
-        super::elements::collect_document_paths(
-            language,
-            &root,
-            &walk_config,
-            &mut verified_source_paths,
-        )?;
-        verified_source_paths.sort();
-        verified_source_paths.dedup();
-        if source_paths != verified_source_paths {
-            return Err(format!(
-                "{} query: admitted source set changed while parser facts were being built",
-                language.id()
-            ));
-        }
-        let verified_evidence = super::packets::document_query_evidence(
-            language,
-            verified_source_paths,
-            None,
-            &root,
-            &args,
-        )?;
+        let verified_evidence =
+            super::packets::document_query_evidence(language, source_paths, None, &root, &args)?;
         if evidence
             .as_ref()
             .is_some_and(|before| before.source_snapshot != verified_evidence.source_snapshot)

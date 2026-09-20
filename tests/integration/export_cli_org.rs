@@ -624,6 +624,40 @@ fn org_document_query_commands_run() {
         "{dot_root_packet:#}"
     );
 
+    let absolute_heading_selector = dot_root_inventory_packet["documentFacts"]
+        .as_array()
+        .expect("document facts")
+        .iter()
+        .find(|fact| fact["kind"] == "heading")
+        .and_then(|fact| fact["structuralSelector"].as_str())
+        .expect("dot-root heading structural selector");
+    let relative_heading_selector = format!(
+        "org://plan.org#{}",
+        absolute_heading_selector
+            .split_once('#')
+            .map(|(_, fragment)| fragment)
+            .expect("selector fragment")
+    );
+    let relative_selector_query = orgize_command()
+        .current_dir(&root)
+        .args([
+            "query",
+            "--selector",
+            &relative_heading_selector,
+            "--json",
+            ".",
+        ])
+        .output()
+        .expect("run relative structural selector query");
+    assert!(
+        relative_selector_query.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&relative_selector_query.stderr)
+    );
+    let relative_selector_packet: Value = serde_json::from_slice(&relative_selector_query.stdout)
+        .expect("parse relative selector packet");
+    assert_eq!(relative_selector_packet["projectRoot"], ".");
+
     for kind in ["heading", "task"] {
         let selector = dot_root_inventory_packet["documentFacts"]
             .as_array()
@@ -656,6 +690,11 @@ fn orgize_command() -> crate::library_cli::OrgizeLibraryCliCommand {
 
 #[test]
 fn org_document_legacy_search_facade_is_rejected() {
+    let usage = orgize_command().output().expect("render top-level usage");
+    let usage = String::from_utf8_lossy(&usage.stderr);
+    assert!(usage.contains("|org|"), "{usage}");
+    assert!(!usage.contains("|search|"), "{usage}");
+
     for view in ["prime", "toc", "owner", "fzf", "memory"] {
         let output = orgize_command().args(["search", view]).output().unwrap();
         assert!(

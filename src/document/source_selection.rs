@@ -1,6 +1,6 @@
 //! Source selector parsing and bounded line extraction for document commands.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Source file plus its parser-owned structural selector.
 #[derive(Debug)]
@@ -12,6 +12,14 @@ pub struct SourceSelector {
 }
 
 impl SourceSelector {
+    /// Returns the selected file's directory, normalizing a relative file's empty parent to `.`.
+    pub fn parent_root(&self) -> &Path {
+        self.path
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+            .unwrap_or_else(|| Path::new("."))
+    }
+
     /// Parse the legacy direct-read `path[:start-end]` selector.
     pub fn parse_direct_read(value: &str) -> Result<Self, String> {
         let (path, range) = match value.rsplit_once(':') {
