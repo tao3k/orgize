@@ -2,7 +2,7 @@
 
 pub(crate) fn print_usage() {
     eprintln!(
-        "Usage: orgize <agent-planning|capture-plan|contract|elements-query|eval|export|fmt|guide|lint|md|org|query|sdd|sparse-tree|task-list> [options] [PATH ...]"
+        "Usage: orgize <agent-planning|capture-plan|contract|elements-query|eval|export|fmt|guide|lint|md|org|query|sdd|sparse-tree|task-list|version> [options] [PATH ...]"
     );
 }
 

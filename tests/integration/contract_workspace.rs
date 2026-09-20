@@ -669,12 +669,6 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
     })
     .expect("measure workspace admission through the ASP Rust Scenario macro");
 
-    eprintln!(
-        "workspace admission performance: documents=256 evaluations=512 observed={:?} max={:?}",
-        measurement.observed_total,
-        benchmark.benchmark.max_total.as_duration()
-    );
-
     assert!(
         measurement.observed_total < benchmark.benchmark.max_total.as_duration(),
         "workspace admission exceeded {}ms gate for 256 documents: {:?}",

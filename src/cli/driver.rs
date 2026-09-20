@@ -56,12 +56,45 @@ pub fn run_args(args: Vec<String>) -> Result<ExitCode, String> {
         "sdd" => run_sdd(args.collect()),
         "sparse-tree" => run_sparse_tree(args.collect()),
         "task-list" => run_task_list(args.collect()),
+        "version" => run_version(args.collect()),
+        "-V" | "--version" => run_version(Vec::new()),
         "-h" | "--help" | "help" => {
             print_usage();
             Ok(ExitCode::SUCCESS)
         }
         command => Err(format!("unknown command `{command}`")),
     }
+}
+
+fn run_version(args: Vec<String>) -> Result<ExitCode, String> {
+    let json = match args.as_slice() {
+        [] => false,
+        [flag] if flag == "--json" => true,
+        _ => return Err("Usage: orgize version [--json]".to_string()),
+    };
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "name": env!("CARGO_PKG_NAME"),
+                "version": env!("CARGO_PKG_VERSION"),
+                "sourceRevision": env!("ORGIZE_SOURCE_REVISION"),
+                "sourceDirty": env!("ORGIZE_SOURCE_DIRTY") == "true",
+            })
+        );
+    } else {
+        println!(
+            "orgize {} ({}{})",
+            env!("CARGO_PKG_VERSION"),
+            env!("ORGIZE_SOURCE_REVISION"),
+            if env!("ORGIZE_SOURCE_DIRTY") == "true" {
+                "+dirty"
+            } else {
+                ""
+            }
+        );
+    }
+    Ok(ExitCode::SUCCESS)
 }
 
 fn run_capture_plan(args: Vec<String>) -> Result<ExitCode, String> {

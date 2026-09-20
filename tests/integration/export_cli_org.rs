@@ -704,3 +704,24 @@ fn org_document_legacy_search_facade_is_rejected() {
         assert!(String::from_utf8_lossy(&output.stderr).contains("unknown command `search`"));
     }
 }
+
+#[test]
+fn orgize_version_reports_build_provenance() {
+    let output = orgize_command()
+        .args(["version", "--json"])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let receipt: Value = serde_json::from_slice(&output.stdout).expect("version receipt");
+    assert_eq!(receipt["name"], "orgize");
+    assert!(
+        receipt["sourceRevision"]
+            .as_str()
+            .is_some_and(|value| value.len() == 40)
+    );
+    assert!(receipt["sourceDirty"].is_boolean());
+}

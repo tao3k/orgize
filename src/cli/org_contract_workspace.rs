@@ -237,14 +237,20 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     );
 
     if options.json {
+        let workspace_digest =
+            workspace_digest(&root, &options.policy, &options.registry_paths, &maintained)?;
         let receipt = json!({
             "schemaVersion": 1,
             "workspaceContractId": policy.id,
             "root": root,
             "status": if findings.is_empty() { "passed" } else { "failed" },
+            "documentCount": maintained.len(),
             "files": file_receipts,
             "evaluationCount": evaluation_count,
             "assertionCount": assertion_count,
+            "orgizeRevision": env!("ORGIZE_SOURCE_REVISION"),
+            "orgizeSourceDirty": env!("ORGIZE_SOURCE_DIRTY") == "true",
+            "workspaceDigest": workspace_digest,
             "findings": findings,
         });
         println!(
@@ -270,6 +276,30 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     } else {
         ExitCode::from(1)
     })
+}
+
+fn workspace_digest(
+    root: &Path,
+    policy: &Path,
+    registries: &[PathBuf],
+    documents: &[MaintainedDocument],
+) -> Result<String, String> {
+    let mut paths = registries.to_vec();
+    paths.push(policy.to_path_buf());
+    paths.extend(documents.iter().map(|document| document.path.clone()));
+    paths.sort();
+    paths.dedup();
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(b"orgize.workspace-receipt.v1\0");
+    for path in paths {
+        let label = path.strip_prefix(root).unwrap_or(&path).to_string_lossy();
+        let source = fs::read(&path).map_err(|error| format!("{}: {error}", path.display()))?;
+        hasher.update(&(label.len() as u64).to_be_bytes());
+        hasher.update(label.as_bytes());
+        hasher.update(&(source.len() as u64).to_be_bytes());
+        hasher.update(&source);
+    }
+    Ok(format!("blake3:{}", hasher.finalize().to_hex()))
 }
 
 #[derive(Debug)]
