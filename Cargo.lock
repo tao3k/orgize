@@ -1610,6 +1610,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "gerbil-parser-rowan"
+version = "0.1.0"
+source = "git+https://github.com/tao3k/gerbil-parser?rev=61f1006bbd10f4c21e9d0ca9dc483d4303f70821#61f1006bbd10f4c21e9d0ca9dc483d4303f70821"
+dependencies = [
+ "rowan",
+ "sha2 0.10.9",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2168,6 +2177,7 @@ dependencies = [
  "comrak",
  "criterion",
  "datafusion",
+ "gerbil-parser-rowan",
  "ignore",
  "indexmap",
  "insta",

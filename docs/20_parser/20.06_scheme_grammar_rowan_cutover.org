@@ -13,9 +13,10 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
   revision; the existing defconst drift test and =.data/org-mode= fixture are
   the current coverage baseline.  The upstream file is singular
   =org-element.el=, not =org-elements.el=.
-- Maintain =languages/org/<version>/grammar.ss=, =parser.ss=, =fixtures.ss=,
-  =parser-test.ss=, and =corpus/= as one language pack.  Only its Scheme grammar
-  resolves precedence, ambiguity, syntax kinds, fields, and recovery.
+- Maintain =languages/org/<version>/grammar.ss=, =scanner.ss=, =parser.ss=,
+  =fixtures.ss=, =parser-test.ss=, and =corpus/= as one language pack.  The
+  Scheme pack owns Org precedence, ambiguity, syntax kinds, fields, recovery,
+  and all context-sensitive scanning decisions.
 - Generate and commit immutable Rust tables from that pack.  Cargo consumers
   use those tables without =gerbil.pkg=, an installed Gerbil, or build-time
   Scheme.  Regeneration is an upstream development/release action.
@@ -26,10 +27,12 @@ The current =gerbil-parser= Rust/Rowan AOT RFC 0006 explicitly leaves external
 scanners, recovery parity, and generated typed node/field accessors open.  Org
 requires all three before the parser swap:
 
-1. A generated, context-aware scanner contract must recognize beginning-of-line
+1. The generic runtime must admit a validated stream of terminal names and
+   source-byte ranges from a downstream scanner.  Org's beginning-of-line
    constructs, indentation, headline levels, block and drawer delimiters,
-   list nesting, and object-context restrictions.  Any scanner logic belongs
-   to the Gerbil language pack/engine contract, not an orgize Rust lexer.
+   list nesting, and object-context restrictions are declared in orgize Scheme
+   and AOT-generated into its Rust language product.  No Org scanner rules
+   or handwritten Org lexer belong in =gerbil-parser=.
 2. The generated runtime must preserve malformed input with explicit recovery
    nodes/diagnostics and exact UTF-8 byte ranges, including CRLF and missing
    end delimiters.  A generic all-TEXT success is not admission.
