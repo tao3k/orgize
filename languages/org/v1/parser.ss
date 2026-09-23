@@ -4,7 +4,7 @@
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  make-line-structure make-heading-line make-heading-fields
                  make-block-line make-block-header make-key-value-line
-                 make-inline-link make-text-line))
+                 make-inline-link make-text-line make-table-line))
 (export org-v1-line-structure)
 
 (def org-v1-line-structure
@@ -25,4 +25,7 @@
    (make-text-line 'OrgTextLine 'TextLine
                    (make-inline-link "[[" "][" "]]" 'OrgLink
                                      'LinkTarget 'LinkDescription 'LinkTrivia)
-                   'OrgParagraph)))
+                   'OrgParagraph)
+   (make-table-line "|" 'OrgTable 'OrgTableRow 'OrgTableRuleRow
+                    'OrgTableCell 'TableSeparator 'TableCellText
+                    'TableTrivia 'TableRuleText)))

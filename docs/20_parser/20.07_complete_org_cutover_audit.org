@@ -6,7 +6,7 @@
 The current Scheme-AOT/Rowan product is a lossless structural slice, not an
 Org parser replacement.  The generated element inventory names 30 element
 types and 24 object types, while =parser.ss= currently admits
-headlines/sections, property drawers, source blocks, links, and provisional
+headlines/sections, property drawers, source blocks, links, tables, and provisional
 paragraph grouping. The public =ParseConfig::parse= path still invokes the
 handwritten Rust =document_node=.  Three-platform CI and source roundtrip
 therefore establish neither complete syntax nor the requested cutover.
@@ -28,10 +28,10 @@ The input is the Git-tracked
 =tests/fixtures/org-elements/representative.org=.  Its public tree currently
 contains 30 distinct node kinds (including affiliated keywords, links,
 emphasis, lists, tables, planning, drawers, footnotes, and timestamps); the
-generated tree contains nine kinds. Both reproduce the source. The generated
-tree groups eight paragraphs where the old public tree reports seven, because
-list/table and other contexts still fall through to generic text. This is the
-counterexample to treating losslessness as syntax completeness.
+generated tree contains 13 kinds. Both reproduce the source. The generated
+tree now owns one table with two standard rows, one rule row, and four cells;
+both trees report seven paragraphs, but lists and several other contexts still
+fall through to generic text. Matching counts do not establish matching syntax.
 
 * Blocking contracts
 
@@ -39,7 +39,7 @@ counterexample to treating losslessness as syntax completeness.
 |----------+------------------+--------------------|
 | Grammar authority | =grammar.ss= plus POO =parser.ss= declare line structure | Every element/object recognition rule and containment restriction is Scheme-owned; no downstream Rust parser rule or generated scanner program |
 | Engine | Generic section and opaque-block executor | Bounded contextual Parser IR, recursive element/object strategies, typed recovery, source-backed events, and deterministic AOT validation |
-| Syntax coverage | Headlines, sections, source blocks, property drawers, links, and provisional paragraph grouping; ordinary list/table context is still generic text | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
+| Syntax coverage | Headlines, sections, source blocks, property drawers, links, tables, and provisional paragraph grouping; list context is still generic text | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
 | Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans expose the intended Org model; migrate callers rather than preserving incorrect old shapes |
 | Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
 | Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, migrated consumer tests, and equivalent-semantics performance receipts |
@@ -47,9 +47,9 @@ counterexample to treating losslessness as syntax completeness.
 
 * First typed failures
 
-1. The generated parser maps the representative document's list, table,
-   ordinary drawer, planning line, link, emphasis, timestamp, and footnote to
-   generic text lines. The Org POO strategy now recognizes property drawers
+1. The generated parser maps the representative document's list,
+   ordinary drawer, planning line, emphasis, timestamp, and footnote to
+   generic text lines. The Org POO strategy now recognizes tables and property drawers
    and node-property lines on the tracked contract fixture pair, including
    typed property key/value tokens and exact source spans. Inventory entries alone
    remain metadata, not parsing rules.
@@ -60,7 +60,7 @@ counterexample to treating losslessness as syntax completeness.
    the search for a later closing marker, so a marker beyond that heading
    cannot retroactively claim the block. The structural CST
    now groups nonblank text lines into a source-backed =OrgParagraph= node,
-   but this is not yet a complete paragraph decision: unrecognized list/table
+   but this is not yet a complete paragraph decision: unrecognized list
    constructs can be grouped as prose, and recovery still lacks the full
    public span contract.
 3. =parse_structural_lines= now returns the normal =Parse= receipt, source

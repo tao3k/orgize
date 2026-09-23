@@ -95,6 +95,45 @@ fn scheme_declared_paragraphs_preserve_line_breaks_and_link_ancestry() {
 }
 
 #[test]
+fn scheme_declared_table_builds_rows_and_cells_without_paragraph_claims() {
+    let source = "* Data\n| Name | Value |\n|------+-------|\n| é\\|x | 42 |\nAfter\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    let tables: Vec<_> = root
+        .descendants()
+        .filter(|node| name(node) == "OrgTable")
+        .collect();
+    assert_eq!(tables.len(), 1);
+    assert_eq!(name(&tables[0].parent().unwrap()), "OrgSection");
+    assert_eq!(
+        tables[0]
+            .descendants()
+            .filter(|node| name(node) == "OrgTableRow")
+            .count(),
+        2
+    );
+    assert_eq!(
+        tables[0]
+            .descendants()
+            .filter(|node| name(node) == "OrgTableRuleRow")
+            .count(),
+        1
+    );
+    let cells: Vec<_> = tables[0]
+        .descendants()
+        .filter(|node| name(node) == "OrgTableCell")
+        .collect();
+    assert_eq!(cells.len(), 4);
+    assert_eq!(cells[2].to_string(), " é\\|x ");
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgParagraph")
+            .count(),
+        1
+    );
+}
+
+#[test]
 fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
     let source = "* Open\r\n#+begin_src rust\r\n** source text\r\n";
     let root = parse(source);

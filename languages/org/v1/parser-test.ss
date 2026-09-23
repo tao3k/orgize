@@ -4,6 +4,8 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure? line-structure-heading line-structure-blocks
+                 line-structure-table table-line-delimiter
+                 table-line-table-node table-line-row-node table-line-cell-node
                  heading-line-section-node heading-line-heading-node
                  heading-line-fields heading-fields-title-token
                  block-line-opening block-line-closing block-line-block-node
@@ -23,7 +25,8 @@
              (heading (line-structure-heading structure))
              (blocks (line-structure-blocks structure))
              (source-block (car blocks))
-             (drawer (cadr blocks)))
+             (drawer (cadr blocks))
+             (table (line-structure-table structure)))
         (check (line-structure? structure) => #t)
         (check (heading-line-section-node heading) => 'OrgSection)
         (check (heading-line-heading-node heading) => 'OrgHeadline)
@@ -52,4 +55,8 @@
         (check (key-value-line-key-token (block-line-body-line drawer))
                => 'PropertyKey)
         (check (key-value-line-value-token (block-line-body-line drawer))
-               => 'PropertyValue)))))
+               => 'PropertyValue)
+        (check (table-line-delimiter table) => "|")
+        (check (table-line-table-node table) => 'OrgTable)
+        (check (table-line-row-node table) => 'OrgTableRow)
+        (check (table-line-cell-node table) => 'OrgTableCell)))))

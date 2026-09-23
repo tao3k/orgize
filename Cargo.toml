@@ -27,7 +27,7 @@ md = ["dep:comrak"]
 
 [dependencies]
 bytecount = "0.6"
-gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "ed6692603f909e5c8f7520d567eeeb2207b3948c", version = "0.1.0" }
+gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "d017cd27ef66bf758876a6b4c3df791fa2fce779", version = "0.1.0" }
 blake3 = "1"
 cfg-if = "1"
 chrono = { version = "0.4", optional = true }

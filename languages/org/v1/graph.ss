@@ -15,6 +15,11 @@
            (make-graph-field 'HeadlineTitle "title")))
     (make-graph-node 'OrgPropertyDrawer "element" "property-drawer" '())
     (make-graph-node 'OrgParagraph "element" "paragraph" '())
+    (make-graph-node 'OrgTable "element" "table" '())
+    (make-graph-node 'OrgTableRow "element" "table-row" '())
+    (make-graph-node 'OrgTableRuleRow "element" "table-rule-row" '())
+    (make-graph-node 'OrgTableCell "object" "table-cell"
+                     (list (make-graph-field 'TableCellText "text")))
     (make-graph-node
      'OrgNodeProperty "property" "node-property"
      (list (make-graph-field 'PropertyKey "key")
