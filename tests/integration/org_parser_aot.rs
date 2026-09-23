@@ -12,8 +12,9 @@ mod graph;
 
 mod contract_plan {
     use orgize::contract_feature::{
-        ContractAssertionRule, ContractBindingRule, ContractExpectationRule, ContractOperator,
-        ContractQueryRule, ContractRelation, ContractRule, ContractScope, ContractSeverity,
+        ContractAssertionRule, ContractBindingRule, ContractExpectationRule, ContractFieldMatch,
+        ContractOperator, ContractPack, ContractQueryRule, ContractRelation, ContractRule,
+        ContractScope, ContractSeverity,
     };
     include!("../../languages/org/v1/modules/org-contract/generated/contract-plan.rs");
 }
@@ -489,13 +490,19 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
     let records =
         gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
             .expect("Org Element projection matches the parser digest");
+    assert_eq!(contract_plan::CONTRACTS.rules.len(), 4);
     let evidence = records
         .iter()
         .find(|record| record.kind == "headline" && record.field("title") == Some("Evidence"))
         .expect("fixture has an Evidence headline");
     let scope = evidence.parent_id.expect("Evidence has a parent headline");
+    let contract = contract_plan::CONTRACTS
+        .rules
+        .iter()
+        .find(|rule| rule.id == "section.scope.v1")
+        .expect("Scheme AOT pack includes the subtree contract");
     let results = orgize::contract_feature::evaluate_contract(
-        &contract_plan::CONTRACT,
+        contract,
         &graph::GRAPH,
         &records,
         orgize::contract_feature::ContractScopeNodeId(scope),
@@ -506,9 +513,72 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
     assert_eq!(results[0].matched_count, 1);
     assert!(results[0].passed);
 
+    let document_contract = contract_plan::CONTRACTS
+        .rules
+        .iter()
+        .find(|rule| rule.id == "document.headlines.v1")
+        .expect("Scheme AOT pack includes the document contract");
+    let document_results = orgize::contract_feature::evaluate_contract(
+        document_contract,
+        &graph::GRAPH,
+        &records,
+        orgize::contract_feature::ContractScopeNodeId(0),
+    )
+    .expect("document contract uses the same Element graph");
+    assert_eq!(document_results.len(), 1);
+    assert!(document_results[0].passed);
+    assert!(document_results[0].matched_count >= 2);
+    assert_eq!(
+        orgize::contract_feature::evaluate_contract(
+            document_contract,
+            &graph::GRAPH,
+            &records,
+            orgize::contract_feature::ContractScopeNodeId(scope),
+        ),
+        Err(orgize::contract_feature::ContractExecutionError::InvalidScope)
+    );
+
+    let property_contract = contract_plan::CONTRACTS
+        .rules
+        .iter()
+        .find(|rule| rule.id == "document.properties.v1")
+        .expect("Scheme AOT pack includes the document property contract");
+    let property_results = orgize::contract_feature::evaluate_contract(
+        property_contract,
+        &graph::GRAPH,
+        &records,
+        orgize::contract_feature::ContractScopeNodeId(0),
+    )
+    .expect("document property query is admitted");
+    assert_eq!(property_results.len(), 1);
+    assert!(property_results[0].passed);
+
+    let override_scope = records
+        .iter()
+        .find(|record| {
+            record.kind == "headline" && record.field("title") == Some("Override Parent")
+        })
+        .expect("fixture has the override section")
+        .id;
+    let override_contract = contract_plan::CONTRACTS
+        .rules
+        .iter()
+        .find(|rule| rule.id == "section.override-title.v1")
+        .expect("Scheme AOT pack includes the override title contract");
+    let override_results = orgize::contract_feature::evaluate_contract(
+        override_contract,
+        &graph::GRAPH,
+        &records,
+        orgize::contract_feature::ContractScopeNodeId(override_scope),
+    )
+    .expect("scope-bound title containment is admitted");
+    assert_eq!(override_results.len(), 1);
+    assert_eq!(override_results[0].matched_count, 1);
+    assert!(override_results[0].passed);
+
     let stale = orgize::contract_feature::ContractRule {
         graph_digest: "outdated-projection",
-        ..contract_plan::CONTRACT
+        ..*contract
     };
     assert_eq!(
         orgize::contract_feature::evaluate_contract(

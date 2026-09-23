@@ -11,8 +11,10 @@
         (only-in "objects.ss"
                  make-org-element-query org-element-clause-kind
                  org-element-clause-name org-element-clause-value
+                 org-element-clause-match
                  org-element-query-node-kind org-element-query-field-name
-                 org-element-query-field-value org-element-query-relation
+                 org-element-query-field-value org-element-query-field-match
+                 org-element-query-relation
                  org-element-graph-records org-element-graph-id-of
                  org-element-graph-parent-of org-element-graph-kind-of
                  org-element-graph-field-of))
@@ -23,9 +25,11 @@
 
 (def (org-element-query-compose kind clauses)
   (let loop ((rest clauses) (field-name #f) (field-value #f)
+             (field-match 'exact)
              (relation 'any) (target #f))
     (if (null? rest)
-      (make-org-element-query kind field-name field-value relation target)
+      (make-org-element-query kind field-name field-value
+                              relation target field-match)
       (let (clause (car rest))
         (unless (org-element-query-clause? clause)
           (error "Org Element query requires POO clauses" clause))
@@ -34,11 +38,12 @@
            (when field-name
              (error "duplicate Org Element property clause" kind))
            (loop (cdr rest) (org-element-clause-name clause)
-                 (org-element-clause-value clause) relation target))
+                 (org-element-clause-value clause)
+                 (org-element-clause-match clause) relation target))
           ((relation)
            (unless (eq? relation 'any)
              (error "duplicate Org Element relation clause" kind))
-           (loop (cdr rest) field-name field-value
+           (loop (cdr rest) field-name field-value field-match
                  (org-element-clause-name clause)
                  (org-element-clause-value clause))))))))
 
@@ -101,6 +106,7 @@
          (parent-of (org-element-graph-parent-of graph))
          (field-name (org-element-query-field-name query))
          (field-value (org-element-query-field-value query))
+         (field-match (org-element-query-field-match query))
          (relation (org-element-query-relation query)))
     (org-element-map
      context (org-element-query-node-kind query)
@@ -109,10 +115,16 @@
          (and (or (equal? id scope-id)
                   (org-element-lineage? context scope-id id))
               (or (not field-name)
-                  (equal? (org-element-property context record field-name)
-                          field-value))
+                  (let (actual (org-element-property context record
+                                                      field-name))
+                    (and (string? actual)
+                         (case field-match
+                           ((exact) (equal? actual field-value))
+                           ((contains) (if (string-contains actual field-value)
+                                         #t #f))))))
               (case relation
                 ((any) #t)
+                ((at) (member id targets))
                 ((child-of) (member (parent-of record) targets))
                 ((descendant-of)
                  (ormap (lambda (target)

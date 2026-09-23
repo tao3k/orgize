@@ -11,7 +11,7 @@
                  make-org-element-query-context org-element-query?
                  org-element-map org-element-property
                  org-element-lineage? org-element-select
-                 org-elements property child-of))
+                 org-elements property property-contains at child-of))
 (export org-elements-module-test)
 
 (def sample-graph
@@ -53,6 +53,11 @@
          (lambda (record) (.ref record 'id)) (list 1))
         (check-org-element-selection
          reordered context 0 (list 0)
+         (lambda (record) (.ref record 'id)) (list 1))
+        (check-org-element-selection
+         (org-elements headline (property-contains title "Evid")
+                       (at scope))
+         context 1 (list 1)
          (lambda (record) (.ref record 'id)) (list 1))))
     (test-case "query syntax rejects conflicting and unknown declarations"
       (check-exception

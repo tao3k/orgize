@@ -5,7 +5,7 @@
                  make-org-element-property-clause
                  make-org-element-relation-clause)
         (only-in "funs.ss" org-element-query-compose))
-(export org-elements property child-of descendant-of)
+(export org-elements property property-contains at child-of descendant-of)
 
 (defsyntax (org-elements stx)
   (syntax-case stx ()
@@ -18,6 +18,20 @@
     ((_ name value)
      (syntax (make-org-element-property-clause
               (symbol->string 'name) value)))))
+
+(defsyntax (property-contains stx)
+  (syntax-case stx ()
+    ((_ name value)
+     (syntax (make-org-element-property-clause
+              (symbol->string 'name) value 'contains)))))
+
+(defsyntax (at stx)
+  (syntax-case stx (scope)
+    ((_ scope)
+     (syntax (make-org-element-relation-clause 'at 'scope)))
+    ((_ binding-name)
+     (syntax (make-org-element-relation-clause
+              'at (symbol->string 'binding-name))))))
 
 (defsyntax (child-of stx)
   (syntax-case stx (scope)

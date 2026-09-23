@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Contract behavior is Scheme/POO over Org Element facts, not S-expressions.
 
-(import (only-in :std/test check test-case test-suite)
+(import (only-in :std/test check check-exception test-case test-suite)
         (only-in :clan/poo/object .o .ref)
         (only-in "../org-elements/interface.ss"
                  make-org-element-query make-org-element-graph-view
@@ -18,7 +18,9 @@
                  org-contract-result-matched-count
                  org-contract-evaluate-definition
                  org-contract-default-profile org-contract-profile?
-                 assert-org-element))
+                 org-contract-block assert-org-element
+                 org-contract-definition-id org-contract-definition-scope)
+        (only-in "generated/contract-source.ss" org-contract-definitions))
 (export org-contract-feature-test)
 
 (def (fact id-value parent-value kind-value field-name-value field-value-value)
@@ -41,6 +43,21 @@
 
 (def org-contract-feature-test
   (test-suite "Org Contract POO feature"
+    (test-case "one Org document admits distinct POO contracts"
+      (check (map org-contract-definition-id org-contract-definitions)
+             => '("section.scope.v1" "document.headlines.v1"
+                  "document.properties.v1" "section.override-title.v1"))
+      (check (map org-contract-definition-scope org-contract-definitions)
+             => '(subtree document document subtree)))
+    (test-case "one dedicated block expands multiple admitted assertions"
+      (check
+       (length
+        (org-contract-block
+         (assert-org-element "first" error
+           (bindings) (org-elements headline) (expect at-least 1))
+         (assert-org-element "second" warning
+           (bindings) (org-elements link) (expect at-most 5))))
+       => 2))
     (test-case "query vocabulary is bound to declared Org Element fields"
       (check (org-contract-profile? org-contract-default-profile) => #t)
       (check (org-element-query? (make-org-element-query "headline" "title" "Task"))
@@ -81,7 +98,10 @@
                        contract sample-graph 1)))
         (check (length results) => 1)
         (check (org-contract-result-matched-count (car results)) => 1)
-        (check (org-contract-result-passed? (car results)) => #t)))
+        (check (org-contract-result-passed? (car results)) => #t)
+        (check-exception
+         (org-contract-evaluate-definition contract sample-graph 0)
+         true)))
     (test-case "hygienic declaration lowers to admitted POO assertions"
       (let* ((assertions
               (list

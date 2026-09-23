@@ -43,7 +43,7 @@ fall through to generic text. Matching counts do not establish matching syntax.
 | Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans expose the intended Org model; migrate callers rather than preserving incorrect old shapes |
 | Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
 | Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, migrated consumer tests, and equivalent-semantics performance receipts |
-| Org contract | The expression grammar now has a Scheme-owned AOT Rust/Rowan product, but Rust still owns contract policy, query compilation, evaluation, lint, CLI and workspace logic | One Org-owned Scheme/POO contract module owns syntax, policy, query and evaluation; Rust retains only typed AOT execution, filesystem/process handoff and public transport projection |
+| Org contract | Org headings/properties and =scheme :org-contract= blocks now AOT-generate a multi-contract POO/Rust pack, evaluated over the generated Element graph in integration tests. Production trace/lint/workspace still use the old Rust contract model | Migrate real consumers to the generated pack and delete displaced Rust policy/evaluation; retain only typed AOT execution, filesystem/process handoff and public transport projection |
 
 * First typed failures
 
@@ -71,15 +71,24 @@ fall through to generic text. Matching counts do not establish matching syntax.
 4. There is no element/object-complete, Git-tracked differential corpus.  The
    =.data/org-mode= checkout is reference evidence outside the Git-scoped
    fixture boundary; it must not become a runtime or CI input.
-5. =org-contract= is not yet a Scheme policy.  Moving only its constants or
-   introducing a second Scheme model beside the Rust evaluator would increase
-   authority count instead of reducing Rust responsibility.
+5. =org-contract= now has a Scheme/POO policy module and a bounded
+   =scheme :org-contract= declaration surface. The generator admits multiple
+   contract sections, uses the nearest Element headline for property/block
+   ownership, rejects duplicate identities, and binds each Rust rule to the
+   Element graph projection digest. The maintained AOT pack now evaluates four
+   Org-owned assertions against the tracked =notes.org= fixture: top-level
+   headlines, document properties, Evidence descendants, and scope-bound
+   title containment. The Rust descendant executor merges preorder intervals
+   instead of scanning every binding target for every record. This remains a
+   parallel path until
+   trace/lint/workspace consume the AOT pack and the old Rust policy is removed.
 
 * Completed expression-parser cutover within the larger MVP
 
-=languages/org/v1/modules/org-contract/grammar.ss= now defines expression
-syntax. Its reproducibly generated Rust table is consumed by the existing
-public query and contract-expression entrypoints. The former independent
+=languages/org/v1/modules/org-contract/grammar.ss= defines the older
+expression syntax used by existing Rust consumers; it is not the new
+=org-contract= feature language. Its generated Rust table is consumed by the
+existing public query and contract-expression entrypoints. The former independent
 Rowan S-expression scanner and syntax-kind catalog in =core_parser.rs= are
 gone; that file only lowers the generated CST to the existing query value.
 The same grammar is checked by a Scheme AST fixture and Rust tests covering
@@ -92,13 +101,14 @@ still uses =document_node=, and contract policy/evaluation still live in Rust.
 
 * Org contract module chain
 
-The contract owner belongs under
+The contract owner is
 =languages/org/v1/modules/org-contract/= with one public =interface.ss=. Follow
 the POO Flow role direction =types -> objects -> funs -> config -> interface=:
 
-- =types.ss=: closed contract, assertion, scope, severity, reference and query
-  vocabularies, shape admission, and diagnostics.
-- =objects.ss=: POO contract/assertion/query values and named constructors;
+- =types.ss=: closed contract, assertion, scope and severity vocabularies,
+  shape admission, and diagnostics; shared Element query types belong to
+  =modules/org-elements/=.
+- =objects.ss=: POO contract/assertion values and named constructors;
   extension is through prototypes or a one-receiver generic only where a
   behavior actually varies.
 - =funs.ss=: pure contract parsing, reference resolution policy, query
@@ -110,7 +120,7 @@ the POO Flow role direction =types -> objects -> funs -> config -> interface=:
 - =interface.ss=: the sole public import; it re-exports the four role owners
   and contains no second implementation.
 
-The downstream Rust product must project this admitted POO module through the
+The downstream Rust product projects this admitted POO module through the
 same development-time AOT boundary as the parser. Cargo users do not install
 Gerbil. Existing Rust model/evaluator code is deleted only when corresponding
 public lint, trace, workspace, query, JSON and negative tests pass against the
@@ -135,7 +145,7 @@ deliverables called a scanner MVP, element-inventory MVP, and contract MVP.
 |------+-----------------+---------------|
 | M1 fixture structure | Both tracked =contract_org_property_scope= inputs parse from Scheme-authored AOT rules with 8 headlines each, 8/4 property drawers, 20/6 node-property nodes, 4/0 source blocks, typed property key/value tokens, exact source ranges, and malformed-drawer recovery | Local Scheme/Rust tests pass; not a public cutover |
 | M2 typed semantic input | Generated CST additionally exposes headline titles, links and source-block language/body fields; the fixture pair projects the intended element graph without the handwritten Org parser | In progress: Scheme-owned graph rules AOT-project the fixture topology from Rowan CST, but production =org_elements_graph= and contract evaluation still use =ParsedAst= |
-| M3 executable contract | Scheme POO =org-contract= modules own query/policy/evaluation; migrated public trace/lint/workspace entrypoints execute the generated product and the displaced Rust owners are removed | Open; this closes the vertical MVP |
+| M3 executable contract | Scheme POO =org-contract= modules own policy/evaluation; migrated public trace/lint/workspace entrypoints execute the generated product and the displaced Rust owners are removed | Scheme module, Org-native multi-contract pack and generated-graph test pass; public consumers and old-owner removal remain open |
 | M4 complete Org cutover | All 30 elements and 24 objects, context/recovery/corpus gates, migrated public consumers, and equivalent-semantics performance receipts; remove =document_node= and remaining handwritten syntax parser | Open; this closes the PR |
 
 The gates are cumulative evidence for one product, not four independently

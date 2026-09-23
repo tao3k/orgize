@@ -5,14 +5,16 @@
         (only-in "../org-elements/interface.ss"
                  org-element-graph-view? make-org-element-query-context
                  org-element-select org-element-query-target
-                 org-element-graph-id-of)
+                 org-element-graph-records org-element-graph-id-of
+                 org-element-graph-parent-of org-element-graph-kind-of)
         (only-in "objects.ss"
                  make-org-contract-result
                  org-contract-expectation-operator org-contract-expectation-count
                  org-contract-binding-name org-contract-binding-query
                  org-contract-assertion-id org-contract-assertion-bindings
                  org-contract-assertion-query org-contract-assertion-expectation
-                 org-contract-definition-assertions))
+                 org-contract-definition-assertions
+                 org-contract-definition-scope))
 (export org-contract-select org-contract-evaluate-assertion
         org-contract-evaluate-definition)
 
@@ -75,6 +77,23 @@
   (unless (and (org-contract-definition? definition)
                (org-element-graph-view? graph))
     (error "Org contract evaluation requires admitted POO values"))
+  (let ((id-of (org-element-graph-id-of graph))
+        (kind-of (org-element-graph-kind-of graph))
+        (parent-of (org-element-graph-parent-of graph)))
+    (let loop ((rest (org-element-graph-records graph)))
+      (cond
+       ((null? rest) (error "Org contract scope is absent" scope-id))
+       ((equal? (id-of (car rest)) scope-id)
+        (unless
+         (case (org-contract-definition-scope definition)
+           ((document)
+            (and (equal? scope-id 0)
+                 (not (parent-of (car rest)))
+                 (equal? (kind-of (car rest)) "org-data")))
+           ((subtree) (equal? (kind-of (car rest)) "headline"))
+           (else #f))
+         (error "Org contract scope has the wrong Element kind" scope-id)))
+       (else (loop (cdr rest))))))
   (let (context (make-org-element-query-context graph))
     (map (lambda (assertion)
            (evaluate-assertion assertion graph context scope-id))

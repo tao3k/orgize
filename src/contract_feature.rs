@@ -11,8 +11,16 @@ use gerbil_parser_rowan::{GraphProjectionSpec, GraphRecord};
 /// Relationship between a selected Element and the query target.
 pub enum ContractRelation {
     Any,
+    At,
     ChildOf,
     DescendantOf,
+}
+
+/// Comparison applied to an Org Element field.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ContractFieldMatch {
+    Exact,
+    Contains,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -44,6 +52,7 @@ pub struct ContractQueryRule {
     pub node_kind: &'static str,
     pub field_name: Option<&'static str>,
     pub field_value: Option<&'static str>,
+    pub field_match: ContractFieldMatch,
     pub relation: ContractRelation,
     pub target_scope: bool,
     pub target_binding: Option<&'static str>,
@@ -80,6 +89,12 @@ pub struct ContractRule {
     pub graph_digest: &'static str,
     pub scope: ContractScope,
     pub assertions: &'static [ContractAssertionRule],
+}
+
+/// Immutable group of contracts generated from one Org source document.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ContractPack {
+    pub rules: &'static [ContractRule],
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -135,10 +150,34 @@ impl<'a> GraphIndex<'a> {
     fn descendant_or_self(&self, ancestor: usize, node: usize) -> bool {
         ancestor <= node && node < self.subtree_end[ancestor]
     }
+}
 
-    fn descendant(&self, ancestor: usize, node: usize) -> bool {
-        ancestor < node && node < self.subtree_end[ancestor]
+fn descendant_intervals(targets: &[usize], subtree_end: &[usize]) -> Vec<(usize, usize)> {
+    let mut ranges: Vec<_> = targets
+        .iter()
+        .filter_map(|&target| {
+            let start = target + 1;
+            let end = subtree_end[target];
+            (start < end).then_some((start, end))
+        })
+        .collect();
+    ranges.sort_unstable_by_key(|&(start, _)| start);
+    let mut merged = Vec::<(usize, usize)>::with_capacity(ranges.len());
+    for (start, end) in ranges {
+        if let Some(last) = merged.last_mut()
+            && start <= last.1
+        {
+            last.1 = last.1.max(end);
+            continue;
+        }
+        merged.push((start, end));
     }
+    merged
+}
+
+fn in_intervals(node: usize, intervals: &[(usize, usize)]) -> bool {
+    let position = intervals.partition_point(|&(start, _)| start <= node);
+    position > 0 && node < intervals[position - 1].1
 }
 
 fn target_ids(
@@ -166,24 +205,37 @@ fn select(
 ) -> Result<Vec<usize>, ContractExecutionError> {
     let targets = target_ids(query, scope_id, bindings)?;
     let child_targets: HashSet<_> = targets.iter().copied().collect();
+    let descendant_ranges = if query.relation == ContractRelation::DescendantOf {
+        descendant_intervals(&targets, &graph.subtree_end)
+    } else {
+        Vec::new()
+    };
     let mut matches = Vec::new();
     for record in graph.records {
         if !graph.descendant_or_self(scope_id, record.id)
             || record.kind != query.node_kind
-            || query
-                .field_name
-                .is_some_and(|field| record.field(field) != query.field_value)
+            || query.field_name.is_some_and(|field| {
+                let Some(actual) = record.field(field) else {
+                    return true;
+                };
+                let Some(expected) = query.field_value else {
+                    return true;
+                };
+                match query.field_match {
+                    ContractFieldMatch::Exact => actual != expected,
+                    ContractFieldMatch::Contains => !actual.contains(expected),
+                }
+            })
         {
             continue;
         }
         let related = match query.relation {
             ContractRelation::Any => true,
+            ContractRelation::At => child_targets.contains(&record.id),
             ContractRelation::ChildOf => record
                 .parent_id
                 .is_some_and(|parent| child_targets.contains(&parent)),
-            ContractRelation::DescendantOf => targets
-                .iter()
-                .any(|&target| graph.descendant(target, record.id)),
+            ContractRelation::DescendantOf => in_intervals(record.id, &descendant_ranges),
         };
         if related {
             matches.push(record.id);
@@ -211,6 +263,15 @@ pub fn evaluate_contract(
     if scope_id >= records.len() {
         return Err(ContractExecutionError::InvalidScope);
     }
+    match contract.scope {
+        ContractScope::Document if scope_id != 0 || records[scope_id].kind != "org-data" => {
+            return Err(ContractExecutionError::InvalidScope);
+        }
+        ContractScope::Subtree if records[scope_id].kind != "headline" => {
+            return Err(ContractExecutionError::InvalidScope);
+        }
+        _ => {}
+    }
     let mut results = Vec::with_capacity(contract.assertions.len());
     for assertion in contract.assertions {
         let mut bindings = HashMap::<&'static str, Vec<usize>>::new();
@@ -236,3 +297,7 @@ pub fn evaluate_contract(
     }
     Ok(results)
 }
+
+#[cfg(test)]
+#[path = "../tests/unit/contract_feature.rs"]
+mod tests;

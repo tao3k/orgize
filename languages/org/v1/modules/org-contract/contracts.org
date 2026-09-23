@@ -16,3 +16,43 @@
   (org-elements link (descendant-of evidence))
   (expect at-least 1))
 #+end_src
+
+** Document visibility contract
+:PROPERTIES:
+:CONTRACT_ID: document.headlines.v1
+:CONTRACT_SCOPE: document
+:END:
+
+#+begin_src scheme :org-contract
+(assert-org-element "document.has-headline" warning
+  (bindings)
+  (org-elements headline (child-of scope))
+  (expect at-least 2))
+#+end_src
+
+* Document property contract
+:PROPERTIES:
+:CONTRACT_ID: document.properties.v1
+:CONTRACT_SCOPE: document
+:END:
+
+#+begin_src scheme :org-contract
+(assert-org-element "document.has-contract-org-node-property" error
+  (bindings)
+  (org-elements node-property (property key "CONTRACT_ORG"))
+  (expect at-least 1))
+#+end_src
+
+* Override title contract
+:PROPERTIES:
+:CONTRACT_ID: section.override-title.v1
+:CONTRACT_SCOPE: subtree
+:END:
+
+#+begin_src scheme :org-contract
+(assert-org-element "section.title-has-override" error
+  (bindings)
+  (org-elements headline (property-contains title "Override")
+                (at scope))
+  (expect at-least 1))
+#+end_src

@@ -50,7 +50,7 @@
 (def (org-element-query-shape? value)
   (and (has-kind-and-slots?
         value +org-element-query-kind+
-        '(schema node-kind field-name field-value relation target))
+        '(schema node-kind field-name field-value field-match relation target))
        (equal? (.ref value 'schema) +org-element-schema+)
        (let (rule (org-element-kind-rule (.ref value 'node-kind)))
          (and rule
@@ -61,7 +61,8 @@
              (field-value (.ref value 'field-value)))
          (or (and (not field-name) (not field-value))
              (and (nonempty-string? field-name) (string? field-value))))
-       (memq (.ref value 'relation) '(any child-of descendant-of))
+       (memq (.ref value 'field-match) '(exact contains))
+       (memq (.ref value 'relation) '(any at child-of descendant-of))
        (let (target (.ref value 'target))
          (if (eq? (.ref value 'relation) 'any)
            (not target)
@@ -72,14 +73,16 @@
 
 (def (org-element-query-clause-shape? value)
   (and (has-kind-and-slots? value +org-element-clause-kind+
-                            '(schema clause-kind name value))
+                            '(schema clause-kind name value match))
        (equal? (.ref value 'schema) +org-element-schema+)
        (case (.ref value 'clause-kind)
          ((property)
           (and (nonempty-string? (.ref value 'name))
-               (string? (.ref value 'value))))
+               (string? (.ref value 'value))
+               (memq (.ref value 'match) '(exact contains))))
          ((relation)
-          (and (memq (.ref value 'name) '(child-of descendant-of))
+          (and (memq (.ref value 'name) '(at child-of descendant-of))
+               (not (.ref value 'match))
                (or (eq? (.ref value 'value) 'scope)
                    (nonempty-string? (.ref value 'value)))))
          (else #f))))
