@@ -1,6 +1,8 @@
 // Generated from languages/org/v1/scanner.ss. Do not edit.
 pub const BLOCK_BEGIN: &str = "#+begin_src";
 pub const BLOCK_END: &str = "#+end_src";
+pub const SCANNER_DIGEST: &str =
+    "sha256:7259b399e144d49e67eb36af3e38d1f43b8cf9cb7677bdd8841fefa5e41e4164";
 
 use gerbil_parser_rowan::ScannedToken;
 

@@ -25,6 +25,12 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
 ** Current vertical slice
 
 =languages/org/v1/grammar.ss= declares the initial line-level Org grammar.
+=generate-parser.ss= now compiles that declaration through gerbil-parser's public
+Rust/Rowan generator into committed =generated/parser.rs=.  The independent
+=org_parser_aot= integration gate feeds the Scheme-generated scanner's tokens
+to =parse_scanned= and checks Rowan shape, exact source roundtrip, scanner
+identity, and malformed-block rejection.  This proves the generated parser
+tables execute; it does not route the public =Org::parse= facade through them.
 =scanner.ss= owns source-block/headline context and UTF-8 byte ranges; the
 development-only =generate-scanner.ss= emits the committed
 =generated/scanner.rs=.  Scheme and independent Rust tests exercise the same
@@ -34,9 +40,9 @@ generates =generated/elements.rs=; the default affiliated-keyword configuration
 consumes that projection.  The original Org guide and upstream-inventory
 snapshots remain preserved as Rowan cutover comparison targets, while the
 Git-tracked representative document has its own runnable snapshot.  This is
-not yet the public =Org::parse= implementation:
-the generated grammar tables, scanner-to-engine adapter, nested headline
-structure, recovery, and full =org-element.el= inventory remain cutover gates.
+not yet the public =Org::parse= implementation: nested headline structure,
+recovery, full =org-element.el= syntax behavior, and the public tree projection
+remain cutover gates.  An element inventory is not a set of parsing rules.
 
 ** Required upstream engine work
 

@@ -3,6 +3,15 @@
 #[path = "../../languages/org/v1/generated/scanner.rs"]
 mod generated;
 
+#[test]
+fn scanner_receipt_tracks_scheme_source() {
+    use sha2::{Digest, Sha256};
+
+    let source = include_str!("../../languages/org/v1/scanner.ss");
+    let actual = format!("sha256:{:x}", Sha256::digest(source.as_bytes()));
+    assert_eq!(generated::SCANNER_DIGEST, actual);
+}
+
 fn scanned(source: &str) -> Vec<(&'static str, usize, usize)> {
     generated::scan(source)
         .into_iter()

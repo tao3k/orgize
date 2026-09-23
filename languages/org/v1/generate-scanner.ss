@@ -3,6 +3,22 @@
 ;;; Development-only Scheme AOT generator; Cargo consumes committed Rust.
 
 (load "languages/org/v1/scanner.ss")
+(import (only-in :std/crypto/digest sha256)
+        (only-in :std/misc/ports read-all-as-u8vector))
+
+(def (scanner-digest)
+  (let ((digest (sha256
+                 (call-with-input-file "languages/org/v1/scanner.ss"
+                   read-all-as-u8vector)))
+        (digits "0123456789abcdef"))
+    (string-append
+     "sha256:"
+     (list->string
+      (apply append
+             (map (lambda (byte)
+                    (list (string-ref digits (quotient byte 16))
+                          (string-ref digits (modulo byte 16))))
+                  (u8vector->list digest)))))))
 
 (def (directive name)
   (cdr (assq name +org-scanner-directives+)))
@@ -13,6 +29,9 @@
   (write (directive 'block-begin) port)
   (display ";\npub const BLOCK_END: &str = " port)
   (write (directive 'block-end) port)
+  (display ";\n" port)
+  (display "pub const SCANNER_DIGEST: &str = " port)
+  (write (scanner-digest) port)
   (display ";\n" port)
   (display #<<RUST
 
