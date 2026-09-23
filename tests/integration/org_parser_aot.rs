@@ -2,8 +2,7 @@
 
 #[path = "../../languages/org/v1/generated/parser.rs"]
 mod grammar;
-#[path = "../../languages/org/v1/generated/scanner.rs"]
-mod scanner;
+use super::org_scanner_generated as scanner;
 
 fn parse(source: &str) -> gerbil_parser_rowan::Parse {
     let tokens = scanner::scan(source);

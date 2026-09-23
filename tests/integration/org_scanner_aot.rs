@@ -1,7 +1,6 @@
 //! Customer-owned scanner generated from the Scheme Org language pack.
 
-#[path = "../../languages/org/v1/generated/scanner.rs"]
-mod generated;
+use super::org_scanner_generated as generated;
 
 #[test]
 fn scanner_receipt_tracks_scheme_source() {
