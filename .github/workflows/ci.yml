@@ -11,9 +11,6 @@ on:
 env:
   CARGO_INCREMENTAL: 0
   CARGO_TERM_COLOR: always
-  # External parser fixture lock. Update intentionally when refreshing Org mode
-  # compatibility coverage; do not track upstream main in CI.
-  ORG_MODE_FIXTURE_REV: b470d813d19e55cb90020649ae076684f1494c3b
 
 jobs:
   test:
@@ -42,39 +39,6 @@ jobs:
           git config --global core.longpaths true
           echo "CARGO_HOME=D:/c" >> "$GITHUB_ENV"
           echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
-
-      - name: Restore Org mode fixture cache
-        id: org-mode-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: .data/org-mode
-          key: orgize-org-mode-${{ runner.os }}-${{ env.ORG_MODE_FIXTURE_REV }}
-
-      - name: Fetch Org mode fixture
-        if: ${{ steps.org-mode-cache.outputs.cache-hit != 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p .data
-          git init .data/org-mode
-          git -C .data/org-mode remote add origin https://github.com/bzg/org-mode.git
-          git -C .data/org-mode fetch --depth=1 origin "$ORG_MODE_FIXTURE_REV"
-          git -C .data/org-mode checkout --detach FETCH_HEAD
-
-      - name: Validate Org mode fixture
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f .data/org-mode/doc/org-guide.org
-          test -f .data/org-mode/lisp/org-element.el
-
-      - name: Save Org mode fixture cache
-        if: ${{ steps.org-mode-cache.outputs.cache-hit != 'true' }}
-        continue-on-error: true
-        uses: actions/cache/save@v5
-        with:
-          path: .data/org-mode
-          key: orgize-org-mode-${{ runner.os }}-${{ env.ORG_MODE_FIXTURE_REV }}
 
       - name: Setup rust
         uses: dtolnay/rust-toolchain@stable
