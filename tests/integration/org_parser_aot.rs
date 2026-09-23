@@ -61,7 +61,7 @@ fn headings_form_nested_sections_and_blocks_mask_headlines() {
 }
 
 #[test]
-fn unclosed_source_block_recovers_losslessly_at_eof() {
+fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
     let source = "* Open\r\n#+begin_src rust\r\n** source text\r\n";
     let root = parse(source);
     assert_eq!(root.to_string(), source);
@@ -69,11 +69,17 @@ fn unclosed_source_block_recovers_losslessly_at_eof() {
         root.descendants()
             .filter(|node| name(node) == "OrgHeadline")
             .count(),
-        1
+        2
     );
     assert_eq!(
         root.descendants()
             .filter(|node| name(node) == "OrgSourceBlock")
+            .count(),
+        0
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgTextLine")
             .count(),
         1
     );

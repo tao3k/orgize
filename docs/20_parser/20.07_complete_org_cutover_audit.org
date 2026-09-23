@@ -40,10 +40,12 @@ counterexample to treating losslessness as syntax completeness.
 1. The generated parser maps the representative document's list, table,
    drawer, planning line, link, emphasis, timestamp, and footnote to generic
    text lines.  Their inventory entries are metadata, not parsing rules.
-2. The structural executor closes an unterminated source block at EOF.  The
-   pinned =org-element.el= reference's incomplete block parsers instead return
-   paragraph parsing.  Recovery policy must be declared and tested, not
-   inferred from lossless source text.
+2. The Scheme POO source-block rule now declares =recover-as-text= for an
+   unmatched opener. The generated structural parser therefore keeps the
+   following headline visible, matching the pinned =org-element.el= decision
+   to parse an incomplete source block as a paragraph. The structural CST
+   still has only line-level text nodes, not a public paragraph node or the
+   full recovery span contract.
 3. =parse_structural_lines= now returns the normal =Parse= receipt, source
    digest, POO parser-strategy digest, diagnostics and generated kind catalog.
    It still lacks generated

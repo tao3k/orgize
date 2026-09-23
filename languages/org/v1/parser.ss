@@ -11,5 +11,6 @@
    (make-heading-line "*" " " 'OrgSection 'OrgHeadline 'HeadlineLine)
    (list (make-block-line
           "#+begin_src" "#+end_src" #t #t
-          'OrgSourceBlock 'BlockBeginLine 'TextLine 'BlockEndLine))
+          'OrgSourceBlock 'BlockBeginLine 'TextLine 'BlockEndLine
+          'recover-as-text))
    (make-text-line 'OrgTextLine 'TextLine)))

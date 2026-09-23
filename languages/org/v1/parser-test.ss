@@ -5,7 +5,8 @@
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure? line-structure-heading line-structure-blocks
                  heading-line-section-node heading-line-heading-node
-                 block-line-opening block-line-closing block-line-block-node)
+                 block-line-opening block-line-closing block-line-block-node
+                 block-line-unclosed)
         (only-in "parser.ss" org-v1-line-structure))
 (export org-v1-parser-test)
 
@@ -22,4 +23,5 @@
         (check (length blocks) => 1)
         (check (block-line-opening source-block) => "#+begin_src")
         (check (block-line-closing source-block) => "#+end_src")
-        (check (block-line-block-node source-block) => 'OrgSourceBlock)))))
+        (check (block-line-block-node source-block) => 'OrgSourceBlock)
+        (check (block-line-unclosed source-block) => 'recover-as-text)))))
