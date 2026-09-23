@@ -129,7 +129,7 @@ deliverables called a scanner MVP, element-inventory MVP, and contract MVP.
 | Gate | Exact admission | Current state |
 |------+-----------------+---------------|
 | M1 fixture structure | Both tracked =contract_org_property_scope= inputs parse from Scheme-authored AOT rules with 8 headlines each, 8/4 property drawers, 20/6 node-property nodes, 4/0 source blocks, typed property key/value tokens, exact source ranges, and malformed-drawer recovery | Local Scheme/Rust tests pass; not a public cutover |
-| M2 typed semantic input | Generated CST additionally exposes headline titles, links and source-block language/body fields; the fixture pair projects the intended element graph without the handwritten Org parser | In progress: typed headline title, source language/body, and link target/description tokens pass the fixture gate; direct graph projection remains open |
+| M2 typed semantic input | Generated CST additionally exposes headline titles, links and source-block language/body fields; the fixture pair projects the intended element graph without the handwritten Org parser | In progress: Scheme-owned graph rules AOT-project the fixture topology from Rowan CST, but production =org_elements_graph= and contract evaluation still use =ParsedAst= |
 | M3 executable contract | Scheme POO =org-contract= modules own query/policy/evaluation; migrated public trace/lint/workspace entrypoints execute the generated product and the displaced Rust owners are removed | Open; this closes the vertical MVP |
 | M4 complete Org cutover | All 30 elements and 24 objects, context/recovery/corpus gates, migrated public consumers, and equivalent-semantics performance receipts; remove =document_node= and remaining handwritten syntax parser | Open; this closes the PR |
 
@@ -143,17 +143,25 @@ and delimiters to the parser digest; the Rowan executor emits typed language,
 link target, and description tokens without losing indentation, whitespace,
 CRLF, or source ranges. Org owns the =HeadlineTitle=, =SourceLanguage= and =OrgLink= declarations
 in =parser.ss= and =grammar.ss=; the tracked contract fixture checks all four
-=org-contract= block languages, three described links and every fixture headline title. This does not yet
-project the element graph or transfer contract evaluation from Rust, so M2 and
-the vertical MVP remain open.
+=org-contract= block languages, three described links and every fixture headline title.
 
-The next typed blocker is *not* a missing Cargo hook: =Document<ParsedAnnotation>::org_elements_graph=
-still indexes the old =ParsedAst=, and =evaluate_org_contract_with_context=
-constructs that graph from the same old AST. A generated-CST graph must derive
-the contract fixture's headline outline, local node properties, source blocks,
-and link descendants directly from source-backed Rowan nodes. It must then
-replace this production graph owner before contract evaluation can migrate;
-a test-only graph or second public graph API would not close M2.
+=graph.ss= now declares the Org graph projection as POO contracts. Its AOT
+Rust table is consumed by the generic =gerbil-parser-rowan= graph projector,
+which traverses the generated CST once and preserves projected ancestry and
+source ranges across unprojected wrapper nodes. The tracked contract fixture
+pair checks graph record counts, source-block fields, links, and the Evidence
+headline's link descendants without invoking the handwritten Org parser.
+This is private differential evidence, not a second public graph API. The
+production =org_elements_graph= still derives from =ParsedAst=, and contract
+evaluation still lives in Rust; M2 and the vertical MVP remain open.
+
+The next typed blocker is *not* a missing Cargo hook:
+=Document<ParsedAnnotation>::org_elements_graph= still indexes the old
+=ParsedAst=, and =evaluate_org_contract_with_context= constructs that graph
+from the same old AST. The generated-CST graph now derives the contract
+fixture's headline outline, local node properties, source blocks, and link
+descendants, but it must replace this production graph owner before contract
+evaluation can migrate. A test-only graph does not close M2.
 
 The MVP workflow is the existing Git-tracked =contract_org_property_scope=
 scenario: load =inputs/contracts.org= and =inputs/notes.org=, parse both,

@@ -6,6 +6,9 @@ mod grammar;
 #[rustfmt::skip]
 #[path = "../../languages/org/v1/generated/structure.rs"]
 mod structure;
+#[rustfmt::skip]
+#[path = "../../languages/org/v1/generated/graph.rs"]
+mod graph;
 
 use gerbil_parser_rowan::SyntaxNode;
 
@@ -309,6 +312,73 @@ fn invalid_property_drawer_recovers_without_claiming_node_properties() {
             .count(),
         2
     );
+}
+
+#[test]
+fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
+    let fixtures = [
+        (
+            include_str!(
+                "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/contracts.org"
+            ),
+            41,
+            4,
+            0,
+        ),
+        (
+            include_str!(
+                "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org"
+            ),
+            22,
+            0,
+            3,
+        ),
+    ];
+    for (source, expected_records, expected_blocks, expected_links) in fixtures {
+        let root = parse(source);
+        let records = gerbil_parser_rowan::project_syntax_graph(
+            &grammar::LANGUAGE,
+            &graph::GRAPH,
+            &root,
+        )
+        .expect("Scheme AOT graph rule must match the same grammar");
+        assert_eq!(records.len(), expected_records);
+        assert_eq!(records[0].kind, "org-data");
+        assert_eq!(records[0].parent_id, None);
+        assert_eq!(records.iter().filter(|record| record.kind == "headline").count(), 8);
+        assert_eq!(
+            records.iter().filter(|record| record.kind == "src-block").count(),
+            expected_blocks
+        );
+        assert_eq!(
+            records.iter().filter(|record| record.kind == "link").count(),
+            expected_links
+        );
+        for record in &records {
+            assert_eq!(records[record.id].id, record.id);
+            if let Some(parent_id) = record.parent_id {
+                assert!(records[parent_id].child_ids.contains(&record.id));
+            }
+            let range = record.range;
+            assert_eq!(
+                &source[usize::from(range.start())..usize::from(range.end())],
+                root.descendants()
+                    .find(|node| node.text_range() == range)
+                    .expect("graph range belongs to a Rowan node")
+                    .to_string()
+            );
+        }
+        for record in records.iter().filter(|record| record.kind == "link") {
+            assert_eq!(record.field("path"), Some("https://example.test"));
+            let parent = &records[record.parent_id.expect("link has a section parent")];
+            assert_eq!(parent.kind, "headline");
+            assert_eq!(parent.field("title"), Some("Evidence"));
+        }
+        for record in records.iter().filter(|record| record.kind == "src-block") {
+            assert_eq!(record.field("language"), Some("org-contract"));
+            assert!(record.field("body").is_some_and(|body| body.contains("(assert")));
+        }
+    }
 }
 
 #[test]
