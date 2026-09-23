@@ -1,0 +1,60 @@
+* 20.06 Scheme Grammar to Rowan Cutover
+
+The Org syntax declaration belongs in a versioned Gerbil language pack.  The
+normal Rust consumer must depend on the generated Org module and the generic
+=gerbil-parser-rowan= runtime only.  It must not invoke Gerbil at parse time,
+copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
+
+** Baseline and authority
+
+- Start from orgize =main= at =771e92b=; the earlier ASP alignment branch is
+  already represented by the squash and its dirty checkout is not an input.
+- Pin =org-element.el= and Org syntax specification at a named upstream
+  revision; the existing defconst drift test and =.data/org-mode= fixture are
+  the current coverage baseline.  The upstream file is singular
+  =org-element.el=, not =org-elements.el=.
+- Maintain =languages/org/<version>/grammar.ss=, =parser.ss=, =fixtures.ss=,
+  =parser-test.ss=, and =corpus/= as one language pack.  Only its Scheme grammar
+  resolves precedence, ambiguity, syntax kinds, fields, and recovery.
+- Generate and commit immutable Rust tables from that pack.  Cargo consumers
+  use those tables without =gerbil.pkg=, an installed Gerbil, or build-time
+  Scheme.  Regeneration is an upstream development/release action.
+
+** Required upstream engine work
+
+The current =gerbil-parser= Rust/Rowan AOT RFC 0006 explicitly leaves external
+scanners, recovery parity, and generated typed node/field accessors open.  Org
+requires all three before the parser swap:
+
+1. A generated, context-aware scanner contract must recognize beginning-of-line
+   constructs, indentation, headline levels, block and drawer delimiters,
+   list nesting, and object-context restrictions.  Any scanner logic belongs
+   to the Gerbil language pack/engine contract, not an orgize Rust lexer.
+2. The generated runtime must preserve malformed input with explicit recovery
+   nodes/diagnostics and exact UTF-8 byte ranges, including CRLF and missing
+   end delimiters.  A generic all-TEXT success is not admission.
+3. Generated typed kinds and fields must replace =src/syntax/kind.rs= and the
+   handwritten parser-facing =src/syntax/*.rs= modules without changing the
+   public =Org= facade or forcing semantic/export clients to parse source text.
+
+** Cutover gate
+
+For each pinned corpus case, compare the old parser, Scheme parser, generated
+Rowan parser, and where applicable Emacs =org-element.el=: acceptance/rejection,
+tree kind and hierarchy, field boundaries, diagnostics, and exact source
+roundtrip.  Cover every upstream element/object kind, affiliated keyword,
+configuration-dependent behavior, malformed/recovery case, and real Org guide
+fixture.  The focused =gerbil_rowan_cutover= tests pin four nontrivial public
+tree behaviors now.  The block-contained headline case is intentionally
+ignored against main because the legacy section splitter fails it; the Scheme
+cutover must enable and pass it.  Expand this gate before deleting the old
+parser.
+
+Run performance scenarios on representative Org documents and pathological
+nested/ambiguous inputs with the ASP Rust Dev Gate.  Record throughput,
+allocation, and peak memory against main; do not weaken existing thresholds
+to absorb a generated-engine regression.
+
+Only after the complete differential and performance gates pass should the
+handwritten Rust lexer/combinator/element/object parser be removed.  Keeping
+both as a runtime selection path would create two grammar authorities.
