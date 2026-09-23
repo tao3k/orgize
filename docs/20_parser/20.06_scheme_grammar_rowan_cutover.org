@@ -33,7 +33,8 @@ Rust/Rowan generator into committed =generated/parser.rs=. The Org-owned
 source-block delimiters, and text-line kinds. The upstream AOT projection
 resolves those symbolic kinds against the same grammar digest and emits
 =generated/structure.rs=. The generic =parse_structural_lines= engine executes
-section nesting and opaque source-block masking, producing a lossless Rowan
+section nesting, closed source blocks, and Scheme-declared recovery at EOF
+or a subsequent heading, producing a lossless Rowan
 tree over LF, CRLF, bare CR, and UTF-8 input. =org_parser_aot= tests that
 product, including the Git-tracked representative document, from Cargo
 without a Gerbil installation or build-time Scheme. No separate =scanner.ss=
@@ -59,21 +60,20 @@ Org parser. Org still requires these gates before the parser swap:
    nodes/diagnostics and exact UTF-8 byte ranges, including CRLF and missing
    end delimiters.  A generic all-TEXT success is not admission.
 3. Generated typed kinds and fields must replace =src/syntax/kind.rs= and the
-   handwritten parser-facing =src/syntax/*.rs= modules without changing the
-   public =Org= facade or forcing semantic/export clients to parse source text.
+   handwritten parser-facing =src/syntax/*.rs= modules. Redesign the public
+   =Org= facade and migrate or remove semantic/export clients that assume the
+   old AST shape; compatibility with an incorrect consumer is not a gate.
 
 ** Cutover gate
 
-For each pinned corpus case, compare the old parser, Scheme parser, generated
-Rowan parser, and where applicable Emacs =org-element.el=: acceptance/rejection,
-tree kind and hierarchy, field boundaries, diagnostics, and exact source
-roundtrip.  Cover every upstream element/object kind, affiliated keyword,
+For each pinned corpus case, compare the old parser and, where applicable,
+the pinned =org-element.el= reference with the Scheme-authored AOT product:
+acceptance/rejection, tree hierarchy, field boundaries, diagnostics, and
+exact source roundtrip. The old parser is evidence, not an authority; record
+source-backed intentional changes rather than forcing incorrect parity.
+Cover every upstream element/object kind, affiliated keyword,
 configuration-dependent behavior, malformed/recovery case, and real Org guide
-fixture.  The focused =gerbil_rowan_cutover= tests pin four nontrivial public
-tree behaviors now.  The block-contained headline case is intentionally
-ignored against main because the current section splitter fails it; the Scheme
-cutover must enable and pass it.  Expand this gate before deleting the old
-parser.
+fixture. Expand this gate before deleting the old parser.
 
 Run performance scenarios on representative Org documents and pathological
 nested/ambiguous inputs with the ASP Rust Dev Gate.  Record throughput,
