@@ -1,5 +1,5 @@
 ;;; -*- Gerbil -*-
-;;; Org v1 vertical slice. The customer pack owns the grammar and scanner.
+;;; Org v1 grammar. Contextual structure is declared in parser.ss.
 
 (import (only-in :gerbil-parser/language-support deflanguage-grammar))
 (export org-v1-language-grammar)
@@ -11,6 +11,7 @@
    (OrgHeadline node (line))
    (OrgSourceBlock node (begin body end))
    (OrgTextLine node (line))
+   (OrgSection node (heading element))
    (HeadlineLine token (text))
    (BlockBeginLine token (text))
    (BlockEndLine token (text))

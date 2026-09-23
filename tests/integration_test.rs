@@ -70,8 +70,6 @@ mod markdown;
 mod named_source_block_template;
 #[path = "integration/org_parser_aot.rs"]
 mod org_parser_aot;
-#[path = "integration/org_scanner_aot.rs"]
-mod org_scanner_aot;
 #[path = "integration/parse.rs"]
 mod parse;
 #[path = "integration/scenario_benchmark.rs"]

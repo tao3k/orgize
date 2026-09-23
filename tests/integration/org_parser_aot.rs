@@ -1,54 +1,107 @@
-//! The Org-owned Scheme grammar must compile to a real Rowan parser product.
+//! Scheme POO declaration -> gerbil-parser AOT table -> contextual Rowan CST.
 
+#[rustfmt::skip]
 #[path = "../../languages/org/v1/generated/parser.rs"]
 mod grammar;
-use super::org_scanner_aot::generated as scanner;
+#[rustfmt::skip]
+#[path = "../../languages/org/v1/generated/structure.rs"]
+mod structure;
 
-fn parse(source: &str) -> gerbil_parser_rowan::Parse {
-    let tokens = scanner::scan(source);
-    gerbil_parser_rowan::parse_scanned(&grammar::LANGUAGE, source, scanner::SCANNER_DIGEST, &tokens)
-        .unwrap_or_else(|error| panic!("AOT Org parser rejected source: {error:?}"))
-}
+use gerbil_parser_rowan::SyntaxNode;
 
-#[test]
-fn scheme_grammar_scanner_and_rowan_engine_form_one_lossless_path() {
-    let source = "* Real\r\n#+BEGIN_SRC rust\r\n* code, not a headline\r\n#+END_SRC\r\né\n";
-    let parsed = parse(source);
-    let root = parsed.syntax();
-    assert_eq!(root.to_string(), source);
-    assert_eq!(parsed.kind_name(root.kind()), Some("OrgFile"));
-
-    let kinds: Vec<_> = root
-        .descendants()
-        .filter_map(|node| parsed.kind_name(node.kind()))
-        .collect();
-    assert!(kinds.contains(&"OrgHeadline"), "{kinds:?}");
-    assert!(kinds.contains(&"OrgSourceBlock"), "{kinds:?}");
-    assert_eq!(
-        kinds.iter().filter(|kind| **kind == "OrgHeadline").count(),
-        1,
-        "headlines inside source blocks must remain body text"
-    );
-    assert_eq!(
-        parsed.receipt().grammar_digest,
-        grammar::LANGUAGE.grammar_digest
-    );
-    assert_eq!(
-        parsed.receipt().scanner_digest,
-        Some(scanner::SCANNER_DIGEST)
-    );
-}
-
-#[test]
-fn malformed_source_block_is_not_silently_accepted_as_text() {
-    let source = "#+begin_src rust\nmissing end\n";
-    let tokens = scanner::scan(source);
-    let error = gerbil_parser_rowan::parse_scanned(
+fn parse(source: &str) -> SyntaxNode {
+    let green = gerbil_parser_rowan::parse_structural_lines(
         &grammar::LANGUAGE,
+        &structure::STRUCTURE,
         source,
-        scanner::SCANNER_DIGEST,
-        &tokens,
     )
-    .expect_err("missing block end must not become a successful all-text tree");
-    assert_ne!(error.diagnostic.reason_kind, "invalid-aot-artifact");
+    .unwrap_or_else(|error| panic!("Org structural AOT rejected source: {error:?}"));
+    SyntaxNode::new_root(green)
+}
+
+fn name(node: &SyntaxNode) -> &'static str {
+    grammar::LANGUAGE.kinds[usize::from(node.kind().0)].name
+}
+
+#[test]
+fn headings_form_nested_sections_and_blocks_mask_headlines() {
+    let source = "é\r\n* Parent\n#+BEGIN_SRC rust\n** code, not a headline\n#+END_SRC\n** Child\nbody\r* Sibling\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    assert_eq!(name(&root), "OrgFile");
+    let sections: Vec<_> = root
+        .descendants()
+        .filter(|node| name(node) == "OrgSection")
+        .collect();
+    assert_eq!(sections.len(), 3);
+    assert_eq!(name(&sections[0].parent().unwrap()), "OrgFile");
+    assert_eq!(name(&sections[1].parent().unwrap()), "OrgSection");
+    assert_eq!(name(&sections[2].parent().unwrap()), "OrgFile");
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgHeadline")
+            .count(),
+        3
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgSourceBlock")
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn unclosed_source_block_recovers_losslessly_at_eof() {
+    let source = "* Open\r\n#+begin_src rust\r\n** source text\r\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgHeadline")
+            .count(),
+        1
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgSourceBlock")
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn structural_artifact_must_match_the_same_grammar_digest() {
+    let mut stale = structure::STRUCTURE;
+    stale.grammar_digest = "sha256:0000000000000000000000000000000000000000000000000000000000";
+    let error = gerbil_parser_rowan::parse_structural_lines(&grammar::LANGUAGE, &stale, "")
+        .expect_err("a stale POO projection cannot be silently used");
+    assert_eq!(error.reason_kind, "invalid-structural-aot");
+}
+
+#[test]
+fn many_sibling_sections_keep_exact_source_order() {
+    let source = "* item\n".repeat(10_000);
+    let root = parse(&source);
+    assert_eq!(root.to_string(), source);
+    assert_eq!(root.children().count(), 10_000);
+}
+
+#[test]
+fn git_tracked_org_document_is_lossless_at_the_current_structural_boundary() {
+    let source = include_str!("../fixtures/org-elements/representative.org");
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgSection")
+            .count(),
+        4
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgSourceBlock")
+            .count(),
+        1
+    );
 }

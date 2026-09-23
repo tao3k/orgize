@@ -14,10 +14,12 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
   =languages/org/v1/elements.ss=; its generated Rust projection and
   Git-tracked Org corpus are the test inputs.  Emacs Lisp is never an
   implementation or Cargo fixture.
-- Maintain =languages/org/<version>/grammar.ss=, =scanner.ss=, =parser.ss=,
-  =fixtures.ss=, =parser-test.ss=, and =corpus/= as one language pack.  The
+- Maintain =languages/org/<version>/grammar.ss=, =parser.ss=, and
+  =parser-test.ss= as one language pack. The Git-tracked regression source is
+  =tests/fixtures/org-elements/representative.org=; a complete versioned
+  =fixtures.ss=/=corpus/= and element/object coverage remain cutover work. The
   Scheme pack owns Org precedence, ambiguity, syntax kinds, fields, recovery,
-  and all context-sensitive scanning decisions.
+  and all context-sensitive recognition decisions.
 - Generate and commit immutable Rust tables from that pack.  Cargo consumers
   use those tables without =gerbil.pkg=, an installed Gerbil, or build-time
   Scheme.  Regeneration is an upstream development/release action.
@@ -25,37 +27,34 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
 ** Current vertical slice
 
 =languages/org/v1/grammar.ss= declares the initial line-level Org grammar.
-=generate-parser.ss= now compiles that declaration through gerbil-parser's public
-Rust/Rowan generator into committed =generated/parser.rs=.  The independent
-=org_parser_aot= integration gate feeds the Scheme-generated scanner's tokens
-to =parse_scanned= and checks Rowan shape, exact source roundtrip, scanner
-identity, and malformed-block rejection.  This proves the generated parser
-tables execute; it does not route the public =Org::parse= facade through them.
-=scanner.ss= owns source-block/headline context and UTF-8 byte ranges; the
-development-only =generate-scanner.ss= emits the committed
-=generated/scanner.rs=.  Scheme and independent Rust tests exercise the same
-CRLF, Unicode, block-content, and directive-boundary cases.  Cargo itself does
-not invoke Gerbil.  =elements.ss= now owns the element/object inventory and
+=generate-parser.ss= compiles that declaration through gerbil-parser's public
+Rust/Rowan generator into committed =generated/parser.rs=. The Org-owned
+=parser.ss= supplies a POO =LineStructure= value: headline/section kinds,
+source-block delimiters, and text-line kinds. The upstream AOT projection
+resolves those symbolic kinds against the same grammar digest and emits
+=generated/structure.rs=. The generic =parse_structural_lines= engine executes
+section nesting and opaque source-block masking, producing a lossless Rowan
+tree over LF, CRLF, bare CR, and UTF-8 input. =org_parser_aot= tests that
+product, including the Git-tracked representative document, from Cargo
+without a Gerbil installation or build-time Scheme. No separate =scanner.ss=
+or generated Rust scanner remains. =elements.ss= owns the element/object inventory and
 generates =generated/elements.rs=; the default affiliated-keyword configuration
 consumes that projection.  The original Org guide and upstream-inventory
 snapshots remain preserved as Rowan cutover comparison targets, while the
 Git-tracked representative document has its own runnable snapshot.  This is
-not yet the public =Org::parse= implementation: nested headline structure,
-recovery, full =org-element.el= syntax behavior, and the public tree projection
+not yet the public =Org::parse= implementation: full headline metadata,
+contextual element/object recognition, typed recovery, and the public tree projection
 remain cutover gates.  An element inventory is not a set of parsing rules.
 
 ** Required upstream engine work
 
-The current =gerbil-parser= Rust/Rowan AOT RFC 0006 explicitly leaves external
-scanners, recovery parity, and generated typed node/field accessors open.  Org
-requires all three before the parser swap:
+The upstream engine now owns a bounded line-structure executor, not a complete
+Org parser. Org still requires these gates before the parser swap:
 
-1. The generic runtime must admit a validated stream of terminal names and
-   source-byte ranges from a downstream scanner.  Org's beginning-of-line
-   constructs, indentation, headline levels, block and drawer delimiters,
-   list nesting, and object-context restrictions are declared in orgize Scheme
-   and AOT-generated into its Rust language product.  No Org scanner rules
-   or handwritten Org lexer belong in =gerbil-parser=.
+1. Extend the Scheme-owned POO parser declaration and the upstream bounded
+   contextual Parser IR to admit drawers, lists, tables, planning/property
+   metadata, affiliated keywords, and object-context restrictions. Org's rules
+   remain in orgize; no handwritten Org scanner or event algorithm is added.
 2. The generated runtime must preserve malformed input with explicit recovery
    nodes/diagnostics and exact UTF-8 byte ranges, including CRLF and missing
    end delimiters.  A generic all-TEXT success is not admission.
