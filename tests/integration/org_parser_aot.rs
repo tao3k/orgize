@@ -68,6 +68,33 @@ fn headings_form_nested_sections_and_closed_blocks_remain_lossless() {
 }
 
 #[test]
+fn scheme_declared_paragraphs_preserve_line_breaks_and_link_ancestry() {
+    let source = "* Task\r\nalpha\r\nbeta\n\n[[https://example.test][inside]]\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    let paragraphs: Vec<_> = root
+        .descendants()
+        .filter(|node| name(node) == "OrgParagraph")
+        .collect();
+    assert_eq!(paragraphs.len(), 2);
+    assert_eq!(paragraphs[0].to_string(), "alpha\r\nbeta\n");
+    assert_eq!(
+        paragraphs[1].to_string(),
+        "[[https://example.test][inside]]\n"
+    );
+    assert_eq!(name(&paragraphs[0].parent().unwrap()), "OrgSection");
+    let link = root
+        .descendants()
+        .find(|node| name(node) == "OrgLink")
+        .unwrap();
+    assert_eq!(name(&link.parent().unwrap()), "OrgTextLine");
+    assert_eq!(
+        name(&link.parent().unwrap().parent().unwrap()),
+        "OrgParagraph"
+    );
+}
+
+#[test]
 fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
     let source = "* Open\r\n#+begin_src rust\r\n** source text\r\n";
     let root = parse(source);
@@ -324,17 +351,20 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
             41,
             4,
             0,
+            0,
         ),
         (
             include_str!(
                 "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org"
             ),
-            22,
+            25,
             0,
+            3,
             3,
         ),
     ];
-    for (source, expected_records, expected_blocks, expected_links) in fixtures {
+    for (source, expected_records, expected_blocks, expected_links, expected_paragraphs) in fixtures
+    {
         let root = parse(source);
         let records =
             gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
@@ -363,6 +393,13 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
                 .count(),
             expected_links
         );
+        assert_eq!(
+            records
+                .iter()
+                .filter(|record| record.kind == "paragraph")
+                .count(),
+            expected_paragraphs
+        );
         for record in &records {
             assert_eq!(records[record.id].id, record.id);
             if let Some(parent_id) = record.parent_id {
@@ -379,9 +416,11 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
         }
         for record in records.iter().filter(|record| record.kind == "link") {
             assert_eq!(record.field("path"), Some("https://example.test"));
-            let parent = &records[record.parent_id.expect("link has a section parent")];
-            assert_eq!(parent.kind, "headline");
-            assert_eq!(parent.field("title"), Some("Evidence"));
+            let parent = &records[record.parent_id.expect("link has a paragraph parent")];
+            assert_eq!(parent.kind, "paragraph");
+            let section = &records[parent.parent_id.expect("paragraph has a section parent")];
+            assert_eq!(section.kind, "headline");
+            assert_eq!(section.field("title"), Some("Evidence"));
         }
         for record in records.iter().filter(|record| record.kind == "src-block") {
             assert_eq!(record.field("language"), Some("org-contract"));

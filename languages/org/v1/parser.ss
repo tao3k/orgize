@@ -24,4 +24,5 @@
                                'PropertyKey 'PropertyValue 'PropertyTrivia)))
    (make-text-line 'OrgTextLine 'TextLine
                    (make-inline-link "[[" "][" "]]" 'OrgLink
-                                     'LinkTarget 'LinkDescription 'LinkTrivia))))
+                                     'LinkTarget 'LinkDescription 'LinkTrivia)
+                   'OrgParagraph)))

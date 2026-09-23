@@ -14,8 +14,8 @@
       (let (nodes (graph-projection-nodes org-v1-graph-projection))
         (check (graph-projection? org-v1-graph-projection) => #t)
         (check (map graph-node-syntax-kind nodes)
-               => '(OrgFile OrgSection OrgPropertyDrawer OrgNodeProperty
+               => '(OrgFile OrgSection OrgPropertyDrawer OrgParagraph OrgNodeProperty
                             OrgSourceBlock OrgLink))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "property-drawer"
-                                "node-property" "src-block" "link"))))))
+                                "paragraph" "node-property" "src-block" "link"))))))

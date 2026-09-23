@@ -2,12 +2,13 @@
 use gerbil_parser_rowan::{BlockHeaderRule, BlockLineRule, HeadingFieldsRule, HeadingLineRule, InlineLinkRule, KeyValueLineRule, LineStructureSpec, UnclosedBlockPolicy};
 
 pub static STRUCTURE: LineStructureSpec = LineStructureSpec {
-    grammar_digest: "sha256:6a9a9d59df99b4e69a57848e31a09a7fc062c5640c4345e689e8e04d319df4d5",
-    parser_digest: "sha256:f47475ab851b1263e7803ccea294432c916ddae01d891fbd2d5254c6ece098b1",
-    heading: HeadingLineRule { marker: 42, separator: 32, section_node: 7, heading_node: 1, heading_token: 8, fields: Some(HeadingFieldsRule { title_token: 9, trivia_token: 10 }) },
+    grammar_digest: "sha256:18dafd4399e621be8f5ba93815705c57b8a3b0e28fce9845f389a7952488be98",
+    parser_digest: "sha256:38645dfc1a8be22e040edb9adb335f3272ada844cd736c12a6784c7be7b093f1",
+    heading: HeadingLineRule { marker: 42, separator: 32, section_node: 8, heading_node: 1, heading_token: 9, fields: Some(HeadingFieldsRule { title_token: 10, trivia_token: 11 }) },
     blocks: &[
-    BlockLineRule { opening: "#+begin_src", closing: "#+end_src", case_insensitive: true, indent: true, block_node: 2, begin_token: 11, body_token: 15, end_token: 14, unclosed: UnclosedBlockPolicy::RecoverAsText, heading_bound: true, body_line: None, header: Some(BlockHeaderRule { argument_token: 12, trivia_token: 13 }) },
-    BlockLineRule { opening: ":PROPERTIES:", closing: ":END:", case_insensitive: true, indent: true, block_node: 3, begin_token: 16, body_token: 15, end_token: 17, unclosed: UnclosedBlockPolicy::RecoverAsText, heading_bound: true, body_line: Some(KeyValueLineRule { marker: 58, node: 4, key_token: 18, value_token: 19, trivia_token: 20 }), header: None },
+    BlockLineRule { opening: "#+begin_src", closing: "#+end_src", case_insensitive: true, indent: true, block_node: 2, begin_token: 12, body_token: 16, end_token: 15, unclosed: UnclosedBlockPolicy::RecoverAsText, heading_bound: true, body_line: None, header: Some(BlockHeaderRule { argument_token: 13, trivia_token: 14 }) },
+    BlockLineRule { opening: ":PROPERTIES:", closing: ":END:", case_insensitive: true, indent: true, block_node: 3, begin_token: 17, body_token: 16, end_token: 18, unclosed: UnclosedBlockPolicy::RecoverAsText, heading_bound: true, body_line: Some(KeyValueLineRule { marker: 58, node: 4, key_token: 19, value_token: 20, trivia_token: 21 }), header: None },
     ],
-    text_node: 5, text_token: 15, inline_link: Some(InlineLinkRule { opening: "[[", separator: "][", closing: "]]", node: 6, target_token: 21, description_token: 22, trivia_token: 23 }),
+    paragraph_node: Some(6),
+    text_node: 5, text_token: 16, inline_link: Some(InlineLinkRule { opening: "[[", separator: "][", closing: "]]", node: 7, target_token: 22, description_token: 23, trivia_token: 24 }),
 };

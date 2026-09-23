@@ -13,6 +13,7 @@
    (OrgPropertyDrawer node (begin property end))
    (OrgNodeProperty node (key value))
    (OrgTextLine node (line))
+   (OrgParagraph node (line))
    (OrgLink node (target description))
    (OrgSection node (heading element))
    (HeadlineLine token (text))

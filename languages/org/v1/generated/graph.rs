@@ -2,14 +2,15 @@
 use gerbil_parser_rowan::{GraphFieldRule, GraphNodeRule, GraphProjectionSpec};
 
 pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
-    grammar_digest: "sha256:6a9a9d59df99b4e69a57848e31a09a7fc062c5640c4345e689e8e04d319df4d5",
-    projection_digest: "sha256:73ef616183cefadbc9fcaa12d4c7c94cc76cac078bb796c6764a86160e013a03",
+    grammar_digest: "sha256:18dafd4399e621be8f5ba93815705c57b8a3b0e28fce9845f389a7952488be98",
+    projection_digest: "sha256:c16cd512bd5575f86cc4cf00cc500d66a6710dc1d4da638cccd26a07601c96b2",
     rules: &[
         GraphNodeRule { syntax_kind: 0, category: "document", kind: "org-data", fields: &[] },
-        GraphNodeRule { syntax_kind: 7, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 8, name: "markers" }, GraphFieldRule { token_kind: 9, name: "title" }, ] },
+        GraphNodeRule { syntax_kind: 8, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 9, name: "markers" }, GraphFieldRule { token_kind: 10, name: "title" }, ] },
         GraphNodeRule { syntax_kind: 3, category: "element", kind: "property-drawer", fields: &[] },
-        GraphNodeRule { syntax_kind: 4, category: "property", kind: "node-property", fields: &[GraphFieldRule { token_kind: 18, name: "key" }, GraphFieldRule { token_kind: 19, name: "value" }, ] },
-        GraphNodeRule { syntax_kind: 2, category: "element", kind: "src-block", fields: &[GraphFieldRule { token_kind: 12, name: "language" }, GraphFieldRule { token_kind: 15, name: "body" }, ] },
-        GraphNodeRule { syntax_kind: 6, category: "object", kind: "link", fields: &[GraphFieldRule { token_kind: 21, name: "path" }, GraphFieldRule { token_kind: 22, name: "description" }, ] },
+        GraphNodeRule { syntax_kind: 6, category: "element", kind: "paragraph", fields: &[] },
+        GraphNodeRule { syntax_kind: 4, category: "property", kind: "node-property", fields: &[GraphFieldRule { token_kind: 19, name: "key" }, GraphFieldRule { token_kind: 20, name: "value" }, ] },
+        GraphNodeRule { syntax_kind: 2, category: "element", kind: "src-block", fields: &[GraphFieldRule { token_kind: 13, name: "language" }, GraphFieldRule { token_kind: 16, name: "body" }, ] },
+        GraphNodeRule { syntax_kind: 7, category: "object", kind: "link", fields: &[GraphFieldRule { token_kind: 22, name: "path" }, GraphFieldRule { token_kind: 23, name: "description" }, ] },
     ],
 };

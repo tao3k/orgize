@@ -5,8 +5,9 @@
 
 The current Scheme-AOT/Rowan product is a lossless structural slice, not an
 Org parser replacement.  The generated element inventory names 30 element
-types and 24 object types, while =parser.ss= admits headlines/sections and
-source blocks only.  The public =ParseConfig::parse= path still invokes the
+types and 24 object types, while =parser.ss= currently admits
+headlines/sections, property drawers, source blocks, links, and provisional
+paragraph grouping. The public =ParseConfig::parse= path still invokes the
 handwritten Rust =document_node=.  Three-platform CI and source roundtrip
 therefore establish neither complete syntax nor the requested cutover.
 
@@ -27,7 +28,9 @@ The input is the Git-tracked
 =tests/fixtures/org-elements/representative.org=.  Its public tree currently
 contains 30 distinct node kinds (including affiliated keywords, links,
 emphasis, lists, tables, planning, drawers, footnotes, and timestamps); the
-generated tree contains eight kinds. Both reproduce the source. This is the
+generated tree contains nine kinds. Both reproduce the source. The generated
+tree groups eight paragraphs where the old public tree reports seven, because
+list/table and other contexts still fall through to generic text. This is the
 counterexample to treating losslessness as syntax completeness.
 
 * Blocking contracts
@@ -36,7 +39,7 @@ counterexample to treating losslessness as syntax completeness.
 |----------+------------------+--------------------|
 | Grammar authority | =grammar.ss= plus POO =parser.ss= declare line structure | Every element/object recognition rule and containment restriction is Scheme-owned; no downstream Rust parser rule or generated scanner program |
 | Engine | Generic section and opaque-block executor | Bounded contextual Parser IR, recursive element/object strategies, typed recovery, source-backed events, and deterministic AOT validation |
-| Syntax coverage | Headlines, sections, source blocks, text lines | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
+| Syntax coverage | Headlines, sections, source blocks, property drawers, links, and provisional paragraph grouping; ordinary list/table context is still generic text | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
 | Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans expose the intended Org model; migrate callers rather than preserving incorrect old shapes |
 | Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
 | Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, migrated consumer tests, and equivalent-semantics performance receipts |
@@ -56,8 +59,10 @@ counterexample to treating losslessness as syntax completeness.
    to parse an incomplete source block as a paragraph. A heading also bounds
    the search for a later closing marker, so a marker beyond that heading
    cannot retroactively claim the block. The structural CST
-   still has only line-level text nodes, not a public paragraph node or the
-   full recovery span contract.
+   now groups nonblank text lines into a source-backed =OrgParagraph= node,
+   but this is not yet a complete paragraph decision: unrecognized list/table
+   constructs can be grouped as prose, and recovery still lacks the full
+   public span contract.
 3. =parse_structural_lines= now returns the normal =Parse= receipt, source
    digest, POO parser-strategy digest, diagnostics and generated kind catalog.
    It still lacks generated
@@ -150,7 +155,10 @@ Rust table is consumed by the generic =gerbil-parser-rowan= graph projector,
 which traverses the generated CST once and preserves projected ancestry and
 source ranges across unprojected wrapper nodes. The tracked contract fixture
 pair checks graph record counts, source-block fields, links, and the Evidence
-headline's link descendants without invoking the handwritten Org parser.
+headline's link descendants through paragraph records without invoking the
+handwritten Org parser. The Scheme-declared paragraph strategy groups
+consecutive nonblank lines and preserves UTF-8/CRLF source spans; the fixture
+pair has 0/3 generated paragraphs. This is not general Org paragraph parity.
 This is private differential evidence, not a second public graph API. The
 production =org_elements_graph= still derives from =ParsedAst=, and contract
 evaluation still lives in Rust; M2 and the vertical MVP remain open.
