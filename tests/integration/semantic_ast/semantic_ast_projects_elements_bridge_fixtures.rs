@@ -14,7 +14,7 @@ pub(super) use generated_elements::{
 fn semantic_ast_projects_scheme_object_context_contract() {
     use sha2::{Digest, Sha256};
 
-    let scheme_source = include_str!("../../../languages/org/v1/elements.ss");
+    let scheme_source = include_str!("../../../languages/org/v1/modules/org-elements/catalog.ss");
     assert_eq!(
         generated_elements::ELEMENTS_DIGEST,
         format!("sha256:{:x}", Sha256::digest(scheme_source.as_bytes()))
@@ -46,7 +46,7 @@ fn semantic_ast_projects_scheme_element_catalog_matches_approved_baseline() {
     insta::assert_snapshot!(
         "scheme_element_catalog",
         serde_json::to_string_pretty(&serde_json::json!({
-            "source": "languages/org/v1/elements.ss",
+            "source": "languages/org/v1/modules/org-elements/catalog.ss",
             "allElements": ORG_ELEMENT_KINDS,
             "greaterElements": ORG_GREATER_ELEMENT_KINDS,
             "allObjects": ORG_OBJECT_KINDS,

@@ -1,6 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge_fixtures.rs
-expression: "serde_json::to_string_pretty(&serde_json::json!({\n    \"source\": \"languages/org/v1/elements.ss\", \"allElements\":\n    UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS, \"greaterElements\":\n    UPSTREAM_ORG_ELEMENT_GREATER_ELEMENTS, \"allObjects\":\n    UPSTREAM_ORG_ELEMENT_ALL_OBJECTS, \"recursiveObjects\":\n    UPSTREAM_ORG_ELEMENT_RECURSIVE_OBJECTS, \"affiliatedKeywords\":\n    UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS,\n})).unwrap()"
+expression: "serde_json::to_string_pretty(&serde_json::json!({\n    \"source\": \"languages/org/v1/modules/org-elements/catalog.ss\", \"allElements\":\n    UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS, \"greaterElements\":\n    UPSTREAM_ORG_ELEMENT_GREATER_ELEMENTS, \"allObjects\":\n    UPSTREAM_ORG_ELEMENT_ALL_OBJECTS, \"recursiveObjects\":\n    UPSTREAM_ORG_ELEMENT_RECURSIVE_OBJECTS, \"affiliatedKeywords\":\n    UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS,\n})).unwrap()"
 ---
 {
   "affiliatedKeywords": [
@@ -105,5 +105,5 @@ expression: "serde_json::to_string_pretty(&serde_json::json!({\n    \"source\": 
     "table-cell",
     "underline"
   ],
-  "source": "languages/org/v1/elements.ss"
+  "source": "languages/org/v1/modules/org-elements/catalog.ss"
 }

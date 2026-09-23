@@ -3,7 +3,7 @@
 //! Nodes are selected by type plus plist-like properties, and traversal
 //! follows contents and lineage. Secondary property contents are queryable
 //! when the parser projects them into summary or property facts. The Org
-//! element inventory is declared in `languages/org/v1/elements.ss`.
+//! element inventory is declared in `languages/org/v1/modules/org-elements/catalog.ss`.
 
 mod core;
 mod core_contract;

@@ -2,13 +2,13 @@
 ;;; -*- Gerbil -*-
 ;;; Development-only AOT projection of the Scheme Org element inventory.
 
-(load "languages/org/v1/elements.ss")
+(load "languages/org/v1/modules/org-elements/catalog.ss")
 (import (only-in :std/crypto/digest sha256)
         (only-in :std/misc/ports read-all-as-u8vector))
 
 (def (elements-digest)
   (let ((digest (sha256
-                 (call-with-input-file "languages/org/v1/elements.ss"
+                 (call-with-input-file "languages/org/v1/modules/org-elements/catalog.ss"
                    read-all-as-u8vector)))
         (digits "0123456789abcdef"))
     (string-append
@@ -53,8 +53,8 @@
   (display "];\n" port))
 
 (def (emit-elements port)
-  (display "// Generated from languages/org/v1/elements.ss. Do not edit.\n\n" port)
-  (display "pub const ELEMENTS_DIGEST: &str = " port)
+  (display "// Generated from languages/org/v1/modules/org-elements/catalog.ss. Do not edit.\n\n" port)
+  (display "pub const ELEMENTS_DIGEST: &str =\n    " port)
   (write (elements-digest) port)
   (display ";\n\n" port)
   (emit-list port "ORG_ELEMENT_KINDS" +org-element-kinds+)

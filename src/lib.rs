@@ -10,6 +10,8 @@ pub mod ast;
 pub mod cli;
 /// Parser configuration.
 pub mod config;
+/// Scheme-AOT Org Contract execution over generated Element graphs.
+pub mod contract_feature;
 /// Document element mapping and parser-owned query API.
 pub mod document;
 mod entities;

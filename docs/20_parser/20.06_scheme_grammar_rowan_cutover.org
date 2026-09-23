@@ -11,7 +11,7 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
   already represented by the squash and its dirty checkout is not an input.
 - Use the named upstream =org-element.el= revision only as a comparison
   reference.  The executable element inventory belongs to
-  =languages/org/v1/elements.ss=; its generated Rust projection and
+  =languages/org/v1/modules/org-elements/catalog.ss=; its generated Rust projection and
   Git-tracked Org corpus are the test inputs.  Emacs Lisp is never an
   implementation or Cargo fixture.
 - Maintain =languages/org/<version>/grammar.ss=, =parser.ss=, and

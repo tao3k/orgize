@@ -10,7 +10,7 @@ bzg/org-mode b470d81 2026-06-10 16:08:54 +0200
 #+end_example
 
 The original comparison recorded these upstream constants; the executable
-inventory now lives in =languages/org/v1/elements.ss=:
+inventory now lives in =languages/org/v1/modules/org-elements/catalog.ss=:
 
 - =org-element-all-elements=
 - =org-element-all-objects=

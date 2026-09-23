@@ -27,6 +27,7 @@
     (make-graph-node
      'OrgSourceBlock "element" "src-block"
      (list (make-graph-field 'SourceLanguage "language")
+           (make-graph-field 'BlockHeaderTrivia "header")
            (make-graph-field 'TextLine "body")))
     (make-graph-node
      'OrgLink "object" "link"

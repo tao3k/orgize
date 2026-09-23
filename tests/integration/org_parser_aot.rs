@@ -10,6 +10,14 @@ mod structure;
 #[path = "../../languages/org/v1/generated/graph.rs"]
 mod graph;
 
+mod contract_plan {
+    use orgize::contract_feature::{
+        ContractAssertionRule, ContractBindingRule, ContractExpectationRule, ContractOperator,
+        ContractQueryRule, ContractRelation, ContractRule, ContractScope, ContractSeverity,
+    };
+    include!("../../languages/org/v1/modules/org-contract/generated/contract-plan.rs");
+}
+
 use gerbil_parser_rowan::SyntaxNode;
 
 fn parse(source: &str) -> SyntaxNode {
@@ -470,6 +478,47 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
             );
         }
     }
+}
+
+#[test]
+fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
+    let source = include_str!(
+        "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org"
+    );
+    let root = parse(source);
+    let records =
+        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
+            .expect("Org Element projection matches the parser digest");
+    let evidence = records
+        .iter()
+        .find(|record| record.kind == "headline" && record.field("title") == Some("Evidence"))
+        .expect("fixture has an Evidence headline");
+    let scope = evidence.parent_id.expect("Evidence has a parent headline");
+    let results = orgize::contract_feature::evaluate_contract(
+        &contract_plan::CONTRACT,
+        &graph::GRAPH,
+        &records,
+        orgize::contract_feature::ContractScopeNodeId(scope),
+    )
+    .expect("Scheme-AOT contract has valid Element bindings");
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].assertion_id, "section.has-evidence-link");
+    assert_eq!(results[0].matched_count, 1);
+    assert!(results[0].passed);
+
+    let stale = orgize::contract_feature::ContractRule {
+        graph_digest: "outdated-projection",
+        ..contract_plan::CONTRACT
+    };
+    assert_eq!(
+        orgize::contract_feature::evaluate_contract(
+            &stale,
+            &graph::GRAPH,
+            &records,
+            orgize::contract_feature::ContractScopeNodeId(scope),
+        ),
+        Err(orgize::contract_feature::ContractExecutionError::StaleGraph)
+    );
 }
 
 #[test]

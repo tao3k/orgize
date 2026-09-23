@@ -3,7 +3,7 @@ use gerbil_parser_rowan::{GraphFieldRule, GraphNodeRule, GraphProjectionSpec};
 
 pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
     grammar_digest: "sha256:162da0480004cfbfe0860cbb2a755fffec0def0e148fd4fd28eebf99e9448e26",
-    projection_digest: "sha256:acc5f917b3ae53c892eb265ceb91645c4ab6c184e7246ca23fb958f4376d5c94",
+    projection_digest: "sha256:3f01dcb9a5e9100f60590b8de2b57f6bd4714c9d6934954805afe75979e4452c",
     rules: &[
         GraphNodeRule { syntax_kind: 0, category: "document", kind: "org-data", fields: &[] },
         GraphNodeRule { syntax_kind: 12, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 13, name: "markers" }, GraphFieldRule { token_kind: 14, name: "title" }, ] },
@@ -14,7 +14,7 @@ pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
         GraphNodeRule { syntax_kind: 9, category: "element", kind: "table-rule-row", fields: &[] },
         GraphNodeRule { syntax_kind: 10, category: "object", kind: "table-cell", fields: &[GraphFieldRule { token_kind: 30, name: "text" }, ] },
         GraphNodeRule { syntax_kind: 4, category: "property", kind: "node-property", fields: &[GraphFieldRule { token_kind: 23, name: "key" }, GraphFieldRule { token_kind: 24, name: "value" }, ] },
-        GraphNodeRule { syntax_kind: 2, category: "element", kind: "src-block", fields: &[GraphFieldRule { token_kind: 17, name: "language" }, GraphFieldRule { token_kind: 20, name: "body" }, ] },
+        GraphNodeRule { syntax_kind: 2, category: "element", kind: "src-block", fields: &[GraphFieldRule { token_kind: 17, name: "language" }, GraphFieldRule { token_kind: 18, name: "header" }, GraphFieldRule { token_kind: 20, name: "body" }, ] },
         GraphNodeRule { syntax_kind: 11, category: "object", kind: "link", fields: &[GraphFieldRule { token_kind: 26, name: "path" }, GraphFieldRule { token_kind: 27, name: "description" }, ] },
     ],
 };

@@ -1,0 +1,18 @@
+#+title: Scheme-owned Org Contract fixture
+
+* Evidence link contract
+:PROPERTIES:
+:CONTRACT_ID: section.scope.v1
+:CONTRACT_SCOPE: subtree
+:END:
+
+#+name: evidence-link-assertions
+#+begin_src scheme :org-contract
+(assert-org-element "section.has-evidence-link" error
+  (bindings
+   (bind evidence
+     (org-elements headline (property title "Evidence")
+                   (child-of scope))))
+  (org-elements link (descendant-of evidence))
+  (expect at-least 1))
+#+end_src

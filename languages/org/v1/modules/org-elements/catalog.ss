@@ -1,5 +1,5 @@
 ;;; -*- Gerbil -*-
-;;; Org v1 element and object inventory owned by the Scheme language pack.
+;;; Org v1 element and object inventory owned by the Org Elements module.
 ;;; The upstream Org mode revision is comparison evidence, not executable input.
 
 (export +org-element-kinds+ +org-greater-element-kinds+

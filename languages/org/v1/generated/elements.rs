@@ -1,7 +1,7 @@
-// Generated from languages/org/v1/elements.ss. Do not edit.
+// Generated from languages/org/v1/modules/org-elements/catalog.ss. Do not edit.
 
 pub const ELEMENTS_DIGEST: &str =
-    "sha256:96846ea16ab828c06cefe9b52f7e81c093474cecd06910bba032ce742bdea2e4";
+    "sha256:60fc8ff72e60a586339f06d78e952b3279f65b9c6561f8f84a9cb7b458754e9c";
 
 #[rustfmt::skip]
 pub const ORG_ELEMENT_KINDS: &[&str] = &[
