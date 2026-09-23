@@ -44,9 +44,10 @@ counterexample to treating losslessness as syntax completeness.
    pinned =org-element.el= reference's incomplete block parsers instead return
    paragraph parsing.  Recovery policy must be declared and tested, not
    inferred from lossless source text.
-3. =parse_structural_lines= currently returns a green node without the normal
-   parse receipt or generated typed field projection.  It cannot be substituted
-   into public =Org::parse= without a second AST authority.
+3. =parse_structural_lines= now returns the normal =Parse= receipt, source
+   digest, diagnostics and generated kind catalog. It still lacks generated
+   typed field projection and the complete Org recognition rules, so it cannot
+   yet replace public =Org::parse=.
 4. There is no element/object-complete, Git-tracked differential corpus.  The
    =.data/org-mode= checkout is reference evidence outside the Git-scoped
    fixture boundary; it must not become a runtime or CI input.
@@ -63,8 +64,10 @@ Rowan S-expression scanner and syntax-kind catalog in =core_parser.rs= are
 gone; that file only lowers the generated CST to the existing query value.
 The same grammar is checked by a Scheme AST fixture and Rust tests covering
 comments, adjacent escaped strings, Unicode whitespace, malformed input,
-source roundtrip, and the existing contract property-scope scenario. This is
-an owner replacement, but *not* the vertical MVP: the Org document parser
+source roundtrip, and the existing contract property-scope scenario. The
+structural engine now returns the same =Parse= result contract as the
+generated LR path; Org's structural test and differential audit consume its
+receipt. This is an owner replacement, but *not* the vertical MVP: the Org document parser
 still uses =document_node=, and contract policy/evaluation still live in Rust.
 
 * Org contract module chain

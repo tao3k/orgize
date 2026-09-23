@@ -44,10 +44,14 @@ fn main() {
         source,
     )
     .expect("generated Org structure should accept the pinned fixture");
-    let generated_root = gerbil_parser_rowan::SyntaxNode::new_root(generated);
+    let generated_root = generated.syntax();
 
     assert_eq!(public_root.to_string(), source);
     assert_eq!(generated_root.to_string(), source);
+    assert_eq!(
+        generated.receipt().grammar_digest,
+        grammar::LANGUAGE.grammar_digest
+    );
 
     println!(
         "inventory {}: {} elements, {} greater elements, {} objects, {} recursive objects, {} affiliated keywords, {} restriction owners, {} secondary values",

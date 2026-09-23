@@ -10,13 +10,18 @@ mod structure;
 use gerbil_parser_rowan::SyntaxNode;
 
 fn parse(source: &str) -> SyntaxNode {
-    let green = gerbil_parser_rowan::parse_structural_lines(
+    let parsed = gerbil_parser_rowan::parse_structural_lines(
         &grammar::LANGUAGE,
         &structure::STRUCTURE,
         source,
     )
     .unwrap_or_else(|error| panic!("Org structural AOT rejected source: {error:?}"));
-    SyntaxNode::new_root(green)
+    assert_eq!(parsed.receipt().language, "org");
+    assert_eq!(
+        parsed.receipt().grammar_digest,
+        grammar::LANGUAGE.grammar_digest
+    );
+    parsed.syntax()
 }
 
 fn name(node: &SyntaxNode) -> &'static str {
@@ -76,7 +81,11 @@ fn structural_artifact_must_match_the_same_grammar_digest() {
     stale.grammar_digest = "sha256:0000000000000000000000000000000000000000000000000000000000";
     let error = gerbil_parser_rowan::parse_structural_lines(&grammar::LANGUAGE, &stale, "")
         .expect_err("a stale POO projection cannot be silently used");
-    assert_eq!(error.reason_kind, "invalid-structural-aot");
+    assert_eq!(error.diagnostic.reason_kind, "invalid-structural-aot");
+    assert_eq!(
+        error.receipt.grammar_digest,
+        grammar::LANGUAGE.grammar_digest
+    );
 }
 
 #[test]
