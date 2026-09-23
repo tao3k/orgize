@@ -1,0 +1,99 @@
+#+title: 20.07 Complete Org Parser Cutover Audit
+#+startup: overview
+
+* Verdict
+
+The current Scheme-AOT/Rowan product is a lossless structural slice, not an
+Org parser replacement.  The generated element inventory names 30 element
+types and 24 object types, while =parser.ss= admits headlines/sections and
+source blocks only.  The public =ParseConfig::parse= path still invokes the
+handwritten Rust =document_node=.  Three-platform CI and source roundtrip
+therefore establish neither complete syntax nor public API parity.
+
+Run the read-only differential inventory with:
+
+#+begin_src sh
+cargo run --locked --example org_cutover_audit
+#+end_src
+
+The input is the Git-tracked
+=tests/fixtures/org-elements/representative.org=.  Its public tree currently
+contains 30 distinct node kinds (including affiliated keywords, links,
+emphasis, lists, tables, planning, drawers, footnotes, and timestamps); the
+generated tree contains five kinds.  Both reproduce the source.  This is the
+counterexample to treating losslessness as syntax completeness.
+
+* Blocking contracts
+
+| Boundary | Current evidence | Required admission |
+|----------+------------------+--------------------|
+| Grammar authority | =grammar.ss= plus POO =parser.ss= declare line structure | Every element/object recognition rule and containment restriction is Scheme-owned; no downstream Rust parser rule or generated scanner program |
+| Engine | Generic section and opaque-block executor | Bounded contextual Parser IR, recursive element/object strategies, typed recovery, source-backed events, and deterministic AOT validation |
+| Syntax coverage | Headlines, sections, source blocks, text lines | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
+| Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans preserve the =Org=, query, export, and document contracts |
+| Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
+| Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, independent public-consumer tests, and equivalent-semantics performance receipts |
+| Org contract | About 5,000 lines of Rust model, parsing, evaluation, lint, CLI and workspace logic remain in =src/semantic_ast/org_contract*.rs= and related owners | One Org-owned Scheme/POO contract module owns syntax, policy, query and evaluation; Rust retains only typed AOT execution, filesystem/process handoff and public transport projection |
+
+* First typed failures
+
+1. The generated parser maps the representative document's list, table,
+   drawer, planning line, link, emphasis, timestamp, and footnote to generic
+   text lines.  Their inventory entries are metadata, not parsing rules.
+2. The structural executor closes an unterminated source block at EOF.  The
+   pinned =org-element.el= reference's incomplete block parsers instead return
+   paragraph parsing.  Recovery policy must be declared and tested, not
+   inferred from lossless source text.
+3. =parse_structural_lines= currently returns a green node without the normal
+   parse receipt or generated typed field projection.  It cannot be substituted
+   into public =Org::parse= without a second AST authority.
+4. There is no element/object-complete, Git-tracked differential corpus.  The
+   =.data/org-mode= checkout is reference evidence outside the Git-scoped
+   fixture boundary; it must not become a runtime or CI input.
+5. =org-contract= is not yet a Scheme policy.  Moving only its constants or
+   introducing a second Scheme model beside the Rust evaluator would increase
+   authority count instead of reducing Rust responsibility.
+
+* Org contract module chain
+
+The contract owner belongs under
+=languages/org/v1/modules/org-contract/= with one public =interface.ss=. Follow
+the POO Flow role direction =types -> objects -> funs -> config -> interface=:
+
+- =types.ss=: closed contract, assertion, scope, severity, reference and query
+  vocabularies, shape admission, and diagnostics.
+- =objects.ss=: POO contract/assertion/query values and named constructors;
+  extension is through prototypes or a one-receiver generic only where a
+  behavior actually varies.
+- =funs.ss=: pure contract parsing, reference resolution policy, query
+  combination, assertion evaluation, and receipt construction. Use functional
+  combinators for traversals and indexes; no IO or unbounded shell execution.
+- =config.ss=: maintained Org contract profiles and explicit provider/runtime
+  handoff selection. Use CLOS methods only for genuinely independent provider
+  and contract-kind axes.
+- =interface.ss=: the sole public import; it re-exports the four role owners
+  and contains no second implementation.
+
+The downstream Rust product must project this admitted POO module through the
+same development-time AOT boundary as the parser. Cargo users do not install
+Gerbil. Existing Rust model/evaluator code is deleted only when corresponding
+public lint, trace, workspace, query, JSON and negative tests pass against the
+generated product. A file rename or a second shadow evaluator is not a cutover.
+
+* Implementation order
+
+Extend the existing v1 parser/compiler boundary in =gerbil-parser= with a
+POO-native contextual Parser IR: named strategies admit element recognition,
+recursive containment, object restrictions, malformed-input policy, and
+source-backed events.  The Org language pack supplies those strategies and
+fixtures; the generic Rust/Rowan crate only executes the AOT product.  Add
+exact Scheme AST assertions and generated-Rowan/public-tree differential tests
+for each rule family before widening the next one.  Do not cut over the public
+facade, remove snapshots, weaken performance gates, or add a Rust fallback
+while any row above is open.
+
+Performance comparison is meaningful only between equivalent syntax and
+query outputs.  Record throughput, allocation, and peak memory against the
+current public parser on representative and pathological documents using the
+ASP Rust Dev Gate after semantic parity; the 10,000-section smoke test is not
+a substitute for those receipts.
