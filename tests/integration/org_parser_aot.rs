@@ -32,6 +32,10 @@ fn name(node: &SyntaxNode) -> &'static str {
     grammar::LANGUAGE.kinds[usize::from(node.kind().0)].name
 }
 
+fn token_name(token: &gerbil_parser_rowan::SyntaxToken) -> &'static str {
+    grammar::LANGUAGE.kinds[usize::from(token.kind().0)].name
+}
+
 #[test]
 fn headings_form_nested_sections_and_closed_blocks_remain_lossless() {
     let source = "é\r\n* Parent\n#+BEGIN_SRC rust\ncode\n#+END_SRC\n** Child\nbody\r* Sibling\n";
@@ -145,5 +149,103 @@ fn git_tracked_org_document_is_lossless_at_the_current_structural_boundary() {
             .filter(|node| name(node) == "OrgSourceBlock")
             .count(),
         1
+    );
+}
+
+#[test]
+fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
+    let fixtures = [
+        (
+            include_str!(
+                "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/contracts.org"
+            ),
+            8,
+            20,
+            4,
+            0,
+        ),
+        (
+            include_str!(
+                "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org"
+            ),
+            4,
+            6,
+            0,
+            6,
+        ),
+    ];
+    for (source, drawers, properties, source_blocks, contract_org_properties) in fixtures {
+        let root = parse(source);
+        assert_eq!(root.to_string(), source);
+        assert_eq!(
+            root.descendants()
+                .filter(|node| name(node) == "OrgHeadline")
+                .count(),
+            8
+        );
+        assert_eq!(
+            root.descendants()
+                .filter(|node| name(node) == "OrgPropertyDrawer")
+                .count(),
+            drawers
+        );
+        assert_eq!(
+            root.descendants()
+                .filter(|node| name(node) == "OrgSourceBlock")
+                .count(),
+            source_blocks
+        );
+        let property_nodes: Vec<_> = root
+            .descendants()
+            .filter(|node| name(node) == "OrgNodeProperty")
+            .collect();
+        assert_eq!(property_nodes.len(), properties);
+        let mut contract_org_count = 0;
+        for node in property_nodes {
+            let range = node.text_range();
+            let original = &source[usize::from(range.start())..usize::from(range.end())];
+            assert_eq!(node.to_string(), original);
+            assert!(original.trim_start().starts_with(':'));
+            let tokens: Vec<_> = node
+                .children_with_tokens()
+                .filter_map(rowan::NodeOrToken::into_token)
+                .collect();
+            let key = tokens
+                .iter()
+                .find(|token| token_name(token) == "PropertyKey")
+                .expect("every admitted node-property has a typed key");
+            let value = tokens
+                .iter()
+                .find(|token| token_name(token) == "PropertyValue")
+                .expect("fixture node-properties have typed values");
+            for token in [key, value] {
+                let range = token.text_range();
+                assert_eq!(
+                    &source[usize::from(range.start())..usize::from(range.end())],
+                    token.text()
+                );
+            }
+            contract_org_count += usize::from(key.text() == "CONTRACT_ORG");
+        }
+        assert_eq!(contract_org_count, contract_org_properties);
+    }
+}
+
+#[test]
+fn invalid_property_drawer_recovers_without_claiming_node_properties() {
+    let source = "* Task\n:PROPERTIES:\nnot a property\n:END:\n** Next\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgPropertyDrawer")
+            .count(),
+        0
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgHeadline")
+            .count(),
+        2
     );
 }

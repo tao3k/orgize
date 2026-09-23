@@ -45,8 +45,11 @@ counterexample to treating losslessness as syntax completeness.
 * First typed failures
 
 1. The generated parser maps the representative document's list, table,
-   drawer, planning line, link, emphasis, timestamp, and footnote to generic
-   text lines.  Their inventory entries are metadata, not parsing rules.
+   ordinary drawer, planning line, link, emphasis, timestamp, and footnote to
+   generic text lines. The Org POO strategy now recognizes property drawers
+   and node-property lines on the tracked contract fixture pair, including
+   typed property key/value tokens and exact source spans. Inventory entries alone
+   remain metadata, not parsing rules.
 2. The Scheme POO source-block rule now declares =recover-as-text= for an
    unmatched opener. The generated structural parser therefore keeps the
    following headline visible, matching the pinned =org-element.el= decision
@@ -120,6 +123,19 @@ the syntax output is equivalent to the public parser.
 
 This is one vertical MVP followed by full-coverage expansion, not separate
 deliverables called a scanner MVP, element-inventory MVP, and contract MVP.
+
+** Milestone receipts for the one vertical MVP
+
+| Gate | Exact admission | Current state |
+|------+-----------------+---------------|
+| M1 fixture structure | Both tracked =contract_org_property_scope= inputs parse from Scheme-authored AOT rules with 8 headlines each, 8/4 property drawers, 20/6 node-property nodes, 4/0 source blocks, typed property key/value tokens, exact source ranges, and malformed-drawer recovery | Local Scheme/Rust tests pass; not a public cutover |
+| M2 typed semantic input | Generated CST additionally exposes links and source-block language/body fields; the fixture pair projects the intended element graph without the handwritten Org parser | Open |
+| M3 executable contract | Scheme POO =org-contract= modules own query/policy/evaluation; migrated public trace/lint/workspace entrypoints execute the generated product and the displaced Rust owners are removed | Open; this closes the vertical MVP |
+| M4 complete Org cutover | All 30 elements and 24 objects, context/recovery/corpus gates, migrated public consumers, and equivalent-semantics performance receipts; remove =document_node= and remaining handwritten syntax parser | Open; this closes the PR |
+
+The gates are cumulative evidence for one product, not four independently
+releasable parser implementations. M1 does not authorize a runtime fallback
+or a claim that =Org::parse= has switched.
 
 The MVP workflow is the existing Git-tracked =contract_org_property_scope=
 scenario: load =inputs/contracts.org= and =inputs/notes.org=, parse both,

@@ -30,11 +30,12 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
 =generate-parser.ss= compiles that declaration through gerbil-parser's public
 Rust/Rowan generator into committed =generated/parser.rs=. The Org-owned
 =parser.ss= supplies a POO =LineStructure= value: headline/section kinds,
-source-block delimiters, and text-line kinds. The upstream AOT projection
+source-block delimiters, property-drawer delimiters and typed node-property
+line rules, and text-line kinds. The upstream AOT projection
 resolves those symbolic kinds against the same grammar digest and emits
 =generated/structure.rs=. The generic =parse_structural_lines= engine executes
-section nesting, closed source blocks, and Scheme-declared recovery at EOF
-or a subsequent heading, producing a lossless Rowan
+section nesting, closed source blocks, property drawers and their node-property
+lines, and Scheme-declared recovery at EOF or a subsequent heading, producing a lossless Rowan
 tree over LF, CRLF, bare CR, and UTF-8 input. =org_parser_aot= tests that
 product, including the Git-tracked representative document, from Cargo
 without a Gerbil installation or build-time Scheme. No separate =scanner.ss=

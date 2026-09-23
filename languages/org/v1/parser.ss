@@ -3,7 +3,7 @@
 
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  make-line-structure make-heading-line
-                 make-block-line make-text-line))
+                 make-block-line make-key-value-line make-text-line))
 (export org-v1-line-structure)
 
 (def org-v1-line-structure
@@ -12,5 +12,11 @@
    (list (make-block-line
           "#+begin_src" "#+end_src" #t #t
           'OrgSourceBlock 'BlockBeginLine 'TextLine 'BlockEndLine
-          'recover-as-text #t))
+          'recover-as-text #t #f)
+         (make-block-line
+          ":PROPERTIES:" ":END:" #t #t
+          'OrgPropertyDrawer 'DrawerBeginLine 'TextLine 'DrawerEndLine
+          'recover-as-text #t
+          (make-key-value-line ":" 'OrgNodeProperty
+                               'PropertyKey 'PropertyValue 'PropertyTrivia)))
    (make-text-line 'OrgTextLine 'TextLine)))
