@@ -17,6 +17,8 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgNodeProperty", category: KindCategory::Node },
     KindSpec { name: "OrgTextLine", category: KindCategory::Node },
     KindSpec { name: "OrgParagraph", category: KindCategory::Node },
+    KindSpec { name: "OrgPlainList", category: KindCategory::Node },
+    KindSpec { name: "OrgListItem", category: KindCategory::Node },
     KindSpec { name: "OrgTable", category: KindCategory::Node },
     KindSpec { name: "OrgTableRow", category: KindCategory::Node },
     KindSpec { name: "OrgTableRuleRow", category: KindCategory::Node },
@@ -44,13 +46,15 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "TableCellText", category: KindCategory::Token },
     KindSpec { name: "TableTrivia", category: KindCategory::Token },
     KindSpec { name: "TableRuleText", category: KindCategory::Token },
+    KindSpec { name: "ListBullet", category: KindCategory::Token },
+    KindSpec { name: "ListTrivia", category: KindCategory::Token },
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 19 },
-    TerminalSpec { name: "block-begin", syntax_kind: 22 },
-    TerminalSpec { name: "block-end", syntax_kind: 26 },
-    TerminalSpec { name: "text", syntax_kind: 27 },
+    TerminalSpec { name: "headline", syntax_kind: 21 },
+    TerminalSpec { name: "block-begin", syntax_kind: 24 },
+    TerminalSpec { name: "block-end", syntax_kind: 28 },
+    TerminalSpec { name: "text", syntax_kind: 29 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -225,7 +229,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:3bcd8e6c09d966daca56383dd58c5785cd76153b06b6716afe3db74f640a8dfd",
+    grammar_digest: "sha256:9f4aa2bd2cc63a84f24b8520fd56eca07cd02bf77727165058f495e9c20c65a3",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

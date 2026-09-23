@@ -7,7 +7,7 @@ The current Scheme-AOT/Rowan product is a lossless structural slice, not an
 Org parser replacement.  The generated element inventory names 30 element
 types and 24 object types, while =parser.ss= currently admits
 headlines/sections, property drawers, source blocks, six common greater-block
-kinds, links, tables, and provisional paragraph grouping. The public
+kinds, marker-led lists, links, tables, and provisional paragraph grouping. The public
 =ParseConfig::parse= path still invokes the
 handwritten Rust =document_node=.  Three-platform CI and source roundtrip
 therefore establish neither complete syntax nor the requested cutover.
@@ -29,10 +29,11 @@ The input is the Git-tracked
 =tests/fixtures/org-elements/representative.org=.  Its public tree currently
 contains 30 distinct node kinds (including affiliated keywords, links,
 emphasis, lists, tables, planning, drawers, footnotes, and timestamps); the
-generated tree contains 13 kinds. Both reproduce the source. The generated
+generated tree contains 15 kinds. Both reproduce the source. The generated
 tree now owns one table with two standard rows, one rule row, and four cells;
-both trees report seven paragraphs, but lists and several other contexts still
-fall through to generic text. Matching counts do not establish matching syntax.
+The generated tree also reports one list and two items, matching the public fixture topology.
+It reports eight paragraphs versus seven publicly; item metadata and several
+other contexts remain incomplete. Matching counts do not establish matching syntax.
 
 * Blocking contracts
 
@@ -40,7 +41,7 @@ fall through to generic text. Matching counts do not establish matching syntax.
 |----------+------------------+--------------------|
 | Grammar authority | =grammar.ss= plus POO =parser.ss= declare line structure | Every element/object recognition rule and containment restriction is Scheme-owned; no downstream Rust parser rule or generated scanner program |
 | Engine | Generic section and opaque-block executor | Bounded contextual Parser IR, recursive element/object strategies, typed recovery, source-backed events, and deterministic AOT validation |
-| Syntax coverage | Headlines, sections, source/quote/example/verse/center/comment/export blocks, property drawers, links, tables, and provisional paragraph grouping; list context is still generic text | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
+| Syntax coverage | Headlines, sections, source/quote/example/verse/center/comment/export blocks, property drawers, marker-led nested lists, links, tables, and provisional paragraph grouping; item metadata and continuation rules are not complete | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
 | Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans expose the intended Org model; migrate callers rather than preserving incorrect old shapes |
 | Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
 | Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, migrated consumer tests, and equivalent-semantics performance receipts |
@@ -48,7 +49,7 @@ fall through to generic text. Matching counts do not establish matching syntax.
 
 * First typed failures
 
-1. The generated parser maps the representative document's list,
+1. The generated parser maps the representative document's
    ordinary drawer, planning line, emphasis, timestamp, and footnote to
    generic text lines. The Org POO strategy now recognizes tables and property drawers
    and node-property lines on the tracked contract fixture pair, including
@@ -62,7 +63,7 @@ fall through to generic text. Matching counts do not establish matching syntax.
    cannot retroactively claim the block. The structural CST
    now groups nonblank text lines into a source-backed =OrgParagraph= node,
    but this is not yet a complete paragraph decision: unrecognized list
-   constructs can be grouped as prose, and recovery still lacks the full
+   constructs can still be grouped as prose, and recovery still lacks the full
    public span contract.
 3. =parse_structural_lines= now returns the normal =Parse= receipt, source
    digest, POO parser-strategy digest, diagnostics and generated kind catalog.
@@ -91,8 +92,15 @@ fall through to generic text. Matching counts do not establish matching syntax.
    The same generated graph projects each kind, nested Element ancestry, and
    the export backend. A focused source-backed test covers all six plus an
    unclosed quote block before a heading. These
-   kinds do not occur in the representative fixture, so its 13-kind count is
-   unchanged; this is syntax expansion, not public parser parity.
+   kinds do not occur in the representative fixture, so its earlier 13-kind count
+   was unchanged by the block change. The list strategy raises it to 15 kinds;
+   this is syntax expansion, not public parser parity.
+7. The list strategy derives nested list/item structure from Scheme-owned
+   markers and tab width. The tracked fixture now has one generated list and
+   two items with typed bullets and source-backed spans. The generic engine
+   checks sibling, nested, ordered, tab-column and 10,000-item cases. Checkbox,
+   counter and description-tag projections, full =org-list.el= continuation and
+   blank-line semantics, and paragraph parity remain open.
 
 * Completed expression-parser cutover within the larger MVP
 

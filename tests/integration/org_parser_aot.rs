@@ -340,6 +340,52 @@ fn git_tracked_org_document_is_lossless_at_the_current_structural_boundary() {
 }
 
 #[test]
+fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
+    let source = include_str!("../fixtures/org-elements/representative.org");
+    let root = parse(source);
+    let lists: Vec<_> = root
+        .descendants()
+        .filter(|node| name(node) == "OrgPlainList")
+        .collect();
+    assert_eq!(lists.len(), 1);
+    let items: Vec<_> = lists[0]
+        .children()
+        .filter(|node| name(node) == "OrgListItem")
+        .collect();
+    assert_eq!(items.len(), 2);
+    for item in &items {
+        let bullet = item
+            .children_with_tokens()
+            .filter_map(rowan::NodeOrToken::into_token)
+            .find(|token| token_name(token) == "ListBullet")
+            .expect("every admitted item has a typed bullet");
+        assert_eq!(bullet.text(), "-");
+        let range = item.text_range();
+        assert_eq!(
+            &source[usize::from(range.start())..usize::from(range.end())],
+            item.to_string()
+        );
+    }
+    let records =
+        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
+            .expect("list projection uses Scheme-owned Element kinds");
+    let list = records
+        .iter()
+        .find(|record| record.kind == "plain-list")
+        .expect("tracked fixture projects one list");
+    let children: Vec<_> = records
+        .iter()
+        .filter(|record| record.parent_id == Some(list.id) && record.kind == "item")
+        .collect();
+    assert_eq!(children.len(), 2);
+    assert!(
+        children
+            .iter()
+            .all(|item| item.field("bullet") == Some("-"))
+    );
+}
+
+#[test]
 fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
     let fixtures = [
         (

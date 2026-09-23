@@ -5,6 +5,8 @@
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure? line-structure-heading line-structure-blocks
                  line-structure-table table-line-delimiter
+                 line-structure-list list-line-unordered-markers list-line-ordered
+                 list-line-list-node list-line-item-node
                  table-line-table-node table-line-row-node table-line-cell-node
                  heading-line-section-node heading-line-heading-node
                  heading-line-fields heading-fields-title-token
@@ -73,4 +75,11 @@
         (check (table-line-delimiter table) => "|")
         (check (table-line-table-node table) => 'OrgTable)
         (check (table-line-row-node table) => 'OrgTableRow)
-        (check (table-line-cell-node table) => 'OrgTableCell)))))
+        (check (table-line-cell-node table) => 'OrgTableCell)
+        (check (list-line-unordered-markers (line-structure-list structure))
+               => "-+*")
+        (check (list-line-ordered (line-structure-list structure)) => #t)
+        (check (list-line-list-node (line-structure-list structure))
+               => 'OrgPlainList)
+        (check (list-line-item-node (line-structure-list structure))
+               => 'OrgListItem)))))
