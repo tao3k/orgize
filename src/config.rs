@@ -1,5 +1,9 @@
 //! Parser configuration for Org syntax and semantic projection.
 
+#[allow(dead_code)] // The full Scheme catalog is generated together; parsing uses this slice first.
+#[path = "../languages/org/v1/generated/elements.rs"]
+mod org_elements;
+
 #[derive(Clone, Debug)]
 /// Controls Org subscript and superscript parsing.
 pub enum UseSubSuperscript {
@@ -186,21 +190,10 @@ impl Default for ParseConfig {
             dual_keywords: vec!["CAPTION".into(), "RESULTS".into()],
             parsed_keywords: vec!["CAPTION".into()],
             use_sub_superscript: UseSubSuperscript::True,
-            affiliated_keywords: vec![
-                "CAPTION".into(),
-                "DATA".into(),
-                "HEADER".into(),
-                "HEADERS".into(),
-                "LABEL".into(),
-                "NAME".into(),
-                "PLOT".into(),
-                "RESNAME".into(),
-                "RESULT".into(),
-                "RESULTS".into(),
-                "SOURCE".into(),
-                "SRCNAME".into(),
-                "TBLNAME".into(),
-            ],
+            affiliated_keywords: org_elements::ORG_AFFILIATED_KEYWORDS
+                .iter()
+                .map(|keyword| (*keyword).to_string())
+                .collect(),
             radio_link_projection: RadioLinkProjection::PlainText,
             inlinetask_min_level: 15,
             src_tab_width: 4,

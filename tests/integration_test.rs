@@ -30,8 +30,6 @@ mod fmt_links;
 mod fmt_table;
 #[path = "integration/gerbil_rowan_cutover.rs"]
 mod gerbil_rowan_cutover;
-#[path = "integration/org_scanner_aot.rs"]
-mod org_scanner_aot;
 #[path = "integration/harness_report_consumer.rs"]
 mod harness_report_consumer;
 #[path = "integration/html.rs"]
@@ -70,6 +68,8 @@ mod lint_task_blockers;
 mod markdown;
 #[path = "integration/named_source_block_template.rs"]
 mod named_source_block_template;
+#[path = "integration/org_scanner_aot.rs"]
+mod org_scanner_aot;
 #[path = "integration/parse.rs"]
 mod parse;
 #[path = "integration/scenario_benchmark.rs"]

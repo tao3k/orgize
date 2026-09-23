@@ -9,10 +9,11 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
 
 - Start from orgize =main= at =771e92b=; the earlier ASP alignment branch is
   already represented by the squash and its dirty checkout is not an input.
-- Pin =org-element.el= and Org syntax specification at a named upstream
-  revision; the existing defconst drift test and =.data/org-mode= fixture are
-  the current coverage baseline.  The upstream file is singular
-  =org-element.el=, not =org-elements.el=.
+- Use the named upstream =org-element.el= revision only as a comparison
+  reference.  The executable element inventory belongs to
+  =languages/org/v1/elements.ss=; its generated Rust projection and
+  Git-tracked Org corpus are the test inputs.  Emacs Lisp is never an
+  implementation or Cargo fixture.
 - Maintain =languages/org/<version>/grammar.ss=, =scanner.ss=, =parser.ss=,
   =fixtures.ss=, =parser-test.ss=, and =corpus/= as one language pack.  The
   Scheme pack owns Org precedence, ambiguity, syntax kinds, fields, recovery,
@@ -28,7 +29,12 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
 development-only =generate-scanner.ss= emits the committed
 =generated/scanner.rs=.  Scheme and independent Rust tests exercise the same
 CRLF, Unicode, block-content, and directive-boundary cases.  Cargo itself does
-not invoke Gerbil.  This is not yet the public =Org::parse= implementation:
+not invoke Gerbil.  =elements.ss= now owns the element/object inventory and
+generates =generated/elements.rs=; the default affiliated-keyword configuration
+consumes that projection.  The original Org guide and upstream-inventory
+snapshots remain preserved as Rowan cutover comparison targets, while the
+Git-tracked representative document has its own runnable snapshot.  This is
+not yet the public =Org::parse= implementation:
 the generated grammar tables, scanner-to-engine adapter, nested headline
 structure, recovery, and full =org-element.el= inventory remain cutover gates.
 

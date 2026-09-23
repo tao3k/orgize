@@ -9,8 +9,11 @@ use orgize::{
 use serde_json::Value;
 
 #[test]
-fn semantic_ast_projects_org_guide_real_document_org_elements_regression_has_snapshot() {
-    let doc = Org::parse(include_str!("../../../.data/org-mode/doc/org-guide.org")).document();
+fn semantic_ast_projects_git_scoped_document_org_elements_regression_has_snapshot() {
+    let doc = Org::parse(include_str!(
+        "../../fixtures/org-elements/representative.org"
+    ))
+    .document();
 
     assert_clean_projection(&doc);
     let records = doc.org_elements_index();
@@ -43,9 +46,9 @@ fn semantic_ast_projects_org_guide_real_document_org_elements_regression_has_sna
         .collect::<Vec<_>>();
 
     insta::assert_snapshot!(
-        "org_guide_elements",
+        "git_scoped_document_elements",
         serde_json::to_string_pretty(&serde_json::json!({
-            "source": ".data/org-mode/doc/org-guide.org",
+            "source": "tests/fixtures/org-elements/representative.org",
             "recordCount": records.len(),
             "selectedKindCounts": selected_kind_counts,
             "topLevelHeadlines": top_level_headlines,

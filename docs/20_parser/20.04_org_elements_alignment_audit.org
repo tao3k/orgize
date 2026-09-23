@@ -3,14 +3,14 @@
 This audit pins the current =org-elements= bridge against upstream
 =org-element.el= before using it as the durable substrate for =CONTRACT_ORG=.
 
-The upstream reference was cloned into =.data/org-mode= and audited at:
+The upstream reference was audited historically at:
 
 #+begin_example
 bzg/org-mode b470d81 2026-06-10 16:08:54 +0200
 #+end_example
 
-The reference constants were extracted with Emacs by loading
-=.data/org-mode/lisp/org-element.el= and printing:
+The original comparison recorded these upstream constants; the executable
+inventory now lives in =languages/org/v1/elements.ss=:
 
 - =org-element-all-elements=
 - =org-element-all-objects=
@@ -160,10 +160,10 @@ The real-document regression snapshot is
 
 - P0: the root gitlink and nested orgize checkout are treated as separate
   commit boundaries; root updates carry only the nested commit pointer.
-- P1: =org-element.el= element, object, greater-element, recursive-object, and
-  affiliated-keyword baselines are parsed from
-  =.data/org-mode/lisp/org-element.el= and compared against checked-in
-  constants. Element-like and object-like gaps are now empty except the
+- P1: element, object, greater-element, recursive-object, and
+  affiliated-keyword inventories are Scheme-owned and checked against an
+  approved Git-tracked snapshot. Element-like and object-like gaps are now
+  empty except the
   intentional orgize-owned =plain-text= object extension.
 - P2: alignment assertions are split into targeted snapshots for kind coverage
   and standard-property coverage, so upstream drift and intentional unmapped
@@ -172,11 +172,12 @@ The real-document regression snapshot is
 - P3: =CONTRACT_ORG= selectors now cover affiliated fields, summary fields,
   property fields, =or=, and =not= through the shared predicate AST in addition
   to count and relation conditions.
-- P4: upstream =defconst= extraction is automated in the integration suite; a
-  changed upstream list must update the checked-in baseline intentionally.
+- P4: the Scheme inventory is AOT-projected into Rust and checked against an
+  approved snapshot; a changed inventory must update that baseline intentionally.
   =OrgElementsIndexKind= also marks orgize-owned extensions such as
   =plain-text= with the =orgize= extension namespace.
-- P5: =.data/org-mode/doc/org-guide.org= is parsed as a real document
+- P5: =tests/fixtures/org-elements/representative.org= is parsed as a Git-tracked
+  real document
   regression and snapshots record count, selected kind counts, and first
   top-level headlines. Index records now carry property provenance so callers
   can distinguish standard, local, summary-derived, and inherited values.
@@ -200,9 +201,8 @@ The real-document regression snapshot is
 - P3/P4: namespace and property-provenance policy is fixed by the
   =org_element_namespace_and_property_provenance= snapshot, covering
   org-mode-owned headline records and orgize extension objects.
-- P5: upstream drift remains guarded by =.data/org-mode/lisp/org-element.el=
-  defconst extraction and the fetched =.data/org-mode/doc/org-guide.org=
-  regression fixture.
+- P5: the Scheme inventory snapshot and Git-tracked representative Org
+  document guard parser alignment without requiring an external workspace.
 - P6: =CONTRACT_ORG= boolean assertion failures now include a compact predicate
   summary so any/none failures can be diagnosed from the lint snapshot without
   reopening the source fixture.

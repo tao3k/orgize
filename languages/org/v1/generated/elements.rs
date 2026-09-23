@@ -1,0 +1,113 @@
+// Generated from languages/org/v1/elements.ss. Do not edit.
+
+#[rustfmt::skip]
+pub const ORG_ELEMENT_KINDS: &[&str] = &[
+    "babel-call",
+    "center-block",
+    "clock",
+    "comment",
+    "comment-block",
+    "diary-sexp",
+    "drawer",
+    "dynamic-block",
+    "example-block",
+    "export-block",
+    "fixed-width",
+    "footnote-definition",
+    "headline",
+    "horizontal-rule",
+    "inlinetask",
+    "item",
+    "keyword",
+    "latex-environment",
+    "node-property",
+    "paragraph",
+    "plain-list",
+    "planning",
+    "property-drawer",
+    "quote-block",
+    "section",
+    "special-block",
+    "src-block",
+    "table",
+    "table-row",
+    "verse-block",
+];
+
+#[rustfmt::skip]
+pub const ORG_GREATER_ELEMENT_KINDS: &[&str] = &[
+    "center-block",
+    "drawer",
+    "dynamic-block",
+    "footnote-definition",
+    "headline",
+    "inlinetask",
+    "item",
+    "plain-list",
+    "property-drawer",
+    "quote-block",
+    "section",
+    "special-block",
+    "table",
+    "org-data",
+];
+
+#[rustfmt::skip]
+pub const ORG_OBJECT_KINDS: &[&str] = &[
+    "bold",
+    "citation",
+    "citation-reference",
+    "code",
+    "entity",
+    "export-snippet",
+    "footnote-reference",
+    "inline-babel-call",
+    "inline-src-block",
+    "italic",
+    "line-break",
+    "latex-fragment",
+    "link",
+    "macro",
+    "radio-target",
+    "statistics-cookie",
+    "strike-through",
+    "subscript",
+    "superscript",
+    "table-cell",
+    "target",
+    "timestamp",
+    "underline",
+    "verbatim",
+];
+
+#[rustfmt::skip]
+pub const ORG_RECURSIVE_OBJECT_KINDS: &[&str] = &[
+    "bold",
+    "citation",
+    "footnote-reference",
+    "italic",
+    "link",
+    "subscript",
+    "radio-target",
+    "strike-through",
+    "superscript",
+    "table-cell",
+    "underline",
+];
+
+#[rustfmt::skip]
+pub const ORG_AFFILIATED_KEYWORDS: &[&str] = &[
+    "CAPTION",
+    "DATA",
+    "HEADER",
+    "HEADERS",
+    "LABEL",
+    "NAME",
+    "PLOT",
+    "RESNAME",
+    "RESULT",
+    "RESULTS",
+    "SOURCE",
+    "SRCNAME",
+    "TBLNAME",
+];

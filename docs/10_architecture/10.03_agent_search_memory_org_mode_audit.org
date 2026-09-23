@@ -1,8 +1,8 @@
 * 10.03 Wendao Search Support And Memory Org Mode Audit
 
-This audit reviews the local research-only Org mode checkout under
-`.data/org-mode` for memory and Wendao Search support alignment. It does not
-import Emacs Lisp behavior into orgize. It also does not move search ownership
+This audit reviews pinned upstream Org mode references for memory and Wendao
+Search support alignment. It does not import Emacs Lisp implementation into
+orgize. It also does not move search ownership
 into orgize. Wendao owns search execution, ranking, cross-document recall,
 storage, and retrieval APIs.
 
