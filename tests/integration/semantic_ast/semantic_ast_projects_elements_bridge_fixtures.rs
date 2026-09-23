@@ -11,6 +11,37 @@ pub(super) use generated_elements::{
 };
 
 #[test]
+fn semantic_ast_projects_scheme_object_context_contract() {
+    use sha2::{Digest, Sha256};
+
+    let scheme_source = include_str!("../../../languages/org/v1/elements.ss");
+    assert_eq!(
+        generated_elements::ELEMENTS_DIGEST,
+        format!("sha256:{:x}", Sha256::digest(scheme_source.as_bytes()))
+    );
+    let allowed = |container: &str, object: &str| {
+        generated_elements::ORG_OBJECT_RESTRICTIONS
+            .iter()
+            .find(|(owner, _)| *owner == container)
+            .is_some_and(|(_, objects)| objects.contains(&object))
+    };
+    let secondary = |container: &str, field: &str| {
+        generated_elements::ORG_SECONDARY_VALUES
+            .iter()
+            .find(|(owner, _)| *owner == container)
+            .is_some_and(|(_, fields)| fields.contains(&field))
+    };
+
+    assert!(allowed("paragraph", "link"));
+    assert!(allowed("table-row", "table-cell"));
+    assert!(!allowed("table-row", "link"));
+    assert!(!allowed("headline", "line-break"));
+    assert!(!allowed("src-block", "bold"));
+    assert!(secondary("headline", "title"));
+    assert!(!secondary("paragraph", "title"));
+}
+
+#[test]
 fn semantic_ast_projects_scheme_element_catalog_matches_approved_baseline() {
     insta::assert_snapshot!(
         "scheme_element_catalog",

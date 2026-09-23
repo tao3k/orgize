@@ -1,5 +1,8 @@
 // Generated from languages/org/v1/elements.ss. Do not edit.
 
+pub const ELEMENTS_DIGEST: &str =
+    "sha256:96846ea16ab828c06cefe9b52f7e81c093474cecd06910bba032ce742bdea2e4";
+
 #[rustfmt::skip]
 pub const ORG_ELEMENT_KINDS: &[&str] = &[
     "babel-call",
@@ -110,4 +113,36 @@ pub const ORG_AFFILIATED_KEYWORDS: &[&str] = &[
     "SOURCE",
     "SRCNAME",
     "TBLNAME",
+];
+
+#[rustfmt::skip]
+pub const ORG_OBJECT_RESTRICTIONS: &[(&str, &[&str])] = &[
+    ("bold", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("citation", &["citation-reference", ]),
+    ("citation-reference", &["bold", "code", "entity", "export-snippet", "inline-babel-call", "inline-src-block", "italic", "latex-fragment", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("footnote-reference", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("headline", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("inlinetask", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("italic", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("item", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("keyword", &["bold", "citation", "code", "entity", "export-snippet", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("link", &["export-snippet", "inline-babel-call", "inline-src-block", "macro", "statistics-cookie", "bold", "code", "entity", "italic", "latex-fragment", "strike-through", "subscript", "superscript", "underline", "verbatim", ]),
+    ("paragraph", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("radio-target", &["bold", "code", "entity", "italic", "latex-fragment", "strike-through", "subscript", "superscript", "underline", "verbatim", ]),
+    ("strike-through", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("subscript", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("superscript", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("table-cell", &["citation", "export-snippet", "footnote-reference", "link", "macro", "radio-target", "target", "timestamp", "bold", "code", "entity", "italic", "latex-fragment", "strike-through", "subscript", "superscript", "underline", "verbatim", ]),
+    ("table-row", &["table-cell", ]),
+    ("underline", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+    ("verse-block", &["bold", "citation", "code", "entity", "export-snippet", "footnote-reference", "inline-babel-call", "inline-src-block", "italic", "line-break", "latex-fragment", "link", "macro", "radio-target", "statistics-cookie", "strike-through", "subscript", "superscript", "target", "timestamp", "underline", "verbatim", ]),
+];
+
+#[rustfmt::skip]
+pub const ORG_SECONDARY_VALUES: &[(&str, &[&str])] = &[
+    ("citation", &["prefix", "suffix", ]),
+    ("headline", &["title", ]),
+    ("inlinetask", &["title", ]),
+    ("item", &["tag", ]),
+    ("citation-reference", &["prefix", "suffix", ]),
 ];
