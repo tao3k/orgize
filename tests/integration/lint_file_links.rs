@@ -40,7 +40,7 @@ fn lint_enforces_skill_package_relative_paths() {
 [[../contracts/agent.execplan.v1.org][agent.execplan.v1]]
 [[languages/org/templates/README.org][repo-root template]]
 #+begin_src shell
-asp org contract trace --org-contract-registry <ASP_ORG_ROOT>/contracts/agent.execplan.v1.org templates/agent.execplan.v1.org
+orgize org contract trace --org-contract-registry <ASP_ORG_ROOT>/contracts/agent.execplan.v1.org templates/agent.execplan.v1.org
 #+end_src
 "#;
 

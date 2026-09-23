@@ -64,8 +64,10 @@ pub enum OrgElementQueryPredicate {
     Context(String),
     PropertyEquals(OrgElementsIndexSummaryPredicate),
     PropertyContains(OrgElementsIndexSummaryTextPredicate),
+    PropertyPositiveInteger(String),
     SummaryEquals(OrgElementsIndexSummaryPredicate),
     SummaryContains(OrgElementsIndexSummaryTextPredicate),
+    SummaryPositiveInteger(String),
 }
 
 impl Default for OrgElementQueryPredicate {
@@ -366,6 +368,10 @@ impl OrgElementQueryPredicate {
         })
     }
 
+    pub fn property_positive_integer(key: impl Into<String>) -> Self {
+        Self::PropertyPositiveInteger(key.into())
+    }
+
     pub fn summary_eq(
         key: impl Into<String>,
         value: impl Into<OrgElementsIndexSummaryValue>,
@@ -383,6 +389,10 @@ impl OrgElementQueryPredicate {
         })
     }
 
+    pub fn summary_positive_integer(key: impl Into<String>) -> Self {
+        Self::SummaryPositiveInteger(key.into())
+    }
+
     pub fn matches<A>(&self, record: &OrgElementsIndexRecord<A>) -> bool {
         match self {
             Self::All(predicates) => predicates.iter().all(|predicate| predicate.matches(record)),
@@ -396,6 +406,9 @@ impl OrgElementQueryPredicate {
                 .is_some_and(|value| value == &predicate.value),
             Self::PropertyContains(predicate) => record_property(record, &predicate.key)
                 .is_some_and(|value| value.contains_text(&predicate.needle)),
+            Self::PropertyPositiveInteger(key) => {
+                record_property(record, key).is_some_and(summary_value_is_positive_integer)
+            }
             Self::SummaryEquals(predicate) => record
                 .summary
                 .get(&predicate.key)
@@ -404,7 +417,29 @@ impl OrgElementQueryPredicate {
                 .summary
                 .get(&predicate.key)
                 .is_some_and(|value| value.contains_text(&predicate.needle)),
+            Self::SummaryPositiveInteger(key) => record
+                .summary
+                .get(key)
+                .is_some_and(summary_value_is_positive_integer),
         }
+    }
+}
+
+fn summary_value_is_positive_integer(value: &OrgElementsIndexSummaryValue) -> bool {
+    match value {
+        OrgElementsIndexSummaryValue::Integer(value) => *value > 0,
+        OrgElementsIndexSummaryValue::Text(value) => {
+            let value = value.trim();
+            value
+                .as_bytes()
+                .first()
+                .is_some_and(|byte| matches!(byte, b'1'..=b'9'))
+                && value.bytes().all(|byte| byte.is_ascii_digit())
+                && value.parse::<u64>().is_ok()
+        }
+        OrgElementsIndexSummaryValue::Null
+        | OrgElementsIndexSummaryValue::Bool(_)
+        | OrgElementsIndexSummaryValue::StringList(_) => false,
     }
 }
 

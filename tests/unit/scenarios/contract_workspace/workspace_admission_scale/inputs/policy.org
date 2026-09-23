@@ -1,0 +1,12 @@
+#+TITLE: Workspace Admission Scale Input
+:PROPERTIES:
+:WORKSPACE_CONTRACT_ID: orgize.workspace.scale.v1
+:END:
+
+* Maintained documents
+:PROPERTIES:
+:PATH: cn/docs
+:PATH_KIND: directory
+:ROLE: maintained
+:CONTRACT_ORG_EXACT: orgize.document.v1 orgize.document.cn.v1
+:END:

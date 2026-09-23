@@ -3,6 +3,7 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    thread,
 };
 
 use super::{
@@ -10,6 +11,11 @@ use super::{
     model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
     org_elements::index_org,
 };
+
+pub(super) struct DocumentSource {
+    pub(super) path: PathBuf,
+    pub(super) source: String,
+}
 
 /// Index all document files under `root` with the default walk policy.
 pub fn index_project(
@@ -30,14 +36,20 @@ pub fn index_project_with_config(
     files.sort();
     files.dedup();
 
-    let mut facts = Vec::new();
-    for path in files {
-        if !path.exists() {
-            continue;
+    index_paths(language, &files)
+}
+
+pub(super) fn walk_config_with_cli_excludes(
+    walk_config: &DocumentWalkConfig,
+    args: &[String],
+) -> DocumentWalkConfig {
+    let mut walk_config = walk_config.clone();
+    for dir in option_values(args, "--exclude-dir") {
+        if !dir.trim().is_empty() && !walk_config.ignore_dirs.iter().any(|item| item == &dir) {
+            walk_config.ignore_dirs.push(dir);
         }
-        facts.extend(index_path(language, &path)?);
     }
-    Ok(facts)
+    walk_config
 }
 
 /// Index a single document path into parser-owned document elements.
@@ -47,154 +59,103 @@ pub fn index_path(language: DocumentLanguage, path: &Path) -> Result<Vec<Documen
     index_source(language, path, &source)
 }
 
+pub(super) fn load_sources(paths: &[PathBuf]) -> Result<Vec<DocumentSource>, String> {
+    paths
+        .iter()
+        .map(|path| {
+            let source =
+                fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+            Ok(DocumentSource {
+                path: path.clone(),
+                source,
+            })
+        })
+        .collect()
+}
+
+pub(super) fn index_sources(
+    language: DocumentLanguage,
+    sources: &[DocumentSource],
+) -> Result<Vec<DocumentElement>, String> {
+    sources.iter().try_fold(Vec::new(), |mut facts, source| {
+        facts.extend(index_source(language, &source.path, &source.source)?);
+        Ok(facts)
+    })
+}
+
 pub(super) fn query_project_with_config(
     language: DocumentLanguage,
     root: &Path,
     walk_config: &DocumentWalkConfig,
-    terms: &[String],
-    fields: &[String],
+    _terms: &[String],
+    _fields: &[String],
 ) -> Result<Vec<DocumentElement>, String> {
-    let _ = (terms, fields);
     let mut files = Vec::new();
     collect_document_paths(language, root, walk_config, &mut files)?;
     files.sort();
     files.dedup();
 
-    let mut facts = Vec::new();
-    for path in files {
-        if !path.exists() {
-            continue;
-        }
-        let source =
-            fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-        if document_query_lexical_prefilter_miss(language, &path, &source, terms, fields) {
-            continue;
-        }
-        facts.extend(index_source(language, &path, &source)?);
-    }
-    Ok(facts)
+    index_paths(language, &files)
 }
 
-pub(crate) fn document_query_lexical_prefilter_miss(
+fn index_paths(
     language: DocumentLanguage,
-    path: &Path,
-    source: &str,
-    terms: &[String],
-    fields: &[String],
+    paths: &[PathBuf],
+) -> Result<Vec<DocumentElement>, String> {
+    let sources = load_sources(paths)?;
+    let total_bytes = sources
+        .iter()
+        .map(|source| source.source.len() as u64)
+        .sum();
+    if should_index_sequentially(language, sources.len(), total_bytes) {
+        return index_sources(language, &sources);
+    }
+
+    let worker_count = thread::available_parallelism()
+        .map(usize::from)
+        .unwrap_or(1)
+        .min(4)
+        .min(sources.len());
+    let chunk_size = sources.len().div_ceil(worker_count);
+    thread::scope(|scope| {
+        sources
+            .chunks(chunk_size)
+            .map(|chunk| {
+                scope.spawn(move || {
+                    chunk.iter().try_fold(Vec::new(), |mut facts, source| {
+                        facts.extend(index_source(language, &source.path, &source.source)?);
+                        Ok::<_, String>(facts)
+                    })
+                })
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .try_fold(Vec::new(), |mut facts, task| {
+                facts.extend(
+                    task.join()
+                        .map_err(|_| "document parser worker panicked".to_string())??,
+                );
+                Ok(facts)
+            })
+    })
+}
+
+pub(super) fn should_index_sequentially(
+    language: DocumentLanguage,
+    path_count: usize,
+    total_bytes: u64,
 ) -> bool {
-    if terms.is_empty() && fields.is_empty() {
+    const PARALLEL_INDEX_MIN_PATHS: usize = 16;
+    const SMALL_ORG_BATCH_MAX_PATHS: usize = 63;
+    const SMALL_ORG_BATCH_MAX_BYTES: u64 = 64 * 1024;
+
+    if path_count < PARALLEL_INDEX_MIN_PATHS {
+        return true;
+    }
+    if language != DocumentLanguage::Org || path_count > SMALL_ORG_BATCH_MAX_PATHS {
         return false;
     }
-
-    let haystack = document_query_lexical_haystack(path, source);
-    for term in terms {
-        for needle in term
-            .split_whitespace()
-            .map(str::trim)
-            .filter(|part| !part.is_empty())
-            .map(str::to_ascii_lowercase)
-        {
-            if document_query_parser_only_term(language, &needle) {
-                continue;
-            }
-            if !haystack.contains(&needle) {
-                return true;
-            }
-        }
-    }
-
-    for field in fields {
-        let Some((key, value)) = field.split_once('=') else {
-            continue;
-        };
-        if !key.trim().eq_ignore_ascii_case("text") {
-            continue;
-        }
-        let value = value.trim().to_ascii_lowercase();
-        if !value.is_empty() && !haystack.contains(&value) {
-            return true;
-        }
-    }
-
-    false
-}
-
-fn document_query_lexical_haystack(path: &Path, source: &str) -> String {
-    let mut haystack = String::with_capacity(source.len() + path.as_os_str().len() + 1);
-    haystack.push_str(&source.to_ascii_lowercase());
-    haystack.push('\n');
-    haystack.push_str(&path.display().to_string().to_ascii_lowercase());
-    haystack
-}
-
-fn document_query_parser_only_term(language: DocumentLanguage, term: &str) -> bool {
-    matches!(
-        term,
-        "heading"
-            | "task"
-            | "paragraph"
-            | "property"
-            | "planning"
-            | "table"
-            | "block"
-            | "list"
-            | "listitem"
-            | "checklistitem"
-            | "link"
-            | "image"
-            | "headline"
-            | "propertydrawer"
-            | "syntaxplanning"
-            | "orgtable"
-            | "sourceblock"
-            | "syntaxlist"
-            | "syntaxlistitem"
-            | "syntaxlink"
-            | "level"
-            | "title"
-            | "todo"
-            | "todotype"
-            | "priority"
-            | "tag"
-            | "text"
-            | "key"
-            | "value"
-            | "scheduled"
-            | "deadline"
-            | "closed"
-            | "header"
-            | "kind"
-            | "lang"
-            | "backend"
-            | "listkind"
-            | "descriptive"
-            | "bullet"
-            | "indent"
-            | "counter"
-            | "checkbox"
-            | "checked"
-            | "target"
-            | "description"
-            | "code"
-            | "start"
-            | "open"
-            | "true"
-            | "false"
-            | "source"
-            | "export"
-            | "ordered"
-            | "unordered"
-    ) || matches!(language, DocumentLanguage::Markdown)
-        && matches!(
-            term,
-            "codeblock"
-                | "taskitem"
-                | "frontmatter"
-                | "thematicbreak"
-                | "markdownheading"
-                | "markdownparagraph"
-        )
-        || matches!(language, DocumentLanguage::Markdown) && term.starts_with("nodevalue::")
+    total_bytes <= SMALL_ORG_BATCH_MAX_BYTES
 }
 
 fn index_source(
@@ -232,13 +193,6 @@ pub fn filter_elements_by_query(
                 && fields.iter().all(|field| element.field_matches(field))
         })
         .collect()
-}
-
-pub(super) fn count_kind(elements: &[DocumentElement], kind: &str) -> usize {
-    elements
-        .iter()
-        .filter(|element| element.kind == kind)
-        .count()
 }
 
 pub(super) fn last_existing_path(args: &[String]) -> Option<PathBuf> {
@@ -297,48 +251,42 @@ pub(super) fn collect_document_paths(
         return Err(format!("{}: unsupported path type", path.display()));
     }
 
-    let mut entries = fs::read_dir(path)
-        .map_err(|error| format!("{}: {error}", path.display()))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|error| format!("{}: {error}", path.display()))?;
-    entries.sort_by_key(|entry| entry.path());
-
-    for entry in entries {
-        let entry_path = entry.path();
-        let Some(name) = entry_path.file_name().and_then(|name| name.to_str()) else {
-            continue;
-        };
-        let entry_type = entry
-            .file_type()
-            .map_err(|error| format!("{}: {error}", entry_path.display()))?;
-        if entry_type.is_dir() {
-            if should_skip_project_directory(name, walk_config) {
-                continue;
+    let ignored_directories = walk_config.ignore_dirs.clone();
+    let included_hidden_directories = walk_config.include_hidden_dirs.clone();
+    let mut builder = ignore::WalkBuilder::new(path);
+    builder
+        .standard_filters(true)
+        .hidden(false)
+        .follow_links(false)
+        .filter_entry(move |entry| {
+            if entry.depth() == 0 || !entry.file_type().is_some_and(|kind| kind.is_dir()) {
+                return true;
             }
-            collect_document_paths(language, &entry_path, walk_config, files)?;
-        } else if entry_type.is_file() && language.matches_path(&entry_path) {
-            files.push(entry_path);
+            let name = entry.file_name().to_string_lossy();
+            if ignored_directories
+                .iter()
+                .any(|ignored| ignored == name.as_ref())
+            {
+                return false;
+            }
+            !name.starts_with('.')
+                || included_hidden_directories
+                    .iter()
+                    .any(|included| included == name.as_ref())
+        });
+    for entry in builder.build() {
+        let entry = entry.map_err(|error| format!("{}: {error}", path.display()))?;
+        if entry.depth() == 0 {
+            continue;
+        }
+        if entry.file_type().is_some_and(|kind| kind.is_file())
+            && language.matches_path(entry.path())
+        {
+            files.push(entry.into_path());
         }
     }
+    files.sort();
     Ok(())
-}
-
-fn should_skip_project_directory(name: &str, walk_config: &DocumentWalkConfig) -> bool {
-    if walk_config
-        .include_hidden_dirs
-        .iter()
-        .any(|included| included == name)
-    {
-        return false;
-    }
-    if walk_config
-        .ignore_dirs
-        .iter()
-        .any(|ignored| ignored == name)
-    {
-        return true;
-    }
-    name.starts_with('.')
 }
 
 impl DocumentElement {

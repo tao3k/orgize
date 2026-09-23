@@ -107,3 +107,39 @@ fn renders_canonical_query_packet() {
         })
     );
 }
+
+#[test]
+fn positive_integer_predicates_round_trip_through_query_json() {
+    let value = json!({
+        "schemaVersion": 1,
+        "predicate": {
+            "all": [
+                { "property": { "key": "REVISION", "positiveInteger": true } },
+                { "summary": { "key": "rank", "positiveInteger": true } }
+            ]
+        }
+    });
+
+    let query =
+        org_elements_index_query_from_json_value(&value).expect("query packet should parse");
+    assert_eq!(org_elements_index_query_to_json_value(&query), value);
+}
+
+#[test]
+fn field_predicates_reject_multiple_or_false_operators() {
+    for predicate in [
+        json!({ "key": "REVISION", "equals": 1, "positiveInteger": true }),
+        json!({ "key": "REVISION", "contains": "1", "positiveInteger": true }),
+        json!({ "key": "REVISION", "positiveInteger": false }),
+    ] {
+        let error = org_elements_index_query_from_json_value(&json!({
+            "schemaVersion": 1,
+            "predicate": { "property": predicate }
+        }))
+        .expect_err("ambiguous or false positiveInteger predicate must fail");
+        assert!(
+            error.to_string().contains("exactly one") || error.to_string().contains("must be true"),
+            "{error}"
+        );
+    }
+}

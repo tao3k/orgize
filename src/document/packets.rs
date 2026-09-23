@@ -1,71 +1,61 @@
-use std::path::Path;
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::{Component, Path},
+    sync::OnceLock,
+};
+
+#[cfg(not(target_os = "macos"))]
+use std::io::Read;
 
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 use super::{
-    elements::display_path,
+    elements::{DocumentSource, display_path},
     model::{DocumentElement, DocumentLanguage},
     source_selection::{SourceSelector, structural_selector_fragment},
 };
 
-pub(super) fn print_search_json(
+const DOCUMENT_QUERY_PACKET_SCHEMA_ID: &str =
+    "agent.semantic-protocols.semantic-document-query-packet";
+const DOCUMENT_QUERY_PACKET_SCHEMA_VERSION: &str = "1";
+const DOCUMENT_QUERY_PACKET_SCHEMA_AUTHORITY: &str =
+    "https://tao3k.github.io/agent-semantic-protocols/schemas/";
+
+pub(super) struct DocumentQueryEvidence {
+    pub(super) source_snapshot: Value,
+    pub(super) resolution_evidence: Value,
+    snapshot_root: String,
+    execution_command_digest: String,
+}
+
+struct DocumentQueryPacketInput<'a> {
     language: DocumentLanguage,
-    view: &str,
-    root: &Path,
-    facts: &[DocumentElement],
-    query: Option<&str>,
-) -> Result<(), String> {
-    let packet = json!({
-        "schemaId": "agent.semantic-protocols.semantic-document-search-packet",
-        "schemaVersion": "1",
-        "protocolId": "agent.semantic-protocols.semantic-language",
-        "protocolVersion": "1",
-        "languageId": language.id(),
-        "providerId": "orgize",
-        "binary": "asp",
-        "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
-        "method": format!("search/{view}"),
-        "projectRoot": packet_project_root(root),
-        "view": view,
-        "documentMode": "metadata",
-        "query": query.unwrap_or_default(),
-        "documentCount": document_count(facts),
-        "factCount": facts.len(),
-        "owners": owners_json(language, root, facts),
-        "documentFacts": facts.iter().map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
-        "nextActions": [
-            {
-                "kind": "query",
-                "target": "term",
-                "command": format!("{} query --term <term> --view metadata", language.command_prefix())
-            },
-            {
-                "kind": "query",
-                "target": "selector",
-                "command": format!("{} query --selector <structural-selector> --view metadata", language.command_prefix())
-            },
-            {
-                "kind": "query",
-                "target": "kind",
-                "command": format!("{} query --kind <element-kind> --view metadata", language.command_prefix())
-            },
-            {
-                "kind": "query",
-                "target": "field",
-                "command": format!("{} query --field <key=value> --view metadata", language.command_prefix())
-            },
-            {
-                "kind": "query",
-                "target": "content",
-                "command": format!("{} query --term <term> --content", language.command_prefix())
-            }
-        ],
-        "notes": [{
-            "kind": "search-document",
-            "message": "Document facts are parser-owned element metadata. Use emitted structuralSelector values for query --selector and --content."
-        }]
-    });
-    print_json(&packet)
+    query: String,
+    query_terms: Vec<String>,
+    query_kind: &'static str,
+    root: &'a Path,
+    facts: &'a [DocumentElement],
+    content_output: bool,
+    evidence: DocumentQueryEvidence,
+}
+
+pub(super) fn document_query_evidence(
+    language: DocumentLanguage,
+    sources: &[DocumentSource],
+    owner_path: Option<&Path>,
+    project_root: &Path,
+    logical_args: &[String],
+) -> Result<DocumentQueryEvidence, String> {
+    let execution_command_digest = provider_execution_command_digest(language, logical_args)?;
+    document_query_evidence_with_digest(
+        language,
+        sources,
+        owner_path,
+        project_root,
+        execution_command_digest,
+    )
 }
 
 pub(super) fn print_query_json(
@@ -74,40 +64,23 @@ pub(super) fn print_query_json(
     root: &Path,
     facts: &[DocumentElement],
     content_output: bool,
+    evidence: DocumentQueryEvidence,
 ) -> Result<(), String> {
     let query_terms = if terms.is_empty() {
         vec!["*".to_string()]
     } else {
         terms.to_vec()
     };
-    let query_surface = if content_output {
-        "content"
-    } else {
-        "metadata"
-    };
-    let packet = json!({
-        "schemaId": "agent.semantic-protocols.semantic-document-query-packet",
-        "schemaVersion": "1",
-        "protocolId": "agent.semantic-protocols.semantic-language",
-        "protocolVersion": "1",
-        "languageId": language.id(),
-        "providerId": "orgize",
-        "binary": "asp",
-        "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
-        "method": "query/document",
-        "projectRoot": packet_project_root(root),
-        "query": query_terms.join(" "),
-        "queryTerms": query_terms,
-        "queryKind": "term",
-        "querySurface": query_surface,
-        "documentMode": query_surface,
-        "matchCount": facts.len(),
-        "matchLimit": 80,
-        "matchesTruncated": facts.len() > 80,
-        "documentFacts": facts.iter().take(80).map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
-        "contentBlocks": if content_output { content_blocks_json(language, root, facts) } else { Vec::new() },
-        "truncated": facts.len() > 80
-    });
+    let packet = build_document_query_packet(DocumentQueryPacketInput {
+        language,
+        query: query_terms.join(" "),
+        query_terms,
+        query_kind: "term",
+        root,
+        facts,
+        content_output,
+        evidence,
+    })?;
     print_json(&packet)
 }
 
@@ -117,41 +90,167 @@ pub(super) fn print_selector_query_json(
     selection: &SourceSelector,
     facts: &[DocumentElement],
     content_output: bool,
+    evidence: DocumentQueryEvidence,
 ) -> Result<(), String> {
-    let root = if selection.structural_selector.is_some() {
+    let selected_parent = selection.packet_root()?;
+    let current_directory = std::env::current_dir()
+        .ok()
+        .and_then(|path| fs::canonicalize(path).ok());
+    let root = if fs::canonicalize(&selected_parent).ok() == current_directory {
         Path::new(".")
     } else {
-        selection.path.parent().unwrap_or_else(|| Path::new("."))
+        &selected_parent
     };
-    let query_surface = if content_output {
+    let packet = build_document_query_packet(DocumentQueryPacketInput {
+        language,
+        query: selector.to_string(),
+        query_terms: vec![selector.to_string()],
+        query_kind: "selector",
+        root,
+        facts,
+        content_output,
+        evidence,
+    })?;
+    print_json(&packet)
+}
+
+fn document_query_evidence_with_digest(
+    language: DocumentLanguage,
+    sources: &[DocumentSource],
+    owner_path: Option<&Path>,
+    project_root: &Path,
+    execution_command_digest: String,
+) -> Result<DocumentQueryEvidence, String> {
+    let snapshot_base = if project_root.is_file() {
+        project_root
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+            .unwrap_or_else(|| Path::new("."))
+    } else {
+        project_root
+    };
+    let snapshot_base = fs::canonicalize(snapshot_base).map_err(|error| {
+        format!(
+            "could not resolve document query snapshot root {}: {error}",
+            snapshot_base.display()
+        )
+    })?;
+    let mut leaves = BTreeMap::new();
+    for source in sources {
+        let absolute_path = fs::canonicalize(&source.path).map_err(|error| {
+            format!(
+                "could not resolve document query source {}: {error}",
+                source.path.display()
+            )
+        })?;
+        let snapshot_path = relative_snapshot_path(&snapshot_base, &absolute_path)?;
+        let source_digest = blake3::hash(source.source.as_bytes()).to_hex().to_string();
+        if leaves
+            .insert(snapshot_path.clone(), source_digest)
+            .is_some()
+        {
+            return Err(format!(
+                "document query snapshot contains duplicate source path `{snapshot_path}`"
+            ));
+        }
+    }
+    let snapshot_root = workspace_merkle_root(&leaves);
+    let provider_digest = document_provider_digest(language)?;
+    let owner_evidence = owner_path
+        .map(|path| {
+            let absolute_path = fs::canonicalize(path).map_err(|error| {
+                format!(
+                    "could not resolve document query owner {}: {error}",
+                    path.display()
+                )
+            })?;
+            let snapshot_path = relative_snapshot_path(&snapshot_base, &absolute_path)?;
+            let source_digest = leaves.get(&snapshot_path).ok_or_else(|| {
+                format!("document query owner `{snapshot_path}` is absent from the source snapshot")
+            })?;
+            Ok::<_, String>((snapshot_path, format!("blake3:{source_digest}")))
+        })
+        .transpose()?;
+    let mut resolution_evidence = json!({
+        "schemaId": "asp.source-resolution.v1",
+        "snapshotRoot": snapshot_root,
+        "authority": "live-parser",
+        "state": "live-hit",
+        "parserArtifactDigest": provider_digest
+    });
+    if let Some((owner_path, owner_blob_digest)) = owner_evidence {
+        resolution_evidence["ownerPath"] = json!(owner_path);
+        resolution_evidence["ownerBlobDigest"] = json!(owner_blob_digest);
+    }
+    let source_snapshot = json!({
+        "schemaId": "asp.source-snapshot.v1",
+        "algorithm": "blake3-merkle-v1",
+        "rootDigest": snapshot_root,
+        "sourceKind": "filesystem",
+        "leafCount": leaves.len(),
+        "providerDigest": provider_digest
+    });
+    Ok(DocumentQueryEvidence {
+        source_snapshot,
+        resolution_evidence,
+        snapshot_root,
+        execution_command_digest,
+    })
+}
+
+fn build_document_query_packet(input: DocumentQueryPacketInput<'_>) -> Result<Value, String> {
+    let query_surface = if input.content_output {
         "content"
     } else {
         "metadata"
     };
-    let packet = json!({
-        "schemaId": "agent.semantic-protocols.semantic-document-query-packet",
-        "schemaVersion": "1",
+    let document_facts = input
+        .facts
+        .iter()
+        .take(80)
+        .map(|fact| document_fact_json(input.language, input.root, fact))
+        .collect::<Vec<_>>();
+    let content_blocks = if input.content_output {
+        content_blocks_json(input.language, input.root, input.facts)?
+    } else {
+        Vec::new()
+    };
+    let item_digest = query_projection_digest(
+        input.language,
+        &input.evidence.snapshot_root,
+        input.query_kind,
+        &input.query,
+        &document_facts,
+        &content_blocks,
+    )?;
+    Ok(json!({
+        "schemaId": DOCUMENT_QUERY_PACKET_SCHEMA_ID,
+        "schemaVersion": DOCUMENT_QUERY_PACKET_SCHEMA_VERSION,
+        "schemaAuthority": DOCUMENT_QUERY_PACKET_SCHEMA_AUTHORITY,
         "protocolId": "agent.semantic-protocols.semantic-language",
         "protocolVersion": "1",
-        "languageId": language.id(),
-        "providerId": "orgize",
-        "binary": "asp",
-        "namespace": format!("agent.semantic-protocols.languages.{}.orgize", language.id()),
+        "languageId": input.language.id(),
+        "providerId": input.language.provider_id(),
+        "binary": env!("CARGO_PKG_NAME"),
+        "namespace": input.language.provider_namespace(),
         "method": "query/document",
-        "projectRoot": packet_project_root(root),
-        "query": selector,
-        "queryTerms": [selector],
-        "queryKind": "selector",
+        "projectRoot": packet_project_root(input.root),
+        "query": input.query,
+        "queryTerms": input.query_terms,
+        "queryKind": input.query_kind,
         "querySurface": query_surface,
         "documentMode": query_surface,
-        "matchCount": facts.len(),
+        "matchCount": input.facts.len(),
         "matchLimit": 80,
-        "matchesTruncated": facts.len() > 80,
-        "documentFacts": facts.iter().take(80).map(|fact| document_fact_json(language, root, fact)).collect::<Vec<_>>(),
-        "contentBlocks": if content_output { content_blocks_json(language, root, facts) } else { Vec::new() },
-        "truncated": facts.len() > 80
-    });
-    print_json(&packet)
+        "matchesTruncated": input.facts.len() > 80,
+        "documentFacts": document_facts,
+        "contentBlocks": content_blocks,
+        "sourceSnapshot": input.evidence.source_snapshot,
+        "resolutionEvidence": input.evidence.resolution_evidence,
+        "itemDigest": item_digest,
+        "executionCommandDigest": input.evidence.execution_command_digest,
+        "truncated": input.facts.len() > 80
+    }))
 }
 
 fn print_json(packet: &Value) -> Result<(), String> {
@@ -159,14 +258,6 @@ fn print_json(packet: &Value) -> Result<(), String> {
         .map_err(|error| format!("failed to render JSON packet: {error}"))?;
     println!("{text}");
     Ok(())
-}
-
-fn document_count(facts: &[DocumentElement]) -> usize {
-    facts
-        .iter()
-        .map(|fact| fact.path.as_str())
-        .collect::<std::collections::BTreeSet<_>>()
-        .len()
 }
 
 fn packet_project_root(root: &Path) -> String {
@@ -178,26 +269,10 @@ fn packet_project_root(root: &Path) -> String {
     }
 }
 
-fn owners_json(language: DocumentLanguage, root: &Path, facts: &[DocumentElement]) -> Vec<Value> {
-    facts
-        .iter()
-        .map(|fact| packet_path(root, &fact.path))
-        .collect::<std::collections::BTreeSet<_>>()
-        .into_iter()
-        .map(|path| {
-            json!({
-                "path": path,
-                "role": "document",
-                "parserAuthority": language.parser_authority()
-            })
-        })
-        .collect()
-}
-
 fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentElement) -> Value {
     let path = packet_path(root, &fact.path);
-    let structural_selector = packet_structural_selector(language, &path, fact);
-    let mut value = json!({
+    let structural_selector = packet_structural_selector(language, &fact.path, fact);
+    json!({
         "id": structural_selector.as_str(),
         "kind": fact.kind,
         "sourceKind": fact.source_kind,
@@ -207,19 +282,16 @@ fn document_fact_json(language: DocumentLanguage, root: &Path, fact: &DocumentEl
         "location": location_json(&packet_path(root, &fact.path), fact.line, fact.end_line),
         "parserAuthority": language.parser_authority(),
         "queryKeys": query_keys(fact),
-        "attributes": fact_fields_json(fact)
-    });
-    if !fact.text.is_empty() {
-        value["textSnippet"] = json!(fact.text);
-    }
-    value
+        "attributes": fact_fields_json(fact),
+        "textSnippet": fact.text
+    })
 }
 
 fn content_blocks_json(
     language: DocumentLanguage,
     root: &Path,
     facts: &[DocumentElement],
-) -> Vec<Value> {
+) -> Result<Vec<Value>, String> {
     facts
         .iter()
         .take(80)
@@ -227,18 +299,282 @@ fn content_blocks_json(
             let content = fact.content_text();
             (!content.trim().is_empty()).then(|| {
                 let path = packet_path(root, &fact.path);
-                let structural_selector = packet_structural_selector(language, &path, fact);
-                json!({
+                let structural_selector = packet_structural_selector(language, &fact.path, fact);
+                let item_digest = content_block_digest(
+                    language,
+                    structural_selector.as_str(),
+                    content.as_bytes(),
+                );
+                let block = json!({
                     "kind": "element",
                     "documentPath": path,
                     "structuralSelector": structural_selector.as_str(),
                     "location": location_json(&packet_path(root, &fact.path), fact.line, fact.end_line),
                     "parserAuthority": language.parser_authority(),
-                    "content": content
-                })
+                    "content": content,
+                    "itemDigest": item_digest
+                });
+                Ok(block)
             })
         })
         .collect()
+}
+
+fn relative_snapshot_path(snapshot_base: &Path, absolute_path: &Path) -> Result<String, String> {
+    let relative = absolute_path.strip_prefix(snapshot_base).map_err(|_| {
+        format!(
+            "document query source {} is outside snapshot root {}",
+            absolute_path.display(),
+            snapshot_base.display()
+        )
+    })?;
+    let mut components = Vec::new();
+    for component in relative.components() {
+        match component {
+            Component::Normal(value) => components.push(value.to_string_lossy().into_owned()),
+            Component::CurDir => {}
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => {
+                return Err(format!(
+                    "document query snapshot path is not normalized: {}",
+                    relative.display()
+                ));
+            }
+        }
+    }
+    if components.is_empty() {
+        return Err("document query snapshot path must name a source file".to_string());
+    }
+    Ok(components.join("/"))
+}
+
+fn workspace_merkle_root(leaves: &BTreeMap<String, String>) -> String {
+    if leaves.is_empty() {
+        return canonical_blake3_digest(b"asp.workspace-merkle-empty.v1", &[]);
+    }
+    let mut level = leaves
+        .iter()
+        .map(|(path, source_digest)| {
+            canonical_blake3_digest(
+                b"asp.workspace-file-leaf.v1",
+                &[path.as_bytes(), source_digest.as_bytes()],
+            )
+        })
+        .collect::<Vec<_>>();
+    while level.len() > 1 {
+        level = level
+            .chunks(2)
+            .map(|pair| {
+                let left = &pair[0];
+                let right = pair.get(1).unwrap_or(left);
+                canonical_blake3_digest(
+                    b"asp.workspace-merkle-node.v1",
+                    &[left.as_bytes(), right.as_bytes()],
+                )
+            })
+            .collect();
+    }
+    level.pop().expect("non-empty Merkle level")
+}
+
+fn document_provider_digest(language: DocumentLanguage) -> Result<String, String> {
+    static EXECUTABLE_DIGEST: OnceLock<Result<String, String>> = OnceLock::new();
+    let executable_digest = EXECUTABLE_DIGEST
+        .get_or_init(current_executable_digest)
+        .as_ref()
+        .map_err(Clone::clone)?;
+    Ok(format!(
+        "blake3:{}",
+        canonical_blake3_digest(
+            b"asp.semantic-document-parser-artifact.v1",
+            &[
+                language.provider_id().as_bytes(),
+                executable_digest.as_bytes(),
+            ],
+        )
+    ))
+}
+
+fn current_executable_digest() -> Result<String, String> {
+    #[cfg(target_os = "linux")]
+    {
+        digest_executable(Path::new("/proc/self/exe"))
+    }
+    #[cfg(target_os = "macos")]
+    {
+        loaded_macho_uuid()
+            .map(|uuid| canonical_blake3_digest(b"asp.semantic-document-parser-macho.v1", &[&uuid]))
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        let executable = std::env::current_exe().map_err(|error| {
+            format!("could not resolve current parser executable artifact: {error}")
+        })?;
+        digest_executable(&executable)
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn loaded_macho_uuid() -> Result<[u8; 16], String> {
+    const MH_MAGIC: u32 = 0xfeed_face;
+    const MH_MAGIC_64: u32 = 0xfeed_facf;
+    const LC_UUID: u32 = 0x1b;
+
+    unsafe extern "C" {
+        fn _dyld_get_image_header(image_index: u32) -> *const u8;
+    }
+
+    // SAFETY: dyld owns image zero for the lifetime of the process. We only
+    // inspect its fixed Mach-O header and bounds-checked load-command bytes.
+    let header = unsafe { _dyld_get_image_header(0) };
+    if header.is_null() {
+        return Err("dyld did not expose the running parser image".to_string());
+    }
+    // SAFETY: a non-null dyld image begins with a complete Mach-O header.
+    let magic = unsafe { (header.cast::<u32>()).read_unaligned() };
+    let header_size = match magic {
+        MH_MAGIC => 28_usize,
+        MH_MAGIC_64 => 32_usize,
+        _ => {
+            return Err(format!(
+                "running parser image has unknown Mach-O magic {magic:#x}"
+            ));
+        }
+    };
+    // SAFETY: ncmds and sizeofcmds are fixed u32 fields in both Mach-O headers.
+    let command_count = unsafe { (header.add(16).cast::<u32>()).read_unaligned() } as usize;
+    // SAFETY: see the preceding header-field justification.
+    let command_bytes = unsafe { (header.add(20).cast::<u32>()).read_unaligned() } as usize;
+    // SAFETY: header_size is the validated size for the observed Mach-O magic.
+    let commands = unsafe { header.add(header_size) };
+    let mut offset = 0_usize;
+    for _ in 0..command_count {
+        if command_bytes.saturating_sub(offset) < 8 {
+            break;
+        }
+        // SAFETY: offset has at least one complete load_command remaining.
+        let command = unsafe { (commands.add(offset).cast::<u32>()).read_unaligned() };
+        // SAFETY: the same bounds check covers the cmdsize field at byte four.
+        let command_size =
+            unsafe { (commands.add(offset + 4).cast::<u32>()).read_unaligned() } as usize;
+        if command_size < 8 || command_size > command_bytes - offset {
+            break;
+        }
+        if command == LC_UUID && command_size >= 24 {
+            let mut uuid = [0_u8; 16];
+            // SAFETY: LC_UUID with cmdsize >= 24 owns sixteen UUID bytes at offset eight.
+            unsafe {
+                std::ptr::copy_nonoverlapping(commands.add(offset + 8), uuid.as_mut_ptr(), 16);
+            }
+            return Ok(uuid);
+        }
+        offset += command_size;
+    }
+    Err("running parser Mach-O image has no LC_UUID build identity".to_string())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn digest_executable(executable: &Path) -> Result<String, String> {
+    let mut file = fs::File::open(executable).map_err(|error| {
+        format!(
+            "could not open parser executable artifact {}: {error}",
+            executable.display()
+        )
+    })?;
+    let mut hasher = blake3::Hasher::new();
+    let mut buffer = [0_u8; 64 * 1024];
+    loop {
+        let read = file.read(&mut buffer).map_err(|error| {
+            format!(
+                "could not hash parser executable artifact {}: {error}",
+                executable.display()
+            )
+        })?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(hasher.finalize().to_hex().to_string())
+}
+
+fn content_block_digest(
+    language: DocumentLanguage,
+    structural_selector: &str,
+    content: &[u8],
+) -> String {
+    format!(
+        "blake3:{}",
+        canonical_blake3_digest(
+            b"asp.semantic-document-content-block.v1",
+            &[
+                language.provider_id().as_bytes(),
+                structural_selector.as_bytes(),
+                content,
+            ],
+        )
+    )
+}
+
+fn query_projection_digest(
+    language: DocumentLanguage,
+    snapshot_root: &str,
+    query_kind: &str,
+    query: &str,
+    document_facts: &[Value],
+    content_blocks: &[Value],
+) -> Result<String, String> {
+    let facts = serde_json::to_vec(document_facts)
+        .map_err(|error| format!("could not encode document facts for identity: {error}"))?;
+    let blocks = serde_json::to_vec(content_blocks)
+        .map_err(|error| format!("could not encode document content for identity: {error}"))?;
+    Ok(format!(
+        "blake3:{}",
+        canonical_blake3_digest(
+            b"asp.semantic-document-query-projection.v1",
+            &[
+                language.provider_id().as_bytes(),
+                snapshot_root.as_bytes(),
+                query_kind.as_bytes(),
+                query.as_bytes(),
+                &facts,
+                &blocks,
+            ],
+        )
+    ))
+}
+
+fn canonical_blake3_digest(domain: &[u8], parts: &[&[u8]]) -> String {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(&(domain.len() as u64).to_be_bytes());
+    hasher.update(domain);
+    hasher.update(&(parts.len() as u64).to_be_bytes());
+    for part in parts {
+        hasher.update(&(part.len() as u64).to_be_bytes());
+        hasher.update(part);
+    }
+    hasher.finalize().to_hex().to_string()
+}
+
+fn provider_execution_command_digest(
+    language: DocumentLanguage,
+    logical_args: &[String],
+) -> Result<String, String> {
+    let executable = std::env::current_exe().map_err(|error| {
+        format!("could not resolve current executable for JSON query evidence: {error}")
+    })?;
+    let mut hasher = Sha256::new();
+    hash_command_component(&mut hasher, executable.as_os_str().as_encoded_bytes());
+    hash_command_component(&mut hasher, language.id().as_bytes());
+    hash_command_component(&mut hasher, b"query");
+    for argument in logical_args {
+        hash_command_component(&mut hasher, argument.as_bytes());
+    }
+    Ok(format!("sha256:{:x}", hasher.finalize()))
+}
+
+fn hash_command_component(hasher: &mut Sha256, component: &[u8]) {
+    hasher.update((component.len() as u64).to_be_bytes());
+    hasher.update(component);
 }
 
 fn location_json(path: &str, line: usize, end_line: usize) -> Value {
@@ -250,24 +586,41 @@ fn location_json(path: &str, line: usize, end_line: usize) -> Value {
 
 fn packet_structural_selector(
     language: DocumentLanguage,
-    packet_path: &str,
+    source_path: &str,
     fact: &DocumentElement,
 ) -> String {
+    let source_path = Path::new(source_path);
+    let source_path = if source_path.is_absolute() {
+        source_path.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map(|directory| directory.join(source_path))
+            .unwrap_or_else(|_| source_path.to_path_buf())
+    };
     format!(
         "{}://{}#{}",
         language.id(),
-        packet_path,
+        source_path.display(),
         structural_selector_fragment(&fact.structural_selector)
     )
 }
 
 fn packet_path(root: &Path, path: &str) -> String {
     let path = Path::new(path);
-    let relative = if path.is_absolute() {
-        path.strip_prefix(root).ok()
+    let current_directory = std::env::current_dir().ok();
+    let absolute_root = fs::canonicalize(root).ok();
+    let absolute_path = if path.is_absolute() {
+        fs::canonicalize(path).ok()
     } else {
-        Some(path)
+        current_directory
+            .as_ref()
+            .and_then(|directory| fs::canonicalize(directory.join(path)).ok())
     };
+    let relative = absolute_root
+        .as_ref()
+        .zip(absolute_path.as_ref())
+        .and_then(|(root, path)| path.strip_prefix(root).ok())
+        .or_else(|| path.is_relative().then_some(path));
     let mut candidate = relative
         .map(display_path)
         .or_else(|| {

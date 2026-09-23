@@ -188,7 +188,7 @@ fn collect_source_block(
     if let Some(language) = block.language() {
         fields.push(("lang".to_string(), language.to_string()));
     }
-    facts.push(fact(
+    let mut element = fact(
         "block",
         "SourceBlock",
         path,
@@ -196,7 +196,9 @@ fn collect_source_block(
         line_index,
         block.syntax(),
         fields,
-    ));
+    );
+    element.content = block.value();
+    facts.push(element);
 }
 
 fn collect_export_block(
@@ -210,7 +212,7 @@ fn collect_export_block(
     if let Some(backend) = block.ty() {
         fields.push(("backend".to_string(), backend.to_string()));
     }
-    facts.push(fact(
+    let mut element = fact(
         "block",
         "ExportBlock",
         path,
@@ -218,7 +220,9 @@ fn collect_export_block(
         line_index,
         block.syntax(),
         fields,
-    ));
+    );
+    element.content = block.value();
+    facts.push(element);
 }
 
 fn collect_list(
@@ -409,6 +413,8 @@ fn fact_with_text(
         structural_selector,
         line,
         end_line,
+        start_byte: start,
+        end_byte: end,
         text: element_text.text,
         content: element_text.content,
         fields,

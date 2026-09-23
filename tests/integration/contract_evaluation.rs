@@ -1,7 +1,6 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::Command,
     time::Instant,
 };
 
@@ -12,6 +11,11 @@ use orgize::{
         evaluate_org_contract, org_contract_evaluation_to_json_value, parse_contract_reference,
         parse_contracts_from_document,
     },
+};
+
+use crate::contract_evaluation_fixtures::{
+    query_expression_contract_source, query_expression_target_source,
+    reflection_answer_contract_source, reflection_answered_source, reflection_empty_value_source,
 };
 
 const CONTRACT_ORG_SCOPE_CONTRACTS: &str = include_str!(
@@ -121,7 +125,7 @@ fn plain_text_summary_contains_matches_inline_rendered_text_split_by_subscript()
 
 #+BEGIN_SRC org-contract
 (assert exists
-  (plain-text :descendant-of $scope :summary-contains (value "asp org capture --contract CONTRACT_ID")))
+  (plain-text :descendant-of $scope :summary-contains (value "orgize org capture --contract CONTRACT_ID")))
 #+END_SRC
 "#,
     )
@@ -133,7 +137,7 @@ fn plain_text_summary_contains_matches_inline_rendered_text_split_by_subscript()
     let target = Org::parse(
         r#"
 * Skill
-Use asp org capture --contract CONTRACT_ID before writing.
+Use orgize org capture --contract CONTRACT_ID before writing.
 "#,
     )
     .document();
@@ -145,6 +149,66 @@ Use asp org capture --contract CONTRACT_ID before writing.
     let assertion = &evaluation.assertions[0];
     assert_eq!(assertion.status, OrgContractAssertionStatus::Passed);
     assert_eq!(assertion.actual_count, 1);
+}
+
+#[test]
+fn paragraph_nonempty_distinguishes_prose_from_blank_section_body() {
+    let contract_document = Org::parse(
+        r#"
+* prose-contract
+:PROPERTIES:
+:CONTRACT_ID: document.prose.v1
+:CONTRACT_SCOPE: document
+:END:
+
+** Filled section
+:PROPERTIES:
+:ASSERT_ID: document.prose.filled
+:END:
+#+BEGIN_SRC org-contract
+(let ((heading (headline :summary (title "Filled")))
+      (body (section :child-of $heading)))
+  (assert exists (paragraph :within $body :nonempty t)))
+#+END_SRC
+
+** Empty section
+:PROPERTIES:
+:ASSERT_ID: document.prose.empty
+:END:
+#+BEGIN_SRC org-contract
+(let ((heading (headline :summary (title "Empty")))
+      (body (section :child-of $heading)))
+  (assert exists (paragraph :within $body :nonempty t)))
+#+END_SRC
+"#,
+    )
+    .document();
+    let registry = parse_contracts_from_document(&contract_document, None);
+    let contract = registry
+        .resolve(&parse_contract_reference("document.prose.v1"))
+        .expect("contract should resolve");
+    let target = Org::parse(
+        r#"
+* Filled
+Substantive prose.
+* Empty
+
+"#,
+    )
+    .document();
+
+    let evaluation =
+        evaluate_org_contract(&target, contract, OrgContractEvaluationScope::document());
+
+    assert_eq!(evaluation.assertions.len(), 2);
+    assert_eq!(
+        evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(
+        evaluation.assertions[1].status,
+        OrgContractAssertionStatus::Failed
+    );
 }
 
 #[test]
@@ -170,7 +234,7 @@ No link here.
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -236,7 +300,7 @@ fn cli_trace_evaluates_multiple_contract_org_bindings_on_same_scope() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -272,7 +336,7 @@ fn cli_trace_distinguishes_document_and_heading_contract_org_property_scope() {
     fs::write(dir.join("contracts.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
     fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_NOTES).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -334,11 +398,11 @@ fn contract_org_property_scope_fixture_stays_in_millisecond_budget() {
         .join("scenarios")
         .join("contract_trace")
         .join("contract_org_property_scope");
-    let benchmark = rust_lang_project_harness::validate_rust_scenario_benchmark(&scenario_root)
+    let benchmark = asp_rust::validate_rust_scenario_benchmark(&scenario_root)
         .expect("validate contract trace property scope scenario benchmark");
     assert_eq!(
         benchmark.status,
-        rust_lang_project_harness::RustScenarioBenchmarkStatus::Pass,
+        asp_rust::RustScenarioBenchmarkStatus::Pass,
         "{:?}",
         benchmark.violations
     );
@@ -450,7 +514,7 @@ fn cli_trace_rejects_contract_org_metadata_keyword_declarations() {
     fs::write(dir.join("contract.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
     fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_KEYWORD_NOTES).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -481,7 +545,7 @@ fn cli_trace_rejects_duplicate_contract_org_bindings_on_same_scope() {
     fs::write(dir.join("contract.org"), CONTRACT_ORG_SCOPE_CONTRACTS).unwrap();
     fs::write(dir.join("notes.org"), CONTRACT_ORG_SCOPE_DUPLICATE_NOTES).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -527,7 +591,7 @@ fn cli_trace_resolves_org_link_contract_reference_relative_to_source_file() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -616,7 +680,7 @@ fn cli_trace_loads_registry_dependencies_declared_by_contract_source() {
     )
     .unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args([
             "contract",
@@ -647,7 +711,7 @@ fn cli_trace_loads_registry_dependencies_declared_by_contract_source() {
 
 #[test]
 fn cli_query_surface_outputs_agent_facing_json() {
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["contract", "query-surface", "--json"])
         .output()
         .unwrap();
@@ -718,7 +782,7 @@ fn org_link_reference_uses_relative_path_and_display_contract_id() {
 #[test]
 fn execplan_template_satisfies_language_contract() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&manifest_dir)
         .args([
             "contract",
@@ -862,119 +926,6 @@ fn contract_target_source() -> &'static str {
 :END:
 ** Evidence
 [[https://example.test][inside]]
-"#
-}
-
-fn reflection_answer_contract_source() -> &'static str {
-    r#"* reflection-answers
-:PROPERTIES:
-:CONTRACT_ID: agent.reflection-answers.v1
-:CONTRACT_SCOPE: subtree
-:CONTRACT_KIND: org-elements
-:END:
-
-** has-question-table
-:PROPERTIES:
-:ASSERT_ID: reflection-has-question-table
-:SEVERITY: error
-:END:
-
-#+BEGIN_SRC org-contract
-(assert exists
-  (table :descendant-of $scope))
-#+END_SRC
-
-** has-question-column
-:PROPERTIES:
-:ASSERT_ID: reflection-has-question-column
-:SEVERITY: error
-:END:
-
-#+BEGIN_SRC org-contract
-(assert exists
-  (table-cell :descendant-of $scope :text "Question"))
-#+END_SRC
-
-** has-value-column
-:PROPERTIES:
-:ASSERT_ID: reflection-has-value-column
-:SEVERITY: error
-:END:
-
-#+BEGIN_SRC org-contract
-(assert exists
-  (table-cell :descendant-of $scope :text "Value"))
-#+END_SRC
-
-** has-nonempty-answer
-:PROPERTIES:
-:ASSERT_ID: reflection-has-nonempty-answer
-:SEVERITY: error
-:END:
-
-#+BEGIN_SRC org-contract
-(assert exists
-  (table-cell :descendant-of $scope :column "Value" :header nil :nonempty t))
-#+END_SRC
-"#
-}
-
-fn reflection_answered_source() -> &'static str {
-    r#"* Reflection Questions
-:PROPERTIES:
-:CONTRACT_ORG: agent.reflection-answers.v1
-:END:
-
-| Question | Value |
-|----------+-------|
-| What should reflection record? | It must answer with a nonempty Value cell. |
-"#
-}
-
-fn reflection_empty_value_source() -> &'static str {
-    r#"* Reflection Questions
-:PROPERTIES:
-:CONTRACT_ORG: agent.reflection-answers.v1
-:END:
-
-| Question | Value |
-|----------+-------|
-| What should reflection record? | |
-"#
-}
-
-fn query_expression_contract_source() -> &'static str {
-    r#"* query-expression-contract
-:PROPERTIES:
-:CONTRACT_ID: agent.query-expression.v1
-:CONTRACT_SCOPE: subtree
-:CONTRACT_KIND: org-elements
-:END:
-
-** evidence-link-from-cell
-:PROPERTIES:
-:ASSERT_ID: evidence-link-from-cell
-:SEVERITY: error
-:END:
-
-#+BEGIN_SRC org-contract
-(let ((evidence
-       (table-cell :descendant-of $scope :column "Evidence" :header nil :nonempty t)))
-  (assert count >= 1
-    (link :descendant-of evidence)))
-#+END_SRC
-"#
-}
-
-fn query_expression_target_source() -> &'static str {
-    r#"* Evidence Loop
-:PROPERTIES:
-:CONTRACT_ORG: agent.query-expression.v1
-:END:
-
-| Claim | Evidence |
-|-------+----------|
-| Ready | [[https://example.test][trace]] |
 "#
 }
 

@@ -2,8 +2,22 @@
 mod agent_cli;
 #[path = "integration/capture_cli.rs"]
 mod capture_cli;
+#[path = "integration/contract_composition.rs"]
+mod contract_composition;
 #[path = "integration/contract_evaluation.rs"]
 mod contract_evaluation;
+#[path = "integration/contract_evaluation_fixtures.rs"]
+mod contract_evaluation_fixtures;
+#[path = "integration/contract_registry.rs"]
+mod contract_registry;
+#[path = "integration/contract_workspace.rs"]
+mod contract_workspace;
+#[path = "integration/contract_workspace_receipt.rs"]
+mod contract_workspace_receipt;
+#[path = "integration/contract_workspace_reciprocal.rs"]
+mod contract_workspace_reciprocal;
+#[path = "integration/document_git_scope.rs"]
+mod document_git_scope;
 #[path = "integration/eval_cli.rs"]
 mod eval_cli;
 #[path = "integration/export_cli.rs"]
@@ -20,6 +34,8 @@ mod harness_report_consumer;
 mod html;
 #[path = "integration/latex.rs"]
 mod latex;
+#[path = "integration/library_cli.rs"]
+mod library_cli;
 #[path = "integration/lint_attachments.rs"]
 mod lint_attachments;
 #[path = "integration/lint_babel.rs"]
@@ -48,6 +64,8 @@ mod lint_table_formulas;
 mod lint_task_blockers;
 #[path = "integration/markdown.rs"]
 mod markdown;
+#[path = "integration/named_source_block_template.rs"]
+mod named_source_block_template;
 #[path = "integration/parse.rs"]
 mod parse;
 #[path = "integration/scenario_benchmark.rs"]
@@ -56,5 +74,7 @@ mod scenario_benchmark;
 mod sdd;
 #[path = "integration/semantic_ast/mod.rs"]
 mod semantic_ast;
+#[path = "integration/source_block_document.rs"]
+mod source_block_document;
 #[path = "integration/task_cli.rs"]
 mod task_cli;

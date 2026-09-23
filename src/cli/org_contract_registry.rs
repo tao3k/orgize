@@ -9,19 +9,25 @@ use std::{
 use crate::{
     Org,
     ast::{
-        CONTRACT_ORG_PROPERTY, OrgContractRegistry, parse_contract_reference,
-        parse_contracts_from_document,
+        CONTRACT_ORG_PROPERTY, OrgContractReference, OrgContractRegistry,
+        parse_contract_references, parse_contracts_from_document,
     },
 };
 
 pub(super) fn load_org_contract_registries(
     paths: &[PathBuf],
 ) -> Result<OrgContractRegistry, String> {
+    Ok(load_org_contract_registries_with_sources(paths)?.0)
+}
+
+pub(super) fn load_org_contract_registries_with_sources(
+    paths: &[PathBuf],
+) -> Result<(OrgContractRegistry, Vec<(PathBuf, String)>), String> {
     let mut loader = OrgContractRegistryLoader::default();
     for path in paths {
-        loader.load_path(path)?;
+        loader.load_path(path, true)?;
     }
-    Ok(loader.registry)
+    Ok((loader.registry, loader.loaded_sources))
 }
 
 pub(super) fn load_org_contract_registry_for_lint(
@@ -30,10 +36,10 @@ pub(super) fn load_org_contract_registry_for_lint(
 ) -> Result<OrgContractRegistry, String> {
     let mut loader = OrgContractRegistryLoader::default();
     for path in explicit_registry_paths {
-        loader.load_path(path)?;
+        loader.load_path(path, true)?;
     }
     for path in lint_source_paths {
-        loader.load_path(path)?;
+        loader.load_path(path, false)?;
     }
     Ok(loader.registry)
 }
@@ -42,26 +48,32 @@ pub(super) fn load_org_contract_registry_for_lint(
 struct OrgContractRegistryLoader {
     registry: OrgContractRegistry,
     loaded_paths: BTreeSet<PathBuf>,
+    loaded_sources: Vec<(PathBuf, String)>,
 }
 
 impl OrgContractRegistryLoader {
-    fn load_path(&mut self, path: &Path) -> Result<(), String> {
+    fn load_path(&mut self, path: &Path, load_dependencies: bool) -> Result<(), String> {
         let load_key = path
             .canonicalize()
             .unwrap_or_else(|_| normalize_lexical_path(path));
-        if !self.loaded_paths.insert(load_key) {
+        if !self.loaded_paths.insert(load_key.clone()) {
             return Ok(());
         }
 
         let source =
             fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
         let document = Org::parse(&source).document();
-        let dependency_paths = registry_dependency_paths(path, &document)?;
         let loaded = parse_contracts_from_document(&document, Some(path));
+        let dependency_paths = if load_dependencies {
+            registry_dependency_paths(path, &document)?
+        } else {
+            Vec::new()
+        };
         self.registry.contracts.extend(loaded.contracts);
+        self.loaded_sources.push((load_key, source));
 
         for dependency_path in dependency_paths {
-            self.load_path(&dependency_path)?;
+            self.load_path(&dependency_path, true)?;
         }
         Ok(())
     }
@@ -86,12 +98,15 @@ fn registry_dependency_paths(
         .properties
         .iter()
         .filter(|property| property.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
-        .map(|property| registry_dependency_path(source_path, property.value.as_str()))
+        .flat_map(|property| parse_contract_references(property.value.as_str()))
+        .map(|reference| registry_dependency_path(source_path, reference))
         .collect()
 }
 
-fn registry_dependency_path(source_path: &Path, value: &str) -> Result<PathBuf, String> {
-    let reference = parse_contract_reference(value);
+fn registry_dependency_path(
+    source_path: &Path,
+    reference: OrgContractReference,
+) -> Result<PathBuf, String> {
     if reference.raw.trim().is_empty() {
         return Err(format!(
             "{}: registry CONTRACT_ORG dependency is empty",

@@ -11,8 +11,9 @@ use super::{
     AstRef, OrgContract, OrgContractAssertion, OrgContractAssertionEvaluation,
     OrgContractAssertionStatus, OrgContractDocumentPredicate, OrgContractEvaluation,
     OrgContractEvaluationContext, OrgContractEvaluationScope, OrgContractQuery,
-    OrgContractRelativeScope, OrgElementGraph, OrgElementId, OrgElementsIndexQuery,
-    ParsedAnnotation, ParsedAst, Property, Section,
+    OrgContractRelativeScope, OrgContractValueField, OrgElementGraph, OrgElementId,
+    OrgElementsIndexQuery, OrgElementsIndexSummaryValue, ParsedAnnotation, ParsedAst, Property,
+    Section,
 };
 
 const DIR_PROPERTY: &str = "DIR";
@@ -39,13 +40,23 @@ pub fn evaluate_org_contract_with_context(
     context: &OrgContractEvaluationContext,
 ) -> OrgContractEvaluation {
     let graph = document.org_elements_graph();
+    evaluate_org_contract_with_graph_context(document, &graph, contract, scope, context)
+}
+
+pub(crate) fn evaluate_org_contract_with_graph_context(
+    document: &ParsedAst,
+    graph: &OrgElementGraph<ParsedAnnotation>,
+    contract: &OrgContract,
+    scope: OrgContractEvaluationScope,
+    context: &OrgContractEvaluationContext,
+) -> OrgContractEvaluation {
     let mut document_context = context.clone();
     document_context.metadata_keys = document_keyword_keys(document);
     let scoped_context = context_with_effective_dir(document, &scope, &document_context);
     let assertions = contract
         .assertions
         .iter()
-        .map(|assertion| evaluate_assertion(&graph, assertion, &scope, &scoped_context))
+        .map(|assertion| evaluate_assertion(graph, assertion, &scope, &scoped_context))
         .collect();
     OrgContractEvaluation {
         contract_id: contract.id.clone(),
@@ -81,6 +92,21 @@ fn evaluate_assertion(
     let query = scoped_contract_query(&assertion.query, scope);
     let matched = query_graph_ids(graph, &query, &binding_sets, context);
     let actual_count = matched.len();
+    let binding_counts = binding_sets
+        .iter()
+        .map(|(name, ids)| (name.clone(), ids.len()))
+        .collect::<BTreeMap<_, _>>();
+    let passed = match &assertion.expectation {
+        super::OrgContractExpectation::ValueSetEqual {
+            binding,
+            source_field,
+            target_field,
+        } => binding_sets.get(binding).is_some_and(|source_ids| {
+            projected_values(graph, source_ids, source_field)
+                == projected_values(graph, &matched, target_field)
+        }),
+        expectation => expectation.check(actual_count, &binding_counts),
+    };
     let bindings = binding_sets
         .into_iter()
         .map(|(name, ids)| (name, ids.into_iter().collect()))
@@ -90,7 +116,7 @@ fn evaluate_assertion(
         severity: assertion.severity,
         expectation: assertion.expectation.clone(),
         actual_count,
-        status: if assertion.expectation.check(actual_count) {
+        status: if passed {
             OrgContractAssertionStatus::Passed
         } else {
             OrgContractAssertionStatus::Failed
@@ -99,6 +125,47 @@ fn evaluate_assertion(
         bindings,
         message_template: assertion.message.clone(),
         fix_template: assertion.fix.clone(),
+    }
+}
+
+fn projected_values(
+    graph: &OrgElementGraph<ParsedAnnotation>,
+    ids: &BTreeSet<OrgElementId>,
+    field: &OrgContractValueField,
+) -> BTreeSet<String> {
+    ids.iter()
+        .filter_map(|id| {
+            graph
+                .by_id
+                .get(id)
+                .and_then(|index| graph.records.get(*index))
+        })
+        .filter_map(|record| match field {
+            OrgContractValueField::Property(key) => record
+                .properties
+                .get(key)
+                .or_else(|| {
+                    key.strip_prefix(':')
+                        .and_then(|key| record.properties.get(key))
+                })
+                .or_else(|| {
+                    (!key.starts_with(':'))
+                        .then(|| record.properties.get(&format!(":{key}")))
+                        .flatten()
+                }),
+            OrgContractValueField::Summary(key) => record.summary.get(key),
+        })
+        .flat_map(summary_value_strings)
+        .collect()
+}
+
+fn summary_value_strings(value: &OrgElementsIndexSummaryValue) -> Vec<String> {
+    match value {
+        OrgElementsIndexSummaryValue::Null => Vec::new(),
+        OrgElementsIndexSummaryValue::Text(value) => vec![value.clone()],
+        OrgElementsIndexSummaryValue::StringList(values) => values.clone(),
+        OrgElementsIndexSummaryValue::Bool(value) => vec![value.to_string()],
+        OrgElementsIndexSummaryValue::Integer(value) => vec![value.to_string()],
     }
 }
 

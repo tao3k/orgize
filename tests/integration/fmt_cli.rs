@@ -1,9 +1,4 @@
-use std::{
-    fs,
-    io::Write,
-    path::PathBuf,
-    process::{Command, Stdio},
-};
+use std::{fs, io::Write, path::PathBuf, process::Stdio};
 
 #[test]
 fn fmt_cli_check_output_is_snapshotted() {
@@ -11,7 +6,7 @@ fn fmt_cli_check_output_is_snapshotted() {
     fs::create_dir_all(&dir).unwrap();
     fs::write(dir.join("dirty.org"), default_write_fmt_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["fmt", "--check", "dirty.org"])
         .output()
@@ -25,7 +20,7 @@ fn fmt_cli_check_output_is_snapshotted() {
 
 #[test]
 fn fmt_cli_check_stdin_output_is_snapshotted() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let mut child = crate::library_cli::orgize_cli_command()
         .args(["fmt", "--check"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -49,7 +44,7 @@ fn fmt_cli_check_stdin_output_is_snapshotted() {
 
 #[test]
 fn fmt_cli_stdin_aligns_tables_with_snapshot() {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let mut child = crate::library_cli::orgize_cli_command()
         .args(["fmt"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -79,7 +74,7 @@ fn fmt_cli_check_directory_output_is_snapshotted() {
     fs::write(dir.join("notes/nested/b.org"), directory_b_fmt_fixture()).unwrap();
     fs::write(dir.join("notes/skip.txt"), skip_text_fmt_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["fmt", "--check", "notes"])
         .output()
@@ -97,7 +92,7 @@ fn fmt_cli_default_writes_file_with_snapshot() {
     fs::create_dir_all(&dir).unwrap();
     fs::write(dir.join("notes.org"), default_write_fmt_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["fmt", "notes.org"])
         .output()
@@ -120,7 +115,7 @@ fn fmt_cli_multiple_files_write_with_snapshot() {
     fs::write(dir.join("one.org"), multiple_one_fmt_fixture()).unwrap();
     fs::write(dir.join("two.org"), multiple_two_fmt_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["fmt", "one.org", "two.org"])
         .output()
@@ -145,7 +140,7 @@ fn fmt_cli_directory_path_writes_org_files_with_snapshot() {
     fs::write(dir.join("notes/nested/b.org"), directory_b_fmt_fixture()).unwrap();
     fs::write(dir.join("notes/skip.txt"), skip_text_fmt_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .current_dir(&dir)
         .args(["fmt", "notes"])
         .output()

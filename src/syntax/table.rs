@@ -2,7 +2,7 @@ use nom::{
     Err, IResult,
     bytes::complete::take_while,
     character::complete::{multispace0, space0},
-    combinator::iterator,
+    combinator::{iterator, opt, peek},
 };
 
 use super::{
@@ -61,14 +61,19 @@ fn table_standard_row_node(input: Input) -> Result<GreenElement, nom::Err<()>> {
 
     let mut it = iterator(
         input,
-        (pipe_token, multispace0, take_while(|c: char| c != '|')),
+        (
+            pipe_token,
+            multispace0,
+            take_while(|c: char| c != '|'),
+            peek(opt(pipe_token)),
+        ),
     );
 
-    it.by_ref().for_each(|(pipe, ws, input)| {
+    it.by_ref().for_each(|(pipe, ws, input, next_pipe)| {
         b.push(pipe);
         b.ws(ws);
 
-        if input.is_empty() {
+        if input.is_empty() && next_pipe.is_none() {
             return;
         }
 

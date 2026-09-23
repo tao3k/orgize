@@ -17,9 +17,9 @@ use crate::{
         CONTRACT_ORG_PROPERTY, Keyword, ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES,
         ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE, OrgContract, OrgContractEvaluation,
         OrgContractEvaluationContext, OrgContractEvaluationScope, OrgContractRegistry,
-        OrgContractScope, ParsedAnnotation, ParsedAst, Property, Section,
-        evaluate_org_contract_with_context, org_contract_evaluations_to_json_value,
-        parse_contract_reference,
+        OrgContractScope, OrgElementGraph, ParsedAnnotation, ParsedAst, Property, Section,
+        evaluate_org_contract_with_graph_context, org_contract_evaluations_to_json_value,
+        parse_contract_references,
     },
 };
 
@@ -32,6 +32,7 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
 
     match command.as_str() {
         "trace" => run_trace(args.collect()),
+        "workspace" => super::org_contract_workspace::run(args.collect()),
         "query-surface" | "surface" | "guide" => run_query_surface(args.collect()),
         "-h" | "--help" | "help" => {
             print_usage();
@@ -160,20 +161,22 @@ fn trace_file(
     }))
 }
 
-fn collect_contract_evaluations(
+pub(super) fn collect_contract_evaluations(
     document: &ParsedAst,
     registry: &OrgContractRegistry,
     path: &str,
 ) -> Result<Vec<OrgContractEvaluation>, String> {
     let mut evaluations = Vec::new();
     let context = OrgContractEvaluationContext::with_source_path(path);
+    let graph = document.org_elements_graph();
     let document_contracts =
         resolve_bindings(document_contract_bindings(document, path)?, registry, path)?;
     let mut document_default_contracts = Vec::new();
     for contract in document_contracts {
         if contract.scope == OrgContractScope::Document {
-            evaluations.push(evaluate_org_contract_with_context(
+            evaluations.push(evaluate_org_contract_with_graph_context(
                 document,
+                &graph,
                 contract,
                 OrgContractEvaluationScope::document(),
                 &context,
@@ -186,6 +189,7 @@ fn collect_contract_evaluations(
     {
         let mut collector = SectionContractEvaluationCollector {
             document,
+            graph: &graph,
             registry,
             path,
             context: &context,
@@ -200,6 +204,7 @@ fn collect_contract_evaluations(
 
 struct SectionContractEvaluationCollector<'a> {
     document: &'a ParsedAst,
+    graph: &'a OrgElementGraph<ParsedAnnotation>,
     registry: &'a OrgContractRegistry,
     path: &'a str,
     context: &'a OrgContractEvaluationContext,
@@ -225,16 +230,18 @@ impl<'a> SectionContractEvaluationCollector<'a> {
         };
 
         for contract in &section_contracts {
-            self.evaluations.push(evaluate_org_contract_with_context(
-                self.document,
-                contract,
-                OrgContractEvaluationScope::section(
-                    section.raw_title.trim_end(),
-                    outline_path.clone(),
-                    section.ann.range,
-                ),
-                self.context,
-            ));
+            self.evaluations
+                .push(evaluate_org_contract_with_graph_context(
+                    self.document,
+                    self.graph,
+                    contract,
+                    OrgContractEvaluationScope::section(
+                        section.raw_title.trim_end(),
+                        outline_path.clone(),
+                        section.ann.range,
+                    ),
+                    self.context,
+                ));
         }
 
         for child in &section.subsections {
@@ -316,9 +323,13 @@ fn property_contract_bindings(properties: &[Property<ParsedAnnotation>]) -> Vec<
     properties
         .iter()
         .filter(|property| property.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
-        .map(|property| ContractBinding {
-            reference: parse_contract_reference(property.value.as_str()),
-            range: property.ann.range,
+        .flat_map(|property| {
+            parse_contract_references(property.value.as_str())
+                .into_iter()
+                .map(|reference| ContractBinding {
+                    reference,
+                    range: property.ann.range,
+                })
         })
         .collect()
 }
@@ -327,9 +338,13 @@ fn keyword_contract_bindings(keywords: &[Keyword<ParsedAnnotation>]) -> Vec<Cont
     keywords
         .iter()
         .filter(|keyword| keyword.key.eq_ignore_ascii_case(CONTRACT_ORG_PROPERTY))
-        .map(|keyword| ContractBinding {
-            reference: parse_contract_reference(keyword.value.as_str()),
-            range: keyword.ann.range,
+        .flat_map(|keyword| {
+            parse_contract_references(keyword.value.as_str())
+                .into_iter()
+                .map(|reference| ContractBinding {
+                    reference,
+                    range: keyword.ann.range,
+                })
         })
         .collect()
 }
@@ -399,7 +414,7 @@ fn is_org_file(path: &Path) -> bool {
 }
 
 fn print_usage() {
-    eprintln!("Usage: orgize contract <trace|query-surface> [options] [PATH ...]");
+    eprintln!("Usage: orgize contract <trace|workspace|query-surface> [options] [PATH ...]");
 }
 
 fn print_trace_usage() {

@@ -363,6 +363,147 @@ fn query_level_or_matches_node_property_branches() {
 }
 
 #[test]
+fn contract_kind_sugar_can_restrict_properties_to_document_root() {
+    let contract = parse_single_contract(
+        r#"
+* Root source kind contract
+:PROPERTIES:
+:CONTRACT_ID: source.root-kind.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Source kind is primary
+:PROPERTIES:
+:ASSERT_ID: source.has-root-kind
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (node-property
+    :outline-depth 0
+    :summary (key "SOURCE_KIND")
+    :summary (value "PRIMARY")))
+#+END_SRC
+"#,
+    );
+    let document = Org::parse(
+        r#"
+:PROPERTIES:
+:SOURCE_KIND: INTERPRETATION
+:END:
+* Masking child
+:PROPERTIES:
+:SOURCE_KIND: PRIMARY
+:END:
+"#,
+    )
+    .document();
+    let evaluation = evaluate_org_contract_with_context(
+        &document,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &OrgContractEvaluationContext::with_source_path("sources/example.org"),
+    );
+
+    assert_eq!(evaluation.assertions.len(), 1);
+    assert_eq!(
+        evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+    assert_eq!(evaluation.assertions[0].actual_count, 0);
+}
+
+#[test]
+fn table_column_nonempty_does_not_shift_across_an_empty_cell() {
+    let contract = parse_single_contract(
+        r#"
+* Engineering column contract
+:PROPERTIES:
+:CONTRACT_ID: engineering.column.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Engineering property is substantive
+:PROPERTIES:
+:ASSERT_ID: engineering.has-property
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (table-cell :column "Engineering property" :header false :nonempty true))
+#+END_SRC
+"#,
+    );
+    let document = Org::parse(
+        r#"
+| Principle | Engineering property | Owner |
+|-----------+----------------------+-------|
+| P-001     |                      | ASP   |
+"#,
+    )
+    .document();
+    let evaluation = evaluate_org_contract_with_context(
+        &document,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &OrgContractEvaluationContext::default(),
+    );
+
+    assert_eq!(evaluation.assertions.len(), 1);
+    assert_eq!(
+        evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+    assert_eq!(evaluation.assertions[0].actual_count, 0);
+}
+
+#[test]
+fn predicate_or_groups_inside_and_are_intersected() {
+    let contract = parse_single_contract(
+        r#"
+* Principle classification contract
+:PROPERTIES:
+:CONTRACT_ID: principle.classification.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Status and kind enums
+:PROPERTIES:
+:ASSERT_ID: principle.has-valid-status-and-kind
+:SEVERITY: error
+:END:
+#+BEGIN_SRC org-contract
+(assert exists
+  (and
+    (headline)
+    (or
+      (= (property "STATUS") "draft")
+      (= (property "STATUS") "accepted"))
+    (or
+      (= (property "KIND") "foundational")
+      (= (property "KIND") "refinement"))))
+#+END_SRC
+"#,
+    );
+    for (kind, expected) in [
+        ("foundational", OrgContractAssertionStatus::Passed),
+        ("unclassified", OrgContractAssertionStatus::Failed),
+    ] {
+        let document = Org::parse(format!(
+            "* Principle\n:PROPERTIES:\n:STATUS: draft\n:KIND: {kind}\n:END:\n"
+        ))
+        .document();
+        let evaluation = evaluate_org_contract_with_context(
+            &document,
+            &contract,
+            OrgContractEvaluationScope::document(),
+            &OrgContractEvaluationContext::with_source_path("principles/test.org"),
+        );
+        assert_eq!(evaluation.assertions[0].status, expected, "kind={kind}");
+    }
+}
+
+#[test]
 fn named_org_contract_blocks_define_assertions_without_heading_properties() {
     let contract_source = r#"
 * Evidence link contract
@@ -482,4 +623,297 @@ fn parse_single_contract(source: &str) -> crate::ast::OrgContract {
         .into_iter()
         .next()
         .expect("contract parsed")
+}
+
+#[test]
+fn contract_count_can_match_a_binding_to_require_complete_nodes() {
+    let contract = parse_single_contract(
+        r#"
+* Principle nodes
+:PROPERTIES:
+:CONTRACT_ID: principle.nodes.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Complete metadata on every principle
+:PROPERTIES:
+:ASSERT_ID: principle.nodes.complete
+:SEVERITY: error
+:END:
+#+begin_src org-contract
+(let ((principles
+       (headline :property-contains ("PRINCIPLE_ID" ""))))
+  (assert count == $principles
+    (and
+      (headline
+        :property-contains ("PRINCIPLE_ID" "")
+        :property-contains ("PRINCIPLE_STATUS" "")
+        :property-contains ("REVISION" ""))
+      (not (= (property "PRINCIPLE_ID") ""))
+      (not (= (property "PRINCIPLE_STATUS") ""))
+      (not (= (property "REVISION") "")))))
+#+end_src
+"#,
+    );
+    let complete = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:PRINCIPLE_STATUS: proposed\n:REVISION: 1\n:END:\n* B\n:PROPERTIES:\n:PRINCIPLE_ID: P-002\n:PRINCIPLE_STATUS: draft\n:REVISION: 1\n:END:\n",
+    )
+    .document();
+    let incomplete = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:PRINCIPLE_STATUS: proposed\n:REVISION: 1\n:END:\n* B\n:PROPERTIES:\n:PRINCIPLE_ID: P-002\n:PRINCIPLE_STATUS: draft\n:END:\n",
+    )
+    .document();
+    let context = OrgContractEvaluationContext::default();
+    let complete = evaluate_org_contract_with_context(
+        &complete,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    let incomplete = evaluate_org_contract_with_context(
+        &incomplete,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    assert_eq!(
+        complete.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(
+        incomplete.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+}
+
+#[test]
+fn contract_value_sets_can_require_exact_trace_coverage() {
+    let contract = parse_single_contract(
+        r#"
+* Trace coverage
+:PROPERTIES:
+:CONTRACT_ID: trace.coverage.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Every principle is traced
+:PROPERTIES:
+:ASSERT_ID: trace.covers-principles
+:SEVERITY: error
+:END:
+#+begin_src org-contract
+(let ((principles
+       (headline :property-contains ("PRINCIPLE_ID" ""))))
+  (assert value-set ==
+    (source $principles (property "PRINCIPLE_ID"))
+    (target
+      (table-cell :column "Principle ID" :header false :nonempty true)
+      (summary "text"))))
+#+end_src
+"#,
+    );
+    let complete = Org::parse(
+        r#"* A
+:PROPERTIES:
+:PRINCIPLE_ID: P-001
+:END:
+* B
+:PROPERTIES:
+:PRINCIPLE_ID: P-002
+:END:
+| Principle ID | Evidence |
+|--------------+----------|
+| P-001        | one      |
+| P-002        | two      |
+"#,
+    )
+    .document();
+    let missing = Org::parse(
+        r#"* A
+:PROPERTIES:
+:PRINCIPLE_ID: P-001
+:END:
+* B
+:PROPERTIES:
+:PRINCIPLE_ID: P-002
+:END:
+| Principle ID | Evidence |
+|--------------+----------|
+| P-001        | one      |
+| P-001        | duplicate |
+"#,
+    )
+    .document();
+
+    let context = OrgContractEvaluationContext::default();
+    let complete_evaluation = evaluate_org_contract_with_context(
+        &complete,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    let missing_evaluation = evaluate_org_contract_with_context(
+        &missing,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    assert_eq!(
+        complete_evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(
+        missing_evaluation.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+}
+
+#[test]
+fn contract_table_rows_can_require_named_columns_on_the_same_row() {
+    let contract = parse_single_contract(
+        r#"
+* Trace rows
+:PROPERTIES:
+:CONTRACT_ID: trace.rows.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Every trace row is complete
+:PROPERTIES:
+:ASSERT_ID: trace.rows.complete
+:SEVERITY: error
+:END:
+#+begin_src org-contract
+(let ((principles
+       (headline :property-contains ("PRINCIPLE_ID" ""))))
+  (assert count == $principles
+    (table-row
+      :header false
+      :column-nonempty "Principle ID"
+      :column-nonempty "Engineering direction"
+      :column-nonempty "Downstream owner")))
+#+end_src
+"#,
+    );
+    let complete = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:END:\n| Principle ID | Engineering direction | Downstream owner |\n|--------------+-----------------------+------------------|\n| P-001        | Query from AST        | Orgize           |\n",
+    )
+    .document();
+    let compensated = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:END:\n| Principle ID | Engineering direction | Downstream owner |\n|--------------+-----------------------+------------------|\n| P-001        |                       | Orgize           |\n|              | Query from AST        | Orgize           |\n",
+    )
+    .document();
+    let headerless = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:END:\n| Principle ID | Engineering direction | Downstream owner |\n| P-001        | Query from AST        | Orgize           |\n",
+    )
+    .document();
+    let multirow_header = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:END:\n| Principle ID | Engineering direction | Downstream owner |\n| P-001        | Header explanation    | Header owner     |\n|--------------+------------------------+------------------|\n| P-001        |                        | Orgize           |\n",
+    )
+    .document();
+    let duplicate_header = Org::parse(
+        "* A\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:END:\n| Principle ID | Principle ID | Engineering direction | Downstream owner |\n|--------------+--------------+-----------------------+------------------|\n|              | P-001        | Query from AST        | Orgize           |\n",
+    )
+    .document();
+    let context = OrgContractEvaluationContext::default();
+    let complete = evaluate_org_contract_with_context(
+        &complete,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    let compensated = evaluate_org_contract_with_context(
+        &compensated,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    let headerless = evaluate_org_contract_with_context(
+        &headerless,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    let multirow_header = evaluate_org_contract_with_context(
+        &multirow_header,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    let duplicate_header = evaluate_org_contract_with_context(
+        &duplicate_header,
+        &contract,
+        OrgContractEvaluationScope::document(),
+        &context,
+    );
+    assert_eq!(
+        complete.assertions[0].status,
+        OrgContractAssertionStatus::Passed
+    );
+    assert_eq!(
+        compensated.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+    assert_eq!(
+        headerless.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+    assert_eq!(
+        multirow_header.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+    assert_eq!(
+        duplicate_header.assertions[0].status,
+        OrgContractAssertionStatus::Failed
+    );
+}
+
+#[test]
+fn contract_positive_integer_predicate_rejects_noncanonical_and_nonpositive_values() {
+    let contract = parse_single_contract(
+        r#"
+* Revision contract
+:PROPERTIES:
+:CONTRACT_ID: revision.positive-integer.v1
+:CONTRACT_SCOPE: document
+:CONTRACT_KIND: org-elements
+:END:
+** Positive revision
+:PROPERTIES:
+:ASSERT_ID: revision.is-positive-integer
+:SEVERITY: error
+:END:
+#+begin_src org-contract
+(assert count == 1
+  (and
+    (headline :property-contains ("PRINCIPLE_ID" ""))
+    (positive-integer (property "REVISION"))))
+#+end_src
+"#,
+    );
+
+    for (revision, expected) in [
+        ("1", OrgContractAssertionStatus::Passed),
+        ("42", OrgContractAssertionStatus::Passed),
+        ("0", OrgContractAssertionStatus::Failed),
+        ("01", OrgContractAssertionStatus::Failed),
+        ("-1", OrgContractAssertionStatus::Failed),
+        ("latest", OrgContractAssertionStatus::Failed),
+        ("+1", OrgContractAssertionStatus::Failed),
+    ] {
+        let document = Org::parse(format!(
+            "* Principle\n:PROPERTIES:\n:PRINCIPLE_ID: P-001\n:REVISION: {revision}\n:END:\n"
+        ))
+        .document();
+        let evaluation = evaluate_org_contract_with_context(
+            &document,
+            &contract,
+            OrgContractEvaluationScope::document(),
+            &OrgContractEvaluationContext::default(),
+        );
+        assert_eq!(
+            evaluation.assertions[0].status, expected,
+            "unexpected status for revision {revision:?}"
+        );
+    }
 }

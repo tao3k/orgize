@@ -41,6 +41,12 @@ mod column_summary_model;
 mod column_view_model;
 mod column_views;
 mod conversion;
+mod conversion_helpers;
+mod conversion_nodes;
+mod conversion_objects;
+mod conversion_properties;
+mod conversion_radio;
+mod conversion_traversal;
 mod conversion_util;
 mod crypt;
 mod crypt_model;
@@ -51,7 +57,10 @@ mod dynamic_blocks;
 mod elements_bridge;
 mod elements_bridge_element_json;
 mod elements_bridge_index;
+mod elements_bridge_index_collect;
 mod elements_bridge_index_json;
+mod elements_bridge_index_properties;
+mod elements_bridge_index_summary;
 mod elements_bridge_json;
 mod elements_bridge_model;
 mod elements_bridge_object_json;
@@ -76,6 +85,7 @@ mod macro_expansion;
 mod memory;
 mod memory_model;
 mod model;
+mod named_source_block_template;
 mod org_contract;
 mod org_contract_evaluation;
 mod org_contract_evaluation_json;
@@ -108,6 +118,7 @@ mod sdd_model;
 mod section_index;
 mod section_index_model;
 mod settings;
+mod source_block_document;
 mod source_block_execution;
 mod source_block_headers;
 mod source_block_model;
@@ -128,7 +139,12 @@ mod task_blocker_model;
 mod task_blockers;
 mod timestamp_metadata;
 mod timestamp_model;
-mod traversal;
+mod traversal_collect;
+mod traversal_cursor;
+mod traversal_elements;
+mod traversal_filters;
+mod traversal_objects;
+mod traversal_ranges;
 mod workspace_index;
 mod workspace_index_model;
 
@@ -273,10 +289,12 @@ pub use model::{
     TableFormulaReference, TableFormulaReferenceKind, TableRow, TagDefinition, TagDefinitionGroup,
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
+pub use named_source_block_template::{NamedSourceBlockTemplate, NamedSourceBlockTemplateError};
 pub use org_contract::{
-    parse_contract_reference, parse_contract_reference_from_source, parse_contracts_from_document,
-    validate_contract_source,
+    parse_contract_reference, parse_contract_reference_from_source, parse_contract_references,
+    parse_contracts_from_document, validate_contract_source,
 };
+pub(crate) use org_contract_evaluation::evaluate_org_contract_with_graph_context;
 pub use org_contract_evaluation::{evaluate_org_contract, evaluate_org_contract_with_context};
 pub use org_contract_evaluation_json::{
     evaluation_to_json_value as org_contract_evaluation_to_json_value,
@@ -288,13 +306,20 @@ pub use org_contract_model::{
     CONTRACT_SCOPE_PROPERTY, OrgContract, OrgContractAssertion, OrgContractAssertionEvaluation,
     OrgContractAssertionStatus, OrgContractBinding, OrgContractCompareOp,
     OrgContractDocumentPredicate, OrgContractEvaluation, OrgContractEvaluationContext,
-    OrgContractEvaluationScope, OrgContractExpectation, OrgContractKind, OrgContractQuery,
+    OrgContractEvaluationScope, OrgContractExpectation, OrgContractKind,
+    OrgContractPairDocumentEquality, OrgContractPairNodeEquality, OrgContractQuery,
     OrgContractReference, OrgContractRegistry, OrgContractRelativeScope, OrgContractScope,
     OrgContractSeverity, OrgContractSourceDiagnostic, OrgContractSourceValidation,
+    OrgContractValueField, OrgContractWorkspaceReference, OrgContractWorkspaceReferenceSource,
+    OrgContractWorkspaceTargetProperty,
 };
 pub use org_elements_query_expr::{
     ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES, ORG_ELEMENTS_QUERY_EXPRESSION_SURFACE_GUIDE,
     OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str,
+};
+pub(crate) use org_elements_query_expr::{
+    parse_org_contract_pair_document_equality_block, parse_org_contract_pair_node_equality_block,
+    parse_org_contract_workspace_reference_block,
 };
 pub use org_interactive_model::{
     OrgInteractiveCategory, OrgInteractiveChoice, OrgInteractiveChoiceEntry,
@@ -348,6 +373,10 @@ pub use section_index_model::{
     SectionIndexCategory, SectionIndexLifecycleRecord, SectionIndexLink, SectionIndexProperty,
     SectionIndexRecord, SectionIndexSource, SectionIndexSpecialProperty, SectionIndexTarget,
     SectionIndexTextSlice,
+};
+pub use source_block_document::{
+    OrgSourceBlock, OrgSourceBlockDocument, OrgSourceBlockDocumentError, OrgSourceBlockHeader,
+    OrgSourceBlockHeaderValue, OrgSourceBlockKeyword,
 };
 pub use source_block_model::{
     SourceBlockBooleanHeader, SourceBlockCache, SourceBlockDirectory, SourceBlockDirectoryKind,

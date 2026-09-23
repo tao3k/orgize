@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{fs, path::PathBuf};
 
 #[test]
 fn task_list_renders_active_tasks_from_org_files() {
@@ -6,7 +6,7 @@ fn task_list_renders_active_tasks_from_org_files() {
     let path = dir.join("tasks.org");
     fs::write(&path, task_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["task-list", "--text", "routing", path.to_str().unwrap()])
         .output()
         .unwrap();
@@ -25,7 +25,7 @@ fn task_list_done_view_renders_done_tasks() {
     let path = dir.join("tasks.org");
     fs::write(&path, task_fixture()).unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_orgize"))
+    let output = crate::library_cli::orgize_cli_command()
         .args(["task-list", "--view", "done", path.to_str().unwrap()])
         .output()
         .unwrap();

@@ -1,7 +1,7 @@
 //! Contract model for `CONTRACT_ORG` validation over Org element index records.
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     path::{Component, Path, PathBuf},
 };
 
@@ -536,6 +536,19 @@ pub enum OrgContractExpectation {
     Exists,
     NotExists,
     Count(OrgContractCompareOp, usize),
+    CountBinding(OrgContractCompareOp, String),
+    ValueSetEqual {
+        binding: String,
+        source_field: OrgContractValueField,
+        target_field: OrgContractValueField,
+    },
+}
+
+/// Field projection used by generic ContractORG value-set relations.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OrgContractValueField {
+    Property(String),
+    Summary(String),
 }
 
 impl OrgContractExpectation {
@@ -544,16 +557,80 @@ impl OrgContractExpectation {
             Self::Exists => "exists".to_string(),
             Self::NotExists => "not exists".to_string(),
             Self::Count(op, count) => format!("count {} {}", op.as_str(), count),
+            Self::CountBinding(op, binding) => {
+                format!("count {} ${binding}", op.as_str())
+            }
+            Self::ValueSetEqual {
+                binding,
+                source_field,
+                target_field,
+            } => format!(
+                "value-set == ${binding}.{} target.{}",
+                source_field.key(),
+                target_field.key()
+            ),
         }
     }
 
-    pub fn check(&self, actual: usize) -> bool {
+    pub fn check(&self, actual: usize, binding_counts: &BTreeMap<String, usize>) -> bool {
         match self {
             Self::Exists => actual > 0,
             Self::NotExists => actual == 0,
             Self::Count(op, expected) => op.matches(actual, *expected),
+            Self::CountBinding(op, binding) => binding_counts
+                .get(binding)
+                .is_some_and(|expected| op.matches(actual, *expected)),
+            Self::ValueSetEqual { .. } => false,
         }
     }
+}
+
+impl OrgContractValueField {
+    pub fn key(&self) -> &str {
+        match self {
+            Self::Property(key) | Self::Summary(key) => key,
+        }
+    }
+}
+
+/// Cross-document equality projection declared by an `org-contract` S-expression.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractPairNodeEquality {
+    pub identity_property: String,
+    pub properties: Vec<String>,
+}
+
+/// Cross-document equality projection for root document properties.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrgContractPairDocumentEquality {
+    pub properties: Vec<String>,
+}
+
+/// Source scope for a workspace property-reference relation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum OrgContractWorkspaceReferenceSource {
+    DocumentProperty,
+    NodeProperty,
+}
+
+/// Generic workspace relation from property tokens to node identities.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct OrgContractWorkspaceReference {
+    pub source: OrgContractWorkspaceReferenceSource,
+    pub property: String,
+    pub identity_property: String,
+    pub allowed_values: BTreeSet<String>,
+    pub exclude_self: bool,
+    pub acyclic: bool,
+    pub reciprocal_property: Option<String>,
+    pub target_property: Option<OrgContractWorkspaceTargetProperty>,
+}
+
+/// Required property values on the node resolved by a workspace reference.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct OrgContractWorkspaceTargetProperty {
+    pub property: String,
+    pub allowed_values: BTreeSet<String>,
 }
 
 /// Comparison operator for a `count` expectation.

@@ -10,8 +10,6 @@ use crate::{
 
 #[path = "document_command.rs"]
 mod document_command;
-#[path = "document_query_prefilter.rs"]
-mod document_query_prefilter;
 #[path = "document_source_selection.rs"]
 mod document_source_selection;
 #[path = "elements_bridge_query_json.rs"]
