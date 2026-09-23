@@ -3,10 +3,10 @@ use gerbil_parser_rowan::{BlockLineRule, HeadingLineRule, LineStructureSpec, Unc
 
 pub static STRUCTURE: LineStructureSpec = LineStructureSpec {
     grammar_digest: "sha256:dcf4faf8d3f7c56dc5405ef2cbf1adea8a1bb9391a7c2ebe3446fda5681ebe11",
-    parser_digest: "sha256:263a58ff2fa9b0195cad1d136a62151dad894ed51edbcc457da56dd243ea5a0e",
+    parser_digest: "sha256:31b9601f28201d5d1d188d194644cd67a28a5ba3edbe400a28809e31579a7c02",
     heading: HeadingLineRule { marker: 42, separator: 32, section_node: 4, heading_node: 1, heading_token: 5 },
     blocks: &[
-    BlockLineRule { opening: "#+begin_src", closing: "#+end_src", case_insensitive: true, indent: true, block_node: 2, begin_token: 6, body_token: 8, end_token: 7, unclosed: UnclosedBlockPolicy::RecoverAsText },
+    BlockLineRule { opening: "#+begin_src", closing: "#+end_src", case_insensitive: true, indent: true, block_node: 2, begin_token: 6, body_token: 8, end_token: 7, unclosed: UnclosedBlockPolicy::RecoverAsText, heading_bound: true },
     ],
     text_node: 3, text_token: 8,
 };

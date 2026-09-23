@@ -33,8 +33,8 @@ fn name(node: &SyntaxNode) -> &'static str {
 }
 
 #[test]
-fn headings_form_nested_sections_and_blocks_mask_headlines() {
-    let source = "é\r\n* Parent\n#+BEGIN_SRC rust\n** code, not a headline\n#+END_SRC\n** Child\nbody\r* Sibling\n";
+fn headings_form_nested_sections_and_closed_blocks_remain_lossless() {
+    let source = "é\r\n* Parent\n#+BEGIN_SRC rust\ncode\n#+END_SRC\n** Child\nbody\r* Sibling\n";
     let root = parse(source);
     assert_eq!(root.to_string(), source);
     assert_eq!(name(&root), "OrgFile");
@@ -82,6 +82,25 @@ fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
             .filter(|node| name(node) == "OrgTextLine")
             .count(),
         1
+    );
+}
+
+#[test]
+fn a_heading_bounds_source_block_recovery_even_when_an_end_marker_follows() {
+    let source = "* One\n#+begin_src rust\n** Next\n#+end_src\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgHeadline")
+            .count(),
+        2
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgSourceBlock")
+            .count(),
+        0
     );
 }
 

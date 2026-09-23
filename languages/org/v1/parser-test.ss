@@ -6,7 +6,7 @@
                  line-structure? line-structure-heading line-structure-blocks
                  heading-line-section-node heading-line-heading-node
                  block-line-opening block-line-closing block-line-block-node
-                 block-line-unclosed)
+                 block-line-unclosed block-line-heading-bound)
         (only-in "parser.ss" org-v1-line-structure))
 (export org-v1-parser-test)
 
@@ -24,4 +24,5 @@
         (check (block-line-opening source-block) => "#+begin_src")
         (check (block-line-closing source-block) => "#+end_src")
         (check (block-line-block-node source-block) => 'OrgSourceBlock)
-        (check (block-line-unclosed source-block) => 'recover-as-text)))))
+        (check (block-line-unclosed source-block) => 'recover-as-text)
+        (check (block-line-heading-bound source-block) => #t)))))

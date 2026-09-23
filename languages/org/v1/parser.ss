@@ -12,5 +12,5 @@
    (list (make-block-line
           "#+begin_src" "#+end_src" #t #t
           'OrgSourceBlock 'BlockBeginLine 'TextLine 'BlockEndLine
-          'recover-as-text))
+          'recover-as-text #t))
    (make-text-line 'OrgTextLine 'TextLine)))
