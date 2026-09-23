@@ -336,22 +336,31 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
     ];
     for (source, expected_records, expected_blocks, expected_links) in fixtures {
         let root = parse(source);
-        let records = gerbil_parser_rowan::project_syntax_graph(
-            &grammar::LANGUAGE,
-            &graph::GRAPH,
-            &root,
-        )
-        .expect("Scheme AOT graph rule must match the same grammar");
+        let records =
+            gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
+                .expect("Scheme AOT graph rule must match the same grammar");
         assert_eq!(records.len(), expected_records);
         assert_eq!(records[0].kind, "org-data");
         assert_eq!(records[0].parent_id, None);
-        assert_eq!(records.iter().filter(|record| record.kind == "headline").count(), 8);
         assert_eq!(
-            records.iter().filter(|record| record.kind == "src-block").count(),
+            records
+                .iter()
+                .filter(|record| record.kind == "headline")
+                .count(),
+            8
+        );
+        assert_eq!(
+            records
+                .iter()
+                .filter(|record| record.kind == "src-block")
+                .count(),
             expected_blocks
         );
         assert_eq!(
-            records.iter().filter(|record| record.kind == "link").count(),
+            records
+                .iter()
+                .filter(|record| record.kind == "link")
+                .count(),
             expected_links
         );
         for record in &records {
@@ -376,7 +385,11 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
         }
         for record in records.iter().filter(|record| record.kind == "src-block") {
             assert_eq!(record.field("language"), Some("org-contract"));
-            assert!(record.field("body").is_some_and(|body| body.contains("(assert")));
+            assert!(
+                record
+                    .field("body")
+                    .is_some_and(|body| body.contains("(assert"))
+            );
         }
     }
 }
