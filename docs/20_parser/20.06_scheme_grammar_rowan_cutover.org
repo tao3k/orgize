@@ -21,6 +21,17 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
   use those tables without =gerbil.pkg=, an installed Gerbil, or build-time
   Scheme.  Regeneration is an upstream development/release action.
 
+** Current vertical slice
+
+=languages/org/v1/grammar.ss= declares the initial line-level Org grammar.
+=scanner.ss= owns source-block/headline context and UTF-8 byte ranges; the
+development-only =generate-scanner.ss= emits the committed
+=generated/scanner.rs=.  Scheme and independent Rust tests exercise the same
+CRLF, Unicode, block-content, and directive-boundary cases.  Cargo itself does
+not invoke Gerbil.  This is not yet the public =Org::parse= implementation:
+the generated grammar tables, scanner-to-engine adapter, nested headline
+structure, recovery, and full =org-element.el= inventory remain cutover gates.
+
 ** Required upstream engine work
 
 The current =gerbil-parser= Rust/Rowan AOT RFC 0006 explicitly leaves external
