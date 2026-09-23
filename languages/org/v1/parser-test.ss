@@ -5,6 +5,7 @@
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure? line-structure-heading line-structure-blocks
                  heading-line-section-node heading-line-heading-node
+                 heading-line-fields heading-fields-title-token
                  block-line-opening block-line-closing block-line-block-node
                  block-line-unclosed block-line-heading-bound block-line-body-line
                  block-line-header block-header-argument-token
@@ -26,6 +27,8 @@
         (check (line-structure? structure) => #t)
         (check (heading-line-section-node heading) => 'OrgSection)
         (check (heading-line-heading-node heading) => 'OrgHeadline)
+        (check (heading-fields-title-token (heading-line-fields heading))
+               => 'HeadlineTitle)
         (check (length blocks) => 2)
         (check (block-line-opening source-block) => "#+begin_src")
         (check (block-line-closing source-block) => "#+end_src")

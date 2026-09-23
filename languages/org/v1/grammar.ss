@@ -8,7 +8,7 @@
   (identity "org" "v1" "org-elements.v1")
   (syntax-kinds
    (OrgFile node (element))
-   (OrgHeadline node (line))
+   (OrgHeadline node (line title))
    (OrgSourceBlock node (begin language body end))
    (OrgPropertyDrawer node (begin property end))
    (OrgNodeProperty node (key value))
@@ -16,6 +16,8 @@
    (OrgLink node (target description))
    (OrgSection node (heading element))
    (HeadlineLine token (text))
+   (HeadlineTitle token (text))
+   (HeadlineTrivia token (text))
    (BlockBeginLine token (text))
    (SourceLanguage token (text))
    (BlockHeaderTrivia token (text))

@@ -27,7 +27,7 @@ The input is the Git-tracked
 =tests/fixtures/org-elements/representative.org=.  Its public tree currently
 contains 30 distinct node kinds (including affiliated keywords, links,
 emphasis, lists, tables, planning, drawers, footnotes, and timestamps); the
-generated tree contains five kinds.  Both reproduce the source.  This is the
+generated tree contains eight kinds. Both reproduce the source. This is the
 counterexample to treating losslessness as syntax completeness.
 
 * Blocking contracts
@@ -129,7 +129,7 @@ deliverables called a scanner MVP, element-inventory MVP, and contract MVP.
 | Gate | Exact admission | Current state |
 |------+-----------------+---------------|
 | M1 fixture structure | Both tracked =contract_org_property_scope= inputs parse from Scheme-authored AOT rules with 8 headlines each, 8/4 property drawers, 20/6 node-property nodes, 4/0 source blocks, typed property key/value tokens, exact source ranges, and malformed-drawer recovery | Local Scheme/Rust tests pass; not a public cutover |
-| M2 typed semantic input | Generated CST additionally exposes links and source-block language/body fields; the fixture pair projects the intended element graph without the handwritten Org parser | In progress: typed source language/body and link target/description tokens pass the fixture gate; direct graph projection remains open |
+| M2 typed semantic input | Generated CST additionally exposes headline titles, links and source-block language/body fields; the fixture pair projects the intended element graph without the handwritten Org parser | In progress: typed headline title, source language/body, and link target/description tokens pass the fixture gate; direct graph projection remains open |
 | M3 executable contract | Scheme POO =org-contract= modules own query/policy/evaluation; migrated public trace/lint/workspace entrypoints execute the generated product and the displaced Rust owners are removed | Open; this closes the vertical MVP |
 | M4 complete Org cutover | All 30 elements and 24 objects, context/recovery/corpus gates, migrated public consumers, and equivalent-semantics performance receipts; remove =document_node= and remaining handwritten syntax parser | Open; this closes the PR |
 
@@ -137,15 +137,23 @@ The gates are cumulative evidence for one product, not four independently
 releasable parser implementations. M1 does not authorize a runtime fallback
 or a claim that =Org::parse= has switched.
 
-The current M2 slice extends generic POO block and text declarations with a
-typed header argument and inline-link rule. Their AOT table binds token kinds
+The current M2 slice extends generic POO heading, block and text declarations
+with typed title, header argument and inline-link rules. Their AOT table binds token kinds
 and delimiters to the parser digest; the Rowan executor emits typed language,
 link target, and description tokens without losing indentation, whitespace,
-CRLF, or source ranges. Org owns the =SourceLanguage= and =OrgLink= declarations
+CRLF, or source ranges. Org owns the =HeadlineTitle=, =SourceLanguage= and =OrgLink= declarations
 in =parser.ss= and =grammar.ss=; the tracked contract fixture checks all four
-=org-contract= block languages and three described links. This does not yet
+=org-contract= block languages, three described links and every fixture headline title. This does not yet
 project the element graph or transfer contract evaluation from Rust, so M2 and
 the vertical MVP remain open.
+
+The next typed blocker is *not* a missing Cargo hook: =Document<ParsedAnnotation>::org_elements_graph=
+still indexes the old =ParsedAst=, and =evaluate_org_contract_with_context=
+constructs that graph from the same old AST. A generated-CST graph must derive
+the contract fixture's headline outline, local node properties, source blocks,
+and link descendants directly from source-backed Rowan nodes. It must then
+replace this production graph owner before contract evaluation can migrate;
+a test-only graph or second public graph API would not close M2.
 
 The MVP workflow is the existing Git-tracked =contract_org_property_scope=
 scenario: load =inputs/contracts.org= and =inputs/notes.org=, parse both,

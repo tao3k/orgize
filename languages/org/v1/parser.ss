@@ -2,14 +2,15 @@
 ;;; Org-owned POO contextual structure; gerbil-parser AOT resolves kind IDs.
 
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
-                 make-line-structure make-heading-line
+                 make-line-structure make-heading-line make-heading-fields
                  make-block-line make-block-header make-key-value-line
                  make-inline-link make-text-line))
 (export org-v1-line-structure)
 
 (def org-v1-line-structure
   (make-line-structure
-   (make-heading-line "*" " " 'OrgSection 'OrgHeadline 'HeadlineLine)
+   (make-heading-line "*" " " 'OrgSection 'OrgHeadline 'HeadlineLine
+                      (make-heading-fields 'HeadlineTitle 'HeadlineTrivia))
    (list (make-block-line
           "#+begin_src" "#+end_src" #t #t
           'OrgSourceBlock 'BlockBeginLine 'TextLine 'BlockEndLine

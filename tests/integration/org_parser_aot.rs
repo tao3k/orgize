@@ -179,12 +179,24 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
     for (source, drawers, properties, source_blocks, contract_org_properties, links) in fixtures {
         let root = parse(source);
         assert_eq!(root.to_string(), source);
-        assert_eq!(
-            root.descendants()
-                .filter(|node| name(node) == "OrgHeadline")
-                .count(),
-            8
-        );
+        let headlines: Vec<_> = root
+            .descendants()
+            .filter(|node| name(node) == "OrgHeadline")
+            .collect();
+        assert_eq!(headlines.len(), 8);
+        for headline in &headlines {
+            let title = headline
+                .children_with_tokens()
+                .filter_map(rowan::NodeOrToken::into_token)
+                .find(|token| token_name(token) == "HeadlineTitle")
+                .expect("fixture headline has a typed title");
+            let range = title.text_range();
+            assert_eq!(
+                &source[usize::from(range.start())..usize::from(range.end())],
+                title.text()
+            );
+            assert!(!title.text().is_empty());
+        }
         assert_eq!(
             root.descendants()
                 .filter(|node| name(node) == "OrgPropertyDrawer")
