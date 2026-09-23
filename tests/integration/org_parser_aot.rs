@@ -163,6 +163,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             20,
             4,
             0,
+            0,
         ),
         (
             include_str!(
@@ -172,9 +173,10 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             6,
             0,
             6,
+            3,
         ),
     ];
-    for (source, drawers, properties, source_blocks, contract_org_properties) in fixtures {
+    for (source, drawers, properties, source_blocks, contract_org_properties, links) in fixtures {
         let root = parse(source);
         assert_eq!(root.to_string(), source);
         assert_eq!(
@@ -195,6 +197,53 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
                 .count(),
             source_blocks
         );
+        let languages: Vec<_> = root
+            .descendants()
+            .filter(|node| name(node) == "OrgSourceBlock")
+            .map(|block| {
+                let token = block
+                    .children_with_tokens()
+                    .filter_map(rowan::NodeOrToken::into_token)
+                    .find(|token| token_name(token) == "SourceLanguage")
+                    .expect("every fixture source block declares its language");
+                let range = token.text_range();
+                assert_eq!(
+                    &source[usize::from(range.start())..usize::from(range.end())],
+                    token.text()
+                );
+                token.text().to_owned()
+            })
+            .collect();
+        assert_eq!(languages, vec!["org-contract"; source_blocks]);
+        let link_nodes: Vec<_> = root
+            .descendants()
+            .filter(|node| name(node) == "OrgLink")
+            .collect();
+        assert_eq!(link_nodes.len(), links);
+        for link in link_nodes {
+            let range = link.text_range();
+            assert_eq!(
+                &source[usize::from(range.start())..usize::from(range.end())],
+                link.to_string()
+            );
+            let tokens: Vec<_> = link
+                .children_with_tokens()
+                .filter_map(rowan::NodeOrToken::into_token)
+                .collect();
+            assert_eq!(
+                tokens
+                    .iter()
+                    .find(|token| token_name(token) == "LinkTarget")
+                    .expect("link has a typed target")
+                    .text(),
+                "https://example.test"
+            );
+            assert!(
+                tokens
+                    .iter()
+                    .any(|token| token_name(token) == "LinkDescription")
+            );
+        }
         let property_nodes: Vec<_> = root
             .descendants()
             .filter(|node| name(node) == "OrgNodeProperty")
@@ -239,6 +288,25 @@ fn invalid_property_drawer_recovers_without_claiming_node_properties() {
     assert_eq!(
         root.descendants()
             .filter(|node| name(node) == "OrgPropertyDrawer")
+            .count(),
+        0
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgHeadline")
+            .count(),
+        2
+    );
+}
+
+#[test]
+fn incomplete_link_remains_lossless_text() {
+    let source = "* One\nparagraph [[unfinished\n** Next\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgLink")
             .count(),
         0
     );

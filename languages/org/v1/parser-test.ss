@@ -7,6 +7,9 @@
                  heading-line-section-node heading-line-heading-node
                  block-line-opening block-line-closing block-line-block-node
                  block-line-unclosed block-line-heading-bound block-line-body-line
+                 block-line-header block-header-argument-token
+                 line-structure-text text-line-inline-link
+                 inline-link-node inline-link-target-token
                  key-value-line-marker key-value-line-node
                  key-value-line-key-token key-value-line-value-token)
         (only-in "parser.ss" org-v1-line-structure))
@@ -29,6 +32,14 @@
         (check (block-line-block-node source-block) => 'OrgSourceBlock)
         (check (block-line-unclosed source-block) => 'recover-as-text)
         (check (block-line-heading-bound source-block) => #t)
+        (check (block-header-argument-token (block-line-header source-block))
+               => 'SourceLanguage)
+        (check (inline-link-node (text-line-inline-link
+                                  (line-structure-text structure)))
+               => 'OrgLink)
+        (check (inline-link-target-token (text-line-inline-link
+                                          (line-structure-text structure)))
+               => 'LinkTarget)
         (check (block-line-opening drawer) => ":PROPERTIES:")
         (check (block-line-closing drawer) => ":END:")
         (check (block-line-block-node drawer) => 'OrgPropertyDrawer)

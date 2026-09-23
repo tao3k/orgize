@@ -10,9 +10,12 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgPropertyDrawer", category: KindCategory::Node },
     KindSpec { name: "OrgNodeProperty", category: KindCategory::Node },
     KindSpec { name: "OrgTextLine", category: KindCategory::Node },
+    KindSpec { name: "OrgLink", category: KindCategory::Node },
     KindSpec { name: "OrgSection", category: KindCategory::Node },
     KindSpec { name: "HeadlineLine", category: KindCategory::Token },
     KindSpec { name: "BlockBeginLine", category: KindCategory::Token },
+    KindSpec { name: "SourceLanguage", category: KindCategory::Token },
+    KindSpec { name: "BlockHeaderTrivia", category: KindCategory::Token },
     KindSpec { name: "BlockEndLine", category: KindCategory::Token },
     KindSpec { name: "TextLine", category: KindCategory::Token },
     KindSpec { name: "DrawerBeginLine", category: KindCategory::Token },
@@ -20,13 +23,16 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "PropertyKey", category: KindCategory::Token },
     KindSpec { name: "PropertyValue", category: KindCategory::Token },
     KindSpec { name: "PropertyTrivia", category: KindCategory::Token },
+    KindSpec { name: "LinkTarget", category: KindCategory::Token },
+    KindSpec { name: "LinkDescription", category: KindCategory::Token },
+    KindSpec { name: "LinkTrivia", category: KindCategory::Token },
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 7 },
-    TerminalSpec { name: "block-begin", syntax_kind: 8 },
-    TerminalSpec { name: "block-end", syntax_kind: 9 },
-    TerminalSpec { name: "text", syntax_kind: 10 },
+    TerminalSpec { name: "headline", syntax_kind: 8 },
+    TerminalSpec { name: "block-begin", syntax_kind: 9 },
+    TerminalSpec { name: "block-end", syntax_kind: 12 },
+    TerminalSpec { name: "text", syntax_kind: 13 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -201,7 +207,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:233a90a7dbf90474ba1dcf62000a66da5f855c5973add3fd0603ec1025da0871",
+    grammar_digest: "sha256:0893407adefc8612fd0b8b1aef36b448230a2fee8179b753e40241995360df41",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,
