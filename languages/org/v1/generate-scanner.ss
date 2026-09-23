@@ -16,6 +16,8 @@
   (display ";\n" port)
   (display #<<RUST
 
+use gerbil_parser_rowan::ScannedToken;
+
 fn directive_line(line: &str, directive: &str) -> bool {
     let Some(prefix) = line.get(..directive.len()) else {
         return false;
@@ -33,7 +35,7 @@ fn headline_line(line: &str) -> bool {
 }
 
 /// Full-source UTF-8 byte coverage for the Org customer language pack.
-pub fn scan(source: &str) -> Vec<(&'static str, usize, usize)> {
+pub fn scan(source: &str) -> Vec<ScannedToken> {
     let mut result = Vec::new();
     let mut inside_source_block = false;
     let mut start = 0;
@@ -55,7 +57,11 @@ pub fn scan(source: &str) -> Vec<(&'static str, usize, usize)> {
         } else {
             "text"
         };
-        result.push((terminal, start, end));
+        result.push(ScannedToken {
+            terminal,
+            start,
+            end,
+        });
         if block_end {
             inside_source_block = false;
         } else if block_begin {
