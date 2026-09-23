@@ -72,8 +72,6 @@ mod named_source_block_template;
 mod org_parser_aot;
 #[path = "integration/org_scanner_aot.rs"]
 mod org_scanner_aot;
-#[path = "../languages/org/v1/generated/scanner.rs"]
-mod org_scanner_generated;
 #[path = "integration/parse.rs"]
 mod parse;
 #[path = "integration/scenario_benchmark.rs"]

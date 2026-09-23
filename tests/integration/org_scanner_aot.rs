@@ -1,6 +1,7 @@
 //! Customer-owned scanner generated from the Scheme Org language pack.
 
-use super::org_scanner_generated as generated;
+#[path = "../../languages/org/v1/generated/scanner.rs"]
+pub(super) mod generated;
 
 #[test]
 fn scanner_receipt_tracks_scheme_source() {
@@ -52,5 +53,25 @@ fn directive_names_require_a_boundary() {
     assert_eq!(
         scanned("#+begin_srcx\n*not headline\n"),
         [("text", 0, 13), ("text", 13, 27)]
+    );
+}
+
+#[test]
+fn headline_marker_requires_space_as_in_org_element() {
+    assert_eq!(
+        scanned("*\tNot a headline\n* Real\n"),
+        [("text", 0, 17), ("headline", 17, 24)]
+    );
+}
+
+#[test]
+fn indented_block_end_requires_only_trailing_space() {
+    assert_eq!(
+        scanned("  #+BEGIN_SRC rust\n  #+END_SRC trailing\n  #+END_SRC\n"),
+        [
+            ("block-begin", 0, 19),
+            ("text", 19, 40),
+            ("block-end", 40, 52),
+        ]
     );
 }

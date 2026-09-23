@@ -20,4 +20,10 @@
 (assert-equal
  (org-scan-lines "#+begin_srcx\n*not headline\n")
  '((text 0 13) (text 13 27)))
+(assert-equal
+ (org-scan-lines "*\tNot a headline\n* Real\n")
+ '((text 0 17) (headline 17 24)))
+(assert-equal
+ (org-scan-lines "  #+BEGIN_SRC rust\n  #+END_SRC trailing\n  #+END_SRC\n")
+ '((block-begin 0 19) (text 19 40) (block-end 40 52)))
 (displayln "Org scanner contracts OK")
