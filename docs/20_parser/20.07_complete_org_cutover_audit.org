@@ -84,9 +84,13 @@ fall through to generic text. Matching counts do not establish matching syntax.
    parallel path until
    trace/lint/workspace consume the AOT pack and the old Rust policy is removed.
 6. The Scheme line strategy now recognizes quote, example, verse, center,
-   comment, and export blocks as distinct greater Elements. The same generated
-   graph projects each kind and the export backend. A focused source-backed
-   test covers all six plus an unclosed quote block before a heading. These
+   comment, and export blocks as distinct greater Elements. Quote, verse, and
+   center declare recursive Element contents, while source/example/comment/export
+   remain opaque. The shared Rowan engine executes that Scheme-owned choice;
+   a nested example block does not parse apparent links in its literal body.
+   The same generated graph projects each kind, nested Element ancestry, and
+   the export backend. A focused source-backed test covers all six plus an
+   unclosed quote block before a heading. These
    kinds do not occur in the representative fixture, so its 13-kind count is
    unchanged; this is syntax expansion, not public parser parity.
 

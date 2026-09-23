@@ -25,7 +25,7 @@
          (make-block-line
           "#+begin_quote" "#+end_quote" #t #t
           'OrgQuoteBlock 'BlockBeginLine 'TextLine 'BlockEndLine
-          'recover-as-text #t #f)
+          'recover-as-text #t #f #f 'elements)
          (make-block-line
           "#+begin_example" "#+end_example" #t #t
           'OrgExampleBlock 'BlockBeginLine 'TextLine 'BlockEndLine
@@ -33,11 +33,11 @@
          (make-block-line
           "#+begin_verse" "#+end_verse" #t #t
           'OrgVerseBlock 'BlockBeginLine 'TextLine 'BlockEndLine
-          'recover-as-text #t #f)
+          'recover-as-text #t #f #f 'elements)
          (make-block-line
           "#+begin_center" "#+end_center" #t #t
           'OrgCenterBlock 'BlockBeginLine 'TextLine 'BlockEndLine
-          'recover-as-text #t #f)
+          'recover-as-text #t #f #f 'elements)
          (make-block-line
           "#+begin_comment" "#+end_comment" #t #t
           'OrgCommentBlock 'BlockBeginLine 'TextLine 'BlockEndLine

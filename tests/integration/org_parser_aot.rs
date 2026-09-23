@@ -175,7 +175,7 @@ fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend
         root.descendants()
             .filter(|node| name(node) == "OrgParagraph")
             .count(),
-        1
+        4
     );
 }
 
@@ -195,6 +195,59 @@ fn unmatched_greater_block_does_not_swallow_following_headline() {
             .filter(|node| name(node) == "OrgSection")
             .count(),
         2
+    );
+}
+
+#[test]
+fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
+    let source = "* Task\n#+begin_quote\n[[id:inside]]\n| a | b |\n#+begin_example\n[[id:literal]]\n#+end_example\n#+end_quote\n#+begin_verse\n[[id:verse]]\n#+end_verse\n#+begin_center\n[[id:center]]\n#+end_center\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    let quote = root
+        .descendants()
+        .find(|node| name(node) == "OrgQuoteBlock")
+        .expect("quote block is present");
+    assert_eq!(
+        quote
+            .descendants()
+            .filter(|node| name(node) == "OrgLink")
+            .count(),
+        1
+    );
+    assert_eq!(
+        quote
+            .descendants()
+            .filter(|node| name(node) == "OrgTable")
+            .count(),
+        1
+    );
+    assert_eq!(
+        quote
+            .descendants()
+            .filter(|node| name(node) == "OrgExampleBlock")
+            .count(),
+        1
+    );
+    let records =
+        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
+            .expect("nested Element graph follows recursive block ancestry");
+    let quote_record = records
+        .iter()
+        .find(|record| record.kind == "quote-block")
+        .expect("quote is projected");
+    assert!(records.iter().any(|record| {
+        record.kind == "link"
+            && record.field("path") == Some("id:inside")
+            && record
+                .parent_id
+                .is_some_and(|parent| records[parent].parent_id == Some(quote_record.id))
+    }));
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "link")
+            .count(),
+        3
     );
 }
 

@@ -10,6 +10,7 @@
                  heading-line-fields heading-fields-title-token
                  block-line-opening block-line-closing block-line-block-node
                  block-line-unclosed block-line-heading-bound block-line-body-line
+                 block-line-contents
                  block-line-header block-header-argument-token
                  line-structure-text text-line-inline-link
                  inline-link-node inline-link-target-token
@@ -41,6 +42,8 @@
                => '("#+begin_quote" "#+begin_example" "#+begin_verse"
                                      "#+begin_center" "#+begin_comment"
                                      "#+begin_export"))
+        (check (map block-line-contents (cddr blocks))
+               => '(elements opaque elements elements opaque opaque))
         (check (block-header-argument-token
                 (block-line-header (car (reverse blocks))))
                => 'ExportBackend)
