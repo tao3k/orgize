@@ -52,6 +52,10 @@ fn main() {
         generated.receipt().grammar_digest,
         grammar::LANGUAGE.grammar_digest
     );
+    assert_eq!(
+        generated.receipt().parser_digest,
+        Some(structure::STRUCTURE.parser_digest)
+    );
 
     println!(
         "inventory {}: {} elements, {} greater elements, {} objects, {} recursive objects, {} affiliated keywords, {} restriction owners, {} secondary values",

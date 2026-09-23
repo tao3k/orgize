@@ -21,6 +21,10 @@ fn parse(source: &str) -> SyntaxNode {
         parsed.receipt().grammar_digest,
         grammar::LANGUAGE.grammar_digest
     );
+    assert_eq!(
+        parsed.receipt().parser_digest,
+        Some(structure::STRUCTURE.parser_digest)
+    );
     parsed.syntax()
 }
 
@@ -85,6 +89,10 @@ fn structural_artifact_must_match_the_same_grammar_digest() {
     assert_eq!(
         error.receipt.grammar_digest,
         grammar::LANGUAGE.grammar_digest
+    );
+    assert_eq!(
+        error.receipt.parser_digest,
+        Some(structure::STRUCTURE.parser_digest)
     );
 }
 

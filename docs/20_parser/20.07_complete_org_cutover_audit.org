@@ -45,7 +45,8 @@ counterexample to treating losslessness as syntax completeness.
    paragraph parsing.  Recovery policy must be declared and tested, not
    inferred from lossless source text.
 3. =parse_structural_lines= now returns the normal =Parse= receipt, source
-   digest, diagnostics and generated kind catalog. It still lacks generated
+   digest, POO parser-strategy digest, diagnostics and generated kind catalog.
+   It still lacks generated
    typed field projection and the complete Org recognition rules, so it cannot
    yet replace public =Org::parse=.
 4. There is no element/object-complete, Git-tracked differential corpus.  The
