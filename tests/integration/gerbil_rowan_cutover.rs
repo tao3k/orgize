@@ -34,7 +34,7 @@ fn nested_headlines_and_section_boundaries() {
 }
 
 #[test]
-#[ignore = "legacy section splitter treats a headline inside SRC as a real headline; required for Scheme cutover"]
+#[ignore = "current section splitter treats a headline inside SRC as a real headline; required for Scheme cutover"]
 fn block_contents_do_not_start_headlines() {
     let source = "#+begin_src text\n* not a headline\n#+end_src\n* Real\n";
     assert_kinds(source, &[SyntaxKind::SOURCE_BLOCK, SyntaxKind::HEADLINE]);

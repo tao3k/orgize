@@ -60,7 +60,7 @@ roundtrip.  Cover every upstream element/object kind, affiliated keyword,
 configuration-dependent behavior, malformed/recovery case, and real Org guide
 fixture.  The focused =gerbil_rowan_cutover= tests pin four nontrivial public
 tree behaviors now.  The block-contained headline case is intentionally
-ignored against main because the legacy section splitter fails it; the Scheme
+ignored against main because the current section splitter fails it; the Scheme
 cutover must enable and pass it.  Expand this gate before deleting the old
 parser.
 
