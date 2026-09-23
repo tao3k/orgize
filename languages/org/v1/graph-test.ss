@@ -16,9 +16,13 @@
         (check (map graph-node-syntax-kind nodes)
                => '(OrgFile OrgSection OrgPropertyDrawer OrgParagraph
                             OrgTable OrgTableRow OrgTableRuleRow OrgTableCell
-                            OrgNodeProperty OrgSourceBlock OrgLink))
+                            OrgNodeProperty OrgSourceBlock OrgQuoteBlock
+                            OrgExampleBlock OrgVerseBlock OrgCenterBlock
+                            OrgCommentBlock OrgExportBlock OrgLink))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "property-drawer"
                                 "paragraph" "table" "table-row"
                                 "table-rule-row" "table-cell"
-                                "node-property" "src-block" "link"))))))
+                                "node-property" "src-block" "quote-block"
+                                "example-block" "verse-block" "center-block"
+                                "comment-block" "export-block" "link"))))))

@@ -21,7 +21,32 @@
           'OrgPropertyDrawer 'DrawerBeginLine 'TextLine 'DrawerEndLine
           'recover-as-text #t
           (make-key-value-line ":" 'OrgNodeProperty
-                               'PropertyKey 'PropertyValue 'PropertyTrivia)))
+                               'PropertyKey 'PropertyValue 'PropertyTrivia))
+         (make-block-line
+          "#+begin_quote" "#+end_quote" #t #t
+          'OrgQuoteBlock 'BlockBeginLine 'TextLine 'BlockEndLine
+          'recover-as-text #t #f)
+         (make-block-line
+          "#+begin_example" "#+end_example" #t #t
+          'OrgExampleBlock 'BlockBeginLine 'TextLine 'BlockEndLine
+          'recover-as-text #t #f)
+         (make-block-line
+          "#+begin_verse" "#+end_verse" #t #t
+          'OrgVerseBlock 'BlockBeginLine 'TextLine 'BlockEndLine
+          'recover-as-text #t #f)
+         (make-block-line
+          "#+begin_center" "#+end_center" #t #t
+          'OrgCenterBlock 'BlockBeginLine 'TextLine 'BlockEndLine
+          'recover-as-text #t #f)
+         (make-block-line
+          "#+begin_comment" "#+end_comment" #t #t
+          'OrgCommentBlock 'BlockBeginLine 'TextLine 'BlockEndLine
+          'recover-as-text #t #f)
+         (make-block-line
+          "#+begin_export" "#+end_export" #t #t
+          'OrgExportBlock 'BlockBeginLine 'TextLine 'BlockEndLine
+          'recover-as-text #t #f
+          (make-block-header 'ExportBackend 'BlockHeaderTrivia)))
    (make-text-line 'OrgTextLine 'TextLine
                    (make-inline-link "[[" "][" "]]" 'OrgLink
                                      'LinkTarget 'LinkDescription 'LinkTrivia)

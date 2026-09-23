@@ -6,8 +6,9 @@
 The current Scheme-AOT/Rowan product is a lossless structural slice, not an
 Org parser replacement.  The generated element inventory names 30 element
 types and 24 object types, while =parser.ss= currently admits
-headlines/sections, property drawers, source blocks, links, tables, and provisional
-paragraph grouping. The public =ParseConfig::parse= path still invokes the
+headlines/sections, property drawers, source blocks, six common greater-block
+kinds, links, tables, and provisional paragraph grouping. The public
+=ParseConfig::parse= path still invokes the
 handwritten Rust =document_node=.  Three-platform CI and source roundtrip
 therefore establish neither complete syntax nor the requested cutover.
 
@@ -39,7 +40,7 @@ fall through to generic text. Matching counts do not establish matching syntax.
 |----------+------------------+--------------------|
 | Grammar authority | =grammar.ss= plus POO =parser.ss= declare line structure | Every element/object recognition rule and containment restriction is Scheme-owned; no downstream Rust parser rule or generated scanner program |
 | Engine | Generic section and opaque-block executor | Bounded contextual Parser IR, recursive element/object strategies, typed recovery, source-backed events, and deterministic AOT validation |
-| Syntax coverage | Headlines, sections, source blocks, property drawers, links, tables, and provisional paragraph grouping; list context is still generic text | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
+| Syntax coverage | Headlines, sections, source/quote/example/verse/center/comment/export blocks, property drawers, links, tables, and provisional paragraph grouping; list context is still generic text | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
 | Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans expose the intended Org model; migrate callers rather than preserving incorrect old shapes |
 | Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
 | Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, migrated consumer tests, and equivalent-semantics performance receipts |
@@ -82,6 +83,12 @@ fall through to generic text. Matching counts do not establish matching syntax.
    instead of scanning every binding target for every record. This remains a
    parallel path until
    trace/lint/workspace consume the AOT pack and the old Rust policy is removed.
+6. The Scheme line strategy now recognizes quote, example, verse, center,
+   comment, and export blocks as distinct greater Elements. The same generated
+   graph projects each kind and the export backend. A focused source-backed
+   test covers all six plus an unclosed quote block before a heading. These
+   kinds do not occur in the representative fixture, so its 13-kind count is
+   unchanged; this is syntax expansion, not public parser parity.
 
 * Completed expression-parser cutover within the larger MVP
 

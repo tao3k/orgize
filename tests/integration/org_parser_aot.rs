@@ -143,6 +143,62 @@ fn scheme_declared_table_builds_rows_and_cells_without_paragraph_claims() {
 }
 
 #[test]
+fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend() {
+    let source = "* Blocks\n#+begin_quote\nquoted\n#+end_quote\n#+begin_example\nliteral\n#+end_example\n#+begin_verse\nverse\n#+end_verse\n#+begin_center\ncentered\n#+end_center\n#+begin_comment\nhidden\n#+end_comment\n#+begin_export html\n<b>raw</b>\n#+end_export\nAfter\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    let expected = [
+        ("OrgQuoteBlock", "quote-block"),
+        ("OrgExampleBlock", "example-block"),
+        ("OrgVerseBlock", "verse-block"),
+        ("OrgCenterBlock", "center-block"),
+        ("OrgCommentBlock", "comment-block"),
+        ("OrgExportBlock", "export-block"),
+    ];
+    let records =
+        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
+            .expect("greater blocks use the Scheme-owned graph projection");
+    for (syntax_kind, graph_kind) in expected {
+        let node = root
+            .descendants()
+            .find(|node| name(node) == syntax_kind)
+            .unwrap_or_else(|| panic!("missing {syntax_kind}"));
+        assert_eq!(name(&node.parent().unwrap()), "OrgSection");
+        assert!(records.iter().any(|record| record.kind == graph_kind));
+    }
+    let export = records
+        .iter()
+        .find(|record| record.kind == "export-block")
+        .expect("export block is a typed Element");
+    assert_eq!(export.field("backend"), Some("html"));
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgParagraph")
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn unmatched_greater_block_does_not_swallow_following_headline() {
+    let source = "* First\n#+begin_quote\nunclosed\n** Next\nvisible\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgQuoteBlock")
+            .count(),
+        0
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgSection")
+            .count(),
+        2
+    );
+}
+
+#[test]
 fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
     let source = "* Open\r\n#+begin_src rust\r\n** source text\r\n";
     let root = parse(source);

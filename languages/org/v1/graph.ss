@@ -29,6 +29,14 @@
      (list (make-graph-field 'SourceLanguage "language")
            (make-graph-field 'BlockHeaderTrivia "header")
            (make-graph-field 'TextLine "body")))
+    (make-graph-node 'OrgQuoteBlock "element" "quote-block" '())
+    (make-graph-node 'OrgExampleBlock "element" "example-block" '())
+    (make-graph-node 'OrgVerseBlock "element" "verse-block" '())
+    (make-graph-node 'OrgCenterBlock "element" "center-block" '())
+    (make-graph-node 'OrgCommentBlock "element" "comment-block" '())
+    (make-graph-node
+     'OrgExportBlock "element" "export-block"
+     (list (make-graph-field 'ExportBackend "backend")))
     (make-graph-node
      'OrgLink "object" "link"
      (list (make-graph-field 'LinkTarget "path")

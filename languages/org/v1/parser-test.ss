@@ -20,7 +20,7 @@
 
 (def org-v1-parser-test
   (test-suite "Org POO parser declaration"
-    (test-case "Org owns sections, source blocks, and property drawers"
+    (test-case "Org owns sections, drawers, and greater blocks"
       (let* ((structure org-v1-line-structure)
              (heading (line-structure-heading structure))
              (blocks (line-structure-blocks structure))
@@ -32,7 +32,18 @@
         (check (heading-line-heading-node heading) => 'OrgHeadline)
         (check (heading-fields-title-token (heading-line-fields heading))
                => 'HeadlineTitle)
-        (check (length blocks) => 2)
+        (check (length blocks) => 8)
+        (check (map block-line-block-node blocks)
+               => '(OrgSourceBlock OrgPropertyDrawer OrgQuoteBlock
+                                    OrgExampleBlock OrgVerseBlock OrgCenterBlock
+                                    OrgCommentBlock OrgExportBlock))
+        (check (map block-line-opening (cddr blocks))
+               => '("#+begin_quote" "#+begin_example" "#+begin_verse"
+                                     "#+begin_center" "#+begin_comment"
+                                     "#+begin_export"))
+        (check (block-header-argument-token
+                (block-line-header (car (reverse blocks))))
+               => 'ExportBackend)
         (check (block-line-opening source-block) => "#+begin_src")
         (check (block-line-closing source-block) => "#+end_src")
         (check (block-line-block-node source-block) => 'OrgSourceBlock)
