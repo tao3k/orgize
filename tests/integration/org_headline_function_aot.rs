@@ -2,6 +2,7 @@
 
 include!("../../languages/org/v1/modules/org-elements/generated/todo_directive.rs");
 include!("../../languages/org/v1/modules/org-elements/generated/todo_state_from_directives.rs");
+include!("../../languages/org/v1/modules/org-elements/generated/todo_keyword_from_directives.rs");
 
 macro_rules! check_todo_state_aot {
     ($($title:expr, $directives:expr => $expected:expr),+ $(,)?) => {
@@ -42,5 +43,19 @@ fn scheme_todo_directive_aot_is_case_insensitive() {
         "ＴＯＤＯ" => false,
         "TITLE" => false,
         "" => false,
+    );
+}
+
+#[test]
+fn scheme_todo_keyword_value_aot_uses_file_local_declarations() {
+    let directives = vec!["WAIT(w) | DONE(d)".to_string()];
+    assert_eq!(
+        todo_keyword_from_directives("WAIT Review", &directives),
+        "WAIT"
+    );
+    assert_eq!(todo_keyword_from_directives("TODO prose", &directives), "");
+    assert_eq!(
+        todo_keyword_from_directives("DONE Child", &directives),
+        "DONE"
     );
 }

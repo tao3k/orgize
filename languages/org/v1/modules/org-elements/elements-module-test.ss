@@ -15,6 +15,8 @@
                  todo-directive-rust
                  todo-state-from-directives
                  todo-state-from-directives-rust
+                 todo-keyword-from-directives
+                 todo-keyword-from-directives-rust
                  todo-keyword-matches? todo-keyword-matches-rust)
         (only-in "generated/query-source.ss" org-element-queries)
         (only-in "interface.ss"
@@ -72,7 +74,10 @@
       (check (filter (lambda (path)
                        (not (org-test-source-structured? path)))
                      (org-test-sources "languages/org/v1"))
-             => '()))
+             => '())
+      (check (org-test-source-structured?
+              "languages/org/v1/modules/org-elements/generate-todo-keyword-value.ss")
+             => #t))
     (test-case "catalog and projected query share one feature interface"
       (check-org-element-catalog)
       (check (if (member "headline" +org-element-kinds+) #t #f)
@@ -143,6 +148,13 @@
       (check-org-headline-aot
        todo-keyword-matches-rust 'todo_keyword_matches_p
        "languages/org/v1/modules/org-elements/generated/todo_keyword_matches.rs")
+      (check-org-headline-aot
+       todo-keyword-from-directives-rust 'todo_keyword_from_directives
+       "languages/org/v1/modules/org-elements/generated/todo_keyword_from_directives.rs")
+      (check (todo-keyword-from-directives
+              "WAIT Review" '("WAIT(w) | DONE(d)")) => "WAIT")
+      (check (todo-keyword-from-directives
+              "TODO prose" '("WAIT(w) | DONE(d)")) => "")
       (check (todo-keyword-matches?
               "WAIT Review" '("WAIT | DONE") "WAIT") => #t)
       (check (todo-keyword-matches?

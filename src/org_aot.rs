@@ -160,6 +160,19 @@ impl OrgAotDocument {
         self.todo_states.get(record_id).copied().flatten()
     }
 
+    /// Return the file-local TODO keyword recognized by the Scheme AOT algorithm.
+    #[must_use]
+    pub fn headline_todo_keyword(&self, record_id: usize) -> Option<String> {
+        let title = self
+            .records
+            .get(record_id)
+            .filter(|record| record.kind == "headline")?
+            .field("title")?;
+        let keyword =
+            headline_functions::todo_keyword_from_directives(title, &self.todo_directives);
+        (!keyword.is_empty()).then_some(keyword)
+    }
+
     /// Evaluate a Scheme-AOT Org Contract against this document's Element graph.
     ///
     /// # Errors

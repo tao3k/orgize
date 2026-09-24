@@ -15,6 +15,7 @@
 (export org-element-with-headline-properties
         todo-directive-rust
         todo-state-from-directives todo-state-from-directives-rust
+        todo-keyword-from-directives todo-keyword-from-directives-rust
         todo-keyword-matches? todo-keyword-matches-rust)
 
 (defstruct headline-properties (source-title title todo-keyword todo-type
@@ -74,6 +75,14 @@
                directives)
             "done" ""))))))
 
+;; The keyword value is a source-owned string, not a Rust re-parse of title.
+(define-rust-pure todo-keyword-from-directives todo-keyword-from-directives-rust
+  ((title "&str") (directives "&[String]")) "String"
+  (using ((todo-state-from-directives "&str" "&[String]"))
+    (if (equal? (todo-state-from-directives title directives) "")
+      ""
+      (string-first-word title))))
+
 ;; A query checks the source keyword only after the same Scheme-owned state
 ;; algorithm admits it under file-local declarations. The dependency call is
 ;; lowered to Rust with an explicit typed pure-function signature.
@@ -131,10 +140,10 @@
 
 (def (decode-headline title directives)
   (let* ((first (split-first title))
-         (word (car first))
          (state-value (todo-state-from-directives title directives))
          (state (if (equal? state-value "") #f state-value))
-         (todo (and state word))
+         (todo-value (todo-keyword-from-directives title directives))
+         (todo (and state (not (equal? todo-value "")) todo-value))
          (after-todo (if todo (cdr first) (string-trim title)))
          (next (split-first after-todo))
          (priority (and (priority-token? (car next))

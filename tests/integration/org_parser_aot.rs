@@ -550,6 +550,23 @@ fn scheme_aot_headline_state_classifies_projected_element_titles() {
         document, headlines[4], "FINISHED Shipped" => Some("done")
     );
     assert_eq!(document.headline_todo_type(0), None);
+    assert_eq!(
+        document.headline_todo_keyword(headlines[0].id),
+        Some("WAIT".into())
+    );
+    assert_eq!(
+        document.headline_todo_keyword(headlines[1].id),
+        Some("DONE".into())
+    );
+    assert_eq!(document.headline_todo_keyword(headlines[2].id), None);
+    assert_eq!(
+        document.headline_todo_keyword(headlines[3].id),
+        Some("HOLD".into())
+    );
+    assert_eq!(
+        document.headline_todo_keyword(headlines[4].id),
+        Some("FINISHED".into())
+    );
 }
 
 #[test]
