@@ -9,10 +9,27 @@
                  key-line-value-token key-line-trivia-token)
         (only-in "../../parser.ss" org-v1-line-structure))
 
-(export org-headline-level token-if-nonempty
+(export org-line-spans org-headline-level token-if-nonempty
         skip-horizontal scan-word strip-trailing-space
         scan-key bytes-match? line-content-end line-marker?
         matching-key-line emit-key-line)
+
+(def (org-line-spans bytes)
+  (let (size (u8vector-length bytes))
+    (let loop ((start 0) (cursor 0) (reversed '()))
+      (cond
+       ((= cursor size)
+        (reverse (if (= start size) reversed
+                   (cons (cons start size) reversed))))
+       ((= (u8vector-ref bytes cursor) 10)
+        (let (end (+ cursor 1))
+          (loop end end (cons (cons start end) reversed))))
+       ((= (u8vector-ref bytes cursor) 13)
+        (let (end (if (and (< (+ cursor 1) size)
+                           (= (u8vector-ref bytes (+ cursor 1)) 10))
+                     (+ cursor 2) (+ cursor 1)))
+          (loop end end (cons (cons start end) reversed))))
+       (else (loop start (+ cursor 1) reversed))))))
 
 (def (org-headline-level bytes start end)
   (let loop ((offset start) (level 0))

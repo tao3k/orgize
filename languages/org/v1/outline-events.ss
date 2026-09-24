@@ -14,14 +14,13 @@
                  heading-line-heading-token heading-line-fields
                  heading-fields-title-token heading-fields-trivia-token)
         (only-in "modules/org-parser/funs.ss"
-                 org-headline-level token-if-nonempty
+                 org-line-spans org-headline-level token-if-nonempty
                  skip-horizontal scan-word strip-trailing-space
                  line-marker? matching-key-line emit-key-line)
         (only-in "modules/org-parser/table.ss"
                  org-table-line? org-table-node emit-org-table-row)
         (only-in "modules/org-parser/property.ss"
                  parse-property-drawer emit-property-drawer)
-        (only-in "line-event-parser.ss" parse-org-line-events)
         (only-in "parser.ss" org-v1-line-structure))
 (export parse-org-outline-events)
 
@@ -78,14 +77,6 @@
                               title-end end)
            (list '(finish)))))
     (foldl cons reversed events)))
-
-(def (line-spans flat)
-  (let loop ((rest (cdr flat)) (reversed '()))
-    (if (equal? (car rest) '(finish))
-      (reverse reversed)
-      (let (token (cadr rest))
-        (loop (cdddr rest) (cons (cons (caddr token) (cadddr token))
-                                reversed))))))
 
 (def (closed-block-spec bytes span)
   (ormap (lambda (block)
@@ -147,7 +138,7 @@
 
 (def (parse-org-outline-events source)
   (let* ((bytes (string->utf8 source))
-         (spans (line-spans (parse-org-line-events source))))
+         (spans (org-line-spans bytes)))
     (let loop ((rest spans) (levels '())
                (reversed '((start OrgFile)))
                (pending '()) (block #f) (paragraph? #f) (table? #f))

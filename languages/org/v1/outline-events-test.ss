@@ -6,11 +6,24 @@
         (only-in :std/misc/ports read-all-as-string)
         (only-in "modules/org-parser/test-syntax.ss"
                  check-org-ast org-events-cover-source?)
+        (only-in "modules/org-parser/funs.ss" org-line-spans)
         (only-in "outline-event-fixture.ss" outline-event-fixture-json))
 (export org-v1-outline-events-test)
 
 (def org-v1-outline-events-test
   (test-suite "Org Scheme structural AST"
+    (test-case "line spans follow UTF-8 bytes, CRLF, bare CR and EOF"
+      (check (org-line-spans (string->utf8 "α\r\nb\rc\nlast"))
+             => '((0 . 4) (4 . 6) (6 . 8) (8 . 12)))
+      (check (org-line-spans (string->utf8 "")) => '())
+      (check (org-line-spans (string->utf8 "x\n")) => '((0 . 2))))
+    (test-case "mixed line endings preserve paragraph byte coverage"
+      (check-org-ast "α\r\nb\rc\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine (TextLine 0 4))
+          (OrgTextLine (TextLine 4 6))
+          (OrgTextLine (TextLine 6 8))))))
     (test-case "nested and sibling sections"
       (check-org-ast "* Parent\n** Child\ntext\n* Peer\n"
         (OrgFile
