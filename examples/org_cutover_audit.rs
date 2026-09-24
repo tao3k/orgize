@@ -88,6 +88,30 @@ fn main() {
                 counts
             });
     println!("Scheme event-AOT Element kinds: {event_record_counts:#?}");
+    let structural_records = generated.records();
+    let event_records = event_tree.records();
+    if structural_records == event_records {
+        println!("structural/event Element graph: exact record parity");
+    } else {
+        let first_difference = structural_records
+            .iter()
+            .zip(event_records)
+            .position(|(structural, event)| structural != event)
+            .unwrap_or(structural_records.len().min(event_records.len()));
+        println!(
+            "structural/event Element graph differs: structural={}, event={}, first_index={first_difference}",
+            structural_records.len(),
+            event_records.len()
+        );
+        println!(
+            "first structural record: {:?}",
+            structural_records.get(first_difference)
+        );
+        println!(
+            "first event record: {:?}",
+            event_records.get(first_difference)
+        );
+    }
     let projected: BTreeSet<_> = org_graph_spec()
         .rules
         .iter()
