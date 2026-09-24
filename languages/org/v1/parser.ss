@@ -18,6 +18,12 @@
           'recover-as-text #t #f
           (make-block-header 'SourceLanguage 'BlockHeaderTrivia))
          (make-block-line
+          "#+BEGIN:" "#+END:" #t #t
+          'OrgDynamicBlock 'BlockBeginLine 'TextLine 'BlockEndLine
+          'recover-as-text #t #f
+          (make-block-header 'DynamicBlockName 'DynamicBlockHeaderTrivia)
+          'elements 'required-named-argument)
+         (make-block-line
           ":PROPERTIES:" ":END:" #t #t
           'OrgPropertyDrawer 'DrawerBeginLine 'TextLine 'DrawerEndLine
          'recover-as-text #t

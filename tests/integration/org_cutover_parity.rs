@@ -109,6 +109,7 @@ macro_rules! check_org_cutover_parity {
             (SyntaxKind::LIST_ITEM, "item"),
             (SyntaxKind::ORG_TABLE, "table"),
             (SyntaxKind::SOURCE_BLOCK, "src-block"),
+            (SyntaxKind::DYN_BLOCK, "dynamic-block"),
             (SyntaxKind::BABEL_CALL, "babel-call"),
             (SyntaxKind::QUOTE_BLOCK, "quote-block"),
             (SyntaxKind::EXAMPLE_BLOCK, "example-block"),

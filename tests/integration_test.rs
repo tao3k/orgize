@@ -72,6 +72,8 @@ mod named_source_block_template;
 mod org_aot_edit;
 #[path = "integration/org_cutover_parity.rs"]
 mod org_cutover_parity;
+#[path = "integration/org_dynamic_block.rs"]
+mod org_dynamic_block;
 #[path = "integration/org_element_query.rs"]
 mod org_element_query;
 #[path = "integration/org_headline_function_aot.rs"]

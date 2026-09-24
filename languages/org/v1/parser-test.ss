@@ -30,7 +30,7 @@
              (heading (line-structure-heading structure))
              (blocks (line-structure-blocks structure))
              (source-block (car blocks))
-             (drawer (cadr blocks))
+             (drawer (caddr blocks))
              (table (line-structure-table structure))
              (key-lines (line-structure-key-lines structure)))
         (check (line-structure? structure) => #t)
@@ -38,20 +38,24 @@
         (check (heading-line-heading-node heading) => 'OrgHeadline)
         (check (heading-fields-title-token (heading-line-fields heading))
                => 'HeadlineTitle)
-        (check (length blocks) => 9)
+        (check (length blocks) => 10)
         (check (map block-line-block-node blocks)
-               => '(OrgSourceBlock OrgPropertyDrawer OrgDrawer OrgQuoteBlock
+               => '(OrgSourceBlock OrgDynamicBlock OrgPropertyDrawer OrgDrawer OrgQuoteBlock
                                     OrgExampleBlock OrgVerseBlock OrgCenterBlock
                                     OrgCommentBlock OrgExportBlock))
         (check (map block-line-opening (cddr blocks))
-               => '(":" "#+begin_quote" "#+begin_example" "#+begin_verse"
+               => '(":PROPERTIES:" ":" "#+begin_quote" "#+begin_example" "#+begin_verse"
                                      "#+begin_center" "#+begin_comment"
                                      "#+begin_export"))
         (check (map block-line-contents (cddr blocks))
-               => '(elements elements opaque elements elements opaque opaque))
-        (check (block-line-opening-mode (caddr blocks)) => 'named-delimited)
+               => '(opaque elements elements opaque elements elements opaque opaque))
+        (check (block-line-opening-mode (cadr blocks))
+               => 'required-named-argument)
         (check (block-header-argument-token
-                (block-line-header (caddr blocks))) => 'DrawerName)
+                (block-line-header (cadr blocks))) => 'DynamicBlockName)
+        (check (block-line-opening-mode (cadddr blocks)) => 'named-delimited)
+        (check (block-header-argument-token
+                (block-line-header (cadddr blocks))) => 'DrawerName)
         (check (block-header-argument-token
                 (block-line-header (car (reverse blocks))))
                => 'ExportBackend)

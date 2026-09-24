@@ -31,11 +31,13 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
 Rust/Rowan generator into committed =generated/parser.rs=. The Org-owned
 =parser.ss= supplies a POO =LineStructure= value: headline/section kinds,
 source-block delimiters, property-drawer delimiters and typed node-property
-line rules, ordinary named drawers, and text-line kinds. The upstream AOT projection
+line rules, ordinary named drawers, dynamic blocks with required names, and
+text-line kinds. The upstream AOT projection
 resolves those symbolic kinds against the same grammar digest and emits
 =generated/structure.rs=. The generic =parse_structural_lines= engine executes
 section nesting, closed source blocks, property drawers and their node-property
-lines, ordinary drawers with typed names and recursive element bodies, and
+lines, ordinary drawers and dynamic blocks with typed names and recursive
+element bodies, and
 Scheme-declared recovery at EOF or a subsequent heading. An Org-owned
 key-line rule classifies =#+CALL:= as a Babel Call instead of a generic keyword.
 The result is a lossless Rowan tree over LF, CRLF, bare CR, and UTF-8 input.

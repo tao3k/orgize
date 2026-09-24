@@ -53,6 +53,9 @@
          (list (field 'SourceLanguage "language")
                (field 'BlockHeaderTrivia "header")
                (field 'TextLine "body")))
+   (node 'OrgDynamicBlock "element" "dynamic-block"
+         (list (field 'DynamicBlockName "name")
+               (field 'DynamicBlockHeaderTrivia "header")))
    (node 'OrgQuoteBlock "element" "quote-block" '())
    (node 'OrgExampleBlock "element" "example-block"
          (list (field 'TextLine "body")))

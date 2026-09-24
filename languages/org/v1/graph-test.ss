@@ -19,7 +19,7 @@
                             OrgKeyword OrgBabelCall OrgPlanning OrgClock
                             OrgPlainList OrgListItem
                             OrgTable OrgTableRow OrgTableRuleRow OrgTableCell
-                            OrgNodeProperty OrgSourceBlock OrgQuoteBlock
+                            OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgQuoteBlock
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
                             OrgCommentBlock OrgExportBlock OrgLink))
         (check (map graph-node-label nodes)
@@ -27,7 +27,7 @@
                                 "paragraph" "keyword" "babel-call" "planning" "clock"
                                 "plain-list" "item" "table" "table-row"
                                 "table-rule-row" "table-cell"
-                                "node-property" "src-block" "quote-block"
+                                "node-property" "src-block" "dynamic-block" "quote-block"
                                 "example-block" "verse-block" "center-block"
                                 "comment-block" "export-block" "link"))))
     (test-case "planning keeps each key and value independently"
