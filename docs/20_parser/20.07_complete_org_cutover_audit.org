@@ -44,7 +44,7 @@ other contexts remain incomplete. Matching counts do not establish matching synt
 | Boundary | Current evidence | Required admission |
 |----------+------------------+--------------------|
 | Grammar authority | =grammar.ss= plus POO =parser.ss= declare line structure | Every element/object recognition rule and containment restriction is Scheme-owned; no downstream Rust parser rule or generated scanner program |
-| Engine | Generic section and opaque-block executor | Bounded contextual Parser IR, recursive element/object strategies, typed recovery, source-backed events, and deterministic AOT validation |
+| Engine | =parser.ss= currently configures a static line table; handwritten Rust =parse_structural_lines= still owns decision order and event algorithms | Statically checked Scheme parser strategies execute in Scheme tests and AOT-lower directly to Rust event-producing functions; Rust/Rowan retains only generic event validation and tree construction |
 | Syntax coverage | Headlines, sections, source/quote/example/verse/center/comment/export blocks, property drawers, marker-led nested lists, keyed keyword/planning/clock lines, links, tables, and provisional paragraph grouping; clock timestamps remain an untyped value, and affiliation, item metadata and continuation rules are not complete | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
 | Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans expose the intended Org model; migrate callers rather than preserving incorrect old shapes |
 | Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
@@ -254,7 +254,10 @@ Scheme-owned target semantics; it is not an API compatibility requirement.
 Before calling that workflow done:
 
 1. Replace the separate =parse_structural_lines= decision path with one
-   existing v1 Grammar/Parser IR pipeline. The local contract-expression
+   existing v1 Grammar/Parser IR pipeline extended for Scheme-authored
+   contextual event functions. A static =LineStructure= table is insufficient:
+   it leaves dispatch order, object recognition, and recovery algorithms in
+   handwritten Rust. The local contract-expression
    Rowan parser has already moved to a Scheme-owned generated grammar.
    =gerbil-parser= may add generic contextual strategy and lexical primitives;
    it must not gain Org rules. Scheme POO declarations in orgize supply the
