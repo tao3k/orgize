@@ -37,7 +37,9 @@
          (.o id: 3 parent: 2 kind: "headline"
              title: "DONE Child :work:")
          (.o id: 4 parent: 0 kind: "headline"
-             title: "TODO is ordinary text under this profile"))
+             title: "TODO is ordinary text under this profile")
+         (.o id: 5 parent: 0 kind: "headline"
+             title: "WAIT :only:"))
    (lambda (record) (.ref record 'id))
    (lambda (record) (.ref record 'parent))
    (lambda (record) (.ref record 'kind))
@@ -92,7 +94,8 @@
                                        (lambda (record) #t)))
              (parent (car records))
              (child (cadr records))
-             (plain (caddr records)))
+             (plain (caddr records))
+             (tag-only (cadddr records)))
         (check-org-headline-properties
          context parent "WAIT [#A] Parent :work:urgent:"
          "Parent" "WAIT" "todo" "A"
@@ -104,11 +107,13 @@
          context plain "TODO is ordinary text under this profile"
          "TODO is ordinary text under this profile"
          #f #f #f '())
+        (check-org-headline-properties
+         context tag-only "WAIT :only:" "" "WAIT" "todo" #f '("only"))
         (check (org-element-lineage? context 2 3) => #t)
         (check-org-element-selection
          (org-elements headline (property todo-keyword "WAIT"))
          context 0 (list 0)
-         (lambda (record) (.ref record 'id)) (list 2))
+         (lambda (record) (.ref record 'id)) (list 2 5))
         (check-org-element-selection
          (org-elements headline (property tags "work"))
          context 0 (list 0)

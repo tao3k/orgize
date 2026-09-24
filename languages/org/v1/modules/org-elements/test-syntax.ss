@@ -72,10 +72,11 @@
 
 (defsyntax (check-org-headline-properties stx)
   (syntax-case stx ()
-    ((_ context record raw title todo type priority tags)
+    ((_ context record source title todo type priority tags)
      (syntax
       (begin
-        (check (org-element-property context record "raw-value") => raw)
+        (check (org-element-property context record "source-title") => source)
+        (check (org-element-property context record "raw-value") => title)
         (check (org-element-property context record "title") => title)
         (check (org-element-property context record "todo-keyword") => todo)
         (check (org-element-property context record "todo-type") => type)

@@ -42,7 +42,8 @@
 (def (org-element-field? rule name)
   (and rule
        (or (and (equal? (graph-node-label rule) "headline")
-                (member name '("raw-value" "todo-keyword" "todo-type"
+                (member name '("source-title" "raw-value"
+                               "todo-keyword" "todo-type"
                                "priority" "tags")))
            (let loop ((fields (graph-node-fields rule)))
              (cond

@@ -11,7 +11,7 @@
                  org-element-graph-field-of))
 (export org-element-with-headline-properties)
 
-(defstruct headline-properties (raw-value title todo-keyword todo-type
+(defstruct headline-properties (source-title title todo-keyword todo-type
                                           priority tags))
 
 (def (split-first value)
@@ -129,7 +129,9 @@
                         (substring (car next) 2
                                    (- (string-length (car next)) 1))))
          (after-priority (if priority (cdr next) after-todo))
-         (last (split-last after-priority))
+         (last (or (split-last after-priority)
+                   (and (tag-token after-priority)
+                        (cons "" after-priority))))
          (tags (and last (tag-token (cdr last)))))
     (make-headline-properties
      title (if tags (car last) (string-trim after-priority))
@@ -160,8 +162,10 @@
          (if properties
            (cond
             ((equal? name "title") (headline-properties-title properties))
+            ((equal? name "source-title")
+             (headline-properties-source-title properties))
             ((equal? name "raw-value")
-             (headline-properties-raw-value properties))
+             (headline-properties-title properties))
             ((equal? name "todo-keyword")
              (headline-properties-todo-keyword properties))
             ((equal? name "todo-type")
