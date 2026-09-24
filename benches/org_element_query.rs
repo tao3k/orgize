@@ -30,6 +30,15 @@ fn table_source() -> String {
     source
 }
 
+fn list_source() -> String {
+    let mut source = String::with_capacity(150_000);
+    source.push_str("* Lists\n");
+    for _ in 0..2_500 {
+        source.push_str("- parent\n  - child\n  - second\n- peer\n");
+    }
+    source
+}
+
 fn bench_org_element_query(c: &mut Criterion) {
     let source = task_source();
     let document = parse_org_aot(&source).expect("benchmark document is valid Org");
@@ -175,5 +184,62 @@ fn bench_org_table_rows(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_org_element_query, bench_org_table_rows);
+fn bench_org_nested_lists(c: &mut Criterion) {
+    let source = list_source();
+    let structural = parse_org_aot(&source).expect("structural list benchmark parses");
+    let events = generated_context_events::parse_org_rowan_events(&source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        &source,
+        &events,
+    )
+    .expect("Scheme list benchmark events satisfy Rowan");
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme list benchmark projects Elements");
+    for (kind, expected) in [("plain-list", 2_501), ("item", 10_000)] {
+        assert_eq!(
+            structural
+                .records()
+                .iter()
+                .filter(|record| record.kind == kind)
+                .count(),
+            expected
+        );
+        assert_eq!(
+            records.iter().filter(|record| record.kind == kind).count(),
+            expected
+        );
+    }
+
+    let mut group = c.benchmark_group("OrgSchemeEventAotList");
+    group.throughput(Throughput::Elements(10_000));
+    group.bench_function("structural-elements/10k-items", |b| {
+        b.iter(|| black_box(parse_org_aot(black_box(&source)).unwrap()))
+    });
+    group.bench_function("events-rowan-elements/10k-items", |b| {
+        b.iter(|| {
+            let events = generated_context_events::parse_org_rowan_events(black_box(&source));
+            let parsed = parse_generated_events(
+                org_language_spec(),
+                generated_context_events::PARSER_DIGEST,
+                &source,
+                &events,
+            )
+            .unwrap();
+            black_box(
+                project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+                    .unwrap(),
+            )
+        })
+    });
+    group.finish();
+}
+
+criterion_group!(
+    benches,
+    bench_org_element_query,
+    bench_org_table_rows,
+    bench_org_nested_lists
+);
 criterion_main!(benches);

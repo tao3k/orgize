@@ -151,6 +151,51 @@
            (OrgTableCell (TableCellText 9 12))
            (TableSeparator 12 13)
            (TableTrivia 13 14))))))
+    (test-case "POO list markers retain nested and sibling item scopes"
+      (check-org-ast-with parse-org-rowan-events "- a\n  - b\n- c\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 1) (ListTrivia 1 2)
+           (OrgParagraph (OrgTextLine (TextLine 2 4)))
+           (OrgPlainList
+            (OrgListItem
+             (ListTrivia 4 6) (ListBullet 6 7) (ListTrivia 7 8)
+             (OrgParagraph (OrgTextLine (TextLine 8 10))))))
+          (OrgListItem
+           (ListBullet 10 11) (ListTrivia 11 12)
+           (OrgParagraph (OrgTextLine (TextLine 12 14)))))))
+      (check-org-ast-with parse-org-rowan-events "1. a\n2) b\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 2) (ListTrivia 2 3)
+           (OrgParagraph (OrgTextLine (TextLine 3 5))))
+          (OrgListItem
+           (ListBullet 5 7) (ListTrivia 7 8)
+           (OrgParagraph (OrgTextLine (TextLine 8 10))))))))
+    (test-case "list continuation and blank line remain within item"
+      (check-org-ast-with parse-org-rowan-events "- alpha\n  more\n- beta\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 1) (ListTrivia 1 2)
+           (OrgParagraph
+            (OrgTextLine (TextLine 2 8))
+            (OrgTextLine (TextLine 8 15))))
+          (OrgListItem
+           (ListBullet 15 16) (ListTrivia 16 17)
+           (OrgParagraph (OrgTextLine (TextLine 17 22)))))))
+      (check-org-ast-with parse-org-rowan-events "- a\n\n- b\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 1) (ListTrivia 1 2)
+           (OrgParagraph (OrgTextLine (TextLine 2 4)))
+           (ListTrivia 4 5))
+          (OrgListItem
+           (ListBullet 5 6) (ListTrivia 6 7)
+           (OrgParagraph (OrgTextLine (TextLine 7 9))))))))
     (test-case "block and drawer markers do not consume longer lookalikes"
       (check-org-ast-with parse-org-rowan-events
         "#+begin_src rust\n#+end_srcx\n#+END_SRC \t\n"

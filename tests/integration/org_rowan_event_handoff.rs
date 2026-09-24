@@ -360,6 +360,61 @@ fn org_scheme_context_algorithm_projects_poo_declared_opaque_blocks() {
     assert_eq!(export.field("body"), Some("<b>x</b>\n"));
 }
 
+#[test]
+fn org_scheme_context_algorithm_aot_projects_nested_lists() {
+    let source = "- a\n  - b\n- c\n\n1. d\n2) e\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme list strategy builds a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme nested lists project Org Elements");
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "plain-list")
+            .count(),
+        3
+    );
+    let bullets: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "item")
+        .map(|record| record.field("bullet"))
+        .collect();
+    assert_eq!(
+        bullets,
+        [Some("-"), Some("-"), Some("-"), Some("1."), Some("2)")]
+    );
+}
+
+#[test]
+fn org_scheme_context_list_boundaries_keep_headlines_and_marker_types_distinct() {
+    let source = "* H\n  * item\n\n\nnext\n1. a\n- b\n\t- c\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("mixed list boundaries remain lossless");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("mixed marker types project Elements");
+    for (kind, expected) in [("headline", 1), ("plain-list", 4), ("item", 4)] {
+        assert_eq!(
+            records.iter().filter(|record| record.kind == kind).count(),
+            expected
+        );
+    }
+}
+
 fn kind(name: &str, category: KindCategory) -> u16 {
     org_language_spec()
         .kinds

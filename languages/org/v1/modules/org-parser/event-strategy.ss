@@ -17,7 +17,11 @@
                  table-line-row-node table-line-rule-row-node
                  table-line-cell-node table-line-separator-token
                  table-line-cell-token table-line-trivia-token
-                 table-line-rule-token)
+                 table-line-rule-token line-structure-list
+                 list-line-unordered-markers list-line-ordered
+                 list-line-tab-width list-line-list-node
+                 list-line-item-node list-line-bullet-token
+                 list-line-trivia-token)
         (only-in "../../parser.ss" org-v1-line-structure))
 (export org-event-initial org-event-line-forms org-event-finish-forms)
 
@@ -39,6 +43,7 @@
 (def planning-rule (key-line-by-node 'OrgPlanning))
 (def clock-rule (key-line-by-node 'OrgClock))
 (def table-rule (line-structure-table org-v1-line-structure))
+(def list-rule (line-structure-list org-v1-line-structure))
 (def table-byte
   (char->integer (string-ref (table-line-delimiter table-rule) 0)))
 (def property-open (block-line-opening property-rule))
@@ -302,22 +307,115 @@
         ,(property-open-form
           (opaque-open-chain (headline-form))))))
 
+(def list-column '(state list-column))
+(def list-top '(uint-divide (stack-top list-frames) (uint 2)))
+(def list-frame-base `(uint-multiply ,list-column (uint 2)))
+(def list-marker-form
+  `(scan-list-marker ,(list-line-unordered-markers list-rule)
+                     ,(list-line-ordered list-rule)
+                     ,(list-line-tab-width list-rule)
+                     list-present list-column list-ordered
+                     list-bullet-start list-bullet-end list-content-start))
+
+(def (list-frame-value ordered?)
+  (if ordered? `(uint-add ,list-frame-base (uint 1)) list-frame-base))
+
+(def list-close-paragraph
+  '(if (state list-paragraph-open)
+       ((finish-node) (set-bool list-paragraph-open (bool #f))) ()))
+
+(def list-close-all
+  `(,list-close-paragraph
+    (close-all-frames list-frames 2)
+    (set-uint list-blank-count (uint 0))))
+
+(def (list-text-line from)
+  `((if (not (state list-paragraph-open))
+        ((start-node OrgParagraph)
+         (set-bool list-paragraph-open (bool #t))) ())
+    (start-node OrgTextLine)
+    (token TextLine ,from end)
+    (finish-node)))
+
+(def (list-marker-body ordered?)
+  (let ((frame (list-frame-value ordered?))
+        (list-node (list-line-list-node list-rule))
+        (item-node (list-line-item-node list-rule))
+        (trivia (list-line-trivia-token list-rule))
+        (bullet (list-line-bullet-token list-rule)))
+    `((close-frames-while list-frames
+        (or (uint-greater? ,list-top ,list-column)
+            (and (uint-equal? ,list-top ,list-column)
+                 (uint-not-equal? (stack-top list-frames) ,frame))) 2)
+      (if (and (stack-nonempty? list-frames)
+               (uint-equal? ,list-top ,list-column))
+          ((finish-node))
+          ((start-node ,list-node)
+           (push-frame list-frames ,frame)))
+      (start-node ,item-node)
+      (token ,trivia start (state-offset list-bullet-start))
+      (token ,bullet (state-offset list-bullet-start)
+             (state-offset list-bullet-end))
+      (token ,trivia (state-offset list-bullet-end)
+             (state-offset list-content-start))
+      (if (offset-less? (state-offset list-content-start)
+                        (line-content-end))
+          ,(list-text-line '(state-offset list-content-start))
+          ((token ,trivia (state-offset list-content-start) end)))
+      (set-uint list-blank-count (uint 0)))))
+
+(def (list-marker-forms)
+  `((if (state table-open)
+        ((finish-node) (set-bool table-open (bool #f))) ())
+    ,close-paragraph
+    ,list-close-paragraph
+    (if (state list-ordered)
+        ,(list-marker-body #t)
+        ,(list-marker-body #f))
+    (set-bool after-heading (bool #f))))
+
+(def (list-or-element-form)
+  `(,list-marker-form
+    (if (and (state list-present)
+             (uint-equal?
+              (line-marker-level ,heading-marker ,heading-separator) (uint 0)))
+        ,(list-marker-forms)
+        ((if (stack-nonempty? list-frames)
+             ((if (line-blank?)
+                  ((if (uint-equal? (state list-blank-count) (uint 0))
+                       (,list-close-paragraph
+                        (token ,(list-line-trivia-token list-rule) start end)
+                        (set-uint list-blank-count (uint 1)))
+                       (,@list-close-all ,(table-or-element-form))))
+                  ((if (uint-greater?
+                        (line-indent-column ,(list-line-tab-width list-rule))
+                        ,list-top)
+                       (,@(list-text-line 'start)
+                        (set-uint list-blank-count (uint 0)))
+                       (,@list-close-all ,(table-or-element-form))))))
+             (,(table-or-element-form)))))))
+
 (def org-event-initial
   '((open-levels (uint-stack)) (active-opaque-block 0)
     (property-drawer-open #f) (paragraph-open #f) (after-heading #f)
     (table-open #f) (table-seen-separator #f) (table-escaped #f)
-    (table-cell-start 0)))
+    (table-cell-start 0)
+    (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
+    (list-column 0) (list-bullet-start 0) (list-bullet-end 0)
+    (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0)))
 
 (def org-event-line-forms
   `((if (uint-positive? (state active-opaque-block))
         (,(opaque-body-chain))
         ((if (state property-drawer-open)
              (,(property-body-form))
-             (,(table-or-element-form)))))))
+             ,(list-or-element-form))))))
 
 (def org-event-finish-forms
   '((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
     (if (state property-drawer-open) ((finish-node)) ())
     (if (state table-open) ((finish-node)) ())
+    (if (state list-paragraph-open) ((finish-node)) ())
+    (close-all-frames list-frames 2)
     (if (state paragraph-open) ((finish-node)) ())
     (close-all open-levels)))
