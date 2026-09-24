@@ -21,11 +21,10 @@ mod structure;
 mod graph;
 #[path = "org_aot_contract_plan.rs"]
 mod contract_plan;
-mod todo_directive {
-    include!(concat!(env!("OUT_DIR"), "/todo_directive_p.rs"));
-}
 #[path = "org_aot_headline_functions.rs"]
 mod headline_functions;
+#[path = "org_aot_todo_directive.rs"]
+mod todo_directive;
 
 /// A source-backed, lossless Rowan tree and its Scheme-declared Element graph.
 #[derive(Debug)]
