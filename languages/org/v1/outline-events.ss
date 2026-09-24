@@ -4,19 +4,18 @@
 
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks block-line-block-node
-                 block-line-opening block-line-closing
+                 block-line-closing
                  block-line-case-insensitive block-line-indent
-                 block-line-heading-bound block-line-begin-token
+                 block-line-heading-bound
                  block-line-body-token block-line-end-token
                  block-line-contents block-line-body-line
-                 block-line-header block-header-argument-token
-                 block-header-trivia-token line-structure-heading
+                 line-structure-heading
                  heading-line-heading-token heading-line-fields
                  heading-fields-title-token heading-fields-trivia-token)
         (only-in "modules/org-parser/funs.ss"
                  org-line-spans structural-lead-byte
                  org-headline-level token-if-nonempty
-                 skip-horizontal scan-word strip-trailing-space
+                 skip-horizontal strip-trailing-space
                  line-marker? matching-key-line emit-key-line)
         (only-in "modules/org-parser/table.ss"
                  org-table-line? org-table-node emit-org-table-row)
@@ -25,6 +24,8 @@
         (only-in "modules/org-parser/link.ss" emit-org-text-line)
         (only-in "modules/org-parser/list.ss"
                  org-list-marker consume-org-list)
+        (only-in "modules/org-parser/block.ss"
+                 org-block-opening? org-block-opening-events)
         (only-in "parser.ss" org-v1-line-structure))
 (export parse-org-outline-events)
 
@@ -79,10 +80,8 @@
 
 (def (closed-block-spec bytes span)
   (ormap (lambda (block)
-           (and (eq? (block-line-contents block) 'opaque)
-                (line-marker? bytes span (block-line-opening block)
-                              (block-line-case-insensitive block)
-                              (block-line-indent block))
+           (and (memq (block-line-contents block) '(opaque elements))
+                (org-block-opening? bytes span block)
                 block))
          (line-structure-blocks org-v1-line-structure)))
 
@@ -98,36 +97,10 @@
   (let* ((lines (reverse pending))
          (opening (car lines))
          (body (cdr lines))
-         (header (block-line-header block))
-         (prefix-end (let* ((indent-end
-                            (if (block-line-indent block)
-                              (skip-horizontal bytes (car opening)
-                                               (cdr opening))
-                              (car opening))))
-                       (+ indent-end
-                          (u8vector-length
-                           (string->utf8 (block-line-opening block))))))
-         (argument-start (and header
-                              (skip-horizontal bytes prefix-end
-                                               (cdr opening))))
-         (argument-end (and header
-                            (scan-word bytes argument-start
-                                       (cdr opening))))
          (events
           (append
-           (list (list 'start (block-line-block-node block))
-                 (list 'token (block-line-begin-token block)
-                       (car opening)
-                       (if header prefix-end (cdr opening))))
-           (if header
-             (append
-              (token-if-nonempty (block-header-trivia-token header)
-                                 prefix-end argument-start)
-              (token-if-nonempty (block-header-argument-token header)
-                                 argument-start argument-end)
-              (token-if-nonempty (block-header-trivia-token header)
-                                 argument-end (cdr opening)))
-             '())
+           (list (list 'start (block-line-block-node block)))
+           (org-block-opening-events bytes opening block)
            (map (lambda (span) (list 'token (block-line-body-token block)
                                      (car span) (cdr span))) body)
            (list (list 'token (block-line-end-token block)
@@ -135,11 +108,23 @@
                  '(finish)))))
     (foldl cons reversed events)))
 
-(def (parse-org-outline-events source)
-  (let* ((bytes (string->utf8 source))
-         (spans (org-line-spans bytes)))
+(def (emit-container-block reversed bytes block pending closing)
+  (let* ((lines (reverse pending))
+         (opening (car lines))
+         (body (cdr lines))
+         (initial
+          (foldl cons reversed
+                 (cons (list 'start (block-line-block-node block))
+                       (org-block-opening-events bytes opening block))))
+         (contents (parse-org-spans bytes body initial)))
+    (foldl cons contents
+           (list (list 'token (block-line-end-token block)
+                       (car closing) (cdr closing))
+                 '(finish)))))
+
+(def (parse-org-spans bytes spans initial)
     (let loop ((rest spans) (levels '())
-               (reversed '((start OrgFile)))
+               (reversed initial)
                (pending '()) (block #f) (paragraph? #f)
                (table? #f) (after-heading? #f))
       (cond
@@ -149,7 +134,7 @@
                         (cons reversed paragraph?)))
                (closed (close-paragraph (car state) (cdr state)))
                (closed (if table? (cons '(finish) closed) closed)))
-          (reverse (cons '(finish) (close-sections levels closed)))))
+          (close-sections levels closed)))
        (block
         (let* ((span (car rest))
                (level (org-headline-level bytes (car span) (cdr span))))
@@ -168,7 +153,9 @@
                   (loop (cdr rest) levels (car state)
                         '() #f (cdr state) #f #f))))
               (loop (cdr rest) levels
-                    (emit-opaque-block reversed bytes block pending span)
+                    (if (eq? (block-line-contents block) 'elements)
+                      (emit-container-block reversed bytes block pending span)
+                      (emit-opaque-block reversed bytes block pending span))
                     '() #f #f #f #f)))
            ((and (block-line-heading-bound block) (> level 0))
             (let (state (emit-text-spans reversed bytes pending))
@@ -228,4 +215,10 @@
             (let-values (((events open?)
                           (emit-paragraph-line reversed paragraph?
                                                bytes span)))
-              (loop (cdr rest) levels events '() #f open? #f #f))))))))))
+              (loop (cdr rest) levels events '() #f open? #f #f)))))))))
+
+(def (parse-org-outline-events source)
+  (let* ((bytes (string->utf8 source))
+         (spans (org-line-spans bytes))
+         (reversed (parse-org-spans bytes spans '((start OrgFile)))))
+    (reverse (cons '(finish) reversed))))

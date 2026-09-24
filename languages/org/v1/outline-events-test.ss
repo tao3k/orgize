@@ -126,6 +126,55 @@
           (OrgListItem
            (ListBullet 5 6) (ListTrivia 6 7)
            (OrgParagraph (OrgTextLine (TextLine 7 9))))))))
+    (test-case "element blocks recursively parse paragraphs and lists"
+      (check-org-ast "#+begin_quote\ntext\n- item\n#+end_quote\n"
+        (OrgFile
+         (OrgQuoteBlock
+          (BlockBeginLine 0 14)
+          (OrgParagraph (OrgTextLine (TextLine 14 19)))
+          (OrgPlainList
+           (OrgListItem
+            (ListBullet 19 20) (ListTrivia 20 21)
+            (OrgParagraph (OrgTextLine (TextLine 21 26)))))
+          (BlockEndLine 26 38))))
+      (check-org-ast
+       "#+begin_center\n#+begin_quote\nα\n#+end_quote\n#+end_center\n"
+        (OrgFile
+         (OrgCenterBlock
+          (BlockBeginLine 0 15)
+          (OrgQuoteBlock
+           (BlockBeginLine 15 29)
+           (OrgParagraph (OrgTextLine (TextLine 29 32)))
+           (BlockEndLine 32 44))
+          (BlockEndLine 44 57)))))
+    (test-case "named dynamic blocks and drawers keep typed headers"
+      (check-org-ast "#+BEGIN: note\ntext\n#+END:\n"
+        (OrgFile
+         (OrgDynamicBlock
+          (BlockBeginLine 0 8) (DynamicBlockHeaderTrivia 8 9)
+          (DynamicBlockName 9 13) (DynamicBlockHeaderTrivia 13 14)
+          (OrgParagraph (OrgTextLine (TextLine 14 19)))
+          (BlockEndLine 19 26))))
+      (check-org-ast ":LOGBOOK:\nentry\n:END:\n"
+        (OrgFile
+         (OrgDrawer
+          (DrawerBeginLine 0 1) (DrawerName 1 8)
+          (DrawerTrivia 8 10)
+          (OrgParagraph (OrgTextLine (TextLine 10 16)))
+          (DrawerEndLine 16 22)))))
+    (test-case "closing delimiters and invalid dynamic names are not openings"
+      (check-org-ast ":END:\ntext\n:END:\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine (TextLine 0 6))
+          (OrgTextLine (TextLine 6 11))
+          (OrgTextLine (TextLine 11 17)))))
+      (check-org-ast "#+BEGIN: 123\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 7)
+          (KeywordTrivia 7 9) (KeywordValue 9 12)
+          (KeywordTrivia 12 13)))))
     (test-case "table rows, rule row, escaped bar and UTF-8 cells"
       (check-org-ast "| a | b |\n|---+---|\n| c\\|d | α |\n\n* Next\n"
         (OrgFile

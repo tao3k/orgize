@@ -195,13 +195,30 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .iter()
         .filter(|record| record.kind == "item")
         .collect();
-    assert_eq!(lists.len(), 2);
-    assert_eq!(items.len(), 3);
+    assert_eq!(lists.len(), 3);
+    assert_eq!(items.len(), 4);
     assert_eq!(items[0].field("bullet"), Some("-"));
     assert_eq!(items[1].field("bullet"), Some("-"));
     assert_eq!(items[2].field("bullet"), Some("-"));
+    assert_eq!(items[3].field("bullet"), Some("-"));
     assert_eq!(lists[1].parent_id, Some(items[0].id));
     assert_eq!(items[1].parent_id, Some(lists[1].id));
+    let quote = records
+        .iter()
+        .find(|record| record.kind == "quote-block")
+        .expect("Scheme-owned container projects as a quote Element");
+    assert_eq!(lists[2].parent_id, Some(quote.id));
+    assert_eq!(items[3].parent_id, Some(lists[2].id));
+    let dynamic = records
+        .iter()
+        .find(|record| record.kind == "dynamic-block")
+        .expect("Scheme-owned dynamic block projects as an Element");
+    assert_eq!(dynamic.field("name"), Some("note"));
+    let logbook = records
+        .iter()
+        .find(|record| record.kind == "drawer")
+        .expect("Scheme-owned named drawer projects as an Element");
+    assert_eq!(logbook.field("name"), Some("LOGBOOK"));
 
     let transitional = orgize::org_aot::parse_org_aot(source)
         .expect("the current production parser accepts the handoff fixture");
