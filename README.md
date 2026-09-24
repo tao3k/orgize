@@ -35,6 +35,28 @@ This is an opt-in parser surface while Org syntax coverage and the older
 `Org::parse` consumers are being migrated. The contract pack is generated from
 Orgize's Scheme declarations; its current evaluator is a Rust graph executor.
 
+## Python SDK
+
+[`bindings/python`](bindings/python) contains the uv-managed `orgizepy` project.
+Its three APIs are deliberately separate: `orgizepy.parser` parses raw Org
+through the Scheme-AOT Rust/Rowan parser, `orgizepy.functions` exposes the
+generated headline functions, and `orgizepy.contract` evaluates explicit
+Element rows through the standalone Scheme/Gambit C ABI. The parser and
+functions do not require a Gerbil runtime.
+
+```python
+from orgizepy.parser import parse_org
+from orgizepy.functions import headline_functions
+
+document = parse_org("#+TODO: NEXT DONE\n* NEXT Ship SDK\n")
+headline = next(element for element in document.elements if element.kind == "headline")
+assert headline_functions(document, headline.id).todo_keyword == "NEXT"
+```
+
+The Contract ABI is also independently consumable from C or Rust. It requires
+one Gambit runtime initialization per process; see
+[`bindings/c/include/orgize_standalone.h`](bindings/c/include/orgize_standalone.h).
+
 Named Element queries are declared in Orgize's `scheme :org-elements` blocks
 and compiled into a typed Rust pack at development time. Cargo consumers query
 without Gerbil at build or runtime:

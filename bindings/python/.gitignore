@@ -1,0 +1,7 @@
+.venv/
+src/orgizepy/_orgize*.so
+src/orgizepy/_orgize*.pyd
+src/orgizepy/lib/
+__pycache__/
+.pytest_cache/
+dist/

@@ -111,6 +111,54 @@ jobs:
         shell: bash
         run: sccache --show-stats || true
 
+  python-sdk:
+    name: orgizepy / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-26]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - name: System libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config
+      - name: System libraries
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: brew install gcc openssl pkg-config sqlite zlib
+      - name: Install released Gerbil
+        run: bash tools/ci/install-gerbil-release.sh
+      - name: Build Scheme Contract package
+        run: |
+          gxpkg deps --install
+          gerbil build
+      - name: Verify independent C and Rust consumers
+        run: just contract-smoke
+      - name: Verify Python SDK
+        run: just python-test
+      - name: Build Python wheel with Contract library
+        run: just python-wheel
+      - name: Test installed wheel outside source tree
+        shell: bash
+        run: |
+          uv venv "$RUNNER_TEMP/orgizepy-wheel"
+          uv pip install --python "$RUNNER_TEMP/orgizepy-wheel/bin/python" bindings/python/dist/orgizepy-*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/orgizepy-wheel/bin/python" \
+            "$GITHUB_WORKSPACE/bindings/python/tests/installed_smoke.py"
+
   gh-pages:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [".", "build-support"]
+members = [".", "build-support", "bindings/python"]
 
 [package]
 name = "orgize"
