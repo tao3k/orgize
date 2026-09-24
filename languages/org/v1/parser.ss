@@ -61,4 +61,6 @@
                         'OrgKeyword 'KeywordKey 'KeywordValue 'KeywordTrivia)
          (make-key-line "" '("SCHEDULED" "DEADLINE" "CLOSED") ":"
                         #f #t #t #t
-                        'OrgPlanning 'PlanningKey 'PlanningValue 'PlanningTrivia))))
+                        'OrgPlanning 'PlanningKey 'PlanningValue 'PlanningTrivia)
+         (make-key-line "" '("CLOCK") ":" #f #t #f #f
+                        'OrgClock 'ClockKey 'ClockValue 'ClockTrivia))))

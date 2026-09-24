@@ -22,6 +22,9 @@
      'OrgPlanning "element" "planning"
      (list (make-graph-field 'PlanningKey "key" 'each)
            (make-graph-field 'PlanningValue "value" 'each)))
+    (make-graph-node
+     'OrgClock "element" "clock"
+     (list (make-graph-field 'ClockValue "value")))
     (make-graph-node 'OrgPlainList "element" "plain-list" '())
     (make-graph-node 'OrgListItem "element" "item"
                      (list (make-graph-field 'ListBullet "bullet")))

@@ -19,6 +19,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgParagraph", category: KindCategory::Node },
     KindSpec { name: "OrgKeyword", category: KindCategory::Node },
     KindSpec { name: "OrgPlanning", category: KindCategory::Node },
+    KindSpec { name: "OrgClock", category: KindCategory::Node },
     KindSpec { name: "OrgPlainList", category: KindCategory::Node },
     KindSpec { name: "OrgListItem", category: KindCategory::Node },
     KindSpec { name: "OrgTable", category: KindCategory::Node },
@@ -56,13 +57,16 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "PlanningKey", category: KindCategory::Token },
     KindSpec { name: "PlanningValue", category: KindCategory::Token },
     KindSpec { name: "PlanningTrivia", category: KindCategory::Token },
+    KindSpec { name: "ClockKey", category: KindCategory::Token },
+    KindSpec { name: "ClockValue", category: KindCategory::Token },
+    KindSpec { name: "ClockTrivia", category: KindCategory::Token },
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 23 },
-    TerminalSpec { name: "block-begin", syntax_kind: 26 },
-    TerminalSpec { name: "block-end", syntax_kind: 30 },
-    TerminalSpec { name: "text", syntax_kind: 31 },
+    TerminalSpec { name: "headline", syntax_kind: 24 },
+    TerminalSpec { name: "block-begin", syntax_kind: 27 },
+    TerminalSpec { name: "block-end", syntax_kind: 31 },
+    TerminalSpec { name: "text", syntax_kind: 32 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -237,7 +241,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:8ca89d6430df06b52123a3ebc37025713edef0a0d0ddcaf94fe25cb28fb7cb3d",
+    grammar_digest: "sha256:b390f706a73b253b3dc8b45362b15c0533c3ce2ef1f6cbcb47ac56108a02acb1",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

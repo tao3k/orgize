@@ -449,6 +449,53 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
 }
 
 #[test]
+fn clock_is_a_source_backed_element_between_paragraphs() {
+    let source = "* Task\nBefore\nCLOCK: [2026-09-24 Thu 10:00]--[2026-09-24 Thu 11:00] => 1:00\nAfter\n#+begin_example\nCLOCK: literal\n#+end_example\n";
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("Scheme-owned clock rule admits a standalone element");
+    let root = document.syntax();
+    assert_eq!(root.to_string(), source);
+    let clocks: Vec<_> = root
+        .descendants()
+        .filter(|node| name(node) == "OrgClock")
+        .collect();
+    assert_eq!(clocks.len(), 1);
+    let clock = &clocks[0];
+    assert_eq!(name(&clock.parent().unwrap()), "OrgSection");
+    let range = clock.text_range();
+    assert_eq!(
+        &source[usize::from(range.start())..usize::from(range.end())],
+        clock.to_string()
+    );
+    let paragraphs: Vec<_> = root
+        .descendants()
+        .filter(|node| name(node) == "OrgParagraph")
+        .collect();
+    assert_eq!(paragraphs.len(), 2);
+    assert!(
+        paragraphs
+            .iter()
+            .all(|paragraph| !paragraph.to_string().contains("CLOCK:"))
+    );
+    let records = document.records();
+    let clock = records
+        .iter()
+        .find(|record| record.kind == "clock")
+        .expect("clock Element is projected into the query graph");
+    assert_eq!(
+        clock.field("value"),
+        Some("[2026-09-24 Thu 10:00]--[2026-09-24 Thu 11:00] => 1:00")
+    );
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "clock")
+            .count(),
+        1
+    );
+}
+
+#[test]
 fn scheme_aot_headline_state_classifies_projected_element_titles() {
     let source = "#+SEQ_TODO: WAIT(w) | DONE(d)\n#+TYP_TODO: HOLD(h) | FINISHED(f)\n* WAIT Parent\n** DONE Child\n* TODO prose\n* HOLD Review\n* FINISHED Shipped\n";
     let document = orgize::org_aot::parse_org_aot(source)

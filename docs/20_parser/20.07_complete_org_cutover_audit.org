@@ -7,7 +7,7 @@ The current Scheme-AOT/Rowan product is a lossless structural slice, not an
 Org parser replacement.  The generated element inventory names 30 element
 types and 24 object types, while =parser.ss= currently admits
 headlines/sections, property drawers, source blocks, six common greater-block
-kinds, marker-led lists, keyed keyword/planning lines, links, tables, and
+kinds, marker-led lists, keyed keyword/planning/clock lines, links, tables, and
 provisional paragraph grouping. The public
 =ParseConfig::parse= path still invokes the
 handwritten Rust =document_node=.  Three-platform CI and source roundtrip
@@ -45,7 +45,7 @@ other contexts remain incomplete. Matching counts do not establish matching synt
 |----------+------------------+--------------------|
 | Grammar authority | =grammar.ss= plus POO =parser.ss= declare line structure | Every element/object recognition rule and containment restriction is Scheme-owned; no downstream Rust parser rule or generated scanner program |
 | Engine | Generic section and opaque-block executor | Bounded contextual Parser IR, recursive element/object strategies, typed recovery, source-backed events, and deterministic AOT validation |
-| Syntax coverage | Headlines, sections, source/quote/example/verse/center/comment/export blocks, property drawers, marker-led nested lists, keyed keyword/planning lines, links, tables, and provisional paragraph grouping; affiliation, item metadata and continuation rules are not complete | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
+| Syntax coverage | Headlines, sections, source/quote/example/verse/center/comment/export blocks, property drawers, marker-led nested lists, keyed keyword/planning/clock lines, links, tables, and provisional paragraph grouping; clock timestamps remain an untyped value, and affiliation, item metadata and continuation rules are not complete | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
 | Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans expose the intended Org model; migrate callers rather than preserving incorrect old shapes |
 | Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
 | Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, migrated consumer tests, and equivalent-semantics performance receipts |
@@ -68,6 +68,12 @@ On local =arm64=, this run measured 6.39–6.81 ms to parse and project the
 document (central estimate 6.55 ms), and 533–556 μs for the composite query
 (central estimate 542 μs). These are focused local receipts, not a comparison
 against =main= or a three-platform performance closure.
+
+After adding the Scheme-owned clock element and fixing the generic keyed-line
+paragraph boundary, a local 10-sample run measured 6.17–6.26 ms for parse and
+projection and 405–410 μs for the composite query. The run used a shorter
+measurement window than the earlier receipt, so it does not establish a
+controlled speedup or full-parser performance parity.
 
 * First typed failures
 
