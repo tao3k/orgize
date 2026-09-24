@@ -16,6 +16,7 @@ visible under `orgizepy/.dylibs/` or the equivalent repaired-wheel directory.
 | zlib | Bundled by wheel repair when linked by the native runtime | Zlib license; [source and license](https://zlib.net/zlib_license.html). |
 | SQLite | Bundled by wheel repair when linked by the native runtime | Public domain; [source statement](https://www.sqlite.org/copyright.html). |
 
-The wheel's CycloneDX SBOM enumerates additional Rust crates and their versions.
+The wheel's CycloneDX SBOM enumerates additional Rust crates, their versions,
+and their declared license expressions.
 Review the exact built wheel and its linked libraries before publication;
 including these texts is not, by itself, a completed release-compliance review.

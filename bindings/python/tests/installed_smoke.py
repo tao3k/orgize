@@ -1,6 +1,7 @@
 """Run from outside the source tree against an installed wheel."""
 
 from importlib.metadata import distribution
+import json
 
 from orgizepy.contract import ContractRow, evaluate_contract
 from orgizepy.functions import headline_functions
@@ -20,7 +21,8 @@ result = evaluate_contract(
     expected_count=1,
 )
 assert result.passed and result.matched_count == 1
-package_files = {str(path) for path in distribution("orgizepy").files or ()}
+package = distribution("orgizepy")
+package_files = {str(path) for path in package.files or ()}
 for notice in (
     "LICENSE.orgizepy",
     "LICENSES/Apache-2.0.txt",
@@ -29,4 +31,10 @@ for notice in (
     "THIRD_PARTY_NOTICES.md",
 ):
     assert any(path.endswith(f"/licenses/{notice}") for path in package_files), notice
+sbom_path = next(
+    path for path in package.files or ()
+    if str(path).endswith("/sboms/orgizepy.cyclonedx.json")
+)
+sbom = json.loads(package.locate_file(sbom_path).read_text(encoding="utf-8"))
+assert all(component.get("licenses") for component in sbom["components"])
 print("orgizepy-wheel-ok")
