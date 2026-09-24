@@ -132,12 +132,9 @@ fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend
         ("OrgCommentBlock", "comment-block"),
         ("OrgExportBlock", "export-block"),
     ];
-    let records = gerbil_parser_rowan::project_syntax_graph(
-        orgize::org_aot::org_language_spec(),
-        orgize::org_aot::org_graph_spec(),
-        &root,
-    )
-    .expect("greater blocks use the Scheme-owned graph projection");
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("greater blocks use the production Scheme-owned projection");
+    let records = document.records();
     for (syntax_kind, graph_kind) in expected {
         let node = root
             .descendants()
@@ -151,6 +148,21 @@ fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend
         .find(|record| record.kind == "export-block")
         .expect("export block is a typed Element");
     assert_eq!(export.field("backend"), Some("html"));
+    assert_eq!(export.field("body"), Some("<b>raw</b>\n"));
+    assert_eq!(
+        records
+            .iter()
+            .find(|record| record.kind == "example-block")
+            .and_then(|record| record.field("body")),
+        Some("literal\n")
+    );
+    assert_eq!(
+        records
+            .iter()
+            .find(|record| record.kind == "comment-block")
+            .and_then(|record| record.field("body")),
+        Some("hidden\n")
+    );
     assert_eq!(
         root.descendants()
             .filter(|node| name(node) == "OrgParagraph")
@@ -405,24 +417,26 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
             .count(),
         1
     );
-    let records = gerbil_parser_rowan::project_syntax_graph(
-        orgize::org_aot::org_language_spec(),
-        orgize::org_aot::org_graph_spec(),
-        &root,
-    )
-    .expect("Scheme-owned keyword projects through AOT graph");
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("keywords and planning use the production Scheme-owned projection");
+    let records = document.records();
     let keyword = records
         .iter()
         .find(|record| record.kind == "keyword")
         .expect("one keyword");
     assert_eq!(keyword.field("key"), Some("TITLE"));
     assert_eq!(keyword.field("value"), Some("α fixture"));
+    let planning = records
+        .iter()
+        .find(|record| record.kind == "planning")
+        .expect("one planning element");
     assert_eq!(
-        records
-            .iter()
-            .filter(|record| record.kind == "planning")
-            .count(),
-        1
+        planning.values("key").collect::<Vec<_>>(),
+        ["SCHEDULED", "DEADLINE"]
+    );
+    assert_eq!(
+        planning.values("value").collect::<Vec<_>>(),
+        ["<2026-09-24 Thu>", "<2026-09-25 Fri>"]
     );
 }
 

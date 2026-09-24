@@ -24,6 +24,11 @@ assert!(!org_contract_pack().rules.is_empty());
 # Ok::<(), orgize::org_aot::OrgAotError>(())
 ```
 
+Projected fields preserve their declared cardinality: `record.field("name")`
+returns the first value, while `record.values("name")` iterates all values in
+source order. For example, a planning line with both `SCHEDULED` and
+`DEADLINE` exposes two separate `key` and `value` entries.
+
 This is an opt-in parser surface while Org syntax coverage and the older
 `Org::parse` consumers are being migrated. The contract pack is generated from
 Orgize's Scheme declarations; its current evaluator is a Rust graph executor.

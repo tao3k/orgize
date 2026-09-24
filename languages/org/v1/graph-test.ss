@@ -4,7 +4,8 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in :gerbil-parser/src/modules/parser/graph-projection-objects
                  graph-projection? graph-projection-nodes
-                 graph-node-syntax-kind graph-node-label)
+                 graph-node-syntax-kind graph-node-label graph-node-fields
+                 graph-field-name graph-field-mode)
         (only-in "graph.ss" org-v1-graph-projection))
 (export org-v1-graph-test)
 
@@ -27,4 +28,13 @@
                                 "table-rule-row" "table-cell"
                                 "node-property" "src-block" "quote-block"
                                 "example-block" "verse-block" "center-block"
-                                "comment-block" "export-block" "link"))))))
+                                "comment-block" "export-block" "link"))))
+    (test-case "planning keeps each key and value independently"
+      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+             (planning
+              (car (filter (lambda (node)
+                             (eq? (graph-node-syntax-kind node) 'OrgPlanning))
+                           nodes)))
+             (fields (graph-node-fields planning)))
+        (check (map graph-field-name fields) => '("key" "value"))
+        (check (map graph-field-mode fields) => '(each each))))))

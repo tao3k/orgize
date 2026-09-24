@@ -18,7 +18,10 @@
     (make-graph-node 'OrgKeyword "element" "keyword"
                      (list (make-graph-field 'KeywordKey "key")
                            (make-graph-field 'KeywordValue "value")))
-    (make-graph-node 'OrgPlanning "element" "planning" '())
+    (make-graph-node
+     'OrgPlanning "element" "planning"
+     (list (make-graph-field 'PlanningKey "key" 'each)
+           (make-graph-field 'PlanningValue "value" 'each)))
     (make-graph-node 'OrgPlainList "element" "plain-list" '())
     (make-graph-node 'OrgListItem "element" "item"
                      (list (make-graph-field 'ListBullet "bullet")))
@@ -37,13 +40,16 @@
            (make-graph-field 'BlockHeaderTrivia "header")
            (make-graph-field 'TextLine "body")))
     (make-graph-node 'OrgQuoteBlock "element" "quote-block" '())
-    (make-graph-node 'OrgExampleBlock "element" "example-block" '())
+    (make-graph-node 'OrgExampleBlock "element" "example-block"
+                     (list (make-graph-field 'TextLine "body")))
     (make-graph-node 'OrgVerseBlock "element" "verse-block" '())
     (make-graph-node 'OrgCenterBlock "element" "center-block" '())
-    (make-graph-node 'OrgCommentBlock "element" "comment-block" '())
+    (make-graph-node 'OrgCommentBlock "element" "comment-block"
+                     (list (make-graph-field 'TextLine "body")))
     (make-graph-node
      'OrgExportBlock "element" "export-block"
-     (list (make-graph-field 'ExportBackend "backend")))
+     (list (make-graph-field 'ExportBackend "backend")
+           (make-graph-field 'TextLine "body")))
     (make-graph-node
      'OrgLink "object" "link"
      (list (make-graph-field 'LinkTarget "path")
