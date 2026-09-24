@@ -17,9 +17,12 @@
 (C-declare #<<END-C
 #include "include/orgize.h"
 
-extern int32_t orgize_contract_evaluate_scheme(
-  orgize_element_row *, uint32_t, int64_t, char *, char *, char *,
-  uint32_t, uint32_t, orgize_contract_result *);
+/* Match Gambit's generated C types exactly; int64_t is long on Linux but
+ * ___S64 is long long in the generated declaration. */
+extern ___S32 orgize_contract_evaluate_scheme(
+  orgize_element_row *, ___U32, ___S64, ___UTF_8STRING,
+  ___UTF_8STRING, ___UTF_8STRING, ___U32, ___U32,
+  orgize_contract_result *);
 
 int32_t orgize_contract_evaluate(const orgize_element_row *rows,
                                  uint32_t row_count, int64_t scope_id,
