@@ -1,0 +1,204 @@
+;;; -*- Gerbil -*-
+;;; Org-owned, compositional event strategy. POO parser declarations own markers;
+;;; the resulting forms execute in Scheme and AOT-lower to one Rust function.
+
+(import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
+                 line-structure-heading line-structure-blocks
+                 line-structure-key-lines key-line-node key-line-prefix
+                 key-line-keys key-line-separator
+                 heading-line-marker heading-line-separator
+                 block-line-block-node block-line-opening block-line-closing
+                 block-line-body-line block-line-begin-token
+                 block-line-body-token block-line-end-token block-line-header
+                 block-header-argument-token block-header-trivia-token
+                 key-value-line-marker)
+        (only-in "../../parser.ss" org-v1-line-structure))
+(export org-event-initial org-event-line-forms org-event-finish-forms)
+
+(def (block-by-node node)
+  (or (ormap (lambda (block)
+               (and (eq? (block-line-block-node block) node) block))
+             (line-structure-blocks org-v1-line-structure))
+      (error "missing Org block declaration" node)))
+
+(def (key-line-by-node node)
+  (or (ormap (lambda (rule) (and (eq? (key-line-node rule) node) rule))
+             (line-structure-key-lines org-v1-line-structure))
+      (error "missing Org key-line declaration" node)))
+
+(def property-rule (block-by-node 'OrgPropertyDrawer))
+(def heading-rule (line-structure-heading org-v1-line-structure))
+(def keyword-rule (key-line-by-node 'OrgKeyword))
+(def babel-call-rule (key-line-by-node 'OrgBabelCall))
+(def property-open (block-line-opening property-rule))
+(def property-close (block-line-closing property-rule))
+(def property-marker (key-value-line-marker (block-line-body-line property-rule)))
+(def heading-marker (heading-line-marker heading-rule))
+(def heading-separator (heading-line-separator heading-rule))
+(def keyword-prefix (key-line-prefix keyword-rule))
+(def babel-call-marker
+  (let (keys (key-line-keys babel-call-rule))
+    (unless (and (pair? keys) (null? (cdr keys)))
+      (error "Org Babel CALL requires one declared key" keys))
+    (string-append (key-line-prefix babel-call-rule)
+                   (car keys) (key-line-separator babel-call-rule))))
+
+(def (numbered-blocks names)
+  (let loop ((rest names) (id 1))
+    (if (null? rest) '()
+      (cons (cons id (block-by-node (car rest)))
+            (loop (cdr rest) (+ id 1))))))
+
+(def opaque-blocks
+  (numbered-blocks
+   '(OrgSourceBlock OrgExampleBlock OrgCommentBlock OrgExportBlock)))
+
+(def close-paragraph
+  '(if (state paragraph-open)
+       ((finish-node) (set-bool paragraph-open (bool #f))) ()))
+
+(def (paragraph-form)
+  `(if (line-blank?)
+       (,close-paragraph
+        (start-node OrgTextLine) (token TextLine start end) (finish-node))
+       ((if (not (state paragraph-open))
+            ((start-node OrgParagraph) (set-bool paragraph-open (bool #t))) ())
+        (start-node OrgTextLine) (token TextLine start end) (finish-node))))
+
+(def (keyword-form)
+  `(if (line-has-key-after-prefix? ,keyword-prefix)
+       (,close-paragraph
+        (if (line-starts-with-ascii-ci ,babel-call-marker)
+            ((start-node OrgBabelCall)) ((start-node OrgKeyword)))
+        (token KeywordTrivia start (line-prefix-end ,keyword-prefix))
+        (token KeywordKey (line-prefix-end ,keyword-prefix)
+               (line-scan-key (line-prefix-end ,keyword-prefix)))
+        (token KeywordTrivia
+               (line-scan-key (line-prefix-end ,keyword-prefix))
+               (line-skip-horizontal
+                (line-step (line-scan-key (line-prefix-end ,keyword-prefix)))))
+        (token KeywordValue
+               (line-skip-horizontal
+                (line-step (line-scan-key (line-prefix-end ,keyword-prefix))))
+               (line-trim-end))
+        (token KeywordTrivia (line-trim-end) end)
+        (finish-node))
+       (,(paragraph-form))))
+
+(def (headline-form)
+  `(if (uint-positive? (line-marker-level ,heading-marker ,heading-separator))
+       (,close-paragraph
+        (close-through open-levels
+                       (line-marker-level ,heading-marker ,heading-separator))
+        (open-level open-levels
+                    (line-marker-level ,heading-marker ,heading-separator)
+                    OrgSection)
+        (start-node OrgHeadline)
+        (token HeadlineLine start
+               (line-marker-end ,heading-marker ,heading-separator))
+        (token HeadlineTrivia
+               (line-marker-end ,heading-marker ,heading-separator)
+               (line-skip-horizontal
+                (line-marker-end ,heading-marker ,heading-separator)))
+        (token HeadlineTitle
+               (line-skip-horizontal
+                (line-marker-end ,heading-marker ,heading-separator))
+               (line-trim-end))
+        (token HeadlineTrivia (line-trim-end) end)
+        (finish-node))
+       (,(keyword-form))))
+
+(def (property-line-form)
+  `(if (line-has-key-after-prefix? ,property-marker)
+       ((start-node OrgNodeProperty)
+        (token PropertyTrivia start (line-prefix-end ,property-marker))
+        (token PropertyKey (line-prefix-end ,property-marker)
+               (line-scan-key (line-prefix-end ,property-marker)))
+        (token PropertyTrivia
+               (line-scan-key (line-prefix-end ,property-marker))
+               (line-skip-horizontal
+                (line-step (line-scan-key (line-prefix-end ,property-marker)))))
+        (token PropertyValue
+               (line-skip-horizontal
+                (line-step (line-scan-key (line-prefix-end ,property-marker))))
+               (line-trim-end))
+        (token PropertyTrivia (line-trim-end) end)
+        (finish-node))
+       ((token TextLine start end))))
+
+(def (property-body-form)
+  `(if (line-marker-ascii-ci ,property-close)
+       ((token DrawerEndLine start end) (finish-node)
+        (set-bool property-drawer-open (bool #f)))
+       (,(property-line-form))))
+
+(def (property-open-form otherwise)
+  `(if (line-marker-ascii-ci ,property-open)
+       (,close-paragraph (start-node OrgPropertyDrawer)
+        (token DrawerBeginLine start end)
+        (set-bool property-drawer-open (bool #t)))
+       (,otherwise)))
+
+(def (block-header-forms rule)
+  (let* ((opening (block-line-opening rule))
+         (begin-token (block-line-begin-token rule))
+         (header (block-line-header rule)))
+    (if (not header)
+      `((token ,begin-token start end))
+      (let ((argument-token (block-header-argument-token header))
+            (trivia-token (block-header-trivia-token header)))
+        `((token ,begin-token start (line-prefix-end ,opening))
+          (if (line-has-word-after-prefix? ,opening)
+              ((token ,trivia-token
+                      (line-prefix-end ,opening)
+                      (line-skip-horizontal (line-prefix-end ,opening)))
+               (token ,argument-token
+                      (line-skip-horizontal (line-prefix-end ,opening))
+                      (line-scan-word
+                       (line-skip-horizontal (line-prefix-end ,opening))))
+               (token ,trivia-token
+                      (line-scan-word
+                       (line-skip-horizontal (line-prefix-end ,opening))) end))
+              ((token ,trivia-token (line-prefix-end ,opening) end))))))))
+
+(def (opaque-open-form block-id otherwise)
+  (let ((id (car block-id)) (rule (cdr block-id)))
+    `(if (line-prefix-boundary-ascii-ci ,(block-line-opening rule))
+         ,(append (list close-paragraph
+                        (list 'start-node (block-line-block-node rule)))
+                  (block-header-forms rule)
+                  (list `(set-uint active-opaque-block (uint ,id))))
+         (,otherwise))))
+
+(def (opaque-open-chain otherwise)
+  (foldr opaque-open-form otherwise opaque-blocks))
+
+(def (opaque-body-form block-id otherwise)
+  (let ((id (car block-id)) (rule (cdr block-id)))
+    `(if (uint-equal? (state active-opaque-block) (uint ,id))
+         ((if (line-marker-ascii-ci ,(block-line-closing rule))
+              ((token ,(block-line-end-token rule) start end)
+               (finish-node) (set-uint active-opaque-block (uint 0)))
+              ((token ,(block-line-body-token rule) start end))))
+         (,otherwise))))
+
+(def (opaque-body-chain)
+  (foldr opaque-body-form '(token TextLine start end) opaque-blocks))
+
+(def org-event-initial
+  '((open-levels (uint-stack)) (active-opaque-block 0)
+    (property-drawer-open #f) (paragraph-open #f)))
+
+(def org-event-line-forms
+  `((if (uint-positive? (state active-opaque-block))
+        (,(opaque-body-chain))
+        ((if (state property-drawer-open)
+             (,(property-body-form))
+             (,(property-open-form
+                (opaque-open-chain (headline-form)))))))))
+
+(def org-event-finish-forms
+  '((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
+    (if (state property-drawer-open) ((finish-node)) ())
+    (if (state paragraph-open) ((finish-node)) ())
+    (close-all open-levels)))

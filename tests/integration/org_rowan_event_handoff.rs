@@ -208,6 +208,47 @@ fn org_scheme_context_algorithm_rejects_longer_block_marker_lookalikes() {
     );
 }
 
+#[test]
+fn org_scheme_context_algorithm_projects_poo_declared_opaque_blocks() {
+    let source = "#+BEGIN_SRC rust\n** fake\n#+END_SRC\n#+begin_example\n* hidden\n#+end_example\n#+begin_comment\n| x |\n#+end_comment\n#+begin_export html\n<b>x</b>\n#+end_export\n* Visible\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme opaque-block strategy builds a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme opaque-block strategy projects Org Elements");
+    for kind in [
+        "src-block",
+        "example-block",
+        "comment-block",
+        "export-block",
+    ] {
+        assert_eq!(
+            records.iter().filter(|record| record.kind == kind).count(),
+            1
+        );
+    }
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "headline")
+            .count(),
+        1,
+        "headline and table-looking block bodies remain opaque"
+    );
+    let export = records
+        .iter()
+        .find(|record| record.kind == "export-block")
+        .expect("export block Element");
+    assert_eq!(export.field("backend"), Some("html"));
+    assert_eq!(export.field("body"), Some("<b>x</b>\n"));
+}
+
 fn kind(name: &str, category: KindCategory) -> u16 {
     org_language_spec()
         .kinds

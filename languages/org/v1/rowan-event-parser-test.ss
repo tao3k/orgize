@@ -96,6 +96,21 @@
                               (PropertyTrivia 21 23) (PropertyValue 23 27)
                               (PropertyTrivia 27 28))
                              (DrawerEndLine 28 34))))))
+    (test-case "POO-declared opaque blocks share one Scheme AOT strategy"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_example\n* hidden\n#+end_example\n#+begin_comment\n| x |\n#+end_comment\n#+begin_export html\n<b>x</b>\n#+end_export\n* Visible\n"
+        (OrgFile
+         (OrgExampleBlock (BlockBeginLine 0 16) (TextLine 16 25)
+                          (BlockEndLine 25 39))
+         (OrgCommentBlock (BlockBeginLine 39 55) (TextLine 55 61)
+                          (BlockEndLine 61 75))
+         (OrgExportBlock (BlockBeginLine 75 89)
+                         (BlockHeaderTrivia 89 90) (ExportBackend 90 94)
+                         (BlockHeaderTrivia 94 95) (TextLine 95 104)
+                         (BlockEndLine 104 117))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 117 118) (HeadlineTrivia 118 119)
+                       (HeadlineTitle 119 126) (HeadlineTrivia 126 127))))))
     (test-case "AOT IR is a typed source-owned event function"
       (let (ir (string->json parse_org_rowan_events
                              (JSONReadOptions object-as-hash: #t

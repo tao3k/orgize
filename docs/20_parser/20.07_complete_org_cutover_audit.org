@@ -231,6 +231,14 @@ keyword prefixes, property delimiters, and Babel CALL spelling from the POO
 stable after this authority consolidation. This removes duplicated literal
 grammar, but does not yet unify the two Scheme algorithms or cover all Org syntax.
 
+Opaque source, example, comment, and export blocks now share a Scheme strategy
+family assembled from the same POO block declarations. The typed unsigned
+event state AOT-selects each closer and keeps headline/table-looking body
+lines opaque; source language and export backend project as distinct tokens.
+The tracked representative fixture contains only a source block, so its
+three-way node-kind count does not change from this expansion. Unclosed-block
+recovery and recursively parsed quote/verse/center blocks remain open.
+
 * Implementation order
 
 This is one vertical MVP followed by full-coverage expansion, not separate
