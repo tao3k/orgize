@@ -33,6 +33,27 @@ This is an opt-in parser surface while Org syntax coverage and the older
 `Org::parse` consumers are being migrated. The contract pack is generated from
 Orgize's Scheme declarations; its current evaluator is a Rust graph executor.
 
+Named Element queries are declared in Orgize's `scheme :org-elements` blocks
+and compiled into a typed Rust pack at development time. Cargo consumers query
+without Gerbil at build or runtime:
+
+```rust
+use orgize::org_aot::parse_org_aot;
+
+let document = parse_org_aot("#+SEQ_TODO: WAIT | DONE\n* Team\n** WAIT Review\n")?;
+let team = document.records().iter()
+    .find(|record| record.kind == "headline" && record.field("title") == Some("Team"))
+    .unwrap();
+let open = document.query_named("tasks.open", team.id).unwrap();
+assert_eq!(open.len(), 1);
+# Ok::<(), orgize::org_aot::OrgAotError>(())
+```
+
+The query inherits file-local TODO declarations from the Element graph; users
+do not duplicate them in the query. The current AOT query subset admits one
+property comparison and one scope relation per named query. Composite
+predicates and query algebra remain separate work, not implicit Rust fallbacks.
+
 Live demo: <https://tao3k.github.io/orgize/>
 
 ## Parse

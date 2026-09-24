@@ -5,6 +5,7 @@
         (only-in :clan/poo/object .o .ref .slot?)
         (only-in "test-syntax.ss"
                  check-org-element-catalog check-org-element-selection
+                 check-org-named-query-selection
                  check-org-headline-properties check-org-headline-aot
                  check-org-headline-state-aot
                  org-test-form-structured? org-test-source-structured?
@@ -13,12 +14,14 @@
                  todo-directive-rust
                  todo-state-from-directives
                  todo-state-from-directives-rust)
+        (only-in "generated/query-source.ss" org-element-queries)
         (only-in "interface.ss"
                  +org-element-kinds+ org-elements-default-profile
                  make-org-element-graph-view make-org-element-query
                  make-org-element-query-context org-element-query?
                  org-element-map org-element-property
                  org-element-lineage? org-element-select
+                 org-named-element-query-id org-named-element-query-query
                  org-element-with-headline-properties
                  org-elements property property-contains at child-of))
 (export org-elements-module-test)
@@ -102,6 +105,20 @@
                      (property title "B"))
        true)
       (check-exception (org-elements invented-kind) true))
+    (test-case "tagged named queries use derived headline properties"
+      (let* ((graph (org-element-with-headline-properties headline-graph))
+             (context (make-org-element-query-context graph))
+             (id-of (lambda (record) (.ref record 'id))))
+        (check (length org-element-queries) => 3)
+        (check-org-named-query-selection
+         (car org-element-queries) context 0 '(0) id-of
+         "tasks.open" '(2 5))
+        (check-org-named-query-selection
+         (cadr org-element-queries) context 0 '(0) id-of
+         "tasks.done" '(3))
+        (check-org-named-query-selection
+         (caddr org-element-queries) context 0 '(0) id-of
+         "headlines.child" '(3))))
     (test-case "headline properties remain on the Element query graph"
       (check-org-headline-aot
        todo-directive-rust 'todo_directive_p

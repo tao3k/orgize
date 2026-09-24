@@ -3,9 +3,18 @@
 
 (import (only-in "objects.ss"
                  make-org-element-property-clause
-                 make-org-element-relation-clause)
+                 make-org-element-relation-clause
+                 make-org-named-element-query)
         (only-in "funs.ss" org-element-query-compose))
-(export org-elements property property-contains at child-of descendant-of)
+(export org-elements org-element-query
+        property property-contains at child-of descendant-of)
+
+;; A tagged :org-elements block admits one named query declaration only.
+(defsyntax (org-element-query stx)
+  (syntax-case stx (org-elements)
+    ((_ id (org-elements kind clause ...))
+     (syntax (make-org-named-element-query
+              id (org-elements kind clause ...))))))
 
 (defsyntax (org-elements stx)
   (syntax-case stx ()

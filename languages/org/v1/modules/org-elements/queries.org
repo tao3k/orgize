@@ -1,0 +1,30 @@
+#+title: Scheme-owned Org Element queries
+
+* Open tasks
+:PROPERTIES:
+:QUERY_ID: tasks.open
+:END:
+
+#+begin_src scheme :org-elements
+(org-elements headline (property todo-type "todo")
+              (descendant-of scope))
+#+end_src
+
+* Completed tasks
+:PROPERTIES:
+:QUERY_ID: tasks.done
+:END:
+
+#+begin_src scheme :org-elements
+(org-elements headline (property todo-type "done")
+              (descendant-of scope))
+#+end_src
+
+* Named child headline
+:PROPERTIES:
+:QUERY_ID: headlines.child
+:END:
+
+#+begin_src scheme :org-elements
+(org-elements headline (property source-title "DONE Child :work:"))
+#+end_src

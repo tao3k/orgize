@@ -11,7 +11,9 @@
 (export +org-element-schema+ +org-element-query-kind+
         +org-element-clause-kind+ +org-element-graph-kind+
         +org-element-context-kind+ +org-element-profile-kind+
+        +org-element-named-query-kind+
         OrgElementQuery OrgElementQueryClause
+        OrgNamedElementQuery org-named-element-query?
         OrgElementGraphView OrgElementQueryContext OrgElementsProfile
         org-element-query? org-element-query-clause?
         org-element-graph-view?
@@ -23,6 +25,7 @@
 (def +org-element-graph-kind+ 'org-element-graph-view)
 (def +org-element-context-kind+ 'org-element-query-context)
 (def +org-element-profile-kind+ 'org-elements-profile)
+(def +org-element-named-query-kind+ 'org-named-element-query)
 
 (def (has-kind-and-slots? value kind slots)
   (and (object? value) (.slot? value 'kind)
@@ -126,6 +129,18 @@
   .element?: org-elements-profile-shape?)
 
 (def (org-element-query? value) (element? OrgElementQuery value))
+(def (org-named-element-query-shape? value)
+  (and (has-kind-and-slots? value +org-element-named-query-kind+
+                            '(schema id query))
+       (equal? (.ref value 'schema) +org-element-schema+)
+       (nonempty-string? (.ref value 'id))
+       (org-element-query? (.ref value 'query))))
+
+(define-type (OrgNamedElementQuery @ Type.)
+  .element?: org-named-element-query-shape?)
+
+(def (org-named-element-query? value)
+  (element? OrgNamedElementQuery value))
 (def (org-element-query-clause? value)
   (element? OrgElementQueryClause value))
 (def (org-element-graph-view? value)

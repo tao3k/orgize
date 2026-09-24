@@ -34,6 +34,7 @@ pub struct OrgAotDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
     todo_directives: Vec<String>,
+    subtree_end: Vec<usize>,
 }
 
 /// An error from the parser or the generated Element projection contract.
@@ -68,10 +69,17 @@ pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
         })
         .filter_map(|record| record.field("value").map(str::to_owned))
         .collect();
+    let mut subtree_end: Vec<usize> = (1..=records.len()).collect();
+    for record in records.iter().rev() {
+        if let Some(parent) = record.parent_id {
+            subtree_end[parent] = subtree_end[parent].max(subtree_end[record.id]);
+        }
+    }
     Ok(OrgAotDocument {
         parse,
         records,
         todo_directives,
+        subtree_end,
     })
 }
 
@@ -100,6 +108,10 @@ pub fn org_contract_pack() -> &'static ContractPack {
 }
 
 impl OrgAotDocument {
+    pub(crate) fn element_subtree_end(&self, record_id: usize) -> Option<usize> {
+        self.subtree_end.get(record_id).copied()
+    }
+
     /// Return the lossless Rowan root; its text equals the parsed source.
     #[must_use]
     pub fn syntax(&self) -> SyntaxNode {

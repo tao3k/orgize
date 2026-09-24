@@ -2,63 +2,13 @@
 
 use std::{collections::HashSet, env, fmt::Write as _, fs, path::Path};
 
-use gerbil_parser_rowan::GraphRecord;
+#[path = "support/org_feature_source.rs"]
+mod org_feature_source;
 
-#[rustfmt::skip]
-#[path = "../languages/org/v1/generated/parser.rs"]
-mod grammar;
-#[rustfmt::skip]
-#[path = "../languages/org/v1/generated/structure.rs"]
-mod structure;
-#[rustfmt::skip]
-#[path = "../languages/org/v1/generated/graph.rs"]
-mod graph;
-
-fn owning_headline(records: &[GraphRecord], mut id: usize) -> Option<usize> {
-    loop {
-        let record = records.get(id)?;
-        if record.kind == "headline" {
-            return Some(id);
-        }
-        id = record.parent_id?;
-    }
-}
-
-fn property<'a>(
-    records: &'a [GraphRecord],
-    section: usize,
-    key: &str,
-) -> Result<Option<&'a str>, String> {
-    let values: Vec<_> = records
-        .iter()
-        .filter(|record| {
-            record.kind == "node-property" && owning_headline(records, record.id) == Some(section)
-        })
-        .filter(|record| record.field("key") == Some(key))
-        .map(|record| record.field("value").map(str::trim))
-        .collect();
-    match values.as_slice() {
-        [] => Ok(None),
-        [Some(value)] => Ok(Some(value)),
-        _ => Err(format!(
-            "duplicate or empty {key} property in contract section"
-        )),
-    }
-}
+use org_feature_source::{feature_block, property, records};
 
 fn tangle(source: &str) -> Result<String, String> {
-    let parse = gerbil_parser_rowan::parse_structural_lines(
-        &grammar::LANGUAGE,
-        &structure::STRUCTURE,
-        source,
-    )
-    .map_err(|error| format!("invalid Org contract source: {error:?}"))?;
-    let records = gerbil_parser_rowan::project_syntax_graph(
-        &grammar::LANGUAGE,
-        &graph::GRAPH,
-        &parse.syntax(),
-    )
-    .map_err(|error| format!("invalid Org Element projection: {error:?}"))?;
+    let records = records(source)?;
     let mut output = String::new();
     writeln!(output, ";;; -*- Gerbil -*-").unwrap();
     writeln!(
@@ -98,29 +48,7 @@ fn tangle(source: &str) -> Result<String, String> {
             Some("subtree") => "subtree",
             _ => return Err(format!("CONTRACT_SCOPE must be document or subtree: {id}")),
         };
-        let blocks: Vec<_> = records
-            .iter()
-            .filter(|record| {
-                record.kind == "src-block"
-                    && owning_headline(&records, record.id) == Some(section.id)
-            })
-            .filter(|record| record.field("language") == Some("scheme"))
-            .filter(|record| {
-                record.field("header").is_some_and(|header| {
-                    header
-                        .split_ascii_whitespace()
-                        .any(|part| part == ":org-contract")
-                })
-            })
-            .collect();
-        let [block] = blocks.as_slice() else {
-            return Err(format!(
-                "expected exactly one scheme :org-contract block: {id}"
-            ));
-        };
-        let body = block
-            .field("body")
-            .ok_or("Scheme :org-contract source block has no body")?;
+        let body = feature_block(&records, section.id, ":org-contract")?;
         writeln!(
             output,
             "  (make-org-contract-definition {id:?} '{scope} (org-contract-block"

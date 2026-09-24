@@ -16,8 +16,11 @@
                  +org-affiliated-keywords+ +org-object-restrictions+
                  +org-secondary-values+ org-object-allowed?
                  org-secondary-value?)
-        (only-in "funs.ss" org-element-select org-element-property))
+        (only-in "funs.ss" org-element-select org-element-property)
+        (only-in "objects.ss"
+                 org-named-element-query-id org-named-element-query-query))
 (export check-org-element-catalog check-org-element-selection
+        check-org-named-query-selection
         check-org-headline-properties check-org-headline-aot
         check-org-headline-state-aot
         org-test-form-structured? org-test-source-structured?
@@ -112,6 +115,18 @@
      (syntax
       (check (map id-of (org-element-select query context scope targets))
              => expected-ids)))))
+
+(defsyntax (check-org-named-query-selection stx)
+  (syntax-case stx ()
+    ((_ named context scope targets id-of expected-name expected-ids)
+     (syntax
+      (begin
+        (check (org-named-element-query-id named) => expected-name)
+        (check (map id-of
+                    (org-element-select
+                     (org-named-element-query-query named)
+                     context scope targets))
+               => expected-ids))))))
 
 (defsyntax (check-org-headline-properties stx)
   (syntax-case stx ()

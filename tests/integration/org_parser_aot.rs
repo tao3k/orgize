@@ -10,6 +10,17 @@ macro_rules! check_org_aot_headline_state {
     }};
 }
 
+macro_rules! check_org_aot_query {
+    ($document:expr, $query:literal, $scope:expr => [$($record:expr),* $(,)?]) => {{
+        assert_eq!(
+            $document.query_named($query, $scope),
+            Ok(vec![$($record.id),*]),
+            "Scheme-AOT query {} selected unexpected Org Elements",
+            $query
+        );
+    }};
+}
+
 fn parse(source: &str) -> SyntaxNode {
     let parsed = orgize::org_aot::parse_org_aot(source)
         .unwrap_or_else(|error| panic!("Org structural AOT rejected source: {error:?}"));
@@ -489,6 +500,85 @@ fn headline_state_uses_defaults_only_without_document_directives() {
     check_org_aot_headline_state!(document, headlines[0], "TODO Open" => Some("todo"));
     check_org_aot_headline_state!(document, headlines[1], "DONE Closed" => Some("done"));
     check_org_aot_headline_state!(document, headlines[2], "WAIT Plain" => None);
+}
+
+#[test]
+fn tagged_element_queries_inherit_custom_todo_state_and_scope() {
+    let source = "#+SEQ_TODO: WAIT(w) | DONE(d)\n* Group\n** WAIT First\n** DONE Child :work:\n* Other\n** WAIT Remote\n";
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("custom queries run over Scheme-AOT Element properties");
+    let group = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "headline" && record.field("title") == Some("Group"))
+        .expect("group headline");
+    let first = document
+        .records()
+        .iter()
+        .find(|record| record.field("title") == Some("WAIT First"))
+        .expect("first task");
+    let done = document
+        .records()
+        .iter()
+        .find(|record| record.field("title") == Some("DONE Child :work:"))
+        .expect("done task");
+    check_org_aot_query!(document, "tasks.open", group.id => [first]);
+    check_org_aot_query!(document, "tasks.done", group.id => [done]);
+    check_org_aot_query!(document, "headlines.child", 0 => [done]);
+    assert_eq!(
+        document.query_named("missing", 0),
+        Err(orgize::org_element_query::OrgElementQueryError::UnknownQuery)
+    );
+}
+
+#[test]
+fn supplied_element_query_packs_fail_closed_before_scanning() {
+    use orgize::org_element_query::{
+        OrgElementFieldMatch, OrgElementQueryError, OrgElementQueryPack, OrgElementQueryRule,
+        OrgElementRelation, org_element_query_pack,
+    };
+
+    let document = orgize::org_aot::parse_org_aot("* Task\n").expect("valid Org document");
+    let stale = OrgElementQueryPack {
+        graph_digest: "sha256:outdated",
+        rules: org_element_query_pack().rules,
+    };
+    assert_eq!(
+        document.query_with_pack(&stale, "tasks.open", 0),
+        Err(OrgElementQueryError::StaleGraph)
+    );
+    let unsupported = OrgElementQueryPack {
+        graph_digest: org_element_query_pack().graph_digest,
+        rules: &[OrgElementQueryRule {
+            id: "headline.normalized-title",
+            node_kind: "headline",
+            field_name: Some("title"),
+            field_value: Some("Task"),
+            field_match: OrgElementFieldMatch::Exact,
+            relation: OrgElementRelation::Any,
+            target_scope: false,
+        }],
+    };
+    assert_eq!(
+        document.query_with_pack(&unsupported, "headline.normalized-title", 0),
+        Err(OrgElementQueryError::UnsupportedField)
+    );
+    let invalid = OrgElementQueryPack {
+        graph_digest: org_element_query_pack().graph_digest,
+        rules: &[OrgElementQueryRule {
+            id: "headline.invalid",
+            node_kind: "headline",
+            field_name: Some("not-a-projected-property"),
+            field_value: Some("value"),
+            field_match: OrgElementFieldMatch::Exact,
+            relation: OrgElementRelation::Any,
+            target_scope: false,
+        }],
+    };
+    assert_eq!(
+        document.query_with_pack(&invalid, "headline.invalid", 0),
+        Err(OrgElementQueryError::InvalidRule)
+    );
 }
 
 #[test]

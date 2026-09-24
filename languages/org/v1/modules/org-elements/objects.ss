@@ -6,8 +6,12 @@
         (only-in "types.ss"
                  +org-element-schema+ +org-element-query-kind+
                  +org-element-clause-kind+ +org-element-graph-kind+
-                 OrgElementQuery OrgElementQueryClause OrgElementGraphView))
+                 +org-element-named-query-kind+
+                 OrgElementQuery OrgElementQueryClause OrgElementGraphView
+                 OrgNamedElementQuery))
 (export make-org-element-query make-org-element-property-clause
+        make-org-named-element-query
+        org-named-element-query-id org-named-element-query-query
         make-org-element-relation-clause make-org-element-graph-view
         org-element-query-node-kind org-element-query-field-name
         org-element-query-field-value org-element-query-field-match
@@ -37,6 +41,15 @@
               field-match: field-match-value
               relation: relation-value
               target: target-value)))
+
+(def (make-org-named-element-query id-value query-value)
+  (admit! OrgNamedElementQuery
+          (.o kind: +org-element-named-query-kind+
+              schema: +org-element-schema+
+              id: id-value query: query-value)))
+
+(def (org-named-element-query-id value) (.ref value 'id))
+(def (org-named-element-query-query value) (.ref value 'query))
 
 (def (make-org-element-property-clause name-value field-value
                                        (field-match-value 'exact))
