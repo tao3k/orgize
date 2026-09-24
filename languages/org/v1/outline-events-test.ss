@@ -30,4 +30,29 @@
                   (finish) (finish))))
     (test-case "empty document has one closed root"
       (check (parse-org-outline-events "")
-             => '((start OrgFile) (finish))))))
+             => '((start OrgFile) (finish))))
+    (test-case "declared source block stays inside its section"
+      (check (parse-org-outline-events
+              "* Code\n#+BEGIN_SRC rust\nα\n#+END_SRC\n** Next\n")
+             => '((start OrgFile)
+                  (start OrgSection)
+                  (start OrgHeadline) (token HeadlineLine 0 7) (finish)
+                  (start OrgSourceBlock)
+                  (token BlockBeginLine 7 24)
+                  (token TextLine 24 27)
+                  (token BlockEndLine 27 37)
+                  (finish)
+                  (start OrgSection)
+                  (start OrgHeadline) (token HeadlineLine 37 45) (finish)
+                  (finish) (finish) (finish))))
+    (test-case "unclosed source block recovers before next headline"
+      (check (parse-org-outline-events
+              "* First\n#+begin_src rust\nbody\n** Next\n")
+             => '((start OrgFile)
+                  (start OrgSection)
+                  (start OrgHeadline) (token HeadlineLine 0 8) (finish)
+                  (start OrgTextLine) (token TextLine 8 25) (finish)
+                  (start OrgTextLine) (token TextLine 25 30) (finish)
+                  (start OrgSection)
+                  (start OrgHeadline) (token HeadlineLine 30 38) (finish)
+                  (finish) (finish) (finish))))))

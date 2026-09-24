@@ -1,9 +1,14 @@
 ;;; -*- Gerbil -*-
-;;; Org-owned section containment over source-backed line events.
-;;; This pure pass is the algorithm to lower into Rust; it is not a runtime
-;;; dependency of Cargo consumers.
+;;; Org-owned section containment and opaque source-block recovery.
+;;; This pass is not a runtime dependency of Cargo consumers.
 
-(import (only-in "line-event-parser.ss" parse-org-line-events))
+(import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
+                 line-structure-blocks block-line-block-node
+                 block-line-opening block-line-closing
+                 block-line-case-insensitive block-line-indent
+                 block-line-heading-bound)
+        (only-in "line-event-parser.ss" parse-org-line-events)
+        (only-in "parser.ss" org-v1-line-structure))
 (export parse-org-outline-events org-headline-level)
 
 (def (org-headline-level bytes start end)
@@ -30,23 +35,119 @@
         (cons (list 'token token start end)
               (cons (list 'start node) reversed))))
 
+(def (line-spans flat)
+  (let loop ((rest (cdr flat)) (reversed '()))
+    (if (equal? (car rest) '(finish))
+      (reverse reversed)
+      (let (token (cadr rest))
+        (loop (cdddr rest) (cons (cons (caddr token) (cadddr token))
+                                reversed))))))
+
+(def (ascii-lower-byte byte)
+  (if (and (<= 65 byte) (<= byte 90)) (+ byte 32) byte))
+
+(def (line-content-end bytes span)
+  (let loop ((end (cdr span)))
+    (if (and (> end (car span))
+             (memv (u8vector-ref bytes (- end 1)) '(10 13)))
+      (loop (- end 1))
+      end)))
+
+(def (line-marker? bytes span marker case-insensitive? indent?)
+  (let* ((content-end (line-content-end bytes span))
+         (start (let skip ((offset (car span)))
+                  (if (and indent? (< offset content-end)
+                           (memv (u8vector-ref bytes offset) '(9 32)))
+                    (skip (+ offset 1))
+                    offset)))
+         (marker-bytes (string->utf8 marker))
+         (size (u8vector-length marker-bytes)))
+    (and (<= (+ start size) content-end)
+         (let match ((index 0))
+           (or (= index size)
+               (and (let ((actual (u8vector-ref bytes (+ start index)))
+                          (expected (u8vector-ref marker-bytes index)))
+                      (= (if case-insensitive?
+                           (ascii-lower-byte actual) actual)
+                         (if case-insensitive?
+                           (ascii-lower-byte expected) expected)))
+                    (match (+ index 1)))))
+         (or (= (+ start size) content-end)
+             (memv (u8vector-ref bytes (+ start size)) '(9 32))))))
+
+(def (source-block-spec bytes span)
+  (let loop ((blocks (line-structure-blocks org-v1-line-structure)))
+    (and (pair? blocks)
+         (let (block (car blocks))
+           (if (and (eq? (block-line-block-node block) 'OrgSourceBlock)
+                    (line-marker? bytes span (block-line-opening block)
+                                  (block-line-case-insensitive block)
+                                  (block-line-indent block)))
+             block
+             (loop (cdr blocks)))))))
+
+(def (emit-text-spans reversed spans)
+  (foldl (lambda (span acc)
+           (emit-line acc 'OrgTextLine 'TextLine (car span) (cdr span)))
+         reversed (reverse spans)))
+
+(def (emit-source-block reversed pending closing)
+  (let* ((lines (reverse pending))
+         (opening (car lines))
+         (body (cdr lines))
+         (events
+          (append
+           (list '(start OrgSourceBlock)
+                 (list 'token 'BlockBeginLine (car opening) (cdr opening)))
+           (map (lambda (span) (list 'token 'TextLine
+                                     (car span) (cdr span))) body)
+           (list (list 'token 'BlockEndLine (car closing) (cdr closing))
+                 '(finish)))))
+    (foldl cons reversed events)))
+
 (def (parse-org-outline-events source)
   (let* ((bytes (string->utf8 source))
-         (flat (parse-org-line-events source)))
-    (let loop ((rest (cdr flat)) (levels '())
-               (reversed '((start OrgFile))))
-      (if (equal? (car rest) '(finish))
-        (reverse (cons '(finish) (close-sections levels reversed)))
-        (let* ((line-token (cadr rest))
-               (start (caddr line-token))
-               (end (cadddr line-token))
-               (level (org-headline-level bytes start end)))
-          (if (> level 0)
+         (spans (line-spans (parse-org-line-events source))))
+    (let loop ((rest spans) (levels '())
+               (reversed '((start OrgFile)))
+               (pending '()) (block #f))
+      (cond
+       ((null? rest)
+        (reverse (cons '(finish)
+                       (close-sections levels
+                                       (if block
+                                         (emit-text-spans reversed pending)
+                                         reversed)))))
+       (block
+        (let* ((span (car rest))
+               (level (org-headline-level bytes (car span) (cdr span))))
+          (cond
+           ((line-marker? bytes span (block-line-closing block)
+                          (block-line-case-insensitive block)
+                          (block-line-indent block))
+            (loop (cdr rest) levels
+                  (emit-source-block reversed pending span) '() #f))
+           ((and (block-line-heading-bound block) (> level 0))
+            (loop rest levels (emit-text-spans reversed pending) '() #f))
+           (else (loop (cdr rest) levels reversed
+                       (cons span pending) block)))))
+       (else
+        (let* ((span (car rest))
+               (start (car span))
+               (end (cdr span))
+               (level (org-headline-level bytes start end))
+               (opening (and (= level 0)
+                             (source-block-spec bytes span))))
+          (cond
+           ((> level 0)
             (let-values (((parents closed)
                           (close-through-level levels reversed level)))
-              (loop (cdddr rest)
-                    (cons level parents)
+              (loop (cdr rest) (cons level parents)
                     (emit-line (cons '(start OrgSection) closed)
-                               'OrgHeadline 'HeadlineLine start end)))
-            (loop (cdddr rest) levels
-                  (emit-line reversed 'OrgTextLine 'TextLine start end))))))))
+                               'OrgHeadline 'HeadlineLine start end)
+                    '() #f)))
+           (opening (loop (cdr rest) levels reversed (list span) opening))
+           (else
+            (loop (cdr rest) levels
+                  (emit-line reversed 'OrgTextLine 'TextLine start end)
+                  '() #f)))))))))
