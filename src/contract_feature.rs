@@ -197,6 +197,20 @@ fn target_ids(
     }
 }
 
+fn field_matches(record: &GraphRecord, query: ContractQueryRule) -> bool {
+    let (Some(name), Some(expected)) = (query.field_name, query.field_value) else {
+        return query.field_name.is_none();
+    };
+    record
+        .fields
+        .iter()
+        .filter(|field| field.name == name)
+        .any(|field| match query.field_match {
+            ContractFieldMatch::Exact => field.value == expected,
+            ContractFieldMatch::Contains => field.value.contains(expected),
+        })
+}
+
 fn select(
     query: ContractQueryRule,
     graph: &GraphIndex<'_>,
@@ -214,18 +228,7 @@ fn select(
     for record in graph.records {
         if !graph.descendant_or_self(scope_id, record.id)
             || record.kind != query.node_kind
-            || query.field_name.is_some_and(|field| {
-                let Some(actual) = record.field(field) else {
-                    return true;
-                };
-                let Some(expected) = query.field_value else {
-                    return true;
-                };
-                match query.field_match {
-                    ContractFieldMatch::Exact => actual != expected,
-                    ContractFieldMatch::Contains => !actual.contains(expected),
-                }
-            })
+            || !field_matches(record, query)
         {
             continue;
         }
