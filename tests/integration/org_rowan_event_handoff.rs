@@ -76,6 +76,31 @@ fn org_scheme_context_algorithm_aot_masks_headlines_inside_source_blocks() {
     );
 }
 
+#[test]
+fn org_scheme_context_algorithm_aot_projects_paragraph_elements() {
+    let source = "alpha\nβ\n \t\nnext\n* H\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme paragraph transitions build a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme paragraphs project through the Org Element graph");
+    let paragraphs: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "paragraph")
+        .collect();
+    assert_eq!(paragraphs.len(), 2);
+    assert_eq!(paragraphs[0].range.start(), 0u32.into());
+    assert_eq!(paragraphs[0].range.end(), 9u32.into());
+    assert_eq!(paragraphs[1].range.start(), 12u32.into());
+    assert_eq!(paragraphs[1].range.end(), 17u32.into());
+}
+
 fn kind(name: &str, category: KindCategory) -> u16 {
     org_language_spec()
         .kinds

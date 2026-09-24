@@ -10,6 +10,15 @@
 
 (def org-v1-rowan-event-parser-test
   (test-suite "Org contextual Rowan event AOT"
+    (test-case "paragraphs group source lines and blank trivia closes the scope"
+      (check-org-ast-with parse-org-rowan-events
+        "alpha\nβ\n \t\nnext\n* H\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 6))
+                       (OrgTextLine (TextLine 6 9)))
+         (OrgTextLine (TextLine 9 12))
+         (OrgParagraph (OrgTextLine (TextLine 12 17)))
+         (OrgSection (OrgHeadline (HeadlineLine 17 21))))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"
