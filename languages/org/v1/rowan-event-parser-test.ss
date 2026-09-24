@@ -75,6 +75,27 @@
                             (PropertyTrivia 27 28))
            (DrawerEndLine 28 34))
           (OrgParagraph (OrgTextLine (TextLine 34 39)))))))
+    (test-case "block and drawer markers do not consume longer lookalikes"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_src rust\n#+end_srcx\n#+END_SRC \t\n"
+        (OrgFile
+         (OrgSourceBlock (BlockBeginLine 0 11)
+                         (BlockHeaderTrivia 11 12)
+                         (SourceLanguage 12 16)
+                         (BlockHeaderTrivia 16 17)
+                         (TextLine 17 28) (BlockEndLine 28 40))))
+      (check-org-ast-with parse-org-rowan-events
+        "* H\n:PROPERTIES:\n:END: tail\n:END:\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgPropertyDrawer (DrawerBeginLine 4 17)
+                             (OrgNodeProperty
+                              (PropertyTrivia 17 18) (PropertyKey 18 21)
+                              (PropertyTrivia 21 23) (PropertyValue 23 27)
+                              (PropertyTrivia 27 28))
+                             (DrawerEndLine 28 34))))))
     (test-case "AOT IR is a typed source-owned event function"
       (let (ir (string->json parse_org_rowan_events
                              (JSONReadOptions object-as-hash: #t

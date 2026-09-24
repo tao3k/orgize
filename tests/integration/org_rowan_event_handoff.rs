@@ -175,6 +175,39 @@ fn org_scheme_context_algorithm_projects_headline_property_drawers() {
     assert_eq!(property.field("value"), Some("alpha"));
 }
 
+#[test]
+fn org_scheme_context_algorithm_rejects_longer_block_marker_lookalikes() {
+    let source = "#+begin_srcx\n* H\n:PROPERTIES:x\n:PROPERTIES:\n:ID: alpha\n:END: tail\n:END:\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("bounded Scheme markers preserve the source");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("bounded marker tree projects Elements");
+    assert!(!records.iter().any(|record| record.kind == "src-block"));
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "property-drawer")
+            .count(),
+        1
+    );
+    let properties: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "node-property")
+        .map(|record| (record.field("key"), record.field("value")))
+        .collect();
+    assert_eq!(
+        properties,
+        [(Some("ID"), Some("alpha")), (Some("END"), Some("tail"))]
+    );
+}
+
 fn kind(name: &str, category: KindCategory) -> u16 {
     org_language_spec()
         .kinds
