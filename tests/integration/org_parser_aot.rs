@@ -567,6 +567,15 @@ fn scheme_aot_headline_state_classifies_projected_element_titles() {
         document.headline_todo_keyword(headlines[4].id),
         Some("FINISHED".into())
     );
+    assert_eq!(
+        document.headline_content_after_todo(headlines[0].id),
+        Some("Parent".into())
+    );
+    assert_eq!(
+        document.headline_content_after_todo(headlines[2].id),
+        Some("TODO prose".into())
+    );
+    assert_eq!(document.headline_content_after_todo(0), None);
 }
 
 #[test]

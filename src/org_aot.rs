@@ -173,6 +173,21 @@ impl OrgAotDocument {
         (!keyword.is_empty()).then_some(keyword)
     }
 
+    /// Return headline content after a Scheme-recognized TODO keyword.
+    /// Priority and tags are retained until their Element projections run.
+    #[must_use]
+    pub fn headline_content_after_todo(&self, record_id: usize) -> Option<String> {
+        let title = self
+            .records
+            .get(record_id)
+            .filter(|record| record.kind == "headline")?
+            .field("title")?;
+        Some(headline_functions::headline_content_after_todo(
+            title,
+            &self.todo_directives,
+        ))
+    }
+
     /// Evaluate a Scheme-AOT Org Contract against this document's Element graph.
     ///
     /// # Errors

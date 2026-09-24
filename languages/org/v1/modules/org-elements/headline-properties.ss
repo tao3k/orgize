@@ -5,7 +5,8 @@
 (import (only-in :std/string/misc string-trim)
         (only-in :gerbil-parser/src/compiler/rust-pure-aot
                  define-rust-pure string-before ascii-ci=?
-                 string-after string-first-word string-words)
+                 string-after string-first-word
+                 string-rest-after-first-word string-words)
         (only-in "types.ss" org-element-graph-view?)
         (only-in "objects.ss"
                  make-org-element-graph-view
@@ -16,6 +17,7 @@
         todo-directive-rust
         todo-state-from-directives todo-state-from-directives-rust
         todo-keyword-from-directives todo-keyword-from-directives-rust
+        headline-content-after-todo headline-content-after-todo-rust
         todo-keyword-matches? todo-keyword-matches-rust)
 
 (defstruct headline-properties (source-title title todo-keyword todo-type
@@ -83,6 +85,13 @@
       ""
       (string-first-word title))))
 
+(define-rust-pure headline-content-after-todo headline-content-after-todo-rust
+  ((title "&str") (directives "&[String]")) "String"
+  (using ((todo-keyword-from-directives "&str" "&[String]"))
+    (if (equal? (todo-keyword-from-directives title directives) "")
+      (string-trim title)
+      (string-rest-after-first-word title))))
+
 ;; A query checks the source keyword only after the same Scheme-owned state
 ;; algorithm admits it under file-local declarations. The dependency call is
 ;; lowered to Rust with an explicit typed pure-function signature.
@@ -139,12 +148,11 @@
                 tags)))))
 
 (def (decode-headline title directives)
-  (let* ((first (split-first title))
-         (state-value (todo-state-from-directives title directives))
+  (let* ((state-value (todo-state-from-directives title directives))
          (state (if (equal? state-value "") #f state-value))
          (todo-value (todo-keyword-from-directives title directives))
          (todo (and state (not (equal? todo-value "")) todo-value))
-         (after-todo (if todo (cdr first) (string-trim title)))
+         (after-todo (headline-content-after-todo title directives))
          (next (split-first after-todo))
          (priority (and (priority-token? (car next))
                         (substring (car next) 2

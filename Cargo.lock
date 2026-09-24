@@ -1612,10 +1612,22 @@ dependencies = [
 [[package]]
 name = "gerbil-parser-rowan"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-parser?rev=ca01627c0c5ba1d460c0de83b060bc90d3b961e8#ca01627c0c5ba1d460c0de83b060bc90d3b961e8"
+source = "git+https://github.com/tao3k/gerbil-parser?rev=af7e019eb2c32d11719458fbf02f1e532a380ead#af7e019eb2c32d11719458fbf02f1e532a380ead"
 dependencies = [
  "rowan",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "gerbil-scheme-rust-ir"
+version = "0.1.0"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=0e77fa4ddf6b92537b1194f257e02c8df31790f2#0e77fa4ddf6b92537b1194f257e02c8df31790f2"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_json",
+ "syn 3.0.6",
 ]
 
 [[package]]
@@ -2178,6 +2190,7 @@ dependencies = [
  "criterion",
  "datafusion",
  "gerbil-parser-rowan",
+ "gerbil-scheme-rust-ir",
  "ignore",
  "indexmap",
  "insta",

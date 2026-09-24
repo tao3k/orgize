@@ -8,6 +8,7 @@
                  check-org-named-query-selection
                  check-org-element-query-aot
                  check-org-headline-properties check-org-headline-aot
+                 check-org-headline-ir
                  check-org-headline-state-aot
                  org-test-form-structured? org-test-source-structured?
                  org-test-sources)
@@ -17,6 +18,8 @@
                  todo-state-from-directives-rust
                  todo-keyword-from-directives
                  todo-keyword-from-directives-rust
+                 headline-content-after-todo
+                 headline-content-after-todo-rust
                  todo-keyword-matches? todo-keyword-matches-rust)
         (only-in "generated/query-source.ss" org-element-queries)
         (only-in "interface.ss"
@@ -77,6 +80,9 @@
              => '())
       (check (org-test-source-structured?
               "languages/org/v1/modules/org-elements/generate-todo-keyword-value.ss")
+             => #t)
+      (check (org-test-source-structured?
+              "languages/org/v1/modules/org-elements/generate-headline-content.ss")
              => #t))
     (test-case "catalog and projected query share one feature interface"
       (check-org-element-catalog)
@@ -151,6 +157,14 @@
       (check-org-headline-aot
        todo-keyword-from-directives-rust 'todo_keyword_from_directives
        "languages/org/v1/modules/org-elements/generated/todo_keyword_from_directives.rs")
+      (check-org-headline-ir
+       headline-content-after-todo-rust 'headline_content_after_todo)
+      (check (headline-content-after-todo
+              "  WAIT   [#A] Parent :work:  " '("WAIT(w) | DONE(d)"))
+             => "[#A] Parent :work:")
+      (check (headline-content-after-todo
+              "TODO is ordinary text" '("WAIT(w) | DONE(d)"))
+             => "TODO is ordinary text")
       (check (todo-keyword-from-directives
               "WAIT Review" '("WAIT(w) | DONE(d)")) => "WAIT")
       (check (todo-keyword-from-directives

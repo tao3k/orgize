@@ -1,0 +1,93 @@
+{
+  "body": {
+    "bindings": [],
+    "result": {
+      "alternate": {
+        "arguments": [],
+        "kind": "method",
+        "method": "to_owned",
+        "receiver": {
+          "arguments": [],
+          "kind": "method",
+          "method": "trim",
+          "receiver": {
+            "index": 1,
+            "kind": "tuple_index",
+            "tuple": {
+              "arguments": [],
+              "kind": "method",
+              "method": "unwrap_or_default",
+              "receiver": {
+                "arguments": [
+                  {
+                    "kind": "name",
+                    "value": "char::is_whitespace"
+                  }
+                ],
+                "kind": "method",
+                "method": "split_once",
+                "receiver": {
+                  "arguments": [],
+                  "kind": "method",
+                  "method": "trim",
+                  "receiver": {
+                    "kind": "name",
+                    "value": "title"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "condition": {
+        "kind": "empty",
+        "value": {
+          "arguments": [
+            {
+              "kind": "name",
+              "value": "title"
+            },
+            {
+              "kind": "name",
+              "value": "directives"
+            }
+          ],
+          "callee": {
+            "kind": "name",
+            "value": "todo_keyword_from_directives"
+          },
+          "kind": "call"
+        }
+      },
+      "consequent": {
+        "arguments": [],
+        "kind": "method",
+        "method": "to_owned",
+        "receiver": {
+          "arguments": [],
+          "kind": "method",
+          "method": "trim",
+          "receiver": {
+            "kind": "name",
+            "value": "title"
+          }
+        }
+      },
+      "kind": "if"
+    }
+  },
+  "name": "headline_content_after_todo",
+  "parameters": [
+    {
+      "name": "title",
+      "ty": "&str"
+    },
+    {
+      "name": "directives",
+      "ty": "&[String]"
+    }
+  ],
+  "result": "String",
+  "schema": "gerbil-scheme-rust.rust-function-ir.v1"
+}

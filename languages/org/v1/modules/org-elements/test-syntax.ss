@@ -2,9 +2,11 @@
 ;;; Domain-specific hygienic checks for Org Element catalog and graph queries.
 
 (import (only-in :std/test check)
+        (only-in :std/encoding/json JSONReadOptions string->json)
         (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-parser/src/compiler/rust-syntax
-                 rust-render rust-function-form? rust-function-form-name
+                 rust-render rust-function-ir-json
+                 rust-function-form? rust-function-form-name
                  rust-function-form-body rust-block-form-statements
                  rust-block-form-result rust-let-form? rust-let-form-value
                  rust-first-word-form? rust-if-form? rust-if-form-condition
@@ -23,6 +25,7 @@
 (export check-org-element-catalog check-org-element-selection
         check-org-named-query-selection
         check-org-headline-properties check-org-headline-aot
+        check-org-headline-ir
         check-org-headline-state-aot
         check-org-element-query-aot
         org-test-form-structured? org-test-source-structured?
@@ -159,6 +162,19 @@
         (check (rust-function-form-name function) => name)
         (check (call-with-input-file artifact read-all-as-string)
                => (rust-render function)))))))
+
+(defsyntax (check-org-headline-ir stx)
+  (syntax-case stx ()
+    ((_ function name)
+     (syntax
+      (let (ir (string->json
+                (rust-function-ir-json function)
+                (JSONReadOptions object-as-hash: #t)))
+        (check (rust-function-form? function) => #t)
+        (check (rust-function-form-name function) => name)
+        (check (hash-get ir "schema")
+               => "gerbil-scheme-rust.rust-function-ir.v1")
+        (check (hash-get ir "name") => (symbol->string name)))))))
 
 (defsyntax (check-org-headline-state-aot stx)
   (syntax-case stx ()
