@@ -1,8 +1,8 @@
-//! Boundary test: Org-shaped nesting reaches Rowan without structural scanning.
-//! These events are a fixture, not a claim that Orgize generates them yet.
+//! Scheme-authored event fixtures reach Rowan and Org Element projection.
+//! Fixture parity does not mean production parsing has switched to event AOT.
 
-use gerbil_parser_rowan::{KindCategory, TreeEvent, parse_generated_events};
-use orgize::org_aot::org_language_spec;
+use gerbil_parser_rowan::{KindCategory, TreeEvent, parse_generated_events, project_syntax_graph};
+use orgize::org_aot::{org_graph_spec, org_language_spec};
 
 #[rustfmt::skip]
 #[path = "../../languages/org/v1/generated/line-events.rs"]
@@ -43,6 +43,79 @@ fn kind(name: &str, category: KindCategory) -> u16 {
         .position(|candidate| candidate.name == name && candidate.category == category)
         .and_then(|index| u16::try_from(index).ok())
         .expect("Scheme grammar declares the requested syntax kind")
+}
+
+#[test]
+fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../languages/org/v1/generated/outline-event-fixture.json"
+    ))
+    .expect("Scheme outline fixture is valid JSON");
+    let source = fixture["source"].as_str().expect("fixture source");
+    let events: Vec<_> = fixture["events"]
+        .as_array()
+        .expect("fixture events")
+        .iter()
+        .map(|event| {
+            let fields = event.as_array().expect("event tuple");
+            match fields[0].as_str().expect("event tag") {
+                "start" => TreeEvent::StartNode(kind(
+                    fields[1].as_str().expect("node kind"),
+                    KindCategory::Node,
+                )),
+                "token" => TreeEvent::Token {
+                    kind: kind(fields[1].as_str().expect("token kind"), KindCategory::Token),
+                    start: usize::try_from(fields[2].as_u64().expect("token start"))
+                        .expect("start fits usize"),
+                    end: usize::try_from(fields[3].as_u64().expect("token end"))
+                        .expect("end fits usize"),
+                },
+                "finish" => TreeEvent::FinishNode,
+                tag => panic!("unknown Scheme event tag: {tag}"),
+            }
+        })
+        .collect();
+    let parsed = parse_generated_events(org_language_spec(), HANDOFF_TEST_DIGEST, source, &events)
+        .expect("Scheme events satisfy Rowan's source and nesting contract");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme events support Org Element projection");
+    let headline_titles: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "headline")
+        .filter_map(|record| record.field("title"))
+        .collect();
+    assert_eq!(headline_titles, ["Parent", "Child"]);
+    let todo = records
+        .iter()
+        .find(|record| record.kind == "keyword")
+        .expect("Scheme keyword projects as Element");
+    assert_eq!(todo.field("key"), Some("TODO"));
+    assert_eq!(todo.field("value"), Some("TODO | DONE"));
+    let source_block = records
+        .iter()
+        .find(|record| record.kind == "src-block")
+        .expect("Scheme source block projects as Element");
+    assert_eq!(source_block.field("language"), Some("rust"));
+    assert_eq!(source_block.field("body"), Some("α\n"));
+    let paragraph = parsed
+        .syntax()
+        .descendants()
+        .find(|node| node.kind().0 == kind("OrgParagraph", KindCategory::Node))
+        .expect("Scheme events retain a paragraph boundary");
+    assert_eq!(paragraph.to_string(), "summary\n");
+    assert!(records.iter().any(|record| record.kind == "paragraph"));
+
+    let transitional = orgize::org_aot::parse_org_aot(source)
+        .expect("the current production parser accepts the handoff fixture");
+    assert_eq!(records.len(), transitional.records().len());
+    for (actual, expected) in records.iter().zip(transitional.records()) {
+        assert_eq!(actual.parent_id, expected.parent_id);
+        assert_eq!(actual.child_ids, expected.child_ids);
+        assert_eq!(actual.kind, expected.kind);
+        assert_eq!(actual.range, expected.range);
+        assert_eq!(actual.fields, expected.fields);
+    }
 }
 
 macro_rules! org_event {

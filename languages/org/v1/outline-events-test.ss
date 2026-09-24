@@ -2,6 +2,9 @@
 ;;; Structural AST events are asserted as values, never printed strings.
 
 (import (only-in :std/test check test-case test-suite)
+        (only-in :std/encoding/json JSONReadOptions string->json)
+        (only-in :std/misc/ports read-all-as-string)
+        (only-in "outline-event-fixture.ss" outline-event-fixture-json)
         (only-in "outline-events.ss"
                  org-headline-level parse-org-outline-events))
 (export org-v1-outline-events-test)
@@ -24,8 +27,9 @@
                   (token HeadlineTrivia 11 12)
                   (token HeadlineTitle 12 17)
                   (token HeadlineTrivia 17 18) (finish)
+                  (start OrgParagraph)
                   (start OrgTextLine) (token TextLine 18 23) (finish)
-                  (finish) (finish)
+                  (finish) (finish) (finish)
                   (start OrgSection)
                   (start OrgHeadline)
                   (token HeadlineLine 23 24)
@@ -36,7 +40,9 @@
     (test-case "non-headline stars remain text and UTF-8 spans remain bytes"
       (check (parse-org-outline-events "*not a headline\n* α\n")
              => '((start OrgFile)
+                  (start OrgParagraph)
                   (start OrgTextLine) (token TextLine 0 16) (finish)
+                  (finish)
                   (start OrgSection)
                   (start OrgHeadline)
                   (token HeadlineLine 16 17)
@@ -47,6 +53,36 @@
     (test-case "empty document has one closed root"
       (check (parse-org-outline-events "")
              => '((start OrgFile) (finish))))
+    (test-case "blank lines split paragraphs without losing source bytes"
+      (check (parse-org-outline-events "alpha\nbeta\n\nnext\n")
+             => '((start OrgFile)
+                  (start OrgParagraph)
+                  (start OrgTextLine) (token TextLine 0 6) (finish)
+                  (start OrgTextLine) (token TextLine 6 11) (finish)
+                  (finish)
+                  (start OrgTextLine) (token TextLine 11 12) (finish)
+                  (start OrgParagraph)
+                  (start OrgTextLine) (token TextLine 12 17) (finish)
+                  (finish) (finish))))
+    (test-case "Rowan handoff fixture matches the executable Scheme algorithm"
+      (let* ((options (JSONReadOptions object-as-hash: #t))
+             (generated (string->json (outline-event-fixture-json) options))
+             (saved (call-with-input-file
+                     "languages/org/v1/generated/outline-event-fixture.json"
+                     (lambda (port)
+                       (string->json (read-all-as-string port) options)))))
+        (check (hash-get saved "source") => (hash-get generated "source"))
+        (check (hash-get saved "events") => (hash-get generated "events"))))
+    (test-case "POO key-line priority keeps Babel CALL distinct from keywords"
+      (check (parse-org-outline-events "#+CALL: build(input=42)\n")
+             => '((start OrgFile)
+                  (start OrgBabelCall)
+                  (token KeywordTrivia 0 2)
+                  (token KeywordKey 2 6)
+                  (token KeywordTrivia 6 8)
+                  (token KeywordValue 8 23)
+                  (token KeywordTrivia 23 24)
+                  (finish) (finish))))
     (test-case "declared source block stays inside its section"
       (check (parse-org-outline-events
               "* Code\n#+BEGIN_SRC rust\nα\n#+END_SRC\n** Next\n")
@@ -82,8 +118,10 @@
                   (token HeadlineTrivia 1 2)
                   (token HeadlineTitle 2 7)
                   (token HeadlineTrivia 7 8) (finish)
+                  (start OrgParagraph)
                   (start OrgTextLine) (token TextLine 8 25) (finish)
                   (start OrgTextLine) (token TextLine 25 30) (finish)
+                  (finish)
                   (start OrgSection)
                   (start OrgHeadline)
                   (token HeadlineLine 30 32)
