@@ -415,6 +415,35 @@ fn org_scheme_context_list_boundaries_keep_headlines_and_marker_types_distinct()
     }
 }
 
+#[test]
+fn org_scheme_context_algorithm_aot_projects_inline_link_objects() {
+    let source = "go [[https://a][α]] and [[id:b]]\n[[broken\n- [[file:x][item]]\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme inline links build a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme inline links project Org Objects");
+    let links: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "link")
+        .map(|record| (record.field("path"), record.field("description")))
+        .collect();
+    assert_eq!(
+        links,
+        [
+            (Some("https://a"), Some("α")),
+            (Some("id:b"), None),
+            (Some("file:x"), Some("item"))
+        ]
+    );
+}
+
 fn kind(name: &str, category: KindCategory) -> u16 {
     org_language_spec()
         .kinds

@@ -22,6 +22,21 @@
                                   (HeadlineTrivia 18 19)
                                   (HeadlineTitle 19 20)
                                   (HeadlineTrivia 20 21))))))
+    (test-case "POO-declared inline links preserve descriptions and malformed text"
+      (check-org-ast-with parse-org-rowan-events
+        "go [[https://a][α]] and [[id:b]]\n[[broken\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 3)
+           (OrgLink (LinkTrivia 3 5) (LinkTarget 5 14)
+                    (LinkTrivia 14 16) (LinkDescription 16 18)
+                    (LinkTrivia 18 20))
+           (TextLine 20 25)
+           (OrgLink (LinkTrivia 25 27) (LinkTarget 27 31)
+                    (LinkTrivia 31 33))
+           (TextLine 33 34))
+          (OrgTextLine (TextLine 34 43))))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"

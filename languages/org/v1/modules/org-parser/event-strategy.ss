@@ -22,7 +22,8 @@
                  list-line-tab-width list-line-list-node
                  list-line-item-node list-line-bullet-token
                  list-line-trivia-token)
-        (only-in "../../parser.ss" org-v1-line-structure))
+        (only-in "../../parser.ss" org-v1-line-structure)
+        (only-in "event-inline.ss" event-inline-initial event-text-line-forms))
 (export org-event-initial org-event-line-forms org-event-finish-forms)
 
 (def (block-by-node node)
@@ -79,7 +80,7 @@
         (start-node OrgTextLine) (token TextLine start end) (finish-node))
        ((if (not (state paragraph-open))
             ((start-node OrgParagraph) (set-bool paragraph-open (bool #t))) ())
-        (start-node OrgTextLine) (token TextLine start end) (finish-node))))
+        ,@(event-text-line-forms 'start))))
 
 (def (keyword-form)
   `(if (line-has-key-after-prefix? ,keyword-prefix)
@@ -333,9 +334,7 @@
   `((if (not (state list-paragraph-open))
         ((start-node OrgParagraph)
          (set-bool list-paragraph-open (bool #t))) ())
-    (start-node OrgTextLine)
-    (token TextLine ,from end)
-    (finish-node)))
+    ,@(event-text-line-forms from)))
 
 (def (list-marker-body ordered?)
   (let ((frame (list-frame-value ordered?))
@@ -396,13 +395,15 @@
              (,(table-or-element-form)))))))
 
 (def org-event-initial
-  '((open-levels (uint-stack)) (active-opaque-block 0)
+  (append
+   '((open-levels (uint-stack)) (active-opaque-block 0)
     (property-drawer-open #f) (paragraph-open #f) (after-heading #f)
     (table-open #f) (table-seen-separator #f) (table-escaped #f)
     (table-cell-start 0)
     (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
     (list-column 0) (list-bullet-start 0) (list-bullet-end 0)
-    (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0)))
+    (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0))
+   event-inline-initial))
 
 (def org-event-line-forms
   `((if (uint-positive? (state active-opaque-block))
