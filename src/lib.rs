@@ -25,6 +25,8 @@ mod lint_runtime_validation;
 mod org;
 /// Scheme-AOT Org parser and Element graph for Cargo-only consumers.
 pub mod org_aot;
+/// Source-bound Org edits validated against the Scheme-AOT Element graph.
+pub mod org_aot_edit;
 /// Scheme-AOT named Org Element queries over the generated graph.
 pub mod org_element_query;
 mod replace;

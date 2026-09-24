@@ -68,6 +68,8 @@ mod lint_task_blockers;
 mod markdown;
 #[path = "integration/named_source_block_template.rs"]
 mod named_source_block_template;
+#[path = "integration/org_aot_edit.rs"]
+mod org_aot_edit;
 #[path = "integration/org_cutover_parity.rs"]
 mod org_cutover_parity;
 #[path = "integration/org_element_query.rs"]
