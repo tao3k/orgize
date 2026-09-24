@@ -5,7 +5,9 @@
         (only-in :clan/poo/object .o .ref .slot?)
         (only-in "test-syntax.ss"
                  check-org-element-catalog check-org-element-selection
-                 check-org-headline-properties)
+                 check-org-headline-properties check-org-headline-aot)
+        (only-in "headline-properties.ss"
+                 todo-name-rust todo-directive-rust)
         (only-in "interface.ss"
                  +org-element-kinds+ org-elements-default-profile
                  make-org-element-graph-view make-org-element-query
@@ -88,6 +90,12 @@
        true)
       (check-exception (org-elements invented-kind) true))
     (test-case "headline properties remain on the Element query graph"
+      (check-org-headline-aot
+       todo-name-rust 'todo_name
+       "languages/org/v1/modules/org-elements/generated/todo_name.rs")
+      (check-org-headline-aot
+       todo-directive-rust 'todo_directive_p
+       "languages/org/v1/modules/org-elements/generated/todo_directive.rs")
       (let* ((graph (org-element-with-headline-properties headline-graph))
              (context (make-org-element-query-context graph))
              (records (org-element-map context "headline"

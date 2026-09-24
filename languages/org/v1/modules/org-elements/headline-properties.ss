@@ -3,13 +3,16 @@
 ;;; No second headline node or parser-engine semantics are introduced.
 
 (import (only-in :std/string/misc string-trim)
+        (only-in :gerbil-parser/src/compiler/rust-pure-aot
+                 define-rust-pure string-before ascii-ci=?)
         (only-in "types.ss" org-element-graph-view?)
         (only-in "objects.ss"
                  make-org-element-graph-view
                  org-element-graph-records org-element-graph-id-of
                  org-element-graph-parent-of org-element-graph-kind-of
                  org-element-graph-field-of))
-(export org-element-with-headline-properties)
+(export org-element-with-headline-properties
+        todo-name-rust todo-directive-rust)
 
 (defstruct headline-properties (source-title title todo-keyword todo-type
                                           priority tags))
@@ -34,20 +37,15 @@
               (string-trim (substring value (+ index 1) size))))
        (else (loop (- index 1)))))))
 
-(def (todo-name token)
-  (let (size (string-length token))
-    (let loop ((index 0))
-      (cond
-       ((= index size) token)
-       ((char=? (string-ref token index) #\()
-        (substring token 0 index))
-       (else (loop (+ index 1)))))))
+(define-rust-pure todo-name todo-name-rust
+  ((token "&str")) "&str"
+  (string-before token "("))
 
-(def (todo-directive? key)
-  (and (string? key)
-       (or (string-ci=? key "TODO")
-           (string-ci=? key "SEQ_TODO")
-           (string-ci=? key "TYP_TODO"))))
+(define-rust-pure todo-directive? todo-directive-rust
+  ((key "&str")) "bool"
+  (or (ascii-ci=? key "TODO")
+      (ascii-ci=? key "SEQ_TODO")
+      (ascii-ci=? key "TYP_TODO")))
 
 (def (add-distinct values value)
   (if (member value values) values (append values (list value))))
@@ -78,7 +76,7 @@
              (key (and (equal? (kind-of record) "keyword")
                        (field-of record "key")))
              (value (and key (field-of record "value"))))
-        (if (and (todo-directive? key) (string? value))
+        (if (and (string? key) (todo-directive? key) (string? value))
           (let-values (((next-open next-done)
                         (collect-todo value open done)))
             (loop (cdr rest) next-open next-done #t))

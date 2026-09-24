@@ -2,6 +2,9 @@
 ;;; Domain-specific hygienic checks for Org Element catalog and graph queries.
 
 (import (only-in :std/test check)
+        (only-in :std/misc/ports read-all-as-string)
+        (only-in :gerbil-parser/src/compiler/rust-syntax
+                 rust-render rust-function-form? rust-function-form-name)
         (only-in :std/list/list every)
         (only-in "config.ss"
                  +org-element-kinds+ +org-greater-element-kinds+
@@ -11,7 +14,7 @@
                  org-secondary-value?)
         (only-in "funs.ss" org-element-select org-element-property))
 (export check-org-element-catalog check-org-element-selection
-        check-org-headline-properties)
+        check-org-headline-properties check-org-headline-aot)
 
 (def (catalog-unique? values)
   (let loop ((remaining values) (seen '()))
@@ -82,3 +85,13 @@
         (check (org-element-property context record "todo-type") => type)
         (check (org-element-property context record "priority") => priority)
         (check (org-element-property context record "tags") => tags))))))
+
+(defsyntax (check-org-headline-aot stx)
+  (syntax-case stx ()
+    ((_ function name artifact)
+     (syntax
+      (begin
+        (check (rust-function-form? function) => #t)
+        (check (rust-function-form-name function) => name)
+        (check (call-with-input-file artifact read-all-as-string)
+               => (rust-render function)))))))
