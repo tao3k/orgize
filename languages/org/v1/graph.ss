@@ -14,6 +14,8 @@
      (list (make-graph-field 'HeadlineLine "markers")
            (make-graph-field 'HeadlineTitle "title")))
     (make-graph-node 'OrgPropertyDrawer "element" "property-drawer" '())
+    (make-graph-node 'OrgDrawer "element" "drawer"
+                     (list (make-graph-field 'DrawerName "name")))
     (make-graph-node 'OrgParagraph "element" "paragraph" '())
     (make-graph-node 'OrgKeyword "element" "keyword"
                      (list (make-graph-field 'KeywordKey "key")

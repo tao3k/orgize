@@ -14,6 +14,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgCommentBlock", category: KindCategory::Node },
     KindSpec { name: "OrgExportBlock", category: KindCategory::Node },
     KindSpec { name: "OrgPropertyDrawer", category: KindCategory::Node },
+    KindSpec { name: "OrgDrawer", category: KindCategory::Node },
     KindSpec { name: "OrgNodeProperty", category: KindCategory::Node },
     KindSpec { name: "OrgTextLine", category: KindCategory::Node },
     KindSpec { name: "OrgParagraph", category: KindCategory::Node },
@@ -39,6 +40,8 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "BlockEndLine", category: KindCategory::Token },
     KindSpec { name: "TextLine", category: KindCategory::Token },
     KindSpec { name: "DrawerBeginLine", category: KindCategory::Token },
+    KindSpec { name: "DrawerName", category: KindCategory::Token },
+    KindSpec { name: "DrawerTrivia", category: KindCategory::Token },
     KindSpec { name: "DrawerEndLine", category: KindCategory::Token },
     KindSpec { name: "PropertyKey", category: KindCategory::Token },
     KindSpec { name: "PropertyValue", category: KindCategory::Token },
@@ -64,10 +67,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 25 },
-    TerminalSpec { name: "block-begin", syntax_kind: 28 },
-    TerminalSpec { name: "block-end", syntax_kind: 32 },
-    TerminalSpec { name: "text", syntax_kind: 33 },
+    TerminalSpec { name: "headline", syntax_kind: 26 },
+    TerminalSpec { name: "block-begin", syntax_kind: 29 },
+    TerminalSpec { name: "block-end", syntax_kind: 33 },
+    TerminalSpec { name: "text", syntax_kind: 34 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -235,14 +238,14 @@ static PRODUCTIONS: &[Production] = &[
     Production { lhs: "$source-block.1", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("block-begin")), actions: &[OperandAction::Field("begin")] }, Operand { symbol: Symbol::Nonterminal("$source-block.2"), actions: &[] }, Operand { symbol: Symbol::Terminal(Terminal::Token("block-end")), actions: &[OperandAction::Field("end")] }], reduction: Reduction::Concat, dynamic_precedence: 0 },
     Production { lhs: "source-block", rhs: &[Operand { symbol: Symbol::Nonterminal("$source-block.1"), actions: &[OperandAction::Alias(2)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
     Production { lhs: "headline", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("headline")), actions: &[OperandAction::Field("line"), OperandAction::Alias(1)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
-    Production { lhs: "text-line", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("text")), actions: &[OperandAction::Field("line"), OperandAction::Alias(11)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
+    Production { lhs: "text-line", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("text")), actions: &[OperandAction::Field("line"), OperandAction::Alias(12)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
 ];
 
 pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:d9577de7c5ec75a6c76a7230e6e83d1413240df75d61b4a87349c746fe9668af",
+    grammar_digest: "sha256:07ae73841d92ac0eb22127446d7a60d443bd606e873b6bdb7809f6108387041b",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

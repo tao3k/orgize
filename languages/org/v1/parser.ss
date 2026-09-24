@@ -20,9 +20,15 @@
          (make-block-line
           ":PROPERTIES:" ":END:" #t #t
           'OrgPropertyDrawer 'DrawerBeginLine 'TextLine 'DrawerEndLine
-          'recover-as-text #t
-          (make-key-value-line ":" 'OrgNodeProperty
+         'recover-as-text #t
+         (make-key-value-line ":" 'OrgNodeProperty
                                'PropertyKey 'PropertyValue 'PropertyTrivia))
+         (make-block-line
+          ":" ":END:" #t #t
+          'OrgDrawer 'DrawerBeginLine 'TextLine 'DrawerEndLine
+          'recover-as-text #t #f
+          (make-block-header 'DrawerName 'DrawerTrivia)
+          'elements 'named-delimited)
          (make-block-line
           "#+begin_quote" "#+end_quote" #t #t
           'OrgQuoteBlock 'BlockBeginLine 'TextLine 'BlockEndLine

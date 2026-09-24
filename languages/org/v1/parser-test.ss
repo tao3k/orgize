@@ -14,7 +14,7 @@
                  heading-line-fields heading-fields-title-token
                  block-line-opening block-line-closing block-line-block-node
                  block-line-unclosed block-line-heading-bound block-line-body-line
-                 block-line-contents
+                 block-line-contents block-line-opening-mode
                  block-line-header block-header-argument-token
                  line-structure-text text-line-inline-link
                  inline-link-node inline-link-target-token
@@ -38,17 +38,20 @@
         (check (heading-line-heading-node heading) => 'OrgHeadline)
         (check (heading-fields-title-token (heading-line-fields heading))
                => 'HeadlineTitle)
-        (check (length blocks) => 8)
+        (check (length blocks) => 9)
         (check (map block-line-block-node blocks)
-               => '(OrgSourceBlock OrgPropertyDrawer OrgQuoteBlock
+               => '(OrgSourceBlock OrgPropertyDrawer OrgDrawer OrgQuoteBlock
                                     OrgExampleBlock OrgVerseBlock OrgCenterBlock
                                     OrgCommentBlock OrgExportBlock))
         (check (map block-line-opening (cddr blocks))
-               => '("#+begin_quote" "#+begin_example" "#+begin_verse"
+               => '(":" "#+begin_quote" "#+begin_example" "#+begin_verse"
                                      "#+begin_center" "#+begin_comment"
                                      "#+begin_export"))
         (check (map block-line-contents (cddr blocks))
-               => '(elements opaque elements elements opaque opaque))
+               => '(elements elements opaque elements elements opaque opaque))
+        (check (block-line-opening-mode (caddr blocks)) => 'named-delimited)
+        (check (block-header-argument-token
+                (block-line-header (caddr blocks))) => 'DrawerName)
         (check (block-header-argument-token
                 (block-line-header (car (reverse blocks))))
                => 'ExportBackend)
