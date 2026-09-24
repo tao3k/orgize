@@ -9,7 +9,7 @@
         (only-in "funs.ss"
                  bytes-match? line-content-end line-marker?
                  skip-horizontal scan-word token-if-nonempty))
-(export org-block-opening? org-block-opening-events)
+(export org-block-opening? org-block-closing? org-block-opening-events)
 
 (def (ascii-letter? byte)
   (or (<= 65 byte 90) (<= 97 byte 122)))
@@ -28,7 +28,7 @@
         (and (horizontal-trivia? (u8vector-ref bytes offset))
              (loop (+ offset 1))))))
 
-(def (closing-line? bytes span rule)
+(def (org-block-closing? bytes span rule)
   (let* ((end (line-content-end bytes span))
          (start (if (block-line-indent rule)
                   (skip-horizontal bytes (car span) end)
@@ -49,7 +49,7 @@
          (name-start (+ start marker-size)))
     (and (= marker-size 1)
          (< name-start end)
-         (not (closing-line? bytes span rule))
+         (not (org-block-closing? bytes span rule))
          (bytes-match? bytes start end (block-line-opening rule)
                        (block-line-case-insensitive rule))
          (ascii-letter? (u8vector-ref bytes name-start))

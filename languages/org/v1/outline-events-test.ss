@@ -175,6 +175,18 @@
           (KeywordTrivia 0 2) (KeywordKey 2 7)
           (KeywordTrivia 7 9) (KeywordValue 9 12)
           (KeywordTrivia 12 13)))))
+    (test-case "block closer requires only trailing whitespace"
+      (check-org-ast
+       "#+begin_quote\ntext\n#+end_quote junk\n* Next\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine (TextLine 0 14))
+          (OrgTextLine (TextLine 14 19))
+          (OrgTextLine (TextLine 19 36)))
+         (OrgSection
+          (OrgHeadline
+           (HeadlineLine 36 37) (HeadlineTrivia 37 38)
+           (HeadlineTitle 38 42) (HeadlineTrivia 42 43))))))
     (test-case "table rows, rule row, escaped bar and UTF-8 cells"
       (check-org-ast "| a | b |\n|---+---|\n| c\\|d | α |\n\n* Next\n"
         (OrgFile

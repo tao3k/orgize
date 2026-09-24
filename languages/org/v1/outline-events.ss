@@ -4,8 +4,6 @@
 
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks block-line-block-node
-                 block-line-closing
-                 block-line-case-insensitive block-line-indent
                  block-line-heading-bound
                  block-line-body-token block-line-end-token
                  block-line-contents block-line-body-line
@@ -16,7 +14,7 @@
                  org-line-spans structural-lead-byte
                  org-headline-level token-if-nonempty
                  skip-horizontal strip-trailing-space
-                 line-marker? matching-key-line emit-key-line)
+                 matching-key-line emit-key-line)
         (only-in "modules/org-parser/table.ss"
                  org-table-line? org-table-node emit-org-table-row)
         (only-in "modules/org-parser/property.ss"
@@ -25,7 +23,8 @@
         (only-in "modules/org-parser/list.ss"
                  org-list-marker consume-org-list)
         (only-in "modules/org-parser/block.ss"
-                 org-block-opening? org-block-opening-events)
+                 org-block-opening? org-block-closing?
+                 org-block-opening-events)
         (only-in "parser.ss" org-v1-line-structure))
 (export parse-org-outline-events)
 
@@ -139,9 +138,7 @@
         (let* ((span (car rest))
                (level (org-headline-level bytes (car span) (cdr span))))
           (cond
-           ((line-marker? bytes span (block-line-closing block)
-                          (block-line-case-insensitive block)
-                          (block-line-indent block))
+           ((org-block-closing? bytes span block)
             (if (block-line-body-line block)
               (let (parsed (parse-property-drawer bytes pending block))
                 (if parsed
