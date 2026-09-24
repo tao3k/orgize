@@ -4,7 +4,8 @@
 
 (import (only-in :std/string/misc string-trim)
         (only-in :gerbil-parser/src/compiler/rust-pure-aot
-                 define-rust-pure string-before ascii-ci=?)
+                 define-rust-pure string-before ascii-ci=?
+                 string-after string-first-word string-words)
         (only-in "types.ss" org-element-graph-view?)
         (only-in "objects.ss"
                  make-org-element-graph-view
@@ -12,7 +13,8 @@
                  org-element-graph-parent-of org-element-graph-kind-of
                  org-element-graph-field-of))
 (export org-element-with-headline-properties
-        todo-name-rust todo-directive-rust)
+        todo-directive-rust
+        todo-state-from-directives todo-state-from-directives-rust)
 
 (defstruct headline-properties (source-title title todo-keyword todo-type
                                           priority tags))
@@ -37,50 +39,51 @@
               (string-trim (substring value (+ index 1) size))))
        (else (loop (- index 1)))))))
 
-(define-rust-pure todo-name todo-name-rust
-  ((token "&str")) "&str"
-  (string-before token "("))
-
 (define-rust-pure todo-directive? todo-directive-rust
   ((key "&str")) "bool"
   (or (ascii-ci=? key "TODO")
       (ascii-ci=? key "SEQ_TODO")
       (ascii-ci=? key "TYP_TODO")))
 
-(def (add-distinct values value)
-  (if (member value values) values (append values (list value))))
+;; File-local keyword Elements are the authority. The same executable Scheme
+;; function is lowered to Rust; callers never supply a separate TODO profile.
+(define-rust-pure todo-state-from-directives todo-state-from-directives-rust
+  ((title "&str") (directives "&[String]")) "&'static str"
+  (let* ((candidate (string-first-word title)))
+    (if (equal? candidate "") ""
+      (if (null? directives)
+        (if (equal? candidate "TODO") "todo"
+          (if (equal? candidate "DONE") "done" ""))
+        (if (ormap
+             (lambda (directive)
+               (let* ((open-side (string-before directive "|")))
+                 (ormap
+                  (lambda (word)
+                    (equal? candidate (string-before word "(")))
+                  (string-words open-side))))
+             directives)
+          "todo"
+          (if (ormap
+               (lambda (directive)
+                 (let* ((done-side (string-after directive "|")))
+                   (ormap
+                    (lambda (word)
+                      (equal? candidate (string-before word "(")))
+                    (string-words done-side))))
+               directives)
+            "done" ""))))))
 
-(def (collect-todo value open done)
-  (let loop ((rest (string-trim value)) (open open) (done done)
-             (done-side? #f))
-    (if (equal? rest "")
-      (values open done)
-      (let* ((part (split-first rest))
-             (word (car part))
-             (tail (cdr part)))
-        (if (equal? word "|")
-          (loop tail open done #t)
-          (let (name (todo-name word))
-            (if (or (equal? name "")
-                    (char=? (string-ref name 0) #\())
-              (loop tail open done done-side?)
-              (if done-side?
-                (loop tail open (add-distinct done name) #t)
-                (loop tail (add-distinct open name) done #f)))))))))
-
-(def (document-todo-profile records kind-of field-of)
-  (let loop ((rest records) (open '()) (done '()) (declared? #f))
+(def (document-todo-directives records kind-of field-of)
+  (let loop ((rest records) (directives '()))
     (if (null? rest)
-      (if declared? (cons open done) (cons '("TODO") '("DONE")))
+      (reverse directives)
       (let* ((record (car rest))
              (key (and (equal? (kind-of record) "keyword")
                        (field-of record "key")))
              (value (and key (field-of record "value"))))
         (if (and (string? key) (todo-directive? key) (string? value))
-          (let-values (((next-open next-done)
-                        (collect-todo value open done)))
-            (loop (cdr rest) next-open next-done #t))
-          (loop (cdr rest) open done declared?))))))
+          (loop (cdr rest) (cons value directives))
+          (loop (cdr rest) directives))))))
 
 (def (priority-token? word)
   (let (size (string-length word))
@@ -114,12 +117,11 @@
                         tags)
                 tags)))))
 
-(def (decode-headline title profile)
+(def (decode-headline title directives)
   (let* ((first (split-first title))
          (word (car first))
-         (state (cond ((member word (car profile)) "todo")
-                      ((member word (cdr profile)) "done")
-                      (else #f)))
+         (state-value (todo-state-from-directives title directives))
+         (state (if (equal? state-value "") #f state-value))
          (todo (and state word))
          (after-todo (if todo (cdr first) (string-trim title)))
          (next (split-first after-todo))
@@ -143,7 +145,7 @@
          (parent-of (org-element-graph-parent-of graph))
          (kind-of (org-element-graph-kind-of graph))
          (field-of (org-element-graph-field-of graph))
-         (profile (document-todo-profile records kind-of field-of))
+         (directives (document-todo-directives records kind-of field-of))
          (headlines (make-hash-table)))
     (for-each
      (lambda (record)
@@ -151,7 +153,7 @@
          (let (title (field-of record "title"))
            (when (string? title)
              (hash-put! headlines (id-of record)
-                        (decode-headline title profile))))))
+                        (decode-headline title directives))))))
      records)
     (make-org-element-graph-view
      records id-of parent-of kind-of

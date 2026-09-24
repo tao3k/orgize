@@ -5,9 +5,14 @@
         (only-in :clan/poo/object .o .ref .slot?)
         (only-in "test-syntax.ss"
                  check-org-element-catalog check-org-element-selection
-                 check-org-headline-properties check-org-headline-aot)
+                 check-org-headline-properties check-org-headline-aot
+                 check-org-headline-state-aot
+                 org-test-form-structured? org-test-source-structured?
+                 org-test-sources)
         (only-in "headline-properties.ss"
-                 todo-name-rust todo-directive-rust)
+                 todo-directive-rust
+                 todo-state-from-directives
+                 todo-state-from-directives-rust)
         (only-in "interface.ss"
                  +org-element-kinds+ org-elements-default-profile
                  make-org-element-graph-view make-org-element-query
@@ -51,6 +56,14 @@
 
 (def org-elements-module-test
   (test-suite "Org Elements POO module"
+    (test-case "Scheme AST contract rejects output-based tests"
+      (check (org-test-form-structured? '(display "snapshot")) => #f)
+      (check (org-test-form-structured? '(string-append "a" "b")) => #f)
+      (check (org-test-form-structured? '(quote (display "fixture"))) => #t)
+      (check (filter (lambda (path)
+                       (not (org-test-source-structured? path)))
+                     (org-test-sources "languages/org/v1"))
+             => '()))
     (test-case "catalog and projected query share one feature interface"
       (check-org-element-catalog)
       (check (if (member "headline" +org-element-kinds+) #t #f)
@@ -91,11 +104,18 @@
       (check-exception (org-elements invented-kind) true))
     (test-case "headline properties remain on the Element query graph"
       (check-org-headline-aot
-       todo-name-rust 'todo_name
-       "languages/org/v1/modules/org-elements/generated/todo_name.rs")
-      (check-org-headline-aot
        todo-directive-rust 'todo_directive_p
        "languages/org/v1/modules/org-elements/generated/todo_directive.rs")
+      (check-org-headline-state-aot
+       todo-state-from-directives-rust
+       "languages/org/v1/modules/org-elements/generated/todo_state_from_directives.rs")
+      (check (todo-state-from-directives "TODO Work" '()) => "todo")
+      (check (todo-state-from-directives "DONE Work" '()) => "done")
+      (check (todo-state-from-directives "WAIT Work"
+                                         '("WAIT(w) | DONE(d)")) => "todo")
+      (check (todo-state-from-directives "FINISHED Work"
+                                         '("WAIT(w) | DONE(d)"
+                                           "HOLD(h) | FINISHED(f)")) => "done")
       (let* ((graph (org-element-with-headline-properties headline-graph))
              (context (make-org-element-query-context graph))
              (records (org-element-map context "headline"

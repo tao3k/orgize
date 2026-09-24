@@ -21,12 +21,19 @@ mod structure;
 mod graph;
 #[path = "org_aot_contract_plan.rs"]
 mod contract_plan;
+#[rustfmt::skip]
+#[path = "../languages/org/v1/modules/org-elements/generated/todo_directive.rs"]
+mod todo_directive;
+#[rustfmt::skip]
+#[path = "../languages/org/v1/modules/org-elements/generated/todo_state_from_directives.rs"]
+mod todo_state_from_directives;
 
 /// A source-backed, lossless Rowan tree and its Scheme-declared Element graph.
 #[derive(Debug)]
 pub struct OrgAotDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
+    todo_directives: Vec<String>,
 }
 
 /// An error from the parser or the generated Element projection contract.
@@ -51,7 +58,21 @@ pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
         .map_err(OrgAotError::Parse)?;
     let records = project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
         .map_err(OrgAotError::Projection)?;
-    Ok(OrgAotDocument { parse, records })
+    let todo_directives = records
+        .iter()
+        .filter(|record| record.kind == "keyword")
+        .filter(|record| {
+            record
+                .field("key")
+                .is_some_and(todo_directive::todo_directive_p)
+        })
+        .filter_map(|record| record.field("value").map(str::to_owned))
+        .collect();
+    Ok(OrgAotDocument {
+        parse,
+        records,
+        todo_directives,
+    })
 }
 
 /// The generated Org grammar, including syntax-kind names and its digest.
@@ -95,6 +116,21 @@ impl OrgAotDocument {
     #[must_use]
     pub fn records(&self) -> &[GraphRecord] {
         &self.records
+    }
+
+    /// Query a headline's TODO type from this document's keyword Elements.
+    /// File-local TODO, SEQ_TODO and TYP_TODO declarations override defaults.
+    #[must_use]
+    pub fn headline_todo_type(&self, record_id: usize) -> Option<&'static str> {
+        let headline = self
+            .records
+            .get(record_id)
+            .filter(|record| record.id == record_id && record.kind == "headline")?;
+        let title = headline.field("title")?;
+        match todo_state_from_directives::todo_state_from_directives(title, &self.todo_directives) {
+            "" => None,
+            state => Some(state),
+        }
     }
 
     /// Evaluate a Scheme-AOT Org Contract against this document's Element graph.

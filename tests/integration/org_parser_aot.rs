@@ -2,6 +2,14 @@
 
 use gerbil_parser_rowan::SyntaxNode;
 
+macro_rules! check_org_aot_headline_state {
+    ($document:expr, $record:expr, $title:expr => $expected:expr) => {{
+        assert_eq!($record.kind, "headline");
+        assert_eq!($record.field("title"), Some($title));
+        assert_eq!($document.headline_todo_type($record.id), $expected);
+    }};
+}
+
 fn parse(source: &str) -> SyntaxNode {
     let parsed = orgize::org_aot::parse_org_aot(source)
         .unwrap_or_else(|error| panic!("Org structural AOT rejected source: {error:?}"));
@@ -438,6 +446,49 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
         planning.values("value").collect::<Vec<_>>(),
         ["<2026-09-24 Thu>", "<2026-09-25 Fri>"]
     );
+}
+
+#[test]
+fn scheme_aot_headline_state_classifies_projected_element_titles() {
+    let source = "#+SEQ_TODO: WAIT(w) | DONE(d)\n#+TYP_TODO: HOLD(h) | FINISHED(f)\n* WAIT Parent\n** DONE Child\n* TODO prose\n* HOLD Review\n* FINISHED Shipped\n";
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("headline state reads production Element records");
+    let headlines: Vec<_> = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "headline")
+        .collect();
+    assert_eq!(headlines.len(), 5);
+    check_org_aot_headline_state!(
+        document, headlines[0], "WAIT Parent" => Some("todo")
+    );
+    check_org_aot_headline_state!(
+        document, headlines[1], "DONE Child" => Some("done")
+    );
+    check_org_aot_headline_state!(
+        document, headlines[2], "TODO prose" => None
+    );
+    check_org_aot_headline_state!(
+        document, headlines[3], "HOLD Review" => Some("todo")
+    );
+    check_org_aot_headline_state!(
+        document, headlines[4], "FINISHED Shipped" => Some("done")
+    );
+    assert_eq!(document.headline_todo_type(0), None);
+}
+
+#[test]
+fn headline_state_uses_defaults_only_without_document_directives() {
+    let document = orgize::org_aot::parse_org_aot("* TODO Open\n* DONE Closed\n* WAIT Plain\n")
+        .expect("default TODO states derive from Org Element graph");
+    let headlines: Vec<_> = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "headline")
+        .collect();
+    check_org_aot_headline_state!(document, headlines[0], "TODO Open" => Some("todo"));
+    check_org_aot_headline_state!(document, headlines[1], "DONE Closed" => Some("done"));
+    check_org_aot_headline_state!(document, headlines[2], "WAIT Plain" => None);
 }
 
 #[test]
