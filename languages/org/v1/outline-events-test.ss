@@ -75,6 +75,57 @@
                        (OrgTextLine (TextLine 6 11)))
          (OrgTextLine (TextLine 11 12))
          (OrgParagraph (OrgTextLine (TextLine 12 17))))))
+    (test-case "nested and sibling lists are Scheme-owned Elements"
+      (check-org-ast "- a\n  - b\n- c\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 1) (ListTrivia 1 2)
+           (OrgParagraph (OrgTextLine (TextLine 2 4)))
+           (OrgPlainList
+            (OrgListItem
+             (ListTrivia 4 6) (ListBullet 6 7) (ListTrivia 7 8)
+             (OrgParagraph (OrgTextLine (TextLine 8 10))))))
+          (OrgListItem
+           (ListBullet 10 11) (ListTrivia 11 12)
+           (OrgParagraph (OrgTextLine (TextLine 12 14)))))))
+      (check-org-ast "1. a\n2) b\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 2) (ListTrivia 2 3)
+           (OrgParagraph (OrgTextLine (TextLine 3 5))))
+          (OrgListItem
+           (ListBullet 5 7) (ListTrivia 7 8)
+           (OrgParagraph (OrgTextLine (TextLine 8 10)))))))
+      (check-org-ast "\t- α\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListTrivia 0 1) (ListBullet 1 2) (ListTrivia 2 3)
+           (OrgParagraph (OrgTextLine (TextLine 3 6))))))))
+    (test-case "list continuation and blank separation preserve item scope"
+      (check-org-ast "- alpha\n  more\n- beta\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 1) (ListTrivia 1 2)
+           (OrgParagraph
+            (OrgTextLine (TextLine 2 8))
+            (OrgTextLine (TextLine 8 15))))
+          (OrgListItem
+           (ListBullet 15 16) (ListTrivia 16 17)
+           (OrgParagraph (OrgTextLine (TextLine 17 22)))))))
+      (check-org-ast "- a\n\n- b\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 1) (ListTrivia 1 2)
+           (OrgParagraph (OrgTextLine (TextLine 2 4)))
+           (ListTrivia 4 5))
+          (OrgListItem
+           (ListBullet 5 6) (ListTrivia 6 7)
+           (OrgParagraph (OrgTextLine (TextLine 7 9))))))))
     (test-case "table rows, rule row, escaped bar and UTF-8 cells"
       (check-org-ast "| a | b |\n|---+---|\n| c\\|d | α |\n\n* Next\n"
         (OrgFile

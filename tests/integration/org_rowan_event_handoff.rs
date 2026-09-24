@@ -187,6 +187,21 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .expect("Scheme inline link projects as an Object");
     assert_eq!(link.field("path"), Some("https://example.test"));
     assert_eq!(link.field("description"), Some("α"));
+    let lists: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "plain-list")
+        .collect();
+    let items: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "item")
+        .collect();
+    assert_eq!(lists.len(), 2);
+    assert_eq!(items.len(), 3);
+    assert_eq!(items[0].field("bullet"), Some("-"));
+    assert_eq!(items[1].field("bullet"), Some("-"));
+    assert_eq!(items[2].field("bullet"), Some("-"));
+    assert_eq!(lists[1].parent_id, Some(items[0].id));
+    assert_eq!(items[1].parent_id, Some(lists[1].id));
 
     let transitional = orgize::org_aot::parse_org_aot(source)
         .expect("the current production parser accepts the handoff fixture");

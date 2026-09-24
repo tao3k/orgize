@@ -23,6 +23,8 @@
         (only-in "modules/org-parser/property.ss"
                  parse-property-drawer emit-property-drawer)
         (only-in "modules/org-parser/link.ss" emit-org-text-line)
+        (only-in "modules/org-parser/list.ss"
+                 org-list-marker consume-org-list)
         (only-in "parser.ss" org-v1-line-structure))
 (export parse-org-outline-events)
 
@@ -207,6 +209,12 @@
                     (emit-headline (cons '(start OrgSection) closed)
                                    bytes start end level)
                     '() #f #f #f #t)))
+           ((org-list-marker bytes span)
+            (let-values (((remaining events)
+                          (consume-org-list
+                           bytes rest
+                           (close-paragraph reversed paragraph?))))
+              (loop remaining levels events '() #f #f #f #f)))
            (opening
             (loop (cdr rest) levels
                   (close-paragraph reversed paragraph?)
