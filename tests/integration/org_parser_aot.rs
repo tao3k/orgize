@@ -386,6 +386,73 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
 }
 
 #[test]
+fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
+    let source = "#+TITLE: α fixture\n* Task\nSCHEDULED: <2026-09-24 Thu> DEADLINE: <2026-09-25 Fri>\nBody\nSCHEDULED: ordinary prose\n#+begin_src text\nliteral\n#+end_src\n";
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    let planning: Vec<_> = root
+        .descendants()
+        .filter(|node| name(node) == "OrgPlanning")
+        .collect();
+    assert_eq!(planning.len(), 1);
+    assert_eq!(name(&planning[0].parent().unwrap()), "OrgSection");
+    let keys: Vec<_> = planning[0]
+        .children_with_tokens()
+        .filter_map(rowan::NodeOrToken::into_token)
+        .filter(|token| token_name(token) == "PlanningKey")
+        .map(|token| token.text().to_string())
+        .collect();
+    assert_eq!(keys, ["SCHEDULED", "DEADLINE"]);
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgKeyword")
+            .count(),
+        1
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgSourceBlock")
+            .count(),
+        1
+    );
+    let records =
+        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
+            .expect("Scheme-owned keyword projects through AOT graph");
+    let keyword = records
+        .iter()
+        .find(|record| record.kind == "keyword")
+        .expect("one keyword");
+    assert_eq!(keyword.field("key"), Some("TITLE"));
+    assert_eq!(keyword.field("value"), Some("α fixture"));
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "planning")
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn tracked_fixture_has_scheme_owned_keywords_and_planning() {
+    let source = include_str!("../fixtures/org-elements/representative.org");
+    let root = parse(source);
+    assert_eq!(root.to_string(), source);
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgKeyword")
+            .count(),
+        4
+    );
+    assert_eq!(
+        root.descendants()
+            .filter(|node| name(node) == "OrgPlanning")
+            .count(),
+        1
+    );
+}
+
+#[test]
 fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
     let fixtures = [
         (

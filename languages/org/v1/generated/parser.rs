@@ -17,6 +17,8 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgNodeProperty", category: KindCategory::Node },
     KindSpec { name: "OrgTextLine", category: KindCategory::Node },
     KindSpec { name: "OrgParagraph", category: KindCategory::Node },
+    KindSpec { name: "OrgKeyword", category: KindCategory::Node },
+    KindSpec { name: "OrgPlanning", category: KindCategory::Node },
     KindSpec { name: "OrgPlainList", category: KindCategory::Node },
     KindSpec { name: "OrgListItem", category: KindCategory::Node },
     KindSpec { name: "OrgTable", category: KindCategory::Node },
@@ -48,13 +50,19 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "TableRuleText", category: KindCategory::Token },
     KindSpec { name: "ListBullet", category: KindCategory::Token },
     KindSpec { name: "ListTrivia", category: KindCategory::Token },
+    KindSpec { name: "KeywordKey", category: KindCategory::Token },
+    KindSpec { name: "KeywordValue", category: KindCategory::Token },
+    KindSpec { name: "KeywordTrivia", category: KindCategory::Token },
+    KindSpec { name: "PlanningKey", category: KindCategory::Token },
+    KindSpec { name: "PlanningValue", category: KindCategory::Token },
+    KindSpec { name: "PlanningTrivia", category: KindCategory::Token },
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 21 },
-    TerminalSpec { name: "block-begin", syntax_kind: 24 },
-    TerminalSpec { name: "block-end", syntax_kind: 28 },
-    TerminalSpec { name: "text", syntax_kind: 29 },
+    TerminalSpec { name: "headline", syntax_kind: 23 },
+    TerminalSpec { name: "block-begin", syntax_kind: 26 },
+    TerminalSpec { name: "block-end", syntax_kind: 30 },
+    TerminalSpec { name: "text", syntax_kind: 31 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -229,7 +237,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:9f4aa2bd2cc63a84f24b8520fd56eca07cd02bf77727165058f495e9c20c65a3",
+    grammar_digest: "sha256:8ca89d6430df06b52123a3ebc37025713edef0a0d0ddcaf94fe25cb28fb7cb3d",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

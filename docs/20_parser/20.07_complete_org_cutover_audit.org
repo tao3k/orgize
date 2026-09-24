@@ -7,7 +7,8 @@ The current Scheme-AOT/Rowan product is a lossless structural slice, not an
 Org parser replacement.  The generated element inventory names 30 element
 types and 24 object types, while =parser.ss= currently admits
 headlines/sections, property drawers, source blocks, six common greater-block
-kinds, marker-led lists, links, tables, and provisional paragraph grouping. The public
+kinds, marker-led lists, keyed keyword/planning lines, links, tables, and
+provisional paragraph grouping. The public
 =ParseConfig::parse= path still invokes the
 handwritten Rust =document_node=.  Three-platform CI and source roundtrip
 therefore establish neither complete syntax nor the requested cutover.
@@ -29,10 +30,13 @@ The input is the Git-tracked
 =tests/fixtures/org-elements/representative.org=.  Its public tree currently
 contains 30 distinct node kinds (including affiliated keywords, links,
 emphasis, lists, tables, planning, drawers, footnotes, and timestamps); the
-generated tree contains 15 kinds. Both reproduce the source. The generated
+generated tree contains 17 kinds. Both reproduce the source. The generated
 tree now owns one table with two standard rows, one rule row, and four cells;
-The generated tree also reports one list and two items, matching the public fixture topology.
-It reports eight paragraphs versus seven publicly; item metadata and several
+The generated tree also reports one list and two items, matching the public
+fixture topology. It reports four standalone keywords and one planning line;
+the public tree has two ordinary keywords, two affiliated keywords, and one
+planning line. The generated tree reports five paragraphs versus seven publicly;
+item metadata and several
 other contexts remain incomplete. Matching counts do not establish matching syntax.
 
 * Blocking contracts
@@ -41,7 +45,7 @@ other contexts remain incomplete. Matching counts do not establish matching synt
 |----------+------------------+--------------------|
 | Grammar authority | =grammar.ss= plus POO =parser.ss= declare line structure | Every element/object recognition rule and containment restriction is Scheme-owned; no downstream Rust parser rule or generated scanner program |
 | Engine | Generic section and opaque-block executor | Bounded contextual Parser IR, recursive element/object strategies, typed recovery, source-backed events, and deterministic AOT validation |
-| Syntax coverage | Headlines, sections, source/quote/example/verse/center/comment/export blocks, property drawers, marker-led nested lists, links, tables, and provisional paragraph grouping; item metadata and continuation rules are not complete | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
+| Syntax coverage | Headlines, sections, source/quote/example/verse/center/comment/export blocks, property drawers, marker-led nested lists, keyed keyword/planning lines, links, tables, and provisional paragraph grouping; affiliation, item metadata and continuation rules are not complete | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
 | Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans expose the intended Org model; migrate callers rather than preserving incorrect old shapes |
 | Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
 | Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, migrated consumer tests, and equivalent-semantics performance receipts |
@@ -50,9 +54,12 @@ other contexts remain incomplete. Matching counts do not establish matching synt
 * First typed failures
 
 1. The generated parser maps the representative document's
-   ordinary drawer, planning line, emphasis, timestamp, and footnote to
-   generic text lines. The Org POO strategy now recognizes tables and property drawers
-   and node-property lines on the tracked contract fixture pair, including
+   ordinary drawer, emphasis, timestamp, and footnote to generic text lines.
+   The Org POO strategy now recognizes tables, property drawers,
+   heading-adjacent planning and standalone keywords. It does not yet attach
+   =#+NAME= or =#+CAPTION= to the following element, nor parse the planning
+   timestamp as a typed object. Node-property lines on the tracked contract
+   fixture pair include
    typed property key/value tokens and exact source spans. Inventory entries alone
    remain metadata, not parsing rules.
 2. The Scheme POO source-block rule now declares =recover-as-text= for an
@@ -93,14 +100,23 @@ other contexts remain incomplete. Matching counts do not establish matching synt
    the export backend. A focused source-backed test covers all six plus an
    unclosed quote block before a heading. These
    kinds do not occur in the representative fixture, so its earlier 13-kind count
-   was unchanged by the block change. The list strategy raises it to 15 kinds;
-   this is syntax expansion, not public parser parity.
+   was unchanged by the block change. The list strategy raised it to 15 kinds;
+   keyed lines now raise it to 17. This is syntax expansion, not public parser
+   parity.
 7. The list strategy derives nested list/item structure from Scheme-owned
    markers and tab width. The tracked fixture now has one generated list and
    two items with typed bullets and source-backed spans. The generic engine
    checks sibling, nested, ordered, tab-column and 10,000-item cases. Checkbox,
    counter and description-tag projections, full =org-list.el= continuation and
    blank-line semantics, and paragraph parity remain open.
+8. A bounded Scheme-declared key-line strategy now emits typed keyword keys and
+   values and admits repeated planning keys only on the line immediately after
+   a heading. The shared engine recognizes both without an Org-specific Rust
+   scanner. The tracked fixture reports four standalone keyword nodes and one
+   planning node, while the public parser distinguishes two of those keywords
+   as affiliated metadata. The graph projects ordinary keyword fields but does
+   not concatenate repeated planning values into a false single field. Full
+   affiliation and typed timestamp projections remain open.
 
 * Completed expression-parser cutover within the larger MVP
 

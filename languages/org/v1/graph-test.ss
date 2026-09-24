@@ -15,14 +15,15 @@
         (check (graph-projection? org-v1-graph-projection) => #t)
         (check (map graph-node-syntax-kind nodes)
                => '(OrgFile OrgSection OrgPropertyDrawer OrgParagraph
-                            OrgPlainList OrgListItem
+                            OrgKeyword OrgPlanning OrgPlainList OrgListItem
                             OrgTable OrgTableRow OrgTableRuleRow OrgTableCell
                             OrgNodeProperty OrgSourceBlock OrgQuoteBlock
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
                             OrgCommentBlock OrgExportBlock OrgLink))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "property-drawer"
-                                "paragraph" "plain-list" "item" "table" "table-row"
+                                "paragraph" "keyword" "planning"
+                                "plain-list" "item" "table" "table-row"
                                 "table-rule-row" "table-cell"
                                 "node-property" "src-block" "quote-block"
                                 "example-block" "verse-block" "center-block"

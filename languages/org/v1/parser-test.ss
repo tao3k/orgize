@@ -7,6 +7,8 @@
                  line-structure-table table-line-delimiter
                  line-structure-list list-line-unordered-markers list-line-ordered
                  list-line-list-node list-line-item-node
+                 line-structure-key-lines key-line-prefix key-line-keys
+                 key-line-after-heading key-line-repeated key-line-node
                  table-line-table-node table-line-row-node table-line-cell-node
                  heading-line-section-node heading-line-heading-node
                  heading-line-fields heading-fields-title-token
@@ -29,7 +31,8 @@
              (blocks (line-structure-blocks structure))
              (source-block (car blocks))
              (drawer (cadr blocks))
-             (table (line-structure-table structure)))
+             (table (line-structure-table structure))
+             (key-lines (line-structure-key-lines structure)))
         (check (line-structure? structure) => #t)
         (check (heading-line-section-node heading) => 'OrgSection)
         (check (heading-line-heading-node heading) => 'OrgHeadline)
@@ -82,4 +85,10 @@
         (check (list-line-list-node (line-structure-list structure))
                => 'OrgPlainList)
         (check (list-line-item-node (line-structure-list structure))
-               => 'OrgListItem)))))
+               => 'OrgListItem)
+        (check (map key-line-node key-lines) => '(OrgKeyword OrgPlanning))
+        (check (map key-line-prefix key-lines) => '("#+" ""))
+        (check (key-line-keys (cadr key-lines))
+               => '("SCHEDULED" "DEADLINE" "CLOSED"))
+        (check (key-line-after-heading (cadr key-lines)) => #t)
+        (check (key-line-repeated (cadr key-lines)) => #t)))))

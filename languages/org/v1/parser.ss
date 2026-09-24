@@ -4,7 +4,8 @@
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  make-line-structure make-heading-line make-heading-fields
                  make-block-line make-block-header make-key-value-line
-                 make-inline-link make-text-line make-table-line make-list-line))
+                 make-inline-link make-text-line make-table-line make-list-line
+                 make-key-line))
 (export org-v1-line-structure)
 
 (def org-v1-line-structure
@@ -55,4 +56,9 @@
                     'OrgTableCell 'TableSeparator 'TableCellText
                     'TableTrivia 'TableRuleText)
    (make-list-line "-+*" #t 'OrgPlainList 'OrgListItem
-                   'ListBullet 'ListTrivia)))
+                   'ListBullet 'ListTrivia)
+   (list (make-key-line "#+" '() ":" #t #t #f #f
+                        'OrgKeyword 'KeywordKey 'KeywordValue 'KeywordTrivia)
+         (make-key-line "" '("SCHEDULED" "DEADLINE" "CLOSED") ":"
+                        #f #t #t #t
+                        'OrgPlanning 'PlanningKey 'PlanningValue 'PlanningTrivia))))
