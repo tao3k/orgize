@@ -4,8 +4,37 @@
 use gerbil_parser_rowan::{KindCategory, TreeEvent, parse_generated_events};
 use orgize::org_aot::org_language_spec;
 
+#[rustfmt::skip]
+#[path = "../../languages/org/v1/generated/line-events.rs"]
+mod generated_line_events;
+
 const HANDOFF_TEST_DIGEST: &str =
     "sha256:8b41c0fcb53588c81a44b83ec9e530bdb6125096637cba4934c96f7c2965abd6";
+
+#[test]
+fn scheme_authored_line_algorithm_aot_builds_lossless_rowan() {
+    let source = "* α\r\nbody\n";
+    let events = generated_line_events::parse_org_line_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_line_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme-generated Org line events satisfy Rowan");
+
+    assert_eq!(parsed.syntax().to_string(), source);
+    assert_eq!(
+        parsed.receipt().parser_digest,
+        Some(generated_line_events::PARSER_DIGEST)
+    );
+    let kinds: Vec<_> = parsed
+        .syntax()
+        .children()
+        .map(|node| org_language_spec().kinds[usize::from(node.kind().0)].name)
+        .collect();
+    assert_eq!(kinds, ["OrgHeadline", "OrgTextLine"]);
+}
 
 fn kind(name: &str, category: KindCategory) -> u16 {
     org_language_spec()
