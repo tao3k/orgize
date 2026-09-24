@@ -1612,7 +1612,7 @@ dependencies = [
 [[package]]
 name = "gerbil-parser-rowan"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-parser?rev=eee9792466211a3ddb36a6f1b1d0f04802cec042#eee9792466211a3ddb36a6f1b1d0f04802cec042"
+source = "git+https://github.com/tao3k/gerbil-parser?rev=7c19ca7ea6fbac47bc5a3c83ab3aaa9515a4ba75#7c19ca7ea6fbac47bc5a3c83ab3aaa9515a4ba75"
 dependencies = [
  "rowan",
  "sha2 0.10.9",

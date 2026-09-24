@@ -35,28 +35,36 @@ line rules, and text-line kinds. The upstream AOT projection
 resolves those symbolic kinds against the same grammar digest and emits
 =generated/structure.rs=. The generic =parse_structural_lines= engine executes
 section nesting, closed source blocks, property drawers and their node-property
-lines, and Scheme-declared recovery at EOF or a subsequent heading, producing a lossless Rowan
-tree over LF, CRLF, bare CR, and UTF-8 input. =org_parser_aot= tests that
+lines, and Scheme-declared recovery at EOF or a subsequent heading. An Org-owned
+key-line rule classifies =#+CALL:= as a Babel Call instead of a generic keyword.
+The result is a lossless Rowan tree over LF, CRLF, bare CR, and UTF-8 input.
+=org_parser_aot= tests that
 product, including the Git-tracked representative document, from Cargo
 without a Gerbil installation or build-time Scheme. No separate =scanner.ss=
-or generated Rust scanner remains. =elements.ss= owns the element/object inventory and
-generates =generated/elements.rs=; the default affiliated-keyword configuration
+or generated Rust scanner remains. =modules/org-elements/catalog.ss= owns the
+element/object inventory and generates =generated/elements.rs=; the default affiliated-keyword configuration
 consumes that projection.  The original Org guide and upstream-inventory
 snapshots remain preserved as Rowan cutover comparison targets, while the
 Git-tracked representative document has its own runnable snapshot.  This is
 not yet the public =Org::parse= implementation: full headline metadata,
 contextual element/object recognition, typed recovery, and the public tree projection
 remain cutover gates.  An element inventory is not a set of parsing rules.
+The =org_cutover_parity= test now compares 44 Git-tracked Org fixtures for source
+roundtrip, section ranges and nesting, and core Element counts. Affiliated
+keyword attachment, clock context, all object boundaries, and public API
+replacement are not yet admitted by that test.
 
 ** Required upstream engine work
 
 The upstream engine now owns a bounded line-structure executor, not a complete
 Org parser. Org still requires these gates before the parser swap:
 
-1. Extend the Scheme-owned POO parser declaration and the upstream bounded
-   contextual Parser IR to admit drawers, lists, tables, planning/property
-   metadata, affiliated keywords, and object-context restrictions. Org's rules
-   remain in orgize; no handwritten Org scanner or event algorithm is added.
+1. Replace the bounded line-structure executor with Org-owned Scheme parser
+   algorithms compiled directly into Rust event functions. Existing Scheme
+   declarations cover drawers, lists, tables, planning/property metadata, and
+   Babel Calls, but affiliated-keyword attachment and the catalog's remaining
+   element/object context rules are not yet parsed. The generic Rowan sink
+   remains in gerbil-parser; Org recognition stays in orgize.
 2. The generated runtime must preserve malformed input with explicit recovery
    nodes/diagnostics and exact UTF-8 byte ranges, including CRLF and missing
    end delimiters.  A generic all-TEXT success is not admission.
