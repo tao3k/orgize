@@ -62,6 +62,10 @@ orgize-build-support = { path = "build-support" }
 name = "parse"
 harness = false
 
+[[bench]]
+name = "org_element_query"
+harness = false
+
 [[example]]
 name = "parse"
 required-features = ["tracing"]

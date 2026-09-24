@@ -6,6 +6,7 @@
         (only-in "test-syntax.ss"
                  check-org-element-catalog check-org-element-selection
                  check-org-named-query-selection
+                 check-org-element-query-aot
                  check-org-headline-properties check-org-headline-aot
                  check-org-headline-state-aot
                  org-test-form-structured? org-test-source-structured?
@@ -49,7 +50,11 @@
          (.o id: 4 parent: 0 kind: "headline"
              title: "TODO is ordinary text under this profile")
          (.o id: 5 parent: 0 kind: "headline"
-             title: "WAIT :only:"))
+             title: "WAIT :only:")
+         (.o id: 6 parent: 0 kind: "headline"
+             title: "WAIT Review")
+         (.o id: 7 parent: 0 kind: "headline"
+             title: "WAIT Audit"))
    (lambda (record) (.ref record 'id))
    (lambda (record) (.ref record 'parent))
    (lambda (record) (.ref record 'kind))
@@ -100,24 +105,29 @@
          context 1 (list 1)
          (lambda (record) (.ref record 'id)) (list 1))))
     (test-case "query syntax rejects conflicting and unknown declarations"
-      (check-exception
-       (org-elements headline (property title "A")
-                     (property title "B"))
-       true)
+      (check (org-element-query?
+              (org-elements headline (property title "A")
+                            (property title "B"))) => #t)
       (check-exception (org-elements invented-kind) true))
     (test-case "tagged named queries use derived headline properties"
       (let* ((graph (org-element-with-headline-properties headline-graph))
              (context (make-org-element-query-context graph))
              (id-of (lambda (record) (.ref record 'id))))
-        (check (length org-element-queries) => 3)
+        (check-org-element-query-aot
+         org-element-queries
+         "languages/org/v1/modules/org-elements/generated/query-pack.rs")
+        (check (length org-element-queries) => 4)
         (check-org-named-query-selection
          (car org-element-queries) context 0 '(0) id-of
-         "tasks.open" '(2 5))
+         "tasks.open" '(2 5 6 7))
         (check-org-named-query-selection
          (cadr org-element-queries) context 0 '(0) id-of
-         "tasks.done" '(3))
+         "tasks.review-or-audit" '(6 7))
         (check-org-named-query-selection
          (caddr org-element-queries) context 0 '(0) id-of
+         "tasks.done" '(3))
+        (check-org-named-query-selection
+         (cadddr org-element-queries) context 0 '(0) id-of
          "headlines.child" '(3))))
     (test-case "headline properties remain on the Element query graph"
       (check-org-headline-aot
@@ -158,7 +168,7 @@
         (check-org-element-selection
          (org-elements headline (property todo-keyword "WAIT"))
          context 0 (list 0)
-         (lambda (record) (.ref record 'id)) (list 2 5))
+         (lambda (record) (.ref record 'id)) (list 2 5 6 7))
         (check-org-element-selection
          (org-elements headline (property tags "work"))
          context 0 (list 0)

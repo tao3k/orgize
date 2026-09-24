@@ -2,7 +2,7 @@
 ;;; Org Element POO queries -> typed Rust AOT pack, independent of Contract.
 
 (import (only-in :gerbil-parser/src/compiler/rust-syntax
-                 rust-struct rust-static rust-array rust-some rust-none
+                 rust-struct rust-static rust-array
                  rust-string rust-identifier rust-render)
         (only-in :gerbil-parser/graph-projection-support
                  graph-projection-digest)
@@ -11,14 +11,12 @@
         (only-in "types.ss" org-named-element-query?)
         (only-in "objects.ss"
                  org-named-element-query-id org-named-element-query-query
-                 org-element-query-node-kind org-element-query-field-name
-                 org-element-query-field-value org-element-query-field-match
+                 org-element-query-node-kind org-element-query-groups
+                 org-element-clause-name org-element-clause-value
+                 org-element-clause-match
                  org-element-query-relation org-element-query-target))
 (export org-element-query-rust-syntax org-element-query-rust-source
         generate-org-element-query-rust-module)
-
-(def (optional-string value)
-  (if value (rust-some (rust-string value)) (rust-none)))
 
 (def (field-match-value value)
   (rust-identifier
@@ -36,23 +34,29 @@
      ((descendant-of) "OrgElementRelation::DescendantOf")
      (else (error "unsupported Org Element relation" value)))))
 
+(def (property-value clause)
+  (let (field (org-element-clause-name clause))
+    (when (member field '("title" "raw-value" "todo-keyword"
+                          "priority" "tags"))
+      (error "derived Element property lacks an AOT implementation" field))
+    (rust-struct OrgElementPropertyRule
+      (name (rust-string field))
+      (value (rust-string (org-element-clause-value clause)))
+      (matcher (field-match-value (org-element-clause-match clause))))))
+
 (def (query-value named)
   (unless (org-named-element-query? named)
     (error "query AOT requires an admitted POO value" named))
   (let* ((query (org-named-element-query-query named))
-         (target (org-element-query-target query))
-         (field (org-element-query-field-name query)))
+         (target (org-element-query-target query)))
     (unless (or (not target) (eq? target 'scope))
       (error "named Element queries cannot use unbound targets" target))
-    (when (member field '("title" "raw-value" "todo-keyword"
-                          "priority" "tags"))
-      (error "derived Element property lacks an AOT implementation" field))
     (rust-struct OrgElementQueryRule
       (id (rust-string (org-named-element-query-id named)))
       (node_kind (rust-string (org-element-query-node-kind query)))
-      (field_name (optional-string (org-element-query-field-name query)))
-      (field_value (optional-string (org-element-query-field-value query)))
-      (field_match (field-match-value (org-element-query-field-match query)))
+      (groups (rust-array
+               (map (lambda (group) (rust-array (map property-value group)))
+                    (org-element-query-groups query))))
       (relation (relation-value (org-element-query-relation query)))
       (target_scope (rust-identifier (if (eq? target 'scope) "true" "false"))))))
 

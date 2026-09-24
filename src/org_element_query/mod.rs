@@ -6,6 +6,6 @@ mod query_plan;
 
 pub use execute::org_element_query_pack;
 pub use model::{
-    OrgElementFieldMatch, OrgElementQueryError, OrgElementQueryPack, OrgElementQueryRule,
-    OrgElementRelation,
+    OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryError, OrgElementQueryPack,
+    OrgElementQueryRule, OrgElementRelation,
 };

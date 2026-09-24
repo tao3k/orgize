@@ -11,6 +11,7 @@
         (only-in "../org-elements/interface.ss"
                  org-element-query-node-kind org-element-query-field-name
                  org-element-query-field-value org-element-query-field-match
+                 org-element-query-groups
                  org-element-query-relation
                  org-element-query-target)
         (only-in "types.ss" org-contract-definition?)
@@ -61,7 +62,11 @@
      (else (error "invalid Org contract scope" scope)))))
 
 (def (query-value query)
-  (let (target (org-element-query-target query))
+  (let ((target (org-element-query-target query))
+        (groups (org-element-query-groups query)))
+    (unless (and (= (length groups) 1)
+                 (<= (length (car groups)) 1))
+      (error "Org Contract AOT requires a single property predicate"))
     (rust-struct ContractQueryRule
       (node_kind (rust-string (org-element-query-node-kind query)))
       (field_name (optional-string (org-element-query-field-name query)))

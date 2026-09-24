@@ -50,9 +50,19 @@ assert_eq!(open.len(), 1);
 ```
 
 The query inherits file-local TODO declarations from the Element graph; users
-do not duplicate them in the query. The current AOT query subset admits one
-property comparison and one scope relation per named query. Composite
-predicates and query algebra remain separate work, not implicit Rust fallbacks.
+do not duplicate them in the query. Property predicates compose with hygienic
+`all-of` and `any-of` forms, which the Scheme module lowers to a bounded
+disjunction of conjunctions before generating Rust. Each named query still
+has one scope relation; negation, joins, ordering, and aggregation are not yet
+admitted and have no implicit Rust fallback.
+
+A consumer-owned example lives in
+[`tests/fixtures/org-elements/customer-queries.org`](tests/fixtures/org-elements/customer-queries.org).
+The `org_elements_tangle` example accepts an optional Element interface module
+path, and the public Scheme AOT function emits a pack consumed by
+`query_with_pack`. Authoring or regenerating that pack needs Gerbil in the
+development environment; using its committed Rust artifact through Cargo does
+not.
 
 Live demo: <https://tao3k.github.io/orgize/>
 

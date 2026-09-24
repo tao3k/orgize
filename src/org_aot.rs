@@ -33,7 +33,7 @@ mod todo_state_from_directives;
 pub struct OrgAotDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
-    todo_directives: Vec<String>,
+    todo_states: Vec<Option<&'static str>>,
     subtree_end: Vec<usize>,
 }
 
@@ -68,6 +68,18 @@ pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
                 .is_some_and(todo_directive::todo_directive_p)
         })
         .filter_map(|record| record.field("value").map(str::to_owned))
+        .collect::<Vec<_>>();
+    let todo_states = records
+        .iter()
+        .map(|record| {
+            let title = record
+                .field("title")
+                .filter(|_| record.kind == "headline")?;
+            match todo_state_from_directives::todo_state_from_directives(title, &todo_directives) {
+                "" => None,
+                state => Some(state),
+            }
+        })
         .collect();
     let mut subtree_end: Vec<usize> = (1..=records.len()).collect();
     for record in records.iter().rev() {
@@ -78,7 +90,7 @@ pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
     Ok(OrgAotDocument {
         parse,
         records,
-        todo_directives,
+        todo_states,
         subtree_end,
     })
 }
@@ -134,15 +146,7 @@ impl OrgAotDocument {
     /// File-local TODO, SEQ_TODO and TYP_TODO declarations override defaults.
     #[must_use]
     pub fn headline_todo_type(&self, record_id: usize) -> Option<&'static str> {
-        let headline = self
-            .records
-            .get(record_id)
-            .filter(|record| record.id == record_id && record.kind == "headline")?;
-        let title = headline.field("title")?;
-        match todo_state_from_directives::todo_state_from_directives(title, &self.todo_directives) {
-            "" => None,
-            state => Some(state),
-        }
+        self.todo_states.get(record_id).copied().flatten()
     }
 
     /// Evaluate a Scheme-AOT Org Contract against this document's Element graph.

@@ -17,12 +17,14 @@
                  +org-secondary-values+ org-object-allowed?
                  org-secondary-value?)
         (only-in "funs.ss" org-element-select org-element-property)
+        (only-in "aot.ss" org-element-query-rust-source)
         (only-in "objects.ss"
                  org-named-element-query-id org-named-element-query-query))
 (export check-org-element-catalog check-org-element-selection
         check-org-named-query-selection
         check-org-headline-properties check-org-headline-aot
         check-org-headline-state-aot
+        check-org-element-query-aot
         org-test-form-structured? org-test-source-structured?
         org-test-sources)
 
@@ -127,6 +129,13 @@
                      (org-named-element-query-query named)
                      context scope targets))
                => expected-ids))))))
+
+(defsyntax (check-org-element-query-aot stx)
+  (syntax-case stx ()
+    ((_ queries artifact)
+     (syntax
+      (check (call-with-input-file artifact read-all-as-string)
+             => (org-element-query-rust-source queries))))))
 
 (defsyntax (check-org-headline-properties stx)
   (syntax-case stx ()

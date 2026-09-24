@@ -5,8 +5,8 @@ use gerbil_parser_rowan::GraphRecord;
 use crate::org_aot::{OrgAotDocument, org_graph_spec};
 
 use super::model::{
-    OrgElementFieldMatch, OrgElementQueryError, OrgElementQueryPack, OrgElementQueryRule,
-    OrgElementRelation,
+    OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryError, OrgElementQueryPack,
+    OrgElementQueryRule, OrgElementRelation,
 };
 use super::query_plan;
 
@@ -19,7 +19,9 @@ pub fn org_element_query_pack() -> &'static OrgElementQueryPack {
 fn admit_rule(rule: &OrgElementQueryRule) -> Result<(), OrgElementQueryError> {
     if rule.id.is_empty()
         || rule.target_scope != (rule.relation != OrgElementRelation::Any)
-        || rule.field_name.is_some() != rule.field_value.is_some()
+        || rule.groups.is_empty()
+        || rule.groups.len() > 32
+        || rule.groups.iter().any(|group| group.len() > 16)
     {
         return Err(OrgElementQueryError::InvalidRule);
     }
@@ -28,14 +30,16 @@ fn admit_rule(rule: &OrgElementQueryRule) -> Result<(), OrgElementQueryError> {
         .iter()
         .find(|node| node.kind == rule.node_kind)
         .ok_or(OrgElementQueryError::InvalidRule)?;
-    if let Some(name) = rule.field_name {
-        match name {
-            "title" | "raw-value" | "todo-keyword" | "priority" | "tags" => {
-                return Err(OrgElementQueryError::UnsupportedField);
+    for group in rule.groups {
+        for property in *group {
+            match property.name {
+                "title" | "raw-value" | "todo-keyword" | "priority" | "tags" => {
+                    return Err(OrgElementQueryError::UnsupportedField);
+                }
+                "todo-type" | "source-title" if node.kind == "headline" => {}
+                name if node.fields.iter().any(|field| field.name == name) => {}
+                _ => return Err(OrgElementQueryError::InvalidRule),
             }
-            "todo-type" | "source-title" if node.kind == "headline" => {}
-            _ if node.fields.iter().any(|field| field.name == name) => {}
-            _ => return Err(OrgElementQueryError::InvalidRule),
         }
     }
     Ok(())
@@ -44,24 +48,16 @@ fn admit_rule(rule: &OrgElementQueryRule) -> Result<(), OrgElementQueryError> {
 fn property_matches(
     document: &OrgAotDocument,
     record: &GraphRecord,
-    rule: &OrgElementQueryRule,
-) -> Result<bool, OrgElementQueryError> {
-    let (Some(name), Some(expected)) = (rule.field_name, rule.field_value) else {
-        return Ok(rule.field_name.is_none() && rule.field_value.is_none());
+    property: &OrgElementPropertyRule,
+) -> bool {
+    let matches = |actual: &str| match property.matcher {
+        OrgElementFieldMatch::Exact => actual == property.value,
+        OrgElementFieldMatch::Contains => actual.contains(property.value),
     };
-    let matches = |actual: &str| match rule.field_match {
-        OrgElementFieldMatch::Exact => actual == expected,
-        OrgElementFieldMatch::Contains => actual.contains(expected),
-    };
-    match name {
-        "todo-type" => Ok(document.headline_todo_type(record.id).is_some_and(matches)),
-        "source-title" if record.kind == "headline" => {
-            Ok(record.field("title").is_some_and(matches))
-        }
-        "title" | "raw-value" | "todo-keyword" | "priority" | "tags" => {
-            Err(OrgElementQueryError::UnsupportedField)
-        }
-        _ => Ok(record.values(name).any(matches)),
+    match property.name {
+        "todo-type" => document.headline_todo_type(record.id).is_some_and(matches),
+        "source-title" if record.kind == "headline" => record.field("title").is_some_and(matches),
+        name => record.values(name).any(matches),
     }
 }
 
@@ -93,11 +89,13 @@ impl OrgAotDocument {
         if pack.graph_digest != org_graph_spec().projection_digest {
             return Err(OrgElementQueryError::StaleGraph);
         }
-        let rule = pack
-            .rules
-            .iter()
-            .find(|rule| rule.id == id)
+        let mut named_rules = pack.rules.iter().filter(|rule| rule.id == id);
+        let rule = named_rules
+            .next()
             .ok_or(OrgElementQueryError::UnknownQuery)?;
+        if named_rules.next().is_some() {
+            return Err(OrgElementQueryError::InvalidRule);
+        }
         let end = self
             .element_subtree_end(scope_id)
             .ok_or(OrgElementQueryError::InvalidScope)?;
@@ -113,7 +111,13 @@ impl OrgAotDocument {
                 OrgElementRelation::ChildOf => record.parent_id == Some(scope_id),
                 OrgElementRelation::DescendantOf => record.id > scope_id,
             };
-            if related && property_matches(self, record, rule)? {
+            if related
+                && rule.groups.iter().any(|group| {
+                    group
+                        .iter()
+                        .all(|property| property_matches(self, record, property))
+                })
+            {
                 matches.push(record.id);
             }
         }

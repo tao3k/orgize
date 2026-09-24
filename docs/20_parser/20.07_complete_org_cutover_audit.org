@@ -50,6 +50,24 @@ other contexts remain incomplete. Matching counts do not establish matching synt
 | Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
 | Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, migrated consumer tests, and equivalent-semantics performance receipts |
 | Org contract | Org headings/properties and =scheme :org-contract= blocks now AOT-generate a multi-contract POO/Rust pack, evaluated over the generated Element graph in integration tests. Production trace/lint/workspace still use the old Rust contract model | Migrate real consumers to the generated pack and delete displaced Rust policy/evaluation; retain only typed AOT execution, filesystem/process handoff and public transport projection |
+| Custom Element query | =scheme :org-elements= blocks AOT-generate named queries. POO =all-of=/=any-of= properties compile to bounded DNF, inherit file-local TODO state, and execute over subtree intervals without runtime Gerbil. A consumer-authored Org fixture tangles through the same interface, generates its own pack, and executes via =query_with_pack= in Cargo tests | Add joins, negation, ordering, aggregation, and more derived properties without another Rust semantic owner |
+
+* Composite Element query performance receipt
+
+The focused release benchmark uses a generated 10,000-headline document with
+file-local =SEQ_TODO= and a query for open Review or Audit headlines. Parsing
+computes each headline's TODO type once with the Scheme-AOT function; repeated
+queries read that cache. The query checks a precomputed subtree interval and
+short-circuits the bounded DNF predicate groups.
+
+#+begin_src sh
+cargo bench --locked --bench org_element_query -- --sample-size 20 --measurement-time 3
+#+end_src
+
+On local =arm64=, this run measured 6.39–6.81 ms to parse and project the
+document (central estimate 6.55 ms), and 533–556 μs for the composite query
+(central estimate 542 μs). These are focused local receipts, not a comparison
+against =main= or a three-platform performance closure.
 
 * First typed failures
 

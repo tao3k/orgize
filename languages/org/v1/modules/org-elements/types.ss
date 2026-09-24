@@ -12,7 +12,9 @@
         +org-element-clause-kind+ +org-element-graph-kind+
         +org-element-context-kind+ +org-element-profile-kind+
         +org-element-named-query-kind+
+        +org-element-predicate-kind+
         OrgElementQuery OrgElementQueryClause
+        OrgElementPredicate org-element-predicate?
         OrgNamedElementQuery org-named-element-query?
         OrgElementGraphView OrgElementQueryContext OrgElementsProfile
         org-element-query? org-element-query-clause?
@@ -26,6 +28,7 @@
 (def +org-element-context-kind+ 'org-element-query-context)
 (def +org-element-profile-kind+ 'org-elements-profile)
 (def +org-element-named-query-kind+ 'org-named-element-query)
+(def +org-element-predicate-kind+ 'org-element-predicate)
 
 (def (has-kind-and-slots? value kind slots)
   (and (object? value) (.slot? value 'kind)
@@ -57,18 +60,10 @@
 (def (org-element-query-shape? value)
   (and (has-kind-and-slots?
         value +org-element-query-kind+
-        '(schema node-kind field-name field-value field-match relation target))
+        '(schema node-kind groups relation target))
        (equal? (.ref value 'schema) +org-element-schema+)
        (let (rule (org-element-kind-rule (.ref value 'node-kind)))
-         (and rule
-              (let (field-name (.ref value 'field-name))
-                (or (not field-name)
-                    (org-element-field? rule field-name)))))
-       (let ((field-name (.ref value 'field-name))
-             (field-value (.ref value 'field-value)))
-         (or (and (not field-name) (not field-value))
-             (and (nonempty-string? field-name) (string? field-value))))
-       (memq (.ref value 'field-match) '(exact contains))
+         (and rule (predicate-groups? (.ref value 'groups) rule)))
        (memq (.ref value 'relation) '(any at child-of descendant-of))
        (let (target (.ref value 'target))
          (if (eq? (.ref value 'relation) 'any)
@@ -96,6 +91,30 @@
 
 (define-type (OrgElementQueryClause @ Type.)
   .element?: org-element-query-clause-shape?)
+
+(def (predicate-groups? groups rule)
+  (and (list? groups) (pair? groups) (<= (length groups) 32)
+       (every (lambda (group)
+                (and (list? group) (<= (length group) 16)
+                     (every (lambda (clause)
+                              (and (org-element-query-clause? clause)
+                                   (eq? (.ref clause 'clause-kind) 'property)
+                                   (or (not rule)
+                                       (org-element-field? rule
+                                                           (.ref clause 'name)))))
+                            group)))
+              groups)))
+
+(def (org-element-predicate-shape? value)
+  (and (has-kind-and-slots? value +org-element-predicate-kind+
+                            '(schema groups))
+       (equal? (.ref value 'schema) +org-element-schema+)
+       (predicate-groups? (.ref value 'groups) #f)))
+
+(define-type (OrgElementPredicate @ Type.)
+  .element?: org-element-predicate-shape?)
+
+(def (org-element-predicate? value) (element? OrgElementPredicate value))
 
 (def (org-element-graph-view-shape? value)
   (and (has-kind-and-slots?

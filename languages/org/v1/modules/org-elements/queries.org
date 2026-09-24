@@ -10,6 +10,19 @@
               (descendant-of scope))
 #+end_src
 
+* Review or audit tasks
+:PROPERTIES:
+:QUERY_ID: tasks.review-or-audit
+:END:
+
+#+begin_src scheme :org-elements
+(org-elements headline
+              (all-of (property todo-type "todo")
+                      (any-of (property-contains source-title "Review")
+                              (property-contains source-title "Audit")))
+              (descendant-of scope))
+#+end_src
+
 * Completed tasks
 :PROPERTIES:
 :QUERY_ID: tasks.done

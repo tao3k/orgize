@@ -22,6 +22,17 @@ pub enum OrgElementRelation {
     DescendantOf,
 }
 
+/// One property comparison in a Scheme-AOT Element query.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct OrgElementPropertyRule {
+    /// Projected or AOT-derived property name.
+    pub name: &'static str,
+    /// Expected property value.
+    pub value: &'static str,
+    /// Property comparison.
+    pub matcher: OrgElementFieldMatch,
+}
+
 /// One named query compiled from `scheme :org-elements`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct OrgElementQueryRule {
@@ -29,12 +40,8 @@ pub struct OrgElementQueryRule {
     pub id: &'static str,
     /// Generated Element kind.
     pub node_kind: &'static str,
-    /// Optional projected or AOT-derived property name.
-    pub field_name: Option<&'static str>,
-    /// Expected property value.
-    pub field_value: Option<&'static str>,
-    /// Property comparison.
-    pub field_match: OrgElementFieldMatch,
+    /// Disjunction of conjunctions; an empty conjunction matches every Element.
+    pub groups: &'static [&'static [OrgElementPropertyRule]],
     /// Relationship to the scope.
     pub relation: OrgElementRelation,
     /// Whether the relation targets the supplied scope.
