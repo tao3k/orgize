@@ -135,6 +135,17 @@
           (KeywordTrivia 13 15) (KeywordKey 15 20)
           (KeywordTrivia 20 22) (KeywordValue 22 25)
           (KeywordTrivia 25 26)))))
+    (test-case "diary S-expressions are standalone source-backed Elements"
+      (check-org-ast-with parse-org-rowan-events
+        "%%(diary-anniversary 1 1 2000)\ntext\n%%not-diary\n"
+        (OrgFile
+         (OrgDiarySexp (DiarySexpValue 0 30) (DiarySexpTrivia 30 31))
+         (OrgParagraph (OrgTextLine (TextLine 31 36))
+                       (OrgTextLine (TextLine 36 48)))))
+      (check-org-ast-with parse-org-rowan-events
+        "%%(x) \r\n"
+        (OrgFile
+         (OrgDiarySexp (DiarySexpValue 0 6) (DiarySexpTrivia 6 8)))))
     (test-case "file-local TODO and Babel CALL keys project as distinct Elements"
       (check-org-ast-with parse-org-rowan-events
         "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n"

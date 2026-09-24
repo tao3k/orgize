@@ -463,6 +463,17 @@
         (set-bool after-heading (bool #f)))
        ,otherwise))
 
+(def (diary-sexp-form otherwise)
+  `(if (line-starts-with "%%(")
+       (,close-paragraph
+        ,fixed-width-close
+        (start-node OrgDiarySexp)
+        (token DiarySexpValue start (line-content-end))
+        (token DiarySexpTrivia (line-content-end) end)
+        (finish-node)
+        (set-bool after-heading (bool #f)))
+       ,otherwise))
+
 (def fixed-width-marker '(line-skip-horizontal start))
 (def fixed-width-content-start `(line-step ,fixed-width-marker))
 (def fixed-width-line?
@@ -537,9 +548,11 @@
         ,close-paragraph
         ,@(comment-line-forms))
        (,close-comment
-        ,(fixed-width-form
-          (list (horizontal-rule-form
-                 (list (property-open-form (container-or-opaque-form)))))))))
+        ,(diary-sexp-form
+          (list (fixed-width-form
+                 (list (horizontal-rule-form
+                        (list (property-open-form
+                               (container-or-opaque-form)))))))))))
 
 (def (table-or-element-form)
   `(if ,table-line-predicate

@@ -20,6 +20,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgTextLine", category: KindCategory::Node },
     KindSpec { name: "OrgParagraph", category: KindCategory::Node },
     KindSpec { name: "OrgComment", category: KindCategory::Node },
+    KindSpec { name: "OrgDiarySexp", category: KindCategory::Node },
     KindSpec { name: "OrgHorizontalRule", category: KindCategory::Node },
     KindSpec { name: "OrgFixedWidth", category: KindCategory::Node },
     KindSpec { name: "OrgKeyword", category: KindCategory::Node },
@@ -46,6 +47,8 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "BlockEndLine", category: KindCategory::Token },
     KindSpec { name: "TextLine", category: KindCategory::Token },
     KindSpec { name: "CommentLine", category: KindCategory::Token },
+    KindSpec { name: "DiarySexpValue", category: KindCategory::Token },
+    KindSpec { name: "DiarySexpTrivia", category: KindCategory::Token },
     KindSpec { name: "HorizontalRuleLine", category: KindCategory::Token },
     KindSpec { name: "FixedWidthLine", category: KindCategory::Token },
     KindSpec { name: "DrawerBeginLine", category: KindCategory::Token },
@@ -76,10 +79,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 30 },
-    TerminalSpec { name: "block-begin", syntax_kind: 33 },
-    TerminalSpec { name: "block-end", syntax_kind: 39 },
-    TerminalSpec { name: "text", syntax_kind: 40 },
+    TerminalSpec { name: "headline", syntax_kind: 31 },
+    TerminalSpec { name: "block-begin", syntax_kind: 34 },
+    TerminalSpec { name: "block-end", syntax_kind: 40 },
+    TerminalSpec { name: "text", syntax_kind: 41 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -254,7 +257,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:5f6c64dcc67f6df7d0c0ae31ac0fcaf4597e704ed479aac7407629f1236d8fb7",
+    grammar_digest: "sha256:dc2e358ea8ad1343d59843d3d86150c1da91a3beed617cca2a1f393007dd96c0",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

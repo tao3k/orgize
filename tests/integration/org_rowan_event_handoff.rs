@@ -58,6 +58,38 @@ fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
 }
 
 #[test]
+fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
+    let source = "%%(diary-anniversary 1 1 2000)\n%%not-diary\n";
+    let document = orgize::org_aot::parse_org_event_aot(source)
+        .expect("Scheme diary-sexp declaration reaches Rowan and Elements");
+    assert_eq!(document.syntax().to_string(), source);
+    let diary = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "diary-sexp")
+        .expect("diary-sexp is a typed Element");
+    assert_eq!(diary.field("value"), Some("%%(diary-anniversary 1 1 2000)"));
+    assert_eq!(diary.range.start(), 0u32.into());
+    assert_eq!(diary.range.end(), 31u32.into());
+    assert!(
+        document
+            .records()
+            .iter()
+            .any(|record| record.kind == "paragraph" && record.range.start() == 31u32.into())
+    );
+
+    let trailing = orgize::org_aot::parse_org_event_aot("%%(x) \r\n")
+        .expect("CRLF and trailing spaces remain lossless");
+    assert_eq!(trailing.syntax().to_string(), "%%(x) \r\n");
+    let value = trailing
+        .records()
+        .iter()
+        .find(|record| record.kind == "diary-sexp")
+        .and_then(|record| record.field("value"));
+    assert_eq!(value, Some("%%(x) "));
+}
+
+#[test]
 fn scheme_authored_line_algorithm_aot_builds_lossless_rowan() {
     let source = "* α\r\nbody\n";
     let events = generated_line_events::parse_org_line_events(source);

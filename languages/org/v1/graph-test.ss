@@ -16,7 +16,7 @@
         (check (graph-projection? org-v1-graph-projection) => #t)
         (check (map graph-node-syntax-kind nodes)
                => '(OrgFile OrgSection OrgPropertyDrawer OrgDrawer OrgParagraph
-                            OrgComment
+                            OrgComment OrgDiarySexp
                             OrgHorizontalRule OrgFixedWidth
                             OrgKeyword OrgBabelCall OrgPlanning OrgClock
                             OrgPlainList OrgListItem
@@ -26,7 +26,8 @@
                             OrgCommentBlock OrgExportBlock OrgLink))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "property-drawer" "drawer"
-                                "paragraph" "comment" "horizontal-rule" "fixed-width"
+                                "paragraph" "comment" "diary-sexp"
+                                "horizontal-rule" "fixed-width"
                                 "keyword" "babel-call"
                                 "planning" "clock"
                                 "plain-list" "item" "table" "table-row"
