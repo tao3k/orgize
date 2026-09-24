@@ -5,7 +5,7 @@
         (only-in :std/encoding/json JSONReadOptions string->json)
         (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-parser/src/compiler/rust-syntax
-                 rust-render rust-function-ir-json
+                 rust-function-ir-json
                  rust-function-form? rust-function-form-name
                  rust-function-form-body rust-block-form-statements
                  rust-block-form-result rust-let-form? rust-let-form-value
@@ -24,7 +24,7 @@
                  org-named-element-query-id org-named-element-query-query))
 (export check-org-element-catalog check-org-element-selection
         check-org-named-query-selection
-        check-org-headline-properties check-org-headline-aot
+        check-org-headline-properties
         check-org-headline-ir
         check-org-headline-state-aot
         check-org-element-query-aot
@@ -75,6 +75,26 @@
           (member kind +org-element-kinds+)
           (member kind +org-object-kinds+))
     #t #f))
+
+(def (json-tree-equivalent? left right)
+  (cond
+   ((and (hash-table? left) (hash-table? right))
+    (let ((keys (hash-keys left)) (other-keys (hash-keys right)))
+      (and (= (length keys) (length other-keys))
+           (let loop ((rest keys))
+             (or (null? rest)
+                 (and (member (car rest) other-keys)
+                      (json-tree-equivalent?
+                       (hash-get left (car rest))
+                       (hash-get right (car rest)))
+                      (loop (cdr rest))))))))
+   ((and (list? left) (list? right))
+    (and (= (length left) (length right))
+         (let loop ((values left) (expected right))
+           (or (null? values)
+               (and (json-tree-equivalent? (car values) (car expected))
+                    (loop (cdr values) (cdr expected)))))))
+   (else (equal? left right))))
 
 (defsyntax (check-org-element-catalog stx)
   (syntax-case stx ()
@@ -153,32 +173,25 @@
         (check (org-element-property context record "priority") => priority)
         (check (org-element-property context record "tags") => tags))))))
 
-(defsyntax (check-org-headline-aot stx)
-  (syntax-case stx ()
-    ((_ function name artifact)
-     (syntax
-      (begin
-        (check (rust-function-form? function) => #t)
-        (check (rust-function-form-name function) => name)
-        (check (call-with-input-file artifact read-all-as-string)
-               => (rust-render function)))))))
-
 (defsyntax (check-org-headline-ir stx)
   (syntax-case stx ()
-    ((_ function name)
+    ((_ function name fixture)
      (syntax
-      (let (ir (string->json
-                (rust-function-ir-json function)
-                (JSONReadOptions object-as-hash: #t)))
+      (let* ((options (JSONReadOptions object-as-hash: #t))
+             (ir (string->json (rust-function-ir-json function) options))
+             (saved (call-with-input-file fixture
+                      (lambda (port)
+                        (string->json (read-all-as-string port) options)))))
         (check (rust-function-form? function) => #t)
         (check (rust-function-form-name function) => name)
         (check (hash-get ir "schema")
                => "gerbil-scheme-rust.rust-function-ir.v1")
-        (check (hash-get ir "name") => (symbol->string name)))))))
+        (check (hash-get ir "name") => (symbol->string name))
+        (check (json-tree-equivalent? ir saved) => #t))))))
 
 (defsyntax (check-org-headline-state-aot stx)
   (syntax-case stx ()
-    ((_ function artifact)
+    ((_ function)
      (syntax
       (let* ((value function)
              (body (rust-function-form-body value))
@@ -197,6 +210,4 @@
         (check (rust-empty-form? (rust-if-form-condition declared)) => #t)
         (check (rust-any-form?
                 (rust-if-form-condition
-                 (rust-if-form-alternate declared))) => #t)
-        (check (call-with-input-file artifact read-all-as-string)
-               => (rust-render value)))))))
+                 (rust-if-form-alternate declared))) => #t))))))

@@ -1,0 +1,97 @@
+{
+  "body": {
+    "bindings": [
+      {
+        "name": "state",
+        "value": {
+          "arguments": [
+            {
+              "kind": "name",
+              "value": "title"
+            },
+            {
+              "kind": "name",
+              "value": "directives"
+            }
+          ],
+          "callee": {
+            "kind": "name",
+            "value": "todo_state_from_directives"
+          },
+          "kind": "call"
+        }
+      },
+      {
+        "name": "candidate",
+        "value": {
+          "kind": "first_word",
+          "value": {
+            "kind": "name",
+            "value": "title"
+          }
+        }
+      }
+    ],
+    "result": {
+      "kind": "binary",
+      "left": {
+        "kind": "binary",
+        "left": {
+          "kind": "binary",
+          "left": {
+            "kind": "name",
+            "value": "state"
+          },
+          "operator": "equal",
+          "right": {
+            "kind": "string",
+            "value": "todo"
+          }
+        },
+        "operator": "or",
+        "right": {
+          "kind": "binary",
+          "left": {
+            "kind": "name",
+            "value": "state"
+          },
+          "operator": "equal",
+          "right": {
+            "kind": "string",
+            "value": "done"
+          }
+        }
+      },
+      "operator": "and",
+      "right": {
+        "kind": "binary",
+        "left": {
+          "kind": "name",
+          "value": "candidate"
+        },
+        "operator": "equal",
+        "right": {
+          "kind": "name",
+          "value": "expected"
+        }
+      }
+    }
+  },
+  "name": "todo_keyword_matches_p",
+  "parameters": [
+    {
+      "name": "title",
+      "ty": "&str"
+    },
+    {
+      "name": "directives",
+      "ty": "&[String]"
+    },
+    {
+      "name": "expected",
+      "ty": "&str"
+    }
+  ],
+  "result": "bool",
+  "schema": "gerbil-scheme-rust.rust-function-ir.v1"
+}

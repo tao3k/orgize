@@ -1,0 +1,234 @@
+{
+  "body": {
+    "bindings": [
+      {
+        "name": "candidate",
+        "value": {
+          "kind": "first_word",
+          "value": {
+            "kind": "name",
+            "value": "title"
+          }
+        }
+      }
+    ],
+    "result": {
+      "alternate": {
+        "alternate": {
+          "alternate": {
+            "alternate": {
+              "kind": "string",
+              "value": ""
+            },
+            "condition": {
+              "body": {
+                "bindings": [
+                  {
+                    "name": "done_side",
+                    "value": {
+                      "delimiter": {
+                        "kind": "string",
+                        "value": "|"
+                      },
+                      "kind": "after",
+                      "value": {
+                        "kind": "name",
+                        "value": "directive"
+                      }
+                    }
+                  }
+                ],
+                "kind": "block",
+                "result": {
+                  "body": {
+                    "kind": "binary",
+                    "left": {
+                      "kind": "name",
+                      "value": "candidate"
+                    },
+                    "operator": "equal",
+                    "right": {
+                      "delimiter": {
+                        "kind": "string",
+                        "value": "("
+                      },
+                      "kind": "before",
+                      "owned": false,
+                      "value": {
+                        "kind": "name",
+                        "value": "word"
+                      }
+                    }
+                  },
+                  "collection": {
+                    "kind": "words",
+                    "value": {
+                      "kind": "name",
+                      "value": "done_side"
+                    }
+                  },
+                  "kind": "any",
+                  "string_slice": false,
+                  "variable": "word"
+                }
+              },
+              "collection": {
+                "kind": "name",
+                "value": "directives"
+              },
+              "kind": "any",
+              "string_slice": true,
+              "variable": "directive"
+            },
+            "consequent": {
+              "kind": "string",
+              "value": "done"
+            },
+            "kind": "if"
+          },
+          "condition": {
+            "body": {
+              "bindings": [
+                {
+                  "name": "open_side",
+                  "value": {
+                    "delimiter": {
+                      "kind": "string",
+                      "value": "|"
+                    },
+                    "kind": "before",
+                    "owned": false,
+                    "value": {
+                      "kind": "name",
+                      "value": "directive"
+                    }
+                  }
+                }
+              ],
+              "kind": "block",
+              "result": {
+                "body": {
+                  "kind": "binary",
+                  "left": {
+                    "kind": "name",
+                    "value": "candidate"
+                  },
+                  "operator": "equal",
+                  "right": {
+                    "delimiter": {
+                      "kind": "string",
+                      "value": "("
+                    },
+                    "kind": "before",
+                    "owned": false,
+                    "value": {
+                      "kind": "name",
+                      "value": "word"
+                    }
+                  }
+                },
+                "collection": {
+                  "kind": "words",
+                  "value": {
+                    "kind": "name",
+                    "value": "open_side"
+                  }
+                },
+                "kind": "any",
+                "string_slice": false,
+                "variable": "word"
+              }
+            },
+            "collection": {
+              "kind": "name",
+              "value": "directives"
+            },
+            "kind": "any",
+            "string_slice": true,
+            "variable": "directive"
+          },
+          "consequent": {
+            "kind": "string",
+            "value": "todo"
+          },
+          "kind": "if"
+        },
+        "condition": {
+          "kind": "empty",
+          "value": {
+            "kind": "name",
+            "value": "directives"
+          }
+        },
+        "consequent": {
+          "alternate": {
+            "alternate": {
+              "kind": "string",
+              "value": ""
+            },
+            "condition": {
+              "kind": "binary",
+              "left": {
+                "kind": "name",
+                "value": "candidate"
+              },
+              "operator": "equal",
+              "right": {
+                "kind": "string",
+                "value": "DONE"
+              }
+            },
+            "consequent": {
+              "kind": "string",
+              "value": "done"
+            },
+            "kind": "if"
+          },
+          "condition": {
+            "kind": "binary",
+            "left": {
+              "kind": "name",
+              "value": "candidate"
+            },
+            "operator": "equal",
+            "right": {
+              "kind": "string",
+              "value": "TODO"
+            }
+          },
+          "consequent": {
+            "kind": "string",
+            "value": "todo"
+          },
+          "kind": "if"
+        },
+        "kind": "if"
+      },
+      "condition": {
+        "kind": "empty",
+        "value": {
+          "kind": "name",
+          "value": "candidate"
+        }
+      },
+      "consequent": {
+        "kind": "string",
+        "value": ""
+      },
+      "kind": "if"
+    }
+  },
+  "name": "todo_state_from_directives",
+  "parameters": [
+    {
+      "name": "title",
+      "ty": "&str"
+    },
+    {
+      "name": "directives",
+      "ty": "&[String]"
+    }
+  ],
+  "result": "&'static str",
+  "schema": "gerbil-scheme-rust.rust-function-ir.v1"
+}

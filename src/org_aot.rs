@@ -21,9 +21,9 @@ mod structure;
 mod graph;
 #[path = "org_aot_contract_plan.rs"]
 mod contract_plan;
-#[rustfmt::skip]
-#[path = "../languages/org/v1/modules/org-elements/generated/todo_directive.rs"]
-mod todo_directive;
+mod todo_directive {
+    include!(concat!(env!("OUT_DIR"), "/todo_directive_p.rs"));
+}
 #[path = "org_aot_headline_functions.rs"]
 mod headline_functions;
 

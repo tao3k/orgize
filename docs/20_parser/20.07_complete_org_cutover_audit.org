@@ -39,6 +39,27 @@ planning line. The generated tree reports five paragraphs versus seven publicly;
 item metadata and several
 other contexts remain incomplete. Matching counts do not establish matching syntax.
 
+* Headline AOT chain now has one generated Rust authority
+
+The five Org-owned headline functions (TODO directive admission, state, keyword
+matching/value, and TODO-stripped content) are declared in Scheme. Their
+versioned, typed IR artifacts are checked against those declarations by the
+Org Element Scheme test macro. Cargo build support compiles the committed IR
+into Rust functions in =OUT_DIR=; neither checked-in Rust function copies nor
+Gerbil are needed by a Cargo consumer. The pure IR backend now admits nested
+lexical bindings used by file-local TODO declarations. =syn= is confined to
+that build-time backend; it is not a normal Org runtime dependency.
+
+This closes the duplicate-source risk for the headline *functions*, not the
+parser cutover. The current read-only audit still finds 30 public node kinds
+versus 17 generated kinds on the tracked representative fixture. In particular,
+affiliated keywords, ordinary drawers, emphasis, footnotes and typed timestamps
+remain absent or incomplete in the generated CST/graph. The public
+=ParseConfig::parse= route still uses the handwritten Rust parser. The next
+syntax admission must add source-backed CST and graph behavior for one of these
+families through Org-owned Scheme declarations, with negative/recovery fixtures;
+then public consumers can be migrated only after equivalent AST fields exist.
+
 * Blocking contracts
 
 | Boundary | Current evidence | Required admission |

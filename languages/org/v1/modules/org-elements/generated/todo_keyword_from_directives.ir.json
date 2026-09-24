@@ -1,0 +1,61 @@
+{
+  "body": {
+    "bindings": [],
+    "result": {
+      "alternate": {
+        "arguments": [],
+        "kind": "method",
+        "method": "to_owned",
+        "receiver": {
+          "kind": "first_word",
+          "value": {
+            "kind": "name",
+            "value": "title"
+          }
+        }
+      },
+      "condition": {
+        "kind": "empty",
+        "value": {
+          "arguments": [
+            {
+              "kind": "name",
+              "value": "title"
+            },
+            {
+              "kind": "name",
+              "value": "directives"
+            }
+          ],
+          "callee": {
+            "kind": "name",
+            "value": "todo_state_from_directives"
+          },
+          "kind": "call"
+        }
+      },
+      "consequent": {
+        "arguments": [],
+        "callee": {
+          "kind": "name",
+          "value": "String::new"
+        },
+        "kind": "call"
+      },
+      "kind": "if"
+    }
+  },
+  "name": "todo_keyword_from_directives",
+  "parameters": [
+    {
+      "name": "title",
+      "ty": "&str"
+    },
+    {
+      "name": "directives",
+      "ty": "&[String]"
+    }
+  ],
+  "result": "String",
+  "schema": "gerbil-scheme-rust.rust-function-ir.v1"
+}

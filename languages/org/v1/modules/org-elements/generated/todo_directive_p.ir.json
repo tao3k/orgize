@@ -1,0 +1,64 @@
+{
+  "body": {
+    "bindings": [],
+    "result": {
+      "kind": "binary",
+      "left": {
+        "kind": "binary",
+        "left": {
+          "arguments": [
+            {
+              "kind": "string",
+              "value": "TODO"
+            }
+          ],
+          "kind": "method",
+          "method": "eq_ignore_ascii_case",
+          "receiver": {
+            "kind": "name",
+            "value": "key"
+          }
+        },
+        "operator": "or",
+        "right": {
+          "arguments": [
+            {
+              "kind": "string",
+              "value": "SEQ_TODO"
+            }
+          ],
+          "kind": "method",
+          "method": "eq_ignore_ascii_case",
+          "receiver": {
+            "kind": "name",
+            "value": "key"
+          }
+        }
+      },
+      "operator": "or",
+      "right": {
+        "arguments": [
+          {
+            "kind": "string",
+            "value": "TYP_TODO"
+          }
+        ],
+        "kind": "method",
+        "method": "eq_ignore_ascii_case",
+        "receiver": {
+          "kind": "name",
+          "value": "key"
+        }
+      }
+    }
+  },
+  "name": "todo_directive_p",
+  "parameters": [
+    {
+      "name": "key",
+      "ty": "&str"
+    }
+  ],
+  "result": "bool",
+  "schema": "gerbil-scheme-rust.rust-function-ir.v1"
+}

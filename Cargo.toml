@@ -27,7 +27,7 @@ md = ["dep:comrak"]
 
 [dependencies]
 bytecount = "0.6"
-gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "af7e019eb2c32d11719458fbf02f1e532a380ead", version = "0.1.0" }
+gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "484488f1496106693b487e88f824205eba20e0de", version = "0.1.0" }
 blake3 = "1"
 cfg-if = "1"
 chrono = { version = "0.4", optional = true }
@@ -48,7 +48,6 @@ libc = "0.2"
 
 [dev-dependencies]
 criterion = "0.8"
-gerbil-scheme-rust-ir = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "0e77fa4ddf6b92537b1194f257e02c8df31790f2", version = "0.1.0" }
 insta = "1"
 asp-rust = { git = "https://github.com/tao3k/asp-rust", rev = "2419414ee5379bad89506496e3eaab928df68daf", version = "0.1.2" }
 asp-rust-build-support = { git = "https://github.com/tao3k/asp-rust", rev = "2419414ee5379bad89506496e3eaab928df68daf", version = "0.1.0" }

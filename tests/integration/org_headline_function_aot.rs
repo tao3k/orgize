@@ -1,17 +1,9 @@
 //! The Scheme-authored Org TODO functions must compile and behave in Rust.
 
-include!("../../languages/org/v1/modules/org-elements/generated/todo_directive.rs");
-include!("../../languages/org/v1/modules/org-elements/generated/todo_state_from_directives.rs");
-include!("../../languages/org/v1/modules/org-elements/generated/todo_keyword_from_directives.rs");
-include!("../../languages/org/v1/modules/org-elements/generated/headline_content_after_todo.rs");
-
-#[test]
-fn scheme_headline_ir_compiles_to_rust_function() {
-    let ir = include_str!(
-        "../../languages/org/v1/modules/org-elements/generated/headline_content_after_todo.ir.json"
-    );
-    gerbil_scheme_rust_ir::compile_function_json(ir).unwrap();
-}
+include!(concat!(env!("OUT_DIR"), "/todo_directive_p.rs"));
+include!(concat!(env!("OUT_DIR"), "/todo_state_from_directives.rs"));
+include!(concat!(env!("OUT_DIR"), "/todo_keyword_from_directives.rs"));
+include!(concat!(env!("OUT_DIR"), "/headline_content_after_todo.rs"));
 
 macro_rules! check_todo_state_aot {
     ($($title:expr, $directives:expr => $expected:expr),+ $(,)?) => {

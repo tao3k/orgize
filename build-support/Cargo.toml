@@ -3,3 +3,6 @@ name = "orgize-build-support"
 version = "0.1.0"
 edition = "2024"
 publish = false
+
+[dependencies]
+gerbil-scheme-rust-ir = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "bc8b4bb1209016c7603e1289c9817792fec54887", version = "0.1.0" }

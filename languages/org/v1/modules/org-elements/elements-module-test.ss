@@ -7,7 +7,7 @@
                  check-org-element-catalog check-org-element-selection
                  check-org-named-query-selection
                  check-org-element-query-aot
-                 check-org-headline-properties check-org-headline-aot
+                 check-org-headline-properties
                  check-org-headline-ir
                  check-org-headline-state-aot
                  org-test-form-structured? org-test-source-structured?
@@ -79,10 +79,10 @@
                      (org-test-sources "languages/org/v1"))
              => '())
       (check (org-test-source-structured?
-              "languages/org/v1/modules/org-elements/generate-todo-keyword-value.ss")
+              "languages/org/v1/modules/org-elements/generate-headline-ir.ss")
              => #t)
       (check (org-test-source-structured?
-              "languages/org/v1/modules/org-elements/generate-headline-content.ss")
+              "languages/org/v1/modules/org-elements/headline-properties.ss")
              => #t))
     (test-case "catalog and projected query share one feature interface"
       (check-org-element-catalog)
@@ -145,20 +145,22 @@
          (list-ref org-element-queries 4) context 0 '(0) id-of
          "headlines.child" '(3))))
     (test-case "headline properties remain on the Element query graph"
-      (check-org-headline-aot
-       todo-directive-rust 'todo_directive_p
-       "languages/org/v1/modules/org-elements/generated/todo_directive.rs")
-      (check-org-headline-state-aot
-       todo-state-from-directives-rust
-       "languages/org/v1/modules/org-elements/generated/todo_state_from_directives.rs")
-      (check-org-headline-aot
-       todo-keyword-matches-rust 'todo_keyword_matches_p
-       "languages/org/v1/modules/org-elements/generated/todo_keyword_matches.rs")
-      (check-org-headline-aot
-       todo-keyword-from-directives-rust 'todo_keyword_from_directives
-       "languages/org/v1/modules/org-elements/generated/todo_keyword_from_directives.rs")
       (check-org-headline-ir
-       headline-content-after-todo-rust 'headline_content_after_todo)
+       todo-directive-rust 'todo_directive_p
+       "languages/org/v1/modules/org-elements/generated/todo_directive_p.ir.json")
+      (check-org-headline-ir
+       todo-state-from-directives-rust 'todo_state_from_directives
+       "languages/org/v1/modules/org-elements/generated/todo_state_from_directives.ir.json")
+      (check-org-headline-state-aot todo-state-from-directives-rust)
+      (check-org-headline-ir
+       todo-keyword-matches-rust 'todo_keyword_matches_p
+       "languages/org/v1/modules/org-elements/generated/todo_keyword_matches_p.ir.json")
+      (check-org-headline-ir
+       todo-keyword-from-directives-rust 'todo_keyword_from_directives
+       "languages/org/v1/modules/org-elements/generated/todo_keyword_from_directives.ir.json")
+      (check-org-headline-ir
+       headline-content-after-todo-rust 'headline_content_after_todo
+       "languages/org/v1/modules/org-elements/generated/headline_content_after_todo.ir.json")
       (check (headline-content-after-todo
               "  WAIT   [#A] Parent :work:  " '("WAIT(w) | DONE(d)"))
              => "[#A] Parent :work:")

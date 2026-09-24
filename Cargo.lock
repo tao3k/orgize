@@ -1612,7 +1612,7 @@ dependencies = [
 [[package]]
 name = "gerbil-parser-rowan"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-parser?rev=af7e019eb2c32d11719458fbf02f1e532a380ead#af7e019eb2c32d11719458fbf02f1e532a380ead"
+source = "git+https://github.com/tao3k/gerbil-parser?rev=484488f1496106693b487e88f824205eba20e0de#484488f1496106693b487e88f824205eba20e0de"
 dependencies = [
  "rowan",
  "sha2 0.10.9",
@@ -1621,7 +1621,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-rust-ir"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=0e77fa4ddf6b92537b1194f257e02c8df31790f2#0e77fa4ddf6b92537b1194f257e02c8df31790f2"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=bc8b4bb1209016c7603e1289c9817792fec54887#bc8b4bb1209016c7603e1289c9817792fec54887"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2190,7 +2190,6 @@ dependencies = [
  "criterion",
  "datafusion",
  "gerbil-parser-rowan",
- "gerbil-scheme-rust-ir",
  "ignore",
  "indexmap",
  "insta",
@@ -2211,6 +2210,9 @@ dependencies = [
 [[package]]
 name = "orgize-build-support"
 version = "0.1.0"
+dependencies = [
+ "gerbil-scheme-rust-ir",
+]
 
 [[package]]
 name = "page_size"
