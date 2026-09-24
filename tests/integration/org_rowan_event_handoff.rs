@@ -105,6 +105,34 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .expect("Scheme events retain a paragraph boundary");
     assert_eq!(paragraph.to_string(), "summary\n");
     assert!(records.iter().any(|record| record.kind == "paragraph"));
+    let table = records
+        .iter()
+        .find(|record| record.kind == "table")
+        .expect("Scheme table projects as an Element");
+    assert_eq!(
+        usize::from(table.range.start()),
+        source.find("| a | b |").unwrap()
+    );
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "table-row")
+            .count(),
+        2
+    );
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "table-rule-row")
+            .count(),
+        1
+    );
+    let cells: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "table-cell")
+        .filter_map(|record| record.field("text"))
+        .collect();
+    assert_eq!(cells, [" a ", " b ", " c\\|d ", " α "]);
 
     let transitional = orgize::org_aot::parse_org_aot(source)
         .expect("the current production parser accepts the handoff fixture");

@@ -16,6 +16,8 @@
                  org-headline-level token-if-nonempty
                  skip-horizontal scan-word strip-trailing-space
                  line-marker? matching-key-line emit-key-line)
+        (only-in "modules/org-parser/table.ss"
+                 org-table-line? org-table-node emit-org-table-row)
         (only-in "line-event-parser.ss" parse-org-line-events)
         (only-in "parser.ss" org-v1-line-structure))
 (export parse-org-outline-events)
@@ -137,13 +139,14 @@
          (spans (line-spans (parse-org-line-events source))))
     (let loop ((rest spans) (levels '())
                (reversed '((start OrgFile)))
-               (pending '()) (block #f) (paragraph? #f))
+               (pending '()) (block #f) (paragraph? #f) (table? #f))
       (cond
        ((null? rest)
         (let* ((state (if block
                         (emit-text-spans reversed bytes pending)
                         (cons reversed paragraph?)))
-               (closed (close-paragraph (car state) (cdr state))))
+               (closed (close-paragraph (car state) (cdr state)))
+               (closed (if table? (cons '(finish) closed) closed)))
           (reverse (cons '(finish) (close-sections levels closed)))))
        (block
         (let* ((span (car rest))
@@ -154,22 +157,33 @@
                           (block-line-indent block))
             (loop (cdr rest) levels
                   (emit-source-block reversed bytes block pending span)
-                  '() #f #f))
+                  '() #f #f #f))
            ((and (block-line-heading-bound block) (> level 0))
             (let (state (emit-text-spans reversed bytes pending))
-              (loop rest levels (car state) '() #f (cdr state))))
+              (loop rest levels (car state) '() #f (cdr state) #f)))
            (else (loop (cdr rest) levels reversed
-                       (cons span pending) block #f)))))
+                       (cons span pending) block #f #f)))))
+       ((and table? (not (org-table-line? bytes (car rest))))
+        (loop rest levels (cons '(finish) reversed) '() #f #f #f))
        (else
         (let* ((span (car rest))
                (start (car span))
                (end (cdr span))
+               (table-line? (org-table-line? bytes span))
                (level (org-headline-level bytes start end))
-               (opening (and (= level 0)
+               (opening (and (not table-line?) (= level 0)
                              (source-block-spec bytes span)))
-               (key-line (and (= level 0) (not opening)
+               (key-line (and (not table-line?) (= level 0) (not opening)
                               (matching-key-line bytes span))))
           (cond
+           (table-line?
+            (loop (cdr rest) levels
+                  (emit-org-table-row
+                   (if table? reversed
+                       (cons (list 'start org-table-node)
+                             (close-paragraph reversed paragraph?)))
+                   bytes span)
+                  '() #f #f #t))
            ((> level 0)
             (let-values (((parents closed)
                           (close-through-level
@@ -178,18 +192,18 @@
               (loop (cdr rest) (cons level parents)
                     (emit-headline (cons '(start OrgSection) closed)
                                    bytes start end level)
-                    '() #f #f)))
+                    '() #f #f #f)))
            (opening
             (loop (cdr rest) levels
                   (close-paragraph reversed paragraph?)
-                  (list span) opening #f))
+                  (list span) opening #f #f))
            (key-line
             (loop (cdr rest) levels
                   (emit-key-line (close-paragraph reversed paragraph?)
                                  bytes span key-line)
-                  '() #f #f))
+                  '() #f #f #f))
            (else
             (let-values (((events open?)
                           (emit-paragraph-line reversed paragraph?
                                                bytes span)))
-              (loop (cdr rest) levels events '() #f open?))))))))))
+              (loop (cdr rest) levels events '() #f open? #f))))))))))

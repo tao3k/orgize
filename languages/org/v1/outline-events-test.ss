@@ -48,6 +48,35 @@
                        (OrgTextLine (TextLine 6 11)))
          (OrgTextLine (TextLine 11 12))
          (OrgParagraph (OrgTextLine (TextLine 12 17))))))
+    (test-case "table rows, rule row, escaped bar and UTF-8 cells"
+      (check-org-ast "| a | b |\n|---+---|\n| c\\|d | α |\n\n* Next\n"
+        (OrgFile
+         (OrgTable
+          (OrgTableRow
+           (TableSeparator 0 1) (OrgTableCell (TableCellText 1 4))
+           (TableSeparator 4 5) (OrgTableCell (TableCellText 5 8))
+           (TableSeparator 8 9) (TableTrivia 9 10))
+          (OrgTableRuleRow (TableRuleText 10 20))
+          (OrgTableRow
+           (TableSeparator 20 21) (OrgTableCell (TableCellText 21 27))
+           (TableSeparator 27 28) (OrgTableCell (TableCellText 28 32))
+           (TableSeparator 32 33) (TableTrivia 33 34)))
+         (OrgTextLine (TextLine 34 35))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 35 36) (HeadlineTrivia 36 37)
+                       (HeadlineTitle 37 41) (HeadlineTrivia 41 42))))))
+    (test-case "indent, missing trailing bar and table boundaries"
+      (check-org-ast "  | x\ntext\n|z|\n"
+        (OrgFile
+         (OrgTable
+          (OrgTableRow
+           (TableTrivia 0 2) (TableSeparator 2 3)
+           (OrgTableCell (TableCellText 3 5)) (TableTrivia 5 6)))
+         (OrgParagraph (OrgTextLine (TextLine 6 11)))
+         (OrgTable
+          (OrgTableRow
+           (TableSeparator 11 12) (OrgTableCell (TableCellText 12 13))
+           (TableSeparator 13 14) (TableTrivia 14 15))))))
     (test-case "Babel CALL retains its own Element kind"
       (check-org-ast "#+CALL: build(input=42)\n"
         (OrgFile
