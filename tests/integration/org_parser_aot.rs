@@ -33,6 +33,34 @@ fn token_name(token: &gerbil_parser_rowan::SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
+macro_rules! check_org_aot_element {
+    ($source:expr, $kind:expr, $field:expr => $value:expr) => {{
+        let document = orgize::org_aot::parse_org_aot($source)
+            .expect("Scheme-owned Org Element parser accepts the source");
+        let elements: Vec<_> = document
+            .records()
+            .iter()
+            .filter(|record| record.kind == $kind)
+            .collect();
+        assert_eq!(elements.len(), 1);
+        assert_eq!(elements[0].field($field), Some($value));
+        assert_eq!(document.syntax().to_string(), $source);
+    }};
+}
+
+#[test]
+fn scheme_declared_babel_call_is_not_a_generic_keyword() {
+    let source = "#+CALL: build(input=42)\n";
+    check_org_aot_element!(source, "babel-call", "value" => "build(input=42)");
+    let document = orgize::org_aot::parse_org_aot(source).expect("Babel Call element");
+    assert!(
+        !document
+            .records()
+            .iter()
+            .any(|record| record.kind == "keyword")
+    );
+}
+
 #[test]
 fn headings_form_nested_sections_and_closed_blocks_remain_lossless() {
     let source = "é\r\n* Parent\n#+BEGIN_SRC rust\ncode\n#+END_SRC\n** Child\nbody\r* Sibling\n";

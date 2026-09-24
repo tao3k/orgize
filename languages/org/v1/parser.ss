@@ -57,7 +57,9 @@
                     'TableTrivia 'TableRuleText)
    (make-list-line "-+*" #t 'OrgPlainList 'OrgListItem
                    'ListBullet 'ListTrivia)
-   (list (make-key-line "#+" '() ":" #t #t #f #f
+   (list (make-key-line "#+" '("CALL") ":" #t #t #f #f
+                        'OrgBabelCall 'KeywordKey 'KeywordValue 'KeywordTrivia)
+         (make-key-line "#+" '() ":" #t #t #f #f
                         'OrgKeyword 'KeywordKey 'KeywordValue 'KeywordTrivia)
          (make-key-line "" '("SCHEDULED" "DEADLINE" "CLOSED") ":"
                         #f #t #t #t

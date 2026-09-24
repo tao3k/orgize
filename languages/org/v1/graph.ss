@@ -18,6 +18,9 @@
     (make-graph-node 'OrgKeyword "element" "keyword"
                      (list (make-graph-field 'KeywordKey "key")
                            (make-graph-field 'KeywordValue "value")))
+    (make-graph-node 'OrgBabelCall "element" "babel-call"
+                     (list (make-graph-field 'KeywordKey "key")
+                           (make-graph-field 'KeywordValue "value")))
     (make-graph-node
      'OrgPlanning "element" "planning"
      (list (make-graph-field 'PlanningKey "key" 'each)

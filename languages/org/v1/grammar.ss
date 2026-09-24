@@ -21,6 +21,7 @@
    (OrgTextLine node (line))
    (OrgParagraph node (line))
    (OrgKeyword node (key value))
+   (OrgBabelCall node (key value))
    (OrgPlanning node (key value))
    (OrgClock node (key value))
    (OrgPlainList node (item))

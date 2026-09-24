@@ -18,6 +18,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgTextLine", category: KindCategory::Node },
     KindSpec { name: "OrgParagraph", category: KindCategory::Node },
     KindSpec { name: "OrgKeyword", category: KindCategory::Node },
+    KindSpec { name: "OrgBabelCall", category: KindCategory::Node },
     KindSpec { name: "OrgPlanning", category: KindCategory::Node },
     KindSpec { name: "OrgClock", category: KindCategory::Node },
     KindSpec { name: "OrgPlainList", category: KindCategory::Node },
@@ -63,10 +64,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 24 },
-    TerminalSpec { name: "block-begin", syntax_kind: 27 },
-    TerminalSpec { name: "block-end", syntax_kind: 31 },
-    TerminalSpec { name: "text", syntax_kind: 32 },
+    TerminalSpec { name: "headline", syntax_kind: 25 },
+    TerminalSpec { name: "block-begin", syntax_kind: 28 },
+    TerminalSpec { name: "block-end", syntax_kind: 32 },
+    TerminalSpec { name: "text", syntax_kind: 33 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -241,7 +242,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:b390f706a73b253b3dc8b45362b15c0533c3ce2ef1f6cbcb47ac56108a02acb1",
+    grammar_digest: "sha256:d9577de7c5ec75a6c76a7230e6e83d1413240df75d61b4a87349c746fe9668af",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,
