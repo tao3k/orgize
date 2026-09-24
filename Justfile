@@ -23,12 +23,14 @@ contract-smoke: contract-library
     {{ native_env }} rustc --edition=2024 bindings/rust/native_smoke.rs -L native=target {{ rust_linker }} -o target/orgize-rust-smoke
     LD_LIBRARY_PATH=target target/orgize-rust-smoke
 
-python-test: contract-library
-    {{ native_env }} ORGIZE_CONTRACT_LIBRARY="{{ justfile_directory() }}/target/liborgize.{{ lib_ext }}" uv sync --directory bindings/python --locked --extra test
-    {{ native_env }} ORGIZE_CONTRACT_LIBRARY="{{ justfile_directory() }}/target/liborgize.{{ lib_ext }}" uv run --directory bindings/python --offline pytest
-
-python-wheel: contract-library
+python-contract-library:
     {{ native_env }} python3 bindings/c/build-native-library.py --output bindings/python/src/orgizepy/lib/liborgize.{{ lib_ext }}
+
+python-test: python-contract-library
+    {{ native_env }} uv sync --directory bindings/python --locked --extra test
+    {{ native_env }} uv run --directory bindings/python --offline pytest
+
+python-wheel: python-contract-library
     {{ native_env }} uv build --directory bindings/python --wheel
     unzip -l bindings/python/dist/orgizepy-*.whl | grep 'orgizepy/lib/liborgize.{{ lib_ext }}'
 

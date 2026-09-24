@@ -15,9 +15,12 @@ cannot be restarted in the same process after shutdown. Contract evaluation does
 silently flatten a parsed Element's multiple fields into the narrower Contract
 ABI row shape. The standalone Contract library is bundled in the CI-built
 platform wheels; source-tree tests can set `ORGIZE_CONTRACT_LIBRARY` to its
-built path. A wheel rebuilt from the source distribution contains only the
-parser/functions extension and requires that environment variable for
-Contract calls. Do not publish such a wheel as a complete Contract SDK.
+built path. A wheel rebuilt from the source distribution now fails explicitly
+unless the Scheme Contract library is built first; it must not silently become
+a parser-only wheel. In a repository checkout, prepare the library with
+`just python-contract-library` before building a wheel; that recipe requires an
+installed Gerbil toolchain and the compiled Orgize Scheme package. A standalone
+sdist-to-complete-wheel build is not yet qualified.
 
 Raw wheels retain build-host dynamic library paths. The `python-wheel-repair`
 recipe relinks and bundles non-system dependencies; CI then tests the repaired

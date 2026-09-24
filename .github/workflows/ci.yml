@@ -158,6 +158,20 @@ jobs:
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/orgizepy-wheel/bin/python" \
             "$GITHUB_WORKSPACE/bindings/python/tests/installed_smoke.py"
+      - name: Reject incomplete wheel from source distribution
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          uv build --directory bindings/python --sdist
+          if output=$(uv build bindings/python/dist/orgizepy-*.tar.gz --wheel \
+            --out-dir "$RUNNER_TEMP/orgizepy-sdist-wheel" 2>&1); then
+            echo 'Source distribution unexpectedly produced a wheel without Contract'
+            exit 1
+          fi
+          case "$output" in
+            *'the complete orgizepy SDK requires'*) ;;
+            *) echo "$output"; exit 1 ;;
+          esac
 
   gh-pages:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
