@@ -82,6 +82,8 @@ mod org_headline_function_aot;
 mod org_named_drawer;
 #[path = "integration/org_parser_aot.rs"]
 mod org_parser_aot;
+#[path = "integration/org_rowan_event_handoff.rs"]
+mod org_rowan_event_handoff;
 #[path = "integration/parse.rs"]
 mod parse;
 #[path = "integration/scenario_benchmark.rs"]

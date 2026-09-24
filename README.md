@@ -10,9 +10,11 @@ non-mutating by default: source blocks, links, agenda metadata, capture plans,
 publishing graphs, and runtime-adjacent Org features are projected as
 source-backed data instead of being executed.
 
-The Scheme-owned AOT parser is available to Cargo consumers without installing
-Gerbil. It builds a lossless Rowan tree and an Org Element graph from generated
-artifacts shipped with this crate:
+The opt-in AOT parser is available to Cargo consumers without installing
+Gerbil. Scheme declarations generate its syntax and Element tables, while a
+transitional Rust structural scanner currently builds its lossless Rowan tree.
+The complete Org recognition algorithm has not yet moved to Orgize's Scheme
+event generator. The shipped artifacts support:
 
 ```rust
 use orgize::org_aot::{org_contract_pack, parse_org_aot};

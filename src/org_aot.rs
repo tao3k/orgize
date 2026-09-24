@@ -1,4 +1,8 @@
-//! Cargo-only Org parsing from the Scheme-owned AOT language artifacts.
+//! Cargo-only Org parsing from Scheme-declared AOT language artifacts.
+//!
+//! The structural scanner is transitional: it still runs in gerbil-parser.
+//! Orgize's Scheme event algorithm must replace that call before parser
+//! ownership or public `Org::parse` parity can be claimed.
 
 use gerbil_parser_rowan::{
     Diagnostic, GraphProjectionSpec, GraphRecord, LanguageSpec, LineStructureSpec, Parse,
@@ -45,7 +49,10 @@ pub enum OrgAotError {
     Projection(Diagnostic),
 }
 
-/// Parse Org source through the Scheme-owned AOT parser and Element projection.
+/// Parse Org source through Scheme-declared structure and Element projection.
+///
+/// The current implementation uses the transitional structural scanner, not
+/// the Scheme-generated event function intended for the full cutover.
 ///
 /// No Gerbil runtime or package is needed by a Cargo consumer.
 ///

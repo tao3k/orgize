@@ -1,4 +1,4 @@
-//! Differential admission gate for the public parser and Scheme-owned AOT.
+//! Differential admission gate for the public parser and transitional AOT path.
 
 use std::fs;
 use std::path::{Path, PathBuf};
