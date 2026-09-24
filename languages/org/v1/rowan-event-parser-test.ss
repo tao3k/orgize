@@ -90,6 +90,20 @@
                             (PropertyTrivia 27 28))
            (DrawerEndLine 28 34))
           (OrgParagraph (OrgTextLine (TextLine 34 39)))))))
+    (test-case "indented property drawers preserve keys and trivia"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\n  :PROPERTIES:\n  :ID: x\n  :END:\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgPropertyDrawer
+           (DrawerBeginLine 4 19)
+           (OrgNodeProperty
+            (PropertyTrivia 19 22) (PropertyKey 22 24)
+            (PropertyTrivia 24 26) (PropertyValue 26 27)
+            (PropertyTrivia 27 28))
+           (DrawerEndLine 28 36))))))
     (test-case "declared planning and clock keys retain headline context"
       (check-org-ast-with parse-org-rowan-events
         "* H\nSCHEDULED: now\nCLOCK: 2\n* N\nDEADLINE: x\n"

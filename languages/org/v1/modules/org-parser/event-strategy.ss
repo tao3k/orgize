@@ -12,7 +12,7 @@
                  block-line-body-line block-line-begin-token
                  block-line-body-token block-line-end-token block-line-header
                  block-header-argument-token block-header-trivia-token
-                 key-value-line-marker line-structure-table
+                 line-structure-table
                  table-line-delimiter table-line-table-node
                  table-line-row-node table-line-rule-row-node
                  table-line-cell-node table-line-separator-token
@@ -49,7 +49,6 @@
   (char->integer (string-ref (table-line-delimiter table-rule) 0)))
 (def property-open (block-line-opening property-rule))
 (def property-close (block-line-closing property-rule))
-(def property-marker (key-value-line-marker (block-line-body-line property-rule)))
 (def heading-marker (heading-line-marker heading-rule))
 (def heading-separator (heading-line-separator heading-rule))
 (def keyword-prefix (key-line-prefix keyword-rule))
@@ -176,37 +175,39 @@
        (,(context-key-form)
         (set-bool after-heading (bool #f)))))
 
+(def property-indent '(line-skip-horizontal start))
+(def property-key-start `(line-step ,property-indent))
+(def property-key-end `(line-scan-key ,property-key-start))
+(def property-value-start
+  `(line-skip-horizontal (line-step ,property-key-end)))
+(def property-value-end `(line-trim-end-from ,property-value-start))
+
 (def (property-line-form)
-  `(if (line-has-key-after-prefix? ,property-marker)
+  `(if (and (line-byte-equal? ,property-indent 58)
+            (line-bytes-any-in? ,property-key-start
+                                (line-step ,property-key-start)
+                                ,ascii-name-bytes)
+            (line-byte-equal? ,property-key-end 58))
        ((start-node OrgNodeProperty)
-        (token PropertyTrivia start (line-prefix-end ,property-marker))
-        (token PropertyKey (line-prefix-end ,property-marker)
-               (line-scan-key (line-prefix-end ,property-marker)))
-        (token PropertyTrivia
-               (line-scan-key (line-prefix-end ,property-marker))
-               (line-skip-horizontal
-                (line-step (line-scan-key (line-prefix-end ,property-marker)))))
-        (token PropertyValue
-               (line-skip-horizontal
-                (line-step (line-scan-key (line-prefix-end ,property-marker))))
-               (line-trim-end-from
-                (line-skip-horizontal
-                 (line-step (line-scan-key (line-prefix-end ,property-marker))))))
-        (token PropertyTrivia
-               (line-trim-end-from
-                (line-skip-horizontal
-                 (line-step (line-scan-key (line-prefix-end ,property-marker))))) end)
+        (token PropertyTrivia start ,property-key-start)
+        (token PropertyKey ,property-key-start ,property-key-end)
+        (token PropertyTrivia ,property-key-end ,property-value-start)
+        (token PropertyValue ,property-value-start ,property-value-end)
+        (token PropertyTrivia ,property-value-end end)
         (finish-node))
        ((token TextLine start end))))
 
 (def (property-body-form)
-  `(if (line-marker-ascii-ci ,property-close)
+  `(if ,(container-close-condition property-rule)
        ((token DrawerEndLine start end) (finish-node)
         (set-bool property-drawer-open (bool #f)))
        (,(property-line-form))))
 
 (def (property-open-form otherwise)
-  `(if (line-marker-ascii-ci ,property-open)
+  `(if (and ,(ascii-ci-pattern-at property-indent property-open)
+            (line-bytes-all-in?
+             ,(offset-after property-indent (string-length property-open))
+             end (9 10 13 32)))
        (,close-paragraph (start-node OrgPropertyDrawer)
         (token DrawerBeginLine start end)
         (set-bool after-heading (bool #f))
