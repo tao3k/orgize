@@ -22,6 +22,13 @@
                                   (HeadlineTrivia 18 19)
                                   (HeadlineTitle 19 20)
                                   (HeadlineTrivia 20 21))))))
+    (test-case "five-dash horizontal rule interrupts a paragraph"
+      (check-org-ast-with parse-org-rowan-events
+        "before\n-----\nafter\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 7)))
+         (OrgHorizontalRule (HorizontalRuleLine 7 13))
+         (OrgParagraph (OrgTextLine (TextLine 13 19))))))
     (test-case "POO-declared inline links preserve descriptions and malformed text"
       (check-org-ast-with parse-org-rowan-events
         "go [[https://a][α]] and [[id:b]]\n[[broken\n"

@@ -396,6 +396,24 @@
 (def table-line-predicate
   `(line-byte-equal? ,table-indent ,table-byte))
 
+(def horizontal-rule-start table-indent)
+(def horizontal-rule-condition
+  `(and ,@(let loop ((index 0) (offset horizontal-rule-start))
+            (if (= index 5) '()
+              (cons `(line-byte-equal? ,offset 45)
+                    (loop (+ index 1) `(line-step ,offset)))))
+        (line-bytes-all-in? ,(offset-after horizontal-rule-start 5)
+                            (line-content-end) (9 32 45))))
+
+(def (horizontal-rule-form otherwise)
+  `(if ,horizontal-rule-condition
+       (,close-paragraph
+        (start-node OrgHorizontalRule)
+        (token HorizontalRuleLine start end)
+        (finish-node)
+        (set-bool after-heading (bool #f)))
+       ,otherwise))
+
 (def (table-cell-forms until)
   `((start-node ,(table-line-cell-node table-rule))
     (token ,(table-line-cell-token table-rule) ,table-cell-start ,until)
@@ -445,13 +463,14 @@
         (set-bool after-heading (bool #f)))
        ((if (state table-open)
             ((finish-node) (set-bool table-open (bool #f))) ())
-        ,(property-open-form
-          `(,@(container-open-chain)
-            (if (state container-opened)
-                ((set-bool container-opened (bool #f)))
-                (,@(opaque-open-chain)
-                 (if (uint-positive? (state active-opaque-block))
-                     () (,(headline-form))))))))))
+        ,(horizontal-rule-form
+          `(,(property-open-form
+              `(,@(container-open-chain)
+                (if (state container-opened)
+                    ((set-bool container-opened (bool #f)))
+                    (,@(opaque-open-chain)
+                     (if (uint-positive? (state active-opaque-block))
+                         () (,(headline-form))))))))))))
 
 (def list-column '(state list-column))
 (def list-top '(uint-divide (stack-top list-frames) (uint 2)))

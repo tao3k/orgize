@@ -16,6 +16,7 @@
         (check (graph-projection? org-v1-graph-projection) => #t)
         (check (map graph-node-syntax-kind nodes)
                => '(OrgFile OrgSection OrgPropertyDrawer OrgDrawer OrgParagraph
+                            OrgHorizontalRule
                             OrgKeyword OrgBabelCall OrgPlanning OrgClock
                             OrgPlainList OrgListItem
                             OrgTable OrgTableRow OrgTableRuleRow OrgTableCell
@@ -24,7 +25,8 @@
                             OrgCommentBlock OrgExportBlock OrgLink))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "property-drawer" "drawer"
-                                "paragraph" "keyword" "babel-call" "planning" "clock"
+                                "paragraph" "horizontal-rule" "keyword" "babel-call"
+                                "planning" "clock"
                                 "plain-list" "item" "table" "table-row"
                                 "table-rule-row" "table-cell"
                                 "node-property" "src-block" "dynamic-block" "quote-block"

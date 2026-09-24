@@ -2,7 +2,7 @@
 use gerbil_parser_rowan::TreeEvent;
 
 pub const PARSER_DIGEST: &str =
-    "sha256:eb9489c85a2a2dd2ea70d1230f44e410390a178b2858425c6175c376ff3958fe";
+    "sha256:9989801da9d058fcc7571303c06201516ccdb08bee4e84cb51745be845055cf7";
 
 pub fn parse_org_line_events(source: &str) -> Vec<TreeEvent> {
     let bytes = source.as_bytes();
@@ -25,7 +25,7 @@ pub fn parse_org_line_events(source: &str) -> Vec<TreeEvent> {
         if line.starts_with("* ") {
             events.push(TreeEvent::StartNode(1));
             events.push(TreeEvent::Token {
-                kind: 27,
+                kind: 28,
                 start,
                 end,
             });
@@ -33,7 +33,7 @@ pub fn parse_org_line_events(source: &str) -> Vec<TreeEvent> {
         } else {
             events.push(TreeEvent::StartNode(13));
             events.push(TreeEvent::Token {
-                kind: 37,
+                kind: 38,
                 start,
                 end,
             });

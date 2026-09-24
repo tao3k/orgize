@@ -110,6 +110,50 @@ fn org_scheme_context_algorithm_aot_projects_paragraph_elements() {
 }
 
 #[test]
+fn org_scheme_context_algorithm_aot_projects_horizontal_rules() {
+    let source = "before\n-----\nafter\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme horizontal-rule events build a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("horizontal rule projects through the Org Element graph");
+    let kinds: Vec<_> = records.iter().map(|record| record.kind).collect();
+    assert_eq!(
+        kinds,
+        ["org-data", "paragraph", "horizontal-rule", "paragraph"]
+    );
+    let rule = records
+        .iter()
+        .find(|record| record.kind == "horizontal-rule")
+        .expect("horizontal rule is a typed Element");
+    assert_eq!(rule.range.start(), 7u32.into());
+    assert_eq!(rule.range.end(), 13u32.into());
+
+    let near_misses = "----\n----- x\n";
+    let events = generated_context_events::parse_org_rowan_events(near_misses);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        near_misses,
+        &events,
+    )
+    .expect("non-rules remain lossless paragraphs");
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("non-rules project through the Org Element graph");
+    assert!(
+        !records
+            .iter()
+            .any(|record| record.kind == "horizontal-rule")
+    );
+}
+
+#[test]
 fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
     let source = "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n";
     let events = generated_context_events::parse_org_rowan_events(source);

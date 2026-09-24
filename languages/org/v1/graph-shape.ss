@@ -29,6 +29,7 @@
    (node 'OrgDrawer "element" "drawer"
          (list (field 'DrawerName "name")))
    (node 'OrgParagraph "element" "paragraph" '())
+   (node 'OrgHorizontalRule "element" "horizontal-rule" '())
    (node 'OrgKeyword "element" "keyword"
          (list (field 'KeywordKey "key") (field 'KeywordValue "value")))
    (node 'OrgBabelCall "element" "babel-call"
