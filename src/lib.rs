@@ -23,6 +23,8 @@ pub mod fmt;
 pub mod lint;
 mod lint_runtime_validation;
 mod org;
+/// Scheme-AOT Org parser and Element graph for Cargo-only consumers.
+pub mod org_aot;
 mod replace;
 mod runtime;
 mod syntax;

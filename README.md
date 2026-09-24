@@ -10,6 +10,24 @@ non-mutating by default: source blocks, links, agenda metadata, capture plans,
 publishing graphs, and runtime-adjacent Org features are projected as
 source-backed data instead of being executed.
 
+The Scheme-owned AOT parser is available to Cargo consumers without installing
+Gerbil. It builds a lossless Rowan tree and an Org Element graph from generated
+artifacts shipped with this crate:
+
+```rust
+use orgize::org_aot::{org_contract_pack, parse_org_aot};
+
+let document = parse_org_aot("* Evidence\n[[id:proof]]\n")?;
+assert_eq!(document.syntax().to_string(), "* Evidence\n[[id:proof]]\n");
+assert!(document.records().iter().any(|record| record.kind == "link"));
+assert!(!org_contract_pack().rules.is_empty());
+# Ok::<(), orgize::org_aot::OrgAotError>(())
+```
+
+This is an opt-in parser surface while Org syntax coverage and the older
+`Org::parse` consumers are being migrated. The contract pack is generated from
+Orgize's Scheme declarations; its current evaluator is a Rust graph executor.
+
 Live demo: <https://tao3k.github.io/orgize/>
 
 ## Parse

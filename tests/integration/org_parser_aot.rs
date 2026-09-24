@@ -1,51 +1,28 @@
 //! Scheme POO declaration -> gerbil-parser AOT table -> contextual Rowan CST.
 
-#[rustfmt::skip]
-#[path = "../../languages/org/v1/generated/parser.rs"]
-mod grammar;
-#[rustfmt::skip]
-#[path = "../../languages/org/v1/generated/structure.rs"]
-mod structure;
-#[rustfmt::skip]
-#[path = "../../languages/org/v1/generated/graph.rs"]
-mod graph;
-
-mod contract_plan {
-    use orgize::contract_feature::{
-        ContractAssertionRule, ContractBindingRule, ContractExpectationRule, ContractFieldMatch,
-        ContractOperator, ContractPack, ContractQueryRule, ContractRelation, ContractRule,
-        ContractScope, ContractSeverity,
-    };
-    include!("../../languages/org/v1/modules/org-contract/generated/contract-plan.rs");
-}
-
 use gerbil_parser_rowan::SyntaxNode;
 
 fn parse(source: &str) -> SyntaxNode {
-    let parsed = gerbil_parser_rowan::parse_structural_lines(
-        &grammar::LANGUAGE,
-        &structure::STRUCTURE,
-        source,
-    )
-    .unwrap_or_else(|error| panic!("Org structural AOT rejected source: {error:?}"));
+    let parsed = orgize::org_aot::parse_org_aot(source)
+        .unwrap_or_else(|error| panic!("Org structural AOT rejected source: {error:?}"));
     assert_eq!(parsed.receipt().language, "org");
     assert_eq!(
         parsed.receipt().grammar_digest,
-        grammar::LANGUAGE.grammar_digest
+        orgize::org_aot::org_language_spec().grammar_digest
     );
     assert_eq!(
         parsed.receipt().parser_digest,
-        Some(structure::STRUCTURE.parser_digest)
+        Some(orgize::org_aot::org_structure_spec().parser_digest)
     );
     parsed.syntax()
 }
 
 fn name(node: &SyntaxNode) -> &'static str {
-    grammar::LANGUAGE.kinds[usize::from(node.kind().0)].name
+    orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name
 }
 
 fn token_name(token: &gerbil_parser_rowan::SyntaxToken) -> &'static str {
-    grammar::LANGUAGE.kinds[usize::from(token.kind().0)].name
+    orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
 #[test]
@@ -155,9 +132,12 @@ fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend
         ("OrgCommentBlock", "comment-block"),
         ("OrgExportBlock", "export-block"),
     ];
-    let records =
-        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
-            .expect("greater blocks use the Scheme-owned graph projection");
+    let records = gerbil_parser_rowan::project_syntax_graph(
+        orgize::org_aot::org_language_spec(),
+        orgize::org_aot::org_graph_spec(),
+        &root,
+    )
+    .expect("greater blocks use the Scheme-owned graph projection");
     for (syntax_kind, graph_kind) in expected {
         let node = root
             .descendants()
@@ -228,9 +208,12 @@ fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
             .count(),
         1
     );
-    let records =
-        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
-            .expect("nested Element graph follows recursive block ancestry");
+    let records = gerbil_parser_rowan::project_syntax_graph(
+        orgize::org_aot::org_language_spec(),
+        orgize::org_aot::org_graph_spec(),
+        &root,
+    )
+    .expect("nested Element graph follows recursive block ancestry");
     let quote_record = records
         .iter()
         .find(|record| record.kind == "quote-block")
@@ -297,18 +280,22 @@ fn a_heading_bounds_source_block_recovery_even_when_an_end_marker_follows() {
 
 #[test]
 fn structural_artifact_must_match_the_same_grammar_digest() {
-    let mut stale = structure::STRUCTURE;
+    let mut stale = *orgize::org_aot::org_structure_spec();
     stale.grammar_digest = "sha256:0000000000000000000000000000000000000000000000000000000000";
-    let error = gerbil_parser_rowan::parse_structural_lines(&grammar::LANGUAGE, &stale, "")
-        .expect_err("a stale POO projection cannot be silently used");
+    let error = gerbil_parser_rowan::parse_structural_lines(
+        orgize::org_aot::org_language_spec(),
+        &stale,
+        "",
+    )
+    .expect_err("a stale POO projection cannot be silently used");
     assert_eq!(error.diagnostic.reason_kind, "invalid-structural-aot");
     assert_eq!(
         error.receipt.grammar_digest,
-        grammar::LANGUAGE.grammar_digest
+        orgize::org_aot::org_language_spec().grammar_digest
     );
     assert_eq!(
         error.receipt.parser_digest,
-        Some(structure::STRUCTURE.parser_digest)
+        Some(orgize::org_aot::org_structure_spec().parser_digest)
     );
 }
 
@@ -366,9 +353,12 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
             item.to_string()
         );
     }
-    let records =
-        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
-            .expect("list projection uses Scheme-owned Element kinds");
+    let records = gerbil_parser_rowan::project_syntax_graph(
+        orgize::org_aot::org_language_spec(),
+        orgize::org_aot::org_graph_spec(),
+        &root,
+    )
+    .expect("list projection uses Scheme-owned Element kinds");
     let list = records
         .iter()
         .find(|record| record.kind == "plain-list")
@@ -415,9 +405,12 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
             .count(),
         1
     );
-    let records =
-        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
-            .expect("Scheme-owned keyword projects through AOT graph");
+    let records = gerbil_parser_rowan::project_syntax_graph(
+        orgize::org_aot::org_language_spec(),
+        orgize::org_aot::org_graph_spec(),
+        &root,
+    )
+    .expect("Scheme-owned keyword projects through AOT graph");
     let keyword = records
         .iter()
         .find(|record| record.kind == "keyword")
@@ -636,9 +629,12 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
     for (source, expected_records, expected_blocks, expected_links, expected_paragraphs) in fixtures
     {
         let root = parse(source);
-        let records =
-            gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
-                .expect("Scheme AOT graph rule must match the same grammar");
+        let records = gerbil_parser_rowan::project_syntax_graph(
+            orgize::org_aot::org_language_spec(),
+            orgize::org_aot::org_graph_spec(),
+            &root,
+        )
+        .expect("Scheme AOT graph rule must match the same grammar");
         assert_eq!(records.len(), expected_records);
         assert_eq!(records[0].kind, "org-data");
         assert_eq!(records[0].parent_id, None);
@@ -708,70 +704,69 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
     let source = include_str!(
         "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org"
     );
-    let root = parse(source);
-    let records =
-        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &root)
-            .expect("Org Element projection matches the parser digest");
-    assert_eq!(contract_plan::CONTRACTS.rules.len(), 4);
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("production Org AOT entrypoint parses and projects Elements");
+    assert_eq!(document.syntax().to_string(), source);
+    assert_eq!(
+        document.receipt().grammar_digest,
+        orgize::org_aot::org_language_spec().grammar_digest
+    );
+    let records = document.records();
+    assert_eq!(orgize::org_aot::org_contract_pack().rules.len(), 4);
     let evidence = records
         .iter()
         .find(|record| record.kind == "headline" && record.field("title") == Some("Evidence"))
         .expect("fixture has an Evidence headline");
     let scope = evidence.parent_id.expect("Evidence has a parent headline");
-    let contract = contract_plan::CONTRACTS
+    let contract = orgize::org_aot::org_contract_pack()
         .rules
         .iter()
         .find(|rule| rule.id == "section.scope.v1")
         .expect("Scheme AOT pack includes the subtree contract");
-    let results = orgize::contract_feature::evaluate_contract(
-        contract,
-        &graph::GRAPH,
-        &records,
-        orgize::contract_feature::ContractScopeNodeId(scope),
-    )
-    .expect("Scheme-AOT contract has valid Element bindings");
+    let results = document
+        .evaluate_contract(
+            contract,
+            orgize::contract_feature::ContractScopeNodeId(scope),
+        )
+        .expect("Scheme-AOT contract has valid Element bindings");
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].assertion_id, "section.has-evidence-link");
     assert_eq!(results[0].matched_count, 1);
     assert!(results[0].passed);
 
-    let document_contract = contract_plan::CONTRACTS
+    let document_contract = orgize::org_aot::org_contract_pack()
         .rules
         .iter()
         .find(|rule| rule.id == "document.headlines.v1")
         .expect("Scheme AOT pack includes the document contract");
-    let document_results = orgize::contract_feature::evaluate_contract(
-        document_contract,
-        &graph::GRAPH,
-        &records,
-        orgize::contract_feature::ContractScopeNodeId(0),
-    )
-    .expect("document contract uses the same Element graph");
+    let document_results = document
+        .evaluate_contract(
+            document_contract,
+            orgize::contract_feature::ContractScopeNodeId(0),
+        )
+        .expect("document contract uses the same Element graph");
     assert_eq!(document_results.len(), 1);
     assert!(document_results[0].passed);
     assert!(document_results[0].matched_count >= 2);
     assert_eq!(
-        orgize::contract_feature::evaluate_contract(
+        document.evaluate_contract(
             document_contract,
-            &graph::GRAPH,
-            &records,
             orgize::contract_feature::ContractScopeNodeId(scope),
         ),
         Err(orgize::contract_feature::ContractExecutionError::InvalidScope)
     );
 
-    let property_contract = contract_plan::CONTRACTS
+    let property_contract = orgize::org_aot::org_contract_pack()
         .rules
         .iter()
         .find(|rule| rule.id == "document.properties.v1")
         .expect("Scheme AOT pack includes the document property contract");
-    let property_results = orgize::contract_feature::evaluate_contract(
-        property_contract,
-        &graph::GRAPH,
-        &records,
-        orgize::contract_feature::ContractScopeNodeId(0),
-    )
-    .expect("document property query is admitted");
+    let property_results = document
+        .evaluate_contract(
+            property_contract,
+            orgize::contract_feature::ContractScopeNodeId(0),
+        )
+        .expect("document property query is admitted");
     assert_eq!(property_results.len(), 1);
     assert!(property_results[0].passed);
 
@@ -782,18 +777,17 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
         })
         .expect("fixture has the override section")
         .id;
-    let override_contract = contract_plan::CONTRACTS
+    let override_contract = orgize::org_aot::org_contract_pack()
         .rules
         .iter()
         .find(|rule| rule.id == "section.override-title.v1")
         .expect("Scheme AOT pack includes the override title contract");
-    let override_results = orgize::contract_feature::evaluate_contract(
-        override_contract,
-        &graph::GRAPH,
-        &records,
-        orgize::contract_feature::ContractScopeNodeId(override_scope),
-    )
-    .expect("scope-bound title containment is admitted");
+    let override_results = document
+        .evaluate_contract(
+            override_contract,
+            orgize::contract_feature::ContractScopeNodeId(override_scope),
+        )
+        .expect("scope-bound title containment is admitted");
     assert_eq!(override_results.len(), 1);
     assert_eq!(override_results[0].matched_count, 1);
     assert!(override_results[0].passed);
@@ -803,12 +797,7 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
         ..*contract
     };
     assert_eq!(
-        orgize::contract_feature::evaluate_contract(
-            &stale,
-            &graph::GRAPH,
-            &records,
-            orgize::contract_feature::ContractScopeNodeId(scope),
-        ),
+        document.evaluate_contract(&stale, orgize::contract_feature::ContractScopeNodeId(scope),),
         Err(orgize::contract_feature::ContractExecutionError::StaleGraph)
     );
 }
