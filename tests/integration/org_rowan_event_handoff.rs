@@ -58,19 +58,11 @@ fn nested_org_events_reach_rowan_without_a_structural_engine_rule() {
         org_event!(finish),
         org_event!(finish),
     ];
-    let parsed = parse_generated_events(
-        org_language_spec(),
-        HANDOFF_TEST_DIGEST,
-        source,
-        &events,
-    )
-    .expect("Org event stream satisfies the generic Rowan contract");
+    let parsed = parse_generated_events(org_language_spec(), HANDOFF_TEST_DIGEST, source, &events)
+        .expect("Org event stream satisfies the generic Rowan contract");
 
     assert_eq!(parsed.syntax().to_string(), source);
-    assert_eq!(
-        parsed.receipt().parser_digest,
-        Some(HANDOFF_TEST_DIGEST)
-    );
+    assert_eq!(parsed.receipt().parser_digest, Some(HANDOFF_TEST_DIGEST));
     assert_eq!(
         parsed.selective_glr_receipt().winner_reason,
         "scheme-aot-events"
