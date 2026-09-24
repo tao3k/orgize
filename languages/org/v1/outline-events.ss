@@ -1,5 +1,5 @@
 ;;; -*- Gerbil -*-
-;;; Org-owned section containment and opaque source-block recovery.
+;;; Org-owned section containment and opaque block recovery.
 ;;; This pass is not a runtime dependency of Cargo consumers.
 
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
@@ -8,6 +8,7 @@
                  block-line-case-insensitive block-line-indent
                  block-line-heading-bound block-line-begin-token
                  block-line-body-token block-line-end-token
+                 block-line-contents block-line-body-line
                  block-line-header block-header-argument-token
                  block-header-trivia-token line-structure-heading
                  heading-line-heading-token heading-line-fields
@@ -84,9 +85,10 @@
         (loop (cdddr rest) (cons (cons (caddr token) (cadddr token))
                                 reversed))))))
 
-(def (source-block-spec bytes span)
+(def (opaque-block-spec bytes span)
   (ormap (lambda (block)
-           (and (eq? (block-line-block-node block) 'OrgSourceBlock)
+           (and (eq? (block-line-contents block) 'opaque)
+                (not (block-line-body-line block))
                 (line-marker? bytes span (block-line-opening block)
                               (block-line-case-insensitive block)
                               (block-line-indent block))
@@ -101,7 +103,7 @@
              (cons events open?)))
          (cons reversed #f) (reverse spans)))
 
-(def (emit-source-block reversed bytes block pending closing)
+(def (emit-opaque-block reversed bytes block pending closing)
   (let* ((lines (reverse pending))
          (opening (car lines))
          (body (cdr lines))
@@ -114,19 +116,27 @@
                        (+ indent-end
                           (u8vector-length
                            (string->utf8 (block-line-opening block))))))
-         (argument-start (skip-horizontal bytes prefix-end (cdr opening)))
-         (argument-end (scan-word bytes argument-start (cdr opening)))
+         (argument-start (and header
+                              (skip-horizontal bytes prefix-end
+                                               (cdr opening))))
+         (argument-end (and header
+                            (scan-word bytes argument-start
+                                       (cdr opening))))
          (events
           (append
-           (list '(start OrgSourceBlock)
+           (list (list 'start (block-line-block-node block))
                  (list 'token (block-line-begin-token block)
-                       (car opening) prefix-end))
-           (token-if-nonempty (block-header-trivia-token header)
-                              prefix-end argument-start)
-           (token-if-nonempty (block-header-argument-token header)
-                              argument-start argument-end)
-           (token-if-nonempty (block-header-trivia-token header)
-                              argument-end (cdr opening))
+                       (car opening)
+                       (if header prefix-end (cdr opening))))
+           (if header
+             (append
+              (token-if-nonempty (block-header-trivia-token header)
+                                 prefix-end argument-start)
+              (token-if-nonempty (block-header-argument-token header)
+                                 argument-start argument-end)
+              (token-if-nonempty (block-header-trivia-token header)
+                                 argument-end (cdr opening)))
+             '())
            (map (lambda (span) (list 'token (block-line-body-token block)
                                      (car span) (cdr span))) body)
            (list (list 'token (block-line-end-token block)
@@ -156,7 +166,7 @@
                           (block-line-case-insensitive block)
                           (block-line-indent block))
             (loop (cdr rest) levels
-                  (emit-source-block reversed bytes block pending span)
+                  (emit-opaque-block reversed bytes block pending span)
                   '() #f #f #f))
            ((and (block-line-heading-bound block) (> level 0))
             (let (state (emit-text-spans reversed bytes pending))
@@ -172,7 +182,7 @@
                (table-line? (org-table-line? bytes span))
                (level (org-headline-level bytes start end))
                (opening (and (not table-line?) (= level 0)
-                             (source-block-spec bytes span)))
+                             (opaque-block-spec bytes span)))
                (key-line (and (not table-line?) (= level 0) (not opening)
                               (matching-key-line bytes span))))
           (cond

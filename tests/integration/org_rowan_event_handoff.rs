@@ -133,6 +133,29 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .filter_map(|record| record.field("text"))
         .collect();
     assert_eq!(cells, [" a ", " b ", " c\\|d ", " α "]);
+    let example = records
+        .iter()
+        .find(|record| record.kind == "example-block")
+        .expect("Scheme example block projects as an Element");
+    assert_eq!(example.field("body"), Some("| literal |\n"));
+    let export = records
+        .iter()
+        .find(|record| record.kind == "export-block")
+        .expect("Scheme export block projects as an Element");
+    assert_eq!(export.field("backend"), Some("html"));
+    assert_eq!(export.field("body"), Some("<b>α</b>\n"));
+    let comment = records
+        .iter()
+        .find(|record| record.kind == "comment-block")
+        .expect("Scheme comment block projects as an Element");
+    assert_eq!(comment.field("body"), Some("ignored\n"));
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "table")
+            .count(),
+        1
+    );
 
     let transitional = orgize::org_aot::parse_org_aot(source)
         .expect("the current production parser accepts the handoff fixture");

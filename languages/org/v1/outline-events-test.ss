@@ -109,6 +109,26 @@
           (OrgSection
            (OrgHeadline (HeadlineLine 30 32) (HeadlineTrivia 32 33)
                         (HeadlineTitle 33 37) (HeadlineTrivia 37 38)))))))
+    (test-case "opaque block declarations keep their bodies literal"
+      (check-org-ast
+       "#+begin_example\n| not table |\n#+end_example\n#+begin_export html\n<b>α</b>\n#+end_export\n#+begin_comment\nignored\n#+end_comment\n"
+       (OrgFile
+        (OrgExampleBlock (BlockBeginLine 0 16) (TextLine 16 30)
+                         (BlockEndLine 30 44))
+        (OrgExportBlock (BlockBeginLine 44 58)
+                        (BlockHeaderTrivia 58 59) (ExportBackend 59 63)
+                        (BlockHeaderTrivia 63 64) (TextLine 64 74)
+                        (BlockEndLine 74 87))
+        (OrgCommentBlock (BlockBeginLine 87 103) (TextLine 103 111)
+                         (BlockEndLine 111 125)))))
+    (test-case "unclosed example recovers before the next headline"
+      (check-org-ast "#+begin_example\nbody\n* Next\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 16))
+                       (OrgTextLine (TextLine 16 21)))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 21 22) (HeadlineTrivia 22 23)
+                       (HeadlineTitle 23 27) (HeadlineTrivia 27 28))))))
     (test-case "Rowan fixture matches executable Scheme events"
       (let* ((options (JSONReadOptions object-as-hash: #t))
              (generated (string->json (outline-event-fixture-json) options))
