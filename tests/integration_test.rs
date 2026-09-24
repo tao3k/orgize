@@ -76,6 +76,8 @@ mod org_cutover_parity;
 mod org_dynamic_block;
 #[path = "integration/org_element_query.rs"]
 mod org_element_query;
+#[path = "integration/org_event_aot_contract.rs"]
+mod org_event_aot_contract;
 #[path = "integration/org_headline_function_aot.rs"]
 mod org_headline_function_aot;
 #[path = "integration/org_named_drawer.rs"]
