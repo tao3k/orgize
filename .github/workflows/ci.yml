@@ -158,7 +158,7 @@ jobs:
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/orgizepy-wheel/bin/python" \
             "$GITHUB_WORKSPACE/bindings/python/tests/installed_smoke.py"
-      - name: Reject incomplete wheel from source distribution
+      - name: Qualify complete SDK from source distribution
         if: runner.os == 'Linux'
         shell: bash
         run: |
@@ -172,6 +172,24 @@ jobs:
             *'the complete orgizepy SDK requires'*) ;;
             *) echo "$output"; exit 1 ;;
           esac
+          mkdir -p "$RUNNER_TEMP/orgizepy-sdist-source" "$RUNNER_TEMP/orgizepy-sdist-gerbil"
+          tar -xzf bindings/python/dist/orgizepy-*.tar.gz \
+            -C "$RUNNER_TEMP/orgizepy-sdist-source"
+          cd "$RUNNER_TEMP/orgizepy-sdist-source/orgizepy-0.1.0"
+          export GERBIL_PATH="$RUNNER_TEMP/orgizepy-sdist-gerbil"
+          gxpkg deps --install
+          gxi -:max-heap=512M build.ss compile
+          python3 bindings/c/build-native-library.py \
+            --output src/orgizepy/lib/liborgize.so
+          uv build --wheel
+          "$GITHUB_WORKSPACE/bindings/python/.venv/bin/auditwheel" repair \
+            --wheel-dir "$RUNNER_TEMP/orgizepy-sdist-repaired" dist/orgizepy-*.whl
+          uv venv "$RUNNER_TEMP/orgizepy-sdist-install"
+          uv pip install --python "$RUNNER_TEMP/orgizepy-sdist-install/bin/python" \
+            "$RUNNER_TEMP"/orgizepy-sdist-repaired/orgizepy-*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/orgizepy-sdist-install/bin/python" \
+            "$GITHUB_WORKSPACE/bindings/python/tests/installed_smoke.py"
 
   gh-pages:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')

@@ -20,7 +20,13 @@ unless the Scheme Contract library is built first; it must not silently become
 a parser-only wheel. In a repository checkout, prepare the library with
 `just python-contract-library` before building a wheel; that recipe requires an
 installed Gerbil toolchain and the compiled Orgize Scheme package. A standalone
-sdist-to-complete-wheel build is not yet qualified.
+sdist has its Python project at the extracted archive root. With its pinned
+Gerbil dependencies installed in an isolated `GERBIL_PATH`, run
+`gxi build.ss compile`, then build the Contract library into
+`src/orgizepy/lib/liborgize.so` on Linux or `liborgize.dylib` on macOS using
+`bindings/c/build-native-library.py --output <path>`. Finally build and repair
+the wheel from that root. A complete sdist-built wheel must pass the same
+installed SDK smoke test as a repository-built wheel.
 
 Raw wheels retain build-host dynamic library paths. The `python-wheel-repair`
 recipe relinks and bundles non-system dependencies; CI then tests the repaired

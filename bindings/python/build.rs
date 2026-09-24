@@ -13,13 +13,18 @@ fn main() {
         Ok("linux") => "so",
         _ => panic!("the complete orgizepy SDK is currently supported on macOS and Linux"),
     };
-    let library = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let project = manifest
+        .ancestors()
+        .find(|directory| directory.join("pyproject.toml").is_file())
+        .expect("orgizepy pyproject.toml is missing");
+    let library = project
         .join("src/orgizepy/lib")
         .join(format!("liborgize.{extension}"));
     println!("cargo:rerun-if-changed={}", library.display());
     assert!(
         library.is_file(),
-        "the complete orgizepy SDK requires {}; build the Scheme Contract library before building a wheel (just python-contract-library)",
+        "the complete orgizepy SDK requires {}; build the Scheme Contract library at this package path before building a wheel",
         library.display()
     );
 }
