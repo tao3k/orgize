@@ -444,6 +444,41 @@ fn org_scheme_context_algorithm_aot_projects_inline_link_objects() {
     );
 }
 
+#[test]
+fn org_scheme_context_algorithm_aot_projects_recursive_containers() {
+    let source = "#+begin_quote\ntext\n- item\n#+end_quote\n#+BEGIN: note\nbody\n#+END:\n:LOGBOOK:\nentry\n:END:\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme recursive containers build a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme containers project Org Elements");
+    let quote = records
+        .iter()
+        .find(|record| record.kind == "quote-block")
+        .expect("quote block Element");
+    let list = records
+        .iter()
+        .find(|record| record.kind == "plain-list")
+        .expect("nested plain list Element");
+    assert_eq!(list.parent_id, Some(quote.id));
+    let dynamic = records
+        .iter()
+        .find(|record| record.kind == "dynamic-block")
+        .expect("dynamic block Element");
+    assert_eq!(dynamic.field("name"), Some("note"));
+    let drawer = records
+        .iter()
+        .find(|record| record.kind == "drawer")
+        .expect("named drawer Element");
+    assert_eq!(drawer.field("name"), Some("LOGBOOK"));
+}
+
 fn kind(name: &str, category: KindCategory) -> u16 {
     org_language_spec()
         .kinds

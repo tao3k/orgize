@@ -247,6 +247,68 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 117 118) (HeadlineTrivia 118 119)
                        (HeadlineTitle 119 126) (HeadlineTrivia 126 127))))))
+    (test-case "recursive containers keep nested Scheme-owned Elements"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_quote\ntext\n- item\n#+end_quote\n"
+        (OrgFile
+         (OrgQuoteBlock
+          (BlockBeginLine 0 14)
+          (OrgParagraph (OrgTextLine (TextLine 14 19)))
+          (OrgPlainList
+           (OrgListItem
+            (ListBullet 19 20) (ListTrivia 20 21)
+            (OrgParagraph (OrgTextLine (TextLine 21 26)))))
+          (BlockEndLine 26 38))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN: note\ntext\n#+END:\n:LOGBOOK:\nentry\n:END:\n"
+        (OrgFile
+         (OrgDynamicBlock
+          (BlockBeginLine 0 8) (DynamicBlockHeaderTrivia 8 9)
+          (DynamicBlockName 9 13) (DynamicBlockHeaderTrivia 13 14)
+          (OrgParagraph (OrgTextLine (TextLine 14 19)))
+          (BlockEndLine 19 26))
+         (OrgDrawer
+          (DrawerBeginLine 26 27) (DrawerName 27 34)
+          (DrawerTrivia 34 36)
+          (OrgParagraph (OrgTextLine (TextLine 36 42)))
+          (DrawerEndLine 42 48)))))
+    (test-case "indented container delimiters and orphan closers retain source"
+      (check-org-ast-with parse-org-rowan-events
+        "  #+begin_quote\nx\n  #+end_quote\n"
+        (OrgFile
+         (OrgQuoteBlock
+          (BlockBeginLine 0 16)
+          (OrgParagraph (OrgTextLine (TextLine 16 18)))
+          (BlockEndLine 18 32))))
+      (check-org-ast-with parse-org-rowan-events
+        " :LOGBOOK:\nentry\n :END:\n"
+        (OrgFile
+         (OrgDrawer
+          (DrawerBeginLine 0 2) (DrawerName 2 9)
+          (DrawerTrivia 9 11)
+          (OrgParagraph (OrgTextLine (TextLine 11 17)))
+          (DrawerEndLine 17 24))))
+      (check-org-ast-with parse-org-rowan-events
+        ":END:\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 6)))))
+      (check-org-ast-with parse-org-rowan-events
+        "  #+BEGIN: note\nx\n  #+END:\n"
+        (OrgFile
+         (OrgDynamicBlock
+          (BlockBeginLine 0 10) (DynamicBlockHeaderTrivia 10 11)
+          (DynamicBlockName 11 15) (DynamicBlockHeaderTrivia 15 16)
+          (OrgParagraph (OrgTextLine (TextLine 16 18)))
+          (BlockEndLine 18 27))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_center\n#+begin_quote\nα\n#+end_quote\n#+end_center\n"
+        (OrgFile
+         (OrgCenterBlock
+          (BlockBeginLine 0 15)
+          (OrgQuoteBlock
+           (BlockBeginLine 15 29)
+           (OrgParagraph (OrgTextLine (TextLine 29 32)))
+           (BlockEndLine 32 44))
+          (BlockEndLine 44 57)))))
     (test-case "AOT IR is a typed source-owned event function"
       (let (ir (string->json parse_org_rowan_events
                              (JSONReadOptions object-as-hash: #t

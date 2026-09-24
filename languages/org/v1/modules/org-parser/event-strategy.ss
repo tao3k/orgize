@@ -70,6 +70,16 @@
   (numbered-blocks
    '(OrgSourceBlock OrgExampleBlock OrgCommentBlock OrgExportBlock)))
 
+(def container-blocks
+  (numbered-blocks
+   '(OrgDynamicBlock OrgDrawer OrgQuoteBlock OrgVerseBlock OrgCenterBlock)))
+(def ascii-letter-bytes
+  (map char->integer
+       (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
+(def ascii-name-bytes
+  (append ascii-letter-bytes
+          (map char->integer (string->list "0123456789_-"))))
+
 (def close-paragraph
   '(if (state paragraph-open)
        ((finish-node) (set-bool paragraph-open (bool #f))) ()))
@@ -136,7 +146,8 @@
         (,(keyword-form)))))
 
 (def (headline-form)
-  `(if (uint-positive? (line-marker-level ,heading-marker ,heading-separator))
+  `(if (and (uint-equal? (stack-top container-frames) (uint 0))
+            (uint-positive? (line-marker-level ,heading-marker ,heading-separator)))
        (,close-paragraph
         (close-through open-levels
                        (line-marker-level ,heading-marker ,heading-separator))
@@ -200,7 +211,7 @@
         (token DrawerBeginLine start end)
         (set-bool after-heading (bool #f))
         (set-bool property-drawer-open (bool #t)))
-       (,otherwise)))
+       ,otherwise))
 
 (def (block-header-forms rule)
   (let* ((opening (block-line-opening rule))
@@ -232,10 +243,14 @@
                   (block-header-forms rule)
                   (list '(set-bool after-heading (bool #f))
                         `(set-uint active-opaque-block (uint ,id))))
-         (,otherwise))))
+         ,otherwise)))
 
-(def (opaque-open-chain otherwise)
-  (foldr opaque-open-form otherwise opaque-blocks))
+(def (opaque-open-chain)
+  (let (chain (foldr (lambda (block rest)
+                       (list (opaque-open-form block rest)))
+                     '() opaque-blocks))
+    `((if (line-byte-equal? (line-skip-horizontal start) 35)
+          ,chain ()))))
 
 (def (opaque-body-form block-id otherwise)
   (let ((id (car block-id)) (rule (cdr block-id)))
@@ -248,6 +263,131 @@
 
 (def (opaque-body-chain)
   (foldr opaque-body-form '(token TextLine start end) opaque-blocks))
+
+(def container-indent '(line-skip-horizontal start))
+
+(def (offset-after from count)
+  (let loop ((offset from) (remaining count))
+    (if (= remaining 0) offset
+      (loop `(line-step ,offset) (- remaining 1)))))
+
+(def (ascii-ci-pattern-at from pattern)
+  (let loop ((rest (string->list pattern)) (offset from) (predicates []))
+    (if (null? rest)
+      (cons 'and (reverse predicates))
+      (let* ((upper (char->integer (char-upcase (car rest))))
+             (lower (char->integer (char-downcase (car rest))))
+             (check (if (= upper lower)
+                      `(line-byte-equal? ,offset ,upper)
+                      `(line-bytes-any-in? ,offset (line-step ,offset)
+                                           (,upper ,lower)))))
+        (loop (cdr rest) `(line-step ,offset) (cons check predicates))))))
+
+(def (container-marker-end rule)
+  (offset-after container-indent (string-length (block-line-opening rule))))
+
+(def (container-close-condition rule)
+  (let ((closing (block-line-closing rule))
+        (indent container-indent))
+    `(and ,(ascii-ci-pattern-at indent closing)
+          (line-bytes-all-in? ,(offset-after indent (string-length closing))
+                              end (9 10 13 32)))))
+
+(def (named-container-start rule)
+  `(line-skip-horizontal ,(container-marker-end rule)))
+
+(def (container-open-condition rule)
+  (let ((opening (block-line-opening rule)))
+    (cond
+     ((eq? (block-line-block-node rule) 'OrgDrawer)
+      (let* ((name-start '(line-step (line-skip-horizontal start)))
+             (name-end `(line-scan-key ,name-start))
+             (after-colon `(line-step ,name-end)))
+        `(and (line-byte-equal? ,container-indent 58)
+              (line-bytes-any-in? ,name-start (line-step ,name-start)
+                                  ,ascii-letter-bytes)
+              (line-byte-equal? ,name-end 58)
+              (line-bytes-all-in? ,after-colon end (9 10 13 32)))))
+     ((eq? (block-line-block-node rule) 'OrgDynamicBlock)
+      (let ((name-start (named-container-start rule))
+            (prefix-end (container-marker-end rule)))
+        `(and ,(ascii-ci-pattern-at container-indent opening)
+              (line-bytes-any-in? ,prefix-end (line-step ,prefix-end) (9 32))
+              (line-bytes-any-in? ,name-start (line-step ,name-start)
+                                  ,ascii-letter-bytes)
+              (line-bytes-all-in? ,name-start (line-scan-word ,name-start)
+                                  ,ascii-name-bytes))))
+     (else
+      (let (prefix-end (container-marker-end rule))
+        `(and ,(ascii-ci-pattern-at container-indent opening)
+              (or (line-bytes-all-in? ,prefix-end end (9 10 13 32))
+                  (line-bytes-any-in? ,prefix-end (line-step ,prefix-end)
+                                      (9 32)))))))))
+
+(def (container-header-forms rule)
+  (if (eq? (block-line-block-node rule) 'OrgDrawer)
+    (let* ((name-start '(line-step (line-skip-horizontal start)))
+           (name-end `(line-scan-key ,name-start)))
+      `((token ,(block-line-begin-token rule) start ,name-start)
+        (token ,(block-header-argument-token (block-line-header rule))
+               ,name-start ,name-end)
+        (token ,(block-header-trivia-token (block-line-header rule))
+               ,name-end end)))
+    (if (eq? (block-line-block-node rule) 'OrgDynamicBlock)
+      (let* ((prefix-end (container-marker-end rule))
+             (name-start (named-container-start rule))
+             (name-end `(line-scan-word ,name-start))
+             (header (block-line-header rule)))
+        `((token ,(block-line-begin-token rule) start ,prefix-end)
+          (token ,(block-header-trivia-token header)
+                 ,prefix-end ,name-start)
+          (token ,(block-header-argument-token header)
+                 ,name-start ,name-end)
+          (token ,(block-header-trivia-token header) ,name-end end)))
+      (block-header-forms rule))))
+
+(def (container-open-form block-id otherwise)
+  (let ((id (car block-id)) (rule (cdr block-id)))
+    `(if ,(container-open-condition rule)
+         ,(append (list close-paragraph
+                        (list 'start-node (block-line-block-node rule)))
+                  (container-header-forms rule)
+                  (list `(push-frame container-frames (uint ,id))
+                        '(set-bool after-heading (bool #f))
+                        '(set-bool container-opened (bool #t))))
+         ,otherwise)))
+
+(def (container-open-chain)
+  (let* ((chain (foldr (lambda (block rest)
+                         (list (container-open-form block rest)))
+                       '() container-blocks))
+         (drawer (block-by-node 'OrgDrawer)))
+    `((if (or (line-byte-equal? (line-skip-horizontal start) 35)
+              (line-byte-equal? (line-skip-horizontal start) 58))
+          ((if ,(container-close-condition drawer) () ,chain)) ()))))
+
+(def (container-close-form block-id otherwise)
+  (let ((id (car block-id)) (rule (cdr block-id)))
+    `(if (and (stack-nonempty? container-frames)
+              (uint-equal? (stack-top container-frames) (uint ,id))
+              ,(container-close-condition rule))
+         (,close-paragraph
+          ,@list-close-all
+          (if (state table-open)
+              ((finish-node) (set-bool table-open (bool #f))) ())
+          (token ,(block-line-end-token rule) start end)
+          (close-frames-while container-frames
+                              (uint-equal? (stack-top container-frames)
+                                           (uint ,id)) 1)
+          (set-bool container-closed (bool #t)))
+         ,otherwise)))
+
+(def (container-close-chain)
+  (let (chain (foldr (lambda (block rest)
+                       (list (container-close-form block rest)))
+                     '() container-blocks))
+    `((if (stack-nonempty? container-frames)
+          ,chain ()))))
 
 (def table-content-end '(line-content-end))
 (def table-indent '(line-skip-horizontal start))
@@ -306,7 +446,12 @@
        ((if (state table-open)
             ((finish-node) (set-bool table-open (bool #f))) ())
         ,(property-open-form
-          (opaque-open-chain (headline-form))))))
+          `(,@(container-open-chain)
+            (if (state container-opened)
+                ((set-bool container-opened (bool #f)))
+                (,@(opaque-open-chain)
+                 (if (uint-positive? (state active-opaque-block))
+                     () (,(headline-form))))))))))
 
 (def list-column '(state list-column))
 (def list-top '(uint-divide (stack-top list-frames) (uint 2)))
@@ -400,6 +545,8 @@
     (property-drawer-open #f) (paragraph-open #f) (after-heading #f)
     (table-open #f) (table-seen-separator #f) (table-escaped #f)
     (table-cell-start 0)
+    (container-frames (uint-stack)) (container-closed #f)
+    (container-opened #f)
     (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
     (list-column 0) (list-bullet-start 0) (list-bullet-end 0)
     (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0))
@@ -410,7 +557,10 @@
         (,(opaque-body-chain))
         ((if (state property-drawer-open)
              (,(property-body-form))
-             ,(list-or-element-form))))))
+             (,@(container-close-chain)
+              (if (state container-closed)
+                  ((set-bool container-closed (bool #f)))
+                  (,@(list-or-element-form)))))))))
 
 (def org-event-finish-forms
   '((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
@@ -419,4 +569,5 @@
     (if (state list-paragraph-open) ((finish-node)) ())
     (close-all-frames list-frames 2)
     (if (state paragraph-open) ((finish-node)) ())
+    (close-all-frames container-frames 1)
     (close-all open-levels)))
