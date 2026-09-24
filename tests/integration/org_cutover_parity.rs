@@ -46,7 +46,63 @@ macro_rules! check_org_cutover_parity {
             .filter(|record| record.kind == "headline")
             .count();
         assert_eq!(aot_headlines, baseline_headlines, "{}", $path.display());
-        for (legacy_kind, aot_kind) in [
+        let baseline_headline_ranges: Vec<_> = baseline
+            .syntax_document()
+            .syntax()
+            .descendants()
+            .filter(|node| node.kind() == SyntaxKind::HEADLINE)
+            .map(|node| node.text_range())
+            .collect();
+        let aot_headline_ranges: Vec<_> = aot
+            .syntax()
+            .descendants()
+            .filter(|node| {
+                orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name
+                    == "OrgSection"
+            })
+            .map(|node| node.text_range())
+            .collect();
+        assert_eq!(
+            aot_headline_ranges,
+            baseline_headline_ranges,
+            "{}: headline ranges",
+            $path.display()
+        );
+        let baseline_headline_depths: Vec<_> = baseline
+            .syntax_document()
+            .syntax()
+            .descendants()
+            .filter(|node| node.kind() == SyntaxKind::HEADLINE)
+            .map(|node| {
+                node.ancestors()
+                    .filter(|ancestor| ancestor.kind() == SyntaxKind::HEADLINE)
+                    .count()
+            })
+            .collect();
+        let aot_headline_depths: Vec<_> = aot
+            .syntax()
+            .descendants()
+            .filter(|node| {
+                orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name
+                    == "OrgSection"
+            })
+            .map(|node| {
+                node.ancestors()
+                    .filter(|ancestor| {
+                        orgize::org_aot::org_language_spec().kinds[usize::from(ancestor.kind().0)]
+                            .name
+                            == "OrgSection"
+                    })
+                    .count()
+            })
+            .collect();
+        assert_eq!(
+            aot_headline_depths,
+            baseline_headline_depths,
+            "{}: headline nesting",
+            $path.display()
+        );
+        for (baseline_kind, aot_kind) in [
             (SyntaxKind::PROPERTY_DRAWER, "property-drawer"),
             (SyntaxKind::LIST, "plain-list"),
             (SyntaxKind::LIST_ITEM, "item"),
@@ -61,7 +117,7 @@ macro_rules! check_org_cutover_parity {
                 .syntax_document()
                 .syntax()
                 .descendants()
-                .filter(|node| node.kind() == legacy_kind)
+                .filter(|node| node.kind() == baseline_kind)
                 .count();
             let actual = aot
                 .records()
@@ -96,7 +152,7 @@ macro_rules! check_org_cutover_parity {
 }
 
 #[test]
-fn tracked_org_fixtures_preserve_source_and_headline_count() {
+fn tracked_org_fixtures_match_core_structure_and_source_ranges() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let fixtures = org_fixtures(&root);
     assert!(
