@@ -69,16 +69,30 @@
                                     (HeadlineTrivia 46 47)
                                     (HeadlineTitle 47 52)
                                     (HeadlineTrivia 52 53)))))))
-    (test-case "unterminated blocks close at EOF without treating body as headings"
+    (test-case "unterminated blocks recover as text before the next heading"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BEGIN_SRC\n** body\n"
         (OrgFile
          (OrgSection
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
                        (HeadlineTitle 2 8) (HeadlineTrivia 8 9))
-          (OrgSourceBlock (BlockBeginLine 9 20)
-                          (BlockHeaderTrivia 20 21)
-                          (TextLine 21 29))))))
+          (OrgParagraph (OrgTextLine (TextLine 9 21)))
+          (OrgSection
+           (OrgHeadline (HeadlineLine 21 23) (HeadlineTrivia 23 24)
+                        (HeadlineTitle 24 28) (HeadlineTrivia 28 29)))))))
+    (test-case "unclosed recursive blocks preserve later headline structure"
+      (check-org-ast-with parse-org-rowan-events
+        "* First\n#+begin_quote\nunclosed\n** Next\nvisible\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 7) (HeadlineTrivia 7 8))
+          (OrgParagraph (OrgTextLine (TextLine 8 22))
+                        (OrgTextLine (TextLine 22 31)))
+          (OrgSection
+           (OrgHeadline (HeadlineLine 31 33) (HeadlineTrivia 33 34)
+                        (HeadlineTitle 34 38) (HeadlineTrivia 38 39))
+           (OrgParagraph (OrgTextLine (TextLine 39 47))))))))
     (test-case "file-local TODO and Babel CALL keys project as distinct Elements"
       (check-org-ast-with parse-org-rowan-events
         "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n"

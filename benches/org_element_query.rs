@@ -129,6 +129,22 @@ fn bench_org_element_query(c: &mut Criterion) {
             )
         })
     });
+    let unmatched_blocks = "#+begin_src rust\n".repeat(10_000);
+    aot_group.bench_function("events-rowan/10k-unclosed-blocks", |b| {
+        b.iter(|| {
+            let events =
+                generated_context_events::parse_org_rowan_events(black_box(&unmatched_blocks));
+            black_box(
+                parse_generated_events(
+                    org_language_spec(),
+                    generated_context_events::PARSER_DIGEST,
+                    &unmatched_blocks,
+                    &events,
+                )
+                .unwrap(),
+            )
+        })
+    });
     aot_group.finish();
 }
 

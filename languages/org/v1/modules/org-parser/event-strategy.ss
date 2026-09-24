@@ -11,6 +11,8 @@
                  block-line-block-node block-line-opening block-line-closing
                  block-line-body-line block-line-begin-token
                  block-line-body-token block-line-end-token block-line-header
+                 block-line-unclosed block-line-heading-bound block-line-indent
+                 block-line-contents
                  block-header-argument-token block-header-trivia-token
                  line-structure-table
                  table-line-delimiter table-line-table-node
@@ -72,6 +74,29 @@
 (def container-blocks
   (numbered-blocks
    '(OrgDynamicBlock OrgDrawer OrgQuoteBlock OrgVerseBlock OrgCenterBlock)))
+
+(def (future-close-scan rule stop)
+  `(future-line-marker-before-boundary?
+    ,(block-line-closing rule) ,stop
+    ,(heading-line-marker heading-rule)
+    ,(heading-line-separator heading-rule)
+    ,(block-line-indent rule)
+    ,(eq? (block-line-contents rule) 'elements)))
+
+(def (future-close-condition rule)
+  (unless (and (eq? (block-line-unclosed rule) 'recover-as-text)
+               (block-line-heading-bound rule))
+    (error "Org event block requires declared text recovery and heading boundary"
+           (block-line-block-node rule)))
+  (foldr
+   (lambda (parent otherwise)
+     `(or (and (uint-equal? (stack-top container-frames)
+                            (uint ,(car parent)))
+               ,(future-close-scan rule (block-line-closing (cdr parent))))
+          ,otherwise))
+   `(and (uint-equal? (stack-top container-frames) (uint 0))
+         ,(future-close-scan rule ""))
+   container-blocks))
 (def ascii-letter-bytes
   (map char->integer
        (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
@@ -206,7 +231,8 @@
   `(if (and ,(ascii-ci-pattern-at property-indent property-open)
             (line-bytes-all-in?
              ,(offset-after property-indent (string-length property-open))
-             end (9 10 13 32)))
+             end (9 10 13 32))
+            ,(future-close-condition property-rule))
        (,close-paragraph (start-node OrgPropertyDrawer)
         (token DrawerBeginLine start end)
         (set-bool after-heading (bool #f))
@@ -237,7 +263,8 @@
 
 (def (opaque-open-form block-id otherwise)
   (let ((id (car block-id)) (rule (cdr block-id)))
-    `(if (line-prefix-boundary-ascii-ci ,(block-line-opening rule))
+    `(if (and (line-prefix-boundary-ascii-ci ,(block-line-opening rule))
+              ,(future-close-condition rule))
          ,(append (list close-paragraph
                         (list 'start-node (block-line-block-node rule)))
                   (block-header-forms rule)
@@ -348,7 +375,8 @@
 
 (def (container-open-form block-id otherwise)
   (let ((id (car block-id)) (rule (cdr block-id)))
-    `(if ,(container-open-condition rule)
+    `(if (and ,(container-open-condition rule)
+              ,(future-close-condition rule))
          ,(append (list close-paragraph
                         (list 'start-node (block-line-block-node rule)))
                   (container-header-forms rule)
