@@ -93,6 +93,20 @@
            (OrgHeadline (HeadlineLine 31 33) (HeadlineTrivia 33 34)
                         (HeadlineTitle 34 38) (HeadlineTrivia 38 39))
            (OrgParagraph (OrgTextLine (TextLine 39 47))))))))
+    (test-case "malformed property body recovers as text, not a named drawer"
+      (check-org-ast-with parse-org-rowan-events
+        "* Parent\n:PROPERTIES:\n:ID: one\nmalformed\n:END:\n** Next\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 8) (HeadlineTrivia 8 9))
+          (OrgParagraph (OrgTextLine (TextLine 9 22))
+                        (OrgTextLine (TextLine 22 31))
+                        (OrgTextLine (TextLine 31 41))
+                        (OrgTextLine (TextLine 41 47)))
+          (OrgSection
+           (OrgHeadline (HeadlineLine 47 49) (HeadlineTrivia 49 50)
+                        (HeadlineTitle 50 54) (HeadlineTrivia 54 55)))))))
     (test-case "file-local TODO and Babel CALL keys project as distinct Elements"
       (check-org-ast-with parse-org-rowan-events
         "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n"

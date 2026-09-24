@@ -13,6 +13,7 @@
                  block-line-body-token block-line-end-token block-line-header
                  block-line-unclosed block-line-heading-bound block-line-indent
                  block-line-contents
+                 key-value-line-marker
                  block-header-argument-token block-header-trivia-token
                  line-structure-table
                  table-line-delimiter table-line-table-node
@@ -81,7 +82,9 @@
     ,(heading-line-marker heading-rule)
     ,(heading-line-separator heading-rule)
     ,(block-line-indent rule)
-    ,(eq? (block-line-contents rule) 'elements)))
+    ,(eq? (block-line-contents rule) 'elements)
+    ,(let (body (block-line-body-line rule))
+       (if body (key-value-line-marker body) ""))))
 
 (def (future-close-condition rule)
   (unless (and (eq? (block-line-unclosed rule) 'recover-as-text)
@@ -331,6 +334,7 @@
              (name-end `(line-scan-key ,name-start))
              (after-colon `(line-step ,name-end)))
         `(and (line-byte-equal? ,container-indent 58)
+              (not (line-marker-ascii-ci ,property-open))
               (line-bytes-any-in? ,name-start (line-step ,name-start)
                                   ,ascii-letter-bytes)
               (line-byte-equal? ,name-end 58)

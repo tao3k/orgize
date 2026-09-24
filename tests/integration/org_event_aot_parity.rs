@@ -26,6 +26,7 @@ fn unclosed_blocks_recover_before_headlines_and_parent_boundaries() {
         "* Parent\n#+begin_src rust\nbody\n** Next\nvisible\n",
         "* Parent\n#+begin_quote\nbody\n** Next\nvisible\n",
         "#+begin_quote\n#+begin_src rust\nbody\n#+end_quote\nafter\n",
+        "* Parent\n:PROPERTIES:\n:ID: one\nmalformed\n:END:\n** Next\n",
     ] {
         let structural = orgize::org_aot::parse_org_aot(source)
             .expect("structural parser recovers the unclosed block");
