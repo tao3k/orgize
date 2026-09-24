@@ -144,6 +144,10 @@ jobs:
         run: |
           gxpkg deps --install
           gerbil build
+      - name: Verify Scheme Org parser and Contract
+        run: |
+          gxpkg install github.com/tao3k/gerbil-parser@27d68a0d99531376bc3b2cb3defe710dd80e6c4b
+          just scheme-test "$GERBIL_PATH/lib" "$GERBIL_PATH/lib"
       - name: Verify independent C and Rust consumers
         run: just contract-smoke
       - name: Verify Python SDK
