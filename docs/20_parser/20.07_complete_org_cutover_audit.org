@@ -39,6 +39,15 @@ planning line. The generated tree reports five paragraphs versus seven publicly;
 item metadata and several
 other contexts remain incomplete. Matching counts do not establish matching syntax.
 
+The audit now reports three paths separately. On the current tracked fixture,
+the public Rust CST has 32 node kinds, the transitional structural scanner has
+18, and the Scheme event-AOT/Rowan path has 9. The latter already projects
+headlines, keywords, source blocks, paragraphs, property drawers, and typed
+node properties, but not the fixture's tables, lists, ordinary drawer, links,
+planning, affiliation, or inline objects. All three trees round-trip the
+source; that does not establish Element or query parity. Earlier kind counts
+in this document describe prior slices, not the event-AOT cutover state.
+
 * Headline AOT chain now has one generated Rust authority
 
 The five Org-owned headline functions (TODO directive admission, state, keyword
@@ -206,13 +215,15 @@ Gerbil. Existing Rust model/evaluator code is deleted only when corresponding
 public lint, trace, workspace, query, JSON and negative tests pass against the
 generated product. A file rename or a second shadow evaluator is not a cutover.
 
-Scheme owns declarations and pure semantic policy, not the downstream scanner
-runtime. =gerbil-parser= may interpret a lexical rule in Scheme for its own
-authoring tests, but the shipped Cargo path uses the same rule as a generated
-Rust table entry and executes it in the shared Rust lexer. Org must not add a
-second Scheme scan implementation, a generated Org-specific scan program, or
-handwritten Rust lexer. Measure and optimize the shared Rust lexer only after
-the syntax output is equivalent to the public parser.
+Scheme owns the Org recognition and contextual event algorithm. The same
+bounded event forms execute in Scheme authoring tests and AOT-compile into a
+Rust function that emits source-backed events; generic =gerbil-parser-rowan=
+validates them and builds the tree. Cargo consumers need neither Gerbil nor a
+second handwritten Org scanner. The existing =outline-events.ss= and
+=rowan-event-parser.ss= implementations are currently distinct, however; their
+algorithms must converge before one Scheme authority can be claimed. Measure
+the generated event path against equivalent syntax and Element projection,
+not against an incomplete tree with fewer fields.
 
 * Implementation order
 

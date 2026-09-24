@@ -61,6 +61,20 @@
           (OrgBabelCall (KeywordTrivia 38 40) (KeywordKey 40 44)
                         (KeywordTrivia 44 46) (KeywordValue 46 52)
                         (KeywordTrivia 52 53))))))
+    (test-case "property drawer keys stay beneath the owning headline"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\n:PROPERTIES:\n:ID: alpha\n:END:\nbody\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgPropertyDrawer
+           (DrawerBeginLine 4 17)
+           (OrgNodeProperty (PropertyTrivia 17 18) (PropertyKey 18 20)
+                            (PropertyTrivia 20 22) (PropertyValue 22 27)
+                            (PropertyTrivia 27 28))
+           (DrawerEndLine 28 34))
+          (OrgParagraph (OrgTextLine (TextLine 34 39)))))))
     (test-case "AOT IR is a typed source-owned event function"
       (let (ir (string->json parse_org_rowan_events
                              (JSONReadOptions object-as-hash: #t

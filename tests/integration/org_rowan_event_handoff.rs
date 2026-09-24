@@ -143,6 +143,38 @@ fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
     assert_eq!(babel_call.field("value"), Some("name()"));
 }
 
+#[test]
+fn org_scheme_context_algorithm_projects_headline_property_drawers() {
+    let source = "* H\n:PROPERTIES:\n:ID: alpha\n:END:\nbody\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme drawer algorithm builds a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme property drawer projects through Org Elements");
+    let headline = records
+        .iter()
+        .find(|record| record.kind == "headline")
+        .expect("owner headline");
+    let drawer = records
+        .iter()
+        .find(|record| record.kind == "property-drawer")
+        .expect("property drawer Element");
+    let property = records
+        .iter()
+        .find(|record| record.kind == "node-property")
+        .expect("typed node-property Element");
+    assert_eq!(drawer.parent_id, Some(headline.id));
+    assert_eq!(property.parent_id, Some(drawer.id));
+    assert_eq!(property.field("key"), Some("ID"));
+    assert_eq!(property.field("value"), Some("alpha"));
+}
+
 fn kind(name: &str, category: KindCategory) -> u16 {
     org_language_spec()
         .kinds

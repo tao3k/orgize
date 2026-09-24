@@ -20,6 +20,12 @@ mod graph;
 #[path = "../languages/org/v1/generated/elements.rs"]
 mod elements;
 
+#[rustfmt::skip]
+mod generated_context_events {
+    use gerbil_parser_rowan::TreeEvent;
+    include!(concat!(env!("OUT_DIR"), "/org_rowan_events.rs"));
+}
+
 fn public_kinds(root: &PublicSyntaxNode) -> BTreeMap<String, usize> {
     let mut kinds = BTreeMap::new();
     for node in root.descendants() {
@@ -48,9 +54,18 @@ fn main() {
     )
     .expect("generated Org structure should accept the pinned fixture");
     let generated_root = generated.syntax();
+    let event_tree = gerbil_parser_rowan::parse_generated_events(
+        &grammar::LANGUAGE,
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &generated_context_events::parse_org_rowan_events(source),
+    )
+    .expect("Scheme AOT Org events should accept the pinned fixture");
+    let event_root = event_tree.syntax();
 
     assert_eq!(public_root.to_string(), source);
     assert_eq!(generated_root.to_string(), source);
+    assert_eq!(event_root.to_string(), source);
     assert_eq!(
         generated.receipt().grammar_digest,
         grammar::LANGUAGE.grammar_digest
@@ -72,6 +87,7 @@ fn main() {
         elements::ORG_SECONDARY_VALUES.len()
     );
     let public_kinds = public_kinds(&public_root);
+    let event_kinds = generated_kinds(&event_root);
     let generated_kinds = generated_kinds(&generated_root);
     println!(
         "public node kinds in fixture ({}): {public_kinds:#?}",
@@ -81,6 +97,20 @@ fn main() {
         "generated node kinds in fixture ({}): {generated_kinds:#?}",
         generated_kinds.len()
     );
+    println!(
+        "Scheme event-AOT node kinds in fixture ({}): {event_kinds:#?}",
+        event_kinds.len()
+    );
+    let event_records =
+        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &event_root)
+            .expect("Scheme event-AOT tree projects through the Org Element graph");
+    let event_record_counts = event_records
+        .iter()
+        .fold(BTreeMap::new(), |mut counts, record| {
+            *counts.entry(record.kind).or_insert(0usize) += 1;
+            counts
+        });
+    println!("Scheme event-AOT Element kinds: {event_record_counts:#?}");
     let projected: BTreeSet<_> = graph::GRAPH
         .rules
         .iter()
@@ -105,6 +135,6 @@ fn main() {
         missing_objects.len()
     );
     println!(
-        "status: structural source parity only; element/object and public-AST parity not admitted"
+        "status: three-way source parity only; element/object and public-AST parity not admitted"
     );
 }
