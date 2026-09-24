@@ -66,6 +66,12 @@ path, and the public Scheme AOT function emits a pack consumed by
 development environment; using its committed Rust artifact through Cargo does
 not.
 
+The `org_contract_tangle` example likewise accepts optional Contract and
+Element interface module paths for a consumer-owned generated Scheme source.
+Omitting both paths preserves the upstream relative imports. This only
+relocates imports; consumer Scheme admission, AOT generation and execution
+still require their own qualification.
+
 Live demo: <https://tao3k.github.io/orgize/>
 
 ## Parse
