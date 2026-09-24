@@ -2,7 +2,7 @@
 ;;; Pure Org contract query and assertion algorithms over a typed graph view.
 
 (import (only-in "types.ss" org-contract-definition?)
-        (only-in "../org-elements/interface.ss"
+        (only-in "../org-elements/runtime-interface.ss"
                  org-element-graph-view? make-org-element-query-context
                  org-element-select org-element-query-target
                  org-element-graph-records org-element-graph-id-of

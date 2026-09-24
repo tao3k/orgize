@@ -1,0 +1,4 @@
+(package:
+ orgize
+depend:
+ ("github.com/tao3k/gerbil-poo@e8c57dd44f610c634cf738b130907e0e29fe8ccf"))

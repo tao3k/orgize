@@ -1,0 +1,68 @@
+;;; -*- Gerbil -*-
+;;; Org-owned projection declarations shared by generator and runtime.
+
+(export org-v1-graph-shape org-v1-headline-extra-fields
+        org-graph-node-rust org-graph-node-category
+        org-graph-node-label org-graph-node-fields
+        org-graph-field-rust org-graph-field-label org-graph-field-mode)
+
+(defstruct org-graph-node (rust category label fields))
+(defstruct org-graph-field (rust label mode))
+
+(def (field rust label (mode 'one))
+  (make-org-graph-field rust label mode))
+
+(def (node rust category label fields)
+  (make-org-graph-node rust category label fields))
+
+(def org-v1-headline-extra-fields
+  '("source-title" "raw-value" "todo-keyword" "todo-type"
+    "priority" "tags"))
+
+(def org-v1-graph-shape
+  (list
+   (node 'OrgFile "document" "org-data" '())
+   (node 'OrgSection "section" "headline"
+         (list (field 'HeadlineLine "markers")
+               (field 'HeadlineTitle "title")))
+   (node 'OrgPropertyDrawer "element" "property-drawer" '())
+   (node 'OrgDrawer "element" "drawer"
+         (list (field 'DrawerName "name")))
+   (node 'OrgParagraph "element" "paragraph" '())
+   (node 'OrgKeyword "element" "keyword"
+         (list (field 'KeywordKey "key") (field 'KeywordValue "value")))
+   (node 'OrgBabelCall "element" "babel-call"
+         (list (field 'KeywordKey "key") (field 'KeywordValue "value")))
+   (node 'OrgPlanning "element" "planning"
+         (list (field 'PlanningKey "key" 'each)
+               (field 'PlanningValue "value" 'each)))
+   (node 'OrgClock "element" "clock"
+         (list (field 'ClockValue "value")))
+   (node 'OrgPlainList "element" "plain-list" '())
+   (node 'OrgListItem "element" "item"
+         (list (field 'ListBullet "bullet")))
+   (node 'OrgTable "element" "table" '())
+   (node 'OrgTableRow "element" "table-row" '())
+   (node 'OrgTableRuleRow "element" "table-rule-row" '())
+   (node 'OrgTableCell "object" "table-cell"
+         (list (field 'TableCellText "text")))
+   (node 'OrgNodeProperty "property" "node-property"
+         (list (field 'PropertyKey "key")
+               (field 'PropertyValue "value")))
+   (node 'OrgSourceBlock "element" "src-block"
+         (list (field 'SourceLanguage "language")
+               (field 'BlockHeaderTrivia "header")
+               (field 'TextLine "body")))
+   (node 'OrgQuoteBlock "element" "quote-block" '())
+   (node 'OrgExampleBlock "element" "example-block"
+         (list (field 'TextLine "body")))
+   (node 'OrgVerseBlock "element" "verse-block" '())
+   (node 'OrgCenterBlock "element" "center-block" '())
+   (node 'OrgCommentBlock "element" "comment-block"
+         (list (field 'TextLine "body")))
+   (node 'OrgExportBlock "element" "export-block"
+         (list (field 'ExportBackend "backend")
+               (field 'TextLine "body")))
+   (node 'OrgLink "object" "link"
+         (list (field 'LinkTarget "path")
+               (field 'LinkDescription "description")))))

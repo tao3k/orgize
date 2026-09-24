@@ -4,10 +4,10 @@
 (import (only-in :clan/poo/object .ref .slot? object?)
         (only-in :clan/poo/mop define-type Type. element?)
         (only-in :std/list/list every)
-        (only-in :gerbil-parser/src/modules/parser/graph-projection-objects
-                 graph-projection-nodes graph-node-label graph-node-fields
-                 graph-field-name)
-        (only-in "../../graph.ss" org-v1-graph-projection))
+        (only-in "../../graph-shape.ss"
+                 org-v1-graph-shape org-v1-headline-extra-fields
+                 org-graph-node-label org-graph-node-fields
+                 org-graph-field-label))
 (export +org-element-schema+ +org-element-query-kind+
         +org-element-clause-kind+ +org-element-graph-kind+
         +org-element-context-kind+ +org-element-profile-kind+
@@ -39,22 +39,20 @@
   (and (string? value) (> (string-length value) 0)))
 
 (def (org-element-kind-rule label)
-  (let loop ((rules (graph-projection-nodes org-v1-graph-projection)))
+  (let loop ((rules org-v1-graph-shape))
     (cond
      ((null? rules) #f)
-     ((equal? label (graph-node-label (car rules))) (car rules))
+     ((equal? label (org-graph-node-label (car rules))) (car rules))
      (else (loop (cdr rules))))))
 
 (def (org-element-field? rule name)
   (and rule
-       (or (and (equal? (graph-node-label rule) "headline")
-                (member name '("source-title" "raw-value"
-                               "todo-keyword" "todo-type"
-                               "priority" "tags")))
-           (let loop ((fields (graph-node-fields rule)))
+       (or (and (equal? (org-graph-node-label rule) "headline")
+                (member name org-v1-headline-extra-fields))
+           (let loop ((fields (org-graph-node-fields rule)))
              (cond
               ((null? fields) #f)
-              ((equal? name (graph-field-name (car fields))) #t)
+              ((equal? name (org-graph-field-label (car fields))) #t)
               (else (loop (cdr fields))))))))
 
 (def (org-element-query-shape? value)
