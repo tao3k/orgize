@@ -97,6 +97,19 @@
           (KeywordTrivia 0 2) (KeywordKey 2 6)
           (KeywordTrivia 6 8) (KeywordValue 8 23)
           (KeywordTrivia 23 24)))))
+    (test-case "Planning is headline-local while CLOCK is a keyed Element"
+      (check-org-ast
+       "SCHEDULED: outside\n* Task\nSCHEDULED: <2026-01-01>\nCLOCK: [a]--[b]\nSCHEDULED: later\n"
+       (OrgFile
+        (OrgParagraph (OrgTextLine (TextLine 0 19)))
+        (OrgSection
+         (OrgHeadline (HeadlineLine 19 20) (HeadlineTrivia 20 21)
+                      (HeadlineTitle 21 25) (HeadlineTrivia 25 26))
+         (OrgPlanning (PlanningKey 26 35) (PlanningTrivia 35 37)
+                      (PlanningValue 37 49) (PlanningTrivia 49 50))
+         (OrgClock (ClockKey 50 55) (ClockTrivia 55 57)
+                   (ClockValue 57 65) (ClockTrivia 65 66))
+         (OrgParagraph (OrgTextLine (TextLine 66 83)))))))
     (test-case "source block remains inside its section"
       (check-org-ast "* Code\n#+BEGIN_SRC rust\nα\n#+END_SRC\n** Next\n"
         (OrgFile

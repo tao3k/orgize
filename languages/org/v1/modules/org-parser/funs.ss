@@ -5,7 +5,8 @@
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-key-lines key-line-prefix key-line-keys
                  key-line-separator key-line-case-insensitive
-                 key-line-indent key-line-node key-line-key-token
+                 key-line-indent key-line-after-heading
+                 key-line-node key-line-key-token
                  key-line-value-token key-line-trivia-token)
         (only-in "../../parser.ss" org-v1-line-structure))
 
@@ -115,8 +116,8 @@
                                     (key-line-case-insensitive rule))))
                keys))))
 
-(def (match-key-rule bytes span rule)
-  (and (memq (key-line-node rule) '(OrgKeyword OrgBabelCall))
+(def (match-key-rule bytes span rule after-heading?)
+  (and (or (not (key-line-after-heading rule)) after-heading?)
        (let* ((start (car span))
               (end (line-content-end bytes span))
               (indent (if (key-line-indent rule)
@@ -136,8 +137,9 @@
                      (list rule key-start key-end
                            (skip-horizontal bytes (+ key-end 1) end))))))))
 
-(def (matching-key-line bytes span)
-  (ormap (lambda (rule) (match-key-rule bytes span rule))
+(def (matching-key-line bytes span after-heading?)
+  (ormap (lambda (rule)
+           (match-key-rule bytes span rule after-heading?))
          (line-structure-key-lines org-v1-line-structure)))
 
 (def (emit-key-line reversed bytes span match)

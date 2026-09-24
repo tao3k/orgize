@@ -170,6 +170,17 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         properties,
         [(Some("ID"), Some("alpha")), (Some("EMPTY"), None)]
     );
+    let planning = records
+        .iter()
+        .find(|record| record.kind == "planning")
+        .expect("Scheme headline-local planning projects as an Element");
+    assert_eq!(planning.field("key"), Some("SCHEDULED"));
+    assert_eq!(planning.field("value"), Some("<2026-01-01>"));
+    let clock = records
+        .iter()
+        .find(|record| record.kind == "clock")
+        .expect("Scheme CLOCK line projects as an Element");
+    assert_eq!(clock.field("value"), Some("[a]--[b]"));
 
     let transitional = orgize::org_aot::parse_org_aot(source)
         .expect("the current production parser accepts the handoff fixture");

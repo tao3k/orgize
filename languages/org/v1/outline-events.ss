@@ -141,7 +141,8 @@
          (spans (org-line-spans bytes)))
     (let loop ((rest spans) (levels '())
                (reversed '((start OrgFile)))
-               (pending '()) (block #f) (paragraph? #f) (table? #f))
+               (pending '()) (block #f) (paragraph? #f)
+               (table? #f) (after-heading? #f))
       (cond
        ((null? rest)
         (let* ((state (if block
@@ -162,21 +163,21 @@
                 (if parsed
                 (loop (cdr rest) levels
                       (emit-property-drawer reversed block parsed span)
-                      '() #f #f #f)
+                      '() #f #f #f #f)
                 (let (state (emit-text-spans reversed bytes
                                             (cons span pending)))
                   (loop (cdr rest) levels (car state)
-                        '() #f (cdr state) #f))))
+                        '() #f (cdr state) #f #f))))
               (loop (cdr rest) levels
                     (emit-opaque-block reversed bytes block pending span)
-                    '() #f #f #f)))
+                    '() #f #f #f #f)))
            ((and (block-line-heading-bound block) (> level 0))
             (let (state (emit-text-spans reversed bytes pending))
-              (loop rest levels (car state) '() #f (cdr state) #f)))
+              (loop rest levels (car state) '() #f (cdr state) #f #f)))
            (else (loop (cdr rest) levels reversed
-                       (cons span pending) block #f #f)))))
+                       (cons span pending) block #f #f #f)))))
        ((and table? (not (org-table-line? bytes (car rest))))
-        (loop rest levels (cons '(finish) reversed) '() #f #f #f))
+        (loop rest levels (cons '(finish) reversed) '() #f #f #f #f))
        (else
         (let* ((span (car rest))
                (start (car span))
@@ -186,7 +187,8 @@
                (opening (and (not table-line?) (= level 0)
                              (closed-block-spec bytes span)))
                (key-line (and (not table-line?) (= level 0) (not opening)
-                              (matching-key-line bytes span))))
+                              (matching-key-line bytes span
+                                                 after-heading?))))
           (cond
            (table-line?
             (loop (cdr rest) levels
@@ -195,7 +197,7 @@
                        (cons (list 'start org-table-node)
                              (close-paragraph reversed paragraph?)))
                    bytes span)
-                  '() #f #f #t))
+                  '() #f #f #t #f))
            ((> level 0)
             (let-values (((parents closed)
                           (close-through-level
@@ -204,18 +206,18 @@
               (loop (cdr rest) (cons level parents)
                     (emit-headline (cons '(start OrgSection) closed)
                                    bytes start end level)
-                    '() #f #f #f)))
+                    '() #f #f #f #t)))
            (opening
             (loop (cdr rest) levels
                   (close-paragraph reversed paragraph?)
-                  (list span) opening #f #f))
+                  (list span) opening #f #f #f))
            (key-line
             (loop (cdr rest) levels
                   (emit-key-line (close-paragraph reversed paragraph?)
                                  bytes span key-line)
-                  '() #f #f #f))
+                  '() #f #f #f #f))
            (else
             (let-values (((events open?)
                           (emit-paragraph-line reversed paragraph?
                                                bytes span)))
-              (loop (cdr rest) levels events '() #f open? #f))))))))))
+              (loop (cdr rest) levels events '() #f open? #f #f))))))))))
