@@ -185,6 +185,76 @@ fn org_scheme_context_algorithm_projects_declared_planning_and_clock() {
 }
 
 #[test]
+fn org_scheme_context_algorithm_projects_escaped_tables_and_rule_rows() {
+    let source = "* H\n| a\\|b | c |\n|---+---|\nplain\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme table algorithm builds a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme table rows project through Org Elements");
+    let table = records
+        .iter()
+        .find(|record| record.kind == "table")
+        .expect("one table Element");
+    let rows: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "table-row")
+        .collect();
+    assert_eq!(rows.len(), 1);
+    assert!(rows.iter().all(|row| row.parent_id == Some(table.id)));
+    let rule_rows: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "table-rule-row")
+        .collect();
+    assert_eq!(rule_rows.len(), 1);
+    assert_eq!(rule_rows[0].parent_id, Some(table.id));
+    let cells: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "table-cell")
+        .collect();
+    assert_eq!(cells.len(), 2);
+    assert_eq!(cells[0].field("text"), Some(" a\\|b "));
+    assert_eq!(cells[1].field("text"), Some(" c "));
+    assert!(cells.iter().all(|cell| cell.parent_id == Some(rows[0].id)));
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "paragraph")
+            .count(),
+        1
+    );
+
+    let even_escape_source = "| a\\\\|b | c |\n";
+    let even_escape_events = generated_context_events::parse_org_rowan_events(even_escape_source);
+    let even_escape_tree = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        even_escape_source,
+        &even_escape_events,
+    )
+    .expect("even backslash parity exposes the table separator");
+    let even_escape_records = project_syntax_graph(
+        org_language_spec(),
+        org_graph_spec(),
+        &even_escape_tree.syntax(),
+    )
+    .expect("even parity table cells project");
+    assert_eq!(
+        even_escape_records
+            .iter()
+            .filter(|record| record.kind == "table-cell")
+            .count(),
+        3
+    );
+}
+
+#[test]
 fn org_scheme_context_algorithm_projects_headline_property_drawers() {
     let source = "* H\n:PROPERTIES:\n:ID: alpha\n:END:\nbody\n";
     let events = generated_context_events::parse_org_rowan_events(source);

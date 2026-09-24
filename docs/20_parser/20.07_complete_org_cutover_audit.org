@@ -243,10 +243,25 @@ The event strategy now also lowers POO-declared planning and clock key-lines
 with source-backed key/value spans. Planning is only recognized immediately
 after a headline; a later =SCHEDULED:= line remains paragraph text. Empty
 values use a bounded trim offset, and the generic event compiler omits zero-byte
-tokens so Rowan still accepts the lossless source. On the tracked representative
-fixture the Scheme event path rises from nine to ten distinct node kinds and
-projects its planning Element; table, list, ordinary drawer, inline object,
+tokens so Rowan still accepts the lossless source. The tracked representative
+fixture projects its planning Element; list, ordinary drawer, inline object,
 affiliation, and public-parser parity remain open.
+
+The same Scheme event strategy now folds table rows by source bytes using the
+generic bounded line-byte iteration IR. Orgize's POO table declaration supplies
+the delimiter, row/cell node kinds, and token kinds; the Org-owned Scheme
+algorithm handles backslash parity, rule rows, cell spans, and closing a table
+before subsequent prose. The generated Rust event function contains the
+statically bounded loop and Rowan projects the table/cell hierarchy. In the
+representative fixture this raises the event path to fourteen distinct node
+kinds, versus eighteen in the transitional structural parser. List, link,
+ordinary drawer, recursive block, inline object, affiliation, recovery, and
+public-parser parity remain open; the table slice alone is not full Org parity.
+The focused 10,000-row/four-cell Criterion case checks equal table, row, and
+cell counts before measurement. On this macOS host, event→Rowan→Element took
+17.13 ms versus 18.08 ms for the transitional structural document path
+(ten samples, short warm-up). This is a bounded table-shape comparison, not
+evidence of full Org parser performance or cross-platform equivalence.
 
 * Implementation order
 

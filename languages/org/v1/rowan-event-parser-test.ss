@@ -109,6 +109,48 @@
                        (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
           (OrgPlanning (PlanningKey 4 13) (PlanningTrivia 13 16)
                        (PlanningTrivia 16 17))))))
+    (test-case "POO table rows and rule rows AOT-fold into one table Element"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\n| a | b |\n|---+---|\nplain\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgTable
+           (OrgTableRow
+            (TableSeparator 4 5)
+            (OrgTableCell (TableCellText 5 8))
+            (TableSeparator 8 9)
+            (OrgTableCell (TableCellText 9 12))
+            (TableSeparator 12 13)
+            (TableTrivia 13 14))
+           (OrgTableRuleRow (TableRuleText 14 24)))
+          (OrgParagraph (OrgTextLine (TextLine 24 30)))))))
+    (test-case "table delimiter escaping follows preceding backslash parity"
+      (check-org-ast-with parse-org-rowan-events
+        "| a\\|b | c |\n"
+        (OrgFile
+         (OrgTable
+          (OrgTableRow
+           (TableSeparator 0 1)
+           (OrgTableCell (TableCellText 1 7))
+           (TableSeparator 7 8)
+           (OrgTableCell (TableCellText 8 11))
+           (TableSeparator 11 12)
+           (TableTrivia 12 13)))))
+      (check-org-ast-with parse-org-rowan-events
+        "| a\\\\|b | c |\n"
+        (OrgFile
+         (OrgTable
+          (OrgTableRow
+           (TableSeparator 0 1)
+           (OrgTableCell (TableCellText 1 5))
+           (TableSeparator 5 6)
+           (OrgTableCell (TableCellText 6 8))
+           (TableSeparator 8 9)
+           (OrgTableCell (TableCellText 9 12))
+           (TableSeparator 12 13)
+           (TableTrivia 13 14))))))
     (test-case "block and drawer markers do not consume longer lookalikes"
       (check-org-ast-with parse-org-rowan-events
         "#+begin_src rust\n#+end_srcx\n#+END_SRC \t\n"

@@ -12,7 +12,12 @@
                  block-line-body-line block-line-begin-token
                  block-line-body-token block-line-end-token block-line-header
                  block-header-argument-token block-header-trivia-token
-                 key-value-line-marker)
+                 key-value-line-marker line-structure-table
+                 table-line-delimiter table-line-table-node
+                 table-line-row-node table-line-rule-row-node
+                 table-line-cell-node table-line-separator-token
+                 table-line-cell-token table-line-trivia-token
+                 table-line-rule-token)
         (only-in "../../parser.ss" org-v1-line-structure))
 (export org-event-initial org-event-line-forms org-event-finish-forms)
 
@@ -33,6 +38,9 @@
 (def babel-call-rule (key-line-by-node 'OrgBabelCall))
 (def planning-rule (key-line-by-node 'OrgPlanning))
 (def clock-rule (key-line-by-node 'OrgClock))
+(def table-rule (line-structure-table org-v1-line-structure))
+(def table-byte
+  (char->integer (string-ref (table-line-delimiter table-rule) 0)))
 (def property-open (block-line-opening property-rule))
 (def property-close (block-line-closing property-rule))
 (def property-marker (key-value-line-marker (block-line-body-line property-rule)))
@@ -235,20 +243,81 @@
 (def (opaque-body-chain)
   (foldr opaque-body-form '(token TextLine start end) opaque-blocks))
 
+(def table-content-end '(line-content-end))
+(def table-indent '(line-skip-horizontal start))
+(def table-index '(line-index table-byte-index))
+(def table-cell-start '(state-offset table-cell-start))
+(def table-line-predicate
+  `(line-byte-equal? ,table-indent ,table-byte))
+
+(def (table-cell-forms until)
+  `((start-node ,(table-line-cell-node table-rule))
+    (token ,(table-line-cell-token table-rule) ,table-cell-start ,until)
+    (finish-node)))
+
+(def (table-row-form)
+  `(if (and (line-bytes-all-in? ,table-indent ,table-content-end
+                                 (,table-byte 43 45 58 9 32))
+            (line-bytes-any-in? ,table-indent ,table-content-end (45)))
+       ((start-node ,(table-line-rule-row-node table-rule))
+        (token ,(table-line-rule-token table-rule) start end)
+        (finish-node))
+       ((start-node ,(table-line-row-node table-rule))
+        (for-line-bytes table-byte-index ,table-indent ,table-content-end
+          ((if (line-byte-equal? ,table-index 92)
+               ((set-bool table-escaped (not (state table-escaped))))
+               ((if (and (line-byte-equal? ,table-index ,table-byte)
+                         (not (state table-escaped)))
+                    ((if (state table-seen-separator)
+                         ,(table-cell-forms table-index)
+                         ((token ,(table-line-trivia-token table-rule)
+                                 start ,table-index)))
+                     (token ,(table-line-separator-token table-rule)
+                            ,table-index (line-step ,table-index))
+                     (set-uint table-cell-start
+                               (offset (line-step ,table-index)))
+                     (set-bool table-seen-separator (bool #t))) ())
+                (set-bool table-escaped (bool #f))))))
+        (if (state table-seen-separator)
+            ((if (line-bytes-all-in? ,table-cell-start ,table-content-end
+                                     (9 32))
+                 ((token ,(table-line-trivia-token table-rule)
+                         ,table-cell-start ,table-content-end))
+                 ,(table-cell-forms table-content-end))) ())
+        (token ,(table-line-trivia-token table-rule) ,table-content-end end)
+        (finish-node)
+        (set-bool table-seen-separator (bool #f))
+        (set-bool table-escaped (bool #f)))))
+
+(def (table-or-element-form)
+  `(if ,table-line-predicate
+       (,close-paragraph
+        (if (not (state table-open))
+            ((start-node ,(table-line-table-node table-rule))
+             (set-bool table-open (bool #t))) ())
+        ,(table-row-form)
+        (set-bool after-heading (bool #f)))
+       ((if (state table-open)
+            ((finish-node) (set-bool table-open (bool #f))) ())
+        ,(property-open-form
+          (opaque-open-chain (headline-form))))))
+
 (def org-event-initial
   '((open-levels (uint-stack)) (active-opaque-block 0)
-    (property-drawer-open #f) (paragraph-open #f) (after-heading #f)))
+    (property-drawer-open #f) (paragraph-open #f) (after-heading #f)
+    (table-open #f) (table-seen-separator #f) (table-escaped #f)
+    (table-cell-start 0)))
 
 (def org-event-line-forms
   `((if (uint-positive? (state active-opaque-block))
         (,(opaque-body-chain))
         ((if (state property-drawer-open)
              (,(property-body-form))
-             (,(property-open-form
-                (opaque-open-chain (headline-form)))))))))
+             (,(table-or-element-form)))))))
 
 (def org-event-finish-forms
   '((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
     (if (state property-drawer-open) ((finish-node)) ())
+    (if (state table-open) ((finish-node)) ())
     (if (state paragraph-open) ((finish-node)) ())
     (close-all open-levels)))
