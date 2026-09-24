@@ -5,26 +5,13 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use orgize::org_aot::{
+    org_graph_spec, org_language_spec, org_structure_spec, parse_org_aot, parse_org_event_aot,
+};
 use orgize::{Org, SyntaxNode as PublicSyntaxNode, rowan::ast::AstNode};
-
-#[rustfmt::skip]
-#[path = "../languages/org/v1/generated/parser.rs"]
-mod grammar;
-#[rustfmt::skip]
-#[path = "../languages/org/v1/generated/structure.rs"]
-mod structure;
-#[rustfmt::skip]
-#[path = "../languages/org/v1/generated/graph.rs"]
-mod graph;
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/elements.rs"]
 mod elements;
-
-#[rustfmt::skip]
-mod generated_context_events {
-    use gerbil_parser_rowan::TreeEvent;
-    include!(concat!(env!("OUT_DIR"), "/org_rowan_events.rs"));
-}
 
 fn public_kinds(root: &PublicSyntaxNode) -> BTreeMap<String, usize> {
     let mut kinds = BTreeMap::new();
@@ -37,7 +24,7 @@ fn public_kinds(root: &PublicSyntaxNode) -> BTreeMap<String, usize> {
 fn generated_kinds(root: &gerbil_parser_rowan::SyntaxNode) -> BTreeMap<&'static str, usize> {
     let mut kinds = BTreeMap::new();
     for node in root.descendants() {
-        let kind = grammar::LANGUAGE.kinds[usize::from(node.kind().0)].name;
+        let kind = org_language_spec().kinds[usize::from(node.kind().0)].name;
         *kinds.entry(kind).or_insert(0) += 1;
     }
     kinds
@@ -47,20 +34,11 @@ fn main() {
     let source = include_str!("../tests/fixtures/org-elements/representative.org");
     let public = Org::parse(source);
     let public_root = public.syntax_document().syntax().clone();
-    let generated = gerbil_parser_rowan::parse_structural_lines(
-        &grammar::LANGUAGE,
-        &structure::STRUCTURE,
-        source,
-    )
-    .expect("generated Org structure should accept the pinned fixture");
+    let generated =
+        parse_org_aot(source).expect("generated Org structure should accept the pinned fixture");
     let generated_root = generated.syntax();
-    let event_tree = gerbil_parser_rowan::parse_generated_events(
-        &grammar::LANGUAGE,
-        generated_context_events::PARSER_DIGEST,
-        source,
-        &generated_context_events::parse_org_rowan_events(source),
-    )
-    .expect("Scheme AOT Org events should accept the pinned fixture");
+    let event_tree = parse_org_event_aot(source)
+        .expect("Scheme AOT Org events should accept the pinned fixture");
     let event_root = event_tree.syntax();
 
     assert_eq!(public_root.to_string(), source);
@@ -68,11 +46,11 @@ fn main() {
     assert_eq!(event_root.to_string(), source);
     assert_eq!(
         generated.receipt().grammar_digest,
-        grammar::LANGUAGE.grammar_digest
+        org_language_spec().grammar_digest
     );
     assert_eq!(
         generated.receipt().parser_digest,
-        Some(structure::STRUCTURE.parser_digest)
+        Some(org_structure_spec().parser_digest)
     );
 
     println!(
@@ -101,17 +79,16 @@ fn main() {
         "Scheme event-AOT node kinds in fixture ({}): {event_kinds:#?}",
         event_kinds.len()
     );
-    let event_records =
-        gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &event_root)
-            .expect("Scheme event-AOT tree projects through the Org Element graph");
-    let event_record_counts = event_records
-        .iter()
-        .fold(BTreeMap::new(), |mut counts, record| {
-            *counts.entry(record.kind).or_insert(0usize) += 1;
-            counts
-        });
+    let event_record_counts =
+        event_tree
+            .records()
+            .iter()
+            .fold(BTreeMap::new(), |mut counts, record| {
+                *counts.entry(record.kind).or_insert(0usize) += 1;
+                counts
+            });
     println!("Scheme event-AOT Element kinds: {event_record_counts:#?}");
-    let projected: BTreeSet<_> = graph::GRAPH
+    let projected: BTreeSet<_> = org_graph_spec()
         .rules
         .iter()
         .flat_map(|rule| [rule.kind, rule.category])

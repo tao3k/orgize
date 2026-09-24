@@ -1,12 +1,13 @@
 //! Cargo-only Org parsing from Scheme-declared AOT language artifacts.
 //!
-//! The structural scanner is transitional: it still runs in gerbil-parser.
-//! Orgize's Scheme event algorithm must replace that call before parser
-//! ownership or public `Org::parse` parity can be claimed.
+//! The structural scanner remains transitional for existing consumers.
+//! The Scheme event-AOT entrypoint uses the same Element/query projection so
+//! parity can be established before switching the default and public facade.
 
 use gerbil_parser_rowan::{
     Diagnostic, GraphProjectionSpec, GraphRecord, LanguageSpec, LineStructureSpec, Parse,
-    ParseError, ParseReceipt, SyntaxNode, parse_structural_lines, project_syntax_graph,
+    ParseError, ParseReceipt, SyntaxNode, parse_generated_events, parse_structural_lines,
+    project_syntax_graph,
 };
 
 use crate::contract_feature::{
@@ -29,6 +30,9 @@ mod contract_plan;
 mod headline_functions;
 #[path = "org_aot_todo_directive.rs"]
 mod todo_directive;
+#[rustfmt::skip]
+#[path = "org_aot_events.rs"]
+mod generated_context_events;
 
 /// A source-backed, lossless Rowan tree and its Scheme-declared Element graph.
 #[derive(Debug)]
@@ -63,6 +67,30 @@ pub enum OrgAotError {
 pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
     let parse = parse_structural_lines(&grammar::LANGUAGE, &structure::STRUCTURE, source)
         .map_err(OrgAotError::Parse)?;
+    document_from_parse(parse)
+}
+
+/// Parse through the Org-owned Scheme algorithm AOT-compiled to Rust events.
+///
+/// This entrypoint shares the normal Element, TODO, query and contract
+/// projection. It is explicit until syntax and public AST parity is complete.
+///
+/// # Errors
+///
+/// Returns the parser receipt or Element projection diagnostic on failure.
+pub fn parse_org_event_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parse = parse_generated_events(
+        &grammar::LANGUAGE,
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .map_err(OrgAotError::Parse)?;
+    document_from_parse(parse)
+}
+
+fn document_from_parse(parse: Parse) -> Result<OrgAotDocument, OrgAotError> {
     let records = project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
         .map_err(OrgAotError::Projection)?;
     let todo_directives = records
