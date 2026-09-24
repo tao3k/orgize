@@ -181,6 +181,12 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .find(|record| record.kind == "clock")
         .expect("Scheme CLOCK line projects as an Element");
     assert_eq!(clock.field("value"), Some("[a]--[b]"));
+    let link = records
+        .iter()
+        .find(|record| record.kind == "link")
+        .expect("Scheme inline link projects as an Object");
+    assert_eq!(link.field("path"), Some("https://example.test"));
+    assert_eq!(link.field("description"), Some("α"));
 
     let transitional = orgize::org_aot::parse_org_aot(source)
         .expect("the current production parser accepts the handoff fixture");

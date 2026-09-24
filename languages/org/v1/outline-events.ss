@@ -14,13 +14,15 @@
                  heading-line-heading-token heading-line-fields
                  heading-fields-title-token heading-fields-trivia-token)
         (only-in "modules/org-parser/funs.ss"
-                 org-line-spans org-headline-level token-if-nonempty
+                 org-line-spans structural-lead-byte
+                 org-headline-level token-if-nonempty
                  skip-horizontal scan-word strip-trailing-space
                  line-marker? matching-key-line emit-key-line)
         (only-in "modules/org-parser/table.ss"
                  org-table-line? org-table-node emit-org-table-row)
         (only-in "modules/org-parser/property.ss"
                  parse-property-drawer emit-property-drawer)
+        (only-in "modules/org-parser/link.ss" emit-org-text-line)
         (only-in "parser.ss" org-v1-line-structure))
 (export parse-org-outline-events)
 
@@ -34,11 +36,6 @@
     (values levels reversed)
     (close-through-level (cdr levels) (cons '(finish) reversed) level)))
 
-(def (emit-line reversed node token start end)
-  (cons '(finish)
-        (cons (list 'token token start end)
-              (cons (list 'start node) reversed))))
-
 (def (close-paragraph reversed open?)
   (if open? (cons '(finish) reversed) reversed))
 
@@ -50,12 +47,12 @@
 
 (def (emit-paragraph-line reversed open? bytes span)
   (if (blank-line? bytes span)
-    (values (emit-line (close-paragraph reversed open?)
-                       'OrgTextLine 'TextLine (car span) (cdr span))
+    (values (emit-org-text-line (close-paragraph reversed open?)
+                                bytes (car span) (cdr span))
             #f)
-    (values (emit-line (if open? reversed
-                        (cons '(start OrgParagraph) reversed))
-                       'OrgTextLine 'TextLine (car span) (cdr span))
+    (values (emit-org-text-line
+             (if open? reversed (cons '(start OrgParagraph) reversed))
+             bytes (car span) (cdr span))
             #t)))
 
 (def (emit-headline reversed bytes start end level)
@@ -182,11 +179,14 @@
         (let* ((span (car rest))
                (start (car span))
                (end (cdr span))
+               (lead (structural-lead-byte bytes span))
                (table-line? (org-table-line? bytes span))
                (level (org-headline-level bytes start end))
                (opening (and (not table-line?) (= level 0)
+                             (memv lead '(35 58))
                              (closed-block-spec bytes span)))
                (key-line (and (not table-line?) (= level 0) (not opening)
+                              (memv lead '(35 83 115 68 100 67 99))
                               (matching-key-line bytes span
                                                  after-heading?))))
           (cond

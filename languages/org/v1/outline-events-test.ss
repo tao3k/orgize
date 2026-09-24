@@ -24,6 +24,20 @@
           (OrgTextLine (TextLine 0 4))
           (OrgTextLine (TextLine 4 6))
           (OrgTextLine (TextLine 6 8))))))
+    (test-case "inline links preserve target, description and malformed text"
+      (check-org-ast "go [[https://a][α]] and [[id:b]]\n[[broken\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 3)
+           (OrgLink (LinkTrivia 3 5) (LinkTarget 5 14)
+                    (LinkTrivia 14 16) (LinkDescription 16 18)
+                    (LinkTrivia 18 20))
+           (TextLine 20 25)
+           (OrgLink (LinkTrivia 25 27) (LinkTarget 27 31)
+                    (LinkTrivia 31 33))
+           (TextLine 33 34))
+          (OrgTextLine (TextLine 34 43))))))
     (test-case "nested and sibling sections"
       (check-org-ast "* Parent\n** Child\ntext\n* Peer\n"
         (OrgFile
