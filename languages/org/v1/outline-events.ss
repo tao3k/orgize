@@ -6,7 +6,12 @@
                  line-structure-blocks block-line-block-node
                  block-line-opening block-line-closing
                  block-line-case-insensitive block-line-indent
-                 block-line-heading-bound)
+                 block-line-heading-bound block-line-begin-token
+                 block-line-body-token block-line-end-token
+                 block-line-header block-header-argument-token
+                 block-header-trivia-token line-structure-heading
+                 heading-line-heading-token heading-line-fields
+                 heading-fields-title-token heading-fields-trivia-token)
         (only-in "line-event-parser.ss" parse-org-line-events)
         (only-in "parser.ss" org-v1-line-structure))
 (export parse-org-outline-events org-headline-level)
@@ -34,6 +39,46 @@
   (cons '(finish)
         (cons (list 'token token start end)
               (cons (list 'start node) reversed))))
+
+(def (token-if-nonempty kind start end)
+  (if (< start end) (list (list 'token kind start end)) '()))
+
+(def (skip-horizontal bytes offset end)
+  (if (and (< offset end) (memv (u8vector-ref bytes offset) '(9 32)))
+    (skip-horizontal bytes (+ offset 1) end)
+    offset))
+
+(def (scan-word bytes offset end)
+  (if (and (< offset end)
+           (not (memv (u8vector-ref bytes offset) '(9 32 10 13))))
+    (scan-word bytes (+ offset 1) end)
+    offset))
+
+(def (strip-trailing-space bytes start end)
+  (if (and (> end start)
+           (memv (u8vector-ref bytes (- end 1)) '(9 10 13 32)))
+    (strip-trailing-space bytes start (- end 1))
+    end))
+
+(def (emit-headline reversed bytes start end level)
+  (let* ((heading (line-structure-heading org-v1-line-structure))
+         (fields (heading-line-fields heading))
+         (title-start (skip-horizontal bytes (+ start level) end))
+         (title-end (max title-start
+                         (strip-trailing-space bytes title-start end)))
+         (events
+          (append
+           (list '(start OrgHeadline)
+                 (list 'token (heading-line-heading-token heading)
+                       start (+ start level)))
+           (token-if-nonempty (heading-fields-trivia-token fields)
+                              (+ start level) title-start)
+           (token-if-nonempty (heading-fields-title-token fields)
+                              title-start title-end)
+           (token-if-nonempty (heading-fields-trivia-token fields)
+                              title-end end)
+           (list '(finish)))))
+    (foldl cons reversed events)))
 
 (def (line-spans flat)
   (let loop ((rest (cdr flat)) (reversed '()))
@@ -91,17 +136,36 @@
            (emit-line acc 'OrgTextLine 'TextLine (car span) (cdr span)))
          reversed (reverse spans)))
 
-(def (emit-source-block reversed pending closing)
+(def (emit-source-block reversed bytes block pending closing)
   (let* ((lines (reverse pending))
          (opening (car lines))
          (body (cdr lines))
+         (header (block-line-header block))
+         (prefix-end (let* ((indent-end
+                            (if (block-line-indent block)
+                              (skip-horizontal bytes (car opening)
+                                               (cdr opening))
+                              (car opening))))
+                       (+ indent-end
+                          (u8vector-length
+                           (string->utf8 (block-line-opening block))))))
+         (argument-start (skip-horizontal bytes prefix-end (cdr opening)))
+         (argument-end (scan-word bytes argument-start (cdr opening)))
          (events
           (append
            (list '(start OrgSourceBlock)
-                 (list 'token 'BlockBeginLine (car opening) (cdr opening)))
-           (map (lambda (span) (list 'token 'TextLine
+                 (list 'token (block-line-begin-token block)
+                       (car opening) prefix-end))
+           (token-if-nonempty (block-header-trivia-token header)
+                              prefix-end argument-start)
+           (token-if-nonempty (block-header-argument-token header)
+                              argument-start argument-end)
+           (token-if-nonempty (block-header-trivia-token header)
+                              argument-end (cdr opening))
+           (map (lambda (span) (list 'token (block-line-body-token block)
                                      (car span) (cdr span))) body)
-           (list (list 'token 'BlockEndLine (car closing) (cdr closing))
+           (list (list 'token (block-line-end-token block)
+                       (car closing) (cdr closing))
                  '(finish)))))
     (foldl cons reversed events)))
 
@@ -126,7 +190,8 @@
                           (block-line-case-insensitive block)
                           (block-line-indent block))
             (loop (cdr rest) levels
-                  (emit-source-block reversed pending span) '() #f))
+                  (emit-source-block reversed bytes block pending span)
+                  '() #f))
            ((and (block-line-heading-bound block) (> level 0))
             (loop rest levels (emit-text-spans reversed pending) '() #f))
            (else (loop (cdr rest) levels reversed
@@ -143,8 +208,8 @@
             (let-values (((parents closed)
                           (close-through-level levels reversed level)))
               (loop (cdr rest) (cons level parents)
-                    (emit-line (cons '(start OrgSection) closed)
-                               'OrgHeadline 'HeadlineLine start end)
+                    (emit-headline (cons '(start OrgSection) closed)
+                                   bytes start end level)
                     '() #f)))
            (opening (loop (cdr rest) levels reversed (list span) opening))
            (else
