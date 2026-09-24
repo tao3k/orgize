@@ -3,7 +3,14 @@
 use std::hint::black_box;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use orgize::org_aot::parse_org_aot;
+use gerbil_parser_rowan::{parse_generated_events, project_syntax_graph};
+use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
+
+#[rustfmt::skip]
+mod generated_context_events {
+    use gerbil_parser_rowan::TreeEvent;
+    include!(concat!(env!("OUT_DIR"), "/org_rowan_events.rs"));
+}
 
 fn task_source() -> String {
     let mut source = String::with_capacity(200_000);
@@ -46,6 +53,65 @@ fn bench_org_element_query(c: &mut Criterion) {
         })
     });
     group.finish();
+
+    let events = generated_context_events::parse_org_rowan_events(&source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        &source,
+        &events,
+    )
+    .expect("Scheme AOT benchmark events satisfy Rowan");
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme AOT benchmark events project Elements");
+    assert_eq!(
+        records
+            .iter()
+            .filter(|record| record.kind == "headline")
+            .count(),
+        10_001
+    );
+    assert_eq!(
+        records
+            .iter()
+            .find(|record| record.kind == "keyword")
+            .and_then(|record| record.field("key")),
+        Some("SEQ_TODO")
+    );
+
+    let mut aot_group = c.benchmark_group("OrgSchemeEventAot");
+    aot_group.throughput(Throughput::Elements(10_000));
+    aot_group.bench_function("events-rowan/10k-headlines", |b| {
+        b.iter(|| {
+            let events = generated_context_events::parse_org_rowan_events(black_box(&source));
+            black_box(
+                parse_generated_events(
+                    org_language_spec(),
+                    generated_context_events::PARSER_DIGEST,
+                    &source,
+                    &events,
+                )
+                .unwrap(),
+            )
+        })
+    });
+    aot_group.bench_function("events-rowan-elements/10k-headlines", |b| {
+        b.iter(|| {
+            let events = generated_context_events::parse_org_rowan_events(black_box(&source));
+            let parsed = parse_generated_events(
+                org_language_spec(),
+                generated_context_events::PARSER_DIGEST,
+                &source,
+                &events,
+            )
+            .unwrap();
+            black_box(
+                project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+                    .unwrap(),
+            )
+        })
+    });
+    aot_group.finish();
 }
 
 criterion_group!(benches, bench_org_element_query);
