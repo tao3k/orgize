@@ -8,6 +8,10 @@ property property-contains all-of any-of at child-of descendant-of))
 (org-elements headline (property todo-type "todo")
               (descendant-of scope))
   )
+  (org-element-query "tasks.waiting"
+(org-elements headline (property todo-keyword "WAIT")
+              (descendant-of scope))
+  )
   (org-element-query "tasks.review-or-audit"
 (org-elements headline
               (all-of (property todo-type "todo")

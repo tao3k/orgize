@@ -14,7 +14,8 @@
         (only-in "headline-properties.ss"
                  todo-directive-rust
                  todo-state-from-directives
-                 todo-state-from-directives-rust)
+                 todo-state-from-directives-rust
+                 todo-keyword-matches? todo-keyword-matches-rust)
         (only-in "generated/query-source.ss" org-element-queries)
         (only-in "interface.ss"
                  +org-element-kinds+ org-elements-default-profile
@@ -116,18 +117,21 @@
         (check-org-element-query-aot
          org-element-queries
          "languages/org/v1/modules/org-elements/generated/query-pack.rs")
-        (check (length org-element-queries) => 4)
+        (check (length org-element-queries) => 5)
         (check-org-named-query-selection
          (car org-element-queries) context 0 '(0) id-of
          "tasks.open" '(2 5 6 7))
         (check-org-named-query-selection
          (cadr org-element-queries) context 0 '(0) id-of
-         "tasks.review-or-audit" '(6 7))
+         "tasks.waiting" '(2 5 6 7))
         (check-org-named-query-selection
          (caddr org-element-queries) context 0 '(0) id-of
-         "tasks.done" '(3))
+         "tasks.review-or-audit" '(6 7))
         (check-org-named-query-selection
          (cadddr org-element-queries) context 0 '(0) id-of
+         "tasks.done" '(3))
+        (check-org-named-query-selection
+         (list-ref org-element-queries 4) context 0 '(0) id-of
          "headlines.child" '(3))))
     (test-case "headline properties remain on the Element query graph"
       (check-org-headline-aot
@@ -136,6 +140,13 @@
       (check-org-headline-state-aot
        todo-state-from-directives-rust
        "languages/org/v1/modules/org-elements/generated/todo_state_from_directives.rs")
+      (check-org-headline-aot
+       todo-keyword-matches-rust 'todo_keyword_matches_p
+       "languages/org/v1/modules/org-elements/generated/todo_keyword_matches.rs")
+      (check (todo-keyword-matches?
+              "WAIT Review" '("WAIT | DONE") "WAIT") => #t)
+      (check (todo-keyword-matches?
+              "WAIT Review" '("HOLD | FINISHED") "WAIT") => #f)
       (check (todo-state-from-directives "TODO Work" '()) => "todo")
       (check (todo-state-from-directives "DONE Work" '()) => "done")
       (check (todo-state-from-directives "WAIT Work"

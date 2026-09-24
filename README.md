@@ -55,6 +55,8 @@ do not duplicate them in the query. Property predicates compose with hygienic
 disjunction of conjunctions before generating Rust. Each named query still
 has one scope relation; negation, joins, ordering, and aggregation are not yet
 admitted and have no implicit Rust fallback.
+The exact `todo-keyword` predicate is also Scheme-AOT generated and checks the
+document's own TODO declarations; it does not assume a global keyword list.
 
 A consumer-owned example lives in
 [`tests/fixtures/org-elements/customer-queries.org`](tests/fixtures/org-elements/customer-queries.org).

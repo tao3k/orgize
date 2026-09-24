@@ -24,15 +24,15 @@ mod contract_plan;
 #[rustfmt::skip]
 #[path = "../languages/org/v1/modules/org-elements/generated/todo_directive.rs"]
 mod todo_directive;
-#[rustfmt::skip]
-#[path = "../languages/org/v1/modules/org-elements/generated/todo_state_from_directives.rs"]
-mod todo_state_from_directives;
+#[path = "org_aot_headline_functions.rs"]
+mod headline_functions;
 
 /// A source-backed, lossless Rowan tree and its Scheme-declared Element graph.
 #[derive(Debug)]
 pub struct OrgAotDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
+    todo_directives: Vec<String>,
     todo_states: Vec<Option<&'static str>>,
     subtree_end: Vec<usize>,
 }
@@ -75,7 +75,7 @@ pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
             let title = record
                 .field("title")
                 .filter(|_| record.kind == "headline")?;
-            match todo_state_from_directives::todo_state_from_directives(title, &todo_directives) {
+            match headline_functions::todo_state_from_directives(title, &todo_directives) {
                 "" => None,
                 state => Some(state),
             }
@@ -90,6 +90,7 @@ pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
     Ok(OrgAotDocument {
         parse,
         records,
+        todo_directives,
         todo_states,
         subtree_end,
     })
@@ -120,6 +121,16 @@ pub fn org_contract_pack() -> &'static ContractPack {
 }
 
 impl OrgAotDocument {
+    pub(crate) fn headline_todo_keyword_matches(&self, record_id: usize, expected: &str) -> bool {
+        self.records
+            .get(record_id)
+            .filter(|record| record.kind == "headline")
+            .and_then(|record| record.field("title"))
+            .is_some_and(|title| {
+                headline_functions::todo_keyword_matches_p(title, &self.todo_directives, expected)
+            })
+    }
+
     pub(crate) fn element_subtree_end(&self, record_id: usize) -> Option<usize> {
         self.subtree_end.get(record_id).copied()
     }

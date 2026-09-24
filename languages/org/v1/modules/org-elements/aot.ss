@@ -36,9 +36,12 @@
 
 (def (property-value clause)
   (let (field (org-element-clause-name clause))
-    (when (member field '("title" "raw-value" "todo-keyword"
+    (when (member field '("title" "raw-value"
                           "priority" "tags"))
       (error "derived Element property lacks an AOT implementation" field))
+    (when (and (equal? field "todo-keyword")
+               (not (eq? (org-element-clause-match clause) 'exact)))
+      (error "TODO keyword AOT only admits exact matching"))
     (rust-struct OrgElementPropertyRule
       (name (rust-string field))
       (value (rust-string (org-element-clause-value clause)))

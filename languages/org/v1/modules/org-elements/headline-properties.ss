@@ -14,7 +14,8 @@
                  org-element-graph-field-of))
 (export org-element-with-headline-properties
         todo-directive-rust
-        todo-state-from-directives todo-state-from-directives-rust)
+        todo-state-from-directives todo-state-from-directives-rust
+        todo-keyword-matches? todo-keyword-matches-rust)
 
 (defstruct headline-properties (source-title title todo-keyword todo-type
                                           priority tags))
@@ -72,6 +73,17 @@
                     (string-words done-side))))
                directives)
             "done" ""))))))
+
+;; A query checks the source keyword only after the same Scheme-owned state
+;; algorithm admits it under file-local declarations. The dependency call is
+;; lowered to Rust with an explicit typed pure-function signature.
+(define-rust-pure todo-keyword-matches? todo-keyword-matches-rust
+  ((title "&str") (directives "&[String]") (expected "&str")) "bool"
+  (using ((todo-state-from-directives "&str" "&[String]"))
+    (let* ((state (todo-state-from-directives title directives))
+           (candidate (string-first-word title)))
+      (and (or (equal? state "todo") (equal? state "done"))
+           (equal? candidate expected)))))
 
 (def (document-todo-directives records kind-of field-of)
   (let loop ((rest records) (directives '()))

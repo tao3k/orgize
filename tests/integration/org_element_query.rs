@@ -45,6 +45,7 @@ fn tagged_element_queries_inherit_custom_todo_state_and_scope() {
         .find(|record| record.field("title") == Some("WAIT Audit"))
         .expect("audit task");
     check_org_aot_query!(document, "tasks.open", group.id => [first, review, audit]);
+    check_org_aot_query!(document, "tasks.waiting", group.id => [first, review, audit]);
     check_org_aot_query!(document, "tasks.review-or-audit", group.id => [review, audit]);
     check_org_aot_query!(document, "tasks.done", group.id => [done]);
     check_org_aot_query!(document, "headlines.child", 0 => [done]);
@@ -52,6 +53,20 @@ fn tagged_element_queries_inherit_custom_todo_state_and_scope() {
         document.query_named("missing", 0),
         Err(orgize::org_element_query::OrgElementQueryError::UnknownQuery)
     );
+}
+
+#[test]
+fn todo_keyword_query_obeys_file_local_declarations() {
+    let source = "#+SEQ_TODO: HOLD | FINISHED\n* HOLD Review\n* WAIT is plain text\n";
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("file-local TODO declarations are parsed from Org Elements");
+    check_org_aot_query!(document, "tasks.waiting", 0 => []);
+    let hold = document
+        .records()
+        .iter()
+        .find(|record| record.field("title") == Some("HOLD Review"))
+        .expect("custom TODO headline");
+    check_org_aot_query!(document, "tasks.open", 0 => [hold]);
 }
 
 #[test]

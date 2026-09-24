@@ -10,6 +10,16 @@
               (descendant-of scope))
 #+end_src
 
+* Waiting tasks under the file's TODO declaration
+:PROPERTIES:
+:QUERY_ID: tasks.waiting
+:END:
+
+#+begin_src scheme :org-elements
+(org-elements headline (property todo-keyword "WAIT")
+              (descendant-of scope))
+#+end_src
+
 * Review or audit tasks
 :PROPERTIES:
 :QUERY_ID: tasks.review-or-audit

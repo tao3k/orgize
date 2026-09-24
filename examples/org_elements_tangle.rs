@@ -89,8 +89,8 @@ mod tests {
     #[test]
     fn tagged_queries_are_projected_from_org_elements() {
         let source = include_str!("../languages/org/v1/modules/org-elements/queries.org");
-        let generated = tangle(source, "../interface.ss").expect("four named queries are admitted");
-        assert_eq!(generated.matches("(org-element-query ").count(), 4);
+        let generated = tangle(source, "../interface.ss").expect("five named queries are admitted");
+        assert_eq!(generated.matches("(org-element-query ").count(), 5);
         assert_eq!(
             generated,
             include_str!("../languages/org/v1/modules/org-elements/generated/query-source.ss")
