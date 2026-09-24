@@ -2,6 +2,7 @@ set dotenv-load := false
 lib_ext := if os() == "macos" { "dylib" } else { "so" }
 native_env := if os() == "macos" { "env -u SDKROOT CC=/usr/bin/cc CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc" } else { "env" }
 rust_linker := if os() == "macos" { "-C linker=/usr/bin/cc" } else { "" }
+repair_command := if os() == "macos" { "delocate-wheel -w" } else { "auditwheel repair --wheel-dir" }
 
 default:
     @just --list
@@ -30,6 +31,11 @@ python-wheel: contract-library
     {{ native_env }} python3 bindings/c/build-native-library.py --output bindings/python/src/orgizepy/lib/liborgize.{{ lib_ext }}
     {{ native_env }} uv build --directory bindings/python --wheel
     unzip -l bindings/python/dist/orgizepy-*.whl | grep 'orgizepy/lib/liborgize.{{ lib_ext }}'
+
+python-wheel-repair: python-wheel
+    uv sync --directory bindings/python --locked --group wheel-repair
+    mkdir -p bindings/python/dist/repaired
+    {{ native_env }} uv run --directory bindings/python --no-sync {{ repair_command }} "{{ justfile_directory() }}/bindings/python/dist/repaired" "{{ justfile_directory() }}/bindings/python/dist/"orgizepy-*.whl
 
 wasm-build:
     git submodule update --init --recursive wasm

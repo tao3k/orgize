@@ -132,7 +132,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config patchelf
       - name: System libraries
         if: runner.os == 'macOS'
         env:
@@ -148,13 +148,13 @@ jobs:
         run: just contract-smoke
       - name: Verify Python SDK
         run: just python-test
-      - name: Build Python wheel with Contract library
-        run: just python-wheel
+      - name: Build and repair Python wheel
+        run: just python-wheel-repair
       - name: Test installed wheel outside source tree
         shell: bash
         run: |
           uv venv "$RUNNER_TEMP/orgizepy-wheel"
-          uv pip install --python "$RUNNER_TEMP/orgizepy-wheel/bin/python" bindings/python/dist/orgizepy-*.whl
+          uv pip install --python "$RUNNER_TEMP/orgizepy-wheel/bin/python" bindings/python/dist/repaired/orgizepy-*.whl
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/orgizepy-wheel/bin/python" \
             "$GITHUB_WORKSPACE/bindings/python/tests/installed_smoke.py"

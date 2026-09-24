@@ -9,11 +9,17 @@ description = "Orgize Python SDK for parsing, contracts, and functions"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE.orgizepy"]
 dependencies = ["cffi>=2.0"]
 
 [project.optional-dependencies]
 test = ["pytest>=8.0"]
+
+[dependency-groups]
+wheel-repair = [
+    "delocate==0.13.0; sys_platform == 'darwin'",
+    "auditwheel==6.8.2; sys_platform == 'linux'",
+]
 
 [tool.maturin]
 python-source = "src"
