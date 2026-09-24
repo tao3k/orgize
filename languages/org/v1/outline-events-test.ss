@@ -1,70 +1,86 @@
 ;;; -*- Gerbil -*-
-;;; Structural AST events are asserted as values, never printed strings.
+;;; Parser-specific AST checks preserve nesting and source byte spans.
 
 (import (only-in :std/test check test-case test-suite)
         (only-in :std/encoding/json JSONReadOptions string->json)
         (only-in :std/misc/ports read-all-as-string)
-        (only-in "outline-event-fixture.ss" outline-event-fixture-json)
-        (only-in "outline-events.ss"
-                 org-headline-level parse-org-outline-events))
+        (only-in "modules/org-parser/test-syntax.ss"
+                 check-org-ast org-events-cover-source?)
+        (only-in "outline-event-fixture.ss" outline-event-fixture-json))
 (export org-v1-outline-events-test)
 
 (def org-v1-outline-events-test
-  (test-suite "Org Scheme outline events"
-    (test-case "nested and sibling headlines close at the right depth"
-      (check (parse-org-outline-events
-              "* Parent\n** Child\ntext\n* Peer\n")
-             => '((start OrgFile)
-                  (start OrgSection)
-                  (start OrgHeadline)
-                  (token HeadlineLine 0 1)
-                  (token HeadlineTrivia 1 2)
-                  (token HeadlineTitle 2 8)
-                  (token HeadlineTrivia 8 9) (finish)
-                  (start OrgSection)
-                  (start OrgHeadline)
-                  (token HeadlineLine 9 11)
-                  (token HeadlineTrivia 11 12)
-                  (token HeadlineTitle 12 17)
-                  (token HeadlineTrivia 17 18) (finish)
-                  (start OrgParagraph)
-                  (start OrgTextLine) (token TextLine 18 23) (finish)
-                  (finish) (finish) (finish)
-                  (start OrgSection)
-                  (start OrgHeadline)
-                  (token HeadlineLine 23 24)
-                  (token HeadlineTrivia 24 25)
-                  (token HeadlineTitle 25 29)
-                  (token HeadlineTrivia 29 30) (finish)
-                  (finish) (finish))))
-    (test-case "non-headline stars remain text and UTF-8 spans remain bytes"
-      (check (parse-org-outline-events "*not a headline\n* α\n")
-             => '((start OrgFile)
-                  (start OrgParagraph)
-                  (start OrgTextLine) (token TextLine 0 16) (finish)
-                  (finish)
-                  (start OrgSection)
-                  (start OrgHeadline)
-                  (token HeadlineLine 16 17)
-                  (token HeadlineTrivia 17 18)
-                  (token HeadlineTitle 18 20)
-                  (token HeadlineTrivia 20 21) (finish)
-                  (finish) (finish))))
-    (test-case "empty document has one closed root"
-      (check (parse-org-outline-events "")
-             => '((start OrgFile) (finish))))
-    (test-case "blank lines split paragraphs without losing source bytes"
-      (check (parse-org-outline-events "alpha\nbeta\n\nnext\n")
-             => '((start OrgFile)
-                  (start OrgParagraph)
-                  (start OrgTextLine) (token TextLine 0 6) (finish)
-                  (start OrgTextLine) (token TextLine 6 11) (finish)
-                  (finish)
-                  (start OrgTextLine) (token TextLine 11 12) (finish)
-                  (start OrgParagraph)
-                  (start OrgTextLine) (token TextLine 12 17) (finish)
-                  (finish) (finish))))
-    (test-case "Rowan handoff fixture matches the executable Scheme algorithm"
+  (test-suite "Org Scheme structural AST"
+    (test-case "nested and sibling sections"
+      (check-org-ast "* Parent\n** Child\ntext\n* Peer\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 8) (HeadlineTrivia 8 9))
+          (OrgSection
+           (OrgHeadline (HeadlineLine 9 11) (HeadlineTrivia 11 12)
+                        (HeadlineTitle 12 17) (HeadlineTrivia 17 18))
+           (OrgParagraph (OrgTextLine (TextLine 18 23)))))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 23 24) (HeadlineTrivia 24 25)
+                       (HeadlineTitle 25 29) (HeadlineTrivia 29 30))))))
+    (test-case "non-headline stars and UTF-8 byte spans"
+      (check-org-ast "*not a headline\n* α\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 16)))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 16 17) (HeadlineTrivia 17 18)
+                       (HeadlineTitle 18 20) (HeadlineTrivia 20 21))))))
+    (test-case "empty document"
+      (check-org-ast "" (OrgFile)))
+    (test-case "AST assertion rejects missing and overlapping source spans"
+      (check (org-events-cover-source?
+              "abc" '((start OrgFile) (token TextLine 0 2) (finish)))
+             => #f)
+      (check (org-events-cover-source?
+              "abc" '((start OrgFile) (token TextLine 0 2)
+                      (token TextLine 1 3) (finish)))
+             => #f))
+    (test-case "blank lines separate paragraphs"
+      (check-org-ast "alpha\nbeta\n\nnext\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 6))
+                       (OrgTextLine (TextLine 6 11)))
+         (OrgTextLine (TextLine 11 12))
+         (OrgParagraph (OrgTextLine (TextLine 12 17))))))
+    (test-case "Babel CALL retains its own Element kind"
+      (check-org-ast "#+CALL: build(input=42)\n"
+        (OrgFile
+         (OrgBabelCall
+          (KeywordTrivia 0 2) (KeywordKey 2 6)
+          (KeywordTrivia 6 8) (KeywordValue 8 23)
+          (KeywordTrivia 23 24)))))
+    (test-case "source block remains inside its section"
+      (check-org-ast "* Code\n#+BEGIN_SRC rust\nα\n#+END_SRC\n** Next\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 6) (HeadlineTrivia 6 7))
+          (OrgSourceBlock
+           (BlockBeginLine 7 18) (BlockHeaderTrivia 18 19)
+           (SourceLanguage 19 23) (BlockHeaderTrivia 23 24)
+           (TextLine 24 27) (BlockEndLine 27 37))
+          (OrgSection
+           (OrgHeadline (HeadlineLine 37 39) (HeadlineTrivia 39 40)
+                        (HeadlineTitle 40 44) (HeadlineTrivia 44 45)))))))
+    (test-case "unclosed source block recovers before a headline"
+      (check-org-ast "* First\n#+begin_src rust\nbody\n** Next\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 7) (HeadlineTrivia 7 8))
+          (OrgParagraph
+           (OrgTextLine (TextLine 8 25))
+           (OrgTextLine (TextLine 25 30)))
+          (OrgSection
+           (OrgHeadline (HeadlineLine 30 32) (HeadlineTrivia 32 33)
+                        (HeadlineTitle 33 37) (HeadlineTrivia 37 38)))))))
+    (test-case "Rowan fixture matches executable Scheme events"
       (let* ((options (JSONReadOptions object-as-hash: #t))
              (generated (string->json (outline-event-fixture-json) options))
              (saved (call-with-input-file
@@ -72,60 +88,4 @@
                      (lambda (port)
                        (string->json (read-all-as-string port) options)))))
         (check (hash-get saved "source") => (hash-get generated "source"))
-        (check (hash-get saved "events") => (hash-get generated "events"))))
-    (test-case "POO key-line priority keeps Babel CALL distinct from keywords"
-      (check (parse-org-outline-events "#+CALL: build(input=42)\n")
-             => '((start OrgFile)
-                  (start OrgBabelCall)
-                  (token KeywordTrivia 0 2)
-                  (token KeywordKey 2 6)
-                  (token KeywordTrivia 6 8)
-                  (token KeywordValue 8 23)
-                  (token KeywordTrivia 23 24)
-                  (finish) (finish))))
-    (test-case "declared source block stays inside its section"
-      (check (parse-org-outline-events
-              "* Code\n#+BEGIN_SRC rust\nα\n#+END_SRC\n** Next\n")
-             => '((start OrgFile)
-                  (start OrgSection)
-                  (start OrgHeadline)
-                  (token HeadlineLine 0 1)
-                  (token HeadlineTrivia 1 2)
-                  (token HeadlineTitle 2 6)
-                  (token HeadlineTrivia 6 7) (finish)
-                  (start OrgSourceBlock)
-                  (token BlockBeginLine 7 18)
-                  (token BlockHeaderTrivia 18 19)
-                  (token SourceLanguage 19 23)
-                  (token BlockHeaderTrivia 23 24)
-                  (token TextLine 24 27)
-                  (token BlockEndLine 27 37)
-                  (finish)
-                  (start OrgSection)
-                  (start OrgHeadline)
-                  (token HeadlineLine 37 39)
-                  (token HeadlineTrivia 39 40)
-                  (token HeadlineTitle 40 44)
-                  (token HeadlineTrivia 44 45) (finish)
-                  (finish) (finish) (finish))))
-    (test-case "unclosed source block recovers before next headline"
-      (check (parse-org-outline-events
-              "* First\n#+begin_src rust\nbody\n** Next\n")
-             => '((start OrgFile)
-                  (start OrgSection)
-                  (start OrgHeadline)
-                  (token HeadlineLine 0 1)
-                  (token HeadlineTrivia 1 2)
-                  (token HeadlineTitle 2 7)
-                  (token HeadlineTrivia 7 8) (finish)
-                  (start OrgParagraph)
-                  (start OrgTextLine) (token TextLine 8 25) (finish)
-                  (start OrgTextLine) (token TextLine 25 30) (finish)
-                  (finish)
-                  (start OrgSection)
-                  (start OrgHeadline)
-                  (token HeadlineLine 30 32)
-                  (token HeadlineTrivia 32 33)
-                  (token HeadlineTitle 33 37)
-                  (token HeadlineTrivia 37 38) (finish)
-                  (finish) (finish) (finish))))))
+        (check (hash-get saved "events") => (hash-get generated "events"))))))
