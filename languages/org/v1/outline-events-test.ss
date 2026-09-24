@@ -129,6 +129,33 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 21 22) (HeadlineTrivia 22 23)
                        (HeadlineTitle 23 27) (HeadlineTrivia 27 28))))))
+    (test-case "property drawer emits typed keys, values and empty values"
+      (check-org-ast "* Task\n:PROPERTIES:\n:ID: alpha\n:EMPTY:\n:END:\nbody\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 6) (HeadlineTrivia 6 7))
+          (OrgPropertyDrawer
+           (DrawerBeginLine 7 20)
+           (OrgNodeProperty
+            (PropertyTrivia 20 21) (PropertyKey 21 23)
+            (PropertyTrivia 23 25) (PropertyValue 25 30)
+            (PropertyTrivia 30 31))
+           (OrgNodeProperty
+            (PropertyTrivia 31 32) (PropertyKey 32 37)
+            (PropertyTrivia 37 38) (PropertyTrivia 38 39))
+           (DrawerEndLine 39 45))
+          (OrgParagraph (OrgTextLine (TextLine 45 50))))))
+    (test-case "invalid property body recovers as text"
+      (check-org-ast ":PROPERTIES:\n:BAD:value\n:END:\n* Next\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine (TextLine 0 13))
+          (OrgTextLine (TextLine 13 24))
+          (OrgTextLine (TextLine 24 30)))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 30 31) (HeadlineTrivia 31 32)
+                       (HeadlineTitle 32 36) (HeadlineTrivia 36 37))))))
     (test-case "Rowan fixture matches executable Scheme events"
       (let* ((options (JSONReadOptions object-as-hash: #t))
              (generated (string->json (outline-event-fixture-json) options))
@@ -137,4 +164,4 @@
                      (lambda (port)
                        (string->json (read-all-as-string port) options)))))
         (check (hash-get saved "source") => (hash-get generated "source"))
-        (check (hash-get saved "events") => (hash-get generated "events"))))))
+        (check (hash-get saved "events") => (hash-get generated "events")))))))

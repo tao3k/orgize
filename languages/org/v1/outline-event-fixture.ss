@@ -14,7 +14,7 @@
     (else (error "unknown Org outline event" event))))
 
 (def (outline-event-fixture-json)
-  (let (source "#+TODO: TODO | DONE\n* Parent\n#+BEGIN_SRC rust\nα\n#+END_SRC\nsummary\n** Child\n| a | b |\n|---+---|\n| c\\|d | α |\n#+begin_example\n| literal |\n#+end_example\n#+begin_export html\n<b>α</b>\n#+end_export\n#+begin_comment\nignored\n#+end_comment\n")
+  (let (source "#+TODO: TODO | DONE\n* Parent\n#+BEGIN_SRC rust\nα\n#+END_SRC\nsummary\n** Child\n| a | b |\n|---+---|\n| c\\|d | α |\n#+begin_example\n| literal |\n#+end_example\n#+begin_export html\n<b>α</b>\n#+end_export\n#+begin_comment\nignored\n#+end_comment\n:PROPERTIES:\n:ID: alpha\n:EMPTY:\n:END:\n")
     (json->string
      (hash (source source)
            (events (list->vector

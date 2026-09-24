@@ -156,6 +156,20 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
             .count(),
         1
     );
+    let drawer = records
+        .iter()
+        .find(|record| record.kind == "property-drawer")
+        .expect("Scheme property drawer projects as an Element");
+    let properties: Vec<_> = records
+        .iter()
+        .filter(|record| record.parent_id == Some(drawer.id))
+        .filter(|record| record.kind == "node-property")
+        .map(|record| (record.field("key"), record.field("value")))
+        .collect();
+    assert_eq!(
+        properties,
+        [(Some("ID"), Some("alpha")), (Some("EMPTY"), None)]
+    );
 
     let transitional = orgize::org_aot::parse_org_aot(source)
         .expect("the current production parser accepts the handoff fixture");

@@ -19,6 +19,8 @@
                  line-marker? matching-key-line emit-key-line)
         (only-in "modules/org-parser/table.ss"
                  org-table-line? org-table-node emit-org-table-row)
+        (only-in "modules/org-parser/property.ss"
+                 parse-property-drawer emit-property-drawer)
         (only-in "line-event-parser.ss" parse-org-line-events)
         (only-in "parser.ss" org-v1-line-structure))
 (export parse-org-outline-events)
@@ -85,10 +87,9 @@
         (loop (cdddr rest) (cons (cons (caddr token) (cadddr token))
                                 reversed))))))
 
-(def (opaque-block-spec bytes span)
+(def (closed-block-spec bytes span)
   (ormap (lambda (block)
            (and (eq? (block-line-contents block) 'opaque)
-                (not (block-line-body-line block))
                 (line-marker? bytes span (block-line-opening block)
                               (block-line-case-insensitive block)
                               (block-line-indent block))
@@ -165,9 +166,19 @@
            ((line-marker? bytes span (block-line-closing block)
                           (block-line-case-insensitive block)
                           (block-line-indent block))
-            (loop (cdr rest) levels
-                  (emit-opaque-block reversed bytes block pending span)
-                  '() #f #f #f))
+            (if (block-line-body-line block)
+              (let (parsed (parse-property-drawer bytes pending block))
+                (if parsed
+                (loop (cdr rest) levels
+                      (emit-property-drawer reversed block parsed span)
+                      '() #f #f #f)
+                (let (state (emit-text-spans reversed bytes
+                                            (cons span pending)))
+                  (loop (cdr rest) levels (car state)
+                        '() #f (cdr state) #f))))
+              (loop (cdr rest) levels
+                    (emit-opaque-block reversed bytes block pending span)
+                    '() #f #f #f)))
            ((and (block-line-heading-bound block) (> level 0))
             (let (state (emit-text-spans reversed bytes pending))
               (loop rest levels (car state) '() #f (cdr state) #f)))
@@ -182,7 +193,7 @@
                (table-line? (org-table-line? bytes span))
                (level (org-headline-level bytes start end))
                (opening (and (not table-line?) (= level 0)
-                             (opaque-block-spec bytes span)))
+                             (closed-block-spec bytes span)))
                (key-line (and (not table-line?) (= level 0) (not opening)
                               (matching-key-line bytes span))))
           (cond
