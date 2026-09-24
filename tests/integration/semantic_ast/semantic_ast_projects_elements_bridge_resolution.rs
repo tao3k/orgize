@@ -25,6 +25,7 @@ fn semantic_ast_projects_git_scoped_document_org_elements_regression_has_snapsho
             "section",
             "paragraph",
             "src-block",
+            "drawer",
             "plain-list",
             "table",
             "link",

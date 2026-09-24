@@ -104,6 +104,7 @@ macro_rules! check_org_cutover_parity {
         );
         for (baseline_kind, aot_kind) in [
             (SyntaxKind::PROPERTY_DRAWER, "property-drawer"),
+            (SyntaxKind::DRAWER, "drawer"),
             (SyntaxKind::LIST, "plain-list"),
             (SyntaxKind::LIST_ITEM, "item"),
             (SyntaxKind::ORG_TABLE, "table"),

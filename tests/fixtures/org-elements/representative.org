@@ -29,6 +29,10 @@ SCHEDULED: <2026-09-24 Thu>
 :ID:       git-scoped-fixture
 :END:
 
+:LOGBOOK:
+Recorded context for the planning item.
+:END:
+
 The final paragraph has a footnote reference[fn:note].
 
 [fn:note] The fixture is owned by this repository.

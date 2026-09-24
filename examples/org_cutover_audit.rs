@@ -3,7 +3,7 @@
 //! This intentionally reports mismatches instead of admitting the AOT parser
 //! as a public replacement before element, object, and typed-AST parity.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use orgize::{Org, SyntaxNode as PublicSyntaxNode, rowan::ast::AstNode};
 
@@ -13,6 +13,9 @@ mod grammar;
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/structure.rs"]
 mod structure;
+#[rustfmt::skip]
+#[path = "../languages/org/v1/generated/graph.rs"]
+mod graph;
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/elements.rs"]
 mod elements;
@@ -77,6 +80,29 @@ fn main() {
     println!(
         "generated node kinds in fixture ({}): {generated_kinds:#?}",
         generated_kinds.len()
+    );
+    let projected: BTreeSet<_> = graph::GRAPH
+        .rules
+        .iter()
+        .flat_map(|rule| [rule.kind, rule.category])
+        .collect();
+    let missing_elements: Vec<_> = elements::ORG_ELEMENT_KINDS
+        .iter()
+        .copied()
+        .filter(|kind| !projected.contains(kind))
+        .collect();
+    let missing_objects: Vec<_> = elements::ORG_OBJECT_KINDS
+        .iter()
+        .copied()
+        .filter(|kind| !projected.contains(kind))
+        .collect();
+    println!(
+        "Scheme catalog not yet projected as typed Element kinds ({}): {missing_elements:?}",
+        missing_elements.len()
+    );
+    println!(
+        "Scheme catalog not yet projected as typed Object kinds ({}): {missing_objects:?}",
+        missing_objects.len()
     );
     println!(
         "status: structural source parity only; element/object and public-AST parity not admitted"

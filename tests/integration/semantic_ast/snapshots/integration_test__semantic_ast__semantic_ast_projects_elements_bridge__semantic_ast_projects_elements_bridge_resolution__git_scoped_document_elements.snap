@@ -3,12 +3,13 @@ source: tests/integration/semantic_ast/semantic_ast_projects_elements_bridge_res
 expression: "serde_json::to_string_pretty(&serde_json::json!({\n    \"source\": \"tests/fixtures/org-elements/representative.org\", \"recordCount\":\n    records.len(), \"selectedKindCounts\": selected_kind_counts,\n    \"topLevelHeadlines\": top_level_headlines,\n})).unwrap()"
 ---
 {
-  "recordCount": 86,
+  "recordCount": 89,
   "selectedKindCounts": {
+    "drawer": 1,
     "headline": 4,
     "link": 1,
     "org-data": 1,
-    "paragraph": 8,
+    "paragraph": 9,
     "plain-list": 1,
     "section": 4,
     "src-block": 1,

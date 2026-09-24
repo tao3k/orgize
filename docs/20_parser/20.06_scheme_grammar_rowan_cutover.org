@@ -31,11 +31,12 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
 Rust/Rowan generator into committed =generated/parser.rs=. The Org-owned
 =parser.ss= supplies a POO =LineStructure= value: headline/section kinds,
 source-block delimiters, property-drawer delimiters and typed node-property
-line rules, and text-line kinds. The upstream AOT projection
+line rules, ordinary named drawers, and text-line kinds. The upstream AOT projection
 resolves those symbolic kinds against the same grammar digest and emits
 =generated/structure.rs=. The generic =parse_structural_lines= engine executes
 section nesting, closed source blocks, property drawers and their node-property
-lines, and Scheme-declared recovery at EOF or a subsequent heading. An Org-owned
+lines, ordinary drawers with typed names and recursive element bodies, and
+Scheme-declared recovery at EOF or a subsequent heading. An Org-owned
 key-line rule classifies =#+CALL:= as a Babel Call instead of a generic keyword.
 The result is a lossless Rowan tree over LF, CRLF, bare CR, and UTF-8 input.
 =org_parser_aot= tests that
@@ -50,7 +51,8 @@ not yet the public =Org::parse= implementation: full headline metadata,
 contextual element/object recognition, typed recovery, and the public tree projection
 remain cutover gates.  An element inventory is not a set of parsing rules.
 The =org_cutover_parity= test now compares 44 Git-tracked Org fixtures for source
-roundtrip, section ranges and nesting, and core Element counts. Affiliated
+roundtrip, section ranges and nesting, and core Element counts including
+ordinary drawers. Affiliated
 keyword attachment, clock context, all object boundaries, and public API
 replacement are not yet admitted by that test.
 
