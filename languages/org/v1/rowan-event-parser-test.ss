@@ -29,6 +29,15 @@
          (OrgParagraph (OrgTextLine (TextLine 0 7)))
          (OrgHorizontalRule (HorizontalRuleLine 7 13))
          (OrgParagraph (OrgTextLine (TextLine 13 19))))))
+    (test-case "fixed-width lines form one Element and stop at prose"
+      (check-org-ast-with parse-org-rowan-events
+        "first\n: A\n:\n: B\nlast\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 6)))
+         (OrgFixedWidth (FixedWidthLine 6 10)
+                        (FixedWidthLine 10 12)
+                        (FixedWidthLine 12 16))
+         (OrgParagraph (OrgTextLine (TextLine 16 21))))))
     (test-case "POO-declared inline links preserve descriptions and malformed text"
       (check-org-ast-with parse-org-rowan-events
         "go [[https://a][α]] and [[id:b]]\n[[broken\n"

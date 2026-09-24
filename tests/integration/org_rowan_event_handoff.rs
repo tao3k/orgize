@@ -154,6 +154,47 @@ fn org_scheme_context_algorithm_aot_projects_horizontal_rules() {
 }
 
 #[test]
+fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
+    let source = "first\n: A\n:\n: B\nlast\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme fixed-width events build a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("fixed-width text projects through the Org Element graph");
+    let kinds: Vec<_> = records.iter().map(|record| record.kind).collect();
+    assert_eq!(kinds, ["org-data", "paragraph", "fixed-width", "paragraph"]);
+    let fixed = records
+        .iter()
+        .find(|record| record.kind == "fixed-width")
+        .expect("fixed-width is a typed Element");
+    assert_eq!(fixed.range.start(), 6u32.into());
+    assert_eq!(fixed.range.end(), 16u32.into());
+
+    let nested = "#+begin_quote\n: A\n#+end_quote\n:PROPERTIES:\n:ID: x\n:END:\n";
+    let events = generated_context_events::parse_org_rowan_events(nested);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        nested,
+        &events,
+    )
+    .expect("fixed-width container closure and following properties stay lossless");
+    assert_eq!(parsed.syntax().to_string(), nested);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("nested fixed-width text and property drawer project");
+    let kinds: Vec<_> = records.iter().map(|record| record.kind).collect();
+    assert!(kinds.contains(&"quote-block"));
+    assert!(kinds.contains(&"fixed-width"));
+    assert!(kinds.contains(&"property-drawer"));
+}
+
+#[test]
 fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
     let source = "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n";
     let events = generated_context_events::parse_org_rowan_events(source);

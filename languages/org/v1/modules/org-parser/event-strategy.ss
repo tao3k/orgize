@@ -373,6 +373,7 @@
               ,(container-close-condition rule))
          (,close-paragraph
           ,@list-close-all
+          ,fixed-width-close
           (if (state table-open)
               ((finish-node) (set-bool table-open (bool #f))) ())
           (token ,(block-line-end-token rule) start end)
@@ -414,6 +415,27 @@
         (set-bool after-heading (bool #f)))
        ,otherwise))
 
+(def fixed-width-marker '(line-skip-horizontal start))
+(def fixed-width-content-start `(line-step ,fixed-width-marker))
+(def fixed-width-line?
+  `(and (line-byte-equal? ,fixed-width-marker 58)
+        (or (line-byte-equal? ,fixed-width-content-start 32)
+            (line-bytes-all-in? ,fixed-width-content-start
+                                (line-content-end) (9 32)))))
+(def fixed-width-close
+  '(if (state fixed-width-open)
+       ((finish-node) (set-bool fixed-width-open (bool #f))) ()))
+
+(def (fixed-width-form otherwise)
+  `(if ,fixed-width-line?
+       (,close-paragraph
+        (if (not (state fixed-width-open))
+            ((start-node OrgFixedWidth)
+             (set-bool fixed-width-open (bool #t))) ())
+        (token FixedWidthLine start end)
+        (set-bool after-heading (bool #f)))
+       (,fixed-width-close ,@otherwise)))
+
 (def (table-cell-forms until)
   `((start-node ,(table-line-cell-node table-rule))
     (token ,(table-line-cell-token table-rule) ,table-cell-start ,until)
@@ -453,9 +475,22 @@
         (set-bool table-seen-separator (bool #f))
         (set-bool table-escaped (bool #f)))))
 
+(def (container-or-opaque-form)
+  `(,@(container-open-chain)
+    (if (state container-opened)
+        ((set-bool container-opened (bool #f)))
+        (,@(opaque-open-chain)
+         (if (uint-positive? (state active-opaque-block))
+             () (,(headline-form)))))))
+
+(def (non-table-element-form)
+  (fixed-width-form
+   (list (horizontal-rule-form
+          (list (property-open-form (container-or-opaque-form)))))))
+
 (def (table-or-element-form)
   `(if ,table-line-predicate
-       (,close-paragraph
+       (,fixed-width-close ,close-paragraph
         (if (not (state table-open))
             ((start-node ,(table-line-table-node table-rule))
              (set-bool table-open (bool #t))) ())
@@ -463,14 +498,7 @@
         (set-bool after-heading (bool #f)))
        ((if (state table-open)
             ((finish-node) (set-bool table-open (bool #f))) ())
-        ,(horizontal-rule-form
-          `(,(property-open-form
-              `(,@(container-open-chain)
-                (if (state container-opened)
-                    ((set-bool container-opened (bool #f)))
-                    (,@(opaque-open-chain)
-                     (if (uint-positive? (state active-opaque-block))
-                         () (,(headline-form))))))))))))
+        ,(non-table-element-form))))
 
 (def list-column '(state list-column))
 (def list-top '(uint-divide (stack-top list-frames) (uint 2)))
@@ -530,6 +558,7 @@
 (def (list-marker-forms)
   `((if (state table-open)
         ((finish-node) (set-bool table-open (bool #f))) ())
+    ,fixed-width-close
     ,close-paragraph
     ,list-close-paragraph
     (if (state list-ordered)
@@ -562,6 +591,7 @@
   (append
    '((open-levels (uint-stack)) (active-opaque-block 0)
     (property-drawer-open #f) (paragraph-open #f) (after-heading #f)
+    (fixed-width-open #f)
     (table-open #f) (table-seen-separator #f) (table-escaped #f)
     (table-cell-start 0)
     (container-frames (uint-stack)) (container-closed #f)
@@ -587,6 +617,7 @@
     (if (state table-open) ((finish-node)) ())
     (if (state list-paragraph-open) ((finish-node)) ())
     (close-all-frames list-frames 2)
+    (if (state fixed-width-open) ((finish-node)) ())
     (if (state paragraph-open) ((finish-node)) ())
     (close-all-frames container-frames 1)
     (close-all open-levels)))
