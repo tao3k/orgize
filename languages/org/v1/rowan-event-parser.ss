@@ -46,7 +46,17 @@
                   (open-level open-levels (line-marker-level "*" " ")
                               OrgSection)
                   (start-node OrgHeadline)
-                  (token HeadlineLine start end) (finish-node))
+                  (token HeadlineLine start (line-marker-end "*" " "))
+                  (token HeadlineTrivia
+                         (line-marker-end "*" " ")
+                         (line-skip-horizontal
+                          (line-marker-end "*" " ")))
+                  (token HeadlineTitle
+                         (line-skip-horizontal
+                          (line-marker-end "*" " "))
+                         (line-trim-end))
+                  (token HeadlineTrivia (line-trim-end) end)
+                  (finish-node))
                  ((if (line-has-key-after-prefix? "#+")
                       ((if (state paragraph-open)
                            ((finish-node)

@@ -129,6 +129,12 @@ fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
         .expect("file-local TODO declaration is a keyword Element");
     assert_eq!(keyword.field("key"), Some("SEQ_TODO"));
     assert_eq!(keyword.field("value"), Some("TODO | DONE"));
+    let headline = records
+        .iter()
+        .find(|record| record.kind == "headline")
+        .expect("headline is an Element with source-backed fields");
+    assert_eq!(headline.field("markers"), Some("*"));
+    assert_eq!(headline.field("title"), Some("TODO Work"));
     let babel_call = records
         .iter()
         .find(|record| record.kind == "babel-call")

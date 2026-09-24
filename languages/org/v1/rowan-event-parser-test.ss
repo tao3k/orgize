@@ -18,25 +18,33 @@
                        (OrgTextLine (TextLine 6 9)))
          (OrgTextLine (TextLine 9 12))
          (OrgParagraph (OrgTextLine (TextLine 12 17)))
-         (OrgSection (OrgHeadline (HeadlineLine 17 21))))))
+         (OrgSection (OrgHeadline (HeadlineLine 17 18)
+                                  (HeadlineTrivia 18 19)
+                                  (HeadlineTitle 19 20)
+                                  (HeadlineTrivia 20 21))))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"
         (OrgFile
          (OrgSection
-          (OrgHeadline (HeadlineLine 0 9))
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 8) (HeadlineTrivia 8 9))
           (OrgSourceBlock (BlockBeginLine 9 20)
                           (BlockHeaderTrivia 20 21)
                           (SourceLanguage 21 25)
                           (BlockHeaderTrivia 25 26)
                           (TextLine 26 34) (BlockEndLine 34 44))
-          (OrgSection (OrgHeadline (HeadlineLine 44 53)))))))
+          (OrgSection (OrgHeadline (HeadlineLine 44 46)
+                                    (HeadlineTrivia 46 47)
+                                    (HeadlineTitle 47 52)
+                                    (HeadlineTrivia 52 53)))))))
     (test-case "unterminated blocks close at EOF without treating body as headings"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BEGIN_SRC\n** body\n"
         (OrgFile
          (OrgSection
-          (OrgHeadline (HeadlineLine 0 9))
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 8) (HeadlineTrivia 8 9))
           (OrgSourceBlock (BlockBeginLine 9 20)
                           (BlockHeaderTrivia 20 21)
                           (TextLine 21 29))))))
@@ -48,7 +56,8 @@
                      (KeywordTrivia 10 12) (KeywordValue 12 23)
                      (KeywordTrivia 23 26))
          (OrgSection
-          (OrgHeadline (HeadlineLine 26 38))
+          (OrgHeadline (HeadlineLine 26 27) (HeadlineTrivia 27 28)
+                       (HeadlineTitle 28 37) (HeadlineTrivia 37 38))
           (OrgBabelCall (KeywordTrivia 38 40) (KeywordKey 40 44)
                         (KeywordTrivia 44 46) (KeywordValue 46 52)
                         (KeywordTrivia 52 53))))))
