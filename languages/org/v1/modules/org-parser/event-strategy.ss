@@ -177,16 +177,15 @@
 
 (def property-indent '(line-skip-horizontal start))
 (def property-key-start `(line-step ,property-indent))
-(def property-key-end `(line-scan-key ,property-key-start))
+(def property-key-end
+  `(line-scan-nonspace-until ,property-key-start ":"))
 (def property-value-start
   `(line-skip-horizontal (line-step ,property-key-end)))
 (def property-value-end `(line-trim-end-from ,property-value-start))
 
 (def (property-line-form)
   `(if (and (line-byte-equal? ,property-indent 58)
-            (line-bytes-any-in? ,property-key-start
-                                (line-step ,property-key-start)
-                                ,ascii-name-bytes)
+            (offset-less? ,property-key-start ,property-key-end)
             (line-byte-equal? ,property-key-end 58))
        ((start-node OrgNodeProperty)
         (token PropertyTrivia start ,property-key-start)
