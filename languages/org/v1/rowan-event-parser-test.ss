@@ -75,6 +75,40 @@
                             (PropertyTrivia 27 28))
            (DrawerEndLine 28 34))
           (OrgParagraph (OrgTextLine (TextLine 34 39)))))))
+    (test-case "declared planning and clock keys retain headline context"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\nSCHEDULED: now\nCLOCK: 2\n* N\nDEADLINE: x\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgPlanning (PlanningKey 4 13) (PlanningTrivia 13 15)
+                       (PlanningValue 15 18) (PlanningTrivia 18 19))
+          (OrgClock (ClockKey 19 24) (ClockTrivia 24 26)
+                    (ClockValue 26 27) (ClockTrivia 27 28)))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 28 29) (HeadlineTrivia 29 30)
+                       (HeadlineTitle 30 31) (HeadlineTrivia 31 32))
+          (OrgPlanning (PlanningKey 32 40) (PlanningTrivia 40 42)
+                       (PlanningValue 42 43) (PlanningTrivia 43 44))))))
+    (test-case "planning is not promoted after ordinary paragraph content"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\nbody\nSCHEDULED: later\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgParagraph (OrgTextLine (TextLine 4 9))
+                        (OrgTextLine (TextLine 9 26)))))))
+    (test-case "empty declared values keep source spans ordered"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\nSCHEDULED:  \n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgPlanning (PlanningKey 4 13) (PlanningTrivia 13 16)
+                       (PlanningTrivia 16 17))))))
     (test-case "block and drawer markers do not consume longer lookalikes"
       (check-org-ast-with parse-org-rowan-events
         "#+begin_src rust\n#+end_srcx\n#+END_SRC \t\n"

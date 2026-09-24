@@ -239,6 +239,15 @@ The tracked representative fixture contains only a source block, so its
 three-way node-kind count does not change from this expansion. Unclosed-block
 recovery and recursively parsed quote/verse/center blocks remain open.
 
+The event strategy now also lowers POO-declared planning and clock key-lines
+with source-backed key/value spans. Planning is only recognized immediately
+after a headline; a later =SCHEDULED:= line remains paragraph text. Empty
+values use a bounded trim offset, and the generic event compiler omits zero-byte
+tokens so Rowan still accepts the lossless source. On the tracked representative
+fixture the Scheme event path rises from nine to ten distinct node kinds and
+projects its planning Element; table, list, ordinary drawer, inline object,
+affiliation, and public-parser parity remain open.
+
 * Implementation order
 
 This is one vertical MVP followed by full-coverage expansion, not separate

@@ -144,6 +144,47 @@ fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
 }
 
 #[test]
+fn org_scheme_context_algorithm_projects_declared_planning_and_clock() {
+    let source = "* H\nSCHEDULED: now\nCLOCK: 2\n* N\nDEADLINE: x\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme planning and clock algorithm builds a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("declared key lines project through Org Elements");
+    let planning: Vec<_> = records
+        .iter()
+        .filter(|record| record.kind == "planning")
+        .collect();
+    assert_eq!(planning.len(), 2);
+    assert_eq!(planning[0].field("key"), Some("SCHEDULED"));
+    assert_eq!(planning[0].field("value"), Some("now"));
+    assert_eq!(planning[1].field("key"), Some("DEADLINE"));
+    assert_eq!(planning[1].field("value"), Some("x"));
+    let clock = records
+        .iter()
+        .find(|record| record.kind == "clock")
+        .expect("clock Element");
+    assert_eq!(clock.field("value"), Some("2"));
+
+    let empty_source = "* H\nSCHEDULED:  \nCLOCK:  \n";
+    let empty_events = generated_context_events::parse_org_rowan_events(empty_source);
+    let empty_tree = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        empty_source,
+        &empty_events,
+    )
+    .expect("empty declared values retain ordered source spans");
+    assert_eq!(empty_tree.syntax().to_string(), empty_source);
+}
+
+#[test]
 fn org_scheme_context_algorithm_projects_headline_property_drawers() {
     let source = "* H\n:PROPERTIES:\n:ID: alpha\n:END:\nbody\n";
     let events = generated_context_events::parse_org_rowan_events(source);

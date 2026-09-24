@@ -5,7 +5,8 @@
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-heading line-structure-blocks
                  line-structure-key-lines key-line-node key-line-prefix
-                 key-line-keys key-line-separator
+                 key-line-keys key-line-separator key-line-key-token
+                 key-line-value-token key-line-trivia-token
                  heading-line-marker heading-line-separator
                  block-line-block-node block-line-opening block-line-closing
                  block-line-body-line block-line-begin-token
@@ -30,6 +31,8 @@
 (def heading-rule (line-structure-heading org-v1-line-structure))
 (def keyword-rule (key-line-by-node 'OrgKeyword))
 (def babel-call-rule (key-line-by-node 'OrgBabelCall))
+(def planning-rule (key-line-by-node 'OrgPlanning))
+(def clock-rule (key-line-by-node 'OrgClock))
 (def property-open (block-line-opening property-rule))
 (def property-close (block-line-closing property-rule))
 (def property-marker (key-value-line-marker (block-line-body-line property-rule)))
@@ -80,10 +83,43 @@
         (token KeywordValue
                (line-skip-horizontal
                 (line-step (line-scan-key (line-prefix-end ,keyword-prefix))))
-               (line-trim-end))
-        (token KeywordTrivia (line-trim-end) end)
+               (line-trim-end-from
+                (line-skip-horizontal
+                 (line-step (line-scan-key (line-prefix-end ,keyword-prefix))))))
+        (token KeywordTrivia
+               (line-trim-end-from
+                (line-skip-horizontal
+                 (line-step (line-scan-key (line-prefix-end ,keyword-prefix))))) end)
         (finish-node))
        (,(paragraph-form))))
+
+(def (declared-key-form rule key otherwise)
+  (let* ((marker (string-append (key-line-prefix rule) key
+                                (key-line-separator rule)))
+         (key-end `(line-prefix-end ,key))
+         (value-start `(line-skip-horizontal (line-prefix-end ,marker))))
+    `(if (line-starts-with-ascii-ci ,marker)
+         (,close-paragraph
+          (start-node ,(key-line-node rule))
+          (token ,(key-line-key-token rule) start ,key-end)
+          (token ,(key-line-trivia-token rule) ,key-end ,value-start)
+          (token ,(key-line-value-token rule) ,value-start
+                 (line-trim-end-from ,value-start))
+          (token ,(key-line-trivia-token rule)
+                 (line-trim-end-from ,value-start) end)
+          (finish-node))
+         (,otherwise))))
+
+(def (declared-key-chain rule otherwise)
+  (foldr (lambda (key next) (declared-key-form rule key next))
+         otherwise (key-line-keys rule)))
+
+(def (context-key-form)
+  (declared-key-chain
+   clock-rule
+   `(if (state after-heading)
+        (,(declared-key-chain planning-rule (keyword-form)))
+        (,(keyword-form)))))
 
 (def (headline-form)
   `(if (uint-positive? (line-marker-level ,heading-marker ,heading-separator))
@@ -103,10 +139,17 @@
         (token HeadlineTitle
                (line-skip-horizontal
                 (line-marker-end ,heading-marker ,heading-separator))
-               (line-trim-end))
-        (token HeadlineTrivia (line-trim-end) end)
-        (finish-node))
-       (,(keyword-form))))
+               (line-trim-end-from
+                (line-skip-horizontal
+                 (line-marker-end ,heading-marker ,heading-separator))))
+        (token HeadlineTrivia
+               (line-trim-end-from
+                (line-skip-horizontal
+                 (line-marker-end ,heading-marker ,heading-separator))) end)
+        (finish-node)
+        (set-bool after-heading (bool #t)))
+       (,(context-key-form)
+        (set-bool after-heading (bool #f)))))
 
 (def (property-line-form)
   `(if (line-has-key-after-prefix? ,property-marker)
@@ -121,8 +164,13 @@
         (token PropertyValue
                (line-skip-horizontal
                 (line-step (line-scan-key (line-prefix-end ,property-marker))))
-               (line-trim-end))
-        (token PropertyTrivia (line-trim-end) end)
+               (line-trim-end-from
+                (line-skip-horizontal
+                 (line-step (line-scan-key (line-prefix-end ,property-marker))))))
+        (token PropertyTrivia
+               (line-trim-end-from
+                (line-skip-horizontal
+                 (line-step (line-scan-key (line-prefix-end ,property-marker))))) end)
         (finish-node))
        ((token TextLine start end))))
 
@@ -136,6 +184,7 @@
   `(if (line-marker-ascii-ci ,property-open)
        (,close-paragraph (start-node OrgPropertyDrawer)
         (token DrawerBeginLine start end)
+        (set-bool after-heading (bool #f))
         (set-bool property-drawer-open (bool #t)))
        (,otherwise)))
 
@@ -167,7 +216,8 @@
          ,(append (list close-paragraph
                         (list 'start-node (block-line-block-node rule)))
                   (block-header-forms rule)
-                  (list `(set-uint active-opaque-block (uint ,id))))
+                  (list '(set-bool after-heading (bool #f))
+                        `(set-uint active-opaque-block (uint ,id))))
          (,otherwise))))
 
 (def (opaque-open-chain otherwise)
@@ -187,7 +237,7 @@
 
 (def org-event-initial
   '((open-levels (uint-stack)) (active-opaque-block 0)
-    (property-drawer-open #f) (paragraph-open #f)))
+    (property-drawer-open #f) (paragraph-open #f) (after-heading #f)))
 
 (def org-event-line-forms
   `((if (uint-positive? (state active-opaque-block))
