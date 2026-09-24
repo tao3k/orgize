@@ -6,6 +6,9 @@
   Rust/Rowan AOT parser. It returns typed Elements, including all projected fields.
 - `orgizepy.functions.headline_functions` reads the Scheme-AOT headline functions
   from a parsed document.
+- `orgizepy.edits` computes an exact-source digest and asks the Rust/Scheme-AOT
+  path to validate source-bound edits. It returns candidate Org text only;
+  authorization, review, source recheck, and persistence remain with the caller.
 - `orgizepy.contract.evaluate_contract` calls the independent Scheme/Gambit
   Contract ABI over explicitly admitted Element rows.
 

@@ -4,6 +4,7 @@ from importlib.metadata import distribution
 import json
 
 from orgizepy.contract import ContractRow, evaluate_contract
+from orgizepy.edits import SourceEdit, apply_source_edits, source_digest
 from orgizepy.functions import headline_functions
 from orgizepy.parser import parse_org
 
@@ -21,6 +22,19 @@ result = evaluate_contract(
     expected_count=1,
 )
 assert result.passed and result.matched_count == 1
+source = "* Design\n:PROPERTIES:\n:ID: design-1\n:END:\nOld guarantee\n"
+start = source.encode().index(b"Old guarantee")
+candidate = apply_source_edits(
+    source,
+    source_digest(source),
+    [
+        SourceEdit(
+            "design-1", start, start + len(b"Old guarantee"),
+            "Old guarantee", "New guarantee",
+        )
+    ],
+)
+assert candidate == source.replace("Old guarantee", "New guarantee")
 package = distribution("orgizepy")
 package_files = {str(path) for path in package.files or ()}
 for notice in (

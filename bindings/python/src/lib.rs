@@ -1,6 +1,7 @@
-//! Thin Python projection of the Scheme-AOT Org parser and headline functions.
+//! Thin Python projection of the Scheme-AOT Org parser, functions, and source edits.
 
 use orgize::org_aot::{OrgAotDocument, parse_org_aot};
+use orgize::org_aot_edit::{OrgSourceEdit, apply_org_source_edits, org_source_digest};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -68,10 +69,39 @@ fn parse_org(source: &str) -> PyResult<ParsedOrg> {
         .map_err(|error| PyValueError::new_err(format!("Org parse failed: {error:?}")))
 }
 
+#[pyfunction]
+fn source_digest(source: &str) -> String {
+    org_source_digest(source)
+}
+
+#[pyfunction]
+fn apply_source_edits(
+    source: &str,
+    projected_source_digest: &str,
+    edits: Vec<(String, usize, usize, String, String)>,
+) -> PyResult<String> {
+    let edits = edits
+        .iter()
+        .map(
+            |(node_id, start_byte, end_byte, expected_old, replacement)| OrgSourceEdit {
+                node_id,
+                start_byte: *start_byte,
+                end_byte: *end_byte,
+                expected_old,
+                replacement,
+            },
+        )
+        .collect::<Vec<_>>();
+    apply_org_source_edits(source, projected_source_digest, &edits)
+        .map_err(|error| PyValueError::new_err(format!("Org source edit failed: {error:?}")))
+}
+
 #[pymodule]
 fn _orgize(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<ParsedOrg>()?;
     module.add_class::<Element>()?;
     module.add_function(wrap_pyfunction!(parse_org, module)?)?;
+    module.add_function(wrap_pyfunction!(source_digest, module)?)?;
+    module.add_function(wrap_pyfunction!(apply_source_edits, module)?)?;
     Ok(())
 }

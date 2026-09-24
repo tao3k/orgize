@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "orgizepy"
 version = "0.1.0"
-description = "Orgize Python SDK for parsing, contracts, and functions"
+description = "Orgize Python SDK for parsing, functions, source edits, and contracts"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
