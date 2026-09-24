@@ -40,6 +40,18 @@
           (OrgSourceBlock (BlockBeginLine 9 20)
                           (BlockHeaderTrivia 20 21)
                           (TextLine 21 29))))))
+    (test-case "file-local TODO and Babel CALL keys project as distinct Elements"
+      (check-org-ast-with parse-org-rowan-events
+        "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n"
+        (OrgFile
+         (OrgKeyword (KeywordTrivia 0 2) (KeywordKey 2 10)
+                     (KeywordTrivia 10 12) (KeywordValue 12 23)
+                     (KeywordTrivia 23 26))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 26 38))
+          (OrgBabelCall (KeywordTrivia 38 40) (KeywordKey 40 44)
+                        (KeywordTrivia 44 46) (KeywordValue 46 52)
+                        (KeywordTrivia 52 53))))))
     (test-case "AOT IR is a typed source-owned event function"
       (let (ir (string->json parse_org_rowan_events
                              (JSONReadOptions object-as-hash: #t

@@ -109,6 +109,34 @@ fn org_scheme_context_algorithm_aot_projects_paragraph_elements() {
     assert_eq!(paragraphs[1].range.end(), 17u32.into());
 }
 
+#[test]
+fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
+    let source = "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme key-line algorithm builds a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme keyed lines project through Org Elements");
+    let keyword = records
+        .iter()
+        .find(|record| record.kind == "keyword")
+        .expect("file-local TODO declaration is a keyword Element");
+    assert_eq!(keyword.field("key"), Some("SEQ_TODO"));
+    assert_eq!(keyword.field("value"), Some("TODO | DONE"));
+    let babel_call = records
+        .iter()
+        .find(|record| record.kind == "babel-call")
+        .expect("CALL is a distinct Babel Element");
+    assert_eq!(babel_call.field("key"), Some("CALL"));
+    assert_eq!(babel_call.field("value"), Some("name()"));
+}
+
 fn kind(name: &str, category: KindCategory) -> u16 {
     org_language_spec()
         .kinds
