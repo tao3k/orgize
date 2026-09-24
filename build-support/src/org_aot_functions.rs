@@ -23,3 +23,16 @@ pub fn write_org_aot_functions() {
             .expect("write generated headline function");
     }
 }
+
+/// Compile the Org-owned contextual event algorithm for Cargo-only consumers.
+pub fn write_org_aot_events() {
+    let source = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").expect("Cargo manifest dir"))
+        .join("languages/org/v1/generated/rowan-events.ir.json");
+    println!("cargo:rerun-if-changed={}", source.display());
+    let ir = fs::read_to_string(source).expect("read Scheme-authored Org event IR");
+    let generated = gerbil_scheme_rust_ir::compile_event_function_json(&ir)
+        .expect("Scheme-authored Org events must compile to Rust");
+    let output_dir = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo output dir"));
+    fs::write(output_dir.join("org_rowan_events.rs"), generated)
+        .expect("write generated Org event function");
+}

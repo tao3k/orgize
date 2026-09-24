@@ -3,7 +3,7 @@
 
 (import (only-in :std/test check)
         (only-in "../../outline-events.ss" parse-org-outline-events))
-(export check-org-ast org-events->ast org-events-cover-source?)
+(export check-org-ast check-org-ast-with org-events->ast org-events-cover-source?)
 
 (def (org-events->ast events)
   (def (children rest reversed)
@@ -43,5 +43,14 @@
      (syntax
       (let* ((text source)
              (events (parse-org-outline-events text)))
+        (check (org-events-cover-source? text events) => #t)
+        (check (org-events->ast events) => 'expected))))))
+
+(defsyntax (check-org-ast-with stx)
+  (syntax-case stx ()
+    ((_ parser source expected)
+     (syntax
+      (let* ((text source)
+             (events (parser text)))
         (check (org-events-cover-source? text events) => #t)
         (check (org-events->ast events) => 'expected))))))

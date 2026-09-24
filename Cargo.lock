@@ -1612,7 +1612,7 @@ dependencies = [
 [[package]]
 name = "gerbil-parser-rowan"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-parser?rev=42195e8cc5d9b62849234770eb85b3b87b0ef738#42195e8cc5d9b62849234770eb85b3b87b0ef738"
+source = "git+https://github.com/tao3k/gerbil-parser?rev=b4809247a32fec1aa0f67415a917db1e5b822f15#b4809247a32fec1aa0f67415a917db1e5b822f15"
 dependencies = [
  "rowan",
  "sha2 0.10.9",
@@ -1621,7 +1621,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-rust-ir"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=c6e36bc1af00542a78b554d8884604246eb6dffc#c6e36bc1af00542a78b554d8884604246eb6dffc"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=b2b7a7eed95eb80b4b4780f22a8603aa022a7921#b2b7a7eed95eb80b4b4780f22a8603aa022a7921"
 dependencies = [
  "proc-macro2",
  "quote",

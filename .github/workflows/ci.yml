@@ -146,8 +146,11 @@ jobs:
           gerbil build
       - name: Verify Scheme Org parser and Contract
         run: |
-          gxpkg install github.com/tao3k/gerbil-parser@42195e8cc5d9b62849234770eb85b3b87b0ef738
+          gxpkg install github.com/tao3k/gerbil-parser@b4809247a32fec1aa0f67415a917db1e5b822f15
           just scheme-test "$GERBIL_PATH/lib" "$GERBIL_PATH/lib"
+          generated="$(mktemp)"
+          gerbil env gxi languages/org/v1/generate-rowan-event-ir.ss "$generated"
+          cmp "$generated" languages/org/v1/generated/rowan-events.ir.json
       - name: Verify independent C and Rust consumers
         run: just contract-smoke
       - name: Verify Python SDK

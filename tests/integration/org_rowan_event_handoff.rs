@@ -8,6 +8,12 @@ use orgize::org_aot::{org_graph_spec, org_language_spec};
 #[path = "../../languages/org/v1/generated/line-events.rs"]
 mod generated_line_events;
 
+#[rustfmt::skip]
+mod generated_context_events {
+    use gerbil_parser_rowan::TreeEvent;
+    include!(concat!(env!("OUT_DIR"), "/org_rowan_events.rs"));
+}
+
 const HANDOFF_TEST_DIGEST: &str =
     "sha256:8b41c0fcb53588c81a44b83ec9e530bdb6125096637cba4934c96f7c2965abd6";
 
@@ -34,6 +40,40 @@ fn scheme_authored_line_algorithm_aot_builds_lossless_rowan() {
         .map(|node| org_language_spec().kinds[usize::from(node.kind().0)].name)
         .collect();
     assert_eq!(kinds, ["OrgHeadline", "OrgTextLine"]);
+}
+
+#[test]
+fn org_scheme_context_algorithm_aot_masks_headlines_inside_source_blocks() {
+    let source = "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Org Scheme context algorithm builds a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let kinds: Vec<_> = parsed
+        .syntax()
+        .descendants()
+        .map(|node| org_language_spec().kinds[usize::from(node.kind().0)].name)
+        .collect();
+    assert_eq!(
+        kinds,
+        [
+            "OrgFile",
+            "OrgSection",
+            "OrgHeadline",
+            "OrgSourceBlock",
+            "OrgSection",
+            "OrgHeadline",
+        ]
+    );
+    assert_eq!(
+        parsed.receipt().parser_digest,
+        Some(generated_context_events::PARSER_DIGEST)
+    );
 }
 
 fn kind(name: &str, category: KindCategory) -> u16 {
