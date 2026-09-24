@@ -29,6 +29,8 @@
    (node 'OrgDrawer "element" "drawer"
          (list (field 'DrawerName "name")))
    (node 'OrgParagraph "element" "paragraph" '())
+   (node 'OrgComment "element" "comment"
+         (list (field 'CommentLine "source-line" 'each)))
    (node 'OrgHorizontalRule "element" "horizontal-rule" '())
    (node 'OrgFixedWidth "element" "fixed-width" '())
    (node 'OrgKeyword "element" "keyword"

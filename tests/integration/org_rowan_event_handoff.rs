@@ -18,6 +18,46 @@ const HANDOFF_TEST_DIGEST: &str =
     "sha256:8b41c0fcb53588c81a44b83ec9e530bdb6125096637cba4934c96f7c2965abd6";
 
 #[test]
+fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
+    let source = "# first\n# second\ntext\n#+begin_quote\n# nested\n#+end_quote\n#\n";
+    let document = orgize::org_aot::parse_org_event_aot(source)
+        .expect("Scheme comment strategy builds a lossless Rowan document");
+    assert_eq!(document.syntax().to_string(), source);
+    let comments: Vec<_> = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "comment")
+        .collect();
+    assert_eq!(comments.len(), 3);
+    assert_eq!(
+        comments[0].values("source-line").collect::<Vec<_>>(),
+        ["# first\n", "# second\n"]
+    );
+    assert_eq!(comments[1].field("source-line"), Some("# nested\n"));
+    assert_eq!(comments[2].field("source-line"), Some("#\n"));
+    let quote = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "quote-block")
+        .expect("recursive quote block is an Element");
+    assert_eq!(comments[1].parent_id, Some(quote.id));
+
+    let listed = orgize::org_aot::parse_org_event_aot("- item\n  # child\n")
+        .expect("indented comment stays inside its list item");
+    let item = listed
+        .records()
+        .iter()
+        .find(|record| record.kind == "item")
+        .expect("list item projects as an Element");
+    let child = listed
+        .records()
+        .iter()
+        .find(|record| record.kind == "comment")
+        .expect("comment projects inside the list item");
+    assert_eq!(child.parent_id, Some(item.id));
+}
+
+#[test]
 fn scheme_authored_line_algorithm_aot_builds_lossless_rowan() {
     let source = "* α\r\nbody\n";
     let events = generated_line_events::parse_org_line_events(source);

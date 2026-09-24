@@ -19,6 +19,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgNodeProperty", category: KindCategory::Node },
     KindSpec { name: "OrgTextLine", category: KindCategory::Node },
     KindSpec { name: "OrgParagraph", category: KindCategory::Node },
+    KindSpec { name: "OrgComment", category: KindCategory::Node },
     KindSpec { name: "OrgHorizontalRule", category: KindCategory::Node },
     KindSpec { name: "OrgFixedWidth", category: KindCategory::Node },
     KindSpec { name: "OrgKeyword", category: KindCategory::Node },
@@ -44,6 +45,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "BlockHeaderTrivia", category: KindCategory::Token },
     KindSpec { name: "BlockEndLine", category: KindCategory::Token },
     KindSpec { name: "TextLine", category: KindCategory::Token },
+    KindSpec { name: "CommentLine", category: KindCategory::Token },
     KindSpec { name: "HorizontalRuleLine", category: KindCategory::Token },
     KindSpec { name: "FixedWidthLine", category: KindCategory::Token },
     KindSpec { name: "DrawerBeginLine", category: KindCategory::Token },
@@ -74,10 +76,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 29 },
-    TerminalSpec { name: "block-begin", syntax_kind: 32 },
-    TerminalSpec { name: "block-end", syntax_kind: 38 },
-    TerminalSpec { name: "text", syntax_kind: 39 },
+    TerminalSpec { name: "headline", syntax_kind: 30 },
+    TerminalSpec { name: "block-begin", syntax_kind: 33 },
+    TerminalSpec { name: "block-end", syntax_kind: 39 },
+    TerminalSpec { name: "text", syntax_kind: 40 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -252,7 +254,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:13dbf8905f5ef9e19b1390cc47079919f07b4eb4836f34396ff7d49e99d2190c",
+    grammar_digest: "sha256:5f6c64dcc67f6df7d0c0ae31ac0fcaf4597e704ed479aac7407629f1236d8fb7",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

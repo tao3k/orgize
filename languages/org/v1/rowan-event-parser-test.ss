@@ -107,6 +107,34 @@
           (OrgSection
            (OrgHeadline (HeadlineLine 47 49) (HeadlineTrivia 49 50)
                         (HeadlineTitle 50 54) (HeadlineTrivia 54 55)))))))
+    (test-case "adjacent Org comments form one typed element"
+      (check-org-ast-with parse-org-rowan-events
+        "# one\n# two\ntext\n#\n"
+        (OrgFile
+         (OrgComment (CommentLine 0 6) (CommentLine 6 12))
+         (OrgParagraph (OrgTextLine (TextLine 12 17)))
+         (OrgComment (CommentLine 17 19)))))
+    (test-case "indented comments remain inside the owning list item"
+      (check-org-ast-with parse-org-rowan-events
+        "- item\n  # child\n  # next\n- peer\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 1) (ListTrivia 1 2)
+           (OrgParagraph (OrgTextLine (TextLine 2 7)))
+           (OrgComment (CommentLine 7 17) (CommentLine 17 26)))
+          (OrgListItem
+           (ListBullet 26 27) (ListTrivia 27 28)
+           (OrgParagraph (OrgTextLine (TextLine 28 33))))))))
+    (test-case "hash-prefixed text and keywords are not comments"
+      (check-org-ast-with parse-org-rowan-events
+        "#not-comment\n#+TITLE: Yes\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 13)))
+         (OrgKeyword
+          (KeywordTrivia 13 15) (KeywordKey 15 20)
+          (KeywordTrivia 20 22) (KeywordValue 22 25)
+          (KeywordTrivia 25 26)))))
     (test-case "file-local TODO and Babel CALL keys project as distinct Elements"
       (check-org-ast-with parse-org-rowan-events
         "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n"

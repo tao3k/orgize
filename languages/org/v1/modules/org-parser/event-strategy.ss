@@ -111,6 +111,22 @@
   '(if (state paragraph-open)
        ((finish-node) (set-bool paragraph-open (bool #f))) ()))
 
+(def comment-marker '(line-skip-horizontal start))
+(def comment-next `(line-step ,comment-marker))
+(def comment-line?
+  `(and (line-byte-equal? ,comment-marker 35)
+        (or (line-byte-equal? ,comment-next 32)
+            (line-bytes-all-in? ,comment-next (line-content-end) ()))))
+(def close-comment
+  '(if (state comment-open)
+       ((finish-node) (set-bool comment-open (bool #f))) ()))
+
+(def (comment-line-forms)
+  '((if (not (state comment-open))
+        ((start-node OrgComment) (set-bool comment-open (bool #t))) ())
+    (token CommentLine start end)
+    (set-bool after-heading (bool #f))))
+
 (def (paragraph-form)
   `(if (line-blank?)
        (,close-paragraph
@@ -516,9 +532,14 @@
              () (,(headline-form)))))))
 
 (def (non-table-element-form)
-  (fixed-width-form
-   (list (horizontal-rule-form
-          (list (property-open-form (container-or-opaque-form)))))))
+  `(if ,comment-line?
+       (,fixed-width-close
+        ,close-paragraph
+        ,@(comment-line-forms))
+       (,close-comment
+        ,(fixed-width-form
+          (list (horizontal-rule-form
+                 (list (property-open-form (container-or-opaque-form)))))))))
 
 (def (table-or-element-form)
   `(if ,table-line-predicate
@@ -614,15 +635,30 @@
                   ((if (uint-greater?
                         (line-indent-column ,(list-line-tab-width list-rule))
                         ,list-top)
-                       (,@(list-text-line 'start)
+                       ((if ,comment-line?
+                            (,list-close-paragraph ,@(comment-line-forms))
+                            ,(list-text-line 'start))
                         (set-uint list-blank-count (uint 0)))
                        (,@list-close-all ,(table-or-element-form))))))
              (,(table-or-element-form)))))))
+
+(def (headline-or-element-form)
+  `(if (and (uint-equal? (stack-top container-frames) (uint 0))
+            (uint-positive? (line-marker-level ,heading-marker
+                                               ,heading-separator)))
+       (,@list-close-all
+        (if (state table-open)
+            ((finish-node) (set-bool table-open (bool #f))) ())
+        ,fixed-width-close
+        ,close-comment
+        ,(headline-form))
+       ,(list-or-element-form)))
 
 (def org-event-initial
   (append
    '((open-levels (uint-stack)) (active-opaque-block 0)
     (property-drawer-open #f) (paragraph-open #f) (after-heading #f)
+    (comment-open #f)
     (fixed-width-open #f)
     (table-open #f) (table-seen-separator #f) (table-escaped #f)
     (table-cell-start 0)
@@ -638,10 +674,12 @@
         (,(opaque-body-chain))
         ((if (state property-drawer-open)
              (,(property-body-form))
-             (,@(container-close-chain)
+             ((if (state comment-open)
+                  ((if ,comment-line? () (,close-comment))) ())
+              ,@(container-close-chain)
               (if (state container-closed)
                   ((set-bool container-closed (bool #f)))
-                  (,@(list-or-element-form)))))))))
+                  (,(headline-or-element-form)))))))))
 
 (def org-event-finish-forms
   '((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
@@ -651,5 +689,6 @@
     (close-all-frames list-frames 2)
     (if (state fixed-width-open) ((finish-node)) ())
     (if (state paragraph-open) ((finish-node)) ())
+    (if (state comment-open) ((finish-node)) ())
     (close-all-frames container-frames 1)
     (close-all open-levels)))
