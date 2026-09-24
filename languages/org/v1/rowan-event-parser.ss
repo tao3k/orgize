@@ -19,7 +19,25 @@
        ((if (line-starts-with-ascii-ci "#+begin_src")
             ((if (state paragraph-open)
                  ((finish-node) (set-bool paragraph-open (bool #f))) ())
-             (start-node OrgSourceBlock) (token BlockBeginLine start end)
+             (start-node OrgSourceBlock)
+             (token BlockBeginLine start (line-prefix-end "#+begin_src"))
+             (if (line-has-word-after-prefix? "#+begin_src")
+                 ((token BlockHeaderTrivia
+                         (line-prefix-end "#+begin_src")
+                         (line-skip-horizontal
+                          (line-prefix-end "#+begin_src")))
+                  (token SourceLanguage
+                         (line-skip-horizontal
+                          (line-prefix-end "#+begin_src"))
+                         (line-scan-word
+                          (line-skip-horizontal
+                           (line-prefix-end "#+begin_src"))))
+                  (token BlockHeaderTrivia
+                         (line-scan-word
+                          (line-skip-horizontal
+                           (line-prefix-end "#+begin_src"))) end))
+                 ((token BlockHeaderTrivia
+                         (line-prefix-end "#+begin_src") end)))
              (set-bool source-block-open (bool #t)))
             ((if (uint-positive? (line-marker-level "*" " "))
                  ((if (state paragraph-open)

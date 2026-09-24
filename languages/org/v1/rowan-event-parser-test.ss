@@ -25,8 +25,11 @@
         (OrgFile
          (OrgSection
           (OrgHeadline (HeadlineLine 0 9))
-          (OrgSourceBlock (BlockBeginLine 9 26) (TextLine 26 34)
-                          (BlockEndLine 34 44))
+          (OrgSourceBlock (BlockBeginLine 9 20)
+                          (BlockHeaderTrivia 20 21)
+                          (SourceLanguage 21 25)
+                          (BlockHeaderTrivia 25 26)
+                          (TextLine 26 34) (BlockEndLine 34 44))
           (OrgSection (OrgHeadline (HeadlineLine 44 53)))))))
     (test-case "unterminated blocks close at EOF without treating body as headings"
       (check-org-ast-with parse-org-rowan-events
@@ -34,7 +37,8 @@
         (OrgFile
          (OrgSection
           (OrgHeadline (HeadlineLine 0 9))
-          (OrgSourceBlock (BlockBeginLine 9 21)
+          (OrgSourceBlock (BlockBeginLine 9 20)
+                          (BlockHeaderTrivia 20 21)
                           (TextLine 21 29))))))
     (test-case "AOT IR is a typed source-owned event function"
       (let (ir (string->json parse_org_rowan_events

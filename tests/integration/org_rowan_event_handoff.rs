@@ -74,6 +74,14 @@ fn org_scheme_context_algorithm_aot_masks_headlines_inside_source_blocks() {
         parsed.receipt().parser_digest,
         Some(generated_context_events::PARSER_DIGEST)
     );
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("Scheme source-block fields project through Org Elements");
+    let block = records
+        .iter()
+        .find(|record| record.kind == "src-block")
+        .expect("source block is an Element");
+    assert_eq!(block.field("language"), Some("rust"));
+    assert_eq!(block.field("body"), Some("** fake\n"));
 }
 
 #[test]
