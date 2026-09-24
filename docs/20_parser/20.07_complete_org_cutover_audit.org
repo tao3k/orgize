@@ -225,6 +225,12 @@ algorithms must converge before one Scheme authority can be claimed. Measure
 the generated event path against equivalent syntax and Element projection,
 not against an incomplete tree with fewer fields.
 
+The event-AOT path now derives headline markers, source/property block markers,
+keyword prefixes, property delimiters, and Babel CALL spelling from the POO
+=parser.ss= declarations. Scheme execution and regenerated Rust IR are byte-for-byte
+stable after this authority consolidation. This removes duplicated literal
+grammar, but does not yet unify the two Scheme algorithms or cover all Org syntax.
+
 * Implementation order
 
 This is one vertical MVP followed by full-coverage expansion, not separate
