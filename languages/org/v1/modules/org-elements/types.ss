@@ -41,11 +41,14 @@
 
 (def (org-element-field? rule name)
   (and rule
-       (let loop ((fields (graph-node-fields rule)))
-         (cond
-          ((null? fields) #f)
-          ((equal? name (graph-field-name (car fields))) #t)
-          (else (loop (cdr fields)))))))
+       (or (and (equal? (graph-node-label rule) "headline")
+                (member name '("raw-value" "todo-keyword" "todo-type"
+                               "priority" "tags")))
+           (let loop ((fields (graph-node-fields rule)))
+             (cond
+              ((null? fields) #f)
+              ((equal? name (graph-field-name (car fields))) #t)
+              (else (loop (cdr fields))))))))
 
 (def (org-element-query-shape? value)
   (and (has-kind-and-slots?

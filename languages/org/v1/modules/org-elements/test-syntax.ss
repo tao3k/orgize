@@ -9,8 +9,9 @@
                  +org-affiliated-keywords+ +org-object-restrictions+
                  +org-secondary-values+ org-object-allowed?
                  org-secondary-value?)
-        (only-in "funs.ss" org-element-select))
-(export check-org-element-catalog check-org-element-selection)
+        (only-in "funs.ss" org-element-select org-element-property))
+(export check-org-element-catalog check-org-element-selection
+        check-org-headline-properties)
 
 (def (catalog-unique? values)
   (let loop ((remaining values) (seen '()))
@@ -68,3 +69,15 @@
      (syntax
       (check (map id-of (org-element-select query context scope targets))
              => expected-ids)))))
+
+(defsyntax (check-org-headline-properties stx)
+  (syntax-case stx ()
+    ((_ context record raw title todo type priority tags)
+     (syntax
+      (begin
+        (check (org-element-property context record "raw-value") => raw)
+        (check (org-element-property context record "title") => title)
+        (check (org-element-property context record "todo-keyword") => todo)
+        (check (org-element-property context record "todo-type") => type)
+        (check (org-element-property context record "priority") => priority)
+        (check (org-element-property context record "tags") => tags))))))

@@ -1,9 +1,11 @@
 ;;; -*- Gerbil -*-
 ;;; Public POO/functional interface for the Org Elements feature.
 
-(import "types.ss" "objects.ss" "funs.ss" "config.ss" "syntax.ss")
+(import "types.ss" "objects.ss" "funs.ss" "config.ss" "syntax.ss"
+        "headline-properties.ss")
 (export (import: "types.ss")
         (import: "objects.ss")
         (import: "funs.ss")
         (import: "config.ss")
-        (import: "syntax.ss"))
+        (import: "syntax.ss")
+        (import: "headline-properties.ss"))

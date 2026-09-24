@@ -1,0 +1,173 @@
+;;; -*- Gerbil -*-
+;;; Org-only headline properties layered onto the existing Element graph.
+;;; No second headline node or parser-engine semantics are introduced.
+
+(import (only-in :std/string/misc string-trim)
+        (only-in "types.ss" org-element-graph-view?)
+        (only-in "objects.ss"
+                 make-org-element-graph-view
+                 org-element-graph-records org-element-graph-id-of
+                 org-element-graph-parent-of org-element-graph-kind-of
+                 org-element-graph-field-of))
+(export org-element-with-headline-properties)
+
+(defstruct headline-properties (raw-value title todo-keyword todo-type
+                                          priority tags))
+
+(def (split-first value)
+  (let* ((text (string-trim value)) (size (string-length text)))
+    (let loop ((index 0))
+      (cond
+       ((= index size) (cons text ""))
+       ((char-whitespace? (string-ref text index))
+        (cons (substring text 0 index)
+              (string-trim (substring text index size))))
+       (else (loop (+ index 1)))))))
+
+(def (split-last value)
+  (let (size (string-length value))
+    (let loop ((index (- size 1)))
+      (cond
+       ((< index 0) #f)
+       ((char-whitespace? (string-ref value index))
+        (cons (string-trim (substring value 0 index))
+              (string-trim (substring value (+ index 1) size))))
+       (else (loop (- index 1)))))))
+
+(def (todo-name token)
+  (let (size (string-length token))
+    (let loop ((index 0))
+      (cond
+       ((= index size) token)
+       ((char=? (string-ref token index) #\()
+        (substring token 0 index))
+       (else (loop (+ index 1)))))))
+
+(def (todo-directive? key)
+  (and (string? key)
+       (or (string-ci=? key "TODO")
+           (string-ci=? key "SEQ_TODO")
+           (string-ci=? key "TYP_TODO"))))
+
+(def (add-distinct values value)
+  (if (member value values) values (append values (list value))))
+
+(def (collect-todo value open done)
+  (let loop ((rest (string-trim value)) (open open) (done done)
+             (done-side? #f))
+    (if (equal? rest "")
+      (values open done)
+      (let* ((part (split-first rest))
+             (word (car part))
+             (tail (cdr part)))
+        (if (equal? word "|")
+          (loop tail open done #t)
+          (let (name (todo-name word))
+            (if (or (equal? name "")
+                    (char=? (string-ref name 0) #\())
+              (loop tail open done done-side?)
+              (if done-side?
+                (loop tail open (add-distinct done name) #t)
+                (loop tail (add-distinct open name) done #f)))))))))
+
+(def (document-todo-profile records kind-of field-of)
+  (let loop ((rest records) (open '()) (done '()) (declared? #f))
+    (if (null? rest)
+      (if declared? (cons open done) (cons '("TODO") '("DONE")))
+      (let* ((record (car rest))
+             (key (and (equal? (kind-of record) "keyword")
+                       (field-of record "key")))
+             (value (and key (field-of record "value"))))
+        (if (and (todo-directive? key) (string? value))
+          (let-values (((next-open next-done)
+                        (collect-todo value open done)))
+            (loop (cdr rest) next-open next-done #t))
+          (loop (cdr rest) open done declared?))))))
+
+(def (priority-token? word)
+  (let (size (string-length word))
+    (and (>= size 4)
+         (char=? (string-ref word 0) #\[)
+         (char=? (string-ref word 1) #\#)
+         (char=? (string-ref word (- size 1)) #\])
+         (let (inner (substring word 2 (- size 1)))
+           (or (and (= (string-length inner) 1)
+                    (char-alphabetic? (string-ref inner 0)))
+               (let (number (string->number inner))
+                 (and (integer? number) (<= 0 number 64))))))))
+
+(def (tag-char? char)
+  (or (char-alphabetic? char) (char-numeric? char)
+      (memv char '(#\_ #\@ #\# #\%))))
+
+(def (tag-token word)
+  (let (size (string-length word))
+    (and (> size 2)
+         (char=? (string-ref word 0) #\:)
+         (char=? (string-ref word (- size 1)) #\:)
+         (let (tags (string-split (substring word 1 (- size 1)) #\:))
+           (and (pair? tags)
+                (andmap (lambda (tag)
+                          (and (> (string-length tag) 0)
+                               (let loop ((index 0))
+                                 (or (= index (string-length tag))
+                                     (and (tag-char? (string-ref tag index))
+                                          (loop (+ index 1)))))))
+                        tags)
+                tags)))))
+
+(def (decode-headline title profile)
+  (let* ((first (split-first title))
+         (word (car first))
+         (state (cond ((member word (car profile)) "todo")
+                      ((member word (cdr profile)) "done")
+                      (else #f)))
+         (todo (and state word))
+         (after-todo (if todo (cdr first) (string-trim title)))
+         (next (split-first after-todo))
+         (priority (and (priority-token? (car next))
+                        (substring (car next) 2
+                                   (- (string-length (car next)) 1))))
+         (after-priority (if priority (cdr next) after-todo))
+         (last (split-last after-priority))
+         (tags (and last (tag-token (cdr last)))))
+    (make-headline-properties
+     title (if tags (car last) (string-trim after-priority))
+     todo state priority (or tags '()))))
+
+(def (org-element-with-headline-properties graph)
+  (unless (org-element-graph-view? graph)
+    (error "headline properties require an admitted Org Element graph" graph))
+  (let* ((records (org-element-graph-records graph))
+         (id-of (org-element-graph-id-of graph))
+         (parent-of (org-element-graph-parent-of graph))
+         (kind-of (org-element-graph-kind-of graph))
+         (field-of (org-element-graph-field-of graph))
+         (profile (document-todo-profile records kind-of field-of))
+         (headlines (make-hash-table)))
+    (for-each
+     (lambda (record)
+       (when (equal? (kind-of record) "headline")
+         (let (title (field-of record "title"))
+           (when (string? title)
+             (hash-put! headlines (id-of record)
+                        (decode-headline title profile))))))
+     records)
+    (make-org-element-graph-view
+     records id-of parent-of kind-of
+     (lambda (record name)
+       (let (properties (hash-get headlines (id-of record)))
+         (if properties
+           (cond
+            ((equal? name "title") (headline-properties-title properties))
+            ((equal? name "raw-value")
+             (headline-properties-raw-value properties))
+            ((equal? name "todo-keyword")
+             (headline-properties-todo-keyword properties))
+            ((equal? name "todo-type")
+             (headline-properties-todo-type properties))
+            ((equal? name "priority")
+             (headline-properties-priority properties))
+            ((equal? name "tags") (headline-properties-tags properties))
+            (else (field-of record name)))
+           (field-of record name)))))))

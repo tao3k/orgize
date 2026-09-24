@@ -117,11 +117,17 @@
               (or (not field-name)
                   (let (actual (org-element-property context record
                                                       field-name))
-                    (and (string? actual)
-                         (case field-match
-                           ((exact) (equal? actual field-value))
-                           ((contains) (if (string-contains actual field-value)
-                                         #t #f))))))
+                    (let (matches?
+                          (lambda (value)
+                            (and (string? value)
+                                 (case field-match
+                                   ((exact) (equal? value field-value))
+                                   ((contains)
+                                    (if (string-contains value field-value)
+                                      #t #f))))))
+                      (if (list? actual)
+                        (ormap matches? actual)
+                        (matches? actual)))))
               (case relation
                 ((any) #t)
                 ((at) (member id targets))
