@@ -34,3 +34,6 @@ wheel after installation. On macOS the repair step also recalculates the
 minimum supported OS tag from the bundled libraries.
 
 The project is managed by `uv`; Rust bindings are built with PyO3 and maturin.
+Bundled native and Rust dependencies are inventoried in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md); the matching license texts
+are included in each wheel and source distribution.
