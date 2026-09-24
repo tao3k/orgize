@@ -10,6 +10,7 @@ use super::elements::{
 use super::model::{DocumentLanguage, DocumentWalkConfig};
 
 #[test]
+#[ignore = "run as a focused release-mode performance scenario"]
 fn document_query_org_elements_ast_stays_inside_scenario_gate() {
     let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/unit/scenarios/document_query_org_elements_ast");
@@ -28,7 +29,7 @@ fn document_query_org_elements_ast_stays_inside_scenario_gate() {
         fixture_root: "tests/unit/scenarios/document_query_org_elements_ast",
         tags: ["org-elements", "query", "performance"],
         commands: [
-            { label: "focused", argv: ["cargo", "test", "document_query_org_elements_ast_stays_inside_scenario_gate"] }
+            { label: "focused-release", argv: ["cargo", "test", "--release", "--lib", "document_query_org_elements_ast_stays_inside_scenario_gate", "--", "--ignored", "--test-threads=1"] }
         ],
         benchmark: {
             harness: "libtest",
