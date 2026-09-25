@@ -64,6 +64,72 @@ compares its structural backbone after removing only the newly supported
 Objects. Public AST and semantic
 query parity remain unadmitted.
 
+* Why the public parser has not been replaced
+
+This is a type-and-consumer cutover, not an entrypoint rename:
+
+1. =src/org.rs= still constructs its =GreenNode= with
+   =syntax::document::document_node=. =src/replace.rs= calls the same parser
+   twice after edits. The AOT =parse_org_aot= path is separate.
+2. =src/syntax/kind.rs= assigns raw Rowan IDs from the handwritten
+   =SyntaxKind= enum; =OrgLanguage::kind_from_raw= uses an unchecked
+   =u16= transmute. Generated =LanguageSpec.kinds= has a different ID order.
+   Feeding an AOT green tree to the old =OrgLanguage= is invalid, not a
+   cutover shortcut.
+3. =src/ast/generated= and =src/semantic_ast/conversion.rs= assume old CST
+   nodes such as =DOCUMENT=, =HEADLINE= and their old child layout. The AOT
+   tree uses =OrgFile=, =OrgSection= and =OrgHeadline=. Typed AST, exporters,
+   editing, and CLI code cannot be preserved by relabeling kind IDs.
+4. A source search at commit =c752fd1= finds 23 production =Org::parse= calls
+   across 15 files under =src/cli=, =src/document=, =src/lint*.rs= and
+   =src/semantic_ast=. These are consumers to migrate, not an API name that
+   necessarily must disappear: the final =Org::parse= may delegate to AOT.
+   =src/document/memory_projection.rs= additionally
+   hand-scans plan-ledger headline, TODO, tags and property lines in Rust for
+   a 2,000-file/100-ms scenario. This is a separate Org syntax authority even
+   though it does not call =Org::parse=.
+5. =src/config.rs= still parses file-local TODO declarations in Rust and
+   carries configurable subscript, affiliated-keyword, inlinetask and other
+   settings that the generated event entrypoint does not yet accept. Merely
+   passing the source string to AOT would drop public configuration behavior.
+
+Reproduce the callsite inventory with:
+
+#+begin_src sh
+rg -n 'Org::parse\(' src/cli src/document src/lint.rs src/lint_contracts.rs src/lint_lifecycle.rs src/lint_runtime_validation.rs src/semantic_ast
+rg -n 'document_node\(' src/org.rs src/replace.rs src/syntax/document.rs
+#+end_src
+
+These counts are a migration ledger, not permission to retain a second
+parser. Each consumer migration must have a Scheme-AOT behavior test and a
+consumer test. The final count of calls into =document_node= and independent
+Rust Org recognizers is zero; remaining =Org::parse= calls must resolve to the
+single AOT implementation.
+
+* Milestone order and admission
+
+| Milestone | Deliverable | Admission evidence |
+|-----------+-------------+--------------------|
+| M0 Audit baseline | Inventory the two parser paths, hidden Rust recognizers, kind mismatch, consumer calls and missing graph families | Reproducible source inventory plus =org_cutover_audit= on the exact head; explicitly red for full replacement |
+| M1 Scheme syntax and context | All 30 Elements and 24 Objects, headline/configuration properties, nesting, affiliated keywords, recovery and byte ranges are Scheme-owned event functions | Generated kind/graph catalog has no missing kinds; upstream-derived, custom and negative fixtures test each property and lossless spans |
+| M2 One public tree | =Org::parse= and =ParseConfig::parse= use generated AOT events and one safe generated Rowan kind model; typed AST is rebuilt on that model | No =document_node= in the public path; public AST/source roundtrip and configuration tests pass without kind conversion or reparsing |
+| M3 Consumer migration | Exporters, editing, lint, Contract, CLI, memory and bindings consume the single AOT tree/graph | All 23 production =Org::parse= consumers resolve to AOT; the plan-ledger Rust syntax scanner is gone; consumer snapshots, query and scale tests pass |
+| M4 Remove displaced parser | Handwritten =src/syntax= parsing routines and obsolete CST assumptions are deleted, not kept as a fallback | Source and dependency audit finds no second Org recognizer; all remaining fixtures exercise AOT |
+| M5 Final admission | Exact final head passes losslessness, semantic parity, Dev Gate, strict Clippy, release parse/projection/query and build-cost budgets, and supported platform CI | Receipts from the final SHA, not earlier focused or cancelled runs |
+
+M1 and M2 are coupled: adding catalog names alone cannot admit the public
+tree. M3 cannot use a Rust compatibility parser to bridge missing Scheme
+semantics. Build-time Scheme→Rust AOT calls Rowan directly; runtime FFI is
+not part of any milestone.
+
+The present state is an audit baseline, not M1 admission. The first
+implementation batch is headline/file configuration and missing Element and
+Object event families in Org-owned Scheme, with malformed and nested cases.
+Only after those graph and property contracts are executable should the
+public kind/AST cutover begin. Keep the 2,000-file/100-ms plan-ledger case as
+a performance admission gate throughout; a full parse per file is not an
+acceptable unmeasured substitution for its current fast projection.
+
 * Ownership boundary
 
 Org recognition, context, source spans, Object/Element properties, and
