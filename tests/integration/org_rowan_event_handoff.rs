@@ -4,8 +4,7 @@
 use gerbil_parser_rowan::{
     KindCategory, TreeEvent, parse_generated_events, parse_structural_lines, project_syntax_graph,
 };
-use orgize::org_aot::{org_graph_spec, org_language_spec};
-
+use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
 
 #[rustfmt::skip]
 #[path = "../../languages/org/v1/generated/line-events.rs"]
@@ -157,6 +156,27 @@ fn org_scheme_context_algorithm_aot_masks_headlines_inside_source_blocks() {
         .expect("source block is an Element");
     assert_eq!(block.field("language"), Some("rust"));
     assert_eq!(block.field("body"), Some("** fake\n"));
+}
+
+#[test]
+fn org_scheme_source_header_args_project_as_source_backed_fields() {
+    let source = "#+begin_src rust :results output :var \"hello world\"\nbody\n#+end_src\n";
+    let document = parse_org_aot(source).expect("Scheme event parser admits source headers");
+    assert_eq!(document.syntax().to_string(), source);
+    let block = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "src-block")
+        .expect("source block projects as an Element");
+    assert_eq!(block.field("language"), Some("rust"));
+    assert_eq!(
+        block.values("header-key").collect::<Vec<_>>(),
+        ["results", "var"]
+    );
+    assert_eq!(
+        block.values("header-value").collect::<Vec<_>>(),
+        ["output", "\"hello world\""]
+    );
 }
 
 #[test]

@@ -246,6 +246,26 @@ fn bench_org_table_rows(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_org_source_headers(c: &mut Criterion) {
+    let source =
+        "#+begin_src rust :results output :var \"hello world\"\nbody\n#+end_src\n".repeat(1_000);
+    let document = parse_org_aot(&source).expect("source header scenario parses");
+    assert_eq!(
+        document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "src-block")
+            .count(),
+        1_000
+    );
+    let mut group = c.benchmark_group("OrgSchemeSourceHeaders");
+    group.throughput(Throughput::Elements(1_000));
+    group.bench_function("events-rowan-elements/1k-source-headers", |b| {
+        b.iter(|| black_box(parse_org_aot(black_box(&source)).unwrap()))
+    });
+    group.finish();
+}
+
 fn bench_org_nested_lists(c: &mut Criterion) {
     let source = list_source();
     let structural = parse_org_aot(&source).expect("structural list benchmark parses");
@@ -302,6 +322,7 @@ criterion_group!(
     benches,
     bench_org_element_query,
     bench_org_table_rows,
-    bench_org_nested_lists
+    bench_org_nested_lists,
+    bench_org_source_headers
 );
 criterion_main!(benches);

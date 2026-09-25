@@ -26,7 +26,9 @@
                  list-line-item-node list-line-bullet-token
                  list-line-trivia-token)
         (only-in "../../parser.ss" org-v1-line-structure)
-        (only-in "event-inline.ss" event-inline-initial event-text-line-forms))
+        (only-in "event-inline.ss" event-inline-initial event-text-line-forms)
+        (only-in "event-source-header.ss"
+                 event-source-header-initial event-source-header-forms))
 (export org-event-initial org-event-line-forms org-event-finish-forms)
 
 (def (block-by-node node)
@@ -347,7 +349,10 @@
     (if (not header)
       `((token ,begin-token start end))
       (let ((argument-token (block-header-argument-token header))
-            (trivia-token (block-header-trivia-token header)))
+            (trivia-token (block-header-trivia-token header))
+            (argument-end
+             `(line-scan-word
+               (line-skip-horizontal (line-prefix-end ,opening)))))
         `((token ,begin-token start (line-prefix-end ,opening))
           (if (line-has-word-after-prefix? ,opening)
               ((token ,trivia-token
@@ -355,11 +360,10 @@
                       (line-skip-horizontal (line-prefix-end ,opening)))
                (token ,argument-token
                       (line-skip-horizontal (line-prefix-end ,opening))
-                      (line-scan-word
-                       (line-skip-horizontal (line-prefix-end ,opening))))
-               (token ,trivia-token
-                      (line-scan-word
-                       (line-skip-horizontal (line-prefix-end ,opening))) end))
+                      ,argument-end)
+               ,@(if (eq? (block-line-block-node rule) 'OrgSourceBlock)
+                   (event-source-header-forms argument-end)
+                   `((token ,trivia-token ,argument-end end))))
               ((token ,trivia-token (line-prefix-end ,opening) end))))))))
 
 (def (opaque-open-form block-id otherwise)
@@ -798,7 +802,8 @@
     (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
     (list-column 0) (list-bullet-start 0) (list-bullet-end 0)
     (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0))
-   event-inline-initial))
+   event-inline-initial
+   event-source-header-initial))
 
 (def org-event-line-forms
   `((if (uint-positive? (state active-opaque-block))

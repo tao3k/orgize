@@ -179,12 +179,36 @@
           (OrgSourceBlock (BlockBeginLine 9 20)
                           (BlockHeaderTrivia 20 21)
                           (SourceLanguage 21 25)
-                          (BlockHeaderTrivia 25 26)
+                          (SourceHeaderTrivia 25 26)
                           (TextLine 26 34) (BlockEndLine 34 44))
           (OrgSection (OrgHeadline (HeadlineLine 44 46)
                                     (HeadlineTrivia 46 47)
                                     (HeadlineTitle 47 52)
                                     (HeadlineTrivia 52 53)))))))
+    (test-case "source block arguments retain Scheme-owned keys and quoted values"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_src rust :results output :var \"hello world\"\nbody\n#+end_src\n"
+        (OrgFile
+         (OrgSourceBlock
+          (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
+          (SourceLanguage 12 16)
+          (SourceHeaderTrivia 16 18) (SourceHeaderKey 18 25)
+          (SourceHeaderTrivia 25 26) (SourceHeaderValue 26 32)
+          (SourceHeaderTrivia 32 34) (SourceHeaderKey 34 37)
+          (SourceHeaderTrivia 37 38) (SourceHeaderValue 38 51)
+          (SourceHeaderTrivia 51 52)
+          (TextLine 52 57) (BlockEndLine 57 67)))))
+    (test-case "header-like text without a leading separator remains trivia"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_src rust x:bad :var ok\nbody\n#+end_src\n"
+        (OrgFile
+         (OrgSourceBlock
+          (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
+          (SourceLanguage 12 16)
+          (SourceHeaderTrivia 16 24) (SourceHeaderKey 24 27)
+          (SourceHeaderTrivia 27 28) (SourceHeaderValue 28 30)
+          (SourceHeaderTrivia 30 31)
+          (TextLine 31 36) (BlockEndLine 36 46)))))
     (test-case "unterminated blocks recover as text before the next heading"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BEGIN_SRC\n** body\n"
@@ -473,7 +497,7 @@
          (OrgSourceBlock (BlockBeginLine 0 11)
                          (BlockHeaderTrivia 11 12)
                          (SourceLanguage 12 16)
-                         (BlockHeaderTrivia 16 17)
+                         (SourceHeaderTrivia 16 17)
                          (TextLine 17 28) (BlockEndLine 28 40))))
       (check-org-ast-with parse-org-rowan-events
         "* H\n:PROPERTIES:\n:END: tail\n:END:\n"

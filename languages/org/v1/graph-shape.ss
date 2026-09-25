@@ -62,6 +62,11 @@
    (node 'OrgSourceBlock "element" "src-block"
          (list (field 'SourceLanguage "language")
                (field 'BlockHeaderTrivia "header")
+               (field 'SourceHeaderTrivia "header")
+               (field 'SourceHeaderKey "header")
+               (field 'SourceHeaderValue "header")
+               (field 'SourceHeaderKey "header-key" 'each)
+               (field 'SourceHeaderValue "header-value" 'each)
                (field 'TextLine "body")))
    (node 'OrgDynamicBlock "element" "dynamic-block"
          (list (field 'DynamicBlockName "name")

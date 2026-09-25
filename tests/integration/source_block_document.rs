@@ -2,6 +2,7 @@ use orgize::ast::{
     ElementData, OrgSourceBlock, OrgSourceBlockDocument, OrgSourceBlockHeader,
     OrgSourceBlockHeaderValue, OrgSourceBlockKeyword,
 };
+use orgize::org_aot::parse_org_aot;
 use orgize::{Org, syntax_ast::SourceBlock};
 
 #[test]
@@ -67,10 +68,50 @@ fn typed_source_block_document_round_trips_through_orgize() {
         rendered,
         "#+GQL: Registry::refresh --calls--> Registry::publish\n#+begin_src rust :query \"rust://src/registry.rs#item/method/refresh/type/Registry\" :filename \"src/registry.rs\"\nfn refresh() {}\n#+end_src\n"
     );
+    let parsed = parse_org_aot(&rendered).expect("Scheme AOT parses the typed source block");
+    assert_eq!(parsed.syntax().to_string(), rendered);
     assert_eq!(
-        Org::parse(rendered).document().source_block_records().len(),
+        parsed
+            .records()
+            .iter()
+            .filter(|record| record.kind == "src-block")
+            .count(),
         1
     );
+}
+
+#[test]
+fn typed_source_blocks_preserve_escaped_header_text_across_blocks() {
+    let first = OrgSourceBlock::new(
+        "rust",
+        vec![
+            OrgSourceBlockHeader::new(
+                "path",
+                OrgSourceBlockHeaderValue::text("a \"quote\" and \\ path").unwrap(),
+            )
+            .unwrap(),
+        ],
+        vec![],
+        "first",
+    )
+    .unwrap();
+    let second = OrgSourceBlock::new("scheme", vec![], vec![], "second").unwrap();
+    let rendered = OrgSourceBlockDocument::new(vec![first, second])
+        .unwrap()
+        .render()
+        .expect("both blocks are admitted by Scheme AOT");
+    let parsed = parse_org_aot(&rendered).expect("escaped source headers parse");
+    let blocks = parsed
+        .records()
+        .iter()
+        .filter(|record| record.kind == "src-block")
+        .collect::<Vec<_>>();
+    assert_eq!(blocks.len(), 2);
+    assert_eq!(
+        blocks[0].field("header-value"),
+        Some("\"a \\\"quote\\\" and \\\\ path\"")
+    );
+    assert_eq!(blocks[1].field("language"), Some("scheme"));
 }
 
 #[test]

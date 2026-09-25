@@ -82,9 +82,11 @@ This is a type-and-consumer cutover, not an entrypoint rename:
    nodes such as =DOCUMENT=, =HEADLINE= and their old child layout. The AOT
    tree uses =OrgFile=, =OrgSection= and =OrgHeadline=. Typed AST, exporters,
    editing, and CLI code cannot be preserved by relabeling kind IDs.
-4. A source search at commit =c752fd1= finds 23 production =Org::parse= calls
+4. The baseline at commit =c752fd1= found 23 production =Org::parse= calls
    across 15 files under =src/cli=, =src/document=, =src/lint*.rs= and
-   =src/semantic_ast=. These are consumers to migrate, not an API name that
+   =src/semantic_ast=. The source-block-document admission path now consumes
+   Scheme-AOT graph records, leaving 22 production calls in this inventory.
+   These are consumers to migrate, not an API name that
    necessarily must disappear: the final =Org::parse= may delegate to AOT.
    =src/document/memory_projection.rs= additionally
    hand-scans plan-ledger headline, TODO, tags and property lines in Rust for
@@ -115,7 +117,7 @@ single AOT implementation.
 | M0 Audit baseline | Inventory the two parser paths, hidden Rust recognizers, kind mismatch, consumer calls and missing graph families | Reproducible source inventory plus =org_cutover_audit= on the exact head; explicitly red for full replacement |
 | M1 Scheme syntax and context | All 30 Elements and 24 Objects, headline/configuration properties, nesting, affiliated keywords, recovery and byte ranges are Scheme-owned event functions | Generated kind/graph catalog has no missing kinds; upstream-derived, custom and negative fixtures test each property and lossless spans |
 | M2 One public tree | =Org::parse= and =ParseConfig::parse= use generated AOT events and one safe generated Rowan kind model; typed AST is rebuilt on that model | No =document_node= in the public path; public AST/source roundtrip and configuration tests pass without kind conversion or reparsing |
-| M3 Consumer migration | Exporters, editing, lint, Contract, CLI, memory and bindings consume the single AOT tree/graph | All 23 production =Org::parse= consumers resolve to AOT; the plan-ledger Rust syntax scanner is gone; consumer snapshots, query and scale tests pass |
+| M3 Consumer migration | Exporters, editing, lint, Contract, CLI, memory and bindings consume the single AOT tree/graph | All 23 baseline production =Org::parse= consumers resolve to AOT; the plan-ledger Rust syntax scanner is gone; consumer snapshots, query and scale tests pass |
 | M4 Remove displaced parser | Handwritten =src/syntax= parsing routines and obsolete CST assumptions are deleted, not kept as a fallback | Source and dependency audit finds no second Org recognizer; all remaining fixtures exercise AOT |
 | M5 Final admission | Exact final head passes losslessness, semantic parity, Dev Gate, strict Clippy, release parse/projection/query and build-cost budgets, and supported platform CI | Receipts from the final SHA, not earlier focused or cancelled runs |
 
@@ -151,6 +153,22 @@ Only after those graph and property contracts are executable should the
 public kind/AST cutover begin. Keep the 2,000-file/100-ms plan-ledger case as
 a performance admission gate throughout; a full parse per file is not an
 acceptable unmeasured substitution for its current fast projection.
+
+The source-block admission slice now emits source-backed header keys and
+values from the Org Scheme event function, including quoted values and
+negative header-like text. Its typed document renderer re-admits via the AOT
+Element graph, preserving exact keyword adjacency, block language, header
+order and values, and lossless Rowan source text. This migrates one production
+consumer, not the public parser. The generated event IR is 1,763,887 bytes
+(+25,051 from the preceding batch), and the local generated Rust function is
+12,441,589 bytes. This growth is a build-cost warning to resolve before M5;
+the local release benchmark build took 5m17s. A 10-sample Criterion run of
+1,000 source blocks with two header arguments measured 4.4872–4.5705 ms
+(218.79–222.86 thousand blocks/s) for AOT events, Rowan construction and
+Element projection together. This is a same-head scenario, not a comparison
+against the displaced parser or a final performance admission. Neither this header
+tokenization nor the earlier Object additions imply complete Babel header
+semantics or full Org grammar parity.
 
 * Ownership boundary
 

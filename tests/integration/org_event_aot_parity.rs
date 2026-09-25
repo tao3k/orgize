@@ -39,6 +39,14 @@ fn structural_backbone(records: &[GraphRecord]) -> Vec<GraphRecord> {
             for child_id in &mut record.child_ids {
                 *child_id = new_ids[*child_id].expect("retained child id");
             }
+            if record.kind == "src-block" {
+                // The fixture oracle predates Scheme-owned structured header fields.
+                // Their values have dedicated event/graph assertions; compare the
+                // original lossless raw header here.
+                record
+                    .fields
+                    .retain(|field| !matches!(field.name, "header-key" | "header-value"));
+            }
             record
         })
         .collect()
