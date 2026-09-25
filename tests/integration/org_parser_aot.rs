@@ -121,7 +121,7 @@ fn scheme_declared_paragraphs_preserve_line_breaks_and_link_ancestry() {
         .filter(|node| name(node) == "OrgParagraph")
         .collect();
     assert_eq!(paragraphs.len(), 2);
-    assert_eq!(paragraphs[0].to_string(), "alpha\r\nbeta\n");
+    assert_eq!(paragraphs[0].to_string(), "alpha\r\nbeta\n\n");
     assert_eq!(
         paragraphs[1].to_string(),
         "[[https://example.test][inside]]\n"

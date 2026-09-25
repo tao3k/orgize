@@ -215,7 +215,7 @@ fn org_scheme_context_algorithm_aot_projects_paragraph_elements() {
         .collect();
     assert_eq!(paragraphs.len(), 2);
     assert_eq!(paragraphs[0].range.start(), 0u32.into());
-    assert_eq!(paragraphs[0].range.end(), 9u32.into());
+    assert_eq!(paragraphs[0].range.end(), 12u32.into());
     assert_eq!(paragraphs[1].range.start(), 12u32.into());
     assert_eq!(paragraphs[1].range.end(), 17u32.into());
 }

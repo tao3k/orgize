@@ -109,7 +109,9 @@
 
 (def close-paragraph
   '(if (state paragraph-open)
-       ((finish-node) (set-bool paragraph-open (bool #f))) ()))
+       ((finish-node)
+        (set-bool paragraph-open (bool #f))
+        (set-bool paragraph-post-blank (bool #f))) ()))
 
 (def comment-marker '(line-skip-horizontal start))
 (def comment-next `(line-step ,comment-marker))
@@ -129,9 +131,11 @@
 
 (def (paragraph-form)
   `(if (line-blank?)
-       (,close-paragraph
+       ((if (state paragraph-open)
+            ((set-bool paragraph-post-blank (bool #t))) ())
         (start-node OrgTextLine) (token TextLine start end) (finish-node))
-       ((if (not (state paragraph-open))
+       ((if (state paragraph-post-blank) (,close-paragraph) ())
+        (if (not (state paragraph-open))
             ((start-node OrgParagraph) (set-bool paragraph-open (bool #t))) ())
         ,@(event-text-line-forms 'start))))
 
@@ -731,7 +735,8 @@
 (def org-event-initial
   (append
    '((open-levels (uint-stack)) (active-opaque-block 0)
-    (property-drawer-open #f) (paragraph-open #f) (after-heading #f)
+    (property-drawer-open #f) (paragraph-open #f)
+    (paragraph-post-blank #f) (after-heading #f)
     (comment-open #f)
     (fixed-width-open #f)
     (table-open #f) (table-seen-separator #f) (table-escaped #f)
