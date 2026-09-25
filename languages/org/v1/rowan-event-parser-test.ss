@@ -53,6 +53,33 @@
                     (LinkTrivia 31 33))
            (TextLine 33 34))
           (OrgTextLine (TextLine 34 43))))))
+    (test-case "target and radio-target Objects retain source-backed value spans"
+      (check-org-ast-with parse-org-rowan-events
+        "a <<one two>> and <<<radio>>> z\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgTarget (InlineTargetDelimiter 2 4)
+                      (InlineTargetValue 4 11)
+                      (InlineTargetDelimiter 11 13))
+           (TextLine 13 18)
+           (OrgRadioTarget (InlineTargetDelimiter 18 21)
+                           (InlineTargetValue 21 26)
+                           (InlineTargetDelimiter 26 29))
+           (TextLine 29 32)))))
+      (check-org-ast-with parse-org-rowan-events
+        "x << bad>> and <<bad >>\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 24)))))
+      (check-org-ast-with parse-org-rowan-events
+        "<<β>>\r\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgTarget (InlineTargetDelimiter 0 2)
+                      (InlineTargetValue 2 4)
+                      (InlineTargetDelimiter 4 6))
+           (TextLine 6 8))))))
     (test-case "inline code and verbatim preserve delimiters and source values"
       (check-org-ast-with parse-org-rowan-events
         "a ~code~ =verb= z\n"

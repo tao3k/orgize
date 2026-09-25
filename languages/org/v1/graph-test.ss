@@ -24,6 +24,7 @@
                             OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgQuoteBlock
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
                             OrgCommentBlock OrgExportBlock OrgLink
+                            OrgTarget OrgRadioTarget
                             OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
                             OrgStrikeThrough))
         (check (map graph-node-label nodes)
@@ -37,6 +38,7 @@
                                 "node-property" "src-block" "dynamic-block" "quote-block"
                                 "example-block" "verse-block" "center-block"
                                 "comment-block" "export-block" "link"
+                                "target" "radio-target"
                                 "code" "verbatim" "bold" "italic"
                                 "underline" "strike-through"))))
     (test-case "planning keeps each key and value independently"

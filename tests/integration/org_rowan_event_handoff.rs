@@ -93,42 +93,6 @@ fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
 }
 
 #[test]
-fn org_scheme_event_aot_projects_inline_code_and_verbatim_values() {
-    let source = "a ~code~ =verb= [[id:x]] z\n";
-    let document = orgize::org_aot::parse_org_aot(source)
-        .expect("Scheme inline Object strategy builds a lossless Rowan document");
-    assert_eq!(document.syntax().to_string(), source);
-    let code = document
-        .records()
-        .iter()
-        .find(|record| record.kind == "code")
-        .expect("code is a typed Object");
-    assert_eq!(code.field("value"), Some("code"));
-    let verbatim = document
-        .records()
-        .iter()
-        .find(|record| record.kind == "verbatim")
-        .expect("verbatim is a typed Object");
-    assert_eq!(verbatim.field("value"), Some("verb"));
-    assert!(
-        document
-            .records()
-            .iter()
-            .any(|record| record.kind == "link")
-    );
-
-    let negative = orgize::org_aot::parse_org_aot("x~y~ ~unclosed\n")
-        .expect("invalid and unclosed markup remains source text");
-    assert_eq!(negative.syntax().to_string(), "x~y~ ~unclosed\n");
-    assert!(
-        !negative
-            .records()
-            .iter()
-            .any(|record| record.kind == "code" || record.kind == "verbatim")
-    );
-}
-
-#[test]
 fn scheme_authored_line_algorithm_aot_builds_lossless_rowan() {
     let source = "* α\r\nbody\n";
     let events = generated_line_events::parse_org_line_events(source);
@@ -609,35 +573,6 @@ fn org_scheme_context_list_boundaries_keep_headlines_and_marker_types_distinct()
             expected
         );
     }
-}
-
-#[test]
-fn org_scheme_context_algorithm_aot_projects_inline_link_objects() {
-    let source = "go [[https://a][α]] and [[id:b]]\n[[broken\n- [[file:x][item]]\n";
-    let events = generated_context_events::parse_org_rowan_events(source);
-    let parsed = parse_generated_events(
-        org_language_spec(),
-        generated_context_events::PARSER_DIGEST,
-        source,
-        &events,
-    )
-    .expect("Scheme inline links build a lossless Rowan tree");
-    assert_eq!(parsed.syntax().to_string(), source);
-    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-        .expect("Scheme inline links project Org Objects");
-    let links: Vec<_> = records
-        .iter()
-        .filter(|record| record.kind == "link")
-        .map(|record| (record.field("path"), record.field("description")))
-        .collect();
-    assert_eq!(
-        links,
-        [
-            (Some("https://a"), Some("α")),
-            (Some("id:b"), None),
-            (Some("file:x"), Some("item"))
-        ]
-    );
 }
 
 #[test]

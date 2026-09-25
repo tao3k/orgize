@@ -159,6 +159,20 @@ fn bench_org_element_query(c: &mut Criterion) {
     aot_group.bench_function("events-rowan-elements/10k-inline-objects", |b| {
         b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&inline_objects)).unwrap()))
     });
+    let target_objects = "<<target>> <<<radio>>>\n".repeat(10_000);
+    let target_records = orgize::org_aot::parse_org_aot(&target_objects)
+        .expect("target benchmark source builds a Rowan document");
+    assert_eq!(
+        target_records
+            .records()
+            .iter()
+            .filter(|record| record.kind == "target" || record.kind == "radio-target")
+            .count(),
+        20_000
+    );
+    aot_group.bench_function("events-rowan-elements/10k-target-objects", |b| {
+        b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&target_objects)).unwrap()))
+    });
     let plain_lines = "plain words here\n".repeat(10_000);
     aot_group.bench_function("events-rowan-elements/10k-plain-lines", |b| {
         b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&plain_lines)).unwrap()))

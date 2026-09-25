@@ -46,15 +46,17 @@ current audit reports:
 | Scheme event-AOT CST | 20 distinct node kinds in the fixture |
 | Structural fixture oracle / event Element records | Event graph adds bold and italic Objects; structural backbone parity is tested separately |
 | Catalog Elements not projected as typed graph kinds | 4 |
-| Catalog Objects not projected as typed graph kinds | 16 |
+| Catalog Objects not projected as typed graph kinds | 14 |
 
 The missing Elements are =footnote-definition=, =inlinetask=,
 =latex-environment=, and =special-block=. The missing Objects are
 =citation=, =citation-reference=, =entity=, =export-snippet=,
 =footnote-reference=, =inline-babel-call=, =inline-src-block=,
-=line-break=, =latex-fragment=, =macro=, =radio-target=,
+=line-break=, =latex-fragment=, =macro=,
 =statistics-cookie=, =subscript=, =superscript=,
-=target=, and =timestamp=. These are catalog-versus-typed-graph
+=timestamp=. Scheme now recognizes =target= and =radio-target= as
+source-backed Objects with value fields and strict boundary fixtures. These
+are catalog-versus-typed-graph
 gaps, not a claim that every already-projected kind has full Org behavior.
 
 The representative fixture does not exercise all configured, malformed,
@@ -125,6 +127,15 @@ not part of any milestone.
 The present state is an audit baseline, not M1 admission. The first
 implementation batch is headline/file configuration and missing Element and
 Object event families in Org-owned Scheme, with malformed and nested cases.
+The target/radio-target batch closes two typed graph names and passes Scheme
+AST plus Rust AOT/Rowan tests, but does not yet implement recursive contents
+of radio targets or admit full Object parity. Its generated event IR grew from
+1,491,899 to 1,642,483 bytes; build cost and release-path parse performance
+must be measured before M5 admission. A local 10-sample Criterion run of
+=benches/org_element_query.rs= measured 10,000 target/radio-target lines at
+12.379–14.791 ms and 10,000 plain lines at 5.2113–5.2365 ms. These are
+same-head scenarios, not a before/after regression comparison or a full
+parse-performance budget receipt.
 Only after those graph and property contracts are executable should the
 public kind/AST cutover begin. Keep the 2,000-file/100-ms plan-ledger case as
 a performance admission gate throughout; a full parse per file is not an

@@ -85,6 +85,8 @@ mod org_event_aot_contract;
 mod org_event_aot_parity;
 #[path = "integration/org_headline_function_aot.rs"]
 mod org_headline_function_aot;
+#[path = "integration/org_inline_object_aot.rs"]
+mod org_inline_object_aot;
 #[path = "integration/org_list_aot.rs"]
 mod org_list_aot;
 #[path = "integration/org_list_fields.rs"]

@@ -79,6 +79,10 @@
    (node 'OrgLink "object" "link"
          (list (field 'LinkTarget "path")
                (field 'LinkDescription "description")))
+   (node 'OrgTarget "object" "target"
+         (list (field 'InlineTargetValue "value")))
+   (node 'OrgRadioTarget "object" "radio-target"
+         (list (field 'InlineTargetValue "value")))
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"
