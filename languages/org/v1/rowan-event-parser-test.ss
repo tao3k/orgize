@@ -391,6 +391,22 @@
           (OrgListItem
            (ListBullet 5 6) (ListTrivia 6 7)
            (OrgParagraph (OrgTextLine (TextLine 7 9))))))))
+    (test-case "Scheme list algorithm emits typed counter checkbox and tag spans"
+      (check-org-ast-with parse-org-rowan-events "- [@2] [X] done\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 1) (ListTrivia 1 2)
+           (ListTrivia 2 4) (ListCounterValue 4 5) (ListTrivia 5 7)
+           (ListTrivia 7 8) (ListCheckboxValue 8 9) (ListTrivia 9 11)
+           (OrgParagraph (OrgTextLine (TextLine 11 16)))))))
+      (check-org-ast-with parse-org-rowan-events "- term :: body\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 1) (ListTrivia 1 2)
+           (ListTagValue 2 7) (ListTrivia 7 10)
+           (OrgParagraph (OrgTextLine (TextLine 10 15))))))))
     (test-case "block and drawer markers do not consume longer lookalikes"
       (check-org-ast-with parse-org-rowan-events
         "#+begin_src rust\n#+end_srcx\n#+END_SRC \t\n"

@@ -2,8 +2,8 @@
 use gerbil_parser_rowan::{GraphFieldMode, GraphFieldRule, GraphNodeRule, GraphProjectionSpec};
 
 pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
-    grammar_digest: "sha256:49dc838dfb33426ef4648d7e82fd9c7b3cf867fd4ab0f0848bb1e4b817749308",
-    projection_digest: "sha256:c3abd8aa7af9ca216d6518bebd73ca2a4e29af79e8a50e4211ab2618946451eb",
+    grammar_digest: "sha256:a57d9361119b75ca263ce06b0079da55538f59da1cb34f169ca24034687e8791",
+    projection_digest: "sha256:379716e262676279019458598cb5f7e7d51e473da2a448b031fdb1f99afe7e5a",
     rules: &[
         GraphNodeRule { syntax_kind: 0, category: "document", kind: "org-data", fields: &[] },
         GraphNodeRule { syntax_kind: 36, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 37, name: "markers", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 38, name: "title", mode: GraphFieldMode::Append }, ] },
@@ -14,12 +14,12 @@ pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
         GraphNodeRule { syntax_kind: 16, category: "element", kind: "diary-sexp", fields: &[GraphFieldRule { token_kind: 49, name: "value", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 17, category: "element", kind: "horizontal-rule", fields: &[] },
         GraphNodeRule { syntax_kind: 18, category: "element", kind: "fixed-width", fields: &[] },
-        GraphNodeRule { syntax_kind: 19, category: "element", kind: "keyword", fields: &[GraphFieldRule { token_kind: 71, name: "key", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 72, name: "value", mode: GraphFieldMode::Append }, ] },
-        GraphNodeRule { syntax_kind: 20, category: "element", kind: "babel-call", fields: &[GraphFieldRule { token_kind: 71, name: "key", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 72, name: "value", mode: GraphFieldMode::Append }, ] },
-        GraphNodeRule { syntax_kind: 21, category: "element", kind: "planning", fields: &[GraphFieldRule { token_kind: 74, name: "key", mode: GraphFieldMode::Each }, GraphFieldRule { token_kind: 75, name: "value", mode: GraphFieldMode::Each }, ] },
-        GraphNodeRule { syntax_kind: 22, category: "element", kind: "clock", fields: &[GraphFieldRule { token_kind: 78, name: "value", mode: GraphFieldMode::Append }, ] },
+        GraphNodeRule { syntax_kind: 19, category: "element", kind: "keyword", fields: &[GraphFieldRule { token_kind: 74, name: "key", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 75, name: "value", mode: GraphFieldMode::Append }, ] },
+        GraphNodeRule { syntax_kind: 20, category: "element", kind: "babel-call", fields: &[GraphFieldRule { token_kind: 74, name: "key", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 75, name: "value", mode: GraphFieldMode::Append }, ] },
+        GraphNodeRule { syntax_kind: 21, category: "element", kind: "planning", fields: &[GraphFieldRule { token_kind: 77, name: "key", mode: GraphFieldMode::Each }, GraphFieldRule { token_kind: 78, name: "value", mode: GraphFieldMode::Each }, ] },
+        GraphNodeRule { syntax_kind: 22, category: "element", kind: "clock", fields: &[GraphFieldRule { token_kind: 81, name: "value", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 23, category: "element", kind: "plain-list", fields: &[] },
-        GraphNodeRule { syntax_kind: 24, category: "element", kind: "item", fields: &[GraphFieldRule { token_kind: 69, name: "bullet", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 70, name: "trivia", mode: GraphFieldMode::Each }, ] },
+        GraphNodeRule { syntax_kind: 24, category: "element", kind: "item", fields: &[GraphFieldRule { token_kind: 69, name: "bullet", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 70, name: "counter", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 71, name: "checkbox", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 72, name: "tag", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 73, name: "trivia", mode: GraphFieldMode::Each }, ] },
         GraphNodeRule { syntax_kind: 25, category: "element", kind: "table", fields: &[] },
         GraphNodeRule { syntax_kind: 26, category: "element", kind: "table-row", fields: &[] },
         GraphNodeRule { syntax_kind: 27, category: "element", kind: "table-rule-row", fields: &[] },

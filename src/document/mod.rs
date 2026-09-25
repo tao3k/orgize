@@ -33,6 +33,9 @@ mod block_body_tests;
 #[path = "../../tests/unit/document_line_index.rs"]
 mod line_index_tests;
 #[cfg(test)]
+#[path = "../../tests/unit/document_org_elements_aot.rs"]
+mod org_elements_aot_tests;
+#[cfg(test)]
 #[path = "../../tests/unit/document_org_elements_query_project.rs"]
 mod org_elements_query_project_tests;
 #[cfg(test)]

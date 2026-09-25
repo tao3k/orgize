@@ -17,6 +17,12 @@ still has Org-specific Rust projections for list, table, and item
 facts; those properties, plus exact priority/tag validation, are not yet
 admitted as fully Scheme-owned semantics.
 
+List item counter, checkbox, and descriptive tag spans now originate in the
+Org Scheme event algorithm and project through the generated Element graph.
+The Rust document index consumes those fields for checklist and descriptive
+list facts; list classification and remaining item behavior still need
+migration. This is a list milestone, not complete Element parity.
+
 =Org::parse= and =ParseConfig::parse= still call the handwritten Rust
 =document_node=. Their typed syntax AST, exporters, and dependent consumers
 have *not* been migrated. No source roundtrip, green test, or graph parity on
@@ -86,6 +92,11 @@ another parser or a per-token hot-path dependency.
 | Losslessness | Exact source roundtrip and byte ranges over tracked, upstream-derived and negative corpora | Focused tests only |
 | Performance | Release-mode parse, projection and query benchmarks against the displaced implementation, with an explicit regression policy | Not admitted |
 | Gates | Scheme suite, Cargo full targets, strict Clippy, Dev Gate and macOS/Ubuntu/Windows CI on the exact final head | Not yet final-head verified |
+
+Build cost also belongs to the performance gate. One local build after the
+list metadata extension produced about 10 MB of generated Rust event source
+and took several minutes to compile the debug library. The AOT backend must
+bound code growth; runtime-only benchmarks are insufficient evidence.
 
 * Performance evidence boundary
 

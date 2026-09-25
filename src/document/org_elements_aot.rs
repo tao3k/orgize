@@ -238,13 +238,17 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                 ));
             }
             "plain-list" => {
-                let ordered = record
+                let items = record
                     .child_ids
                     .iter()
                     .filter_map(|id| records.get(*id))
-                    .find(|child| child.kind == "item")
+                    .filter(|child| child.kind == "item")
+                    .collect::<Vec<_>>();
+                let ordered = items
+                    .first()
                     .and_then(|item| item.field("bullet"))
                     .is_some_and(|bullet| bullet.starts_with(|ch: char| ch.is_ascii_digit()));
+                let descriptive = items.iter().any(|item| item.field("tag").is_some());
                 facts.push(context.fact(
                     "list",
                     "SyntaxList",
@@ -255,7 +259,7 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                             "listKind".to_string(),
                             if ordered { "ordered" } else { "unordered" }.to_string(),
                         ),
-                        ("descriptive".to_string(), "false".to_string()),
+                        ("descriptive".to_string(), descriptive.to_string()),
                     ],
                     None,
                 ));
@@ -272,15 +276,30 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                     .get(usize::from(indent > 0))
                     .copied()
                     .unwrap_or_default();
-                let fields = vec![
+                let mut fields = vec![
                     (
                         "bullet".to_string(),
                         format!("{}{}", record.field("bullet").unwrap_or_default(), spacing),
                     ),
                     ("indent".to_string(), indent.to_string()),
                 ];
+                if let Some(counter) = record.field("counter") {
+                    fields.push(("counter".to_string(), counter.to_string()));
+                }
+                let checkbox = record.field("checkbox");
+                if let Some(value) = checkbox {
+                    fields.push(("checkbox".to_string(), value.to_string()));
+                    fields.push(("checked".to_string(), (value == "X").to_string()));
+                }
+                if let Some(tag) = record.field("tag") {
+                    fields.push(("tag".to_string(), tag.trim_end().to_string()));
+                }
                 facts.push(context.fact(
-                    "listItem",
+                    if checkbox.is_some() {
+                        "checklistItem"
+                    } else {
+                        "listItem"
+                    },
                     "SyntaxListItem",
                     record,
                     record.range,
