@@ -173,6 +173,20 @@ fn bench_org_element_query(c: &mut Criterion) {
     aot_group.bench_function("events-rowan-elements/10k-target-objects", |b| {
         b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&target_objects)).unwrap()))
     });
+    let terminal_objects = "[50%] [2/3] text\\\\\n".repeat(10_000);
+    let terminal_records = orgize::org_aot::parse_org_aot(&terminal_objects)
+        .expect("terminal-Object benchmark source builds a Rowan document");
+    assert_eq!(
+        terminal_records
+            .records()
+            .iter()
+            .filter(|record| record.kind == "statistics-cookie" || record.kind == "line-break")
+            .count(),
+        30_000
+    );
+    aot_group.bench_function("events-rowan-elements/10k-terminal-objects", |b| {
+        b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&terminal_objects)).unwrap()))
+    });
     let plain_lines = "plain words here\n".repeat(10_000);
     aot_group.bench_function("events-rowan-elements/10k-plain-lines", |b| {
         b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&plain_lines)).unwrap()))

@@ -46,18 +46,18 @@ current audit reports:
 | Scheme event-AOT CST | 20 distinct node kinds in the fixture |
 | Structural fixture oracle / event Element records | Event graph adds bold and italic Objects; structural backbone parity is tested separately |
 | Catalog Elements not projected as typed graph kinds | 4 |
-| Catalog Objects not projected as typed graph kinds | 14 |
+| Catalog Objects not projected as typed graph kinds | 12 |
 
 The missing Elements are =footnote-definition=, =inlinetask=,
 =latex-environment=, and =special-block=. The missing Objects are
 =citation=, =citation-reference=, =entity=, =export-snippet=,
 =footnote-reference=, =inline-babel-call=, =inline-src-block=,
-=line-break=, =latex-fragment=, =macro=,
-=statistics-cookie=, =subscript=, =superscript=,
+=latex-fragment=, =macro=, =subscript=, =superscript=,
 =timestamp=. Scheme now recognizes =target= and =radio-target= as
-source-backed Objects with value fields and strict boundary fixtures. These
-are catalog-versus-typed-graph
-gaps, not a claim that every already-projected kind has full Org behavior.
+source-backed Objects with value fields and strict boundary fixtures, plus
+=statistics-cookie= and =line-break= with Org's exact physical-line boundary
+cases. These are catalog-versus-typed-graph gaps, not a claim that every
+already-projected kind has full Org behavior.
 
 The representative fixture does not exercise all configured, malformed,
 recursive, or nested cases. The structural oracle predates the new Scheme
@@ -136,6 +136,17 @@ must be measured before M5 admission. A local 10-sample Criterion run of
 12.379–14.791 ms and 10,000 plain lines at 5.2113–5.2365 ms. These are
 same-head scenarios, not a before/after regression comparison or a full
 parse-performance budget receipt.
+The next terminal-Object batch adds Scheme-owned statistics cookies and
+physical end-of-line breaks. Their event graph passes Scheme AST and Rust
+AOT/Rowan positive and negative tests. One Scheme line-level trigger check
+now bypasses the bytewise inline state machine on plain lines; its trigger
+bytes derive from the declared link and markup markers. The event IR is now
+1,738,836 bytes. Same-machine, 10-sample Criterion runs measured 10,000
+plain lines at 4.5184–4.5407 ms (versus 5.2113–5.2365 ms before this batch),
+10,000 target/radio-target lines at 12.954–13.028 ms (no significant change
+from the preceding sample), and 10,000 terminal-Object lines at
+12.597–12.740 ms with 30,000 projected Object records. These are local
+scenarios, not complete Org syntax or cross-platform performance admission.
 Only after those graph and property contracts are executable should the
 public kind/AST cutover begin. Keep the 2,000-file/100-ms plan-ledger case as
 a performance admission gate throughout; a full parse per file is not an

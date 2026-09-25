@@ -80,6 +80,38 @@
                       (InlineTargetValue 2 4)
                       (InlineTargetDelimiter 4 6))
            (TextLine 6 8))))))
+    (test-case "statistics cookies accept Org's percent and fraction shapes"
+      (check-org-ast-with parse-org-rowan-events
+        "a [50%] [2/3] [%] [/] z\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgStatisticsCookie (StatisticsCookieValue 2 7))
+           (TextLine 7 8)
+           (OrgStatisticsCookie (StatisticsCookieValue 8 13))
+           (TextLine 13 14)
+           (OrgStatisticsCookie (StatisticsCookieValue 14 17))
+           (TextLine 17 18)
+           (OrgStatisticsCookie (StatisticsCookieValue 18 21))
+           (TextLine 21 24)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[5] [5/a] [5%%] x\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 18))))))
+    (test-case "line break is only an unescaped pair at the physical line end"
+      (check-org-ast-with parse-org-rowan-events
+        "a\\\\  \r\nnext\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine (TextLine 0 1)
+                       (OrgLineBreak (LineBreakText 1 7)))
+          (OrgTextLine (TextLine 7 12)))))
+      (check-org-ast-with parse-org-rowan-events
+        "a\\\\ x\na\\\\\\\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine (TextLine 0 6))
+          (OrgTextLine (TextLine 6 11))))))
     (test-case "inline code and verbatim preserve delimiters and source values"
       (check-org-ast-with parse-org-rowan-events
         "a ~code~ =verb= z\n"

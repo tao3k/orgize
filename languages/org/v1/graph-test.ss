@@ -24,7 +24,7 @@
                             OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgQuoteBlock
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
                             OrgCommentBlock OrgExportBlock OrgLink
-                            OrgTarget OrgRadioTarget
+                            OrgTarget OrgRadioTarget OrgStatisticsCookie OrgLineBreak
                             OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
                             OrgStrikeThrough))
         (check (map graph-node-label nodes)
@@ -38,7 +38,7 @@
                                 "node-property" "src-block" "dynamic-block" "quote-block"
                                 "example-block" "verse-block" "center-block"
                                 "comment-block" "export-block" "link"
-                                "target" "radio-target"
+                                "target" "radio-target" "statistics-cookie" "line-break"
                                 "code" "verbatim" "bold" "italic"
                                 "underline" "strike-through"))))
     (test-case "planning keeps each key and value independently"

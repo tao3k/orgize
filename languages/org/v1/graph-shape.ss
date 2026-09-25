@@ -83,6 +83,9 @@
          (list (field 'InlineTargetValue "value")))
    (node 'OrgRadioTarget "object" "radio-target"
          (list (field 'InlineTargetValue "value")))
+   (node 'OrgStatisticsCookie "object" "statistics-cookie"
+         (list (field 'StatisticsCookieValue "value")))
+   (node 'OrgLineBreak "object" "line-break" '())
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"

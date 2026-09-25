@@ -67,6 +67,59 @@ fn org_scheme_event_aot_projects_target_and_radio_target_values() {
 }
 
 #[test]
+fn org_scheme_event_aot_projects_statistics_cookies_with_exact_values() {
+    let source = "a [50%] [2/3] [%] [/] z\n";
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("Scheme statistics cookies build a lossless Rowan document");
+    assert_eq!(document.syntax().to_string(), source);
+    let values: Vec<_> = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "statistics-cookie")
+        .map(|record| record.field("value"))
+        .collect();
+    assert_eq!(
+        values,
+        [Some("[50%]"), Some("[2/3]"), Some("[%]"), Some("[/]")]
+    );
+
+    let invalid = orgize::org_aot::parse_org_aot("[5] [5/a] [5%%] x\n")
+        .expect("malformed statistics cookies remain source text");
+    assert_eq!(invalid.syntax().to_string(), "[5] [5/a] [5%%] x\n");
+    assert!(
+        !invalid
+            .records()
+            .iter()
+            .any(|record| record.kind == "statistics-cookie")
+    );
+}
+
+#[test]
+fn org_scheme_event_aot_projects_only_physical_line_end_breaks() {
+    let source = "a\\\\  \r\nnext\n";
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("Scheme line-break strategy builds a lossless Rowan document");
+    assert_eq!(document.syntax().to_string(), source);
+    let line_break = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "line-break")
+        .expect("physical end-of-line break is a typed Object");
+    assert_eq!(line_break.range.start(), 1u32.into());
+    assert_eq!(line_break.range.end(), 7u32.into());
+
+    let invalid = orgize::org_aot::parse_org_aot("a\\\\ x\na\\\\\\\n")
+        .expect("nonterminal and escaped pairs remain source text");
+    assert_eq!(invalid.syntax().to_string(), "a\\\\ x\na\\\\\\\n");
+    assert!(
+        !invalid
+            .records()
+            .iter()
+            .any(|record| record.kind == "line-break")
+    );
+}
+
+#[test]
 fn org_scheme_context_algorithm_aot_projects_inline_link_objects() {
     let source = "go [[https://a][α]] and [[id:b]]\n[[broken\n- [[file:x][item]]\n";
     let parsed = orgize::org_aot::parse_org_aot(source)
