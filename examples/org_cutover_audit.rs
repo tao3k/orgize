@@ -5,13 +5,15 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use orgize::org_aot::{
-    org_graph_spec, org_language_spec, org_structure_spec, parse_org_aot, parse_org_event_aot,
-};
+use gerbil_parser_rowan::{parse_structural_lines, project_syntax_graph};
+use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
 use orgize::{Org, SyntaxNode as PublicSyntaxNode, rowan::ast::AstNode};
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/elements.rs"]
 mod elements;
+#[rustfmt::skip]
+#[path = "../languages/org/v1/generated/structure.rs"]
+mod structure;
 
 fn public_kinds(root: &PublicSyntaxNode) -> BTreeMap<String, usize> {
     let mut kinds = BTreeMap::new();
@@ -34,11 +36,11 @@ fn main() {
     let source = include_str!("../tests/fixtures/org-elements/representative.org");
     let public = Org::parse(source);
     let public_root = public.syntax_document().syntax().clone();
-    let generated =
-        parse_org_aot(source).expect("generated Org structure should accept the pinned fixture");
+    let generated = parse_structural_lines(org_language_spec(), &structure::STRUCTURE, source)
+        .expect("structural fixture oracle should accept the pinned fixture");
     let generated_root = generated.syntax();
-    let event_tree = parse_org_event_aot(source)
-        .expect("Scheme AOT Org events should accept the pinned fixture");
+    let event_tree =
+        parse_org_aot(source).expect("Scheme AOT Org events should accept the fixture");
     let event_root = event_tree.syntax();
 
     assert_eq!(public_root.to_string(), source);
@@ -50,7 +52,7 @@ fn main() {
     );
     assert_eq!(
         generated.receipt().parser_digest,
-        Some(org_structure_spec().parser_digest)
+        Some(structure::STRUCTURE.parser_digest)
     );
 
     println!(
@@ -88,9 +90,11 @@ fn main() {
                 counts
             });
     println!("Scheme event-AOT Element kinds: {event_record_counts:#?}");
-    let structural_records = generated.records();
+    let structural_records =
+        project_syntax_graph(org_language_spec(), org_graph_spec(), &generated_root)
+            .expect("structural fixture oracle projects Elements");
     let event_records = event_tree.records();
-    if structural_records == event_records {
+    if structural_records.as_slice() == event_records {
         println!("structural/event Element graph: exact record parity");
     } else {
         let first_difference = structural_records

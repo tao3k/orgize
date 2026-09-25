@@ -2,25 +2,10 @@
 
 use gerbil_parser_rowan::GraphRecord;
 
-#[rustfmt::skip]
-#[path = "../../languages/org/v1/generated/parser.rs"]
-mod grammar;
-#[rustfmt::skip]
-#[path = "../../languages/org/v1/generated/structure.rs"]
-mod structure;
-#[rustfmt::skip]
-#[path = "../../languages/org/v1/generated/graph.rs"]
-mod graph;
-
 pub fn records(source: &str) -> Result<Vec<GraphRecord>, String> {
-    let parse = gerbil_parser_rowan::parse_structural_lines(
-        &grammar::LANGUAGE,
-        &structure::STRUCTURE,
-        source,
-    )
-    .map_err(|error| format!("invalid Org feature source: {error:?}"))?;
-    gerbil_parser_rowan::project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
-        .map_err(|error| format!("invalid Org Element projection: {error:?}"))
+    orgize::org_aot::parse_org_aot(source)
+        .map(|document| document.records().to_vec())
+        .map_err(|error| format!("invalid Org feature source: {error:?}"))
 }
 
 pub fn owning_headline(records: &[GraphRecord], mut id: usize) -> Option<usize> {

@@ -80,7 +80,11 @@
            (OrgCode (InlineMarkupDelimiter 0 1)
                     (InlineMarkupValue 1 3)
                     (InlineMarkupDelimiter 3 4))
-           (TextLine 4 6))))))
+           (TextLine 4 6)))))
+      (check-org-ast-with parse-org-rowan-events
+        "!~x~ ~a ~ ~b~c\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 15))))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"
@@ -245,6 +249,18 @@
                        (HeadlineTitle 30 31) (HeadlineTrivia 31 32))
           (OrgPlanning (PlanningKey 32 40) (PlanningTrivia 40 42)
                        (PlanningValue 42 43) (PlanningTrivia 43 44))))))
+    (test-case "one Planning Element keeps every declared key on its line"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\nSCHEDULED: <a> DEADLINE: <b>\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgPlanning
+           (PlanningKey 4 13) (PlanningTrivia 13 15)
+           (PlanningValue 15 18) (PlanningTrivia 18 19)
+           (PlanningKey 19 27) (PlanningTrivia 27 29)
+           (PlanningValue 29 32) (PlanningTrivia 32 33))))))
     (test-case "planning is not promoted after ordinary paragraph content"
       (check-org-ast-with parse-org-rowan-events
         "* H\nbody\nSCHEDULED: later\n"

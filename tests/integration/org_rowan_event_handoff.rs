@@ -1,8 +1,11 @@
 //! Scheme-authored event fixtures reach Rowan and Org Element projection.
 //! Fixture parity does not mean production parsing has switched to event AOT.
 
-use gerbil_parser_rowan::{KindCategory, TreeEvent, parse_generated_events, project_syntax_graph};
+use gerbil_parser_rowan::{
+    KindCategory, TreeEvent, parse_generated_events, parse_structural_lines, project_syntax_graph,
+};
 use orgize::org_aot::{org_graph_spec, org_language_spec};
+
 
 #[rustfmt::skip]
 #[path = "../../languages/org/v1/generated/line-events.rs"]
@@ -20,7 +23,7 @@ const HANDOFF_TEST_DIGEST: &str =
 #[test]
 fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
     let source = "# first\n# second\ntext\n#+begin_quote\n# nested\n#+end_quote\n#\n";
-    let document = orgize::org_aot::parse_org_event_aot(source)
+    let document = orgize::org_aot::parse_org_aot(source)
         .expect("Scheme comment strategy builds a lossless Rowan document");
     assert_eq!(document.syntax().to_string(), source);
     let comments: Vec<_> = document
@@ -42,7 +45,7 @@ fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
         .expect("recursive quote block is an Element");
     assert_eq!(comments[1].parent_id, Some(quote.id));
 
-    let listed = orgize::org_aot::parse_org_event_aot("- item\n  # child\n")
+    let listed = orgize::org_aot::parse_org_aot("- item\n  # child\n")
         .expect("indented comment stays inside its list item");
     let item = listed
         .records()
@@ -60,7 +63,7 @@ fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
 #[test]
 fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
     let source = "%%(diary-anniversary 1 1 2000)\n%%not-diary\n";
-    let document = orgize::org_aot::parse_org_event_aot(source)
+    let document = orgize::org_aot::parse_org_aot(source)
         .expect("Scheme diary-sexp declaration reaches Rowan and Elements");
     assert_eq!(document.syntax().to_string(), source);
     let diary = document
@@ -78,7 +81,7 @@ fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
             .any(|record| record.kind == "paragraph" && record.range.start() == 31u32.into())
     );
 
-    let trailing = orgize::org_aot::parse_org_event_aot("%%(x) \r\n")
+    let trailing = orgize::org_aot::parse_org_aot("%%(x) \r\n")
         .expect("CRLF and trailing spaces remain lossless");
     assert_eq!(trailing.syntax().to_string(), "%%(x) \r\n");
     let value = trailing
@@ -92,7 +95,7 @@ fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
 #[test]
 fn org_scheme_event_aot_projects_inline_code_and_verbatim_values() {
     let source = "a ~code~ =verb= [[id:x]] z\n";
-    let document = orgize::org_aot::parse_org_event_aot(source)
+    let document = orgize::org_aot::parse_org_aot(source)
         .expect("Scheme inline Object strategy builds a lossless Rowan document");
     assert_eq!(document.syntax().to_string(), source);
     let code = document
@@ -114,7 +117,7 @@ fn org_scheme_event_aot_projects_inline_code_and_verbatim_values() {
             .any(|record| record.kind == "link")
     );
 
-    let negative = orgize::org_aot::parse_org_event_aot("x~y~ ~unclosed\n")
+    let negative = orgize::org_aot::parse_org_aot("x~y~ ~unclosed\n")
         .expect("invalid and unclosed markup remains source text");
     assert_eq!(negative.syntax().to_string(), "x~y~ ~unclosed\n");
     assert!(
@@ -900,10 +903,17 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .expect("Scheme-owned named drawer projects as an Element");
     assert_eq!(logbook.field("name"), Some("LOGBOOK"));
 
-    let transitional = orgize::org_aot::parse_org_aot(source)
-        .expect("the current production parser accepts the handoff fixture");
-    assert_eq!(records.len(), transitional.records().len());
-    for (actual, expected) in records.iter().zip(transitional.records()) {
+    let structural = parse_structural_lines(
+        org_language_spec(),
+        &crate::org_structural_fixture::STRUCTURE,
+        source,
+    )
+    .expect("the structural fixture oracle accepts the handoff fixture");
+    let structural_records =
+        project_syntax_graph(org_language_spec(), org_graph_spec(), &structural.syntax())
+            .expect("the structural fixture oracle projects Elements");
+    assert_eq!(records.len(), structural_records.len());
+    for (actual, expected) in records.iter().zip(&structural_records) {
         assert_eq!(actual.parent_id, expected.parent_id);
         assert_eq!(actual.child_ids, expected.child_ids);
         assert_eq!(actual.kind, expected.kind);

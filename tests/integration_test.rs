@@ -1,3 +1,6 @@
+#[path = "integration/org_structural_fixture.rs"]
+mod org_structural_fixture;
+
 #[path = "integration/agent_cli.rs"]
 mod agent_cli;
 #[path = "integration/capture_cli.rs"]

@@ -16,11 +16,13 @@
 (def link-close (inline-link-closing link-rule))
 (def link-index '(line-index inline-byte-index))
 (def inline-next `(line-step ,link-index))
-(def inline-boundary-bytes '(9 32 33 34 39 40 41 44 46 58 59 63))
+(def inline-open-boundary-bytes '(9 32 45 40 39 34 123))
+(def inline-close-boundary-bytes
+  '(9 32 45 46 44 59 58 33 63 39 34 41 125 92 91))
 (def inline-right-boundary?
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
        (line-bytes-any-in? ,inline-next (line-step ,inline-next)
-                           ,inline-boundary-bytes)))
+                           ,inline-close-boundary-bytes)))
 
 (def (pattern-end from pattern)
   (let loop ((offset from) (remaining (string-length pattern)))
@@ -107,6 +109,7 @@
   `((if (uint-positive? (state inline-markup-kind))
         ((if (and (offset-less? (state-offset inline-markup-value-start)
                                ,link-index)
+                  (not (state inline-previous-space))
                   ,inline-right-boundary?)
              ((if (and (uint-equal? (state inline-markup-kind) (uint 1))
                        (line-byte-equal? ,link-index 126))
@@ -141,7 +144,9 @@
                   ,(markup-scan-forms))))))
     (set-bool inline-left-boundary
               (line-bytes-any-in? ,link-index ,inline-next
-                                  ,inline-boundary-bytes))))
+                                  ,inline-open-boundary-bytes))
+    (set-bool inline-previous-space
+              (line-bytes-any-in? ,link-index ,inline-next (9 32)))))
 
 (def (event-text-line-forms from)
   `((start-node OrgTextLine)
@@ -154,6 +159,7 @@
     (set-bool inline-open (bool #f))
     (set-bool inline-failed (bool #f))
     (set-bool inline-left-boundary (bool #t))
+    (set-bool inline-previous-space (bool #f))
     (set-uint inline-markup-kind (uint 0))
     (finish-node)))
 
@@ -161,5 +167,6 @@
   '((inline-cursor 0) (inline-open #f) (inline-has-separator #f)
     (inline-failed #f) (inline-open-at 0) (inline-target-start 0)
     (inline-separator-at 0) (inline-left-boundary #t)
+    (inline-previous-space #f)
     (inline-markup-kind 0) (inline-markup-open-at 0)
     (inline-markup-value-start 0)))

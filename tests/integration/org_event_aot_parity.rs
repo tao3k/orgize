@@ -1,4 +1,18 @@
-//! Exact Element graph parity on the Git-tracked representative Org fixture.
+//! Compare the Scheme event entrypoint with the legacy structural fixture oracle.
+
+use gerbil_parser_rowan::{parse_structural_lines, project_syntax_graph};
+use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
+
+fn structural_records(source: &str) -> Vec<gerbil_parser_rowan::GraphRecord> {
+    let parsed = parse_structural_lines(
+        org_language_spec(),
+        &crate::org_structural_fixture::STRUCTURE,
+        source,
+    )
+    .expect("legacy structural fixture oracle accepts the source");
+    project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("legacy structural fixture oracle projects Elements")
+}
 
 #[test]
 fn tracked_org_fixtures_have_exact_event_element_graph_parity() {
@@ -10,13 +24,10 @@ fn tracked_org_fixtures_have_exact_event_element_graph_parity() {
             "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org"
         ),
     ] {
-        let structural = orgize::org_aot::parse_org_aot(source)
-            .expect("structural Scheme declaration parses the fixture");
-        let events = orgize::org_aot::parse_org_event_aot(source)
-            .expect("Scheme event algorithm parses the fixture");
-        assert_eq!(structural.syntax().to_string(), source);
+        let structural = structural_records(source);
+        let events = parse_org_aot(source).expect("Scheme event algorithm parses the fixture");
         assert_eq!(events.syntax().to_string(), source);
-        assert_eq!(events.records(), structural.records());
+        assert_eq!(events.records(), structural);
     }
 }
 
@@ -28,11 +39,10 @@ fn unclosed_blocks_recover_before_headlines_and_parent_boundaries() {
         "#+begin_quote\n#+begin_src rust\nbody\n#+end_quote\nafter\n",
         "* Parent\n:PROPERTIES:\n:ID: one\nmalformed\n:END:\n** Next\n",
     ] {
-        let structural = orgize::org_aot::parse_org_aot(source)
-            .expect("structural parser recovers the unclosed block");
-        let events = orgize::org_aot::parse_org_event_aot(source)
-            .expect("Scheme event parser recovers the unclosed block");
+        let structural = structural_records(source);
+        let events =
+            parse_org_aot(source).expect("Scheme event parser recovers the unclosed block");
         assert_eq!(events.syntax().to_string(), source);
-        assert_eq!(events.records(), structural.records(), "source: {source}");
+        assert_eq!(events.records(), structural, "source: {source}");
     }
 }

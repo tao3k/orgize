@@ -12,7 +12,7 @@ macro_rules! check_org_aot_headline_state {
 
 fn parse(source: &str) -> SyntaxNode {
     let parsed = orgize::org_aot::parse_org_aot(source)
-        .unwrap_or_else(|error| panic!("Org structural AOT rejected source: {error:?}"));
+        .unwrap_or_else(|error| panic!("Org event AOT rejected source: {error:?}"));
     assert_eq!(parsed.receipt().language, "org");
     assert_eq!(
         parsed.receipt().grammar_digest,
@@ -20,7 +20,7 @@ fn parse(source: &str) -> SyntaxNode {
     );
     assert_eq!(
         parsed.receipt().parser_digest,
-        Some(orgize::org_aot::org_structure_spec().parser_digest)
+        Some(orgize::org_aot::org_event_parser_digest())
     );
     parsed.syntax()
 }
@@ -308,7 +308,7 @@ fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
 }
 
 #[test]
-fn a_heading_bounds_source_block_recovery_even_when_an_end_marker_follows() {
+fn closed_source_block_masks_heading_looking_body_lines() {
     let source = "* One\n#+begin_src rust\n** Next\n#+end_src\n";
     let root = parse(source);
     assert_eq!(root.to_string(), source);
@@ -316,34 +316,13 @@ fn a_heading_bounds_source_block_recovery_even_when_an_end_marker_follows() {
         root.descendants()
             .filter(|node| name(node) == "OrgHeadline")
             .count(),
-        2
+        1
     );
     assert_eq!(
         root.descendants()
             .filter(|node| name(node) == "OrgSourceBlock")
             .count(),
-        0
-    );
-}
-
-#[test]
-fn structural_artifact_must_match_the_same_grammar_digest() {
-    let mut stale = *orgize::org_aot::org_structure_spec();
-    stale.grammar_digest = "sha256:0000000000000000000000000000000000000000000000000000000000";
-    let error = gerbil_parser_rowan::parse_structural_lines(
-        orgize::org_aot::org_language_spec(),
-        &stale,
-        "",
-    )
-    .expect_err("a stale POO projection cannot be silently used");
-    assert_eq!(error.diagnostic.reason_kind, "invalid-structural-aot");
-    assert_eq!(
-        error.receipt.grammar_digest,
-        orgize::org_aot::org_language_spec().grammar_digest
-    );
-    assert_eq!(
-        error.receipt.parser_digest,
-        Some(orgize::org_aot::org_structure_spec().parser_digest)
+        1
     );
 }
 

@@ -70,32 +70,6 @@ fn todo_keyword_query_obeys_file_local_declarations() {
 }
 
 #[test]
-fn scheme_event_aot_shares_headline_queries_with_structural_entrypoint() {
-    let source = "#+SEQ_TODO: HOLD | FINISHED\n* HOLD Review\n* WAIT is plain text\n";
-    let structural = orgize::org_aot::parse_org_aot(source).expect("structural baseline parses");
-    let events = orgize::org_aot::parse_org_event_aot(source)
-        .expect("Scheme event AOT projects through the production query path");
-    let structural_headlines: Vec<_> = structural
-        .records()
-        .iter()
-        .filter(|record| record.kind == "headline")
-        .map(|record| record.field("title"))
-        .collect();
-    let event_headlines: Vec<_> = events
-        .records()
-        .iter()
-        .filter(|record| record.kind == "headline")
-        .map(|record| record.field("title"))
-        .collect();
-    assert_eq!(event_headlines, structural_headlines);
-    assert_eq!(
-        events.query_named("tasks.open", 0),
-        structural.query_named("tasks.open", 0)
-    );
-    assert_eq!(events.query_named("tasks.waiting", 0), Ok(Vec::new()));
-}
-
-#[test]
 fn supplied_element_query_packs_fail_closed_before_scanning() {
     use orgize::org_element_query::{
         OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryError, OrgElementQueryPack,

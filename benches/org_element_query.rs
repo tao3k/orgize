@@ -145,6 +145,24 @@ fn bench_org_element_query(c: &mut Criterion) {
             )
         })
     });
+    let inline_objects = "~code~ =verbatim=\n".repeat(10_000);
+    let inline_records = orgize::org_aot::parse_org_aot(&inline_objects)
+        .expect("inline benchmark source builds a Rowan document");
+    assert_eq!(
+        inline_records
+            .records()
+            .iter()
+            .filter(|record| record.kind == "code" || record.kind == "verbatim")
+            .count(),
+        20_000
+    );
+    aot_group.bench_function("events-rowan-elements/10k-inline-objects", |b| {
+        b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&inline_objects)).unwrap()))
+    });
+    let plain_lines = "plain words here\n".repeat(10_000);
+    aot_group.bench_function("events-rowan-elements/10k-plain-lines", |b| {
+        b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&plain_lines)).unwrap()))
+    });
     aot_group.finish();
 }
 

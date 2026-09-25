@@ -1,13 +1,11 @@
 //! Cargo-only Org parsing from Scheme-declared AOT language artifacts.
 //!
-//! The structural scanner remains transitional for existing consumers.
-//! The Scheme event-AOT entrypoint uses the same Element/query projection so
-//! parity can be established before switching the default and public facade.
+//! The default AOT entrypoint runs the Org-owned Scheme event algorithm.
+//! The public `Org` facade still requires its separate typed-AST cutover.
 
 use gerbil_parser_rowan::{
-    Diagnostic, GraphProjectionSpec, GraphRecord, LanguageSpec, LineStructureSpec, Parse,
-    ParseError, ParseReceipt, SyntaxNode, parse_generated_events, parse_structural_lines,
-    project_syntax_graph,
+    Diagnostic, GraphProjectionSpec, GraphRecord, LanguageSpec, Parse, ParseError, ParseReceipt,
+    SyntaxNode, parse_generated_events, project_syntax_graph,
 };
 
 use crate::contract_feature::{
@@ -18,9 +16,6 @@ use crate::contract_feature::{
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/parser.rs"]
 mod grammar;
-#[rustfmt::skip]
-#[path = "../languages/org/v1/generated/structure.rs"]
-mod structure;
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/graph.rs"]
 mod graph;
@@ -53,10 +48,7 @@ pub enum OrgAotError {
     Projection(Diagnostic),
 }
 
-/// Parse Org source through Scheme-declared structure and Element projection.
-///
-/// The current implementation uses the transitional structural scanner, not
-/// the Scheme-generated event function intended for the full cutover.
+/// Parse Org source through the Scheme-generated event algorithm and Element projection.
 ///
 /// No Gerbil runtime or package is needed by a Cargo consumer.
 ///
@@ -65,20 +57,6 @@ pub enum OrgAotError {
 /// Returns the parser receipt on parse failure, or a projection diagnostic if
 /// the generated graph table is stale or invalid.
 pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
-    let parse = parse_structural_lines(&grammar::LANGUAGE, &structure::STRUCTURE, source)
-        .map_err(OrgAotError::Parse)?;
-    document_from_parse(parse)
-}
-
-/// Parse through the Org-owned Scheme algorithm AOT-compiled to Rust events.
-///
-/// This entrypoint shares the normal Element, TODO, query and contract
-/// projection. It is explicit until syntax and public AST parity is complete.
-///
-/// # Errors
-///
-/// Returns the parser receipt or Element projection diagnostic on failure.
-pub fn parse_org_event_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
     let events = generated_context_events::parse_org_rowan_events(source);
     let parse = parse_generated_events(
         &grammar::LANGUAGE,
@@ -136,10 +114,10 @@ pub fn org_language_spec() -> &'static LanguageSpec {
     &grammar::LANGUAGE
 }
 
-/// The generated Org contextual structure contract and its parser digest.
+/// Digest of the Scheme-generated event algorithm used by `parse_org_aot`.
 #[must_use]
-pub fn org_structure_spec() -> &'static LineStructureSpec {
-    &structure::STRUCTURE
+pub fn org_event_parser_digest() -> &'static str {
+    generated_context_events::PARSER_DIGEST
 }
 
 /// The generated Org Element graph contract and its projection digest.

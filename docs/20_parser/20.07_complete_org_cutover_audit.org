@@ -3,361 +3,84 @@
 
 * Verdict
 
-The current Scheme-AOT/Rowan product is a lossless structural slice, not an
-Org parser replacement.  The generated element inventory names 30 element
-types and 24 object types, while =parser.ss= currently admits
-headlines/sections, property drawers, source blocks, six common greater-block
-kinds, marker-led lists, keyed keyword/planning/clock lines, links, tables, and
-provisional paragraph grouping. The public
-=ParseConfig::parse= path still invokes the
-handwritten Rust =document_node=.  Three-platform CI and source roundtrip
-therefore establish neither complete syntax nor the requested cutover.
+The Org parser replacement is *not complete*. =parse_org_aot= now executes the
+Org-owned Scheme event algorithm AOT-compiled to Rust and constructs a Rowan
+tree. Element queries, source edits, contract evaluation, the Python AOT
+binding, and feature-source examples enter through this path. The generated
+structural scanner is no longer loaded by the production AOT module; it is
+only a fixture oracle in differential tests and this audit.
 
-The target is a direct refactor, not preservation of the existing Rust parser
-or its consumer-facing AST shape. Scheme owns Org recognition, contextual
-structure, and semantic policy; gerbil-parser compiles those declarations to
-the Rust/Rowan execution product. Existing consumers are migrated to the new
-typed projection or removed when their old assumptions are invalid. No
-compatibility parser, fallback path, or duplicate Org grammar is retained.
+=Org::parse= and =ParseConfig::parse= still call the handwritten Rust
+=document_node=. Their typed syntax AST, exporters, and dependent consumers
+have *not* been migrated. No source roundtrip, green test, or graph parity on
+one fixture admits a full public-parser replacement.
 
-Run the read-only differential inventory with:
+* Current executable inventory
+
+Run from the repository root:
 
 #+begin_src sh
 cargo run --locked --example org_cutover_audit
 #+end_src
 
-The input is the Git-tracked
-=tests/fixtures/org-elements/representative.org=.  Its public tree currently
-contains 30 distinct node kinds (including affiliated keywords, links,
-emphasis, lists, tables, planning, drawers, footnotes, and timestamps); the
-generated tree contains 17 kinds. Both reproduce the source. The generated
-tree now owns one table with two standard rows, one rule row, and four cells;
-The generated tree also reports one list and two items, matching the public
-fixture topology. It reports four standalone keywords and one planning line;
-the public tree has two ordinary keywords, two affiliated keywords, and one
-planning line. The generated tree reports five paragraphs versus seven publicly;
-item metadata and several
-other contexts remain incomplete. Matching counts do not establish matching syntax.
+On the Git-tracked =tests/fixtures/org-elements/representative.org=, the
+current audit reports:
 
-The audit now reports three paths separately. On the current tracked fixture,
-the public Rust CST has 32 node kinds, the transitional structural scanner has
-18, and the Scheme event-AOT/Rowan path has 9. The latter already projects
-headlines, keywords, source blocks, paragraphs, property drawers, and typed
-node properties, but not the fixture's tables, lists, ordinary drawer, links,
-planning, affiliation, or inline objects. All three trees round-trip the
-source; that does not establish Element or query parity. Earlier kind counts
-in this document describe prior slices, not the event-AOT cutover state.
+| Measure | Current result |
+|---------+----------------|
+| Scheme catalog | 30 Elements; 24 Objects |
+| Public handwritten Rust CST | 32 distinct node kinds in the fixture |
+| Scheme event-AOT CST | 18 distinct node kinds in the fixture |
+| Structural fixture oracle / event Element records | Exact parity on this fixture |
+| Catalog Elements not projected as typed graph kinds | 4 |
+| Catalog Objects not projected as typed graph kinds | 20 |
 
-* Headline AOT chain now has one generated Rust authority
+The missing Elements are =footnote-definition=, =inlinetask=,
+=latex-environment=, and =special-block=. The missing Objects are =bold=,
+=citation=, =citation-reference=, =entity=, =export-snippet=,
+=footnote-reference=, =inline-babel-call=, =inline-src-block=, =italic=,
+=line-break=, =latex-fragment=, =macro=, =radio-target=,
+=statistics-cookie=, =strike-through=, =subscript=, =superscript=,
+=target=, =timestamp=, and =underline=. These are catalog-versus-typed-graph
+gaps, not a claim that every already-projected kind has full Org behavior.
 
-The five Org-owned headline functions (TODO directive admission, state, keyword
-matching/value, and TODO-stripped content) are declared in Scheme. Their
-versioned, typed IR artifacts are checked against those declarations by the
-Org Element Scheme test macro. Cargo build support compiles the committed IR
-into Rust functions in =OUT_DIR=; neither checked-in Rust function copies nor
-Gerbil are needed by a Cargo consumer. The pure IR backend now admits nested
-lexical bindings used by file-local TODO declarations. =syn= is confined to
-that build-time backend; it is not a normal Org runtime dependency.
+The representative fixture does not exercise all configured, malformed,
+recursive, or nested cases. Its structural/event equality proves only that
+one test oracle and the event path agree there. Public AST and semantic
+query parity remain unadmitted.
 
-This closes the duplicate-source risk for the headline *functions*, not the
-parser cutover. The current read-only audit still finds 30 public node kinds
-versus 17 generated kinds on the tracked representative fixture. In particular,
-affiliated keywords, ordinary drawers, emphasis, footnotes and typed timestamps
-remain absent or incomplete in the generated CST/graph. The public
-=ParseConfig::parse= route still uses the handwritten Rust parser. The next
-syntax admission must add source-backed CST and graph behavior for one of these
-families through Org-owned Scheme declarations, with negative/recovery fixtures;
-then public consumers can be migrated only after equivalent AST fields exist.
+* Ownership boundary
 
-* Blocking contracts
+Org recognition, context, source spans, Object/Element properties, and
+queries belong in =languages/org/v1= Scheme modules within Orgize. The AOT
+backend and gerbil-parser may provide typed, language-neutral IR, validation,
+bounded source primitives, and Rowan construction; they must not own Org
+grammar, TODO policy, or Org Element semantics. Generic primitives added for
+an Org case should be reviewed for accidental Org-shaped assumptions.
 
-| Boundary | Current evidence | Required admission |
-|----------+------------------+--------------------|
-| Grammar authority | =grammar.ss= plus POO =parser.ss= declare line structure | Every element/object recognition rule and containment restriction is Scheme-owned; no downstream Rust parser rule or generated scanner program |
-| Engine | =parser.ss= currently configures a static line table; handwritten Rust =parse_structural_lines= still owns decision order and event algorithms | Statically checked Scheme parser strategies execute in Scheme tests and AOT-lower directly to Rust event-producing functions; Rust/Rowan retains only generic event validation and tree construction |
-| Syntax coverage | Headlines, sections, source/quote/example/verse/center/comment/export blocks, property drawers, marker-led nested lists, keyed keyword/planning/clock lines, links, tables, and provisional paragraph grouping; clock timestamps remain an untyped value, and affiliation, item metadata and continuation rules are not complete | All 30 elements and 24 objects, affiliated keywords, configuration-dependent syntax, malformed inputs, and object restrictions |
-| Public AST | Generated Rowan uses a separate kind catalog | Generated typed nodes/fields and source spans expose the intended Org model; migrate callers rather than preserving incorrect old shapes |
-| Cutover | =ParseConfig::parse= calls Rust =document_node= | Exactly one generated parse path; old handwritten lexer/element/object parser removed only after full differential parity |
-| Evidence | Focused structural tests and source roundtrip | Exact AST fixtures, negative/recovery cases, pinned full corpus, migrated consumer tests, and equivalent-semantics performance receipts |
-| Org contract | Org headings/properties and =scheme :org-contract= blocks now AOT-generate a multi-contract POO/Rust pack, evaluated over the generated Element graph in integration tests. Production trace/lint/workspace still use the old Rust contract model | Migrate real consumers to the generated pack and delete displaced Rust policy/evaluation; retain only typed AOT execution, filesystem/process handoff and public transport projection |
-| Custom Element query | =scheme :org-elements= blocks AOT-generate named queries. POO =all-of=/=any-of= properties compile to bounded DNF, inherit file-local TODO state, and execute over subtree intervals without runtime Gerbil. Exact TODO keyword matching is also Scheme-AOT generated from the same document declarations. A consumer-authored Org fixture tangles through the same interface, generates its own pack, and executes via =query_with_pack= in Cargo tests | Add joins, negation, ordering, aggregation, normalized titles, tags, and priority without another Rust semantic owner |
+The public Rust parser is a remaining second authority, not a fallback to
+retain. The old structural scanner is a test oracle only; it must not be
+reintroduced as a production parsing path.
 
-* Composite Element query performance receipt
+* Completion gates
 
-The focused release benchmark uses a generated 10,000-headline document with
-file-local =SEQ_TODO= and a query for open Review or Audit headlines. Parsing
-computes each headline's TODO type once with the Scheme-AOT function; repeated
-queries read that cache. The query checks a precomputed subtree interval and
-short-circuits the bounded DNF predicate groups.
+| Gate | Required evidence | Current state |
+|------+-------------------+---------------|
+| Syntax | Scheme event function covers all 30 Elements, 24 Objects, nesting, restrictions, affiliation, configuration and recovery | Incomplete |
+| Properties and query | Source-backed Element fields and file-local/custom query behavior agree with authoritative Org fixtures | Partial |
+| Public cutover | =Org::parse=, typed AST, exporters and consumers use the Scheme AOT Rowan result; displaced Rust parser is removed | Not started at public facade |
+| Losslessness | Exact source roundtrip and byte ranges over tracked, upstream-derived and negative corpora | Focused tests only |
+| Performance | Release-mode parse, projection and query benchmarks against the displaced implementation, with an explicit regression policy | Not admitted |
+| Gates | Scheme suite, Cargo full targets, strict Clippy, Dev Gate and macOS/Ubuntu/Windows CI on the exact final head | Not yet final-head verified |
 
-#+begin_src sh
-cargo bench --locked --bench org_element_query -- --sample-size 20 --measurement-time 3
-#+end_src
+* Performance evidence boundary
 
-On local =arm64=, this run measured 6.39–6.81 ms to parse and project the
-document (central estimate 6.55 ms), and 533–556 μs for the composite query
-(central estimate 542 μs). These are focused local receipts, not a comparison
-against =main= or a three-platform performance closure.
+The benchmark in =benches/org_element_query.rs= includes 10,000 plain lines,
+10,000 lines with =code=/=verbatim= Objects, and 10,000 headlines. The first
+local release run of the Object addition measured about 5.4 ms for plain
+lines and 13.9 ms for inline-Object lines. These inputs produce different
+numbers of graph records, so they are not a regression comparison. A headline
+run had high variance. The subsequent default-entrypoint and Planning changes
+have not yet received a stable, comparable release benchmark receipt.
 
-After adding the Scheme-owned clock element and fixing the generic keyed-line
-paragraph boundary, a local 10-sample run measured 6.17–6.26 ms for parse and
-projection and 405–410 μs for the composite query. The run used a shorter
-measurement window than the earlier receipt, so it does not establish a
-controlled speedup or full-parser performance parity.
-
-* First typed failures
-
-1. The generated parser maps the representative document's
-   ordinary drawer, emphasis, timestamp, and footnote to generic text lines.
-   The Org POO strategy now recognizes tables, property drawers,
-   heading-adjacent planning and standalone keywords. It does not yet attach
-   =#+NAME= or =#+CAPTION= to the following element, nor parse the planning
-   timestamp as a typed object. Node-property lines on the tracked contract
-   fixture pair include
-   typed property key/value tokens and exact source spans. Inventory entries alone
-   remain metadata, not parsing rules.
-2. The Scheme POO source-block rule now declares =recover-as-text= for an
-   unmatched opener. The generated structural parser therefore keeps the
-   following headline visible, matching the pinned =org-element.el= decision
-   to parse an incomplete source block as a paragraph. A heading also bounds
-   the search for a later closing marker, so a marker beyond that heading
-   cannot retroactively claim the block. The structural CST
-   now groups nonblank text lines into a source-backed =OrgParagraph= node,
-   but this is not yet a complete paragraph decision: unrecognized list
-   constructs can still be grouped as prose, and recovery still lacks the full
-   public span contract.
-3. =parse_structural_lines= now returns the normal =Parse= receipt, source
-   digest, POO parser-strategy digest, diagnostics and generated kind catalog.
-   It still lacks generated
-   typed field projection and the complete Org recognition rules, so it cannot
-   yet replace public =Org::parse=.
-4. There is no element/object-complete, Git-tracked differential corpus.  The
-   =.data/org-mode= checkout is reference evidence outside the Git-scoped
-   fixture boundary; it must not become a runtime or CI input.
-5. =org-contract= now has a Scheme/POO policy module and a bounded
-   =scheme :org-contract= declaration surface. The generator admits multiple
-   contract sections, uses the nearest Element headline for property/block
-   ownership, rejects duplicate identities, and binds each Rust rule to the
-   Element graph projection digest. The maintained AOT pack now evaluates four
-   Org-owned assertions against the tracked =notes.org= fixture: top-level
-   headlines, document properties, Evidence descendants, and scope-bound
-   title containment. The Rust descendant executor merges preorder intervals
-   instead of scanning every binding target for every record. This remains a
-   parallel path until
-   trace/lint/workspace consume the AOT pack and the old Rust policy is removed.
-6. The Scheme line strategy now recognizes quote, example, verse, center,
-   comment, and export blocks as distinct greater Elements. Quote, verse, and
-   center declare recursive Element contents, while source/example/comment/export
-   remain opaque. The shared Rowan engine executes that Scheme-owned choice;
-   a nested example block does not parse apparent links in its literal body.
-   The same generated graph projects each kind, nested Element ancestry, and
-   the export backend. A focused source-backed test covers all six plus an
-   unclosed quote block before a heading. These
-   kinds do not occur in the representative fixture, so its earlier 13-kind count
-   was unchanged by the block change. The list strategy raised it to 15 kinds;
-   keyed lines now raise it to 17. This is syntax expansion, not public parser
-   parity.
-7. The list strategy derives nested list/item structure from Scheme-owned
-   markers and tab width. The tracked fixture now has one generated list and
-   two items with typed bullets and source-backed spans. The generic engine
-   checks sibling, nested, ordered, tab-column and 10,000-item cases. Checkbox,
-   counter and description-tag projections, full =org-list.el= continuation and
-   blank-line semantics, and paragraph parity remain open.
-8. A bounded Scheme-declared key-line strategy now emits typed keyword keys and
-   values and admits repeated planning keys only on the line immediately after
-   a heading. The shared engine recognizes both without an Org-specific Rust
-   scanner. The tracked fixture reports four standalone keyword nodes and one
-   planning node, while the public parser distinguishes two of those keywords
-   as affiliated metadata. The graph projects ordinary keyword fields but does
-   not concatenate repeated planning values into a false single field. Full
-   affiliation and typed timestamp projections remain open.
-
-* Completed expression-parser cutover within the larger MVP
-
-=languages/org/v1/modules/org-contract/grammar.ss= defines the older
-expression syntax used by existing Rust consumers; it is not the new
-=org-contract= feature language. Its generated Rust table is consumed by the
-existing public query and contract-expression entrypoints. The former independent
-Rowan S-expression scanner and syntax-kind catalog in =core_parser.rs= are
-gone; that file only lowers the generated CST to the existing query value.
-The same grammar is checked by a Scheme AST fixture and Rust tests covering
-comments, adjacent escaped strings, Unicode whitespace, malformed input,
-source roundtrip, and the existing contract property-scope scenario. The
-structural engine now returns the same =Parse= result contract as the
-generated LR path; Org's structural test and differential audit consume its
-receipt. This is an owner replacement, but *not* the vertical MVP: the Org document parser
-still uses =document_node=, and contract policy/evaluation still live in Rust.
-
-* Org contract module chain
-
-The contract owner is
-=languages/org/v1/modules/org-contract/= with one public =interface.ss=. Follow
-the POO Flow role direction =types -> objects -> funs -> config -> interface=:
-
-- =types.ss=: closed contract, assertion, scope and severity vocabularies,
-  shape admission, and diagnostics; shared Element query types belong to
-  =modules/org-elements/=.
-- =objects.ss=: POO contract/assertion values and named constructors;
-  extension is through prototypes or a one-receiver generic only where a
-  behavior actually varies.
-- =funs.ss=: pure contract parsing, reference resolution policy, query
-  combination, assertion evaluation, and receipt construction. Use functional
-  combinators for traversals and indexes; no IO or unbounded shell execution.
-- =config.ss=: maintained Org contract profiles and explicit provider/runtime
-  handoff selection. Use CLOS methods only for genuinely independent provider
-  and contract-kind axes.
-- =interface.ss=: the sole public import; it re-exports the four role owners
-  and contains no second implementation.
-
-The downstream Rust product projects this admitted POO module through the
-same development-time AOT boundary as the parser. Cargo users do not install
-Gerbil. Existing Rust model/evaluator code is deleted only when corresponding
-public lint, trace, workspace, query, JSON and negative tests pass against the
-generated product. A file rename or a second shadow evaluator is not a cutover.
-
-Scheme owns the Org recognition and contextual event algorithm. The same
-bounded event forms execute in Scheme authoring tests and AOT-compile into a
-Rust function that emits source-backed events; generic =gerbil-parser-rowan=
-validates them and builds the tree. Cargo consumers need neither Gerbil nor a
-second handwritten Org scanner. The existing =outline-events.ss= and
-=rowan-event-parser.ss= implementations are currently distinct, however; their
-algorithms must converge before one Scheme authority can be claimed. Measure
-the generated event path against equivalent syntax and Element projection,
-not against an incomplete tree with fewer fields.
-
-The event-AOT path now derives headline markers, source/property block markers,
-keyword prefixes, property delimiters, and Babel CALL spelling from the POO
-=parser.ss= declarations. Scheme execution and regenerated Rust IR are byte-for-byte
-stable after this authority consolidation. This removes duplicated literal
-grammar, but does not yet unify the two Scheme algorithms or cover all Org syntax.
-
-Opaque source, example, comment, and export blocks now share a Scheme strategy
-family assembled from the same POO block declarations. The typed unsigned
-event state AOT-selects each closer and keeps headline/table-looking body
-lines opaque; source language and export backend project as distinct tokens.
-The tracked representative fixture contains only a source block, so its
-three-way node-kind count does not change from this expansion. Unclosed-block
-recovery and recursively parsed quote/verse/center blocks remain open.
-
-The event strategy now also lowers POO-declared planning and clock key-lines
-with source-backed key/value spans. Planning is only recognized immediately
-after a headline; a later =SCHEDULED:= line remains paragraph text. Empty
-values use a bounded trim offset, and the generic event compiler omits zero-byte
-tokens so Rowan still accepts the lossless source. The tracked representative
-fixture projects its planning Element; list, ordinary drawer, inline object,
-affiliation, and public-parser parity remain open.
-
-The same Scheme event strategy now folds table rows by source bytes using the
-generic bounded line-byte iteration IR. Orgize's POO table declaration supplies
-the delimiter, row/cell node kinds, and token kinds; the Org-owned Scheme
-algorithm handles backslash parity, rule rows, cell spans, and closing a table
-before subsequent prose. The generated Rust event function contains the
-statically bounded loop and Rowan projects the table/cell hierarchy. In the
-representative fixture this raises the event path to fourteen distinct node
-kinds, versus eighteen in the transitional structural parser. List, link,
-ordinary drawer, recursive block, inline object, affiliation, recovery, and
-public-parser parity remain open; the table slice alone is not full Org parity.
-The focused 10,000-row/four-cell Criterion case checks equal table, row, and
-cell counts before measurement. On this macOS host, event→Rowan→Element took
-17.13 ms versus 18.08 ms for the transitional structural document path
-(ten samples, short warm-up). This is a bounded table-shape comparison, not
-evidence of full Org parser performance or cross-platform equivalence.
-
-* Implementation order
-
-This is one vertical MVP followed by full-coverage expansion, not separate
-deliverables called a scanner MVP, element-inventory MVP, and contract MVP.
-
-** Milestone receipts for the one vertical MVP
-
-| Gate | Exact admission | Current state |
-|------+-----------------+---------------|
-| M1 fixture structure | Both tracked =contract_org_property_scope= inputs parse from Scheme-authored AOT rules with 8 headlines each, 8/4 property drawers, 20/6 node-property nodes, 4/0 source blocks, typed property key/value tokens, exact source ranges, and malformed-drawer recovery | Local Scheme/Rust tests pass; not a public cutover |
-| M2 typed semantic input | Generated CST additionally exposes headline titles, links and source-block language/body fields; the fixture pair projects the intended element graph without the handwritten Org parser | In progress: Scheme-owned graph rules AOT-project the fixture topology from Rowan CST, but production =org_elements_graph= and contract evaluation still use =ParsedAst= |
-| M3 executable contract | Scheme POO =org-contract= modules own policy/evaluation; migrated public trace/lint/workspace entrypoints execute the generated product and the displaced Rust owners are removed | Scheme module, Org-native multi-contract pack and generated-graph test pass; public consumers and old-owner removal remain open |
-| M4 complete Org cutover | All 30 elements and 24 objects, context/recovery/corpus gates, migrated public consumers, and equivalent-semantics performance receipts; remove =document_node= and remaining handwritten syntax parser | Open; this closes the PR |
-
-The gates are cumulative evidence for one product, not four independently
-releasable parser implementations. M1 does not authorize a runtime fallback
-or a claim that =Org::parse= has switched.
-
-The current M2 slice extends generic POO heading, block and text declarations
-with typed title, header argument and inline-link rules. Their AOT table binds token kinds
-and delimiters to the parser digest; the Rowan executor emits typed language,
-link target, and description tokens without losing indentation, whitespace,
-CRLF, or source ranges. Org owns the =HeadlineTitle=, =SourceLanguage= and =OrgLink= declarations
-in =parser.ss= and =grammar.ss=; the tracked contract fixture checks all four
-=org-contract= block languages, three described links and every fixture headline title.
-
-=graph.ss= now declares the Org graph projection as POO contracts. Its AOT
-Rust table is consumed by the generic =gerbil-parser-rowan= graph projector,
-which traverses the generated CST once and preserves projected ancestry and
-source ranges across unprojected wrapper nodes. The tracked contract fixture
-pair checks graph record counts, source-block fields, links, and the Evidence
-headline's link descendants through paragraph records without invoking the
-handwritten Org parser. The Scheme-declared paragraph strategy groups
-consecutive nonblank lines and preserves UTF-8/CRLF source spans; the fixture
-pair has 0/3 generated paragraphs. This is not general Org paragraph parity.
-This is private differential evidence, not a second public graph API. The
-production =org_elements_graph= still derives from =ParsedAst=, and contract
-evaluation still lives in Rust; M2 and the vertical MVP remain open.
-
-The next typed blocker is *not* a missing Cargo hook:
-=Document<ParsedAnnotation>::org_elements_graph= still indexes the old
-=ParsedAst=, and =evaluate_org_contract_with_context= constructs that graph
-from the same old AST. The generated-CST graph now derives the contract
-fixture's headline outline, local node properties, source blocks, and link
-descendants, but it must replace this production graph owner before contract
-evaluation can migrate. A test-only graph does not close M2.
-
-The MVP workflow is the existing Git-tracked =contract_org_property_scope=
-scenario: load =inputs/contracts.org= and =inputs/notes.org=, parse both,
-project the element graph, evaluate the document/subtree =org-contract=
-assertions, and return the same public trace and lint results. It exercises
-headlines, sections, property drawers, node properties, links, source blocks,
-query bindings, scopes, count/exists assertions, and real CLI consumers. The
-generated parser and Scheme-owned POO contract module must both participate;
-source roundtrip or a separate demo API does not satisfy this MVP. The old
-consumer output is a differential oracle only where it agrees with the
-Scheme-owned target semantics; it is not an API compatibility requirement.
-
-Before calling that workflow done:
-
-1. Replace the separate =parse_structural_lines= decision path with one
-   existing v1 Grammar/Parser IR pipeline extended for Scheme-authored
-   contextual event functions. A static =LineStructure= table is insufficient:
-   it leaves dispatch order, object recognition, and recovery algorithms in
-   handwritten Rust. The local contract-expression
-   Rowan parser has already moved to a Scheme-owned generated grammar.
-   =gerbil-parser= may add generic contextual strategy and lexical primitives;
-   it must not gain Org rules. Scheme POO declarations in orgize supply the
-   actual rules and contract behavior. This is an implementation dependency,
-   not an independently releasable feature.
-2. Generate immutable Rust products and typed CST accessors from the Scheme
-   owners. The Cargo consumer needs no Gerbil installation. One grammar digest,
-   source digest, and contract/module identity bind the parse/evaluation
-   receipts; no handwritten scanner or fallback path is permitted.
-3. Run exact AST, graph, query, contract trace, lint and negative-case checks
-   against the intended semantics for the fixture pair. Document any
-   intentional divergence from the old Rust parser with a source-backed
-   counterexample. Include a
-   malformed contract, an unclosed block, UTF-8 spans, and source roundtrip.
-4. Route the scenario's public consumers to the generated product and remove
-   the displaced Rust parser/contract-expression owner code in the same change.
-   A second dormant implementation or a new side API is not MVP closure.
-5. Measure equivalent outputs with ASP Rust Dev Gate scenarios before accepting
-   throughput, allocation, or peak-memory claims.
-
-After the vertical MVP, expand the same Scheme/POO product and source-backed corpus
-to all 30 elements and 24 objects, configuration variants, malformed input,
-query/export/document consumers, and the complete =org-contract= lint, trace,
-workspace and JSON surfaces. Then replace the general =Org::parse= facade,
-migrate or remove consumers tied to the old AST, and delete the handwritten
-Rust syntax parser. The draft PR remains open until that full cutover; green
-focused tests do not change its status.
-
-Performance comparison is meaningful only between equivalent syntax and
-query outputs.  Record throughput, allocation, and peak memory against the
-current public parser on representative and pathological documents using the
-ASP Rust Dev Gate after semantic parity; the 10,000-section smoke test is not
-a substitute for those receipts.
+Only a verified final-head performance run can satisfy the performance gate.

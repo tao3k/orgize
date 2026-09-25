@@ -181,11 +181,89 @@
   (foldr (lambda (key next) (declared-key-form rule key next))
          otherwise (key-line-keys rule)))
 
+(def (offset-after from count)
+  (let loop ((offset from) (remaining count))
+    (if (= remaining 0) offset
+      (loop `(line-step ,offset) (- remaining 1)))))
+
+(def (ascii-ci-pattern-at from pattern)
+  (let loop ((rest (string->list pattern)) (offset from) (predicates []))
+    (if (null? rest)
+      (cons 'and (reverse predicates))
+      (let* ((upper (char->integer (char-upcase (car rest))))
+             (lower (char->integer (char-downcase (car rest))))
+             (check (if (= upper lower)
+                      `(line-byte-equal? ,offset ,upper)
+                      `(line-bytes-any-in? ,offset (line-step ,offset)
+                                           (,upper ,lower)))))
+        (loop (cdr rest) `(line-step ,offset) (cons check predicates))))))
+
+(def planning-index '(line-index planning-byte-index))
+(def planning-next `(line-step ,planning-index))
+(def planning-value-start '(state-offset planning-value-start))
+(def planning-value-end '(state-offset planning-value-end))
+
+(def (planning-following-key-form key otherwise)
+  (let* ((marker (string-append key (key-line-separator planning-rule)))
+         (key-start planning-next)
+         (key-end (offset-after key-start (string-length key)))
+         (marker-end (offset-after key-start (string-length marker)))
+         (value-start `(line-skip-horizontal ,marker-end)))
+    `(if (and ,(ascii-ci-pattern-at key-start marker)
+              (or (line-bytes-all-in? ,marker-end (line-content-end) ())
+                  (line-bytes-any-in? ,marker-end
+                                      (line-step ,marker-end) (9 32))))
+         ((token ,(key-line-value-token planning-rule)
+                 ,planning-value-start ,planning-value-end)
+          (token ,(key-line-trivia-token planning-rule)
+                 ,planning-value-end ,key-start)
+          (token ,(key-line-key-token planning-rule) ,key-start ,key-end)
+          (token ,(key-line-trivia-token planning-rule)
+                 ,key-end ,value-start)
+          (set-uint planning-value-start (offset ,value-start))
+          (set-uint planning-value-end (offset ,value-start)))
+         ,(if (null? otherwise) '() (list otherwise)))))
+
+(def planning-following-key-chain
+  (foldr (lambda (key next) (planning-following-key-form key next))
+         '() (key-line-keys planning-rule)))
+
+(def (planning-first-key-form key otherwise)
+  (let* ((marker (string-append key (key-line-separator planning-rule)))
+         (key-end `(line-prefix-end ,key))
+         (value-start `(line-skip-horizontal (line-prefix-end ,marker))))
+    `(if (line-starts-with-ascii-ci ,marker)
+         (,close-paragraph
+          (start-node ,(key-line-node planning-rule))
+          (token ,(key-line-key-token planning-rule) start ,key-end)
+          (token ,(key-line-trivia-token planning-rule)
+                 ,key-end ,value-start)
+          (if (offset-less? ,planning-value-start ,value-start)
+              ((set-uint planning-value-start (offset ,value-start))) ())
+          (if (offset-less? ,planning-value-end ,value-start)
+              ((set-uint planning-value-end (offset ,value-start))) ())
+          (for-line-bytes planning-byte-index ,value-start (line-content-end)
+            ((if (line-bytes-any-in? ,planning-index ,planning-next (9 32))
+                 (,planning-following-key-chain) ())
+             (if (and (offset-less? ,planning-value-start ,planning-next)
+                      (not (line-bytes-any-in?
+                            ,planning-index ,planning-next (9 32))))
+                 ((set-uint planning-value-end (offset ,planning-next))) ())))
+          (token ,(key-line-value-token planning-rule)
+                 ,planning-value-start ,planning-value-end)
+          (token ,(key-line-trivia-token planning-rule)
+                 ,planning-value-end end)
+          (finish-node))
+         (,otherwise))))
+
+(def (planning-first-key-chain otherwise)
+  (foldr planning-first-key-form otherwise (key-line-keys planning-rule)))
+
 (def (context-key-form)
   (declared-key-chain
    clock-rule
    `(if (state after-heading)
-        (,(declared-key-chain planning-rule (keyword-form)))
+        (,(planning-first-key-chain (keyword-form)))
         (,(keyword-form)))))
 
 (def (headline-form)
@@ -311,23 +389,6 @@
   (foldr opaque-body-form '(token TextLine start end) opaque-blocks))
 
 (def container-indent '(line-skip-horizontal start))
-
-(def (offset-after from count)
-  (let loop ((offset from) (remaining count))
-    (if (= remaining 0) offset
-      (loop `(line-step ,offset) (- remaining 1)))))
-
-(def (ascii-ci-pattern-at from pattern)
-  (let loop ((rest (string->list pattern)) (offset from) (predicates []))
-    (if (null? rest)
-      (cons 'and (reverse predicates))
-      (let* ((upper (char->integer (char-upcase (car rest))))
-             (lower (char->integer (char-downcase (car rest))))
-             (check (if (= upper lower)
-                      `(line-byte-equal? ,offset ,upper)
-                      `(line-bytes-any-in? ,offset (line-step ,offset)
-                                           (,upper ,lower)))))
-        (loop (cdr rest) `(line-step ,offset) (cons check predicates))))))
 
 (def (container-marker-end rule)
   (offset-after container-indent (string-length (block-line-opening rule))))
@@ -675,6 +736,7 @@
     (fixed-width-open #f)
     (table-open #f) (table-seen-separator #f) (table-escaped #f)
     (table-cell-start 0)
+    (planning-value-start 0) (planning-value-end 0)
     (container-frames (uint-stack)) (container-closed #f)
     (container-opened #f)
     (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
