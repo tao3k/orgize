@@ -6,7 +6,9 @@
         (only-in :gerbil-parser/src/compiler/rust-pure-aot
                  define-rust-pure string-before ascii-ci=?
                  string-after string-first-word
-                 string-rest-after-first-word string-words)
+                 string-rest-after-first-word string-last-word
+                 string-before-last-word string-prefix? string-suffix?
+                 string-words)
         (only-in "types.ss" org-element-graph-view?)
         (only-in "objects.ss"
                  make-org-element-graph-view
@@ -18,6 +20,7 @@
         todo-state-from-directives todo-state-from-directives-rust
         todo-keyword-from-directives todo-keyword-from-directives-rust
         headline-content-after-todo headline-content-after-todo-rust
+        headline-display-title headline-display-title-rust
         todo-keyword-matches? todo-keyword-matches-rust)
 
 (defstruct headline-properties (source-title title todo-keyword todo-type
@@ -91,6 +94,21 @@
     (if (equal? (todo-keyword-from-directives title directives) "")
       (string-trim title)
       (string-rest-after-first-word title))))
+
+(define-rust-pure headline-display-title headline-display-title-rust
+  ((content "&str")) "String"
+  (let* ((trimmed (string-trim content))
+         (first (string-first-word trimmed))
+         (without-priority
+          (if (and (string-prefix? first "[#")
+                   (string-suffix? first "]"))
+            (string-rest-after-first-word trimmed)
+            trimmed))
+         (last (string-last-word without-priority)))
+    (if (and (string-prefix? last ":")
+             (string-suffix? last ":"))
+      (string-before-last-word without-priority)
+      (string-trim without-priority))))
 
 ;; A query checks the source keyword only after the same Scheme-owned state
 ;; algorithm admits it under file-local declarations. The dependency call is

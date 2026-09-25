@@ -20,7 +20,10 @@
                  todo-keyword-from-directives-rust
                  headline-content-after-todo
                  headline-content-after-todo-rust
+                 headline-display-title headline-display-title-rust
                  todo-keyword-matches? todo-keyword-matches-rust)
+        (only-in "link-properties.ss"
+                 org-image-link? org-image-link-rust)
         (only-in "generated/query-source.ss" org-element-queries)
         (only-in "interface.ss"
                  +org-element-kinds+ org-elements-default-profile
@@ -83,7 +86,17 @@
              => #t)
       (check (org-test-source-structured?
               "languages/org/v1/modules/org-elements/headline-properties.ss")
+             => #t)
+      (check (org-test-source-structured?
+              "languages/org/v1/modules/org-elements/link-properties.ss")
              => #t))
+    (test-case "link kind is Scheme-owned and AOT projected"
+      (check-org-headline-ir
+       org-image-link-rust 'org_image_link_p
+       "languages/org/v1/modules/org-elements/generated/org_image_link_p.ir.json")
+      (check (org-image-link? "diagram.svg") => #t)
+      (check (org-image-link? "diagram.svg?size=2") => #f)
+      (check (org-image-link? "https://example.test/doc.org") => #f))
     (test-case "catalog and projected query share one feature interface"
       (check-org-element-catalog)
       (check (if (member "headline" +org-element-kinds+) #t #f)
@@ -161,6 +174,13 @@
       (check-org-headline-ir
        headline-content-after-todo-rust 'headline_content_after_todo
        "languages/org/v1/modules/org-elements/generated/headline_content_after_todo.ir.json")
+      (check-org-headline-ir
+       headline-display-title-rust 'headline_display_title
+       "languages/org/v1/modules/org-elements/generated/headline_display_title.ir.json")
+      (check (headline-display-title
+              "[#A] Parent :work:urgent:")
+             => "Parent")
+      (check (headline-display-title "Review") => "Review")
       (check (headline-content-after-todo
               "  WAIT   [#A] Parent :work:  " '("WAIT(w) | DONE(d)"))
              => "[#A] Parent :work:")

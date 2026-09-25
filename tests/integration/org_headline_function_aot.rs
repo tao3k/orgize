@@ -4,6 +4,8 @@ include!(concat!(env!("OUT_DIR"), "/todo_directive_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/todo_state_from_directives.rs"));
 include!(concat!(env!("OUT_DIR"), "/todo_keyword_from_directives.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_content_after_todo.rs"));
+include!(concat!(env!("OUT_DIR"), "/headline_display_title.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_image_link_p.rs"));
 
 macro_rules! check_todo_state_aot {
     ($($title:expr, $directives:expr => $expected:expr),+ $(,)?) => {
@@ -74,5 +76,39 @@ fn scheme_headline_content_aot_preserves_remaining_text() {
         "WAIT" => "",
         "TODO is ordinary text" => "TODO is ordinary text",
         "DONE\tévidence  :研究:" => "évidence  :研究:",
+    );
+}
+
+#[test]
+fn scheme_headline_display_title_aot_projects_decorations() {
+    macro_rules! check_display_title {
+        ($($content:expr => $expected:expr),+ $(,)?) => {
+            $(
+                assert_eq!(headline_display_title($content), $expected,
+                           "headline content: {:?}", $content);
+            )+
+        };
+    }
+    check_display_title!(
+        "[#A] Parent :work:urgent:" => "Parent",
+        "Child :work:" => "Child",
+        "TODO is ordinary text" => "TODO is ordinary text",
+        "Task :work:sdd:" => "Task",
+        "Task" => "Task",
+    );
+}
+
+#[test]
+fn scheme_org_image_link_aot_classifies_targets() {
+    macro_rules! check_image_target {
+        ($($target:expr => $expected:expr),+ $(,)?) => {
+            $(assert_eq!(org_image_link_p($target), $expected, "target: {:?}", $target);)+
+        };
+    }
+    check_image_target!(
+        "diagram.svg" => true,
+        "photo.jpeg" => true,
+        "diagram.svg?size=2" => false,
+        "notes.org" => false,
     );
 }

@@ -1,7 +1,7 @@
-id = "document-query-org-elements-ast"
-title = "Org document query filters parser-owned org-elements AST"
+id = "document-query-org-elements-aot"
+title = "Org document query filters Scheme-AOT org-elements"
 policy_ids = ["ORGIZE-AGENT-ASP-PERF-SUBCOMMAND-QUERY-ORG-ELEMENTS-001"]
-agent_goal = "Keep project-wide Org query on the parser-owned element AST without legacy search facades or raw-source admission shortcuts."
+agent_goal = "Keep project-wide Org query on the Scheme-AOT Element graph without a second Rust Org parser."
 reference_repositories = ["tao3k/agent-semantic-protocols"]
 reference_patterns = ["orgize org query", "query_project_with_config", "filter_elements_by_query"]
 inputs = "inputs"

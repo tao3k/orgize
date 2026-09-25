@@ -92,7 +92,7 @@ jobs:
         run: cargo test --workspace --all-targets --all-features
 
       - name: Run focused Org query performance gate
-        run: cargo test --release --lib document_query_org_elements_ast_stays_inside_scenario_gate -- --ignored --test-threads=1
+        run: cargo test --release --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored --test-threads=1
 
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -146,7 +146,7 @@ jobs:
           gerbil build
       - name: Verify Scheme Org parser and Contract
         run: |
-          gxpkg install github.com/tao3k/gerbil-parser@9ccd0794382702a0771ab37593507ae6841d669e
+          gxpkg install github.com/tao3k/gerbil-parser@097f7f3cabfd3ecc8e0a03551df76ad0958d9862
           just scheme-test "$GERBIL_PATH/lib" "$GERBIL_PATH/lib"
           generated="$(mktemp)"
           gerbil env gxi languages/org/v1/generate-rowan-event-ir.ss "$generated"

@@ -12,7 +12,8 @@ flowchart LR
   A -->|closed| B
 #+end_src
 ";
-    let facts = super::org_elements::index_org(Path::new("proof.org"), source);
+    let facts = super::org_elements::index_org(Path::new("proof.org"), source)
+        .expect("Scheme AOT indexes source blocks");
     let blocks = facts
         .iter()
         .filter(|fact| fact.kind == "block")

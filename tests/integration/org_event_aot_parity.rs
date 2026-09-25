@@ -67,7 +67,10 @@ fn tracked_org_fixtures_preserve_structural_backbone_with_new_scheme_objects() {
                 let post_blank = source
                     .get(usize::from(legacy.range.end())..usize::from(event.range.end()))
                     .expect("paragraph ranges are source boundaries");
-                assert!(post_blank.trim().is_empty(), "only Org post-blank may differ");
+                assert!(
+                    post_blank.trim().is_empty(),
+                    "only Org post-blank may differ"
+                );
                 event.range = legacy.range;
             }
         }

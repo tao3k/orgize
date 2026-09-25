@@ -8,6 +8,7 @@ mod line_index;
 mod markdown_elements;
 mod memory_projection;
 mod model;
+#[path = "org_elements_aot.rs"]
 mod org_elements;
 mod packets;
 mod source_selection;

@@ -10,6 +10,13 @@ binding, and feature-source examples enter through this path. The generated
 structural scanner is no longer loaded by the production AOT module; it is
 only a fixture oracle in differential tests and this audit.
 
+The document-query index now projects facts from that Scheme-AOT Element
+graph rather than parsing source again through =Org::parse=. Its headline
+display-title operation is also Scheme-authored and AOT-compiled. The index
+still has Org-specific Rust projections for list, table, and item
+facts; those properties, plus exact priority/tag validation, are not yet
+admitted as fully Scheme-owned semantics.
+
 =Org::parse= and =ParseConfig::parse= still call the handwritten Rust
 =document_node=. Their typed syntax AST, exporters, and dependent consumers
 have *not* been migrated. No source roundtrip, green test, or graph parity on

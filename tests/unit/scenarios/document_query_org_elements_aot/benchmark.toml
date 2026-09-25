@@ -1,7 +1,7 @@
 harness = "libtest"
-test = "document_query_org_elements_ast_stays_inside_scenario_gate"
+test = "document_query_org_elements_aot_stays_inside_scenario_gate"
 phase = "cold"
-route_source = "org-elements-ast"
+route_source = "org-elements-aot"
 target_total = "5ms"
 max_total = "45ms"
 max_provider_process_count = 0

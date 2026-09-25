@@ -13,6 +13,8 @@ pub fn write_org_aot_functions() {
         "todo_keyword_matches_p",
         "todo_keyword_from_directives",
         "headline_content_after_todo",
+        "headline_display_title",
+        "org_image_link_p",
     ] {
         let source = source_dir.join(format!("{name}.ir.json"));
         println!("cargo:rerun-if-changed={}", source.display());

@@ -11,9 +11,9 @@ use super::model::{DocumentLanguage, DocumentWalkConfig};
 
 #[test]
 #[ignore = "run as a focused release-mode performance scenario"]
-fn document_query_org_elements_ast_stays_inside_scenario_gate() {
+fn document_query_org_elements_aot_stays_inside_scenario_gate() {
     let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/unit/scenarios/document_query_org_elements_ast");
+        .join("tests/unit/scenarios/document_query_org_elements_aot");
     let benchmark = asp_rust::validate_rust_scenario_benchmark(&scenario_root)
         .expect("validate Org element query scenario benchmark");
     assert_eq!(
@@ -23,18 +23,18 @@ fn document_query_org_elements_ast_stays_inside_scenario_gate() {
         benchmark.violations
     );
     let scenario = asp_rust_scenario! {
-        name: "document-query-org-elements-ast",
+        name: "document-query-org-elements-aot",
         package: "orgize",
         description: "Forty-eight Org documents parse to one parser-owned element projection and answer a no-hit query",
-        fixture_root: "tests/unit/scenarios/document_query_org_elements_ast",
+        fixture_root: "tests/unit/scenarios/document_query_org_elements_aot",
         tags: ["org-elements", "query", "performance"],
         commands: [
-            { label: "focused-release", argv: ["cargo", "test", "--release", "--lib", "document_query_org_elements_ast_stays_inside_scenario_gate", "--", "--ignored", "--test-threads=1"] }
+            { label: "focused-release", argv: ["cargo", "test", "--release", "--lib", "document_query_org_elements_aot_stays_inside_scenario_gate", "--", "--ignored", "--test-threads=1"] }
         ],
         benchmark: {
             harness: "libtest",
-            test: "document_query_org_elements_ast_stays_inside_scenario_gate",
-            snapshot: "org_elements_ast_query",
+            test: "document_query_org_elements_aot_stays_inside_scenario_gate",
+            snapshot: "org_elements_aot_query",
             target_total: "5ms",
             max_total: "45ms",
             regression_budget: "40ms",
@@ -93,7 +93,7 @@ fn document_query_org_elements_ast_stays_inside_scenario_gate() {
 
     assert!(
         measurement.total_max <= benchmark.benchmark.max_total.as_duration(),
-        "Org AST query exceeded max_total={:?}: p50={:?}, p95={:?}, max={:?}",
+        "Org AOT query exceeded max_total={:?}: p50={:?}, p95={:?}, max={:?}",
         benchmark.benchmark.max_total.as_duration(),
         measurement.total_p50,
         measurement.observed_total,

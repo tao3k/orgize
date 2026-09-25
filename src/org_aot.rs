@@ -23,6 +23,8 @@ mod graph;
 mod contract_plan;
 #[path = "org_aot_headline_functions.rs"]
 mod headline_functions;
+#[path = "org_aot_link_functions.rs"]
+mod link_functions;
 #[path = "org_aot_todo_directive.rs"]
 mod todo_directive;
 #[rustfmt::skip]
@@ -66,6 +68,10 @@ pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
     )
     .map_err(OrgAotError::Parse)?;
     document_from_parse(parse)
+}
+
+pub(crate) fn org_image_link(target: &str) -> bool {
+    link_functions::org_image_link_p(target)
 }
 
 fn document_from_parse(parse: Parse) -> Result<OrgAotDocument, OrgAotError> {
@@ -198,6 +204,13 @@ impl OrgAotDocument {
             title,
             &self.todo_directives,
         ))
+    }
+
+    /// Return the Scheme-AOT headline display title after TODO and decorations.
+    #[must_use]
+    pub fn headline_display_title(&self, record_id: usize) -> Option<String> {
+        let content = self.headline_content_after_todo(record_id)?;
+        Some(headline_functions::headline_display_title(&content))
     }
 
     /// Evaluate a Scheme-AOT Org Contract against this document's Element graph.
