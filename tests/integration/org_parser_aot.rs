@@ -62,6 +62,28 @@ fn scheme_declared_babel_call_is_not_a_generic_keyword() {
 }
 
 #[test]
+fn scheme_emphasis_objects_project_into_rowan_and_element_graph() {
+    let source = "*bold* /italic/ _under_ +strike+\n";
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("Scheme-owned emphasis Objects parse through the event AOT");
+    for (kind, value) in [
+        ("bold", "bold"),
+        ("italic", "italic"),
+        ("underline", "under"),
+        ("strike-through", "strike"),
+    ] {
+        let records: Vec<_> = document
+            .records()
+            .iter()
+            .filter(|record| record.kind == kind)
+            .collect();
+        assert_eq!(records.len(), 1, "{kind}");
+        assert_eq!(records[0].field("value"), Some(value), "{kind}");
+    }
+    assert_eq!(document.syntax().to_string(), source);
+}
+
+#[test]
 fn headings_form_nested_sections_and_closed_blocks_remain_lossless() {
     let source = "é\r\n* Parent\n#+BEGIN_SRC rust\ncode\n#+END_SRC\n** Child\nbody\r* Sibling\n";
     let root = parse(source);

@@ -78,4 +78,12 @@
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"
+         (list (field 'InlineMarkupValue "value")))
+   (node 'OrgBold "object" "bold"
+         (list (field 'InlineMarkupValue "value")))
+   (node 'OrgItalic "object" "italic"
+         (list (field 'InlineMarkupValue "value")))
+   (node 'OrgUnderline "object" "underline"
+         (list (field 'InlineMarkupValue "value")))
+   (node 'OrgStrikeThrough "object" "strike-through"
          (list (field 'InlineMarkupValue "value")))))

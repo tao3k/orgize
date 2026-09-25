@@ -19,6 +19,9 @@
 (def inline-open-boundary-bytes '(9 32 45 40 39 34 123))
 (def inline-close-boundary-bytes
   '(9 32 45 46 44 59 58 33 63 39 34 41 125 92 91))
+(def inline-markup-rules
+  '((126 1 OrgCode) (61 2 OrgVerbatim) (42 3 OrgBold)
+    (47 4 OrgItalic) (95 5 OrgUnderline) (43 6 OrgStrikeThrough)))
 (def inline-right-boundary?
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
        (line-bytes-any-in? ,inline-next (line-step ,inline-next)
@@ -111,25 +114,27 @@
                                ,link-index)
                   (not (state inline-previous-space))
                   ,inline-right-boundary?)
-             ((if (and (uint-equal? (state inline-markup-kind) (uint 1))
-                       (line-byte-equal? ,link-index 126))
-                  ,(markup-events 'OrgCode)
-                  ((if (and (uint-equal? (state inline-markup-kind) (uint 2))
-                            (line-byte-equal? ,link-index 61))
-                       ,(markup-events 'OrgVerbatim) ())))) ()))
+             ,(foldr (lambda (rule otherwise)
+                       `((if (and (uint-equal? (state inline-markup-kind)
+                                               (uint ,(cadr rule)))
+                                  (line-byte-equal? ,link-index ,(car rule)))
+                             ,(markup-events (caddr rule)) ,otherwise)))
+                     '() inline-markup-rules)
+             ()))
         ((if (and (state inline-left-boundary)
                   (offset-less? ,inline-next (line-content-end))
                   (not (line-bytes-any-in? ,inline-next
                                            (line-step ,inline-next) (9 32))))
-             ((if (line-byte-equal? ,link-index 126)
-                  ((set-uint inline-markup-kind (uint 1))
-                   (set-uint inline-markup-open-at (offset ,link-index))
-                   (set-uint inline-markup-value-start (offset ,inline-next)))
-                  ((if (line-byte-equal? ,link-index 61)
-                       ((set-uint inline-markup-kind (uint 2))
-                        (set-uint inline-markup-open-at (offset ,link-index))
-                        (set-uint inline-markup-value-start
-                                  (offset ,inline-next))) ())))) ())))))
+             ,(foldr (lambda (rule otherwise)
+                       `((if (line-byte-equal? ,link-index ,(car rule))
+                             ((set-uint inline-markup-kind (uint ,(cadr rule)))
+                              (set-uint inline-markup-open-at
+                                        (offset ,link-index))
+                              (set-uint inline-markup-value-start
+                                        (offset ,inline-next)))
+                             ,otherwise)))
+                     '() inline-markup-rules)
+             ())))))
 
 (def (inline-scan-forms)
   `((if (state inline-open)

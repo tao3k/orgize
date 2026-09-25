@@ -30,23 +30,25 @@ current audit reports:
 |---------+----------------|
 | Scheme catalog | 30 Elements; 24 Objects |
 | Public handwritten Rust CST | 32 distinct node kinds in the fixture |
-| Scheme event-AOT CST | 18 distinct node kinds in the fixture |
-| Structural fixture oracle / event Element records | Exact parity on this fixture |
+| Scheme event-AOT CST | 20 distinct node kinds in the fixture |
+| Structural fixture oracle / event Element records | Event graph adds bold and italic Objects; structural backbone parity is tested separately |
 | Catalog Elements not projected as typed graph kinds | 4 |
-| Catalog Objects not projected as typed graph kinds | 20 |
+| Catalog Objects not projected as typed graph kinds | 16 |
 
 The missing Elements are =footnote-definition=, =inlinetask=,
-=latex-environment=, and =special-block=. The missing Objects are =bold=,
+=latex-environment=, and =special-block=. The missing Objects are
 =citation=, =citation-reference=, =entity=, =export-snippet=,
-=footnote-reference=, =inline-babel-call=, =inline-src-block=, =italic=,
+=footnote-reference=, =inline-babel-call=, =inline-src-block=,
 =line-break=, =latex-fragment=, =macro=, =radio-target=,
-=statistics-cookie=, =strike-through=, =subscript=, =superscript=,
-=target=, =timestamp=, and =underline=. These are catalog-versus-typed-graph
+=statistics-cookie=, =subscript=, =superscript=,
+=target=, and =timestamp=. These are catalog-versus-typed-graph
 gaps, not a claim that every already-projected kind has full Org behavior.
 
 The representative fixture does not exercise all configured, malformed,
-recursive, or nested cases. Its structural/event equality proves only that
-one test oracle and the event path agree there. Public AST and semantic
+recursive, or nested cases. The structural oracle predates the new Scheme
+emphasis Objects, so exact graph equality is no longer expected; the test
+compares its structural backbone after removing only the newly supported
+Objects. Public AST and semantic
 query parity remain unadmitted.
 
 * Ownership boundary
@@ -76,11 +78,14 @@ reintroduced as a production parsing path.
 * Performance evidence boundary
 
 The benchmark in =benches/org_element_query.rs= includes 10,000 plain lines,
-10,000 lines with =code=/=verbatim= Objects, and 10,000 headlines. The first
-local release run of the Object addition measured about 5.4 ms for plain
-lines and 13.9 ms for inline-Object lines. These inputs produce different
-numbers of graph records, so they are not a regression comparison. A headline
-run had high variance. The subsequent default-entrypoint and Planning changes
-have not yet received a stable, comparable release benchmark receipt.
+10,000 lines with =code=/=verbatim= Objects, and 10,000 headlines. After the
+Scheme emphasis extension, a local release run measured about 5.10 ms for
+plain lines, 14.57 ms for inline-Object lines, and 13.52 ms for headlines.
+Criterion found no statistically significant change for the inline-Object
+case; its first headline run reported a possible 5% regression. A longer
+headline rerun measured 13.32 ms, with no statistically significant change
+and 7 high outliers among 30 samples. These are noisy local signals, not a
+performance admission. The different input shapes produce different graph
+sizes and must not be compared against each other as a speed ratio.
 
 Only a verified final-head performance run can satisfy the performance gate.

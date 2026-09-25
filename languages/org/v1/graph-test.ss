@@ -24,7 +24,8 @@
                             OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgQuoteBlock
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
                             OrgCommentBlock OrgExportBlock OrgLink
-                            OrgCode OrgVerbatim))
+                            OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
+                            OrgStrikeThrough))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "property-drawer" "drawer"
                                 "paragraph" "comment" "diary-sexp"
@@ -36,7 +37,8 @@
                                 "node-property" "src-block" "dynamic-block" "quote-block"
                                 "example-block" "verse-block" "center-block"
                                 "comment-block" "export-block" "link"
-                                "code" "verbatim"))))
+                                "code" "verbatim" "bold" "italic"
+                                "underline" "strike-through"))))
     (test-case "planning keeps each key and value independently"
       (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
              (planning

@@ -1,6 +1,6 @@
 //! Compare the Scheme event entrypoint with the legacy structural fixture oracle.
 
-use gerbil_parser_rowan::{parse_structural_lines, project_syntax_graph};
+use gerbil_parser_rowan::{GraphRecord, parse_structural_lines, project_syntax_graph};
 use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
 
 fn structural_records(source: &str) -> Vec<gerbil_parser_rowan::GraphRecord> {
@@ -14,8 +14,38 @@ fn structural_records(source: &str) -> Vec<gerbil_parser_rowan::GraphRecord> {
         .expect("legacy structural fixture oracle projects Elements")
 }
 
+fn structural_backbone(records: &[GraphRecord]) -> Vec<GraphRecord> {
+    let retained = records
+        .iter()
+        .filter(|record| {
+            !matches!(
+                record.kind,
+                "bold" | "italic" | "underline" | "strike-through"
+            )
+        })
+        .collect::<Vec<_>>();
+    let mut new_ids = vec![None; records.len()];
+    for (new_id, record) in retained.iter().enumerate() {
+        new_ids[record.id] = Some(new_id);
+    }
+    retained
+        .into_iter()
+        .enumerate()
+        .map(|(new_id, record)| {
+            let mut record = record.clone();
+            record.id = new_id;
+            record.parent_id = record.parent_id.and_then(|id| new_ids[id]);
+            record.child_ids.retain(|id| new_ids[*id].is_some());
+            for child_id in &mut record.child_ids {
+                *child_id = new_ids[*child_id].expect("retained child id");
+            }
+            record
+        })
+        .collect()
+}
+
 #[test]
-fn tracked_org_fixtures_have_exact_event_element_graph_parity() {
+fn tracked_org_fixtures_preserve_structural_backbone_with_new_scheme_objects() {
     for source in [
         include_str!("../fixtures/org-elements/representative.org"),
         include_str!("../fixtures/org-elements/dynamic-block.org"),
@@ -27,7 +57,7 @@ fn tracked_org_fixtures_have_exact_event_element_graph_parity() {
         let structural = structural_records(source);
         let events = parse_org_aot(source).expect("Scheme event algorithm parses the fixture");
         assert_eq!(events.syntax().to_string(), source);
-        assert_eq!(events.records(), structural);
+        assert_eq!(structural_backbone(events.records()), structural);
     }
 }
 

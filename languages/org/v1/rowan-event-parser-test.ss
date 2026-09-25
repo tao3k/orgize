@@ -85,6 +85,31 @@
         "!~x~ ~a ~ ~b~c\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 15))))))
+    (test-case "emphasis Objects use the same Scheme boundary strategy"
+      (check-org-ast-with parse-org-rowan-events
+        "*bold* /italic/ _under_ +strike+\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgBold (InlineMarkupDelimiter 0 1)
+                    (InlineMarkupValue 1 5)
+                    (InlineMarkupDelimiter 5 6))
+           (TextLine 6 7)
+           (OrgItalic (InlineMarkupDelimiter 7 8)
+                      (InlineMarkupValue 8 14)
+                      (InlineMarkupDelimiter 14 15))
+           (TextLine 15 16)
+           (OrgUnderline (InlineMarkupDelimiter 16 17)
+                         (InlineMarkupValue 17 22)
+                         (InlineMarkupDelimiter 22 23))
+           (TextLine 23 24)
+           (OrgStrikeThrough (InlineMarkupDelimiter 24 25)
+                             (InlineMarkupValue 25 31)
+                             (InlineMarkupDelimiter 31 32))
+           (TextLine 32 33)))))
+      (check-org-ast-with parse-org-rowan-events
+        "x*y* *open\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11))))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"
