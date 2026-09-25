@@ -23,7 +23,8 @@
                             OrgTable OrgTableRow OrgTableRuleRow OrgTableCell
                             OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgQuoteBlock
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
-                            OrgCommentBlock OrgExportBlock OrgLink))
+                            OrgCommentBlock OrgExportBlock OrgLink
+                            OrgCode OrgVerbatim))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "property-drawer" "drawer"
                                 "paragraph" "comment" "diary-sexp"
@@ -34,7 +35,8 @@
                                 "table-rule-row" "table-cell"
                                 "node-property" "src-block" "dynamic-block" "quote-block"
                                 "example-block" "verse-block" "center-block"
-                                "comment-block" "export-block" "link"))))
+                                "comment-block" "export-block" "link"
+                                "code" "verbatim"))))
     (test-case "planning keeps each key and value independently"
       (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
              (planning

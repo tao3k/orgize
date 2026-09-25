@@ -90,6 +90,42 @@ fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
 }
 
 #[test]
+fn org_scheme_event_aot_projects_inline_code_and_verbatim_values() {
+    let source = "a ~code~ =verb= [[id:x]] z\n";
+    let document = orgize::org_aot::parse_org_event_aot(source)
+        .expect("Scheme inline Object strategy builds a lossless Rowan document");
+    assert_eq!(document.syntax().to_string(), source);
+    let code = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "code")
+        .expect("code is a typed Object");
+    assert_eq!(code.field("value"), Some("code"));
+    let verbatim = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "verbatim")
+        .expect("verbatim is a typed Object");
+    assert_eq!(verbatim.field("value"), Some("verb"));
+    assert!(
+        document
+            .records()
+            .iter()
+            .any(|record| record.kind == "link")
+    );
+
+    let negative = orgize::org_aot::parse_org_event_aot("x~y~ ~unclosed\n")
+        .expect("invalid and unclosed markup remains source text");
+    assert_eq!(negative.syntax().to_string(), "x~y~ ~unclosed\n");
+    assert!(
+        !negative
+            .records()
+            .iter()
+            .any(|record| record.kind == "code" || record.kind == "verbatim")
+    );
+}
+
+#[test]
 fn scheme_authored_line_algorithm_aot_builds_lossless_rowan() {
     let source = "* α\r\nbody\n";
     let events = generated_line_events::parse_org_line_events(source);

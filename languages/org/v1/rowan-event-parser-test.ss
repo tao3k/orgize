@@ -53,6 +53,34 @@
                     (LinkTrivia 31 33))
            (TextLine 33 34))
           (OrgTextLine (TextLine 34 43))))))
+    (test-case "inline code and verbatim preserve delimiters and source values"
+      (check-org-ast-with parse-org-rowan-events
+        "a ~code~ =verb= z\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgCode (InlineMarkupDelimiter 2 3)
+                    (InlineMarkupValue 3 7)
+                    (InlineMarkupDelimiter 7 8))
+           (TextLine 8 9)
+           (OrgVerbatim (InlineMarkupDelimiter 9 10)
+                        (InlineMarkupValue 10 14)
+                        (InlineMarkupDelimiter 14 15))
+           (TextLine 15 18)))))
+      (check-org-ast-with parse-org-rowan-events
+        "x~y~ ~unclosed\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 15)))))
+      (check-org-ast-with parse-org-rowan-events
+        "~β~\r\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCode (InlineMarkupDelimiter 0 1)
+                    (InlineMarkupValue 1 3)
+                    (InlineMarkupDelimiter 3 4))
+           (TextLine 4 6))))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"
