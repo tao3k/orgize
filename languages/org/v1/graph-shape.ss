@@ -46,7 +46,8 @@
          (list (field 'ClockValue "value")))
    (node 'OrgPlainList "element" "plain-list" '())
    (node 'OrgListItem "element" "item"
-         (list (field 'ListBullet "bullet")))
+         (list (field 'ListBullet "bullet")
+               (field 'ListTrivia "trivia" 'each)))
    (node 'OrgTable "element" "table" '())
    (node 'OrgTableRow "element" "table-row" '())
    (node 'OrgTableRuleRow "element" "table-rule-row" '())

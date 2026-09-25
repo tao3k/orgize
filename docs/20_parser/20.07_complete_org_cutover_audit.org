@@ -64,6 +64,11 @@ The public Rust parser is a remaining second authority, not a fallback to
 retain. The old structural scanner is a test oracle only; it must not be
 reintroduced as a production parsing path.
 
+Cargo consumers call the Scheme-AOT-generated Rust event function directly
+and hand its events to Rowan. This runtime path has no Scheme/Rust FFI boundary;
+an optional FFI would only serve a Scheme runtime caller and must not become
+another parser or a per-token hot-path dependency.
+
 * Completion gates
 
 | Gate | Required evidence | Current state |

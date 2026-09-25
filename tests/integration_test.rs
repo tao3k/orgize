@@ -85,6 +85,8 @@ mod org_event_aot_contract;
 mod org_event_aot_parity;
 #[path = "integration/org_headline_function_aot.rs"]
 mod org_headline_function_aot;
+#[path = "integration/org_list_fields.rs"]
+mod org_list_fields;
 #[path = "integration/org_named_drawer.rs"]
 mod org_named_drawer;
 #[path = "integration/org_parser_aot.rs"]
