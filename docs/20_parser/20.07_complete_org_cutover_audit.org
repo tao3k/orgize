@@ -88,10 +88,10 @@ This is a type-and-consumer cutover, not an entrypoint rename:
    Scheme-AOT graph records, leaving 22 production calls in this inventory.
    These are consumers to migrate, not an API name that
    necessarily must disappear: the final =Org::parse= may delegate to AOT.
-   =src/document/memory_projection.rs= additionally
-   hand-scans plan-ledger headline, TODO, tags and property lines in Rust for
-   a 2,000-file/100-ms scenario. This is a separate Org syntax authority even
-   though it does not call =Org::parse=.
+   The plan-ledger shortcut in =src/document/memory_projection.rs= has now
+   stopped hand-scanning headline, TODO, tags and property lines in Rust. It
+   reads the Scheme-AOT Element graph; the general memory query in that same
+   file still calls =Org::parse= and remains in the 22-call inventory.
 5. =src/config.rs= still parses file-local TODO declarations in Rust and
    carries configurable subscript, affiliated-keyword, inlinetask and other
    settings that the generated event entrypoint does not yet accept. Merely
@@ -169,6 +169,22 @@ Element projection together. This is a same-head scenario, not a comparison
 against the displaced parser or a final performance admission. Neither this header
 tokenization nor the earlier Object additions imply complete Babel header
 semantics or full Org grammar parity.
+
+The next consumer cutover projects headline suffix tags as Scheme-owned
+source-backed tokens and reads plan-ledger headline, TODO, tags and node
+properties from the same AOT Element graph. The independent Rust plan-ledger
+syntax scanner is removed. A release, 10-sample Criterion probe measured
+12.621–12.773 ms for AOT parsing and Element projection of 2,000 plan-ledger
+shaped documents in memory, excluding filesystem work. The existing 2,000-file
+end-to-end test still enforces its 100-ms budget in the test profile. The
+display-title AOT function now removes a suffix only when the same Scheme
+event graph projected source-backed tags, so malformed =:bad::= text remains
+in the title. Priority validation and Unicode tag classification still need
+exact parity with the Org Element policy. The added tag projection raised the
+in-memory 2,000-document release scenario to 14.089–14.671 ms; Criterion
+reported a 10.685–13.477% regression against the prior same-machine sample.
+The end-to-end 100-ms gate passes, but this regression remains an optimization
+target before final admission.
 
 * Ownership boundary
 

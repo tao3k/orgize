@@ -82,19 +82,20 @@ fn scheme_headline_content_aot_preserves_remaining_text() {
 #[test]
 fn scheme_headline_display_title_aot_projects_decorations() {
     macro_rules! check_display_title {
-        ($($content:expr => $expected:expr),+ $(,)?) => {
+        ($($content:expr, $has_tags:expr => $expected:expr),+ $(,)?) => {
             $(
-                assert_eq!(headline_display_title($content), $expected,
+                assert_eq!(headline_display_title($content, $has_tags), $expected,
                            "headline content: {:?}", $content);
             )+
         };
     }
     check_display_title!(
-        "[#A] Parent :work:urgent:" => "Parent",
-        "Child :work:" => "Child",
-        "TODO is ordinary text" => "TODO is ordinary text",
-        "Task :work:sdd:" => "Task",
-        "Task" => "Task",
+        "[#A] Parent :work:urgent:", true => "Parent",
+        "Child :work:", true => "Child",
+        "TODO is ordinary text", false => "TODO is ordinary text",
+        "Task :work:sdd:", true => "Task",
+        "Task", false => "Task",
+        "Plan :bad::", false => "Plan :bad::",
     );
 }
 

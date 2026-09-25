@@ -266,6 +266,33 @@ fn bench_org_source_headers(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_org_plan_ledgers(c: &mut Criterion) {
+    let sources = (0..2_000)
+        .map(|index| {
+            format!(
+                "* TODO Plan {index} [1/8] [12%] :agent:plan:\n\
+                 :PROPERTIES:\n\
+                 :CONTRACT_ORG: agent.plan.v1\n\
+                 :PLAN_ID: plan-{index}\n\
+                 :SESSION_ID: session-a\n\
+                 :END:\n\
+                 ** Evidence\n\
+                 - receipt {index}\n"
+            )
+        })
+        .collect::<Vec<_>>();
+    let mut group = c.benchmark_group("OrgSchemePlanLedgers");
+    group.throughput(Throughput::Elements(2_000));
+    group.bench_function("aot/2k-documents", |b| {
+        b.iter(|| {
+            for source in &sources {
+                black_box(parse_org_aot(black_box(source)).unwrap());
+            }
+        })
+    });
+    group.finish();
+}
+
 fn bench_org_nested_lists(c: &mut Criterion) {
     let source = list_source();
     let structural = parse_org_aot(&source).expect("structural list benchmark parses");
@@ -323,6 +350,7 @@ criterion_group!(
     bench_org_element_query,
     bench_org_table_rows,
     bench_org_nested_lists,
-    bench_org_source_headers
+    bench_org_source_headers,
+    bench_org_plan_ledgers
 );
 criterion_main!(benches);

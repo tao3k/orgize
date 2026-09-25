@@ -50,6 +50,8 @@
    (OrgSection node (heading element))
    (HeadlineLine token (text))
    (HeadlineTitle token (text))
+   (HeadlineTagValue token (text))
+   (HeadlineTagTrivia token (text))
    (HeadlineTrivia token (text))
    (BlockBeginLine token (text))
    (SourceLanguage token (text))

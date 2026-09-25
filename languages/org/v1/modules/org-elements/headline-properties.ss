@@ -96,17 +96,15 @@
       (string-rest-after-first-word title))))
 
 (define-rust-pure headline-display-title headline-display-title-rust
-  ((content "&str")) "String"
+  ((content "&str") (has-tags "bool")) "String"
   (let* ((trimmed (string-trim content))
          (first (string-first-word trimmed))
          (without-priority
           (if (and (string-prefix? first "[#")
                    (string-suffix? first "]"))
             (string-rest-after-first-word trimmed)
-            trimmed))
-         (last (string-last-word without-priority)))
-    (if (and (string-prefix? last ":")
-             (string-suffix? last ":"))
+            trimmed)))
+    (if has-tags
       (string-before-last-word without-priority)
       (string-trim without-priority))))
 

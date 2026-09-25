@@ -210,7 +210,10 @@ impl OrgAotDocument {
     #[must_use]
     pub fn headline_display_title(&self, record_id: usize) -> Option<String> {
         let content = self.headline_content_after_todo(record_id)?;
-        Some(headline_functions::headline_display_title(&content))
+        let has_tags = self.records.get(record_id)?.field("tag").is_some();
+        Some(headline_functions::headline_display_title(
+            &content, has_tags,
+        ))
     }
 
     /// Evaluate a Scheme-AOT Org Contract against this document's Element graph.

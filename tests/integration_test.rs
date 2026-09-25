@@ -83,6 +83,8 @@ mod org_element_query;
 mod org_event_aot_contract;
 #[path = "integration/org_event_aot_parity.rs"]
 mod org_event_aot_parity;
+#[path = "integration/org_headline_aot.rs"]
+mod org_headline_aot;
 #[path = "integration/org_headline_function_aot.rs"]
 mod org_headline_function_aot;
 #[path = "integration/org_inline_object_aot.rs"]

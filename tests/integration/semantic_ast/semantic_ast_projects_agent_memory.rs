@@ -313,14 +313,45 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
         .expect("plan ledger projection benchmark sample");
 
     assert_eq!(records.len(), 2_000);
-    assert!(records.iter().any(
-        |record| record.properties.get("PLAN_ID").map(String::as_str)
-            == Some("memory-engine-hot-path")
-    ));
+    let hot_path = records
+        .iter()
+        .find(|record| {
+            record.properties.get("PLAN_ID").map(String::as_str) == Some("memory-engine-hot-path")
+        })
+        .expect("AOT Element graph projects the selected plan ledger");
+    assert_eq!(hot_path.title, "Plan 777 [1/8] [12%]");
+    assert_eq!(hot_path.todo.as_deref(), Some("TODO"));
+    assert_eq!(hot_path.tags, ["agent", "plan"]);
+    assert_eq!((hot_path.start_line, hot_path.end_line), (1, 11));
+    assert_eq!(hot_path.state, MemoryRecordState::Current);
     assert!(
         elapsed < Duration::from_millis(100),
         "plan ledger projection exceeded 100ms gate: {elapsed:?}"
     );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn plan_ledger_projection_obeys_scheme_block_context() {
+    let root = temp_test_dir("orgize-plan-ledger-block-context");
+    let plans = root.join("flow").join("plans");
+    fs::create_dir_all(&plans).expect("create plans dir");
+    fs::write(
+        plans.join("agent-plan-structural.org"),
+        "* TODO Plan :agent:plan:\n:PROPERTIES:\n:CONTRACT_ORG: agent.plan.v1\n:PLAN_ID: structural\n:END:\n#+begin_src text\n* Not a headline\n#+end_src\nNext action\n",
+    )
+    .expect("write plan");
+
+    let records = query_org_memory_records(
+        &root,
+        &DocumentWalkConfig::default(),
+        &OrgMemorySearchOptions::plan_ledgers(),
+    )
+    .expect("query plans through Scheme AOT");
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].title, "Plan");
+    assert_eq!(records[0].tags, ["agent", "plan"]);
+    assert_eq!(records[0].end_line, 9);
     let _ = fs::remove_dir_all(root);
 }
 

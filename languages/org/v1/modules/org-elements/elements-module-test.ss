@@ -178,9 +178,11 @@
        headline-display-title-rust 'headline_display_title
        "languages/org/v1/modules/org-elements/generated/headline_display_title.ir.json")
       (check (headline-display-title
-              "[#A] Parent :work:urgent:")
+              "[#A] Parent :work:urgent:" #t)
              => "Parent")
-      (check (headline-display-title "Review") => "Review")
+      (check (headline-display-title "Review" #f) => "Review")
+      (check (headline-display-title "Plan :bad::" #f)
+             => "Plan :bad::")
       (check (headline-content-after-todo
               "  WAIT   [#A] Parent :work:  " '("WAIT(w) | DONE(d)"))
              => "[#A] Parent :work:")

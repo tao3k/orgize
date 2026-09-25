@@ -27,6 +27,8 @@
                  list-line-trivia-token)
         (only-in "../../parser.ss" org-v1-line-structure)
         (only-in "event-inline.ss" event-inline-initial event-text-line-forms)
+        (only-in "event-headline-tags.ss"
+                 event-headline-tags-initial event-headline-title-forms)
         (only-in "event-source-header.ss"
                  event-source-header-initial event-source-header-forms))
 (export org-event-initial org-event-line-forms org-event-finish-forms)
@@ -288,12 +290,12 @@
                (line-marker-end ,heading-marker ,heading-separator)
                (line-skip-horizontal
                 (line-marker-end ,heading-marker ,heading-separator)))
-        (token HeadlineTitle
-               (line-skip-horizontal
-                (line-marker-end ,heading-marker ,heading-separator))
-               (line-trim-end-from
-                (line-skip-horizontal
-                 (line-marker-end ,heading-marker ,heading-separator))))
+        ,@(event-headline-title-forms
+           `(line-skip-horizontal
+             (line-marker-end ,heading-marker ,heading-separator))
+           `(line-trim-end-from
+             (line-skip-horizontal
+              (line-marker-end ,heading-marker ,heading-separator))))
         (token HeadlineTrivia
                (line-trim-end-from
                 (line-skip-horizontal
@@ -803,6 +805,7 @@
     (list-column 0) (list-bullet-start 0) (list-bullet-end 0)
     (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0))
    event-inline-initial
+   event-headline-tags-initial
    event-source-header-initial))
 
 (def org-event-line-forms

@@ -22,6 +22,24 @@
                                   (HeadlineTrivia 18 19)
                                   (HeadlineTitle 19 20)
                                   (HeadlineTrivia 20 21))))))
+    (test-case "headline tags are source-backed fields, not Rust title parsing"
+      (check-org-ast-with parse-org-rowan-events
+        "* TODO Plan :agent:plan:\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline
+           (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+           (HeadlineTitle 2 12)
+           (HeadlineTagTrivia 12 13) (HeadlineTagValue 13 18)
+           (HeadlineTagTrivia 18 19) (HeadlineTagValue 19 23)
+           (HeadlineTagTrivia 23 24) (HeadlineTrivia 24 25)))))
+      (check-org-ast-with parse-org-rowan-events
+        "* Plan :bad::\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline
+           (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+           (HeadlineTitle 2 13) (HeadlineTrivia 13 14))))))
     (test-case "five-dash horizontal rule interrupts a paragraph"
       (check-org-ast-with parse-org-rowan-events
         "before\n-----\nafter\n"
