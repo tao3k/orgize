@@ -9,9 +9,11 @@
                  line-structure-blocks)
         (only-in "parser.ss" org-v1-line-structure)
         (only-in "modules/org-parser/types.ss"
-                 org-event-block? org-inline-markup? org-event-strategy?)
+                 org-event-block? org-named-block?
+                 org-inline-markup? org-event-strategy?)
         (only-in "modules/org-parser/objects.ss"
                  make-org-event-block org-event-block-id
+                 make-org-named-block
                  make-org-inline-markup org-inline-markup-node
                  make-org-event-strategy org-event-strategy-root)
         (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
@@ -29,12 +31,16 @@
             (strategy (make-org-event-strategy
                        'OrgFile '() '((finish-node)) '() '())))
         (check (org-event-block? block) => #t)
+        (check (org-named-block?
+                (make-org-named-block "#+BEGIN_" "#+END_"
+                                      'OrgSpecialBlock 'SpecialBlockName)) => #t)
         (check (org-event-block-id block) => 1)
         (check (org-inline-markup? markup) => #t)
         (check (org-inline-markup-node markup) => 'OrgBold)
         (check (org-event-strategy? strategy) => #t)
         (check (org-event-strategy-root strategy) => 'OrgFile)
         (check (org-event-block? '(1 . block)) => #f)
+        (check (org-named-block? '("#+BEGIN_" . "#+END_")) => #f)
         (check (org-inline-markup? '(42 3 OrgBold)) => #f)
         (check (org-inline-markup?
                 (.o kind: 'org-inline-markup byte: 256 id: 3
@@ -918,6 +924,40 @@
           (DrawerTrivia 34 36)
           (OrgParagraph (OrgTextLine (TextLine 36 42)))
           (DrawerEndLine 42 48)))))
+    (test-case "source-named special blocks match their closing names"
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_NOTE\ntext\n#+END_note\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 12)
+          (BlockHeaderTrivia 12 13)
+          (OrgParagraph (OrgTextLine (TextLine 13 18)))
+          (BlockEndLine 18 29))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_NOTE\n* heading\n#+END_note\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 13)))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 13 14) (HeadlineTrivia 14 15)
+                       (HeadlineTitle 15 22) (HeadlineTrivia 22 23))
+          (OrgParagraph (OrgTextLine (TextLine 23 34))))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_NOTE\ntext\n#+END_OTHER\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 30))))))
+    (test-case "nested named special blocks close one frame at a time"
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_OUTER\n#+BEGIN_INNER\nx\n#+END_inner\n#+END_outer\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 13)
+          (BlockHeaderTrivia 13 14)
+          (OrgSpecialBlock
+           (BlockBeginLine 14 22) (SpecialBlockName 22 27)
+           (BlockHeaderTrivia 27 28)
+           (OrgParagraph (OrgTextLine (TextLine 28 30)))
+           (BlockEndLine 30 42))
+          (BlockEndLine 42 54)))))
     (test-case "indented container delimiters and orphan closers retain source"
       (check-org-ast-with parse-org-rowan-events
         "  #+begin_quote\nx\n  #+end_quote\n"

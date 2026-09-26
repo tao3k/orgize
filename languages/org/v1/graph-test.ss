@@ -44,7 +44,8 @@
                             OrgKeyword OrgBabelCall OrgPlanning OrgClock
                             OrgPlainList OrgListItem
                             OrgTable OrgTableRow OrgTableRuleRow OrgTableCell
-                            OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgQuoteBlock
+                            OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgSpecialBlock
+                            OrgQuoteBlock
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
                             OrgCommentBlock OrgExportBlock OrgLink
                             OrgTarget OrgRadioTarget OrgStatisticsCookie OrgLineBreak
@@ -61,7 +62,8 @@
                                 "planning" "clock"
                                 "plain-list" "item" "table" "table-row"
                                 "table-rule-row" "table-cell"
-                                "node-property" "src-block" "dynamic-block" "quote-block"
+                                "node-property" "src-block" "dynamic-block" "special-block"
+                                "quote-block"
                                 "example-block" "verse-block" "center-block"
                                 "comment-block" "export-block" "link"
                                 "target" "radio-target" "statistics-cookie" "line-break"

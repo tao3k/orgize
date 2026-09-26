@@ -3,10 +3,15 @@
 
 (import (only-in :clan/poo/object .o .ref)
         (only-in "types.ss"
-                 +org-event-block-kind+ +org-inline-markup-kind+
+                 +org-event-block-kind+ +org-named-block-kind+
+                 +org-inline-markup-kind+
                  +org-event-strategy-kind+
-                 org-event-block? org-inline-markup? org-event-strategy?))
+                 org-event-block? org-named-block?
+                 org-inline-markup? org-event-strategy?))
 (export make-org-event-block org-event-block-id org-event-block-rule
+        make-org-named-block org-named-block-opening
+        org-named-block-closing org-named-block-node
+        org-named-block-name-token
         make-org-inline-markup org-inline-markup-byte
         org-inline-markup-id org-inline-markup-node
         make-org-event-strategy org-event-strategy-root
@@ -22,6 +27,19 @@
 
 (def (org-event-block-id value) (.ref value 'id))
 (def (org-event-block-rule value) (.ref value 'rule))
+
+(def (make-org-named-block opening-value closing-value node-value name-token-value)
+  (let (value (.o kind: +org-named-block-kind+
+                  opening: opening-value closing: closing-value
+                  node: node-value name-token: name-token-value))
+    (unless (org-named-block? value)
+      (error "invalid Org named block strategy" value))
+    value))
+
+(def (org-named-block-opening value) (.ref value 'opening))
+(def (org-named-block-closing value) (.ref value 'closing))
+(def (org-named-block-node value) (.ref value 'node))
+(def (org-named-block-name-token value) (.ref value 'name-token))
 
 (def (make-org-inline-markup byte-value id-value node-value)
   (let (value (.o kind: +org-inline-markup-kind+

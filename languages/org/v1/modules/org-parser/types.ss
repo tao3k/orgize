@@ -5,12 +5,13 @@
         (only-in :clan/poo/mop define-type Type. element?)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  block-line?))
-(export +org-event-block-kind+ +org-inline-markup-kind+
+(export +org-event-block-kind+ +org-named-block-kind+ +org-inline-markup-kind+
         +org-event-strategy-kind+
-        OrgEventBlock OrgInlineMarkup OrgEventStrategy
-        org-event-block? org-inline-markup? org-event-strategy?)
+        OrgEventBlock OrgNamedBlock OrgInlineMarkup OrgEventStrategy
+        org-event-block? org-named-block? org-inline-markup? org-event-strategy?)
 
 (def +org-event-block-kind+ 'org-event-block)
+(def +org-named-block-kind+ 'org-named-block)
 (def +org-inline-markup-kind+ 'org-inline-markup)
 (def +org-event-strategy-kind+ 'org-event-strategy)
 
@@ -24,6 +25,27 @@
 
 (define-type (OrgEventBlock @ Type.)
   .element?: event-block-shape?)
+
+(def (named-block-shape? value)
+  (and (object? value)
+       (.slot? value 'kind) (.slot? value 'opening)
+       (.slot? value 'closing) (.slot? value 'node)
+       (.slot? value 'name-token)
+       (eq? (.ref value 'kind) +org-named-block-kind+)
+       (let ((opening (.ref value 'opening))
+             (closing (.ref value 'closing)))
+         (and (string? opening) (string? closing)
+              (> (string-length opening) 0)
+              (> (string-length closing) 0)
+              (every (lambda (character) (< (char->integer character) 128))
+                     (string->list opening))
+              (every (lambda (character) (< (char->integer character) 128))
+                     (string->list closing))))
+       (symbol? (.ref value 'node))
+       (symbol? (.ref value 'name-token))))
+
+(define-type (OrgNamedBlock @ Type.)
+  .element?: named-block-shape?)
 
 (def (inline-markup-shape? value)
   (and (object? value)
@@ -54,5 +76,6 @@
   .element?: event-strategy-shape?)
 
 (def (org-event-block? value) (element? OrgEventBlock value))
+(def (org-named-block? value) (element? OrgNamedBlock value))
 (def (org-inline-markup? value) (element? OrgInlineMarkup value))
 (def (org-event-strategy? value) (element? OrgEventStrategy value))

@@ -29,6 +29,9 @@
                  event-source-header-initial event-source-header-forms)
         (only-in "event-table.ss"
                  table-event-initial table-close-form table-or-element-form)
+        (only-in "event-special-block.ss"
+                 special-event-initial special-block-id special-future-scan
+                 special-open-form special-close-form)
         (only-in "objects.ss"
                  make-org-event-block org-event-block-id org-event-block-rule))
 (export org-event-initial org-event-line-forms org-event-finish-forms
@@ -83,6 +86,20 @@
           ,otherwise))
    `(and (uint-equal? (stack-top container-frames) (uint 0))
          ,(future-close-scan rule ""))
+   container-blocks))
+(def (special-future-condition)
+  (foldr
+   (lambda (parent otherwise)
+     `(or (and (uint-equal? (stack-top container-frames)
+                            (uint ,(org-event-block-id parent)))
+               ,(special-future-scan
+                 (block-line-closing (org-event-block-rule parent))
+                 heading-marker heading-separator))
+          ,otherwise))
+   `(and (or (uint-equal? (stack-top container-frames) (uint 0))
+             (uint-equal? (stack-top container-frames)
+                          (uint ,special-block-id)))
+         ,(special-future-scan "" heading-marker heading-separator))
    container-blocks))
 (def ascii-letter-bytes
   (map char->integer
@@ -305,9 +322,7 @@
           ,fixed-width-close
           ,table-close-form
           (token ,(block-line-end-token rule) start end)
-          (close-frames-while container-frames
-                              (uint-equal? (stack-top container-frames)
-                                           (uint ,id)) 1)
+          (close-frame container-frames 1)
           (set-bool container-closed (bool #t)))
          ,otherwise)))
 
@@ -374,7 +389,11 @@
         ((set-bool container-opened (bool #f)))
         (,@(opaque-open-chain)
          (if (uint-positive? (state active-opaque-block))
-             () (,(headline-form)))))))
+             () (,(special-open-form close-paragraph
+                                     (special-future-condition))
+                 (if (state container-opened)
+                     ((set-bool container-opened (bool #f)))
+                     (,(headline-form)))))))))
 
 (def (non-table-element-form)
   `(if ,comment-line?
@@ -651,6 +670,7 @@
    '((footnote-open #f) (footnote-line-handled #f)
      (footnote-blank-pending #f)
      (footnote-blank-start 0) (footnote-blank-end 0))
+   special-event-initial
    paragraph-event-initial
    event-headline-tags-initial
    event-source-header-initial))
@@ -664,6 +684,8 @@
              (,(property-body-form))
              ((if (state comment-open)
                   ((if ,comment-line? () (,close-comment))) ())
+              ,(special-close-form close-paragraph list-close-all
+                                   fixed-width-close table-close-form)
               ,@(container-close-chain)
               (if (state container-closed)
                   ((set-bool container-closed (bool #f)))
