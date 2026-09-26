@@ -268,6 +268,7 @@ fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
 }
 
 #[test]
+#[ignore = "release performance gate; run explicitly with --release --ignored"]
 fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
     let root = temp_test_dir("orgize-plan-ledger-projection-gate");
     let artifacts = root.join("artifacts").join("org");

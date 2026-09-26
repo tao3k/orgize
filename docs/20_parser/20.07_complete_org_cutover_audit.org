@@ -176,15 +176,26 @@ properties from the same AOT Element graph. The independent Rust plan-ledger
 syntax scanner is removed. A release, 10-sample Criterion probe measured
 12.621–12.773 ms for AOT parsing and Element projection of 2,000 plan-ledger
 shaped documents in memory, excluding filesystem work. The existing 2,000-file
-end-to-end test still enforces its 100-ms budget in the test profile. The
+end-to-end test retains its 100-ms budget as an explicit release-profile gate. The
 display-title AOT function now removes a suffix only when the same Scheme
 event graph projected source-backed tags, so malformed =:bad::= text remains
 in the title. Priority validation and Unicode tag classification still need
 exact parity with the Org Element policy. The added tag projection raised the
 in-memory 2,000-document release scenario to 14.089–14.671 ms; Criterion
 reported a 10.685–13.477% regression against the prior same-machine sample.
-The end-to-end 100-ms gate passes, but this regression remains an optimization
-target before final admission.
+The local release end-to-end 100-ms gate passes, but this regression remains an
+optimization target before final admission.
+
+The first cross-platform CI run of the plan-ledger AOT consumer at =bf895b9=
+failed its 100-ms gate in the unoptimized Cargo test profile on Ubuntu,
+macOS, and Windows (267.814, 118.151, and 191.907 ms respectively). This
+is a real CI admission failure, not a green performance receipt. The 100-ms
+threshold is retained and now runs as an explicit release-profile CI gate,
+alongside the existing release Org query gate. Other debug integration tests
+retain behavioral coverage; the absolute latency assertion is only meaningful
+for the optimized artifact users execute. Final admission still requires
+the release gate to pass on all supported platforms and the measured
+tag-projection regression to be resolved or accepted against a stated budget.
 
 * Ownership boundary
 
