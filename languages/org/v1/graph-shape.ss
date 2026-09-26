@@ -111,6 +111,9 @@
                (field 'InlineBabelInsideHeader "inside-header")
                (field 'InlineBabelArguments "arguments" 'append-or-empty)
                (field 'InlineBabelEndHeader "end-header")))
+   (node 'OrgMacro "object" "macro"
+         (list (field 'MacroName "name")
+               (field 'MacroArguments "arguments" 'append-or-empty)))
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"

@@ -40,6 +40,28 @@
           (OrgHeadline
            (HeadlineLine 0 1) (HeadlineTrivia 1 2)
            (HeadlineTitle 2 13) (HeadlineTrivia 13 14))))))
+    (test-case "Scheme macro Objects retain named and argument spans"
+      (check-org-ast-with parse-org-rowan-events
+        "x {{{title}}} y\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgMacro (MacroDelimiter 2 5) (MacroName 5 10)
+                     (MacroDelimiter 10 13))
+           (TextLine 13 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "{{{issue(42)}}}\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgMacro (MacroDelimiter 0 3) (MacroName 3 8)
+                     (MacroDelimiter 8 9) (MacroArguments 9 11)
+                     (MacroDelimiter 11 15))
+           (TextLine 15 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "{{{9bad}}} {{{broken\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 21))))))
     (test-case "five-dash horizontal rule interrupts a paragraph"
       (check-org-ast-with parse-org-rowan-events
         "before\n-----\nafter\n"

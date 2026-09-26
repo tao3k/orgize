@@ -40,10 +40,15 @@
   (map char->integer
        (string->list
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")))
+(def macro-name-bytes
+  (append inline-word-bytes '(45)))
+(def macro-first-bytes
+  (map char->integer
+       (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
 (def inline-trigger-bytes
   (append (map (lambda (marker)
                  (char->integer (string-ref marker 0)))
-               (list link-open "<<" "\\\\" "@@"))
+               (list link-open "<<" "\\\\" "@@" "{{{"))
           (map car inline-markup-rules)))
 (def inline-right-boundary?
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
@@ -571,7 +576,70 @@
                                  ((set-uint inline-code-mode (uint 0)))))
                             ,(inline-code-second-scan-forms))))))))))))
 
-(def (inline-free-scan-forms)
+(def (macro-events arguments?)
+  (let ((close-end (if arguments?
+                     (pattern-end link-index ")}}}")
+                     (pattern-end link-index "}}}"))))
+    `((token TextLine (state-offset inline-cursor)
+             (state-offset inline-macro-open-at))
+      (start-node OrgMacro)
+      (token MacroDelimiter (state-offset inline-macro-open-at)
+             (state-offset inline-macro-name-start))
+      (token MacroName (state-offset inline-macro-name-start)
+             (state-offset inline-macro-name-end))
+      ,@(if arguments?
+            `((token MacroDelimiter (state-offset inline-macro-name-end)
+                     (state-offset inline-macro-arguments-start))
+              (token MacroArguments (state-offset inline-macro-arguments-start)
+                     ,link-index))
+            '())
+      (token MacroDelimiter
+             ,(if arguments? link-index '(state-offset inline-macro-name-end))
+             ,close-end)
+      (finish-node)
+      (set-uint inline-cursor (offset ,close-end))
+      (set-uint inline-macro-mode (uint 0)))))
+
+(def (macro-name-end-forms)
+  `((if ,(pattern-at? link-index "}}}")
+        ,(macro-events #f)
+        ((if (line-byte-equal? ,link-index 40)
+             ((set-uint inline-macro-arguments-start (offset ,inline-next))
+              (set-uint inline-macro-mode (uint 2)))
+             ((set-uint inline-macro-mode (uint 0))))))))
+
+(def (macro-name-scan-forms)
+  `((if (line-bytes-any-in? ,link-index ,inline-next ,macro-name-bytes)
+        ((set-uint inline-macro-name-end (offset ,inline-next)))
+        ((if (offset-less? (state-offset inline-macro-name-start)
+                           (state-offset inline-macro-name-end))
+             ,(macro-name-end-forms)
+             ((set-uint inline-macro-mode (uint 0))))))))
+
+(def (macro-arguments-scan-forms)
+  `((if (and (line-byte-equal? ,link-index 41)
+             ,(pattern-at? inline-next "}}}"))
+        ,(macro-events #t) ())))
+
+(def (macro-scan-forms)
+  `((if (offset-less? ,link-index (state-offset inline-macro-name-start))
+        ()
+        ((if (uint-equal? (state inline-macro-mode) (uint 1))
+             ,(macro-name-scan-forms)
+             ,(macro-arguments-scan-forms))))))
+
+(def (macro-open-forms)
+  `((if (line-bytes-any-in? ,(pattern-end link-index "{{{")
+                            ,(pattern-end link-index "{{{{")
+                            ,macro-first-bytes)
+        ((set-uint inline-macro-mode (uint 1))
+         (set-uint inline-macro-open-at (offset ,link-index))
+         (set-uint inline-macro-name-start
+                   (offset ,(pattern-end link-index "{{{")))
+         (set-uint inline-macro-name-end
+                   (offset ,(pattern-end link-index "{{{")))) ())))
+
+(def (inline-ordinary-free-scan-forms)
   `((if (and (state inline-code-left-boundary)
              (line-byte-equal? ,link-index 115)
              ,(pattern-at? link-index "src_"))
@@ -595,7 +663,12 @@
                             ,(line-break-events)
                             ,(markup-scan-forms))))))))))))
 
-(def (inline-non-code-scan-forms)
+(def (inline-free-scan-forms)
+  `((if ,(pattern-at? link-index "{{{")
+        ,(macro-open-forms)
+        ,(inline-ordinary-free-scan-forms))))
+
+(def (inline-ordinary-non-code-scan-forms)
   `((if (uint-positive? (state inline-footnote-mode))
         ,(footnote-reference-scan-forms)
         ((if (uint-positive? (state inline-export-mode))
@@ -615,6 +688,11 @@
                              (if (uint-positive? (state inline-markup-kind))
                                  ,(markup-scan-forms)
                                  ,(inline-free-scan-forms))))))))))))))
+
+(def (inline-non-code-scan-forms)
+  `((if (uint-positive? (state inline-macro-mode))
+        ,(macro-scan-forms)
+        ,(inline-ordinary-non-code-scan-forms))))
 
 (def (inline-scan-forms)
   `((if (uint-positive? (state inline-code-mode))
@@ -650,6 +728,7 @@
     (set-uint inline-export-mode (uint 0))
     (set-uint inline-footnote-mode (uint 0))
     (set-uint inline-code-mode (uint 0))
+    (set-uint inline-macro-mode (uint 0))
     (set-bool inline-code-left-boundary (bool #t))
     (set-bool inline-previous-backslash (bool #f))
     (finish-node)))
@@ -683,4 +762,7 @@
     (inline-code-second-start 0) (inline-code-second-end 0)
     (inline-code-has-second #f)
     (inline-code-opens 0) (inline-code-closes 0)
+    (inline-macro-mode 0) (inline-macro-open-at 0)
+    (inline-macro-name-start 0) (inline-macro-name-end 0)
+    (inline-macro-arguments-start 0)
     (inline-previous-backslash #f)))

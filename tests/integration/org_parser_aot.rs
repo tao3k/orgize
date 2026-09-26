@@ -41,6 +41,29 @@ macro_rules! check_org_aot_element {
 }
 
 #[test]
+fn scheme_declared_macro_objects_project_into_rowan_and_graph() {
+    check_org_aot_element!("{{{issue(42)}}}\n", "macro", "name" => "issue");
+    let document =
+        orgize::org_aot::parse_org_aot("{{{issue(42)}}}\n").expect("Scheme-owned Org macro object");
+    let macro_record = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "macro")
+        .expect("macro graph record");
+    assert_eq!(macro_record.field("arguments"), Some("42"));
+    assert_eq!(document.syntax().to_string(), "{{{issue(42)}}}\n");
+    let malformed = orgize::org_aot::parse_org_aot("{{{9bad}}} {{{broken\n")
+        .expect("invalid macros are lossless text");
+    assert!(
+        !malformed
+            .records()
+            .iter()
+            .any(|record| record.kind == "macro")
+    );
+    assert_eq!(malformed.syntax().to_string(), "{{{9bad}}} {{{broken\n");
+}
+
+#[test]
 fn scheme_declared_babel_call_is_not_a_generic_keyword() {
     let source = "#+CALL: build(input=42)\n";
     check_org_aot_element!(source, "babel-call", "value" => "build(input=42)");
