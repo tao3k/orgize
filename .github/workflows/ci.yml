@@ -149,7 +149,6 @@ jobs:
           gerbil build
       - name: Verify Scheme Org parser and Contract
         run: |
-          gxpkg install github.com/tao3k/gerbil-parser@14e0552a6f4b1f681a690a7a9c77b9ba53f87227
           just scheme-test "$GERBIL_PATH/lib" "$GERBIL_PATH/lib"
           generated="$(mktemp)"
           gerbil env gxi languages/org/v1/generate-rowan-event-ir.ss "$generated"
