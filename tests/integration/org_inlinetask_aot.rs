@@ -1,10 +1,39 @@
 //! Scheme-AOT inlinetask Elements and source-backed recovery.
 
-use orgize::org_aot::parse_org_aot;
+use orgize::ParseConfig;
+use orgize::org_aot::{parse_org_aot, parse_org_aot_with_config};
 use orgize::org_element_query::{
     OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryPack, OrgElementQueryRule,
     OrgElementRelation,
 };
+
+#[test]
+fn configured_inlinetask_level_uses_the_scheme_aot_algorithm() {
+    let source = "* Parent\n**** Inline\nBody.\n**** END\n* Next\n";
+    let default = parse_org_aot(source).expect("default AOT parses");
+    assert!(
+        default
+            .records()
+            .iter()
+            .all(|record| record.kind != "inlinetask")
+    );
+
+    let config = ParseConfig {
+        inlinetask_min_level: 4,
+        ..ParseConfig::default()
+    };
+    let configured = parse_org_aot_with_config(source, &config).expect("configured AOT parses");
+    assert_eq!(configured.syntax().to_string(), source);
+    assert_eq!(
+        configured
+            .records()
+            .iter()
+            .filter(|record| record.kind == "inlinetask")
+            .count(),
+        1,
+    );
+    assert!(configured.syntax().to_string().contains("**** END"));
+}
 
 #[test]
 fn closed_inlinetask_projects_element_body_and_next_outline() {

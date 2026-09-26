@@ -23,7 +23,9 @@
         (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
         (only-in "rowan-event-fixture.ss" rowan-event-fixture-json)
         (only-in "rowan-event-parser.ss"
-                 parse-org-rowan-events parse_org_rowan_events))
+                 parse-org-rowan-events
+                 parse-org-rowan-events-with-inlinetask-level
+                 parse_org_rowan_events))
 (export org-v1-rowan-event-parser-test)
 
 (def org-v1-rowan-event-parser-test
@@ -143,6 +145,25 @@
            (HeadlineLine 0 15) (HeadlineTrivia 15 16)
            (HeadlineTitle 16 20) (HeadlineTrivia 20 21)))
          (OrgParagraph (OrgTextLine (TextLine 21 33))))))
+    (test-case "configured inlinetask threshold is Scheme algorithm state"
+      (check-org-ast-with
+       (lambda (source)
+         (parse-org-rowan-events-with-inlinetask-level source 4))
+       "**** Inline\nBody.\n**** END\n"
+       (OrgFile
+        (OrgInlinetask
+         (OrgHeadline
+          (HeadlineLine 0 4) (HeadlineTrivia 4 5)
+          (HeadlineTitle 5 11) (HeadlineTrivia 11 12))
+         (OrgParagraph (OrgTextLine (TextLine 12 18)))
+         (OrgInlinetaskEnd (InlinetaskEndLine 18 27)))))
+      (check-org-ast-with parse-org-rowan-events
+        "**** Inline\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline
+           (HeadlineLine 0 4) (HeadlineTrivia 4 5)
+           (HeadlineTitle 5 11) (HeadlineTrivia 11 12))))))
     (test-case "Scheme macro Objects retain named and argument spans"
       (check-org-ast-with parse-org-rowan-events
         "x {{{title}}} y\n"

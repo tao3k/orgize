@@ -10,6 +10,7 @@ use gerbil_parser_rowan::{
     SyntaxNode, parse_generated_events, project_syntax_graph,
 };
 
+use crate::config::ParseConfig;
 use crate::contract_feature::{
     ContractExecutionError, ContractPack, ContractResult, ContractRule, ContractScopeNodeId,
     evaluate_contract,
@@ -74,7 +75,33 @@ pub enum OrgAotError {
 /// Returns the parser receipt on parse failure, or a projection diagnostic if
 /// the generated graph table is stale or invalid.
 pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
-    let events = generated_context_events::parse_org_rowan_events(source);
+    parse_org_aot_events(
+        source,
+        generated_context_events::parse_org_rowan_events(source),
+    )
+}
+
+/// Parse Org with the same Scheme-generated algorithm and a caller-provided configuration.
+///
+/// # Errors
+///
+/// Returns the parser receipt on parse failure, or a projection diagnostic if
+/// the generated graph table is stale or invalid.
+pub fn parse_org_aot_with_config(
+    source: &str,
+    config: &ParseConfig,
+) -> Result<OrgAotDocument, OrgAotError> {
+    let events = generated_context_events::parse_org_rowan_events_with_parameters(
+        source,
+        config.effective_inlinetask_min_level(),
+    );
+    parse_org_aot_events(source, events)
+}
+
+fn parse_org_aot_events(
+    source: &str,
+    events: Vec<gerbil_parser_rowan::TreeEvent>,
+) -> Result<OrgAotDocument, OrgAotError> {
     let parse = parse_generated_events(
         &grammar::LANGUAGE,
         generated_context_events::PARSER_DIGEST,

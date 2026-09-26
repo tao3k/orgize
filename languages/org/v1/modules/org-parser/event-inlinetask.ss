@@ -15,7 +15,8 @@
     (line-marker-end ,heading-marker ,heading-separator)))
 
 (def inlinetask-start-condition
-  `(uint-greater? ,heading-level (uint ,(- inlinetask-min-level 1))))
+  `(uint-greater? (uint-add ,heading-level (uint 1))
+                  (state inlinetask-min-level)))
 
 (def inlinetask-end-condition
   `(and ,inlinetask-start-condition
@@ -26,7 +27,8 @@
                             (9 10 13 32))))
 
 (def inlinetask-event-initial
-  '((inlinetask-open #f) (inlinetask-pending #f)
+  `((inlinetask-min-level ,inlinetask-min-level)
+    (inlinetask-open #f) (inlinetask-pending #f)
     (inlinetask-body-levels (uint-stack))))
 
 (def (inlinetask-pending-close-form keep-condition)
@@ -37,7 +39,7 @@
   `((start-node OrgInlinetask)
     ,@(headline-line-forms)
     (if (future-heading-title?
-         ,heading-marker ,heading-separator ,inlinetask-min-level "END")
+         ,heading-marker ,heading-separator (state inlinetask-min-level) "END")
         ((set-bool inlinetask-open (bool #t)))
         ((set-bool inlinetask-pending (bool #t))))
     (set-bool after-heading (bool #t))))

@@ -6,4 +6,4 @@ publish = false
 license = "MIT"
 
 [dependencies]
-gerbil-scheme-rust-ir = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "7dc456d59bbe310fe3a41fd156c9fdc47c42ac84", version = "0.1.0" }
+gerbil-scheme-rust-ir = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "3b7cb8c2ed2549a73a1d3fa25e0fd31614ab3542", version = "0.1.0" }

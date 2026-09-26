@@ -24,7 +24,8 @@
         org-event-helper-descriptor
         make-org-event-strategy org-event-strategy-root
         org-event-strategy-initial org-event-strategy-line-forms
-        org-event-strategy-finish-forms org-event-strategy-helpers)
+        org-event-strategy-finish-forms org-event-strategy-helpers
+        org-event-strategy-parameters)
 
 (def (make-org-event-block id-value rule-value)
   (let (value (.o kind: +org-event-block-kind+
@@ -87,12 +88,14 @@
         (org-event-helper-forms value)))
 
 (def (make-org-event-strategy root-value initial-value line-forms-value
-                              finish-forms-value helpers-value)
+                              finish-forms-value helpers-value
+                              (parameters-value '()))
   (let (value (.o kind: +org-event-strategy-kind+
                   root: root-value initial: initial-value
                   line-forms: line-forms-value
                   finish-forms: finish-forms-value
-                  helpers: helpers-value))
+                  helpers: helpers-value
+                  parameters: parameters-value))
     (unless (org-event-strategy? value)
       (error "invalid Org event strategy" value))
     value))
@@ -102,3 +105,4 @@
 (def (org-event-strategy-line-forms value) (.ref value 'line-forms))
 (def (org-event-strategy-finish-forms value) (.ref value 'finish-forms))
 (def (org-event-strategy-helpers value) (.ref value 'helpers))
+(def (org-event-strategy-parameters value) (.ref value 'parameters))

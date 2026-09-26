@@ -8,17 +8,19 @@
                  org-event-strategy-root org-event-strategy-initial
                  org-event-strategy-line-forms
                  org-event-strategy-finish-forms
-                 org-event-strategy-helpers))
+                 org-event-strategy-helpers
+                 org-event-strategy-parameters))
 (export run-org-event-strategy org-event-strategy-ir-json)
 
-(def (run-org-event-strategy strategy source)
+(def (run-org-event-strategy strategy source (overrides '()))
   (run-event-fold source
                   (org-event-strategy-root strategy)
                   (org-event-strategy-initial strategy)
                   (org-event-strategy-line-forms strategy)
                   (org-event-strategy-finish-forms strategy)
                   (map org-event-helper-descriptor
-                       (org-event-strategy-helpers strategy))))
+                       (org-event-strategy-helpers strategy))
+                  overrides))
 
 (def (org-event-strategy-ir-json strategy function-name grammar)
   (event-fold-ir-json function-name grammar
@@ -27,4 +29,5 @@
                       (org-event-strategy-line-forms strategy)
                       (org-event-strategy-finish-forms strategy)
                       (map org-event-helper-descriptor
-                           (org-event-strategy-helpers strategy))))
+                           (org-event-strategy-helpers strategy))
+                      (org-event-strategy-parameters strategy)))
