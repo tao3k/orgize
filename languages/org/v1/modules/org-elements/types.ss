@@ -50,7 +50,8 @@
 
 (def (org-element-field? rule name)
   (and rule
-       (or (and (equal? (org-graph-node-label rule) "headline")
+       (or (and (member (org-graph-node-label rule)
+                        '("headline" "inlinetask"))
                 (member name org-v1-headline-extra-fields))
            (let loop ((fields (org-graph-node-fields rule)))
              (cond

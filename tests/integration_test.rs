@@ -98,6 +98,8 @@ mod org_headline_function_aot;
 mod org_inline_code_aot;
 #[path = "integration/org_inline_object_aot.rs"]
 mod org_inline_object_aot;
+#[path = "integration/org_inlinetask_aot.rs"]
+mod org_inlinetask_aot;
 #[path = "integration/org_list_aot.rs"]
 mod org_list_aot;
 #[path = "integration/org_list_fields.rs"]

@@ -18,8 +18,13 @@
         (only-in "event-headline-tags.ss"
                  event-headline-tags-initial)
         (only-in "event-headline.ss"
-                 headline-form heading-marker heading-separator
+                 headline-form planning-start-condition
+                 heading-marker heading-separator
                  ascii-ci-pattern-at offset-after)
+        (only-in "event-inlinetask.ss"
+                 inlinetask-event-initial inlinetask-start-condition
+                 inlinetask-end-condition inlinetask-open-forms
+                 inlinetask-end-forms inlinetask-pending-close-form)
         (only-in "event-source-header.ss"
                  event-source-header-initial event-source-header-forms)
         (only-in "event-table.ss"
@@ -169,12 +174,15 @@
         (set-bool property-drawer-open (bool #f)))
        (,(property-line-form))))
 
+(def property-open-condition
+  `(and ,(ascii-ci-pattern-at property-indent property-open)
+        (line-bytes-all-in?
+         ,(offset-after property-indent (string-length property-open))
+         end (9 10 13 32))
+        ,(future-close-condition property-rule)))
+
 (def (property-open-form otherwise)
-  `(if (and ,(ascii-ci-pattern-at property-indent property-open)
-            (line-bytes-all-in?
-             ,(offset-after property-indent (string-length property-open))
-             end (9 10 13 32))
-            ,(future-close-condition property-rule))
+  `(if ,property-open-condition
        (,close-paragraph (start-node OrgPropertyDrawer)
         (token DrawerBeginLine start end)
         (set-bool after-heading (bool #f))
@@ -523,7 +531,14 @@
              ,table-close-form
              ,fixed-width-close
              ,close-comment))
-        ,(headline-form))
+        (if (and (state inlinetask-open) ,inlinetask-end-condition)
+            ,(cons close-paragraph (inlinetask-end-forms))
+            ((if (and (not (state inlinetask-open))
+                      ,inlinetask-start-condition)
+                 ,(cons close-paragraph (inlinetask-open-forms))
+                 ((if (state inlinetask-open)
+                      (,(headline-form 'inlinetask-body-levels))
+                      (,(headline-form))))))))
        ,(footnote-or-element-forms)))
 
 (def org-event-initial
@@ -547,12 +562,19 @@
    latex-environment-initial
    paragraph-event-initial
    event-headline-tags-initial
+   inlinetask-event-initial
    event-source-header-initial))
 
 (def org-event-helpers paragraph-event-helpers)
 
+(def inlinetask-pending-keep-condition
+  `(or (state property-drawer-open)
+       (and (state after-heading) ,planning-start-condition)
+       ,property-open-condition))
+
 (def org-event-line-forms
-  `((if (state latex-open)
+  `(,(inlinetask-pending-close-form inlinetask-pending-keep-condition)
+    (if (state latex-open)
         (,latex-body-form)
         ((if (uint-positive? (state active-opaque-block))
              (,(opaque-body-chain))
@@ -582,4 +604,7 @@
         ((if (state footnote-blank-pending)
              ,(footnote-pending-trivia #f) ())
          (finish-node)) ())
+    (close-all inlinetask-body-levels)
+    (if (or (state inlinetask-open) (state inlinetask-pending))
+        ((finish-node)) ())
     (close-all open-levels)))

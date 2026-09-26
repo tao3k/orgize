@@ -10,7 +10,7 @@
                  todo-keyword-matches-rust
                  todo-keyword-from-directives-rust
                  headline-content-after-todo-rust
-                 headline-display-title-rust))
+                 headline-display-title-rust priority-token-rust))
 
 (def arguments (command-line))
 (unless (> (length arguments) 2)
@@ -27,4 +27,5 @@
        (cons "todo_keyword_matches_p.ir.json" todo-keyword-matches-rust)
        (cons "todo_keyword_from_directives.ir.json" todo-keyword-from-directives-rust)
        (cons "headline_content_after_todo.ir.json" headline-content-after-todo-rust)
+       (cons "priority_token_p.ir.json" priority-token-rust)
        (cons "headline_display_title.ir.json" headline-display-title-rust)))

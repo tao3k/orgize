@@ -10,7 +10,8 @@
         (only-in "event-paragraph.ss"
                  paragraph-close-form paragraph-line-form)
         (only-in "event-headline-tags.ss" event-headline-title-forms))
-(export headline-form heading-marker heading-separator
+(export headline-form headline-line-forms planning-start-condition
+        heading-marker heading-separator
         ascii-ci-pattern-at offset-after)
 
 (def (key-line-by-node node)
@@ -128,6 +129,14 @@
   (foldr (lambda (key next) (planning-following-key-form key next))
          '() (key-line-keys planning-rule)))
 
+(def planning-start-condition
+  (cons 'or
+        (map (lambda (key)
+               `(line-starts-with-ascii-ci
+                 ,(string-append (key-line-prefix planning-rule) key
+                                 (key-line-separator planning-rule))))
+             (key-line-keys planning-rule))))
+
 (def (planning-first-key-form key otherwise)
   (let* ((marker (string-append key (key-line-separator planning-rule)))
          (key-end `(line-prefix-end ,key))
@@ -166,33 +175,36 @@
         (,(planning-first-key-chain (keyword-form)))
         (,(keyword-form)))))
 
-(def (headline-form)
+(def (headline-line-forms)
+  `((start-node OrgHeadline)
+    (token HeadlineLine start
+           (line-marker-end ,heading-marker ,heading-separator))
+    (token HeadlineTrivia
+           (line-marker-end ,heading-marker ,heading-separator)
+           (line-skip-horizontal
+            (line-marker-end ,heading-marker ,heading-separator)))
+    ,@(event-headline-title-forms
+       `(line-skip-horizontal
+         (line-marker-end ,heading-marker ,heading-separator))
+       `(line-trim-end-from
+         (line-skip-horizontal
+          (line-marker-end ,heading-marker ,heading-separator))))
+    (token HeadlineTrivia
+           (line-trim-end-from
+            (line-skip-horizontal
+             (line-marker-end ,heading-marker ,heading-separator))) end)
+    (finish-node)))
+
+(def (headline-form (levels 'open-levels))
   `(if (and (uint-equal? (stack-top container-frames) (uint 0))
             (uint-positive? (line-marker-level ,heading-marker ,heading-separator)))
        (,close-paragraph
-        (close-through open-levels
+        (close-through ,levels
                        (line-marker-level ,heading-marker ,heading-separator))
-        (open-level open-levels
+        (open-level ,levels
                     (line-marker-level ,heading-marker ,heading-separator)
                     OrgSection)
-        (start-node OrgHeadline)
-        (token HeadlineLine start
-               (line-marker-end ,heading-marker ,heading-separator))
-        (token HeadlineTrivia
-               (line-marker-end ,heading-marker ,heading-separator)
-               (line-skip-horizontal
-                (line-marker-end ,heading-marker ,heading-separator)))
-        ,@(event-headline-title-forms
-           `(line-skip-horizontal
-             (line-marker-end ,heading-marker ,heading-separator))
-           `(line-trim-end-from
-             (line-skip-horizontal
-              (line-marker-end ,heading-marker ,heading-separator))))
-        (token HeadlineTrivia
-               (line-trim-end-from
-                (line-skip-horizontal
-                 (line-marker-end ,heading-marker ,heading-separator))) end)
-        (finish-node)
+        ,@(headline-line-forms)
         (set-bool after-heading (bool #t)))
        (,(context-key-form)
         (set-bool after-heading (bool #f)))))

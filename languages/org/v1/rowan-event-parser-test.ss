@@ -121,6 +121,28 @@
           (OrgHeadline
            (HeadlineLine 0 1) (HeadlineTrivia 1 2)
            (HeadlineTitle 2 13) (HeadlineTrivia 13 14))))))
+    (test-case "inlinetask Element keeps its END and leaves following outline intact"
+      (check-org-ast-with parse-org-rowan-events
+        "*************** TODO Inline\nBody.\n*************** END\n* Next\n"
+        (OrgFile
+         (OrgInlinetask
+          (OrgHeadline
+           (HeadlineLine 0 15) (HeadlineTrivia 15 16)
+           (HeadlineTitle 16 27) (HeadlineTrivia 27 28))
+          (OrgParagraph (OrgTextLine (TextLine 28 34)))
+          (OrgInlinetaskEnd (InlinetaskEndLine 34 54)))
+         (OrgSection
+          (OrgHeadline
+           (HeadlineLine 54 55) (HeadlineTrivia 55 56)
+           (HeadlineTitle 56 60) (HeadlineTrivia 60 61)))))
+      (check-org-ast-with parse-org-rowan-events
+        "*************** Note\nAfter text.\n"
+        (OrgFile
+         (OrgInlinetask
+          (OrgHeadline
+           (HeadlineLine 0 15) (HeadlineTrivia 15 16)
+           (HeadlineTitle 16 20) (HeadlineTrivia 20 21)))
+         (OrgParagraph (OrgTextLine (TextLine 21 33))))))
     (test-case "Scheme macro Objects retain named and argument spans"
       (check-org-ast-with parse-org-rowan-events
         "x {{{title}}} y\n"
@@ -1308,4 +1330,4 @@
         (check (hash-ref ir "schema")
                => "gerbil-scheme-rust.event-function-ir.v1")
         (check (hash-ref ir "name") => "parse_org_rowan_events")
-        (check (vector-length (hash-ref ir "line")) => 1)))))
+        (check (vector-length (hash-ref ir "line")) => 2)))))

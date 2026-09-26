@@ -13,7 +13,8 @@ The document-query index now projects facts from that Scheme-AOT Element
 graph rather than parsing source again through =Org::parse=. Its headline
 display-title operation is also Scheme-authored and AOT-compiled. The index
 still has Org-specific Rust projections for list, table, and item
-facts; those properties, plus exact priority/tag validation, are not yet
+facts; those properties, plus file-local priority bounds and exact tag
+classification, are not yet
 admitted as fully Scheme-owned semantics.
 
 List item counter, checkbox, and descriptive tag spans now originate in the
@@ -44,12 +45,33 @@ current audit reports:
 | Public handwritten Rust CST | 32 distinct node kinds in the fixture |
 | Scheme event-AOT CST | 24 distinct node kinds in the fixture |
 | Event graph fixture checks | Source roundtrip, parent-child links, source ranges, representative Elements/Objects and recovery are checked directly against Scheme AOT |
-| Catalog Elements not projected as typed graph kinds | 1 |
+| Catalog Elements not projected as typed graph kinds | 0 |
 | Catalog Objects not projected as typed graph kinds | 0 |
 
-The remaining missing Element is =inlinetask=; its recognition is conditional
-on the Org inlinetask extension and a configurable minimum level, not an
-unconditional 15-star heading rewrite. All 24 Object names have typed graph
+The Scheme event graph now projects =inlinetask= at the default 15-star
+threshold, including a source-backed =END= boundary, nested content, and
+recovery when no end line exists. Its minimum level is still a fixed Scheme
+declaration in the AOT function; public =ParseConfig.inlinetask_min_level=
+cannot yet drive it. An unclosed task now has a focused AOT fixture proving
+planning/property ownership and recovery before the following paragraph;
+nested inline tasks and configurable thresholds still need parity fixtures.
+The AOT Element query fixture also verifies that an inlinetask inherits a
+file-local =#+TODO:= vocabulary without repeating the custom keyword in the
+query implementation.
+The generic future-heading predicate is
+implemented locally in gerbil-parser and gerbil-scheme-rust, but those
+dependency revisions are not yet published. A serial, 10-sample local release
+probe of 10,000 unclosed inlinetasks measured 9.9959--14.590 ms for AOT
+events, Rowan construction and graph projection; its wide interval is an
+observation, not a regression or final performance admission. A later
+same-machine A/B probe found 2,000-document parse intervals of 17.925--21.757 ms
+on the preceding binary and 22.743--27.793 ms on the inlinetask binary,
+while both binaries' 10,000 plain-line results also inflated to roughly
+27--37 ms against an earlier 4.5 ms baseline. The machine state makes this
+insufficient for a stable regression verdict; performance admission remains
+open. A separate 10-sample parse-plus-headline-title run measured
+21.033--23.727 ms for 2,000 documents, likewise only observational.
+All 24 Object names have typed graph
 projections, but typed-name coverage does not imply complete context,
 restriction, property or public-API parity. Scheme now recognizes =footnote-definition= and
 =footnote-reference= with source-backed labels and inline definitions;
@@ -196,7 +218,10 @@ shaped documents in memory, excluding filesystem work. The existing 2,000-file
 end-to-end test retains its 100-ms budget as an explicit release-profile gate. The
 display-title AOT function now removes a suffix only when the same Scheme
 event graph projected source-backed tags, so malformed =:bad::= text remains
-in the title. Priority validation and Unicode tag classification still need
+in the title. A shared Scheme pure function now validates priority cookies
+against uppercase =A-Z= or decimal =0-64= before AOT display-title removal;
+these lexical bounds follow the [[https://orgmode.org/manual/Priorities.html][Org manual's priority syntax]].
+file-local =#+PRIORITIES:= bounds and Unicode tag classification still need
 exact parity with the Org Element policy. The added tag projection raised the
 in-memory 2,000-document release scenario to 14.089–14.671 ms; Criterion
 reported a 10.685–13.477% regression against the prior same-machine sample.

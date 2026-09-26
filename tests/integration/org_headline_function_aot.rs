@@ -4,6 +4,7 @@ include!(concat!(env!("OUT_DIR"), "/todo_directive_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/todo_state_from_directives.rs"));
 include!(concat!(env!("OUT_DIR"), "/todo_keyword_from_directives.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_content_after_todo.rs"));
+include!(concat!(env!("OUT_DIR"), "/priority_token_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_display_title.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_image_link_p.rs"));
 
@@ -81,6 +82,20 @@ fn scheme_headline_content_aot_preserves_remaining_text() {
 
 #[test]
 fn scheme_headline_display_title_aot_projects_decorations() {
+    macro_rules! check_priority_token {
+        ($($token:expr => $expected:expr),+ $(,)?) => {
+            $(assert_eq!(priority_token_p($token), $expected, "priority token: {:?}", $token);)+
+        };
+    }
+    check_priority_token!(
+        "[#A]" => true,
+        "[#064]" => true,
+        "[#65]" => false,
+        "[#+1]" => false,
+        "[#a]" => false,
+        "[#É]" => false,
+        "[#A]junk]" => false,
+    );
     macro_rules! check_display_title {
         ($($content:expr, $has_tags:expr => $expected:expr),+ $(,)?) => {
             $(
@@ -96,6 +111,8 @@ fn scheme_headline_display_title_aot_projects_decorations() {
         "Task :work:sdd:", true => "Task",
         "Task", false => "Task",
         "Plan :bad::", false => "Plan :bad::",
+        "[#AB] Plan", false => "[#AB] Plan",
+        "[#65] Plan", false => "[#65] Plan",
     );
 }
 

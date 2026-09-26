@@ -142,3 +142,31 @@ fn scheme_headline_properties_are_stable_across_repeated_queries() {
         );
     }
 }
+
+#[test]
+fn scheme_priority_cookie_validation_preserves_malformed_headlines() {
+    macro_rules! check_display_title {
+        ($($source:expr => $expected:expr),+ $(,)?) => {
+            $(
+                let source = $source;
+                let document = orgize::org_aot::parse_org_aot(source)
+                    .expect("Scheme priority headline parses");
+                assert_eq!(document.syntax().to_string(), source);
+                let headline = document.records().iter()
+                    .find(|record| record.kind == "headline")
+                    .expect("headline Element");
+                assert_eq!(document.headline_display_title(headline.id).as_deref(),
+                           Some($expected), "source: {source:?}");
+            )+
+        };
+    }
+    check_display_title!(
+        "* [#A] Work\n" => "Work",
+        "* [#64] Work\n" => "Work",
+        "* [#65] Work\n" => "[#65] Work",
+        "* [#a] Work\n" => "[#a] Work",
+        "* [#É] Work\n" => "[#É] Work",
+        "* [#AB] Work\n" => "[#AB] Work",
+        "* [#A]junk] Work\n" => "[#A]junk] Work",
+    );
+}

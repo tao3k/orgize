@@ -21,6 +21,7 @@
                  headline-content-after-todo
                  headline-content-after-todo-rust
                  headline-display-title headline-display-title-rust
+                 priority-token? priority-token-rust
                  todo-keyword-matches? todo-keyword-matches-rust)
         (only-in "objects.ss"
                  make-org-headline-properties org-headline-property-field)
@@ -65,7 +66,9 @@
          (.o id: 6 parent: 0 kind: "headline"
              title: "WAIT Review")
          (.o id: 7 parent: 0 kind: "headline"
-             title: "WAIT Audit"))
+             title: "WAIT Audit")
+         (.o id: 8 parent: 2 kind: "inlinetask"
+             title: "WAIT Inline :work:"))
    (lambda (record) (.ref record 'id))
    (lambda (record) (.ref record 'parent))
    (lambda (record) (.ref record 'kind))
@@ -189,11 +192,23 @@
        headline-content-after-todo-rust 'headline_content_after_todo
        "languages/org/v1/modules/org-elements/generated/headline_content_after_todo.ir.json")
       (check-org-headline-ir
+       priority-token-rust 'priority_token_p
+       "languages/org/v1/modules/org-elements/generated/priority_token_p.ir.json")
+      (check-org-headline-ir
        headline-display-title-rust 'headline_display_title
        "languages/org/v1/modules/org-elements/generated/headline_display_title.ir.json")
+      (check (priority-token? "[#A]") => #t)
+      (check (priority-token? "[#064]") => #t)
+      (check (priority-token? "[#65]") => #f)
+      (check (priority-token? "[#+1]") => #f)
+      (check (priority-token? "[#a]") => #f)
+      (check (priority-token? "[#É]") => #f)
+      (check (priority-token? "[#A]junk]") => #f)
       (check (headline-display-title
               "[#A] Parent :work:urgent:" #t)
              => "Parent")
+      (check (headline-display-title "[#AB] Plan" #f) => "[#AB] Plan")
+      (check (headline-display-title "[#65] Plan" #f) => "[#65] Plan")
       (check (headline-display-title "Review" #f) => "Review")
       (check (headline-display-title "Plan :bad::" #f)
              => "Plan :bad::")
@@ -225,7 +240,9 @@
              (parent (car records))
              (child (cadr records))
              (plain (caddr records))
-             (tag-only (cadddr records)))
+             (tag-only (cadddr records))
+             (inline (car (org-element-map context "inlinetask"
+                                           (lambda (record) #t)))))
         (check-org-headline-properties
          context parent "WAIT [#A] Parent :work:urgent:"
          "Parent" "WAIT" "todo" "A"
@@ -239,6 +256,9 @@
          #f #f #f '())
         (check-org-headline-properties
          context tag-only "WAIT :only:" "" "WAIT" "todo" #f '("only"))
+        (check-org-headline-properties
+         context inline "WAIT Inline :work:"
+         "Inline" "WAIT" "todo" #f '("work"))
         (check (org-element-lineage? context 2 3) => #t)
         (check-org-element-selection
          (org-elements headline (property todo-keyword "WAIT"))
@@ -252,4 +272,9 @@
          (org-elements headline (property todo-type "done")
                        (child-of scope))
          context 2 (list 2)
-         (lambda (record) (.ref record 'id)) (list 3))))))
+         (lambda (record) (.ref record 'id)) (list 3))
+        (check-org-element-selection
+         (org-elements inlinetask (property todo-type "todo")
+                       (child-of scope))
+         context 2 (list 2)
+         (lambda (record) (.ref record 'id)) (list 8))))))

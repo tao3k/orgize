@@ -107,7 +107,7 @@ fn document_from_parse(parse: Parse) -> Result<OrgAotDocument, OrgAotError> {
         .map(|record| {
             let title = record
                 .field("title")
-                .filter(|_| record.kind == "headline")?;
+                .filter(|_| matches!(record.kind, "headline" | "inlinetask"))?;
             let todo_type =
                 match headline_functions::todo_state_from_directives(title, &todo_directives) {
                     "" => None,

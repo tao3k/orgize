@@ -168,7 +168,10 @@
    (PlanningTrivia token (text))
    (ClockKey token (text))
    (ClockValue token (text))
-   (ClockTrivia token (text)))
+   (ClockTrivia token (text))
+   (OrgInlinetask node (heading element end))
+   (OrgInlinetaskEnd node (line))
+   (InlinetaskEndLine token (text)))
   (terminals
    (headline HeadlineLine)
    (block-begin BlockBeginLine)

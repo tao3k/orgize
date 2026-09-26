@@ -166,6 +166,9 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "ClockKey", category: KindCategory::Token },
     KindSpec { name: "ClockValue", category: KindCategory::Token },
     KindSpec { name: "ClockTrivia", category: KindCategory::Token },
+    KindSpec { name: "OrgInlinetask", category: KindCategory::Node },
+    KindSpec { name: "OrgInlinetaskEnd", category: KindCategory::Node },
+    KindSpec { name: "InlinetaskEndLine", category: KindCategory::Token },
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
@@ -347,7 +350,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:261cdd02042447120bd49856acdb48376f6d733599e3b6f68305e199f41621aa",
+    grammar_digest: "sha256:1524c74659c5dc826e66a8ee1ec32d0ba3c4e13ad6fb95426008e25013608986",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

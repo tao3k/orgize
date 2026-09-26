@@ -37,9 +37,9 @@ fn admit_rule(rule: &OrgElementQueryRule) -> Result<(), OrgElementQueryError> {
                     return Err(OrgElementQueryError::UnsupportedField);
                 }
                 "todo-keyword"
-                    if node.kind == "headline"
+                    if matches!(node.kind, "headline" | "inlinetask")
                         && property.matcher == OrgElementFieldMatch::Exact => {}
-                "todo-type" | "source-title" if node.kind == "headline" => {}
+                "todo-type" | "source-title" if matches!(node.kind, "headline" | "inlinetask") => {}
                 name if node.fields.iter().any(|field| field.name == name) => {}
                 _ => return Err(OrgElementQueryError::InvalidRule),
             }
@@ -60,7 +60,9 @@ fn property_matches(
     match property.name {
         "todo-type" => document.headline_todo_type(record.id).is_some_and(matches),
         "todo-keyword" => document.headline_todo_keyword_matches(record.id, property.value),
-        "source-title" if record.kind == "headline" => record.field("title").is_some_and(matches),
+        "source-title" if matches!(record.kind, "headline" | "inlinetask") => {
+            record.field("title").is_some_and(matches)
+        }
         name => record.values(name).any(matches),
     }
 }

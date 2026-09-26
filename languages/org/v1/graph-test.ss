@@ -37,7 +37,8 @@
       (let (nodes (graph-projection-nodes org-v1-graph-projection))
         (check (graph-projection? org-v1-graph-projection) => #t)
         (check (map graph-node-syntax-kind nodes)
-               => '(OrgFile OrgSection OrgPropertyDrawer OrgDrawer OrgParagraph
+               => '(OrgFile OrgSection OrgInlinetask
+                            OrgPropertyDrawer OrgDrawer OrgParagraph
                             OrgFootnoteDefinition
                             OrgComment OrgDiarySexp
                             OrgHorizontalRule OrgFixedWidth
@@ -60,7 +61,8 @@
                             OrgSubscript OrgSuperscript
                             OrgStrikeThrough))
         (check (map graph-node-label nodes)
-               => '("org-data" "headline" "property-drawer" "drawer"
+               => '("org-data" "headline" "inlinetask"
+                                "property-drawer" "drawer"
                                 "paragraph" "footnote-definition" "comment" "diary-sexp"
                                 "horizontal-rule" "fixed-width"
                                 "keyword" "babel-call"

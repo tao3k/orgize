@@ -8,7 +8,8 @@
                  string-after string-first-word
                  string-rest-after-first-word string-last-word
                  string-before-last-word string-prefix? string-suffix?
-                 string-words)
+                 string-words string-single-ascii-uppercase?
+                 string-unsigned-at-most?)
         (only-in "types.ss" org-element-graph-view?)
         (only-in "objects.ss"
                  make-org-element-graph-view
@@ -22,6 +23,7 @@
         todo-keyword-from-directives todo-keyword-from-directives-rust
         headline-content-after-todo headline-content-after-todo-rust
         headline-display-title headline-display-title-rust
+        priority-token? priority-token-rust
         todo-keyword-matches? todo-keyword-matches-rust)
 
 (def (split-first value)
@@ -93,18 +95,28 @@
       (string-trim title)
       (string-rest-after-first-word title))))
 
+(define-rust-pure priority-token? priority-token-rust
+  ((word "&str")) "bool"
+  (let* ((after-prefix (string-after word "[#"))
+         (inner (string-before after-prefix "]")))
+    (and (string-prefix? word "[#")
+         (string-suffix? word "]")
+         (equal? (string-after after-prefix "]") "")
+         (or (string-single-ascii-uppercase? inner)
+             (string-unsigned-at-most? inner 64)))))
+
 (define-rust-pure headline-display-title headline-display-title-rust
   ((content "&str") (has-tags "bool")) "String"
-  (let* ((trimmed (string-trim content))
-         (first (string-first-word trimmed))
-         (without-priority
-          (if (and (string-prefix? first "[#")
-                   (string-suffix? first "]"))
-            (string-rest-after-first-word trimmed)
-            trimmed)))
-    (if has-tags
-      (string-before-last-word without-priority)
-      (string-trim without-priority))))
+  (using ((priority-token? "&str"))
+    (let* ((trimmed (string-trim content))
+           (first (string-first-word trimmed))
+           (without-priority
+            (if (priority-token? first)
+              (string-rest-after-first-word trimmed)
+              trimmed)))
+      (if has-tags
+        (string-before-last-word without-priority)
+        (string-trim without-priority)))))
 
 ;; A query checks the source keyword only after the same Scheme-owned state
 ;; algorithm admits it under file-local declarations. The dependency call is
@@ -128,18 +140,6 @@
         (if (and (string? key) (todo-directive? key) (string? value))
           (loop (cdr rest) (cons value directives))
           (loop (cdr rest) directives))))))
-
-(def (priority-token? word)
-  (let (size (string-length word))
-    (and (>= size 4)
-         (char=? (string-ref word 0) #\[)
-         (char=? (string-ref word 1) #\#)
-         (char=? (string-ref word (- size 1)) #\])
-         (let (inner (substring word 2 (- size 1)))
-           (or (and (= (string-length inner) 1)
-                    (char-alphabetic? (string-ref inner 0)))
-               (let (number (string->number inner))
-                 (and (integer? number) (<= 0 number 64))))))))
 
 (def (tag-char? char)
   (or (char-alphabetic? char) (char-numeric? char)
@@ -192,7 +192,7 @@
          (headlines (make-hash-table)))
     (for-each
      (lambda (record)
-       (when (equal? (kind-of record) "headline")
+       (when (member (kind-of record) '("headline" "inlinetask"))
          (let (title (field-of record "title"))
            (when (string? title)
              (hash-put! headlines (id-of record)

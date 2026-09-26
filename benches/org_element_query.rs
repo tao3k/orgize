@@ -21,6 +21,14 @@ fn task_source() -> String {
     source
 }
 
+fn inlinetask_source() -> String {
+    let mut source = String::with_capacity(300_000);
+    for _ in 0..10_000 {
+        source.push_str("*************** TODO Inline\n");
+    }
+    source
+}
+
 fn table_source() -> String {
     let mut source = String::with_capacity(220_000);
     source.push_str("* Table\n");
@@ -240,6 +248,25 @@ fn bench_org_element_query(c: &mut Criterion) {
     aot_group.finish();
 }
 
+fn bench_org_inlinetask_aot(c: &mut Criterion) {
+    let source = inlinetask_source();
+    let document = parse_org_aot(&source).expect("benchmark inlinetasks parse");
+    assert_eq!(
+        document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "inlinetask")
+            .count(),
+        10_000
+    );
+    let mut group = c.benchmark_group("OrgSchemeInlinetaskAot");
+    group.throughput(Throughput::Elements(10_000));
+    group.bench_function("parse/10k-unclosed-inlinetasks", |b| {
+        b.iter(|| black_box(parse_org_aot(black_box(&source)).unwrap()))
+    });
+    group.finish();
+}
+
 fn bench_org_table_rows(c: &mut Criterion) {
     let source = table_source();
     let structural = parse_org_aot(&source).expect("structural table benchmark parses");
@@ -336,6 +363,19 @@ fn bench_org_plan_ledgers(c: &mut Criterion) {
             }
         })
     });
+    group.bench_function("aot+headline-title/2k-documents", |b| {
+        b.iter(|| {
+            for source in &sources {
+                let document = parse_org_aot(black_box(source)).unwrap();
+                let headline = document
+                    .records()
+                    .iter()
+                    .find(|record| record.kind == "headline")
+                    .expect("plan ledger headline");
+                black_box(document.headline_display_title(headline.id));
+            }
+        })
+    });
     group.finish();
 }
 
@@ -394,6 +434,7 @@ fn bench_org_nested_lists(c: &mut Criterion) {
 criterion_group!(
     benches,
     bench_org_element_query,
+    bench_org_inlinetask_aot,
     bench_org_table_rows,
     bench_org_nested_lists,
     bench_org_source_headers,

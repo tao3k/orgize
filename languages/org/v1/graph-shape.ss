@@ -41,6 +41,12 @@
                (field 'HeadlineTagValue "title")
                (field 'HeadlineTagTrivia "title")
                (field 'HeadlineTagValue "tag" 'each)))
+   (node 'OrgInlinetask "element" "inlinetask"
+         (list (field 'HeadlineLine "markers")
+               (field 'HeadlineTitle "title")
+               (field 'HeadlineTagValue "title")
+               (field 'HeadlineTagTrivia "title")
+               (field 'HeadlineTagValue "tag" 'each)))
    (node 'OrgPropertyDrawer "element" "property-drawer" '())
    (node 'OrgDrawer "element" "drawer"
          (list (field 'DrawerName "name")))

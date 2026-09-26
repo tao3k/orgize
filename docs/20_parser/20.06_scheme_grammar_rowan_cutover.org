@@ -35,7 +35,8 @@ graph/roundtrip fixtures verify this path.
 
 =modules/org-elements/catalog.ss= owns the Element/Object inventory and
 =graph-shape.ss= owns source-backed projection fields. All catalog Object
-names have typed graph projections, but full context, malformed-input,
+names and the default-threshold =inlinetask= Element have typed graph
+projections, but full context, configurable inlinetask threshold, malformed-input,
 configuration, and public AST parity are not yet admitted. The public
 =Org::parse= still calls the handwritten Rust parser and must be replaced.
 
