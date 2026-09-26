@@ -31,7 +31,9 @@
                  headline-form heading-marker heading-separator
                  ascii-ci-pattern-at offset-after)
         (only-in "event-source-header.ss"
-                 event-source-header-initial event-source-header-forms))
+                 event-source-header-initial event-source-header-forms)
+        (only-in "objects.ss"
+                 make-org-event-block org-event-block-id org-event-block-rule))
 (export org-event-initial org-event-line-forms org-event-finish-forms
         org-event-helpers)
 
@@ -52,7 +54,7 @@
 (def (numbered-blocks names)
   (let loop ((rest names) (id 1))
     (if (null? rest) '()
-      (cons (cons id (block-by-node (car rest)))
+      (cons (make-org-event-block id (block-by-node (car rest)))
             (loop (cdr rest) (+ id 1))))))
 
 (def opaque-blocks
@@ -81,8 +83,9 @@
   (foldr
    (lambda (parent otherwise)
      `(or (and (uint-equal? (stack-top container-frames)
-                            (uint ,(car parent)))
-               ,(future-close-scan rule (block-line-closing (cdr parent))))
+                            (uint ,(org-event-block-id parent)))
+               ,(future-close-scan
+                 rule (block-line-closing (org-event-block-rule parent))))
           ,otherwise))
    `(and (uint-equal? (stack-top container-frames) (uint 0))
          ,(future-close-scan rule ""))
@@ -178,7 +181,8 @@
               ((token ,trivia-token (line-prefix-end ,opening) end))))))))
 
 (def (opaque-open-form block-id otherwise)
-  (let ((id (car block-id)) (rule (cdr block-id)))
+  (let ((id (org-event-block-id block-id))
+        (rule (org-event-block-rule block-id)))
     `(if (and (line-prefix-boundary-ascii-ci ,(block-line-opening rule))
               ,(future-close-condition rule))
          ,(append (list close-paragraph
@@ -196,7 +200,8 @@
           ,chain ()))))
 
 (def (opaque-body-form block-id otherwise)
-  (let ((id (car block-id)) (rule (cdr block-id)))
+  (let ((id (org-event-block-id block-id))
+        (rule (org-event-block-rule block-id)))
     `(if (uint-equal? (state active-opaque-block) (uint ,id))
          ((if (line-marker-ascii-ci ,(block-line-closing rule))
               ((token ,(block-line-end-token rule) start end)
@@ -274,7 +279,8 @@
       (block-header-forms rule))))
 
 (def (container-open-form block-id otherwise)
-  (let ((id (car block-id)) (rule (cdr block-id)))
+  (let ((id (org-event-block-id block-id))
+        (rule (org-event-block-rule block-id)))
     `(if (and ,(container-open-condition rule)
               ,(future-close-condition rule))
          ,(append (list close-paragraph
@@ -295,7 +301,8 @@
           ((if ,(container-close-condition drawer) () ,chain)) ()))))
 
 (def (container-close-form block-id otherwise)
-  (let ((id (car block-id)) (rule (cdr block-id)))
+  (let ((id (org-event-block-id block-id))
+        (rule (org-event-block-rule block-id)))
     `(if (and (stack-nonempty? container-frames)
               (uint-equal? (stack-top container-frames) (uint ,id))
               ,(container-close-condition rule))

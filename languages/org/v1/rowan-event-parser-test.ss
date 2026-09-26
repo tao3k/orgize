@@ -2,8 +2,17 @@
 ;;; The Org-owned algorithm executes as Scheme before AOT lowering.
 
 (import (only-in :std/test check test-case test-suite)
+        (only-in :clan/poo/object .o)
         (only-in :std/encoding/json JSONReadOptions string->json)
         (only-in :std/misc/ports read-all-as-string)
+        (only-in :gerbil-parser/src/modules/parser/line-structure-objects
+                 line-structure-blocks)
+        (only-in "parser.ss" org-v1-line-structure)
+        (only-in "modules/org-parser/types.ss"
+                 org-event-block? org-inline-markup?)
+        (only-in "modules/org-parser/objects.ss"
+                 make-org-event-block org-event-block-id
+                 make-org-inline-markup org-inline-markup-node)
         (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
         (only-in "rowan-event-fixture.ss" rowan-event-fixture-json)
         (only-in "rowan-event-parser.ss"
@@ -12,6 +21,20 @@
 
 (def org-v1-rowan-event-parser-test
   (test-suite "Org contextual Rowan event AOT"
+    (test-case "POO strategy declarations reject untyped rule tuples"
+      (let ((block (make-org-event-block
+                    1 (car (line-structure-blocks org-v1-line-structure))))
+            (markup (make-org-inline-markup 42 3 'OrgBold)))
+        (check (org-event-block? block) => #t)
+        (check (org-event-block-id block) => 1)
+        (check (org-inline-markup? markup) => #t)
+        (check (org-inline-markup-node markup) => 'OrgBold)
+        (check (org-event-block? '(1 . block)) => #f)
+        (check (org-inline-markup? '(42 3 OrgBold)) => #f)
+        (check (org-inline-markup?
+                (.o kind: 'org-inline-markup byte: 256 id: 3
+                    node: 'OrgBold))
+               => #f)))
     (test-case "paragraphs group source lines and blank trivia closes the scope"
       (check-org-ast-with parse-org-rowan-events
         "alpha\nβ\n \t\nnext\n* H\n"

@@ -11,7 +11,10 @@
                  link-index inline-next pattern-end pattern-at?)
         (only-in "event-inline-entity.ss"
                  entity-name-bytes entity-space-choices entity-events
-                 entity-finish-forms entity-name-scan-forms))
+                 entity-finish-forms entity-name-scan-forms)
+        (only-in "objects.ss"
+                 make-org-inline-markup org-inline-markup-byte
+                 org-inline-markup-id org-inline-markup-node))
 (export event-inline-initial event-text-line-forms)
 
 (def link-rule
@@ -23,8 +26,12 @@
 (def inline-close-boundary-bytes
   '(9 10 13 32 45 46 44 59 58 33 63 39 34 41 125 92 91))
 (def inline-markup-rules
-  '((126 1 OrgCode) (61 2 OrgVerbatim) (42 3 OrgBold)
-    (47 4 OrgItalic) (95 5 OrgUnderline) (43 6 OrgStrikeThrough)))
+  (list (make-org-inline-markup 126 1 'OrgCode)
+        (make-org-inline-markup 61 2 'OrgVerbatim)
+        (make-org-inline-markup 42 3 'OrgBold)
+        (make-org-inline-markup 47 4 'OrgItalic)
+        (make-org-inline-markup 95 5 'OrgUnderline)
+        (make-org-inline-markup 43 6 'OrgStrikeThrough)))
 (def inline-target-border-invalid-bytes '(9 10 13 32 60 62))
 (def inline-decimal-bytes
   (map char->integer (string->list "0123456789")))
@@ -52,7 +59,7 @@
   (append (map (lambda (marker)
                  (char->integer (string-ref marker 0)))
                (list link-open "<<" "\\\\" "@@" "{{{"))
-          (map car inline-markup-rules)))
+          (map org-inline-markup-byte inline-markup-rules)))
 (def inline-right-boundary?
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
        (line-bytes-any-in? ,inline-next (line-step ,inline-next)
@@ -132,9 +139,11 @@
                   ,inline-right-boundary?)
              ,(foldr (lambda (rule otherwise)
                        `((if (and (uint-equal? (state inline-markup-kind)
-                                               (uint ,(cadr rule)))
-                                  (line-byte-equal? ,link-index ,(car rule)))
-                             ,(markup-events (caddr rule)) ,otherwise)))
+                                               (uint ,(org-inline-markup-id rule)))
+                                  (line-byte-equal? ,link-index
+                                                    ,(org-inline-markup-byte rule)))
+                             ,(markup-events (org-inline-markup-node rule))
+                             ,otherwise)))
                      '() inline-markup-rules)
              ()))
         ((if (and (state inline-left-boundary)
@@ -142,8 +151,10 @@
                   (not (line-bytes-any-in? ,inline-next
                                            (line-step ,inline-next) (9 32))))
              ,(foldr (lambda (rule otherwise)
-                       `((if (line-byte-equal? ,link-index ,(car rule))
-                             ((set-uint inline-markup-kind (uint ,(cadr rule)))
+                       `((if (line-byte-equal? ,link-index
+                                               ,(org-inline-markup-byte rule))
+                             ((set-uint inline-markup-kind
+                                        (uint ,(org-inline-markup-id rule)))
                               (set-uint inline-markup-open-at
                                         (offset ,link-index))
                               (set-uint inline-markup-value-start
