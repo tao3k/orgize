@@ -20,7 +20,7 @@ fn structural_backbone(records: &[GraphRecord]) -> Vec<GraphRecord> {
         .filter(|record| {
             !matches!(
                 record.kind,
-                "bold" | "italic" | "underline" | "strike-through"
+                "bold" | "italic" | "underline" | "strike-through" | "subscript" | "superscript"
             )
         })
         .collect::<Vec<_>>();
@@ -116,6 +116,10 @@ fn unclosed_blocks_recover_before_headlines_and_parent_boundaries() {
         let events =
             parse_org_aot(source).expect("Scheme event parser recovers the unclosed block");
         assert_eq!(events.syntax().to_string(), source);
-        assert_eq!(events.records(), structural, "source: {source}");
+        assert_eq!(
+            structural_backbone(events.records()),
+            structural,
+            "source: {source}"
+        );
     }
 }

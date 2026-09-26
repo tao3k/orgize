@@ -5,15 +5,18 @@
         (only-in "types.ss"
                  +org-event-block-kind+ +org-named-block-kind+
                  +org-inline-markup-kind+
+                 +org-inline-script-kind+
                  +org-event-strategy-kind+
                  org-event-block? org-named-block?
-                 org-inline-markup? org-event-strategy?))
+                 org-inline-markup? org-inline-script? org-event-strategy?))
 (export make-org-event-block org-event-block-id org-event-block-rule
         make-org-named-block org-named-block-opening
         org-named-block-closing org-named-block-node
         org-named-block-name-token
         make-org-inline-markup org-inline-markup-byte
         org-inline-markup-id org-inline-markup-node
+        make-org-inline-script org-inline-script-byte
+        org-inline-script-id org-inline-script-node
         make-org-event-strategy org-event-strategy-root
         org-event-strategy-initial org-event-strategy-line-forms
         org-event-strategy-finish-forms org-event-strategy-helpers)
@@ -51,6 +54,17 @@
 (def (org-inline-markup-byte value) (.ref value 'byte))
 (def (org-inline-markup-id value) (.ref value 'id))
 (def (org-inline-markup-node value) (.ref value 'node))
+
+(def (make-org-inline-script byte-value id-value node-value)
+  (let (value (.o kind: +org-inline-script-kind+
+                  byte: byte-value id: id-value node: node-value))
+    (unless (org-inline-script? value)
+      (error "invalid Org inline script strategy" value))
+    value))
+
+(def (org-inline-script-byte value) (.ref value 'byte))
+(def (org-inline-script-id value) (.ref value 'id))
+(def (org-inline-script-node value) (.ref value 'node))
 
 (def (make-org-event-strategy root-value initial-value line-forms-value
                               finish-forms-value helpers-value)

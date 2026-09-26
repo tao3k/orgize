@@ -13,6 +13,10 @@
         (only-in "event-inline-latex.ss"
                  latex-event-initial latex-prescan-forms
                  latex-open-forms latex-scan-forms)
+        (only-in "event-inline-script.ss"
+                 inline-script-trigger-bytes inline-script-open-forms
+                 inline-script-scan-forms inline-script-final-forms
+                 inline-script-event-initial inline-script-upper-digit-bytes)
         (only-in "objects.ss"
                  make-org-inline-markup org-inline-markup-byte
                  org-inline-markup-id org-inline-markup-node))
@@ -55,7 +59,8 @@
   (append (map (lambda (marker)
                  (char->integer (string-ref marker 0)))
                (list link-open "<<" "\\\\" "@@" "{{{" "$"))
-          (map org-inline-markup-byte inline-markup-rules)))
+          (map org-inline-markup-byte inline-markup-rules)
+          inline-script-trigger-bytes))
 (def inline-right-boundary?
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
        (line-bytes-any-in? ,inline-next (line-step ,inline-next)
@@ -700,19 +705,46 @@
               (not (line-bytes-any-in? ,link-index ,inline-next
                                        ,inline-word-bytes)))
     (set-bool inline-previous-space
-              (line-bytes-any-in? ,link-index ,inline-next (9 32)))
+              (line-bytes-any-in? ,link-index ,inline-next (9 10 13 32)))
     (set-bool inline-previous-backslash
-              (line-byte-equal? ,link-index 92))))
+              (line-byte-equal? ,link-index 92))
+    (if (line-bytes-any-in? ,link-index ,inline-next
+                            ,inline-script-upper-digit-bytes)
+        ((set-uint inline-upper-run
+                   (uint-add (state inline-upper-run) (uint 1))))
+        ((set-uint inline-upper-run (uint 0))))
+    (set-bool inline-previous-present
+              (not (line-bytes-any-in? ,link-index ,inline-next (10 13))))))
 
 (def (inline-scan-non-latex-forms)
-  `((if (uint-positive? (state inline-entity-mode))
+  `((if (uint-positive? (state inline-script-mode))
+        ,(inline-script-scan-forms) ())
+    (if (offset-less? ,link-index (state-offset inline-cursor))
+        ()
+        ((if (and (uint-equal? (state inline-script-mode) (uint 0))
+             (line-bytes-any-in? ,link-index ,inline-next
+                                 ,inline-script-trigger-bytes)
+             (uint-equal? (state inline-entity-mode) (uint 0))
+             (uint-equal? (state inline-code-mode) (uint 0))
+             (uint-equal? (state inline-macro-mode) (uint 0))
+             (uint-equal? (state inline-citation-mode) (uint 0))
+             (uint-equal? (state inline-footnote-mode) (uint 0))
+             (uint-equal? (state inline-export-mode) (uint 0))
+             (uint-equal? (state inline-delimited-kind) (uint 0))
+             (uint-equal? (state inline-markup-kind) (uint 0))
+             (not (state inline-open)))
+        ,(inline-script-open-forms) ())))
+    (if (uint-positive? (state inline-entity-mode))
         ,(entity-name-scan-forms)
         ())
-    (if (uint-equal? (state inline-entity-mode) (uint 0))
-        ((if (uint-positive? (state inline-code-mode))
-             ,(inline-code-scan-forms)
-             ,(inline-non-code-scan-forms)))
-        ())))
+    (if (offset-less? ,link-index (state-offset inline-cursor))
+        ()
+        ((if (and (uint-equal? (state inline-script-mode) (uint 0))
+                  (uint-equal? (state inline-entity-mode) (uint 0)))
+             ((if (uint-positive? (state inline-code-mode))
+                  ,(inline-code-scan-forms)
+                  ,(inline-non-code-scan-forms)))
+             ())))))
 
 (def (event-text-line-forms from)
   `((start-node OrgTextLine)
@@ -725,6 +757,7 @@
                          ,(inline-scan-forms))) ())
     (if (uint-positive? (state inline-entity-mode))
         ,(entity-finish-forms #f) ())
+    ,@(inline-script-final-forms)
     (token TextLine (state-offset inline-cursor) end)
     (finish-node)))
 
@@ -734,6 +767,7 @@
    '((inline-cursor 0))
    inline-link-event-initial
    citation-event-initial
+   inline-script-event-initial
    '((inline-left-boundary #t)
     (inline-previous-space #f)
     (inline-markup-kind 0) (inline-markup-open-at 0)

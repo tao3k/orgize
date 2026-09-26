@@ -10,11 +10,13 @@
         (only-in "parser.ss" org-v1-line-structure)
         (only-in "modules/org-parser/types.ss"
                  org-event-block? org-named-block?
-                 org-inline-markup? org-event-strategy?)
+                 org-inline-markup? org-inline-script?
+                 org-event-strategy?)
         (only-in "modules/org-parser/objects.ss"
                  make-org-event-block org-event-block-id
                  make-org-named-block
                  make-org-inline-markup org-inline-markup-node
+                 make-org-inline-script org-inline-script-node
                  make-org-event-strategy org-event-strategy-root)
         (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
         (only-in "rowan-event-fixture.ss" rowan-event-fixture-json)
@@ -28,6 +30,7 @@
       (let ((block (make-org-event-block
                     1 (car (line-structure-blocks org-v1-line-structure))))
             (markup (make-org-inline-markup 42 3 'OrgBold))
+            (script (make-org-inline-script 94 2 'OrgSuperscript))
             (strategy (make-org-event-strategy
                        'OrgFile '() '((finish-node)) '() '())))
         (check (org-event-block? block) => #t)
@@ -37,6 +40,9 @@
         (check (org-event-block-id block) => 1)
         (check (org-inline-markup? markup) => #t)
         (check (org-inline-markup-node markup) => 'OrgBold)
+        (check (org-inline-script? script) => #t)
+        (check (org-inline-script-node script) => 'OrgSuperscript)
+        (check (org-inline-script? '(94 2 OrgSuperscript)) => #f)
         (check (org-event-strategy? strategy) => #t)
         (check (org-event-strategy-root strategy) => 'OrgFile)
         (check (org-event-block? '(1 . block)) => #f)
@@ -405,7 +411,43 @@
         "prefixsrc_rust{a}\n"
         (OrgFile
          (OrgParagraph
-          (OrgTextLine (TextLine 0 18))))))
+          (OrgTextLine
+           (TextLine 0 9)
+           (OrgSubscript (InlineScriptDelimiter 9 10)
+                         (InlineScriptValue 10 14))
+           (TextLine 14 18))))))
+    (test-case "Scheme script Objects preserve delimiters and nested braces"
+      (check-org-ast-with parse-org-rowan-events
+        "x_abc y^2\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 1)
+           (OrgSubscript (InlineScriptDelimiter 1 2)
+                         (InlineScriptValue 2 5))
+           (TextLine 5 7)
+           (OrgSuperscript (InlineScriptDelimiter 7 8)
+                           (InlineScriptValue 8 9))
+           (TextLine 9 10)))))
+      (check-org-ast-with parse-org-rowan-events
+        "x_{a{b}c} y^*\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 1)
+           (OrgSubscript (InlineScriptDelimiter 1 3)
+                         (InlineScriptValue 3 8)
+                         (InlineScriptDelimiter 8 9))
+           (TextLine 9 11)
+           (OrgSuperscript (InlineScriptDelimiter 11 12)
+                           (InlineScriptValue 12 13))
+           (TextLine 13 14)))))
+      (check-org-ast-with parse-org-rowan-events
+        "AB_2O x^a,\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11)))))
+      (check-org-ast-with parse-org-rowan-events
+        "_abc\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 5))))))
     (test-case "footnote definitions contain elements and stop at headings"
       (check-org-ast-with parse-org-rowan-events
         "[fn:n] body\n* H\n"
@@ -648,7 +690,12 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
                        (HeadlineTitle 2 7) (HeadlineTrivia 7 8))
-          (OrgParagraph (OrgTextLine (TextLine 8 31)))
+          (OrgParagraph
+           (OrgTextLine
+            (TextLine 8 15)
+            (OrgSubscript (InlineScriptDelimiter 15 16)
+                          (InlineScriptValue 16 21))
+            (TextLine 21 31)))
           (OrgSection
            (OrgHeadline (HeadlineLine 31 33) (HeadlineTrivia 33 34)
                         (HeadlineTitle 34 38) (HeadlineTrivia 38 39))
@@ -981,7 +1028,12 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 13 14) (HeadlineTrivia 14 15)
                        (HeadlineTitle 15 22) (HeadlineTrivia 22 23))
-          (OrgParagraph (OrgTextLine (TextLine 23 34))))))
+          (OrgParagraph
+           (OrgTextLine
+            (TextLine 23 28)
+            (OrgSubscript (InlineScriptDelimiter 28 29)
+                          (InlineScriptValue 29 33))
+            (TextLine 33 34))))))
       (check-org-ast-with parse-org-rowan-events
         "#+BEGIN_NOTE\ntext\n#+END_OTHER\n"
         (OrgFile
@@ -1008,7 +1060,12 @@
           (BlockHeaderTrivia 13 14)
           (OrgParagraph (OrgTextLine (TextLine 14 28)))
           (BlockEndLine 28 40))
-         (OrgParagraph (OrgTextLine (TextLine 40 52)))))
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 40 45)
+           (OrgSubscript (InlineScriptDelimiter 45 46)
+                         (InlineScriptValue 46 51))
+           (TextLine 51 52)))))
       (check-org-ast-with parse-org-rowan-events
         "#+BEGIN_NOTE\n\\begin{a}\n#+END_NOTE\n\\end{a}\n"
         (OrgFile
@@ -1028,7 +1085,12 @@
           (OrgSpecialBlock
            (BlockBeginLine 14 22) (SpecialBlockName 22 27)
            (BlockHeaderTrivia 27 28)
-           (OrgParagraph (OrgTextLine (TextLine 28 40)))
+           (OrgParagraph
+            (OrgTextLine
+             (TextLine 28 33)
+             (OrgSubscript (InlineScriptDelimiter 33 34)
+                           (InlineScriptValue 34 39))
+             (TextLine 39 40)))
            (BlockEndLine 40 52))
           (BlockEndLine 52 64)))))
     (test-case "source-named LaTeX environments keep opaque bodies"

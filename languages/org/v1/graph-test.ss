@@ -54,6 +54,7 @@
                             OrgInlineSourceBlock OrgInlineBabelCall OrgMacro OrgCitation OrgEntity
                             OrgLaTeXFragment
                             OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
+                            OrgSubscript OrgSuperscript
                             OrgStrikeThrough))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "property-drawer" "drawer"
@@ -73,7 +74,8 @@
                                 "inline-src-block" "inline-babel-call" "macro" "citation" "entity"
                                 "latex-fragment"
                                 "code" "verbatim" "bold" "italic"
-                                "underline" "strike-through"))))
+                                "underline" "subscript" "superscript"
+                                "strike-through"))))
     (test-case "planning keeps each key and value independently"
       (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
              (planning

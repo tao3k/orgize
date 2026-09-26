@@ -141,5 +141,9 @@
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgUnderline "object" "underline"
          (list (field 'InlineMarkupValue "value")))
+   (node 'OrgSubscript "object" "subscript"
+         (list (field 'InlineScriptValue "value")))
+   (node 'OrgSuperscript "object" "superscript"
+         (list (field 'InlineScriptValue "value")))
    (node 'OrgStrikeThrough "object" "strike-through"
          (list (field 'InlineMarkupValue "value")))))

@@ -6,13 +6,16 @@
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  block-line?))
 (export +org-event-block-kind+ +org-named-block-kind+ +org-inline-markup-kind+
+        +org-inline-script-kind+
         +org-event-strategy-kind+
-        OrgEventBlock OrgNamedBlock OrgInlineMarkup OrgEventStrategy
-        org-event-block? org-named-block? org-inline-markup? org-event-strategy?)
+        OrgEventBlock OrgNamedBlock OrgInlineMarkup OrgInlineScript OrgEventStrategy
+        org-event-block? org-named-block? org-inline-markup?
+        org-inline-script? org-event-strategy?)
 
 (def +org-event-block-kind+ 'org-event-block)
 (def +org-named-block-kind+ 'org-named-block)
 (def +org-inline-markup-kind+ 'org-inline-markup)
+(def +org-inline-script-kind+ 'org-inline-script)
 (def +org-event-strategy-kind+ 'org-event-strategy)
 
 (def (event-block-shape? value)
@@ -60,6 +63,19 @@
 (define-type (OrgInlineMarkup @ Type.)
   .element?: inline-markup-shape?)
 
+(def (inline-script-shape? value)
+  (and (object? value)
+       (.slot? value 'kind) (.slot? value 'byte)
+       (.slot? value 'id) (.slot? value 'node)
+       (eq? (.ref value 'kind) +org-inline-script-kind+)
+       (let ((byte (.ref value 'byte)) (id (.ref value 'id)))
+         (and (fixnum? byte) (memv byte '(94 95))
+              (fixnum? id) (> id 0)))
+       (symbol? (.ref value 'node))))
+
+(define-type (OrgInlineScript @ Type.)
+  .element?: inline-script-shape?)
+
 (def (event-strategy-shape? value)
   (and (object? value)
        (.slot? value 'kind) (.slot? value 'root)
@@ -78,4 +94,5 @@
 (def (org-event-block? value) (element? OrgEventBlock value))
 (def (org-named-block? value) (element? OrgNamedBlock value))
 (def (org-inline-markup? value) (element? OrgInlineMarkup value))
+(def (org-inline-script? value) (element? OrgInlineScript value))
 (def (org-event-strategy? value) (element? OrgEventStrategy value))
