@@ -3,7 +3,9 @@
 ;;; alongside the other inline event strategies.
 
 (import (only-in "event-inline-primitives.ss"
-                 link-index inline-next pattern-end pattern-at?))
+                 link-index inline-next pattern-end pattern-at?)
+        (only-in "event-inline-citation-reference.ss"
+                 citation-reference-key-bytes))
 (export citation-event-initial citation-open-forms citation-scan-forms)
 
 (def citation-event-initial
@@ -11,7 +13,7 @@
     (inline-citation-open-at 0) (inline-citation-body-start 0)
     (inline-citation-scan-start 0)
     (inline-citation-style-part #f)
-    (inline-citation-has-key #f) (inline-citation-await-key #f)
+    (inline-citation-has-key #f)
     (inline-citation-escaped #f)
     (inline-citation-opens 0) (inline-citation-closes 0)))
 
@@ -22,7 +24,6 @@
               (offset ,(pattern-end link-index marker)))
     (set-bool inline-citation-style-part (bool #f))
     (set-bool inline-citation-has-key (bool #f))
-    (set-bool inline-citation-await-key (bool #f))
     (set-bool inline-citation-escaped (bool #f))
     (set-uint inline-citation-opens (uint 0))
     (set-uint inline-citation-closes (uint 0))))
@@ -64,13 +65,13 @@
                   ((set-bool inline-citation-style-part (bool #t))))))))))
 
 (def (citation-key-scan-forms)
-  `((if (state inline-citation-await-key)
-        ((if (not (line-bytes-any-in? ,link-index ,inline-next
-                                     (9 10 13 32 93)))
-             ((set-bool inline-citation-has-key (bool #t))) ())
-         (set-bool inline-citation-await-key (bool #f))) ())
-    (if (line-byte-equal? ,link-index 64)
-        ((set-bool inline-citation-await-key (bool #t))) ())))
+  `((if (and (not (state inline-citation-escaped))
+             (uint-equal? (state inline-citation-opens)
+                          (state inline-citation-closes))
+             (line-byte-equal? ,link-index 64)
+             (line-bytes-any-in? ,inline-next (line-step ,inline-next)
+                                 ,citation-reference-key-bytes))
+        ((set-bool inline-citation-has-key (bool #t))) ())))
 
 (def (citation-body-scan-forms)
   `(,@(citation-key-scan-forms)

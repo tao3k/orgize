@@ -4,7 +4,7 @@
 ;;; mutable state with its caller and AOT-compiles to one Rust function.
 
 (import (only-in "objects.ss" make-org-event-helper))
-(export citation-reference-helper)
+(export citation-reference-helper citation-reference-key-bytes)
 
 (def citation-ref-index '(line-index citation-ref-byte-index))
 (def citation-ref-next `(line-step ,citation-ref-index))
@@ -30,11 +30,16 @@
          (token CitationReferenceSuffix
                 (state-offset citation-ref-key-end) ,until)
          (finish-node))
-        ((token CitationText
-                (state-offset citation-ref-segment-start) ,until)))))
+        ((if (state citation-ref-seen-reference)
+             ((token CitationGlobalSuffix
+                     (state-offset citation-ref-segment-start) ,until))
+             ((token CitationGlobalPrefix
+                     (state-offset citation-ref-segment-start) ,until)))))))
 
 (def (citation-reference-separator-forms)
   `(,@(citation-reference-segment-events citation-ref-index)
+    (if (state citation-ref-has-key)
+        ((set-bool citation-ref-seen-reference (bool #t))) ())
     (token CitationSeparator ,citation-ref-index ,citation-ref-next)
     (set-uint citation-ref-segment-start (offset ,citation-ref-next))
     (set-bool citation-ref-has-key (bool #f))
@@ -88,6 +93,7 @@
      (citation-ref-key-at 0) (citation-ref-key-start 0)
      (citation-ref-key-end 0)
      (citation-ref-has-key #f) (citation-ref-key-scanning #f)
+     (citation-ref-seen-reference #f)
      (citation-ref-escaped #f)
      (citation-ref-opens 0) (citation-ref-closes 0))
    `((set-uint citation-ref-segment-start

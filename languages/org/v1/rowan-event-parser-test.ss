@@ -159,6 +159,9 @@
         "[cite/:@key]\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 13)))))
       (check-org-ast-with parse-org-rowan-events
+        "[cite:\\@key] [cite:@ ]\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 23)))))
+      (check-org-ast-with parse-org-rowan-events
         "[cite:@key] [cite:no key]\n"
         (OrgFile
          (OrgParagraph
@@ -200,6 +203,22 @@
              (CitationReferenceKey 36 43))
             (CitationDelimiter 43 44))
            (TextLine 44 45)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:see;@key;and]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation
+            (CitationDelimiter 0 6)
+            (CitationGlobalPrefix 6 9)
+            (CitationSeparator 9 10)
+            (OrgCitationReference
+             (CitationReferenceMarker 10 11)
+             (CitationReferenceKey 11 14))
+            (CitationSeparator 14 15)
+            (CitationGlobalSuffix 15 18)
+            (CitationDelimiter 18 19))
+           (TextLine 19 20)))))
       (check-org-ast-with parse-org-rowan-events
         "[cite:@key\n[cite:@next]\n"
         (OrgFile

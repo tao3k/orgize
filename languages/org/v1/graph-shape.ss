@@ -124,7 +124,9 @@
    (node 'OrgMacro "object" "macro"
          (list (field 'MacroName "name")
                (field 'MacroArguments "arguments" 'append-or-empty)))
-   (node 'OrgCitation "object" "citation" '())
+   (node 'OrgCitation "object" "citation"
+         (list (field 'CitationGlobalPrefix "global-prefix" 'append-or-empty)
+               (field 'CitationGlobalSuffix "global-suffix" 'append-or-empty)))
    (node 'OrgCitationReference "object" "citation-reference"
          (list (field 'CitationReferencePrefix "prefix" 'append-or-empty)
                (field 'CitationReferenceKey "key")
