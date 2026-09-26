@@ -12,6 +12,9 @@
         (only-in "event-inline-entity.ss"
                  entity-name-bytes entity-space-choices entity-events
                  entity-finish-forms entity-name-scan-forms)
+        (only-in "event-inline-latex.ss"
+                 latex-event-initial latex-prescan-forms
+                 latex-open-forms latex-scan-forms)
         (only-in "objects.ss"
                  make-org-inline-markup org-inline-markup-byte
                  org-inline-markup-id org-inline-markup-node))
@@ -58,7 +61,7 @@
 (def inline-trigger-bytes
   (append (map (lambda (marker)
                  (char->integer (string-ref marker 0)))
-               (list link-open "<<" "\\\\" "@@" "{{{"))
+               (list link-open "<<" "\\\\" "@@" "{{{" "$"))
           (map org-inline-markup-byte inline-markup-rules)))
 (def inline-right-boundary?
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
@@ -589,7 +592,10 @@
                             ,(inline-code-second-scan-forms))))))))))))
 
 (def (entity-or-ordinary-free-forms)
-  `((if (line-byte-equal? ,inline-next 95)
+  `((if (or ,(pattern-at? link-index "\\(")
+            ,(pattern-at? link-index "\\["))
+        ,(latex-open-forms)
+        ((if (line-byte-equal? ,inline-next 95)
         ,(entity-space-choices 20)
         ((if (line-bytes-any-in? ,inline-next
                                  (line-step ,inline-next) ,entity-name-bytes)
@@ -602,7 +608,7 @@
         (,@(entity-events)
          (set-uint inline-entity-mode (uint 0)))
         ((if (uint-equal? (state inline-entity-mode) (uint 0))
-             ,(inline-ordinary-free-scan-forms) ())))))
+             ,(inline-ordinary-free-scan-forms) ())))))))
 
 (def (macro-events arguments?)
   (let ((close-end (if arguments?
@@ -689,7 +695,9 @@
                        ,(export-snippet-open-forms)
                        ((if ,(line-break-at?)
                             ,(line-break-events)
-                            ,(markup-scan-forms))))))))))))
+                            ((if (line-byte-equal? ,link-index 36)
+                                 ,(latex-open-forms)
+                                 ,(markup-scan-forms))))))))))))))
 
 (def (inline-free-scan-forms)
   `((if ,(pattern-at? link-index "{{{")
@@ -725,14 +733,15 @@
         ,(inline-ordinary-non-code-scan-forms))))
 
 (def (inline-scan-forms)
-  `((if (uint-positive? (state inline-entity-mode))
-        ,(entity-name-scan-forms)
-        ())
-    (if (uint-equal? (state inline-entity-mode) (uint 0))
-        ((if (uint-positive? (state inline-code-mode))
-             ,(inline-code-scan-forms)
-             ,(inline-non-code-scan-forms)))
-        ())
+  `((if (offset-less? ,link-index (state-offset inline-cursor))
+        ()
+        ((if (uint-positive? (state inline-latex-mode))
+             ,(latex-scan-forms)
+             ,(inline-scan-non-latex-forms))))
+    (if (uint-equal? (state inline-latex-mode) (uint 4))
+        ((set-bool inline-latex-previous-invalid
+                   (line-bytes-any-in? ,link-index ,inline-next
+                                       (9 10 13 32 44 46 59)))) ())
     (set-bool inline-left-boundary
               (line-bytes-any-in? ,link-index ,inline-next
                                   ,inline-open-boundary-bytes))
@@ -744,10 +753,21 @@
     (set-bool inline-previous-backslash
               (line-byte-equal? ,link-index 92))))
 
+(def (inline-scan-non-latex-forms)
+  `((if (uint-positive? (state inline-entity-mode))
+        ,(entity-name-scan-forms)
+        ())
+    (if (uint-equal? (state inline-entity-mode) (uint 0))
+        ((if (uint-positive? (state inline-code-mode))
+             ,(inline-code-scan-forms)
+             ,(inline-non-code-scan-forms)))
+        ())))
+
 (def (event-text-line-forms from)
   `((start-node OrgTextLine)
     (if (offset-less? (state-offset inline-cursor) ,from)
         ((set-uint inline-cursor (offset ,from))) ())
+    ,@(latex-prescan-forms from)
     (if (line-bytes-any-in? ,from (line-content-end)
                             ,inline-trigger-bytes)
         ((for-line-bytes inline-byte-index ,from (line-content-end)
@@ -758,7 +778,9 @@
     (finish-node)))
 
 (def event-inline-initial
-  '((inline-cursor 0) (inline-open #f) (inline-has-separator #f)
+  (append
+   latex-event-initial
+   '((inline-cursor 0) (inline-open #f) (inline-has-separator #f)
     (inline-failed #f) (inline-open-at 0) (inline-target-start 0)
     (inline-separator-at 0) (inline-left-boundary #t)
     (inline-previous-space #f)
@@ -792,4 +814,4 @@
     (inline-entity-mode 0) (inline-entity-open-at 0)
     (inline-entity-name-start 0)
     (inline-entity-name-end 0) (inline-entity-post-end 0)
-    (inline-previous-backslash #f)))
+    (inline-previous-backslash #f))))

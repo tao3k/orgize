@@ -121,6 +121,8 @@
    (node 'OrgEntity "object" "entity"
          (list (field 'EntityName "name")
                (field 'EntityPost "post" 'append-or-empty)))
+   (node 'OrgLaTeXFragment "object" "latex-fragment"
+         (list (field 'LatexFragmentValue "value")))
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"

@@ -40,6 +40,38 @@
                 (.o kind: 'org-inline-markup byte: 256 id: 3
                     node: 'OrgBold))
                => #f)))
+    (test-case "Scheme parses source-backed LaTeX math fragments"
+      (check-org-ast-with parse-org-rowan-events
+        "a \\(x\\) b\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgLaTeXFragment (LatexFragmentValue 2 7))
+           (TextLine 7 10)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\[x\\] $$y$$ $z$\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgLaTeXFragment (LatexFragmentValue 0 5))
+           (TextLine 5 6)
+           (OrgLaTeXFragment (LatexFragmentValue 6 11))
+           (TextLine 11 12)
+           (OrgLaTeXFragment (LatexFragmentValue 12 15))
+           (TextLine 15 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "$ x$ $x $\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 10)))))
+      (check-org-ast-with parse-org-rowan-events
+        "$unfinished [[id:x]]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 12)
+           (OrgLink (LinkTrivia 12 14) (LinkTarget 14 18)
+                    (LinkTrivia 18 20))
+           (TextLine 20 21))))))
     (test-case "paragraphs group source lines and blank trivia closes the scope"
       (check-org-ast-with parse-org-rowan-events
         "alpha\nβ\n \t\nnext\n* H\n"
