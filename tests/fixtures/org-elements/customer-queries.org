@@ -11,3 +11,12 @@
                       (property-contains source-title "Review"))
               (descendant-of scope))
 #+end_src
+
+* Cited evidence
+:PROPERTIES:
+:QUERY_ID: customer.cited-evidence
+:END:
+
+#+begin_src scheme :org-elements
+(org-elements citation-reference (property key "doe2020"))
+#+end_src

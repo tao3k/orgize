@@ -1,9 +1,8 @@
 ;;; -*- Gerbil -*-
 ;;; Domain-specific AST assertions for source-backed Org parser events.
 
-(import (only-in :std/test check)
-        (only-in "../../outline-events.ss" parse-org-outline-events))
-(export check-org-ast check-org-ast-with org-events->ast org-events-cover-source?)
+(import (only-in :std/test check))
+(export check-org-ast-with org-events->ast org-events-cover-source?)
 
 (def (org-events->ast events)
   (def (children rest reversed)
@@ -37,20 +36,12 @@
                  (loop (cdr rest) (cadddr event)))
             (loop (cdr rest) offset)))))))
 
-(defsyntax (check-org-ast stx)
-  (syntax-case stx ()
-    ((_ source expected)
-     (syntax
-      (let* ((text source)
-             (events (parse-org-outline-events text)))
-        (check (org-events-cover-source? text events) => #t)
-        (check (org-events->ast events) => 'expected))))))
-
 (defsyntax (check-org-ast-with stx)
   (syntax-case stx ()
     ((_ parser source expected)
      (syntax
       (let* ((text source)
              (events (parser text)))
-        (check (org-events-cover-source? text events) => #t)
+        (unless (org-events-cover-source? text events)
+          (error "Org AST source partition mismatch" text events))
         (check (org-events->ast events) => 'expected))))))

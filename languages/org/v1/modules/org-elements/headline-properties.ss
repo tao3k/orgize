@@ -12,6 +12,7 @@
         (only-in "types.ss" org-element-graph-view?)
         (only-in "objects.ss"
                  make-org-element-graph-view
+                 make-org-headline-properties org-headline-property-field
                  org-element-graph-records org-element-graph-id-of
                  org-element-graph-parent-of org-element-graph-kind-of
                  org-element-graph-field-of))
@@ -22,9 +23,6 @@
         headline-content-after-todo headline-content-after-todo-rust
         headline-display-title headline-display-title-rust
         todo-keyword-matches? todo-keyword-matches-rust)
-
-(defstruct headline-properties (source-title title todo-keyword todo-type
-                                          priority tags))
 
 (def (split-first value)
   (let* ((text (string-trim value)) (size (string-length text)))
@@ -178,7 +176,7 @@
                    (and (tag-token after-priority)
                         (cons "" after-priority))))
          (tags (and last (tag-token (cdr last)))))
-    (make-headline-properties
+    (make-org-headline-properties
      title (if tags (car last) (string-trim after-priority))
      todo state priority (or tags '()))))
 
@@ -205,18 +203,7 @@
      (lambda (record name)
        (let (properties (hash-get headlines (id-of record)))
          (if properties
-           (cond
-            ((equal? name "title") (headline-properties-title properties))
-            ((equal? name "source-title")
-             (headline-properties-source-title properties))
-            ((equal? name "raw-value")
-             (headline-properties-title properties))
-            ((equal? name "todo-keyword")
-             (headline-properties-todo-keyword properties))
-            ((equal? name "todo-type")
-             (headline-properties-todo-type properties))
-            ((equal? name "priority")
-             (headline-properties-priority properties))
-            ((equal? name "tags") (headline-properties-tags properties))
-            (else (field-of record name)))
+           (let-values (((known? projected)
+                         (org-headline-property-field properties name)))
+             (if known? projected (field-of record name)))
            (field-of record name)))))))

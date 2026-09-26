@@ -25,19 +25,68 @@ fn token_name(token: &gerbil_parser_rowan::SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
-macro_rules! check_org_aot_element {
-    ($source:expr, $kind:expr, $field:expr => $value:expr) => {{
-        let document = orgize::org_aot::parse_org_aot($source)
-            .expect("Scheme-owned Org Element parser accepts the source");
-        let elements: Vec<_> = document
+#[test]
+fn scheme_declared_macro_objects_project_into_rowan_and_graph() {
+    check_org_aot_element!("{{{issue(42)}}}\n", "macro", "name" => "issue");
+    let document =
+        orgize::org_aot::parse_org_aot("{{{issue(42)}}}\n").expect("Scheme-owned Org macro object");
+    let macro_record = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "macro")
+        .expect("macro graph record");
+    assert_eq!(macro_record.field("arguments"), Some("42"));
+    assert_eq!(document.syntax().to_string(), "{{{issue(42)}}}\n");
+    let malformed = orgize::org_aot::parse_org_aot("{{{9bad}}} {{{broken\n")
+        .expect("invalid macros are lossless text");
+    assert!(
+        !malformed
             .records()
             .iter()
-            .filter(|record| record.kind == $kind)
-            .collect();
-        assert_eq!(elements.len(), 1);
-        assert_eq!(elements[0].field($field), Some($value));
-        assert_eq!(document.syntax().to_string(), $source);
-    }};
+            .any(|record| record.kind == "macro")
+    );
+    assert_eq!(malformed.syntax().to_string(), "{{{9bad}}} {{{broken\n");
+}
+
+#[test]
+fn scheme_declared_entities_require_catalog_names_and_preserve_postfix() {
+    check_org_aot_element!("\\alpha{}\n", "entity", "name" => "alpha");
+    let document =
+        orgize::org_aot::parse_org_aot("\\alpha{} \\_   \n").expect("Scheme-owned Org entities");
+    let entities: Vec<_> = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "entity")
+        .collect();
+    assert_eq!(entities.len(), 2);
+    assert_eq!(entities[0].field("post"), Some("{}"));
+    assert_eq!(entities[1].field("name"), Some("_"));
+    assert_eq!(entities[1].field("post"), Some("   "));
+    assert_eq!(document.syntax().to_string(), "\\alpha{} \\_   \n");
+    let unknown = orgize::org_aot::parse_org_aot("\\unknown \\centaur\n")
+        .expect("unknown entity names are text");
+    assert!(
+        !unknown
+            .records()
+            .iter()
+            .any(|record| record.kind == "entity")
+    );
+    let adjacent = orgize::org_aot::parse_org_aot("\\alpha\\beta [[https://example.org]]\n")
+        .expect("entity boundaries keep the next Object visible");
+    assert_eq!(
+        adjacent
+            .records()
+            .iter()
+            .filter(|record| record.kind == "entity")
+            .count(),
+        2
+    );
+    assert!(
+        adjacent
+            .records()
+            .iter()
+            .any(|record| record.kind == "link")
+    );
 }
 
 #[test]
@@ -73,6 +122,19 @@ fn scheme_emphasis_objects_project_into_rowan_and_element_graph() {
         assert_eq!(records[0].field("value"), Some(value), "{kind}");
     }
     assert_eq!(document.syntax().to_string(), source);
+    check_org_aot_element!("a *bo\nld* z\n", "bold", "value" => "bo\nld");
+    let repeated = "~code~ =verbatim=\n~code~ =verbatim=\n";
+    let repeated_document =
+        orgize::org_aot::parse_org_aot(repeated).expect("inline objects span physical lines");
+    assert_eq!(
+        repeated_document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "code" || record.kind == "verbatim")
+            .count(),
+        4
+    );
+    assert_eq!(repeated_document.syntax().to_string(), repeated);
 }
 
 #[test]

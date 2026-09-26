@@ -1,13 +1,17 @@
 ;;; -*- Gerbil -*-
 ;;; Org-owned projection declarations shared by generator and runtime.
 
+(import (only-in "modules/org-elements/graph-objects.ss"
+                 make-org-graph-node make-org-graph-field
+                 org-graph-node-rust org-graph-node-category
+                 org-graph-node-label org-graph-node-fields
+                 org-graph-field-rust org-graph-field-label
+                 org-graph-field-mode))
+
 (export org-v1-graph-shape org-v1-headline-extra-fields
         org-graph-node-rust org-graph-node-category
         org-graph-node-label org-graph-node-fields
         org-graph-field-rust org-graph-field-label org-graph-field-mode)
-
-(defstruct org-graph-node (rust category label fields))
-(defstruct org-graph-field (rust label mode))
 
 (def (field rust label (mode 'one))
   (make-org-graph-field rust label mode))
@@ -76,6 +80,12 @@
    (node 'OrgDynamicBlock "element" "dynamic-block"
          (list (field 'DynamicBlockName "name")
                (field 'DynamicBlockHeaderTrivia "header")))
+   (node 'OrgSpecialBlock "element" "special-block"
+         (list (field 'SpecialBlockName "name")
+               (field 'BlockHeaderTrivia "header")))
+   (node 'OrgLatexEnvironment "element" "latex-environment"
+         (list (field 'LatexEnvironmentName "name")
+               (field 'LatexEnvironmentBody "body" 'append-or-empty)))
    (node 'OrgQuoteBlock "element" "quote-block" '())
    (node 'OrgExampleBlock "element" "example-block"
          (list (field 'TextLine "body")))
@@ -111,6 +121,21 @@
                (field 'InlineBabelInsideHeader "inside-header")
                (field 'InlineBabelArguments "arguments" 'append-or-empty)
                (field 'InlineBabelEndHeader "end-header")))
+   (node 'OrgMacro "object" "macro"
+         (list (field 'MacroName "name")
+               (field 'MacroArguments "arguments" 'append-or-empty)))
+   (node 'OrgCitation "object" "citation"
+         (list (field 'CitationGlobalPrefix "global-prefix" 'append-or-empty)
+               (field 'CitationGlobalSuffix "global-suffix" 'append-or-empty)))
+   (node 'OrgCitationReference "object" "citation-reference"
+         (list (field 'CitationReferencePrefix "prefix" 'append-or-empty)
+               (field 'CitationReferenceKey "key")
+               (field 'CitationReferenceSuffix "suffix" 'append-or-empty)))
+   (node 'OrgEntity "object" "entity"
+         (list (field 'EntityName "name")
+               (field 'EntityPost "post" 'append-or-empty)))
+   (node 'OrgLaTeXFragment "object" "latex-fragment"
+         (list (field 'LatexFragmentValue "value")))
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"
@@ -121,5 +146,9 @@
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgUnderline "object" "underline"
          (list (field 'InlineMarkupValue "value")))
+   (node 'OrgSubscript "object" "subscript"
+         (list (field 'InlineScriptValue "value")))
+   (node 'OrgSuperscript "object" "superscript"
+         (list (field 'InlineScriptValue "value")))
    (node 'OrgStrikeThrough "object" "strike-through"
          (list (field 'InlineMarkupValue "value")))))

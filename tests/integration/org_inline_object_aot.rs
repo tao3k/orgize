@@ -1,5 +1,37 @@
 //! Scheme-owned inline Object events through generated Rust and Rowan.
 
+macro_rules! check_org_aot_latex_fragments {
+    ($source:expr => [$($value:expr),* $(,)?]) => {{
+        let document = orgize::org_aot::parse_org_aot($source)
+            .expect("Scheme LaTeX fragments build a lossless Rowan document");
+        assert_eq!(document.syntax().to_string(), $source);
+        let values: Vec<_> = document.records().iter()
+            .filter(|record| record.kind == "latex-fragment")
+            .map(|record| record.field("value"))
+            .collect();
+        assert_eq!(values, [$(Some($value)),*]);
+    }};
+}
+
+#[test]
+fn org_scheme_event_aot_projects_latex_math_fragments() {
+    check_org_aot_latex_fragments!(
+        "\\(x\\) \\[y\\] $$z$$ $w$\n"
+        => ["\\(x\\)", "\\[y\\]", "$$z$$", "$w$"]
+    );
+    check_org_aot_latex_fragments!("$ x$ $x $ \\(open\n" => []);
+    let source = "$unfinished [[id:x]]\n";
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("unclosed LaTeX candidate leaves later Objects parseable");
+    assert_eq!(document.syntax().to_string(), source);
+    assert!(
+        document
+            .records()
+            .iter()
+            .any(|record| record.kind == "link")
+    );
+}
+
 #[test]
 fn org_scheme_event_aot_projects_inline_code_and_verbatim_values() {
     let source = "a ~code~ =verb= [[id:x]] z\n";

@@ -1,27 +1,37 @@
 ;;; -*- Gerbil -*-
 ;;; POO-declared inline links are folded as source-backed text-line events.
 
-(import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
-                 line-structure-text text-line-inline-link
-                 inline-link-opening inline-link-separator inline-link-closing
-                 inline-link-node inline-link-target-token
-                 inline-link-description-token inline-link-trivia-token)
-        (only-in "../../parser.ss" org-v1-line-structure))
+(import (only-in "event-inline-primitives.ss"
+                 link-index inline-next pattern-end pattern-at?)
+        (only-in "event-inline-link.ss"
+                 link-open link-scan-forms inline-link-event-initial)
+        (only-in "event-inline-citation.ss"
+                 citation-event-initial citation-open-forms citation-scan-forms)
+        (only-in "event-inline-entity.ss"
+                 entity-name-bytes entity-space-choices entity-events
+                 entity-finish-forms entity-name-scan-forms)
+        (only-in "event-inline-latex.ss"
+                 latex-event-initial latex-prescan-forms
+                 latex-open-forms latex-scan-forms)
+        (only-in "event-inline-script.ss"
+                 inline-script-trigger-bytes inline-script-open-forms
+                 inline-script-scan-forms inline-script-final-forms
+                 inline-script-event-initial inline-script-upper-digit-bytes)
+        (only-in "objects.ss"
+                 make-org-inline-markup org-inline-markup-byte
+                 org-inline-markup-id org-inline-markup-node))
 (export event-inline-initial event-text-line-forms)
 
-(def link-rule
-  (text-line-inline-link (line-structure-text org-v1-line-structure)))
-(def link-open (inline-link-opening link-rule))
-(def link-separator (inline-link-separator link-rule))
-(def link-close (inline-link-closing link-rule))
-(def link-index '(line-index inline-byte-index))
-(def inline-next `(line-step ,link-index))
-(def inline-open-boundary-bytes '(9 32 45 40 39 34 123))
+(def inline-open-boundary-bytes '(9 10 13 32 45 40 39 34 123))
 (def inline-close-boundary-bytes
-  '(9 32 45 46 44 59 58 33 63 39 34 41 125 92 91))
+  '(9 10 13 32 45 46 44 59 58 33 63 39 34 41 125 92 91))
 (def inline-markup-rules
-  '((126 1 OrgCode) (61 2 OrgVerbatim) (42 3 OrgBold)
-    (47 4 OrgItalic) (95 5 OrgUnderline) (43 6 OrgStrikeThrough)))
+  (list (make-org-inline-markup 126 1 'OrgCode)
+        (make-org-inline-markup 61 2 'OrgVerbatim)
+        (make-org-inline-markup 42 3 'OrgBold)
+        (make-org-inline-markup 47 4 'OrgItalic)
+        (make-org-inline-markup 95 5 'OrgUnderline)
+        (make-org-inline-markup 43 6 'OrgStrikeThrough)))
 (def inline-target-border-invalid-bytes '(9 10 13 32 60 62))
 (def inline-decimal-bytes
   (map char->integer (string->list "0123456789")))
@@ -40,83 +50,21 @@
   (map char->integer
        (string->list
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")))
+(def macro-name-bytes
+  (append inline-word-bytes '(45)))
+(def macro-first-bytes
+  (map char->integer
+       (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
 (def inline-trigger-bytes
   (append (map (lambda (marker)
                  (char->integer (string-ref marker 0)))
-               (list link-open "<<" "\\\\" "@@"))
-          (map car inline-markup-rules)))
+               (list link-open "<<" "\\\\" "@@" "{{{" "$"))
+          (map org-inline-markup-byte inline-markup-rules)
+          inline-script-trigger-bytes))
 (def inline-right-boundary?
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
        (line-bytes-any-in? ,inline-next (line-step ,inline-next)
                            ,inline-close-boundary-bytes)))
-
-(def (pattern-end from pattern)
-  (let loop ((offset from) (remaining (string-length pattern)))
-    (if (= remaining 0) offset
-      (loop `(line-step ,offset) (- remaining 1)))))
-
-(def (pattern-at? from pattern)
-  (let ((bytes (string->utf8 pattern)))
-    (unless (> (u8vector-length bytes) 0)
-      (error "inline link marker must not be empty" pattern))
-    (let loop ((offset from) (index 0) (predicate #f))
-      (if (= index (u8vector-length bytes)) predicate
-        (let (check `(line-byte-equal? ,offset ,(u8vector-ref bytes index)))
-          (loop `(line-step ,offset) (+ index 1)
-                (if predicate `(and ,predicate ,check) check)))))))
-
-(def (link-valid? target-end)
-  `(offset-less? (state-offset inline-target-start) ,target-end))
-
-(def (link-events)
-  (let ((trivia (inline-link-trivia-token link-rule))
-        (target (inline-link-target-token link-rule))
-        (description (inline-link-description-token link-rule))
-        (separator-end (pattern-end '(state-offset inline-separator-at)
-                                    link-separator))
-        (close-end (pattern-end link-index link-close)))
-    `((token TextLine (state-offset inline-cursor)
-             (state-offset inline-open-at))
-      (start-node ,(inline-link-node link-rule))
-      (token ,trivia (state-offset inline-open-at)
-             (state-offset inline-target-start))
-      (if (state inline-has-separator)
-          ((token ,target (state-offset inline-target-start)
-                  (state-offset inline-separator-at))
-           (token ,trivia (state-offset inline-separator-at) ,separator-end)
-           (token ,description ,separator-end ,link-index))
-          ((token ,target (state-offset inline-target-start) ,link-index)))
-      (token ,trivia ,link-index ,close-end)
-      (finish-node)
-      (set-uint inline-cursor (offset ,close-end))
-      (set-bool inline-open (bool #f)))))
-
-(def (link-close-forms)
-  `((if (state inline-has-separator)
-        ((if ,(link-valid? '(state-offset inline-separator-at))
-             ,(link-events)
-             ((set-bool inline-failed (bool #t)))))
-        ((if ,(link-valid? link-index)
-             ,(link-events)
-             ((set-bool inline-failed (bool #t))))))))
-
-(def (link-scan-forms)
-  `((if (and (not (state inline-failed))
-             (not (state inline-open)))
-        ((if ,(pattern-at? link-index link-open)
-             ((set-bool inline-open (bool #t))
-              (set-bool inline-has-separator (bool #f))
-              (set-uint inline-open-at (offset ,link-index))
-              (set-uint inline-target-start
-                        (offset ,(pattern-end link-index link-open)))) ()))
-        ((if (and (state inline-open)
-                  ,(pattern-at? link-index link-close))
-             ,(link-close-forms)
-             ((if (and (state inline-open)
-                       (not (state inline-has-separator))
-                       ,(pattern-at? link-index link-separator))
-                  ((set-bool inline-has-separator (bool #t))
-                   (set-uint inline-separator-at (offset ,link-index))) ())))))))
 
 (def (markup-events node)
   `((token TextLine (state-offset inline-cursor)
@@ -139,9 +87,11 @@
                   ,inline-right-boundary?)
              ,(foldr (lambda (rule otherwise)
                        `((if (and (uint-equal? (state inline-markup-kind)
-                                               (uint ,(cadr rule)))
-                                  (line-byte-equal? ,link-index ,(car rule)))
-                             ,(markup-events (caddr rule)) ,otherwise)))
+                                               (uint ,(org-inline-markup-id rule)))
+                                  (line-byte-equal? ,link-index
+                                                    ,(org-inline-markup-byte rule)))
+                             ,(markup-events (org-inline-markup-node rule))
+                             ,otherwise)))
                      '() inline-markup-rules)
              ()))
         ((if (and (state inline-left-boundary)
@@ -149,8 +99,10 @@
                   (not (line-bytes-any-in? ,inline-next
                                            (line-step ,inline-next) (9 32))))
              ,(foldr (lambda (rule otherwise)
-                       `((if (line-byte-equal? ,link-index ,(car rule))
-                             ((set-uint inline-markup-kind (uint ,(cadr rule)))
+                       `((if (line-byte-equal? ,link-index
+                                               ,(org-inline-markup-byte rule))
+                             ((set-uint inline-markup-kind
+                                        (uint ,(org-inline-markup-id rule)))
                               (set-uint inline-markup-open-at
                                         (offset ,link-index))
                               (set-uint inline-markup-value-start
@@ -247,19 +199,32 @@
                        ,(statistics-cookie-events)
                        ((set-uint inline-delimited-kind (uint 0))))))))))))
 
+(def line-break-physical-end
+  `(line-physical-end ,inline-next))
+(def line-break-after-terminator
+  `(line-step ,line-break-physical-end))
+(def line-break-after-crlf
+  `(line-step ,line-break-after-terminator))
+
 (def (line-break-events)
   `((token TextLine (state-offset inline-cursor) ,link-index)
     (start-node OrgLineBreak)
-    (token LineBreakText ,link-index end)
-    (finish-node)
-    (set-uint inline-cursor (offset end))))
+    (if (and (line-byte-equal? ,line-break-physical-end 13)
+             (line-byte-equal? ,line-break-after-terminator 10))
+        ((token LineBreakText ,link-index ,line-break-after-crlf)
+         (set-uint inline-cursor (offset ,line-break-after-crlf)))
+        ((token LineBreakText ,link-index ,line-break-after-terminator)
+         (set-uint inline-cursor (offset ,line-break-after-terminator))))
+    (finish-node)))
 
 (def (line-break-at?)
   `(and (line-byte-equal? ,link-index 92)
         (not (state inline-previous-backslash))
         (line-byte-equal? ,inline-next 92)
         (line-bytes-all-in? ,(pattern-end link-index "\\\\")
-                            (line-content-end) (9 32))))
+                            ,line-break-physical-end (9 32))
+        (line-bytes-any-in? ,line-break-physical-end
+                            ,line-break-after-terminator (10 13))))
 
 (def (export-snippet-events)
   `((token TextLine (state-offset inline-cursor)
@@ -571,7 +536,102 @@
                                  ((set-uint inline-code-mode (uint 0)))))
                             ,(inline-code-second-scan-forms))))))))))))
 
-(def (inline-free-scan-forms)
+(def (entity-or-ordinary-free-forms)
+  `((if (or ,(pattern-at? link-index "\\(")
+            ,(pattern-at? link-index "\\["))
+        ,(latex-open-forms)
+        ((if (line-byte-equal? ,inline-next 95)
+        ,(entity-space-choices 20)
+        ((if (line-bytes-any-in? ,inline-next
+                                 (line-step ,inline-next) ,entity-name-bytes)
+             ((set-uint inline-entity-mode (uint 1))
+              (set-uint inline-entity-open-at (offset ,link-index))
+              (set-uint inline-entity-name-start (offset ,inline-next))
+              (set-uint inline-entity-name-end (offset ,inline-next)))
+             ())))
+    (if (uint-equal? (state inline-entity-mode) (uint 2))
+        (,@(entity-events)
+         (set-uint inline-entity-mode (uint 0)))
+        ((if (uint-equal? (state inline-entity-mode) (uint 0))
+             ,(inline-ordinary-free-scan-forms) ())))))))
+
+(def (macro-events arguments?)
+  (let ((close-end (if arguments?
+                     (pattern-end link-index ")}}}")
+                     (pattern-end link-index "}}}"))))
+    `((token TextLine (state-offset inline-cursor)
+             (state-offset inline-macro-open-at))
+      (start-node OrgMacro)
+      (token MacroDelimiter (state-offset inline-macro-open-at)
+             (state-offset inline-macro-name-start))
+      (token MacroName (state-offset inline-macro-name-start)
+             (state-offset inline-macro-name-end))
+      ,@(if arguments?
+            `((token MacroDelimiter (state-offset inline-macro-name-end)
+                     (state-offset inline-macro-arguments-start))
+              (token MacroArguments (state-offset inline-macro-arguments-start)
+                     ,link-index))
+            '())
+      (token MacroDelimiter
+             ,(if arguments? link-index '(state-offset inline-macro-name-end))
+             ,close-end)
+      (finish-node)
+      (set-uint inline-cursor (offset ,close-end))
+      (set-uint inline-macro-mode (uint 0)))))
+
+(def (macro-name-end-forms)
+  `((if ,(pattern-at? link-index "}}}")
+        ,(macro-events #f)
+        ((if (line-byte-equal? ,link-index 40)
+             ((set-uint inline-macro-arguments-start (offset ,inline-next))
+              (set-uint inline-macro-mode (uint 2)))
+             ((set-uint inline-macro-mode (uint 0))))))))
+
+(def (macro-name-scan-forms)
+  `((if (line-bytes-any-in? ,link-index ,inline-next ,macro-name-bytes)
+        ((set-uint inline-macro-name-end (offset ,inline-next)))
+        ((if (offset-less? (state-offset inline-macro-name-start)
+                           (state-offset inline-macro-name-end))
+             ,(macro-name-end-forms)
+             ((set-uint inline-macro-mode (uint 0))))))))
+
+(def (macro-arguments-scan-forms)
+  `((if (and (line-byte-equal? ,link-index 41)
+             ,(pattern-at? inline-next "}}}"))
+        ,(macro-events #t) ())))
+
+(def (macro-scan-forms)
+  `((if (offset-less? ,link-index (state-offset inline-macro-name-start))
+        ()
+        ((if (uint-equal? (state inline-macro-mode) (uint 1))
+             ,(macro-name-scan-forms)
+             ,(macro-arguments-scan-forms))))))
+
+(def (macro-open-forms)
+  `((if (line-bytes-any-in? ,(pattern-end link-index "{{{")
+                            ,(pattern-end link-index "{{{{")
+                            ,macro-first-bytes)
+        ((set-uint inline-macro-mode (uint 1))
+         (set-uint inline-macro-open-at (offset ,link-index))
+         (set-uint inline-macro-name-start
+                   (offset ,(pattern-end link-index "{{{")))
+         (set-uint inline-macro-name-end
+                   (offset ,(pattern-end link-index "{{{")))) ())))
+
+(def (inline-bracket-open-forms)
+  `((if (or ,(pattern-at? link-index "[cite:")
+            ,(pattern-at? link-index "[cite/"))
+        ,(citation-open-forms)
+        ((if ,(pattern-at? link-index "[fn:")
+             ,(footnote-reference-open-forms)
+             ((if ,(pattern-at? link-index link-open)
+                  ,(link-scan-forms)
+                  ((set-uint inline-delimited-kind
+                             (uint ,inline-cookie-first))
+                   (set-uint inline-cookie-open-at
+                             (offset ,link-index))))))))))
+
+(def (inline-ordinary-free-scan-forms)
   `((if (and (state inline-code-left-boundary)
              (line-byte-equal? ,link-index 115)
              ,(pattern-at? link-index "src_"))
@@ -581,21 +641,23 @@
                   ,(pattern-at? link-index "call_"))
              ,(inline-code-open-forms 2 "call_")
              ((if (line-byte-equal? ,link-index 91)
-                  ((if ,(pattern-at? link-index "[fn:")
-                       ,(footnote-reference-open-forms)
-                       ((if ,(pattern-at? link-index link-open)
-                            ,(link-scan-forms)
-                            ((set-uint inline-delimited-kind
-                                       (uint ,inline-cookie-first))
-                             (set-uint inline-cookie-open-at
-                                       (offset ,link-index)))))))
+                  ,(inline-bracket-open-forms)
                   ((if ,(pattern-at? link-index "@@")
                        ,(export-snippet-open-forms)
                        ((if ,(line-break-at?)
                             ,(line-break-events)
-                            ,(markup-scan-forms))))))))))))
+                            ((if (line-byte-equal? ,link-index 36)
+                                 ,(latex-open-forms)
+                                 ,(markup-scan-forms))))))))))))))
 
-(def (inline-non-code-scan-forms)
+(def (inline-free-scan-forms)
+  `((if ,(pattern-at? link-index "{{{")
+        ,(macro-open-forms)
+        ((if (line-byte-equal? ,link-index 92)
+             ,(entity-or-ordinary-free-forms)
+             ,(inline-ordinary-free-scan-forms))))))
+
+(def (inline-ordinary-non-code-scan-forms)
   `((if (uint-positive? (state inline-footnote-mode))
         ,(footnote-reference-scan-forms)
         ((if (uint-positive? (state inline-export-mode))
@@ -616,10 +678,26 @@
                                  ,(markup-scan-forms)
                                  ,(inline-free-scan-forms))))))))))))))
 
+(def (inline-non-code-scan-forms)
+  `((if (uint-positive? (state inline-macro-mode))
+        ,(macro-scan-forms)
+        ((if (uint-positive? (state inline-citation-mode))
+             ,(citation-scan-forms)
+             ,(inline-ordinary-non-code-scan-forms))))))
+
 (def (inline-scan-forms)
-  `((if (uint-positive? (state inline-code-mode))
-        ,(inline-code-scan-forms)
-        ,(inline-non-code-scan-forms))
+  `((if (and (uint-positive? (state inline-citation-mode))
+             (line-bytes-any-in? ,link-index ,inline-next (10 13)))
+        ((set-uint inline-citation-mode (uint 0))) ())
+    (if (offset-less? ,link-index (state-offset inline-cursor))
+        ()
+        ((if (uint-positive? (state inline-latex-mode))
+             ,(latex-scan-forms)
+             ,(inline-scan-non-latex-forms))))
+    (if (uint-equal? (state inline-latex-mode) (uint 4))
+        ((set-bool inline-latex-previous-invalid
+                   (line-bytes-any-in? ,link-index ,inline-next
+                                       (9 10 13 32 44 46 59)))) ())
     (set-bool inline-left-boundary
               (line-bytes-any-in? ,link-index ,inline-next
                                   ,inline-open-boundary-bytes))
@@ -627,37 +705,70 @@
               (not (line-bytes-any-in? ,link-index ,inline-next
                                        ,inline-word-bytes)))
     (set-bool inline-previous-space
-              (line-bytes-any-in? ,link-index ,inline-next (9 32)))
+              (line-bytes-any-in? ,link-index ,inline-next (9 10 13 32)))
     (set-bool inline-previous-backslash
-              (line-byte-equal? ,link-index 92))))
+              (line-byte-equal? ,link-index 92))
+    (if (line-bytes-any-in? ,link-index ,inline-next
+                            ,inline-script-upper-digit-bytes)
+        ((set-uint inline-upper-run
+                   (uint-add (state inline-upper-run) (uint 1))))
+        ((set-uint inline-upper-run (uint 0))))
+    (set-bool inline-previous-present
+              (not (line-bytes-any-in? ,link-index ,inline-next (10 13))))))
+
+(def (inline-scan-non-latex-forms)
+  `((if (uint-positive? (state inline-script-mode))
+        ,(inline-script-scan-forms) ())
+    (if (offset-less? ,link-index (state-offset inline-cursor))
+        ()
+        ((if (and (uint-equal? (state inline-script-mode) (uint 0))
+             (line-bytes-any-in? ,link-index ,inline-next
+                                 ,inline-script-trigger-bytes)
+             (uint-equal? (state inline-entity-mode) (uint 0))
+             (uint-equal? (state inline-code-mode) (uint 0))
+             (uint-equal? (state inline-macro-mode) (uint 0))
+             (uint-equal? (state inline-citation-mode) (uint 0))
+             (uint-equal? (state inline-footnote-mode) (uint 0))
+             (uint-equal? (state inline-export-mode) (uint 0))
+             (uint-equal? (state inline-delimited-kind) (uint 0))
+             (uint-equal? (state inline-markup-kind) (uint 0))
+             (not (state inline-open)))
+        ,(inline-script-open-forms) ())))
+    (if (uint-positive? (state inline-entity-mode))
+        ,(entity-name-scan-forms)
+        ())
+    (if (offset-less? ,link-index (state-offset inline-cursor))
+        ()
+        ((if (and (uint-equal? (state inline-script-mode) (uint 0))
+                  (uint-equal? (state inline-entity-mode) (uint 0)))
+             ((if (uint-positive? (state inline-code-mode))
+                  ,(inline-code-scan-forms)
+                  ,(inline-non-code-scan-forms)))
+             ())))))
 
 (def (event-text-line-forms from)
   `((start-node OrgTextLine)
     (if (offset-less? (state-offset inline-cursor) ,from)
         ((set-uint inline-cursor (offset ,from))) ())
+    ,@(latex-prescan-forms from)
     (if (line-bytes-any-in? ,from (line-content-end)
                             ,inline-trigger-bytes)
         ((for-line-bytes inline-byte-index ,from (line-content-end)
                          ,(inline-scan-forms))) ())
+    (if (uint-positive? (state inline-entity-mode))
+        ,(entity-finish-forms #f) ())
+    ,@(inline-script-final-forms)
     (token TextLine (state-offset inline-cursor) end)
-    (set-uint inline-cursor (offset end))
-    (set-bool inline-open (bool #f))
-    (set-bool inline-failed (bool #f))
-    (set-bool inline-left-boundary (bool #t))
-    (set-bool inline-previous-space (bool #f))
-    (set-uint inline-markup-kind (uint 0))
-    (set-uint inline-delimited-kind (uint 0))
-    (set-uint inline-export-mode (uint 0))
-    (set-uint inline-footnote-mode (uint 0))
-    (set-uint inline-code-mode (uint 0))
-    (set-bool inline-code-left-boundary (bool #t))
-    (set-bool inline-previous-backslash (bool #f))
     (finish-node)))
 
 (def event-inline-initial
-  '((inline-cursor 0) (inline-open #f) (inline-has-separator #f)
-    (inline-failed #f) (inline-open-at 0) (inline-target-start 0)
-    (inline-separator-at 0) (inline-left-boundary #t)
+  (append
+   latex-event-initial
+   '((inline-cursor 0))
+   inline-link-event-initial
+   citation-event-initial
+   inline-script-event-initial
+   '((inline-left-boundary #t)
     (inline-previous-space #f)
     (inline-markup-kind 0) (inline-markup-open-at 0)
     (inline-markup-value-start 0)
@@ -683,4 +794,10 @@
     (inline-code-second-start 0) (inline-code-second-end 0)
     (inline-code-has-second #f)
     (inline-code-opens 0) (inline-code-closes 0)
-    (inline-previous-backslash #f)))
+    (inline-macro-mode 0) (inline-macro-open-at 0)
+    (inline-macro-name-start 0) (inline-macro-name-end 0)
+    (inline-macro-arguments-start 0)
+    (inline-entity-mode 0) (inline-entity-open-at 0)
+    (inline-entity-name-start 0)
+    (inline-entity-name-end 0) (inline-entity-post-end 0)
+    (inline-previous-backslash #f))))

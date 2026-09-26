@@ -127,7 +127,7 @@ mod tests {
             source,
             "../../../../languages/org/v1/modules/org-elements/interface.ss",
         )
-        .expect("consumer Org source declares one tagged query");
+        .expect("consumer Org source declares tagged queries");
         assert_eq!(
             generated,
             include_str!("../tests/fixtures/org-elements/generated/customer-query-source.ss")

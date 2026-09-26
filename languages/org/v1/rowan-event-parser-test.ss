@@ -2,20 +2,101 @@
 ;;; The Org-owned algorithm executes as Scheme before AOT lowering.
 
 (import (only-in :std/test check test-case test-suite)
+        (only-in :clan/poo/object .o)
         (only-in :std/encoding/json JSONReadOptions string->json)
+        (only-in :std/misc/ports read-all-as-string)
+        (only-in :gerbil-parser/src/modules/parser/line-structure-objects
+                 line-structure-blocks)
+        (only-in "parser.ss" org-v1-line-structure)
+        (only-in "modules/org-parser/types.ss"
+                 org-event-block? org-named-block?
+                 org-inline-markup? org-inline-script?
+                 org-event-helper?
+                 org-event-strategy?)
+        (only-in "modules/org-parser/objects.ss"
+                 make-org-event-block org-event-block-id
+                 make-org-named-block
+                 make-org-inline-markup org-inline-markup-node
+                 make-org-inline-script org-inline-script-node
+                 make-org-event-helper org-event-helper-descriptor
+                 make-org-event-strategy org-event-strategy-root)
         (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
+        (only-in "rowan-event-fixture.ss" rowan-event-fixture-json)
         (only-in "rowan-event-parser.ss"
                  parse-org-rowan-events parse_org_rowan_events))
 (export org-v1-rowan-event-parser-test)
 
 (def org-v1-rowan-event-parser-test
   (test-suite "Org contextual Rowan event AOT"
+    (test-case "POO strategy declarations reject untyped rule tuples"
+      (let* ((block (make-org-event-block
+                    1 (car (line-structure-blocks org-v1-line-structure))))
+            (markup (make-org-inline-markup 42 3 'OrgBold))
+            (script (make-org-inline-script 94 2 'OrgSuperscript))
+            (helper (make-org-event-helper
+                     'source-fragment '((seen #f)) '((finish-node))))
+            (strategy (make-org-event-strategy
+                       'OrgFile '() '((finish-node)) '() (list helper))))
+        (check (org-event-block? block) => #t)
+        (check (org-named-block?
+                (make-org-named-block "#+BEGIN_" "#+END_"
+                                      'OrgSpecialBlock 'SpecialBlockName)) => #t)
+        (check (org-event-block-id block) => 1)
+        (check (org-inline-markup? markup) => #t)
+        (check (org-inline-markup-node markup) => 'OrgBold)
+        (check (org-inline-script? script) => #t)
+        (check (org-inline-script-node script) => 'OrgSuperscript)
+        (check (org-inline-script? '(94 2 OrgSuperscript)) => #f)
+        (check (org-event-helper? helper) => #t)
+        (check (org-event-helper-descriptor helper)
+               => '(source-fragment ((seen #f)) ((finish-node))))
+        (check (org-event-helper? '(source-fragment () ())) => #f)
+        (check (org-event-strategy? strategy) => #t)
+        (check (org-event-strategy-root strategy) => 'OrgFile)
+        (check (org-event-block? '(1 . block)) => #f)
+        (check (org-named-block? '("#+BEGIN_" . "#+END_")) => #f)
+        (check (org-inline-markup? '(42 3 OrgBold)) => #f)
+        (check (org-inline-markup?
+                (.o kind: 'org-inline-markup byte: 256 id: 3
+                    node: 'OrgBold))
+               => #f)))
+    (test-case "Scheme parses source-backed LaTeX math fragments"
+      (check-org-ast-with parse-org-rowan-events
+        "a \\(x\\) b\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgLaTeXFragment (LatexFragmentValue 2 7))
+           (TextLine 7 10)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\[x\\] $$y$$ $z$\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgLaTeXFragment (LatexFragmentValue 0 5))
+           (TextLine 5 6)
+           (OrgLaTeXFragment (LatexFragmentValue 6 11))
+           (TextLine 11 12)
+           (OrgLaTeXFragment (LatexFragmentValue 12 15))
+           (TextLine 15 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "$ x$ $x $\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 10)))))
+      (check-org-ast-with parse-org-rowan-events
+        "$unfinished [[id:x]]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 12)
+           (OrgLink (LinkTrivia 12 14) (LinkTarget 14 18)
+                    (LinkTrivia 18 20))
+           (TextLine 20 21))))))
     (test-case "paragraphs group source lines and blank trivia closes the scope"
       (check-org-ast-with parse-org-rowan-events
         "alpha\nβ\n \t\nnext\n* H\n"
         (OrgFile
-         (OrgParagraph (OrgTextLine (TextLine 0 6))
-                       (OrgTextLine (TextLine 6 9))
+         (OrgParagraph (OrgTextLine (TextLine 0 9))
                        (OrgTextLine (TextLine 9 12)))
          (OrgParagraph (OrgTextLine (TextLine 12 17)))
          (OrgSection (OrgHeadline (HeadlineLine 17 18)
@@ -40,6 +121,159 @@
           (OrgHeadline
            (HeadlineLine 0 1) (HeadlineTrivia 1 2)
            (HeadlineTitle 2 13) (HeadlineTrivia 13 14))))))
+    (test-case "Scheme macro Objects retain named and argument spans"
+      (check-org-ast-with parse-org-rowan-events
+        "x {{{title}}} y\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgMacro (MacroDelimiter 2 5) (MacroName 5 10)
+                     (MacroDelimiter 10 13))
+           (TextLine 13 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "{{{issue(42)}}}\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgMacro (MacroDelimiter 0 3) (MacroName 3 8)
+                     (MacroDelimiter 8 9) (MacroArguments 9 11)
+                     (MacroDelimiter 11 15))
+           (TextLine 15 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "{{{9bad}}} {{{broken\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 21))))))
+    (test-case "Scheme citation-reference Objects retain source-backed fields"
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:@doe2020]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation (CitationDelimiter 0 6)
+                        (OrgCitationReference
+                         (CitationReferenceMarker 6 7)
+                         (CitationReferenceKey 7 14))
+                        (CitationDelimiter 14 15))
+           (TextLine 15 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite/:@key]\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 13)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:\\@key] [cite:@ ]\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 23)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:@key] [cite:no key]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation (CitationDelimiter 0 6)
+                        (OrgCitationReference
+                         (CitationReferenceMarker 6 7)
+                         (CitationReferenceKey 7 10))
+                        (CitationDelimiter 10 11))
+           (TextLine 11 26)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:see [p. 12] @key]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation (CitationDelimiter 0 6)
+                        (OrgCitationReference
+                         (CitationReferencePrefix 6 18)
+                         (CitationReferenceMarker 18 19)
+                         (CitationReferenceKey 19 22))
+                        (CitationDelimiter 22 23))
+           (TextLine 23 24)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite/text:see @doe2020 p. 42; cf. @roe2021]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation
+            (CitationDelimiter 0 11)
+            (OrgCitationReference
+             (CitationReferencePrefix 11 15)
+             (CitationReferenceMarker 15 16)
+             (CitationReferenceKey 16 23)
+             (CitationReferenceSuffix 23 29))
+            (CitationSeparator 29 30)
+            (OrgCitationReference
+             (CitationReferencePrefix 30 35)
+             (CitationReferenceMarker 35 36)
+             (CitationReferenceKey 36 43))
+            (CitationDelimiter 43 44))
+           (TextLine 44 45)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:see;@key;and]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation
+            (CitationDelimiter 0 6)
+            (CitationGlobalPrefix 6 9)
+            (CitationSeparator 9 10)
+            (OrgCitationReference
+             (CitationReferenceMarker 10 11)
+             (CitationReferenceKey 11 14))
+            (CitationSeparator 14 15)
+            (CitationGlobalSuffix 15 18)
+            (CitationDelimiter 18 19))
+           (TextLine 19 20)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:@key\n[cite:@next]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 11)
+           (OrgCitation (CitationDelimiter 11 17)
+                        (OrgCitationReference
+                         (CitationReferenceMarker 17 18)
+                         (CitationReferenceKey 18 22))
+                        (CitationDelimiter 22 23))
+           (TextLine 23 24))))))
+    (test-case "the complete Org entity catalog drives source-backed Objects"
+      (check-org-ast-with parse-org-rowan-events
+        "\\cent \\alpha{} \\frac12{}test\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgEntity (EntityDelimiter 0 1) (EntityName 1 5))
+           (TextLine 5 6)
+           (OrgEntity (EntityDelimiter 6 7) (EntityName 7 12)
+                      (EntityPost 12 14))
+           (TextLine 14 15)
+           (OrgEntity (EntityDelimiter 15 16) (EntityName 16 22)
+                      (EntityPost 22 24))
+           (TextLine 24 29)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\_   x\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgEntity (EntityDelimiter 0 1) (EntityName 1 2)
+                      (EntityPost 2 5))
+           (TextLine 5 7)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\unknown \\centaur\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 18)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\alpha\\beta\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgEntity (EntityDelimiter 0 1) (EntityName 1 6))
+           (OrgEntity (EntityDelimiter 6 7) (EntityName 7 11))
+           (TextLine 11 12)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\alpha[[https://example.org]]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgEntity (EntityDelimiter 0 1) (EntityName 1 6))
+           (OrgLink (LinkTrivia 6 8)
+                    (LinkTarget 8 27)
+                    (LinkTrivia 27 29))
+           (TextLine 29 30))))))
     (test-case "five-dash horizontal rule interrupts a paragraph"
       (check-org-ast-with parse-org-rowan-events
         "before\n-----\nafter\n"
@@ -69,8 +303,7 @@
            (TextLine 20 25)
            (OrgLink (LinkTrivia 25 27) (LinkTarget 27 31)
                     (LinkTrivia 31 33))
-           (TextLine 33 34))
-          (OrgTextLine (TextLine 34 43))))))
+           (TextLine 33 43))))))
     (test-case "target and radio-target Objects retain source-backed value spans"
       (check-org-ast-with parse-org-rowan-events
         "a <<one two>> and <<<radio>>> z\n"
@@ -228,13 +461,48 @@
         "src_rust{unterminated\ncall_foo[x](unterminated\n"
         (OrgFile
          (OrgParagraph
-          (OrgTextLine (TextLine 0 22))
-          (OrgTextLine (TextLine 22 47)))))
+          (OrgTextLine (TextLine 0 47)))))
       (check-org-ast-with parse-org-rowan-events
         "prefixsrc_rust{a}\n"
         (OrgFile
          (OrgParagraph
-          (OrgTextLine (TextLine 0 18))))))
+          (OrgTextLine
+           (TextLine 0 9)
+           (OrgSubscript (InlineScriptDelimiter 9 10)
+                         (InlineScriptValue 10 14))
+           (TextLine 14 18))))))
+    (test-case "Scheme script Objects preserve delimiters and nested braces"
+      (check-org-ast-with parse-org-rowan-events
+        "x_abc y^2\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 1)
+           (OrgSubscript (InlineScriptDelimiter 1 2)
+                         (InlineScriptValue 2 5))
+           (TextLine 5 7)
+           (OrgSuperscript (InlineScriptDelimiter 7 8)
+                           (InlineScriptValue 8 9))
+           (TextLine 9 10)))))
+      (check-org-ast-with parse-org-rowan-events
+        "x_{a{b}c} y^*\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 1)
+           (OrgSubscript (InlineScriptDelimiter 1 3)
+                         (InlineScriptValue 3 8)
+                         (InlineScriptDelimiter 8 9))
+           (TextLine 9 11)
+           (OrgSuperscript (InlineScriptDelimiter 11 12)
+                           (InlineScriptValue 12 13))
+           (TextLine 13 14)))))
+      (check-org-ast-with parse-org-rowan-events
+        "AB_2O x^a,\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11)))))
+      (check-org-ast-with parse-org-rowan-events
+        "_abc\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 5))))))
     (test-case "footnote definitions contain elements and stop at headings"
       (check-org-ast-with parse-org-rowan-events
         "[fn:n] body\n* H\n"
@@ -345,14 +613,13 @@
         (OrgFile
          (OrgParagraph
           (OrgTextLine (TextLine 0 1)
-                       (OrgLineBreak (LineBreakText 1 7)))
-          (OrgTextLine (TextLine 7 12)))))
+                       (OrgLineBreak (LineBreakText 1 7))
+                       (TextLine 7 12)))))
       (check-org-ast-with parse-org-rowan-events
         "a\\\\ x\na\\\\\\\n"
         (OrgFile
          (OrgParagraph
-          (OrgTextLine (TextLine 0 6))
-          (OrgTextLine (TextLine 6 11))))))
+          (OrgTextLine (TextLine 0 11))))))
     (test-case "inline code and verbatim preserve delimiters and source values"
       (check-org-ast-with parse-org-rowan-events
         "a ~code~ =verb= z\n"
@@ -409,7 +676,17 @@
            (TextLine 32 33)))))
       (check-org-ast-with parse-org-rowan-events
         "x*y* *open\n"
-        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11))))))
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11)))))
+      (check-org-ast-with parse-org-rowan-events
+        "a *bo\nld* z\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgBold (InlineMarkupDelimiter 2 3)
+                    (InlineMarkupValue 3 8)
+                    (InlineMarkupDelimiter 8 9))
+           (TextLine 9 12))))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"
@@ -468,8 +745,12 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
                        (HeadlineTitle 2 7) (HeadlineTrivia 7 8))
-          (OrgParagraph (OrgTextLine (TextLine 8 22))
-                        (OrgTextLine (TextLine 22 31)))
+          (OrgParagraph
+           (OrgTextLine
+            (TextLine 8 15)
+            (OrgSubscript (InlineScriptDelimiter 15 16)
+                          (InlineScriptValue 16 21))
+            (TextLine 21 31)))
           (OrgSection
            (OrgHeadline (HeadlineLine 31 33) (HeadlineTrivia 33 34)
                         (HeadlineTitle 34 38) (HeadlineTrivia 38 39))
@@ -481,10 +762,7 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
                        (HeadlineTitle 2 8) (HeadlineTrivia 8 9))
-          (OrgParagraph (OrgTextLine (TextLine 9 22))
-                        (OrgTextLine (TextLine 22 31))
-                        (OrgTextLine (TextLine 31 41))
-                        (OrgTextLine (TextLine 41 47)))
+          (OrgParagraph (OrgTextLine (TextLine 9 47)))
           (OrgSection
            (OrgHeadline (HeadlineLine 47 49) (HeadlineTrivia 49 50)
                         (HeadlineTitle 50 54) (HeadlineTrivia 54 55)))))))
@@ -521,8 +799,7 @@
         "%%(diary-anniversary 1 1 2000)\ntext\n%%not-diary\n"
         (OrgFile
          (OrgDiarySexp (DiarySexpValue 0 30) (DiarySexpTrivia 30 31))
-         (OrgParagraph (OrgTextLine (TextLine 31 36))
-                       (OrgTextLine (TextLine 36 48)))))
+         (OrgParagraph (OrgTextLine (TextLine 31 48)))))
       (check-org-ast-with parse-org-rowan-events
         "%%(x) \r\n"
         (OrgFile
@@ -617,8 +894,7 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
                        (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
-          (OrgParagraph (OrgTextLine (TextLine 4 9))
-                        (OrgTextLine (TextLine 9 26)))))))
+          (OrgParagraph (OrgTextLine (TextLine 4 26)))))))
     (test-case "empty declared values keep source spans ordered"
       (check-org-ast-with parse-org-rowan-events
         "* H\nSCHEDULED:  \n"
@@ -700,8 +976,7 @@
           (OrgListItem
            (ListBullet 0 1) (ListTrivia 1 2)
            (OrgParagraph
-            (OrgTextLine (TextLine 2 8))
-            (OrgTextLine (TextLine 8 15))))
+            (OrgTextLine (TextLine 2 15))))
           (OrgListItem
            (ListBullet 15 16) (ListTrivia 16 17)
            (OrgParagraph (OrgTextLine (TextLine 17 22)))))))
@@ -792,6 +1067,125 @@
           (DrawerTrivia 34 36)
           (OrgParagraph (OrgTextLine (TextLine 36 42)))
           (DrawerEndLine 42 48)))))
+    (test-case "source-named special blocks match their closing names"
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_NOTE\ntext\n#+END_note\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 12)
+          (BlockHeaderTrivia 12 13)
+          (OrgParagraph (OrgTextLine (TextLine 13 18)))
+          (BlockEndLine 18 29))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_NOTE\n* heading\n#+END_note\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 13)))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 13 14) (HeadlineTrivia 14 15)
+                       (HeadlineTitle 15 22) (HeadlineTrivia 22 23))
+          (OrgParagraph
+           (OrgTextLine
+            (TextLine 23 28)
+            (OrgSubscript (InlineScriptDelimiter 28 29)
+                          (InlineScriptValue 29 33))
+            (TextLine 33 34))))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_NOTE\ntext\n#+END_OTHER\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 30))))))
+    (test-case "nested named special blocks close one frame at a time"
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_OUTER\n#+BEGIN_INNER\nx\n#+END_inner\n#+END_outer\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 13)
+          (BlockHeaderTrivia 13 14)
+          (OrgSpecialBlock
+           (BlockBeginLine 14 22) (SpecialBlockName 22 27)
+           (BlockHeaderTrivia 27 28)
+           (OrgParagraph (OrgTextLine (TextLine 28 30)))
+           (BlockEndLine 30 42))
+          (BlockEndLine 42 54)))))
+    (test-case "named child blocks do not cross a parent closer"
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_OUTER\n#+BEGIN_INNER\n#+END_outer\n#+END_inner\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 13)
+          (BlockHeaderTrivia 13 14)
+          (OrgParagraph (OrgTextLine (TextLine 14 28)))
+          (BlockEndLine 28 40))
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 40 45)
+           (OrgSubscript (InlineScriptDelimiter 45 46)
+                         (InlineScriptValue 46 51))
+           (TextLine 51 52)))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_NOTE\n\\begin{a}\n#+END_NOTE\n\\end{a}\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 12)
+          (BlockHeaderTrivia 12 13)
+          (OrgParagraph (OrgTextLine (TextLine 13 23)))
+          (BlockEndLine 23 34))
+         (OrgParagraph (OrgTextLine (TextLine 34 42))))))
+    (test-case "unrelated named closers do not truncate a child block"
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_OUTER\n#+BEGIN_INNER\n#+END_other\n#+END_inner\n#+END_outer\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 13)
+          (BlockHeaderTrivia 13 14)
+          (OrgSpecialBlock
+           (BlockBeginLine 14 22) (SpecialBlockName 22 27)
+           (BlockHeaderTrivia 27 28)
+           (OrgParagraph
+            (OrgTextLine
+             (TextLine 28 33)
+             (OrgSubscript (InlineScriptDelimiter 33 34)
+                           (InlineScriptValue 34 39))
+             (TextLine 39 40)))
+           (BlockEndLine 40 52))
+          (BlockEndLine 52 64)))))
+    (test-case "source-named LaTeX environments keep opaque bodies"
+      (check-org-ast-with parse-org-rowan-events
+        "\\begin{align*}\nx\n\\end{align*}\n"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 13)
+          (LatexEnvironmentBeginSuffix 13 14)
+          (LatexEnvironmentBody 14 15)
+          (LatexEnvironmentBody 15 17)
+          (LatexEnvironmentEnd 17 30))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\begin{a}\\end{a}"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 8)
+          (LatexEnvironmentBeginSuffix 8 9)
+          (LatexEnvironmentEnd 9 16))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\begin{a}x\\foo \\end{a}"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 8)
+          (LatexEnvironmentBeginSuffix 8 9)
+          (LatexEnvironmentBody 9 15)
+          (LatexEnvironmentEnd 15 22))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\begin{a}\n* heading\n\\end{a}\n"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 8)
+          (LatexEnvironmentBeginSuffix 8 9)
+          (LatexEnvironmentBody 9 10)
+          (LatexEnvironmentBody 10 20)
+          (LatexEnvironmentEnd 20 28)))))
     (test-case "indented container delimiters and orphan closers retain source"
       (check-org-ast-with parse-org-rowan-events
         "  #+begin_quote\nx\n  #+end_quote\n"
@@ -829,10 +1223,20 @@
            (OrgParagraph (OrgTextLine (TextLine 29 32)))
            (BlockEndLine 32 44))
           (BlockEndLine 44 57)))))
+    (test-case "Rowan fixture is projected by the same Scheme event algorithm"
+      (let* ((options (JSONReadOptions object-as-hash: #t))
+             (generated (string->json (rowan-event-fixture-json) options))
+             (saved (call-with-input-file
+                     "languages/org/v1/generated/rowan-event-fixture.json"
+                     (lambda (port)
+                       (string->json (read-all-as-string port) options)))))
+        (check (hash-get saved "source") => (hash-get generated "source"))
+        (check (hash-get saved "events") => (hash-get generated "events"))))
     (test-case "AOT IR is a typed source-owned event function"
       (let (ir (string->json parse_org_rowan_events
                              (JSONReadOptions object-as-hash: #t
                                               array-as-vector: #t)))
         (check (hash-ref ir "schema")
                => "gerbil-scheme-rust.event-function-ir.v1")
-        (check (hash-ref ir "name") => "parse_org_rowan_events")))))
+        (check (hash-ref ir "name") => "parse_org_rowan_events")
+        (check (vector-length (hash-ref ir "line")) => 1)))))

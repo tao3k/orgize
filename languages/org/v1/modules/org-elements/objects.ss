@@ -8,8 +8,10 @@
                  +org-element-clause-kind+ +org-element-graph-kind+
                  +org-element-predicate-kind+
                  +org-element-named-query-kind+
+                 +org-headline-properties-kind+
                  OrgElementQuery OrgElementQueryClause OrgElementGraphView
-                 OrgNamedElementQuery OrgElementPredicate))
+                 OrgNamedElementQuery OrgElementPredicate
+                 OrgHeadlineProperties))
 (export make-org-element-query make-org-element-property-clause
         make-org-element-query-groups make-org-element-predicate
         make-org-named-element-query
@@ -24,12 +26,30 @@
         org-element-clause-match
         org-element-graph-records
         org-element-graph-id-of org-element-graph-parent-of
-        org-element-graph-kind-of org-element-graph-field-of)
+        org-element-graph-kind-of org-element-graph-field-of
+        make-org-headline-properties org-headline-property-field)
 
 (def (admit! type value)
   (unless (element? type value)
     (error "invalid Org Element POO value" value))
   value)
+
+(def (make-org-headline-properties source-title-value title-value
+                                   todo-keyword-value todo-type-value
+                                   priority-value tags-value)
+  (admit! OrgHeadlineProperties
+          (.o kind: +org-headline-properties-kind+
+              schema: +org-element-schema+
+              source-title: source-title-value title: title-value
+              todo-keyword: todo-keyword-value todo-type: todo-type-value
+              priority: priority-value tags: tags-value)))
+
+(def (org-headline-property-field value name)
+  (let (slot (if (equal? name "raw-value") 'title
+               (and (member name '("title" "source-title" "todo-keyword"
+                                   "todo-type" "priority" "tags"))
+                    (string->symbol name))))
+    (if slot (values #t (.ref value slot)) (values #f #f))))
 
 (def (make-org-element-query node-kind-value
                              (field-name-value #f) (field-value-value #f)
