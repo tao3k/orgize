@@ -72,30 +72,28 @@
     ,(let (body (block-line-body-line rule))
        (if body (key-value-line-marker body) ""))))
 
+(def (container-future-condition scan base)
+  (foldr
+   (lambda (parent otherwise)
+     `(or (and (uint-equal? (stack-top container-frames)
+                            (uint ,(org-event-block-id parent)))
+               ,(scan (block-line-closing (org-event-block-rule parent))))
+          ,otherwise))
+   base container-blocks))
+
 (def (future-close-condition rule)
   (unless (and (eq? (block-line-unclosed rule) 'recover-as-text)
                (block-line-heading-bound rule))
     (error "Org event block requires declared text recovery and heading boundary"
            (block-line-block-node rule)))
-  (foldr
-   (lambda (parent otherwise)
-     `(or (and (uint-equal? (stack-top container-frames)
-                            (uint ,(org-event-block-id parent)))
-               ,(future-close-scan
-                 rule (block-line-closing (org-event-block-rule parent))))
-          ,otherwise))
+  (container-future-condition
+   (lambda (stop) (future-close-scan rule stop))
    `(and (uint-equal? (stack-top container-frames) (uint 0))
-         ,(future-close-scan rule ""))
-   container-blocks))
+         ,(future-close-scan rule ""))))
 (def (special-future-condition)
-  (foldr
-   (lambda (parent otherwise)
-     `(or (and (uint-equal? (stack-top container-frames)
-                            (uint ,(org-event-block-id parent)))
-               ,(special-future-scan
-                 (block-line-closing (org-event-block-rule parent))
-                 heading-marker heading-separator))
-          ,otherwise))
+  (container-future-condition
+   (lambda (stop)
+     (special-future-scan stop heading-marker heading-separator))
    `(or (and (uint-equal? (stack-top container-frames) (uint 0))
              ,(special-future-scan "" heading-marker heading-separator))
          (and (uint-equal? (stack-top container-frames)
@@ -103,17 +101,11 @@
               ,(special-future-scan
                 "" heading-marker heading-separator
                 '(state-offset special-name-start)
-                '(state-offset special-name-end))))
-   container-blocks))
+                '(state-offset special-name-end))))))
 (def (latex-future-condition)
-  (foldr
-   (lambda (parent otherwise)
-     `(or (and (uint-equal? (stack-top container-frames)
-                            (uint ,(org-event-block-id parent)))
-               ,(latex-future-scan
-                 (block-line-closing (org-event-block-rule parent))
-                 heading-marker heading-separator))
-          ,otherwise))
+  (container-future-condition
+   (lambda (stop)
+     (latex-future-scan stop heading-marker heading-separator))
    `(or (and (uint-equal? (stack-top container-frames) (uint 0))
              ,(latex-future-scan "" heading-marker heading-separator))
          (and (uint-equal? (stack-top container-frames)
@@ -122,8 +114,7 @@
                 "" heading-marker heading-separator
                 '(state-offset special-name-start)
                 '(state-offset special-name-end)
-                special-closing "" #t)))
-   container-blocks))
+                special-closing "" #t)))))
 (def ascii-letter-bytes
   (map char->integer
        (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
