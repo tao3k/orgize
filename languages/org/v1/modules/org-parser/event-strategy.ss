@@ -11,12 +11,7 @@
                  block-line-contents
                  key-value-line-marker
                  block-header-argument-token block-header-trivia-token
-                 line-structure-table
-                 table-line-delimiter table-line-table-node
-                 table-line-row-node table-line-rule-row-node
-                 table-line-cell-node table-line-separator-token
-                 table-line-cell-token table-line-trivia-token
-                 table-line-rule-token line-structure-list
+                 line-structure-list
                  list-line-unordered-markers list-line-ordered
                  list-line-tab-width list-line-list-node
                  list-line-item-node list-line-bullet-token
@@ -32,6 +27,8 @@
                  ascii-ci-pattern-at offset-after)
         (only-in "event-source-header.ss"
                  event-source-header-initial event-source-header-forms)
+        (only-in "event-table.ss"
+                 table-event-initial table-close-form table-or-element-form)
         (only-in "objects.ss"
                  make-org-event-block org-event-block-id org-event-block-rule))
 (export org-event-initial org-event-line-forms org-event-finish-forms
@@ -44,10 +41,7 @@
       (error "missing Org block declaration" node)))
 
 (def property-rule (block-by-node 'OrgPropertyDrawer))
-(def table-rule (line-structure-table org-v1-line-structure))
 (def list-rule (line-structure-list org-v1-line-structure))
-(def table-byte
-  (char->integer (string-ref (table-line-delimiter table-rule) 0)))
 (def property-open (block-line-opening property-rule))
 (def property-close (block-line-closing property-rule))
 
@@ -309,8 +303,7 @@
          (,close-paragraph
           ,@list-close-all
           ,fixed-width-close
-          (if (state table-open)
-              ((finish-node) (set-bool table-open (bool #f))) ())
+          ,table-close-form
           (token ,(block-line-end-token rule) start end)
           (close-frames-while container-frames
                               (uint-equal? (stack-top container-frames)
@@ -325,14 +318,7 @@
     `((if (stack-nonempty? container-frames)
           ,chain ()))))
 
-(def table-content-end '(line-content-end))
-(def table-indent '(line-skip-horizontal start))
-(def table-index '(line-index table-byte-index))
-(def table-cell-start '(state-offset table-cell-start))
-(def table-line-predicate
-  `(line-byte-equal? ,table-indent ,table-byte))
-
-(def horizontal-rule-start table-indent)
+(def horizontal-rule-start '(line-skip-horizontal start))
 (def horizontal-rule-condition
   `(and ,@(let loop ((index 0) (offset horizontal-rule-start))
             (if (= index 5) '()
@@ -382,45 +368,6 @@
         (set-bool after-heading (bool #f)))
        (,fixed-width-close ,@otherwise)))
 
-(def (table-cell-forms until)
-  `((start-node ,(table-line-cell-node table-rule))
-    (token ,(table-line-cell-token table-rule) ,table-cell-start ,until)
-    (finish-node)))
-
-(def (table-row-form)
-  `(if (and (line-bytes-all-in? ,table-indent ,table-content-end
-                                 (,table-byte 43 45 58 9 32))
-            (line-bytes-any-in? ,table-indent ,table-content-end (45)))
-       ((start-node ,(table-line-rule-row-node table-rule))
-        (token ,(table-line-rule-token table-rule) start end)
-        (finish-node))
-       ((start-node ,(table-line-row-node table-rule))
-        (for-line-bytes table-byte-index ,table-indent ,table-content-end
-          ((if (line-byte-equal? ,table-index 92)
-               ((set-bool table-escaped (not (state table-escaped))))
-               ((if (and (line-byte-equal? ,table-index ,table-byte)
-                         (not (state table-escaped)))
-                    ((if (state table-seen-separator)
-                         ,(table-cell-forms table-index)
-                         ((token ,(table-line-trivia-token table-rule)
-                                 start ,table-index)))
-                     (token ,(table-line-separator-token table-rule)
-                            ,table-index (line-step ,table-index))
-                     (set-uint table-cell-start
-                               (offset (line-step ,table-index)))
-                     (set-bool table-seen-separator (bool #t))) ())
-                (set-bool table-escaped (bool #f))))))
-        (if (state table-seen-separator)
-            ((if (line-bytes-all-in? ,table-cell-start ,table-content-end
-                                     (9 32))
-                 ((token ,(table-line-trivia-token table-rule)
-                         ,table-cell-start ,table-content-end))
-                 ,(table-cell-forms table-content-end))) ())
-        (token ,(table-line-trivia-token table-rule) ,table-content-end end)
-        (finish-node)
-        (set-bool table-seen-separator (bool #f))
-        (set-bool table-escaped (bool #f)))))
-
 (def (container-or-opaque-form)
   `(,@(container-open-chain)
     (if (state container-opened)
@@ -441,17 +388,9 @@
                         (list (property-open-form
                                (container-or-opaque-form)))))))))))
 
-(def (table-or-element-form)
-  `(if ,table-line-predicate
-       (,fixed-width-close ,close-paragraph
-        (if (not (state table-open))
-            ((start-node ,(table-line-table-node table-rule))
-             (set-bool table-open (bool #t))) ())
-        ,(table-row-form)
-        (set-bool after-heading (bool #f)))
-       ((if (state table-open)
-            ((finish-node) (set-bool table-open (bool #f))) ())
-        ,(non-table-element-form))))
+(def (org-table-or-element-form)
+  (table-or-element-form close-paragraph fixed-width-close
+                         (non-table-element-form)))
 
 (def list-column '(state list-column))
 (def list-top '(uint-divide (stack-top list-frames) (uint 2)))
@@ -567,8 +506,7 @@
       (set-uint list-blank-count (uint 0)))))
 
 (def (list-marker-forms)
-  `((if (state table-open)
-        ((finish-node) (set-bool table-open (bool #f))) ())
+  `(,table-close-form
     ,fixed-width-close
     ,close-paragraph
     ,list-close-paragraph
@@ -589,7 +527,7 @@
                        (,list-close-paragraph
                         (token ,(list-line-trivia-token list-rule) start end)
                         (set-uint list-blank-count (uint 1)))
-                       (,@list-close-all ,(table-or-element-form))))
+                       (,@list-close-all ,(org-table-or-element-form))))
                   ((if (uint-greater?
                         (line-indent-column ,(list-line-tab-width list-rule))
                         ,list-top)
@@ -597,8 +535,8 @@
                             (,list-close-paragraph ,@(comment-line-forms))
                             ,(list-text-line 'start))
                         (set-uint list-blank-count (uint 0)))
-                       (,@list-close-all ,(table-or-element-form))))))
-             (,(table-or-element-form)))))))
+                       (,@list-close-all ,(org-table-or-element-form))))))
+             (,(org-table-or-element-form)))))))
 
 (def footnote-label-start '(line-prefix-end "[fn:"))
 (def footnote-label-end `(line-scan-key ,footnote-label-start))
@@ -620,8 +558,7 @@
 (def (footnote-close-forms (reset-open? #t) (pending-inside? #t))
   `(,close-paragraph
     ,@list-close-all
-    (if (state table-open)
-        ((finish-node) (set-bool table-open (bool #f))) ())
+    ,table-close-form
     ,fixed-width-close
     ,close-comment
     (close-all-frames container-frames 1)
@@ -637,8 +574,7 @@
 (def (footnote-prepare-open-forms)
   `(,close-paragraph
     ,@list-close-all
-    (if (state table-open)
-        ((finish-node) (set-bool table-open (bool #f))) ())
+    ,table-close-form
     ,fixed-width-close
     ,close-comment))
 
@@ -692,8 +628,7 @@
        ((if (state footnote-open)
             ,(footnote-close-forms)
             (,@list-close-all
-             (if (state table-open)
-                 ((finish-node) (set-bool table-open (bool #f))) ())
+             ,table-close-form
              ,fixed-width-close
              ,close-comment))
         ,(headline-form))
@@ -704,10 +639,9 @@
    '((open-levels (uint-stack)) (active-opaque-block 0)
     (property-drawer-open #f) (after-heading #f)
     (comment-open #f)
-    (fixed-width-open #f)
-    (table-open #f) (table-seen-separator #f) (table-escaped #f)
-    (table-cell-start 0)
-    (planning-value-start 0) (planning-value-end 0)
+    (fixed-width-open #f))
+   table-event-initial
+   '((planning-value-start 0) (planning-value-end 0)
     (container-frames (uint-stack)) (container-closed #f)
     (container-opened #f)
     (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
