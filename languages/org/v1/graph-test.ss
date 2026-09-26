@@ -25,6 +25,7 @@
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
                             OrgCommentBlock OrgExportBlock OrgLink
                             OrgTarget OrgRadioTarget OrgStatisticsCookie OrgLineBreak
+                            OrgExportSnippet
                             OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
                             OrgStrikeThrough))
         (check (map graph-node-label nodes)
@@ -39,6 +40,7 @@
                                 "example-block" "verse-block" "center-block"
                                 "comment-block" "export-block" "link"
                                 "target" "radio-target" "statistics-cookie" "line-break"
+                                "export-snippet"
                                 "code" "verbatim" "bold" "italic"
                                 "underline" "strike-through"))))
     (test-case "planning keeps each key and value independently"

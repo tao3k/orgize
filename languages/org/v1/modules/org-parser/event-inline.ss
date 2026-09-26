@@ -28,10 +28,14 @@
 (def inline-cookie-first 4)
 (def inline-cookie-fraction 5)
 (def inline-cookie-percent 6)
+(def export-backend-bytes
+  (map char->integer
+       (string->list
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-")))
 (def inline-trigger-bytes
   (append (map (lambda (marker)
                  (char->integer (string-ref marker 0)))
-               (list link-open "<<" "\\\\"))
+               (list link-open "<<" "\\\\" "@@"))
           (map car inline-markup-rules)))
 (def inline-right-boundary?
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
@@ -249,6 +253,59 @@
         (line-bytes-all-in? ,(pattern-end link-index "\\\\")
                             (line-content-end) (9 32))))
 
+(def (export-snippet-events)
+  `((token TextLine (state-offset inline-cursor)
+           (state-offset inline-export-open-at))
+    (start-node OrgExportSnippet)
+    (token ExportSnippetDelimiter (state-offset inline-export-open-at)
+           (state-offset inline-export-backend-start))
+    (token ExportSnippetBackend (state-offset inline-export-backend-start)
+           (state-offset inline-export-backend-end))
+    (token ExportSnippetDelimiter (state-offset inline-export-backend-end)
+           (state-offset inline-export-value-start))
+    (token ExportSnippetValue (state-offset inline-export-value-start)
+           (state-offset inline-export-close-at))
+    (token ExportSnippetDelimiter (state-offset inline-export-close-at)
+           ,inline-next)
+    (finish-node)
+    (set-uint inline-cursor (offset ,inline-next))
+    (set-uint inline-export-mode (uint 0))))
+
+(def (export-snippet-scan-forms)
+  `((if (uint-equal? (state inline-export-mode) (uint 1))
+        ((if (offset-less? ,link-index
+                           (state-offset inline-export-backend-start))
+             ()
+             ((if (line-bytes-any-in? ,link-index ,inline-next
+                                      ,export-backend-bytes)
+                  ((set-uint inline-export-backend-count
+                             (uint-add (state inline-export-backend-count)
+                                       (uint 1))))
+                  ((if (and (uint-positive?
+                             (state inline-export-backend-count))
+                            (line-byte-equal? ,link-index 58))
+                       ((set-uint inline-export-backend-end
+                                  (offset ,link-index))
+                        (set-uint inline-export-value-start
+                                  (offset ,inline-next))
+                        (set-uint inline-export-mode (uint 2)))
+                       ((set-uint inline-export-mode (uint 0)))))))))
+        ((if (uint-equal? (state inline-export-mode) (uint 2))
+             ((if (line-byte-equal? ,link-index 64)
+                  ((set-uint inline-export-close-at (offset ,link-index))
+                   (set-uint inline-export-mode (uint 3))) ()))
+             ((if (line-byte-equal? ,link-index 64)
+                  ,(export-snippet-events)
+                  ((set-uint inline-export-mode (uint 2))))))))))
+
+(def (export-snippet-open-forms)
+  `((set-uint inline-export-mode (uint 1))
+    (set-uint inline-export-open-at (offset ,link-index))
+    (set-uint inline-export-backend-start
+              (offset ,(pattern-end link-index "@@")))
+    (set-uint inline-export-backend-count (uint 0))
+    (set-uint inline-markup-kind (uint 0))))
+
 (def (inline-free-scan-forms)
   `((if (line-byte-equal? ,link-index 91)
         ((if ,(pattern-at? link-index link-open)
@@ -256,15 +313,19 @@
              ((set-uint inline-delimited-kind
                         (uint ,inline-cookie-first))
               (set-uint inline-cookie-open-at (offset ,link-index)))))
-        ((if ,(line-break-at?)
-             ,(line-break-events)
-             ,(markup-scan-forms))))))
+        ((if ,(pattern-at? link-index "@@")
+             ,(export-snippet-open-forms)
+             ((if ,(line-break-at?)
+                  ,(line-break-events)
+                  ,(markup-scan-forms))))))))
 
 (def (inline-scan-forms)
-  `((if (uint-positive? (state inline-delimited-kind))
-        ((if (uint-greater? (state inline-delimited-kind) (uint 3))
-             ,(statistics-cookie-scan-forms)
-             ,(target-scan-forms)))
+  `((if (uint-positive? (state inline-export-mode))
+        ,(export-snippet-scan-forms)
+        ((if (uint-positive? (state inline-delimited-kind))
+             ((if (uint-greater? (state inline-delimited-kind) (uint 3))
+                  ,(statistics-cookie-scan-forms)
+                  ,(target-scan-forms)))
              ((if (state inline-open)
                   ,(link-scan-forms)
                   ((if ,(pattern-at? link-index "<<")
@@ -275,7 +336,7 @@
                             ((set-uint inline-markup-kind (uint 0))) ())
                         (if (uint-positive? (state inline-markup-kind))
                             ,(markup-scan-forms)
-                            ,(inline-free-scan-forms))))))))
+                            ,(inline-free-scan-forms))))))))))
     (set-bool inline-left-boundary
               (line-bytes-any-in? ,link-index ,inline-next
                                   ,inline-open-boundary-bytes))
@@ -300,6 +361,7 @@
     (set-bool inline-previous-space (bool #f))
     (set-uint inline-markup-kind (uint 0))
     (set-uint inline-delimited-kind (uint 0))
+    (set-uint inline-export-mode (uint 0))
     (set-bool inline-previous-backslash (bool #f))
     (finish-node)))
 
@@ -314,4 +376,8 @@
     (inline-target-value-start 0) (inline-target-has-value #f)
     (inline-target-last-border-valid #f)
     (inline-cookie-open-at 0)
+    (inline-export-mode 0) (inline-export-open-at 0)
+    (inline-export-backend-start 0) (inline-export-backend-end 0)
+    (inline-export-backend-count 0) (inline-export-value-start 0)
+    (inline-export-close-at 0)
     (inline-previous-backslash #f)))

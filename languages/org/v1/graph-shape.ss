@@ -94,6 +94,9 @@
    (node 'OrgStatisticsCookie "object" "statistics-cookie"
          (list (field 'StatisticsCookieValue "value")))
    (node 'OrgLineBreak "object" "line-break" '())
+   (node 'OrgExportSnippet "object" "export-snippet"
+         (list (field 'ExportSnippetBackend "backend")
+               (field 'ExportSnippetValue "value")))
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"

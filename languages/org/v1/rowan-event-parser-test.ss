@@ -98,6 +98,37 @@
                       (InlineTargetValue 2 4)
                       (InlineTargetDelimiter 4 6))
            (TextLine 6 8))))))
+    (test-case "export snippets project backend, value, and lossless delimiters"
+      (check-org-ast-with parse-org-rowan-events
+        "hi @@html:<b>x</b>@@ ok\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 3)
+           (OrgExportSnippet
+            (ExportSnippetDelimiter 3 5)
+            (ExportSnippetBackend 5 9)
+            (ExportSnippetDelimiter 9 10)
+            (ExportSnippetValue 10 18)
+           (ExportSnippetDelimiter 18 20))
+           (TextLine 20 24)))))
+      (check-org-ast-with parse-org-rowan-events
+        "a @@-:@@ b\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgExportSnippet
+            (ExportSnippetDelimiter 2 4)
+            (ExportSnippetBackend 4 5)
+            (ExportSnippetDelimiter 5 6)
+            (ExportSnippetDelimiter 6 8))
+           (TextLine 8 11)))))
+      (check-org-ast-with parse-org-rowan-events
+        "a @@:x@@ and @@h_t:x@@ and @@html:x@\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine (TextLine 0 37))))))
     (test-case "statistics cookies accept Org's percent and fraction shapes"
       (check-org-ast-with parse-org-rowan-events
         "a [50%] [2/3] [%] [/] z\n"
