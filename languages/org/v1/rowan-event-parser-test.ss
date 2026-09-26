@@ -3,7 +3,9 @@
 
 (import (only-in :std/test check test-case test-suite)
         (only-in :std/encoding/json JSONReadOptions string->json)
+        (only-in :std/misc/ports read-all-as-string)
         (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
+        (only-in "rowan-event-fixture.ss" rowan-event-fixture-json)
         (only-in "rowan-event-parser.ss"
                  parse-org-rowan-events parse_org_rowan_events))
 (export org-v1-rowan-event-parser-test)
@@ -893,6 +895,15 @@
            (OrgParagraph (OrgTextLine (TextLine 29 32)))
            (BlockEndLine 32 44))
           (BlockEndLine 44 57)))))
+    (test-case "Rowan fixture is projected by the same Scheme event algorithm"
+      (let* ((options (JSONReadOptions object-as-hash: #t))
+             (generated (string->json (rowan-event-fixture-json) options))
+             (saved (call-with-input-file
+                     "languages/org/v1/generated/rowan-event-fixture.json"
+                     (lambda (port)
+                       (string->json (read-all-as-string port) options)))))
+        (check (hash-get saved "source") => (hash-get generated "source"))
+        (check (hash-get saved "events") => (hash-get generated "events"))))
     (test-case "AOT IR is a typed source-owned event function"
       (let (ir (string->json parse_org_rowan_events
                              (JSONReadOptions object-as-hash: #t
