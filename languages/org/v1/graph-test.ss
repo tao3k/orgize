@@ -27,6 +27,7 @@
                             OrgCommentBlock OrgExportBlock OrgLink
                             OrgTarget OrgRadioTarget OrgStatisticsCookie OrgLineBreak
                             OrgExportSnippet OrgFootnoteReference
+                            OrgInlineSourceBlock OrgInlineBabelCall
                             OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
                             OrgStrikeThrough))
         (check (map graph-node-label nodes)
@@ -42,6 +43,7 @@
                                 "comment-block" "export-block" "link"
                                 "target" "radio-target" "statistics-cookie" "line-break"
                                 "export-snippet" "footnote-reference"
+                                "inline-src-block" "inline-babel-call"
                                 "code" "verbatim" "bold" "italic"
                                 "underline" "strike-through"))))
     (test-case "planning keeps each key and value independently"

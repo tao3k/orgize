@@ -102,6 +102,15 @@
    (node 'OrgFootnoteReference "object" "footnote-reference"
          (list (field 'FootnoteReferenceLabel "label")
                (field 'FootnoteReferenceDefinition "definition")))
+   (node 'OrgInlineSourceBlock "object" "inline-src-block"
+         (list (field 'InlineSourceLanguage "language")
+               (field 'InlineSourceParameters "parameters")
+               (field 'InlineSourceBody "value" 'append-or-empty)))
+   (node 'OrgInlineBabelCall "object" "inline-babel-call"
+         (list (field 'InlineBabelCallName "call")
+               (field 'InlineBabelInsideHeader "inside-header")
+               (field 'InlineBabelArguments "arguments" 'append-or-empty)
+               (field 'InlineBabelEndHeader "end-header")))
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"

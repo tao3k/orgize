@@ -58,6 +58,13 @@ ordinary drawers. Affiliated
 keyword attachment, clock context, all object boundaries, and public API
 replacement are not yet admitted by that test.
 
+The Scheme event AOT also recognizes inline source blocks and inline Babel
+calls, including balanced body delimiters and optional header fields. Their
+language/name, body/arguments, and header values are source-backed graph
+fields; malformed or incomplete forms remain literal text. Focused Scheme AST
+and Cargo graph tests cover these objects, but the public =Org::parse= path
+still uses the handwritten parser and is not yet replaced.
+
 ** Required upstream engine work
 
 The upstream engine now owns a bounded line-structure executor, not a complete

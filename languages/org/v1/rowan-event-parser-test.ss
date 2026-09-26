@@ -169,6 +169,72 @@
         "x [fn:] [fn::] [fn:bad name] [fn:no-close\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 42))))))
+    (test-case "inline source blocks preserve language and balanced body spans"
+      (check-org-ast-with parse-org-rowan-events
+        "x src_rust{a{b}c} y\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgInlineSourceBlock
+            (InlineCodeDelimiter 2 6)
+            (InlineSourceLanguage 6 10)
+            (InlineCodeDelimiter 10 11)
+            (InlineSourceBody 11 16)
+            (InlineCodeDelimiter 16 17))
+           (TextLine 17 20)))))
+      (check-org-ast-with parse-org-rowan-events
+        "src_go{}\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgInlineSourceBlock
+            (InlineCodeDelimiter 0 4)
+            (InlineSourceLanguage 4 6)
+            (InlineCodeDelimiter 6 7)
+            (InlineCodeDelimiter 7 8))
+           (TextLine 8 9))))))
+    (test-case "inline Babel calls preserve optional headers and nested arguments"
+      (check-org-ast-with parse-org-rowan-events
+        "call_foo[x](a(b))[z]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgInlineBabelCall
+            (InlineCodeDelimiter 0 5)
+            (InlineBabelCallName 5 8)
+            (InlineCodeDelimiter 8 9)
+            (InlineBabelInsideHeader 9 10)
+            (InlineCodeDelimiter 10 12)
+            (InlineBabelArguments 12 16)
+            (InlineCodeDelimiter 16 18)
+            (InlineBabelEndHeader 18 19)
+            (InlineCodeDelimiter 19 20))
+           (TextLine 20 21)))))
+      (check-org-ast-with parse-org-rowan-events
+        "call_foo(1)\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgInlineBabelCall
+            (InlineCodeDelimiter 0 5)
+            (InlineBabelCallName 5 8)
+            (InlineCodeDelimiter 8 9)
+            (InlineBabelArguments 9 10)
+            (InlineCodeDelimiter 10 11))
+           (TextLine 11 12))))))
+    (test-case "incomplete inline code stays literal text"
+      (check-org-ast-with parse-org-rowan-events
+        "src_rust{unterminated\ncall_foo[x](unterminated\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine (TextLine 0 22))
+          (OrgTextLine (TextLine 22 47)))))
+      (check-org-ast-with parse-org-rowan-events
+        "prefixsrc_rust{a}\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine (TextLine 0 18))))))
     (test-case "footnote definitions contain elements and stop at headings"
       (check-org-ast-with parse-org-rowan-events
         "[fn:n] body\n* H\n"

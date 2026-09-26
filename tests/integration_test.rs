@@ -91,6 +91,8 @@ mod org_footnote_aot;
 mod org_headline_aot;
 #[path = "integration/org_headline_function_aot.rs"]
 mod org_headline_function_aot;
+#[path = "integration/org_inline_code_aot.rs"]
+mod org_inline_code_aot;
 #[path = "integration/org_inline_object_aot.rs"]
 mod org_inline_object_aot;
 #[path = "integration/org_list_aot.rs"]
