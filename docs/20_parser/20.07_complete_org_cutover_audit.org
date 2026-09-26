@@ -43,17 +43,22 @@ current audit reports:
 |---------+----------------|
 | Scheme catalog | 30 Elements; 24 Objects |
 | Public handwritten Rust CST | 32 distinct node kinds in the fixture |
-| Scheme event-AOT CST | 20 distinct node kinds in the fixture |
-| Structural fixture oracle / event Element records | Event graph adds bold and italic Objects; structural backbone parity is tested separately |
-| Catalog Elements not projected as typed graph kinds | 4 |
-| Catalog Objects not projected as typed graph kinds | 11 |
+| Scheme event-AOT CST | 22 distinct node kinds in the fixture |
+| Structural fixture oracle / event Element records | Event graph adds Objects and footnote definitions absent from the structural oracle; non-footnote fixture backbones remain tested separately |
+| Catalog Elements not projected as typed graph kinds | 3 |
+| Catalog Objects not projected as typed graph kinds | 10 |
 
-The missing Elements are =footnote-definition=, =inlinetask=,
+The missing Elements are =inlinetask=,
 =latex-environment=, and =special-block=. The missing Objects are
-=citation=, =citation-reference=, =entity=, =footnote-reference=,
+=citation=, =citation-reference=, =entity=,
 =inline-babel-call=, =inline-src-block=,
 =latex-fragment=, =macro=, =subscript=, =superscript=,
-=timestamp=. Scheme now recognizes =target= and =radio-target= as
+=timestamp=. Scheme now recognizes =footnote-definition= and
+=footnote-reference= with source-backed labels and inline definitions;
+definition termination and malformed references have focused Scheme AST and
+Rust AOT/Rowan tests. Inline footnote definitions are still one source-backed
+value token; recursively nested Objects inside them are not yet projected.
+It also recognizes =target= and =radio-target= as
 source-backed Objects with value fields and strict boundary fixtures, plus
 =statistics-cookie= and =line-break= with Org's exact physical-line boundary
 cases. These are catalog-versus-typed-graph gaps, not a claim that every
@@ -63,8 +68,9 @@ The representative fixture does not exercise all configured, malformed,
 recursive, or nested cases. The structural oracle predates the new Scheme
 emphasis Objects, so exact graph equality is no longer expected; the test
 compares its structural backbone after removing only the newly supported
-Objects. Public AST and semantic
-query parity remain unadmitted.
+Objects. The representative fixture now differs structurally in its footnote
+region and is checked for losslessness and footnote records instead of false
+oracle equality. Public AST and semantic query parity remain unadmitted.
 
 * Why the public parser has not been replaced
 
@@ -251,6 +257,21 @@ Build cost also belongs to the performance gate. One local build after the
 list metadata extension produced about 10 MB of generated Rust event source
 and took several minutes to compile the debug library. The AOT backend must
 bound code growth; runtime-only benchmarks are insufficient evidence.
+
+The footnote batch's generated event IR is 2,123,181 bytes. A local debug
+rebuild of the AOT crate took over five minutes; that is a build-cost warning,
+not evidence of runtime parse performance. Footnote syntax coverage and the
+public-parser replacement remain separate gates. On the same local head, both
+the focused release 2,000-plan/100-ms projection gate and the 48-document Org
+query scenario gate passed. Dedicated 10,000-line footnote definition and
+reference Criterion scenarios cover the new parser branches; their local
+samples are not a cross-platform regression admission. On the final local IR,
+10-sample Criterion runs measured 8.7004–9.1019 ms for 10,000 references and
+6.8644–6.9050 ms for 10,000 definitions, including Rowan construction and
+Element projection. These are same-head shape measurements, not a comparison
+against the displaced handwritten parser. The local optimized AOT test build
+took 6m35s and the benchmark rebuild 3m24s; code-generation and compile
+cost remain an explicit optimization target.
 
 * Performance evidence boundary
 

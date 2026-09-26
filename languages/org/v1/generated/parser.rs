@@ -19,6 +19,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgNodeProperty", category: KindCategory::Node },
     KindSpec { name: "OrgTextLine", category: KindCategory::Node },
     KindSpec { name: "OrgParagraph", category: KindCategory::Node },
+    KindSpec { name: "OrgFootnoteDefinition", category: KindCategory::Node },
     KindSpec { name: "OrgComment", category: KindCategory::Node },
     KindSpec { name: "OrgDiarySexp", category: KindCategory::Node },
     KindSpec { name: "OrgHorizontalRule", category: KindCategory::Node },
@@ -39,6 +40,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgStatisticsCookie", category: KindCategory::Node },
     KindSpec { name: "OrgLineBreak", category: KindCategory::Node },
     KindSpec { name: "OrgExportSnippet", category: KindCategory::Node },
+    KindSpec { name: "OrgFootnoteReference", category: KindCategory::Node },
     KindSpec { name: "OrgCode", category: KindCategory::Node },
     KindSpec { name: "OrgVerbatim", category: KindCategory::Node },
     KindSpec { name: "OrgBold", category: KindCategory::Node },
@@ -84,6 +86,11 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "ExportSnippetBackend", category: KindCategory::Token },
     KindSpec { name: "ExportSnippetValue", category: KindCategory::Token },
     KindSpec { name: "ExportSnippetDelimiter", category: KindCategory::Token },
+    KindSpec { name: "FootnoteReferenceDelimiter", category: KindCategory::Token },
+    KindSpec { name: "FootnoteReferenceLabel", category: KindCategory::Token },
+    KindSpec { name: "FootnoteReferenceDefinition", category: KindCategory::Token },
+    KindSpec { name: "FootnoteDefinitionDelimiter", category: KindCategory::Token },
+    KindSpec { name: "FootnoteDefinitionLabel", category: KindCategory::Token },
     KindSpec { name: "InlineMarkupDelimiter", category: KindCategory::Token },
     KindSpec { name: "InlineMarkupValue", category: KindCategory::Token },
     KindSpec { name: "TableSeparator", category: KindCategory::Token },
@@ -107,10 +114,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 42 },
-    TerminalSpec { name: "block-begin", syntax_kind: 47 },
-    TerminalSpec { name: "block-end", syntax_kind: 56 },
-    TerminalSpec { name: "text", syntax_kind: 57 },
+    TerminalSpec { name: "headline", syntax_kind: 44 },
+    TerminalSpec { name: "block-begin", syntax_kind: 49 },
+    TerminalSpec { name: "block-end", syntax_kind: 58 },
+    TerminalSpec { name: "text", syntax_kind: 59 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -285,7 +292,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:3a0a71eb94e17313e6ad0a303915ff97b286a5c752dec22fb5352aa78b7e8760",
+    grammar_digest: "sha256:302cf431c4f66a99cbf5414dadf7dd3d56554a329f20ce9dd800bae66d9c2da0",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

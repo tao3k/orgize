@@ -129,6 +129,132 @@
         (OrgFile
          (OrgParagraph
           (OrgTextLine (TextLine 0 37))))))
+    (test-case "footnote references preserve label, inline definition, and balanced brackets"
+      (check-org-ast-with parse-org-rowan-events
+        "x [fn:n] y\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgFootnoteReference
+            (FootnoteReferenceDelimiter 2 6)
+            (FootnoteReferenceLabel 6 7)
+            (FootnoteReferenceDelimiter 7 8))
+           (TextLine 8 11)))))
+      (check-org-ast-with parse-org-rowan-events
+        "x [fn::a [b]] z\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgFootnoteReference
+            (FootnoteReferenceDelimiter 2 6)
+            (FootnoteReferenceDelimiter 6 7)
+            (FootnoteReferenceDefinition 7 12)
+            (FootnoteReferenceDelimiter 12 13))
+           (TextLine 13 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:n:a [b]]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgFootnoteReference
+            (FootnoteReferenceDelimiter 0 4)
+            (FootnoteReferenceLabel 4 5)
+            (FootnoteReferenceDelimiter 5 6)
+            (FootnoteReferenceDefinition 6 11)
+            (FootnoteReferenceDelimiter 11 12))
+           (TextLine 12 13)))))
+      (check-org-ast-with parse-org-rowan-events
+        "x [fn:] [fn::] [fn:bad name] [fn:no-close\n"
+        (OrgFile
+         (OrgParagraph (OrgTextLine (TextLine 0 42))))))
+    (test-case "footnote definitions contain elements and stop at headings"
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:n] body\n* H\n"
+        (OrgFile
+         (OrgFootnoteDefinition
+          (FootnoteDefinitionDelimiter 0 4)
+          (FootnoteDefinitionLabel 4 5)
+          (FootnoteDefinitionDelimiter 5 6)
+          (OrgParagraph (OrgTextLine (TextLine 6 12))))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 12 13) (HeadlineTrivia 13 14)
+                       (HeadlineTitle 14 15) (HeadlineTrivia 15 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:] invalid\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 14)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:n] body\n\n* H\n"
+        (OrgFile
+         (OrgFootnoteDefinition
+          (FootnoteDefinitionDelimiter 0 4)
+          (FootnoteDefinitionLabel 4 5)
+          (FootnoteDefinitionDelimiter 5 6)
+          (OrgParagraph (OrgTextLine (TextLine 6 12)))
+          (OrgTextLine (TextLine 12 13)))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 13 14) (HeadlineTrivia 14 15)
+                       (HeadlineTitle 15 16) (HeadlineTrivia 16 17))))))
+    (test-case "footnote definitions retain one blank and end before two blanks"
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:a] first\n\ncontinued\n"
+        (OrgFile
+         (OrgFootnoteDefinition
+          (FootnoteDefinitionDelimiter 0 4)
+          (FootnoteDefinitionLabel 4 5)
+          (FootnoteDefinitionDelimiter 5 6)
+          (OrgParagraph (OrgTextLine (TextLine 6 13))
+                        (OrgTextLine (TextLine 13 14)))
+          (OrgParagraph (OrgTextLine (TextLine 14 24))))))
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:a] first\n\n\noutside\n"
+        (OrgFile
+         (OrgFootnoteDefinition
+          (FootnoteDefinitionDelimiter 0 4)
+          (FootnoteDefinitionLabel 4 5)
+          (FootnoteDefinitionDelimiter 5 6)
+          (OrgParagraph (OrgTextLine (TextLine 6 13))))
+         (OrgTextLine (TextLine 13 14))
+         (OrgTextLine (TextLine 14 15))
+         (OrgParagraph (OrgTextLine (TextLine 15 23))))))
+    (test-case "next definition and EOF flush terminate the preceding footnote"
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:a] one\n[fn:b] two\n"
+        (OrgFile
+         (OrgFootnoteDefinition
+          (FootnoteDefinitionDelimiter 0 4)
+          (FootnoteDefinitionLabel 4 5)
+          (FootnoteDefinitionDelimiter 5 6)
+          (OrgParagraph (OrgTextLine (TextLine 6 11))))
+         (OrgFootnoteDefinition
+          (FootnoteDefinitionDelimiter 11 15)
+          (FootnoteDefinitionLabel 15 16)
+          (FootnoteDefinitionDelimiter 16 17)
+          (OrgParagraph (OrgTextLine (TextLine 17 22))))))
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:a] one\n\n"
+        (OrgFile
+         (OrgFootnoteDefinition
+         (FootnoteDefinitionDelimiter 0 4)
+          (FootnoteDefinitionLabel 4 5)
+          (FootnoteDefinitionDelimiter 5 6)
+          (OrgParagraph (OrgTextLine (TextLine 6 11)))
+          (OrgTextLine (TextLine 11 12)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:a] one\n\n[fn:b] two\n"
+        (OrgFile
+         (OrgFootnoteDefinition
+          (FootnoteDefinitionDelimiter 0 4)
+          (FootnoteDefinitionLabel 4 5)
+          (FootnoteDefinitionDelimiter 5 6)
+          (OrgParagraph (OrgTextLine (TextLine 6 11)))
+          (OrgTextLine (TextLine 11 12)))
+         (OrgFootnoteDefinition
+          (FootnoteDefinitionDelimiter 12 16)
+          (FootnoteDefinitionLabel 16 17)
+          (FootnoteDefinitionDelimiter 17 18)
+          (OrgParagraph (OrgTextLine (TextLine 18 23)))))))
     (test-case "statistics cookies accept Org's percent and fraction shapes"
       (check-org-ast-with parse-org-rowan-events
         "a [50%] [2/3] [%] [/] z\n"

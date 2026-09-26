@@ -777,17 +777,99 @@
                        (,@list-close-all ,(table-or-element-form))))))
              (,(table-or-element-form)))))))
 
+(def footnote-label-start '(line-prefix-end "[fn:"))
+(def footnote-label-end `(line-scan-key ,footnote-label-start))
+(def footnote-content-start `(line-step ,footnote-label-end))
+(def footnote-definition?
+  `(and (uint-equal? (stack-top container-frames) (uint 0))
+        (line-starts-with "[fn:")
+        (offset-less? ,footnote-label-start ,footnote-label-end)
+        (line-byte-equal? ,footnote-label-end 93)))
+
+(def (footnote-pending-trivia (reset? #t))
+  (append
+   '((start-node OrgTextLine)
+     (token TextLine (state-offset footnote-blank-start)
+            (state-offset footnote-blank-end))
+     (finish-node))
+   (if reset? '((set-bool footnote-blank-pending (bool #f))) '())))
+
+(def (footnote-close-forms (reset-open? #t) (pending-inside? #t))
+  `(,close-paragraph
+    ,@list-close-all
+    (if (state table-open)
+        ((finish-node) (set-bool table-open (bool #f))) ())
+    ,fixed-width-close
+    ,close-comment
+    (close-all-frames container-frames 1)
+    ,@(if pending-inside?
+        `((if (state footnote-blank-pending)
+              ,(footnote-pending-trivia) ())) '())
+    (finish-node)
+    ,@(if reset-open? '((set-bool footnote-open (bool #f))) '())
+    ,@(if pending-inside? '()
+        `((if (state footnote-blank-pending)
+              ,(footnote-pending-trivia) ())))))
+
+(def (footnote-prepare-open-forms)
+  `(,close-paragraph
+    ,@list-close-all
+    (if (state table-open)
+        ((finish-node) (set-bool table-open (bool #f))) ())
+    ,fixed-width-close
+    ,close-comment))
+
+(def (footnote-open-forms)
+  `((start-node OrgFootnoteDefinition)
+    (token FootnoteDefinitionDelimiter start ,footnote-label-start)
+    (token FootnoteDefinitionLabel ,footnote-label-start ,footnote-label-end)
+    (token FootnoteDefinitionDelimiter ,footnote-label-end
+           ,footnote-content-start)
+    (if (line-bytes-all-in? ,footnote-content-start
+                            (line-content-end) (9 32))
+        ((token FootnoteDefinitionDelimiter ,footnote-content-start end))
+        ((start-node OrgParagraph)
+         (set-bool paragraph-open (bool #t))
+         ,@(event-text-line-forms footnote-content-start)))
+    (set-bool footnote-open (bool #t))
+    (set-bool after-heading (bool #f))))
+
+(def (footnote-or-element-forms)
+  `((if ,footnote-definition?
+        ((if (state footnote-open)
+             ,(footnote-close-forms #f)
+             ,(footnote-prepare-open-forms))
+         ,@(footnote-open-forms)
+         (set-bool footnote-line-handled (bool #t)))
+        ((if (state footnote-open)
+             ((if (line-blank?)
+                  ((if (state footnote-blank-pending)
+                       ,(footnote-close-forms #t #f)
+                       ((set-uint footnote-blank-start (offset start))
+                        (set-uint footnote-blank-end (offset end))
+                        (set-bool footnote-blank-pending (bool #t))
+                        (set-bool footnote-line-handled (bool #t)))))
+                  ((if (state footnote-blank-pending)
+                       (,@(footnote-pending-trivia)
+                        (set-bool paragraph-post-blank (bool #t))) ()))))
+             ())))
+    (if (not (state footnote-line-handled))
+        ,(list-or-element-form) ())
+    (set-bool footnote-line-handled (bool #f))))
+
 (def (headline-or-element-form)
   `(if (and (uint-equal? (stack-top container-frames) (uint 0))
             (uint-positive? (line-marker-level ,heading-marker
                                                ,heading-separator)))
-       (,@list-close-all
-        (if (state table-open)
-            ((finish-node) (set-bool table-open (bool #f))) ())
-        ,fixed-width-close
-        ,close-comment
+       ((if (state footnote-open)
+            ,(footnote-close-forms)
+            (,@list-close-all
+             (if (state table-open)
+                 ((finish-node) (set-bool table-open (bool #f))) ())
+             ,fixed-width-close
+             ,close-comment))
         ,(headline-form))
-       ,(list-or-element-form)))
+       ,(footnote-or-element-forms)))
 
 (def org-event-initial
   (append
@@ -804,6 +886,9 @@
     (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
     (list-column 0) (list-bullet-start 0) (list-bullet-end 0)
     (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0))
+   '((footnote-open #f) (footnote-line-handled #f)
+     (footnote-blank-pending #f)
+     (footnote-blank-start 0) (footnote-blank-end 0))
    event-inline-initial
    event-headline-tags-initial
    event-source-header-initial))
@@ -821,7 +906,7 @@
                   (,(headline-or-element-form)))))))))
 
 (def org-event-finish-forms
-  '((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
+  `((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
     (if (state property-drawer-open) ((finish-node)) ())
     (if (state table-open) ((finish-node)) ())
     (if (state list-paragraph-open) ((finish-node)) ())
@@ -830,4 +915,8 @@
     (if (state paragraph-open) ((finish-node)) ())
     (if (state comment-open) ((finish-node)) ())
     (close-all-frames container-frames 1)
+    (if (state footnote-open)
+        ((if (state footnote-blank-pending)
+             ,(footnote-pending-trivia #f) ())
+         (finish-node)) ())
     (close-all open-levels)))

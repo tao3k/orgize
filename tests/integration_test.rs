@@ -85,6 +85,8 @@ mod org_event_aot_contract;
 mod org_event_aot_parity;
 #[path = "integration/org_export_snippet_aot.rs"]
 mod org_export_snippet_aot;
+#[path = "integration/org_footnote_aot.rs"]
+mod org_footnote_aot;
 #[path = "integration/org_headline_aot.rs"]
 mod org_headline_aot;
 #[path = "integration/org_headline_function_aot.rs"]

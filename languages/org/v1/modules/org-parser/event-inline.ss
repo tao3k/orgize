@@ -32,6 +32,10 @@
   (map char->integer
        (string->list
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-")))
+(def footnote-label-bytes
+  (map char->integer
+       (string->list
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-")))
 (def inline-trigger-bytes
   (append (map (lambda (marker)
                  (char->integer (string-ref marker 0)))
@@ -306,13 +310,93 @@
     (set-uint inline-export-backend-count (uint 0))
     (set-uint inline-markup-kind (uint 0))))
 
+(def (footnote-reference-events inline?)
+  (let (close-end inline-next)
+    `((token TextLine (state-offset inline-cursor)
+             (state-offset inline-footnote-open-at))
+      (start-node OrgFootnoteReference)
+      (token FootnoteReferenceDelimiter
+             (state-offset inline-footnote-open-at)
+             (state-offset inline-footnote-label-start))
+      (token FootnoteReferenceLabel
+             (state-offset inline-footnote-label-start)
+             (state-offset inline-footnote-label-end))
+      ,@(if inline?
+          `((token FootnoteReferenceDelimiter
+                   (state-offset inline-footnote-label-end)
+                   (state-offset inline-footnote-definition-start))
+            (token FootnoteReferenceDefinition
+                   (state-offset inline-footnote-definition-start)
+                   ,link-index))
+          '())
+      (token FootnoteReferenceDelimiter ,link-index ,close-end)
+      (finish-node)
+      (set-uint inline-cursor (offset ,close-end))
+      (set-uint inline-footnote-mode (uint 0)))))
+
+(def (footnote-label-scan-forms)
+  `((if (offset-less? ,link-index
+                     (state-offset inline-footnote-label-start))
+        ()
+        ((if (line-bytes-any-in? ,link-index ,inline-next
+                                 ,footnote-label-bytes)
+             ((set-uint inline-footnote-label-count
+                        (uint-add (state inline-footnote-label-count)
+                                  (uint 1))))
+             ((if (line-byte-equal? ,link-index 58)
+                  ((set-uint inline-footnote-label-end
+                             (offset ,link-index))
+                   (set-uint inline-footnote-definition-start
+                             (offset ,inline-next))
+                   (set-uint inline-footnote-mode (uint 2)))
+                  ((if (and (line-byte-equal? ,link-index 93)
+                            (uint-positive?
+                             (state inline-footnote-label-count)))
+                       ((set-uint inline-footnote-label-end
+                                  (offset ,link-index))
+                        ,@(footnote-reference-events #f))
+                       ((set-uint inline-footnote-mode (uint 0))))))))))))
+
+(def (footnote-definition-scan-forms)
+  `((if (line-byte-equal? ,link-index 91)
+        ((set-uint inline-footnote-opens
+                   (uint-add (state inline-footnote-opens) (uint 1))))
+        ((if (line-byte-equal? ,link-index 93)
+             ((if (uint-greater? (state inline-footnote-opens)
+                                 (state inline-footnote-closes))
+                  ((set-uint inline-footnote-closes
+                             (uint-add (state inline-footnote-closes) (uint 1))))
+                  ((if (offset-less?
+                        (state-offset inline-footnote-definition-start)
+                        ,link-index)
+                       ,(footnote-reference-events #t)
+                       ((set-uint inline-footnote-mode (uint 0)))))))
+             ())))))
+
+(def (footnote-reference-scan-forms)
+  `((if (uint-equal? (state inline-footnote-mode) (uint 1))
+        ,(footnote-label-scan-forms)
+        ,(footnote-definition-scan-forms))))
+
+(def (footnote-reference-open-forms)
+  `((set-uint inline-footnote-mode (uint 1))
+    (set-uint inline-footnote-open-at (offset ,link-index))
+    (set-uint inline-footnote-label-start
+              (offset ,(pattern-end link-index "[fn:")))
+    (set-uint inline-footnote-label-count (uint 0))
+    (set-uint inline-footnote-opens (uint 0))
+    (set-uint inline-footnote-closes (uint 0))
+    (set-uint inline-markup-kind (uint 0))))
+
 (def (inline-free-scan-forms)
   `((if (line-byte-equal? ,link-index 91)
-        ((if ,(pattern-at? link-index link-open)
-             ,(link-scan-forms)
-             ((set-uint inline-delimited-kind
-                        (uint ,inline-cookie-first))
-              (set-uint inline-cookie-open-at (offset ,link-index)))))
+        ((if ,(pattern-at? link-index "[fn:")
+             ,(footnote-reference-open-forms)
+             ((if ,(pattern-at? link-index link-open)
+                  ,(link-scan-forms)
+                  ((set-uint inline-delimited-kind
+                             (uint ,inline-cookie-first))
+                   (set-uint inline-cookie-open-at (offset ,link-index)))))))
         ((if ,(pattern-at? link-index "@@")
              ,(export-snippet-open-forms)
              ((if ,(line-break-at?)
@@ -320,23 +404,25 @@
                   ,(markup-scan-forms))))))))
 
 (def (inline-scan-forms)
-  `((if (uint-positive? (state inline-export-mode))
-        ,(export-snippet-scan-forms)
-        ((if (uint-positive? (state inline-delimited-kind))
-             ((if (uint-greater? (state inline-delimited-kind) (uint 3))
-                  ,(statistics-cookie-scan-forms)
-                  ,(target-scan-forms)))
-             ((if (state inline-open)
-                  ,(link-scan-forms)
-                  ((if ,(pattern-at? link-index "<<")
-                       ((set-uint inline-markup-kind (uint 0))
-                        ,@(target-open-forms))
-                       ((if (and (uint-positive? (state inline-markup-kind))
-                                 ,(pattern-at? link-index link-open))
-                            ((set-uint inline-markup-kind (uint 0))) ())
-                        (if (uint-positive? (state inline-markup-kind))
-                            ,(markup-scan-forms)
-                            ,(inline-free-scan-forms))))))))))
+  `((if (uint-positive? (state inline-footnote-mode))
+        ,(footnote-reference-scan-forms)
+        ((if (uint-positive? (state inline-export-mode))
+             ,(export-snippet-scan-forms)
+             ((if (uint-positive? (state inline-delimited-kind))
+                  ((if (uint-greater? (state inline-delimited-kind) (uint 3))
+                       ,(statistics-cookie-scan-forms)
+                       ,(target-scan-forms)))
+                  ((if (state inline-open)
+                       ,(link-scan-forms)
+                       ((if ,(pattern-at? link-index "<<")
+                            ((set-uint inline-markup-kind (uint 0))
+                             ,@(target-open-forms))
+                            ((if (and (uint-positive? (state inline-markup-kind))
+                                      ,(pattern-at? link-index link-open))
+                                 ((set-uint inline-markup-kind (uint 0))) ())
+                             (if (uint-positive? (state inline-markup-kind))
+                                 ,(markup-scan-forms)
+                                 ,(inline-free-scan-forms))))))))))))
     (set-bool inline-left-boundary
               (line-bytes-any-in? ,link-index ,inline-next
                                   ,inline-open-boundary-bytes))
@@ -362,6 +448,7 @@
     (set-uint inline-markup-kind (uint 0))
     (set-uint inline-delimited-kind (uint 0))
     (set-uint inline-export-mode (uint 0))
+    (set-uint inline-footnote-mode (uint 0))
     (set-bool inline-previous-backslash (bool #f))
     (finish-node)))
 
@@ -380,4 +467,9 @@
     (inline-export-backend-start 0) (inline-export-backend-end 0)
     (inline-export-backend-count 0) (inline-export-value-start 0)
     (inline-export-close-at 0)
+    (inline-footnote-mode 0) (inline-footnote-open-at 0)
+    (inline-footnote-label-start 0) (inline-footnote-label-end 0)
+    (inline-footnote-label-count 0)
+    (inline-footnote-definition-start 0)
+    (inline-footnote-opens 0) (inline-footnote-closes 0)
     (inline-previous-backslash #f)))

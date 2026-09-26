@@ -187,6 +187,38 @@ fn bench_org_element_query(c: &mut Criterion) {
     aot_group.bench_function("events-rowan-elements/10k-terminal-objects", |b| {
         b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&terminal_objects)).unwrap()))
     });
+    let footnote_references = "text [fn:n]\n".repeat(10_000);
+    let reference_records = orgize::org_aot::parse_org_aot(&footnote_references)
+        .expect("footnote reference benchmark source builds a Rowan document");
+    assert_eq!(
+        reference_records
+            .records()
+            .iter()
+            .filter(|record| record.kind == "footnote-reference")
+            .count(),
+        10_000
+    );
+    aot_group.bench_function("events-rowan-elements/10k-footnote-references", |b| {
+        b.iter(|| {
+            black_box(orgize::org_aot::parse_org_aot(black_box(&footnote_references)).unwrap())
+        })
+    });
+    let footnote_definitions = "[fn:n] body\n".repeat(10_000);
+    let definition_records = orgize::org_aot::parse_org_aot(&footnote_definitions)
+        .expect("footnote definition benchmark source builds a Rowan document");
+    assert_eq!(
+        definition_records
+            .records()
+            .iter()
+            .filter(|record| record.kind == "footnote-definition")
+            .count(),
+        10_000
+    );
+    aot_group.bench_function("events-rowan-elements/10k-footnote-definitions", |b| {
+        b.iter(|| {
+            black_box(orgize::org_aot::parse_org_aot(black_box(&footnote_definitions)).unwrap())
+        })
+    });
     let plain_lines = "plain words here\n".repeat(10_000);
     aot_group.bench_function("events-rowan-elements/10k-plain-lines", |b| {
         b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&plain_lines)).unwrap()))

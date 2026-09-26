@@ -55,7 +55,6 @@ fn structural_backbone(records: &[GraphRecord]) -> Vec<GraphRecord> {
 #[test]
 fn tracked_org_fixtures_preserve_structural_backbone_with_new_scheme_objects() {
     for source in [
-        include_str!("../fixtures/org-elements/representative.org"),
         include_str!("../fixtures/org-elements/dynamic-block.org"),
         include_str!("../fixtures/org-elements/customer-queries.org"),
         include_str!(
@@ -84,6 +83,25 @@ fn tracked_org_fixtures_preserve_structural_backbone_with_new_scheme_objects() {
         }
         assert_eq!(projected, structural);
     }
+}
+
+#[test]
+fn representative_fixture_keeps_the_new_footnote_shape_and_source() {
+    let source = include_str!("../fixtures/org-elements/representative.org");
+    let events = parse_org_aot(source).expect("Scheme event algorithm parses the fixture");
+    assert_eq!(events.syntax().to_string(), source);
+    assert!(
+        events
+            .records()
+            .iter()
+            .any(|record| record.kind == "footnote-definition")
+    );
+    assert!(
+        events
+            .records()
+            .iter()
+            .any(|record| record.kind == "footnote-reference")
+    );
 }
 
 #[test]

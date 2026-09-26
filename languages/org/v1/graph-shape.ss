@@ -32,6 +32,8 @@
    (node 'OrgDrawer "element" "drawer"
          (list (field 'DrawerName "name")))
    (node 'OrgParagraph "element" "paragraph" '())
+   (node 'OrgFootnoteDefinition "element" "footnote-definition"
+         (list (field 'FootnoteDefinitionLabel "label")))
    (node 'OrgComment "element" "comment"
          (list (field 'CommentLine "source-line" 'each)))
    (node 'OrgDiarySexp "element" "diary-sexp"
@@ -97,6 +99,9 @@
    (node 'OrgExportSnippet "object" "export-snippet"
          (list (field 'ExportSnippetBackend "backend")
                (field 'ExportSnippetValue "value" 'append-or-empty)))
+   (node 'OrgFootnoteReference "object" "footnote-reference"
+         (list (field 'FootnoteReferenceLabel "label")
+               (field 'FootnoteReferenceDefinition "definition")))
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"

@@ -11,11 +11,12 @@
 
 (def org-v1-graph-test
   (test-suite "Org POO graph projection"
-    (test-case "one declaration owns the contract scenario record kinds"
+   (test-case "one declaration owns the contract scenario record kinds"
       (let (nodes (graph-projection-nodes org-v1-graph-projection))
         (check (graph-projection? org-v1-graph-projection) => #t)
         (check (map graph-node-syntax-kind nodes)
                => '(OrgFile OrgSection OrgPropertyDrawer OrgDrawer OrgParagraph
+                            OrgFootnoteDefinition
                             OrgComment OrgDiarySexp
                             OrgHorizontalRule OrgFixedWidth
                             OrgKeyword OrgBabelCall OrgPlanning OrgClock
@@ -25,12 +26,12 @@
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
                             OrgCommentBlock OrgExportBlock OrgLink
                             OrgTarget OrgRadioTarget OrgStatisticsCookie OrgLineBreak
-                            OrgExportSnippet
+                            OrgExportSnippet OrgFootnoteReference
                             OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
                             OrgStrikeThrough))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "property-drawer" "drawer"
-                                "paragraph" "comment" "diary-sexp"
+                                "paragraph" "footnote-definition" "comment" "diary-sexp"
                                 "horizontal-rule" "fixed-width"
                                 "keyword" "babel-call"
                                 "planning" "clock"
@@ -40,7 +41,7 @@
                                 "example-block" "verse-block" "center-block"
                                 "comment-block" "export-block" "link"
                                 "target" "radio-target" "statistics-cookie" "line-break"
-                                "export-snippet"
+                                "export-snippet" "footnote-reference"
                                 "code" "verbatim" "bold" "italic"
                                 "underline" "strike-through"))))
     (test-case "planning keeps each key and value independently"
