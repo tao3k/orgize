@@ -2,6 +2,7 @@
 ;;; Org graph rules are source-owned POO declarations.
 
 (import (only-in :std/test check test-case test-suite)
+        (only-in :std/list/list every)
         (only-in :clan/poo/object .o)
         (only-in :gerbil-parser/src/modules/parser/graph-projection-objects
                  graph-projection? graph-projection-nodes
@@ -12,6 +13,7 @@
         (only-in "modules/org-elements/graph-objects.ss"
                  make-org-graph-node make-org-graph-field
                  org-graph-node-fields org-graph-field-mode)
+        (only-in "graph-shape.ss" org-v1-graph-shape)
         (only-in "graph.ss" org-v1-graph-projection))
 (export org-v1-graph-test)
 
@@ -23,6 +25,7 @@
                                        (list field))))
        (check (org-graph-field? field) => #t)
        (check (org-graph-node? node) => #t)
+       (check (every org-graph-node? org-v1-graph-shape) => #t)
        (check (org-graph-node-fields node) => (list field))
        (check (org-graph-field-mode field) => 'one)
        (check (org-graph-node? '(OrgSection section headline)) => #f)

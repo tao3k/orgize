@@ -9,10 +9,11 @@
                  line-structure-blocks)
         (only-in "parser.ss" org-v1-line-structure)
         (only-in "modules/org-parser/types.ss"
-                 org-event-block? org-inline-markup?)
+                 org-event-block? org-inline-markup? org-event-strategy?)
         (only-in "modules/org-parser/objects.ss"
                  make-org-event-block org-event-block-id
-                 make-org-inline-markup org-inline-markup-node)
+                 make-org-inline-markup org-inline-markup-node
+                 make-org-event-strategy org-event-strategy-root)
         (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
         (only-in "rowan-event-fixture.ss" rowan-event-fixture-json)
         (only-in "rowan-event-parser.ss"
@@ -24,11 +25,15 @@
     (test-case "POO strategy declarations reject untyped rule tuples"
       (let ((block (make-org-event-block
                     1 (car (line-structure-blocks org-v1-line-structure))))
-            (markup (make-org-inline-markup 42 3 'OrgBold)))
+            (markup (make-org-inline-markup 42 3 'OrgBold))
+            (strategy (make-org-event-strategy
+                       'OrgFile '() '((finish-node)) '() '())))
         (check (org-event-block? block) => #t)
         (check (org-event-block-id block) => 1)
         (check (org-inline-markup? markup) => #t)
         (check (org-inline-markup-node markup) => 'OrgBold)
+        (check (org-event-strategy? strategy) => #t)
+        (check (org-event-strategy-root strategy) => 'OrgFile)
         (check (org-event-block? '(1 . block)) => #f)
         (check (org-inline-markup? '(42 3 OrgBold)) => #f)
         (check (org-inline-markup?
