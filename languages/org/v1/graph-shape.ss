@@ -83,6 +83,9 @@
    (node 'OrgSpecialBlock "element" "special-block"
          (list (field 'SpecialBlockName "name")
                (field 'BlockHeaderTrivia "header")))
+   (node 'OrgLatexEnvironment "element" "latex-environment"
+         (list (field 'LatexEnvironmentName "name")
+               (field 'LatexEnvironmentBody "body" 'append-or-empty)))
    (node 'OrgQuoteBlock "element" "quote-block" '())
    (node 'OrgExampleBlock "element" "example-block"
          (list (field 'TextLine "body")))

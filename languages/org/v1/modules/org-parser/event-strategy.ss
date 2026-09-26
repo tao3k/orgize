@@ -27,8 +27,12 @@
         (only-in "event-list.ss"
                  list-close-all list-close-paragraph-form list-or-element-form)
         (only-in "event-special-block.ss"
-                 special-event-initial special-block-id special-future-scan
+                 special-event-initial special-block-id special-closing
+                 special-future-scan
                  special-open-form special-close-form)
+        (only-in "event-latex-environment.ss"
+                 latex-environment-initial latex-future-scan
+                 latex-open-form latex-body-form)
         (only-in "objects.ss"
                  make-org-event-block org-event-block-id org-event-block-rule))
 (export org-event-initial org-event-line-forms org-event-finish-forms
@@ -92,10 +96,33 @@
                  (block-line-closing (org-event-block-rule parent))
                  heading-marker heading-separator))
           ,otherwise))
-   `(and (or (uint-equal? (stack-top container-frames) (uint 0))
-             (uint-equal? (stack-top container-frames)
-                          (uint ,special-block-id)))
-         ,(special-future-scan "" heading-marker heading-separator))
+   `(or (and (uint-equal? (stack-top container-frames) (uint 0))
+             ,(special-future-scan "" heading-marker heading-separator))
+         (and (uint-equal? (stack-top container-frames)
+                           (uint ,special-block-id))
+              ,(special-future-scan
+                "" heading-marker heading-separator
+                '(state-offset special-name-start)
+                '(state-offset special-name-end))))
+   container-blocks))
+(def (latex-future-condition)
+  (foldr
+   (lambda (parent otherwise)
+     `(or (and (uint-equal? (stack-top container-frames)
+                            (uint ,(org-event-block-id parent)))
+               ,(latex-future-scan
+                 (block-line-closing (org-event-block-rule parent))
+                 heading-marker heading-separator))
+          ,otherwise))
+   `(or (and (uint-equal? (stack-top container-frames) (uint 0))
+             ,(latex-future-scan "" heading-marker heading-separator))
+         (and (uint-equal? (stack-top container-frames)
+                           (uint ,special-block-id))
+              ,(latex-future-scan
+                "" heading-marker heading-separator
+                '(state-offset special-name-start)
+                '(state-offset special-name-end)
+                special-closing "" #t)))
    container-blocks))
 (def ascii-letter-bytes
   (map char->integer
@@ -389,7 +416,9 @@
                                      (special-future-condition))
                  (if (state container-opened)
                      ((set-bool container-opened (bool #f)))
-                     (,(headline-form)))))))))
+                     (,@(latex-open-form close-paragraph
+                                         (latex-future-condition)
+                                         (headline-form))))))))))
 
 (def (non-table-element-form)
   `(if ,comment-line?
@@ -524,6 +553,7 @@
      (footnote-blank-pending #f)
      (footnote-blank-start 0) (footnote-blank-end 0))
    special-event-initial
+   latex-environment-initial
    paragraph-event-initial
    event-headline-tags-initial
    event-source-header-initial))
@@ -531,21 +561,24 @@
 (def org-event-helpers paragraph-event-helpers)
 
 (def org-event-line-forms
-  `((if (uint-positive? (state active-opaque-block))
-        (,(opaque-body-chain))
-        ((if (state property-drawer-open)
-             (,(property-body-form))
-             ((if (state comment-open)
-                  ((if ,comment-line? () (,close-comment))) ())
-              ,(special-close-form close-paragraph list-close-all
-                                   fixed-width-close table-close-form)
-              ,@(container-close-chain)
-              (if (state container-closed)
-                  ((set-bool container-closed (bool #f)))
-                  (,(headline-or-element-form)))))))))
+  `((if (state latex-open)
+        (,latex-body-form)
+        ((if (uint-positive? (state active-opaque-block))
+             (,(opaque-body-chain))
+             ((if (state property-drawer-open)
+                  (,(property-body-form))
+                  ((if (state comment-open)
+                       ((if ,comment-line? () (,close-comment))) ())
+                   ,(special-close-form close-paragraph list-close-all
+                                        fixed-width-close table-close-form)
+                   ,@(container-close-chain)
+                   (if (state container-closed)
+                       ((set-bool container-closed (bool #f)))
+                       (,(headline-or-element-form)))))))))))
 
 (def org-event-finish-forms
-  `((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
+  `((if (state latex-open) ((finish-node)) ())
+    (if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
     (if (state property-drawer-open) ((finish-node)) ())
     (if (state table-open) ((finish-node)) ())
     ,(list-close-paragraph-form #f)

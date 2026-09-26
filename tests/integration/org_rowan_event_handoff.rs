@@ -16,47 +16,6 @@ const HANDOFF_TEST_DIGEST: &str =
     "sha256:8b41c0fcb53588c81a44b83ec9e530bdb6125096637cba4934c96f7c2965abd6";
 
 #[test]
-fn org_scheme_named_special_block_projects_name_and_recursive_body() {
-    let source = "#+BEGIN_NOTE\ntext\n#+END_note\n";
-    let document = parse_org_aot(source).expect("Scheme named block reaches Rowan");
-    assert_eq!(document.syntax().to_string(), source);
-    let special = document
-        .records()
-        .iter()
-        .find(|record| record.kind == "special-block")
-        .expect("named block projects as a special-block Element");
-    assert_eq!(special.field("name"), Some("NOTE"));
-    assert!(
-        document
-            .records()
-            .iter()
-            .any(|record| { record.kind == "paragraph" && record.parent_id == Some(special.id) })
-    );
-
-    let mismatched = parse_org_aot("#+BEGIN_NOTE\ntext\n#+END_OTHER\n")
-        .expect("unclosed named block recovers as text");
-    assert!(
-        mismatched
-            .records()
-            .iter()
-            .all(|record| record.kind != "special-block")
-    );
-
-    let nested_source = "#+BEGIN_OUTER\n#+BEGIN_INNER\nx\n#+END_inner\n#+END_outer\n";
-    let nested = parse_org_aot(nested_source).expect("nested named blocks reach Rowan");
-    assert_eq!(nested.syntax().to_string(), nested_source);
-    let blocks: Vec<_> = nested
-        .records()
-        .iter()
-        .filter(|record| record.kind == "special-block")
-        .collect();
-    assert_eq!(blocks.len(), 2);
-    assert_eq!(blocks[0].field("name"), Some("OUTER"));
-    assert_eq!(blocks[1].field("name"), Some("INNER"));
-    assert_eq!(blocks[1].parent_id, Some(blocks[0].id));
-}
-
-#[test]
 fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
     let source = "# first\n# second\ntext\n#+begin_quote\n# nested\n#+end_quote\n#\n";
     let document = orgize::org_aot::parse_org_aot(source)

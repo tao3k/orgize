@@ -101,6 +101,8 @@ mod org_list_aot;
 mod org_list_fields;
 #[path = "integration/org_named_drawer.rs"]
 mod org_named_drawer;
+#[path = "integration/org_named_elements.rs"]
+mod org_named_elements;
 #[path = "integration/org_parser_aot.rs"]
 mod org_parser_aot;
 #[path = "integration/org_rowan_event_handoff.rs"]

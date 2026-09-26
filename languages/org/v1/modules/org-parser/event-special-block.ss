@@ -6,7 +6,7 @@
                  make-org-named-block org-named-block-opening
                  org-named-block-closing org-named-block-node
                  org-named-block-name-token))
-(export special-event-initial special-block-id special-future-scan
+(export special-event-initial special-block-id special-closing special-future-scan
         special-open-form special-close-form)
 
 (def special-block-id 6)
@@ -32,11 +32,16 @@
     (special-name-start-frames (uint-stack))
     (special-name-end-frames (uint-stack))))
 
-(def (special-future-scan stop heading-marker heading-separator)
-  `(future-named-line-marker-before-boundary?
-    ,special-name-start ,special-name-end
-    ,special-closing "" ,stop
-    ,heading-marker ,heading-separator #t #t #t))
+(def (special-future-scan stop heading-marker heading-separator
+                          (parent-name-from #f) (parent-name-until #f))
+  (append
+   `(future-named-line-marker-before-boundary?
+     ,special-name-start ,special-name-end
+     ,special-closing "" ,stop
+     ,heading-marker ,heading-separator #t #t #t)
+   (if parent-name-from
+     (list parent-name-from parent-name-until special-closing "" #t)
+     '())))
 
 (def (special-open-condition future)
   `(and ,(ascii-ci-pattern-at special-indent special-opening)

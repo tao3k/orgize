@@ -958,6 +958,76 @@
            (OrgParagraph (OrgTextLine (TextLine 28 30)))
            (BlockEndLine 30 42))
           (BlockEndLine 42 54)))))
+    (test-case "named child blocks do not cross a parent closer"
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_OUTER\n#+BEGIN_INNER\n#+END_outer\n#+END_inner\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 13)
+          (BlockHeaderTrivia 13 14)
+          (OrgParagraph (OrgTextLine (TextLine 14 28)))
+          (BlockEndLine 28 40))
+         (OrgParagraph (OrgTextLine (TextLine 40 52)))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_NOTE\n\\begin{a}\n#+END_NOTE\n\\end{a}\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 12)
+          (BlockHeaderTrivia 12 13)
+          (OrgParagraph (OrgTextLine (TextLine 13 23)))
+          (BlockEndLine 23 34))
+         (OrgParagraph (OrgTextLine (TextLine 34 42))))))
+    (test-case "unrelated named closers do not truncate a child block"
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN_OUTER\n#+BEGIN_INNER\n#+END_other\n#+END_inner\n#+END_outer\n"
+        (OrgFile
+         (OrgSpecialBlock
+          (BlockBeginLine 0 8) (SpecialBlockName 8 13)
+          (BlockHeaderTrivia 13 14)
+          (OrgSpecialBlock
+           (BlockBeginLine 14 22) (SpecialBlockName 22 27)
+           (BlockHeaderTrivia 27 28)
+           (OrgParagraph (OrgTextLine (TextLine 28 40)))
+           (BlockEndLine 40 52))
+          (BlockEndLine 52 64)))))
+    (test-case "source-named LaTeX environments keep opaque bodies"
+      (check-org-ast-with parse-org-rowan-events
+        "\\begin{align*}\nx\n\\end{align*}\n"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 13)
+          (LatexEnvironmentBeginSuffix 13 14)
+          (LatexEnvironmentBody 14 15)
+          (LatexEnvironmentBody 15 17)
+          (LatexEnvironmentEnd 17 30))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\begin{a}\\end{a}"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 8)
+          (LatexEnvironmentBeginSuffix 8 9)
+          (LatexEnvironmentEnd 9 16))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\begin{a}x\\foo \\end{a}"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 8)
+          (LatexEnvironmentBeginSuffix 8 9)
+          (LatexEnvironmentBody 9 15)
+          (LatexEnvironmentEnd 15 22))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\begin{a}\n* heading\n\\end{a}\n"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 8)
+          (LatexEnvironmentBeginSuffix 8 9)
+          (LatexEnvironmentBody 9 10)
+          (LatexEnvironmentBody 10 20)
+          (LatexEnvironmentEnd 20 28)))))
     (test-case "indented container delimiters and orphan closers retain source"
       (check-org-ast-with parse-org-rowan-events
         "  #+begin_quote\nx\n  #+end_quote\n"

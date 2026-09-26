@@ -2,4 +2,4 @@
  orgize
 depend:
  ("github.com/tao3k/gerbil-poo@099b381588360a8a49fd772f666a1a00351366f5"
-  "github.com/tao3k/gerbil-parser@35d935331fb6f6fdaa1ff78055957c63aca29fd9"))
+  "github.com/tao3k/gerbil-parser@c5a2c06aec741cb93177b6cb599429d029b212ed"))

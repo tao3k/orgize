@@ -45,6 +45,7 @@
                             OrgPlainList OrgListItem
                             OrgTable OrgTableRow OrgTableRuleRow OrgTableCell
                             OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgSpecialBlock
+                            OrgLatexEnvironment
                             OrgQuoteBlock
                             OrgExampleBlock OrgVerseBlock OrgCenterBlock
                             OrgCommentBlock OrgExportBlock OrgLink
@@ -63,6 +64,7 @@
                                 "plain-list" "item" "table" "table-row"
                                 "table-rule-row" "table-cell"
                                 "node-property" "src-block" "dynamic-block" "special-block"
+                                "latex-environment"
                                 "quote-block"
                                 "example-block" "verse-block" "center-block"
                                 "comment-block" "export-block" "link"
