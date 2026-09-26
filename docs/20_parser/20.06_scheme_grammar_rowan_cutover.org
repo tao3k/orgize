@@ -30,9 +30,8 @@ The shared =parser.ss= POO block declarations supply markers to that
 algorithm; they are not a second runtime parser. Gerbil executes the same
 event strategy in tests and AOT-lowers it through gerbil-parser and
 gerbil-scheme-rust into a Rust function consumed by Rowan. Cargo parsing
-requires neither Gerbil nor =gerbil.pkg=. The earlier structural-parser
-artifact and its independent test oracle have been removed; source-backed
-event AST tests and graph/roundtrip fixtures now verify the active path.
+requires neither Gerbil nor =gerbil.pkg=. Source-backed event AST tests and
+graph/roundtrip fixtures verify this path.
 
 =modules/org-elements/catalog.ss= owns the Element/Object inventory and
 =graph-shape.ss= owns source-backed projection fields. All catalog Object

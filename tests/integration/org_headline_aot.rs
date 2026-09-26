@@ -103,3 +103,42 @@ fn headline_state_uses_defaults_only_without_document_directives() {
     check_org_aot_headline_state!(document, headlines[1], "DONE Closed" => Some("done"));
     check_org_aot_headline_state!(document, headlines[2], "WAIT Plain" => None);
 }
+
+#[test]
+fn scheme_headline_properties_are_stable_across_repeated_queries() {
+    let source = "#+SEQ_TODO: WAIT | DONE\n* WAIT [#A] Review :work:\n* TODO Plain\n";
+    let document = orgize::org_aot::parse_org_aot(source)
+        .expect("Scheme AOT projects custom headline properties");
+    let headlines = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "headline")
+        .collect::<Vec<_>>();
+
+    for _ in 0..3 {
+        assert_eq!(document.headline_todo_type(headlines[0].id), Some("todo"));
+        assert_eq!(
+            document.headline_todo_keyword(headlines[0].id).as_deref(),
+            Some("WAIT")
+        );
+        assert_eq!(
+            document
+                .headline_content_after_todo(headlines[0].id)
+                .as_deref(),
+            Some("[#A] Review :work:")
+        );
+        assert_eq!(
+            document.headline_display_title(headlines[0].id).as_deref(),
+            Some("Review")
+        );
+        assert_eq!(document.headline_todo_keyword(headlines[1].id), None);
+        assert_eq!(
+            document.headline_display_title(headlines[1].id).as_deref(),
+            Some("TODO Plain")
+        );
+        assert_eq!(
+            document.headline_display_title(document.records().len()),
+            None
+        );
+    }
+}
