@@ -1,13 +1,17 @@
 ;;; -*- Gerbil -*-
 ;;; Org-owned projection declarations shared by generator and runtime.
 
+(import (only-in "modules/org-elements/graph-objects.ss"
+                 make-org-graph-node make-org-graph-field
+                 org-graph-node-rust org-graph-node-category
+                 org-graph-node-label org-graph-node-fields
+                 org-graph-field-rust org-graph-field-label
+                 org-graph-field-mode))
+
 (export org-v1-graph-shape org-v1-headline-extra-fields
         org-graph-node-rust org-graph-node-category
         org-graph-node-label org-graph-node-fields
         org-graph-field-rust org-graph-field-label org-graph-field-mode)
-
-(defstruct org-graph-node (rust category label fields))
-(defstruct org-graph-field (rust label mode))
 
 (def (field rust label (mode 'one))
   (make-org-graph-field rust label mode))
