@@ -64,6 +64,47 @@ fn scheme_declared_macro_objects_project_into_rowan_and_graph() {
 }
 
 #[test]
+fn scheme_declared_entities_require_catalog_names_and_preserve_postfix() {
+    check_org_aot_element!("\\alpha{}\n", "entity", "name" => "alpha");
+    let document =
+        orgize::org_aot::parse_org_aot("\\alpha{} \\_   \n").expect("Scheme-owned Org entities");
+    let entities: Vec<_> = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "entity")
+        .collect();
+    assert_eq!(entities.len(), 2);
+    assert_eq!(entities[0].field("post"), Some("{}"));
+    assert_eq!(entities[1].field("name"), Some("_"));
+    assert_eq!(entities[1].field("post"), Some("   "));
+    assert_eq!(document.syntax().to_string(), "\\alpha{} \\_   \n");
+    let unknown = orgize::org_aot::parse_org_aot("\\unknown \\centaur\n")
+        .expect("unknown entity names are text");
+    assert!(
+        !unknown
+            .records()
+            .iter()
+            .any(|record| record.kind == "entity")
+    );
+    let adjacent = orgize::org_aot::parse_org_aot("\\alpha\\beta [[https://example.org]]\n")
+        .expect("entity boundaries keep the next Object visible");
+    assert_eq!(
+        adjacent
+            .records()
+            .iter()
+            .filter(|record| record.kind == "entity")
+            .count(),
+        2
+    );
+    assert!(
+        adjacent
+            .records()
+            .iter()
+            .any(|record| record.kind == "link")
+    );
+}
+
+#[test]
 fn scheme_declared_babel_call_is_not_a_generic_keyword() {
     let source = "#+CALL: build(input=42)\n";
     check_org_aot_element!(source, "babel-call", "value" => "build(input=42)");

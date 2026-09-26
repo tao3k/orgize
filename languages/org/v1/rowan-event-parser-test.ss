@@ -62,6 +62,49 @@
       (check-org-ast-with parse-org-rowan-events
         "{{{9bad}}} {{{broken\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 21))))))
+    (test-case "the complete Org entity catalog drives source-backed Objects"
+      (check-org-ast-with parse-org-rowan-events
+        "\\cent \\alpha{} \\frac12{}test\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgEntity (EntityDelimiter 0 1) (EntityName 1 5))
+           (TextLine 5 6)
+           (OrgEntity (EntityDelimiter 6 7) (EntityName 7 12)
+                      (EntityPost 12 14))
+           (TextLine 14 15)
+           (OrgEntity (EntityDelimiter 15 16) (EntityName 16 22)
+                      (EntityPost 22 24))
+           (TextLine 24 29)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\_   x\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgEntity (EntityDelimiter 0 1) (EntityName 1 2)
+                      (EntityPost 2 5))
+           (TextLine 5 7)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\unknown \\centaur\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 18)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\alpha\\beta\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgEntity (EntityDelimiter 0 1) (EntityName 1 6))
+           (OrgEntity (EntityDelimiter 6 7) (EntityName 7 11))
+           (TextLine 11 12)))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\alpha[[https://example.org]]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgEntity (EntityDelimiter 0 1) (EntityName 1 6))
+           (OrgLink (LinkTrivia 6 8)
+                    (LinkTarget 8 27)
+                    (LinkTrivia 27 29))
+           (TextLine 29 30))))))
     (test-case "five-dash horizontal rule interrupts a paragraph"
       (check-org-ast-with parse-org-rowan-events
         "before\n-----\nafter\n"
@@ -857,4 +900,8 @@
                                               array-as-vector: #t)))
         (check (hash-ref ir "schema")
                => "gerbil-scheme-rust.event-function-ir.v1")
-        (check (hash-ref ir "name") => "parse_org_rowan_events")))))
+        (check (hash-ref ir "name") => "parse_org_rowan_events")
+        (check (vector-length (hash-ref ir "line")) => 2)
+        (check (hash-ref (hash-ref (vector-ref (hash-ref ir "line") 1)
+                                   "condition") "name")
+               => "inline_pending")))))

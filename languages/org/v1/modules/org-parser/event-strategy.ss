@@ -141,7 +141,8 @@
        ((if (state paragraph-post-blank) (,close-paragraph) ())
         (if (not (state paragraph-open))
             ((start-node OrgParagraph) (set-bool paragraph-open (bool #t))) ())
-        ,@(event-text-line-forms 'start))))
+        (set-uint inline-pending-from (offset start))
+        (set-bool inline-pending (bool #t)))))
 
 (def (keyword-form)
   `(if (line-has-key-after-prefix? ,keyword-prefix)
@@ -663,7 +664,8 @@
   `((if (not (state list-paragraph-open))
         ((start-node OrgParagraph)
          (set-bool list-paragraph-open (bool #t))) ())
-    ,@(event-text-line-forms from)))
+    (set-uint inline-pending-from (offset ,from))
+    (set-bool inline-pending (bool #t))))
 
 (def list-counter-alnum-bytes
   (map char->integer
@@ -830,7 +832,8 @@
         ((token FootnoteDefinitionDelimiter ,footnote-content-start end))
         ((start-node OrgParagraph)
          (set-bool paragraph-open (bool #t))
-         ,@(event-text-line-forms footnote-content-start)))
+         (set-uint inline-pending-from (offset ,footnote-content-start))
+         (set-bool inline-pending (bool #t))))
     (set-bool footnote-open (bool #t))
     (set-bool after-heading (bool #f))))
 
@@ -885,7 +888,8 @@
     (container-opened #f)
     (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
     (list-column 0) (list-bullet-start 0) (list-bullet-end 0)
-    (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0))
+    (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0)
+    (inline-pending #f) (inline-pending-from 0))
    '((footnote-open #f) (footnote-line-handled #f)
      (footnote-blank-pending #f)
      (footnote-blank-start 0) (footnote-blank-end 0))
@@ -903,7 +907,10 @@
               ,@(container-close-chain)
               (if (state container-closed)
                   ((set-bool container-closed (bool #f)))
-                  (,(headline-or-element-form)))))))))
+                  (,(headline-or-element-form)))))))
+    (if (state inline-pending)
+        (,@(event-text-line-forms '(state-offset inline-pending-from))
+         (set-bool inline-pending (bool #f))) ())))
 
 (def org-event-finish-forms
   `((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())

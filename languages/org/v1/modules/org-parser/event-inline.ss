@@ -7,6 +7,7 @@
                  inline-link-node inline-link-target-token
                  inline-link-description-token inline-link-trivia-token)
         (only-in "../../parser.ss" org-v1-line-structure))
+(import (only-in "entity-names.ss" org-entity-names))
 (export event-inline-initial event-text-line-forms)
 
 (def link-rule
@@ -40,6 +41,10 @@
   (map char->integer
        (string->list
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")))
+(def entity-name-bytes
+  (map char->integer
+       (string->list
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")))
 (def macro-name-bytes
   (append inline-word-bytes '(45)))
 (def macro-first-bytes
@@ -576,6 +581,71 @@
                                  ((set-uint inline-code-mode (uint 0)))))
                             ,(inline-code-second-scan-forms))))))))))))
 
+(def (entity-space-choices count)
+  (if (= count 0) '()
+    (let* ((spaces-start (pattern-end link-index "\\_"))
+           (spaces-end (pattern-end spaces-start
+                                    (make-string count #\space))))
+      `((if (line-bytes-all-in? ,spaces-start ,spaces-end (32))
+            ((set-uint inline-entity-mode (uint 2))
+             (set-uint inline-entity-open-at (offset ,link-index))
+             (set-uint inline-entity-name-start (offset ,inline-next))
+             (set-uint inline-entity-name-end (offset ,spaces-start))
+             (set-uint inline-entity-post-end (offset ,spaces-end)))
+            ,(entity-space-choices (- count 1)))))))
+
+(def (entity-events)
+  `((token TextLine (state-offset inline-cursor)
+           (state-offset inline-entity-open-at))
+    (start-node OrgEntity)
+    (token EntityDelimiter (state-offset inline-entity-open-at)
+           (state-offset inline-entity-name-start))
+    (token EntityName (state-offset inline-entity-name-start)
+           (state-offset inline-entity-name-end))
+    (if (offset-less? (state-offset inline-entity-name-end)
+                      (state-offset inline-entity-post-end))
+        ((token EntityPost (state-offset inline-entity-name-end)
+                (state-offset inline-entity-post-end))) ())
+    (finish-node)
+    (set-uint inline-cursor
+              (offset (state-offset inline-entity-post-end)))))
+
+(def (entity-finish-forms)
+  `((if (line-bytes-in-set? (state-offset inline-entity-name-start)
+                            (state-offset inline-entity-name-end)
+                            ,org-entity-names)
+        ((set-uint inline-entity-post-end
+                   (offset (state-offset inline-entity-name-end)))
+         (if ,(pattern-at? '(state-offset inline-entity-name-end) "{}")
+             ((set-uint inline-entity-post-end
+                        (offset ,(pattern-end
+                                  '(state-offset inline-entity-name-end) "{}"))))
+             ())
+         ,@(entity-events))
+        ())
+    (set-uint inline-entity-mode (uint 0))))
+
+(def (entity-name-scan-forms)
+  `((if (line-bytes-any-in? ,link-index ,inline-next ,entity-name-bytes)
+        ((set-uint inline-entity-name-end (offset ,inline-next)))
+        ,(entity-finish-forms))))
+
+(def (entity-or-ordinary-free-forms)
+  `((if (line-byte-equal? ,inline-next 95)
+        ,(entity-space-choices 20)
+        ((if (line-bytes-any-in? ,inline-next
+                                 (line-step ,inline-next) ,entity-name-bytes)
+             ((set-uint inline-entity-mode (uint 1))
+              (set-uint inline-entity-open-at (offset ,link-index))
+              (set-uint inline-entity-name-start (offset ,inline-next))
+              (set-uint inline-entity-name-end (offset ,inline-next)))
+             ())))
+    (if (uint-equal? (state inline-entity-mode) (uint 2))
+        (,@(entity-events)
+         (set-uint inline-entity-mode (uint 0)))
+        ((if (uint-equal? (state inline-entity-mode) (uint 0))
+             ,(inline-ordinary-free-scan-forms) ())))))
+
 (def (macro-events arguments?)
   (let ((close-end (if arguments?
                      (pattern-end link-index ")}}}")
@@ -666,7 +736,9 @@
 (def (inline-free-scan-forms)
   `((if ,(pattern-at? link-index "{{{")
         ,(macro-open-forms)
-        ,(inline-ordinary-free-scan-forms))))
+        ((if (line-byte-equal? ,link-index 92)
+             ,(entity-or-ordinary-free-forms)
+             ,(inline-ordinary-free-scan-forms))))))
 
 (def (inline-ordinary-non-code-scan-forms)
   `((if (uint-positive? (state inline-footnote-mode))
@@ -695,9 +767,14 @@
         ,(inline-ordinary-non-code-scan-forms))))
 
 (def (inline-scan-forms)
-  `((if (uint-positive? (state inline-code-mode))
-        ,(inline-code-scan-forms)
-        ,(inline-non-code-scan-forms))
+  `((if (uint-positive? (state inline-entity-mode))
+        ,(entity-name-scan-forms)
+        ())
+    (if (uint-equal? (state inline-entity-mode) (uint 0))
+        ((if (uint-positive? (state inline-code-mode))
+             ,(inline-code-scan-forms)
+             ,(inline-non-code-scan-forms)))
+        ())
     (set-bool inline-left-boundary
               (line-bytes-any-in? ,link-index ,inline-next
                                   ,inline-open-boundary-bytes))
@@ -717,6 +794,8 @@
                             ,inline-trigger-bytes)
         ((for-line-bytes inline-byte-index ,from (line-content-end)
                          ,(inline-scan-forms))) ())
+    (if (uint-positive? (state inline-entity-mode))
+        ,(entity-finish-forms) ())
     (token TextLine (state-offset inline-cursor) end)
     (set-uint inline-cursor (offset end))
     (set-bool inline-open (bool #f))
@@ -765,4 +844,7 @@
     (inline-macro-mode 0) (inline-macro-open-at 0)
     (inline-macro-name-start 0) (inline-macro-name-end 0)
     (inline-macro-arguments-start 0)
+    (inline-entity-mode 0) (inline-entity-open-at 0)
+    (inline-entity-name-start 0)
+    (inline-entity-name-end 0) (inline-entity-post-end 0)
     (inline-previous-backslash #f)))
