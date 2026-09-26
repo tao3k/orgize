@@ -7,7 +7,11 @@
                  inline-link-node inline-link-target-token
                  inline-link-description-token inline-link-trivia-token)
         (only-in "../../parser.ss" org-v1-line-structure))
-(import (only-in "entity-names.ss" org-entity-names))
+(import (only-in "event-inline-primitives.ss"
+                 link-index inline-next pattern-end pattern-at?)
+        (only-in "event-inline-entity.ss"
+                 entity-name-bytes entity-space-choices entity-events
+                 entity-finish-forms entity-name-scan-forms))
 (export event-inline-initial event-text-line-forms)
 
 (def link-rule
@@ -15,8 +19,6 @@
 (def link-open (inline-link-opening link-rule))
 (def link-separator (inline-link-separator link-rule))
 (def link-close (inline-link-closing link-rule))
-(def link-index '(line-index inline-byte-index))
-(def inline-next `(line-step ,link-index))
 (def inline-open-boundary-bytes '(9 10 13 32 45 40 39 34 123))
 (def inline-close-boundary-bytes
   '(9 10 13 32 45 46 44 59 58 33 63 39 34 41 125 92 91))
@@ -41,10 +43,6 @@
   (map char->integer
        (string->list
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")))
-(def entity-name-bytes
-  (map char->integer
-       (string->list
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")))
 (def macro-name-bytes
   (append inline-word-bytes '(45)))
 (def macro-first-bytes
@@ -59,21 +57,6 @@
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
        (line-bytes-any-in? ,inline-next (line-step ,inline-next)
                            ,inline-close-boundary-bytes)))
-
-(def (pattern-end from pattern)
-  (let loop ((offset from) (remaining (string-length pattern)))
-    (if (= remaining 0) offset
-      (loop `(line-step ,offset) (- remaining 1)))))
-
-(def (pattern-at? from pattern)
-  (let ((bytes (string->utf8 pattern)))
-    (unless (> (u8vector-length bytes) 0)
-      (error "inline link marker must not be empty" pattern))
-    (let loop ((offset from) (index 0) (predicate #f))
-      (if (= index (u8vector-length bytes)) predicate
-        (let (check `(line-byte-equal? ,offset ,(u8vector-ref bytes index)))
-          (loop `(line-step ,offset) (+ index 1)
-                (if predicate `(and ,predicate ,check) check)))))))
 
 (def (link-valid? target-end)
   `(offset-less? (state-offset inline-target-start) ,target-end))
@@ -593,61 +576,6 @@
                                   (set-uint inline-code-mode (uint 5)))
                                  ((set-uint inline-code-mode (uint 0)))))
                             ,(inline-code-second-scan-forms))))))))))))
-
-(def (entity-space-choices count)
-  (let* ((spaces-start (pattern-end link-index "\\_"))
-         (limit (pattern-end spaces-start (make-string count #\space)))
-         (space-index '(line-index entity-space-byte-index)))
-    `((set-uint inline-entity-mode (uint 3))
-      (set-uint inline-entity-post-end (offset ,spaces-start))
-      (for-line-bytes entity-space-byte-index ,spaces-start ,limit
-        ((if (and (uint-equal? (state inline-entity-mode) (uint 3))
-                  (line-byte-equal? ,space-index 32))
-             ((set-uint inline-entity-post-end
-                        (offset (line-step ,space-index))))
-             ((set-uint inline-entity-mode (uint 0))))))
-      (if (offset-less? ,spaces-start (state-offset inline-entity-post-end))
-          ((set-uint inline-entity-mode (uint 2))
-           (set-uint inline-entity-open-at (offset ,link-index))
-           (set-uint inline-entity-name-start (offset ,inline-next))
-           (set-uint inline-entity-name-end (offset ,spaces-start)))
-          ((set-uint inline-entity-mode (uint 0)))))))
-
-(def (entity-events)
-  `((token TextLine (state-offset inline-cursor)
-           (state-offset inline-entity-open-at))
-    (start-node OrgEntity)
-    (token EntityDelimiter (state-offset inline-entity-open-at)
-           (state-offset inline-entity-name-start))
-    (token EntityName (state-offset inline-entity-name-start)
-           (state-offset inline-entity-name-end))
-    (if (offset-less? (state-offset inline-entity-name-end)
-                      (state-offset inline-entity-post-end))
-        ((token EntityPost (state-offset inline-entity-name-end)
-                (state-offset inline-entity-post-end))) ())
-    (finish-node)
-    (set-uint inline-cursor
-              (offset (state-offset inline-entity-post-end)))))
-
-(def (entity-finish-forms (reset-mode? #t))
-  `((if (line-bytes-in-set? (state-offset inline-entity-name-start)
-                            (state-offset inline-entity-name-end)
-                            ,org-entity-names)
-        ((set-uint inline-entity-post-end
-                   (offset (state-offset inline-entity-name-end)))
-         (if ,(pattern-at? '(state-offset inline-entity-name-end) "{}")
-             ((set-uint inline-entity-post-end
-                        (offset ,(pattern-end
-                                  '(state-offset inline-entity-name-end) "{}"))))
-             ())
-         ,@(entity-events))
-        ())
-    ,@(if reset-mode? '((set-uint inline-entity-mode (uint 0))) '())))
-
-(def (entity-name-scan-forms)
-  `((if (line-bytes-any-in? ,link-index ,inline-next ,entity-name-bytes)
-        ((set-uint inline-entity-name-end (offset ,inline-next)))
-        ,(entity-finish-forms))))
 
 (def (entity-or-ordinary-free-forms)
   `((if (line-byte-equal? ,inline-next 95)
