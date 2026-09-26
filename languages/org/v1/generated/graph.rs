@@ -3,7 +3,7 @@ use gerbil_parser_rowan::{GraphFieldMode, GraphFieldRule, GraphNodeRule, GraphPr
 
 pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
     grammar_digest: "sha256:3a0a71eb94e17313e6ad0a303915ff97b286a5c752dec22fb5352aa78b7e8760",
-    projection_digest: "sha256:9e96a30f00b7e6cae2988041e52e63675e2abc0c601b667098f72c6267ec6fd9",
+    projection_digest: "sha256:dd856e14449b3d9b754fd064eb5ab351ca3f7428b0c5fa60f9a67f04560ecfe9",
     rules: &[
         GraphNodeRule { syntax_kind: 0, category: "document", kind: "org-data", fields: &[] },
         GraphNodeRule { syntax_kind: 41, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 42, name: "markers", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 43, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 44, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 45, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 44, name: "tag", mode: GraphFieldMode::Each }, ] },
@@ -38,7 +38,7 @@ pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
         GraphNodeRule { syntax_kind: 31, category: "object", kind: "radio-target", fields: &[GraphFieldRule { token_kind: 74, name: "value", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 32, category: "object", kind: "statistics-cookie", fields: &[GraphFieldRule { token_kind: 75, name: "value", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 33, category: "object", kind: "line-break", fields: &[] },
-        GraphNodeRule { syntax_kind: 34, category: "object", kind: "export-snippet", fields: &[GraphFieldRule { token_kind: 77, name: "backend", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 78, name: "value", mode: GraphFieldMode::Append }, ] },
+        GraphNodeRule { syntax_kind: 34, category: "object", kind: "export-snippet", fields: &[GraphFieldRule { token_kind: 77, name: "backend", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 78, name: "value", mode: GraphFieldMode::AppendOrEmpty }, ] },
         GraphNodeRule { syntax_kind: 35, category: "object", kind: "code", fields: &[GraphFieldRule { token_kind: 81, name: "value", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 36, category: "object", kind: "verbatim", fields: &[GraphFieldRule { token_kind: 81, name: "value", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 37, category: "object", kind: "bold", fields: &[GraphFieldRule { token_kind: 81, name: "value", mode: GraphFieldMode::Append }, ] },

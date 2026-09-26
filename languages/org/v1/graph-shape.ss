@@ -96,7 +96,7 @@
    (node 'OrgLineBreak "object" "line-break" '())
    (node 'OrgExportSnippet "object" "export-snippet"
          (list (field 'ExportSnippetBackend "backend")
-               (field 'ExportSnippetValue "value")))
+               (field 'ExportSnippetValue "value" 'append-or-empty)))
    (node 'OrgCode "object" "code"
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgVerbatim "object" "verbatim"

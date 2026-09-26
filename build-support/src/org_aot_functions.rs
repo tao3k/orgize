@@ -32,8 +32,18 @@ pub fn write_org_aot_events() {
         .join("languages/org/v1/generated/rowan-events.ir.json");
     println!("cargo:rerun-if-changed={}", source.display());
     let ir = fs::read_to_string(source).expect("read Scheme-authored Org event IR");
-    let generated = gerbil_scheme_rust_ir::compile_event_function_json(&ir)
-        .expect("Scheme-authored Org events must compile to Rust");
+    // The event IR is a deeply nested Scheme expression. Windows build-script
+    // main threads have a smaller stack than the recursive IR compiler needs.
+    let generated = std::thread::Builder::new()
+        .name("org-event-aot".into())
+        .stack_size(32 * 1024 * 1024)
+        .spawn(move || {
+            gerbil_scheme_rust_ir::compile_event_function_json(&ir)
+                .expect("Scheme-authored Org events must compile to Rust")
+        })
+        .expect("spawn Org event AOT compiler")
+        .join()
+        .expect("Org event AOT compiler thread");
     let output_dir = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo output dir"));
     fs::write(output_dir.join("org_rowan_events.rs"), generated)
         .expect("write generated Org event function");

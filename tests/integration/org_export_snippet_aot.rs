@@ -32,7 +32,7 @@ fn scheme_export_snippets_keep_backend_value_and_source_spans() {
         Some("<b>x</b>"),
         "@@html:<b>x</b>@@"
     );
-    check_org_export_snippet!(snippets[1], source, "-", None, "@@-:@@");
+    check_org_export_snippet!(snippets[1], source, "-", Some(""), "@@-:@@");
 }
 
 #[test]

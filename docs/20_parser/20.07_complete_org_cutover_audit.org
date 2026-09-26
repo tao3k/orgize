@@ -190,15 +190,22 @@ The next Scheme event batch projects =export-snippet= as a source-backed Object
 with backend, value, and delimiter spans; malformed backend text, missing
 closing markers, and opaque source-block contents have negative tests in both
 the Scheme AST macro suite and Rust AOT/Rowan integration suite. This closes
-one catalog-to-typed-graph name but is not full Object parity. In particular,
-the generic event engine omits zero-length tokens, so =@@backend:@@= has no
-=value= graph field yet even though the source-backed Object is recognized.
-An explicit empty-field projection contract belongs in the generic engine;
-Org-specific Rust reparsing is not an acceptable substitute.
-The 2,000-document release AOT/Rowan/Element benchmark measured
+one catalog-to-typed-graph name but is not full Object parity. The generic
+event engine correctly omits zero-length tokens. Gerbil-parser PR #10 now
+provides the Scheme-declared =append-or-empty= graph field mode, so
+=@@backend:@@= projects =value=""= without Org-specific Rust reparsing.
+The Orgize Cargo dependency pins that exact upstream commit
+=95966d7695d778e99c5f0de5789efdb734e00817=; Scheme and Rust tests cover
+both empty and nonempty values.
+Before that dependency-pin update, the 2,000-document release AOT/Rowan/Element
+benchmark measured
 14.287–14.788 ms on a 30-sample same-machine rerun after this addition.
 That interval overlaps the preceding 14.089–14.671 ms sample, so no stable
 change is admitted; the 100-ms end-to-end release gate still passes locally.
+The same large event IR exhausted the default Windows build-script thread
+stack on PR #15 at =0b8314c=. Build support now compiles that IR on an
+explicit 32-MiB stack thread; this does not add a runtime parser or change
+the checked-in IR. Windows CI on the new head must confirm the fix.
 
 The first cross-platform CI run of the plan-ledger AOT consumer at =bf895b9=
 failed its 100-ms gate in the unoptimized Cargo test profile on Ubuntu,

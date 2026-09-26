@@ -62,4 +62,15 @@
         (check (map graph-field-name fields)
                => '("bullet" "counter" "checkbox" "tag" "trivia"))
         (check (map graph-field-mode fields)
-               => '(append append append append each))))))
+               => '(append append append append each))))
+    (test-case "export snippet value remains present when its source span is empty"
+      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+             (snippet (car (filter
+                            (lambda (node)
+                              (eq? (graph-node-syntax-kind node)
+                                   'OrgExportSnippet))
+                            nodes)))
+             (fields (graph-node-fields snippet)))
+        (check (map graph-field-name fields) => '("backend" "value"))
+        (check (map graph-field-mode fields)
+               => '(append append-or-empty))))))
