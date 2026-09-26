@@ -7,10 +7,6 @@ use gerbil_parser_rowan::{
 use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
 
 #[rustfmt::skip]
-#[path = "../../languages/org/v1/generated/line-events.rs"]
-mod generated_line_events;
-
-#[rustfmt::skip]
 mod generated_context_events {
     use gerbil_parser_rowan::TreeEvent;
     include!(concat!(env!("OUT_DIR"), "/org_rowan_events.rs"));
@@ -89,31 +85,6 @@ fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
         .find(|record| record.kind == "diary-sexp")
         .and_then(|record| record.field("value"));
     assert_eq!(value, Some("%%(x) "));
-}
-
-#[test]
-fn scheme_authored_line_algorithm_aot_builds_lossless_rowan() {
-    let source = "* α\r\nbody\n";
-    let events = generated_line_events::parse_org_line_events(source);
-    let parsed = parse_generated_events(
-        org_language_spec(),
-        generated_line_events::PARSER_DIGEST,
-        source,
-        &events,
-    )
-    .expect("Scheme-generated Org line events satisfy Rowan");
-
-    assert_eq!(parsed.syntax().to_string(), source);
-    assert_eq!(
-        parsed.receipt().parser_digest,
-        Some(generated_line_events::PARSER_DIGEST)
-    );
-    let kinds: Vec<_> = parsed
-        .syntax()
-        .children()
-        .map(|node| org_language_spec().kinds[usize::from(node.kind().0)].name)
-        .collect();
-    assert_eq!(kinds, ["OrgHeadline", "OrgTextLine"]);
 }
 
 #[test]
@@ -686,7 +657,7 @@ fn kind(name: &str, category: KindCategory) -> u16 {
 #[test]
 fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
-        "../../languages/org/v1/generated/outline-event-fixture.json"
+        "../../languages/org/v1/generated/rowan-event-fixture.json"
     ))
     .expect("Scheme outline fixture is valid JSON");
     let source = fixture["source"].as_str().expect("fixture source");

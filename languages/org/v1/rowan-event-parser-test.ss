@@ -14,8 +14,7 @@
       (check-org-ast-with parse-org-rowan-events
         "alpha\nβ\n \t\nnext\n* H\n"
         (OrgFile
-         (OrgParagraph (OrgTextLine (TextLine 0 6))
-                       (OrgTextLine (TextLine 6 9))
+         (OrgParagraph (OrgTextLine (TextLine 0 9))
                        (OrgTextLine (TextLine 9 12)))
          (OrgParagraph (OrgTextLine (TextLine 12 17)))
          (OrgSection (OrgHeadline (HeadlineLine 17 18)
@@ -134,8 +133,7 @@
            (TextLine 20 25)
            (OrgLink (LinkTrivia 25 27) (LinkTarget 27 31)
                     (LinkTrivia 31 33))
-           (TextLine 33 34))
-          (OrgTextLine (TextLine 34 43))))))
+           (TextLine 33 43))))))
     (test-case "target and radio-target Objects retain source-backed value spans"
       (check-org-ast-with parse-org-rowan-events
         "a <<one two>> and <<<radio>>> z\n"
@@ -293,8 +291,7 @@
         "src_rust{unterminated\ncall_foo[x](unterminated\n"
         (OrgFile
          (OrgParagraph
-          (OrgTextLine (TextLine 0 22))
-          (OrgTextLine (TextLine 22 47)))))
+          (OrgTextLine (TextLine 0 47)))))
       (check-org-ast-with parse-org-rowan-events
         "prefixsrc_rust{a}\n"
         (OrgFile
@@ -410,14 +407,13 @@
         (OrgFile
          (OrgParagraph
           (OrgTextLine (TextLine 0 1)
-                       (OrgLineBreak (LineBreakText 1 7)))
-          (OrgTextLine (TextLine 7 12)))))
+                       (OrgLineBreak (LineBreakText 1 7))
+                       (TextLine 7 12)))))
       (check-org-ast-with parse-org-rowan-events
         "a\\\\ x\na\\\\\\\n"
         (OrgFile
          (OrgParagraph
-          (OrgTextLine (TextLine 0 6))
-          (OrgTextLine (TextLine 6 11))))))
+          (OrgTextLine (TextLine 0 11))))))
     (test-case "inline code and verbatim preserve delimiters and source values"
       (check-org-ast-with parse-org-rowan-events
         "a ~code~ =verb= z\n"
@@ -474,7 +470,17 @@
            (TextLine 32 33)))))
       (check-org-ast-with parse-org-rowan-events
         "x*y* *open\n"
-        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11))))))
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11)))))
+      (check-org-ast-with parse-org-rowan-events
+        "a *bo\nld* z\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 2)
+           (OrgBold (InlineMarkupDelimiter 2 3)
+                    (InlineMarkupValue 3 8)
+                    (InlineMarkupDelimiter 8 9))
+           (TextLine 9 12))))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"
@@ -533,8 +539,7 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
                        (HeadlineTitle 2 7) (HeadlineTrivia 7 8))
-          (OrgParagraph (OrgTextLine (TextLine 8 22))
-                        (OrgTextLine (TextLine 22 31)))
+          (OrgParagraph (OrgTextLine (TextLine 8 31)))
           (OrgSection
            (OrgHeadline (HeadlineLine 31 33) (HeadlineTrivia 33 34)
                         (HeadlineTitle 34 38) (HeadlineTrivia 38 39))
@@ -546,10 +551,7 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
                        (HeadlineTitle 2 8) (HeadlineTrivia 8 9))
-          (OrgParagraph (OrgTextLine (TextLine 9 22))
-                        (OrgTextLine (TextLine 22 31))
-                        (OrgTextLine (TextLine 31 41))
-                        (OrgTextLine (TextLine 41 47)))
+          (OrgParagraph (OrgTextLine (TextLine 9 47)))
           (OrgSection
            (OrgHeadline (HeadlineLine 47 49) (HeadlineTrivia 49 50)
                         (HeadlineTitle 50 54) (HeadlineTrivia 54 55)))))))
@@ -586,8 +588,7 @@
         "%%(diary-anniversary 1 1 2000)\ntext\n%%not-diary\n"
         (OrgFile
          (OrgDiarySexp (DiarySexpValue 0 30) (DiarySexpTrivia 30 31))
-         (OrgParagraph (OrgTextLine (TextLine 31 36))
-                       (OrgTextLine (TextLine 36 48)))))
+         (OrgParagraph (OrgTextLine (TextLine 31 48)))))
       (check-org-ast-with parse-org-rowan-events
         "%%(x) \r\n"
         (OrgFile
@@ -682,8 +683,7 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
                        (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
-          (OrgParagraph (OrgTextLine (TextLine 4 9))
-                        (OrgTextLine (TextLine 9 26)))))))
+          (OrgParagraph (OrgTextLine (TextLine 4 26)))))))
     (test-case "empty declared values keep source spans ordered"
       (check-org-ast-with parse-org-rowan-events
         "* H\nSCHEDULED:  \n"
@@ -765,8 +765,7 @@
           (OrgListItem
            (ListBullet 0 1) (ListTrivia 1 2)
            (OrgParagraph
-            (OrgTextLine (TextLine 2 8))
-            (OrgTextLine (TextLine 8 15))))
+            (OrgTextLine (TextLine 2 15))))
           (OrgListItem
            (ListBullet 15 16) (ListTrivia 16 17)
            (OrgParagraph (OrgTextLine (TextLine 17 22)))))))
@@ -901,7 +900,4 @@
         (check (hash-ref ir "schema")
                => "gerbil-scheme-rust.event-function-ir.v1")
         (check (hash-ref ir "name") => "parse_org_rowan_events")
-        (check (vector-length (hash-ref ir "line")) => 2)
-        (check (hash-ref (hash-ref (vector-ref (hash-ref ir "line") 1)
-                                   "condition") "name")
-               => "inline_pending")))))
+        (check (vector-length (hash-ref ir "line")) => 1)))))

@@ -13,10 +13,12 @@
         +org-element-context-kind+ +org-element-profile-kind+
         +org-element-named-query-kind+
         +org-element-predicate-kind+
+        +org-headline-properties-kind+
         OrgElementQuery OrgElementQueryClause
         OrgElementPredicate org-element-predicate?
         OrgNamedElementQuery org-named-element-query?
         OrgElementGraphView OrgElementQueryContext OrgElementsProfile
+        OrgHeadlineProperties org-headline-properties?
         org-element-query? org-element-query-clause?
         org-element-graph-view?
         org-element-query-context? org-elements-profile?)
@@ -29,6 +31,7 @@
 (def +org-element-profile-kind+ 'org-elements-profile)
 (def +org-element-named-query-kind+ 'org-named-element-query)
 (def +org-element-predicate-kind+ 'org-element-predicate)
+(def +org-headline-properties-kind+ 'org-headline-properties)
 
 (def (has-kind-and-slots? value kind slots)
   (and (object? value) (.slot? value 'kind)
@@ -166,3 +169,25 @@
   (element? OrgElementQueryContext value))
 (def (org-elements-profile? value)
   (element? OrgElementsProfile value))
+
+(def (org-headline-properties-shape? value)
+  (and (has-kind-and-slots? value +org-headline-properties-kind+
+                            '(schema source-title title todo-keyword todo-type
+                                     priority tags))
+       (equal? (.ref value 'schema) +org-element-schema+)
+       (string? (.ref value 'source-title))
+       (string? (.ref value 'title))
+       (let (todo (.ref value 'todo-keyword))
+         (or (not todo) (string? todo)))
+       (let (state (.ref value 'todo-type))
+         (or (not state) (string? state)))
+       (let (priority (.ref value 'priority))
+         (or (not priority) (string? priority)))
+       (list? (.ref value 'tags))
+       (every string? (.ref value 'tags))))
+
+(define-type (OrgHeadlineProperties @ Type.)
+  .element?: org-headline-properties-shape?)
+
+(def (org-headline-properties? value)
+  (element? OrgHeadlineProperties value))

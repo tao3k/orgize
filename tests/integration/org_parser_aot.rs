@@ -137,6 +137,19 @@ fn scheme_emphasis_objects_project_into_rowan_and_element_graph() {
         assert_eq!(records[0].field("value"), Some(value), "{kind}");
     }
     assert_eq!(document.syntax().to_string(), source);
+    check_org_aot_element!("a *bo\nld* z\n", "bold", "value" => "bo\nld");
+    let repeated = "~code~ =verbatim=\n~code~ =verbatim=\n";
+    let repeated_document =
+        orgize::org_aot::parse_org_aot(repeated).expect("inline objects span physical lines");
+    assert_eq!(
+        repeated_document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "code" || record.kind == "verbatim")
+            .count(),
+        4
+    );
+    assert_eq!(repeated_document.syntax().to_string(), repeated);
 }
 
 #[test]

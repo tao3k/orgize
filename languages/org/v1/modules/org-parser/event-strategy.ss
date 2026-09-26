@@ -26,12 +26,15 @@
                  list-line-item-node list-line-bullet-token
                  list-line-trivia-token)
         (only-in "../../parser.ss" org-v1-line-structure)
-        (only-in "event-inline.ss" event-inline-initial event-text-line-forms)
+        (only-in "event-paragraph.ss"
+                 paragraph-event-initial paragraph-close-form paragraph-finish-form
+                 paragraph-line-form paragraph-event-helpers)
         (only-in "event-headline-tags.ss"
                  event-headline-tags-initial event-headline-title-forms)
         (only-in "event-source-header.ss"
                  event-source-header-initial event-source-header-forms))
-(export org-event-initial org-event-line-forms org-event-finish-forms)
+(export org-event-initial org-event-line-forms org-event-finish-forms
+        org-event-helpers)
 
 (def (block-by-node node)
   (or (ormap (lambda (block)
@@ -111,11 +114,7 @@
   (append ascii-letter-bytes
           (map char->integer (string->list "0123456789_-"))))
 
-(def close-paragraph
-  '(if (state paragraph-open)
-       ((finish-node)
-        (set-bool paragraph-open (bool #f))
-        (set-bool paragraph-post-blank (bool #f))) ()))
+(def close-paragraph paragraph-close-form)
 
 (def comment-marker '(line-skip-horizontal start))
 (def comment-next `(line-step ,comment-marker))
@@ -133,16 +132,7 @@
     (token CommentLine start end)
     (set-bool after-heading (bool #f))))
 
-(def (paragraph-form)
-  `(if (line-blank?)
-       ((if (state paragraph-open)
-            ((set-bool paragraph-post-blank (bool #t))) ())
-        (start-node OrgTextLine) (token TextLine start end) (finish-node))
-       ((if (state paragraph-post-blank) (,close-paragraph) ())
-        (if (not (state paragraph-open))
-            ((start-node OrgParagraph) (set-bool paragraph-open (bool #t))) ())
-        (set-uint inline-pending-from (offset start))
-        (set-bool inline-pending (bool #t)))))
+(def paragraph-form paragraph-line-form)
 
 (def (keyword-form)
   `(if (line-has-key-after-prefix? ,keyword-prefix)
@@ -651,9 +641,15 @@
 (def (list-frame-value ordered?)
   (if ordered? `(uint-add ,list-frame-base (uint 1)) list-frame-base))
 
-(def list-close-paragraph
-  '(if (state list-paragraph-open)
-       ((finish-node) (set-bool list-paragraph-open (bool #f))) ()))
+(def (list-close-paragraph-form reset-state?)
+  `(if (state list-paragraph-open)
+       ((call-source-helper inline-span
+                            (state-offset list-paragraph-start)
+                            (state-offset list-paragraph-end))
+        (finish-node)
+        ,@(if reset-state? '((set-bool list-paragraph-open (bool #f))) '())) ()))
+
+(def list-close-paragraph (list-close-paragraph-form #t))
 
 (def list-close-all
   `(,list-close-paragraph
@@ -663,9 +659,9 @@
 (def (list-text-line from)
   `((if (not (state list-paragraph-open))
         ((start-node OrgParagraph)
-         (set-bool list-paragraph-open (bool #t))) ())
-    (set-uint inline-pending-from (offset ,from))
-    (set-bool inline-pending (bool #t))))
+         (set-bool list-paragraph-open (bool #t))
+         (set-uint list-paragraph-start (offset ,from))) ())
+    (set-uint list-paragraph-end (offset end))))
 
 (def list-counter-alnum-bytes
   (map char->integer
@@ -832,8 +828,8 @@
         ((token FootnoteDefinitionDelimiter ,footnote-content-start end))
         ((start-node OrgParagraph)
          (set-bool paragraph-open (bool #t))
-         (set-uint inline-pending-from (offset ,footnote-content-start))
-         (set-bool inline-pending (bool #t))))
+         (set-uint paragraph-start (offset ,footnote-content-start))
+         (set-uint paragraph-end (offset end))))
     (set-bool footnote-open (bool #t))
     (set-bool after-heading (bool #f))))
 
@@ -853,8 +849,12 @@
                         (set-bool footnote-blank-pending (bool #t))
                         (set-bool footnote-line-handled (bool #t)))))
                   ((if (state footnote-blank-pending)
-                       (,@(footnote-pending-trivia)
-                        (set-bool paragraph-post-blank (bool #t))) ()))))
+                       ((if (state paragraph-open)
+                            ((set-bool paragraph-post-blank (bool #t))
+                             (set-uint paragraph-blank-end
+                                       (offset (state-offset footnote-blank-end)))
+                             (set-bool footnote-blank-pending (bool #f)))
+                            ,(footnote-pending-trivia))) ()))))
              ())))
     (if (not (state footnote-line-handled))
         ,(list-or-element-form) ())
@@ -877,8 +877,7 @@
 (def org-event-initial
   (append
    '((open-levels (uint-stack)) (active-opaque-block 0)
-    (property-drawer-open #f) (paragraph-open #f)
-    (paragraph-post-blank #f) (after-heading #f)
+    (property-drawer-open #f) (after-heading #f)
     (comment-open #f)
     (fixed-width-open #f)
     (table-open #f) (table-seen-separator #f) (table-escaped #f)
@@ -889,13 +888,15 @@
     (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
     (list-column 0) (list-bullet-start 0) (list-bullet-end 0)
     (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0)
-    (inline-pending #f) (inline-pending-from 0))
+    (list-paragraph-start 0) (list-paragraph-end 0))
    '((footnote-open #f) (footnote-line-handled #f)
      (footnote-blank-pending #f)
      (footnote-blank-start 0) (footnote-blank-end 0))
-   event-inline-initial
+   paragraph-event-initial
    event-headline-tags-initial
    event-source-header-initial))
+
+(def org-event-helpers paragraph-event-helpers)
 
 (def org-event-line-forms
   `((if (uint-positive? (state active-opaque-block))
@@ -907,19 +908,16 @@
               ,@(container-close-chain)
               (if (state container-closed)
                   ((set-bool container-closed (bool #f)))
-                  (,(headline-or-element-form)))))))
-    (if (state inline-pending)
-        (,@(event-text-line-forms '(state-offset inline-pending-from))
-         (set-bool inline-pending (bool #f))) ())))
+                  (,(headline-or-element-form)))))))))
 
 (def org-event-finish-forms
   `((if (uint-positive? (state active-opaque-block)) ((finish-node)) ())
     (if (state property-drawer-open) ((finish-node)) ())
     (if (state table-open) ((finish-node)) ())
-    (if (state list-paragraph-open) ((finish-node)) ())
+    ,(list-close-paragraph-form #f)
     (close-all-frames list-frames 2)
     (if (state fixed-width-open) ((finish-node)) ())
-    (if (state paragraph-open) ((finish-node)) ())
+    ,paragraph-finish-form
     (if (state comment-open) ((finish-node)) ())
     (close-all-frames container-frames 1)
     (if (state footnote-open)

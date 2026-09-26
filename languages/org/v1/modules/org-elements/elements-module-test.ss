@@ -22,6 +22,8 @@
                  headline-content-after-todo-rust
                  headline-display-title headline-display-title-rust
                  todo-keyword-matches? todo-keyword-matches-rust)
+        (only-in "objects.ss"
+                 make-org-headline-properties org-headline-property-field)
         (only-in "link-properties.ss"
                  org-image-link? org-image-link-rust)
         (only-in "generated/query-source.ss" org-element-queries)
@@ -73,6 +75,18 @@
 
 (def org-elements-module-test
   (test-suite "Org Elements POO module"
+    (test-case "headline property projection is an admitted POO value"
+      (let (properties
+             (make-org-headline-properties "TODO A" "A" "TODO" "todo"
+                                           "A" '("work")))
+        (check (.ref properties 'title) => "A")
+        (let-values (((known? value)
+                      (org-headline-property-field properties "raw-value")))
+          (check known? => #t)
+          (check value => "A")))
+      (check-exception
+       (make-org-headline-properties "A" "A" #f #f #f '(42))
+       true))
     (test-case "Scheme AST contract rejects output-based tests"
       (check (org-test-form-structured? '(display "snapshot")) => #f)
       (check (org-test-form-structured? '(string-append "a" "b")) => #f)

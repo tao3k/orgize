@@ -17,9 +17,9 @@
 (def link-close (inline-link-closing link-rule))
 (def link-index '(line-index inline-byte-index))
 (def inline-next `(line-step ,link-index))
-(def inline-open-boundary-bytes '(9 32 45 40 39 34 123))
+(def inline-open-boundary-bytes '(9 10 13 32 45 40 39 34 123))
 (def inline-close-boundary-bytes
-  '(9 32 45 46 44 59 58 33 63 39 34 41 125 92 91))
+  '(9 10 13 32 45 46 44 59 58 33 63 39 34 41 125 92 91))
 (def inline-markup-rules
   '((126 1 OrgCode) (61 2 OrgVerbatim) (42 3 OrgBold)
     (47 4 OrgItalic) (95 5 OrgUnderline) (43 6 OrgStrikeThrough)))
@@ -257,19 +257,32 @@
                        ,(statistics-cookie-events)
                        ((set-uint inline-delimited-kind (uint 0))))))))))))
 
+(def line-break-physical-end
+  `(line-physical-end ,inline-next))
+(def line-break-after-terminator
+  `(line-step ,line-break-physical-end))
+(def line-break-after-crlf
+  `(line-step ,line-break-after-terminator))
+
 (def (line-break-events)
   `((token TextLine (state-offset inline-cursor) ,link-index)
     (start-node OrgLineBreak)
-    (token LineBreakText ,link-index end)
-    (finish-node)
-    (set-uint inline-cursor (offset end))))
+    (if (and (line-byte-equal? ,line-break-physical-end 13)
+             (line-byte-equal? ,line-break-after-terminator 10))
+        ((token LineBreakText ,link-index ,line-break-after-crlf)
+         (set-uint inline-cursor (offset ,line-break-after-crlf)))
+        ((token LineBreakText ,link-index ,line-break-after-terminator)
+         (set-uint inline-cursor (offset ,line-break-after-terminator))))
+    (finish-node)))
 
 (def (line-break-at?)
   `(and (line-byte-equal? ,link-index 92)
         (not (state inline-previous-backslash))
         (line-byte-equal? ,inline-next 92)
         (line-bytes-all-in? ,(pattern-end link-index "\\\\")
-                            (line-content-end) (9 32))))
+                            ,line-break-physical-end (9 32))
+        (line-bytes-any-in? ,line-break-physical-end
+                            ,line-break-after-terminator (10 13))))
 
 (def (export-snippet-events)
   `((token TextLine (state-offset inline-cursor)
@@ -582,17 +595,23 @@
                             ,(inline-code-second-scan-forms))))))))))))
 
 (def (entity-space-choices count)
-  (if (= count 0) '()
-    (let* ((spaces-start (pattern-end link-index "\\_"))
-           (spaces-end (pattern-end spaces-start
-                                    (make-string count #\space))))
-      `((if (line-bytes-all-in? ,spaces-start ,spaces-end (32))
-            ((set-uint inline-entity-mode (uint 2))
-             (set-uint inline-entity-open-at (offset ,link-index))
-             (set-uint inline-entity-name-start (offset ,inline-next))
-             (set-uint inline-entity-name-end (offset ,spaces-start))
-             (set-uint inline-entity-post-end (offset ,spaces-end)))
-            ,(entity-space-choices (- count 1)))))))
+  (let* ((spaces-start (pattern-end link-index "\\_"))
+         (limit (pattern-end spaces-start (make-string count #\space)))
+         (space-index '(line-index entity-space-byte-index)))
+    `((set-uint inline-entity-mode (uint 3))
+      (set-uint inline-entity-post-end (offset ,spaces-start))
+      (for-line-bytes entity-space-byte-index ,spaces-start ,limit
+        ((if (and (uint-equal? (state inline-entity-mode) (uint 3))
+                  (line-byte-equal? ,space-index 32))
+             ((set-uint inline-entity-post-end
+                        (offset (line-step ,space-index))))
+             ((set-uint inline-entity-mode (uint 0))))))
+      (if (offset-less? ,spaces-start (state-offset inline-entity-post-end))
+          ((set-uint inline-entity-mode (uint 2))
+           (set-uint inline-entity-open-at (offset ,link-index))
+           (set-uint inline-entity-name-start (offset ,inline-next))
+           (set-uint inline-entity-name-end (offset ,spaces-start)))
+          ((set-uint inline-entity-mode (uint 0)))))))
 
 (def (entity-events)
   `((token TextLine (state-offset inline-cursor)
@@ -610,7 +629,7 @@
     (set-uint inline-cursor
               (offset (state-offset inline-entity-post-end)))))
 
-(def (entity-finish-forms)
+(def (entity-finish-forms (reset-mode? #t))
   `((if (line-bytes-in-set? (state-offset inline-entity-name-start)
                             (state-offset inline-entity-name-end)
                             ,org-entity-names)
@@ -623,7 +642,7 @@
              ())
          ,@(entity-events))
         ())
-    (set-uint inline-entity-mode (uint 0))))
+    ,@(if reset-mode? '((set-uint inline-entity-mode (uint 0))) '())))
 
 (def (entity-name-scan-forms)
   `((if (line-bytes-any-in? ,link-index ,inline-next ,entity-name-bytes)
@@ -795,21 +814,8 @@
         ((for-line-bytes inline-byte-index ,from (line-content-end)
                          ,(inline-scan-forms))) ())
     (if (uint-positive? (state inline-entity-mode))
-        ,(entity-finish-forms) ())
+        ,(entity-finish-forms #f) ())
     (token TextLine (state-offset inline-cursor) end)
-    (set-uint inline-cursor (offset end))
-    (set-bool inline-open (bool #f))
-    (set-bool inline-failed (bool #f))
-    (set-bool inline-left-boundary (bool #t))
-    (set-bool inline-previous-space (bool #f))
-    (set-uint inline-markup-kind (uint 0))
-    (set-uint inline-delimited-kind (uint 0))
-    (set-uint inline-export-mode (uint 0))
-    (set-uint inline-footnote-mode (uint 0))
-    (set-uint inline-code-mode (uint 0))
-    (set-uint inline-macro-mode (uint 0))
-    (set-bool inline-code-left-boundary (bool #t))
-    (set-bool inline-previous-backslash (bool #f))
     (finish-node)))
 
 (def event-inline-initial
