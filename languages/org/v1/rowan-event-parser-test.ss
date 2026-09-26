@@ -231,6 +231,75 @@
                          (CitationReferenceKey 18 22))
                         (CitationDelimiter 22 23))
            (TextLine 23 24))))))
+    (test-case "timestamp dates are Scheme-owned source-backed Objects"
+      (check-org-ast-with parse-org-rowan-events
+        "<2026-09-23 Wed>\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgTimestampActive
+            (TimestampDelimiter 0 1)
+            (OrgTimestampPoint
+             (TimestampDate 1 11)
+             (TimestampTrivia 11 12)
+             (TimestampDayName 12 15))
+           (TimestampDelimiter 15 16))
+           (TextLine 16 17)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[2026-09-23]--[2026-09-24]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgTimestampInactive
+            (TimestampDelimiter 0 1)
+            (OrgTimestampPoint (TimestampDate 1 11))
+            (TimestampDelimiter 11 12)
+            (TimestampRangeSeparator 12 14)
+            (TimestampDelimiter 14 15)
+            (OrgTimestampPoint (TimestampDate 15 25))
+            (TimestampDelimiter 25 26))
+           (TextLine 26 27)))))
+      (check-org-ast-with parse-org-rowan-events
+        "<2026-09-23 Wed 10:00-11:00 ++1w -2d>\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgTimestampActive
+            (TimestampDelimiter 0 1)
+            (OrgTimestampPoint
+             (TimestampDate 1 11)
+             (TimestampTrivia 11 12)
+             (TimestampDayName 12 15)
+             (TimestampTrivia 15 16)
+             (TimestampTime 16 27)
+             (TimestampTrivia 27 28)
+             (TimestampRepeater 28 32)
+             (TimestampTrivia 32 33)
+             (TimestampDelay 33 36))
+            (TimestampDelimiter 36 37))
+           (TextLine 37 38)))))
+      (check-org-ast-with parse-org-rowan-events
+        "<%%(diary-float t 1 2)>\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgTimestampDiary
+            (TimestampDelimiter 0 1)
+            (TimestampDiaryExpression 1 22)
+            (TimestampDelimiter 22 23))
+           (TextLine 23 24)))))
+      (check-org-ast-with parse-org-rowan-events
+        "<%%(diary-float t 4 2) 12:00-14:00>\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgTimestampDiary
+            (TimestampDelimiter 0 1)
+            (TimestampDiaryExpression 1 22)
+            (TimestampTrivia 22 23)
+            (TimestampTime 23 34)
+            (TimestampDelimiter 34 35))
+           (TextLine 35 36))))))
     (test-case "the complete Org entity catalog drives source-backed Objects"
       (check-org-ast-with parse-org-rowan-events
         "\\cent \\alpha{} \\frac12{}test\n"

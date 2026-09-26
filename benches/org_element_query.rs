@@ -173,6 +173,20 @@ fn bench_org_element_query(c: &mut Criterion) {
     aot_group.bench_function("events-rowan-elements/10k-target-objects", |b| {
         b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&target_objects)).unwrap()))
     });
+    let timestamp_objects = "<2026-09-23 Wed 10:00 ++1w -2d>\n".repeat(10_000);
+    let timestamp_records = orgize::org_aot::parse_org_aot(&timestamp_objects)
+        .expect("timestamp benchmark source builds a Rowan document");
+    assert_eq!(
+        timestamp_records
+            .records()
+            .iter()
+            .filter(|record| record.kind == "timestamp")
+            .count(),
+        10_000
+    );
+    aot_group.bench_function("events-rowan-elements/10k-timestamp-objects", |b| {
+        b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&timestamp_objects)).unwrap()))
+    });
     let terminal_objects = "[50%] [2/3] text\\\\\n".repeat(10_000);
     let terminal_records = orgize::org_aot::parse_org_aot(&terminal_objects)
         .expect("terminal-Object benchmark source builds a Rowan document");

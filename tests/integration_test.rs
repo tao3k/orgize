@@ -115,6 +115,8 @@ mod org_parser_aot;
 mod org_rowan_event_handoff;
 #[path = "integration/org_script_aot.rs"]
 mod org_script_aot;
+#[path = "integration/org_timestamp_aot.rs"]
+mod org_timestamp_aot;
 #[path = "integration/parse.rs"]
 mod parse;
 #[path = "integration/scenario_benchmark.rs"]

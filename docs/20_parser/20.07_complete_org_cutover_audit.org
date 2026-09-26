@@ -43,17 +43,16 @@ current audit reports:
 |---------+----------------|
 | Scheme catalog | 30 Elements; 24 Objects |
 | Public handwritten Rust CST | 32 distinct node kinds in the fixture |
-| Scheme event-AOT CST | 22 distinct node kinds in the fixture |
+| Scheme event-AOT CST | 24 distinct node kinds in the fixture |
 | Structural fixture oracle / event Element records | Event graph adds Objects and footnote definitions absent from the structural oracle; non-footnote fixture backbones remain tested separately |
-| Catalog Elements not projected as typed graph kinds | 3 |
-| Catalog Objects not projected as typed graph kinds | 10 |
+| Catalog Elements not projected as typed graph kinds | 1 |
+| Catalog Objects not projected as typed graph kinds | 0 |
 
-The missing Elements are =inlinetask=,
-=latex-environment=, and =special-block=. The missing Objects are
-=citation=, =citation-reference=, =entity=,
-=inline-babel-call=, =inline-src-block=,
-=latex-fragment=, =macro=, =subscript=, =superscript=,
-=timestamp=. Scheme now recognizes =footnote-definition= and
+The remaining missing Element is =inlinetask=; its recognition is conditional
+on the Org inlinetask extension and a configurable minimum level, not an
+unconditional 15-star heading rewrite. All 24 Object names have typed graph
+projections, but typed-name coverage does not imply complete context,
+restriction, property or public-API parity. Scheme now recognizes =footnote-definition= and
 =footnote-reference= with source-backed labels and inline definitions;
 definition termination and malformed references have focused Scheme AST and
 Rust AOT/Rowan tests. Inline footnote definitions are still one source-backed
@@ -63,6 +62,18 @@ source-backed Objects with value fields and strict boundary fixtures, plus
 =statistics-cookie= and =line-break= with Org's exact physical-line boundary
 cases. These are catalog-versus-typed-graph gaps, not a claim that every
 already-projected kind has full Org behavior.
+
+The =timestamp= typed family is now Orgize-owned Scheme: active/inactive
+dates, two-date ranges, day names, time ranges, repeaters, delays, and diary
+expressions with optional time project source-backed fields through the AOT
+Rowan graph. Focused Scheme AST and Cargo integration tests cover those
+representatives and lossless spans. This does not yet certify every malformed
+modifier, object restriction context, or public =Org::parse= consumer.
+The generated event IR is 1,260,754 bytes versus 1,126,260 at the preceding
+head (+134,494, about 11.9%). A local release build took 5m27s; a 10-sample
+Criterion run of 10,000 active timestamp lines measured 61.480–88.020 ms
+for event parsing, Rowan construction and graph projection. That wide
+single-head interval is a baseline, not a before/after regression verdict.
 
 The representative fixture does not exercise all configured, malformed,
 recursive, or nested cases. The structural oracle predates the new Scheme

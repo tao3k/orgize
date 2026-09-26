@@ -48,6 +48,10 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgMacro", category: KindCategory::Node },
     KindSpec { name: "OrgCitation", category: KindCategory::Node },
     KindSpec { name: "OrgCitationReference", category: KindCategory::Node },
+    KindSpec { name: "OrgTimestampActive", category: KindCategory::Node },
+    KindSpec { name: "OrgTimestampInactive", category: KindCategory::Node },
+    KindSpec { name: "OrgTimestampDiary", category: KindCategory::Node },
+    KindSpec { name: "OrgTimestampPoint", category: KindCategory::Node },
     KindSpec { name: "OrgEntity", category: KindCategory::Node },
     KindSpec { name: "OrgLaTeXFragment", category: KindCategory::Node },
     KindSpec { name: "OrgCode", category: KindCategory::Node },
@@ -127,6 +131,15 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "CitationReferenceMarker", category: KindCategory::Token },
     KindSpec { name: "CitationReferenceKey", category: KindCategory::Token },
     KindSpec { name: "CitationReferenceSuffix", category: KindCategory::Token },
+    KindSpec { name: "TimestampDelimiter", category: KindCategory::Token },
+    KindSpec { name: "TimestampDate", category: KindCategory::Token },
+    KindSpec { name: "TimestampDayName", category: KindCategory::Token },
+    KindSpec { name: "TimestampTime", category: KindCategory::Token },
+    KindSpec { name: "TimestampRepeater", category: KindCategory::Token },
+    KindSpec { name: "TimestampDelay", category: KindCategory::Token },
+    KindSpec { name: "TimestampRangeSeparator", category: KindCategory::Token },
+    KindSpec { name: "TimestampDiaryExpression", category: KindCategory::Token },
+    KindSpec { name: "TimestampTrivia", category: KindCategory::Token },
     KindSpec { name: "EntityDelimiter", category: KindCategory::Token },
     KindSpec { name: "EntityName", category: KindCategory::Token },
     KindSpec { name: "EntityPost", category: KindCategory::Token },
@@ -156,10 +169,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 55 },
-    TerminalSpec { name: "block-begin", syntax_kind: 60 },
-    TerminalSpec { name: "block-end", syntax_kind: 75 },
-    TerminalSpec { name: "text", syntax_kind: 76 },
+    TerminalSpec { name: "headline", syntax_kind: 59 },
+    TerminalSpec { name: "block-begin", syntax_kind: 64 },
+    TerminalSpec { name: "block-end", syntax_kind: 79 },
+    TerminalSpec { name: "text", syntax_kind: 80 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -334,7 +347,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:a8e23275e2ec701c65b68169617808d063ab52b8ba345f2d29d93f5b85a5156c",
+    grammar_digest: "sha256:261cdd02042447120bd49856acdb48376f6d733599e3b6f68305e199f41621aa",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

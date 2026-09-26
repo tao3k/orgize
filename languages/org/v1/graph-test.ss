@@ -52,7 +52,9 @@
                             OrgTarget OrgRadioTarget OrgStatisticsCookie OrgLineBreak
                             OrgExportSnippet OrgFootnoteReference
                             OrgInlineSourceBlock OrgInlineBabelCall OrgMacro OrgCitation
-                            OrgCitationReference OrgEntity
+                            OrgCitationReference
+                            OrgTimestampActive OrgTimestampInactive OrgTimestampDiary
+                            OrgEntity
                             OrgLaTeXFragment
                             OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
                             OrgSubscript OrgSuperscript
@@ -73,7 +75,8 @@
                                 "target" "radio-target" "statistics-cookie" "line-break"
                                 "export-snippet" "footnote-reference"
                                 "inline-src-block" "inline-babel-call" "macro" "citation"
-                                "citation-reference" "entity"
+                                "citation-reference" "timestamp" "timestamp"
+                                "timestamp" "entity"
                                 "latex-fragment"
                                 "code" "verbatim" "bold" "italic"
                                 "underline" "subscript" "superscript"
@@ -98,6 +101,21 @@
                => '("bullet" "counter" "checkbox" "tag" "trivia"))
         (check (map graph-field-mode fields)
                => '(append append append append each))))
+    (test-case "timestamp graph fields preserve source-backed query properties"
+      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+             (timestamps
+              (filter (lambda (node)
+                        (memq (graph-node-syntax-kind node)
+                              '(OrgTimestampActive OrgTimestampInactive)))
+                      nodes)))
+        (check (length timestamps) => 2)
+        (check (map graph-field-name
+                    (graph-node-fields (car timestamps)))
+               => '("delimiter" "range-separator" "date" "day-name"
+                    "time" "repeater" "delay"))
+        (check (map graph-field-mode
+                    (graph-node-fields (cadr timestamps)))
+               => '(each each each each each each each))))
     (test-case "export snippet value remains present when its source span is empty"
       (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
              (snippet (car (filter

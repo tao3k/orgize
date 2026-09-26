@@ -23,6 +23,15 @@
   '("source-title" "raw-value" "todo-keyword" "todo-type"
     "priority" "tags"))
 
+(def timestamp-fields
+  (list (field 'TimestampDelimiter "delimiter" 'each)
+        (field 'TimestampRangeSeparator "range-separator" 'each)
+        (field 'TimestampDate "date" 'each)
+        (field 'TimestampDayName "day-name" 'each)
+        (field 'TimestampTime "time" 'each)
+        (field 'TimestampRepeater "repeater" 'each)
+        (field 'TimestampDelay "delay" 'each)))
+
 (def org-v1-graph-shape
   (list
    (node 'OrgFile "document" "org-data" '())
@@ -131,6 +140,11 @@
          (list (field 'CitationReferencePrefix "prefix" 'append-or-empty)
                (field 'CitationReferenceKey "key")
                (field 'CitationReferenceSuffix "suffix" 'append-or-empty)))
+   (node 'OrgTimestampActive "object" "timestamp" timestamp-fields)
+   (node 'OrgTimestampInactive "object" "timestamp" timestamp-fields)
+   (node 'OrgTimestampDiary "object" "timestamp"
+         (list (field 'TimestampDiaryExpression "diary-expression")
+               (field 'TimestampTime "time" 'each)))
    (node 'OrgEntity "object" "entity"
          (list (field 'EntityName "name")
                (field 'EntityPost "post" 'append-or-empty)))

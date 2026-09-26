@@ -4,6 +4,7 @@
 (import (only-in "event-inline.ss" event-inline-initial event-text-line-forms)
         (only-in "event-inline-citation-reference.ss"
                  citation-reference-helper)
+        (only-in "event-inline-timestamp.ss" timestamp-candidate-helper)
         (only-in "objects.ss" make-org-event-helper))
 (export paragraph-event-initial paragraph-close-form paragraph-finish-form
         paragraph-line-form
@@ -49,4 +50,5 @@
 (def paragraph-event-helpers
   (list (make-org-event-helper
          'inline-span event-inline-initial (event-text-line-forms 'start))
-        citation-reference-helper))
+        citation-reference-helper
+        timestamp-candidate-helper))
