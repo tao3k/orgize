@@ -124,6 +124,8 @@
    (node 'OrgMacro "object" "macro"
          (list (field 'MacroName "name")
                (field 'MacroArguments "arguments" 'append-or-empty)))
+   (node 'OrgCitation "object" "citation"
+         (list (field 'CitationBody "body")))
    (node 'OrgEntity "object" "entity"
          (list (field 'EntityName "name")
                (field 'EntityPost "post" 'append-or-empty)))

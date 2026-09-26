@@ -129,6 +129,47 @@
       (check-org-ast-with parse-org-rowan-events
         "{{{9bad}}} {{{broken\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 21))))))
+    (test-case "Scheme citation Objects retain a source-backed body"
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:@doe2020]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation (CitationDelimiter 0 6)
+                        (CitationBody 6 14)
+                        (CitationDelimiter 14 15))
+           (TextLine 15 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite/:@key]\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 13)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:@key] [cite:no key]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation (CitationDelimiter 0 6)
+                        (CitationBody 6 10)
+                        (CitationDelimiter 10 11))
+           (TextLine 11 26)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:see [p. 12] @key]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation (CitationDelimiter 0 6)
+                        (CitationBody 6 22)
+                        (CitationDelimiter 22 23))
+           (TextLine 23 24)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite:@key\n[cite:@next]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 11)
+           (OrgCitation (CitationDelimiter 11 17)
+                        (CitationBody 17 22)
+                        (CitationDelimiter 22 23))
+           (TextLine 23 24))))))
     (test-case "the complete Org entity catalog drives source-backed Objects"
       (check-org-ast-with parse-org-rowan-events
         "\\cent \\alpha{} \\frac12{}test\n"

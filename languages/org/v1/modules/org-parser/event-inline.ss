@@ -5,6 +5,8 @@
                  link-index inline-next pattern-end pattern-at?)
         (only-in "event-inline-link.ss"
                  link-open link-scan-forms inline-link-event-initial)
+        (only-in "event-inline-citation.ss"
+                 citation-event-initial citation-open-forms citation-scan-forms)
         (only-in "event-inline-entity.ss"
                  entity-name-bytes entity-space-choices entity-events
                  entity-finish-forms entity-name-scan-forms)
@@ -611,6 +613,19 @@
          (set-uint inline-macro-name-end
                    (offset ,(pattern-end link-index "{{{")))) ())))
 
+(def (inline-bracket-open-forms)
+  `((if (or ,(pattern-at? link-index "[cite:")
+            ,(pattern-at? link-index "[cite/"))
+        ,(citation-open-forms)
+        ((if ,(pattern-at? link-index "[fn:")
+             ,(footnote-reference-open-forms)
+             ((if ,(pattern-at? link-index link-open)
+                  ,(link-scan-forms)
+                  ((set-uint inline-delimited-kind
+                             (uint ,inline-cookie-first))
+                   (set-uint inline-cookie-open-at
+                             (offset ,link-index))))))))))
+
 (def (inline-ordinary-free-scan-forms)
   `((if (and (state inline-code-left-boundary)
              (line-byte-equal? ,link-index 115)
@@ -621,14 +636,7 @@
                   ,(pattern-at? link-index "call_"))
              ,(inline-code-open-forms 2 "call_")
              ((if (line-byte-equal? ,link-index 91)
-                  ((if ,(pattern-at? link-index "[fn:")
-                       ,(footnote-reference-open-forms)
-                       ((if ,(pattern-at? link-index link-open)
-                            ,(link-scan-forms)
-                            ((set-uint inline-delimited-kind
-                                       (uint ,inline-cookie-first))
-                             (set-uint inline-cookie-open-at
-                                       (offset ,link-index)))))))
+                  ,(inline-bracket-open-forms)
                   ((if ,(pattern-at? link-index "@@")
                        ,(export-snippet-open-forms)
                        ((if ,(line-break-at?)
@@ -668,10 +676,15 @@
 (def (inline-non-code-scan-forms)
   `((if (uint-positive? (state inline-macro-mode))
         ,(macro-scan-forms)
-        ,(inline-ordinary-non-code-scan-forms))))
+        ((if (uint-positive? (state inline-citation-mode))
+             ,(citation-scan-forms)
+             ,(inline-ordinary-non-code-scan-forms))))))
 
 (def (inline-scan-forms)
-  `((if (offset-less? ,link-index (state-offset inline-cursor))
+  `((if (and (uint-positive? (state inline-citation-mode))
+             (line-bytes-any-in? ,link-index ,inline-next (10 13)))
+        ((set-uint inline-citation-mode (uint 0))) ())
+    (if (offset-less? ,link-index (state-offset inline-cursor))
         ()
         ((if (uint-positive? (state inline-latex-mode))
              ,(latex-scan-forms)
@@ -720,6 +733,7 @@
    latex-event-initial
    '((inline-cursor 0))
    inline-link-event-initial
+   citation-event-initial
    '((inline-left-boundary #t)
     (inline-previous-space #f)
     (inline-markup-kind 0) (inline-markup-open-at 0)

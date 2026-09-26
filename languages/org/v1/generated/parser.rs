@@ -46,6 +46,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgInlineSourceBlock", category: KindCategory::Node },
     KindSpec { name: "OrgInlineBabelCall", category: KindCategory::Node },
     KindSpec { name: "OrgMacro", category: KindCategory::Node },
+    KindSpec { name: "OrgCitation", category: KindCategory::Node },
     KindSpec { name: "OrgEntity", category: KindCategory::Node },
     KindSpec { name: "OrgLaTeXFragment", category: KindCategory::Node },
     KindSpec { name: "OrgCode", category: KindCategory::Node },
@@ -115,6 +116,8 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "MacroDelimiter", category: KindCategory::Token },
     KindSpec { name: "MacroName", category: KindCategory::Token },
     KindSpec { name: "MacroArguments", category: KindCategory::Token },
+    KindSpec { name: "CitationDelimiter", category: KindCategory::Token },
+    KindSpec { name: "CitationBody", category: KindCategory::Token },
     KindSpec { name: "EntityDelimiter", category: KindCategory::Token },
     KindSpec { name: "EntityName", category: KindCategory::Token },
     KindSpec { name: "EntityPost", category: KindCategory::Token },
@@ -142,10 +145,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 51 },
-    TerminalSpec { name: "block-begin", syntax_kind: 56 },
-    TerminalSpec { name: "block-end", syntax_kind: 71 },
-    TerminalSpec { name: "text", syntax_kind: 72 },
+    TerminalSpec { name: "headline", syntax_kind: 52 },
+    TerminalSpec { name: "block-begin", syntax_kind: 57 },
+    TerminalSpec { name: "block-end", syntax_kind: 72 },
+    TerminalSpec { name: "text", syntax_kind: 73 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -320,7 +323,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:80ad866dab1cfe31d10f21edd0b1351c830fef31544d59fd57f3ab9d994a6549",
+    grammar_digest: "sha256:bcc922d6584b9c4e57bc50b1da87557fec04fbee51891ded28df54570d961fde",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

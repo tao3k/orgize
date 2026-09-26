@@ -1,3 +1,7 @@
+#[macro_use]
+#[path = "integration/org_aot_assertions.rs"]
+mod org_aot_assertions;
+
 #[path = "integration/org_structural_fixture.rs"]
 mod org_structural_fixture;
 
@@ -73,6 +77,8 @@ mod markdown;
 mod named_source_block_template;
 #[path = "integration/org_aot_edit.rs"]
 mod org_aot_edit;
+#[path = "integration/org_citation_aot.rs"]
+mod org_citation_aot;
 #[path = "integration/org_cutover_parity.rs"]
 mod org_cutover_parity;
 #[path = "integration/org_dynamic_block.rs"]

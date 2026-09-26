@@ -25,21 +25,6 @@ fn token_name(token: &gerbil_parser_rowan::SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
-macro_rules! check_org_aot_element {
-    ($source:expr, $kind:expr, $field:expr => $value:expr) => {{
-        let document = orgize::org_aot::parse_org_aot($source)
-            .expect("Scheme-owned Org Element parser accepts the source");
-        let elements: Vec<_> = document
-            .records()
-            .iter()
-            .filter(|record| record.kind == $kind)
-            .collect();
-        assert_eq!(elements.len(), 1);
-        assert_eq!(elements[0].field($field), Some($value));
-        assert_eq!(document.syntax().to_string(), $source);
-    }};
-}
-
 #[test]
 fn scheme_declared_macro_objects_project_into_rowan_and_graph() {
     check_org_aot_element!("{{{issue(42)}}}\n", "macro", "name" => "issue");
