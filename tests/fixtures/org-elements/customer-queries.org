@@ -18,5 +18,5 @@
 :END:
 
 #+begin_src scheme :org-elements
-(org-elements citation (property-contains body "@doe2020"))
+(org-elements citation-reference (property key "doe2020"))
 #+end_src

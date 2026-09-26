@@ -1,7 +1,9 @@
 ;;; -*- Gerbil -*-
 ;;; Paragraph lifetime and cross-line inline strategy owned by Org.
 
-(import (only-in "event-inline.ss" event-inline-initial event-text-line-forms))
+(import (only-in "event-inline.ss" event-inline-initial event-text-line-forms)
+        (only-in "event-inline-citation-reference.ss"
+                 citation-reference-helper))
 (export paragraph-event-initial paragraph-close-form paragraph-finish-form
         paragraph-line-form
         paragraph-event-helpers)
@@ -44,4 +46,5 @@
         (set-uint paragraph-end (offset end)))))
 
 (def paragraph-event-helpers
-  `((inline-span ,event-inline-initial ,(event-text-line-forms 'start))))
+  (list `(inline-span ,event-inline-initial ,(event-text-line-forms 'start))
+        citation-reference-helper))

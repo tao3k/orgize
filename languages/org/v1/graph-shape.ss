@@ -124,8 +124,11 @@
    (node 'OrgMacro "object" "macro"
          (list (field 'MacroName "name")
                (field 'MacroArguments "arguments" 'append-or-empty)))
-   (node 'OrgCitation "object" "citation"
-         (list (field 'CitationBody "body")))
+   (node 'OrgCitation "object" "citation" '())
+   (node 'OrgCitationReference "object" "citation-reference"
+         (list (field 'CitationReferencePrefix "prefix" 'append-or-empty)
+               (field 'CitationReferenceKey "key")
+               (field 'CitationReferenceSuffix "suffix" 'append-or-empty)))
    (node 'OrgEntity "object" "entity"
          (list (field 'EntityName "name")
                (field 'EntityPost "post" 'append-or-empty)))

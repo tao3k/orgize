@@ -47,6 +47,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgInlineBabelCall", category: KindCategory::Node },
     KindSpec { name: "OrgMacro", category: KindCategory::Node },
     KindSpec { name: "OrgCitation", category: KindCategory::Node },
+    KindSpec { name: "OrgCitationReference", category: KindCategory::Node },
     KindSpec { name: "OrgEntity", category: KindCategory::Node },
     KindSpec { name: "OrgLaTeXFragment", category: KindCategory::Node },
     KindSpec { name: "OrgCode", category: KindCategory::Node },
@@ -119,7 +120,12 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "MacroName", category: KindCategory::Token },
     KindSpec { name: "MacroArguments", category: KindCategory::Token },
     KindSpec { name: "CitationDelimiter", category: KindCategory::Token },
-    KindSpec { name: "CitationBody", category: KindCategory::Token },
+    KindSpec { name: "CitationText", category: KindCategory::Token },
+    KindSpec { name: "CitationSeparator", category: KindCategory::Token },
+    KindSpec { name: "CitationReferencePrefix", category: KindCategory::Token },
+    KindSpec { name: "CitationReferenceMarker", category: KindCategory::Token },
+    KindSpec { name: "CitationReferenceKey", category: KindCategory::Token },
+    KindSpec { name: "CitationReferenceSuffix", category: KindCategory::Token },
     KindSpec { name: "EntityDelimiter", category: KindCategory::Token },
     KindSpec { name: "EntityName", category: KindCategory::Token },
     KindSpec { name: "EntityPost", category: KindCategory::Token },
@@ -149,10 +155,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 54 },
-    TerminalSpec { name: "block-begin", syntax_kind: 59 },
-    TerminalSpec { name: "block-end", syntax_kind: 74 },
-    TerminalSpec { name: "text", syntax_kind: 75 },
+    TerminalSpec { name: "headline", syntax_kind: 55 },
+    TerminalSpec { name: "block-begin", syntax_kind: 60 },
+    TerminalSpec { name: "block-end", syntax_kind: 75 },
+    TerminalSpec { name: "text", syntax_kind: 76 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -327,7 +333,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:2f48ede0bee5da9da6fe499ff8eddafc67af08199aa2ef1e4d1d5a2c2ebcb40e",
+    grammar_digest: "sha256:b2430957c74e2547c07ce662589d5f001b75d9231d6e21b4716cb640b1b50310",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

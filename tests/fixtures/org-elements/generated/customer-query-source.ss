@@ -11,6 +11,6 @@ property property-contains all-of any-of at child-of descendant-of))
               (descendant-of scope))
   )
   (org-element-query "customer.cited-evidence"
-(org-elements citation (property-contains body "@doe2020"))
+(org-elements citation-reference (property key "doe2020"))
   )
 ))

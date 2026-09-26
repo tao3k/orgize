@@ -41,7 +41,9 @@
     (start-node OrgCitation)
     (token CitationDelimiter (state-offset inline-citation-open-at)
            (state-offset inline-citation-body-start))
-    (token CitationBody (state-offset inline-citation-body-start) ,link-index)
+    (call-source-helper citation-references
+                        (state-offset inline-citation-body-start)
+                        ,link-index)
     (token CitationDelimiter ,link-index ,inline-next)
     (finish-node)
     (set-uint inline-cursor (offset ,inline-next))))

@@ -135,14 +135,16 @@
       (check-org-ast-with parse-org-rowan-events
         "{{{9bad}}} {{{broken\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 21))))))
-    (test-case "Scheme citation Objects retain a source-backed body"
+    (test-case "Scheme citation-reference Objects retain source-backed fields"
       (check-org-ast-with parse-org-rowan-events
         "[cite:@doe2020]\n"
         (OrgFile
          (OrgParagraph
           (OrgTextLine
            (OrgCitation (CitationDelimiter 0 6)
-                        (CitationBody 6 14)
+                        (OrgCitationReference
+                         (CitationReferenceMarker 6 7)
+                         (CitationReferenceKey 7 14))
                         (CitationDelimiter 14 15))
            (TextLine 15 16)))))
       (check-org-ast-with parse-org-rowan-events
@@ -154,7 +156,9 @@
          (OrgParagraph
           (OrgTextLine
            (OrgCitation (CitationDelimiter 0 6)
-                        (CitationBody 6 10)
+                        (OrgCitationReference
+                         (CitationReferenceMarker 6 7)
+                         (CitationReferenceKey 7 10))
                         (CitationDelimiter 10 11))
            (TextLine 11 26)))))
       (check-org-ast-with parse-org-rowan-events
@@ -163,9 +167,31 @@
          (OrgParagraph
           (OrgTextLine
            (OrgCitation (CitationDelimiter 0 6)
-                        (CitationBody 6 22)
+                        (OrgCitationReference
+                         (CitationReferencePrefix 6 18)
+                         (CitationReferenceMarker 18 19)
+                         (CitationReferenceKey 19 22))
                         (CitationDelimiter 22 23))
            (TextLine 23 24)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[cite/text:see @doe2020 p. 42; cf. @roe2021]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation
+            (CitationDelimiter 0 11)
+            (OrgCitationReference
+             (CitationReferencePrefix 11 15)
+             (CitationReferenceMarker 15 16)
+             (CitationReferenceKey 16 23)
+             (CitationReferenceSuffix 23 29))
+            (CitationSeparator 29 30)
+            (OrgCitationReference
+             (CitationReferencePrefix 30 35)
+             (CitationReferenceMarker 35 36)
+             (CitationReferenceKey 36 43))
+            (CitationDelimiter 43 44))
+           (TextLine 44 45)))))
       (check-org-ast-with parse-org-rowan-events
         "[cite:@key\n[cite:@next]\n"
         (OrgFile
@@ -173,7 +199,9 @@
           (OrgTextLine
            (TextLine 0 11)
            (OrgCitation (CitationDelimiter 11 17)
-                        (CitationBody 17 22)
+                        (OrgCitationReference
+                         (CitationReferenceMarker 17 18)
+                         (CitationReferenceKey 18 22))
                         (CitationDelimiter 22 23))
            (TextLine 23 24))))))
     (test-case "the complete Org entity catalog drives source-backed Objects"

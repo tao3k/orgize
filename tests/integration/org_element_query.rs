@@ -146,13 +146,15 @@ fn consumer_authored_scheme_query_pack_executes_without_gerbil() {
         ),
         Ok(vec![review.id])
     );
-    let citation = document
+    let citation_reference = document
         .records()
         .iter()
-        .find(|record| record.kind == "citation" && record.field("body") == Some("@doe2020"))
-        .expect("Scheme citation is available to custom Element queries");
+        .find(|record| {
+            record.kind == "citation-reference" && record.field("key") == Some("doe2020")
+        })
+        .expect("Scheme citation reference is available to custom Element queries");
     assert_eq!(
         document.query_with_pack(&customer_query_plan::QUERIES, "customer.cited-evidence", 0),
-        Ok(vec![citation.id])
+        Ok(vec![citation_reference.id])
     );
 }

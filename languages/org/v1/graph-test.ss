@@ -51,7 +51,8 @@
                             OrgCommentBlock OrgExportBlock OrgLink
                             OrgTarget OrgRadioTarget OrgStatisticsCookie OrgLineBreak
                             OrgExportSnippet OrgFootnoteReference
-                            OrgInlineSourceBlock OrgInlineBabelCall OrgMacro OrgCitation OrgEntity
+                            OrgInlineSourceBlock OrgInlineBabelCall OrgMacro OrgCitation
+                            OrgCitationReference OrgEntity
                             OrgLaTeXFragment
                             OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
                             OrgSubscript OrgSuperscript
@@ -71,7 +72,8 @@
                                 "comment-block" "export-block" "link"
                                 "target" "radio-target" "statistics-cookie" "line-break"
                                 "export-snippet" "footnote-reference"
-                                "inline-src-block" "inline-babel-call" "macro" "citation" "entity"
+                                "inline-src-block" "inline-babel-call" "macro" "citation"
+                                "citation-reference" "entity"
                                 "latex-fragment"
                                 "code" "verbatim" "bold" "italic"
                                 "underline" "subscript" "superscript"
