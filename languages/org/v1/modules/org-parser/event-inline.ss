@@ -1,14 +1,10 @@
 ;;; -*- Gerbil -*-
 ;;; POO-declared inline links are folded as source-backed text-line events.
 
-(import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
-                 line-structure-text text-line-inline-link
-                 inline-link-opening inline-link-separator inline-link-closing
-                 inline-link-node inline-link-target-token
-                 inline-link-description-token inline-link-trivia-token)
-        (only-in "../../parser.ss" org-v1-line-structure))
 (import (only-in "event-inline-primitives.ss"
                  link-index inline-next pattern-end pattern-at?)
+        (only-in "event-inline-link.ss"
+                 link-open link-scan-forms inline-link-event-initial)
         (only-in "event-inline-entity.ss"
                  entity-name-bytes entity-space-choices entity-events
                  entity-finish-forms entity-name-scan-forms)
@@ -20,11 +16,6 @@
                  org-inline-markup-id org-inline-markup-node))
 (export event-inline-initial event-text-line-forms)
 
-(def link-rule
-  (text-line-inline-link (line-structure-text org-v1-line-structure)))
-(def link-open (inline-link-opening link-rule))
-(def link-separator (inline-link-separator link-rule))
-(def link-close (inline-link-closing link-rule))
 (def inline-open-boundary-bytes '(9 10 13 32 45 40 39 34 123))
 (def inline-close-boundary-bytes
   '(9 10 13 32 45 46 44 59 58 33 63 39 34 41 125 92 91))
@@ -67,59 +58,6 @@
   `(or (line-bytes-all-in? ,inline-next (line-content-end) ())
        (line-bytes-any-in? ,inline-next (line-step ,inline-next)
                            ,inline-close-boundary-bytes)))
-
-(def (link-valid? target-end)
-  `(offset-less? (state-offset inline-target-start) ,target-end))
-
-(def (link-events)
-  (let ((trivia (inline-link-trivia-token link-rule))
-        (target (inline-link-target-token link-rule))
-        (description (inline-link-description-token link-rule))
-        (separator-end (pattern-end '(state-offset inline-separator-at)
-                                    link-separator))
-        (close-end (pattern-end link-index link-close)))
-    `((token TextLine (state-offset inline-cursor)
-             (state-offset inline-open-at))
-      (start-node ,(inline-link-node link-rule))
-      (token ,trivia (state-offset inline-open-at)
-             (state-offset inline-target-start))
-      (if (state inline-has-separator)
-          ((token ,target (state-offset inline-target-start)
-                  (state-offset inline-separator-at))
-           (token ,trivia (state-offset inline-separator-at) ,separator-end)
-           (token ,description ,separator-end ,link-index))
-          ((token ,target (state-offset inline-target-start) ,link-index)))
-      (token ,trivia ,link-index ,close-end)
-      (finish-node)
-      (set-uint inline-cursor (offset ,close-end))
-      (set-bool inline-open (bool #f)))))
-
-(def (link-close-forms)
-  `((if (state inline-has-separator)
-        ((if ,(link-valid? '(state-offset inline-separator-at))
-             ,(link-events)
-             ((set-bool inline-failed (bool #t)))))
-        ((if ,(link-valid? link-index)
-             ,(link-events)
-             ((set-bool inline-failed (bool #t))))))))
-
-(def (link-scan-forms)
-  `((if (and (not (state inline-failed))
-             (not (state inline-open)))
-        ((if ,(pattern-at? link-index link-open)
-             ((set-bool inline-open (bool #t))
-              (set-bool inline-has-separator (bool #f))
-              (set-uint inline-open-at (offset ,link-index))
-              (set-uint inline-target-start
-                        (offset ,(pattern-end link-index link-open)))) ()))
-        ((if (and (state inline-open)
-                  ,(pattern-at? link-index link-close))
-             ,(link-close-forms)
-             ((if (and (state inline-open)
-                       (not (state inline-has-separator))
-                       ,(pattern-at? link-index link-separator))
-                  ((set-bool inline-has-separator (bool #t))
-                   (set-uint inline-separator-at (offset ,link-index))) ())))))))
 
 (def (markup-events node)
   `((token TextLine (state-offset inline-cursor)
@@ -780,9 +718,9 @@
 (def event-inline-initial
   (append
    latex-event-initial
-   '((inline-cursor 0) (inline-open #f) (inline-has-separator #f)
-    (inline-failed #f) (inline-open-at 0) (inline-target-start 0)
-    (inline-separator-at 0) (inline-left-boundary #t)
+   '((inline-cursor 0))
+   inline-link-event-initial
+   '((inline-left-boundary #t)
     (inline-previous-space #f)
     (inline-markup-kind 0) (inline-markup-open-at 0)
     (inline-markup-value-start 0)
