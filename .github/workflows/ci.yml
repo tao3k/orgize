@@ -11,9 +11,6 @@ on:
 env:
   CARGO_INCREMENTAL: 0
   CARGO_TERM_COLOR: always
-  # External parser fixture lock. Update intentionally when refreshing Org mode
-  # compatibility coverage; do not track upstream main in CI.
-  ORG_MODE_FIXTURE_REV: b470d813d19e55cb90020649ae076684f1494c3b
 
 jobs:
   test:
@@ -42,39 +39,6 @@ jobs:
           git config --global core.longpaths true
           echo "CARGO_HOME=D:/c" >> "$GITHUB_ENV"
           echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
-
-      - name: Restore Org mode fixture cache
-        id: org-mode-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: .data/org-mode
-          key: orgize-org-mode-${{ runner.os }}-${{ env.ORG_MODE_FIXTURE_REV }}
-
-      - name: Fetch Org mode fixture
-        if: ${{ steps.org-mode-cache.outputs.cache-hit != 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p .data
-          git init .data/org-mode
-          git -C .data/org-mode remote add origin https://github.com/bzg/org-mode.git
-          git -C .data/org-mode fetch --depth=1 origin "$ORG_MODE_FIXTURE_REV"
-          git -C .data/org-mode checkout --detach FETCH_HEAD
-
-      - name: Validate Org mode fixture
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f .data/org-mode/doc/org-guide.org
-          test -f .data/org-mode/lisp/org-element.el
-
-      - name: Save Org mode fixture cache
-        if: ${{ steps.org-mode-cache.outputs.cache-hit != 'true' }}
-        continue-on-error: true
-        uses: actions/cache/save@v5
-        with:
-          path: .data/org-mode
-          key: orgize-org-mode-${{ runner.os }}-${{ env.ORG_MODE_FIXTURE_REV }}
 
       - name: Setup rust
         uses: dtolnay/rust-toolchain@stable
@@ -127,6 +91,12 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --all-targets --all-features
 
+      - name: Run focused Org query performance gate
+        run: cargo test --release --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored --test-threads=1
+
+      - name: Run plan ledger AOT performance gate
+        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --test-threads=1
+
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
@@ -143,6 +113,92 @@ jobs:
         if: ${{ always() }}
         shell: bash
         run: sccache --show-stats || true
+
+  python-sdk:
+    name: orgizepy / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-26]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - name: System libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config patchelf
+      - name: System libraries
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: brew install gcc openssl pkg-config sqlite zlib
+      - name: Install released Gerbil
+        run: bash tools/ci/install-gerbil-release.sh
+      - name: Build Scheme Contract package
+        run: |
+          gxpkg deps --install
+          gerbil build
+      - name: Verify Scheme Org parser and Contract
+        run: |
+          just scheme-test "$GERBIL_PATH/lib" "$GERBIL_PATH/lib"
+          generated="$(mktemp)"
+          gerbil env gxi languages/org/v1/generate-rowan-event-ir.ss "$generated"
+          cmp "$generated" languages/org/v1/generated/rowan-events.ir.json
+      - name: Verify independent C and Rust consumers
+        run: just contract-smoke
+      - name: Verify Python SDK
+        run: just python-test
+      - name: Build and repair Python wheel
+        run: just python-wheel-repair
+      - name: Test installed wheel outside source tree
+        shell: bash
+        run: |
+          uv venv "$RUNNER_TEMP/orgizepy-wheel"
+          uv pip install --python "$RUNNER_TEMP/orgizepy-wheel/bin/python" bindings/python/dist/repaired/orgizepy-*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/orgizepy-wheel/bin/python" \
+            "$GITHUB_WORKSPACE/bindings/python/tests/installed_smoke.py"
+      - name: Qualify complete SDK from source distribution
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          uv build --directory bindings/python --sdist
+          if output=$(uv build bindings/python/dist/orgizepy-*.tar.gz --wheel \
+            --out-dir "$RUNNER_TEMP/orgizepy-sdist-wheel" 2>&1); then
+            echo 'Source distribution unexpectedly produced a wheel without Contract'
+            exit 1
+          fi
+          case "$output" in
+            *'the complete orgizepy SDK requires'*) ;;
+            *) echo "$output"; exit 1 ;;
+          esac
+          mkdir -p "$RUNNER_TEMP/orgizepy-sdist-source" "$RUNNER_TEMP/orgizepy-sdist-gerbil"
+          tar -xzf bindings/python/dist/orgizepy-*.tar.gz \
+            -C "$RUNNER_TEMP/orgizepy-sdist-source"
+          cd "$RUNNER_TEMP/orgizepy-sdist-source/orgizepy-0.1.0"
+          export GERBIL_PATH="$RUNNER_TEMP/orgizepy-sdist-gerbil"
+          gxpkg deps --install
+          gxi -:max-heap=512M build.ss compile
+          python3 bindings/c/build-native-library.py \
+            --output src/orgizepy/lib/liborgize.so
+          uv build --wheel
+          "$GITHUB_WORKSPACE/bindings/python/.venv/bin/auditwheel" repair \
+            --wheel-dir "$RUNNER_TEMP/orgizepy-sdist-repaired" dist/orgizepy-*.whl
+          uv venv "$RUNNER_TEMP/orgizepy-sdist-install"
+          uv pip install --python "$RUNNER_TEMP/orgizepy-sdist-install/bin/python" \
+            "$RUNNER_TEMP"/orgizepy-sdist-repaired/orgizepy-*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/orgizepy-sdist-install/bin/python" \
+            "$GITHUB_WORKSPACE/bindings/python/tests/installed_smoke.py"
 
   gh-pages:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')

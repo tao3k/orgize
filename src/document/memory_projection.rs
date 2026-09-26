@@ -11,10 +11,12 @@ use std::{
 use crate::{
     Org,
     ast::{MemoryQuery, MemoryRecord, MemoryRecordState},
+    org_aot::parse_org_aot,
 };
 
 use super::{
     elements::collect_document_paths,
+    line_index::LineIndex,
     model::{DocumentLanguage, DocumentWalkConfig},
 };
 
@@ -210,7 +212,7 @@ fn collect_plan_ledger_file(
 ) -> Result<(), String> {
     let source =
         fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    if let Some(record) = plan_ledger_record_from_source(path, &source, options) {
+    if let Some(record) = plan_ledger_record_from_source(path, &source, options)? {
         records.push(record);
     }
     Ok(())
@@ -235,16 +237,48 @@ fn plan_ledger_record_from_source(
     path: &Path,
     source: &str,
     options: &OrgMemorySearchOptions,
-) -> Option<OrgMemorySearchRecord> {
-    let mut lines = source.lines();
-    let first_line = lines.next()?.trim_end();
-    let (todo, title, tags) = root_headline_parts(first_line)?;
-    let state = if todo.as_deref() == Some("DONE") {
+) -> Result<Option<OrgMemorySearchRecord>, String> {
+    let document = parse_org_aot(source)
+        .map_err(|error| format!("{}: Org AOT parse: {error:?}", path.display()))?;
+    let records = document.records();
+    let Some(headline) = records.iter().find(|record| {
+        record.kind == "headline"
+            && record.parent_id == Some(0)
+            && record.field("markers") == Some("*")
+            && usize::from(record.range.start()) == 0
+    }) else {
+        return Ok(None);
+    };
+    let todo = document.headline_todo_keyword(headline.id);
+    let title = document
+        .headline_display_title(headline.id)
+        .ok_or_else(|| format!("{}: headline lacks an AOT title", path.display()))?;
+    let tags = headline.values("tag").map(str::to_owned).collect();
+    let state = if document.headline_todo_type(headline.id) == Some("done") {
         MemoryRecordState::Closed
     } else {
         MemoryRecordState::Current
     };
-    let (properties, end_line) = root_property_drawer_and_end_line(lines);
+    let mut properties = BTreeMap::new();
+    for drawer in headline
+        .child_ids
+        .iter()
+        .filter_map(|id| records.get(*id))
+        .filter(|record| record.kind == "property-drawer")
+    {
+        for property in drawer
+            .child_ids
+            .iter()
+            .filter_map(|id| records.get(*id))
+            .filter(|record| record.kind == "node-property")
+        {
+            if let (Some(key), Some(value)) = (property.field("key"), property.field("value")) {
+                properties.insert(key.to_string(), value.to_string());
+            }
+        }
+    }
+    let end_line =
+        LineIndex::new(source).line_for(usize::from(headline.range.end()).saturating_sub(1));
     let record = OrgMemorySearchRecord {
         path: path.to_path_buf(),
         start_line: 1,
@@ -257,85 +291,7 @@ fn plan_ledger_record_from_source(
         properties,
         mtime: 0.0,
     };
-    memory_search_record_matches_options(&record, options).then_some(record)
-}
-
-fn root_headline_parts(line: &str) -> Option<(Option<String>, String, Vec<String>)> {
-    let rest = line.strip_prefix("* ")?;
-    let (without_tags, tags) = split_headline_tags(rest);
-    let (todo, title) = split_headline_todo(without_tags);
-    Some((todo.map(str::to_string), title.to_string(), tags))
-}
-
-fn split_headline_tags(rest: &str) -> (&str, Vec<String>) {
-    let trimmed = rest.trim_end();
-    let Some((body, tag_tail)) = trimmed.rsplit_once(' ') else {
-        return (trimmed, Vec::new());
-    };
-    if !tag_tail.starts_with(':') || !tag_tail.ends_with(':') {
-        return (trimmed, Vec::new());
-    }
-    let tags = tag_tail
-        .trim_matches(':')
-        .split(':')
-        .filter(|tag| !tag.is_empty())
-        .map(str::to_string)
-        .collect();
-    (body.trim_end(), tags)
-}
-
-fn split_headline_todo(rest: &str) -> (Option<&str>, &str) {
-    let Some((first, title)) = rest.trim_start().split_once(' ') else {
-        return (None, rest.trim());
-    };
-    if first.chars().all(|ch| ch.is_ascii_uppercase() || ch == '_') {
-        (Some(first), title.trim())
-    } else {
-        (None, rest.trim())
-    }
-}
-
-fn root_property_drawer_and_end_line<'a>(
-    lines: impl Iterator<Item = &'a str>,
-) -> (BTreeMap<String, String>, usize) {
-    let mut in_drawer = false;
-    let mut scan_properties = true;
-    let mut properties = BTreeMap::new();
-    let mut end_line = 1;
-    for (offset, line) in lines.enumerate() {
-        let line_number = offset + 2;
-        if line.starts_with("* ") {
-            end_line = line_number - 1;
-            break;
-        }
-        end_line = line_number;
-        if !scan_properties {
-            continue;
-        }
-        if !in_drawer && line.starts_with("** ") {
-            scan_properties = false;
-            continue;
-        }
-        if line.trim() == ":PROPERTIES:" {
-            in_drawer = true;
-            continue;
-        }
-        if line.trim() == ":END:" {
-            scan_properties = false;
-            continue;
-        }
-        if in_drawer && let Some((key, value)) = property_line(line) {
-            properties.insert(key, value);
-        }
-    }
-    (properties, end_line)
-}
-
-fn property_line(line: &str) -> Option<(String, String)> {
-    let trimmed = line.trim();
-    let rest = trimmed.strip_prefix(':')?;
-    let (key, value) = rest.split_once(':')?;
-    Some((key.trim().to_string(), value.trim().to_string()))
+    Ok(memory_search_record_matches_options(&record, options).then_some(record))
 }
 
 fn memory_search_root(root: &Path, options: &OrgMemorySearchOptions) -> PathBuf {

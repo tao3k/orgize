@@ -1,0 +1,6 @@
+* Dynamic overview
+#+BEGIN: clocktable :scope file
+Nested paragraph with [[https://example.test][link]].
+#+END:
+
+After the block.

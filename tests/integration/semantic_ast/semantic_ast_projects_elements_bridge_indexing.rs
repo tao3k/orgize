@@ -502,10 +502,10 @@ Inline body.
     );
 
     let records = doc.org_elements_index();
-    let mut official_element_like = string_set(UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS);
+    let mut official_element_like = string_set(ORG_ELEMENT_KINDS);
     official_element_like.insert("org-data".to_string());
-    let official_objects = string_set(UPSTREAM_ORG_ELEMENT_ALL_OBJECTS);
-    let official_affiliated_keywords = string_set(UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS);
+    let official_objects = string_set(ORG_OBJECT_KINDS);
+    let official_affiliated_keywords = string_set(ORG_AFFILIATED_KEYWORDS);
     let official_standard_properties = string_set(UPSTREAM_ORG_ELEMENT_STANDARD_PROPERTIES);
 
     let current_element_like = records
@@ -587,11 +587,11 @@ Inline body.
     let payload = serde_json::json!({
         "baseline": {
             "source": "bzg/org-mode b470d81 org-element.el",
-            "elements": UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS,
-            "objects": UPSTREAM_ORG_ELEMENT_ALL_OBJECTS,
-            "greaterElements": UPSTREAM_ORG_ELEMENT_GREATER_ELEMENTS,
-            "recursiveObjects": UPSTREAM_ORG_ELEMENT_RECURSIVE_OBJECTS,
-            "affiliatedKeywords": UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS,
+            "elements": ORG_ELEMENT_KINDS,
+            "objects": ORG_OBJECT_KINDS,
+            "greaterElements": ORG_GREATER_ELEMENT_KINDS,
+            "recursiveObjects": ORG_RECURSIVE_OBJECT_KINDS,
+            "affiliatedKeywords": ORG_AFFILIATED_KEYWORDS,
             "standardProperties": UPSTREAM_ORG_ELEMENT_STANDARD_PROPERTIES,
         },
         "current": {
@@ -614,9 +614,9 @@ Inline body.
     insta::assert_snapshot!(serde_json::to_string_pretty(&payload).unwrap());
 }
 use super::semantic_ast_projects_elements_bridge_fixtures::{
-    UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS, UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS,
-    UPSTREAM_ORG_ELEMENT_ALL_OBJECTS, UPSTREAM_ORG_ELEMENT_STANDARD_PROPERTIES, intersection,
+    ORG_AFFILIATED_KEYWORDS, ORG_ELEMENT_KINDS, ORG_OBJECT_KINDS,
+    UPSTREAM_ORG_ELEMENT_STANDARD_PROPERTIES, intersection,
 };
 use super::semantic_ast_projects_elements_bridge_fixtures::{
-    UPSTREAM_ORG_ELEMENT_GREATER_ELEMENTS, UPSTREAM_ORG_ELEMENT_RECURSIVE_OBJECTS,
+    ORG_GREATER_ELEMENT_KINDS, ORG_RECURSIVE_OBJECT_KINDS,
 };

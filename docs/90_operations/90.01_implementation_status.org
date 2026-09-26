@@ -426,9 +426,9 @@ runtime dependency is copied into this repository.
 
 *** M21 Official Agenda Semantics Alignment
 
-- [X] Add local official Org reference checkout at `.data/org-mode` for
-      research-only agenda/manual calibration. It remains ignored and is not
-      imported into Cargo, CI, tests, or released artifacts.
+- [X] Pin official Org reference revisions for research-only agenda/manual
+      comparison. Executable fixtures are Git-tracked in orgize; external
+      checkouts are not inputs to Cargo, CI, tests, or release artifacts.
 - [X] Align scheduled delay cookies with official Org semantics:
       `SCHEDULED: <date -2d>` delays scheduled display rows, while `--2d`
       applies only to the first projected occurrence.
@@ -865,10 +865,9 @@ runtime dependency is copied into this repository.
 
 *** M24 Official Org Priority Audit
 
-This audit is based on the local official Org checkout under `.data/org-mode`,
-especially `doc/org-manual.org` and the front-line modules in `lisp/`.  The
-checkout remains research-only and must not enter Cargo, CI, tests, generated
-artifacts, or released packages.
+This historical audit used the pinned official Org manual and front-line
+modules as reference evidence. The upstream implementation is not an input to
+Cargo, CI, tests, generated artifacts, or released packages.
 
 Priority is assigned by common Org usage and by how early/prominent the feature
 appears in the official manual and runtime modules:
@@ -1104,11 +1103,10 @@ Views", "Capture"; `lisp/org-habit.el`, `lisp/org-datetree.el`,
 This is the refreshed backlog table for "which major Org-mode capabilities
 should orgize align next".  It differs from the M24 audit above: M24 records
 the broad official capability map and historical coverage, while M25 is the
-ordered implementation queue.  The source references are the local official Org
-checkout at `.data/org-mode` (`doc/org-manual.org`, `lisp/org-*.el`,
-`lisp/oc*.el`, and `lisp/ox*.el`) plus the local research-only AST/exporter
-comparison checkout.  Neither checkout may enter Cargo, CI, tests, generated
-artifacts, or release packages.
+ordered implementation queue. Its source references are pinned upstream Org
+manual/runtime revisions and research-only AST/exporter comparisons. Those
+implementations do not enter Cargo, CI, tests, generated artifacts, or release
+packages.
 
 Priority rules:
 

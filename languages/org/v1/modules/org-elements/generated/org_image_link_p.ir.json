@@ -1,0 +1,262 @@
+{
+  "body": {
+    "bindings": [],
+    "result": {
+      "kind": "binary",
+      "left": {
+        "kind": "binary",
+        "left": {
+          "kind": "binary",
+          "left": {
+            "kind": "binary",
+            "left": {
+              "kind": "binary",
+              "left": {
+                "kind": "binary",
+                "left": {
+                  "kind": "binary",
+                  "left": {
+                    "kind": "binary",
+                    "left": {
+                      "kind": "binary",
+                      "left": {
+                        "kind": "binary",
+                        "left": {
+                          "kind": "binary",
+                          "left": {
+                            "kind": "binary",
+                            "left": {
+                              "kind": "binary",
+                              "left": {
+                                "arguments": [
+                                  {
+                                    "kind": "string",
+                                    "value": ".png"
+                                  }
+                                ],
+                                "kind": "method",
+                                "method": "ends_with",
+                                "receiver": {
+                                  "kind": "name",
+                                  "value": "target"
+                                }
+                              },
+                              "operator": "or",
+                              "right": {
+                                "arguments": [
+                                  {
+                                    "kind": "string",
+                                    "value": ".jpeg"
+                                  }
+                                ],
+                                "kind": "method",
+                                "method": "ends_with",
+                                "receiver": {
+                                  "kind": "name",
+                                  "value": "target"
+                                }
+                              }
+                            },
+                            "operator": "or",
+                            "right": {
+                              "arguments": [
+                                {
+                                  "kind": "string",
+                                  "value": ".jpg"
+                                }
+                              ],
+                              "kind": "method",
+                              "method": "ends_with",
+                              "receiver": {
+                                "kind": "name",
+                                "value": "target"
+                              }
+                            }
+                          },
+                          "operator": "or",
+                          "right": {
+                            "arguments": [
+                              {
+                                "kind": "string",
+                                "value": ".gif"
+                              }
+                            ],
+                            "kind": "method",
+                            "method": "ends_with",
+                            "receiver": {
+                              "kind": "name",
+                              "value": "target"
+                            }
+                          }
+                        },
+                        "operator": "or",
+                        "right": {
+                          "arguments": [
+                            {
+                              "kind": "string",
+                              "value": ".tiff"
+                            }
+                          ],
+                          "kind": "method",
+                          "method": "ends_with",
+                          "receiver": {
+                            "kind": "name",
+                            "value": "target"
+                          }
+                        }
+                      },
+                      "operator": "or",
+                      "right": {
+                        "arguments": [
+                          {
+                            "kind": "string",
+                            "value": ".tif"
+                          }
+                        ],
+                        "kind": "method",
+                        "method": "ends_with",
+                        "receiver": {
+                          "kind": "name",
+                          "value": "target"
+                        }
+                      }
+                    },
+                    "operator": "or",
+                    "right": {
+                      "arguments": [
+                        {
+                          "kind": "string",
+                          "value": ".xbm"
+                        }
+                      ],
+                      "kind": "method",
+                      "method": "ends_with",
+                      "receiver": {
+                        "kind": "name",
+                        "value": "target"
+                      }
+                    }
+                  },
+                  "operator": "or",
+                  "right": {
+                    "arguments": [
+                      {
+                        "kind": "string",
+                        "value": ".xpm"
+                      }
+                    ],
+                    "kind": "method",
+                    "method": "ends_with",
+                    "receiver": {
+                      "kind": "name",
+                      "value": "target"
+                    }
+                  }
+                },
+                "operator": "or",
+                "right": {
+                  "arguments": [
+                    {
+                      "kind": "string",
+                      "value": ".pbm"
+                    }
+                  ],
+                  "kind": "method",
+                  "method": "ends_with",
+                  "receiver": {
+                    "kind": "name",
+                    "value": "target"
+                  }
+                }
+              },
+              "operator": "or",
+              "right": {
+                "arguments": [
+                  {
+                    "kind": "string",
+                    "value": ".pgm"
+                  }
+                ],
+                "kind": "method",
+                "method": "ends_with",
+                "receiver": {
+                  "kind": "name",
+                  "value": "target"
+                }
+              }
+            },
+            "operator": "or",
+            "right": {
+              "arguments": [
+                {
+                  "kind": "string",
+                  "value": ".ppm"
+                }
+              ],
+              "kind": "method",
+              "method": "ends_with",
+              "receiver": {
+                "kind": "name",
+                "value": "target"
+              }
+            }
+          },
+          "operator": "or",
+          "right": {
+            "arguments": [
+              {
+                "kind": "string",
+                "value": ".webp"
+              }
+            ],
+            "kind": "method",
+            "method": "ends_with",
+            "receiver": {
+              "kind": "name",
+              "value": "target"
+            }
+          }
+        },
+        "operator": "or",
+        "right": {
+          "arguments": [
+            {
+              "kind": "string",
+              "value": ".avif"
+            }
+          ],
+          "kind": "method",
+          "method": "ends_with",
+          "receiver": {
+            "kind": "name",
+            "value": "target"
+          }
+        }
+      },
+      "operator": "or",
+      "right": {
+        "arguments": [
+          {
+            "kind": "string",
+            "value": ".svg"
+          }
+        ],
+        "kind": "method",
+        "method": "ends_with",
+        "receiver": {
+          "kind": "name",
+          "value": "target"
+        }
+      }
+    }
+  },
+  "name": "org_image_link_p",
+  "parameters": [
+    {
+      "name": "target",
+      "ty": "&str"
+    }
+  ],
+  "result": "bool",
+  "schema": "gerbil-scheme-rust.rust-function-ir.v1"
+}

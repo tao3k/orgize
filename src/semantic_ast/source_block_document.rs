@@ -2,8 +2,7 @@
 
 use std::{error::Error, fmt};
 
-use super::{BlockKind, ElementData};
-use crate::Org;
+use crate::org_aot::parse_org_aot;
 
 /// One generic Org keyword emitted immediately before a source block.
 ///
@@ -271,60 +270,78 @@ fn admit_rendered_document(
     source: &str,
     expected: &[OrgSourceBlock],
 ) -> Result<(), OrgSourceBlockDocumentError> {
-    let document = Org::parse(source).document();
+    let document = parse_org_aot(source)
+        .map_err(|_| rendering("rendered Org did not parse as the expected document"))?;
+    if document.syntax().to_string() != source {
+        return Err(rendering("rendered Org did not round-trip through Rowan"));
+    }
+    let records = document.records();
+    let Some(root) = records.first().filter(|record| record.kind == "org-data") else {
+        return Err(rendering(
+            "rendered Org did not parse as the expected document",
+        ));
+    };
     let expected_element_count = expected
         .iter()
         .map(|block| block.preamble_keywords.len() + 1)
         .sum::<usize>();
-    if !document.diagnostics.is_empty() || document.children.len() != expected_element_count {
+    if root.child_ids.len() != expected_element_count {
         return Err(rendering(
             "rendered Org did not parse as the expected document",
         ));
     }
-    let records = document.source_block_records();
-    if records.len() != expected.len() {
+    if records
+        .iter()
+        .filter(|record| record.kind == "src-block")
+        .count()
+        != expected.len()
+    {
         return Err(rendering(
             "rendered Org did not parse as exactly the expected source blocks",
         ));
     }
-    let mut elements = document.children.iter();
-    for (record, block) in records.iter().zip(expected.iter()) {
+    let mut elements = root.child_ids.iter().filter_map(|id| records.get(*id));
+    for block in expected {
         for keyword in &block.preamble_keywords {
             let Some(element) = elements.next() else {
                 return Err(rendering(
                     "rendered Org lost a source-block preamble keyword",
                 ));
             };
-            if !matches!(
-                &element.data,
-                ElementData::Keyword(actual)
-                    if actual.key.eq_ignore_ascii_case(&keyword.key)
-                        && actual.value.trim() == keyword.value
-            ) {
+            if element.kind != "keyword"
+                || !element
+                    .field("key")
+                    .is_some_and(|key| key.eq_ignore_ascii_case(&keyword.key))
+                || element.field("value").map(str::trim) != Some(keyword.value.as_str())
+            {
                 return Err(rendering(
                     "rendered Org source-block preamble is not an adjacent generic keyword",
                 ));
             }
         }
-        let Some(element) = elements.next() else {
+        let Some(record) = elements.next() else {
             return Err(rendering("rendered Org lost a source block"));
         };
-        if !matches!(&element.data, ElementData::Block(parsed) if parsed.kind == BlockKind::Source)
-            || record.language.as_deref() != Some(block.language.as_str())
-        {
+        if record.kind != "src-block" || record.field("language") != Some(block.language.as_str()) {
             return Err(rendering(
                 "rendered Org source-block structure differs from its typed input",
             ));
         }
-        for header in &block.headers {
-            let parsed = record
-                .normalized_header_args
-                .iter()
-                .find(|candidate| candidate.key == header.key)
-                .and_then(|candidate| candidate.value.as_deref());
+        let parsed_keys = record.values("header-key").collect::<Vec<_>>();
+        let parsed_values = record.values("header-value").collect::<Vec<_>>();
+        if parsed_keys.len() != block.headers.len() || parsed_values.len() != block.headers.len() {
+            return Err(rendering(
+                "rendered Org source-block header differs from its typed input",
+            ));
+        }
+        for ((parsed_key, parsed_value), header) in parsed_keys
+            .into_iter()
+            .zip(parsed_values)
+            .zip(&block.headers)
+        {
             let mut expected_value = String::new();
             render_header_value(&mut expected_value, &header.value);
-            if parsed != Some(expected_value.as_str()) {
+            if parsed_key != header.key || parsed_value != expected_value {
                 return Err(rendering(
                     "rendered Org source-block header differs from its typed input",
                 ));

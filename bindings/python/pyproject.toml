@@ -1,0 +1,32 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "orgizepy"
+version = "0.1.0"
+description = "Orgize Python SDK for parsing, functions, source edits, and contracts"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE.orgizepy", "LICENSES/*", "THIRD_PARTY_NOTICES.md"]
+dependencies = ["cffi>=2.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[dependency-groups]
+wheel-repair = [
+    "delocate==0.13.0; sys_platform == 'darwin'",
+    "auditwheel==6.8.2; sys_platform == 'linux'",
+]
+
+[tool.maturin]
+python-source = "src"
+module-name = "orgizepy._orgize"
+bindings = "pyo3"
+include = [{ path = "src/orgizepy/lib/*", format = "wheel" }]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]

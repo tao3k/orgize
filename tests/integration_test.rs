@@ -1,3 +1,6 @@
+#[path = "integration/org_structural_fixture.rs"]
+mod org_structural_fixture;
+
 #[path = "integration/agent_cli.rs"]
 mod agent_cli;
 #[path = "integration/capture_cli.rs"]
@@ -28,6 +31,8 @@ mod fmt_cli;
 mod fmt_links;
 #[path = "integration/fmt_table.rs"]
 mod fmt_table;
+#[path = "integration/gerbil_rowan_cutover.rs"]
+mod gerbil_rowan_cutover;
 #[path = "integration/harness_report_consumer.rs"]
 mod harness_report_consumer;
 #[path = "integration/html.rs"]
@@ -66,6 +71,40 @@ mod lint_task_blockers;
 mod markdown;
 #[path = "integration/named_source_block_template.rs"]
 mod named_source_block_template;
+#[path = "integration/org_aot_edit.rs"]
+mod org_aot_edit;
+#[path = "integration/org_cutover_parity.rs"]
+mod org_cutover_parity;
+#[path = "integration/org_dynamic_block.rs"]
+mod org_dynamic_block;
+#[path = "integration/org_element_query.rs"]
+mod org_element_query;
+#[path = "integration/org_event_aot_contract.rs"]
+mod org_event_aot_contract;
+#[path = "integration/org_event_aot_parity.rs"]
+mod org_event_aot_parity;
+#[path = "integration/org_export_snippet_aot.rs"]
+mod org_export_snippet_aot;
+#[path = "integration/org_footnote_aot.rs"]
+mod org_footnote_aot;
+#[path = "integration/org_headline_aot.rs"]
+mod org_headline_aot;
+#[path = "integration/org_headline_function_aot.rs"]
+mod org_headline_function_aot;
+#[path = "integration/org_inline_code_aot.rs"]
+mod org_inline_code_aot;
+#[path = "integration/org_inline_object_aot.rs"]
+mod org_inline_object_aot;
+#[path = "integration/org_list_aot.rs"]
+mod org_list_aot;
+#[path = "integration/org_list_fields.rs"]
+mod org_list_fields;
+#[path = "integration/org_named_drawer.rs"]
+mod org_named_drawer;
+#[path = "integration/org_parser_aot.rs"]
+mod org_parser_aot;
+#[path = "integration/org_rowan_event_handoff.rs"]
+mod org_rowan_event_handoff;
 #[path = "integration/parse.rs"]
 mod parse;
 #[path = "integration/scenario_benchmark.rs"]

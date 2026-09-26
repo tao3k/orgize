@@ -56,10 +56,10 @@ keywords, priorities, tags, planning lines, active/inactive timestamps,
 repeaters, property drawers, ordinary drawers, LOGBOOK records, and standard
 agenda semantics.
 
-Calibration should start from the local research-only Org mode checkout under
-`.data/org-mode`, especially `doc/org-manual.org`, `lisp/org.el`,
-`lisp/org-element.el`, and `lisp/org-agenda.el`. That checkout remains outside
-Cargo, CI, tests, and release artifacts.
+Calibration uses pinned upstream Org mode revisions as comparison evidence.
+Executable grammar, element declarations, and fixtures remain under Git in
+the orgize Scheme language pack and test corpus; no external checkout enters
+Cargo, CI, or release artifacts.
 
 ** Planning Projection
 

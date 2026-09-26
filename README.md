@@ -10,6 +10,92 @@ non-mutating by default: source blocks, links, agenda metadata, capture plans,
 publishing graphs, and runtime-adjacent Org features are projected as
 source-backed data instead of being executed.
 
+The opt-in AOT parser is available to Cargo consumers without installing
+Gerbil. Scheme declarations generate its syntax and Element tables, while a
+transitional Rust structural scanner currently builds its lossless Rowan tree.
+The complete Org recognition algorithm has not yet moved to Orgize's Scheme
+event generator. The shipped artifacts support:
+
+```rust
+use orgize::org_aot::{org_contract_pack, parse_org_aot};
+
+let document = parse_org_aot("* Evidence\n[[id:proof]]\n")?;
+assert_eq!(document.syntax().to_string(), "* Evidence\n[[id:proof]]\n");
+assert!(document.records().iter().any(|record| record.kind == "link"));
+assert!(!org_contract_pack().rules.is_empty());
+# Ok::<(), orgize::org_aot::OrgAotError>(())
+```
+
+Projected fields preserve their declared cardinality: `record.field("name")`
+returns the first value, while `record.values("name")` iterates all values in
+source order. For example, a planning line with both `SCHEDULED` and
+`DEADLINE` exposes two separate `key` and `value` entries.
+
+This is an opt-in parser surface while Org syntax coverage and the older
+`Org::parse` consumers are being migrated. The contract pack is generated from
+Orgize's Scheme declarations; its current evaluator is a Rust graph executor.
+
+## Python SDK
+
+[`bindings/python`](bindings/python) contains the uv-managed `orgizepy` project.
+Its three APIs are deliberately separate: `orgizepy.parser` parses raw Org
+through the Scheme-AOT Rust/Rowan parser, `orgizepy.functions` exposes the
+generated headline functions, and `orgizepy.contract` evaluates explicit
+Element rows through the standalone Scheme/Gambit C ABI. The parser and
+functions do not require a Gerbil runtime.
+
+```python
+from orgizepy.parser import parse_org
+from orgizepy.functions import headline_functions
+
+document = parse_org("#+TODO: NEXT DONE\n* NEXT Ship SDK\n")
+headline = next(element for element in document.elements if element.kind == "headline")
+assert headline_functions(document, headline.id).todo_keyword == "NEXT"
+```
+
+The Contract ABI is also independently consumable from C or Rust. It requires
+one Gambit runtime initialization per process; see
+[`bindings/c/include/orgize_standalone.h`](bindings/c/include/orgize_standalone.h).
+
+Named Element queries are declared in Orgize's `scheme :org-elements` blocks
+and compiled into a typed Rust pack at development time. Cargo consumers query
+without Gerbil at build or runtime:
+
+```rust
+use orgize::org_aot::parse_org_aot;
+
+let document = parse_org_aot("#+SEQ_TODO: WAIT | DONE\n* Team\n** WAIT Review\n")?;
+let team = document.records().iter()
+    .find(|record| record.kind == "headline" && record.field("title") == Some("Team"))
+    .unwrap();
+let open = document.query_named("tasks.open", team.id).unwrap();
+assert_eq!(open.len(), 1);
+# Ok::<(), orgize::org_aot::OrgAotError>(())
+```
+
+The query inherits file-local TODO declarations from the Element graph; users
+do not duplicate them in the query. Property predicates compose with hygienic
+`all-of` and `any-of` forms, which the Scheme module lowers to a bounded
+disjunction of conjunctions before generating Rust. Each named query still
+has one scope relation; negation, joins, ordering, and aggregation are not yet
+admitted and have no implicit Rust fallback.
+The exact `todo-keyword` predicate is also Scheme-AOT generated and checks the
+document's own TODO declarations; it does not assume a global keyword list.
+
+A consumer-owned example lives in
+[`tests/fixtures/org-elements/customer-queries.org`](tests/fixtures/org-elements/customer-queries.org).
+The `org_elements_tangle` example accepts an optional Element interface module
+path, and the public Scheme AOT function emits a pack consumed by
+`query_with_pack`. Authoring or regenerating that pack needs Gerbil in the
+development environment; using its committed Rust artifact through Cargo does
+not.
+
+The `org_contract_tangle` example likewise accepts optional Contract and
+Element interface module paths for a consumer-owned generated Scheme source.
+Omitting both paths preserves the upstream relative imports. This only
+relocates imports; consumer Scheme admission, AOT generation and execution
+still require their own qualification.
+
 Live demo: <https://tao3k.github.io/orgize/>
 
 ## Parse

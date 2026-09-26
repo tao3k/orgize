@@ -1,0 +1,38 @@
+#+TITLE: Git-scoped Org element regression
+#+OPTIONS: toc:nil
+
+* Introduction
+
+This document exercises a [[https://orgmode.org][link]], *bold* text, and a
+timestamp <2026-09-23 Wed>.
+
+** Source blocks
+
+#+NAME: example-code
+#+CAPTION: A source block in the regression document
+#+begin_src text
+this line is block content
+#+end_src
+
+** Lists and tables
+
+- first item
+- second item with /emphasis/
+
+| Name | Value |
+|------+-------|
+| one  |     1 |
+
+* Planning
+SCHEDULED: <2026-09-24 Thu>
+:PROPERTIES:
+:ID:       git-scoped-fixture
+:END:
+
+:LOGBOOK:
+Recorded context for the planning item.
+:END:
+
+The final paragraph has a footnote reference[fn:note].
+
+[fn:note] The fixture is owned by this repository.

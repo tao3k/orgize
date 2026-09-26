@@ -1,0 +1,15 @@
+[package]
+name = "orgizepy"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+build = "build.rs"
+
+[lib]
+name = "_orgize"
+crate-type = ["cdylib"]
+
+[dependencies]
+orgize = { path = "../.." }
+pyo3 = { version = "0.27.2", features = ["extension-module", "abi3-py311", "generate-import-lib"] }

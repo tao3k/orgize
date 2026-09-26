@@ -2,39 +2,56 @@ use orgize::ast::{OrgElementsIndexRecord, OrgElementsIndexSummaryValue, ParsedAn
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
-#[test]
-fn semantic_ast_projects_upstream_org_element_defconsts_match_checked_in_baseline() {
-    let upstream = upstream_org_element_defconsts();
-    assert_eq!(
-        upstream.all_elements,
-        string_vec(UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS)
-    );
-    assert_eq!(
-        upstream.greater_elements,
-        string_vec(UPSTREAM_ORG_ELEMENT_GREATER_ELEMENTS)
-    );
-    assert_eq!(
-        upstream.all_objects,
-        string_vec(UPSTREAM_ORG_ELEMENT_ALL_OBJECTS)
-    );
-    assert_eq!(
-        upstream.recursive_objects,
-        string_vec(UPSTREAM_ORG_ELEMENT_RECURSIVE_OBJECTS)
-    );
-    assert_eq!(
-        upstream.affiliated_keywords,
-        string_vec(UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS)
-    );
+#[path = "../../../languages/org/v1/generated/elements.rs"]
+mod generated_elements;
 
+pub(super) use generated_elements::{
+    ORG_AFFILIATED_KEYWORDS, ORG_ELEMENT_KINDS, ORG_GREATER_ELEMENT_KINDS, ORG_OBJECT_KINDS,
+    ORG_RECURSIVE_OBJECT_KINDS,
+};
+
+#[test]
+fn semantic_ast_projects_scheme_object_context_contract() {
+    use sha2::{Digest, Sha256};
+
+    let scheme_source = include_str!("../../../languages/org/v1/modules/org-elements/catalog.ss");
+    assert_eq!(
+        generated_elements::ELEMENTS_DIGEST,
+        format!("sha256:{:x}", Sha256::digest(scheme_source.as_bytes()))
+    );
+    let allowed = |container: &str, object: &str| {
+        generated_elements::ORG_OBJECT_RESTRICTIONS
+            .iter()
+            .find(|(owner, _)| *owner == container)
+            .is_some_and(|(_, objects)| objects.contains(&object))
+    };
+    let secondary = |container: &str, field: &str| {
+        generated_elements::ORG_SECONDARY_VALUES
+            .iter()
+            .find(|(owner, _)| *owner == container)
+            .is_some_and(|(_, fields)| fields.contains(&field))
+    };
+
+    assert!(allowed("paragraph", "link"));
+    assert!(allowed("table-row", "table-cell"));
+    assert!(!allowed("table-row", "link"));
+    assert!(!allowed("headline", "line-break"));
+    assert!(!allowed("src-block", "bold"));
+    assert!(secondary("headline", "title"));
+    assert!(!secondary("paragraph", "title"));
+}
+
+#[test]
+fn semantic_ast_projects_scheme_element_catalog_matches_approved_baseline() {
     insta::assert_snapshot!(
-        "upstream_defconsts",
+        "scheme_element_catalog",
         serde_json::to_string_pretty(&serde_json::json!({
-            "source": "bzg/org-mode .data/org-mode/lisp/org-element.el",
-            "allElements": upstream.all_elements,
-            "greaterElements": upstream.greater_elements,
-            "allObjects": upstream.all_objects,
-            "recursiveObjects": upstream.recursive_objects,
-            "affiliatedKeywords": upstream.affiliated_keywords,
+            "source": "languages/org/v1/modules/org-elements/catalog.ss",
+            "allElements": ORG_ELEMENT_KINDS,
+            "greaterElements": ORG_GREATER_ELEMENT_KINDS,
+            "allObjects": ORG_OBJECT_KINDS,
+            "recursiveObjects": ORG_RECURSIVE_OBJECT_KINDS,
+            "affiliatedKeywords": ORG_AFFILIATED_KEYWORDS,
         }))
         .unwrap()
     );
@@ -102,189 +119,6 @@ pub(super) fn selected_kind_counts(
         })
         .collect()
 }
-
-#[derive(Debug)]
-pub(super) struct UpstreamOrgElementDefconsts {
-    pub(super) all_elements: Vec<String>,
-    pub(super) greater_elements: Vec<String>,
-    pub(super) all_objects: Vec<String>,
-    pub(super) recursive_objects: Vec<String>,
-    pub(super) affiliated_keywords: Vec<String>,
-}
-
-pub(super) fn upstream_org_element_defconsts() -> UpstreamOrgElementDefconsts {
-    let source = include_str!("../../../.data/org-mode/lisp/org-element.el");
-    UpstreamOrgElementDefconsts {
-        all_elements: elisp_defconst_quoted_list(source, "org-element-all-elements"),
-        greater_elements: elisp_defconst_quoted_list(source, "org-element-greater-elements"),
-        all_objects: elisp_defconst_quoted_list(source, "org-element-all-objects"),
-        recursive_objects: elisp_defconst_quoted_list(source, "org-element-recursive-objects"),
-        affiliated_keywords: elisp_defconst_quoted_list(source, "org-element-affiliated-keywords"),
-    }
-}
-
-pub(super) fn elisp_defconst_quoted_list(source: &str, name: &str) -> Vec<String> {
-    let marker = format!("(defconst {name}");
-    let defconst = source
-        .split_once(&marker)
-        .unwrap_or_else(|| panic!("missing upstream defconst `{name}`"))
-        .1;
-    let body_start = defconst
-        .find("'(")
-        .unwrap_or_else(|| panic!("missing quoted list for upstream defconst `{name}`"))
-        + 2;
-    let body = quoted_list_body(&defconst[body_start..]);
-    elisp_list_values(body)
-}
-
-pub(super) fn quoted_list_body(source: &str) -> &str {
-    let mut depth = 1usize;
-    for (index, ch) in source.char_indices() {
-        match ch {
-            '(' => depth += 1,
-            ')' => {
-                depth -= 1;
-                if depth == 0 {
-                    return &source[..index];
-                }
-            }
-            _ => {}
-        }
-    }
-    source
-}
-
-pub(super) fn elisp_list_values(source: &str) -> Vec<String> {
-    let mut values = Vec::new();
-    let mut chars = source.chars().peekable();
-    while let Some(ch) = chars.next() {
-        if ch.is_whitespace() {
-            continue;
-        }
-        if ch == '"' {
-            let mut value = String::new();
-            while let Some(ch) = chars.next() {
-                match ch {
-                    '"' => break,
-                    '\\' => {
-                        if let Some(escaped) = chars.next() {
-                            value.push(escaped);
-                        }
-                    }
-                    _ => value.push(ch),
-                }
-            }
-            values.push(value);
-            continue;
-        }
-        let mut value = ch.to_string();
-        while let Some(next) = chars.peek().copied() {
-            if next.is_whitespace() || next == '(' || next == ')' {
-                break;
-            }
-            value.push(next);
-            chars.next();
-        }
-        values.push(value);
-    }
-    values
-}
-
-pub(super) const UPSTREAM_ORG_ELEMENT_ALL_ELEMENTS: &[&str] = &[
-    "babel-call",
-    "center-block",
-    "clock",
-    "comment",
-    "comment-block",
-    "diary-sexp",
-    "drawer",
-    "dynamic-block",
-    "example-block",
-    "export-block",
-    "fixed-width",
-    "footnote-definition",
-    "headline",
-    "horizontal-rule",
-    "inlinetask",
-    "item",
-    "keyword",
-    "latex-environment",
-    "node-property",
-    "paragraph",
-    "plain-list",
-    "planning",
-    "property-drawer",
-    "quote-block",
-    "section",
-    "special-block",
-    "src-block",
-    "table",
-    "table-row",
-    "verse-block",
-];
-
-pub(super) const UPSTREAM_ORG_ELEMENT_ALL_OBJECTS: &[&str] = &[
-    "bold",
-    "citation",
-    "citation-reference",
-    "code",
-    "entity",
-    "export-snippet",
-    "footnote-reference",
-    "inline-babel-call",
-    "inline-src-block",
-    "italic",
-    "line-break",
-    "latex-fragment",
-    "link",
-    "macro",
-    "radio-target",
-    "statistics-cookie",
-    "strike-through",
-    "subscript",
-    "superscript",
-    "table-cell",
-    "target",
-    "timestamp",
-    "underline",
-    "verbatim",
-];
-
-pub(super) const UPSTREAM_ORG_ELEMENT_GREATER_ELEMENTS: &[&str] = &[
-    "center-block",
-    "drawer",
-    "dynamic-block",
-    "footnote-definition",
-    "headline",
-    "inlinetask",
-    "item",
-    "plain-list",
-    "property-drawer",
-    "quote-block",
-    "section",
-    "special-block",
-    "table",
-    "org-data",
-];
-
-pub(super) const UPSTREAM_ORG_ELEMENT_RECURSIVE_OBJECTS: &[&str] = &[
-    "bold",
-    "citation",
-    "footnote-reference",
-    "italic",
-    "link",
-    "subscript",
-    "radio-target",
-    "strike-through",
-    "superscript",
-    "table-cell",
-    "underline",
-];
-
-pub(super) const UPSTREAM_ORG_ELEMENT_AFFILIATED_KEYWORDS: &[&str] = &[
-    "CAPTION", "DATA", "HEADER", "HEADERS", "LABEL", "NAME", "PLOT", "RESNAME", "RESULT",
-    "RESULTS", "SOURCE", "SRCNAME", "TBLNAME",
-];
 
 pub(super) const UPSTREAM_ORG_ELEMENT_STANDARD_PROPERTIES: &[&str] = &[
     ":begin",

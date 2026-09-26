@@ -1,0 +1,105 @@
+* 20.06 Scheme Grammar to Rowan Cutover
+
+The Org syntax declaration belongs in a versioned Gerbil language pack.  The
+normal Rust consumer must depend on the generated Org module and the generic
+=gerbil-parser-rowan= runtime only.  It must not invoke Gerbil at parse time,
+copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
+
+** Baseline and authority
+
+- Start from orgize =main= at =771e92b=; the earlier ASP alignment branch is
+  already represented by the squash and its dirty checkout is not an input.
+- Use the named upstream =org-element.el= revision only as a comparison
+  reference.  The executable element inventory belongs to
+  =languages/org/v1/modules/org-elements/catalog.ss=; its generated Rust projection and
+  Git-tracked Org corpus are the test inputs.  Emacs Lisp is never an
+  implementation or Cargo fixture.
+- Maintain =languages/org/<version>/grammar.ss=, =parser.ss=, and
+  =parser-test.ss= as one language pack. The Git-tracked regression source is
+  =tests/fixtures/org-elements/representative.org=; a complete versioned
+  =fixtures.ss=/=corpus/= and element/object coverage remain cutover work. The
+  Scheme pack owns Org precedence, ambiguity, syntax kinds, fields, recovery,
+  and all context-sensitive recognition decisions.
+- Generate and commit immutable Rust tables from that pack.  Cargo consumers
+  use those tables without =gerbil.pkg=, an installed Gerbil, or build-time
+  Scheme.  Regeneration is an upstream development/release action.
+
+** Current vertical slice
+
+=languages/org/v1/grammar.ss= declares the initial line-level Org grammar.
+=generate-parser.ss= compiles that declaration through gerbil-parser's public
+Rust/Rowan generator into committed =generated/parser.rs=. The Org-owned
+=parser.ss= supplies a POO =LineStructure= value: headline/section kinds,
+source-block delimiters, property-drawer delimiters and typed node-property
+line rules, ordinary named drawers, dynamic blocks with required names, and
+text-line kinds. The upstream AOT projection
+resolves those symbolic kinds against the same grammar digest and emits
+=generated/structure.rs=. The generic =parse_structural_lines= engine executes
+section nesting, closed source blocks, property drawers and their node-property
+lines, ordinary drawers and dynamic blocks with typed names and recursive
+element bodies, and
+Scheme-declared recovery at EOF or a subsequent heading. An Org-owned
+key-line rule classifies =#+CALL:= as a Babel Call instead of a generic keyword.
+The result is a lossless Rowan tree over LF, CRLF, bare CR, and UTF-8 input.
+=org_parser_aot= tests that
+product, including the Git-tracked representative document, from Cargo
+without a Gerbil installation or build-time Scheme. No separate =scanner.ss=
+or generated Rust scanner remains. =modules/org-elements/catalog.ss= owns the
+element/object inventory and generates =generated/elements.rs=; the default affiliated-keyword configuration
+consumes that projection.  The original Org guide and upstream-inventory
+snapshots remain preserved as Rowan cutover comparison targets, while the
+Git-tracked representative document has its own runnable snapshot.  This is
+not yet the public =Org::parse= implementation: full headline metadata,
+contextual element/object recognition, typed recovery, and the public tree projection
+remain cutover gates.  An element inventory is not a set of parsing rules.
+The =org_cutover_parity= test now compares 44 Git-tracked Org fixtures for source
+roundtrip, section ranges and nesting, and core Element counts including
+ordinary drawers. Affiliated
+keyword attachment, clock context, all object boundaries, and public API
+replacement are not yet admitted by that test.
+
+The Scheme event AOT also recognizes inline source blocks and inline Babel
+calls, including balanced body delimiters and optional header fields. Their
+language/name, body/arguments, and header values are source-backed graph
+fields; malformed or incomplete forms remain literal text. Focused Scheme AST
+and Cargo graph tests cover these objects, but the public =Org::parse= path
+still uses the handwritten parser and is not yet replaced.
+
+** Required upstream engine work
+
+The upstream engine now owns a bounded line-structure executor, not a complete
+Org parser. Org still requires these gates before the parser swap:
+
+1. Replace the bounded line-structure executor with Org-owned Scheme parser
+   algorithms compiled directly into Rust event functions. Existing Scheme
+   declarations cover drawers, lists, tables, planning/property metadata, and
+   Babel Calls, but affiliated-keyword attachment and the catalog's remaining
+   element/object context rules are not yet parsed. The generic Rowan sink
+   remains in gerbil-parser; Org recognition stays in orgize.
+2. The generated runtime must preserve malformed input with explicit recovery
+   nodes/diagnostics and exact UTF-8 byte ranges, including CRLF and missing
+   end delimiters.  A generic all-TEXT success is not admission.
+3. Generated typed kinds and fields must replace =src/syntax/kind.rs= and the
+   handwritten parser-facing =src/syntax/*.rs= modules. Redesign the public
+   =Org= facade and migrate or remove semantic/export clients that assume the
+   old AST shape; compatibility with an incorrect consumer is not a gate.
+
+** Cutover gate
+
+For each pinned corpus case, compare the old parser and, where applicable,
+the pinned =org-element.el= reference with the Scheme-authored AOT product:
+acceptance/rejection, tree hierarchy, field boundaries, diagnostics, and
+exact source roundtrip. The old parser is evidence, not an authority; record
+source-backed intentional changes rather than forcing incorrect parity.
+Cover every upstream element/object kind, affiliated keyword,
+configuration-dependent behavior, malformed/recovery case, and real Org guide
+fixture. Expand this gate before deleting the old parser.
+
+Run performance scenarios on representative Org documents and pathological
+nested/ambiguous inputs with the ASP Rust Dev Gate.  Record throughput,
+allocation, and peak memory against main; do not weaken existing thresholds
+to absorb a generated-engine regression.
+
+Only after the complete differential and performance gates pass should the
+handwritten Rust lexer/combinator/element/object parser be removed.  Keeping
+both as a runtime selection path would create two grammar authorities.

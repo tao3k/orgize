@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [".", "build-support"]
+members = [".", "build-support", "bindings/python"]
 
 [package]
 name = "orgize"
@@ -27,6 +27,7 @@ md = ["dep:comrak"]
 
 [dependencies]
 bytecount = "0.6"
+gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "95966d7695d778e99c5f0de5789efdb734e00817", version = "0.1.0" }
 blake3 = "1"
 cfg-if = "1"
 chrono = { version = "0.4", optional = true }
@@ -59,6 +60,10 @@ orgize-build-support = { path = "build-support" }
 
 [[bench]]
 name = "parse"
+harness = false
+
+[[bench]]
+name = "org_element_query"
 harness = false
 
 [[example]]

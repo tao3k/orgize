@@ -164,7 +164,7 @@ fn index_source(
     source: &str,
 ) -> Result<Vec<DocumentElement>, String> {
     match language {
-        DocumentLanguage::Org => Ok(index_org(path, source)),
+        DocumentLanguage::Org => index_org(path, source),
         DocumentLanguage::Markdown => index_markdown(path, source),
     }
 }

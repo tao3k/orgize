@@ -1,10 +1,9 @@
-//! Elisp-style Org elements query expressions.
+//! Org elements query expressions over parser-owned syntax.
 //!
-//! The expression surface is calibrated against
-//! `.data/org-mode/lisp/org-element-ast.el`: Org syntax nodes are selected by
-//! node type plus plist-like properties, and traversal follows contents and
-//! lineage. Secondary property contents are queryable when the parser projects
-//! them into summary or property facts.
+//! Nodes are selected by type plus plist-like properties, and traversal
+//! follows contents and lineage. Secondary property contents are queryable
+//! when the parser projects them into summary or property facts. The Org
+//! element inventory is declared in `languages/org/v1/modules/org-elements/catalog.ss`.
 
 mod core;
 mod core_contract;

@@ -1,0 +1,289 @@
+#+title: 20.07 Complete Org Parser Cutover Audit
+#+startup: overview
+
+* Verdict
+
+The Org parser replacement is *not complete*. =parse_org_aot= now executes the
+Org-owned Scheme event algorithm AOT-compiled to Rust and constructs a Rowan
+tree. Element queries, source edits, contract evaluation, the Python AOT
+binding, and feature-source examples enter through this path. The generated
+structural scanner is no longer loaded by the production AOT module; it is
+only a fixture oracle in differential tests and this audit.
+
+The document-query index now projects facts from that Scheme-AOT Element
+graph rather than parsing source again through =Org::parse=. Its headline
+display-title operation is also Scheme-authored and AOT-compiled. The index
+still has Org-specific Rust projections for list, table, and item
+facts; those properties, plus exact priority/tag validation, are not yet
+admitted as fully Scheme-owned semantics.
+
+List item counter, checkbox, and descriptive tag spans now originate in the
+Org Scheme event algorithm and project through the generated Element graph.
+The Rust document index consumes those fields for checklist and descriptive
+list facts; list classification and remaining item behavior still need
+migration. This is a list milestone, not complete Element parity.
+
+=Org::parse= and =ParseConfig::parse= still call the handwritten Rust
+=document_node=. Their typed syntax AST, exporters, and dependent consumers
+have *not* been migrated. No source roundtrip, green test, or graph parity on
+one fixture admits a full public-parser replacement.
+
+* Current executable inventory
+
+Run from the repository root:
+
+#+begin_src sh
+cargo run --locked --example org_cutover_audit
+#+end_src
+
+On the Git-tracked =tests/fixtures/org-elements/representative.org=, the
+current audit reports:
+
+| Measure | Current result |
+|---------+----------------|
+| Scheme catalog | 30 Elements; 24 Objects |
+| Public handwritten Rust CST | 32 distinct node kinds in the fixture |
+| Scheme event-AOT CST | 22 distinct node kinds in the fixture |
+| Structural fixture oracle / event Element records | Event graph adds Objects and footnote definitions absent from the structural oracle; non-footnote fixture backbones remain tested separately |
+| Catalog Elements not projected as typed graph kinds | 3 |
+| Catalog Objects not projected as typed graph kinds | 10 |
+
+The missing Elements are =inlinetask=,
+=latex-environment=, and =special-block=. The missing Objects are
+=citation=, =citation-reference=, =entity=,
+=inline-babel-call=, =inline-src-block=,
+=latex-fragment=, =macro=, =subscript=, =superscript=,
+=timestamp=. Scheme now recognizes =footnote-definition= and
+=footnote-reference= with source-backed labels and inline definitions;
+definition termination and malformed references have focused Scheme AST and
+Rust AOT/Rowan tests. Inline footnote definitions are still one source-backed
+value token; recursively nested Objects inside them are not yet projected.
+It also recognizes =target= and =radio-target= as
+source-backed Objects with value fields and strict boundary fixtures, plus
+=statistics-cookie= and =line-break= with Org's exact physical-line boundary
+cases. These are catalog-versus-typed-graph gaps, not a claim that every
+already-projected kind has full Org behavior.
+
+The representative fixture does not exercise all configured, malformed,
+recursive, or nested cases. The structural oracle predates the new Scheme
+emphasis Objects, so exact graph equality is no longer expected; the test
+compares its structural backbone after removing only the newly supported
+Objects. The representative fixture now differs structurally in its footnote
+region and is checked for losslessness and footnote records instead of false
+oracle equality. Public AST and semantic query parity remain unadmitted.
+
+* Why the public parser has not been replaced
+
+This is a type-and-consumer cutover, not an entrypoint rename:
+
+1. =src/org.rs= still constructs its =GreenNode= with
+   =syntax::document::document_node=. =src/replace.rs= calls the same parser
+   twice after edits. The AOT =parse_org_aot= path is separate.
+2. =src/syntax/kind.rs= assigns raw Rowan IDs from the handwritten
+   =SyntaxKind= enum; =OrgLanguage::kind_from_raw= uses an unchecked
+   =u16= transmute. Generated =LanguageSpec.kinds= has a different ID order.
+   Feeding an AOT green tree to the old =OrgLanguage= is invalid, not a
+   cutover shortcut.
+3. =src/ast/generated= and =src/semantic_ast/conversion.rs= assume old CST
+   nodes such as =DOCUMENT=, =HEADLINE= and their old child layout. The AOT
+   tree uses =OrgFile=, =OrgSection= and =OrgHeadline=. Typed AST, exporters,
+   editing, and CLI code cannot be preserved by relabeling kind IDs.
+4. The baseline at commit =c752fd1= found 23 production =Org::parse= calls
+   across 15 files under =src/cli=, =src/document=, =src/lint*.rs= and
+   =src/semantic_ast=. The source-block-document admission path now consumes
+   Scheme-AOT graph records, leaving 22 production calls in this inventory.
+   These are consumers to migrate, not an API name that
+   necessarily must disappear: the final =Org::parse= may delegate to AOT.
+   The plan-ledger shortcut in =src/document/memory_projection.rs= has now
+   stopped hand-scanning headline, TODO, tags and property lines in Rust. It
+   reads the Scheme-AOT Element graph; the general memory query in that same
+   file still calls =Org::parse= and remains in the 22-call inventory.
+5. =src/config.rs= still parses file-local TODO declarations in Rust and
+   carries configurable subscript, affiliated-keyword, inlinetask and other
+   settings that the generated event entrypoint does not yet accept. Merely
+   passing the source string to AOT would drop public configuration behavior.
+
+Reproduce the callsite inventory with:
+
+#+begin_src sh
+rg -n 'Org::parse\(' src/cli src/document src/lint.rs src/lint_contracts.rs src/lint_lifecycle.rs src/lint_runtime_validation.rs src/semantic_ast
+rg -n 'document_node\(' src/org.rs src/replace.rs src/syntax/document.rs
+#+end_src
+
+These counts are a migration ledger, not permission to retain a second
+parser. Each consumer migration must have a Scheme-AOT behavior test and a
+consumer test. The final count of calls into =document_node= and independent
+Rust Org recognizers is zero; remaining =Org::parse= calls must resolve to the
+single AOT implementation.
+
+* Milestone order and admission
+
+| Milestone | Deliverable | Admission evidence |
+|-----------+-------------+--------------------|
+| M0 Audit baseline | Inventory the two parser paths, hidden Rust recognizers, kind mismatch, consumer calls and missing graph families | Reproducible source inventory plus =org_cutover_audit= on the exact head; explicitly red for full replacement |
+| M1 Scheme syntax and context | All 30 Elements and 24 Objects, headline/configuration properties, nesting, affiliated keywords, recovery and byte ranges are Scheme-owned event functions | Generated kind/graph catalog has no missing kinds; upstream-derived, custom and negative fixtures test each property and lossless spans |
+| M2 One public tree | =Org::parse= and =ParseConfig::parse= use generated AOT events and one safe generated Rowan kind model; typed AST is rebuilt on that model | No =document_node= in the public path; public AST/source roundtrip and configuration tests pass without kind conversion or reparsing |
+| M3 Consumer migration | Exporters, editing, lint, Contract, CLI, memory and bindings consume the single AOT tree/graph | All 23 baseline production =Org::parse= consumers resolve to AOT; the plan-ledger Rust syntax scanner is gone; consumer snapshots, query and scale tests pass |
+| M4 Remove displaced parser | Handwritten =src/syntax= parsing routines and obsolete CST assumptions are deleted, not kept as a fallback | Source and dependency audit finds no second Org recognizer; all remaining fixtures exercise AOT |
+| M5 Final admission | Exact final head passes losslessness, semantic parity, Dev Gate, strict Clippy, release parse/projection/query and build-cost budgets, and supported platform CI | Receipts from the final SHA, not earlier focused or cancelled runs |
+
+M1 and M2 are coupled: adding catalog names alone cannot admit the public
+tree. M3 cannot use a Rust compatibility parser to bridge missing Scheme
+semantics. Build-time Scheme→Rust AOT calls Rowan directly; runtime FFI is
+not part of any milestone.
+
+The present state is an audit baseline, not M1 admission. The first
+implementation batch is headline/file configuration and missing Element and
+Object event families in Org-owned Scheme, with malformed and nested cases.
+The target/radio-target batch closes two typed graph names and passes Scheme
+AST plus Rust AOT/Rowan tests, but does not yet implement recursive contents
+of radio targets or admit full Object parity. Its generated event IR grew from
+1,491,899 to 1,642,483 bytes; build cost and release-path parse performance
+must be measured before M5 admission. A local 10-sample Criterion run of
+=benches/org_element_query.rs= measured 10,000 target/radio-target lines at
+12.379–14.791 ms and 10,000 plain lines at 5.2113–5.2365 ms. These are
+same-head scenarios, not a before/after regression comparison or a full
+parse-performance budget receipt.
+The next terminal-Object batch adds Scheme-owned statistics cookies and
+physical end-of-line breaks. Their event graph passes Scheme AST and Rust
+AOT/Rowan positive and negative tests. One Scheme line-level trigger check
+now bypasses the bytewise inline state machine on plain lines; its trigger
+bytes derive from the declared link and markup markers. The event IR is now
+1,738,836 bytes. Same-machine, 10-sample Criterion runs measured 10,000
+plain lines at 4.5184–4.5407 ms (versus 5.2113–5.2365 ms before this batch),
+10,000 target/radio-target lines at 12.954–13.028 ms (no significant change
+from the preceding sample), and 10,000 terminal-Object lines at
+12.597–12.740 ms with 30,000 projected Object records. These are local
+scenarios, not complete Org syntax or cross-platform performance admission.
+Only after those graph and property contracts are executable should the
+public kind/AST cutover begin. Keep the 2,000-file/100-ms plan-ledger case as
+a performance admission gate throughout; a full parse per file is not an
+acceptable unmeasured substitution for its current fast projection.
+
+The source-block admission slice now emits source-backed header keys and
+values from the Org Scheme event function, including quoted values and
+negative header-like text. Its typed document renderer re-admits via the AOT
+Element graph, preserving exact keyword adjacency, block language, header
+order and values, and lossless Rowan source text. This migrates one production
+consumer, not the public parser. The generated event IR is 1,763,887 bytes
+(+25,051 from the preceding batch), and the local generated Rust function is
+12,441,589 bytes. This growth is a build-cost warning to resolve before M5;
+the local release benchmark build took 5m17s. A 10-sample Criterion run of
+1,000 source blocks with two header arguments measured 4.4872–4.5705 ms
+(218.79–222.86 thousand blocks/s) for AOT events, Rowan construction and
+Element projection together. This is a same-head scenario, not a comparison
+against the displaced parser or a final performance admission. Neither this header
+tokenization nor the earlier Object additions imply complete Babel header
+semantics or full Org grammar parity.
+
+The next consumer cutover projects headline suffix tags as Scheme-owned
+source-backed tokens and reads plan-ledger headline, TODO, tags and node
+properties from the same AOT Element graph. The independent Rust plan-ledger
+syntax scanner is removed. A release, 10-sample Criterion probe measured
+12.621–12.773 ms for AOT parsing and Element projection of 2,000 plan-ledger
+shaped documents in memory, excluding filesystem work. The existing 2,000-file
+end-to-end test retains its 100-ms budget as an explicit release-profile gate. The
+display-title AOT function now removes a suffix only when the same Scheme
+event graph projected source-backed tags, so malformed =:bad::= text remains
+in the title. Priority validation and Unicode tag classification still need
+exact parity with the Org Element policy. The added tag projection raised the
+in-memory 2,000-document release scenario to 14.089–14.671 ms; Criterion
+reported a 10.685–13.477% regression against the prior same-machine sample.
+The local release end-to-end 100-ms gate passes, but this regression remains an
+optimization target before final admission.
+
+The next Scheme event batch projects =export-snippet= as a source-backed Object
+with backend, value, and delimiter spans; malformed backend text, missing
+closing markers, and opaque source-block contents have negative tests in both
+the Scheme AST macro suite and Rust AOT/Rowan integration suite. This closes
+one catalog-to-typed-graph name but is not full Object parity. The generic
+event engine correctly omits zero-length tokens. Gerbil-parser PR #10 now
+provides the Scheme-declared =append-or-empty= graph field mode, so
+=@@backend:@@= projects =value=""= without Org-specific Rust reparsing.
+The Orgize Cargo dependency pins that exact upstream commit
+=95966d7695d778e99c5f0de5789efdb734e00817=; Scheme and Rust tests cover
+both empty and nonempty values.
+Before that dependency-pin update, the 2,000-document release AOT/Rowan/Element
+benchmark measured
+14.287–14.788 ms on a 30-sample same-machine rerun after this addition.
+That interval overlaps the preceding 14.089–14.671 ms sample, so no stable
+change is admitted; the 100-ms end-to-end release gate still passes locally.
+The same large event IR exhausted the default Windows build-script thread
+stack on PR #15 at =0b8314c=. Build support now compiles that IR on an
+explicit 32-MiB stack thread; this does not add a runtime parser or change
+the checked-in IR. Windows CI on the new head must confirm the fix.
+
+The first cross-platform CI run of the plan-ledger AOT consumer at =bf895b9=
+failed its 100-ms gate in the unoptimized Cargo test profile on Ubuntu,
+macOS, and Windows (267.814, 118.151, and 191.907 ms respectively). This
+is a real CI admission failure, not a green performance receipt. The 100-ms
+threshold is retained and now runs as an explicit release-profile CI gate,
+alongside the existing release Org query gate. Other debug integration tests
+retain behavioral coverage; the absolute latency assertion is only meaningful
+for the optimized artifact users execute. Final admission still requires
+the release gate to pass on all supported platforms and the measured
+tag-projection regression to be resolved or accepted against a stated budget.
+
+* Ownership boundary
+
+Org recognition, context, source spans, Object/Element properties, and
+queries belong in =languages/org/v1= Scheme modules within Orgize. The AOT
+backend and gerbil-parser may provide typed, language-neutral IR, validation,
+bounded source primitives, and Rowan construction; they must not own Org
+grammar, TODO policy, or Org Element semantics. Generic primitives added for
+an Org case should be reviewed for accidental Org-shaped assumptions.
+
+The public Rust parser is a remaining second authority, not a fallback to
+retain. The old structural scanner is a test oracle only; it must not be
+reintroduced as a production parsing path.
+
+Cargo consumers call the Scheme-AOT-generated Rust event function directly
+and hand its events to Rowan. This runtime path has no Scheme/Rust FFI boundary;
+an optional FFI would only serve a Scheme runtime caller and must not become
+another parser or a per-token hot-path dependency.
+
+* Completion gates
+
+| Gate | Required evidence | Current state |
+|------+-------------------+---------------|
+| Syntax | Scheme event function covers all 30 Elements, 24 Objects, nesting, restrictions, affiliation, configuration and recovery | Incomplete |
+| Properties and query | Source-backed Element fields and file-local/custom query behavior agree with authoritative Org fixtures | Partial |
+| Public cutover | =Org::parse=, typed AST, exporters and consumers use the Scheme AOT Rowan result; displaced Rust parser is removed | Not started at public facade |
+| Losslessness | Exact source roundtrip and byte ranges over tracked, upstream-derived and negative corpora | Focused tests only |
+| Performance | Release-mode parse, projection and query benchmarks against the displaced implementation, with an explicit regression policy | Not admitted |
+| Gates | Scheme suite, Cargo full targets, strict Clippy, Dev Gate and macOS/Ubuntu/Windows CI on the exact final head | Not yet final-head verified |
+
+Build cost also belongs to the performance gate. One local build after the
+list metadata extension produced about 10 MB of generated Rust event source
+and took several minutes to compile the debug library. The AOT backend must
+bound code growth; runtime-only benchmarks are insufficient evidence.
+
+The footnote batch's generated event IR is 2,123,181 bytes. A local debug
+rebuild of the AOT crate took over five minutes; that is a build-cost warning,
+not evidence of runtime parse performance. Footnote syntax coverage and the
+public-parser replacement remain separate gates. On the same local head, both
+the focused release 2,000-plan/100-ms projection gate and the 48-document Org
+query scenario gate passed. Dedicated 10,000-line footnote definition and
+reference Criterion scenarios cover the new parser branches; their local
+samples are not a cross-platform regression admission. On the final local IR,
+10-sample Criterion runs measured 8.7004–9.1019 ms for 10,000 references and
+6.8644–6.9050 ms for 10,000 definitions, including Rowan construction and
+Element projection. These are same-head shape measurements, not a comparison
+against the displaced handwritten parser. The local optimized AOT test build
+took 6m35s and the benchmark rebuild 3m24s; code-generation and compile
+cost remain an explicit optimization target.
+
+* Performance evidence boundary
+
+The benchmark in =benches/org_element_query.rs= includes 10,000 plain lines,
+10,000 lines with =code=/=verbatim= Objects, and 10,000 headlines. After the
+Scheme emphasis extension, a local release run measured about 5.10 ms for
+plain lines, 14.57 ms for inline-Object lines, and 13.52 ms for headlines.
+Criterion found no statistically significant change for the inline-Object
+case; its first headline run reported a possible 5% regression. A longer
+headline rerun measured 13.32 ms, with no statistically significant change
+and 7 high outliers among 30 samples. These are noisy local signals, not a
+performance admission. The different input shapes produce different graph
+sizes and must not be compared against each other as a speed ratio.
+
+Only a verified final-head performance run can satisfy the performance gate.

@@ -131,6 +131,6 @@ Agent Memory tab. The demo content should remain ordinary Org, using tags,
 properties, `CLOSED`, `LOGBOOK`, `CLOCK`, timestamps, links, and archive tags
 as evidence.
 
-This work should continue to calibrate against `.data/org-mode` manual and
-Elisp sources, especially property, TODO logging, agenda, archive, and org-id
-behavior.
+This work should compare against pinned upstream Org specifications and
+observed behavior, especially property, TODO logging, agenda, archive, and
+org-id semantics. Executable fixtures remain Git-tracked and Scheme-owned.

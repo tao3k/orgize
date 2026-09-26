@@ -10,6 +10,8 @@ pub mod ast;
 pub mod cli;
 /// Parser configuration.
 pub mod config;
+/// Scheme-AOT Org Contract execution over generated Element graphs.
+pub mod contract_feature;
 /// Document element mapping and parser-owned query API.
 pub mod document;
 mod entities;
@@ -21,6 +23,12 @@ pub mod fmt;
 pub mod lint;
 mod lint_runtime_validation;
 mod org;
+/// Scheme-AOT Org parser and Element graph for Cargo-only consumers.
+pub mod org_aot;
+/// Source-bound Org edits validated against the Scheme-AOT Element graph.
+pub mod org_aot_edit;
+/// Scheme-AOT named Org Element queries over the generated graph.
+pub mod org_element_query;
 mod replace;
 mod runtime;
 mod syntax;
