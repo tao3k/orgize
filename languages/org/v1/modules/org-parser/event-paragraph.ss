@@ -3,7 +3,8 @@
 
 (import (only-in "event-inline.ss" event-inline-initial event-text-line-forms)
         (only-in "event-inline-citation-reference.ss"
-                 citation-reference-helper))
+                 citation-reference-helper)
+        (only-in "objects.ss" make-org-event-helper))
 (export paragraph-event-initial paragraph-close-form paragraph-finish-form
         paragraph-line-form
         paragraph-event-helpers)
@@ -46,5 +47,6 @@
         (set-uint paragraph-end (offset end)))))
 
 (def paragraph-event-helpers
-  (list `(inline-span ,event-inline-initial ,(event-text-line-forms 'start))
+  (list (make-org-event-helper
+         'inline-span event-inline-initial (event-text-line-forms 'start))
         citation-reference-helper))

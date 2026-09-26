@@ -4,6 +4,7 @@
 (import (only-in :gerbil-parser/rust-rowan-event-support
                  run-event-fold event-fold-ir-json)
         (only-in "objects.ss"
+                 org-event-helper-descriptor
                  org-event-strategy-root org-event-strategy-initial
                  org-event-strategy-line-forms
                  org-event-strategy-finish-forms
@@ -16,7 +17,8 @@
                   (org-event-strategy-initial strategy)
                   (org-event-strategy-line-forms strategy)
                   (org-event-strategy-finish-forms strategy)
-                  (org-event-strategy-helpers strategy)))
+                  (map org-event-helper-descriptor
+                       (org-event-strategy-helpers strategy))))
 
 (def (org-event-strategy-ir-json strategy function-name grammar)
   (event-fold-ir-json function-name grammar
@@ -24,4 +26,5 @@
                       (org-event-strategy-initial strategy)
                       (org-event-strategy-line-forms strategy)
                       (org-event-strategy-finish-forms strategy)
-                      (org-event-strategy-helpers strategy)))
+                      (map org-event-helper-descriptor
+                           (org-event-strategy-helpers strategy))))

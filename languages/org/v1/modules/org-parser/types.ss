@@ -7,15 +7,18 @@
                  block-line?))
 (export +org-event-block-kind+ +org-named-block-kind+ +org-inline-markup-kind+
         +org-inline-script-kind+
+        +org-event-helper-kind+
         +org-event-strategy-kind+
-        OrgEventBlock OrgNamedBlock OrgInlineMarkup OrgInlineScript OrgEventStrategy
+        OrgEventBlock OrgNamedBlock OrgInlineMarkup OrgInlineScript
+        OrgEventHelper OrgEventStrategy
         org-event-block? org-named-block? org-inline-markup?
-        org-inline-script? org-event-strategy?)
+        org-inline-script? org-event-helper? org-event-strategy?)
 
 (def +org-event-block-kind+ 'org-event-block)
 (def +org-named-block-kind+ 'org-named-block)
 (def +org-inline-markup-kind+ 'org-inline-markup)
 (def +org-inline-script-kind+ 'org-inline-script)
+(def +org-event-helper-kind+ 'org-event-helper)
 (def +org-event-strategy-kind+ 'org-event-strategy)
 
 (def (event-block-shape? value)
@@ -76,6 +79,18 @@
 (define-type (OrgInlineScript @ Type.)
   .element?: inline-script-shape?)
 
+(def (event-helper-shape? value)
+  (and (object? value)
+       (.slot? value 'kind) (.slot? value 'name)
+       (.slot? value 'initial) (.slot? value 'forms)
+       (eq? (.ref value 'kind) +org-event-helper-kind+)
+       (symbol? (.ref value 'name))
+       (list? (.ref value 'initial))
+       (list? (.ref value 'forms))))
+
+(define-type (OrgEventHelper @ Type.)
+  .element?: event-helper-shape?)
+
 (def (event-strategy-shape? value)
   (and (object? value)
        (.slot? value 'kind) (.slot? value 'root)
@@ -86,7 +101,8 @@
        (list? (.ref value 'initial))
        (pair? (.ref value 'line-forms))
        (list? (.ref value 'finish-forms))
-       (list? (.ref value 'helpers))))
+       (list? (.ref value 'helpers))
+       (every org-event-helper? (.ref value 'helpers))))
 
 (define-type (OrgEventStrategy @ Type.)
   .element?: event-strategy-shape?)
@@ -95,4 +111,5 @@
 (def (org-named-block? value) (element? OrgNamedBlock value))
 (def (org-inline-markup? value) (element? OrgInlineMarkup value))
 (def (org-inline-script? value) (element? OrgInlineScript value))
+(def (org-event-helper? value) (element? OrgEventHelper value))
 (def (org-event-strategy? value) (element? OrgEventStrategy value))

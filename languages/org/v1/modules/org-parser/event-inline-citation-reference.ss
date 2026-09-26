@@ -3,6 +3,7 @@
 ;;; has passed its Org-owned validity scan.  The bounded helper shares no
 ;;; mutable state with its caller and AOT-compiles to one Rust function.
 
+(import (only-in "objects.ss" make-org-event-helper))
 (export citation-reference-helper)
 
 (def citation-ref-index '(line-index citation-ref-byte-index))
@@ -81,14 +82,15 @@
                   ,(citation-reference-separator-forms) ())))))))
 
 (def citation-reference-helper
-  `(citation-references
-    ((citation-ref-segment-start 0)
+  (make-org-event-helper
+   'citation-references
+   '((citation-ref-segment-start 0)
      (citation-ref-key-at 0) (citation-ref-key-start 0)
      (citation-ref-key-end 0)
      (citation-ref-has-key #f) (citation-ref-key-scanning #f)
      (citation-ref-escaped #f)
      (citation-ref-opens 0) (citation-ref-closes 0))
-    ((set-uint citation-ref-segment-start
+   `((set-uint citation-ref-segment-start
                (uint-add (state citation-ref-segment-start) (offset start)))
      (for-line-bytes citation-ref-byte-index start end
                      ,(citation-reference-scan-forms))

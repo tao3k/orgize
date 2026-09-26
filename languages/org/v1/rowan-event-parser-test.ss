@@ -11,12 +11,14 @@
         (only-in "modules/org-parser/types.ss"
                  org-event-block? org-named-block?
                  org-inline-markup? org-inline-script?
+                 org-event-helper?
                  org-event-strategy?)
         (only-in "modules/org-parser/objects.ss"
                  make-org-event-block org-event-block-id
                  make-org-named-block
                  make-org-inline-markup org-inline-markup-node
                  make-org-inline-script org-inline-script-node
+                 make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
         (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
         (only-in "rowan-event-fixture.ss" rowan-event-fixture-json)
@@ -27,12 +29,14 @@
 (def org-v1-rowan-event-parser-test
   (test-suite "Org contextual Rowan event AOT"
     (test-case "POO strategy declarations reject untyped rule tuples"
-      (let ((block (make-org-event-block
+      (let* ((block (make-org-event-block
                     1 (car (line-structure-blocks org-v1-line-structure))))
             (markup (make-org-inline-markup 42 3 'OrgBold))
             (script (make-org-inline-script 94 2 'OrgSuperscript))
+            (helper (make-org-event-helper
+                     'source-fragment '((seen #f)) '((finish-node))))
             (strategy (make-org-event-strategy
-                       'OrgFile '() '((finish-node)) '() '())))
+                       'OrgFile '() '((finish-node)) '() (list helper))))
         (check (org-event-block? block) => #t)
         (check (org-named-block?
                 (make-org-named-block "#+BEGIN_" "#+END_"
@@ -43,6 +47,10 @@
         (check (org-inline-script? script) => #t)
         (check (org-inline-script-node script) => 'OrgSuperscript)
         (check (org-inline-script? '(94 2 OrgSuperscript)) => #f)
+        (check (org-event-helper? helper) => #t)
+        (check (org-event-helper-descriptor helper)
+               => '(source-fragment ((seen #f)) ((finish-node))))
+        (check (org-event-helper? '(source-fragment () ())) => #f)
         (check (org-event-strategy? strategy) => #t)
         (check (org-event-strategy-root strategy) => 'OrgFile)
         (check (org-event-block? '(1 . block)) => #f)

@@ -6,9 +6,11 @@
                  +org-event-block-kind+ +org-named-block-kind+
                  +org-inline-markup-kind+
                  +org-inline-script-kind+
+                 +org-event-helper-kind+
                  +org-event-strategy-kind+
                  org-event-block? org-named-block?
-                 org-inline-markup? org-inline-script? org-event-strategy?))
+                 org-inline-markup? org-inline-script?
+                 org-event-helper? org-event-strategy?))
 (export make-org-event-block org-event-block-id org-event-block-rule
         make-org-named-block org-named-block-opening
         org-named-block-closing org-named-block-node
@@ -17,6 +19,9 @@
         org-inline-markup-id org-inline-markup-node
         make-org-inline-script org-inline-script-byte
         org-inline-script-id org-inline-script-node
+        make-org-event-helper org-event-helper-name
+        org-event-helper-initial org-event-helper-forms
+        org-event-helper-descriptor
         make-org-event-strategy org-event-strategy-root
         org-event-strategy-initial org-event-strategy-line-forms
         org-event-strategy-finish-forms org-event-strategy-helpers)
@@ -65,6 +70,21 @@
 (def (org-inline-script-byte value) (.ref value 'byte))
 (def (org-inline-script-id value) (.ref value 'id))
 (def (org-inline-script-node value) (.ref value 'node))
+
+(def (make-org-event-helper name-value initial-value forms-value)
+  (let (value (.o kind: +org-event-helper-kind+
+                  name: name-value initial: initial-value forms: forms-value))
+    (unless (org-event-helper? value)
+      (error "invalid Org event helper" value))
+    value))
+
+(def (org-event-helper-name value) (.ref value 'name))
+(def (org-event-helper-initial value) (.ref value 'initial))
+(def (org-event-helper-forms value) (.ref value 'forms))
+(def (org-event-helper-descriptor value)
+  (list (org-event-helper-name value)
+        (org-event-helper-initial value)
+        (org-event-helper-forms value)))
 
 (def (make-org-event-strategy root-value initial-value line-forms-value
                               finish-forms-value helpers-value)
