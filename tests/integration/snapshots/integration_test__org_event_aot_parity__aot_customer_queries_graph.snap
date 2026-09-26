@@ -1,0 +1,217 @@
+---
+source: tests/integration/org_event_aot_parity.rs
+expression: document.records()
+---
+[
+    GraphRecord {
+        id: 0,
+        parent_id: None,
+        child_ids: [
+            1,
+            2,
+            6,
+        ],
+        syntax_kind: 0,
+        category: "document",
+        kind: "org-data",
+        range: 0..509,
+        fields: [],
+    },
+    GraphRecord {
+        id: 1,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [],
+        syntax_kind: 22,
+        category: "element",
+        kind: "keyword",
+        range: 0..44,
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "title",
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "Consumer-owned Org Element queries",
+            },
+        ],
+    },
+    GraphRecord {
+        id: 2,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            3,
+            5,
+        ],
+        syntax_kind: 58,
+        category: "section",
+        kind: "headline",
+        range: 45..335,
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "*",
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Active reviews",
+            },
+        ],
+    },
+    GraphRecord {
+        id: 3,
+        parent_id: Some(
+            2,
+        ),
+        child_ids: [
+            4,
+        ],
+        syntax_kind: 12,
+        category: "element",
+        kind: "property-drawer",
+        range: 62..115,
+        fields: [],
+    },
+    GraphRecord {
+        id: 4,
+        parent_id: Some(
+            3,
+        ),
+        child_ids: [],
+        syntax_kind: 14,
+        category: "property",
+        kind: "node-property",
+        range: 75..109,
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "QUERY_ID",
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "customer.active-review",
+            },
+        ],
+    },
+    GraphRecord {
+        id: 5,
+        parent_id: Some(
+            2,
+        ),
+        child_ids: [],
+        syntax_kind: 2,
+        category: "element",
+        kind: "src-block",
+        range: 116..334,
+        fields: [
+            GraphFieldValue {
+                name: "header",
+                value: "  :org-elements\n",
+            },
+            GraphFieldValue {
+                name: "language",
+                value: "scheme",
+            },
+            GraphFieldValue {
+                name: "header-key",
+                value: "org-elements",
+            },
+            GraphFieldValue {
+                name: "body",
+                value: "(org-elements headline\n              (all-of (property todo-type \"todo\")\n                      (property-contains source-title \"Review\"))\n              (descendant-of scope))\n",
+            },
+        ],
+    },
+    GraphRecord {
+        id: 6,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            7,
+            9,
+        ],
+        syntax_kind: 58,
+        category: "section",
+        kind: "headline",
+        range: 335..509,
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "*",
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Cited evidence",
+            },
+        ],
+    },
+    GraphRecord {
+        id: 7,
+        parent_id: Some(
+            6,
+        ),
+        child_ids: [
+            8,
+        ],
+        syntax_kind: 12,
+        category: "element",
+        kind: "property-drawer",
+        range: 352..406,
+        fields: [],
+    },
+    GraphRecord {
+        id: 8,
+        parent_id: Some(
+            7,
+        ),
+        child_ids: [],
+        syntax_kind: 14,
+        category: "property",
+        kind: "node-property",
+        range: 365..400,
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "QUERY_ID",
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "customer.cited-evidence",
+            },
+        ],
+    },
+    GraphRecord {
+        id: 9,
+        parent_id: Some(
+            6,
+        ),
+        child_ids: [],
+        syntax_kind: 2,
+        category: "element",
+        kind: "src-block",
+        range: 407..509,
+        fields: [
+            GraphFieldValue {
+                name: "header",
+                value: "  :org-elements\n",
+            },
+            GraphFieldValue {
+                name: "language",
+                value: "scheme",
+            },
+            GraphFieldValue {
+                name: "header-key",
+                value: "org-elements",
+            },
+            GraphFieldValue {
+                name: "body",
+                value: "(org-elements citation-reference (property key \"doe2020\"))\n",
+            },
+        ],
+    },
+]

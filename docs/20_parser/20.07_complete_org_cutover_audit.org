@@ -7,8 +7,8 @@ The Org parser replacement is *not complete*. =parse_org_aot= now executes the
 Org-owned Scheme event algorithm AOT-compiled to Rust and constructs a Rowan
 tree. Element queries, source edits, contract evaluation, the Python AOT
 binding, and feature-source examples enter through this path. The generated
-structural scanner is no longer loaded by the production AOT module; it is
-only a fixture oracle in differential tests and this audit.
+structural scanner and its independent oracle have been removed. The public
+=Org::parse= path remains separate and handwritten.
 
 The document-query index now projects facts from that Scheme-AOT Element
 graph rather than parsing source again through =Org::parse=. Its headline
@@ -44,7 +44,7 @@ current audit reports:
 | Scheme catalog | 30 Elements; 24 Objects |
 | Public handwritten Rust CST | 32 distinct node kinds in the fixture |
 | Scheme event-AOT CST | 24 distinct node kinds in the fixture |
-| Structural fixture oracle / event Element records | Event graph adds Objects and footnote definitions absent from the structural oracle; non-footnote fixture backbones remain tested separately |
+| Event graph fixture checks | Source roundtrip, parent-child links, source ranges, representative Elements/Objects and recovery are checked directly against Scheme AOT |
 | Catalog Elements not projected as typed graph kinds | 1 |
 | Catalog Objects not projected as typed graph kinds | 0 |
 
@@ -76,12 +76,10 @@ for event parsing, Rowan construction and graph projection. That wide
 single-head interval is a baseline, not a before/after regression verdict.
 
 The representative fixture does not exercise all configured, malformed,
-recursive, or nested cases. The structural oracle predates the new Scheme
-emphasis Objects, so exact graph equality is no longer expected; the test
-compares its structural backbone after removing only the newly supported
-Objects. The representative fixture now differs structurally in its footnote
-region and is checked for losslessness and footnote records instead of false
-oracle equality. Public AST and semantic query parity remain unadmitted.
+recursive, or nested cases. The former second structural parser has been
+removed; tracked fixtures now check the active Scheme event graph directly
+for losslessness, ancestry, fields, and recovery. Public AST and semantic
+query parity remain unadmitted.
 
 * Why the public parser has not been replaced
 
@@ -245,8 +243,8 @@ grammar, TODO policy, or Org Element semantics. Generic primitives added for
 an Org case should be reviewed for accidental Org-shaped assumptions.
 
 The public Rust parser is a remaining second authority, not a fallback to
-retain. The old structural scanner is a test oracle only; it must not be
-reintroduced as a production parsing path.
+retain. The removed structural scanner must not be reintroduced as an
+independent parser or test oracle.
 
 Cargo consumers call the Scheme-AOT-generated Rust event function directly
 and hand its events to Rowan. This runtime path has no Scheme/Rust FFI boundary;

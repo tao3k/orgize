@@ -1,9 +1,7 @@
 //! Scheme-authored event fixtures reach Rowan and Org Element projection.
 //! Fixture parity does not mean production parsing has switched to event AOT.
 
-use gerbil_parser_rowan::{
-    KindCategory, TreeEvent, parse_generated_events, parse_structural_lines, project_syntax_graph,
-};
+use gerbil_parser_rowan::{KindCategory, TreeEvent, parse_generated_events, project_syntax_graph};
 use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
 
 #[rustfmt::skip]
@@ -829,23 +827,7 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .expect("Scheme-owned named drawer projects as an Element");
     assert_eq!(logbook.field("name"), Some("LOGBOOK"));
 
-    let structural = parse_structural_lines(
-        org_language_spec(),
-        &crate::org_structural_fixture::STRUCTURE,
-        source,
-    )
-    .expect("the structural fixture oracle accepts the handoff fixture");
-    let structural_records =
-        project_syntax_graph(org_language_spec(), org_graph_spec(), &structural.syntax())
-            .expect("the structural fixture oracle projects Elements");
-    assert_eq!(records.len(), structural_records.len());
-    for (actual, expected) in records.iter().zip(&structural_records) {
-        assert_eq!(actual.parent_id, expected.parent_id);
-        assert_eq!(actual.child_ids, expected.child_ids);
-        assert_eq!(actual.kind, expected.kind);
-        assert_eq!(actual.range, expected.range);
-        assert_eq!(actual.fields, expected.fields);
-    }
+    crate::org_event_aot_parity::assert_graph_integrity(source, &records);
 }
 
 macro_rules! org_event {
