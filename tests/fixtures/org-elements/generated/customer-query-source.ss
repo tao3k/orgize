@@ -10,4 +10,7 @@ property property-contains all-of any-of at child-of descendant-of))
                       (property-contains source-title "Review"))
               (descendant-of scope))
   )
+  (org-element-query "customer.cited-evidence"
+(org-elements citation (property-contains body "@doe2020"))
+  )
 ))
