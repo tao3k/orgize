@@ -11,18 +11,14 @@ use rowan::TextRange;
 use crate::org_aot::{OrgAotDocument, org_image_link};
 
 use super::aot_timestamp_projection::project_timestamp;
-use super::block_metadata::{
-    BlockLineOptions, parse_block_header_args, parse_block_lines, split_block_lines,
-};
-use super::block_model::{BlockSwitches, SemanticFixedWidth};
 use super::lifecycle_model::ArchiveState;
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
-    Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
-    Document, Drawer, Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link,
-    List, ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst,
-    Planning, Property, Section, Table, TableCell, TableRow, TargetDefinition, TargetKind,
-    TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind, Document, Drawer,
+    Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link, List, ListItem,
+    ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property,
+    Section, Table, TableCell, TableRow, TargetDefinition, TargetKind, TodoKeyword, TodoState,
+    UnsupportedSyntaxKind,
 };
 use super::preprocessing::{macro_definition, split_macro_args};
 use super::prescan::{SemanticPrescan, collect_document_keyword};
@@ -38,6 +34,9 @@ impl OrgAotDocument {
         GraphProjector::new(self, &source).document()
     }
 }
+
+#[path = "aot_block_projection.rs"]
+mod block_projection;
 
 struct GraphProjector<'a> {
     document: &'a OrgAotDocument,
@@ -471,7 +470,7 @@ impl<'a> GraphProjector<'a> {
         }
         let range = record.range;
         let kind = record.kind;
-        let affiliated_keywords = self
+        let affiliated_keywords: Vec<_> = self
             .document
             .affiliated_keyword_ids(id)
             .iter()
@@ -526,7 +525,7 @@ impl<'a> GraphProjector<'a> {
             }),
             "src-block" | "example-block" | "export-block" | "quote-block" | "verse-block"
             | "center-block" | "comment-block" | "dynamic-block" | "special-block" => {
-                ElementData::Block(self.block(id))
+                ElementData::Block(self.block(id, &affiliated_keywords))
             }
             "comment" => ElementData::Comment(self.raw(range).to_owned()),
             "diary-sexp" => ElementData::DiarySexp(self.raw(range).to_owned()),
@@ -546,79 +545,6 @@ impl<'a> GraphProjector<'a> {
             affiliated_keywords,
             data,
         })
-    }
-
-    fn block(&mut self, id: usize) -> Block<ParsedAnnotation> {
-        let record = self.record(id);
-        let kind = match record.kind {
-            "src-block" => BlockKind::Source,
-            "example-block" => BlockKind::Example,
-            "export-block" => BlockKind::Export,
-            "quote-block" => BlockKind::Quote,
-            "verse-block" => BlockKind::Verse,
-            "center-block" => BlockKind::Center,
-            "comment-block" => BlockKind::Comment,
-            "dynamic-block" => BlockKind::Dynamic,
-            _ => BlockKind::Special(record.field("name").unwrap_or_default().to_owned()),
-        };
-        let children = record.child_ids.clone();
-        let name = record.field("name").map(str::to_owned);
-        let language = record.field("language").map(str::to_owned);
-        let parameters = record.field("header").map(str::to_owned);
-        let header_args = parse_block_header_args(parameters.as_deref());
-        let value = record.field("body").unwrap_or_default().to_owned();
-        Block {
-            kind,
-            name,
-            language,
-            switches: None,
-            switch_options: Default::default(),
-            line_numbering: None,
-            preserve_indentation: false,
-            lines: Vec::new(),
-            code_refs: Vec::new(),
-            parameters,
-            header_args,
-            value,
-            children: children
-                .into_iter()
-                .filter_map(|child| self.element(child))
-                .collect(),
-        }
-    }
-
-    fn fixed_width(&self, range: TextRange) -> SemanticFixedWidth<ParsedAnnotation> {
-        let source = self.raw(range);
-        let source_lines = split_block_lines(source);
-        let mut value = String::with_capacity(source.len());
-        for line in &source_lines {
-            let content = line
-                .text
-                .split_once(':')
-                .map_or(line.text, |(_, text)| text);
-            let content = content.strip_prefix(' ').unwrap_or(content);
-            value.push_str(content);
-            if let Some(ending) = line.ending {
-                value.push_str(ending);
-            }
-        }
-        let switches = BlockSwitches::default();
-        let lines = parse_block_lines(
-            &value,
-            Some(source),
-            BlockLineOptions {
-                switches: &switches,
-                tab_width: self.document.config().src_tab_width,
-                preserve_indentation: false,
-            },
-            |index| {
-                let line = &source_lines[index];
-                let start = usize::from(range.start()) + line.start;
-                let end = usize::from(range.start()) + line.end;
-                self.annotation(TextRange::new((start as u32).into(), (end as u32).into()))
-            },
-        );
-        SemanticFixedWidth { value, lines }
     }
 
     fn table(&self, id: usize) -> Table<ParsedAnnotation> {

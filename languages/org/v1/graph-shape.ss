@@ -106,7 +106,10 @@
                (field 'SourceHeaderValue "header")
                (field 'SourceHeaderKey "header-key" 'each)
                (field 'SourceHeaderValue "header-value" 'each)
-               (field 'TextLine "body")))
+               (field 'SourceSwitchName "switch-name" 'each)
+               (field 'SourceSwitchValue "switch-value" 'each)
+               (field 'TextLine "body")
+               (field 'OrgBlockBodyLine "raw-body" 'node-text)))
    (node 'OrgDynamicBlock "element" "dynamic-block"
          (list (field 'DynamicBlockName "name")
                (field 'DynamicBlockHeaderTrivia "header")))
@@ -118,7 +121,11 @@
                (field 'LatexEnvironmentBody "body" 'append-or-empty)))
    (node 'OrgQuoteBlock "element" "quote-block" '())
    (node 'OrgExampleBlock "element" "example-block"
-         (list (field 'TextLine "body")))
+         (list (field 'SourceHeaderTrivia "header")
+               (field 'SourceSwitchName "switch-name" 'each)
+               (field 'SourceSwitchValue "switch-value" 'each)
+               (field 'TextLine "body")
+               (field 'OrgBlockBodyLine "raw-body" 'node-text)))
    (node 'OrgVerseBlock "element" "verse-block" '())
    (node 'OrgCenterBlock "element" "center-block" '())
    (node 'OrgCommentBlock "element" "comment-block"

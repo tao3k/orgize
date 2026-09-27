@@ -32,10 +32,12 @@ fn field_query_matches_any_value_of_a_repeated_property() {
             GraphFieldValue {
                 name: "tags",
                 value: "work".into(),
+                range: TextRange::empty(TextSize::from(0)),
             },
             GraphFieldValue {
                 name: "tags",
                 value: "urgent".into(),
+                range: TextRange::empty(TextSize::from(0)),
             },
         ],
     };

@@ -53,6 +53,15 @@ fn semantic_ast_projects_planning_timestamp_fields_from_scheme_objects() {
     );
     assert!(scheduled.repeater.is_some());
     assert!(scheduled.warning.is_some());
+
+    let range = Org::parse("* Range\nSCHEDULED: <2026-05-15 Fri>-<2026-05-16 Sat>\n").document();
+    let scheduled_range = range.sections[0]
+        .planning
+        .scheduled
+        .as_ref()
+        .expect("Scheme-classified single-hyphen range");
+    assert!(scheduled_range.is_range);
+    assert_eq!(scheduled_range.end.as_ref().map(|end| end.day), Some(16));
 }
 
 #[test]

@@ -309,8 +309,22 @@
             (TimestampRangeSeparator 12 14)
             (TimestampDelimiter 14 15)
             (OrgTimestampPoint (TimestampDate 15 25))
-            (TimestampDelimiter 25 26))
+           (TimestampDelimiter 25 26))
            (TextLine 26 27)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[2026-09-23]-[2026-09-24]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgTimestampInactive
+            (TimestampDelimiter 0 1)
+            (OrgTimestampPoint (TimestampDate 1 11))
+            (TimestampDelimiter 11 12)
+            (TimestampRangeSeparator 12 13)
+            (TimestampDelimiter 13 14)
+            (OrgTimestampPoint (TimestampDate 14 24))
+            (TimestampDelimiter 24 25))
+           (TextLine 25 26)))))
       (check-org-ast-with parse-org-rowan-events
         "<2026-09-23 Wed 10:00-11:00 ++1w -2d>\n"
         (OrgFile
@@ -882,12 +896,22 @@
                           (BlockHeaderTrivia 20 21)
                           (SourceLanguage 21 25)
                           (SourceHeaderTrivia 25 26)
-                          (TextLine 26 34) (BlockEndLine 34 44))
+                          (OrgBlockBodyLine (TextLine 26 34))
+                          (BlockEndLine 34 44))
           (OrgSection (OrgHeadline (HeadlineLine 44 46)
                                     (HeadlineTrivia 46 47)
                                     (OrgHeadlineTitle
                                      (OrgTextLine (TextLine 47 52)))
                                     (HeadlineTrivia 52 53)))))))
+    (test-case "source block escape is Scheme-owned and retains raw lines"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_src\n,* hi\n,#+foo\n#+end_src\n"
+        (OrgFile
+         (OrgSourceBlock
+          (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
+          (OrgBlockBodyLine (BlockEscape 12 13) (TextLine 13 18))
+          (OrgBlockBodyLine (BlockEscape 18 19) (TextLine 19 25))
+          (BlockEndLine 25 35)))))
     (test-case "source block arguments retain Scheme-owned keys and quoted values"
       (check-org-ast-with parse-org-rowan-events
         "#+begin_src rust :results output :var \"hello world\"\nbody\n#+end_src\n"
@@ -900,7 +924,53 @@
           (SourceHeaderTrivia 32 34) (SourceHeaderKey 34 37)
           (SourceHeaderTrivia 37 38) (SourceHeaderValue 38 51)
           (SourceHeaderTrivia 51 52)
-          (TextLine 52 57) (BlockEndLine 57 67)))))
+          (OrgBlockBodyLine (TextLine 52 57))
+          (BlockEndLine 57 67)))))
+    (test-case "source switches are Scheme-classified before header arguments"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_src rust -i -n 5 :exports both\nx\n#+end_src\n"
+        (OrgFile
+         (OrgSourceBlock
+          (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
+          (SourceLanguage 12 16) (SourceHeaderTrivia 16 17)
+          (SourceSwitchName 17 19) (SourceHeaderTrivia 19 20)
+          (SourceSwitchName 20 22) (SourceHeaderTrivia 22 23)
+          (SourceSwitchValue 23 24) (SourceHeaderTrivia 24 26)
+          (SourceHeaderKey 26 33) (SourceHeaderTrivia 33 34)
+          (SourceHeaderValue 34 38) (SourceHeaderTrivia 38 39)
+          (OrgBlockBodyLine (TextLine 39 41))
+          (BlockEndLine 41 51)))))
+    (test-case "example switches use the same Scheme classification"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_example +n 12\nx\n#+end_example\n"
+        (OrgFile
+         (OrgExampleBlock
+          (BlockBeginLine 0 15) (SourceHeaderTrivia 15 16)
+          (SourceSwitchName 16 18) (SourceHeaderTrivia 18 19)
+          (SourceSwitchValue 19 21) (SourceHeaderTrivia 21 22)
+          (OrgBlockBodyLine (TextLine 22 24))
+          (BlockEndLine 24 38)))))
+    (test-case "optional switch argument does not consume a header key"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_src rust -n :exports both\nx\n#+end_src\n"
+        (OrgFile
+         (OrgSourceBlock
+          (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
+          (SourceLanguage 12 16) (SourceHeaderTrivia 16 17)
+          (SourceSwitchName 17 19) (SourceHeaderTrivia 19 21)
+          (SourceHeaderKey 21 28) (SourceHeaderTrivia 28 29)
+          (SourceHeaderValue 29 33) (SourceHeaderTrivia 33 34)
+          (OrgBlockBodyLine (TextLine 34 36))
+          (BlockEndLine 36 46)))))
+    (test-case "longer lookalike is not a declared switch"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_src rust -invalid\nx\n#+end_src\n"
+        (OrgFile
+         (OrgSourceBlock
+          (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
+          (SourceLanguage 12 16) (SourceHeaderTrivia 16 26)
+          (OrgBlockBodyLine (TextLine 26 28))
+          (BlockEndLine 28 38)))))
     (test-case "header-like text without a leading separator remains trivia"
       (check-org-ast-with parse-org-rowan-events
         "#+begin_src rust x:bad :var ok\nbody\n#+end_src\n"
@@ -911,7 +981,8 @@
           (SourceHeaderTrivia 16 24) (SourceHeaderKey 24 27)
           (SourceHeaderTrivia 27 28) (SourceHeaderValue 28 30)
           (SourceHeaderTrivia 30 31)
-          (TextLine 31 36) (BlockEndLine 36 46)))))
+          (OrgBlockBodyLine (TextLine 31 36))
+          (BlockEndLine 36 46)))))
     (test-case "unterminated blocks recover as text before the next heading"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BEGIN_SRC\n** body\n"
@@ -1272,7 +1343,8 @@
                          (BlockHeaderTrivia 11 12)
                          (SourceLanguage 12 16)
                          (SourceHeaderTrivia 16 17)
-                         (TextLine 17 28) (BlockEndLine 28 40))))
+                         (OrgBlockBodyLine (TextLine 17 28))
+                         (BlockEndLine 28 40))))
       (check-org-ast-with parse-org-rowan-events
         "* H\n:PROPERTIES:\n:END: tail\n:END:\n"
         (OrgFile
@@ -1289,7 +1361,9 @@
       (check-org-ast-with parse-org-rowan-events
         "#+begin_example\n* hidden\n#+end_example\n#+begin_comment\n| x |\n#+end_comment\n#+begin_export html\n<b>x</b>\n#+end_export\n* Visible\n"
         (OrgFile
-         (OrgExampleBlock (BlockBeginLine 0 16) (TextLine 16 25)
+         (OrgExampleBlock (BlockBeginLine 0 15)
+                          (SourceHeaderTrivia 15 16)
+                          (OrgBlockBodyLine (TextLine 16 25))
                           (BlockEndLine 25 39))
          (OrgCommentBlock (BlockBeginLine 39 55) (TextLine 55 61)
                           (BlockEndLine 61 75))
