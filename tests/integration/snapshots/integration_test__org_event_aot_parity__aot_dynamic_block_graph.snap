@@ -1,5 +1,6 @@
 ---
 source: tests/integration/org_event_aot_parity.rs
+assertion_line: 52
 expression: document.records()
 ---
 [
@@ -24,7 +25,7 @@ expression: document.records()
             2,
             5,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 0..130,
@@ -37,6 +38,10 @@ expression: document.records()
                 name: "title",
                 value: "Dynamic overview",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Dynamic overview",
+            },
         ],
     },
     GraphRecord {
@@ -47,7 +52,7 @@ expression: document.records()
         child_ids: [
             3,
         ],
-        syntax_kind: 3,
+        syntax_kind: 7,
         category: "element",
         kind: "dynamic-block",
         range: 19..112,
@@ -70,7 +75,7 @@ expression: document.records()
         child_ids: [
             4,
         ],
-        syntax_kind: 16,
+        syntax_kind: 20,
         category: "element",
         kind: "paragraph",
         range: 51..105,
@@ -82,7 +87,7 @@ expression: document.records()
             3,
         ),
         child_ids: [],
-        syntax_kind: 32,
+        syntax_kind: 36,
         category: "object",
         kind: "link",
         range: 73..103,
@@ -103,7 +108,7 @@ expression: document.records()
             1,
         ),
         child_ids: [],
-        syntax_kind: 16,
+        syntax_kind: 20,
         category: "element",
         kind: "paragraph",
         range: 113..130,

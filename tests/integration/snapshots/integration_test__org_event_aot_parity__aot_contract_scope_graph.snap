@@ -1,5 +1,6 @@
 ---
 source: tests/integration/org_event_aot_parity.rs
+assertion_line: 52
 expression: document.records()
 ---
 [
@@ -28,7 +29,7 @@ expression: document.records()
             3,
             4,
         ],
-        syntax_kind: 12,
+        syntax_kind: 16,
         category: "element",
         kind: "property-drawer",
         range: 0..128,
@@ -40,7 +41,7 @@ expression: document.records()
             1,
         ),
         child_ids: [],
-        syntax_kind: 14,
+        syntax_kind: 18,
         category: "property",
         kind: "node-property",
         range: 13..46,
@@ -61,7 +62,7 @@ expression: document.records()
             1,
         ),
         child_ids: [],
-        syntax_kind: 14,
+        syntax_kind: 18,
         category: "property",
         kind: "node-property",
         range: 46..90,
@@ -82,7 +83,7 @@ expression: document.records()
             1,
         ),
         child_ids: [],
-        syntax_kind: 14,
+        syntax_kind: 18,
         category: "property",
         kind: "node-property",
         range: 90..122,
@@ -106,7 +107,7 @@ expression: document.records()
             6,
             9,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 128..294,
@@ -119,6 +120,10 @@ expression: document.records()
                 name: "title",
                 value: "Task A",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Task A",
+            },
         ],
     },
     GraphRecord {
@@ -129,7 +134,7 @@ expression: document.records()
         child_ids: [
             7,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 137..182,
@@ -142,6 +147,10 @@ expression: document.records()
                 name: "title",
                 value: "Evidence",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Evidence",
+            },
         ],
     },
     GraphRecord {
@@ -152,7 +161,7 @@ expression: document.records()
         child_ids: [
             8,
         ],
-        syntax_kind: 16,
+        syntax_kind: 20,
         category: "element",
         kind: "paragraph",
         range: 149..182,
@@ -164,7 +173,7 @@ expression: document.records()
             7,
         ),
         child_ids: [],
-        syntax_kind: 32,
+        syntax_kind: 36,
         category: "object",
         kind: "link",
         range: 149..181,
@@ -188,7 +197,7 @@ expression: document.records()
             10,
             12,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 182..294,
@@ -201,6 +210,10 @@ expression: document.records()
                 name: "title",
                 value: "Task A Child",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Task A Child",
+            },
         ],
     },
     GraphRecord {
@@ -211,7 +224,7 @@ expression: document.records()
         child_ids: [
             11,
         ],
-        syntax_kind: 12,
+        syntax_kind: 16,
         category: "element",
         kind: "property-drawer",
         range: 198..249,
@@ -223,7 +236,7 @@ expression: document.records()
             10,
         ),
         child_ids: [],
-        syntax_kind: 14,
+        syntax_kind: 18,
         category: "property",
         kind: "node-property",
         range: 211..243,
@@ -246,7 +259,7 @@ expression: document.records()
         child_ids: [
             13,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 249..294,
@@ -259,6 +272,10 @@ expression: document.records()
                 name: "title",
                 value: "Evidence",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Evidence",
+            },
         ],
     },
     GraphRecord {
@@ -269,7 +286,7 @@ expression: document.records()
         child_ids: [
             14,
         ],
-        syntax_kind: 16,
+        syntax_kind: 20,
         category: "element",
         kind: "paragraph",
         range: 262..294,
@@ -281,7 +298,7 @@ expression: document.records()
             13,
         ),
         child_ids: [],
-        syntax_kind: 32,
+        syntax_kind: 36,
         category: "object",
         kind: "link",
         range: 262..293,
@@ -304,7 +321,7 @@ expression: document.records()
         child_ids: [
             16,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 294..348,
@@ -317,6 +334,10 @@ expression: document.records()
                 name: "title",
                 value: "Task B",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Task B",
+            },
         ],
     },
     GraphRecord {
@@ -327,7 +348,7 @@ expression: document.records()
         child_ids: [
             17,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 303..348,
@@ -340,6 +361,10 @@ expression: document.records()
                 name: "title",
                 value: "Evidence",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Evidence",
+            },
         ],
     },
     GraphRecord {
@@ -350,7 +375,7 @@ expression: document.records()
         child_ids: [
             18,
         ],
-        syntax_kind: 16,
+        syntax_kind: 20,
         category: "element",
         kind: "paragraph",
         range: 315..348,
@@ -362,7 +387,7 @@ expression: document.records()
             17,
         ),
         child_ids: [],
-        syntax_kind: 32,
+        syntax_kind: 36,
         category: "object",
         kind: "link",
         range: 315..347,
@@ -386,7 +411,7 @@ expression: document.records()
             20,
             22,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 348..504,
@@ -399,6 +424,10 @@ expression: document.records()
                 name: "title",
                 value: "Override Parent",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Override Parent",
+            },
         ],
     },
     GraphRecord {
@@ -409,7 +438,7 @@ expression: document.records()
         child_ids: [
             21,
         ],
-        syntax_kind: 12,
+        syntax_kind: 16,
         category: "element",
         kind: "property-drawer",
         range: 366..426,
@@ -421,7 +450,7 @@ expression: document.records()
             20,
         ),
         child_ids: [],
-        syntax_kind: 14,
+        syntax_kind: 18,
         category: "property",
         kind: "node-property",
         range: 379..420,
@@ -444,7 +473,7 @@ expression: document.records()
         child_ids: [
             23,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 426..504,
@@ -457,6 +486,10 @@ expression: document.records()
                 name: "title",
                 value: "Override Child",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Override Child",
+            },
         ],
     },
     GraphRecord {
@@ -467,7 +500,7 @@ expression: document.records()
         child_ids: [
             24,
         ],
-        syntax_kind: 12,
+        syntax_kind: 16,
         category: "element",
         kind: "property-drawer",
         range: 444..504,
@@ -479,7 +512,7 @@ expression: document.records()
             23,
         ),
         child_ids: [],
-        syntax_kind: 14,
+        syntax_kind: 18,
         category: "property",
         kind: "node-property",
         range: 457..498,

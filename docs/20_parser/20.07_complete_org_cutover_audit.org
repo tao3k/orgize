@@ -19,7 +19,7 @@ a Rust Org recognizer is not a valid way to close those gaps.
 At the current PR working tree on 2026-09-28, the Scheme suite reports
 =HARNESS-OK= and =OK=, =cargo fmt --all -- --check= passes, and strict Clippy
 passes for the workspace with all targets and features. The full Rust
-integration target reports *317 passed, 111 failed, 2 ignored*. These focused
+integration target reports *319 passed, 109 failed, 2 ignored*. These focused
 receipts do not constitute parser or release closure; check the exact pushed
 head and platform CI again after every change.
 

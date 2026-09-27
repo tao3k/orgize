@@ -1,5 +1,6 @@
 ---
 source: tests/integration/org_event_aot_parity.rs
+assertion_line: 52
 expression: document.records()
 ---
 [
@@ -23,7 +24,7 @@ expression: document.records()
             0,
         ),
         child_ids: [],
-        syntax_kind: 22,
+        syntax_kind: 26,
         category: "element",
         kind: "keyword",
         range: 0..44,
@@ -36,6 +37,10 @@ expression: document.records()
                 name: "value",
                 value: "Consumer-owned Org Element queries",
             },
+            GraphFieldValue {
+                name: "raw-value",
+                value: " Consumer-owned Org Element queries",
+            },
         ],
     },
     GraphRecord {
@@ -47,7 +52,7 @@ expression: document.records()
             3,
             5,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 45..335,
@@ -60,6 +65,10 @@ expression: document.records()
                 name: "title",
                 value: "Active reviews",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Active reviews",
+            },
         ],
     },
     GraphRecord {
@@ -70,7 +79,7 @@ expression: document.records()
         child_ids: [
             4,
         ],
-        syntax_kind: 12,
+        syntax_kind: 16,
         category: "element",
         kind: "property-drawer",
         range: 62..115,
@@ -82,7 +91,7 @@ expression: document.records()
             3,
         ),
         child_ids: [],
-        syntax_kind: 14,
+        syntax_kind: 18,
         category: "property",
         kind: "node-property",
         range: 75..109,
@@ -103,7 +112,7 @@ expression: document.records()
             2,
         ),
         child_ids: [],
-        syntax_kind: 2,
+        syntax_kind: 6,
         category: "element",
         kind: "src-block",
         range: 116..334,
@@ -135,7 +144,7 @@ expression: document.records()
             7,
             9,
         ],
-        syntax_kind: 58,
+        syntax_kind: 66,
         category: "section",
         kind: "headline",
         range: 335..509,
@@ -148,6 +157,10 @@ expression: document.records()
                 name: "title",
                 value: "Cited evidence",
             },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Cited evidence",
+            },
         ],
     },
     GraphRecord {
@@ -158,7 +171,7 @@ expression: document.records()
         child_ids: [
             8,
         ],
-        syntax_kind: 12,
+        syntax_kind: 16,
         category: "element",
         kind: "property-drawer",
         range: 352..406,
@@ -170,7 +183,7 @@ expression: document.records()
             7,
         ),
         child_ids: [],
-        syntax_kind: 14,
+        syntax_kind: 18,
         category: "property",
         kind: "node-property",
         range: 365..400,
@@ -191,7 +204,7 @@ expression: document.records()
             6,
         ),
         child_ids: [],
-        syntax_kind: 2,
+        syntax_kind: 6,
         category: "element",
         kind: "src-block",
         range: 407..509,
