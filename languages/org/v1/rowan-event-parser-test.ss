@@ -225,7 +225,8 @@
           (OrgTextLine
            (OrgCitation (CitationDelimiter 0 6)
                         (OrgCitationReference
-                         (CitationReferencePrefix 6 18)
+                         (OrgCitationReferencePrefix
+                          (OrgTextLine (TextLine 6 18)))
                          (CitationReferenceMarker 18 19)
                          (CitationReferenceKey 19 22))
                         (CitationDelimiter 22 23))
@@ -238,13 +239,16 @@
            (OrgCitation
             (CitationDelimiter 0 11)
             (OrgCitationReference
-             (CitationReferencePrefix 11 15)
+             (OrgCitationReferencePrefix
+              (OrgTextLine (TextLine 11 15)))
              (CitationReferenceMarker 15 16)
              (CitationReferenceKey 16 23)
-             (CitationReferenceSuffix 23 29))
+             (OrgCitationReferenceSuffix
+              (OrgTextLine (TextLine 23 29))))
             (CitationSeparator 29 30)
             (OrgCitationReference
-             (CitationReferencePrefix 30 35)
+             (OrgCitationReferencePrefix
+              (OrgTextLine (TextLine 30 35)))
              (CitationReferenceMarker 35 36)
              (CitationReferenceKey 36 43))
             (CitationDelimiter 43 44))
@@ -256,13 +260,15 @@
           (OrgTextLine
            (OrgCitation
             (CitationDelimiter 0 6)
-            (CitationGlobalPrefix 6 9)
+            (OrgCitationGlobalPrefix
+             (OrgTextLine (TextLine 6 9)))
             (CitationSeparator 9 10)
             (OrgCitationReference
              (CitationReferenceMarker 10 11)
              (CitationReferenceKey 11 14))
             (CitationSeparator 14 15)
-            (CitationGlobalSuffix 15 18)
+            (OrgCitationGlobalSuffix
+             (OrgTextLine (TextLine 15 18)))
             (CitationDelimiter 18 19))
            (TextLine 19 20)))))
       (check-org-ast-with parse-org-rowan-events

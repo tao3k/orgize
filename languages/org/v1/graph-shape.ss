@@ -156,11 +156,15 @@
    (node 'OrgCitation "object" "citation"
          (list (field 'CitationDelimiter "head")
                (field 'CitationGlobalPrefix "global-prefix" 'append-or-empty)
-               (field 'CitationGlobalSuffix "global-suffix" 'append-or-empty)))
+               (field 'OrgCitationGlobalPrefix "global-prefix" 'node-text)
+               (field 'CitationGlobalSuffix "global-suffix" 'append-or-empty)
+               (field 'OrgCitationGlobalSuffix "global-suffix" 'node-text)))
    (node 'OrgCitationReference "object" "citation-reference"
          (list (field 'CitationReferencePrefix "prefix" 'append-or-empty)
+               (field 'OrgCitationReferencePrefix "prefix" 'node-text)
                (field 'CitationReferenceKey "key")
-               (field 'CitationReferenceSuffix "suffix" 'append-or-empty)))
+               (field 'CitationReferenceSuffix "suffix" 'append-or-empty)
+               (field 'OrgCitationReferenceSuffix "suffix" 'node-text)))
    (node 'OrgTimestampActive "object" "timestamp" timestamp-fields)
    (node 'OrgTimestampInactive "object" "timestamp" timestamp-fields)
    (node 'OrgTimestampDiary "object" "timestamp"

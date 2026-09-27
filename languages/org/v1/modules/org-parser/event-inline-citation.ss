@@ -44,7 +44,8 @@
            (state-offset inline-citation-body-start))
     (call-source-helper citation-references
                         (state-offset inline-citation-body-start)
-                        ,link-index)
+                        ,link-index
+                        ((state inline-script-policy)))
     (token CitationDelimiter ,link-index ,inline-next)
     (finish-node)
     (set-uint inline-cursor (offset ,inline-next))))

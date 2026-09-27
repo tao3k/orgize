@@ -15,26 +15,37 @@
          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-.:?!`'/*@+|(){}<>&^$#%~"))
    (iota 128 128)))
 
+(def (citation-affix-events node from until)
+  `((if (offset-less? ,from ,until)
+        ((start-node ,node)
+         (call-source-helper citation-affix-span ,from ,until
+                             ((state inline-script-policy)))
+         (finish-node)) ())))
+
 (def (citation-reference-segment-events until)
   `((if (state citation-ref-has-key)
         ((start-node OrgCitationReference)
-         (token CitationReferencePrefix
-                (state-offset citation-ref-segment-start)
-                (state-offset citation-ref-key-at))
+         ,@(citation-affix-events
+            'OrgCitationReferencePrefix
+            '(state-offset citation-ref-segment-start)
+            '(state-offset citation-ref-key-at))
          (token CitationReferenceMarker
                 (state-offset citation-ref-key-at)
                 (state-offset citation-ref-key-start))
          (token CitationReferenceKey
                 (state-offset citation-ref-key-start)
                 (state-offset citation-ref-key-end))
-         (token CitationReferenceSuffix
-                (state-offset citation-ref-key-end) ,until)
+         ,@(citation-affix-events
+            'OrgCitationReferenceSuffix
+            '(state-offset citation-ref-key-end) until)
          (finish-node))
         ((if (state citation-ref-seen-reference)
-             ((token CitationGlobalSuffix
-                     (state-offset citation-ref-segment-start) ,until))
-             ((token CitationGlobalPrefix
-                     (state-offset citation-ref-segment-start) ,until)))))))
+             ,(citation-affix-events
+               'OrgCitationGlobalSuffix
+               '(state-offset citation-ref-segment-start) until)
+             ,(citation-affix-events
+               'OrgCitationGlobalPrefix
+               '(state-offset citation-ref-segment-start) until))))))
 
 (def (citation-reference-separator-forms)
   `(,@(citation-reference-segment-events citation-ref-index)
@@ -90,6 +101,7 @@
   (make-org-event-helper
    'citation-references
    '((citation-ref-segment-start 0)
+     (inline-script-policy 2)
      (citation-ref-key-at 0) (citation-ref-key-start 0)
      (citation-ref-key-end 0)
      (citation-ref-has-key #f) (citation-ref-key-scanning #f)
@@ -100,4 +112,5 @@
                (uint-add (state citation-ref-segment-start) (offset start)))
      (for-line-bytes citation-ref-byte-index start end
                      ,(citation-reference-scan-forms))
-     ,@(citation-reference-segment-events 'end))))
+     ,@(citation-reference-segment-events 'end))
+   '(inline-script-policy)))

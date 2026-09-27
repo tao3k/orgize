@@ -189,6 +189,9 @@ impl<'a> GraphProjector<'a> {
             if self.attached_keyword_ids.contains(&child) {
                 continue;
             }
+            if matches!(self.record(child).kind, "planning" | "property-drawer") {
+                continue;
+            }
             if self.record(child).kind == "headline" {
                 subsections.push(self.section(child));
             } else if let Some(element) = self.element(child) {
@@ -716,33 +719,83 @@ impl<'a> GraphProjector<'a> {
         }))
     }
 
-    fn citation(&self, id: usize) -> Citation<ParsedAnnotation> {
-        let record = self.record(id);
-        let head = record.field("head").unwrap_or_default();
-        let affix = |value: Option<&str>| {
-            value
-                .filter(|text| !text.is_empty())
-                .map(|text| vec![self.plain(record.range, text)])
-                .unwrap_or_default()
+    fn citation(&mut self, id: usize) -> Citation<ParsedAnnotation> {
+        let (range, head, prefix, suffix, children) = {
+            let record = self.record(id);
+            (
+                record.range,
+                record.field("head").unwrap_or_default().to_owned(),
+                record.field("global-prefix").unwrap_or_default().to_owned(),
+                record.field("global-suffix").unwrap_or_default().to_owned(),
+                record.child_ids.clone(),
+            )
         };
-        Citation {
-            style: OrgAotDocument::citation_style(head),
-            variant: OrgAotDocument::citation_variant(head),
-            prefix: affix(record.field("global-prefix")),
-            suffix: affix(record.field("global-suffix")),
-            references: record
-                .child_ids
-                .iter()
-                .map(|&child| self.record(child))
-                .filter(|child| child.kind == "citation-reference")
-                .map(|child| CiteReference {
-                    ann: self.annotation(child.range),
-                    id: child.field("key").unwrap_or_default().to_owned(),
-                    prefix: affix(child.field("prefix")),
-                    suffix: affix(child.field("suffix")),
-                })
-                .collect(),
+        let range_start = usize::from(range.start());
+        let range_end = usize::from(range.end());
+        let prefix_start = range_start + head.len().saturating_sub(1);
+        let suffix_start = range_end.saturating_sub(1 + suffix.len());
+        let prefix_objects = self.citation_affix(prefix_start, &prefix, &children);
+        let suffix_objects = self.citation_affix(suffix_start, &suffix, &children);
+        let mut references = Vec::new();
+        for child in children {
+            let (ref_range, key, ref_prefix, ref_suffix, ref_children) = {
+                let record = self.record(child);
+                if record.kind != "citation-reference" {
+                    continue;
+                }
+                (
+                    record.range,
+                    record.field("key").unwrap_or_default().to_owned(),
+                    record.field("prefix").unwrap_or_default().to_owned(),
+                    record.field("suffix").unwrap_or_default().to_owned(),
+                    record.child_ids.clone(),
+                )
+            };
+            let ref_start = usize::from(ref_range.start());
+            let ref_end = usize::from(ref_range.end());
+            references.push(CiteReference {
+                ann: self.annotation(ref_range),
+                id: key,
+                prefix: self.citation_affix(ref_start, &ref_prefix, &ref_children),
+                suffix: self.citation_affix(
+                    ref_end.saturating_sub(ref_suffix.len()),
+                    &ref_suffix,
+                    &ref_children,
+                ),
+            });
         }
+        Citation {
+            style: OrgAotDocument::citation_style(&head),
+            variant: OrgAotDocument::citation_variant(&head),
+            prefix: prefix_objects,
+            suffix: suffix_objects,
+            references,
+        }
+    }
+
+    fn citation_affix(
+        &mut self,
+        start: usize,
+        text: &str,
+        children: &[usize],
+    ) -> Vec<Object<ParsedAnnotation>> {
+        let trimmed = text.trim_start_matches([' ', '\t']);
+        let start = start + text.len() - trimmed.len();
+        let text = trimmed;
+        if text.is_empty() {
+            return Vec::new();
+        }
+        let end = start + text.len();
+        let Some(source) = self.source.get(start..end) else {
+            return Vec::new();
+        };
+        if source != text {
+            return Vec::new();
+        }
+        self.objects_in_span(
+            TextRange::new((start as u32).into(), (end as u32).into()),
+            children,
+        )
     }
 
     fn timestamp(&self, id: usize) -> Timestamp {

@@ -52,6 +52,10 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgMacro", category: KindCategory::Node },
     KindSpec { name: "OrgCitation", category: KindCategory::Node },
     KindSpec { name: "OrgCitationReference", category: KindCategory::Node },
+    KindSpec { name: "OrgCitationGlobalPrefix", category: KindCategory::Node },
+    KindSpec { name: "OrgCitationGlobalSuffix", category: KindCategory::Node },
+    KindSpec { name: "OrgCitationReferencePrefix", category: KindCategory::Node },
+    KindSpec { name: "OrgCitationReferenceSuffix", category: KindCategory::Node },
     KindSpec { name: "OrgTimestampActive", category: KindCategory::Node },
     KindSpec { name: "OrgTimestampInactive", category: KindCategory::Node },
     KindSpec { name: "OrgTimestampDiary", category: KindCategory::Node },
@@ -176,10 +180,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 63 },
-    TerminalSpec { name: "block-begin", syntax_kind: 68 },
-    TerminalSpec { name: "block-end", syntax_kind: 83 },
-    TerminalSpec { name: "text", syntax_kind: 84 },
+    TerminalSpec { name: "headline", syntax_kind: 67 },
+    TerminalSpec { name: "block-begin", syntax_kind: 72 },
+    TerminalSpec { name: "block-end", syntax_kind: 87 },
+    TerminalSpec { name: "text", syntax_kind: 88 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -354,7 +358,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:38cb0645e06db3428b2db23e78b9a0ddd13f8a1199a6ab2844e980f6013a93f8",
+    grammar_digest: "sha256:19ecbfb94de49890154366d24a19dfb6fa82b8b80cb250ab811947f2c9b88882",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,

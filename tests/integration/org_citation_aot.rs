@@ -107,3 +107,24 @@ fn citation_global_prefix_and_suffix_project_from_scheme() {
     assert_eq!(citation.field("global-suffix"), Some("and"));
     assert_eq!(document.syntax().to_string(), source);
 }
+
+#[test]
+fn citation_affix_graph_keeps_source_ranges_and_nested_objects() {
+    let source = "See [cite/text:global *prefix* ; see /also/ @doe2020 p. *42*; cf. @roe2021; global suffix].";
+    let document = orgize::org_aot::parse_org_aot(source).expect("Scheme citation graph");
+    let citation = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "citation")
+        .expect("citation Object");
+    assert_eq!(citation.field("head"), Some("[cite/text:]"));
+    assert_eq!(citation.field("global-prefix"), Some("global *prefix* "));
+    assert_eq!(citation.field("global-suffix"), Some(" global suffix"));
+    assert!(
+        citation
+            .child_ids
+            .iter()
+            .map(|&id| &document.records()[id])
+            .any(|child| child.kind == "bold")
+    );
+}
