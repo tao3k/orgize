@@ -2,8 +2,6 @@
 
 use rowan::TextSize;
 
-use crate::syntax::combinator::line_starts_iter;
-
 use super::SourcePosition;
 
 pub(super) struct LineIndex<'a> {
@@ -18,7 +16,22 @@ struct LineInfo {
 
 impl<'a> LineIndex<'a> {
     pub(super) fn new(source: &'a str) -> Self {
-        let starts = line_starts_iter(source).collect::<Vec<_>>();
+        let bytes = source.as_bytes();
+        let starts = std::iter::once(0)
+            .chain(
+                memchr::memchr2_iter(b'\r', b'\n', bytes)
+                    .filter(|&index| {
+                        bytes[index] != b'\n' || index == 0 || bytes[index - 1] != b'\r'
+                    })
+                    .map(|index| {
+                        if bytes[index] == b'\r' && bytes.get(index + 1) == Some(&b'\n') {
+                            index + 2
+                        } else {
+                            index + 1
+                        }
+                    }),
+            )
+            .collect::<Vec<_>>();
         let lines = starts
             .iter()
             .enumerate()
@@ -69,3 +82,7 @@ impl<'a> LineIndex<'a> {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "../../tests/unit/source_position.rs"]
+mod tests;
