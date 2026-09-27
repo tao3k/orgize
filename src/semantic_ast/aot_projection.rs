@@ -13,9 +13,9 @@ use crate::org_aot::{OrgAotDocument, org_image_link};
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
     Block, BlockKind, Checkbox, Diagnostic, DiagnosticKind, Document, Element, ElementData,
-    Keyword, Link, List, ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation,
-    ParsedAst, Planning, Property, Section, Table, TableCell, TableRow, TodoKeyword, TodoState,
-    UnsupportedSyntaxKind,
+    FootnoteDef, Keyword, Link, List, ListItem, ListType, MarkupKind, Object, ObjectData,
+    ParsedAnnotation, ParsedAst, Planning, Property, Section, Table, TableCell, TableRow,
+    TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 use super::preprocessing::macro_definition;
 use super::prescan::{SemanticPrescan, collect_document_keyword};
@@ -265,6 +265,15 @@ impl<'a> GraphProjector<'a> {
                     .filter_map(|&child| self.property(self.record(child)))
                     .collect(),
             ),
+            "footnote-definition" => ElementData::FootnoteDef(FootnoteDef {
+                label: record.field("label").unwrap_or_default().to_owned(),
+                children: record
+                    .child_ids
+                    .clone()
+                    .into_iter()
+                    .filter_map(|child| self.element(child))
+                    .collect(),
+            }),
             "src-block" | "example-block" | "export-block" | "quote-block" | "verse-block"
             | "center-block" | "comment-block" | "dynamic-block" | "special-block" => {
                 ElementData::Block(self.block(id))

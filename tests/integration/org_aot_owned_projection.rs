@@ -110,3 +110,18 @@ fn scheme_priority_cookie_reprojects_after_source_edit() {
     );
     assert_eq!(doc.document().sections[0].priority.raw_cookie(), Some("64"));
 }
+
+#[test]
+fn owned_footnote_definition_uses_scheme_graph_label_and_body() {
+    let doc = Org::parse("[fn:WORD-1] See *bold* text\n").document();
+    assert!(doc.diagnostics.is_empty());
+    let definition = match &doc.children[0].data {
+        ElementData::FootnoteDef(definition) => definition,
+        other => panic!("expected footnote definition, got {other:?}"),
+    };
+    assert_eq!(definition.label, "WORD-1");
+    assert!(matches!(
+        &definition.children[0].data,
+        ElementData::Paragraph(objects) if !objects.is_empty()
+    ));
+}
