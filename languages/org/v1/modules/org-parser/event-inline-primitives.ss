@@ -20,4 +20,3 @@
         (let (check `(line-byte-equal? ,offset ,(u8vector-ref bytes index)))
           (loop `(line-step ,offset) (+ index 1)
                 (if predicate `(and ,predicate ,check) check)))))))
-
