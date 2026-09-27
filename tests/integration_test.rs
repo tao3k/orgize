@@ -62,8 +62,6 @@ mod lint_property_schema;
 mod lint_table_formulas;
 #[path = "integration/lint_task_blockers.rs"]
 mod lint_task_blockers;
-#[path = "integration/markdown.rs"]
-mod markdown;
 #[path = "integration/named_source_block_template.rs"]
 mod named_source_block_template;
 #[path = "integration/org_aot_edit.rs"]

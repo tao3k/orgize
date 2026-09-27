@@ -1,8 +1,4 @@
-use orgize::{
-    Org,
-    export::{MarkdownExport, MarkdownExportOptions},
-};
-use rowan::ast::AstNode;
+use orgize::{Org, export::MarkdownExportOptions};
 
 #[test]
 fn markdown_export_renders_core_document_shapes() {
@@ -116,10 +112,12 @@ fn markdown_export_properties_parse_as_gfm_table() {
 #[test]
 fn markdown_export_can_render_subtrees() {
     let org = Org::parse("* /hello/ *world*");
-    let bold = org.first_node::<orgize::syntax_ast::Bold>().unwrap();
-    let mut markdown = MarkdownExport::default();
-    markdown.render(bold.syntax());
-    assert_eq!(markdown.finish(), "**world**");
+    let bold = org
+        .records()
+        .iter()
+        .position(|record| record.kind == "bold")
+        .expect("Scheme AOT graph should contain the bold Object");
+    assert_eq!(org.try_markdown_record(bold).unwrap(), "**world**");
 }
 
 #[test]

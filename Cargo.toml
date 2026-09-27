@@ -74,6 +74,10 @@ path = "tests/integration/html.rs"
 name = "latex"
 path = "tests/integration/latex.rs"
 
+[[test]]
+name = "markdown"
+path = "tests/integration/markdown.rs"
+
 [[bench]]
 name = "parse"
 harness = false
