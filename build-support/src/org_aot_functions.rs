@@ -23,6 +23,7 @@ pub fn write_org_aot_functions() {
         "priority_token_p",
         "headline_priority_cookie",
         "headline_display_title",
+        "headline_anchor_slug",
         "headline_comment_p",
         "memory_headline_state",
         "org_image_link_p",

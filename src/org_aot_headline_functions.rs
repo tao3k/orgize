@@ -11,5 +11,6 @@ include!(concat!(env!("OUT_DIR"), "/planning_key_kind.rs"));
 include!(concat!(env!("OUT_DIR"), "/priority_token_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_priority_cookie.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_display_title.rs"));
+include!(concat!(env!("OUT_DIR"), "/headline_anchor_slug.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_comment_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/memory_headline_state.rs"));

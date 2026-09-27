@@ -173,6 +173,10 @@ pub(crate) fn org_link_search_value(search: &str) -> &str {
     link_functions::org_link_search_value(search)
 }
 
+pub(crate) fn headline_anchor_slug(title: &str) -> String {
+    headline_functions::headline_anchor_slug(title)
+}
+
 pub(crate) fn org_expand_link_abbreviation(
     replacement: &str,
     path: &str,

@@ -10,7 +10,7 @@
                  string-rest-after-first-word string-last-word
                  string-before-last-word string-prefix? string-suffix?
                  string-words string-single-ascii-uppercase?
-                 string-unsigned-at-most?)
+                 string-unsigned-at-most? string-lowercase)
         (only-in "types.ss" org-element-graph-view?)
         (only-in "objects.ss"
                  make-org-element-graph-view
@@ -29,6 +29,7 @@
         headline-source-title headline-source-title-rust
         planning-key-kind planning-key-kind-rust
         headline-display-title headline-display-title-rust
+        headline-anchor-slug headline-anchor-slug-rust
         headline-comment? headline-comment-rust
         priority-token? priority-token-rust
         headline-priority-cookie headline-priority-cookie-rust
@@ -183,6 +184,11 @@
       (if has-tags
         (string-before-last-word without-priority)
         (string-trim without-priority)))))
+
+(define-rust-pure headline-anchor-slug headline-anchor-slug-rust
+  ((title "&str")) "String"
+  (let* ((lower (string-lowercase title)))
+    (string-join (string-words lower) "-")))
 
 ;; Org's COMMENT marker is a case-sensitive headline word after TODO and
 ;; priority have been resolved. Structural keywords remain case-insensitive.

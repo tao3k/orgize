@@ -26,6 +26,7 @@
                  headline-source-title headline-source-title-rust
                  planning-key-kind planning-key-kind-rust
                  headline-display-title headline-display-title-rust
+                 headline-anchor-slug headline-anchor-slug-rust
                  headline-comment? headline-comment-rust
                  priority-token? priority-token-rust
                  headline-priority-cookie headline-priority-cookie-rust
@@ -327,6 +328,11 @@
       (check-org-headline-ir
        headline-display-title-rust 'headline_display_title
        "languages/org/v1/modules/org-elements/generated/headline_display_title.ir.json")
+      (check-org-headline-ir
+       headline-anchor-slug-rust 'headline_anchor_slug
+       "languages/org/v1/modules/org-elements/generated/headline_anchor_slug.ir.json")
+      (check (headline-anchor-slug "  Mixed  Case  ") => "mixed-case")
+      (check (headline-anchor-slug "RÉSUMÉ Notes") => "résumé-notes")
       (check-org-headline-ir
        headline-comment-rust 'headline_comment_p
        "languages/org/v1/modules/org-elements/generated/headline_comment_p.ir.json")

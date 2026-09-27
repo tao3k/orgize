@@ -34,8 +34,12 @@ pub(super) fn resolve_document_links(document: &mut Document<ParsedAnnotation>) 
     document.targets.extend(code_refs);
 
     let mut counts = HashMap::<String, usize>::new();
+    let mut aliases = HashMap::new();
     for target in &document.targets {
         *counts.entry(target.key.clone()).or_default() += 1;
+        if !target.alias.is_empty() {
+            aliases.insert(target.key.clone(), target.alias.clone());
+        }
     }
     let abbreviations = document.link_abbreviations.clone();
     let mut diagnostics = Vec::new();
@@ -50,6 +54,12 @@ pub(super) fn resolve_document_links(document: &mut Document<ParsedAnnotation>) 
         let kind = org_link_kind(&path);
         let key = org_link_target_key(&path);
         let matches = counts.get(key).copied().unwrap_or_default();
+        if matches == 1
+            && !link.has_description()
+            && let Some(alias) = aliases.get(key)
+        {
+            link.default_description = alias.clone();
+        }
         let protocol = org_link_protocol(&path);
         let expanded = (kind == "uri")
             .then(|| {

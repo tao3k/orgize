@@ -10,6 +10,7 @@ use rowan::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link};
 
+use super::aot_footnote_resolution::resolve_document_footnotes;
 use super::aot_link_resolution::resolve_document_links;
 use super::aot_timestamp_projection::project_timestamp;
 use super::lifecycle_model::ArchiveState;
@@ -24,6 +25,7 @@ use super::model::{
 use super::preprocessing::{macro_definition, split_macro_args};
 use super::prescan::{SemanticPrescan, collect_document_keyword};
 use super::property_model::{OrgDuration, Priority};
+use super::section_index::objects_text;
 use super::source_position::LineIndex;
 use super::timestamp_model::Timestamp;
 
@@ -47,6 +49,7 @@ struct GraphProjector<'a> {
     lines: LineIndex<'a>,
     attached_keyword_ids: HashSet<usize>,
     headline_aliases: HashMap<usize, Vec<Object<ParsedAnnotation>>>,
+    anchor_counts: HashMap<String, usize>,
     diagnostics: Vec<Diagnostic>,
 }
 
@@ -63,6 +66,7 @@ impl<'a> GraphProjector<'a> {
             lines: LineIndex::new(source),
             attached_keyword_ids,
             headline_aliases: HashMap::new(),
+            anchor_counts: HashMap::new(),
             diagnostics: Vec::new(),
         }
     }
@@ -153,6 +157,7 @@ impl<'a> GraphProjector<'a> {
             diagnostics: self.diagnostics,
         };
         resolve_document_links(&mut document);
+        resolve_document_footnotes(&mut document);
         document
     }
 
@@ -234,7 +239,7 @@ impl<'a> GraphProjector<'a> {
                 effective_properties.push(property.clone());
             }
         }
-        let anchor = properties
+        let explicit_anchor = properties
             .iter()
             .find(|property| property.key.eq_ignore_ascii_case("CUSTOM_ID"))
             .or_else(|| {
@@ -243,6 +248,20 @@ impl<'a> GraphProjector<'a> {
                     .find(|property| property.key.eq_ignore_ascii_case("ID"))
             })
             .map(|property| property.value.clone());
+        let anchor = explicit_anchor.or_else(|| {
+            let slug = crate::org_aot::headline_anchor_slug(objects_text(&title).trim());
+            if slug.is_empty() {
+                return None;
+            }
+            let count = self.anchor_counts.entry(slug.clone()).or_default();
+            let anchor = if *count == 0 {
+                slug
+            } else {
+                format!("{slug}-{count}")
+            };
+            *count += 1;
+            Some(anchor)
+        });
         let mut children = Vec::new();
         let mut subsections = Vec::new();
         for child in child_ids {
@@ -818,7 +837,11 @@ impl<'a> GraphProjector<'a> {
             path: LinkPath::new(path.clone()),
             target: LinkTarget::Unresolved(path.clone()),
             description: description_objects,
-            default_description: vec![self.plain(range, &path)],
+            default_description: if description.is_some() {
+                Vec::new()
+            } else {
+                vec![self.plain(range, &path)]
+            },
             raw_description: description.clone().unwrap_or_default(),
             description_state: if description.is_some() {
                 LinkDescriptionState::Explicit
