@@ -10,7 +10,10 @@ use rowan::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link};
 
-use super::block_metadata::parse_block_header_args;
+use super::block_metadata::{
+    BlockLineOptions, parse_block_header_args, parse_block_lines, split_block_lines,
+};
+use super::block_model::{BlockSwitches, SemanticFixedWidth};
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
     Block, BlockKind, Checkbox, Citation, CiteReference, Diagnostic, DiagnosticKind, Document,
@@ -410,6 +413,7 @@ impl<'a> GraphProjector<'a> {
             }
             "comment" => ElementData::Comment(self.raw(range).to_owned()),
             "diary-sexp" => ElementData::DiarySexp(self.raw(range).to_owned()),
+            "fixed-width" => ElementData::FixedWidth(self.fixed_width(range)),
             "horizontal-rule" => ElementData::Rule,
             "latex-environment" => ElementData::LatexEnvironment(self.raw(range).to_owned()),
             _ => {
@@ -464,6 +468,40 @@ impl<'a> GraphProjector<'a> {
                 .filter_map(|child| self.element(child))
                 .collect(),
         }
+    }
+
+    fn fixed_width(&self, range: TextRange) -> SemanticFixedWidth<ParsedAnnotation> {
+        let source = self.raw(range);
+        let source_lines = split_block_lines(source);
+        let mut value = String::with_capacity(source.len());
+        for line in &source_lines {
+            let content = line
+                .text
+                .split_once(':')
+                .map_or(line.text, |(_, text)| text);
+            let content = content.strip_prefix(' ').unwrap_or(content);
+            value.push_str(content);
+            if let Some(ending) = line.ending {
+                value.push_str(ending);
+            }
+        }
+        let switches = BlockSwitches::default();
+        let lines = parse_block_lines(
+            &value,
+            Some(source),
+            BlockLineOptions {
+                switches: &switches,
+                tab_width: self.document.config().src_tab_width,
+                preserve_indentation: false,
+            },
+            |index| {
+                let line = &source_lines[index];
+                let start = usize::from(range.start()) + line.start;
+                let end = usize::from(range.start()) + line.end;
+                self.annotation(TextRange::new((start as u32).into(), (end as u32).into()))
+            },
+        );
+        SemanticFixedWidth { value, lines }
     }
 
     fn table(&self, id: usize) -> Table<ParsedAnnotation> {
