@@ -1,5 +1,5 @@
 use orgize::{
-    Org,
+    Org, ParseConfig, TextRange,
     ast::{Checkbox, ElementData, ListType, ObjectData, TimestampKind},
 };
 
@@ -67,4 +67,27 @@ fn owned_projection_uses_scheme_graph_objects_and_list_structure() {
         })
         .expect("item paragraph from AOT graph");
     assert!(item_paragraph.iter().any(|object| matches!(&object.data, ObjectData::InlineSrc { language, value, .. } if language == "rust" && value == "ok")));
+}
+
+#[test]
+fn file_todo_profile_reverts_to_caller_config_after_source_edit() {
+    let source = "#+TODO: WAIT(w) | DONE(d)\n* WAIT Task\n";
+    let config = ParseConfig {
+        todo_keywords: (vec!["NEXT".into()], vec!["FINISHED".into()]),
+        ..ParseConfig::default()
+    };
+    let mut doc = config.parse(source);
+    assert_eq!(doc.config().todo_keywords.0, ["WAIT"]);
+    assert_eq!(doc.config().todo_keywords.1, ["DONE"]);
+
+    let directive_end = source.find('\n').expect("directive line") + 1;
+    doc.replace_range(TextRange::new(0.into(), (directive_end as u32).into()), "");
+    assert_eq!(doc.config().todo_keywords.0, ["NEXT"]);
+    assert_eq!(doc.config().todo_keywords.1, ["FINISHED"]);
+    assert_eq!(
+        doc.headlines()
+            .next()
+            .and_then(|headline| headline.todo_keyword()),
+        None
+    );
 }

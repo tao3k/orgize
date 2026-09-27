@@ -9,6 +9,9 @@ pub fn write_org_aot_functions() {
     let output_dir = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo output dir"));
     for name in [
         "todo_directive_p",
+        "todo_word_name",
+        "todo_open_words",
+        "todo_done_words",
         "todo_state_from_directives",
         "todo_keyword_matches_p",
         "todo_keyword_from_directives",

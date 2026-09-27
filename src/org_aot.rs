@@ -45,6 +45,7 @@ mod generated_context_events;
 pub struct OrgAotDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
+    base_config: ParseConfig,
     config: ParseConfig,
     todo_directives: Vec<String>,
     configured_todo: Vec<String>,
@@ -144,6 +145,24 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
         })
         .filter_map(|record| record.field("value").map(str::to_owned))
         .collect::<Vec<_>>();
+    let mut effective_config = config.clone();
+    if !todo_directives.is_empty() {
+        let mut open = Vec::new();
+        let mut done = Vec::new();
+        for directive in &todo_directives {
+            open.extend(
+                headline_functions::todo_open_words(directive)
+                    .into_iter()
+                    .filter(|word| !word.is_empty()),
+            );
+            done.extend(
+                headline_functions::todo_done_words(directive)
+                    .into_iter()
+                    .filter(|word| !word.is_empty()),
+            );
+        }
+        effective_config.todo_keywords = (open, done);
+    }
     let headline_properties = records
         .iter()
         .map(|record| {
@@ -174,7 +193,8 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
     Ok(OrgAotDocument {
         parse,
         records,
-        config: config.clone(),
+        base_config: config.clone(),
+        config: effective_config,
         todo_directives,
         configured_todo: config.todo_keywords.0.clone(),
         configured_done: config.todo_keywords.1.clone(),
@@ -280,7 +300,7 @@ impl OrgAotDocument {
             usize::from(range.start())..usize::from(range.end()),
             replacement.as_ref(),
         );
-        *self = parse_org_aot_with_config(&source, &self.config)
+        *self = parse_org_aot_with_config(&source, &self.base_config)
             .expect("Scheme-generated Org parser rejected edited source");
     }
 

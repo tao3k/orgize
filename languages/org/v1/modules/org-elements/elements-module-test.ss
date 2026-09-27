@@ -14,6 +14,9 @@
                  org-test-sources)
         (only-in "headline-properties.ss"
                  todo-directive-rust
+                 todo-word-name todo-word-name-rust
+                 todo-open-words todo-open-words-rust
+                 todo-done-words todo-done-words-rust
                  todo-state-from-directives
                  todo-state-from-directives-rust
                  todo-keyword-from-directives
@@ -195,6 +198,20 @@
       (check-org-headline-ir
        todo-directive-rust 'todo_directive_p
        "languages/org/v1/modules/org-elements/generated/todo_directive_p.ir.json")
+      (check-org-headline-ir
+       todo-word-name-rust 'todo_word_name
+       "languages/org/v1/modules/org-elements/generated/todo_word_name.ir.json")
+      (check-org-headline-ir
+       todo-open-words-rust 'todo_open_words
+       "languages/org/v1/modules/org-elements/generated/todo_open_words.ir.json")
+      (check-org-headline-ir
+       todo-done-words-rust 'todo_done_words
+       "languages/org/v1/modules/org-elements/generated/todo_done_words.ir.json")
+      (check (todo-word-name "WAIT(w@/!)") => "WAIT")
+      (check (todo-open-words "NEXT(n) WAIT(w@/!) | DONE (d)")
+             => '("NEXT" "WAIT"))
+      (check (todo-done-words "NEXT(n) WAIT(w@/!) | DONE (d)")
+             => '("DONE" ""))
       (check-org-headline-ir
        todo-state-from-directives-rust 'todo_state_from_directives
        "languages/org/v1/modules/org-elements/generated/todo_state_from_directives.ir.json")

@@ -19,6 +19,9 @@
                  org-element-graph-field-of))
 (export org-element-with-headline-properties
         todo-directive-rust
+        todo-word-name todo-word-name-rust
+        todo-open-words todo-open-words-rust
+        todo-done-words todo-done-words-rust
         todo-state-from-directives todo-state-from-directives-rust
         todo-keyword-from-directives todo-keyword-from-directives-rust
         headline-content-after-todo headline-content-after-todo-rust
@@ -53,6 +56,24 @@
   (or (ascii-ci=? key "TODO")
       (ascii-ci=? key "SEQ_TODO")
       (ascii-ci=? key "TYP_TODO")))
+
+;; A file-local directive's keyword words are an Org-owned algorithm.  The
+;; AOT functions return typed vectors, not generated source or a string wire.
+(define-rust-pure todo-word-name todo-word-name-rust
+  ((word "&str")) "String"
+  (string-before word "("))
+
+(define-rust-pure todo-open-words todo-open-words-rust
+  ((directive "&str")) "Vec<String>"
+  (using ((todo-word-name "&str"))
+    (map todo-word-name
+         (string-words (string-before directive "|")))))
+
+(define-rust-pure todo-done-words todo-done-words-rust
+  ((directive "&str")) "Vec<String>"
+  (using ((todo-word-name "&str"))
+    (map todo-word-name
+         (string-words (string-after directive "|")))))
 
 ;; File-local keyword Elements override the caller's configured TODO profile.
 ;; The same executable Scheme function is lowered to Rust.
