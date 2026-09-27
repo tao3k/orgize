@@ -10,6 +10,7 @@ use rowan::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link};
 
+use super::aot_timestamp_projection::project_timestamp;
 use super::block_metadata::{
     BlockLineOptions, parse_block_header_args, parse_block_lines, split_block_lines,
 };
@@ -848,22 +849,7 @@ impl<'a> GraphProjector<'a> {
 
     fn timestamp(&self, id: usize) -> Timestamp {
         let record = self.record(id);
-        let kind = if record.field("diary-expression").is_some() {
-            TimestampKind::Diary
-        } else if record.values("delimiter").next() == Some("[") {
-            TimestampKind::Inactive
-        } else {
-            TimestampKind::Active
-        };
-        Timestamp {
-            kind,
-            raw: self.raw(record.range).to_owned(),
-            is_range: record.values("range-separator").next().is_some(),
-            start: None,
-            end: None,
-            repeater: None,
-            warning: None,
-        }
+        project_timestamp(record, self.raw(record.range))
     }
 
     fn unsupported(&mut self, range: TextRange, kind: &str, category: DiagnosticKind) {
