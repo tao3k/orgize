@@ -1,6 +1,17 @@
 use orgize::{Org, export::HtmlExportOptions};
 
 #[test]
+fn headline_anchor_callback_uses_scheme_projected_title() {
+    let rendered = Org::parse("* A & B\n")
+        .try_to_html_with_headline_anchor(|title| format!("section-{title}"))
+        .expect("graph-backed HTML");
+    assert_eq!(
+        rendered,
+        "<main><h1><a id=\"section-A &amp; B\" href=\"#section-A &amp; B\">A &amp; B</a></h1></main>"
+    );
+}
+
+#[test]
 fn emphasis() {
     insta::assert_snapshot!(
         Org::parse("*bold*, /italic/,\n_underlined_, =verbatim= and ~code~").to_html(),

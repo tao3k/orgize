@@ -22,6 +22,7 @@ impl OrgAotDocument {
             source: &source,
             options,
             output: String::new(),
+            headline_anchor: None,
         };
         renderer.render_document()?;
         Ok(renderer.output)
@@ -33,6 +34,29 @@ impl OrgAotDocument {
     /// Returns the first unsupported Element or Object kind.
     pub fn try_to_html(&self) -> Result<String, String> {
         self.try_to_html_with_options(HtmlExportOptions::default())
+    }
+
+    /// Render HTML with a caller-owned headline anchor projection.
+    ///
+    /// The callback only controls presentation; headline recognition and title
+    /// Objects still come from the Scheme-generated graph.
+    ///
+    /// # Errors
+    /// Returns the first unsupported Element or Object kind.
+    pub fn try_to_html_with_headline_anchor(
+        &self,
+        mut anchor: impl FnMut(&str) -> String,
+    ) -> Result<String, String> {
+        let source = self.to_org();
+        let mut renderer = HtmlRenderer {
+            document: self,
+            source: &source,
+            options: HtmlExportOptions::default(),
+            output: String::new(),
+            headline_anchor: Some(&mut anchor),
+        };
+        renderer.render_document()?;
+        Ok(renderer.output)
     }
 
     /// Render Org as HTML, failing explicitly on an unimplemented graph kind.
@@ -54,6 +78,7 @@ struct HtmlRenderer<'a> {
     source: &'a str,
     options: HtmlExportOptions,
     output: String,
+    headline_anchor: Option<&'a mut dyn FnMut(&str) -> String>,
 }
 
 impl HtmlRenderer<'_> {
@@ -134,7 +159,22 @@ impl HtmlRenderer<'_> {
             .map_or(line_end, |offset| after_markers + offset);
         let title_end = title_start + title.len();
         let _ = write!(self.output, "<h{level}>");
+        let anchor = self
+            .headline_anchor
+            .as_mut()
+            .map(|callback| callback(&title));
+        if let Some(ref anchor) = anchor {
+            let _ = write!(
+                self.output,
+                "<a id=\"{}\" href=\"#{}\">",
+                HtmlEscape(anchor),
+                HtmlEscape(anchor)
+            );
+        }
         self.render_inline_span(title_start, title_end, &self.record(id).child_ids.clone())?;
+        if anchor.is_some() {
+            self.output.push_str("</a>");
+        }
         let _ = write!(self.output, "</h{level}>");
         let body: Vec<_> = self
             .record(id)

@@ -1,9 +1,9 @@
+use orgize::Org;
 use orgize::ast::{
     ElementData, OrgSourceBlock, OrgSourceBlockDocument, OrgSourceBlockHeader,
     OrgSourceBlockHeaderValue, OrgSourceBlockKeyword,
 };
 use orgize::org_aot::parse_org_aot;
-use orgize::{Org, syntax_ast::SourceBlock};
 
 #[test]
 fn gql_remains_a_generic_keyword_before_a_source_block() {
@@ -17,8 +17,11 @@ fn gql_remains_a_generic_keyword_before_a_source_block() {
         ElementData::Keyword(keyword) if keyword.key == "gql"
     ));
     assert_eq!(
-        org.first_node::<SourceBlock>().unwrap().language().unwrap(),
-        "rust"
+        org.records()
+            .iter()
+            .find(|record| record.kind == "src-block")
+            .and_then(|record| record.field("language")),
+        Some("rust")
     );
 }
 
@@ -28,8 +31,11 @@ fn source_block_languages_do_not_require_a_global_registration() {
     let document = org.document();
     assert_eq!(document.children.len(), 1);
     assert_eq!(
-        org.first_node::<SourceBlock>().unwrap().language().unwrap(),
-        "any-language"
+        org.records()
+            .iter()
+            .find(|record| record.kind == "src-block")
+            .and_then(|record| record.field("language")),
+        Some("any-language")
     );
 }
 

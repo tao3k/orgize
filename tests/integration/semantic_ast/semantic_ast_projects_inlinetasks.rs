@@ -2,7 +2,6 @@ use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org, ParseConfig,
     ast::{AstRef, ElementData, MarkupKind, ObjectData, TodoState},
-    syntax_ast::SyntaxInlinetask,
 };
 
 #[test]
@@ -100,7 +99,11 @@ fn inlinetask_min_level_keeps_lower_star_headlines_in_the_outline() {
     assert!(doc.children.is_empty());
     assert_eq!(doc.sections.len(), 1);
     assert_eq!(doc.sections[0].level, 14);
-    assert!(org.first_node::<SyntaxInlinetask>().is_none());
+    assert!(
+        org.records()
+            .iter()
+            .all(|record| record.kind != "inlinetask")
+    );
 
     let doc = ParseConfig {
         inlinetask_min_level: 4,
