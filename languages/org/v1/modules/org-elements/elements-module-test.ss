@@ -23,6 +23,9 @@
                  todo-keyword-from-directives-rust
                  headline-content-after-todo
                  headline-content-after-todo-rust
+                 headline-source-title headline-source-title-rust
+                 planning-key-kind planning-key-kind-rust
+                 planning-timestamp-kind planning-timestamp-kind-rust
                  headline-display-title headline-display-title-rust
                  headline-comment? headline-comment-rust
                  priority-token? priority-token-rust
@@ -226,6 +229,23 @@
       (check-org-headline-ir
        headline-content-after-todo-rust 'headline_content_after_todo
        "languages/org/v1/modules/org-elements/generated/headline_content_after_todo.ir.json")
+      (check-org-headline-ir
+       headline-source-title-rust 'headline_source_title
+       "languages/org/v1/modules/org-elements/generated/headline_source_title.ir.json")
+      (check (headline-source-title "TODO [#A] *Inline* task " "TODO")
+             => "*Inline* task ")
+      (check (headline-source-title "  plain  " "") => "plain  ")
+      (check-org-headline-ir
+       planning-key-kind-rust 'planning_key_kind
+       "languages/org/v1/modules/org-elements/generated/planning_key_kind.ir.json")
+      (check-org-headline-ir
+       planning-timestamp-kind-rust 'planning_timestamp_kind
+       "languages/org/v1/modules/org-elements/generated/planning_timestamp_kind.ir.json")
+      (check (planning-key-kind "scheduled") => "scheduled")
+      (check (planning-key-kind "CLOSED") => "closed")
+      (check (planning-timestamp-kind "<2026-05-10 Sun>") => "active")
+      (check (planning-timestamp-kind "[2026-05-10 Sun]") => "inactive")
+      (check (planning-timestamp-kind "later") => "")
       (check-org-headline-ir
        priority-token-rust 'priority_token_p
        "languages/org/v1/modules/org-elements/generated/priority_token_p.ir.json")

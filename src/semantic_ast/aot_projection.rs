@@ -177,6 +177,12 @@ impl<'a> GraphProjector<'a> {
             });
         let is_comment = self.document.headline_is_comment(id).unwrap_or(false);
         let title = vec![self.plain(range, &raw_title)];
+        let planning = child_ids
+            .iter()
+            .copied()
+            .find(|&child| self.record(child).kind == "planning")
+            .map(|child| self.planning(child))
+            .unwrap_or_default();
         let mut children = Vec::new();
         let mut subsections = Vec::new();
         for child in child_ids {
@@ -214,7 +220,7 @@ impl<'a> GraphProjector<'a> {
             anchor: None,
             tags: tags.clone(),
             effective_tags: tags,
-            planning: Planning::default(),
+            planning,
             children,
             subsections,
         }
@@ -232,10 +238,29 @@ impl<'a> GraphProjector<'a> {
     }
 
     fn inlinetask(&mut self, id: usize) -> Inlinetask<ParsedAnnotation> {
-        let record = self.record(id);
-        let range = record.range;
-        let child_ids = record.child_ids.clone();
-        let raw_title = self.document.headline_display_title(id).unwrap_or_default();
+        let (range, child_ids, title_body) = {
+            let record = self.record(id);
+            (
+                record.range,
+                record.child_ids.clone(),
+                record.field("title-body").map(str::to_owned),
+            )
+        };
+        let raw_title = self.document.headline_source_title(id).unwrap_or_default();
+        let title = title_body
+            .as_deref()
+            .filter(|body| !body.is_empty() && body.ends_with(&raw_title))
+            .and_then(|body| {
+                let source_start = usize::from(range.start());
+                let header = self.raw(range).split_once('\n')?.0;
+                let title_start = source_start + header.find(body)? + body.len() - raw_title.len();
+                let title_end = title_start + raw_title.len();
+                Some(self.objects_in_span(
+                    TextRange::new((title_start as u32).into(), (title_end as u32).into()),
+                    &child_ids,
+                ))
+            })
+            .unwrap_or_else(|| vec![self.plain(range, &raw_title)]);
         let todo = self
             .document
             .headline_todo_keyword(id)
@@ -262,6 +287,12 @@ impl<'a> GraphProjector<'a> {
                 level: end.field("markers").map_or(0, str::len),
                 raw: self.raw(end.range).to_owned(),
             });
+        let planning = child_ids
+            .iter()
+            .copied()
+            .find(|&child| self.record(child).kind == "planning")
+            .map(|child| self.planning(child))
+            .unwrap_or_default();
         let mut children = Vec::new();
         for child in child_ids {
             if !matches!(
@@ -276,10 +307,10 @@ impl<'a> GraphProjector<'a> {
             level: self.record(id).field("markers").map_or(0, str::len),
             todo,
             priority: Priority::from_cookie(self.document.headline_priority_cookie(id)),
-            title: vec![self.plain(range, &raw_title)],
+            title,
             raw_title,
             tags: self.record(id).values("tag").map(str::to_owned).collect(),
-            planning: Planning::default(),
+            planning,
             properties,
             children,
             end,
@@ -293,6 +324,34 @@ impl<'a> GraphProjector<'a> {
             value: record.field("value")?.to_owned(),
             duration: None,
         })
+    }
+
+    fn planning(&self, id: usize) -> Planning {
+        let record = self.record(id);
+        let mut planning = Planning::default();
+        for (key, value) in record.values("key").zip(record.values("value")) {
+            let kind = match OrgAotDocument::planning_timestamp_kind(value) {
+                "active" => TimestampKind::Active,
+                "inactive" => TimestampKind::Inactive,
+                _ => continue,
+            };
+            let timestamp = Timestamp {
+                kind,
+                raw: value.to_owned(),
+                is_range: false,
+                start: None,
+                end: None,
+                repeater: None,
+                warning: None,
+            };
+            match OrgAotDocument::planning_key_kind(key) {
+                "scheduled" => planning.scheduled = Some(timestamp),
+                "deadline" => planning.deadline = Some(timestamp),
+                "closed" => planning.closed = Some(timestamp),
+                _ => {}
+            }
+        }
+        planning
     }
 
     fn element(&mut self, id: usize) -> Option<Element<ParsedAnnotation>> {

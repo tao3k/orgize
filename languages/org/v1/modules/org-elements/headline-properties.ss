@@ -6,6 +6,7 @@
         (only-in :gerbil-parser/src/compiler/rust-pure-aot
                  define-rust-pure string-before ascii-ci=?
                  string-after string-first-word
+                 string-trim-start
                  string-rest-after-first-word string-last-word
                  string-before-last-word string-prefix? string-suffix?
                  string-words string-single-ascii-uppercase?
@@ -25,6 +26,9 @@
         todo-state-from-directives todo-state-from-directives-rust
         todo-keyword-from-directives todo-keyword-from-directives-rust
         headline-content-after-todo headline-content-after-todo-rust
+        headline-source-title headline-source-title-rust
+        planning-key-kind planning-key-kind-rust
+        planning-timestamp-kind planning-timestamp-kind-rust
         headline-display-title headline-display-title-rust
         headline-comment? headline-comment-rust
         priority-token? priority-token-rust
@@ -127,6 +131,32 @@
                  title directives configured-todo configured-done) "")
       (string-trim title)
       (string-rest-after-first-word title))))
+
+;; The source-backed title excludes the tag suffix but retains its preceding
+;; whitespace. TODO and priority are admitted by the same Scheme algorithms.
+(define-rust-pure headline-source-title headline-source-title-rust
+  ((title-body "&str") (todo-keyword "&str")) "String"
+  (using ((priority-token? "&str"))
+    (let* ((after-todo
+            (if (equal? todo-keyword "") title-body
+              (string-trim-start (string-after title-body todo-keyword))))
+           (first (string-first-word after-todo)))
+      (if (priority-token? first)
+        (string-trim-start (string-after after-todo first))
+        (string-trim-start after-todo)))))
+
+(define-rust-pure planning-key-kind planning-key-kind-rust
+  ((key "&str")) "&'static str"
+  (if (ascii-ci=? key "SCHEDULED") "scheduled"
+    (if (ascii-ci=? key "DEADLINE") "deadline"
+      (if (ascii-ci=? key "CLOSED") "closed" ""))))
+
+(define-rust-pure planning-timestamp-kind planning-timestamp-kind-rust
+  ((value "&str")) "&'static str"
+  (if (and (string-prefix? value "<") (string-suffix? value ">"))
+    "active"
+    (if (and (string-prefix? value "[") (string-suffix? value "]"))
+      "inactive" "")))
 
 (define-rust-pure priority-token? priority-token-rust
   ((word "&str")) "bool"

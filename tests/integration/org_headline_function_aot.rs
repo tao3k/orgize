@@ -4,6 +4,9 @@ include!(concat!(env!("OUT_DIR"), "/todo_directive_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/todo_state_from_directives.rs"));
 include!(concat!(env!("OUT_DIR"), "/todo_keyword_from_directives.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_content_after_todo.rs"));
+include!(concat!(env!("OUT_DIR"), "/headline_source_title.rs"));
+include!(concat!(env!("OUT_DIR"), "/planning_key_kind.rs"));
+include!(concat!(env!("OUT_DIR"), "/planning_timestamp_kind.rs"));
 include!(concat!(env!("OUT_DIR"), "/priority_token_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_display_title.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_comment_p.rs"));
@@ -128,6 +131,40 @@ fn scheme_headline_content_aot_preserves_remaining_text() {
         "WAIT" => "",
         "TODO is ordinary text" => "TODO is ordinary text",
         "DONE\tévidence  :研究:" => "évidence  :研究:",
+    );
+}
+
+#[test]
+fn scheme_source_title_aot_preserves_tag_boundary_whitespace() {
+    macro_rules! check_source_title_aot {
+        ($($body:expr, $todo:expr => $expected:expr),+ $(,)?) => {
+            $(assert_eq!(headline_source_title($body, $todo), $expected);)+
+        };
+    }
+    check_source_title_aot!(
+        "TODO [#A] *Inline* task ", "TODO" => "*Inline* task ",
+        "  Plain  ", "" => "Plain  ",
+        "DONE\t[#2] Review", "DONE" => "Review",
+    );
+}
+
+#[test]
+fn scheme_planning_aot_classifies_declared_keys_and_timestamp_boundaries() {
+    macro_rules! check_planning_aot {
+        ($function:ident; $($input:expr => $expected:expr),+ $(,)?) => {
+            $(assert_eq!($function($input), $expected, "input: {:?}", $input);)+
+        };
+    }
+    check_planning_aot!(planning_key_kind;
+        "scheduled" => "scheduled",
+        "DEADLINE" => "deadline",
+        "Closed" => "closed",
+        "CLOCK" => "",
+    );
+    check_planning_aot!(planning_timestamp_kind;
+        "<2026-05-10 Sun>" => "active",
+        "[2026-05-10 Sun]" => "inactive",
+        "later" => "",
     );
 }
 
