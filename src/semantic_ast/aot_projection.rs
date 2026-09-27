@@ -21,8 +21,8 @@ use super::model::{
     Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
     Document, Drawer, Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link,
     List, ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst,
-    Planning, Property, Section, Table, TableCell, TableRow, TodoKeyword, TodoState,
-    UnsupportedSyntaxKind,
+    Planning, Property, Section, Table, TableCell, TableRow, TargetDefinition, TargetKind,
+    TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 use super::preprocessing::{macro_definition, split_macro_args};
 use super::prescan::{SemanticPrescan, collect_document_keyword};
@@ -108,6 +108,14 @@ impl<'a> GraphProjector<'a> {
                 collect_document_keyword(keyword, &mut prescan);
             }
         }
+        let properties = self
+            .document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "node-property" && !self.within_headline(record.id))
+            .filter_map(|record| self.property(record))
+            .chain(prescan.properties.clone())
+            .collect::<Vec<_>>();
         let mut children = Vec::new();
         let mut sections = Vec::new();
         for &id in &root.child_ids {
@@ -115,19 +123,11 @@ impl<'a> GraphProjector<'a> {
                 continue;
             }
             if self.record(id).kind == "headline" {
-                sections.push(self.section(id, &prescan.filetags));
+                sections.push(self.section(id, &prescan.filetags, &properties));
             } else if let Some(element) = self.element(id) {
                 children.push(element);
             }
         }
-        let properties = self
-            .document
-            .records()
-            .iter()
-            .filter(|record| record.kind == "node-property" && !self.within_headline(record.id))
-            .filter_map(|record| self.property(record))
-            .chain(prescan.properties)
-            .collect();
         self.diagnostics.extend(prescan.diagnostics);
         Document {
             ann,
@@ -140,7 +140,7 @@ impl<'a> GraphProjector<'a> {
             link_abbreviations: prescan.link_abbreviations,
             includes: prescan.includes,
             macro_definitions: prescan.macro_definitions,
-            targets: Vec::new(),
+            targets: self.targets(),
             footnotes: Vec::new(),
             children,
             sections,
@@ -163,7 +163,12 @@ impl<'a> GraphProjector<'a> {
         None
     }
 
-    fn section(&mut self, id: usize, filetags: &[String]) -> Section<ParsedAnnotation> {
+    fn section(
+        &mut self,
+        id: usize,
+        filetags: &[String],
+        inherited_properties: &[Property<ParsedAnnotation>],
+    ) -> Section<ParsedAnnotation> {
         let record = self.record(id);
         let range = record.range;
         let child_ids = record.child_ids.clone();
@@ -203,6 +208,32 @@ impl<'a> GraphProjector<'a> {
             .find(|&child| self.record(child).kind == "planning")
             .map(|child| self.planning(child))
             .unwrap_or_default();
+        let properties = child_ids
+            .iter()
+            .filter_map(|&child| (self.record(child).kind == "property-drawer").then_some(child))
+            .flat_map(|drawer| self.record(drawer).child_ids.iter())
+            .filter_map(|&property| self.property(self.record(property)))
+            .collect::<Vec<_>>();
+        let mut effective_properties = inherited_properties.to_vec();
+        for property in &properties {
+            if let Some(existing) = effective_properties
+                .iter_mut()
+                .find(|existing| existing.key.eq_ignore_ascii_case(&property.key))
+            {
+                *existing = property.clone();
+            } else {
+                effective_properties.push(property.clone());
+            }
+        }
+        let anchor = properties
+            .iter()
+            .find(|property| property.key.eq_ignore_ascii_case("CUSTOM_ID"))
+            .or_else(|| {
+                properties
+                    .iter()
+                    .find(|property| property.key.eq_ignore_ascii_case("ID"))
+            })
+            .map(|property| property.value.clone());
         let mut children = Vec::new();
         let mut subsections = Vec::new();
         for child in child_ids {
@@ -213,26 +244,17 @@ impl<'a> GraphProjector<'a> {
                 continue;
             }
             if self.record(child).kind == "headline" {
-                subsections.push(self.section(child, filetags));
+                subsections.push(self.section(child, filetags, &effective_properties));
             } else if let Some(element) = self.element(child) {
                 children.push(element);
             }
         }
-        let properties = self
-            .document
-            .records()
-            .iter()
-            .filter(|property| {
-                property.kind == "node-property" && self.nearest_headline(property.id) == Some(id)
-            })
-            .filter_map(|property| self.property(property))
-            .collect::<Vec<_>>();
         Section {
             ann: self.annotation(range),
             body_ann: None,
             level,
             properties: properties.clone(),
-            effective_properties: properties,
+            effective_properties,
             archive: ArchiveState {
                 archived: has_archive_tag,
                 has_archive_tag,
@@ -244,7 +266,7 @@ impl<'a> GraphProjector<'a> {
             priority: Priority::from_cookie(self.document.headline_priority_cookie(id)),
             title,
             raw_title,
-            anchor: None,
+            anchor,
             tags: tags.clone(),
             effective_tags,
             planning,
@@ -339,6 +361,57 @@ impl<'a> GraphProjector<'a> {
             value: record.field("value")?.to_owned(),
             duration: None,
         })
+    }
+
+    fn targets(&self) -> Vec<TargetDefinition<ParsedAnnotation>> {
+        self.document
+            .records()
+            .iter()
+            .filter_map(|record| {
+                let (kind, key, value) = match record.kind {
+                    "headline" => {
+                        let title = self.document.headline_display_title(record.id)?;
+                        (!title.is_empty()).then(|| (TargetKind::Headline, title.clone(), title))?
+                    }
+                    "node-property" => {
+                        let value = record.field("value")?.to_owned();
+                        let kind = match record.field("key")? {
+                            key if key.eq_ignore_ascii_case("CUSTOM_ID") => TargetKind::CustomId,
+                            key if key.eq_ignore_ascii_case("ID") => TargetKind::Id,
+                            _ => return None,
+                        };
+                        let prefix = if kind == TargetKind::CustomId {
+                            "#"
+                        } else {
+                            "id:"
+                        };
+                        (kind, format!("{prefix}{value}"), value)
+                    }
+                    "target" | "radio-target" => {
+                        let value = record.field("value")?.to_owned();
+                        let kind = if record.kind == "target" {
+                            TargetKind::Target
+                        } else {
+                            TargetKind::RadioTarget
+                        };
+                        (kind, value.clone(), value)
+                    }
+                    "footnote-definition" => {
+                        let value = record.field("label")?.to_owned();
+                        (TargetKind::FootnoteDefinition, format!("fn:{value}"), value)
+                    }
+                    _ => return None,
+                };
+                Some(TargetDefinition {
+                    ann: self.annotation(record.range),
+                    kind,
+                    key,
+                    value,
+                    raw: self.raw(record.range).to_owned(),
+                    alias: Vec::new(),
+                })
+            })
+            .collect()
     }
 
     fn headline_title_objects(

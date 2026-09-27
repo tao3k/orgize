@@ -85,6 +85,58 @@ fn semantic_ast_projects_clock_timestamp_and_duration_from_scheme_graph() {
 }
 
 #[test]
+fn semantic_ast_inherits_graph_properties_with_child_override() {
+    let doc = Org::parse(
+        "#+PROPERTY: Effort 2h\n* Parent\n:PROPERTIES:\n:Owner: Sarah\n:END:\n** Child\n:PROPERTIES:\n:Owner: Bob\n:END:\n",
+    )
+    .document();
+    let child = &doc.sections[0].subsections[0];
+    assert_eq!(child.properties.len(), 1);
+    assert!(
+        child
+            .effective_properties
+            .iter()
+            .any(|property| { property.key == "Effort" && property.value == "2h" })
+    );
+    assert!(
+        child
+            .effective_properties
+            .iter()
+            .any(|property| { property.key == "Owner" && property.value == "Bob" })
+    );
+    assert!(
+        !child
+            .effective_properties
+            .iter()
+            .any(|property| { property.key == "Owner" && property.value == "Sarah" })
+    );
+}
+
+#[test]
+fn semantic_ast_projects_document_targets_from_scheme_graph_records() {
+    let doc = Org::parse(
+        "* Anchor Heading\n:PROPERTIES:\n:CUSTOM_ID: local\n:ID: global\n:END:\n<<named>> <<<radio>>>\n[fn:note] body\n",
+    )
+    .document();
+    assert_eq!(doc.sections[0].anchor.as_deref(), Some("local"));
+    let keys = doc
+        .targets
+        .iter()
+        .map(|target| target.key.as_str())
+        .collect::<Vec<_>>();
+    for key in [
+        "Anchor Heading",
+        "#local",
+        "id:global",
+        "named",
+        "radio",
+        "fn:note",
+    ] {
+        assert!(keys.contains(&key), "missing AOT graph target {key}");
+    }
+}
+
+#[test]
 fn semantic_ast_projection_and_bare_snapshot() {
     let doc = Org::parse(
         r#"#+TITLE: Demo
