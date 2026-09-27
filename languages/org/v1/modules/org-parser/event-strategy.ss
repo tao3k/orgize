@@ -441,7 +441,7 @@
 (def footnote-content-start `(line-step ,footnote-label-end))
 (def footnote-definition?
   `(and (uint-equal? (stack-top container-frames) (uint 0))
-        (line-starts-with "[fn:")
+        (line-starts-with-ascii-ci "[fn:")
         (offset-less? ,footnote-label-start ,footnote-label-end)
         (line-byte-equal? ,footnote-label-end 93)))
 

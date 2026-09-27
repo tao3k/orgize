@@ -166,3 +166,35 @@ fn tracked_org_fixtures_match_core_structure_and_source_ranges() {
         check_org_cutover_parity!(path, &source);
     }
 }
+
+#[test]
+fn scheme_aot_latex_environments_match_case_folded_org_markers() {
+    for source in ["\\BEGIN{AlIgN*}\nx\n\\EnD{aLiGn*}\n", "\\BEGIN{A}\\eNd{a}"] {
+        let parsed = parse_org_aot(source).expect("Scheme AOT parses mixed-case LaTeX environment");
+        assert_eq!(parsed.syntax().to_string(), source);
+        assert_eq!(
+            parsed
+                .records()
+                .iter()
+                .filter(|record| record.kind == "latex-environment")
+                .count(),
+            1,
+            "{source}"
+        );
+    }
+}
+
+#[test]
+fn scheme_aot_footnotes_match_case_folded_org_markers() {
+    let source = "[FN:n] body\n* H\n";
+    let parsed = parse_org_aot(source).expect("Scheme AOT parses mixed-case footnote definition");
+    assert_eq!(parsed.syntax().to_string(), source);
+    assert_eq!(
+        parsed
+            .records()
+            .iter()
+            .filter(|record| record.kind == "footnote-definition")
+            .count(),
+        1
+    );
+}

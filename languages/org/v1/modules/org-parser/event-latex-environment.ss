@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org-owned, source-named LaTeX environment with an opaque body.
 
-(import (only-in "event-headline.ss" offset-after)
+(import (only-in "event-headline.ss" ascii-ci-pattern-at offset-after)
         (only-in "objects.ss"
                  make-org-named-block org-named-block-opening
                  org-named-block-closing org-named-block-node
@@ -29,14 +29,6 @@
        (string->list
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*")))
 
-(def (exact-pattern-at from pattern)
-  (let loop ((chars (string->list pattern)) (at from) (tests []))
-    (if (null? chars)
-      (cons 'and (reverse tests))
-      (loop (cdr chars) `(line-step ,at)
-            (cons `(line-byte-equal? ,at ,(char->integer (car chars)))
-                  tests)))))
-
 (def latex-environment-initial
   '((latex-open #f) (latex-name-start 0) (latex-name-end 0)
     (latex-same-line-close #f) (latex-same-line-close-at 0)))
@@ -49,14 +41,14 @@
    `(future-named-line-marker-before-boundary?
      ,latex-name-start ,latex-name-end
      ,latex-closing "}" ,stop
-     ,heading-marker ,heading-separator #t #f #f)
+     ,heading-marker ,heading-separator #t #f #t)
    (if parent-name-from
      (list parent-name-from parent-name-until
            parent-prefix parent-suffix parent-ascii-ci?)
      '())))
 
 (def latex-opening?
-  `(and ,(exact-pattern-at latex-indent latex-opening)
+  `(and ,(ascii-ci-pattern-at latex-indent latex-opening)
         (offset-less? ,latex-name-start ,latex-name-end)
         (line-bytes-all-in? ,latex-name-start ,latex-name-end
                             ,latex-name-bytes)
@@ -69,9 +61,9 @@
   `(line-scan-until ,latex-look-name-start "}"))
 (def latex-look-after `(line-step ,latex-look-name-end))
 (def latex-same-line-close?
-  `(and ,(exact-pattern-at latex-look-index latex-closing)
+  `(and ,(ascii-ci-pattern-at latex-look-index latex-closing)
         (line-byte-equal? ,latex-look-name-end 125)
-        (source-slices-equal?
+        (source-slices-equal-ascii-ci?
          ,latex-name-start ,latex-name-end
          ,latex-look-name-start ,latex-look-name-end)
         (line-bytes-all-in? ,latex-look-after end (9 10 13 32))))
@@ -112,10 +104,10 @@
         (,otherwise))))
 
 (def latex-closing?
-  `(and ,(exact-pattern-at latex-indent latex-closing)
+  `(and ,(ascii-ci-pattern-at latex-indent latex-closing)
         (offset-less? ,latex-close-name-start ,latex-close-name-end)
         (line-byte-equal? ,latex-close-name-end 125)
-        (source-slices-equal?
+        (source-slices-equal-ascii-ci?
          (state-offset latex-name-start) (state-offset latex-name-end)
          ,latex-close-name-start ,latex-close-name-end)
         (line-bytes-all-in? ,latex-close-after end (9 10 13 32))))

@@ -499,6 +499,10 @@
             (FootnoteReferenceDefinition 7 12)
             (FootnoteReferenceDelimiter 12 13))
            (TextLine 13 16)))))
+      ;; Org Mode's object dispatcher distinguishes the lowercase `f` here.
+      (check-org-ast-with parse-org-rowan-events
+        "x [Fn:n] y\n"
+        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11)))))
       (check-org-ast-with parse-org-rowan-events
         "[fn:n:a [b]]\n"
         (OrgFile
@@ -637,6 +641,17 @@
     (test-case "footnote definitions contain elements and stop at headings"
       (check-org-ast-with parse-org-rowan-events
         "[fn:n] body\n* H\n"
+        (OrgFile
+         (OrgFootnoteDefinition
+          (FootnoteDefinitionDelimiter 0 4)
+          (FootnoteDefinitionLabel 4 5)
+          (FootnoteDefinitionDelimiter 5 6)
+          (OrgParagraph (OrgTextLine (TextLine 6 12))))
+         (OrgSection
+          (OrgHeadline (HeadlineLine 12 13) (HeadlineTrivia 13 14)
+                       (HeadlineTitle 14 15) (HeadlineTrivia 15 16)))))
+      (check-org-ast-with parse-org-rowan-events
+        "[FN:n] body\n* H\n"
         (OrgFile
          (OrgFootnoteDefinition
           (FootnoteDefinitionDelimiter 0 4)
@@ -1317,6 +1332,25 @@
           (LatexEnvironmentBody 9 10)
           (LatexEnvironmentBody 10 20)
           (LatexEnvironmentEnd 20 28)))))
+    (test-case "LaTeX environment markers and names are ASCII case-insensitive"
+      (check-org-ast-with parse-org-rowan-events
+        "\\BEGIN{AlIgN*}\nx\n\\EnD{aLiGn*}\n"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 13)
+          (LatexEnvironmentBeginSuffix 13 14)
+          (LatexEnvironmentBody 14 15)
+          (LatexEnvironmentBody 15 17)
+          (LatexEnvironmentEnd 17 30))))
+      (check-org-ast-with parse-org-rowan-events
+        "\\BEGIN{A}\\eNd{a}"
+        (OrgFile
+         (OrgLatexEnvironment
+          (LatexEnvironmentBegin 0 7)
+          (LatexEnvironmentName 7 8)
+          (LatexEnvironmentBeginSuffix 8 9)
+          (LatexEnvironmentEnd 9 16)))))
     (test-case "indented container delimiters and orphan closers retain source"
       (check-org-ast-with parse-org-rowan-events
         "  #+begin_quote\nx\n  #+end_quote\n"
