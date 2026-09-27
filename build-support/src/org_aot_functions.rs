@@ -18,6 +18,7 @@ pub fn write_org_aot_functions() {
         "headline_comment_p",
         "memory_headline_state",
         "org_image_link_p",
+        "org_affiliated_keyword_p",
     ] {
         let source = source_dir.join(format!("{name}.ir.json"));
         println!("cargo:rerun-if-changed={}", source.display());

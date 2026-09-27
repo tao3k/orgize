@@ -3,7 +3,7 @@
 //! The default AOT entrypoint runs the Org-owned Scheme event algorithm.
 //! The public `Org` facade still requires its separate typed-AST cutover.
 
-use std::sync::OnceLock;
+use std::{collections::HashMap, sync::OnceLock};
 
 use gerbil_parser_rowan::{
     Diagnostic, GraphProjectionSpec, GraphRecord, LanguageSpec, Parse, ParseError, ParseReceipt,
@@ -29,6 +29,8 @@ mod headline_functions;
 #[path = "org_aot_headline_view.rs"]
 mod headline_view;
 pub use headline_view::OrgHeadline;
+#[path = "org_aot_affiliation.rs"]
+mod affiliation;
 #[path = "org_aot_link_functions.rs"]
 mod link_functions;
 #[path = "org_aot_todo_directive.rs"]
@@ -47,6 +49,7 @@ pub struct OrgAotDocument {
     configured_done: Vec<String>,
     headline_properties: Vec<Option<HeadlineProperties>>,
     subtree_end: Vec<usize>,
+    affiliations: OnceLock<HashMap<usize, Vec<usize>>>,
 }
 
 #[derive(Debug)]
@@ -174,6 +177,7 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
         configured_done: config.todo_keywords.1.clone(),
         headline_properties,
         subtree_end,
+        affiliations: OnceLock::new(),
     })
 }
 
@@ -259,6 +263,19 @@ impl OrgAotDocument {
     #[must_use]
     pub fn records(&self) -> &[GraphRecord] {
         &self.records
+    }
+
+    /// Return keyword record IDs attached to this Element by the Scheme-owned policy.
+    ///
+    /// Association is computed lazily in one graph pass, so ordinary parsing
+    /// does not pay for affiliated-keyword projections it never queries.
+    #[must_use]
+    pub fn affiliated_keyword_ids(&self, record_id: usize) -> &[usize] {
+        self.affiliations
+            .get_or_init(|| affiliation::project(&self.records, &self.syntax().to_string()))
+            .get(&record_id)
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
     }
 
     /// Query a headline's Scheme-owned TODO type from keyword Elements and

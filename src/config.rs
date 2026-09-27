@@ -4,6 +4,10 @@
 #[path = "../languages/org/v1/generated/elements.rs"]
 mod org_elements;
 
+pub(crate) fn org_affiliated_keyword_names() -> &'static [&'static str] {
+    org_elements::ORG_AFFILIATED_KEYWORDS
+}
+
 #[derive(Clone, Debug)]
 /// Controls Org subscript and superscript parsing.
 pub enum UseSubSuperscript {

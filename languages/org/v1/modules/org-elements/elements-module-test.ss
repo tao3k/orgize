@@ -29,6 +29,9 @@
                  make-org-headline-properties org-headline-property-field)
         (only-in "link-properties.ss"
                  org-image-link? org-image-link-rust)
+        (only-in "affiliated-properties.ss"
+                 org-affiliated-keyword? org-affiliated-keyword-rust)
+        (only-in "catalog.ss" +org-affiliated-keywords+)
         (only-in "generated/query-source.ss" org-element-queries)
         (only-in "interface.ss"
                  +org-element-kinds+ org-elements-default-profile
@@ -108,7 +111,17 @@
              => #t)
       (check (org-test-source-structured?
               "languages/org/v1/modules/org-elements/link-properties.ss")
+             => #t)
+      (check (org-test-source-structured?
+              "languages/org/v1/modules/org-elements/affiliated-properties.ss")
              => #t))
+    (test-case "affiliated keyword membership is Scheme-owned and AOT projected"
+      (check-org-headline-ir
+       org-affiliated-keyword-rust 'org_affiliated_keyword_p
+       "languages/org/v1/modules/org-elements/generated/org_affiliated_keyword_p.ir.json")
+      (check (org-affiliated-keyword? "name" +org-affiliated-keywords+) => #t)
+      (check (org-affiliated-keyword? "NAME" +org-affiliated-keywords+) => #t)
+      (check (org-affiliated-keyword? "TODO" +org-affiliated-keywords+) => #f))
     (test-case "link kind is Scheme-owned and AOT projected"
       (check-org-headline-ir
        org-image-link-rust 'org_image_link_p

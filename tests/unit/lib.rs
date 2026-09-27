@@ -8,6 +8,8 @@ use crate::{
     syntax::{combinator::GreenElement, input::Input},
 };
 
+#[path = "aot_affiliation.rs"]
+mod aot_affiliation;
 #[path = "document_command.rs"]
 mod document_command;
 #[path = "document_source_selection.rs"]
