@@ -19,6 +19,41 @@ fn semantic_ast_projects_headline_title_objects_from_the_aot_graph() {
 }
 
 #[test]
+fn semantic_ast_projects_rich_keyword_objects_from_the_aot_graph() {
+    let doc = Org::parse("#+TITLE: *Demo* Doc\n").document();
+    let title = doc
+        .metadata
+        .iter()
+        .find(|keyword| keyword.key == "TITLE")
+        .expect("TITLE keyword");
+    assert!(title.parsed.iter().any(|object| matches!(
+        object.data,
+        ObjectData::Markup {
+            kind: MarkupKind::Bold,
+            ..
+        }
+    )));
+}
+
+#[test]
+fn semantic_ast_projects_attribute_tokens_from_the_scheme_aot_graph() {
+    let doc = Org::parse("#+ATTR_HTML: :class compact :width \"10 em\"\nText\n").document();
+    let paragraph = doc
+        .children
+        .iter()
+        .find(|element| matches!(element.data, ElementData::Paragraph(_)))
+        .expect("paragraph following ATTR_HTML");
+    let attributes = &paragraph.affiliated_keywords[0].attributes;
+    assert_eq!(attributes.len(), 2);
+    assert_eq!(attributes[0].key, "class");
+    assert_eq!(attributes[0].value.as_deref(), Some("compact"));
+    assert_eq!(attributes[0].raw, ":class compact");
+    assert_eq!(attributes[1].key, "width");
+    assert_eq!(attributes[1].value.as_deref(), Some("10 em"));
+    assert_eq!(attributes[1].raw, ":width \"10 em\"");
+}
+
+#[test]
 fn semantic_ast_inherits_headline_tags_from_the_aot_graph() {
     let doc = Org::parse("* Parent :work:\n** Child :urgent:\n").document();
     let parent = &doc.sections[0];

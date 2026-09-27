@@ -72,6 +72,10 @@
                (field 'KeywordOptional "optional")
                (field 'KeywordValue "value")
                (field 'OrgKeywordValue "value" 'node-text)
+               (field 'OrgKeywordAttributes "value" 'node-text)
+               (field 'OrgKeywordValue "rich-value" 'node-text)
+               (field 'SourceHeaderKey "attribute-key" 'each)
+               (field 'SourceHeaderValue "attribute-value" 'each)
                (field 'OrgKeywordRawValue "raw-value" 'node-text)))
    (node 'OrgBabelCall "element" "babel-call"
          (list (field 'KeywordKey "key")

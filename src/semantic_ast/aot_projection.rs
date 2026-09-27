@@ -16,10 +16,10 @@ use super::lifecycle_model::ArchiveState;
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
     Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind, Document, Drawer,
-    Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link, List, ListItem,
-    ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property,
-    Section, Table, TableCell, TableRow, TargetDefinition, TargetKind, TodoKeyword, TodoState,
-    UnsupportedSyntaxKind,
+    Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, KeywordAttribute, Link,
+    List, ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst,
+    Planning, Property, Section, Table, TableCell, TableRow, TargetDefinition, TargetKind,
+    TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 use super::preprocessing::{macro_definition, split_macro_args};
 use super::prescan::{SemanticPrescan, collect_document_keyword};
@@ -86,13 +86,15 @@ impl<'a> GraphProjector<'a> {
         let root = self.document.records().first().expect("AOT document root");
         let ann = self.annotation(root.range);
         let mut prescan = SemanticPrescan::default();
-        for record in self
+        let document_keyword_ids = self
             .document
             .records()
             .iter()
             .filter(|record| record.kind == "keyword" && !self.within_headline(record.id))
-        {
-            let Some(keyword) = self.keyword(record) else {
+            .map(|record| record.id)
+            .collect::<Vec<_>>();
+        for id in document_keyword_ids {
+            let Some(keyword) = self.keyword(id) else {
                 continue;
             };
             if keyword.key.eq_ignore_ascii_case("MACRO") {
@@ -277,15 +279,60 @@ impl<'a> GraphProjector<'a> {
         }
     }
 
-    fn keyword(&self, record: &GraphRecord) -> Option<Keyword<ParsedAnnotation>> {
+    fn keyword(&mut self, id: usize) -> Option<Keyword<ParsedAnnotation>> {
+        let record = self.record(id);
+        let range = record.range;
+        let key = record.field("key")?.to_owned();
+        let optional = record.field("optional").map(str::to_owned);
+        let value = record.field("raw-value")?.to_owned();
+        let rich_span = record.field_range("rich-value");
+        let children = record.child_ids.clone();
+        let attributes = self.keyword_attributes(record);
         Some(Keyword {
-            ann: self.annotation(record.range),
-            key: record.field("key")?.to_owned(),
-            optional: record.field("optional").map(str::to_owned),
-            value: record.field("raw-value")?.to_owned(),
-            parsed: Vec::new(),
-            attributes: Vec::new(),
+            ann: self.annotation(range),
+            key,
+            optional,
+            value,
+            parsed: rich_span
+                .map(|span| self.objects_in_span(span, &children))
+                .unwrap_or_default(),
+            attributes,
         })
+    }
+
+    fn keyword_attributes(&self, record: &GraphRecord) -> Vec<KeywordAttribute> {
+        let mut fields = record
+            .fields
+            .iter()
+            .filter(|field| matches!(field.name, "attribute-key" | "attribute-value"))
+            .collect::<Vec<_>>();
+        fields.sort_unstable_by_key(|field| field.range.start());
+        fields
+            .iter()
+            .enumerate()
+            .filter(|(_, field)| field.name == "attribute-key")
+            .map(|(index, key)| {
+                let value = fields
+                    .get(index + 1)
+                    .filter(|field| field.name == "attribute-value");
+                let start = u32::from(key.range.start()).saturating_sub(1);
+                let end = value.map_or(key.range.end(), |value| value.range.end());
+                let raw = self.raw(TextRange::new(start.into(), end)).to_owned();
+                let value = value.map(|value| {
+                    value
+                        .value
+                        .strip_prefix('"')
+                        .and_then(|quoted| quoted.strip_suffix('"'))
+                        .unwrap_or(&value.value)
+                        .to_owned()
+                });
+                KeywordAttribute {
+                    key: key.value.clone(),
+                    value,
+                    raw,
+                }
+            })
+            .collect()
     }
 
     fn inlinetask(&mut self, id: usize) -> Inlinetask<ParsedAnnotation> {
@@ -468,20 +515,19 @@ impl<'a> GraphProjector<'a> {
     }
 
     fn element(&mut self, id: usize) -> Option<Element<ParsedAnnotation>> {
-        let record = self.record(id);
-        if record.category != "element" {
+        if self.record(id).category != "element" {
             return None;
         }
+        let affiliated_keyword_ids = self.document.affiliated_keyword_ids(id).to_vec();
+        let affiliated_keywords: Vec<_> = affiliated_keyword_ids
+            .into_iter()
+            .filter_map(|keyword_id| self.keyword(keyword_id))
+            .collect();
+        let record = self.record(id);
         let range = record.range;
         let kind = record.kind;
-        let affiliated_keywords: Vec<_> = self
-            .document
-            .affiliated_keyword_ids(id)
-            .iter()
-            .filter_map(|&keyword_id| self.keyword(self.record(keyword_id)))
-            .collect();
         let mut data = match kind {
-            "keyword" => ElementData::Keyword(self.keyword(record)?),
+            "keyword" => ElementData::Keyword(self.keyword(id)?),
             "clock" => {
                 let duration = record.field("duration").map(str::to_owned);
                 ElementData::Clock(Clock {
@@ -496,7 +542,7 @@ impl<'a> GraphProjector<'a> {
                     raw: self.raw(range).to_owned(),
                 })
             }
-            "babel-call" => ElementData::BabelCall(self.keyword(record)?),
+            "babel-call" => ElementData::BabelCall(self.keyword(id)?),
             "inlinetask" => ElementData::Inlinetask(Box::new(self.inlinetask(id))),
             "paragraph" => ElementData::Paragraph(self.paragraph_objects(id)),
             "plain-list" => ElementData::List(self.list(id)),

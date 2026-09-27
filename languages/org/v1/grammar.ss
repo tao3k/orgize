@@ -11,6 +11,7 @@
    (OrgHeadline node (line title))
    (OrgHeadlineTitle node (object))
    (OrgKeywordValue node (object))
+   (OrgKeywordAttributes node (attribute))
    (OrgKeywordRawValue node (value))
    (OrgLinkDescription node (object))
    (OrgSourceBlock node (begin language body end))

@@ -1049,8 +1049,45 @@
          (OrgKeyword
           (KeywordTrivia 13 15) (KeywordKey 15 20)
           (KeywordTrivia 20 21)
-          (OrgKeywordRawValue (KeywordTrivia 21 22) (KeywordValue 22 25))
+          (OrgKeywordRawValue
+           (KeywordTrivia 21 22)
+           (OrgKeywordValue (OrgTextLine (TextLine 22 25))))
           (KeywordTrivia 25 26)))))
+    (test-case "rich document keywords reuse Scheme inline Objects"
+      (check-org-ast-with parse-org-rowan-events
+        "#+TITLE: *Demo* Doc\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 7)
+          (KeywordTrivia 7 8)
+          (OrgKeywordRawValue
+           (KeywordTrivia 8 9)
+           (OrgKeywordValue
+            (OrgTextLine
+             (OrgBold (InlineMarkupDelimiter 9 10)
+                      (InlineMarkupValue 10 14)
+                      (InlineMarkupDelimiter 14 15))
+             (TextLine 15 19))))
+          (KeywordTrivia 19 20)))))
+    (test-case "attribute keywords tokenize quoted values in Scheme"
+      (check-org-ast-with parse-org-rowan-events
+        "#+ATTR_HTML: :class compact :width \"10 em\"\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 11)
+          (KeywordTrivia 11 12)
+          (OrgKeywordRawValue
+           (KeywordTrivia 12 13)
+           (OrgKeywordAttributes
+            (SourceHeaderTrivia 13 14)
+            (SourceHeaderKey 14 19)
+            (SourceHeaderTrivia 19 20)
+            (SourceHeaderValue 20 27)
+            (SourceHeaderTrivia 27 29)
+            (SourceHeaderKey 29 34)
+            (SourceHeaderTrivia 34 35)
+            (SourceHeaderValue 35 42)))
+          (KeywordTrivia 42 43)))))
     (test-case "optional keyword hashes remain typed Scheme events"
       (check-org-ast-with parse-org-rowan-events
         "#+results[sha1]: prep-output\n"

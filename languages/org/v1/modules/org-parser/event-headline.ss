@@ -9,6 +9,7 @@
         (only-in "../../parser.ss" org-v1-line-structure)
         (only-in "event-paragraph.ss"
                  paragraph-close-form paragraph-line-form)
+        (only-in "event-source-header.ss" event-source-header-forms)
         (only-in "event-headline-tags.ss" event-headline-title-forms))
 (export headline-form headline-line-forms planning-start-condition
         heading-marker heading-separator
@@ -35,13 +36,19 @@
                    (car keys) (key-line-separator babel-call-rule))))
 (def close-paragraph paragraph-close-form)
 (def paragraph-form paragraph-line-form)
+(def rich-keyword-markers
+  (map (lambda (key)
+         (string-append keyword-prefix key
+                        (key-line-separator keyword-rule)))
+       '("TITLE" "SUBTITLE" "AUTHOR" "DATE" "CAPTION" "DESCRIPTION")))
+(def rich-keyword-condition
+  `(or ,@(map (lambda (marker)
+               `(line-starts-with-ascii-ci ,marker))
+             rich-keyword-markers)))
 
 (def (keyword-node-forms key-end value-prefix-end optional-start optional-end)
   (let* ((value-start `(line-skip-horizontal ,value-prefix-end))
-         (value-end `(line-trim-end-from ,value-start))
-         (caption-marker
-          (string-append keyword-prefix "CAPTION"
-                         (key-line-separator keyword-rule))))
+         (value-end `(line-trim-end-from ,value-start)))
     `(,close-paragraph
       (if (line-starts-with-ascii-ci ,babel-call-marker)
           ((start-node OrgBabelCall)) ((start-node OrgKeyword)))
@@ -54,12 +61,16 @@
           `((token KeywordTrivia ,key-end ,value-prefix-end)))
       (start-node OrgKeywordRawValue)
       (token KeywordTrivia ,value-prefix-end ,value-start)
-      (if (line-starts-with-ascii-ci ,caption-marker)
+      (if ,rich-keyword-condition
           ((start-node OrgKeywordValue)
            (call-source-helper inline-span ,value-start ,value-end
                                ((state inline-script-policy)))
            (finish-node))
-          ((token KeywordValue ,value-start ,value-end)))
+          ((if (line-starts-with-ascii-ci "#+ATTR_")
+               ((start-node OrgKeywordAttributes)
+                ,@(event-source-header-forms value-start value-end value-end)
+                (finish-node))
+               ((token KeywordValue ,value-start ,value-end)))))
       (finish-node)
       (token KeywordTrivia ,value-end end)
       (finish-node))))
