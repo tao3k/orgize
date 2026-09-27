@@ -1,7 +1,8 @@
 //! Cargo-only Org parsing from Scheme-declared AOT language artifacts.
 //!
 //! The default AOT entrypoint runs the Org-owned Scheme event algorithm.
-//! The public `Org` facade still requires its separate typed-AST cutover.
+//! The public `Org` facade uses this parser; the owned semantic AST is a
+//! projection of its Scheme-generated Element graph.
 
 use std::{collections::HashMap, sync::OnceLock};
 

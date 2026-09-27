@@ -10,6 +10,7 @@ use rowan::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link};
 
+use super::block_metadata::parse_block_header_args;
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
     Block, BlockKind, Checkbox, Citation, CiteReference, Diagnostic, DiagnosticKind, Document,
@@ -17,7 +18,7 @@ use super::model::{
     ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning,
     Property, Section, Table, TableCell, TableRow, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
-use super::preprocessing::macro_definition;
+use super::preprocessing::{macro_definition, split_macro_args};
 use super::prescan::{SemanticPrescan, collect_document_keyword};
 use super::property_model::Priority;
 use super::source_position::LineIndex;
@@ -443,6 +444,7 @@ impl<'a> GraphProjector<'a> {
         let name = record.field("name").map(str::to_owned);
         let language = record.field("language").map(str::to_owned);
         let parameters = record.field("header").map(str::to_owned);
+        let header_args = parse_block_header_args(parameters.as_deref());
         let value = record.field("body").unwrap_or_default().to_owned();
         Block {
             kind,
@@ -455,7 +457,7 @@ impl<'a> GraphProjector<'a> {
             lines: Vec::new(),
             code_refs: Vec::new(),
             parameters,
-            header_args: Vec::new(),
+            header_args,
             value,
             children: children
                 .into_iter()
@@ -623,6 +625,13 @@ impl<'a> GraphProjector<'a> {
             "radio-target" => {
                 ObjectData::RadioTarget(record.field("value").unwrap_or_default().to_owned())
             }
+            "macro" => ObjectData::Macro {
+                name: record.field("name").unwrap_or_default().to_owned(),
+                arguments: record
+                    .field("arguments")
+                    .map(split_macro_args)
+                    .unwrap_or_default(),
+            },
             "statistics-cookie" => ObjectData::StatisticCookie(self.raw(range).to_owned()),
             "line-break" => ObjectData::LineBreak,
             "inline-src-block" => ObjectData::InlineSrc {
