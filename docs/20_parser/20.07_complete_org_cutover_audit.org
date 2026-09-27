@@ -19,7 +19,7 @@ a Rust Org recognizer is not a valid way to close those gaps.
 At the current PR working tree on 2026-09-28, the Scheme suite reports
 =HARNESS-OK= and =OK=, =cargo fmt --all -- --check= passes, and strict Clippy
 passes for the workspace with all targets and features. The full Rust
-integration target reports *412 passed, 33 failed, 2 ignored*. These focused
+integration target reports *413 passed, 32 failed, 2 ignored*. These focused
 receipts do not constitute parser or release closure; check the exact pushed
 head and platform CI again after every change.
 
@@ -29,7 +29,7 @@ head and platform CI again after every change.
 |----------+------------------|
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys are now covered in Scheme and Rust graph tests. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, and inline timestamps now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
-| Owned semantic projection | Derive remaining link metadata, diagnostics, and lifecycle facts from graph fields without reparsing Org text in Rust. Title and rich-keyword objects, Scheme-tokenized affiliated attributes, filetags/inherited tags, effective properties and typed duration values, explicit and Scheme-generated headline anchors, timestamp metadata, clock duration, source-backed property/ID annotations, section-body spans for Elements indexing, title-object aliases for document targets and implicit link descriptions, document-level footnote registry, source/example block switches and body lines, and Scheme-AOT link classification, document-local resolution, and abbreviation template expansion now project from the AOT graph. |
+| Owned semantic projection | Derive remaining link metadata, diagnostics, and lifecycle facts from graph fields without reparsing Org text in Rust. Title and rich-keyword objects, Scheme-tokenized affiliated attributes, filetags/inherited tags, effective properties and typed duration values, explicit and Scheme-generated headline anchors, timestamp metadata, clock duration, source-backed property/ID annotations, section-body spans for Elements indexing, title-object aliases for document targets and implicit link descriptions, document-level footnote registry, source-backed inline footnote subobjects via a bounded second call to the same Scheme-AOT parser, source/example block switches and body lines, and Scheme-AOT link classification, document-local resolution, and abbreviation template expansion now project from the AOT graph. The footnote fragment path needs a dedicated performance receipt. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
 

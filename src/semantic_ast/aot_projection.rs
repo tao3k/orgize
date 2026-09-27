@@ -40,6 +40,8 @@ impl OrgAotDocument {
 
 #[path = "aot_block_projection.rs"]
 mod block_projection;
+#[path = "aot_inline_fragment.rs"]
+mod inline_fragment;
 #[path = "aot_target_projection.rs"]
 mod target_projection;
 
@@ -775,8 +777,8 @@ impl<'a> GraphProjector<'a> {
                 label: record.field("label").map(str::to_owned),
                 resolved_label: None,
                 definition: record
-                    .field("definition")
-                    .map(|text| vec![self.plain(range, text)])
+                    .field_range("definition")
+                    .map(|span| self.inline_fragment(span))
                     .unwrap_or_default(),
             },
             "citation" => ObjectData::Citation(self.citation(id)),

@@ -5,10 +5,8 @@ use orgize::{
 
 #[test]
 fn semantic_ast_projects_inline_babel_and_footnote_details() {
-    let doc = Org::parse(
-        r#"call_square[:results output](4)[:results html] and src_rust[:exports code]{let x = 1;} and [fn:note:See *bold* text]."#,
-    )
-    .document();
+    let source = r#"call_square[:results output](4)[:results html] and src_rust[:exports code]{let x = 1;} and [fn:note:See *bold* text]."#;
+    let doc = Org::parse(source).document();
 
     assert!(doc.diagnostics.is_empty());
     let paragraph = match &doc.children[0].data {
@@ -67,4 +65,22 @@ fn semantic_ast_projects_inline_babel_and_footnote_details() {
             ..
         }
     )));
+    let bold = footnote
+        .1
+        .iter()
+        .find(|object| {
+            matches!(
+                object.data,
+                ObjectData::Markup {
+                    kind: MarkupKind::Bold,
+                    ..
+                }
+            )
+        })
+        .expect("bold footnote object");
+    assert_eq!(bold.ann.raw, "*bold*");
+    assert_eq!(
+        usize::from(bold.ann.range.start()),
+        source.find("*bold*").expect("source markup")
+    );
 }
