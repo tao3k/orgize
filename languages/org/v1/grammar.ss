@@ -169,6 +169,7 @@
    (ListTagValue token (text))
    (ListTrivia token (text))
    (KeywordKey token (text))
+   (KeywordOptional token (text))
    (KeywordValue token (text))
    (KeywordTrivia token (text))
    (PlanningKey token (text))

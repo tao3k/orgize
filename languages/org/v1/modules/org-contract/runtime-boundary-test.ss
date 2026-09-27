@@ -33,9 +33,9 @@
                             org-v1-graph-shape))
                => '("inlinetask"))
         (check (map org-graph-field-label (org-graph-node-fields keyword))
-               => '("key" "value" "value" "raw-value"))
+               => '("key" "optional" "value" "value" "raw-value"))
         (check (map org-graph-field-mode (org-graph-node-fields keyword))
-               => '(one one node-text node-text))))
+               => '(one one one node-text node-text))))
     (test-case "runtime Contract consumes POO Element graph without generator"
       (let* ((graph
               (make-org-element-graph-view

@@ -69,6 +69,7 @@
    (node 'OrgFixedWidth "element" "fixed-width" '())
    (node 'OrgKeyword "element" "keyword"
          (list (field 'KeywordKey "key")
+               (field 'KeywordOptional "optional")
                (field 'KeywordValue "value")
                (field 'OrgKeywordValue "value" 'node-text)
                (field 'OrgKeywordRawValue "raw-value" 'node-text)))

@@ -237,7 +237,7 @@ impl<'a> GraphProjector<'a> {
         Some(Keyword {
             ann: self.annotation(record.range),
             key: record.field("key")?.to_owned(),
-            optional: None,
+            optional: record.field("optional").map(str::to_owned),
             value: record.field("raw-value")?.to_owned(),
             parsed: Vec::new(),
             attributes: Vec::new(),

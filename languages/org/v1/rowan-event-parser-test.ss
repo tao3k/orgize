@@ -968,6 +968,17 @@
           (KeywordTrivia 20 21)
           (OrgKeywordRawValue (KeywordTrivia 21 22) (KeywordValue 22 25))
           (KeywordTrivia 25 26)))))
+    (test-case "optional keyword hashes remain typed Scheme events"
+      (check-org-ast-with parse-org-rowan-events
+        "#+results[sha1]: prep-output\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 9)
+          (KeywordTrivia 9 10) (KeywordOptional 10 14)
+          (KeywordTrivia 14 16)
+          (OrgKeywordRawValue (KeywordTrivia 16 17)
+                              (KeywordValue 17 28))
+          (KeywordTrivia 28 29)))))
     (test-case "diary S-expressions are standalone source-backed Elements"
       (check-org-ast-with parse-org-rowan-events
         "%%(diary-anniversary 1 1 2000)\ntext\n%%not-diary\n"
