@@ -79,9 +79,10 @@
                (field 'OrgKeywordRawValue "raw-value" 'node-text)))
    (node 'OrgPlanning "element" "planning"
          (list (field 'PlanningKey "key" 'each)
-               (field 'PlanningValue "value" 'each)))
+               (field 'OrgPlanningValue "value" 'each-node-text)))
    (node 'OrgClock "element" "clock"
-         (list (field 'ClockValue "value")))
+         (list (field 'OrgClockValue "value" 'node-text)
+               (field 'ClockDuration "duration")))
    (node 'OrgPlainList "element" "plain-list" '())
    (node 'OrgListItem "element" "item"
          (list (field 'ListBullet "bullet")

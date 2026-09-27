@@ -19,7 +19,7 @@ a Rust Org recognizer is not a valid way to close those gaps.
 At the current PR working tree on 2026-09-28, the Scheme suite reports
 =HARNESS-OK= and =OK=, =cargo fmt --all -- --check= passes, and strict Clippy
 passes for the workspace with all targets and features. The full Rust
-integration target reports *328 passed, 103 failed, 2 ignored*. These focused
+integration target reports *356 passed, 79 failed, 2 ignored*. These focused
 receipts do not constitute parser or release closure; check the exact pushed
 head and platform CI again after every change.
 
@@ -28,8 +28,8 @@ head and platform CI again after every change.
 | Boundary | Required closure |
 |----------+------------------|
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys are now covered in Scheme and Rust graph tests. |
-| AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including timestamps, clocks, affiliated keywords, tables, links, and user-configured headline state. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
-| Owned semantic projection | Derive title objects, inherited/effective properties and tags, anchors, link and source-block metadata, diagnostics, and lifecycle facts from graph fields without reparsing Org text in Rust. Timestamp date/time and repeater/warning values now project from Scheme-classified graph fields. |
+| AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, and inline timestamps now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
+| Owned semantic projection | Derive inherited/effective properties, anchors, link and source-block metadata, diagnostics, and lifecycle facts from graph fields without reparsing Org text in Rust. Title objects, filetags/inherited tags, archive-tag state, timestamp metadata, and clock duration now project from the AOT graph. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
 

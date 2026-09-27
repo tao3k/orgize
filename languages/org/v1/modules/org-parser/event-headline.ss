@@ -136,8 +136,11 @@
               (or (line-bytes-all-in? ,marker-end (line-content-end) ())
                   (line-bytes-any-in? ,marker-end
                                       (line-step ,marker-end) (9 32))))
-         ((token ,(key-line-value-token planning-rule)
-                 ,planning-value-start ,planning-value-end)
+         ((if (offset-less? ,planning-value-start ,planning-value-end)
+              ((start-node OrgPlanningValue)
+               (call-source-helper timestamp-candidate
+                                   ,planning-value-start ,planning-value-end)
+               (finish-node)) ())
           (token ,(key-line-trivia-token planning-rule)
                  ,planning-value-end ,key-start)
           (token ,(key-line-key-token planning-rule) ,key-start ,key-end)
@@ -180,8 +183,11 @@
                       (not (line-bytes-any-in?
                             ,planning-index ,planning-next (9 32))))
                  ((set-uint planning-value-end (offset ,planning-next))) ())))
-          (token ,(key-line-value-token planning-rule)
-                 ,planning-value-start ,planning-value-end)
+          (if (offset-less? ,planning-value-start ,planning-value-end)
+              ((start-node OrgPlanningValue)
+               (call-source-helper timestamp-candidate
+                                   ,planning-value-start ,planning-value-end)
+               (finish-node)) ())
           (token ,(key-line-trivia-token planning-rule)
                  ,planning-value-end end)
           (finish-node))
@@ -190,9 +196,50 @@
 (def (planning-first-key-chain otherwise)
   (foldr planning-first-key-form otherwise (key-line-keys planning-rule)))
 
+(def (clock-value-forms value-start timestamp-end value-end)
+  (let* ((after-timestamp `(line-skip-horizontal ,timestamp-end))
+         (duration-start
+          `(line-skip-horizontal ,(offset-after after-timestamp 2))))
+    `((start-node OrgClockValue)
+      (call-source-helper timestamp-candidate ,value-start ,timestamp-end)
+      (if ,(ascii-ci-pattern-at after-timestamp "=>")
+          ((token ,(key-line-trivia-token clock-rule)
+                  ,timestamp-end ,duration-start)
+           (token ClockDuration ,duration-start ,value-end))
+          ((token ,(key-line-trivia-token clock-rule)
+                  ,timestamp-end ,value-end)))
+      (finish-node))))
+
+(def (clock-form otherwise)
+  (let* ((marker (string-append "CLOCK" (key-line-separator clock-rule)))
+         (key-end '(line-prefix-end "CLOCK"))
+         (value-start `(line-skip-horizontal (line-prefix-end ,marker)))
+         (value-end `(line-trim-end-from ,value-start))
+         (first-close `(line-scan-until ,value-start "]"))
+         (after-first `(line-step ,first-close))
+         (second-open (offset-after after-first 2))
+         (second-close `(line-scan-until ,second-open "]")))
+    `(if (line-starts-with-ascii-ci ,marker)
+         (,close-paragraph
+          (start-node OrgClock)
+          (token ,(key-line-key-token clock-rule) start ,key-end)
+          (token ,(key-line-trivia-token clock-rule) ,key-end ,value-start)
+          (if (and (line-byte-equal? ,value-start 91)
+                   (line-byte-equal? ,first-close 93))
+              ((if (and ,(ascii-ci-pattern-at after-first "--[")
+                        (line-byte-equal? ,second-close 93))
+                   ,(clock-value-forms value-start
+                                       `(line-step ,second-close) value-end)
+                   ,(clock-value-forms value-start after-first value-end)))
+              ((start-node OrgClockValue)
+               (token TextLine ,value-start ,value-end)
+               (finish-node)))
+          (token ,(key-line-trivia-token clock-rule) ,value-end end)
+          (finish-node))
+         (,otherwise))))
+
 (def (context-key-form)
-  (declared-key-chain
-   clock-rule
+  (clock-form
    `(if (state after-heading)
         (,(planning-first-key-chain (keyword-form)))
         (,(keyword-form)))))

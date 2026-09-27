@@ -28,7 +28,6 @@
         headline-content-after-todo headline-content-after-todo-rust
         headline-source-title headline-source-title-rust
         planning-key-kind planning-key-kind-rust
-        planning-timestamp-kind planning-timestamp-kind-rust
         headline-display-title headline-display-title-rust
         headline-comment? headline-comment-rust
         priority-token? priority-token-rust
@@ -150,13 +149,6 @@
   (if (ascii-ci=? key "SCHEDULED") "scheduled"
     (if (ascii-ci=? key "DEADLINE") "deadline"
       (if (ascii-ci=? key "CLOSED") "closed" ""))))
-
-(define-rust-pure planning-timestamp-kind planning-timestamp-kind-rust
-  ((value "&str")) "&'static str"
-  (if (and (string-prefix? value "<") (string-suffix? value ">"))
-    "active"
-    (if (and (string-prefix? value "[") (string-suffix? value "]"))
-      "inactive" "")))
 
 (define-rust-pure priority-token? priority-token-rust
   ((word "&str")) "bool"

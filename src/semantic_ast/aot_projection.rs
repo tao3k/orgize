@@ -15,18 +15,20 @@ use super::block_metadata::{
     BlockLineOptions, parse_block_header_args, parse_block_lines, split_block_lines,
 };
 use super::block_model::{BlockSwitches, SemanticFixedWidth};
+use super::lifecycle_model::ArchiveState;
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
-    Block, BlockKind, Checkbox, Citation, CiteReference, Diagnostic, DiagnosticKind, Document,
-    Drawer, Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link, List,
-    ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning,
-    Property, Section, Table, TableCell, TableRow, TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    Block, BlockKind, Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind,
+    Document, Drawer, Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link,
+    List, ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst,
+    Planning, Property, Section, Table, TableCell, TableRow, TodoKeyword, TodoState,
+    UnsupportedSyntaxKind,
 };
 use super::preprocessing::{macro_definition, split_macro_args};
 use super::prescan::{SemanticPrescan, collect_document_keyword};
-use super::property_model::Priority;
+use super::property_model::{OrgDuration, Priority};
 use super::source_position::LineIndex;
-use super::timestamp_model::{Timestamp, TimestampKind};
+use super::timestamp_model::Timestamp;
 
 impl OrgAotDocument {
     /// Project the Scheme-owned Element graph into the owned semantic API.
@@ -83,19 +85,6 @@ impl<'a> GraphProjector<'a> {
     fn document(mut self) -> ParsedAst {
         let root = self.document.records().first().expect("AOT document root");
         let ann = self.annotation(root.range);
-        let mut children = Vec::new();
-        let mut sections = Vec::new();
-        for &id in &root.child_ids {
-            if self.attached_keyword_ids.contains(&id) {
-                continue;
-            }
-            if self.record(id).kind == "headline" {
-                sections.push(self.section(id));
-            } else if let Some(element) = self.element(id) {
-                children.push(element);
-            }
-        }
-
         let mut prescan = SemanticPrescan::default();
         for record in self
             .document
@@ -117,6 +106,18 @@ impl<'a> GraphProjector<'a> {
                 }
             } else {
                 collect_document_keyword(keyword, &mut prescan);
+            }
+        }
+        let mut children = Vec::new();
+        let mut sections = Vec::new();
+        for &id in &root.child_ids {
+            if self.attached_keyword_ids.contains(&id) {
+                continue;
+            }
+            if self.record(id).kind == "headline" {
+                sections.push(self.section(id, &prescan.filetags));
+            } else if let Some(element) = self.element(id) {
+                children.push(element);
             }
         }
         let properties = self
@@ -162,7 +163,7 @@ impl<'a> GraphProjector<'a> {
         None
     }
 
-    fn section(&mut self, id: usize) -> Section<ParsedAnnotation> {
+    fn section(&mut self, id: usize, filetags: &[String]) -> Section<ParsedAnnotation> {
         let record = self.record(id);
         let range = record.range;
         let child_ids = record.child_ids.clone();
@@ -170,11 +171,18 @@ impl<'a> GraphProjector<'a> {
         let title_body = record.field("title-body").map(str::to_owned);
         let raw_title = self.document.headline_source_title(id).unwrap_or_default();
         let tags = record.values("tag").map(str::to_owned).collect::<Vec<_>>();
-        let effective_tags = self
+        let inherited_tags = self
             .document
             .headline(id)
             .map(|headline| headline.effective_tags())
             .unwrap_or_else(|| tags.clone());
+        let mut effective_tags = filetags.to_vec();
+        for tag in inherited_tags {
+            if !effective_tags.contains(&tag) {
+                effective_tags.push(tag);
+            }
+        }
+        let has_archive_tag = effective_tags.iter().any(|tag| tag == "ARCHIVE");
         let todo = self
             .document
             .headline_todo_keyword(id)
@@ -205,7 +213,7 @@ impl<'a> GraphProjector<'a> {
                 continue;
             }
             if self.record(child).kind == "headline" {
-                subsections.push(self.section(child));
+                subsections.push(self.section(child, filetags));
             } else if let Some(element) = self.element(child) {
                 children.push(element);
             }
@@ -225,7 +233,11 @@ impl<'a> GraphProjector<'a> {
             level,
             properties: properties.clone(),
             effective_properties: properties,
-            archive: Default::default(),
+            archive: ArchiveState {
+                archived: has_archive_tag,
+                has_archive_tag,
+                ..ArchiveState::default()
+            },
             attachment: Default::default(),
             todo,
             is_comment,
@@ -354,21 +366,21 @@ impl<'a> GraphProjector<'a> {
     fn planning(&self, id: usize) -> Planning {
         let record = self.record(id);
         let mut planning = Planning::default();
+        let mut timestamp_children = record
+            .child_ids
+            .iter()
+            .copied()
+            .filter(|&child| self.record(child).kind == "timestamp")
+            .peekable();
         for (key, value) in record.values("key").zip(record.values("value")) {
-            let kind = match OrgAotDocument::planning_timestamp_kind(value) {
-                "active" => TimestampKind::Active,
-                "inactive" => TimestampKind::Inactive,
-                _ => continue,
+            let Some(&timestamp_id) = timestamp_children.peek() else {
+                continue;
             };
-            let timestamp = Timestamp {
-                kind,
-                raw: value.to_owned(),
-                is_range: false,
-                start: None,
-                end: None,
-                repeater: None,
-                warning: None,
-            };
+            if self.raw(self.record(timestamp_id).range) != value {
+                continue;
+            }
+            timestamp_children.next();
+            let timestamp = self.timestamp(timestamp_id);
             match OrgAotDocument::planning_key_kind(key) {
                 "scheduled" => planning.scheduled = Some(timestamp),
                 "deadline" => planning.deadline = Some(timestamp),
@@ -394,6 +406,20 @@ impl<'a> GraphProjector<'a> {
             .collect();
         let data = match kind {
             "keyword" => ElementData::Keyword(self.keyword(record)?),
+            "clock" => {
+                let duration = record.field("duration").map(str::to_owned);
+                ElementData::Clock(Clock {
+                    value: record
+                        .child_ids
+                        .iter()
+                        .copied()
+                        .find(|&child| self.record(child).kind == "timestamp")
+                        .map(|child| self.timestamp(child)),
+                    parsed_duration: duration.as_deref().and_then(OrgDuration::parse),
+                    duration,
+                    raw: self.raw(range).to_owned(),
+                })
+            }
             "babel-call" => ElementData::BabelCall(self.keyword(record)?),
             "inlinetask" => ElementData::Inlinetask(Box::new(self.inlinetask(id))),
             "paragraph" => ElementData::Paragraph(self.paragraph_objects(id)),

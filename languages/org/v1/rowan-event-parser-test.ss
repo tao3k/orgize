@@ -1082,14 +1082,17 @@
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
                        (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
           (OrgPlanning (PlanningKey 4 13) (PlanningTrivia 13 15)
-                       (PlanningValue 15 18) (PlanningTrivia 18 19))
+                       (OrgPlanningValue (TextLine 15 18))
+                       (PlanningTrivia 18 19))
           (OrgClock (ClockKey 19 24) (ClockTrivia 24 26)
-                    (ClockValue 26 27) (ClockTrivia 27 28)))
+                    (OrgClockValue (TextLine 26 27))
+                    (ClockTrivia 27 28)))
          (OrgSection
           (OrgHeadline (HeadlineLine 28 29) (HeadlineTrivia 29 30)
                        (HeadlineTitle 30 31) (HeadlineTrivia 31 32))
           (OrgPlanning (PlanningKey 32 40) (PlanningTrivia 40 42)
-                       (PlanningValue 42 43) (PlanningTrivia 43 44))))))
+                       (OrgPlanningValue (TextLine 42 43))
+                       (PlanningTrivia 43 44))))))
     (test-case "one Planning Element keeps every declared key on its line"
       (check-org-ast-with parse-org-rowan-events
         "* H\nSCHEDULED: <a> DEADLINE: <b>\n"
@@ -1099,9 +1102,49 @@
                        (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
           (OrgPlanning
            (PlanningKey 4 13) (PlanningTrivia 13 15)
-           (PlanningValue 15 18) (PlanningTrivia 18 19)
+           (OrgPlanningValue (TextLine 15 18)) (PlanningTrivia 18 19)
            (PlanningKey 19 27) (PlanningTrivia 27 29)
-           (PlanningValue 29 32) (PlanningTrivia 32 33))))))
+           (OrgPlanningValue (TextLine 29 32)) (PlanningTrivia 32 33))))))
+    (test-case "planning timestamps are Scheme-classified child Objects"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\nSCHEDULED: <2026-05-15 Fri>\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgPlanning
+           (PlanningKey 4 13) (PlanningTrivia 13 15)
+           (OrgPlanningValue
+            (OrgTimestampActive
+             (TimestampDelimiter 15 16)
+             (OrgTimestampPoint
+              (TimestampDate 16 26)
+              (TimestampTrivia 26 27)
+              (TimestampDayName 27 30))
+             (TimestampDelimiter 30 31)))
+           (PlanningTrivia 31 32))))))
+    (test-case "clock timestamp and duration are Scheme-classified fields"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\nCLOCK: [2026-05-15 Fri 10:00] => 1:02\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgClock
+           (ClockKey 4 9) (ClockTrivia 9 11)
+           (OrgClockValue
+            (OrgTimestampInactive
+             (TimestampDelimiter 11 12)
+             (OrgTimestampPoint
+              (TimestampDate 12 22)
+              (TimestampTrivia 22 23)
+              (TimestampDayName 23 26)
+              (TimestampTrivia 26 27)
+              (TimestampTime 27 32))
+             (TimestampDelimiter 32 33))
+            (ClockTrivia 33 37)
+            (ClockDuration 37 41))
+           (ClockTrivia 41 42))))))
     (test-case "planning is not promoted after ordinary paragraph content"
       (check-org-ast-with parse-org-rowan-events
         "* H\nbody\nSCHEDULED: later\n"

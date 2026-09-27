@@ -7,6 +7,43 @@ use orgize::{
     },
 };
 
+#[test]
+fn scheme_aot_planning_graph_keeps_all_fixture_timestamp_children() {
+    let graph = orgize::org_aot::parse_org_aot(SOURCE).expect("Org AOT graph");
+    let planning = graph
+        .records()
+        .iter()
+        .filter(|record| record.kind == "planning")
+        .collect::<Vec<_>>();
+    assert_eq!(planning.len(), 7);
+    assert!(planning.iter().all(|record| {
+        record
+            .child_ids
+            .iter()
+            .any(|&child| graph.records()[child].kind == "timestamp")
+    }));
+}
+
+#[test]
+fn scheme_aot_owned_sections_keep_all_fixture_planning_timestamps() {
+    let doc = Org::parse(SOURCE).document();
+    assert_eq!(doc.sections.len(), 8);
+    assert_eq!(
+        doc.sections
+            .iter()
+            .filter(|section| section.planning.scheduled.is_some())
+            .count(),
+        5
+    );
+    assert_eq!(
+        doc.sections
+            .iter()
+            .filter(|section| section.planning.deadline.is_some())
+            .count(),
+        1
+    );
+}
+
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/agenda-planning.org");
 
 #[test]

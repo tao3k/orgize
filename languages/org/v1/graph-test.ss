@@ -91,7 +91,15 @@
                            nodes)))
              (fields (graph-node-fields planning)))
         (check (map graph-field-name fields) => '("key" "value"))
-        (check (map graph-field-mode fields) => '(each each))))
+        (check (map graph-field-mode fields) => '(each each-node-text))))
+    (test-case "clock value and duration are source-backed graph fields"
+      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+             (clock (car (filter (lambda (node)
+                                   (eq? (graph-node-syntax-kind node) 'OrgClock))
+                                 nodes)))
+             (fields (graph-node-fields clock)))
+        (check (map graph-field-name fields) => '("value" "duration"))
+        (check (map graph-field-mode fields) => '(node-text append))))
     (test-case "list item exposes Scheme-tokenized indentation and spacing"
       (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
              (item (car (filter (lambda (node)

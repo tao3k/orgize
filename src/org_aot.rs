@@ -448,10 +448,6 @@ impl OrgAotDocument {
         headline_functions::planning_key_kind(key)
     }
 
-    pub(crate) fn planning_timestamp_kind(value: &str) -> &'static str {
-        headline_functions::planning_timestamp_kind(value)
-    }
-
     pub(crate) fn citation_style(head: &str) -> String {
         citation_functions::citation_style(head)
     }

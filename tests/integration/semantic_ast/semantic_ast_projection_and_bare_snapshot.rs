@@ -29,6 +29,62 @@ fn semantic_ast_inherits_headline_tags_from_the_aot_graph() {
 }
 
 #[test]
+fn semantic_ast_projects_planning_timestamp_fields_from_scheme_objects() {
+    let doc = Org::parse("* Work\nSCHEDULED: <2026-05-15 Fri 10:00-11:00 ++1w -2d>\n").document();
+    let scheduled = doc.sections[0]
+        .planning
+        .scheduled
+        .as_ref()
+        .expect("Scheme-classified planning timestamp");
+    assert_eq!(
+        scheduled
+            .start
+            .as_ref()
+            .map(|moment| (moment.year, moment.month, moment.day)),
+        Some((2026, 5, 15))
+    );
+    assert_eq!(
+        scheduled.start.as_ref().and_then(|moment| moment.hour),
+        Some(10)
+    );
+    assert_eq!(
+        scheduled.end.as_ref().and_then(|moment| moment.hour),
+        Some(11)
+    );
+    assert!(scheduled.repeater.is_some());
+    assert!(scheduled.warning.is_some());
+}
+
+#[test]
+fn semantic_ast_projects_clock_timestamp_and_duration_from_scheme_graph() {
+    let doc = Org::parse("* Work\nCLOCK: [2026-05-15 Fri 10:00] => 1:02\n").document();
+    let clock = doc.sections[0]
+        .children
+        .iter()
+        .find_map(|element| match &element.data {
+            orgize::ast::ElementData::Clock(clock) => Some(clock),
+            _ => None,
+        })
+        .expect("Scheme-classified clock element");
+    assert_eq!(clock.duration.as_deref(), Some("1:02"));
+    assert_eq!(
+        clock
+            .parsed_duration
+            .as_ref()
+            .map(|value| value.total_seconds),
+        Some(3720)
+    );
+    assert_eq!(
+        clock
+            .value
+            .as_ref()
+            .and_then(|timestamp| timestamp.start.as_ref())
+            .map(|start| start.hour),
+        Some(Some(10))
+    );
+}
+
+#[test]
 fn semantic_ast_projection_and_bare_snapshot() {
     let doc = Org::parse(
         r#"#+TITLE: Demo

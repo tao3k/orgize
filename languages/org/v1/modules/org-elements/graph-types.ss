@@ -18,7 +18,7 @@
        (symbol? (.ref value 'rust))
        (string? (.ref value 'label))
        (and (memq (.ref value 'mode)
-                  '(one each append-or-empty node-text)) #t)))
+                  '(one each append-or-empty node-text each-node-text)) #t)))
 
 (define-type (OrgGraphField @ Type.)
   .element?: org-graph-field-shape?)

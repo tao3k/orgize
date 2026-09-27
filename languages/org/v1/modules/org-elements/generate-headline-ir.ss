@@ -13,7 +13,7 @@
                  todo-keyword-from-directives-rust
                  headline-content-after-todo-rust
                  headline-source-title-rust
-                 planning-key-kind-rust planning-timestamp-kind-rust
+                 planning-key-kind-rust
                  headline-display-title-rust priority-token-rust
                  headline-priority-cookie-rust
                  memory-headline-state-rust headline-comment-rust))
@@ -38,7 +38,6 @@
        (cons "headline_content_after_todo.ir.json" headline-content-after-todo-rust)
        (cons "headline_source_title.ir.json" headline-source-title-rust)
        (cons "planning_key_kind.ir.json" planning-key-kind-rust)
-       (cons "planning_timestamp_kind.ir.json" planning-timestamp-kind-rust)
        (cons "priority_token_p.ir.json" priority-token-rust)
        (cons "headline_priority_cookie.ir.json" headline-priority-cookie-rust)
        (cons "headline_display_title.ir.json" headline-display-title-rust)
