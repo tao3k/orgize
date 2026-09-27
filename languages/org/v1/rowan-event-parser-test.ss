@@ -25,6 +25,7 @@
         (only-in "rowan-event-parser.ss"
                  parse-org-rowan-events
                  parse-org-rowan-events-with-inlinetask-level
+                 parse-org-rowan-events-with-inline-script-policy
                  parse_org_rowan_events))
 (export org-v1-rowan-event-parser-test)
 
@@ -615,6 +616,24 @@
       (check-org-ast-with parse-org-rowan-events
         "_abc\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 5))))))
+    (test-case "Scheme inline helper inherits configured script policy"
+      (check-org-ast-with
+       (lambda (source)
+         (parse-org-rowan-events-with-inline-script-policy source 0))
+       "x_abc y_{z}\n"
+       (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 12)))))
+      (check-org-ast-with
+       (lambda (source)
+         (parse-org-rowan-events-with-inline-script-policy source 1))
+       "x_abc y_{z}\n"
+       (OrgFile
+        (OrgParagraph
+         (OrgTextLine
+          (TextLine 0 7)
+          (OrgSubscript (InlineScriptDelimiter 7 9)
+                        (InlineScriptValue 9 10)
+                        (InlineScriptDelimiter 10 11))
+          (TextLine 11 12))))))
     (test-case "footnote definitions contain elements and stop at headings"
       (check-org-ast-with parse-org-rowan-events
         "[fn:n] body\n* H\n"

@@ -55,6 +55,10 @@ recovery when no end line exists. =parse_org_aot_with_config= passes
 through a typed AOT parameter; Scheme AST and Rust/Rowan tests cover a
 configured four-star task. The separate public =Org::parse= route still uses
 the handwritten parser, so this does not admit public configuration parity.
+The three =UseSubSuperscript= modes also now travel from =ParseConfig= through
+the same AOT entrypoint into the Scheme-authored =inline-span= helper; Scheme
+AST and Rust/Rowan tests cover =Nil=, =Brace=, and =True=, including a list
+item. This is helper-parameter coverage, not public-AST cutover.
 An unclosed task has a focused AOT fixture proving planning/property ownership
 and recovery before the following paragraph; nested inline-task parity remains
 open.
@@ -135,10 +139,11 @@ This is a type-and-consumer cutover, not an entrypoint rename:
    access while keeping TODO type on its parse-time fast path; repeated
    =:org-elements= queries do not re-evaluate title/directive algorithms.
 5. =src/config.rs= still parses file-local TODO declarations in Rust and
-   carries configurable subscript, affiliated-keyword and other settings that
-   the generated event entrypoint does not yet accept. Inlinetask minimum level
-   is now a typed Scheme-AOT parameter, but merely passing the source string
-   to AOT would still drop the remaining public configuration behavior.
+   carries affiliated-keyword and other settings that the generated event
+   entrypoint does not yet accept. Inlinetask minimum level and the three
+   subscript/superscript modes are typed Scheme-AOT parameters, but merely
+   passing the source string to AOT would still drop the remaining public
+   configuration behavior.
 
 Reproduce the callsite inventory with:
 

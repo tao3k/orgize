@@ -18,7 +18,8 @@
   `(if (state paragraph-open)
        ((call-source-helper inline-span
                             (state-offset paragraph-start)
-                            (state-offset paragraph-end))
+                            (state-offset paragraph-end)
+                            ((state inline-script-policy)))
         (if (state paragraph-post-blank)
             ((start-node OrgTextLine)
              (token TextLine (state-offset paragraph-end)
@@ -49,6 +50,7 @@
 
 (def paragraph-event-helpers
   (list (make-org-event-helper
-         'inline-span event-inline-initial (event-text-line-forms 'start))
+         'inline-span event-inline-initial (event-text-line-forms 'start)
+         '(inline-script-policy))
         citation-reference-helper
         timestamp-candidate-helper))

@@ -64,14 +64,27 @@
     (set-bool inline-script-has-upper (bool #f))
     (set-uint inline-script-mode (uint 1))))
 
+(def (script-unbraced-open-forms rule)
+  `((if (uint-equal? (state inline-script-policy) (uint 2))
+        ((if (line-bytes-any-in? ,inline-next (line-step ,inline-next)
+                                  ,inline-script-alnum-bytes)
+             ,(script-open-unbraced rule #t)
+             ((if (line-bytes-any-in? ,inline-next (line-step ,inline-next)
+                                       (43 45))
+                  ,(script-open-unbraced rule #f)
+                  ()))))
+        ())))
+
 (def (inline-script-open-forms)
-  `((if (and (state inline-previous-present)
+  `((if (and (uint-positive? (state inline-script-policy))
+             (state inline-previous-present)
              (not (state inline-previous-space)))
         ,(foldr
           (lambda (rule otherwise)
             `((if (line-byte-equal? ,link-index
                                     ,(org-inline-script-byte rule))
-                  ((if (line-byte-equal? ,inline-next 42)
+                  ((if (and (uint-equal? (state inline-script-policy) (uint 2))
+                            (line-byte-equal? ,inline-next 42))
                        ((set-uint inline-script-kind
                                   (uint ,(org-inline-script-id rule)))
                         (set-uint inline-script-open-at (offset ,link-index))
@@ -88,15 +101,7 @@
                              (set-uint inline-script-opens (uint 1))
                              (set-uint inline-script-closes (uint 0))
                              (set-uint inline-script-mode (uint 2)))
-                            ((if (line-bytes-any-in? ,inline-next
-                                                      (line-step ,inline-next)
-                                                      ,inline-script-alnum-bytes)
-                                 ,(script-open-unbraced rule #t)
-                                 ((if (line-bytes-any-in? ,inline-next
-                                                           (line-step ,inline-next)
-                                                           (43 45))
-                                      ,(script-open-unbraced rule #f)
-                                      ()))))))))
+                            ,(script-unbraced-open-forms rule)))))
                   ,otherwise)))
           '() inline-script-rules)
         ())))
@@ -154,7 +159,8 @@
              ,(inline-script-finish-forms))))))))
 
 (def inline-script-event-initial
-  '((inline-script-mode 0) (inline-script-kind 0)
+  '((inline-script-policy 2)
+    (inline-script-mode 0) (inline-script-kind 0)
     (inline-script-open-at 0) (inline-script-value-start 0)
     (inline-script-end 0) (inline-script-opens 0)
     (inline-script-closes 0)

@@ -21,6 +21,7 @@
         org-inline-script-id org-inline-script-node
         make-org-event-helper org-event-helper-name
         org-event-helper-initial org-event-helper-forms
+        org-event-helper-parameters
         org-event-helper-descriptor
         make-org-event-strategy org-event-strategy-root
         org-event-strategy-initial org-event-strategy-line-forms
@@ -72,9 +73,11 @@
 (def (org-inline-script-id value) (.ref value 'id))
 (def (org-inline-script-node value) (.ref value 'node))
 
-(def (make-org-event-helper name-value initial-value forms-value)
+(def (make-org-event-helper name-value initial-value forms-value
+                            (parameters-value '()))
   (let (value (.o kind: +org-event-helper-kind+
-                  name: name-value initial: initial-value forms: forms-value))
+                  name: name-value initial: initial-value forms: forms-value
+                  parameters: parameters-value))
     (unless (org-event-helper? value)
       (error "invalid Org event helper" value))
     value))
@@ -82,10 +85,14 @@
 (def (org-event-helper-name value) (.ref value 'name))
 (def (org-event-helper-initial value) (.ref value 'initial))
 (def (org-event-helper-forms value) (.ref value 'forms))
+(def (org-event-helper-parameters value) (.ref value 'parameters))
 (def (org-event-helper-descriptor value)
-  (list (org-event-helper-name value)
-        (org-event-helper-initial value)
-        (org-event-helper-forms value)))
+  (let (descriptor
+        (list (org-event-helper-name value)
+              (org-event-helper-initial value)
+              (org-event-helper-forms value)))
+    (if (null? (org-event-helper-parameters value)) descriptor
+      (append descriptor (list (org-event-helper-parameters value))))))
 
 (def (make-org-event-strategy root-value initial-value line-forms-value
                               finish-forms-value helpers-value

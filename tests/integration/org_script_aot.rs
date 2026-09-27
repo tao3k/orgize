@@ -1,5 +1,53 @@
 //! Scheme-owned script Objects must survive AOT into Rowan and Element Query.
 
+use orgize::ParseConfig;
+use orgize::config::UseSubSuperscript;
+use orgize::org_aot::{parse_org_aot, parse_org_aot_with_config};
+
+#[test]
+fn configured_inline_script_policy_reaches_scheme_aot_helper() {
+    let source = "x_abc y_{z}\n";
+    let count = |policy| {
+        let config = ParseConfig {
+            use_sub_superscript: policy,
+            ..ParseConfig::default()
+        };
+        let document = parse_org_aot_with_config(source, &config).expect("configured AOT parses");
+        assert_eq!(document.syntax().to_string(), source);
+        document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "subscript")
+            .count()
+    };
+    assert_eq!(
+        parse_org_aot(source)
+            .expect("default AOT parses")
+            .records()
+            .iter()
+            .filter(|record| record.kind == "subscript")
+            .count(),
+        2
+    );
+    assert_eq!(count(UseSubSuperscript::Nil), 0);
+    assert_eq!(count(UseSubSuperscript::Brace), 1);
+    assert_eq!(count(UseSubSuperscript::True), 2);
+
+    let list_config = ParseConfig {
+        use_sub_superscript: UseSubSuperscript::Nil,
+        ..ParseConfig::default()
+    };
+    let list_source = "- x_abc\n";
+    let list = parse_org_aot_with_config(list_source, &list_config)
+        .expect("list paragraph uses configured helper");
+    assert_eq!(list.syntax().to_string(), list_source);
+    assert!(
+        list.records()
+            .iter()
+            .all(|record| record.kind != "subscript")
+    );
+}
+
 #[test]
 fn scheme_script_objects_project_with_source_backed_values() {
     check_org_aot_element!("x_abc\n", "subscript", "value" => "abc");

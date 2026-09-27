@@ -28,7 +28,8 @@
   `(if (state list-paragraph-open)
        ((call-source-helper inline-span
                             (state-offset list-paragraph-start)
-                            (state-offset list-paragraph-end))
+                            (state-offset list-paragraph-end)
+                            ((state inline-script-policy)))
         (finish-node)
         ,@(if reset-state? '((set-bool list-paragraph-open (bool #f))) '())) ()))
 

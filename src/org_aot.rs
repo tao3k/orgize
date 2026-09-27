@@ -94,6 +94,7 @@ pub fn parse_org_aot_with_config(
     let events = generated_context_events::parse_org_rowan_events_with_parameters(
         source,
         config.effective_inlinetask_min_level(),
+        config.inline_script_policy(),
     );
     parse_org_aot_events(source, events)
 }

@@ -543,7 +543,8 @@
 
 (def org-event-initial
   (append
-   '((open-levels (uint-stack)) (active-opaque-block 0)
+   '((inline-script-policy 2)
+    (open-levels (uint-stack)) (active-opaque-block 0)
     (property-drawer-open #f) (after-heading #f)
     (comment-open #f)
     (fixed-width-open #f))

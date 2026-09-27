@@ -99,6 +99,14 @@ impl ParseConfig {
     pub(crate) fn effective_inlinetask_min_level(&self) -> usize {
         self.inlinetask_min_level.max(1)
     }
+
+    pub(crate) fn inline_script_policy(&self) -> usize {
+        match self.use_sub_superscript {
+            UseSubSuperscript::Nil => 0,
+            UseSubSuperscript::Brace => 1,
+            UseSubSuperscript::True => 2,
+        }
+    }
 }
 
 fn parse_file_todo_keywords(source: &str) -> Option<(Vec<String>, Vec<String>)> {
