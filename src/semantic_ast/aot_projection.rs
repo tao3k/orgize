@@ -10,6 +10,7 @@ use rowan::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link};
 
+use super::aot_link_resolution::resolve_document_links;
 use super::aot_timestamp_projection::project_timestamp;
 use super::lifecycle_model::ArchiveState;
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
@@ -128,7 +129,7 @@ impl<'a> GraphProjector<'a> {
             }
         }
         self.diagnostics.extend(prescan.diagnostics);
-        Document {
+        let mut document = Document {
             ann,
             properties,
             archive_locations: prescan.archive_locations,
@@ -144,7 +145,9 @@ impl<'a> GraphProjector<'a> {
             children,
             sections,
             diagnostics: self.diagnostics,
-        }
+        };
+        resolve_document_links(&mut document);
+        document
     }
 
     fn within_headline(&self, id: usize) -> bool {
@@ -476,7 +479,7 @@ impl<'a> GraphProjector<'a> {
             .iter()
             .filter_map(|&keyword_id| self.keyword(self.record(keyword_id)))
             .collect();
-        let data = match kind {
+        let mut data = match kind {
             "keyword" => ElementData::Keyword(self.keyword(record)?),
             "clock" => {
                 let duration = record.field("duration").map(str::to_owned);
@@ -540,6 +543,20 @@ impl<'a> GraphProjector<'a> {
                 }
             }
         };
+        if let Some(caption) = affiliated_keywords
+            .iter()
+            .rev()
+            .find(|keyword| keyword.key.eq_ignore_ascii_case("CAPTION"))
+            && let ElementData::Paragraph(objects) = &mut data
+        {
+            for object in objects {
+                if let ObjectData::Link(link) = &mut object.data
+                    && link.is_image()
+                {
+                    link.caption = Some(caption.clone());
+                }
+            }
+        }
         Some(Element {
             ann: self.annotation(range),
             affiliated_keywords,

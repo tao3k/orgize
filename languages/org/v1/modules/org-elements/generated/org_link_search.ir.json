@@ -1,0 +1,1 @@
+{"parameters":[{"name":"path","ty":"&str"}],"body":{"bindings":[],"result":{"delimiter":{"value":"::","kind":"string"},"kind":"after","value":{"value":"path","kind":"name"}}},"result":"&str","name":"org_link_search","schema":"gerbil-scheme-rust.rust-function-ir.v1"}

@@ -34,7 +34,16 @@
         (only-in "objects.ss"
                  make-org-headline-properties org-headline-property-field)
         (only-in "link-properties.ss"
-                 org-image-link? org-image-link-rust)
+                 org-image-link? org-image-link-rust
+                 org-link-kind org-link-kind-rust
+                 org-link-target-key org-link-target-key-rust
+                 org-link-protocol org-link-protocol-rust
+                 org-link-protocol-path org-link-protocol-path-rust
+                 org-link-file-path org-link-file-path-rust
+                 org-link-search org-link-search-rust
+                 org-link-file-path-kind org-link-file-path-kind-rust
+                 org-link-search-kind org-link-search-kind-rust
+                 org-link-search-value org-link-search-value-rust)
         (only-in "citation-functions.ss"
                  citation-style citation-style-rust
                  citation-variant citation-variant-rust)
@@ -139,7 +148,54 @@
        "languages/org/v1/modules/org-elements/generated/org_image_link_p.ir.json")
       (check (org-image-link? "diagram.svg") => #t)
       (check (org-image-link? "diagram.svg?size=2") => #f)
-      (check (org-image-link? "https://example.test/doc.org") => #f))
+      (check (org-image-link? "https://example.test/doc.org") => #f)
+      (check-org-headline-ir
+       org-link-kind-rust 'org_link_kind
+       "languages/org/v1/modules/org-elements/generated/org_link_kind.ir.json")
+      (check-org-headline-ir
+       org-link-protocol-rust 'org_link_protocol
+       "languages/org/v1/modules/org-elements/generated/org_link_protocol.ir.json")
+      (check-org-headline-ir
+       org-link-protocol-path-rust 'org_link_protocol_path
+       "languages/org/v1/modules/org-elements/generated/org_link_protocol_path.ir.json")
+      (check-org-headline-ir
+       org-link-target-key-rust 'org_link_target_key
+       "languages/org/v1/modules/org-elements/generated/org_link_target_key.ir.json")
+      (check-org-headline-ir
+       org-link-file-path-rust 'org_link_file_path
+       "languages/org/v1/modules/org-elements/generated/org_link_file_path.ir.json")
+      (check-org-headline-ir
+       org-link-search-rust 'org_link_search
+       "languages/org/v1/modules/org-elements/generated/org_link_search.ir.json")
+      (check-org-headline-ir
+       org-link-file-path-kind-rust 'org_link_file_path_kind
+       "languages/org/v1/modules/org-elements/generated/org_link_file_path_kind.ir.json")
+      (check-org-headline-ir
+       org-link-search-kind-rust 'org_link_search_kind
+       "languages/org/v1/modules/org-elements/generated/org_link_search_kind.ir.json")
+      (check-org-headline-ir
+       org-link-search-value-rust 'org_link_search_value
+       "languages/org/v1/modules/org-elements/generated/org_link_search_value.ir.json")
+      (check (org-link-kind "*Heading") => "headline")
+      (check (org-link-kind "#custom") => "custom-id")
+      (check (org-link-kind "id:local") => "id")
+      (check (org-link-kind "fn:note") => "footnote")
+      (check (org-link-kind "coderef:init") => "code-ref")
+      (check (org-link-kind "https://example.org") => "uri")
+      (check (org-link-kind "target-one") => "fuzzy")
+      (check (org-link-target-key "*Heading") => "Heading")
+      (check (org-link-target-key "id:local::*Heading") => "id:local")
+      (check (org-link-protocol "https://example.org") => "https")
+      (check (org-link-protocol-path "https://example.org") => "//example.org")
+      (check (org-link-file-path "file:notes/demo.org::*Heading")
+             => "notes/demo.org")
+      (check (org-link-search "file:notes/demo.org::*Heading")
+             => "*Heading")
+      (check (org-link-file-path-kind "/tmp/demo.org") => "absolute")
+      (check (org-link-file-path-kind "notes/demo.org") => "relative")
+      (check (org-link-search-kind "*Heading") => "headline")
+      (check (org-link-search-kind "255") => "line-number")
+      (check (org-link-search-value "*Heading") => "Heading"))
     (test-case "citation header style is Scheme-owned and AOT projected"
       (check-org-headline-ir
        citation-style-rust 'citation_style

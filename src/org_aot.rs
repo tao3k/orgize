@@ -137,6 +137,42 @@ pub(crate) fn org_image_link(target: &str) -> bool {
     link_functions::org_image_link_p(target)
 }
 
+pub(crate) fn org_link_kind(path: &str) -> &'static str {
+    link_functions::org_link_kind(path)
+}
+
+pub(crate) fn org_link_target_key(path: &str) -> &str {
+    link_functions::org_link_target_key(path)
+}
+
+pub(crate) fn org_link_protocol(path: &str) -> &str {
+    link_functions::org_link_protocol(path)
+}
+
+pub(crate) fn org_link_protocol_path(path: &str) -> &str {
+    link_functions::org_link_protocol_path(path)
+}
+
+pub(crate) fn org_link_file_path(path: &str) -> &str {
+    link_functions::org_link_file_path(path)
+}
+
+pub(crate) fn org_link_search(path: &str) -> &str {
+    link_functions::org_link_search(path)
+}
+
+pub(crate) fn org_link_file_path_kind(path: &str) -> &'static str {
+    link_functions::org_link_file_path_kind(path)
+}
+
+pub(crate) fn org_link_search_kind(search: &str) -> &'static str {
+    link_functions::org_link_search_kind(search)
+}
+
+pub(crate) fn org_link_search_value(search: &str) -> &str {
+    link_functions::org_link_search_value(search)
+}
+
 fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
     let records = project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
         .map_err(OrgAotError::Projection)?;

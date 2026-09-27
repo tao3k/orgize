@@ -12,6 +12,15 @@ include!(concat!(env!("OUT_DIR"), "/headline_display_title.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_comment_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/memory_headline_state.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_image_link_p.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_kind.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_target_key.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_protocol.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_protocol_path.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_file_path.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_search.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_file_path_kind.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_search_kind.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_search_value.rs"));
 
 macro_rules! check_todo_state_aot {
     ($($title:expr, $directives:expr => $expected:expr),+ $(,)?) => {
@@ -249,4 +258,32 @@ fn scheme_org_image_link_aot_classifies_targets() {
         "diagram.svg?size=2" => false,
         "notes.org" => false,
     );
+}
+
+#[test]
+fn scheme_org_link_path_aot_classifies_internal_and_protocol_forms() {
+    assert_eq!(org_link_kind("*Heading"), "headline");
+    assert_eq!(org_link_kind("#custom"), "custom-id");
+    assert_eq!(org_link_kind("id:local"), "id");
+    assert_eq!(org_link_kind("fn:note"), "footnote");
+    assert_eq!(org_link_kind("coderef:init"), "code-ref");
+    assert_eq!(org_link_kind("target-one"), "fuzzy");
+    assert_eq!(org_link_kind("https://example.org"), "uri");
+    assert_eq!(org_link_target_key("*Heading"), "Heading");
+    assert_eq!(org_link_target_key("id:local::*Heading"), "id:local");
+    assert_eq!(org_link_protocol("https://example.org"), "https");
+    assert_eq!(
+        org_link_protocol_path("https://example.org"),
+        "//example.org"
+    );
+    assert_eq!(
+        org_link_file_path("file:notes/demo.org::*Heading"),
+        "notes/demo.org"
+    );
+    assert_eq!(org_link_search("file:notes/demo.org::*Heading"), "*Heading");
+    assert_eq!(org_link_file_path_kind("/tmp/demo.org"), "absolute");
+    assert_eq!(org_link_file_path_kind("notes/demo.org"), "relative");
+    assert_eq!(org_link_search_kind("*Heading"), "headline");
+    assert_eq!(org_link_search_kind("255"), "line-number");
+    assert_eq!(org_link_search_value("*Heading"), "Heading");
 }
