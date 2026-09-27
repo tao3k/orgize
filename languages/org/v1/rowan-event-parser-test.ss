@@ -1060,6 +1060,20 @@
             (PropertyTrivia 21 23) (PropertyValue 23 26)
             (PropertyTrivia 26 27))
            (DrawerEndLine 27 33))))))
+    (test-case "property keys retain internal colons before their final delimiter"
+      (check-org-ast-with parse-org-rowan-events
+        "* H\n:PROPERTIES:\n:header-args:python: :session local\n:END:\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgPropertyDrawer
+           (DrawerBeginLine 4 17)
+           (OrgNodeProperty
+            (PropertyTrivia 17 18) (PropertyKey 18 36)
+            (PropertyTrivia 36 38) (PropertyValue 38 52)
+            (PropertyTrivia 52 53))
+           (DrawerEndLine 53 59))))))
     (test-case "declared planning and clock keys retain headline context"
       (check-org-ast-with parse-org-rowan-events
         "* H\nSCHEDULED: now\nCLOCK: 2\n* N\nDEADLINE: x\n"

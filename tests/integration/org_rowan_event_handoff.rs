@@ -450,6 +450,26 @@ fn org_scheme_context_algorithm_projects_headline_property_drawers() {
 }
 
 #[test]
+fn org_scheme_context_algorithm_projects_colon_qualified_property_keys() {
+    let source = "* H\n:PROPERTIES:\n:header-args:python: :session local\n:END:\n";
+    let document = parse_org_aot(source).expect("Scheme property drawer reaches Rowan");
+    assert_eq!(document.syntax().to_string(), source);
+    let drawer = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "property-drawer")
+        .expect("colon-qualified property remains in its drawer");
+    let property = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "node-property")
+        .expect("colon-qualified key projects as a node property");
+    assert_eq!(property.parent_id, Some(drawer.id));
+    assert_eq!(property.field("key"), Some("header-args:python"));
+    assert_eq!(property.field("value"), Some(":session local"));
+}
+
+#[test]
 fn org_scheme_context_algorithm_rejects_longer_block_marker_lookalikes() {
     let source = "#+begin_srcx\n* H\n:PROPERTIES:x\n:PROPERTIES:\n:ID: alpha\n:END: tail\n:END:\n";
     let events = generated_context_events::parse_org_rowan_events(source);

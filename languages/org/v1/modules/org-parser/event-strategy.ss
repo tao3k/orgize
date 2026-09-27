@@ -149,30 +149,43 @@
 
 (def property-indent '(line-skip-horizontal start))
 (def property-key-start `(line-step ,property-indent))
-(def property-key-end
-  `(line-scan-nonspace-until ,property-key-start ":"))
+(def property-byte-index '(line-index property-byte-index))
+(def property-byte-next `(line-step ,property-byte-index))
+(def property-key-end '(state-offset property-key-end))
 (def property-value-start
   `(line-skip-horizontal (line-step ,property-key-end)))
 (def property-value-end `(line-trim-end-from ,property-value-start))
 
-(def (property-line-form)
-  `(if (and (line-byte-equal? ,property-indent 58)
-            (offset-less? ,property-key-start ,property-key-end)
-            (line-byte-equal? ,property-key-end 58))
-       ((start-node OrgNodeProperty)
-        (token PropertyTrivia start ,property-key-start)
-        (token PropertyKey ,property-key-start ,property-key-end)
-        (token PropertyTrivia ,property-key-end ,property-value-start)
-        (token PropertyValue ,property-value-start ,property-value-end)
-        (token PropertyTrivia ,property-value-end end)
-        (finish-node))
-       ((token TextLine start end))))
+(def (property-line-forms)
+  `((if (line-byte-equal? ,property-indent 58)
+        ((for-line-bytes property-byte-index ,property-key-start
+                         (line-content-end)
+           ((if (and (uint-equal? (state property-key-end) (uint 0))
+                     (line-byte-equal? ,property-byte-index 58)
+                     (or (line-bytes-all-in? ,property-byte-next
+                                              (line-content-end) ())
+                         (line-bytes-any-in? ,property-byte-next
+                                             (line-step ,property-byte-next)
+                                             (9 32))))
+                ((set-uint property-key-end (offset ,property-byte-index))) ()))))
+        ())
+    (if (and (uint-positive? (state property-key-end))
+             (offset-less? ,property-key-start ,property-key-end))
+        ((start-node OrgNodeProperty)
+         (token PropertyTrivia start ,property-key-start)
+         (token PropertyKey ,property-key-start ,property-key-end)
+         (token PropertyTrivia ,property-key-end ,property-value-start)
+         (token PropertyValue ,property-value-start ,property-value-end)
+         (token PropertyTrivia ,property-value-end end)
+         (finish-node))
+        ((token TextLine start end)))
+    (set-uint property-key-end (uint 0))))
 
 (def (property-body-form)
   `(if ,(container-close-condition property-rule)
        ((token DrawerEndLine start end) (finish-node)
         (set-bool property-drawer-open (bool #f)))
-       (,(property-line-form))))
+       ,(property-line-forms)))
 
 (def property-open-condition
   `(and ,(ascii-ci-pattern-at property-indent property-open)
@@ -545,7 +558,7 @@
   (append
    '((inline-script-policy 2)
     (open-levels (uint-stack)) (active-opaque-block 0)
-    (property-drawer-open #f) (after-heading #f)
+    (property-drawer-open #f) (property-key-end 0) (after-heading #f)
     (comment-open #f)
     (fixed-width-open #f))
    table-event-initial
