@@ -107,7 +107,7 @@ let org = Org::parse("* DONE Title :tag:");
 let document = org.document();
 
 assert_eq!(document.sections[0].level, 1);
-assert_eq!(document.sections[0].raw_title, "Title ");
+assert_eq!(document.sections[0].raw_title, "Title");
 assert_eq!(document.sections[0].tags, ["tag"]);
 assert!(document.sections[0].children.iter().all(|element| {
     !matches!(element.data, ElementData::Unknown { .. })
@@ -117,7 +117,7 @@ assert!(document.sections[0].children.iter().all(|element| {
 Use `ParseConfig::parse` when a document needs custom parser settings:
 
 ```rust
-use orgize::{syntax_ast::Headline, Org, ParseConfig};
+use orgize::ParseConfig;
 
 let config = ParseConfig {
     todo_keywords: (vec!["TASK".to_string()], vec![]),
@@ -125,55 +125,44 @@ let config = ParseConfig {
 };
 
 let org = config.parse("* TASK Title 1");
-let headline = org.first_node::<Headline>().unwrap();
-assert_eq!(headline.todo_keyword().unwrap(), "TASK");
+let headline = &org.document().sections[0];
+assert_eq!(headline.todo.as_ref().map(|todo| todo.name.as_str()), Some("TASK"));
 ```
 
 ## Syntax Tree
 
-Use `Org::syntax_document()` for the lossless rowan-backed syntax tree:
+Use `Org::syntax()` for the lossless Scheme-AOT Rowan tree:
 
 ```rust
-use orgize::{rowan::ast::AstNode, syntax_ast::Headline, Org};
+use orgize::Org;
 
 let org = Org::parse("* Title");
-let syntax_doc = org.syntax_document();
-let headline = syntax_doc.syntax().children().find_map(Headline::cast).unwrap();
-
-assert_eq!(headline.title_raw(), "Title");
+assert_eq!(org.syntax().to_string(), "* Title");
+assert_eq!(org.records().iter().filter(|record| record.kind == "headline").count(), 1);
 ```
 
-## Traverse
+## Query Elements
 
 ```rust
-use orgize::{
-    export::{from_fn, Container, Event},
-    Org,
-};
+use orgize::Org;
 
-let mut headline_count = 0;
-let mut handler = from_fn(|event| {
-    if matches!(event, Event::Enter(Container::Headline(_))) {
-        headline_count += 1;
-    }
-});
-
-Org::parse("* 1\n** 2\n*** 3\n****4").traverse(&mut handler);
+let org = Org::parse("* 1\n** 2\n*** 3\n****4");
+let headline_count = org.records().iter().filter(|record| record.kind == "headline").count();
 assert_eq!(headline_count, 3);
 ```
 
 ## Modify
 
 ```rust
-use orgize::{syntax_ast::Headline, Org, TextRange};
+use orgize::{Org, TextRange};
 
 let mut org = Org::parse("hello\n* world");
-let headline = org.first_node::<Headline>().unwrap();
+let headline = org.records().iter().find(|record| record.kind == "headline").unwrap().range;
 
-org.replace_range(headline.text_range(), "** WORLD!");
-let headline = org.first_node::<Headline>().unwrap();
+org.replace_range(headline, "** WORLD!");
+let headline = org.records().iter().find(|record| record.kind == "headline").unwrap().range;
 
-assert_eq!(headline.level(), 2);
+assert_eq!(org.document().sections[0].level, 2);
 org.replace_range(TextRange::up_to(headline.start()), "");
 assert_eq!(org.to_org(), "** WORLD!");
 ```

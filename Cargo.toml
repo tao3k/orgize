@@ -26,17 +26,14 @@ syntax-org-fc = []
 md = ["dep:comrak"]
 
 [dependencies]
-bytecount = "0.6"
 gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "741f87ad653fc2a561bb2451387ebf0f7ad58198", version = "0.1.0" }
 blake3 = "1"
-cfg-if = "1"
 chrono = { version = "0.4", optional = true }
 comrak = { version = "0.52", default-features = false, optional = true }
 datafusion = { version = "53", default-features = false, features = ["sql"], optional = true }
 indexmap = { version = "2", optional = true }
 jetscii = "0.5"
 memchr = "2"
-nom = { version = "8", default-features = false, features = ["std"] }
 rowan = "0.16"
 serde_json = "1"
 sha2 = "0.10"

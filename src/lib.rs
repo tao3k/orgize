@@ -2,7 +2,7 @@
 
 /// Agent-facing document command API.
 pub mod agent;
-/// Owned semantic AST projected from the lossless parser tree.
+/// Owned semantic AST projected from the Scheme-AOT Element graph.
 #[path = "semantic_ast/mod.rs"]
 pub mod ast;
 /// Command-line interface implementation.
@@ -15,7 +15,7 @@ pub mod contract_feature;
 /// Document element mapping and parser-owned query API.
 pub mod document;
 mod entities;
-/// Event traversal and export helpers built on the lossless syntax tree.
+/// Presentation helpers for Scheme-AOT graph exporters.
 pub mod export;
 /// Conservative Org source formatter.
 pub mod fmt;
@@ -33,11 +33,6 @@ mod org_aot_markdown;
 /// Scheme-AOT named Org Element queries over the generated graph.
 pub mod org_element_query;
 mod runtime;
-mod syntax;
-#[doc(hidden)]
-pub mod syntax_ast;
-#[path = "ast/mod.rs"]
-mod syntax_ast_impl;
 #[cfg(test)]
 #[path = "../tests/unit/lib.rs"]
 mod tests;
@@ -46,13 +41,9 @@ mod tests;
 pub use rowan;
 
 pub use config::ParseConfig;
+pub use gerbil_parser_rowan::{SyntaxKind, SyntaxNode, SyntaxToken};
 pub use org::Org;
 pub use rowan::{TextRange, TextSize};
-pub use syntax::{
-    SyntaxElement, SyntaxElementChildren, SyntaxKind, SyntaxNode, SyntaxNodeChildren, SyntaxToken,
-};
-
-pub(crate) use syntax::combinator::lossless_parser;
 
 #[cfg(test)]
 asp_rust::asp_rust_cargo_test_gate!(

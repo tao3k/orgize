@@ -1,7 +1,7 @@
 //! Owned semantic AST for Org documents.
 //!
-//! The parser still builds the lossless rowan syntax tree. This module is the
-//! semantic, org-element-like layer projected from that syntax tree.
+//! The Scheme-AOT parser builds a lossless Rowan tree and Element graph. This
+//! module projects that graph into owned, org-element-like values.
 
 mod agenda;
 mod agenda_filter;
@@ -123,7 +123,6 @@ mod table_visualization_model;
 mod tag_vocabulary;
 mod tangle;
 mod tangle_model;
-mod targets;
 mod task_blocker_model;
 mod task_blockers;
 mod timestamp_model;

@@ -102,6 +102,8 @@ mod org_named_drawer;
 mod org_named_elements;
 #[path = "integration/org_parser_aot.rs"]
 mod org_parser_aot;
+#[path = "integration/org_public_aot_boundary.rs"]
+mod org_public_aot_boundary;
 #[path = "integration/org_rowan_event_handoff.rs"]
 mod org_rowan_event_handoff;
 #[path = "integration/org_script_aot.rs"]

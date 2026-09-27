@@ -4,7 +4,6 @@ use super::org_contract_model::CONTRACT_ORG_PROPERTY;
 use super::settings::{
     apply_options_keyword, link_abbreviation, parse_tag_definitions, parse_tags, split_words,
 };
-use super::targets::TargetIndex;
 use super::{
     ArchiveLocation, Diagnostic, ExportSettings, FootnoteEntry, IncludeDirective, Keyword,
     LinkAbbreviation, MacroDefinition, OrgDuration, ParsedAnnotation, Property, TagDefinition,
@@ -12,7 +11,6 @@ use super::{
 
 #[derive(Default)]
 pub(super) struct SemanticPrescan {
-    pub(super) target_index: TargetIndex,
     pub(super) metadata: Vec<Keyword<ParsedAnnotation>>,
     pub(super) filetags: Vec<String>,
     pub(super) tag_definitions: Vec<TagDefinition>,
