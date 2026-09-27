@@ -26,6 +26,7 @@
                  headline-display-title headline-display-title-rust
                  headline-comment? headline-comment-rust
                  priority-token? priority-token-rust
+                 headline-priority-cookie headline-priority-cookie-rust
                  todo-keyword-matches? todo-keyword-matches-rust
                  memory-headline-state memory-headline-state-rust)
         (only-in "objects.ss"
@@ -254,6 +255,13 @@
       (check (priority-token? "[#a]") => #f)
       (check (priority-token? "[#É]") => #f)
       (check (priority-token? "[#A]junk]") => #f)
+      (check-org-headline-ir
+       headline-priority-cookie-rust 'headline_priority_cookie
+       "languages/org/v1/modules/org-elements/generated/headline_priority_cookie.ir.json")
+      (check (headline-priority-cookie "[#A] Parent") => "A")
+      (check (headline-priority-cookie "[#064] Parent") => "064")
+      (check (headline-priority-cookie "[#65] Parent") => "")
+      (check (headline-priority-cookie "Parent") => "")
       (check (headline-display-title
               "[#A] Parent :work:urgent:" #t)
              => "Parent")

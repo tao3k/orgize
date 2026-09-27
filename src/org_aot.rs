@@ -65,6 +65,7 @@ struct HeadlineProperties {
 struct HeadlineDetails {
     todo_keyword: Option<String>,
     content_after_todo: String,
+    priority_cookie: Option<String>,
     display_title: String,
     is_comment: bool,
 }
@@ -325,10 +326,12 @@ impl OrgAotDocument {
                 &content_after_todo,
                 record.field("tag").is_some(),
             );
+            let priority_cookie = headline_functions::headline_priority_cookie(&content_after_todo);
             let is_comment = headline_functions::headline_comment_p(&display_title);
             HeadlineDetails {
                 todo_keyword: (!todo_keyword.is_empty()).then_some(todo_keyword),
                 content_after_todo,
+                priority_cookie: (!priority_cookie.is_empty()).then_some(priority_cookie),
                 display_title,
                 is_comment,
             }
@@ -423,6 +426,13 @@ impl OrgAotDocument {
     pub fn headline_display_title(&self, record_id: usize) -> Option<String> {
         self.headline_details(record_id)
             .map(|details| details.display_title.clone())
+    }
+
+    /// Return a priority cookie admitted by the Scheme-AOT headline algorithm.
+    #[must_use]
+    pub fn headline_priority_cookie(&self, record_id: usize) -> Option<String> {
+        self.headline_details(record_id)
+            .and_then(|details| details.priority_cookie.clone())
     }
 
     /// Whether a headline carries Org's case-sensitive COMMENT marker.

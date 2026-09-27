@@ -17,6 +17,7 @@ pub fn write_org_aot_functions() {
         "todo_keyword_from_directives",
         "headline_content_after_todo",
         "priority_token_p",
+        "headline_priority_cookie",
         "headline_display_title",
         "headline_comment_p",
         "memory_headline_state",

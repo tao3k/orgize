@@ -19,6 +19,7 @@ use super::model::{
 };
 use super::preprocessing::macro_definition;
 use super::prescan::{SemanticPrescan, collect_document_keyword};
+use super::property_model::Priority;
 use super::source_position::LineIndex;
 use super::timestamp_model::{Timestamp, TimestampKind};
 
@@ -207,7 +208,7 @@ impl<'a> GraphProjector<'a> {
             attachment: Default::default(),
             todo,
             is_comment,
-            priority: Default::default(),
+            priority: Priority::from_cookie(self.document.headline_priority_cookie(id)),
             title,
             raw_title,
             anchor: None,

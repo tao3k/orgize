@@ -91,3 +91,22 @@ fn file_todo_profile_reverts_to_caller_config_after_source_edit() {
         None
     );
 }
+
+#[test]
+fn scheme_priority_cookie_reprojects_after_source_edit() {
+    let mut doc = Org::parse("* TODO [#A] Task\n");
+    let headline_id = doc.headlines().next().expect("headline").id();
+    assert_eq!(
+        doc.headline_priority_cookie(headline_id).as_deref(),
+        Some("A")
+    );
+    assert_eq!(doc.document().sections[0].priority.raw_cookie(), Some("A"));
+
+    doc.replace_range(TextRange::new(7.into(), 11.into()), "[#64]");
+    let headline_id = doc.headlines().next().expect("edited headline").id();
+    assert_eq!(
+        doc.headline_priority_cookie(headline_id).as_deref(),
+        Some("64")
+    );
+    assert_eq!(doc.document().sections[0].priority.raw_cookie(), Some("64"));
+}

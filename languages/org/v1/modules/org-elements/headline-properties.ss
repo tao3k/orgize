@@ -28,6 +28,7 @@
         headline-display-title headline-display-title-rust
         headline-comment? headline-comment-rust
         priority-token? priority-token-rust
+        headline-priority-cookie headline-priority-cookie-rust
         todo-keyword-matches? todo-keyword-matches-rust
         memory-headline-state memory-headline-state-rust)
 
@@ -137,6 +138,17 @@
          (or (string-single-ascii-uppercase? inner)
              (string-unsigned-at-most? inner 64)))))
 
+;; Return only an admitted cookie's value.  The empty string means that the
+;; headline has no priority; the Rust projection never scans title syntax.
+(define-rust-pure headline-priority-cookie headline-priority-cookie-rust
+  ((content "&str")) "String"
+  (using ((priority-token? "&str"))
+    (let* ((word (string-first-word content))
+           (after-prefix (string-after word "[#")))
+      (if (priority-token? word)
+        (string-before after-prefix "]")
+        ""))))
+
 (define-rust-pure headline-display-title headline-display-title-rust
   ((content "&str") (has-tags "bool")) "String"
   (using ((priority-token? "&str"))
@@ -224,9 +236,8 @@
          (after-todo (headline-content-after-todo
                       title directives configured-todo configured-done))
          (next (split-first after-todo))
-         (priority (and (priority-token? (car next))
-                        (substring (car next) 2
-                                   (- (string-length (car next)) 1))))
+         (priority-value (headline-priority-cookie after-todo))
+         (priority (and (not (equal? priority-value "")) priority-value))
          (after-priority (if priority (cdr next) after-todo))
          (last (or (split-last after-priority)
                    (and (tag-token after-priority)
