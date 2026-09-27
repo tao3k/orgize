@@ -10,7 +10,8 @@
                  org-link-protocol-rust org-link-protocol-path-rust
                  org-link-file-path-rust org-link-search-rust
                  org-link-file-path-kind-rust org-link-search-kind-rust
-                 org-link-search-value-rust))
+                 org-link-search-value-rust
+                 org-expand-link-abbreviation-rust))
 
 (def arguments (command-line))
 (unless (> (length arguments) 2)
@@ -46,3 +47,6 @@
 (write-rust-function-ir
  (path-expand "org_link_search_value.ir.json" (car (reverse arguments)))
  org-link-search-value-rust)
+(write-rust-function-ir
+ (path-expand "org_expand_link_abbreviation.ir.json" (car (reverse arguments)))
+ org-expand-link-abbreviation-rust)

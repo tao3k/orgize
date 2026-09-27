@@ -3,6 +3,7 @@
 
 (import (only-in :gerbil-parser/src/compiler/rust-pure-aot
                  define-rust-pure string-before string-after
+                 string-replace
                  string-prefix? string-suffix?
                  string-unsigned-at-most?))
 (export org-image-link? org-image-link-rust
@@ -14,7 +15,8 @@
         org-link-search org-link-search-rust
         org-link-file-path-kind org-link-file-path-kind-rust
         org-link-search-kind org-link-search-kind-rust
-        org-link-search-value org-link-search-value-rust)
+        org-link-search-value org-link-search-value-rust
+        org-expand-link-abbreviation org-expand-link-abbreviation-rust)
 
 (define-rust-pure org-image-link? org-image-link-rust
   ((target "&str")) "bool"
@@ -93,3 +95,13 @@
     (if (string-prefix? search "#")
       (string-after search "#")
       search)))
+
+(define-rust-pure org-expand-link-abbreviation
+  org-expand-link-abbreviation-rust
+  ((replacement "&str") (path "&str") (encoded-path "&str")) "String"
+  (if (and (equal? (string-before replacement "%s") replacement)
+           (equal? (string-before replacement "%h") replacement))
+    (string-join (list replacement path) "")
+    (string-replace
+     (string-replace replacement "%s" path)
+     "%h" encoded-path)))

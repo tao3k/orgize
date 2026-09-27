@@ -173,6 +173,14 @@ pub(crate) fn org_link_search_value(search: &str) -> &str {
     link_functions::org_link_search_value(search)
 }
 
+pub(crate) fn org_expand_link_abbreviation(
+    replacement: &str,
+    path: &str,
+    encoded_path: &str,
+) -> String {
+    link_functions::org_expand_link_abbreviation(replacement, path, encoded_path)
+}
+
 fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
     let records = project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
         .map_err(OrgAotError::Projection)?;

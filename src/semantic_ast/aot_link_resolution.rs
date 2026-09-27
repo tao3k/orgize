@@ -8,6 +8,7 @@ use crate::org_aot::{
     org_link_target_key,
 };
 
+use super::settings::expand_link_abbreviation;
 use super::{
     AstMut, AstRef, Diagnostic, DiagnosticKind, Document, FileLink, FileLinkPathKind, LinkSearch,
     LinkSearchKind, LinkTarget, ObjectData, ParsedAnnotation, TargetDefinition, TargetKind,
@@ -36,6 +37,7 @@ pub(super) fn resolve_document_links(document: &mut Document<ParsedAnnotation>) 
     for target in &document.targets {
         *counts.entry(target.key.clone()).or_default() += 1;
     }
+    let abbreviations = document.link_abbreviations.clone();
     let mut diagnostics = Vec::new();
     document.visit_mut(|node| {
         let AstMut::Object(object) = node else {
@@ -49,6 +51,11 @@ pub(super) fn resolve_document_links(document: &mut Document<ParsedAnnotation>) 
         let key = org_link_target_key(&path);
         let matches = counts.get(key).copied().unwrap_or_default();
         let protocol = org_link_protocol(&path);
+        let expanded = (kind == "uri")
+            .then(|| {
+                expand_link_abbreviation(protocol, org_link_protocol_path(&path), &abbreviations)
+            })
+            .flatten();
         if protocol == "file" {
             let file_path = org_link_file_path(&path);
             let path_kind = match org_link_file_path_kind(file_path) {
@@ -70,6 +77,17 @@ pub(super) fn resolve_document_links(document: &mut Document<ParsedAnnotation>) 
             link.search = project_link_search(&path);
         }
         link.target = match kind {
+            "uri"
+                if expanded
+                    .as_deref()
+                    .is_some_and(|value| org_link_kind(value) == "uri") =>
+            {
+                let expanded = expanded.as_deref().expect("checked expanded URI");
+                LinkTarget::Uri {
+                    protocol: org_link_protocol(expanded).to_owned(),
+                    path: org_link_protocol_path(expanded).to_owned(),
+                }
+            }
             "uri" => LinkTarget::Uri {
                 protocol: protocol.to_owned(),
                 path: org_link_protocol_path(&path).to_owned(),

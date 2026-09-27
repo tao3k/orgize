@@ -166,16 +166,11 @@ pub(super) fn expand_link_abbreviation(
     let abbreviation = abbreviations
         .iter()
         .find(|abbreviation| abbreviation.name.eq_ignore_ascii_case(protocol))?;
-    let replacement = &abbreviation.replacement;
-    if replacement.contains("%s") || replacement.contains("%h") {
-        Some(
-            replacement
-                .replace("%s", path)
-                .replace("%h", &percent_encode(path)),
-        )
-    } else {
-        Some(format!("{replacement}{path}"))
-    }
+    Some(crate::org_aot::org_expand_link_abbreviation(
+        &abbreviation.replacement,
+        path,
+        &percent_encode(path),
+    ))
 }
 
 fn bool_option(value: &str) -> Option<bool> {

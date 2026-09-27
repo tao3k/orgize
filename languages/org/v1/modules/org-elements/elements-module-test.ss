@@ -43,7 +43,9 @@
                  org-link-search org-link-search-rust
                  org-link-file-path-kind org-link-file-path-kind-rust
                  org-link-search-kind org-link-search-kind-rust
-                 org-link-search-value org-link-search-value-rust)
+                 org-link-search-value org-link-search-value-rust
+                 org-expand-link-abbreviation
+                 org-expand-link-abbreviation-rust)
         (only-in "citation-functions.ss"
                  citation-style citation-style-rust
                  citation-variant citation-variant-rust)
@@ -176,6 +178,9 @@
       (check-org-headline-ir
        org-link-search-value-rust 'org_link_search_value
        "languages/org/v1/modules/org-elements/generated/org_link_search_value.ir.json")
+      (check-org-headline-ir
+       org-expand-link-abbreviation-rust 'org_expand_link_abbreviation
+       "languages/org/v1/modules/org-elements/generated/org_expand_link_abbreviation.ir.json")
       (check (org-link-kind "*Heading") => "headline")
       (check (org-link-kind "#custom") => "custom-id")
       (check (org-link-kind "id:local") => "id")
@@ -195,7 +200,13 @@
       (check (org-link-file-path-kind "notes/demo.org") => "relative")
       (check (org-link-search-kind "*Heading") => "headline")
       (check (org-link-search-kind "255") => "line-number")
-      (check (org-link-search-value "*Heading") => "Heading"))
+      (check (org-link-search-value "*Heading") => "Heading")
+      (check (org-expand-link-abbreviation "https://host/%s" "a/b" "a%2Fb")
+             => "https://host/a/b")
+      (check (org-expand-link-abbreviation "https://host/%h" "a/b" "a%2Fb")
+             => "https://host/a%2Fb")
+      (check (org-expand-link-abbreviation "https://host/" "a/b" "a%2Fb")
+             => "https://host/a/b"))
     (test-case "citation header style is Scheme-owned and AOT projected"
       (check-org-headline-ir
        citation-style-rust 'citation_style

@@ -10,3 +10,4 @@ include!(concat!(env!("OUT_DIR"), "/org_link_search.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_link_file_path_kind.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_link_search_kind.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_link_search_value.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_expand_link_abbreviation.rs"));

@@ -35,6 +35,7 @@ pub fn write_org_aot_functions() {
         "org_link_file_path_kind",
         "org_link_search_kind",
         "org_link_search_value",
+        "org_expand_link_abbreviation",
         "org_affiliated_keyword_p",
     ] {
         let source = source_dir.join(format!("{name}.ir.json"));
