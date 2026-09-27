@@ -70,6 +70,10 @@ path = "tests/integration/org_cutover_parity.rs"
 name = "html"
 path = "tests/integration/html.rs"
 
+[[test]]
+name = "latex"
+path = "tests/integration/latex.rs"
+
 [[bench]]
 name = "parse"
 harness = false

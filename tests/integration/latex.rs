@@ -1,8 +1,4 @@
-use orgize::{
-    Org,
-    export::{LatexExport, LatexExportOptions},
-};
-use rowan::ast::AstNode;
+use orgize::{Org, export::LatexExportOptions};
 
 #[test]
 fn latex_export_escapes_text_and_renders_inline_markup() {
@@ -70,10 +66,12 @@ See [cite:@doe2026; @roe2026 p. 42] on <2026-05-10 Sun>.
 #[test]
 fn latex_export_can_render_subtrees() {
     let org = Org::parse("* /hello/ *world*");
-    let bold = org.first_node::<orgize::syntax_ast::Bold>().unwrap();
-    let mut latex = LatexExport::default();
-    latex.render(bold.syntax());
-    assert_eq!(latex.finish(), r"\textbf{world}");
+    let bold = org
+        .records()
+        .iter()
+        .find(|record| record.kind == "bold")
+        .unwrap();
+    assert_eq!(org.try_latex_record(bold.id).unwrap(), r"\textbf{world}");
 }
 
 #[test]
