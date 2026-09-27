@@ -357,11 +357,12 @@ impl<'a> GraphProjector<'a> {
     }
 
     fn property(&self, record: &GraphRecord) -> Option<Property<ParsedAnnotation>> {
+        let value = record.field("value")?.to_owned();
         Some(Property {
             ann: self.annotation(record.range),
             key: record.field("key")?.to_owned(),
-            value: record.field("value")?.to_owned(),
-            duration: None,
+            duration: OrgDuration::parse(value.clone()),
+            value,
         })
     }
 
