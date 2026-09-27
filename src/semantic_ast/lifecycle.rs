@@ -1,8 +1,7 @@
 //! Opt-in lifecycle projection over ordinary Org LOGBOOK and archive metadata.
 
 use super::{
-    ArchiveLocation, Document, Element, ElementData, LifecycleRecord, LifecycleRecordKind,
-    OrgDuration, ParsedAnnotation, Section,
+    Document, Element, ElementData, LifecycleRecord, LifecycleRecordKind, OrgDuration, Section,
 };
 
 impl<A: Clone> Document<A> {
@@ -30,12 +29,6 @@ pub(super) fn section_lifecycle_records<A: Clone>(section: &Section<A>) -> Vec<L
     let mut records = Vec::new();
     collect_lifecycle_records_in_elements(section, &section.children, &mut records);
     records
-}
-
-pub(super) fn archive_location_from_property(
-    property: &super::Property<ParsedAnnotation>,
-) -> ArchiveLocation<ParsedAnnotation> {
-    ArchiveLocation::from_value(property.ann.clone(), property.value.clone())
 }
 
 fn collect_lifecycle_records_in_elements<A: Clone>(

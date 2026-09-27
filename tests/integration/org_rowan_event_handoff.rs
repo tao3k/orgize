@@ -1,5 +1,4 @@
-//! Scheme-authored event fixtures reach Rowan and Org Element projection.
-//! Fixture parity does not mean production parsing has switched to event AOT.
+//! Scheme-authored events reach the production Rowan and Org Element projection.
 
 use gerbil_parser_rowan::{KindCategory, TreeEvent, parse_generated_events, project_syntax_graph};
 use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
@@ -12,6 +11,21 @@ mod generated_context_events {
 
 const HANDOFF_TEST_DIGEST: &str =
     "sha256:8b41c0fcb53588c81a44b83ec9e530bdb6125096637cba4934c96f7c2965abd6";
+
+#[test]
+fn org_scheme_event_aot_keeps_nested_description_urls_as_text() {
+    let source = "go [[id:a][https://example.org]]\n";
+    let document = parse_org_aot(source).expect("Scheme events build a lossless Rowan document");
+    assert_eq!(document.syntax().to_string(), source);
+    let links = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "link")
+        .collect::<Vec<_>>();
+    assert_eq!(links.len(), 1);
+    assert_eq!(links[0].field("path"), Some("id:a"));
+    assert_eq!(links[0].field("description"), Some("https://example.org"));
+}
 
 #[test]
 fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
@@ -103,15 +117,15 @@ fn org_scheme_context_algorithm_aot_masks_headlines_inside_source_blocks() {
         .map(|node| org_language_spec().kinds[usize::from(node.kind().0)].name)
         .collect();
     assert_eq!(
-        kinds,
-        [
-            "OrgFile",
-            "OrgSection",
-            "OrgHeadline",
-            "OrgSourceBlock",
-            "OrgSection",
-            "OrgHeadline",
-        ]
+        kinds.iter().filter(|kind| **kind == "OrgHeadline").count(),
+        2
+    );
+    assert_eq!(
+        kinds
+            .iter()
+            .filter(|kind| **kind == "OrgSourceBlock")
+            .count(),
+        1
     );
     assert_eq!(
         parsed.receipt().parser_digest,

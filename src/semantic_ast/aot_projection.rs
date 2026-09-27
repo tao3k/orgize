@@ -166,7 +166,8 @@ impl<'a> GraphProjector<'a> {
         let range = record.range;
         let child_ids = record.child_ids.clone();
         let level = record.field("markers").map_or(1, str::len);
-        let raw_title = self.document.headline_display_title(id).unwrap_or_default();
+        let raw_title = self.document.headline_source_title(id).unwrap_or_default();
+        let display_title = self.document.headline_display_title(id).unwrap_or_default();
         let tags = record.values("tag").map(str::to_owned).collect::<Vec<_>>();
         let todo = self
             .document
@@ -180,7 +181,7 @@ impl<'a> GraphProjector<'a> {
                 name,
             });
         let is_comment = self.document.headline_is_comment(id).unwrap_or(false);
-        let title = vec![self.plain(range, &raw_title)];
+        let title = vec![self.plain(range, &display_title)];
         let planning = child_ids
             .iter()
             .copied()

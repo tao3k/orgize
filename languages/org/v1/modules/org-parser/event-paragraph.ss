@@ -2,7 +2,8 @@
 ;;; Paragraph lifetime and cross-line inline strategy owned by Org.
 
 (import (only-in "event-inline.ss"
-                 event-inline-initial citation-affix-event-initial
+                 event-inline-initial nested-description-event-initial
+                 citation-affix-event-initial
                  event-text-line-forms)
         (only-in "event-inline-citation-reference.ss"
                  citation-reference-helper)
@@ -55,7 +56,7 @@
          'inline-span event-inline-initial (event-text-line-forms 'start)
          '(inline-script-policy))
         (make-org-event-helper
-         'link-description-span event-inline-initial
+         'link-description-span nested-description-event-initial
          (event-text-line-forms 'start #t)
          '(inline-script-policy))
         (make-org-event-helper

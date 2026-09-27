@@ -343,14 +343,6 @@ runtime dependency is copied into this repository.
 - [X] Precompute export select/exclude tag sets once per projection instead of
       rebuilding lowercase hash sets for every section.
 
-*** M17 Parser v2 Closeout Evidence
-
-- [X] Add `docs/20_parser/20.02_parser_v2_performance_closeout.org` as the durable performance
-      closeout entry point.
-- [X] Record the parser-v2 hot-path ownership matrix, dense benchmark matrix,
-      and current low-sample Criterion measurements.
-- [X] Link release readiness to the structured performance closeout document.
-
 *** M18 Orgize lint/fmt CLI
 
 - [X] Add a thin `orgize` binary entrypoint with implementation kept in the

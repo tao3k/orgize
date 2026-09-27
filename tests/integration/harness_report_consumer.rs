@@ -97,48 +97,6 @@ fn git_locked_asp_rust_report_exposes_actionable_performance_gaps() {
     );
 }
 
-#[test]
-fn verification_report_docs_keep_dense_parser_backlog_consumable() {
-    let closeout = include_str!("../../docs/20_parser/20.02_parser_v2_performance_closeout.org");
-    let consumption =
-        include_str!("../../docs/90_operations/90.02_verification_report_consumption.org");
-    let dense_surfaces = [
-        "Org::macro_expansions/dense-macro-expansions.org",
-        "Org::document/dense-target-projection/many-targets-and-radio-links.org",
-        "Org::document/dense-annotation-projection/many-annotated-ascii-objects.org",
-        "Org::document/dense-semantic-radio-projection/many-parsed-object-radio-links.org",
-        "Org::document/dense-m15-side-tables/many-m15-settings-links-footnotes.org",
-        "Document::project_for_export/dense-m15/many-m15-settings-links-footnotes.org",
-        "Document::agenda_entries/dense-agenda/many-agenda-planning-timestamps.org",
-        "Document::include-datetree-agenda-extras/dense/include-expansion-plan.org",
-        "Document::include-datetree-agenda-extras/dense/datetree-entries.org",
-        "Document::include-datetree-agenda-extras/dense/agenda-inactive-diary.org",
-    ];
-
-    assert!(consumption.contains(
-        "| Surface | Benchmark command | Baseline evidence | Regression threshold | Next action |"
-    ));
-    for key in ["benchmark_command", "baseline", "regression_threshold"] {
-        assert!(
-            consumption.contains(key),
-            "missing required evidence key {key}"
-        );
-    }
-    for surface in dense_surfaces {
-        assert!(
-            closeout.contains(surface),
-            "closeout is missing dense surface {surface}"
-        );
-        assert!(
-            consumption.contains(surface),
-            "consumption backlog is missing dense surface {surface}"
-        );
-    }
-    assert!(consumption.contains("dense-agenda -- --sample-size 10"));
-    assert!(consumption.contains("include-datetree -- --sample-size 10"));
-    assert!(consumption.contains("pending | Calibrate"));
-}
-
 struct TempProject {
     path: PathBuf,
 }

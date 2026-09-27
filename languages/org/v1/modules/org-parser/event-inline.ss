@@ -26,7 +26,8 @@
         (only-in "objects.ss"
                  make-org-inline-markup org-inline-markup-byte
                  org-inline-markup-id org-inline-markup-node))
-(export event-inline-initial citation-affix-event-initial
+(export event-inline-initial nested-description-event-initial
+        citation-affix-event-initial
         event-text-line-forms inline-trigger-bytes)
 
 (def inline-open-boundary-bytes '(9 10 13 32 45 40 39 34 123))
@@ -669,22 +670,21 @@
                                  ,(markup-scan-forms))))))))))))))))
 
 (def (inline-free-scan-forms nested-description? allow-citation?)
-  `(,@(if nested-description?
-         '()
-         `((if (line-bytes-any-in? ,link-index ,inline-next (60 104))
-               ,(url-link-open-forms) ())))
-    (if (uint-positive? (state inline-url-kind))
-        ()
-        ((if ,(pattern-at? link-index "{{{")
-             ,(macro-open-forms)
-             ((if (line-byte-equal? ,link-index 92)
-                  ,(entity-or-ordinary-free-forms nested-description? allow-citation?)
-                  ,(inline-ordinary-free-scan-forms nested-description? allow-citation?))))))))
+  (let (ordinary
+        `((if ,(pattern-at? link-index "{{{")
+               ,(macro-open-forms)
+               ((if (line-byte-equal? ,link-index 92)
+                    ,(entity-or-ordinary-free-forms nested-description? allow-citation?)
+                    ,(inline-ordinary-free-scan-forms nested-description? allow-citation?))))))
+    (if nested-description?
+      ordinary
+      `((if (line-bytes-any-in? ,link-index ,inline-next (60 104))
+             ,(url-link-open-forms) ())
+        (if (uint-positive? (state inline-url-kind)) () ,ordinary)))))
 
 (def (inline-ordinary-non-code-scan-forms nested-description? allow-citation?)
-  `((if (uint-positive? (state inline-url-kind))
-        ,(url-link-scan-forms)
-        ((if (uint-positive? (state inline-timestamp-mode))
+  (let (ordinary
+        `((if (uint-positive? (state inline-timestamp-mode))
         ,(timestamp-scan-forms)
         ((if (uint-positive? (state inline-footnote-mode))
         ,(footnote-reference-scan-forms)
@@ -704,7 +704,12 @@
                                  ((set-uint inline-markup-kind (uint 0))) ())
                              (if (uint-positive? (state inline-markup-kind))
                                  ,(markup-scan-forms)
-                                 ,(inline-free-scan-forms nested-description? allow-citation?))))))))))))))))))
+                                 ,(inline-free-scan-forms nested-description? allow-citation?))))))))))))))))
+    (if nested-description?
+      ordinary
+      `((if (uint-positive? (state inline-url-kind))
+             ,(url-link-scan-forms)
+             ,ordinary)))))
 
 (def (inline-non-code-scan-forms nested-description? allow-citation?)
   (let ((ordinary
@@ -790,7 +795,7 @@
     (if (uint-positive? (state inline-entity-mode))
         ,(entity-finish-forms #f) ())
     ,@(inline-script-final-forms)
-    ,@(url-link-final-forms)
+    ,@(if nested-description? '() (url-link-final-forms))
     (token TextLine (state-offset inline-cursor) end)
     (finish-node)))
 
@@ -837,6 +842,11 @@
     (inline-entity-name-end 0) (inline-entity-post-end 0)
     (inline-previous-backslash #f))))
 
+(def nested-description-event-initial
+  (filter (lambda (entry)
+            (not (assq (car entry) url-link-event-initial)))
+          event-inline-initial))
+
 ;; The affix helper cannot enter a citation, so only its mode guard is live.
 ;; Keep the other initialized state out of generated Rust rather than silencing
 ;; unused-variable diagnostics in the AOT product.
@@ -844,4 +854,4 @@
   (filter (lambda (entry)
             (or (eq? (car entry) 'inline-citation-mode)
                 (not (assq (car entry) citation-event-initial))))
-          event-inline-initial))
+          nested-description-event-initial))

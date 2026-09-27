@@ -443,6 +443,18 @@
           (OrgTextLine
            (TextLine 0 6) (OrgLink (LinkTarget 6 30))
            (TextLine 30 32))))))
+    (test-case "nested link descriptions keep URL text without recursive links"
+      (check-org-ast-with parse-org-rowan-events
+        "go [[id:a][https://example.org]]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 3)
+           (OrgLink (LinkTrivia 3 5) (LinkTarget 5 9)
+                    (LinkTrivia 9 11)
+                    (OrgLinkDescription (OrgTextLine (TextLine 11 30)))
+                    (LinkTrivia 30 32))
+           (TextLine 32 33))))))
     (test-case "target and radio-target Objects retain source-backed value spans"
       (check-org-ast-with parse-org-rowan-events
         "a <<one two>> and <<<radio>>> z\n"

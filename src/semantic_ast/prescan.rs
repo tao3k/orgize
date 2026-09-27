@@ -5,8 +5,8 @@ use super::settings::{
     apply_options_keyword, link_abbreviation, parse_tag_definitions, parse_tags, split_words,
 };
 use super::{
-    ArchiveLocation, Diagnostic, ExportSettings, FootnoteEntry, IncludeDirective, Keyword,
-    LinkAbbreviation, MacroDefinition, OrgDuration, ParsedAnnotation, Property, TagDefinition,
+    ArchiveLocation, Diagnostic, ExportSettings, IncludeDirective, Keyword, LinkAbbreviation,
+    MacroDefinition, OrgDuration, ParsedAnnotation, Property, TagDefinition,
 };
 
 #[derive(Default)]
@@ -20,7 +20,6 @@ pub(super) struct SemanticPrescan {
     pub(super) link_abbreviations: Vec<LinkAbbreviation>,
     pub(super) includes: Vec<IncludeDirective<ParsedAnnotation>>,
     pub(super) macro_definitions: Vec<MacroDefinition<ParsedAnnotation>>,
-    pub(super) footnotes: Vec<FootnoteEntry<ParsedAnnotation>>,
     pub(super) diagnostics: Vec<Diagnostic>,
 }
 

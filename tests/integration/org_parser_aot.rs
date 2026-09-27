@@ -631,17 +631,23 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             .collect();
         assert_eq!(headlines.len(), 8);
         for headline in &headlines {
-            let title = headline
+            let (range, title) = headline
                 .children_with_tokens()
-                .filter_map(rowan::NodeOrToken::into_token)
-                .find(|token| token_name(token) == "HeadlineTitle")
-                .expect("fixture headline has a typed title");
-            let range = title.text_range();
+                .find_map(|child| match child {
+                    rowan::NodeOrToken::Node(node) if name(&node) == "OrgHeadlineTitle" => {
+                        Some((node.text_range(), node.text().to_string()))
+                    }
+                    rowan::NodeOrToken::Token(token) if token_name(&token) == "HeadlineTitle" => {
+                        Some((token.text_range(), token.text().to_string()))
+                    }
+                    _ => None,
+                })
+                .expect("fixture headline has a source-backed title");
             assert_eq!(
                 &source[usize::from(range.start())..usize::from(range.end())],
-                title.text()
+                title
             );
-            assert!(!title.text().is_empty());
+            assert!(!title.is_empty());
         }
         assert_eq!(
             root.descendants()
@@ -697,9 +703,8 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
                 "https://example.test"
             );
             assert!(
-                tokens
-                    .iter()
-                    .any(|token| token_name(token) == "LinkDescription")
+                link.children()
+                    .any(|node| name(&node) == "OrgLinkDescription")
             );
         }
         let property_nodes: Vec<_> = root

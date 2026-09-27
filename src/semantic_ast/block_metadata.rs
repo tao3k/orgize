@@ -1,51 +1,11 @@
 //! Source and example block metadata parsing for semantic projection.
 
-use super::{
-    BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering, BlockSwitches,
-};
+use super::{BlockCodeRef, BlockHeaderArg, BlockLine, BlockSwitches};
 
 pub(super) struct BlockLineOptions<'a> {
     pub(super) switches: &'a BlockSwitches,
     pub(super) tab_width: usize,
     pub(super) preserve_indentation: bool,
-}
-
-pub(super) fn parse_block_switches(switches: Option<&str>) -> BlockSwitches {
-    let Some(raw) = switches else {
-        return BlockSwitches::default();
-    };
-
-    let mut parsed = BlockSwitches {
-        raw: Some(raw.to_string()),
-        ..BlockSwitches::default()
-    };
-    let mut tokens = split_block_switches(raw).into_iter().peekable();
-
-    while let Some(token) = tokens.next() {
-        match token.as_str() {
-            "-n" | "+n" => {
-                let start = tokens.peek().and_then(|value| value.parse::<usize>().ok());
-                if start.is_some() {
-                    tokens.next();
-                }
-                parsed.line_numbering = Some(BlockLineNumbering {
-                    mode: if token == "-n" {
-                        BlockLineNumberMode::New
-                    } else {
-                        BlockLineNumberMode::Continued
-                    },
-                    start,
-                });
-            }
-            "-i" => parsed.preserve_indentation = true,
-            "-k" => parsed.keep_labels = true,
-            "-r" => parsed.remove_labels = true,
-            "-l" => parsed.label_format = tokens.next(),
-            _ => {}
-        }
-    }
-
-    parsed
 }
 
 pub(super) fn parse_block_lines<A>(
@@ -126,28 +86,6 @@ pub(super) fn parse_block_lines<A>(
         .collect()
 }
 
-pub(super) fn parse_block_code_refs(value: &str, switches: Option<&str>) -> Vec<BlockCodeRef> {
-    let switches = parse_block_switches(switches);
-
-    block_code_refs(&parse_block_lines(
-        value,
-        None,
-        BlockLineOptions {
-            switches: &switches,
-            tab_width: 4,
-            preserve_indentation: switches.preserve_indentation,
-        },
-        |_| (),
-    ))
-}
-
-pub(super) fn block_code_refs<A>(lines: &[BlockLine<A>]) -> Vec<BlockCodeRef> {
-    lines
-        .iter()
-        .filter_map(|line| line.code_ref.clone())
-        .collect()
-}
-
 pub(crate) fn parse_block_header_args(args: Option<&str>) -> Vec<BlockHeaderArg> {
     let Some(args) = args else {
         return Vec::new();
@@ -202,13 +140,6 @@ fn next_keyword_arg_index(tokens: &[KeywordToken], start: usize, prefix: &str) -
 
 fn is_keyword_arg_token(token: &KeywordToken, prefix: &str) -> bool {
     token.value.starts_with(prefix) && token.value.len() > prefix.len()
-}
-
-fn split_keyword_tokens(value: &str) -> Vec<String> {
-    split_keyword_tokens_with_ranges(value)
-        .into_iter()
-        .map(|token| token.value)
-        .collect()
 }
 
 #[derive(Clone, Debug)]
@@ -469,8 +400,4 @@ fn leading_spaces(value: &str) -> usize {
 
 fn drop_leading_spaces(value: &str, count: usize) -> String {
     value.chars().skip(count).collect()
-}
-
-fn split_block_switches(value: &str) -> Vec<String> {
-    split_keyword_tokens(value)
 }

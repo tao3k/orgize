@@ -83,11 +83,6 @@ impl LatexRenderer<'_> {
         (usize::from(range.start()), usize::from(range.end()))
     }
 
-    fn source(&self, id: usize) -> &str {
-        let (start, end) = self.bounds(id);
-        &self.source[start..end]
-    }
-
     fn newline(&mut self) {
         if !self.output.is_empty() && !self.output.ends_with('\n') {
             self.output.push('\n');
