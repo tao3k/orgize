@@ -5,6 +5,30 @@ use orgize::{
 };
 
 #[test]
+fn semantic_ast_projects_headline_title_objects_from_the_aot_graph() {
+    let doc = Org::parse("* TODO *Bold* title :work:\n").document();
+    let section = &doc.sections[0];
+    assert_eq!(section.raw_title, "*Bold* title ");
+    assert!(section.title.iter().any(|object| matches!(
+        object.data,
+        ObjectData::Markup {
+            kind: MarkupKind::Bold,
+            ..
+        }
+    )));
+}
+
+#[test]
+fn semantic_ast_inherits_headline_tags_from_the_aot_graph() {
+    let doc = Org::parse("* Parent :work:\n** Child :urgent:\n").document();
+    let parent = &doc.sections[0];
+    let child = &parent.subsections[0];
+    assert_eq!(parent.tags, ["work"]);
+    assert_eq!(child.tags, ["urgent"]);
+    assert_eq!(child.effective_tags, ["work", "urgent"]);
+}
+
+#[test]
 fn semantic_ast_projection_and_bare_snapshot() {
     let doc = Org::parse(
         r#"#+TITLE: Demo

@@ -167,9 +167,14 @@ impl<'a> GraphProjector<'a> {
         let range = record.range;
         let child_ids = record.child_ids.clone();
         let level = record.field("markers").map_or(1, str::len);
+        let title_body = record.field("title-body").map(str::to_owned);
         let raw_title = self.document.headline_source_title(id).unwrap_or_default();
-        let display_title = self.document.headline_display_title(id).unwrap_or_default();
         let tags = record.values("tag").map(str::to_owned).collect::<Vec<_>>();
+        let effective_tags = self
+            .document
+            .headline(id)
+            .map(|headline| headline.effective_tags())
+            .unwrap_or_else(|| tags.clone());
         let todo = self
             .document
             .headline_todo_keyword(id)
@@ -182,7 +187,8 @@ impl<'a> GraphProjector<'a> {
                 name,
             });
         let is_comment = self.document.headline_is_comment(id).unwrap_or(false);
-        let title = vec![self.plain(range, &display_title)];
+        let title =
+            self.headline_title_objects(range, title_body.as_deref(), &raw_title, &child_ids);
         let planning = child_ids
             .iter()
             .copied()
@@ -228,7 +234,7 @@ impl<'a> GraphProjector<'a> {
             raw_title,
             anchor: None,
             tags: tags.clone(),
-            effective_tags: tags,
+            effective_tags,
             planning,
             children,
             subsections,
@@ -256,20 +262,8 @@ impl<'a> GraphProjector<'a> {
             )
         };
         let raw_title = self.document.headline_source_title(id).unwrap_or_default();
-        let title = title_body
-            .as_deref()
-            .filter(|body| !body.is_empty() && body.ends_with(&raw_title))
-            .and_then(|body| {
-                let source_start = usize::from(range.start());
-                let header = self.raw(range).split_once('\n')?.0;
-                let title_start = source_start + header.find(body)? + body.len() - raw_title.len();
-                let title_end = title_start + raw_title.len();
-                Some(self.objects_in_span(
-                    TextRange::new((title_start as u32).into(), (title_end as u32).into()),
-                    &child_ids,
-                ))
-            })
-            .unwrap_or_else(|| vec![self.plain(range, &raw_title)]);
+        let title =
+            self.headline_title_objects(range, title_body.as_deref(), &raw_title, &child_ids);
         let todo = self
             .document
             .headline_todo_keyword(id)
@@ -333,6 +327,28 @@ impl<'a> GraphProjector<'a> {
             value: record.field("value")?.to_owned(),
             duration: None,
         })
+    }
+
+    fn headline_title_objects(
+        &mut self,
+        range: TextRange,
+        title_body: Option<&str>,
+        raw_title: &str,
+        children: &[usize],
+    ) -> Vec<Object<ParsedAnnotation>> {
+        title_body
+            .filter(|body| !body.is_empty() && body.ends_with(raw_title))
+            .and_then(|body| {
+                let source_start = usize::from(range.start());
+                let header = self.raw(range).lines().next()?;
+                let title_start = source_start + header.find(body)? + body.len() - raw_title.len();
+                let title_end = title_start + raw_title.len();
+                Some(self.objects_in_span(
+                    TextRange::new((title_start as u32).into(), (title_end as u32).into()),
+                    children,
+                ))
+            })
+            .unwrap_or_else(|| vec![self.plain(range, raw_title)])
     }
 
     fn planning(&self, id: usize) -> Planning {
