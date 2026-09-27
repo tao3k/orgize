@@ -36,6 +36,9 @@
                  make-org-headline-properties org-headline-property-field)
         (only-in "link-properties.ss"
                  org-image-link? org-image-link-rust)
+        (only-in "citation-functions.ss"
+                 citation-style citation-style-rust
+                 citation-variant citation-variant-rust)
         (only-in "affiliated-properties.ss"
                  org-affiliated-keyword? org-affiliated-keyword-rust)
         (only-in "catalog.ss" +org-affiliated-keywords+)
@@ -138,6 +141,18 @@
       (check (org-image-link? "diagram.svg") => #t)
       (check (org-image-link? "diagram.svg?size=2") => #f)
       (check (org-image-link? "https://example.test/doc.org") => #f))
+    (test-case "citation header style is Scheme-owned and AOT projected"
+      (check-org-headline-ir
+       citation-style-rust 'citation_style
+       "languages/org/v1/modules/org-elements/generated/citation_style.ir.json")
+      (check-org-headline-ir
+       citation-variant-rust 'citation_variant
+       "languages/org/v1/modules/org-elements/generated/citation_variant.ir.json")
+      (check (citation-style "[cite:") => "nil")
+      (check (citation-style "[cite/text:") => "text")
+      (check (citation-style "[cite/noauthor/bare:") => "noauthor")
+      (check (citation-variant "[cite:") => "")
+      (check (citation-variant "[cite/noauthor/bare:") => "bare"))
     (test-case "catalog and projected query share one feature interface"
       (check-org-element-catalog)
       (check (if (member "headline" +org-element-kinds+) #t #f)

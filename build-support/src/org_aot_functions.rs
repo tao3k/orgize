@@ -19,6 +19,8 @@ pub fn write_org_aot_functions() {
         "headline_source_title",
         "planning_key_kind",
         "planning_timestamp_kind",
+        "citation_style",
+        "citation_variant",
         "priority_token_p",
         "headline_priority_cookie",
         "headline_display_title",

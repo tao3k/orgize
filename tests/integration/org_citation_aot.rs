@@ -1,5 +1,52 @@
 //! Citation Objects are Scheme-owned and source-backed in Rowan.
 
+use orgize::{
+    Org,
+    ast::{ElementData, ObjectData},
+};
+
+include!(concat!(env!("OUT_DIR"), "/citation_style.rs"));
+include!(concat!(env!("OUT_DIR"), "/citation_variant.rs"));
+
+#[test]
+fn scheme_citation_header_aot_projects_style_and_variant() {
+    macro_rules! check_citation_header_aot {
+        ($($head:expr => $style:expr, $variant:expr),+ $(,)?) => {
+            $(
+                assert_eq!(citation_style($head), $style);
+                assert_eq!(citation_variant($head), $variant);
+            )+
+        };
+    }
+    check_citation_header_aot!(
+        "[cite:" => "nil", "",
+        "[cite/text:" => "text", "",
+        "[cite/noauthor/bare:" => "noauthor", "bare",
+    );
+}
+
+#[test]
+fn public_ast_projects_scheme_citation_reference_fields() {
+    let document = Org::parse("See [cite/text:see @doe2020 p. 42; cf. @roe2021].").document();
+    assert!(document.diagnostics.is_empty());
+    let Some(ElementData::Paragraph(objects)) = document.children.first().map(|child| &child.data)
+    else {
+        panic!("expected paragraph");
+    };
+    let citation = objects
+        .iter()
+        .find_map(|object| match &object.data {
+            ObjectData::Citation(citation) => Some(citation),
+            _ => None,
+        })
+        .expect("citation object");
+    assert_eq!(citation.style, "text");
+    assert_eq!(citation.variant, "");
+    assert_eq!(citation.references.len(), 2);
+    assert_eq!(citation.references[0].id, "doe2020");
+    assert_eq!(citation.references[1].id, "roe2021");
+}
+
 #[test]
 fn scheme_declared_citations_project_into_rowan_and_graph() {
     check_org_aot_element!("[cite:@doe2020]\n", "citation-reference", "key" => "doe2020");

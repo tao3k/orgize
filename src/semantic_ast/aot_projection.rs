@@ -12,10 +12,10 @@ use crate::org_aot::{OrgAotDocument, org_image_link};
 
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
-    Block, BlockKind, Checkbox, Diagnostic, DiagnosticKind, Document, Drawer, Element, ElementData,
-    FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link, List, ListItem, ListType, MarkupKind,
-    Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, Section, Table, TableCell,
-    TableRow, TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    Block, BlockKind, Checkbox, Citation, CiteReference, Diagnostic, DiagnosticKind, Document,
+    Drawer, Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link, List,
+    ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning,
+    Property, Section, Table, TableCell, TableRow, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 use super::preprocessing::macro_definition;
 use super::prescan::{SemanticPrescan, collect_document_keyword};
@@ -643,6 +643,7 @@ impl<'a> GraphProjector<'a> {
                     .map(|text| vec![self.plain(range, text)])
                     .unwrap_or_default(),
             },
+            "citation" => ObjectData::Citation(self.citation(id)),
             "export-snippet" => ObjectData::ExportSnippet {
                 backend: record.field("backend").unwrap_or_default().to_owned(),
                 value: record.field("value").unwrap_or_default().to_owned(),
@@ -713,6 +714,35 @@ impl<'a> GraphProjector<'a> {
             attachment: None,
             file: None,
         }))
+    }
+
+    fn citation(&self, id: usize) -> Citation<ParsedAnnotation> {
+        let record = self.record(id);
+        let head = record.field("head").unwrap_or_default();
+        let affix = |value: Option<&str>| {
+            value
+                .filter(|text| !text.is_empty())
+                .map(|text| vec![self.plain(record.range, text)])
+                .unwrap_or_default()
+        };
+        Citation {
+            style: OrgAotDocument::citation_style(head),
+            variant: OrgAotDocument::citation_variant(head),
+            prefix: affix(record.field("global-prefix")),
+            suffix: affix(record.field("global-suffix")),
+            references: record
+                .child_ids
+                .iter()
+                .map(|&child| self.record(child))
+                .filter(|child| child.kind == "citation-reference")
+                .map(|child| CiteReference {
+                    ann: self.annotation(child.range),
+                    id: child.field("key").unwrap_or_default().to_owned(),
+                    prefix: affix(child.field("prefix")),
+                    suffix: affix(child.field("suffix")),
+                })
+                .collect(),
+        }
     }
 
     fn timestamp(&self, id: usize) -> Timestamp {

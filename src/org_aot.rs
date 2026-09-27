@@ -23,6 +23,8 @@ mod grammar;
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/graph.rs"]
 mod graph;
+#[path = "org_aot_citation_functions.rs"]
+mod citation_functions;
 #[path = "org_aot_contract_plan.rs"]
 mod contract_plan;
 #[path = "org_aot_headline_functions.rs"]
@@ -447,6 +449,14 @@ impl OrgAotDocument {
 
     pub(crate) fn planning_timestamp_kind(value: &str) -> &'static str {
         headline_functions::planning_timestamp_kind(value)
+    }
+
+    pub(crate) fn citation_style(head: &str) -> String {
+        citation_functions::citation_style(head)
+    }
+
+    pub(crate) fn citation_variant(head: &str) -> String {
+        citation_functions::citation_variant(head).to_owned()
     }
 
     /// Return a priority cookie admitted by the Scheme-AOT headline algorithm.
