@@ -31,7 +31,7 @@
        (eq? (.ref value 'kind) +org-graph-node-kind+)
        (symbol? (.ref value 'rust))
        (member (.ref value 'category) '("document" "section" "element"
-                                         "object" "property"))
+                                         "object" "property" "component"))
        (string? (.ref value 'label))
        (list? (.ref value 'fields))
        (every org-graph-field? (.ref value 'fields))))

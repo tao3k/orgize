@@ -45,9 +45,12 @@
     (set-bool after-heading (bool #t))))
 
 (def (inlinetask-end-forms)
-  '((close-all inlinetask-body-levels)
+  `((close-all inlinetask-body-levels)
     (start-node OrgInlinetaskEnd)
-    (token InlinetaskEndLine start end)
+    (token HeadlineLine start
+           (line-marker-end ,heading-marker ,heading-separator))
+    (token InlinetaskEndLine
+           (line-marker-end ,heading-marker ,heading-separator) end)
     (finish-node)
     (finish-node)
     (set-bool inlinetask-open (bool #f))

@@ -13,9 +13,9 @@ use crate::org_aot::{OrgAotDocument, org_image_link};
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
     Block, BlockKind, Checkbox, Diagnostic, DiagnosticKind, Document, Drawer, Element, ElementData,
-    FootnoteDef, Keyword, Link, List, ListItem, ListType, MarkupKind, Object, ObjectData,
-    ParsedAnnotation, ParsedAst, Planning, Property, Section, Table, TableCell, TableRow,
-    TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, Link, List, ListItem, ListType, MarkupKind,
+    Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, Section, Table, TableCell,
+    TableRow, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 use super::preprocessing::macro_definition;
 use super::prescan::{SemanticPrescan, collect_document_keyword};
@@ -149,7 +149,7 @@ impl<'a> GraphProjector<'a> {
     fn nearest_headline(&self, id: usize) -> Option<usize> {
         let mut parent = self.record(id).parent_id;
         while let Some(ancestor) = parent {
-            if self.record(ancestor).kind == "headline" {
+            if matches!(self.record(ancestor).kind, "headline" | "inlinetask") {
                 return Some(ancestor);
             }
             parent = self.record(ancestor).parent_id;
@@ -231,6 +231,61 @@ impl<'a> GraphProjector<'a> {
         })
     }
 
+    fn inlinetask(&mut self, id: usize) -> Inlinetask<ParsedAnnotation> {
+        let record = self.record(id);
+        let range = record.range;
+        let child_ids = record.child_ids.clone();
+        let raw_title = self.document.headline_display_title(id).unwrap_or_default();
+        let todo = self
+            .document
+            .headline_todo_keyword(id)
+            .map(|name| TodoKeyword {
+                state: if self.document.headline_todo_type(id) == Some("done") {
+                    TodoState::Done
+                } else {
+                    TodoState::Todo
+                },
+                name,
+            });
+        let properties = child_ids
+            .iter()
+            .filter_map(|&child| (self.record(child).kind == "property-drawer").then_some(child))
+            .flat_map(|drawer| self.record(drawer).child_ids.iter())
+            .filter_map(|&property| self.property(self.record(property)))
+            .collect();
+        let end = child_ids
+            .iter()
+            .map(|&child| self.record(child))
+            .find(|child| child.kind == "inlinetask-end")
+            .map(|end| InlinetaskEnd {
+                ann: self.annotation(end.range),
+                level: end.field("markers").map_or(0, str::len),
+                raw: self.raw(end.range).to_owned(),
+            });
+        let mut children = Vec::new();
+        for child in child_ids {
+            if !matches!(
+                self.record(child).kind,
+                "planning" | "property-drawer" | "inlinetask-end"
+            ) && let Some(element) = self.element(child)
+            {
+                children.push(element);
+            }
+        }
+        Inlinetask {
+            level: self.record(id).field("markers").map_or(0, str::len),
+            todo,
+            priority: Priority::from_cookie(self.document.headline_priority_cookie(id)),
+            title: vec![self.plain(range, &raw_title)],
+            raw_title,
+            tags: self.record(id).values("tag").map(str::to_owned).collect(),
+            planning: Planning::default(),
+            properties,
+            children,
+            end,
+        }
+    }
+
     fn property(&self, record: &GraphRecord) -> Option<Property<ParsedAnnotation>> {
         Some(Property {
             ann: self.annotation(record.range),
@@ -256,6 +311,7 @@ impl<'a> GraphProjector<'a> {
         let data = match kind {
             "keyword" => ElementData::Keyword(self.keyword(record)?),
             "babel-call" => ElementData::BabelCall(self.keyword(record)?),
+            "inlinetask" => ElementData::Inlinetask(Box::new(self.inlinetask(id))),
             "paragraph" => ElementData::Paragraph(self.paragraph_objects(id)),
             "plain-list" => ElementData::List(self.list(id)),
             "table" => ElementData::Table(self.table(id)),

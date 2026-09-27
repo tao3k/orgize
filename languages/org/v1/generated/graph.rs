@@ -3,11 +3,12 @@ use gerbil_parser_rowan::{GraphFieldMode, GraphFieldRule, GraphNodeRule, GraphPr
 
 pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
     grammar_digest: "sha256:38cb0645e06db3428b2db23e78b9a0ddd13f8a1199a6ab2844e980f6013a93f8",
-    projection_digest: "sha256:19ebe9fe8b2f0fa6ee9e92bd6a43de475408e5a690fb52b8faddbe22aa31c42f",
+    projection_digest: "sha256:5a7ec81bf2c835c322544a28befcfb2d83a1e52ac58a9ddb8b37316fb0d68391",
     rules: &[
         GraphNodeRule { syntax_kind: 0, category: "document", kind: "org-data", fields: &[] },
         GraphNodeRule { syntax_kind: 62, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 63, name: "markers", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 64, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 65, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 66, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 65, name: "tag", mode: GraphFieldMode::Each }, ] },
         GraphNodeRule { syntax_kind: 166, category: "element", kind: "inlinetask", fields: &[GraphFieldRule { token_kind: 63, name: "markers", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 64, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 65, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 66, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 65, name: "tag", mode: GraphFieldMode::Each }, ] },
+        GraphNodeRule { syntax_kind: 167, category: "component", kind: "inlinetask-end", fields: &[GraphFieldRule { token_kind: 63, name: "markers", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 16, category: "element", kind: "property-drawer", fields: &[] },
         GraphNodeRule { syntax_kind: 17, category: "element", kind: "drawer", fields: &[GraphFieldRule { token_kind: 91, name: "name", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 20, category: "element", kind: "paragraph", fields: &[] },

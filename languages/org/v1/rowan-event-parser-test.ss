@@ -133,7 +133,8 @@
            (HeadlineLine 0 15) (HeadlineTrivia 15 16)
            (HeadlineTitle 16 27) (HeadlineTrivia 27 28))
           (OrgParagraph (OrgTextLine (TextLine 28 34)))
-          (OrgInlinetaskEnd (InlinetaskEndLine 34 54)))
+          (OrgInlinetaskEnd (HeadlineLine 34 49)
+                            (InlinetaskEndLine 49 54)))
          (OrgSection
           (OrgHeadline
            (HeadlineLine 54 55) (HeadlineTrivia 55 56)
@@ -157,7 +158,8 @@
           (HeadlineLine 0 4) (HeadlineTrivia 4 5)
           (HeadlineTitle 5 11) (HeadlineTrivia 11 12))
          (OrgParagraph (OrgTextLine (TextLine 12 18)))
-         (OrgInlinetaskEnd (InlinetaskEndLine 18 27)))))
+         (OrgInlinetaskEnd (HeadlineLine 18 22)
+                           (InlinetaskEndLine 22 27)))))
       (check-org-ast-with parse-org-rowan-events
         "**** Inline\n"
         (OrgFile

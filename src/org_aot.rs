@@ -286,7 +286,7 @@ impl OrgAotDocument {
     fn record_within_headline(&self, id: usize) -> bool {
         let mut parent = self.records[id].parent_id;
         while let Some(ancestor) = parent {
-            if self.records[ancestor].kind == "headline" {
+            if matches!(self.records[ancestor].kind, "headline" | "inlinetask") {
                 return true;
             }
             parent = self.records[ancestor].parent_id;

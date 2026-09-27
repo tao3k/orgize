@@ -49,6 +49,8 @@
                (field 'HeadlineTagValue "title")
                (field 'HeadlineTagTrivia "title")
                (field 'HeadlineTagValue "tag" 'each)))
+   (node 'OrgInlinetaskEnd "component" "inlinetask-end"
+         (list (field 'HeadlineLine "markers")))
    (node 'OrgPropertyDrawer "element" "property-drawer" '())
    (node 'OrgDrawer "element" "drawer"
          (list (field 'DrawerName "name")))

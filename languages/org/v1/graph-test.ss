@@ -36,8 +36,8 @@
    (test-case "one declaration owns the contract scenario record kinds"
       (let (nodes (graph-projection-nodes org-v1-graph-projection))
         (check (graph-projection? org-v1-graph-projection) => #t)
-        (check (map graph-node-syntax-kind nodes)
-               => '(OrgFile OrgSection OrgInlinetask
+      (check (map graph-node-syntax-kind nodes)
+               => '(OrgFile OrgSection OrgInlinetask OrgInlinetaskEnd
                             OrgPropertyDrawer OrgDrawer OrgParagraph
                             OrgFootnoteDefinition
                             OrgComment OrgDiarySexp
@@ -61,7 +61,7 @@
                             OrgSubscript OrgSuperscript
                             OrgStrikeThrough))
         (check (map graph-node-label nodes)
-               => '("org-data" "headline" "inlinetask"
+               => '("org-data" "headline" "inlinetask" "inlinetask-end"
                                 "property-drawer" "drawer"
                                 "paragraph" "footnote-definition" "comment" "diary-sexp"
                                 "horizontal-rule" "fixed-width"

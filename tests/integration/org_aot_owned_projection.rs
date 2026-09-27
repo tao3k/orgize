@@ -169,3 +169,31 @@ fn owned_drawer_and_babel_call_use_scheme_element_children() {
         ElementData::Paragraph(_)
     ));
 }
+
+#[test]
+fn owned_inlinetask_uses_scheme_begin_body_and_end_records() {
+    let source = "*************** TODO [#A] Inline\nBody\n*************** END\n";
+    let parsed = Org::parse(source);
+    assert_eq!(parsed.to_org(), source);
+    let doc = parsed.document();
+    assert!(doc.diagnostics.is_empty());
+    let inlinetask = match &doc.children[0].data {
+        ElementData::Inlinetask(inlinetask) => inlinetask,
+        other => panic!("expected inlinetask, got {other:?}"),
+    };
+    assert_eq!(inlinetask.level, 15);
+    assert_eq!(
+        inlinetask.todo.as_ref().map(|todo| todo.name.as_str()),
+        Some("TODO")
+    );
+    assert_eq!(inlinetask.priority.raw_cookie(), Some("A"));
+    assert!(matches!(
+        &inlinetask.children[0].data,
+        ElementData::Paragraph(_)
+    ));
+    assert_eq!(inlinetask.end.as_ref().map(|end| end.level), Some(15));
+    assert_eq!(
+        inlinetask.end.as_ref().map(|end| end.raw.as_str()),
+        Some("*************** END\n")
+    );
+}
