@@ -43,6 +43,8 @@ pub struct OrgAotDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
     todo_directives: Vec<String>,
+    configured_todo: Vec<String>,
+    configured_done: Vec<String>,
     headline_properties: Vec<Option<HeadlineProperties>>,
     subtree_end: Vec<usize>,
 }
@@ -79,9 +81,11 @@ pub enum OrgAotError {
 /// Returns the parser receipt on parse failure, or a projection diagnostic if
 /// the generated graph table is stale or invalid.
 pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
+    static DEFAULT_CONFIG: OnceLock<ParseConfig> = OnceLock::new();
     parse_org_aot_events(
         source,
         generated_context_events::parse_org_rowan_events(source),
+        DEFAULT_CONFIG.get_or_init(ParseConfig::default),
     )
 }
 
@@ -100,12 +104,13 @@ pub fn parse_org_aot_with_config(
         config.effective_inlinetask_min_level(),
         config.inline_script_policy(),
     );
-    parse_org_aot_events(source, events)
+    parse_org_aot_events(source, events, config)
 }
 
 fn parse_org_aot_events(
     source: &str,
     events: Vec<gerbil_parser_rowan::TreeEvent>,
+    config: &ParseConfig,
 ) -> Result<OrgAotDocument, OrgAotError> {
     let parse = parse_generated_events(
         &grammar::LANGUAGE,
@@ -114,14 +119,14 @@ fn parse_org_aot_events(
         &events,
     )
     .map_err(OrgAotError::Parse)?;
-    document_from_parse(parse)
+    document_from_parse(parse, config)
 }
 
 pub(crate) fn org_image_link(target: &str) -> bool {
     link_functions::org_image_link_p(target)
 }
 
-fn document_from_parse(parse: Parse) -> Result<OrgAotDocument, OrgAotError> {
+fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
     let records = project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
         .map_err(OrgAotError::Projection)?;
     let todo_directives = records
@@ -140,11 +145,15 @@ fn document_from_parse(parse: Parse) -> Result<OrgAotDocument, OrgAotError> {
             let title = record
                 .field("title")
                 .filter(|_| matches!(record.kind, "headline" | "inlinetask"))?;
-            let todo_type =
-                match headline_functions::todo_state_from_directives(title, &todo_directives) {
-                    "" => None,
-                    state => Some(state),
-                };
+            let todo_type = match headline_functions::todo_state_from_directives(
+                title,
+                &todo_directives,
+                &config.todo_keywords.0,
+                &config.todo_keywords.1,
+            ) {
+                "" => None,
+                state => Some(state),
+            };
             Some(HeadlineProperties {
                 todo_type,
                 details: OnceLock::new(),
@@ -161,6 +170,8 @@ fn document_from_parse(parse: Parse) -> Result<OrgAotDocument, OrgAotError> {
         parse,
         records,
         todo_directives,
+        configured_todo: config.todo_keywords.0.clone(),
+        configured_done: config.todo_keywords.1.clone(),
         headline_properties,
         subtree_end,
     })
@@ -196,10 +207,18 @@ impl OrgAotDocument {
         Some(properties.details.get_or_init(|| {
             let record = &self.records[record_id];
             let title = record.field("title").expect("projected headline title");
-            let todo_keyword =
-                headline_functions::todo_keyword_from_directives(title, &self.todo_directives);
-            let content_after_todo =
-                headline_functions::headline_content_after_todo(title, &self.todo_directives);
+            let todo_keyword = headline_functions::todo_keyword_from_directives(
+                title,
+                &self.todo_directives,
+                &self.configured_todo,
+                &self.configured_done,
+            );
+            let content_after_todo = headline_functions::headline_content_after_todo(
+                title,
+                &self.todo_directives,
+                &self.configured_todo,
+                &self.configured_done,
+            );
             let display_title = headline_functions::headline_display_title(
                 &content_after_todo,
                 record.field("tag").is_some(),
@@ -242,8 +261,8 @@ impl OrgAotDocument {
         &self.records
     }
 
-    /// Query a headline's TODO type from this document's keyword Elements.
-    /// File-local TODO, SEQ_TODO and TYP_TODO declarations override defaults.
+    /// Query a headline's Scheme-owned TODO type from keyword Elements and
+    /// configured states. File-local declarations override the configuration.
     #[must_use]
     pub fn headline_todo_type(&self, record_id: usize) -> Option<&'static str> {
         self.headline_properties
@@ -269,7 +288,7 @@ impl OrgAotDocument {
         )
     }
 
-    /// Return the file-local TODO keyword recognized by the Scheme AOT algorithm.
+    /// Return the TODO keyword recognized by the Scheme AOT algorithm.
     #[must_use]
     pub fn headline_todo_keyword(&self, record_id: usize) -> Option<String> {
         self.headline_details(record_id)

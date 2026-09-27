@@ -105,6 +105,41 @@ fn headline_state_uses_defaults_only_without_document_directives() {
 }
 
 #[test]
+fn scheme_aot_headline_state_honors_parse_config_until_file_directive_overrides_it() {
+    let configured = {
+        let config = orgize::ParseConfig {
+            todo_keywords: (vec!["WAIT".into()], vec!["FINISHED".into()]),
+            ..Default::default()
+        };
+        orgize::org_aot::parse_org_aot_with_config(
+            "* WAIT Open\n* FINISHED Closed\n* TODO Plain\n",
+            &config,
+        )
+        .expect("configured TODO states are Scheme-AOT projected")
+    };
+    let headlines = configured.headlines().collect::<Vec<_>>();
+    assert_eq!(headlines[0].todo_type(), Some("todo"));
+    assert_eq!(headlines[0].display_title().as_deref(), Some("Open"));
+    assert_eq!(headlines[1].todo_type(), Some("done"));
+    assert_eq!(headlines[2].todo_type(), None);
+    assert_eq!(headlines[2].display_title().as_deref(), Some("TODO Plain"));
+
+    let config = orgize::ParseConfig {
+        todo_keywords: (vec!["WAIT".into()], vec!["FINISHED".into()]),
+        ..Default::default()
+    };
+    let declared = orgize::org_aot::parse_org_aot_with_config(
+        "#+SEQ_TODO: HOLD | DONE\n* WAIT Plain\n* HOLD Open\n* DONE Closed\n",
+        &config,
+    )
+    .expect("file-local declarations override configured TODO states");
+    let headlines = declared.headlines().collect::<Vec<_>>();
+    assert_eq!(headlines[0].todo_type(), None);
+    assert_eq!(headlines[1].todo_type(), Some("todo"));
+    assert_eq!(headlines[2].todo_type(), Some("done"));
+}
+
+#[test]
 fn scheme_headline_properties_are_stable_across_repeated_queries() {
     let source = "#+SEQ_TODO: WAIT | DONE\n* WAIT [#A] Review :work:\n* TODO Plain\n";
     let document = orgize::org_aot::parse_org_aot(source)

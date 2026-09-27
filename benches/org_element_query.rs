@@ -4,7 +4,10 @@ use std::hint::black_box;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use gerbil_parser_rowan::{parse_generated_events, project_syntax_graph};
-use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
+use orgize::ParseConfig;
+use orgize::org_aot::{
+    org_graph_spec, org_language_spec, parse_org_aot, parse_org_aot_with_config,
+};
 
 #[rustfmt::skip]
 mod generated_context_events {
@@ -12,9 +15,12 @@ mod generated_context_events {
     include!(concat!(env!("OUT_DIR"), "/org_rowan_events.rs"));
 }
 
-fn task_source() -> String {
+fn task_source(with_directive: bool) -> String {
     let mut source = String::with_capacity(200_000);
-    source.push_str("#+SEQ_TODO: WAIT | DONE\n* Team\n");
+    if with_directive {
+        source.push_str("#+SEQ_TODO: WAIT | DONE\n");
+    }
+    source.push_str("* Team\n");
     for _ in 0..2_500 {
         source.push_str("** WAIT Review\n** WAIT Audit\n** WAIT Other\n** DONE Review\n");
     }
@@ -48,7 +54,21 @@ fn list_source() -> String {
 }
 
 fn bench_org_element_query(c: &mut Criterion) {
-    let source = task_source();
+    let source = task_source(true);
+    let configured_source = task_source(false);
+    let config = ParseConfig {
+        todo_keywords: (vec!["WAIT".into()], vec!["DONE".into()]),
+        ..Default::default()
+    };
+    let configured = parse_org_aot_with_config(&configured_source, &config)
+        .expect("configured benchmark document is valid Org");
+    assert_eq!(
+        configured
+            .headlines()
+            .filter(|headline| headline.todo_type().is_some())
+            .count(),
+        10_000
+    );
     let document = parse_org_aot(&source).expect("benchmark document is valid Org");
     let scope = document
         .records()
@@ -68,6 +88,14 @@ fn bench_org_element_query(c: &mut Criterion) {
     group.throughput(Throughput::Elements(10_000));
     group.bench_function("parse/10k-headlines", |b| {
         b.iter(|| black_box(parse_org_aot(black_box(&source)).unwrap()))
+    });
+    group.bench_function("parse/configured-todo/10k-headlines", |b| {
+        b.iter(|| {
+            black_box(
+                parse_org_aot_with_config(black_box(&configured_source), black_box(&config))
+                    .unwrap(),
+            )
+        })
     });
     group.bench_function("query/composite/10k-headlines", |b| {
         b.iter(|| {

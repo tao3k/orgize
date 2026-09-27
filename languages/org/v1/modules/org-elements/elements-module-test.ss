@@ -231,26 +231,51 @@
       (check (headline-display-title "Plan :bad::" #f)
              => "Plan :bad::")
       (check (headline-content-after-todo
-              "  WAIT   [#A] Parent :work:  " '("WAIT(w) | DONE(d)"))
+              "  WAIT   [#A] Parent :work:  " '("WAIT(w) | DONE(d)")
+              '("TODO") '("DONE"))
              => "[#A] Parent :work:")
       (check (headline-content-after-todo
-              "TODO is ordinary text" '("WAIT(w) | DONE(d)"))
+              "TODO is ordinary text" '("WAIT(w) | DONE(d)")
+              '("TODO") '("DONE"))
              => "TODO is ordinary text")
       (check (todo-keyword-from-directives
-              "WAIT Review" '("WAIT(w) | DONE(d)")) => "WAIT")
+              "WAIT Review" '("WAIT(w) | DONE(d)")
+              '("TODO") '("DONE")) => "WAIT")
       (check (todo-keyword-from-directives
-              "TODO prose" '("WAIT(w) | DONE(d)")) => "")
+              "TODO prose" '("WAIT(w) | DONE(d)")
+              '("TODO") '("DONE")) => "")
       (check (todo-keyword-matches?
-              "WAIT Review" '("WAIT | DONE") "WAIT") => #t)
+              "WAIT Review" '("WAIT | DONE")
+              '("TODO") '("DONE") "WAIT") => #t)
       (check (todo-keyword-matches?
-              "WAIT Review" '("HOLD | FINISHED") "WAIT") => #f)
-      (check (todo-state-from-directives "TODO Work" '()) => "todo")
-      (check (todo-state-from-directives "DONE Work" '()) => "done")
+              "WAIT Review" '("HOLD | FINISHED")
+              '("TODO") '("DONE") "WAIT") => #f)
+      (check (todo-state-from-directives
+              "TODO Work" '() '("TODO") '("DONE")) => "todo")
+      (check (todo-state-from-directives
+              "DONE Work" '() '("TODO") '("DONE")) => "done")
+      (check (todo-state-from-directives
+              "WAIT Work" '() '("WAIT") '("FINISHED")) => "todo")
+      (check (todo-state-from-directives
+              "FINISHED Work" '() '("WAIT") '("FINISHED")) => "done")
+      (check (todo-state-from-directives
+              "WAIT Work" '("HOLD | DONE") '("WAIT") '("FINISHED"))
+             => "")
       (check (todo-state-from-directives "WAIT Work"
-                                         '("WAIT(w) | DONE(d)")) => "todo")
+                                         '("WAIT(w) | DONE(d)")
+                                         '("TODO") '("DONE")) => "todo")
       (check (todo-state-from-directives "FINISHED Work"
                                          '("WAIT(w) | DONE(d)"
-                                           "HOLD(h) | FINISHED(f)")) => "done")
+                                           "HOLD(h) | FINISHED(f)")
+                                         '("TODO") '("DONE")) => "done")
+      (let* ((graph (org-element-with-headline-properties
+                     sample-graph '("Evidence") '("FINISHED")))
+             (context (make-org-element-query-context graph))
+             (headline (car (org-element-map context "headline"
+                                              (lambda (record) #t)))))
+        (check (org-element-property context headline "todo-type") => "todo")
+        (check (org-element-property context headline "todo-keyword")
+               => "Evidence"))
       (let* ((graph (org-element-with-headline-properties headline-graph))
              (context (make-org-element-query-context graph))
              (records (org-element-map context "headline"

@@ -359,3 +359,17 @@ reported a regression against its older saved baseline even though this
 event-only path does not execute the new headline cache. This is a red
 cross-run signal, not evidence that caching caused the regression or that
 the full-parser performance gate is satisfied.
+
+The caller-configured TODO cutover now passes keyword lists to the
+Scheme-authored pure functions instead of interpreting them in Rust. A
+same-head release benchmark build took 17m32s. Its first 10-sample run
+measured =OrgAotDocument/parse/10k-headlines= with a file-local TODO
+declaration at 21.846--34.894 ms and the configured-TODO path without that
+declaration at 13.479--16.594 ms. Immediate 30-sample reruns from the same
+executable measured 39.729--47.510 ms for file-local TODO,
+35.053--45.015 ms for the event/Rowan/Element-only path, and
+17.911--32.497 ms for configured TODO. The event-only path does not execute
+the new TODO function, so its simultaneous slowdown makes causal regression
+attribution unsafe. These noisy measurements do not satisfy the final
+performance gate; build cost and a stable paired comparison with the
+displaced parser remain open.

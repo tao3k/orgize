@@ -54,15 +54,18 @@
       (ascii-ci=? key "SEQ_TODO")
       (ascii-ci=? key "TYP_TODO")))
 
-;; File-local keyword Elements are the authority. The same executable Scheme
-;; function is lowered to Rust; callers never supply a separate TODO profile.
+;; File-local keyword Elements override the caller's configured TODO profile.
+;; The same executable Scheme function is lowered to Rust.
 (define-rust-pure todo-state-from-directives todo-state-from-directives-rust
-  ((title "&str") (directives "&[String]")) "&'static str"
+  ((title "&str") (directives "&[String]")
+   (configured-todo "&[String]") (configured-done "&[String]")) "&'static str"
   (let* ((candidate (string-first-word title)))
     (if (equal? candidate "") ""
       (if (null? directives)
-        (if (equal? candidate "TODO") "todo"
-          (if (equal? candidate "DONE") "done" ""))
+        (if (ormap (lambda (word) (equal? candidate word)) configured-todo)
+          "todo"
+          (if (ormap (lambda (word) (equal? candidate word)) configured-done)
+            "done" ""))
         (if (ormap
              (lambda (directive)
                (let* ((open-side (string-before directive "|")))
@@ -84,16 +87,22 @@
 
 ;; The keyword value is a source-owned string, not a Rust re-parse of title.
 (define-rust-pure todo-keyword-from-directives todo-keyword-from-directives-rust
-  ((title "&str") (directives "&[String]")) "String"
-  (using ((todo-state-from-directives "&str" "&[String]"))
-    (if (equal? (todo-state-from-directives title directives) "")
+  ((title "&str") (directives "&[String]")
+   (configured-todo "&[String]") (configured-done "&[String]")) "String"
+  (using ((todo-state-from-directives "&str" "&[String]"
+                                      "&[String]" "&[String]"))
+    (if (equal? (todo-state-from-directives
+                 title directives configured-todo configured-done) "")
       ""
       (string-first-word title))))
 
 (define-rust-pure headline-content-after-todo headline-content-after-todo-rust
-  ((title "&str") (directives "&[String]")) "String"
-  (using ((todo-keyword-from-directives "&str" "&[String]"))
-    (if (equal? (todo-keyword-from-directives title directives) "")
+  ((title "&str") (directives "&[String]")
+   (configured-todo "&[String]") (configured-done "&[String]")) "String"
+  (using ((todo-keyword-from-directives "&str" "&[String]"
+                                        "&[String]" "&[String]"))
+    (if (equal? (todo-keyword-from-directives
+                 title directives configured-todo configured-done) "")
       (string-trim title)
       (string-rest-after-first-word title))))
 
@@ -127,12 +136,16 @@
   (equal? (string-first-word display-title) "COMMENT"))
 
 ;; A query checks the source keyword only after the same Scheme-owned state
-;; algorithm admits it under file-local declarations. The dependency call is
+;; algorithm admits it under file-local or configured declarations. The call is
 ;; lowered to Rust with an explicit typed pure-function signature.
 (define-rust-pure todo-keyword-matches? todo-keyword-matches-rust
-  ((title "&str") (directives "&[String]") (expected "&str")) "bool"
-  (using ((todo-state-from-directives "&str" "&[String]"))
-    (let* ((state (todo-state-from-directives title directives))
+  ((title "&str") (directives "&[String]")
+   (configured-todo "&[String]") (configured-done "&[String]")
+   (expected "&str")) "bool"
+  (using ((todo-state-from-directives "&str" "&[String]"
+                                      "&[String]" "&[String]"))
+    (let* ((state (todo-state-from-directives
+                   title directives configured-todo configured-done))
            (candidate (string-first-word title)))
       (and (or (equal? state "todo") (equal? state "done"))
            (equal? candidate expected)))))
@@ -180,12 +193,15 @@
                         tags)
                 tags)))))
 
-(def (decode-headline title directives)
-  (let* ((state-value (todo-state-from-directives title directives))
+(def (decode-headline title directives configured-todo configured-done)
+  (let* ((state-value (todo-state-from-directives
+                       title directives configured-todo configured-done))
          (state (if (equal? state-value "") #f state-value))
-         (todo-value (todo-keyword-from-directives title directives))
+         (todo-value (todo-keyword-from-directives
+                      title directives configured-todo configured-done))
          (todo (and state (not (equal? todo-value "")) todo-value))
-         (after-todo (headline-content-after-todo title directives))
+         (after-todo (headline-content-after-todo
+                      title directives configured-todo configured-done))
          (next (split-first after-todo))
          (priority (and (priority-token? (car next))
                         (substring (car next) 2
@@ -199,7 +215,8 @@
      title (if tags (car last) (string-trim after-priority))
      todo state priority (or tags '()))))
 
-(def (org-element-with-headline-properties graph)
+(def (org-element-with-headline-properties
+      graph (configured-todo '("TODO")) (configured-done '("DONE")))
   (unless (org-element-graph-view? graph)
     (error "headline properties require an admitted Org Element graph" graph))
   (let* ((records (org-element-graph-records graph))
@@ -215,7 +232,8 @@
          (let (title (field-of record "title"))
            (when (string? title)
              (hash-put! headlines (id-of record)
-                        (decode-headline title directives))))))
+                        (decode-headline title directives
+                                         configured-todo configured-done))))))
      records)
     (make-org-element-graph-view
      records id-of parent-of kind-of

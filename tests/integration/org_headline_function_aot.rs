@@ -12,10 +12,13 @@ include!(concat!(env!("OUT_DIR"), "/org_image_link_p.rs"));
 
 macro_rules! check_todo_state_aot {
     ($($title:expr, $directives:expr => $expected:expr),+ $(,)?) => {
+        let configured_todo = vec!["TODO".to_string()];
+        let configured_done = vec!["DONE".to_string()];
         $(
             let source: &[&str] = $directives;
             let directives: Vec<String> = source.iter().copied().map(String::from).collect();
-            assert_eq!(todo_state_from_directives($title, &directives), $expected,
+            assert_eq!(todo_state_from_directives(
+                           $title, &directives, &configured_todo, &configured_done), $expected,
                        "title: {:?}, directives: {:?}", $title, directives);
         )+
     };
@@ -32,6 +35,29 @@ fn scheme_todo_state_aot_uses_document_directives() {
         "TODO Work", &["WAIT(w) | DONE(d)"] => "",
         "HOLD Work", &["WAIT(w) | DONE(d)", "HOLD(h) | FINISHED(f)"] => "todo",
         "FINISHED Work", &["WAIT(w) | DONE(d)", "HOLD(h) | FINISHED(f)"] => "done",
+    );
+}
+
+#[test]
+fn scheme_todo_state_aot_uses_config_only_without_file_directives() {
+    let configured_todo = vec!["WAIT".to_string()];
+    let configured_done = vec!["FINISHED".to_string()];
+    assert_eq!(
+        todo_state_from_directives("WAIT Work", &[], &configured_todo, &configured_done),
+        "todo"
+    );
+    assert_eq!(
+        todo_state_from_directives("FINISHED Work", &[], &configured_todo, &configured_done),
+        "done"
+    );
+    assert_eq!(
+        todo_state_from_directives(
+            "WAIT Work",
+            &["HOLD | DONE".to_string()],
+            &configured_todo,
+            &configured_done,
+        ),
+        ""
     );
 }
 
@@ -55,13 +81,33 @@ fn scheme_todo_directive_aot_is_case_insensitive() {
 #[test]
 fn scheme_todo_keyword_value_aot_uses_file_local_declarations() {
     let directives = vec!["WAIT(w) | DONE(d)".to_string()];
+    let configured_todo = vec!["TODO".to_string()];
+    let configured_done = vec!["DONE".to_string()];
     assert_eq!(
-        todo_keyword_from_directives("WAIT Review", &directives),
+        todo_keyword_from_directives(
+            "WAIT Review",
+            &directives,
+            &configured_todo,
+            &configured_done
+        ),
         "WAIT"
     );
-    assert_eq!(todo_keyword_from_directives("TODO prose", &directives), "");
     assert_eq!(
-        todo_keyword_from_directives("DONE Child", &directives),
+        todo_keyword_from_directives(
+            "TODO prose",
+            &directives,
+            &configured_todo,
+            &configured_done
+        ),
+        ""
+    );
+    assert_eq!(
+        todo_keyword_from_directives(
+            "DONE Child",
+            &directives,
+            &configured_todo,
+            &configured_done
+        ),
         "DONE"
     );
 }
@@ -71,7 +117,10 @@ fn scheme_headline_content_aot_preserves_remaining_text() {
     let directives = vec!["WAIT(w) | DONE(d)".to_string()];
     macro_rules! check_content {
         ($($title:expr => $expected:expr),+ $(,)?) => {
-            $(assert_eq!(headline_content_after_todo($title, &directives), $expected);)+
+            let configured_todo = vec!["TODO".to_string()];
+            let configured_done = vec!["DONE".to_string()];
+            $(assert_eq!(headline_content_after_todo(
+                $title, &directives, &configured_todo, &configured_done), $expected);)+
         };
     }
     check_content!(
