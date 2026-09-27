@@ -121,7 +121,7 @@ impl HtmlExport {
     }
 }
 
-fn safe_source_block_data_attributes(source: &str) -> Vec<(&str, &str)> {
+pub(crate) fn safe_source_block_data_attributes(source: &str) -> Vec<(&str, &str)> {
     let mut attributes = Vec::new();
     for line in source.lines() {
         let line = line.trim_start();
@@ -445,7 +445,7 @@ impl Traverser for HtmlExport {
     }
 }
 
-fn special_strings(value: &str) -> String {
+pub(crate) fn special_strings(value: &str) -> String {
     value
         .replace("---", "\u{2014}")
         .replace("--", "\u{2013}")

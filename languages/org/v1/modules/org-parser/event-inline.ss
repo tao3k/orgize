@@ -5,6 +5,9 @@
                  link-index inline-next pattern-end pattern-at?)
         (only-in "event-inline-link.ss"
                  link-open link-scan-forms inline-link-event-initial)
+        (only-in "event-inline-url.ss"
+                 url-link-event-initial url-link-open-forms
+                 url-link-scan-forms url-link-final-forms)
         (only-in "event-inline-citation.ss"
                  citation-event-initial citation-open-forms citation-scan-forms)
         (only-in "event-inline-timestamp.ss"
@@ -62,6 +65,7 @@
   (append (map (lambda (marker)
                  (char->integer (string-ref marker 0)))
                (list link-open "<<" "\\\\" "@@" "{{{" "$"))
+          '(104)
           (map org-inline-markup-byte inline-markup-rules)
           inline-script-trigger-bytes))
 (def inline-right-boundary?
@@ -658,14 +662,22 @@
                                  ,(markup-scan-forms))))))))))))))))
 
 (def (inline-free-scan-forms nested-description?)
-  `((if ,(pattern-at? link-index "{{{")
-        ,(macro-open-forms)
-        ((if (line-byte-equal? ,link-index 92)
-             ,(entity-or-ordinary-free-forms nested-description?)
-             ,(inline-ordinary-free-scan-forms nested-description?))))))
+  `(,@(if nested-description?
+         '()
+         `((if (line-bytes-any-in? ,link-index ,inline-next (60 104))
+               ,(url-link-open-forms) ())))
+    (if (uint-positive? (state inline-url-kind))
+        ()
+        ((if ,(pattern-at? link-index "{{{")
+             ,(macro-open-forms)
+             ((if (line-byte-equal? ,link-index 92)
+                  ,(entity-or-ordinary-free-forms nested-description?)
+                  ,(inline-ordinary-free-scan-forms nested-description?))))))))
 
 (def (inline-ordinary-non-code-scan-forms nested-description?)
-  `((if (uint-positive? (state inline-timestamp-mode))
+  `((if (uint-positive? (state inline-url-kind))
+        ,(url-link-scan-forms)
+        ((if (uint-positive? (state inline-timestamp-mode))
         ,(timestamp-scan-forms)
         ((if (uint-positive? (state inline-footnote-mode))
         ,(footnote-reference-scan-forms)
@@ -685,7 +697,7 @@
                                  ((set-uint inline-markup-kind (uint 0))) ())
                              (if (uint-positive? (state inline-markup-kind))
                                  ,(markup-scan-forms)
-                                 ,(inline-free-scan-forms nested-description?))))))))))))))))
+                                 ,(inline-free-scan-forms nested-description?))))))))))))))))))
 
 (def (inline-non-code-scan-forms nested-description?)
   `((if (uint-positive? (state inline-macro-mode))
@@ -767,6 +779,7 @@
     (if (uint-positive? (state inline-entity-mode))
         ,(entity-finish-forms #f) ())
     ,@(inline-script-final-forms)
+    ,@(url-link-final-forms)
     (token TextLine (state-offset inline-cursor) end)
     (finish-node)))
 
@@ -775,6 +788,7 @@
    latex-event-initial
    '((inline-cursor 0))
    inline-link-event-initial
+   url-link-event-initial
    citation-event-initial
    timestamp-event-initial
    inline-script-event-initial

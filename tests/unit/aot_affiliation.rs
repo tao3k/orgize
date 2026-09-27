@@ -34,3 +34,23 @@ fn blank_line_stops_affiliated_keyword_association() {
         .expect("source block");
     assert!(document.affiliated_keyword_ids(block.id).is_empty());
 }
+
+#[test]
+fn adjacent_affiliated_keywords_attach_as_one_group() {
+    let document = parse_org_aot(
+        "#+NAME: task.rule\n#+ATTR_HTML: :data-poo-flow task\n#+BEGIN_SRC scheme\n(display 1)\n#+END_SRC\n",
+    )
+    .expect("Scheme AOT parse");
+    let block = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "src-block")
+        .expect("source block");
+    let keywords = document.affiliated_keyword_ids(block.id);
+    assert_eq!(keywords.len(), 2);
+    assert_eq!(document.records()[keywords[0]].field("key"), Some("NAME"));
+    assert_eq!(
+        document.records()[keywords[1]].field("key"),
+        Some("ATTR_HTML")
+    );
+}

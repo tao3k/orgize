@@ -121,6 +121,8 @@
        "languages/org/v1/modules/org-elements/generated/org_affiliated_keyword_p.ir.json")
       (check (org-affiliated-keyword? "name" +org-affiliated-keywords+) => #t)
       (check (org-affiliated-keyword? "NAME" +org-affiliated-keywords+) => #t)
+      (check (org-affiliated-keyword? "ATTR_HTML" +org-affiliated-keywords+) => #t)
+      (check (org-affiliated-keyword? "attr_latex" +org-affiliated-keywords+) => #t)
       (check (org-affiliated-keyword? "TODO" +org-affiliated-keywords+) => #f))
     (test-case "link kind is Scheme-owned and AOT projected"
       (check-org-headline-ir

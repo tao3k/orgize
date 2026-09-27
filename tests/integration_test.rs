@@ -34,8 +34,6 @@ mod fmt_links;
 mod fmt_table;
 #[path = "integration/harness_report_consumer.rs"]
 mod harness_report_consumer;
-#[path = "integration/html.rs"]
-mod html;
 #[path = "integration/latex.rs"]
 mod latex;
 #[path = "integration/library_cli.rs"]

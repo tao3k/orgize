@@ -139,7 +139,7 @@ paragraph 3
 paragraph 4
 "#).to_html(),
         @r###"
-    <main><h1>title</h1><section><p></p><p>paragraph 1
+    <main><h1>title</h1><section><p>paragraph 1
     </p><p>paragraph 2
     </p><p>paragraph 3
     </p><p>paragraph 4

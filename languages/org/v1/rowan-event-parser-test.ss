@@ -418,6 +418,23 @@
            (OrgLink (LinkTrivia 25 27) (LinkTarget 27 31)
                     (LinkTrivia 31 33))
            (TextLine 33 43))))))
+    (test-case "angle and plain URLs are Scheme-owned link Objects"
+      (check-org-ast-with parse-org-rowan-events
+        "Visit <https://example.com/path>.\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 6)
+           (OrgLink (LinkTrivia 6 7) (LinkTarget 7 31)
+                    (LinkTrivia 31 32))
+           (TextLine 32 34)))))
+      (check-org-ast-with parse-org-rowan-events
+        "Visit https://example.com/path.\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (TextLine 0 6) (OrgLink (LinkTarget 6 30))
+           (TextLine 30 32))))))
     (test-case "target and radio-target Objects retain source-backed value spans"
       (check-org-ast-with parse-org-rowan-events
         "a <<one two>> and <<<radio>>> z\n"
@@ -848,7 +865,8 @@
                           (TextLine 26 34) (BlockEndLine 34 44))
           (OrgSection (OrgHeadline (HeadlineLine 44 46)
                                     (HeadlineTrivia 46 47)
-                                    (HeadlineTitle 47 52)
+                                    (OrgHeadlineTitle
+                                     (OrgTextLine (TextLine 47 52)))
                                     (HeadlineTrivia 52 53)))))))
     (test-case "source block arguments retain Scheme-owned keys and quoted values"
       (check-org-ast-with parse-org-rowan-events
@@ -1229,7 +1247,8 @@
          (OrgParagraph (OrgTextLine (TextLine 0 13)))
          (OrgSection
           (OrgHeadline (HeadlineLine 13 14) (HeadlineTrivia 14 15)
-                       (HeadlineTitle 15 22) (HeadlineTrivia 22 23))
+                       (OrgHeadlineTitle (OrgTextLine (TextLine 15 22)))
+                       (HeadlineTrivia 22 23))
           (OrgParagraph
            (OrgTextLine
             (TextLine 23 28)

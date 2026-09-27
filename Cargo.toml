@@ -66,6 +66,10 @@ path = "tests/integration/gerbil_rowan_cutover.rs"
 name = "org_cutover_parity"
 path = "tests/integration/org_cutover_parity.rs"
 
+[[test]]
+name = "html"
+path = "tests/integration/html.rs"
+
 [[bench]]
 name = "parse"
 harness = false
