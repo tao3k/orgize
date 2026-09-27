@@ -12,7 +12,7 @@ use crate::org_aot::{OrgAotDocument, org_image_link};
 
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
-    Block, BlockKind, Checkbox, Diagnostic, DiagnosticKind, Document, Element, ElementData,
+    Block, BlockKind, Checkbox, Diagnostic, DiagnosticKind, Document, Drawer, Element, ElementData,
     FootnoteDef, Keyword, Link, List, ListItem, ListType, MarkupKind, Object, ObjectData,
     ParsedAnnotation, ParsedAst, Planning, Property, Section, Table, TableCell, TableRow,
     TodoKeyword, TodoState, UnsupportedSyntaxKind,
@@ -255,6 +255,7 @@ impl<'a> GraphProjector<'a> {
             .collect();
         let data = match kind {
             "keyword" => ElementData::Keyword(self.keyword(record)?),
+            "babel-call" => ElementData::BabelCall(self.keyword(record)?),
             "paragraph" => ElementData::Paragraph(self.paragraph_objects(id)),
             "plain-list" => ElementData::List(self.list(id)),
             "table" => ElementData::Table(self.table(id)),
@@ -265,6 +266,16 @@ impl<'a> GraphProjector<'a> {
                     .filter_map(|&child| self.property(self.record(child)))
                     .collect(),
             ),
+            "drawer" => ElementData::Drawer(Drawer {
+                name: record.field("name").unwrap_or_default().to_owned(),
+                children: record
+                    .child_ids
+                    .clone()
+                    .into_iter()
+                    .filter_map(|child| self.element(child))
+                    .collect(),
+                raw: self.raw(range).to_owned(),
+            }),
             "footnote-definition" => ElementData::FootnoteDef(FootnoteDef {
                 label: record.field("label").unwrap_or_default().to_owned(),
                 children: record

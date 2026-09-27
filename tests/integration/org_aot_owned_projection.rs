@@ -146,3 +146,26 @@ fn keyword_graph_keeps_semantic_and_source_faithful_values_separate() {
         );
     }
 }
+
+#[test]
+fn owned_drawer_and_babel_call_use_scheme_element_children() {
+    let doc = Org::parse("#+CALL: name()\n:LOGBOOK:\nInside\n:END:\n").document();
+    assert!(doc.diagnostics.is_empty());
+    assert!(doc.children.iter().any(|element| matches!(
+        &element.data,
+        ElementData::BabelCall(call) if call.key == "CALL" && call.value == " name()"
+    )));
+    let drawer = doc
+        .children
+        .iter()
+        .find_map(|element| match &element.data {
+            ElementData::Drawer(drawer) => Some(drawer),
+            _ => None,
+        })
+        .expect("Scheme graph drawer");
+    assert_eq!(drawer.name, "LOGBOOK");
+    assert!(matches!(
+        &drawer.children[0].data,
+        ElementData::Paragraph(_)
+    ));
+}
