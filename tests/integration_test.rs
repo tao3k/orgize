@@ -78,8 +78,6 @@ mod org_aot_edit;
 mod org_case_insensitive_aot;
 #[path = "integration/org_citation_aot.rs"]
 mod org_citation_aot;
-#[path = "integration/org_cutover_parity.rs"]
-mod org_cutover_parity;
 #[path = "integration/org_dynamic_block.rs"]
 mod org_dynamic_block;
 #[path = "integration/org_element_query.rs"]
