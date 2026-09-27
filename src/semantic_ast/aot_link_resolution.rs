@@ -109,7 +109,7 @@ pub(super) fn resolve_document_links(document: &mut Document<ParsedAnnotation>) 
                     diagnostics.push(Diagnostic {
                         range: object.ann.range,
                         kind: DiagnosticKind::Conversion,
-                        message: format!("internal link `{path}` was not found"),
+                        message: format!("internal link target `{path}` was not found"),
                     });
                 }
                 LinkTarget::Unresolved(path)

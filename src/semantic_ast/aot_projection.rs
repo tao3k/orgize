@@ -3,7 +3,7 @@
 //! This adapter consumes parser-owned records. It does not recognize Org text
 //! or invoke the displaced handwritten Rust parser.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use gerbil_parser_rowan::GraphRecord;
 use rowan::TextRange;
@@ -18,8 +18,8 @@ use super::model::{
     Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind, Document, Drawer,
     Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, KeywordAttribute, Link,
     List, ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst,
-    Planning, Property, Section, Table, TableCell, TableRow, TargetDefinition, TargetKind,
-    TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    Planning, Property, Section, Table, TableCell, TableRow, TodoKeyword, TodoState,
+    UnsupportedSyntaxKind,
 };
 use super::preprocessing::{macro_definition, split_macro_args};
 use super::prescan::{SemanticPrescan, collect_document_keyword};
@@ -38,12 +38,15 @@ impl OrgAotDocument {
 
 #[path = "aot_block_projection.rs"]
 mod block_projection;
+#[path = "aot_target_projection.rs"]
+mod target_projection;
 
 struct GraphProjector<'a> {
     document: &'a OrgAotDocument,
     source: &'a str,
     lines: LineIndex<'a>,
     attached_keyword_ids: HashSet<usize>,
+    headline_aliases: HashMap<usize, Vec<Object<ParsedAnnotation>>>,
     diagnostics: Vec<Diagnostic>,
 }
 
@@ -59,6 +62,7 @@ impl<'a> GraphProjector<'a> {
             source,
             lines: LineIndex::new(source),
             attached_keyword_ids,
+            headline_aliases: HashMap::new(),
             diagnostics: Vec::new(),
         }
     }
@@ -206,6 +210,7 @@ impl<'a> GraphProjector<'a> {
         let is_comment = self.document.headline_is_comment(id).unwrap_or(false);
         let title =
             self.headline_title_objects(range, title_body.as_deref(), &raw_title, &child_ids);
+        self.headline_aliases.insert(id, title.clone());
         let planning = child_ids
             .iter()
             .copied()
@@ -253,9 +258,15 @@ impl<'a> GraphProjector<'a> {
                 children.push(element);
             }
         }
+        let body_ann = children.first().zip(children.last()).map(|(first, last)| {
+            self.annotation(TextRange::new(
+                first.ann.range.start(),
+                last.ann.range.end(),
+            ))
+        });
         Section {
             ann: self.annotation(range),
-            body_ann: None,
+            body_ann,
             level,
             properties: properties.clone(),
             effective_properties,
@@ -406,62 +417,11 @@ impl<'a> GraphProjector<'a> {
     fn property(&self, record: &GraphRecord) -> Option<Property<ParsedAnnotation>> {
         let value = record.field("value")?.to_owned();
         Some(Property {
-            ann: self.annotation(record.range),
+            ann: self.annotation(record.field_range("value")?),
             key: record.field("key")?.to_owned(),
             duration: OrgDuration::parse(value.clone()),
             value,
         })
-    }
-
-    fn targets(&self) -> Vec<TargetDefinition<ParsedAnnotation>> {
-        self.document
-            .records()
-            .iter()
-            .filter_map(|record| {
-                let (kind, key, value) = match record.kind {
-                    "headline" => {
-                        let title = self.document.headline_display_title(record.id)?;
-                        (!title.is_empty()).then(|| (TargetKind::Headline, title.clone(), title))?
-                    }
-                    "node-property" => {
-                        let value = record.field("value")?.to_owned();
-                        let kind = match record.field("key")? {
-                            key if key.eq_ignore_ascii_case("CUSTOM_ID") => TargetKind::CustomId,
-                            key if key.eq_ignore_ascii_case("ID") => TargetKind::Id,
-                            _ => return None,
-                        };
-                        let prefix = if kind == TargetKind::CustomId {
-                            "#"
-                        } else {
-                            "id:"
-                        };
-                        (kind, format!("{prefix}{value}"), value)
-                    }
-                    "target" | "radio-target" => {
-                        let value = record.field("value")?.to_owned();
-                        let kind = if record.kind == "target" {
-                            TargetKind::Target
-                        } else {
-                            TargetKind::RadioTarget
-                        };
-                        (kind, value.clone(), value)
-                    }
-                    "footnote-definition" => {
-                        let value = record.field("label")?.to_owned();
-                        (TargetKind::FootnoteDefinition, format!("fn:{value}"), value)
-                    }
-                    _ => return None,
-                };
-                Some(TargetDefinition {
-                    ann: self.annotation(record.range),
-                    kind,
-                    key,
-                    value,
-                    raw: self.raw(record.range).to_owned(),
-                    alias: Vec::new(),
-                })
-            })
-            .collect()
     }
 
     fn headline_title_objects(

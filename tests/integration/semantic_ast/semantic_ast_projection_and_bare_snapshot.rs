@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
-    ast::{ElementData, MarkupKind, ObjectData, TodoState},
+    ast::{ElementData, MarkupKind, ObjectData, TargetKind, TodoState},
 };
 
 #[test]
@@ -51,6 +51,68 @@ fn semantic_ast_projects_attribute_tokens_from_the_scheme_aot_graph() {
     assert_eq!(attributes[1].key, "width");
     assert_eq!(attributes[1].value.as_deref(), Some("10 em"));
     assert_eq!(attributes[1].raw, ":width \"10 em\"");
+}
+
+#[test]
+fn semantic_ast_property_value_annotations_use_scheme_graph_field_spans() {
+    let doc = Org::parse("* H\n:PROPERTIES:\n:EFFORT: tomorrow\n:END:\n").document();
+    let property = &doc.sections[0].properties[0];
+    assert_eq!(property.key, "EFFORT");
+    assert_eq!(property.value, "tomorrow");
+    assert_eq!(u32::from(property.ann.range.start()), 26);
+    assert_eq!(u32::from(property.ann.range.end()), 34);
+
+    let id_doc = Org::parse("* H\n:PROPERTIES:\n:ID: shared\n:END:\n").document();
+    let id_target = id_doc
+        .targets
+        .iter()
+        .find(|target| target.key == "id:shared")
+        .expect("ID target");
+    assert_eq!(u32::from(id_target.ann.range.start()), 22);
+    assert_eq!(u32::from(id_target.ann.range.end()), 28);
+}
+
+#[test]
+fn semantic_ast_reports_scheme_classified_missing_internal_link_targets() {
+    let doc = Org::parse("[[fn:missing]]\n").document();
+    assert!(doc.diagnostics.iter().any(|diagnostic| {
+        diagnostic.message == "internal link target `fn:missing` was not found"
+    }));
+}
+
+#[test]
+fn semantic_ast_projects_section_body_from_aot_child_ranges() {
+    let doc = Org::parse("* H\nBody\n").document();
+    let body = doc.sections[0]
+        .body_ann
+        .as_ref()
+        .expect("section body from Scheme graph");
+    assert_eq!(u32::from(body.range.start()), 4);
+    assert_eq!(u32::from(body.range.end()), 9);
+}
+
+#[test]
+fn semantic_ast_reuses_scheme_title_objects_for_document_targets() {
+    let doc = Org::parse("* TODO Heading :work:\n:PROPERTIES:\n:CUSTOM_ID: heading-id\n:END:\n")
+        .document();
+    let headline = doc
+        .targets
+        .iter()
+        .find(|target| target.kind == TargetKind::Headline)
+        .expect("headline target");
+    assert_eq!(headline.raw, "Heading");
+    assert!(
+        headline.alias.iter().any(
+            |object| matches!(&object.data, ObjectData::Plain(text) if text.contains("Heading"))
+        )
+    );
+    let custom = doc
+        .targets
+        .iter()
+        .find(|target| target.kind == TargetKind::CustomId)
+        .expect("CUSTOM_ID target");
+    assert_eq!(custom.raw, "heading-id");
+    assert_eq!(custom.alias, headline.alias);
 }
 
 #[test]
