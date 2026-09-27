@@ -6,6 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/todo_keyword_from_directives.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_content_after_todo.rs"));
 include!(concat!(env!("OUT_DIR"), "/priority_token_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_display_title.rs"));
+include!(concat!(env!("OUT_DIR"), "/memory_headline_state.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_image_link_p.rs"));
 
 macro_rules! check_todo_state_aot {
@@ -113,6 +114,23 @@ fn scheme_headline_display_title_aot_projects_decorations() {
         "Plan :bad::", false => "Plan :bad::",
         "[#AB] Plan", false => "[#AB] Plan",
         "[#65] Plan", false => "[#65] Plan",
+    );
+}
+
+#[test]
+fn scheme_memory_headline_state_aot_classifies_admitted_elements() {
+    macro_rules! check_state {
+        ($($todo:expr, $closed:expr, $planned:expr, $archived:expr => $expected:expr),+ $(,)?) => {
+            $(assert_eq!(memory_headline_state($todo, $closed, $planned, $archived), $expected);)+
+        };
+    }
+    check_state!(
+        "todo", false, false, false => "current",
+        "done", false, false, false => "closed",
+        "", true, false, false => "closed",
+        "", false, true, false => "current",
+        "", false, false, false => "background",
+        "todo", false, false, true => "archived",
     );
 }
 

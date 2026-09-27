@@ -17,6 +17,15 @@ facts; those properties, plus file-local priority bounds and exact tag
 classification, are not yet
 admitted as fully Scheme-owned semantics.
 
+The general document-memory search consumer now reads the same AOT Element
+graph instead of constructing a handwritten-parser =ParsedAst=. The
+headline lifecycle classification is a Scheme pure function AOT-compiled to
+Rust; file-local TODO, case-insensitive structural keys, inherited tags,
+planning, properties and link terms have focused consumer coverage. This
+removes one old-parser consumer, not the public parser, and the Rust
+projection/query adapter still needs reduction as the Scheme graph/query API
+gains richer runtime-parameter support.
+
 List item counter, checkbox, and descriptive tag spans now originate in the
 Org Scheme event algorithm and project through the generated Element graph.
 The Rust document index consumes those fields for checklist and descriptive
@@ -129,12 +138,15 @@ This is a type-and-consumer cutover, not an entrypoint rename:
    across 15 files under =src/cli=, =src/document=, =src/lint*.rs= and
    =src/semantic_ast=. The source-block-document admission path now consumes
    Scheme-AOT graph records, leaving 22 production calls in this inventory.
-   These are consumers to migrate, not an API name that
+   The general memory-search consumer has since moved to the AOT graph,
+   leaving 21 production calls in this inventory. These are consumers to
+   migrate, not an API name that
    necessarily must disappear: the final =Org::parse= may delegate to AOT.
    The plan-ledger shortcut in =src/document/memory_projection.rs= has now
    stopped hand-scanning headline, TODO, tags and property lines in Rust. It
    reads the Scheme-AOT Element graph; the general memory query in that same
-   file still calls =Org::parse= and remains in the 22-call inventory.
+   file now does so as well. Its lifecycle classification is Scheme-authored,
+   while traversal and search filtering remain Rust consumers of graph facts.
    The AOT document now caches Scheme-generated headline details on first
    access while keeping TODO type on its parse-time fast path; repeated
    =:org-elements= queries do not re-evaluate title/directive algorithms.

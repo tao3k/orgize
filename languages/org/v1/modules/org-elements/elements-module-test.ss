@@ -22,7 +22,8 @@
                  headline-content-after-todo-rust
                  headline-display-title headline-display-title-rust
                  priority-token? priority-token-rust
-                 todo-keyword-matches? todo-keyword-matches-rust)
+                 todo-keyword-matches? todo-keyword-matches-rust
+                 memory-headline-state memory-headline-state-rust)
         (only-in "objects.ss"
                  make-org-headline-properties org-headline-property-field)
         (only-in "link-properties.ss"
@@ -197,6 +198,15 @@
       (check-org-headline-ir
        headline-display-title-rust 'headline_display_title
        "languages/org/v1/modules/org-elements/generated/headline_display_title.ir.json")
+      (check-org-headline-ir
+       memory-headline-state-rust 'memory_headline_state
+       "languages/org/v1/modules/org-elements/generated/memory_headline_state.ir.json")
+      (check (memory-headline-state "todo" #f #f #f) => "current")
+      (check (memory-headline-state "done" #f #f #f) => "closed")
+      (check (memory-headline-state "" #t #f #f) => "closed")
+      (check (memory-headline-state "" #f #t #f) => "current")
+      (check (memory-headline-state "" #f #f #f) => "background")
+      (check (memory-headline-state "todo" #f #f #t) => "archived")
       (check (priority-token? "[#A]") => #t)
       (check (priority-token? "[#064]") => #t)
       (check (priority-token? "[#65]") => #f)

@@ -356,6 +356,74 @@ fn plan_ledger_projection_obeys_scheme_block_context() {
     let _ = fs::remove_dir_all(root);
 }
 
+#[test]
+fn general_memory_search_uses_scheme_aot_elements_and_file_todo_profile() {
+    let root = temp_test_dir("orgize-memory-aot-general");
+    let path = root.join("memory.org");
+    fs::write(
+        &path,
+        "#+seq_todo: WAIT(w) | FINISHED(f)\n\
+         * WAIT Parent :agent:\n\
+         :properties:\n\
+         :session_id: session-a\n\
+         :end:\n\
+         ** FINISHED Child\n\
+         [[id:child-ref][evidence]]\n\
+         ** Planned Child\n\
+         scheduled: <2026-09-27 Sun>\n\
+         #+begin_src text\n\
+         * Not a headline\n\
+         #+end_src\n\
+         ** [#A] COMMENT Hidden\n\
+         ** WAIT Archived :ARCHIVE:\n",
+    )
+    .expect("write Org memory source");
+
+    let records = query_org_memory_records(
+        &root,
+        &DocumentWalkConfig::default(),
+        &OrgMemorySearchOptions {
+            include_closed: true,
+            include_archived: true,
+            ..Default::default()
+        },
+    )
+    .expect("query Scheme AOT memory Elements");
+    assert_eq!(records.len(), 4);
+    assert_eq!(records[0].todo.as_deref(), Some("WAIT"));
+    assert_eq!(records[0].state, MemoryRecordState::Current);
+    assert_eq!(records[1].title, "Child");
+    assert_eq!(records[1].state, MemoryRecordState::Closed);
+    assert_eq!(records[1].tags, ["agent"]);
+    assert_eq!(records[2].state, MemoryRecordState::Current);
+    assert_eq!(records[3].state, MemoryRecordState::Archived);
+
+    let linked = query_org_memory_records(
+        &root,
+        &DocumentWalkConfig::default(),
+        &OrgMemorySearchOptions {
+            terms: vec!["child-ref".into()],
+            include_closed: true,
+            ..Default::default()
+        },
+    )
+    .expect("query AOT link Elements");
+    assert_eq!(linked.len(), 1);
+    assert_eq!(linked[0].title, "Child");
+    let scoped = query_org_memory_records(
+        &root,
+        &DocumentWalkConfig::default(),
+        &OrgMemorySearchOptions {
+            session: Some("session-a".into()),
+            ..Default::default()
+        },
+    )
+    .expect("query AOT property with case-insensitive Org key");
+    assert_eq!(scoped.len(), 1);
+    assert_eq!(scoped[0].title, "Parent");
+    let _ = fs::remove_dir_all(root);
+}
+
 fn temp_test_dir(prefix: &str) -> PathBuf {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)

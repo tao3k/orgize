@@ -24,7 +24,8 @@
         headline-content-after-todo headline-content-after-todo-rust
         headline-display-title headline-display-title-rust
         priority-token? priority-token-rust
-        todo-keyword-matches? todo-keyword-matches-rust)
+        todo-keyword-matches? todo-keyword-matches-rust
+        memory-headline-state memory-headline-state-rust)
 
 (def (split-first value)
   (let* ((text (string-trim value)) (size (string-length text)))
@@ -128,6 +129,17 @@
            (candidate (string-first-word title)))
       (and (or (equal? state "todo") (equal? state "done"))
            (equal? candidate expected)))))
+
+;; Memory is a projection of admitted headline, planning and tag Elements.
+;; Rust supplies those typed Element facts; this Scheme function owns their
+;; lifecycle meaning in both the interpreter and the AOT consumer.
+(define-rust-pure memory-headline-state memory-headline-state-rust
+  ((todo-type "&str") (closed "bool") (planned "bool")
+   (archived "bool")) "&'static str"
+  (if archived "archived"
+    (if (or (equal? todo-type "done") closed) "closed"
+      (if (or (equal? todo-type "todo") planned) "current"
+        "background"))))
 
 (def (document-todo-directives records kind-of field-of)
   (let loop ((rest records) (directives '()))

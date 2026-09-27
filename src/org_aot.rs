@@ -246,6 +246,23 @@ impl OrgAotDocument {
             .and_then(|properties| properties.todo_type)
     }
 
+    /// Classify admitted headline, planning and inherited archive facts with
+    /// the Scheme-owned lifecycle function compiled into this Cargo package.
+    pub(crate) fn headline_memory_state(
+        &self,
+        record_id: usize,
+        closed: bool,
+        planned: bool,
+        archived: bool,
+    ) -> &'static str {
+        headline_functions::memory_headline_state(
+            self.headline_todo_type(record_id).unwrap_or(""),
+            closed,
+            planned,
+            archived,
+        )
+    }
+
     /// Return the file-local TODO keyword recognized by the Scheme AOT algorithm.
     #[must_use]
     pub fn headline_todo_keyword(&self, record_id: usize) -> Option<String> {
