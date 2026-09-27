@@ -10,6 +10,8 @@ use crate::{
 
 #[path = "aot_affiliation.rs"]
 mod aot_affiliation;
+#[path = "aot_projection.rs"]
+mod aot_projection;
 #[path = "document_command.rs"]
 mod document_command;
 #[path = "document_source_selection.rs"]

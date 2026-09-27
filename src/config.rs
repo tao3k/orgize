@@ -93,13 +93,6 @@ pub struct ParseConfig {
 }
 
 impl ParseConfig {
-    pub(crate) fn with_file_todo_keywords(mut self, source: &str) -> Self {
-        if let Some(todo_keywords) = parse_file_todo_keywords(source) {
-            self.todo_keywords = todo_keywords;
-        }
-        self
-    }
-
     pub(crate) fn effective_inlinetask_min_level(&self) -> usize {
         self.inlinetask_min_level.max(1)
     }
@@ -111,88 +104,6 @@ impl ParseConfig {
             UseSubSuperscript::True => 2,
         }
     }
-}
-
-fn parse_file_todo_keywords(source: &str) -> Option<(Vec<String>, Vec<String>)> {
-    let mut todo = Vec::new();
-    let mut done = Vec::new();
-    let mut in_block = false;
-
-    for line in source.lines() {
-        let trimmed = line.trim_start_matches([' ', '\t']);
-        if in_block {
-            if is_keyword_line_with_prefix(trimmed, "end_") {
-                in_block = false;
-            }
-            continue;
-        }
-
-        if is_keyword_line_with_prefix(trimmed, "begin_") {
-            in_block = true;
-            continue;
-        }
-
-        if let Some(value) = todo_declaration_value(line) {
-            collect_todo_keywords(value, &mut todo, &mut done);
-        }
-    }
-
-    (!todo.is_empty() || !done.is_empty()).then_some((todo, done))
-}
-
-fn todo_declaration_value(line: &str) -> Option<&str> {
-    let line = line.trim_start_matches([' ', '\t']);
-    let rest = line.strip_prefix("#+")?;
-    let (key, value) = rest.split_once(':')?;
-    matches!(
-        key,
-        key if key.eq_ignore_ascii_case("TODO")
-            || key.eq_ignore_ascii_case("SEQ_TODO")
-            || key.eq_ignore_ascii_case("TYP_TODO")
-    )
-    .then_some(value)
-}
-
-fn is_keyword_line_with_prefix(line: &str, prefix: &str) -> bool {
-    let Some(rest) = line.strip_prefix("#+") else {
-        return false;
-    };
-    rest.get(..prefix.len())
-        .is_some_and(|head| head.eq_ignore_ascii_case(prefix))
-}
-
-fn collect_todo_keywords(value: &str, todo: &mut Vec<String>, done: &mut Vec<String>) {
-    let mut done_side = false;
-
-    for token in value.split_whitespace() {
-        if token == "|" {
-            done_side = true;
-            continue;
-        }
-
-        let Some(keyword) = todo_keyword_name(token) else {
-            continue;
-        };
-        let keywords = if done_side { &mut *done } else { &mut *todo };
-        if !keywords.iter().any(|existing| existing == &keyword) {
-            keywords.push(keyword);
-        }
-    }
-}
-
-fn todo_keyword_name(token: &str) -> Option<String> {
-    let token = token.trim();
-    if token.is_empty() || token.starts_with('(') {
-        return None;
-    }
-
-    let name = token
-        .split_once('(')
-        .map(|(name, _)| name)
-        .unwrap_or(token)
-        .trim();
-
-    (!name.is_empty() && name != "|").then(|| name.to_string())
 }
 
 impl Default for ParseConfig {

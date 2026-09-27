@@ -16,6 +16,7 @@ mod agenda_workspace;
 mod agenda_workspace_model;
 mod agent_planning;
 mod agent_planning_model;
+mod aot_projection;
 mod attachment_inventory;
 mod attachment_inventory_model;
 mod attachment_model;

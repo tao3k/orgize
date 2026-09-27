@@ -27,9 +27,9 @@ mod org;
 pub mod org_aot;
 /// Source-bound Org edits validated against the Scheme-AOT Element graph.
 pub mod org_aot_edit;
+mod org_aot_markdown;
 /// Scheme-AOT named Org Element queries over the generated graph.
 pub mod org_element_query;
-mod replace;
 mod runtime;
 mod syntax;
 #[doc(hidden)]

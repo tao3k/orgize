@@ -1,7 +1,5 @@
 use rowan::ast::AstNode;
 
-use crate::Org;
-
 use super::{PropertyDrawer, SyntaxDocument, SyntaxKeyword};
 
 impl SyntaxDocument {
@@ -85,20 +83,5 @@ impl SyntaxDocument {
             self.section()
                 .and_then(|section| rowan::ast::support::child(&section.syntax))
         })
-    }
-}
-
-impl Org {
-    /// Equals to `self.syntax_document().title()`, see [SyntaxDocument::title]
-    pub fn title(&self) -> Option<String> {
-        self.syntax_document().title()
-    }
-
-    /// Equals to `self.syntax_document().keywords()`, see [SyntaxDocument::keywords]
-    pub fn keywords(&self) -> impl Iterator<Item = SyntaxKeyword> + use<> {
-        self.syntax_document()
-            .keywords()
-            .collect::<Vec<_>>()
-            .into_iter()
     }
 }

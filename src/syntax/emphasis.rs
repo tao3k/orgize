@@ -158,11 +158,7 @@ pub(crate) fn verify_pre(input: &str) -> bool {
 
 #[test]
 fn parse() {
-    use crate::{
-        Org, ParseConfig,
-        syntax_ast::{Bold, Italic},
-        tests::to_ast,
-    };
+    use crate::{ParseConfig, syntax_ast::Bold, tests::to_ast};
 
     let to_bold =
         to_ast::<Bold>(|input| bold_node(input, crate::syntax::object::standard_object_nodes));
@@ -234,7 +230,4 @@ fn parse() {
         )
         .is_err()
     );
-
-    assert!(Org::parse(r#""*quoted*""#).first_node::<Bold>().is_some());
-    assert!(Org::parse("'/quoted/'").first_node::<Italic>().is_some());
 }

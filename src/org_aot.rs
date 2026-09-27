@@ -9,6 +9,7 @@ use gerbil_parser_rowan::{
     Diagnostic, GraphProjectionSpec, GraphRecord, LanguageSpec, Parse, ParseError, ParseReceipt,
     SyntaxNode, parse_generated_events, project_syntax_graph,
 };
+use rowan::TextRange;
 
 use crate::config::ParseConfig;
 use crate::contract_feature::{
@@ -44,6 +45,7 @@ mod generated_context_events;
 pub struct OrgAotDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
+    config: ParseConfig,
     todo_directives: Vec<String>,
     configured_todo: Vec<String>,
     configured_done: Vec<String>,
@@ -172,6 +174,7 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
     Ok(OrgAotDocument {
         parse,
         records,
+        config: config.clone(),
         todo_directives,
         configured_todo: config.todo_keywords.0.clone(),
         configured_done: config.todo_keywords.1.clone(),
@@ -206,6 +209,81 @@ pub fn org_contract_pack() -> &'static ContractPack {
 }
 
 impl OrgAotDocument {
+    /// Parse Org through the Scheme-generated algorithm with default configuration.
+    #[must_use]
+    pub fn parse(source: impl AsRef<str>) -> Self {
+        Self::try_parse(source).expect("Scheme-generated Org parser rejected input")
+    }
+
+    /// Parse Org with structured AOT diagnostics.
+    ///
+    /// # Errors
+    /// Returns a parser or graph-projection error if the generated artifacts reject the source.
+    pub fn try_parse(source: impl AsRef<str>) -> Result<Self, OrgAotError> {
+        parse_org_aot(source.as_ref())
+    }
+
+    /// Return exact source text reconstructed from the lossless Rowan graph.
+    #[must_use]
+    pub fn to_org(&self) -> String {
+        self.syntax().to_string()
+    }
+
+    /// Return the configuration used for this document's AOT parse.
+    #[must_use]
+    pub fn config(&self) -> &ParseConfig {
+        &self.config
+    }
+
+    /// Iterate file-level keyword Elements from the Scheme AOT graph.
+    pub fn keywords(&self) -> impl Iterator<Item = &GraphRecord> {
+        self.records
+            .iter()
+            .filter(|record| record.kind == "keyword" && !self.record_within_headline(record.id))
+    }
+
+    /// Join file-level `#+TITLE` values in source order.
+    #[must_use]
+    pub fn title(&self) -> Option<String> {
+        self.keywords()
+            .filter(|record| {
+                record
+                    .field("key")
+                    .is_some_and(|key| key.eq_ignore_ascii_case("TITLE"))
+            })
+            .filter_map(|record| record.field("value"))
+            .fold(None, |acc: Option<String>, value| {
+                let mut title = acc.unwrap_or_default();
+                if !title.is_empty() {
+                    title.push(' ');
+                }
+                title.push_str(value.trim());
+                Some(title)
+            })
+    }
+
+    fn record_within_headline(&self, id: usize) -> bool {
+        let mut parent = self.records[id].parent_id;
+        while let Some(ancestor) = parent {
+            if self.records[ancestor].kind == "headline" {
+                return true;
+            }
+            parent = self.records[ancestor].parent_id;
+        }
+        false
+    }
+
+    /// Replace a UTF-8-aligned byte range and reparse through the Scheme AOT engine.
+    pub fn replace_range(&mut self, range: TextRange, replacement: impl AsRef<str>) {
+        let mut source = self.to_org();
+        source.replace_range(
+            usize::from(range.start())..usize::from(range.end()),
+            replacement.as_ref(),
+        );
+        *self = parse_org_aot_with_config(&source, &self.config)
+            .expect("Scheme-generated Org parser rejected edited source");
+    }
+
     fn headline_details(&self, record_id: usize) -> Option<&HeadlineDetails> {
         let properties = self.headline_properties.get(record_id)?.as_ref()?;
         Some(properties.details.get_or_init(|| {
