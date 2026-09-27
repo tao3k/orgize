@@ -8,16 +8,19 @@ use std::collections::HashSet;
 use gerbil_parser_rowan::GraphRecord;
 use rowan::TextRange;
 
-use crate::org_aot::OrgAotDocument;
+use crate::org_aot::{OrgAotDocument, org_image_link};
 
+use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
-    Block, BlockKind, Diagnostic, DiagnosticKind, Document, Element, ElementData, Keyword,
-    MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst, Planning, Property, Section,
-    Table, TableCell, TableRow, TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    Block, BlockKind, Checkbox, Diagnostic, DiagnosticKind, Document, Element, ElementData,
+    Keyword, Link, List, ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation,
+    ParsedAst, Planning, Property, Section, Table, TableCell, TableRow, TodoKeyword, TodoState,
+    UnsupportedSyntaxKind,
 };
 use super::preprocessing::macro_definition;
 use super::prescan::{SemanticPrescan, collect_document_keyword};
 use super::source_position::LineIndex;
+use super::timestamp_model::{Timestamp, TimestampKind};
 
 impl OrgAotDocument {
     /// Project the Scheme-owned Element graph into the owned semantic API.
@@ -158,7 +161,7 @@ impl<'a> GraphProjector<'a> {
         let range = record.range;
         let child_ids = record.child_ids.clone();
         let level = record.field("markers").map_or(1, str::len);
-        let raw_title = record.field("title").unwrap_or_default().to_owned();
+        let raw_title = self.document.headline_display_title(id).unwrap_or_default();
         let tags = record.values("tag").map(str::to_owned).collect::<Vec<_>>();
         let todo = self
             .document
@@ -172,11 +175,7 @@ impl<'a> GraphProjector<'a> {
                 name,
             });
         let is_comment = self.document.headline_is_comment(id).unwrap_or(false);
-        let title = self
-            .document
-            .headline_display_title(id)
-            .map(|text| vec![self.plain(range, &text)])
-            .unwrap_or_default();
+        let title = vec![self.plain(range, &raw_title)];
         let mut children = Vec::new();
         let mut subsections = Vec::new();
         for child in child_ids {
@@ -256,6 +255,7 @@ impl<'a> GraphProjector<'a> {
         let data = match kind {
             "keyword" => ElementData::Keyword(self.keyword(record)?),
             "paragraph" => ElementData::Paragraph(self.paragraph_objects(id)),
+            "plain-list" => ElementData::List(self.list(id)),
             "table" => ElementData::Table(self.table(id)),
             "property-drawer" => ElementData::PropertyDrawer(
                 record
@@ -364,15 +364,80 @@ impl<'a> GraphProjector<'a> {
         }
     }
 
+    fn list(&mut self, id: usize) -> List<ParsedAnnotation> {
+        let item_ids = self.record(id).child_ids.clone();
+        let descriptive = item_ids
+            .iter()
+            .any(|&item| self.record(item).field("tag").is_some());
+        let ordered = item_ids
+            .first()
+            .and_then(|&item| self.record(item).field("bullet"))
+            .and_then(|bullet| bullet.chars().next())
+            .is_some_and(char::is_alphanumeric);
+        let list_type = if descriptive {
+            ListType::Descriptive
+        } else if ordered {
+            ListType::Ordered
+        } else {
+            ListType::Unordered
+        };
+        let mut items = Vec::with_capacity(item_ids.len());
+        for item in item_ids {
+            if self.record(item).kind == "item" {
+                items.push(self.list_item(item));
+            }
+        }
+        List { list_type, items }
+    }
+
+    fn list_item(&mut self, id: usize) -> ListItem<ParsedAnnotation> {
+        let record = self.record(id);
+        let range = record.range;
+        let bullet = record.field("bullet").unwrap_or_default().to_owned();
+        let counter = record.field("counter").map(str::to_owned);
+        let checkbox = match record.field("checkbox") {
+            Some("X" | "x") => Some(Checkbox::On),
+            Some(" ") => Some(Checkbox::Off),
+            Some("-") => Some(Checkbox::Trans),
+            _ => None,
+        };
+        let tag = record
+            .field("tag")
+            .map(|value| vec![self.plain(range, value)])
+            .unwrap_or_default();
+        let child_ids = record.child_ids.clone();
+        ListItem {
+            ann: self.annotation(range),
+            bullet,
+            counter,
+            checkbox,
+            tag,
+            children: child_ids
+                .into_iter()
+                .filter_map(|child| self.element(child))
+                .collect(),
+        }
+    }
+
     fn paragraph_objects(&mut self, id: usize) -> Vec<Object<ParsedAnnotation>> {
         let record = self.record(id);
-        let mut cursor = usize::from(record.range.start());
-        let end = usize::from(record.range.end());
-        let children = record.child_ids.clone();
+        self.objects_in_span(record.range, &record.child_ids.clone())
+    }
+
+    fn objects_in_span(
+        &mut self,
+        span: TextRange,
+        children: &[usize],
+    ) -> Vec<Object<ParsedAnnotation>> {
+        let mut cursor = usize::from(span.start());
+        let end = usize::from(span.end());
         let mut objects = Vec::new();
-        for child in children {
+        for &child in children {
             let range = self.record(child).range;
             let start = usize::from(range.start());
+            if start < cursor || usize::from(range.end()) > end {
+                continue;
+            }
             if cursor < start {
                 objects.push(self.plain_bytes(cursor, start));
             }
@@ -412,6 +477,8 @@ impl<'a> GraphProjector<'a> {
                 ObjectData::Verbatim(record.field("value").unwrap_or_default().to_owned())
             }
             "entity" => ObjectData::Entity(self.raw(range).to_owned()),
+            "link" => self.link(id),
+            "timestamp" => ObjectData::Timestamp(self.timestamp(id)),
             "latex-fragment" => ObjectData::LatexFragment(self.raw(range).to_owned()),
             "target" => ObjectData::Target(record.field("value").unwrap_or_default().to_owned()),
             "radio-target" => {
@@ -419,6 +486,27 @@ impl<'a> GraphProjector<'a> {
             }
             "statistics-cookie" => ObjectData::StatisticCookie(self.raw(range).to_owned()),
             "line-break" => ObjectData::LineBreak,
+            "inline-src-block" => ObjectData::InlineSrc {
+                language: record.field("language").unwrap_or_default().to_owned(),
+                parameters: record.field("parameters").map(str::to_owned),
+                value: record.field("value").unwrap_or_default().to_owned(),
+                raw: self.raw(range).to_owned(),
+            },
+            "inline-babel-call" => ObjectData::InlineCall {
+                name: record.field("call").unwrap_or_default().to_owned(),
+                arguments: record.field("arguments").unwrap_or_default().to_owned(),
+                header: record.field("inside-header").map(str::to_owned),
+                end_header: record.field("end-header").map(str::to_owned),
+                raw: self.raw(range).to_owned(),
+            },
+            "footnote-reference" => ObjectData::FootnoteRef {
+                label: record.field("label").map(str::to_owned),
+                resolved_label: None,
+                definition: record
+                    .field("definition")
+                    .map(|text| vec![self.plain(range, text)])
+                    .unwrap_or_default(),
+            },
             "export-snippet" => ObjectData::ExportSnippet {
                 backend: record.field("backend").unwrap_or_default().to_owned(),
                 value: record.field("value").unwrap_or_default().to_owned(),
@@ -449,6 +537,66 @@ impl<'a> GraphProjector<'a> {
             ann: self.annotation(range),
             data,
         })
+    }
+
+    fn link(&mut self, id: usize) -> ObjectData<ParsedAnnotation> {
+        let record = self.record(id);
+        let path = record.field("path").unwrap_or_default().to_owned();
+        let description = record.field("description").map(str::to_owned);
+        let child_ids = record.child_ids.clone();
+        let range = record.range;
+        let description_objects = if let Some(ref text) = description {
+            let end = usize::from(range.end()).saturating_sub(2);
+            let start = end.saturating_sub(text.len());
+            self.objects_in_span(
+                TextRange::new((start as u32).into(), (end as u32).into()),
+                &child_ids,
+            )
+        } else {
+            Vec::new()
+        };
+        let media_kind = if org_image_link(path.trim_start_matches("file:")) {
+            LinkMediaKind::Image
+        } else {
+            LinkMediaKind::Normal
+        };
+        ObjectData::Link(Box::new(Link {
+            path: LinkPath::new(path.clone()),
+            target: LinkTarget::Unresolved(path.clone()),
+            description: description_objects,
+            default_description: vec![self.plain(range, &path)],
+            raw_description: description.clone().unwrap_or_default(),
+            description_state: if description.is_some() {
+                LinkDescriptionState::Explicit
+            } else {
+                LinkDescriptionState::None
+            },
+            media_kind,
+            caption: None,
+            search: None,
+            attachment: None,
+            file: None,
+        }))
+    }
+
+    fn timestamp(&self, id: usize) -> Timestamp {
+        let record = self.record(id);
+        let kind = if record.field("diary-expression").is_some() {
+            TimestampKind::Diary
+        } else if record.values("delimiter").next() == Some("[") {
+            TimestampKind::Inactive
+        } else {
+            TimestampKind::Active
+        };
+        Timestamp {
+            kind,
+            raw: self.raw(record.range).to_owned(),
+            is_range: record.values("range-separator").next().is_some(),
+            start: None,
+            end: None,
+            repeater: None,
+            warning: None,
+        }
     }
 
     fn unsupported(&mut self, range: TextRange, kind: &str, category: DiagnosticKind) {

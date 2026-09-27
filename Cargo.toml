@@ -78,6 +78,10 @@ path = "tests/integration/latex.rs"
 name = "markdown"
 path = "tests/integration/markdown.rs"
 
+[[test]]
+name = "org_aot_owned_projection"
+path = "tests/integration/org_aot_owned_projection.rs"
+
 [[bench]]
 name = "parse"
 harness = false
