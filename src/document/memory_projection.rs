@@ -102,65 +102,50 @@ fn project_memory_records(
     path: &Path,
     options: &OrgMemorySearchOptions,
 ) -> Result<Vec<OrgMemorySearchRecord>, String> {
-    let records = document.records();
     let lines = LineIndex::new(source);
     let mtime = modified_seconds(path);
     let mut selected = Vec::new();
-    for headline in records.iter().filter(|record| record.kind == "headline") {
-        let Some(title) = document.headline_display_title(headline.id) else {
+    for headline in document.headlines() {
+        let Some(title) = headline.display_title() else {
             return Err(format!("{}: headline lacks an AOT title", path.display()));
         };
-        if title == "COMMENT" || title.starts_with("COMMENT ") {
+        if headline.is_comment() {
             continue;
         }
 
-        let tags = inherited_headline_tags(records, headline.id);
-        let mut properties = BTreeMap::new();
+        let tags = headline.effective_tags();
+        let properties = headline
+            .properties()
+            .into_iter()
+            .map(|(key, value)| (key.to_owned(), value.to_owned()))
+            .collect();
         let mut closed = false;
         let mut planned = false;
-        for child in headline.child_ids.iter().filter_map(|id| records.get(*id)) {
-            match child.kind {
-                "planning" => {
-                    if let Some(key) = child.field("key") {
-                        if key.eq_ignore_ascii_case("CLOSED") {
-                            closed = true;
-                        } else if key.eq_ignore_ascii_case("SCHEDULED")
-                            || key.eq_ignore_ascii_case("DEADLINE")
-                        {
-                            planned = true;
-                        }
-                    }
-                }
-                "property-drawer" => {
-                    for property in child.child_ids.iter().filter_map(|id| records.get(*id)) {
-                        if property.kind == "node-property"
-                            && let (Some(key), Some(value)) =
-                                (property.field("key"), property.field("value"))
-                        {
-                            properties.insert(key.to_string(), value.to_string());
-                        }
-                    }
-                }
-                _ => {}
+        for (key, _) in headline.planning() {
+            if key.eq_ignore_ascii_case("CLOSED") {
+                closed = true;
+            } else if key.eq_ignore_ascii_case("SCHEDULED") || key.eq_ignore_ascii_case("DEADLINE")
+            {
+                planned = true;
             }
         }
         let archived = tags.iter().any(|tag| tag.eq_ignore_ascii_case("ARCHIVE"));
-        let state = match document.headline_memory_state(headline.id, closed, planned, archived) {
+        let state = match document.headline_memory_state(headline.id(), closed, planned, archived) {
             "archived" => MemoryRecordState::Archived,
             "closed" => MemoryRecordState::Closed,
             "current" => MemoryRecordState::Current,
             _ => MemoryRecordState::Background,
         };
-        let start = usize::from(headline.range.start());
-        let end = usize::from(headline.range.end()).saturating_sub(1);
+        let start = usize::from(headline.range().start());
+        let end = usize::from(headline.range().end()).saturating_sub(1);
         let record = OrgMemorySearchRecord {
             path: path.to_path_buf(),
             start_line: lines.line_for(start),
             end_line: lines.line_for(end),
             state,
-            level: headline.field("markers").map_or(0, str::len),
+            level: headline.level(),
             title,
-            todo: document.headline_todo_keyword(headline.id),
+            todo: headline.todo_keyword(),
             tags,
             properties,
             mtime,
@@ -170,35 +155,12 @@ fn project_memory_records(
             && (options.include_archived || record.state != MemoryRecordState::Archived)
             && memory_search_record_matches_scope(&record, options)
             && memory_search_record_matches_contract(&record, options.contract.as_deref())
-            && memory_record_terms_match(document, headline.id, &record, &options.terms)
+            && memory_record_terms_match(document, headline.id(), &record, &options.terms)
         {
             selected.push(record);
         }
     }
     Ok(selected)
-}
-
-fn inherited_headline_tags(
-    records: &[gerbil_parser_rowan::GraphRecord],
-    headline_id: usize,
-) -> Vec<String> {
-    let mut lineage = Vec::new();
-    let mut cursor = Some(headline_id);
-    while let Some(record) = cursor.and_then(|id| records.get(id)) {
-        if record.kind == "headline" {
-            lineage.push(record);
-        }
-        cursor = record.parent_id;
-    }
-    let mut tags = Vec::new();
-    for headline in lineage.into_iter().rev() {
-        for tag in headline.values("tag") {
-            if !tags.iter().any(|seen| seen == tag) {
-                tags.push(tag.to_owned());
-            }
-        }
-    }
-    tags
 }
 
 fn memory_record_terms_match(

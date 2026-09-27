@@ -26,6 +26,9 @@ mod graph;
 mod contract_plan;
 #[path = "org_aot_headline_functions.rs"]
 mod headline_functions;
+#[path = "org_aot_headline_view.rs"]
+mod headline_view;
+pub use headline_view::OrgHeadline;
 #[path = "org_aot_link_functions.rs"]
 mod link_functions;
 #[path = "org_aot_todo_directive.rs"]
@@ -55,6 +58,7 @@ struct HeadlineDetails {
     todo_keyword: Option<String>,
     content_after_todo: String,
     display_title: String,
+    is_comment: bool,
 }
 
 /// An error from the parser or the generated Element projection contract.
@@ -200,10 +204,12 @@ impl OrgAotDocument {
                 &content_after_todo,
                 record.field("tag").is_some(),
             );
+            let is_comment = headline_functions::headline_comment_p(&display_title);
             HeadlineDetails {
                 todo_keyword: (!todo_keyword.is_empty()).then_some(todo_keyword),
                 content_after_todo,
                 display_title,
+                is_comment,
             }
         }))
     }
@@ -283,6 +289,13 @@ impl OrgAotDocument {
     pub fn headline_display_title(&self, record_id: usize) -> Option<String> {
         self.headline_details(record_id)
             .map(|details| details.display_title.clone())
+    }
+
+    /// Whether a headline carries Org's case-sensitive COMMENT marker.
+    #[must_use]
+    pub fn headline_is_comment(&self, record_id: usize) -> Option<bool> {
+        self.headline_details(record_id)
+            .map(|details| details.is_comment)
     }
 
     /// Evaluate a Scheme-AOT Org Contract against this document's Element graph.

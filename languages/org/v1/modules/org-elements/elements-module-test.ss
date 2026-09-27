@@ -21,6 +21,7 @@
                  headline-content-after-todo
                  headline-content-after-todo-rust
                  headline-display-title headline-display-title-rust
+                 headline-comment? headline-comment-rust
                  priority-token? priority-token-rust
                  todo-keyword-matches? todo-keyword-matches-rust
                  memory-headline-state memory-headline-state-rust)
@@ -198,6 +199,13 @@
       (check-org-headline-ir
        headline-display-title-rust 'headline_display_title
        "languages/org/v1/modules/org-elements/generated/headline_display_title.ir.json")
+      (check-org-headline-ir
+       headline-comment-rust 'headline_comment_p
+       "languages/org/v1/modules/org-elements/generated/headline_comment_p.ir.json")
+      (check (headline-comment? "COMMENT Hidden") => #t)
+      (check (headline-comment? "COMMENT") => #t)
+      (check (headline-comment? "comment Visible") => #f)
+      (check (headline-comment? "COMMENTARY Visible") => #f)
       (check-org-headline-ir
        memory-headline-state-rust 'memory_headline_state
        "languages/org/v1/modules/org-elements/generated/memory_headline_state.ir.json")

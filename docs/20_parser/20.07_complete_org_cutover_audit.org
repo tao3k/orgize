@@ -25,6 +25,14 @@ planning, properties and link terms have focused consumer coverage. This
 removes one old-parser consumer, not the public parser, and the Rust
 projection/query adapter still needs reduction as the Scheme graph/query API
 gains richer runtime-parameter support.
+The graph now exposes a typed =OrgHeadline= view for source ranges, hierarchy,
+TODO, title, tags, planning and properties; the general memory consumer uses
+that view rather than repeating raw graph traversal. The case-sensitive
+=COMMENT= decision is a Scheme pure function AOT-compiled to Rust. This is a
+new typed *graph* facade, not a conversion back to the old =OrgLanguage= CST or
+an admission of =Org::parse=. A local rebuild after adding the small pure
+function took 8m13s, underscoring the still-open generated-code build-cost
+gate.
 
 List item counter, checkbox, and descriptive tag spans now originate in the
 Org Scheme event algorithm and project through the generated Element graph.

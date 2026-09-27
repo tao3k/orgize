@@ -6,6 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/todo_keyword_from_directives.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_content_after_todo.rs"));
 include!(concat!(env!("OUT_DIR"), "/priority_token_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_display_title.rs"));
+include!(concat!(env!("OUT_DIR"), "/headline_comment_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/memory_headline_state.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_image_link_p.rs"));
 
@@ -131,6 +132,21 @@ fn scheme_memory_headline_state_aot_classifies_admitted_elements() {
         "", false, true, false => "current",
         "", false, false, false => "background",
         "todo", false, false, true => "archived",
+    );
+}
+
+#[test]
+fn scheme_comment_marker_aot_keeps_org_headline_case_rule() {
+    macro_rules! check_comment {
+        ($($title:expr => $expected:expr),+ $(,)?) => {
+            $(assert_eq!(headline_comment_p($title), $expected, "title: {:?}", $title);)+
+        };
+    }
+    check_comment!(
+        "COMMENT Hidden" => true,
+        "COMMENT" => true,
+        "comment Visible" => false,
+        "COMMENTARY Visible" => false,
     );
 }
 

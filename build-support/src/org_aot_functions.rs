@@ -15,6 +15,7 @@ pub fn write_org_aot_functions() {
         "headline_content_after_todo",
         "priority_token_p",
         "headline_display_title",
+        "headline_comment_p",
         "memory_headline_state",
         "org_image_link_p",
     ] {

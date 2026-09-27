@@ -1,0 +1,1 @@
+{"name":"headline_comment_p","schema":"gerbil-scheme-rust.rust-function-ir.v1","body":{"result":{"operator":"equal","left":{"kind":"first_word","value":{"kind":"name","value":"display_title"}},"kind":"binary","right":{"value":"COMMENT","kind":"string"}},"bindings":[]},"result":"bool","parameters":[{"ty":"&str","name":"display_title"}]}

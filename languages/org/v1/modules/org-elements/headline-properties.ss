@@ -23,6 +23,7 @@
         todo-keyword-from-directives todo-keyword-from-directives-rust
         headline-content-after-todo headline-content-after-todo-rust
         headline-display-title headline-display-title-rust
+        headline-comment? headline-comment-rust
         priority-token? priority-token-rust
         todo-keyword-matches? todo-keyword-matches-rust
         memory-headline-state memory-headline-state-rust)
@@ -118,6 +119,12 @@
       (if has-tags
         (string-before-last-word without-priority)
         (string-trim without-priority)))))
+
+;; Org's COMMENT marker is a case-sensitive headline word after TODO and
+;; priority have been resolved. Structural keywords remain case-insensitive.
+(define-rust-pure headline-comment? headline-comment-rust
+  ((display-title "&str")) "bool"
+  (equal? (string-first-word display-title) "COMMENT"))
 
 ;; A query checks the source keyword only after the same Scheme-owned state
 ;; algorithm admits it under file-local declarations. The dependency call is

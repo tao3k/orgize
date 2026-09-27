@@ -170,3 +170,43 @@ fn scheme_priority_cookie_validation_preserves_malformed_headlines() {
         "* [#A]junk] Work\n" => "[#A]junk] Work",
     );
 }
+
+#[test]
+fn typed_aot_headline_view_uses_one_scheme_graph() {
+    let source = "#+seq_todo: WAIT(w) | DONE(d)\n\
+                  * WAIT Parent :agent:\n\
+                  :properties:\n\
+                  :session_id: session-a\n\
+                  :end:\n\
+                  ** DONE [#A] COMMENT Hidden :work:\n\
+                  scheduled: <2026-09-27 Sun>\n";
+    let document = orgize::org_aot::parse_org_aot(source).expect("Scheme AOT graph");
+    let headlines = document.headlines().collect::<Vec<_>>();
+    assert_eq!(headlines.len(), 2);
+    let parent = headlines[0];
+    let child = headlines[1];
+    assert_eq!(parent.level(), 1);
+    assert_eq!(parent.todo_keyword().as_deref(), Some("WAIT"));
+    assert_eq!(parent.todo_type(), Some("todo"));
+    assert_eq!(parent.display_title().as_deref(), Some("Parent"));
+    assert_eq!(parent.local_tags().collect::<Vec<_>>(), ["agent"]);
+    assert_eq!(parent.properties(), [("session_id", "session-a")]);
+    assert!(!parent.is_comment());
+    assert_eq!(child.level(), 2);
+    assert_eq!(
+        child.parent().map(|headline| headline.id()),
+        Some(parent.id())
+    );
+    assert_eq!(child.todo_type(), Some("done"));
+    assert_eq!(child.display_title().as_deref(), Some("COMMENT Hidden"));
+    assert!(child.is_comment());
+    assert_eq!(child.effective_tags(), ["agent", "work"]);
+    assert_eq!(child.planning(), [("scheduled", "<2026-09-27 Sun>")]);
+    assert_eq!(
+        document
+            .headline(child.id())
+            .map(|headline| headline.range()),
+        Some(child.range())
+    );
+    assert!(document.headline(document.records().len()).is_none());
+}
