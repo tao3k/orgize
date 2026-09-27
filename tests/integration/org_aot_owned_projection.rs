@@ -125,3 +125,24 @@ fn owned_footnote_definition_uses_scheme_graph_label_and_body() {
         ElementData::Paragraph(objects) if !objects.is_empty()
     ));
 }
+
+#[test]
+fn keyword_graph_keeps_semantic_and_source_faithful_values_separate() {
+    for (source, expected_raw) in [
+        ("#+CAPTION:  A note\n[fn:note] Body\n", "  A note"),
+        ("#+CAPTION:A note\n[fn:note] Body\n", "A note"),
+    ] {
+        let parsed = Org::parse(source);
+        let keyword = parsed
+            .records()
+            .iter()
+            .find(|record| record.kind == "keyword")
+            .expect("caption keyword");
+        assert_eq!(keyword.field("value"), Some("A note"));
+        assert_eq!(keyword.field("raw-value"), Some(expected_raw));
+        assert_eq!(
+            parsed.document().children[0].affiliated_keywords[0].value,
+            expected_raw
+        );
+    }
+}

@@ -957,7 +957,8 @@
          (OrgParagraph (OrgTextLine (TextLine 0 13)))
          (OrgKeyword
           (KeywordTrivia 13 15) (KeywordKey 15 20)
-          (KeywordTrivia 20 22) (KeywordValue 22 25)
+          (KeywordTrivia 20 21)
+          (OrgKeywordRawValue (KeywordTrivia 21 22) (KeywordValue 22 25))
           (KeywordTrivia 25 26)))))
     (test-case "diary S-expressions are standalone source-backed Elements"
       (check-org-ast-with parse-org-rowan-events
@@ -974,13 +975,17 @@
         "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n"
         (OrgFile
          (OrgKeyword (KeywordTrivia 0 2) (KeywordKey 2 10)
-                     (KeywordTrivia 10 12) (KeywordValue 12 23)
+                     (KeywordTrivia 10 11)
+                     (OrgKeywordRawValue
+                      (KeywordTrivia 11 12) (KeywordValue 12 23))
                      (KeywordTrivia 23 26))
          (OrgSection
           (OrgHeadline (HeadlineLine 26 27) (HeadlineTrivia 27 28)
                        (HeadlineTitle 28 37) (HeadlineTrivia 37 38))
           (OrgBabelCall (KeywordTrivia 38 40) (KeywordKey 40 44)
-                        (KeywordTrivia 44 46) (KeywordValue 46 52)
+                        (KeywordTrivia 44 45)
+                        (OrgKeywordRawValue
+                         (KeywordTrivia 45 46) (KeywordValue 46 52))
                         (KeywordTrivia 52 53))))))
     (test-case "property drawer keys stay beneath the owning headline"
       (check-org-ast-with parse-org-rowan-events

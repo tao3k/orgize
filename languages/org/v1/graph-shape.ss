@@ -64,9 +64,12 @@
    (node 'OrgKeyword "element" "keyword"
          (list (field 'KeywordKey "key")
                (field 'KeywordValue "value")
-               (field 'OrgKeywordValue "value" 'node-text)))
+               (field 'OrgKeywordValue "value" 'node-text)
+               (field 'OrgKeywordRawValue "raw-value" 'node-text)))
    (node 'OrgBabelCall "element" "babel-call"
-         (list (field 'KeywordKey "key") (field 'KeywordValue "value")))
+         (list (field 'KeywordKey "key")
+               (field 'KeywordValue "value")
+               (field 'OrgKeywordRawValue "raw-value" 'node-text)))
    (node 'OrgPlanning "element" "planning"
          (list (field 'PlanningKey "key" 'each)
                (field 'PlanningValue "value" 'each)))

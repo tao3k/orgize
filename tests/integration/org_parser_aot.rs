@@ -517,6 +517,7 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
         .expect("one keyword");
     assert_eq!(keyword.field("key"), Some("TITLE"));
     assert_eq!(keyword.field("value"), Some("α fixture"));
+    assert_eq!(keyword.field("raw-value"), Some(" α fixture"));
     let planning = records
         .iter()
         .find(|record| record.kind == "planning")

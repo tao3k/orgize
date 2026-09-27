@@ -38,7 +38,8 @@
 
 (def (keyword-form)
   (let* ((key-end `(line-scan-key (line-prefix-end ,keyword-prefix)))
-         (value-start `(line-skip-horizontal (line-step ,key-end)))
+         (value-prefix-end `(line-step ,key-end))
+         (value-start `(line-skip-horizontal ,value-prefix-end))
          (value-end `(line-trim-end-from ,value-start))
          (caption-marker
           (string-append keyword-prefix "CAPTION"
@@ -50,13 +51,16 @@
         (token KeywordTrivia start (line-prefix-end ,keyword-prefix))
         (token KeywordKey (line-prefix-end ,keyword-prefix)
                ,key-end)
-        (token KeywordTrivia ,key-end ,value-start)
+        (token KeywordTrivia ,key-end ,value-prefix-end)
+        (start-node OrgKeywordRawValue)
+        (token KeywordTrivia ,value-prefix-end ,value-start)
         (if (line-starts-with-ascii-ci ,caption-marker)
             ((start-node OrgKeywordValue)
              (call-source-helper inline-span ,value-start ,value-end
                                  ((state inline-script-policy)))
              (finish-node))
             ((token KeywordValue ,value-start ,value-end)))
+        (finish-node)
         (token KeywordTrivia ,value-end end)
         (finish-node))
        (,(paragraph-form)))))
