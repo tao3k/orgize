@@ -37,29 +37,29 @@
 (def paragraph-form paragraph-line-form)
 
 (def (keyword-form)
-  `(if (line-has-key-after-prefix? ,keyword-prefix)
+  (let* ((key-end `(line-scan-key (line-prefix-end ,keyword-prefix)))
+         (value-start `(line-skip-horizontal (line-step ,key-end)))
+         (value-end `(line-trim-end-from ,value-start))
+         (caption-marker
+          (string-append keyword-prefix "CAPTION"
+                         (key-line-separator keyword-rule))))
+    `(if (line-has-key-after-prefix? ,keyword-prefix)
        (,close-paragraph
         (if (line-starts-with-ascii-ci ,babel-call-marker)
             ((start-node OrgBabelCall)) ((start-node OrgKeyword)))
         (token KeywordTrivia start (line-prefix-end ,keyword-prefix))
         (token KeywordKey (line-prefix-end ,keyword-prefix)
-               (line-scan-key (line-prefix-end ,keyword-prefix)))
-        (token KeywordTrivia
-               (line-scan-key (line-prefix-end ,keyword-prefix))
-               (line-skip-horizontal
-                (line-step (line-scan-key (line-prefix-end ,keyword-prefix)))))
-        (token KeywordValue
-               (line-skip-horizontal
-                (line-step (line-scan-key (line-prefix-end ,keyword-prefix))))
-               (line-trim-end-from
-                (line-skip-horizontal
-                 (line-step (line-scan-key (line-prefix-end ,keyword-prefix))))))
-        (token KeywordTrivia
-               (line-trim-end-from
-                (line-skip-horizontal
-                 (line-step (line-scan-key (line-prefix-end ,keyword-prefix))))) end)
+               ,key-end)
+        (token KeywordTrivia ,key-end ,value-start)
+        (if (line-starts-with-ascii-ci ,caption-marker)
+            ((start-node OrgKeywordValue)
+             (call-source-helper inline-span ,value-start ,value-end
+                                 ((state inline-script-policy)))
+             (finish-node))
+            ((token KeywordValue ,value-start ,value-end)))
+        (token KeywordTrivia ,value-end end)
         (finish-node))
-       (,(paragraph-form))))
+       (,(paragraph-form)))))
 
 (def (declared-key-form rule key otherwise)
   (let* ((marker (string-append (key-line-prefix rule) key

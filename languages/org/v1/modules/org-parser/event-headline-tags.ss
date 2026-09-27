@@ -1,5 +1,7 @@
 ;;; -*- Gerbil -*-
-;;; Org headline tag suffixes are Scheme-owned, source-backed event tokens.
+;;; Org headline titles and tag suffixes are Scheme-owned, source-backed events.
+
+(import (only-in "event-inline.ss" inline-trigger-bytes))
 
 (export event-headline-tags-initial event-headline-title-forms)
 
@@ -47,6 +49,14 @@
          (token HeadlineTagTrivia ,tag-index ,tag-next)
          (set-uint headline-tag-start (offset ,tag-next))) ())))
 
+(def (headline-title-form from until)
+  `(if (line-bytes-any-in? ,from ,until ,inline-trigger-bytes)
+       ((start-node OrgHeadlineTitle)
+        (call-source-helper inline-span ,from ,until
+                            ((state inline-script-policy)))
+        (finish-node))
+       ((token HeadlineTitle ,from ,until))))
+
 (def (event-headline-title-forms from until)
   `((if (line-bytes-any-in? ,from ,until (58))
         ((if (uint-positive? (state headline-tag-cursor))
@@ -60,8 +70,8 @@
            ,(headline-tag-scan-step))
          (if (and (uint-equal? (state headline-tag-mode) (uint 3))
                   (uint-positive? (state headline-tag-count)))
-             ((token HeadlineTitle ,from
-                     (state-offset headline-tag-start))
+             (,(headline-title-form
+                from '(state-offset headline-tag-start))
               (token HeadlineTagTrivia
                      (state-offset headline-tag-start)
                      (line-step (state-offset headline-tag-start)))
@@ -70,8 +80,8 @@
               (for-line-bytes headline-tag-byte-index
                 (state-offset headline-tag-start) ,until
                 ,(headline-tag-token-step)))
-             ((token HeadlineTitle ,from ,until))))
-        ((token HeadlineTitle ,from ,until)))))
+             (,(headline-title-form from until))))
+        (,(headline-title-form from until)))))
 
 (def event-headline-tags-initial
   '((headline-tag-mode 0) (headline-tag-cursor 0)

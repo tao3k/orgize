@@ -23,7 +23,7 @@
         (only-in "objects.ss"
                  make-org-inline-markup org-inline-markup-byte
                  org-inline-markup-id org-inline-markup-node))
-(export event-inline-initial event-text-line-forms)
+(export event-inline-initial event-text-line-forms inline-trigger-bytes)
 
 (def inline-open-boundary-bytes '(9 10 13 32 45 40 39 34 123))
 (def inline-close-boundary-bytes
@@ -539,7 +539,7 @@
                                  ((set-uint inline-code-mode (uint 0)))))
                             ,(inline-code-second-scan-forms))))))))))))
 
-(def (entity-or-ordinary-free-forms)
+(def (entity-or-ordinary-free-forms nested-description?)
   `((if (or ,(pattern-at? link-index "\\(")
             ,(pattern-at? link-index "\\["))
         ,(latex-open-forms)
@@ -556,7 +556,7 @@
         (,@(entity-events)
          (set-uint inline-entity-mode (uint 0)))
         ((if (uint-equal? (state inline-entity-mode) (uint 0))
-             ,(inline-ordinary-free-scan-forms) ())))))))
+             ,(inline-ordinary-free-scan-forms nested-description?) ())))))))
 
 (def (macro-events arguments?)
   (let ((close-end (if arguments?
@@ -621,7 +621,7 @@
          (set-uint inline-macro-name-end
                    (offset ,(pattern-end link-index "{{{")))) ())))
 
-(def (inline-bracket-open-forms)
+(def (inline-bracket-open-forms nested-description?)
   `((if ,(timestamp-date-at? link-index)
         ,(timestamp-open-forms)
         ((if (or ,(pattern-at? link-index "[cite:")
@@ -630,13 +630,13 @@
         ((if ,(pattern-at? link-index "[fn:")
              ,(footnote-reference-open-forms)
              ((if ,(pattern-at? link-index link-open)
-                  ,(link-scan-forms)
+                  ,(if nested-description? '() (link-scan-forms))
                   ((set-uint inline-delimited-kind
                              (uint ,inline-cookie-first))
                    (set-uint inline-cookie-open-at
                              (offset ,link-index))))))))))))
 
-(def (inline-ordinary-free-scan-forms)
+(def (inline-ordinary-free-scan-forms nested-description?)
   `((if (and (state inline-code-left-boundary)
              (line-byte-equal? ,link-index 115)
              ,(pattern-at? link-index "src_"))
@@ -646,7 +646,7 @@
                   ,(pattern-at? link-index "call_"))
              ,(inline-code-open-forms 2 "call_")
              ((if (line-byte-equal? ,link-index 91)
-                  ,(inline-bracket-open-forms)
+                  ,(inline-bracket-open-forms nested-description?)
                   ((if (line-byte-equal? ,link-index 60)
                        ,(timestamp-open-forms)
                        ((if ,(pattern-at? link-index "@@")
@@ -657,14 +657,14 @@
                                  ,(latex-open-forms)
                                  ,(markup-scan-forms))))))))))))))))
 
-(def (inline-free-scan-forms)
+(def (inline-free-scan-forms nested-description?)
   `((if ,(pattern-at? link-index "{{{")
         ,(macro-open-forms)
         ((if (line-byte-equal? ,link-index 92)
-             ,(entity-or-ordinary-free-forms)
-             ,(inline-ordinary-free-scan-forms))))))
+             ,(entity-or-ordinary-free-forms nested-description?)
+             ,(inline-ordinary-free-scan-forms nested-description?))))))
 
-(def (inline-ordinary-non-code-scan-forms)
+(def (inline-ordinary-non-code-scan-forms nested-description?)
   `((if (uint-positive? (state inline-timestamp-mode))
         ,(timestamp-scan-forms)
         ((if (uint-positive? (state inline-footnote-mode))
@@ -676,7 +676,7 @@
                        ,(statistics-cookie-scan-forms)
                        ,(target-scan-forms)))
                   ((if (state inline-open)
-                       ,(link-scan-forms)
+                       ,(link-scan-forms nested-description?)
                        ((if ,(pattern-at? link-index "<<")
                             ((set-uint inline-markup-kind (uint 0))
                              ,@(target-open-forms))
@@ -685,16 +685,16 @@
                                  ((set-uint inline-markup-kind (uint 0))) ())
                              (if (uint-positive? (state inline-markup-kind))
                                  ,(markup-scan-forms)
-                                 ,(inline-free-scan-forms))))))))))))))))
+                                 ,(inline-free-scan-forms nested-description?))))))))))))))))
 
-(def (inline-non-code-scan-forms)
+(def (inline-non-code-scan-forms nested-description?)
   `((if (uint-positive? (state inline-macro-mode))
         ,(macro-scan-forms)
         ((if (uint-positive? (state inline-citation-mode))
              ,(citation-scan-forms)
-             ,(inline-ordinary-non-code-scan-forms))))))
+             ,(inline-ordinary-non-code-scan-forms nested-description?))))))
 
-(def (inline-scan-forms)
+(def (inline-scan-forms nested-description?)
   `((if (and (uint-positive? (state inline-citation-mode))
              (line-bytes-any-in? ,link-index ,inline-next (10 13)))
         ((set-uint inline-citation-mode (uint 0))) ())
@@ -702,7 +702,7 @@
         ()
         ((if (uint-positive? (state inline-latex-mode))
              ,(latex-scan-forms)
-             ,(inline-scan-non-latex-forms))))
+             ,(inline-scan-non-latex-forms nested-description?))))
     (if (uint-equal? (state inline-latex-mode) (uint 4))
         ((set-bool inline-latex-previous-invalid
                    (line-bytes-any-in? ,link-index ,inline-next
@@ -725,7 +725,7 @@
     (set-bool inline-previous-present
               (not (line-bytes-any-in? ,link-index ,inline-next (10 13))))))
 
-(def (inline-scan-non-latex-forms)
+(def (inline-scan-non-latex-forms nested-description?)
   `((if (uint-positive? (state inline-script-mode))
         ,(inline-script-scan-forms) ())
     (if (offset-less? ,link-index (state-offset inline-cursor))
@@ -752,10 +752,10 @@
                   (uint-equal? (state inline-entity-mode) (uint 0)))
              ((if (uint-positive? (state inline-code-mode))
                   ,(inline-code-scan-forms)
-                  ,(inline-non-code-scan-forms)))
+                  ,(inline-non-code-scan-forms nested-description?)))
              ())))))
 
-(def (event-text-line-forms from)
+(def (event-text-line-forms from (nested-description? #f))
   `((start-node OrgTextLine)
     (if (offset-less? (state-offset inline-cursor) ,from)
         ((set-uint inline-cursor (offset ,from))) ())
@@ -763,7 +763,7 @@
     (if (line-bytes-any-in? ,from (line-content-end)
                             ,inline-trigger-bytes)
         ((for-line-bytes inline-byte-index ,from (line-content-end)
-                         ,(inline-scan-forms))) ())
+                         ,(inline-scan-forms nested-description?))) ())
     (if (uint-positive? (state inline-entity-mode))
         ,(entity-finish-forms #f) ())
     ,@(inline-script-final-forms)

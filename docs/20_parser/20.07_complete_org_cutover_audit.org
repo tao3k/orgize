@@ -107,6 +107,15 @@ source-backed Objects with value fields and strict boundary fixtures, plus
 =statistics-cookie= and =line-break= with Org's exact physical-line boundary
 cases. These are catalog-versus-typed-graph gaps, not a claim that every
 already-projected kind has full Org behavior.
+The public AOT cutover test exposed secondary-value gaps in headline titles,
+=#+CAPTION= values and link descriptions. These spans now invoke the same
+Scheme inline Object strategy within bounded Rowan child nodes, while
+generic node-text projection retains the full title, keyword value and link
+description as source-backed fields. The representative headline/TODO/tag,
+affiliation, caption emphasis and link-description emphasis test passes.
+This does not admit every Org Object restriction or secondary-value context;
+the additional inline helper raises generated event IR from 1,396,913 to
+1,649,740 bytes and requires release-mode build and parse measurements.
 
 The =timestamp= typed family is now Orgize-owned Scheme: active/inactive
 dates, two-date ranges, day names, time ranges, repeaters, delays, and diary
@@ -298,8 +307,9 @@ bounded source primitives, and Rowan construction; they must not own Org
 grammar, TODO policy, or Org Element semantics. Generic primitives added for
 an Org case should be reviewed for accidental Org-shaped assumptions.
 
-The public Rust parser is a remaining second authority, not a fallback to
-retain.
+The public =Org::parse= now enters the Scheme-AOT Rowan graph. Legacy Rust
+syntax parsing modules and exporters are still present and must be migrated
+and removed; they are not an authorized fallback for missing AOT behavior.
 
 Cargo consumers call the Scheme-AOT-generated Rust event function directly
 and hand its events to Rowan. This runtime path has no Scheme/Rust FFI boundary;
@@ -312,7 +322,7 @@ another parser or a per-token hot-path dependency.
 |------+-------------------+---------------|
 | Syntax | Scheme event function covers all 30 Elements, 24 Objects, nesting, restrictions, affiliation, configuration and recovery | Incomplete |
 | Properties and query | Source-backed Element fields and file-local/custom query behavior agree with authoritative Org fixtures | Partial |
-| Public cutover | =Org::parse=, typed AST, exporters and consumers use the Scheme AOT Rowan result; displaced Rust parser is removed | Not started at public facade |
+| Public cutover | =Org::parse=, typed AST, exporters and consumers use the Scheme AOT Rowan result; displaced Rust parser is removed | Public entry switched; exporters, integrations and old syntax modules remain incomplete |
 | Losslessness | Exact source roundtrip and byte ranges over tracked, upstream-derived and negative corpora | Focused tests only |
 | Performance | Release-mode parse, projection and query benchmarks against the displaced implementation, with an explicit regression policy | Not admitted |
 | Gates | Scheme suite, Cargo full targets, strict Clippy, Dev Gate and macOS/Ubuntu/Windows CI on the exact final head | Not yet final-head verified |

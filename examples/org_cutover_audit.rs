@@ -1,23 +1,12 @@
-//! Read-only differential inventory for the Org parser cutover.
-//!
-//! This intentionally reports mismatches instead of admitting the AOT parser
-//! as a public replacement before element, object, and typed-AST parity.
+//! Read-only coverage inventory for the public Scheme AOT Org parser.
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
-use orgize::{Org, SyntaxNode as PublicSyntaxNode, rowan::ast::AstNode};
+use orgize::Org;
+use orgize::org_aot::{org_graph_spec, org_language_spec};
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/elements.rs"]
 mod elements;
-
-fn public_kinds(root: &PublicSyntaxNode) -> BTreeMap<String, usize> {
-    let mut kinds = BTreeMap::new();
-    for node in root.descendants() {
-        *kinds.entry(format!("{:?}", node.kind())).or_insert(0) += 1;
-    }
-    kinds
-}
 
 fn generated_kinds(root: &gerbil_parser_rowan::SyntaxNode) -> BTreeMap<&'static str, usize> {
     let mut kinds = BTreeMap::new();
@@ -30,16 +19,12 @@ fn generated_kinds(root: &gerbil_parser_rowan::SyntaxNode) -> BTreeMap<&'static 
 
 fn main() {
     let source = include_str!("../tests/fixtures/org-elements/representative.org");
-    let public = Org::parse(source);
-    let public_root = public.syntax_document().syntax().clone();
-    let event_tree =
-        parse_org_aot(source).expect("Scheme AOT Org events should accept the fixture");
-    let event_root = event_tree.syntax();
+    let document = Org::parse(source);
+    let event_root = document.syntax();
 
-    assert_eq!(public_root.to_string(), source);
     assert_eq!(event_root.to_string(), source);
     assert_eq!(
-        event_tree.receipt().grammar_digest,
+        document.receipt().grammar_digest,
         org_language_spec().grammar_digest
     );
 
@@ -54,18 +39,13 @@ fn main() {
         elements::ORG_OBJECT_RESTRICTIONS.len(),
         elements::ORG_SECONDARY_VALUES.len()
     );
-    let public_kinds = public_kinds(&public_root);
     let event_kinds = generated_kinds(&event_root);
     println!(
-        "public node kinds in fixture ({}): {public_kinds:#?}",
-        public_kinds.len()
-    );
-    println!(
-        "Scheme event-AOT node kinds in fixture ({}): {event_kinds:#?}",
+        "public Scheme AOT node kinds in fixture ({}): {event_kinds:#?}",
         event_kinds.len()
     );
     let event_record_counts =
-        event_tree
+        document
             .records()
             .iter()
             .fold(BTreeMap::new(), |mut counts, record| {
@@ -96,7 +76,5 @@ fn main() {
         "Scheme catalog not yet projected as typed Object kinds ({}): {missing_objects:?}",
         missing_objects.len()
     );
-    println!(
-        "status: public Rust parser and Scheme event AOT still differ; public-AST parity not admitted"
-    );
+    println!("status: public parser uses Scheme AOT; catalog projection gaps above remain open");
 }

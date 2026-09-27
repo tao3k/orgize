@@ -38,12 +38,14 @@
    (node 'OrgSection "section" "headline"
          (list (field 'HeadlineLine "markers")
                (field 'HeadlineTitle "title")
+               (field 'OrgHeadlineTitle "title" 'node-text)
                (field 'HeadlineTagValue "title")
                (field 'HeadlineTagTrivia "title")
                (field 'HeadlineTagValue "tag" 'each)))
    (node 'OrgInlinetask "element" "inlinetask"
          (list (field 'HeadlineLine "markers")
                (field 'HeadlineTitle "title")
+               (field 'OrgHeadlineTitle "title" 'node-text)
                (field 'HeadlineTagValue "title")
                (field 'HeadlineTagTrivia "title")
                (field 'HeadlineTagValue "tag" 'each)))
@@ -60,7 +62,9 @@
    (node 'OrgHorizontalRule "element" "horizontal-rule" '())
    (node 'OrgFixedWidth "element" "fixed-width" '())
    (node 'OrgKeyword "element" "keyword"
-         (list (field 'KeywordKey "key") (field 'KeywordValue "value")))
+         (list (field 'KeywordKey "key")
+               (field 'KeywordValue "value")
+               (field 'OrgKeywordValue "value" 'node-text)))
    (node 'OrgBabelCall "element" "babel-call"
          (list (field 'KeywordKey "key") (field 'KeywordValue "value")))
    (node 'OrgPlanning "element" "planning"
@@ -113,7 +117,8 @@
                (field 'TextLine "body")))
    (node 'OrgLink "object" "link"
          (list (field 'LinkTarget "path")
-               (field 'LinkDescription "description")))
+               (field 'LinkDescription "description")
+               (field 'OrgLinkDescription "description" 'node-text)))
    (node 'OrgTarget "object" "target"
          (list (field 'InlineTargetValue "value")))
    (node 'OrgRadioTarget "object" "radio-target"

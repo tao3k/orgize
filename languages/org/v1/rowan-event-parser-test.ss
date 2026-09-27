@@ -411,7 +411,8 @@
           (OrgTextLine
            (TextLine 0 3)
            (OrgLink (LinkTrivia 3 5) (LinkTarget 5 14)
-                    (LinkTrivia 14 16) (LinkDescription 16 18)
+                    (LinkTrivia 14 16)
+                    (OrgLinkDescription (OrgTextLine (TextLine 16 18)))
                     (LinkTrivia 18 20))
            (TextLine 20 25)
            (OrgLink (LinkTrivia 25 27) (LinkTarget 27 31)

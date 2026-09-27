@@ -9,6 +9,9 @@
   (syntax-kinds
    (OrgFile node (element))
    (OrgHeadline node (line title))
+   (OrgHeadlineTitle node (object))
+   (OrgKeywordValue node (object))
+   (OrgLinkDescription node (object))
    (OrgSourceBlock node (begin language body end))
    (OrgDynamicBlock node (begin name element end))
    (OrgSpecialBlock node (begin name element end))

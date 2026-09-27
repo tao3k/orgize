@@ -52,5 +52,9 @@
   (list (make-org-event-helper
          'inline-span event-inline-initial (event-text-line-forms 'start)
          '(inline-script-policy))
+        (make-org-event-helper
+         'link-description-span event-inline-initial
+         (event-text-line-forms 'start #t)
+         '(inline-script-policy))
         citation-reference-helper
         timestamp-candidate-helper))

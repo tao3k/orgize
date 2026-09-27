@@ -6,6 +6,9 @@ use gerbil_parser_rowan::{ActionEntry, GotoEntry, KindCategory, KindSpec, Langua
 static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgFile", category: KindCategory::Node },
     KindSpec { name: "OrgHeadline", category: KindCategory::Node },
+    KindSpec { name: "OrgHeadlineTitle", category: KindCategory::Node },
+    KindSpec { name: "OrgKeywordValue", category: KindCategory::Node },
+    KindSpec { name: "OrgLinkDescription", category: KindCategory::Node },
     KindSpec { name: "OrgSourceBlock", category: KindCategory::Node },
     KindSpec { name: "OrgDynamicBlock", category: KindCategory::Node },
     KindSpec { name: "OrgSpecialBlock", category: KindCategory::Node },
@@ -172,10 +175,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 59 },
-    TerminalSpec { name: "block-begin", syntax_kind: 64 },
-    TerminalSpec { name: "block-end", syntax_kind: 79 },
-    TerminalSpec { name: "text", syntax_kind: 80 },
+    TerminalSpec { name: "headline", syntax_kind: 62 },
+    TerminalSpec { name: "block-begin", syntax_kind: 67 },
+    TerminalSpec { name: "block-end", syntax_kind: 82 },
+    TerminalSpec { name: "text", syntax_kind: 83 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -341,16 +344,16 @@ static PRODUCTIONS: &[Production] = &[
     Production { lhs: "$source-block.2", rhs: &[], reduction: Reduction::Concat, dynamic_precedence: 0 },
     Production { lhs: "$source-block.2", rhs: &[Operand { symbol: Symbol::Nonterminal("$source-block.2"), actions: &[] }, Operand { symbol: Symbol::Terminal(Terminal::Token("text")), actions: &[OperandAction::Field("body")] }], reduction: Reduction::Concat, dynamic_precedence: 0 },
     Production { lhs: "$source-block.1", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("block-begin")), actions: &[OperandAction::Field("begin")] }, Operand { symbol: Symbol::Nonterminal("$source-block.2"), actions: &[] }, Operand { symbol: Symbol::Terminal(Terminal::Token("block-end")), actions: &[OperandAction::Field("end")] }], reduction: Reduction::Concat, dynamic_precedence: 0 },
-    Production { lhs: "source-block", rhs: &[Operand { symbol: Symbol::Nonterminal("$source-block.1"), actions: &[OperandAction::Alias(2)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
+    Production { lhs: "source-block", rhs: &[Operand { symbol: Symbol::Nonterminal("$source-block.1"), actions: &[OperandAction::Alias(5)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
     Production { lhs: "headline", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("headline")), actions: &[OperandAction::Field("line"), OperandAction::Alias(1)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
-    Production { lhs: "text-line", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("text")), actions: &[OperandAction::Field("line"), OperandAction::Alias(15)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
+    Production { lhs: "text-line", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("text")), actions: &[OperandAction::Field("line"), OperandAction::Alias(18)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
 ];
 
 pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:6646ef3789c5e2d0c79221d0a263f992f77dc9b67b5cd7e22fea666662bef062",
+    grammar_digest: "sha256:1796efc14d26bcfd900fd3162a3f82a7d438cdbdcdfc24d7bc0b200ad77c5a31",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,
