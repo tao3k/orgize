@@ -74,6 +74,8 @@ mod markdown;
 mod named_source_block_template;
 #[path = "integration/org_aot_edit.rs"]
 mod org_aot_edit;
+#[path = "integration/org_case_insensitive_aot.rs"]
+mod org_case_insensitive_aot;
 #[path = "integration/org_citation_aot.rs"]
 mod org_citation_aot;
 #[path = "integration/org_cutover_parity.rs"]

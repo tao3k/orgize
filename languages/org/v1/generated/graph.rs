@@ -2,8 +2,8 @@
 use gerbil_parser_rowan::{GraphFieldMode, GraphFieldRule, GraphNodeRule, GraphProjectionSpec};
 
 pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
-    grammar_digest: "sha256:1524c74659c5dc826e66a8ee1ec32d0ba3c4e13ad6fb95426008e25013608986",
-    projection_digest: "sha256:0487b7458cf8d58053f833bcf21a3b0ddc4ea37585e753bb5e226a9992528a58",
+    grammar_digest: "sha256:6646ef3789c5e2d0c79221d0a263f992f77dc9b67b5cd7e22fea666662bef062",
+    projection_digest: "sha256:f05cb887d3679441687e951a64f49af709e34111e3d36db174ce18f609ba380d",
     rules: &[
         GraphNodeRule { syntax_kind: 0, category: "document", kind: "org-data", fields: &[] },
         GraphNodeRule { syntax_kind: 58, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 59, name: "markers", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 60, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 61, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 62, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 61, name: "tag", mode: GraphFieldMode::Each }, ] },

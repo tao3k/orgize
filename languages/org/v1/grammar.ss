@@ -204,5 +204,5 @@
   (parser-entrypoints (org-file parse pure))
   (recoveries)
   (conflicts reject)
-  (case-insensitive #f)
+  (case-insensitive #t)
   (flow (source lexical) (lexical cst)))
