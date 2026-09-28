@@ -14,11 +14,13 @@
         +org-element-named-query-kind+
         +org-element-predicate-kind+
         +org-headline-properties-kind+
+        +org-source-match-strategy-kind+
         OrgElementQuery OrgElementQueryClause
         OrgElementPredicate org-element-predicate?
         OrgNamedElementQuery org-named-element-query?
         OrgElementGraphView OrgElementQueryContext OrgElementsProfile
         OrgHeadlineProperties org-headline-properties?
+        OrgSourceMatchStrategy org-source-match-strategy?
         org-element-query? org-element-query-clause?
         org-element-graph-view?
         org-element-query-context? org-elements-profile?)
@@ -32,6 +34,7 @@
 (def +org-element-named-query-kind+ 'org-named-element-query)
 (def +org-element-predicate-kind+ 'org-element-predicate)
 (def +org-headline-properties-kind+ 'org-headline-properties)
+(def +org-source-match-strategy-kind+ 'org-source-match-strategy)
 
 (def (has-kind-and-slots? value kind slots)
   (and (object? value) (.slot? value 'kind)
@@ -170,6 +173,24 @@
   (element? OrgElementQueryContext value))
 (def (org-elements-profile? value)
   (element? OrgElementsProfile value))
+
+(def (org-source-match-strategy-shape? value)
+  (and (has-kind-and-slots?
+        value +org-source-match-strategy-kind+
+        '(schema scan candidate boundary-unicode-alphanumeric
+                 boundary-extra winner))
+       (equal? (.ref value 'schema) +org-element-schema+)
+       (eq? (.ref value 'scan) 'utf8-character-boundaries)
+       (eq? (.ref value 'candidate) 'exact-target-prefix)
+       (boolean? (.ref value 'boundary-unicode-alphanumeric))
+       (string? (.ref value 'boundary-extra))
+       (eq? (.ref value 'winner) 'longest-then-first)))
+
+(define-type (OrgSourceMatchStrategy @ Type.)
+  .element?: org-source-match-strategy-shape?)
+
+(def (org-source-match-strategy? value)
+  (element? OrgSourceMatchStrategy value))
 
 (def (org-headline-properties-shape? value)
   (and (has-kind-and-slots? value +org-headline-properties-kind+

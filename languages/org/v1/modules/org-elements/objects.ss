@@ -11,7 +11,8 @@
                  +org-headline-properties-kind+
                  OrgElementQuery OrgElementQueryClause OrgElementGraphView
                  OrgNamedElementQuery OrgElementPredicate
-                 OrgHeadlineProperties))
+                 OrgHeadlineProperties OrgSourceMatchStrategy
+                 +org-source-match-strategy-kind+))
 (export make-org-element-query make-org-element-property-clause
         make-org-element-query-groups make-org-element-predicate
         make-org-named-element-query
@@ -27,7 +28,18 @@
         org-element-graph-records
         org-element-graph-id-of org-element-graph-parent-of
         org-element-graph-kind-of org-element-graph-field-of
-        make-org-headline-properties org-headline-property-field)
+        make-org-headline-properties org-headline-property-field
+        make-org-source-match-strategy)
+
+(def (make-org-source-match-strategy extra-word-characters)
+  (admit! OrgSourceMatchStrategy
+          (.o kind: +org-source-match-strategy-kind+
+              schema: +org-element-schema+
+              scan: 'utf8-character-boundaries
+              candidate: 'exact-target-prefix
+              boundary-unicode-alphanumeric: #t
+              boundary-extra: extra-word-characters
+              winner: 'longest-then-first)))
 
 (def (admit! type value)
   (unless (element? type value)

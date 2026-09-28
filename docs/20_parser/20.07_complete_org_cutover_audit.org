@@ -8,71 +8,46 @@ event algorithm AOT-compiled to Rust/Rowan. The handwritten =src/syntax= parser
 and its typed-syntax export API have been removed. Ordinary Cargo consumers do
 not run Gerbil or consume Python parser artifacts.
 
-The replacement is *not yet semantically complete*. The Scheme source, AOT
-event IR, Rowan tree, and Element graph are the parsing authority. The owned
-=Org::document()= adapter and several downstream feature consumers still lack
-fields or behavior once supplied by the removed implementation. Reintroducing
-a Rust Org recognizer is not a valid way to close those gaps.
+The Scheme source, AOT event IR, Rowan tree, and Element graph are the parsing
+authority. Org-specific radio matching is a POO strategy in the Scheme
+Elements module, lowered to a Rust function by the generic AOT backend. Rust
+only slices already-parsed Objects and projects Link AST values; the displaced
+handwritten Rust matcher is not compiled or exported.
 
 * Current gates
 
-At the current PR working tree on 2026-09-28, the Scheme suite reports
-=HARNESS-OK= and =OK=. The latest serial Rust integration target reports *443
-passed, 8 failed, 2 ignored* after closing Babel, attachment, and malformed
-citation recovery with source-backed assertions. Earlier Rust library tests
-passed (63 passed, 1 ignored), strict workspace Clippy with =-D warnings=
-passes, and =cargo fmt --check= passes on this working tree. The Scheme suite
-still prints an upstream =rust-module= undefined warning despite its passing
-harness markers. These focused receipts do not constitute parser or release
-closure; check the exact pushed head and platform CI again after every change.
-
-The Ubuntu job at =4dbd274= exposed a clean-build failure masked by a stale
-local Cargo =OUT_DIR=: an integration test included
-=planning_timestamp_kind.rs= although no checked-in Scheme IR or build-support
-entry generated it. The obsolete test reference is removed; the Scheme event
-AST test already covers planning timestamp classification. The Ubuntu job at
-=49ba59b= passed clean compilation and reached the full integration target;
-it failed on semantic gaps, not a missing generated file.
+At the current candidate tree on 2026-09-28, the Scheme suite reports
+=MODULE-OK=, =HARNESS-OK=, and =OK= without error markers. The serial Rust
+integration target reports *451 passed, 0 failed, 2 ignored*. The generic AOT
+backend's integration target reports *41 passed*. These local receipts establish
+the migrated radio-link behavior, not release closure. Strict all-target
+Clippy and the ASP Rust gate pass. The all-feature workspace run reaches the
+integration target with *452 passed, 2 failed, 2 ignored*: the failures are
+=semantic_ast_projects_cloze_objects_with_metadata= (missing cloze Object)
+and =semantic_ast_projects_org_elements_sql_query_uses_datafusion= (two SQL
+rows instead of one). The all-feature matrix, performance receipts, and
+exact-head platform CI remain open before merging.
 
 * Remaining ownership work
 
-** Serial integration failure ledger
+** Semantic regression ledger
 
-The serial run at =972cf48= reproduced 23 failures (425 passed, 2 ignored).
-The working tree now has 8 failures (443 passed, 2 ignored). Grouping is by
-the first missing ownership boundary, not by the last assertion or by a
-changed snapshot. Several consumers appear in more than one feature family;
-each test is counted once below. Re-run this ledger after each grouped repair
-instead of approving =.snap.new= wholesale.
+The default-feature serial integration target has no failing tests. All
+five =semantic_ast_projects_radio_links= cases now exercise the Scheme POO
+source-match strategy through the AOT-generated function, including longest
+target, duplicate declarations, plain text, and opt-in parsed-object runs.
+Table formula assignments, flags, and references are Scheme-owned and covered
+by structural AST tests. Do not weaken these gates or approve =.snap.new= files
+wholesale when further grammar nodes are added.
 
-| Family | Failing tests | Owner and acceptance |
-|--------+---------------+----------------------|
-| Radio-target resolution | 5 =semantic_ast_projects_radio_links= cases | Scheme graph must identify radio-target declarations and text matches; Element projection must preserve longest-match, opt-in, and dedup semantics. |
-| Table formulas | =semantic_ast_projects_org_table_formulas=; =semantic_ast_projects_tangle_and_table_records=; =lint_table_formulas= | Associate each =TBLFM= with its table and project parsed assignments/references from Scheme, retaining keyword annotations. |
-
-The archive/lifecycle pair, contract binding, agenda anchor, and list-bullet
-assertion now pass in the serial full integration target. The Git-scoped
-Elements fixture also passes after an explicit six-paragraph source-text
-assertion justified its 80-record snapshot. The contract fix
-comes from Scheme table-cell inline events plus graph-backed Element objects,
-not a second Rust Org parser. Babel result replacement now includes the
-Scheme-AOT affiliated =#+RESULTS= keyword in its source span, and Babel lint
-locations point to the source block rather than its =#+NAME= keyword. Attachment
-link paths are Scheme-AOT classified; parsed properties, tags, and links now reach
-Orgize attachment inventory, lint, index, and traversal. Before a performance claim, benchmark table-heavy
-parsing and document projection against the prior AOT head.
-
-Malformed citation segments are now marked by the Scheme event algorithm,
-retained in the AOT graph, and projected to a diagnostic. The graph and grammar
-generated tables, embedded query/contract digests, and source-backed graph
-snapshots were updated together. The reviewed snapshot changes outside this
-new marker contain only shifted numeric syntax-kind IDs.
+Before a performance claim, benchmark table-heavy parsing, radio-link
+projection, and document projection against the prior AOT head.
 
 | Boundary | Required closure |
 |----------+------------------|
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are now covered in Scheme and Rust graph tests. List bullet tokens now include the exact horizontal separator, so the Scheme graph preserves =- =, repeated spaces, and tabs without Rust reconstruction. Keep event IR growth bounded: the table.el branch was reduced from a 3.63 MB duplicated strategy to a 2.55 MB single-fallback strategy. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
-| Owned semantic projection | Derive remaining link metadata, diagnostics, and lifecycle facts from graph fields without reparsing Org text in Rust. Title and rich-keyword objects, Scheme-tokenized affiliated attributes, filetags/inherited tags, effective properties and typed duration values, explicit and Scheme-generated headline anchors, timestamp metadata, clock duration, source-backed property/ID annotations, section-body spans for Elements indexing, title-object aliases for document targets and implicit link descriptions, document-level footnote registry, source-backed inline footnote subobjects via a bounded second call to the same Scheme-AOT parser, source/example block switches and body lines, Scheme-AOT link classification, document-local resolution, abbreviation template expansion, source-backed INCLUDE arguments/options, and table column alignment cookies now project from the AOT graph. Table formulas remain unprojected. The footnote fragment path needs a dedicated performance receipt. |
+| Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
 | Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting now calls Scheme-AOT pure functions. Nested =#+TAGS= group/shortcut interpretation in =settings.rs= remains a Rust semantic parser; move that whole family into Scheme-owned events or AOT functions. Keep Rust limited to graph projection, indexing, and primitive type conversion or side-effectful consumers. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
@@ -94,6 +69,5 @@ assertion; generated =.snap.new= files remain unapproved candidates. Numeric
 graph is otherwise unchanged. The bare-AST snapshot was reviewed and updated
 for Scheme-owned exact list bullets, a description body's separator-free text,
 an unnamed source block's absent =NAME=, and coalesced contiguous plain text;
-explicit assertions cover the first three. The 17 failing integration tests
-mean AST and consumer accuracy is not yet established across the full
-supported surface.
+explicit assertions cover the first three. Passing local integration tests do
+not establish complete Org-mode coverage or cross-platform release readiness.

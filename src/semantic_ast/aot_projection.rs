@@ -45,6 +45,8 @@ mod block_projection;
 mod include_projection;
 #[path = "aot_inline_fragment.rs"]
 mod inline_fragment;
+#[path = "aot_radio_projection.rs"]
+mod radio_projection;
 #[path = "aot_table_projection.rs"]
 mod table_projection;
 #[path = "aot_target_projection.rs"]
@@ -55,6 +57,7 @@ struct GraphProjector<'a> {
     source: &'a str,
     lines: LineIndex<'a>,
     attached_keyword_ids: HashSet<usize>,
+    radio_targets: Vec<String>,
     headline_aliases: HashMap<usize, Vec<Object<ParsedAnnotation>>>,
     anchor_counts: HashMap<String, usize>,
     diagnostics: Vec<Diagnostic>,
@@ -67,11 +70,19 @@ impl<'a> GraphProjector<'a> {
             .iter()
             .flat_map(|record| document.affiliated_keyword_ids(record.id).iter().copied())
             .collect();
+        let radio_targets = document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "radio-target")
+            .filter_map(|record| record.field("value"))
+            .map(str::to_owned)
+            .collect();
         Self {
             document,
             source,
             lines: LineIndex::new(source),
             attached_keyword_ids,
+            radio_targets,
             headline_aliases: HashMap::new(),
             anchor_counts: HashMap::new(),
             diagnostics: Vec::new(),
@@ -707,7 +718,7 @@ impl<'a> GraphProjector<'a> {
         if cursor < end {
             objects.push(self.plain_bytes(cursor, end));
         }
-        objects
+        self.project_radio_links(objects)
     }
 
     fn plain_bytes(&self, start: usize, end: usize) -> Object<ParsedAnnotation> {

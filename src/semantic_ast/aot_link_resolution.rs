@@ -51,6 +51,12 @@ pub(super) fn resolve_document_links(document: &mut Document<ParsedAnnotation>) 
         let ObjectData::Link(link) = &mut object.data else {
             return;
         };
+        // Parser-owned explicit links enter as Unresolved.  Scheme-AOT radio
+        // matches already carry their document-local target decision; running
+        // them through ordinary path lookup would invent ambiguity diagnostics.
+        if !matches!(link.target, LinkTarget::Unresolved(_)) {
+            return;
+        }
         let path = link.path().to_string();
         let kind = org_link_kind(&path);
         let key = org_link_target_key(&path);

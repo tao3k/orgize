@@ -57,6 +57,13 @@ pub fn write_org_aot_functions() {
         fs::write(output_dir.join(format!("{name}.rs")), generated)
             .expect("write generated headline function");
     }
+    let matcher = source_dir.join("org_radio_next_match.ir.json");
+    println!("cargo:rerun-if-changed={}", matcher.display());
+    let ir = fs::read_to_string(matcher).expect("read Scheme-authored source matcher IR");
+    let generated = gerbil_scheme_rust_ir::compile_source_match_json(&ir)
+        .expect("Scheme-authored source matcher must compile to Rust");
+    fs::write(output_dir.join("org_radio_next_match.rs"), generated)
+        .expect("write generated source matcher");
 }
 
 /// Compile the Org-owned contextual event algorithm for Cargo-only consumers.
