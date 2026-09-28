@@ -106,7 +106,7 @@
    (node 'OrgTableRow "element" "table-row" '())
    (node 'OrgTableRuleRow "element" "table-rule-row" '())
    (node 'OrgTableCell "object" "table-cell"
-         (list (field 'TableCellText "text")))
+         (list (field 'OrgTableCell "text" 'node-text)))
    (node 'OrgNodeProperty "property" "node-property"
          (list (field 'PropertyKey "key")
                (field 'PropertyValue "value")))

@@ -116,6 +116,11 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
         .iter()
         .find(|entry| entry.raw_title == "Delayed scheduled 8:30-1pm")
         .expect("scheduled delay row");
+    // The Scheme-owned slug joins words; it does not silently rewrite title punctuation.
+    assert_eq!(
+        delayed.anchor.as_deref(),
+        Some("delayed-scheduled-8:30-1pm")
+    );
     assert_eq!(delayed.display_date, AgendaDate::new(2026, 5, 16));
     assert_eq!(
         delayed.scheduled,

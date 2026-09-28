@@ -4,33 +4,27 @@ use super::GraphProjector;
 use crate::ast::model::{ParsedAnnotation, Table, TableCell, TableColumnAlignment, TableRow};
 
 impl GraphProjector<'_> {
-    pub(super) fn table(&self, id: usize) -> Table<ParsedAnnotation> {
-        let row_ids = &self.record(id).child_ids;
-        let column_alignments = self.table_column_alignments(row_ids);
+    pub(super) fn table(&mut self, id: usize) -> Table<ParsedAnnotation> {
+        let row_ids = self.record(id).child_ids.clone();
+        let column_alignments = self.table_column_alignments(&row_ids);
         let rows = row_ids
-            .iter()
-            .filter_map(|&row_id| {
+            .into_iter()
+            .filter_map(|row_id| {
                 let row = self.record(row_id);
                 if !matches!(row.kind, "table-row" | "table-rule-row") {
                     return None;
                 }
-                let cells =
-                    row.child_ids
-                        .iter()
-                        .filter_map(|&cell_id| {
-                            let cell = self.record(cell_id);
-                            (cell.kind == "table-cell").then(|| TableCell {
-                                ann: self.annotation(cell.range),
-                                objects: vec![self.plain(
-                                    cell.range,
-                                    cell.field("text").unwrap_or_default().trim(),
-                                )],
-                            })
-                        })
-                        .collect();
+                let row_range = row.range;
+                let is_rule = row.kind == "table-rule-row";
+                let mut cell_ids = row.child_ids.clone();
+                cell_ids.retain(|&cell_id| self.record(cell_id).kind == "table-cell");
+                let cells = cell_ids
+                    .into_iter()
+                    .map(|cell_id| self.table_cell(cell_id))
+                    .collect();
                 Some(TableRow {
-                    ann: self.annotation(row.range),
-                    is_rule: row.kind == "table-rule-row",
+                    ann: self.annotation(row_range),
+                    is_rule,
                     cells,
                 })
             })
@@ -40,6 +34,28 @@ impl GraphProjector<'_> {
             column_alignments,
             formulas: Vec::new(),
             parsed_formulas: Vec::new(),
+        }
+    }
+
+    fn table_cell(&mut self, id: usize) -> TableCell<ParsedAnnotation> {
+        let cell = self.record(id);
+        let range = cell.range;
+        let children = cell.child_ids.clone();
+        let text = self.raw(range);
+        let trimmed = text.trim();
+        let offset = usize::from(range.start()) + text.len() - text.trim_start().len();
+        let span = rowan::TextRange::new(
+            (offset as u32).into(),
+            ((offset + trimmed.len()) as u32).into(),
+        );
+        let objects = if children.is_empty() || trimmed.is_empty() {
+            vec![self.plain(range, trimmed)]
+        } else {
+            self.objects_in_span(span, &children)
+        };
+        TableCell {
+            ann: self.annotation(range),
+            objects,
         }
     }
 

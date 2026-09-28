@@ -13,7 +13,7 @@ use crate::org_aot::{OrgAotDocument, org_image_link};
 use super::aot_footnote_resolution::resolve_document_footnotes;
 use super::aot_link_resolution::resolve_document_links;
 use super::aot_timestamp_projection::project_timestamp;
-use super::lifecycle_model::ArchiveState;
+use super::lifecycle_model::{ArchiveLocation, ArchiveState};
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
     Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind, Document, Drawer,
@@ -144,7 +144,12 @@ impl<'a> GraphProjector<'a> {
                 continue;
             }
             if self.record(id).kind == "headline" {
-                sections.push(self.section(id, &prescan.filetags, &properties));
+                sections.push(self.section(
+                    id,
+                    &prescan.filetags,
+                    &properties,
+                    prescan.archive_locations.last().cloned(),
+                ));
             } else if let Some(element) = self.element(id) {
                 children.push(element);
             }
@@ -192,6 +197,7 @@ impl<'a> GraphProjector<'a> {
         id: usize,
         filetags: &[String],
         inherited_properties: &[Property<ParsedAnnotation>],
+        inherited_archive_location: Option<ArchiveLocation<ParsedAnnotation>>,
     ) -> Section<ParsedAnnotation> {
         let record = self.record(id);
         let range = record.range;
@@ -275,6 +281,10 @@ impl<'a> GraphProjector<'a> {
         });
         let mut children = Vec::new();
         let mut subsections = Vec::new();
+        let property_archive_location = effective_properties
+            .iter()
+            .find(|property| property.key.eq_ignore_ascii_case("ARCHIVE"))
+            .map(|property| ArchiveLocation::from_value(property.ann.clone(), &property.value));
         for child in child_ids {
             if self.attached_keyword_ids.contains(&child) {
                 continue;
@@ -283,7 +293,12 @@ impl<'a> GraphProjector<'a> {
                 continue;
             }
             if self.record(child).kind == "headline" {
-                subsections.push(self.section(child, filetags, &effective_properties));
+                subsections.push(self.section(
+                    child,
+                    filetags,
+                    &effective_properties,
+                    inherited_archive_location.clone(),
+                ));
             } else if let Some(element) = self.element(child) {
                 children.push(element);
             }
@@ -303,7 +318,8 @@ impl<'a> GraphProjector<'a> {
             archive: ArchiveState {
                 archived: has_archive_tag,
                 has_archive_tag,
-                ..ArchiveState::default()
+                property_location: property_archive_location,
+                keyword_location: inherited_archive_location,
             },
             attachment: Default::default(),
             todo,

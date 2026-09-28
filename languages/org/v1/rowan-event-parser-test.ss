@@ -1336,9 +1336,9 @@
           (OrgTable
            (OrgTableRow
             (TableSeparator 4 5)
-            (OrgTableCell (TableCellText 5 8))
+            (OrgTableCell (OrgTextLine (TextLine 5 8)))
             (TableSeparator 8 9)
-            (OrgTableCell (TableCellText 9 12))
+            (OrgTableCell (OrgTextLine (TextLine 9 12)))
             (TableSeparator 12 13)
             (TableTrivia 13 14))
            (OrgTableRuleRow (TableRuleText 14 24)))
@@ -1351,6 +1351,21 @@
           (TableElLine 0 8)
           (TableElLine 8 16)
           (TableElLine 16 24)))))
+    (test-case "Scheme emits source-backed links inside table cells"
+      (check-org-ast-with parse-org-rowan-events
+        "| [[id:x]] |\n"
+        (OrgFile
+         (OrgTable
+          (OrgTableRow
+           (TableSeparator 0 1)
+           (OrgTableCell
+            (OrgTextLine
+             (TextLine 1 2)
+             (OrgLink (LinkTrivia 2 4) (LinkTarget 4 8)
+                      (LinkTrivia 8 10))
+             (TextLine 10 11)))
+           (TableSeparator 11 12)
+           (TableTrivia 12 13))))))
     (test-case "table delimiter escaping follows preceding backslash parity"
       (check-org-ast-with parse-org-rowan-events
         "| a\\|b | c |\n"
@@ -1358,9 +1373,9 @@
          (OrgTable
           (OrgTableRow
            (TableSeparator 0 1)
-           (OrgTableCell (TableCellText 1 7))
+           (OrgTableCell (OrgTextLine (TextLine 1 7)))
            (TableSeparator 7 8)
-           (OrgTableCell (TableCellText 8 11))
+           (OrgTableCell (OrgTextLine (TextLine 8 11)))
            (TableSeparator 11 12)
            (TableTrivia 12 13)))))
       (check-org-ast-with parse-org-rowan-events
@@ -1369,11 +1384,11 @@
          (OrgTable
           (OrgTableRow
            (TableSeparator 0 1)
-           (OrgTableCell (TableCellText 1 5))
+           (OrgTableCell (OrgTextLine (TextLine 1 5)))
            (TableSeparator 5 6)
-           (OrgTableCell (TableCellText 6 8))
+           (OrgTableCell (OrgTextLine (TextLine 6 8)))
            (TableSeparator 8 9)
-           (OrgTableCell (TableCellText 9 12))
+           (OrgTableCell (OrgTextLine (TextLine 9 12)))
            (TableSeparator 12 13)
            (TableTrivia 13 14))))))
     (test-case "POO list markers retain nested and sibling item scopes"

@@ -5,7 +5,7 @@
                  line-structure-table table-line-delimiter
                  table-line-table-node table-line-row-node
                  table-line-rule-row-node table-line-cell-node
-                 table-line-separator-token table-line-cell-token
+                 table-line-separator-token
                  table-line-trivia-token table-line-rule-token)
         (only-in "../../parser.ss" org-v1-line-structure))
 (export table-event-initial table-close-form table-or-element-form)
@@ -37,7 +37,8 @@
 
 (def (table-cell-forms until)
   `((start-node ,(table-line-cell-node table-rule))
-    (token ,(table-line-cell-token table-rule) ,table-cell-start ,until)
+    (call-source-helper inline-span ,table-cell-start ,until
+                        ((state inline-script-policy)))
     (finish-node)))
 
 (def (table-row-form)

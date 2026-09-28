@@ -474,7 +474,7 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     assert!(
         children
             .iter()
-            .all(|item| item.field("bullet") == Some("-"))
+            .all(|item| item.field("bullet") == Some("- "))
     );
 }
 
