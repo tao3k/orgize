@@ -449,7 +449,7 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
             .filter_map(rowan::NodeOrToken::into_token)
             .find(|token| token_name(token) == "ListBullet")
             .expect("every admitted item has a typed bullet");
-        assert_eq!(bullet.text(), "-");
+        assert_eq!(bullet.text(), "- ");
         let range = item.text_range();
         assert_eq!(
             &source[usize::from(range.start())..usize::from(range.end())],

@@ -1,7 +1,7 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
-    ast::{ElementData, MarkupKind, ObjectData, TargetKind, TodoState},
+    ast::{BlockKind, ElementData, MarkupKind, ObjectData, TargetKind, TodoState},
 };
 
 #[test]
@@ -302,6 +302,38 @@ fn main() {}
             .iter()
             .any(|object| matches!(object.data, ObjectData::Link(_)))
     );
+
+    let list = section
+        .children
+        .iter()
+        .find_map(|element| match &element.data {
+            ElementData::List(list) => Some(list),
+            _ => None,
+        })
+        .expect("plain list element");
+    assert_eq!(
+        list.items
+            .iter()
+            .map(|item| item.bullet.as_str())
+            .collect::<Vec<_>>(),
+        ["- ", "- "]
+    );
+    let ElementData::Paragraph(description_body) = &list.items[1].children[0].data else {
+        panic!("description list body is a paragraph");
+    };
+    assert!(matches!(
+        &description_body[0].data,
+        ObjectData::Plain(value) if value == "item two\n"
+    ));
+    let source_block = section
+        .children
+        .iter()
+        .find_map(|element| match &element.data {
+            ElementData::Block(block) if block.kind == BlockKind::Source => Some(block),
+            _ => None,
+        })
+        .expect("source block element");
+    assert_eq!(source_block.name, None, "unnamed block has no NAME");
 
     insta::with_settings!({snapshot_path => "../../snapshots", prepend_module_to_snapshot => false}, {
         insta::assert_debug_snapshot!("semantic_ast__semantic_bare_ast", doc.to_bare());

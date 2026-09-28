@@ -1035,11 +1035,11 @@
         (OrgFile
          (OrgPlainList
           (OrgListItem
-           (ListBullet 0 1) (ListTrivia 1 2)
+           (ListBullet 0 2)
            (OrgParagraph (OrgTextLine (TextLine 2 7)))
            (OrgComment (CommentLine 7 17) (CommentLine 17 26)))
           (OrgListItem
-           (ListBullet 26 27) (ListTrivia 27 28)
+           (ListBullet 26 28)
            (OrgParagraph (OrgTextLine (TextLine 28 33))))))))
     (test-case "hash-prefixed text and keywords are not comments"
       (check-org-ast-with parse-org-rowan-events
@@ -1381,51 +1381,51 @@
         (OrgFile
          (OrgPlainList
           (OrgListItem
-           (ListBullet 0 1) (ListTrivia 1 2)
+           (ListBullet 0 2)
            (OrgParagraph (OrgTextLine (TextLine 2 4)))
            (OrgPlainList
             (OrgListItem
-             (ListTrivia 4 6) (ListBullet 6 7) (ListTrivia 7 8)
+             (ListTrivia 4 6) (ListBullet 6 8)
              (OrgParagraph (OrgTextLine (TextLine 8 10))))))
           (OrgListItem
-           (ListBullet 10 11) (ListTrivia 11 12)
+           (ListBullet 10 12)
            (OrgParagraph (OrgTextLine (TextLine 12 14)))))))
       (check-org-ast-with parse-org-rowan-events "1. a\n2) b\n"
         (OrgFile
          (OrgPlainList
           (OrgListItem
-           (ListBullet 0 2) (ListTrivia 2 3)
+           (ListBullet 0 3)
            (OrgParagraph (OrgTextLine (TextLine 3 5))))
           (OrgListItem
-           (ListBullet 5 7) (ListTrivia 7 8)
+           (ListBullet 5 8)
            (OrgParagraph (OrgTextLine (TextLine 8 10))))))))
     (test-case "list continuation and blank line remain within item"
       (check-org-ast-with parse-org-rowan-events "- alpha\n  more\n- beta\n"
         (OrgFile
          (OrgPlainList
           (OrgListItem
-           (ListBullet 0 1) (ListTrivia 1 2)
+           (ListBullet 0 2)
            (OrgParagraph
             (OrgTextLine (TextLine 2 15))))
           (OrgListItem
-           (ListBullet 15 16) (ListTrivia 16 17)
+           (ListBullet 15 17)
            (OrgParagraph (OrgTextLine (TextLine 17 22)))))))
       (check-org-ast-with parse-org-rowan-events "- a\n\n- b\n"
         (OrgFile
          (OrgPlainList
           (OrgListItem
-           (ListBullet 0 1) (ListTrivia 1 2)
+           (ListBullet 0 2)
            (OrgParagraph (OrgTextLine (TextLine 2 4)))
            (ListTrivia 4 5))
           (OrgListItem
-           (ListBullet 5 6) (ListTrivia 6 7)
+           (ListBullet 5 7)
            (OrgParagraph (OrgTextLine (TextLine 7 9))))))))
     (test-case "Scheme list algorithm emits typed counter checkbox and tag spans"
       (check-org-ast-with parse-org-rowan-events "- [@2] [X] done\n"
         (OrgFile
          (OrgPlainList
           (OrgListItem
-           (ListBullet 0 1) (ListTrivia 1 2)
+           (ListBullet 0 2)
            (ListTrivia 2 4) (ListCounterValue 4 5) (ListTrivia 5 7)
            (ListTrivia 7 8) (ListCheckboxValue 8 9) (ListTrivia 9 11)
            (OrgParagraph (OrgTextLine (TextLine 11 16)))))))
@@ -1433,7 +1433,7 @@
         (OrgFile
          (OrgPlainList
           (OrgListItem
-           (ListBullet 0 1) (ListTrivia 1 2)
+           (ListBullet 0 2)
            (ListTagValue 2 7) (ListTrivia 7 10)
            (OrgParagraph (OrgTextLine (TextLine 10 15))))))))
     (test-case "block and drawer markers do not consume longer lookalikes"
@@ -1484,7 +1484,7 @@
           (OrgParagraph (OrgTextLine (TextLine 14 19)))
           (OrgPlainList
            (OrgListItem
-            (ListBullet 19 20) (ListTrivia 20 21)
+            (ListBullet 19 21)
             (OrgParagraph (OrgTextLine (TextLine 21 26)))))
           (BlockEndLine 26 38))))
       (check-org-ast-with parse-org-rowan-events

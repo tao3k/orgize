@@ -582,7 +582,7 @@
     (container-frames (uint-stack)) (container-closed #f)
     (container-opened #f)
     (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
-    (list-column 0) (list-bullet-start 0) (list-bullet-end 0)
+    (list-column 0) (list-bullet-start 0) (_list-bullet-end 0)
     (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0)
     (list-paragraph-start 0) (list-paragraph-end 0))
    '((footnote-open #f) (footnote-line-handled #f)

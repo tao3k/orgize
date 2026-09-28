@@ -572,7 +572,7 @@ fn org_scheme_context_algorithm_aot_projects_nested_lists() {
         .collect();
     assert_eq!(
         bullets,
-        [Some("-"), Some("-"), Some("-"), Some("1."), Some("2)")]
+        [Some("- "), Some("- "), Some("- "), Some("1. "), Some("2) ")]
     );
 }
 
@@ -838,10 +838,10 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .collect();
     assert_eq!(lists.len(), 3);
     assert_eq!(items.len(), 4);
-    assert_eq!(items[0].field("bullet"), Some("-"));
-    assert_eq!(items[1].field("bullet"), Some("-"));
-    assert_eq!(items[2].field("bullet"), Some("-"));
-    assert_eq!(items[3].field("bullet"), Some("-"));
+    assert_eq!(items[0].field("bullet"), Some("- "));
+    assert_eq!(items[1].field("bullet"), Some("- "));
+    assert_eq!(items[2].field("bullet"), Some("- "));
+    assert_eq!(items[3].field("bullet"), Some("- "));
     assert_eq!(lists[1].parent_id, Some(items[0].id));
     assert_eq!(items[1].parent_id, Some(lists[1].id));
     let quote = records

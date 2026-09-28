@@ -389,13 +389,8 @@ expression: document.records()
         fields: [
             GraphFieldValue {
                 name: "bullet",
-                value: "-",
-                range: 352..353,
-            },
-            GraphFieldValue {
-                name: "trivia",
-                value: " ",
-                range: 353..354,
+                value: "- ",
+                range: 352..354,
             },
         ],
     },
@@ -426,13 +421,8 @@ expression: document.records()
         fields: [
             GraphFieldValue {
                 name: "bullet",
-                value: "-",
-                range: 365..366,
-            },
-            GraphFieldValue {
-                name: "trivia",
-                value: " ",
-                range: 366..367,
+                value: "- ",
+                range: 365..367,
             },
             GraphFieldValue {
                 name: "trivia",

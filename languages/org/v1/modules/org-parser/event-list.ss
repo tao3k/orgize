@@ -19,7 +19,7 @@
                      ,(list-line-ordered list-rule)
                      ,(list-line-tab-width list-rule)
                      list-present list-column list-ordered
-                     list-bullet-start list-bullet-end list-content-start))
+                     list-bullet-start _list-bullet-end list-content-start))
 
 (def (list-frame-value ordered?)
   (if ordered? `(uint-add ,list-frame-base (uint 1)) list-frame-base))
@@ -118,9 +118,10 @@
            (push-frame list-frames ,frame)))
       (start-node ,item-node)
       (token ,trivia start (state-offset list-bullet-start))
+      ;; Org's item bullet includes the horizontal separator after the marker.
+      ;; Preserve it as one source-backed field instead of reconstructing it
+      ;; in the Rust projection.
       (token ,bullet (state-offset list-bullet-start)
-             (state-offset list-bullet-end))
-      (token ,trivia (state-offset list-bullet-end)
              (state-offset list-content-start))
       ,@(list-content-forms '(state-offset list-content-start) ordered?)
       (set-uint list-blank-count (uint 0)))))
