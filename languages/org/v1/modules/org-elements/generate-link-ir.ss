@@ -8,7 +8,8 @@
                  org-image-link-rust org-link-kind-rust
                  org-link-target-key-rust
                  org-link-protocol-rust org-link-protocol-path-rust
-                 org-link-file-path-rust org-link-search-rust
+                 org-link-file-path-rust org-link-attachment-path-rust
+                 org-link-search-rust
                  org-link-file-path-kind-rust org-link-search-kind-rust
                  org-link-search-value-rust
                  org-expand-link-abbreviation-rust))
@@ -35,6 +36,9 @@
 (write-rust-function-ir
  (path-expand "org_link_file_path.ir.json" (car (reverse arguments)))
  org-link-file-path-rust)
+(write-rust-function-ir
+ (path-expand "org_link_attachment_path.ir.json" (car (reverse arguments)))
+ org-link-attachment-path-rust)
 (write-rust-function-ir
  (path-expand "org_link_search.ir.json" (car (reverse arguments)))
  org-link-search-rust)

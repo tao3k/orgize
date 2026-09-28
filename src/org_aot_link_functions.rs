@@ -6,6 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/org_link_target_key.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_link_protocol.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_link_protocol_path.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_link_file_path.rs"));
+include!(concat!(env!("OUT_DIR"), "/org_link_attachment_path.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_link_search.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_link_file_path_kind.rs"));
 include!(concat!(env!("OUT_DIR"), "/org_link_search_kind.rs"));

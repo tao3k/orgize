@@ -4,27 +4,6 @@ assertion_line: 8
 expression: "format!(\"clean: {}\\n{}\", report.is_clean(),\nreport.to_compact_text(\"fixture.org\", source))"
 ---
 clean: false
-[ORG021] Warning: noweb reference `missing` has no local source block
-@ fixture.org:1:1
-fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
-line: 1 | #+NAME: duplicate
-Help: noweb reference `missing` has no local source block
-Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
-
-[ORG022] Warning: source block uses eval-sensitive header `:eval yes`
-@ fixture.org:1:1
-fix: review the explicit :eval header and prefer no/query only when execution is intentional
-line: 1 | #+NAME: duplicate
-Help: source block uses eval-sensitive header `:eval yes`
-Contract: Explicit eval-sensitive headers should be reviewed before automated tooling treats source blocks as executable context.
-
-[ORG023] Warning: source block tangle target is empty
-@ fixture.org:1:1
-fix: set :tangle to yes, no, or a non-empty target path
-line: 1 | #+NAME: duplicate
-Help: source block tangle target is empty
-Contract: Tangle metadata should have a deterministic target when it is not explicitly yes or no.
-
 [ORG044] Warning: document is missing a #+TITLE keyword (contract `orgize.builtin.document-metadata.v1` assertion `document.has-title-keyword` failed in document `<document>`: expected exists, actual 0) Suggested fix: add a non-empty #+TITLE keyword near the top of the document
 @ fixture.org:1:1
 fix: update the Org subtree to satisfy the failed CONTRACT_ORG assertion, or repair the contract query when the policy is wrong
@@ -39,10 +18,31 @@ line: 1 | #+NAME: duplicate
 Help: document is missing document-level properties (contract `orgize.builtin.document-metadata.v1` assertion `document.has-properties` failed in document `<document>`: expected exists, actual 0) Suggested fix: add document-level properties with #+PROPERTY metadata
 Contract: CONTRACT_ORG validation must be derived from host-loaded Org element query assertions over the parser-owned org_elements_index.
 
+[ORG021] Warning: noweb reference `missing` has no local source block
+@ fixture.org:2:1
+fix: add a matching local source block, noweb-ref, or rename the Babel/header variable reference
+line: 2 | #+begin_src sh :eval yes :tangle ""
+Help: noweb reference `missing` has no local source block
+Contract: Babel calls, inline Babel calls, header variables, and noweb references should point at a syntax-appropriate local source block name or noweb-ref before agent tooling depends on them.
+
+[ORG022] Warning: source block uses eval-sensitive header `:eval yes`
+@ fixture.org:2:1
+fix: review the explicit :eval header and prefer no/query only when execution is intentional
+line: 2 | #+begin_src sh :eval yes :tangle ""
+Help: source block uses eval-sensitive header `:eval yes`
+Contract: Explicit eval-sensitive headers should be reviewed before automated tooling treats source blocks as executable context.
+
+[ORG023] Warning: source block tangle target is empty
+@ fixture.org:2:1
+fix: set :tangle to yes, no, or a non-empty target path
+line: 2 | #+begin_src sh :eval yes :tangle ""
+Help: source block tangle target is empty
+Contract: Tangle metadata should have a deterministic target when it is not explicitly yes or no.
+
 [ORG020] Warning: source block name `duplicate` is defined 2 times
-@ fixture.org:6:1
+@ fixture.org:7:1
 fix: rename the duplicate source block or update callers to one canonical block name
-line: 6 | #+NAME: duplicate
+line: 7 | #+begin_src sh
 Help: source block name `duplicate` is defined 2 times
 Contract: Babel source block names should be unique before calls, result association, or noweb references consume them.
 

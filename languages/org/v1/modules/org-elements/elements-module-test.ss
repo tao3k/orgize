@@ -41,6 +41,7 @@
                  org-link-protocol org-link-protocol-rust
                  org-link-protocol-path org-link-protocol-path-rust
                  org-link-file-path org-link-file-path-rust
+                 org-link-attachment-path org-link-attachment-path-rust
                  org-link-search org-link-search-rust
                  org-link-file-path-kind org-link-file-path-kind-rust
                  org-link-search-kind org-link-search-kind-rust
@@ -179,6 +180,9 @@
        org-link-file-path-rust 'org_link_file_path
        "languages/org/v1/modules/org-elements/generated/org_link_file_path.ir.json")
       (check-org-headline-ir
+       org-link-attachment-path-rust 'org_link_attachment_path
+       "languages/org/v1/modules/org-elements/generated/org_link_attachment_path.ir.json")
+      (check-org-headline-ir
        org-link-search-rust 'org_link_search
        "languages/org/v1/modules/org-elements/generated/org_link_search.ir.json")
       (check-org-headline-ir
@@ -206,6 +210,10 @@
       (check (org-link-protocol-path "https://example.org") => "//example.org")
       (check (org-link-file-path "file:notes/demo.org::*Heading")
              => "notes/demo.org")
+      (check (org-link-attachment-path "attachment:diagram.png::255")
+             => "diagram.png")
+      (check (org-link-attachment-path "ATTACHMENT:diagram.png")
+             => "diagram.png")
       (check (org-link-search "file:notes/demo.org::*Heading")
              => "*Heading")
       (check (org-link-file-path-kind "/tmp/demo.org") => "absolute")

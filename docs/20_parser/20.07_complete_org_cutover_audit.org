@@ -17,12 +17,11 @@ a Rust Org recognizer is not a valid way to close those gaps.
 * Current gates
 
 At the current PR working tree on 2026-09-28, the Scheme suite reports
-=HARNESS-OK= and =OK=. The latest serial Rust integration target reports *431
-passed, 17 failed, 2 ignored* after restoring archive inheritance, reviewing
-the Scheme slug and Elements fixture snapshots, and projecting Scheme-parsed
-table-cell links into Elements/Contract. Rust library tests pass (63 passed, 1 ignored), strict
-workspace Clippy with =-D warnings= passes, and =cargo fmt --check= passes
-on this working tree. The Scheme suite
+=HARNESS-OK= and =OK=. The latest serial Rust integration target reports *441
+passed, 9 failed, 2 ignored* after closing Babel result replacement and the
+attachment projection family with direct location and field assertions. Earlier Rust
+library tests passed (63 passed, 1 ignored), strict workspace Clippy with
+=-D warnings= passed, and =cargo fmt --check= passes on this working tree. The Scheme suite
 still prints an upstream =rust-module= undefined warning despite its passing
 harness markers. These focused receipts do not constitute parser or release
 closure; check the exact pushed head and platform CI again after every change.
@@ -31,15 +30,16 @@ The Ubuntu job at =4dbd274= exposed a clean-build failure masked by a stale
 local Cargo =OUT_DIR=: an integration test included
 =planning_timestamp_kind.rs= although no checked-in Scheme IR or build-support
 entry generated it. The obsolete test reference is removed; the Scheme event
-AST test already covers planning timestamp classification. A fresh CI run must
-confirm that no other missing generated artifacts remain.
+AST test already covers planning timestamp classification. The Ubuntu job at
+=49ba59b= passed clean compilation and reached the full integration target;
+it failed on semantic gaps, not a missing generated file.
 
 * Remaining ownership work
 
 ** Serial integration failure ledger
 
 The serial run at =972cf48= reproduced 23 failures (425 passed, 2 ignored).
-The working tree now has 17 failures (431 passed, 2 ignored). Grouping is by
+The working tree now has 9 failures (441 passed, 2 ignored). Grouping is by
 the first missing ownership boundary, not by the last assertion or by a
 changed snapshot. Several consumers appear in more than one feature family;
 each test is counted once below. Re-run this ledger after each grouped repair
@@ -48,9 +48,7 @@ instead of approving =.snap.new= wholesale.
 | Family | Failing tests | Owner and acceptance |
 |--------+---------------+----------------------|
 | Radio-target resolution | 5 =semantic_ast_projects_radio_links= cases | Scheme graph must identify radio-target declarations and text matches; Element projection must preserve longest-match, opt-in, and dedup semantics. |
-| Attachment projection and consumers | 2 =semantic_ast_projects_attachments= cases; =lint_attachments=; =semantic_ast_projects_workspace_index=; =semantic_traversal_covers_parser_v2_surface=; =semantic_ast_projects_m25_alignment= | Scheme-owned link/property classification must reach attachment directory/link fields before inventory, lint, index, traversal, and M25 can be judged. M25 also exercises other features. |
 | Table formulas | =semantic_ast_projects_org_table_formulas=; =semantic_ast_projects_tangle_and_table_records=; =lint_table_formulas= | Associate each =TBLFM= with its table and project parsed assignments/references from Scheme, retaining keyword annotations. |
-| Babel results | =semantic_ast_projects_babel_eval=; =lint_babel= | Complete affiliated/source/result ancestry and result replacement from the AOT graph. |
 | Citation recovery | =semantic_ast_projects_m15_alignment= malformed segment | Scheme parser must emit the diagnostic without a Rust syntax recognizer. |
 
 The archive/lifecycle pair, contract binding, agenda anchor, and list-bullet
@@ -58,7 +56,11 @@ assertion now pass in the serial full integration target. The Git-scoped
 Elements fixture also passes after an explicit six-paragraph source-text
 assertion justified its 80-record snapshot. The contract fix
 comes from Scheme table-cell inline events plus graph-backed Element objects,
-not a second Rust Org parser. Before a performance claim, benchmark table-heavy
+not a second Rust Org parser. Babel result replacement now includes the
+Scheme-AOT affiliated =#+RESULTS= keyword in its source span, and Babel lint
+locations point to the source block rather than its =#+NAME= keyword. Attachment
+link paths are Scheme-AOT classified; parsed properties, tags, and links now reach
+Orgize attachment inventory, lint, index, and traversal. Before a performance claim, benchmark table-heavy
 parsing and document projection against the prior AOT head.
 
 | Boundary | Required closure |

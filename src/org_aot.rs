@@ -161,6 +161,10 @@ pub(crate) fn org_link_file_path(path: &str) -> &str {
     link_functions::org_link_file_path(path)
 }
 
+pub(crate) fn org_link_attachment_path(path: &str) -> &str {
+    link_functions::org_link_attachment_path(path)
+}
+
 pub(crate) fn org_link_search(path: &str) -> &str {
     link_functions::org_link_search(path)
 }

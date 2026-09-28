@@ -32,6 +32,7 @@ pub fn write_org_aot_functions() {
         "org_link_protocol",
         "org_link_protocol_path",
         "org_link_file_path",
+        "org_link_attachment_path",
         "org_link_search",
         "org_link_file_path_kind",
         "org_link_search_kind",

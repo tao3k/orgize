@@ -12,6 +12,7 @@
         org-link-protocol org-link-protocol-rust
         org-link-protocol-path org-link-protocol-path-rust
         org-link-file-path org-link-file-path-rust
+        org-link-attachment-path org-link-attachment-path-rust
         org-link-search org-link-search-rust
         org-link-file-path-kind org-link-file-path-kind-rust
         org-link-search-kind org-link-search-kind-rust
@@ -66,6 +67,11 @@
 (define-rust-pure org-link-file-path org-link-file-path-rust
   ((path "&str")) "&str"
   (let* ((after-protocol (string-after path "file:")))
+    (string-before after-protocol "::")))
+
+(define-rust-pure org-link-attachment-path org-link-attachment-path-rust
+  ((path "&str")) "&str"
+  (let* ((after-protocol (string-after path ":")))
     (string-before after-protocol "::")))
 
 (define-rust-pure org-link-search org-link-search-rust

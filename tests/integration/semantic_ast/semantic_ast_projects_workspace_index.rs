@@ -13,6 +13,17 @@ fn semantic_ast_projects_workspace_index_from_document_local_records() {
     let doc_b = Org::parse(WORKSPACE_B).document();
     assert_clean_projection(&doc_a);
     assert_clean_projection(&doc_b);
+    assert!(doc_a.source_block_records().iter().any(|block| {
+        block.name.as_deref() == Some("alpha-block") && block.source.start.line == 10
+    }));
+    assert!(
+        doc_a.section_index_records()[0]
+            .body
+            .iter()
+            .any(
+                |slice| slice.text.starts_with("#+begin_src rust") && slice.source.start.line == 10
+            )
+    );
 
     let mut builder = WorkspaceIndexBuilder::new();
     builder

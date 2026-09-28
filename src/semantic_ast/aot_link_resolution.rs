@@ -3,15 +3,16 @@
 use std::collections::HashMap;
 
 use crate::org_aot::{
-    org_link_file_path, org_link_file_path_kind, org_link_kind, org_link_protocol,
-    org_link_protocol_path, org_link_search, org_link_search_kind, org_link_search_value,
-    org_link_target_key,
+    org_link_attachment_path, org_link_file_path, org_link_file_path_kind, org_link_kind,
+    org_link_protocol, org_link_protocol_path, org_link_search, org_link_search_kind,
+    org_link_search_value, org_link_target_key,
 };
 
 use super::settings::expand_link_abbreviation;
 use super::{
-    AstMut, AstRef, Diagnostic, DiagnosticKind, Document, FileLink, FileLinkPathKind, LinkSearch,
-    LinkSearchKind, LinkTarget, ObjectData, ParsedAnnotation, TargetDefinition, TargetKind,
+    AstMut, AstRef, AttachmentLink, AttachmentLinkSearch, AttachmentLinkSearchKind, Diagnostic,
+    DiagnosticKind, Document, FileLink, FileLinkPathKind, LinkSearch, LinkSearchKind, LinkTarget,
+    ObjectData, ParsedAnnotation, TargetDefinition, TargetKind,
 };
 
 pub(super) fn resolve_document_links(document: &mut Document<ParsedAnnotation>) {
@@ -61,6 +62,26 @@ pub(super) fn resolve_document_links(document: &mut Document<ParsedAnnotation>) 
             link.default_description = alias.clone();
         }
         let protocol = org_link_protocol(&path);
+        if protocol.eq_ignore_ascii_case("attachment") {
+            let projected_search = project_link_search(&path);
+            let search = projected_search
+                .as_ref()
+                .map(|search| AttachmentLinkSearch {
+                    raw: search.raw.clone(),
+                    kind: match search.kind {
+                        LinkSearchKind::Headline => AttachmentLinkSearchKind::Headline,
+                        LinkSearchKind::CustomId => AttachmentLinkSearchKind::CustomId,
+                        LinkSearchKind::Regexp => AttachmentLinkSearchKind::Regexp,
+                        LinkSearchKind::LineNumber => AttachmentLinkSearchKind::LineNumber,
+                        LinkSearchKind::Text => AttachmentLinkSearchKind::Text,
+                    },
+                });
+            link.search = projected_search;
+            link.attachment = Some(Box::new(AttachmentLink {
+                path: org_link_attachment_path(&path).to_owned(),
+                search,
+            }));
+        }
         let expanded = (kind == "uri")
             .then(|| {
                 expand_link_abbreviation(protocol, org_link_protocol_path(&path), &abbreviations)
@@ -144,6 +165,12 @@ fn project_link_search(path: &str) -> Option<LinkSearch> {
     Some(LinkSearch {
         raw: raw.to_owned(),
         kind,
-        normalized: org_link_search_value(raw).to_lowercase(),
+        normalized: if kind == LinkSearchKind::Regexp {
+            raw.trim_start_matches('/')
+                .trim_end_matches('/')
+                .to_lowercase()
+        } else {
+            org_link_search_value(raw).to_lowercase()
+        },
     })
 }

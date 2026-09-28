@@ -10,6 +10,7 @@ use rowan::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link};
 
+use super::aot_attachment_projection::attachment_state;
 use super::aot_footnote_resolution::resolve_document_footnotes;
 use super::aot_link_resolution::resolve_document_links;
 use super::aot_timestamp_projection::project_timestamp;
@@ -309,6 +310,7 @@ impl<'a> GraphProjector<'a> {
                 last.ann.range.end(),
             ))
         });
+        let attachment = attachment_state(&effective_tags, &effective_properties);
         Section {
             ann: self.annotation(range),
             body_ann,
@@ -321,7 +323,7 @@ impl<'a> GraphProjector<'a> {
                 property_location: property_archive_location,
                 keyword_location: inherited_archive_location,
             },
-            attachment: Default::default(),
+            attachment,
             todo,
             is_comment,
             priority: Priority::from_cookie(self.document.headline_priority_cookie(id)),
