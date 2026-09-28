@@ -212,6 +212,11 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgInlinetask", category: KindCategory::Node },
     KindSpec { name: "OrgInlinetaskEnd", category: KindCategory::Node },
     KindSpec { name: "InlinetaskEndLine", category: KindCategory::Token },
+    KindSpec { name: "OrgCloze", category: KindCategory::Node },
+    KindSpec { name: "ClozeDelimiter", category: KindCategory::Token },
+    KindSpec { name: "ClozeText", category: KindCategory::Token },
+    KindSpec { name: "ClozeHint", category: KindCategory::Token },
+    KindSpec { name: "ClozeId", category: KindCategory::Token },
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
@@ -393,7 +398,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:fcfca9618b17c9692aff1aff4202846c598123c785fac4a88877c6f5285cead4",
+    grammar_digest: "sha256:ea6a37760bc98a4b6d610b0026b5deefd8e396c33fe72fc5cadfcf67369eb6be",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,

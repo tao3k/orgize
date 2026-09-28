@@ -222,4 +222,8 @@
    (node 'OrgSuperscript "object" "superscript"
          (list (field 'InlineScriptValue "value")))
    (node 'OrgStrikeThrough "object" "strike-through"
-         (list (field 'InlineMarkupValue "value")))))
+         (list (field 'InlineMarkupValue "value")))
+   (node 'OrgCloze "object" "cloze"
+         (list (field 'ClozeText "text")
+               (field 'ClozeHint "hint")
+               (field 'ClozeId "id")))))

@@ -7,22 +7,22 @@
         (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks)
-        (only-in "parser.ss" org-v1-line-structure)
-        (only-in "modules/org-parser/types.ss"
+        (only-in "../languages/org/v1/parser.ss" org-v1-line-structure)
+        (only-in "../languages/org/v1/modules/org-parser/types.ss"
                  org-event-block? org-named-block?
                  org-inline-markup? org-inline-script?
                  org-event-helper?
                  org-event-strategy?)
-        (only-in "modules/org-parser/objects.ss"
+        (only-in "../languages/org/v1/modules/org-parser/objects.ss"
                  make-org-event-block org-event-block-id
                  make-org-named-block
                  make-org-inline-markup org-inline-markup-node
                  make-org-inline-script org-inline-script-node
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
-        (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
-        (only-in "rowan-event-fixture.ss" rowan-event-fixture-json)
-        (only-in "rowan-event-parser.ss"
+        (only-in "org-parser-test-support.ss" check-org-ast-with)
+        (only-in "../languages/org/v1/rowan-event-fixture.ss" rowan-event-fixture-json)
+        (only-in "../languages/org/v1/rowan-event-parser.ss"
                  parse-org-rowan-events
                  parse-org-rowan-events-with-inlinetask-level
                  parse-org-rowan-events-with-inline-script-policy

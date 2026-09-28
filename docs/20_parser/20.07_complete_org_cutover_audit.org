@@ -16,17 +16,19 @@ handwritten Rust matcher is not compiled or exported.
 
 * Current gates
 
-At the current candidate tree on 2026-09-28, the Scheme suite reports
-=MODULE-OK=, =HARNESS-OK=, and =OK= without error markers. The serial Rust
-integration target reports *451 passed, 0 failed, 2 ignored*. The generic AOT
-backend's integration target reports *41 passed*. These local receipts establish
-the migrated radio-link behavior, not release closure. Strict all-target
-Clippy and the ASP Rust gate pass. The all-feature workspace run reaches the
-integration target with *452 passed, 2 failed, 2 ignored*: the failures are
-=semantic_ast_projects_cloze_objects_with_metadata= (missing cloze Object)
-and =semantic_ast_projects_org_elements_sql_query_uses_datafusion= (two SQL
-rows instead of one). The all-feature matrix, performance receipts, and
-exact-head platform CI remain open before merging.
+At the current candidate tree on 2026-09-28, all Scheme tests are under
+=t/*-test.ss= and the suite reports =MODULE-OK=, =HARNESS-OK=, and =OK=
+without error markers. The generic AOT backend's integration target reports
+*41 passed*. The latest all-feature Orgize integration target reports
+*454 passed, 0 failed, 2 ignored*: affiliated keyword source lines and the
+cloze Object are now projected from Scheme-owned events. The other code-test
+targets pass, including Markdown *6/6* and owned projection *7/7*. The
+default-parallelism full workspace command exits successfully, including Rust
+doctests *8/8*. A source-backed headline title and list bullet preserve
+their separator whitespace in the graph and typed AST; Markdown export removes
+only the duplicate output separator. These local receipts are not release
+closure. The current strict all-target Clippy/ASP Rust gate, performance
+receipts, and exact-head platform CI remain open before merging.
 
 * Remaining ownership work
 
@@ -41,7 +43,14 @@ by structural AST tests. Do not weaken these gates or approve =.snap.new= files
 wholesale when further grammar nodes are added.
 
 Before a performance claim, benchmark table-heavy parsing, radio-link
-projection, and document projection against the prior AOT head.
+projection, and document projection against the prior AOT head. Build latency
+is also an open gate: the current 2.68 MB event IR expands to one 13.4 MB,
+121k-line Rust function. Integration and benchmark targets now reuse the
+library's compiled event entry instead of including duplicate generated
+copies. Distinct Cargo feature sets still recompile the large library function;
+runtime parallelism does not solve that compiler cost. The generic event AOT
+backend needs bounded function extraction or equivalent code-size reduction
+with unchanged source-range and throughput receipts.
 
 | Boundary | Required closure |
 |----------+------------------|

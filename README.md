@@ -107,7 +107,8 @@ let org = Org::parse("* DONE Title :tag:");
 let document = org.document();
 
 assert_eq!(document.sections[0].level, 1);
-assert_eq!(document.sections[0].raw_title, "Title");
+// raw_title keeps the source space before the tag suffix.
+assert_eq!(document.sections[0].raw_title, "Title ");
 assert_eq!(document.sections[0].tags, ["tag"]);
 assert!(document.sections[0].children.iter().all(|element| {
     !matches!(element.data, ElementData::Unknown { .. })

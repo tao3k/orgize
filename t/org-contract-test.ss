@@ -3,7 +3,7 @@
 
 (import (only-in :std/test check check-exception test-case test-suite)
         (only-in :clan/poo/object .o .ref)
-        (only-in "../org-elements/interface.ss"
+        (only-in "../languages/org/v1/modules/org-elements/interface.ss"
                  make-org-element-query make-org-element-graph-view
                  make-org-element-query-context org-element-map
                  org-element-property org-element-lineage?
@@ -11,7 +11,7 @@
                  org-element-graph-parent-of org-element-graph-kind-of
                  org-element-query? org-elements property child-of
                  descendant-of)
-        (only-in "interface.ss"
+        (only-in "../languages/org/v1/modules/org-contract/interface.ss"
                  make-org-contract-expectation
                  make-org-contract-binding make-org-contract-assertion
                  make-org-contract-definition org-contract-result-passed?
@@ -20,7 +20,7 @@
                  org-contract-default-profile org-contract-profile?
                  org-contract-block assert-org-element
                  org-contract-definition-id org-contract-definition-scope)
-        (only-in "generated/contract-source.ss" org-contract-definitions))
+        (only-in "../languages/org/v1/modules/org-contract/generated/contract-source.ss" org-contract-definitions))
 (export org-contract-feature-test)
 
 (def (fact id-value parent-value kind-value field-name-value field-value-value)

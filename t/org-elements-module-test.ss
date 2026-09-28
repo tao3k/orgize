@@ -3,7 +3,7 @@
 
 (import (only-in :std/test check check-exception test-case test-suite)
         (only-in :clan/poo/object .o .ref .slot?)
-        (only-in "test-syntax.ss"
+        (only-in "org-elements-test-support.ss"
                  check-org-element-catalog check-org-element-selection
                  check-org-named-query-selection
                  check-org-element-query-aot
@@ -12,7 +12,7 @@
                  check-org-headline-state-aot
                  org-test-form-structured? org-test-source-structured?
                  org-test-sources)
-        (only-in "headline-properties.ss"
+        (only-in "../languages/org/v1/modules/org-elements/headline-properties.ss"
                  todo-directive-rust
                  todo-word-name todo-word-name-rust
                  todo-open-words todo-open-words-rust
@@ -32,9 +32,9 @@
                  headline-priority-cookie headline-priority-cookie-rust
                  todo-keyword-matches? todo-keyword-matches-rust
                  memory-headline-state memory-headline-state-rust)
-        (only-in "objects.ss"
+        (only-in "../languages/org/v1/modules/org-elements/objects.ss"
                  make-org-headline-properties org-headline-property-field)
-        (only-in "link-properties.ss"
+        (only-in "../languages/org/v1/modules/org-elements/link-properties.ss"
                  org-image-link? org-image-link-rust
                  org-link-kind org-link-kind-rust
                  org-link-target-key org-link-target-key-rust
@@ -48,10 +48,10 @@
                  org-link-search-value org-link-search-value-rust
                  org-expand-link-abbreviation
                  org-expand-link-abbreviation-rust)
-        (only-in "citation-functions.ss"
+        (only-in "../languages/org/v1/modules/org-elements/citation-functions.ss"
                  citation-style citation-style-rust
                  citation-variant citation-variant-rust)
-        (only-in "document-keyword-properties.ss"
+        (only-in "../languages/org/v1/modules/org-elements/document-keyword-properties.ss"
                  keyword-word keyword-word-rust
                  keyword-words keyword-words-rust
                  keyword-tag-words keyword-tag-words-rust
@@ -59,14 +59,14 @@
                  keyword-rest keyword-rest-rust
                  keyword-option-value keyword-option-value-rust
                  keyword-option-present? keyword-option-present-rust)
-        (only-in "table-properties.ss"
+        (only-in "../languages/org/v1/modules/org-elements/table-properties.ss"
                  table-column-cookie-match? table-column-cookie-match-rust
                  table-column-cookie-kind table-column-cookie-kind-rust)
-        (only-in "affiliated-properties.ss"
+        (only-in "../languages/org/v1/modules/org-elements/affiliated-properties.ss"
                  org-affiliated-keyword? org-affiliated-keyword-rust)
-        (only-in "catalog.ss" +org-affiliated-keywords+)
-        (only-in "generated/query-source.ss" org-element-queries)
-        (only-in "interface.ss"
+        (only-in "../languages/org/v1/modules/org-elements/catalog.ss" +org-affiliated-keywords+)
+        (only-in "../languages/org/v1/modules/org-elements/generated/query-source.ss" org-element-queries)
+        (only-in "../languages/org/v1/modules/org-elements/interface.ss"
                  +org-element-kinds+ org-elements-default-profile
                  make-org-element-graph-view make-org-element-query
                  make-org-element-query-context org-element-query?

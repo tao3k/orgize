@@ -7,22 +7,22 @@
         (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks)
-        (only-in "parser.ss" org-v1-line-structure)
-        (only-in "modules/org-parser/types.ss"
+        (only-in "../languages/org/v1/parser.ss" org-v1-line-structure)
+        (only-in "../languages/org/v1/modules/org-parser/types.ss"
                  org-event-block? org-named-block?
                  org-inline-markup? org-inline-script?
                  org-event-helper?
                  org-event-strategy?)
-        (only-in "modules/org-parser/objects.ss"
+        (only-in "../languages/org/v1/modules/org-parser/objects.ss"
                  make-org-event-block org-event-block-id
                  make-org-named-block
                  make-org-inline-markup org-inline-markup-node
                  make-org-inline-script org-inline-script-node
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
-        (only-in "modules/org-parser/test-syntax.ss" check-org-ast-with)
-        (only-in "rowan-event-fixture.ss" rowan-event-fixture-json)
-        (only-in "rowan-event-parser.ss"
+        (only-in "org-parser-test-support.ss" check-org-ast-with)
+        (only-in "../languages/org/v1/rowan-event-fixture.ss" rowan-event-fixture-json)
+        (only-in "../languages/org/v1/rowan-event-parser.ss"
                  parse-org-rowan-events
                  parse-org-rowan-events-with-inlinetask-level
                  parse-org-rowan-events-with-inline-script-policy
@@ -167,6 +167,36 @@
           (OrgHeadline
            (HeadlineLine 0 4) (HeadlineTrivia 4 5)
            (HeadlineTitle 5 11) (HeadlineTrivia 11 12))))))
+    (test-case "Scheme cloze Objects retain text, hint, and identifier spans"
+      (check-org-ast-with parse-org-rowan-events
+        "{{text}}\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCloze (ClozeDelimiter 0 2) (ClozeText 2 6)
+                     (ClozeDelimiter 6 7) (ClozeDelimiter 7 8))
+           (TextLine 8 9)))))
+      (check-org-ast-with parse-org-rowan-events
+        "{{text}@id}\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCloze (ClozeDelimiter 0 2) (ClozeText 2 6)
+                     (ClozeDelimiter 6 7) (ClozeDelimiter 7 8)
+                     (ClozeId 8 10) (ClozeDelimiter 10 11))
+           (TextLine 11 12)))))
+      (check-org-ast-with parse-org-rowan-events
+        "{{*text*}{hint}@card-id}\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCloze
+            (ClozeDelimiter 0 2) (ClozeText 2 8)
+            (ClozeDelimiter 8 9) (ClozeDelimiter 9 10)
+            (ClozeHint 10 14) (ClozeDelimiter 14 15)
+            (ClozeDelimiter 15 16) (ClozeId 16 23)
+            (ClozeDelimiter 23 24))
+           (TextLine 24 25))))))
     (test-case "Scheme macro Objects retain named and argument spans"
       (check-org-ast-with parse-org-rowan-events
         "x {{{title}}} y\n"

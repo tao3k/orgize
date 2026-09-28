@@ -8,13 +8,13 @@
                  graph-projection? graph-projection-nodes
                  graph-node-syntax-kind graph-node-label graph-node-fields
                  graph-field-name graph-field-mode)
-        (only-in "modules/org-elements/graph-types.ss"
+        (only-in "../languages/org/v1/modules/org-elements/graph-types.ss"
                  org-graph-node? org-graph-field?)
-        (only-in "modules/org-elements/graph-objects.ss"
+        (only-in "../languages/org/v1/modules/org-elements/graph-objects.ss"
                  make-org-graph-node make-org-graph-field
                  org-graph-node-fields org-graph-field-mode)
-        (only-in "graph-shape.ss" org-v1-graph-shape)
-        (only-in "graph.ss" org-v1-graph-projection))
+        (only-in "../languages/org/v1/graph-shape.ss" org-v1-graph-shape)
+        (only-in "../languages/org/v1/graph.ss" org-v1-graph-projection))
 (export org-v1-graph-test)
 
 (def org-v1-graph-test
@@ -61,7 +61,7 @@
                             OrgLaTeXFragment
                             OrgCode OrgVerbatim OrgBold OrgItalic OrgUnderline
                             OrgSubscript OrgSuperscript
-                            OrgStrikeThrough))
+                            OrgStrikeThrough OrgCloze))
         (check (map graph-node-label nodes)
                => '("org-data" "headline" "inlinetask" "inlinetask-end"
                                 "property-drawer" "drawer"
@@ -88,7 +88,7 @@
                                 "latex-fragment"
                                 "code" "verbatim" "bold" "italic"
                                 "underline" "subscript" "superscript"
-                                "strike-through"))))
+                                "strike-through" "cloze"))))
     (test-case "planning keeps each key and value independently"
       (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
              (planning

@@ -214,7 +214,12 @@
    (ClockTrivia token (text))
    (OrgInlinetask node (heading element end))
    (OrgInlinetaskEnd node (line))
-   (InlinetaskEndLine token (text)))
+   (InlinetaskEndLine token (text))
+   (OrgCloze node (text hint id))
+   (ClozeDelimiter token (text))
+   (ClozeText token (text))
+   (ClozeHint token (text))
+   (ClozeId token (text)))
   (terminals
    (headline HeadlineLine)
    (block-begin BlockBeginLine)

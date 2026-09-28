@@ -3,14 +3,14 @@
 
 (import (only-in :std/test check test-case test-suite)
         (only-in :clan/poo/object .o .ref)
-        (only-in "../../graph-shape.ss"
+        (only-in "../languages/org/v1/graph-shape.ss"
                  org-v1-graph-shape org-graph-node-label
                  org-graph-node-rust org-graph-node-fields
                  org-graph-field-label org-graph-field-mode)
-        (only-in "../org-elements/runtime-interface.ss"
+        (only-in "../languages/org/v1/modules/org-elements/runtime-interface.ss"
                  make-org-element-graph-view make-org-element-query
                  org-element-query?)
-        (only-in "runtime-interface.ss"
+        (only-in "../languages/org/v1/modules/org-contract/runtime-interface.ss"
                  make-org-contract-assertion make-org-contract-expectation
                  org-contract-evaluate-assertion
                  org-contract-result-matched-count

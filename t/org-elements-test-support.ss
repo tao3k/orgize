@@ -12,15 +12,15 @@
                  rust-first-word-form? rust-if-form? rust-if-form-condition
                  rust-if-form-alternate rust-any-form? rust-empty-form?)
         (only-in :std/list/list every)
-        (only-in "config.ss"
+        (only-in "../languages/org/v1/modules/org-elements/config.ss"
                  +org-element-kinds+ +org-greater-element-kinds+
                  +org-object-kinds+ +org-recursive-object-kinds+
                  +org-affiliated-keywords+ +org-object-restrictions+
                  +org-secondary-values+ org-object-allowed?
                  org-secondary-value?)
-        (only-in "funs.ss" org-element-select org-element-property)
-        (only-in "aot.ss" org-element-query-rust-source)
-        (only-in "objects.ss"
+        (only-in "../languages/org/v1/modules/org-elements/funs.ss" org-element-select org-element-property)
+        (only-in "../languages/org/v1/modules/org-elements/aot.ss" org-element-query-rust-source)
+        (only-in "../languages/org/v1/modules/org-elements/objects.ss"
                  org-named-element-query-id org-named-element-query-query))
 (export check-org-element-catalog check-org-element-selection
         check-org-named-query-selection

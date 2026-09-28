@@ -2,8 +2,8 @@
 use gerbil_parser_rowan::{GraphFieldMode, GraphFieldRule, GraphNodeRule, GraphProjectionSpec};
 
 pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
-    grammar_digest: "sha256:fcfca9618b17c9692aff1aff4202846c598123c785fac4a88877c6f5285cead4",
-    projection_digest: "sha256:f301bf4c98eb0a0765562b38be2f00e892e7a5ed64e4db62b898017fdbbf62d5",
+    grammar_digest: "sha256:ea6a37760bc98a4b6d610b0026b5deefd8e396c33fe72fc5cadfcf67369eb6be",
+    projection_digest: "sha256:4234da93f7b7bb76277a7dd9321c3ed99f41cea22c3ee55fd91e4b8b67d9df64",
     rules: &[
         GraphNodeRule { syntax_kind: 0, category: "document", kind: "org-data", fields: &[] },
         GraphNodeRule { syntax_kind: 80, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 81, name: "markers", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 82, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 82, name: "title-body", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title-body", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 83, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 84, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 83, name: "tag", mode: GraphFieldMode::Each }, ] },
@@ -70,5 +70,6 @@ pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
         GraphNodeRule { syntax_kind: 77, category: "object", kind: "subscript", fields: &[GraphFieldRule { token_kind: 169, name: "value", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 78, category: "object", kind: "superscript", fields: &[GraphFieldRule { token_kind: 169, name: "value", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 79, category: "object", kind: "strike-through", fields: &[GraphFieldRule { token_kind: 167, name: "value", mode: GraphFieldMode::Append }, ] },
+        GraphNodeRule { syntax_kind: 208, category: "object", kind: "cloze", fields: &[GraphFieldRule { token_kind: 210, name: "text", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 211, name: "hint", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 212, name: "id", mode: GraphFieldMode::Append }, ] },
     ],
 };

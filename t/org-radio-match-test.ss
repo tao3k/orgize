@@ -4,9 +4,9 @@
 (import (only-in :std/test check check-exception test-case test-suite)
         (only-in :std/encoding/json JSONReadOptions string->json)
         (only-in :std/misc/ports read-all-as-string)
-        (only-in "types.ss" org-source-match-strategy?)
-        (only-in "objects.ss" make-org-source-match-strategy)
-        (only-in "radio-match.ss"
+        (only-in "../languages/org/v1/modules/org-elements/types.ss" org-source-match-strategy?)
+        (only-in "../languages/org/v1/modules/org-elements/objects.ss" make-org-source-match-strategy)
+        (only-in "../languages/org/v1/modules/org-elements/radio-match.ss"
                  org-radio-match-strategy org-next-radio-match
                  org-radio-match-ir-json))
 (export org-radio-match-test)

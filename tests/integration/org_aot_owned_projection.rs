@@ -12,7 +12,8 @@ fn owned_projection_uses_scheme_graph_objects_and_list_structure() {
 
     assert!(doc.diagnostics.is_empty());
     let section = &doc.sections[0];
-    assert_eq!(section.raw_title, "Review");
+    // raw_title preserves the source separator before the headline tag suffix.
+    assert_eq!(section.raw_title, "Review ");
     assert_eq!(
         section.todo.as_ref().map(|todo| todo.name.as_str()),
         Some("TODO")
@@ -56,7 +57,8 @@ fn owned_projection_uses_scheme_graph_objects_and_list_structure() {
         .expect("list from AOT graph");
     assert_eq!(list.list_type, ListType::Unordered);
     assert_eq!(list.items.len(), 1);
-    assert_eq!(list.items[0].bullet, "-");
+    // The bullet includes its exact source separator, independently of export formatting.
+    assert_eq!(list.items[0].bullet, "- ");
     assert_eq!(list.items[0].checkbox, Some(Checkbox::On));
     let item_paragraph = list.items[0]
         .children

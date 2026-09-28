@@ -383,7 +383,7 @@ impl MarkdownRenderer<'_> {
     fn render_item(&mut self, id: usize) -> Result<(), String> {
         self.newline();
         let bullet = self.record(id).field("bullet").unwrap_or("+").to_owned();
-        self.output.push_str(&bullet);
+        self.output.push_str(bullet.trim_end());
         self.output.push(' ');
         for child in self.record(id).child_ids.clone() {
             self.render(child)?;

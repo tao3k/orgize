@@ -47,6 +47,11 @@ mod todo_directive;
 #[path = "org_aot_events.rs"]
 mod generated_context_events;
 
+// Reuse the library's compiled event function from integration and benchmark
+// targets instead of compiling the large generated function into each target.
+#[doc(hidden)]
+pub use generated_context_events::{PARSER_DIGEST, parse_org_rowan_events};
+
 /// A source-backed, lossless Rowan tree and its Scheme-declared Element graph.
 #[derive(Debug)]
 pub struct OrgAotDocument {

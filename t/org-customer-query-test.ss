@@ -3,9 +3,9 @@
 
 (import (only-in :std/test check test-case test-suite)
         (only-in :std/misc/ports read-all-as-string)
-        (only-in "../../../languages/org/v1/modules/org-elements/aot.ss"
+        (only-in "../languages/org/v1/modules/org-elements/aot.ss"
                  org-element-query-rust-source)
-        (only-in "generated/customer-query-source.ss" org-element-queries))
+        (only-in "../tests/fixtures/org-elements/generated/customer-query-source.ss" org-element-queries))
 (export customer-query-test)
 
 (def customer-query-test

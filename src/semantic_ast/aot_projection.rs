@@ -760,6 +760,16 @@ impl<'a> GraphProjector<'a> {
                     .map(split_macro_args)
                     .unwrap_or_default(),
             },
+            "cloze" => {
+                let text_span = record.field_range("text")?;
+                ObjectData::Cloze {
+                    text: self.inline_fragment(text_span),
+                    raw_text: self.raw(text_span).to_owned(),
+                    hint: record.field("hint").map(str::to_owned),
+                    id: record.field("id").map(str::to_owned),
+                    raw: self.raw(range).to_owned(),
+                }
+            }
             "statistics-cookie" => ObjectData::StatisticCookie(self.raw(range).to_owned()),
             "line-break" => ObjectData::LineBreak,
             "inline-src-block" => ObjectData::InlineSrc {

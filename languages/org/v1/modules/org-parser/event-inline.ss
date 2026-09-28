@@ -23,6 +23,8 @@
                  inline-script-trigger-bytes inline-script-open-forms
                  inline-script-scan-forms inline-script-final-forms
                  inline-script-event-initial inline-script-upper-digit-bytes)
+        (only-in "event-inline-cloze.ss"
+                 cloze-event-initial cloze-open-forms cloze-scan-forms)
         (only-in "objects.ss"
                  make-org-inline-markup org-inline-markup-byte
                  org-inline-markup-id org-inline-markup-node))
@@ -673,9 +675,12 @@
   (let (ordinary
         `((if ,(pattern-at? link-index "{{{")
                ,(macro-open-forms)
-               ((if (line-byte-equal? ,link-index 92)
-                    ,(entity-or-ordinary-free-forms nested-description? allow-citation?)
-                    ,(inline-ordinary-free-scan-forms nested-description? allow-citation?))))))
+               ((if (and (not (state inline-previous-lbrace))
+                         ,(pattern-at? link-index "{{"))
+                    ,(cloze-open-forms)
+                    ((if (line-byte-equal? ,link-index 92)
+                         ,(entity-or-ordinary-free-forms nested-description? allow-citation?)
+                         ,(inline-ordinary-free-scan-forms nested-description? allow-citation?))))))))
     (if nested-description?
       ordinary
       `((if (line-bytes-any-in? ,link-index ,inline-next (60 104))
@@ -714,13 +719,15 @@
 (def (inline-non-code-scan-forms nested-description? allow-citation?)
   (let ((ordinary
          (inline-ordinary-non-code-scan-forms nested-description? allow-citation?)))
-    `((if (uint-positive? (state inline-macro-mode))
-          ,(macro-scan-forms)
-          ,(if allow-citation?
-               `((if (uint-positive? (state inline-citation-mode))
-                     ,(citation-scan-forms)
-                     ,ordinary))
-               ordinary)))))
+    `((if (uint-positive? (state inline-cloze-mode))
+          ,(cloze-scan-forms)
+          ((if (uint-positive? (state inline-macro-mode))
+               ,(macro-scan-forms)
+               ,(if allow-citation?
+                    `((if (uint-positive? (state inline-citation-mode))
+                          ,(citation-scan-forms)
+                          ,ordinary))
+                    ordinary)))))))
 
 (def (inline-scan-forms nested-description? allow-citation?)
   `((if (and (uint-positive? (state inline-citation-mode))
@@ -745,6 +752,8 @@
               (line-bytes-any-in? ,link-index ,inline-next (9 10 13 32)))
     (set-bool inline-previous-backslash
               (line-byte-equal? ,link-index 92))
+    (set-bool inline-previous-lbrace
+              (line-byte-equal? ,link-index 123))
     (if (line-bytes-any-in? ,link-index ,inline-next
                             ,inline-script-upper-digit-bytes)
         ((set-uint inline-upper-run
@@ -785,6 +794,10 @@
 
 (def (event-text-line-forms from (nested-description? #f) (allow-citation? #t))
   `((start-node OrgTextLine)
+    (if (uint-positive? (state inline-cloze-mode))
+        ((set-uint inline-cloze-mode (uint 0))) ())
+    (if (state inline-previous-lbrace)
+        ((set-bool inline-previous-lbrace (bool #f))) ())
     (if (offset-less? (state-offset inline-cursor) ,from)
         ((set-uint inline-cursor (offset ,from))) ())
     ,@(latex-prescan-forms from)
@@ -808,6 +821,7 @@
    citation-event-initial
    timestamp-event-initial
    inline-script-event-initial
+   cloze-event-initial
    '((inline-left-boundary #t)
     (inline-previous-space #f)
     (inline-markup-kind 0) (inline-markup-open-at 0)
@@ -840,7 +854,8 @@
     (inline-entity-mode 0) (inline-entity-open-at 0)
     (inline-entity-name-start 0)
     (inline-entity-name-end 0) (inline-entity-post-end 0)
-    (inline-previous-backslash #f))))
+    (inline-previous-backslash #f)
+    (inline-previous-lbrace #f))))
 
 (def nested-description-event-initial
   (filter (lambda (entry)

@@ -9,10 +9,8 @@ use orgize::org_aot::{
     org_graph_spec, org_language_spec, parse_org_aot, parse_org_aot_with_config,
 };
 
-#[rustfmt::skip]
 mod generated_context_events {
-    use gerbil_parser_rowan::TreeEvent;
-    include!(concat!(env!("OUT_DIR"), "/org_rowan_events.rs"));
+    pub use orgize::org_aot::{PARSER_DIGEST, parse_org_rowan_events};
 }
 
 fn task_source(with_directive: bool) -> String {
