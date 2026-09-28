@@ -228,6 +228,14 @@ fn table() {
 }
 
 #[test]
+fn table_formula_is_metadata_not_html_row() {
+    insta::assert_snapshot!(
+        Org::parse("| Name | Value |\n|------+-------|\n| alpha | 1 |\n#+TBLFM: @2$2=1\n").to_html(),
+        @"<main><section><table><thead><tr><td>Name</td><td>Value</td></tr></thead><tbody><tr><td>alpha</td><td>1</td></tr></tbody></table></section></main>"
+    );
+}
+
+#[test]
 fn line_break() {
     insta::assert_debug_snapshot!(
         Org::parse("aa\\\\\nbb").to_html(),

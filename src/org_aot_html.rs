@@ -429,6 +429,14 @@ impl HtmlRenderer<'_> {
         let mut group = "";
         let mut seen_rule = false;
         for row in rows {
+            let record = self.record(row);
+            if record.kind == "keyword"
+                && record
+                    .field("key")
+                    .is_some_and(|key| key.eq_ignore_ascii_case("TBLFM"))
+            {
+                continue;
+            }
             if self.record(row).kind == "table-rule-row" {
                 if !group.is_empty() {
                     let _ = write!(self.output, "</{group}>");
