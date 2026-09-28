@@ -45,6 +45,8 @@
                             OrgKeyword OrgBabelCall OrgPlanning OrgClock
                             OrgPlainList OrgListItem
                             OrgTable OrgTableEl OrgTableRow OrgTableRuleRow OrgTableCell
+                            OrgTableFormulaValue OrgTableFormulaAssignment
+                            OrgTableFormulaLhs OrgTableFormulaRhs OrgTableFormulaReference
                             OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgSpecialBlock
                             OrgLatexEnvironment
                             OrgQuoteBlock
@@ -69,6 +71,9 @@
                                 "planning" "clock"
                                 "plain-list" "item" "table" "table-el" "table-row"
                                 "table-rule-row" "table-cell"
+                                "table-formula-value" "table-formula-assignment"
+                                "table-formula-lhs" "table-formula-rhs"
+                                "table-formula-reference"
                                 "node-property" "src-block" "dynamic-block" "special-block"
                                 "latex-environment"
                                 "quote-block"

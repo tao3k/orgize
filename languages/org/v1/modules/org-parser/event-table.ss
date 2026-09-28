@@ -8,6 +8,7 @@
                  table-line-separator-token
                  table-line-trivia-token table-line-rule-token)
         (only-in "../../parser.ss" org-v1-line-structure))
+(import (only-in "event-table-formula.ss" table-formula-marker))
 (export table-event-initial table-close-form table-or-element-form)
 
 (def table-rule (line-structure-table org-v1-line-structure))
@@ -93,4 +94,7 @@
                   (set-bool table-open (bool #t))) ())
              ,(table-row-form)
              (set-bool after-heading (bool #f)))
-            (,table-close-form ,otherwise)))))
+            ((if (and (state table-open)
+                      (line-starts-with-ascii-ci ,table-formula-marker))
+                 () (,table-close-form))
+             ,otherwise)))))

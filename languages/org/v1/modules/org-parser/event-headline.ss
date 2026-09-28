@@ -10,6 +10,7 @@
         (only-in "event-paragraph.ss"
                  paragraph-close-form paragraph-line-form)
         (only-in "event-source-header.ss" event-source-header-forms)
+        (only-in "event-table-formula.ss" table-formula-marker)
         (only-in "event-headline-tags.ss" event-headline-title-forms))
 (export headline-form headline-line-forms planning-start-condition
         heading-marker heading-separator
@@ -61,7 +62,13 @@
           `((token KeywordTrivia ,key-end ,value-prefix-end)))
       (start-node OrgKeywordRawValue)
       (token KeywordTrivia ,value-prefix-end ,value-start)
-      (if ,rich-keyword-condition
+      (if (and (state table-open)
+               (line-starts-with-ascii-ci ,table-formula-marker))
+          ((start-node OrgTableFormulaValue)
+           (call-source-helper table-formula-assignments
+                               ,value-start ,value-end)
+           (finish-node))
+          ((if ,rich-keyword-condition
           ((start-node OrgKeywordValue)
            (call-source-helper inline-span ,value-start ,value-end
                                ((state inline-script-policy)))
@@ -72,7 +79,7 @@
                     ((start-node OrgKeywordAttributes)
                      ,@(event-source-header-forms value-start value-end value-end)
                      (finish-node))
-                    ((token KeywordValue ,value-start ,value-end)))))))
+                    ((token KeywordValue ,value-start ,value-end)))))))))
       (finish-node)
       (token KeywordTrivia ,value-end end)
       (finish-node))))

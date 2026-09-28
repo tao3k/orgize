@@ -1,6 +1,5 @@
 ---
 source: tests/integration/org_event_aot_parity.rs
-assertion_line: 52
 expression: document.records()
 ---
 [
@@ -113,7 +112,7 @@ expression: document.records()
             6,
             9,
         ],
-        syntax_kind: 75,
+        syntax_kind: 80,
         category: "section",
         kind: "headline",
         range: 128..294,
@@ -143,7 +142,7 @@ expression: document.records()
         child_ids: [
             7,
         ],
-        syntax_kind: 75,
+        syntax_kind: 80,
         category: "section",
         kind: "headline",
         range: 137..182,
@@ -185,7 +184,7 @@ expression: document.records()
             7,
         ),
         child_ids: [],
-        syntax_kind: 44,
+        syntax_kind: 49,
         category: "object",
         kind: "link",
         range: 149..181,
@@ -211,7 +210,7 @@ expression: document.records()
             10,
             12,
         ],
-        syntax_kind: 75,
+        syntax_kind: 80,
         category: "section",
         kind: "headline",
         range: 182..294,
@@ -278,7 +277,7 @@ expression: document.records()
         child_ids: [
             13,
         ],
-        syntax_kind: 75,
+        syntax_kind: 80,
         category: "section",
         kind: "headline",
         range: 249..294,
@@ -320,7 +319,7 @@ expression: document.records()
             13,
         ),
         child_ids: [],
-        syntax_kind: 44,
+        syntax_kind: 49,
         category: "object",
         kind: "link",
         range: 262..293,
@@ -345,7 +344,7 @@ expression: document.records()
         child_ids: [
             16,
         ],
-        syntax_kind: 75,
+        syntax_kind: 80,
         category: "section",
         kind: "headline",
         range: 294..348,
@@ -375,7 +374,7 @@ expression: document.records()
         child_ids: [
             17,
         ],
-        syntax_kind: 75,
+        syntax_kind: 80,
         category: "section",
         kind: "headline",
         range: 303..348,
@@ -417,7 +416,7 @@ expression: document.records()
             17,
         ),
         child_ids: [],
-        syntax_kind: 44,
+        syntax_kind: 49,
         category: "object",
         kind: "link",
         range: 315..347,
@@ -443,7 +442,7 @@ expression: document.records()
             20,
             22,
         ],
-        syntax_kind: 75,
+        syntax_kind: 80,
         category: "section",
         kind: "headline",
         range: 348..504,
@@ -510,7 +509,7 @@ expression: document.records()
         child_ids: [
             23,
         ],
-        syntax_kind: 75,
+        syntax_kind: 80,
         category: "section",
         kind: "headline",
         range: 426..504,

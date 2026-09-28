@@ -1,6 +1,5 @@
 ---
 source: tests/integration/org_event_aot_parity.rs
-assertion_line: 52
 expression: document.records()
 ---
 [
@@ -25,7 +24,7 @@ expression: document.records()
             2,
             5,
         ],
-        syntax_kind: 75,
+        syntax_kind: 80,
         category: "section",
         kind: "headline",
         range: 0..130,
@@ -92,7 +91,7 @@ expression: document.records()
             3,
         ),
         child_ids: [],
-        syntax_kind: 44,
+        syntax_kind: 49,
         category: "object",
         kind: "link",
         range: 73..103,

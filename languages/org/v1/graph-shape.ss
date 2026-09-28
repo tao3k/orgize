@@ -107,6 +107,15 @@
    (node 'OrgTableRuleRow "element" "table-rule-row" '())
    (node 'OrgTableCell "object" "table-cell"
          (list (field 'OrgTableCell "text" 'node-text)))
+   (node 'OrgTableFormulaValue "object" "table-formula-value" '())
+   (node 'OrgTableFormulaAssignment "object" "table-formula-assignment"
+         (list (field 'FormulaFlag "flag" 'each)))
+   (node 'OrgTableFormulaLhs "object" "table-formula-lhs" '())
+   (node 'OrgTableFormulaRhs "object" "table-formula-rhs" '())
+   (node 'OrgTableFormulaReference "object" "table-formula-reference"
+         (list (field 'FormulaFieldReference "field")
+               (field 'FormulaRowReference "row")
+               (field 'FormulaRemoteReference "remote")))
    (node 'OrgNodeProperty "property" "node-property"
          (list (field 'PropertyKey "key")
                (field 'PropertyValue "value")))

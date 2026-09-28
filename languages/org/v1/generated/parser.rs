@@ -48,6 +48,11 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgTableRow", category: KindCategory::Node },
     KindSpec { name: "OrgTableRuleRow", category: KindCategory::Node },
     KindSpec { name: "OrgTableCell", category: KindCategory::Node },
+    KindSpec { name: "OrgTableFormulaValue", category: KindCategory::Node },
+    KindSpec { name: "OrgTableFormulaAssignment", category: KindCategory::Node },
+    KindSpec { name: "OrgTableFormulaLhs", category: KindCategory::Node },
+    KindSpec { name: "OrgTableFormulaRhs", category: KindCategory::Node },
+    KindSpec { name: "OrgTableFormulaReference", category: KindCategory::Node },
     KindSpec { name: "OrgLink", category: KindCategory::Node },
     KindSpec { name: "OrgTarget", category: KindCategory::Node },
     KindSpec { name: "OrgRadioTarget", category: KindCategory::Node },
@@ -174,6 +179,15 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "TableTrivia", category: KindCategory::Token },
     KindSpec { name: "TableRuleText", category: KindCategory::Token },
     KindSpec { name: "TableElLine", category: KindCategory::Token },
+    KindSpec { name: "FormulaTrivia", category: KindCategory::Token },
+    KindSpec { name: "FormulaSeparator", category: KindCategory::Token },
+    KindSpec { name: "FormulaEquals", category: KindCategory::Token },
+    KindSpec { name: "FormulaFlagSeparator", category: KindCategory::Token },
+    KindSpec { name: "FormulaFlag", category: KindCategory::Token },
+    KindSpec { name: "FormulaText", category: KindCategory::Token },
+    KindSpec { name: "FormulaFieldReference", category: KindCategory::Token },
+    KindSpec { name: "FormulaRowReference", category: KindCategory::Token },
+    KindSpec { name: "FormulaRemoteReference", category: KindCategory::Token },
     KindSpec { name: "ListBullet", category: KindCategory::Token },
     KindSpec { name: "ListCounterValue", category: KindCategory::Token },
     KindSpec { name: "ListCheckboxValue", category: KindCategory::Token },
@@ -201,10 +215,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 76 },
-    TerminalSpec { name: "block-begin", syntax_kind: 81 },
-    TerminalSpec { name: "block-end", syntax_kind: 98 },
-    TerminalSpec { name: "text", syntax_kind: 99 },
+    TerminalSpec { name: "headline", syntax_kind: 81 },
+    TerminalSpec { name: "block-begin", syntax_kind: 86 },
+    TerminalSpec { name: "block-end", syntax_kind: 103 },
+    TerminalSpec { name: "text", syntax_kind: 104 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -379,7 +393,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:4e871af08c1a7c8f60efce5941c2b34b1d3a11a87e6dbac359a7f498be6d6e7e",
+    grammar_digest: "sha256:fcfca9618b17c9692aff1aff4202846c598123c785fac4a88877c6f5285cead4",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,

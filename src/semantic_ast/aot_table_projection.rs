@@ -1,12 +1,34 @@
 //! Table metadata projected from Scheme-classified graph cells.
 
 use super::GraphProjector;
-use crate::ast::model::{ParsedAnnotation, Table, TableCell, TableColumnAlignment, TableRow};
+use crate::ast::model::{
+    ParsedAnnotation, Table, TableCell, TableColumnAlignment, TableFormula, TableFormulaAssignment,
+    TableFormulaReference, TableFormulaReferenceKind, TableRow,
+};
 
 impl GraphProjector<'_> {
     pub(super) fn table(&mut self, id: usize) -> Table<ParsedAnnotation> {
         let row_ids = self.record(id).child_ids.clone();
         let column_alignments = self.table_column_alignments(&row_ids);
+        let formula_ids = row_ids
+            .iter()
+            .copied()
+            .filter(|&child_id| {
+                let child = self.record(child_id);
+                child.kind == "keyword"
+                    && child
+                        .field("key")
+                        .is_some_and(|key| key.eq_ignore_ascii_case("TBLFM"))
+            })
+            .collect::<Vec<_>>();
+        let formulas = formula_ids
+            .iter()
+            .filter_map(|&formula_id| self.keyword(formula_id))
+            .collect::<Vec<_>>();
+        let parsed_formulas = formula_ids
+            .into_iter()
+            .filter_map(|formula_id| self.table_formula(formula_id))
+            .collect();
         let rows = row_ids
             .into_iter()
             .filter_map(|row_id| {
@@ -32,9 +54,77 @@ impl GraphProjector<'_> {
         Table {
             rows,
             column_alignments,
-            formulas: Vec::new(),
-            parsed_formulas: Vec::new(),
+            formulas,
+            parsed_formulas,
         }
+    }
+
+    fn table_formula(&self, keyword_id: usize) -> Option<TableFormula<ParsedAnnotation>> {
+        let keyword = self.record(keyword_id);
+        let raw = keyword.field("raw-value")?.trim().to_owned();
+        let assignments = keyword
+            .child_ids
+            .iter()
+            .map(|&id| self.record(id))
+            .filter(|record| record.kind == "table-formula-value")
+            .flat_map(|value| value.child_ids.iter())
+            .map(|&id| self.record(id))
+            .filter(|record| record.kind == "table-formula-assignment")
+            .map(|record| TableFormulaAssignment {
+                raw: self.raw(record.range).trim().to_owned(),
+                lhs: record
+                    .child_ids
+                    .iter()
+                    .map(|&id| self.record(id))
+                    .find(|side| side.kind == "table-formula-lhs")
+                    .map(|side| self.raw(side.range).trim().to_owned())
+                    .unwrap_or_default(),
+                rhs: record
+                    .child_ids
+                    .iter()
+                    .map(|&id| self.record(id))
+                    .find(|side| side.kind == "table-formula-rhs")
+                    .map(|side| self.raw(side.range).trim().to_owned())
+                    .unwrap_or_default(),
+                flags: record
+                    .fields
+                    .iter()
+                    .filter(|field| field.name == "flag")
+                    .map(|field| field.value.trim().to_owned())
+                    .filter(|flag| !flag.is_empty())
+                    .collect(),
+                references: record
+                    .child_ids
+                    .iter()
+                    .flat_map(|&side_id| self.record(side_id).child_ids.iter())
+                    .filter_map(|&reference_id| {
+                        let reference = self.record(reference_id);
+                        if reference.kind != "table-formula-reference" {
+                            return None;
+                        }
+                        let (raw, kind) = if let Some(raw) = reference.field("field") {
+                            (raw, TableFormulaReferenceKind::Field)
+                        } else if let Some(raw) = reference.field("row") {
+                            (raw, TableFormulaReferenceKind::Row)
+                        } else {
+                            (
+                                reference.field("remote")?,
+                                TableFormulaReferenceKind::Remote,
+                            )
+                        };
+                        Some(TableFormulaReference {
+                            raw: raw.to_owned(),
+                            kind,
+                        })
+                    })
+                    .collect(),
+            })
+            .collect();
+        Some(TableFormula {
+            ann: self.annotation(keyword.range),
+            raw,
+            assignments,
+        })
     }
 
     fn table_cell(&mut self, id: usize) -> TableCell<ParsedAnnotation> {
