@@ -254,7 +254,39 @@ impl HtmlRenderer<'_> {
                 let (start, end) = self.bounds(id);
                 self.output.push_str(&self.source[start..end]);
             }
+            "statistics-cookie" | "macro" | "inline-babel-call" => {
+                let (start, end) = self.bounds(id);
+                let _ = write!(self.output, "{}", HtmlEscape(&self.source[start..end]));
+            }
+            "footnote-reference" => {
+                let label = self.document.records()[id]
+                    .field("label")
+                    .unwrap_or_default();
+                if label.is_empty() {
+                    let (start, end) = self.bounds(id);
+                    let _ = write!(self.output, "{}", HtmlEscape(&self.source[start..end]));
+                } else {
+                    let _ = write!(
+                        self.output,
+                        "<sup class=\"footnote-reference\"><a href=\"#fn-{}\">{}</a></sup>",
+                        HtmlEscape(label),
+                        HtmlEscape(label)
+                    );
+                }
+            }
+            "footnote-definition" => self.render_footnote_definition(id)?,
             "src-block" => self.render_source_block(id),
+            "inline-src-block" => {
+                let record = &self.document.records()[id];
+                let language = record.field("language").unwrap_or_default();
+                let value = record.field("value").unwrap_or_default();
+                let _ = write!(
+                    self.output,
+                    "<code class=\"src src-{}\">{}</code>",
+                    HtmlEscape(language),
+                    HtmlEscape(value)
+                );
+            }
             "example-block" | "fixed-width" => {
                 self.output.push_str("<pre class=\"example\">");
                 let body = self.record(id).field("body").unwrap_or_default().to_owned();
@@ -416,6 +448,20 @@ impl HtmlRenderer<'_> {
             self.render(child)?;
         }
         self.output.push_str(close);
+        Ok(())
+    }
+
+    fn render_footnote_definition(&mut self, id: usize) -> Result<(), String> {
+        let label = self.record(id).field("label").unwrap_or_default().to_owned();
+        let _ = write!(
+            self.output,
+            "<aside class=\"footnote\" id=\"fn-{}\">",
+            HtmlEscape(&label)
+        );
+        for child in self.record(id).child_ids.clone() {
+            self.render(child)?;
+        }
+        self.output.push_str("</aside>");
         Ok(())
     }
 

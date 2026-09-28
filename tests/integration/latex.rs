@@ -40,6 +40,38 @@ fn main() {
 }
 
 #[test]
+fn latex_table_formula_is_metadata_not_a_row() {
+    let org = Org::parse("| Name | Value |\n|------+-------|\n| alpha | 1 |\n#+TBLFM: @2$2=1\n");
+    let table = org
+        .records()
+        .iter()
+        .find(|record| record.kind == "table")
+        .expect("Scheme must classify the table");
+    insta::assert_snapshot!(org.try_latex_record(table.id).unwrap(), @r"
+\begin{tabular}{ll}
+Name & Value \\
+\hline
+alpha & 1 \\
+\end{tabular}
+");
+}
+
+#[test]
+fn latex_footnote_definition_preserves_its_label_and_body() {
+    let org = Org::parse("A [fn:bench].\n\n[fn:bench] Note.\n");
+    let definition = org
+        .records()
+        .iter()
+        .find(|record| record.kind == "footnote-definition")
+        .expect("Scheme must classify the footnote definition");
+    insta::assert_snapshot!(org.try_latex_record(definition.id).unwrap(), @r###"
+\begin{quote}\textsuperscript{bench} Note.
+
+\end{quote}
+"###);
+}
+
+#[test]
 fn latex_export_preserves_latex_specific_input() {
     insta::assert_snapshot!(
         Org::parse(

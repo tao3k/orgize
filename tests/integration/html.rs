@@ -236,6 +236,34 @@ fn table_formula_is_metadata_not_html_row() {
 }
 
 #[test]
+fn inline_source_uses_scheme_classified_language_and_escaped_body() {
+    insta::assert_snapshot!(
+        Org::parse("before src_rust{let x = 1 < 2;} after").to_html(),
+        @r#"<main><section><p>before <code class="src src-rust">let x = 1 &lt; 2;</code> after</p></section></main>"#
+    );
+}
+
+#[test]
+fn inline_babel_call_is_escaped_source_text() {
+    insta::assert_snapshot!(
+        Org::parse("call_square(1 < 2)").to_html(),
+        @"<main><section><p>call_square(1 &lt; 2)</p></section></main>"
+    );
+}
+
+#[test]
+fn footnote_reference_and_definition_share_an_anchor() {
+    insta::assert_snapshot!(
+        Org::parse("A [fn:bench].\n\n[fn:bench] Note.\n").to_html(),
+        @r###"
+<main><section><p>A <sup class="footnote-reference"><a href="#fn-bench">bench</a></sup>.
+</p><aside class="footnote" id="fn-bench"><p> Note.
+</p></aside></section></main>
+"###
+    );
+}
+
+#[test]
 fn line_break() {
     insta::assert_debug_snapshot!(
         Org::parse("aa\\\\\nbb").to_html(),

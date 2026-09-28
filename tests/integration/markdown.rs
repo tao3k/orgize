@@ -121,6 +121,15 @@ fn markdown_export_can_render_subtrees() {
 }
 
 #[test]
+fn markdown_footnote_reference_and_definition_share_a_label() {
+    insta::assert_snapshot!(Org::parse("A [fn:bench].\n\n[fn:bench] Note.\n").to_markdown(), @r###"
+A [^bench].
+
+[^bench]: Note.
+"###);
+}
+
+#[test]
 fn markdown_export_options_control_special_strings_and_entities() {
     let org = Org::parse(r#"a -- b --- c... don't \- \alpha{}"#);
     let rendered = org.to_markdown_with_options(MarkdownExportOptions {

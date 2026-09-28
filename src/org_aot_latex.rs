@@ -200,6 +200,20 @@ impl LatexRenderer<'_> {
             "quote-block" | "verse-block" | "center-block" => self.container(id)?,
             "plain-list" => self.list(id)?,
             "item" => self.item(id)?,
+            "footnote-definition" => {
+                let label = self.record(id).field("label").unwrap_or_default().to_owned();
+                self.blank_line();
+                let _ = write!(
+                    self.output,
+                    "\\begin{{quote}}\\textsuperscript{{{}}}",
+                    LatexEscape(&label)
+                );
+                for child in self.record(id).child_ids.clone() {
+                    self.render(child)?;
+                }
+                self.newline();
+                self.output.push_str("\\end{quote}\n");
+            }
             "table" => self.table(id)?,
             "horizontal-rule" => {
                 self.newline();
@@ -458,6 +472,14 @@ impl LatexRenderer<'_> {
         self.newline();
         let _ = writeln!(self.output, "\\begin{{tabular}}{{{}}}", "l".repeat(columns));
         for row in rows {
+            let record = self.record(row);
+            if record.kind == "keyword"
+                && record
+                    .field("key")
+                    .is_some_and(|key| key.eq_ignore_ascii_case("TBLFM"))
+            {
+                continue;
+            }
             if self.record(row).kind == "table-rule-row" {
                 self.output.push_str("\\hline\n");
                 continue;

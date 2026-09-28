@@ -164,6 +164,19 @@ impl MarkdownRenderer<'_> {
                 self.render_paragraph(id)?;
                 self.newline();
             }
+            "footnote-definition" => {
+                self.source_blank_line(id);
+                let label = self.document.records()[id]
+                    .field("label")
+                    .unwrap_or_default();
+                self.output.push_str("[^");
+                self.output.push_str(label);
+                self.output.push_str("]:");
+                for child in child_ids {
+                    self.render(child)?;
+                }
+                self.newline();
+            }
             "src-block" | "example-block" | "fixed-width" => {
                 let language = self
                     .record(id)
@@ -236,9 +249,19 @@ impl MarkdownRenderer<'_> {
                 }
             }
             "citation" | "timestamp" | "latex-fragment" | "latex-environment"
-            | "statistics-cookie" | "macro" | "inline-babel-call" | "footnote-reference" => {
+            | "statistics-cookie" | "macro" | "inline-babel-call" => {
                 let value = self.source(self.record(id)).to_owned();
                 self.text(&value);
+            }
+            "footnote-reference" => {
+                if let Some(label) = self.document.records()[id].field("label") {
+                    self.output.push_str("[^");
+                    self.output.push_str(label);
+                    self.output.push(']');
+                } else {
+                    let value = self.source(self.record(id)).to_owned();
+                    self.text(&value);
+                }
             }
             "inline-src-block" => {
                 let value = self
