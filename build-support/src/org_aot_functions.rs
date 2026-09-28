@@ -38,6 +38,13 @@ pub fn write_org_aot_functions() {
         "org_link_search_value",
         "org_expand_link_abbreviation",
         "org_affiliated_keyword_p",
+        "keyword_word",
+        "keyword_words",
+        "keyword_tag_words",
+        "keyword_first_word",
+        "keyword_rest",
+        "keyword_option_value",
+        "keyword_option_present_p",
     ] {
         let source = source_dir.join(format!("{name}.ir.json"));
         println!("cargo:rerun-if-changed={}", source.display());

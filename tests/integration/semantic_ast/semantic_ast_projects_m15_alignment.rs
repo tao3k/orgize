@@ -87,6 +87,15 @@ fn semantic_ast_projects_m15_keyword_settings_and_abbreviations() {
 }
 
 #[test]
+fn semantic_ast_options_keep_last_declared_value_and_ignore_bare_words() {
+    let doc = Org::parse("#+OPTIONS: H:2 H -:nil e:t e:\n").document();
+    assert_clean_projection(&doc);
+    assert_eq!(doc.export_settings.headline_levels, Some(2));
+    assert_eq!(doc.export_settings.special_strings, Some(false));
+    assert_eq!(doc.export_settings.expand_entities, None);
+}
+
+#[test]
 fn semantic_ast_projects_m15_anchors_link_defaults_and_footnotes() {
     let doc = Org::parse(
         r#"* Anchor *Title*

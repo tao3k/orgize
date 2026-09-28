@@ -50,6 +50,14 @@
         (only-in "citation-functions.ss"
                  citation-style citation-style-rust
                  citation-variant citation-variant-rust)
+        (only-in "document-keyword-properties.ss"
+                 keyword-word keyword-word-rust
+                 keyword-words keyword-words-rust
+                 keyword-tag-words keyword-tag-words-rust
+                 keyword-first-word keyword-first-word-rust
+                 keyword-rest keyword-rest-rust
+                 keyword-option-value keyword-option-value-rust
+                 keyword-option-present? keyword-option-present-rust)
         (only-in "affiliated-properties.ss"
                  org-affiliated-keyword? org-affiliated-keyword-rust)
         (only-in "catalog.ss" +org-affiliated-keywords+)
@@ -208,6 +216,34 @@
              => "https://host/a%2Fb")
       (check (org-expand-link-abbreviation "https://host/" "a/b" "a%2Fb")
              => "https://host/a/b"))
+    (test-case "document keyword values use Scheme-owned AOT algorithms"
+      (check-org-headline-ir keyword-word-rust 'keyword_word
+       "languages/org/v1/modules/org-elements/generated/keyword_word.ir.json")
+      (check-org-headline-ir keyword-words-rust 'keyword_words
+       "languages/org/v1/modules/org-elements/generated/keyword_words.ir.json")
+      (check-org-headline-ir keyword-tag-words-rust 'keyword_tag_words
+       "languages/org/v1/modules/org-elements/generated/keyword_tag_words.ir.json")
+      (check-org-headline-ir keyword-first-word-rust 'keyword_first_word
+       "languages/org/v1/modules/org-elements/generated/keyword_first_word.ir.json")
+      (check-org-headline-ir keyword-rest-rust 'keyword_rest
+       "languages/org/v1/modules/org-elements/generated/keyword_rest.ir.json")
+      (check-org-headline-ir keyword-option-value-rust 'keyword_option_value
+       "languages/org/v1/modules/org-elements/generated/keyword_option_value.ir.json")
+      (check-org-headline-ir keyword-option-present-rust 'keyword_option_present_p
+       "languages/org/v1/modules/org-elements/generated/keyword_option_present_p.ir.json")
+      (check (keyword-word "  evidence ") => "evidence")
+      (check (keyword-words " alpha  beta\tgamma ")
+             => '("alpha" "beta" "gamma"))
+      (check (keyword-tag-words " :alpha:beta:  gamma : ")
+             => '("alpha" "beta" "gamma"))
+      (check (keyword-first-word "  name   value with spaces ") => "name")
+      (check (keyword-rest "  name   value with spaces ")
+             => "value with spaces")
+      (check (keyword-option-value "H:2 -:nil e:t H:3" "H") => "3")
+      (check (keyword-option-value "H:2 H" "H") => "2")
+      (check (keyword-option-value "H:2 -:nil" "missing") => "")
+      (check (keyword-option-present? "H:2 H:" "H") => #t)
+      (check (keyword-option-present? "H -:nil" "H") => #f))
     (test-case "citation header style is Scheme-owned and AOT projected"
       (check-org-headline-ir
        citation-style-rust 'citation_style

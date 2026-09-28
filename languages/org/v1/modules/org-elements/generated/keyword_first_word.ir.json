@@ -1,0 +1,1 @@
+{"parameters":[{"ty":"&str","name":"value"}],"name":"keyword_first_word","schema":"gerbil-scheme-rust.rust-function-ir.v1","body":{"result":{"method":"to_owned","receiver":{"value":{"value":"value","kind":"name"},"kind":"first_word"},"kind":"method","arguments":[]},"bindings":[]},"result":"String"}

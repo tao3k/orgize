@@ -89,15 +89,12 @@ fn push_unique(values: &mut Vec<String>, value: String) {
 }
 
 fn keyword_property(keyword: &Keyword<ParsedAnnotation>) -> Option<Property<ParsedAnnotation>> {
-    let value = keyword.value.trim();
-    let (key, rest) = value
-        .split_once(char::is_whitespace)
-        .map(|(key, rest)| (key.trim(), rest.trim()))
-        .unwrap_or((value, ""));
+    let key = crate::org_aot::keyword_first_word(&keyword.value);
+    let rest = crate::org_aot::keyword_rest(&keyword.value);
     (!key.is_empty()).then(|| Property {
         ann: keyword.ann.clone(),
-        key: key.to_string(),
-        value: rest.to_string(),
-        duration: OrgDuration::parse(rest.to_string()),
+        key,
+        value: rest.clone(),
+        duration: OrgDuration::parse(rest),
     })
 }

@@ -5,17 +5,13 @@ use super::{
 };
 
 pub(super) fn parse_tags(value: &str) -> Vec<String> {
-    value
-        .split(':')
-        .map(str::trim)
-        .filter(|tag| !tag.is_empty())
-        .map(ToOwned::to_owned)
-        .collect()
+    crate::org_aot::keyword_tag_words(value)
 }
 
 pub(super) fn parse_tag_definitions(value: &str) -> Vec<TagDefinition> {
     let mut definitions: Vec<TagDefinition> = Vec::new();
-    let tokens = value.split_whitespace().collect::<Vec<_>>();
+    let words = crate::org_aot::keyword_words(value);
+    let tokens = words.iter().map(String::as_str).collect::<Vec<_>>();
     let mut group_stack: Vec<TagGroupState> = Vec::new();
     for (index, token) in tokens.iter().enumerate() {
         match *token {
@@ -85,11 +81,7 @@ pub(super) fn parse_tag_definitions(value: &str) -> Vec<TagDefinition> {
 }
 
 pub(super) fn split_words(value: &str) -> Vec<String> {
-    value
-        .split_whitespace()
-        .filter(|word| !word.is_empty())
-        .map(ToOwned::to_owned)
-        .collect()
+    crate::org_aot::keyword_words(value)
 }
 
 fn shortcut_token(token: &str) -> Option<&str> {
@@ -135,25 +127,29 @@ fn split_tag_shortcut(token: &str) -> (&str, Option<&str>) {
 }
 
 pub(super) fn apply_options_keyword(value: &str, settings: &mut ExportSettings) {
-    for token in value.split_whitespace() {
-        let Some((key, value)) = token.split_once(':') else {
-            continue;
-        };
-        match key {
-            "H" => settings.headline_levels = value.parse().ok(),
-            "-" => settings.special_strings = bool_option(value),
-            "e" => settings.expand_entities = bool_option(value),
-            _ => {}
-        }
+    let levels = crate::org_aot::keyword_option_value(value, "H");
+    if crate::org_aot::keyword_option_present(value, "H") {
+        settings.headline_levels = levels.parse().ok();
+    }
+    let special_strings = crate::org_aot::keyword_option_value(value, "-");
+    if crate::org_aot::keyword_option_present(value, "-") {
+        settings.special_strings = bool_option(&special_strings);
+    }
+    let expand_entities = crate::org_aot::keyword_option_value(value, "e");
+    if crate::org_aot::keyword_option_present(value, "e") {
+        settings.expand_entities = bool_option(&expand_entities);
     }
 }
 
 pub(super) fn link_abbreviation(keyword: &Keyword<ParsedAnnotation>) -> Option<LinkAbbreviation> {
-    let value = keyword.value.trim();
-    let (name, replacement) = value.split_once(char::is_whitespace)?;
+    let name = crate::org_aot::keyword_first_word(&keyword.value);
+    let replacement = crate::org_aot::keyword_rest(&keyword.value);
+    if name.is_empty() || replacement.is_empty() {
+        return None;
+    }
     Some(LinkAbbreviation {
         name: name.to_ascii_lowercase(),
-        replacement: replacement.trim().to_string(),
+        replacement,
         raw_value: keyword.value.clone(),
     })
 }

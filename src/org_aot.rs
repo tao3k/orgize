@@ -28,6 +28,8 @@ mod graph;
 mod citation_functions;
 #[path = "org_aot_contract_plan.rs"]
 mod contract_plan;
+#[path = "org_aot_document_keyword_functions.rs"]
+mod document_keyword_functions;
 #[path = "org_aot_headline_functions.rs"]
 mod headline_functions;
 #[path = "org_aot_headline_view.rs"]
@@ -175,6 +177,30 @@ pub(crate) fn org_link_search_value(search: &str) -> &str {
 
 pub(crate) fn headline_anchor_slug(title: &str) -> String {
     headline_functions::headline_anchor_slug(title)
+}
+
+pub(crate) fn keyword_words(value: &str) -> Vec<String> {
+    document_keyword_functions::keyword_words(value)
+}
+
+pub(crate) fn keyword_tag_words(value: &str) -> Vec<String> {
+    document_keyword_functions::keyword_tag_words(value)
+}
+
+pub(crate) fn keyword_first_word(value: &str) -> String {
+    document_keyword_functions::keyword_first_word(value)
+}
+
+pub(crate) fn keyword_rest(value: &str) -> String {
+    document_keyword_functions::keyword_rest(value)
+}
+
+pub(crate) fn keyword_option_value(value: &str, key: &str) -> String {
+    document_keyword_functions::keyword_option_value(value, key)
+}
+
+pub(crate) fn keyword_option_present(value: &str, key: &str) -> bool {
+    document_keyword_functions::keyword_option_present_p(value, key)
 }
 
 pub(crate) fn org_expand_link_abbreviation(
