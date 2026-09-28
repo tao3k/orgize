@@ -17,10 +17,10 @@ a Rust Org recognizer is not a valid way to close those gaps.
 * Current gates
 
 At the current PR working tree on 2026-09-28, the Scheme suite reports
-=HARNESS-OK= and =OK=. The latest serial Rust integration target reports *430
-passed, 18 failed, 2 ignored* after restoring archive inheritance, reviewing
-the Scheme slug snapshot, and projecting Scheme-parsed table-cell links into
-Elements/Contract. Rust library tests pass (63 passed, 1 ignored), strict
+=HARNESS-OK= and =OK=. The latest serial Rust integration target reports *431
+passed, 17 failed, 2 ignored* after restoring archive inheritance, reviewing
+the Scheme slug and Elements fixture snapshots, and projecting Scheme-parsed
+table-cell links into Elements/Contract. Rust library tests pass (63 passed, 1 ignored), strict
 workspace Clippy with =-D warnings= passes, and =cargo fmt --check= passes
 on this working tree. The Scheme suite
 still prints an upstream =rust-module= undefined warning despite its passing
@@ -32,7 +32,7 @@ closure; check the exact pushed head and platform CI again after every change.
 ** Serial integration failure ledger
 
 The serial run at =972cf48= reproduced 23 failures (425 passed, 2 ignored).
-The working tree now has 18 failures (430 passed, 2 ignored). Grouping is by
+The working tree now has 17 failures (431 passed, 2 ignored). Grouping is by
 the first missing ownership boundary, not by the last assertion or by a
 changed snapshot. Several consumers appear in more than one feature family;
 each test is counted once below. Re-run this ledger after each grouped repair
@@ -44,11 +44,12 @@ instead of approving =.snap.new= wholesale.
 | Attachment projection and consumers | 2 =semantic_ast_projects_attachments= cases; =lint_attachments=; =semantic_ast_projects_workspace_index=; =semantic_traversal_covers_parser_v2_surface=; =semantic_ast_projects_m25_alignment= | Scheme-owned link/property classification must reach attachment directory/link fields before inventory, lint, index, traversal, and M25 can be judged. M25 also exercises other features. |
 | Table formulas | =semantic_ast_projects_org_table_formulas=; =semantic_ast_projects_tangle_and_table_records=; =lint_table_formulas= | Associate each =TBLFM= with its table and project parsed assignments/references from Scheme, retaining keyword annotations. |
 | Babel results | =semantic_ast_projects_babel_eval=; =lint_babel= | Complete affiliated/source/result ancestry and result replacement from the AOT graph. |
-| Elements bridge | =semantic_ast_projects_elements_bridge= Git-scoped snapshot | Compare source-backed graph ancestry and ranges; only then update the snapshot. |
 | Citation recovery | =semantic_ast_projects_m15_alignment= malformed segment | Scheme parser must emit the diagnostic without a Rust syntax recognizer. |
 
 The archive/lifecycle pair, contract binding, agenda anchor, and list-bullet
-assertion now pass in the serial full integration target. The contract fix
+assertion now pass in the serial full integration target. The Git-scoped
+Elements fixture also passes after an explicit six-paragraph source-text
+assertion justified its 80-record snapshot. The contract fix
 comes from Scheme table-cell inline events plus graph-backed Element objects,
 not a second Rust Org parser. Before a performance claim, benchmark table-heavy
 parsing and document projection against the prior AOT head.
@@ -79,6 +80,6 @@ assertion; generated =.snap.new= files remain unapproved candidates. Numeric
 graph is otherwise unchanged. The bare-AST snapshot was reviewed and updated
 for Scheme-owned exact list bullets, a description body's separator-free text,
 an unnamed source block's absent =NAME=, and coalesced contiguous plain text;
-explicit assertions cover the first three. The 18 failing integration tests
+explicit assertions cover the first three. The 17 failing integration tests
 mean AST and consumer accuracy is not yet established across the full
 supported surface.
