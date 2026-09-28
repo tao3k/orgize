@@ -1287,6 +1287,14 @@
             (TableTrivia 13 14))
            (OrgTableRuleRow (TableRuleText 14 24)))
           (OrgParagraph (OrgTextLine (TextLine 24 30)))))))
+    (test-case "table.el border and cells remain one Scheme Element"
+      (check-org-ast-with parse-org-rowan-events
+        "  +---+\n  | a |\n  +---+\n"
+        (OrgFile
+         (OrgTableEl
+          (TableElLine 0 8)
+          (TableElLine 8 16)
+          (TableElLine 16 24)))))
     (test-case "table delimiter escaping follows preceding backslash parity"
       (check-org-ast-with parse-org-rowan-events
         "| a\\|b | c |\n"

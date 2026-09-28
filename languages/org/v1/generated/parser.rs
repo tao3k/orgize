@@ -41,6 +41,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgPlainList", category: KindCategory::Node },
     KindSpec { name: "OrgListItem", category: KindCategory::Node },
     KindSpec { name: "OrgTable", category: KindCategory::Node },
+    KindSpec { name: "OrgTableEl", category: KindCategory::Node },
     KindSpec { name: "OrgTableRow", category: KindCategory::Node },
     KindSpec { name: "OrgTableRuleRow", category: KindCategory::Node },
     KindSpec { name: "OrgTableCell", category: KindCategory::Node },
@@ -167,6 +168,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "TableCellText", category: KindCategory::Token },
     KindSpec { name: "TableTrivia", category: KindCategory::Token },
     KindSpec { name: "TableRuleText", category: KindCategory::Token },
+    KindSpec { name: "TableElLine", category: KindCategory::Token },
     KindSpec { name: "ListBullet", category: KindCategory::Token },
     KindSpec { name: "ListCounterValue", category: KindCategory::Token },
     KindSpec { name: "ListCheckboxValue", category: KindCategory::Token },
@@ -189,10 +191,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 71 },
-    TerminalSpec { name: "block-begin", syntax_kind: 76 },
-    TerminalSpec { name: "block-end", syntax_kind: 93 },
-    TerminalSpec { name: "text", syntax_kind: 94 },
+    TerminalSpec { name: "headline", syntax_kind: 72 },
+    TerminalSpec { name: "block-begin", syntax_kind: 77 },
+    TerminalSpec { name: "block-end", syntax_kind: 94 },
+    TerminalSpec { name: "text", syntax_kind: 95 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -367,7 +369,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:f609cbc75ba7c07cc32ad36f2e3ec78a7a35691b50b07ae38cb77dce84c0c911",
+    grammar_digest: "sha256:91477d972b70066cc141ad946a0871632e6a9ecf59eaf100d0f2780953564372",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,

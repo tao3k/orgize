@@ -18,14 +18,22 @@
 (def table-index '(line-index table-byte-index))
 (def table-cell-start '(state-offset table-cell-start))
 (def table-line-predicate `(line-byte-equal? ,table-indent ,table-byte))
+(def table-el-border?
+  `(and (line-byte-equal? ,table-indent 43)
+        (line-bytes-all-in? ,table-indent ,table-content-end
+                            (43 45 9 32))
+        (line-bytes-any-in? ,table-indent ,table-content-end (45))))
 
 (def table-event-initial
-  '((table-open #f) (table-seen-separator #f) (table-escaped #f)
+  '((table-open #f) (table-el-open #f)
+    (table-seen-separator #f) (table-escaped #f)
     (table-cell-start 0)))
 
 (def table-close-form
   '(if (state table-open)
-       ((finish-node) (set-bool table-open (bool #f))) ()))
+       ((finish-node) (set-bool table-open (bool #f)))
+       ((if (state table-el-open)
+            ((finish-node) (set-bool table-el-open (bool #f))) ()))))
 
 (def (table-cell-forms until)
   `((start-node ,(table-line-cell-node table-rule))
@@ -67,11 +75,21 @@
         (set-bool table-escaped (bool #f)))))
 
 (def (table-or-element-form close-paragraph fixed-width-close otherwise)
-  `(if ,table-line-predicate
+  `(if (or ,table-el-border?
+           (and (state table-el-open) ,table-line-predicate))
        (,fixed-width-close ,close-paragraph
-        (if (not (state table-open))
-            ((start-node ,(table-line-table-node table-rule))
-             (set-bool table-open (bool #t))) ())
-        ,(table-row-form)
+        (if (not (state table-el-open))
+            ((if (state table-open)
+                 ((finish-node) (set-bool table-open (bool #f))) ())
+             (start-node OrgTableEl)
+             (set-bool table-el-open (bool #t))) ())
+        (token TableElLine start end)
         (set-bool after-heading (bool #f)))
-       (,table-close-form ,otherwise)))
+       ((if ,table-line-predicate
+            (,fixed-width-close ,close-paragraph
+             (if (not (state table-open))
+                 ((start-node ,(table-line-table-node table-rule))
+                  (set-bool table-open (bool #t))) ())
+             ,(table-row-form)
+             (set-bool after-heading (bool #f)))
+            (,table-close-form ,otherwise)))))

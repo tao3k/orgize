@@ -95,6 +95,7 @@
                (field 'ListTagValue "tag")
                (field 'ListTrivia "trivia" 'each)))
    (node 'OrgTable "element" "table" '())
+   (node 'OrgTableEl "element" "table-el" '())
    (node 'OrgTableRow "element" "table-row" '())
    (node 'OrgTableRuleRow "element" "table-rule-row" '())
    (node 'OrgTableCell "object" "table-cell"

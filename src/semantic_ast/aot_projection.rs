@@ -528,6 +528,9 @@ impl<'a> GraphProjector<'a> {
             "paragraph" => ElementData::Paragraph(self.paragraph_objects(id)),
             "plain-list" => ElementData::List(self.list(id)),
             "table" => ElementData::Table(self.table(id)),
+            "table-el" => ElementData::TableEl {
+                raw: self.raw(range).to_owned(),
+            },
             "property-drawer" => ElementData::PropertyDrawer(
                 record
                     .child_ids

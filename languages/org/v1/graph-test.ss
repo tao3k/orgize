@@ -44,7 +44,7 @@
                             OrgHorizontalRule OrgFixedWidth
                             OrgKeyword OrgBabelCall OrgPlanning OrgClock
                             OrgPlainList OrgListItem
-                            OrgTable OrgTableRow OrgTableRuleRow OrgTableCell
+                            OrgTable OrgTableEl OrgTableRow OrgTableRuleRow OrgTableCell
                             OrgNodeProperty OrgSourceBlock OrgDynamicBlock OrgSpecialBlock
                             OrgLatexEnvironment
                             OrgQuoteBlock
@@ -67,7 +67,7 @@
                                 "horizontal-rule" "fixed-width"
                                 "keyword" "babel-call"
                                 "planning" "clock"
-                                "plain-list" "item" "table" "table-row"
+                                "plain-list" "item" "table" "table-el" "table-row"
                                 "table-rule-row" "table-cell"
                                 "node-property" "src-block" "dynamic-block" "special-block"
                                 "latex-environment"
