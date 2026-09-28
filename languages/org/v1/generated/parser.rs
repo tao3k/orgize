@@ -9,6 +9,9 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgHeadlineTitle", category: KindCategory::Node },
     KindSpec { name: "OrgKeywordValue", category: KindCategory::Node },
     KindSpec { name: "OrgKeywordAttributes", category: KindCategory::Node },
+    KindSpec { name: "OrgKeywordInclude", category: KindCategory::Node },
+    KindSpec { name: "OrgIncludePath", category: KindCategory::Node },
+    KindSpec { name: "OrgIncludeTail", category: KindCategory::Node },
     KindSpec { name: "OrgKeywordRawValue", category: KindCategory::Node },
     KindSpec { name: "OrgLinkDescription", category: KindCategory::Node },
     KindSpec { name: "OrgSourceBlock", category: KindCategory::Node },
@@ -178,6 +181,11 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "KeywordOptional", category: KindCategory::Token },
     KindSpec { name: "KeywordValue", category: KindCategory::Token },
     KindSpec { name: "KeywordTrivia", category: KindCategory::Token },
+    KindSpec { name: "IncludePathDelimiter", category: KindCategory::Token },
+    KindSpec { name: "IncludePathValue", category: KindCategory::Token },
+    KindSpec { name: "IncludePathUnclosed", category: KindCategory::Token },
+    KindSpec { name: "IncludeArgument", category: KindCategory::Token },
+    KindSpec { name: "IncludeTrivia", category: KindCategory::Token },
     KindSpec { name: "PlanningKey", category: KindCategory::Token },
     KindSpec { name: "PlanningValue", category: KindCategory::Token },
     KindSpec { name: "PlanningTrivia", category: KindCategory::Token },
@@ -191,10 +199,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 72 },
-    TerminalSpec { name: "block-begin", syntax_kind: 77 },
-    TerminalSpec { name: "block-end", syntax_kind: 94 },
-    TerminalSpec { name: "text", syntax_kind: 95 },
+    TerminalSpec { name: "headline", syntax_kind: 75 },
+    TerminalSpec { name: "block-begin", syntax_kind: 80 },
+    TerminalSpec { name: "block-end", syntax_kind: 97 },
+    TerminalSpec { name: "text", syntax_kind: 98 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -360,16 +368,16 @@ static PRODUCTIONS: &[Production] = &[
     Production { lhs: "$source-block.2", rhs: &[], reduction: Reduction::Concat, dynamic_precedence: 0 },
     Production { lhs: "$source-block.2", rhs: &[Operand { symbol: Symbol::Nonterminal("$source-block.2"), actions: &[] }, Operand { symbol: Symbol::Terminal(Terminal::Token("text")), actions: &[OperandAction::Field("body")] }], reduction: Reduction::Concat, dynamic_precedence: 0 },
     Production { lhs: "$source-block.1", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("block-begin")), actions: &[OperandAction::Field("begin")] }, Operand { symbol: Symbol::Nonterminal("$source-block.2"), actions: &[] }, Operand { symbol: Symbol::Terminal(Terminal::Token("block-end")), actions: &[OperandAction::Field("end")] }], reduction: Reduction::Concat, dynamic_precedence: 0 },
-    Production { lhs: "source-block", rhs: &[Operand { symbol: Symbol::Nonterminal("$source-block.1"), actions: &[OperandAction::Alias(7)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
+    Production { lhs: "source-block", rhs: &[Operand { symbol: Symbol::Nonterminal("$source-block.1"), actions: &[OperandAction::Alias(10)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
     Production { lhs: "headline", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("headline")), actions: &[OperandAction::Field("line"), OperandAction::Alias(1)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
-    Production { lhs: "text-line", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("text")), actions: &[OperandAction::Field("line"), OperandAction::Alias(21)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
+    Production { lhs: "text-line", rhs: &[Operand { symbol: Symbol::Terminal(Terminal::Token("text")), actions: &[OperandAction::Field("line"), OperandAction::Alias(24)] }], reduction: Reduction::Pass, dynamic_precedence: 0 },
 ];
 
 pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:91477d972b70066cc141ad946a0871632e6a9ecf59eaf100d0f2780953564372",
+    grammar_digest: "sha256:bec2538422bca4dd285afbd6d4a0f227debb7509d0d25c716d68dd18d69ffa39",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,

@@ -17,10 +17,10 @@ use super::lifecycle_model::ArchiveState;
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
     Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind, Document, Drawer,
-    Element, ElementData, FootnoteDef, Inlinetask, InlinetaskEnd, Keyword, KeywordAttribute, Link,
-    List, ListItem, ListType, MarkupKind, Object, ObjectData, ParsedAnnotation, ParsedAst,
-    Planning, Property, Section, Table, TableCell, TableRow, TodoKeyword, TodoState,
-    UnsupportedSyntaxKind,
+    Element, ElementData, FootnoteDef, IncludeDirective, IncludeOption, Inlinetask, InlinetaskEnd,
+    Keyword, KeywordAttribute, Link, List, ListItem, ListType, MarkupKind, Object, ObjectData,
+    ParsedAnnotation, ParsedAst, Planning, Property, Section, Table, TableCell, TableRow,
+    TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 use super::preprocessing::{macro_definition, split_macro_args};
 use super::prescan::{SemanticPrescan, collect_document_keyword};
@@ -40,6 +40,8 @@ impl OrgAotDocument {
 
 #[path = "aot_block_projection.rs"]
 mod block_projection;
+#[path = "aot_include_projection.rs"]
+mod include_projection;
 #[path = "aot_inline_fragment.rs"]
 mod inline_fragment;
 #[path = "aot_target_projection.rs"]
@@ -115,6 +117,11 @@ impl<'a> GraphProjector<'a> {
                         kind: DiagnosticKind::Conversion,
                         message,
                     }),
+                }
+            } else if keyword.key.eq_ignore_ascii_case("INCLUDE") {
+                match self.include_directive(id, keyword) {
+                    Ok(include) => prescan.includes.push(include),
+                    Err(diagnostic) => prescan.diagnostics.push(diagnostic),
                 }
             } else {
                 collect_document_keyword(keyword, &mut prescan);

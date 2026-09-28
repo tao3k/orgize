@@ -27,6 +27,7 @@
                  inlinetask-end-forms inlinetask-pending-close-form)
         (only-in "event-source-header.ss"
                  event-source-header-initial event-source-header-forms)
+        (only-in "event-include.ss" event-include-initial event-include-forms)
         (only-in "event-table.ss"
                  table-event-initial table-close-form table-or-element-form)
         (only-in "event-list.ss"
@@ -39,7 +40,8 @@
                  latex-environment-initial latex-future-scan
                  latex-open-form latex-body-form)
         (only-in "objects.ss"
-                 make-org-event-block org-event-block-id org-event-block-rule))
+                 make-org-event-block make-org-event-helper
+                 org-event-block-id org-event-block-rule))
 (export org-event-initial org-event-line-forms org-event-finish-forms
         org-event-helpers)
 
@@ -593,7 +595,12 @@
    inlinetask-event-initial
    event-source-header-initial))
 
-(def org-event-helpers paragraph-event-helpers)
+(def org-event-helpers
+  (append paragraph-event-helpers
+          (list (make-org-event-helper
+                 'include-value
+                 (append event-include-initial event-source-header-initial)
+                 (event-include-forms 'start 'end)))))
 
 (def inlinetask-pending-keep-condition
   `(or (state property-drawer-open)

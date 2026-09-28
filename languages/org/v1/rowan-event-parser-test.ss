@@ -1088,6 +1088,62 @@
             (SourceHeaderTrivia 34 35)
             (SourceHeaderValue 35 42)))
           (KeywordTrivia 42 43)))))
+    (test-case "INCLUDE path and options are source-backed Scheme events"
+      (check-org-ast-with parse-org-rowan-events
+        "#+INCLUDE: x.org\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 9) (KeywordTrivia 9 10)
+          (OrgKeywordRawValue
+           (KeywordTrivia 10 11)
+           (OrgKeywordInclude
+            (OrgIncludePath (IncludePathValue 11 16))
+            (OrgIncludeTail)))
+          (KeywordTrivia 16 17))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+INCLUDE: x.org src org\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 9) (KeywordTrivia 9 10)
+          (OrgKeywordRawValue
+           (KeywordTrivia 10 11)
+           (OrgKeywordInclude
+            (OrgIncludePath (IncludePathValue 11 16))
+            (OrgIncludeTail
+             (IncludeTrivia 16 17) (IncludeArgument 17 20)
+             (IncludeTrivia 20 21) (IncludeArgument 21 24))))
+          (KeywordTrivia 24 25))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+INCLUDE: \"./chapter one.org\" src org :lines \"1-20\" :minlevel 2 :only-contents\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 9) (KeywordTrivia 9 10)
+          (OrgKeywordRawValue
+           (KeywordTrivia 10 11)
+           (OrgKeywordInclude
+            (OrgIncludePath
+             (IncludePathDelimiter 11 12) (IncludePathValue 12 29)
+             (IncludePathDelimiter 29 30))
+            (OrgIncludeTail
+             (IncludeTrivia 30 31) (IncludeArgument 31 34)
+             (IncludeTrivia 34 35) (IncludeArgument 35 38)
+             (IncludeTrivia 38 39)
+             (SourceHeaderTrivia 39 40) (SourceHeaderKey 40 45)
+             (SourceHeaderTrivia 45 46) (SourceHeaderValue 46 52)
+             (SourceHeaderTrivia 52 54) (SourceHeaderKey 54 62)
+             (SourceHeaderTrivia 62 63) (SourceHeaderValue 63 64)
+             (SourceHeaderTrivia 64 66) (SourceHeaderKey 66 79))))
+          (KeywordTrivia 79 80))))
+      (check-org-ast-with parse-org-rowan-events
+        "#+INCLUDE: \"x.org\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 9) (KeywordTrivia 9 10)
+          (OrgKeywordRawValue
+           (KeywordTrivia 10 11)
+           (OrgKeywordInclude
+            (OrgIncludePath (IncludePathUnclosed 11 17))))
+          (KeywordTrivia 17 18)))))
     (test-case "optional keyword hashes remain typed Scheme events"
       (check-org-ast-with parse-org-rowan-events
         "#+results[sha1]: prep-output\n"
