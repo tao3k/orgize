@@ -6,7 +6,6 @@ include!(concat!(env!("OUT_DIR"), "/todo_keyword_from_directives.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_content_after_todo.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_source_title.rs"));
 include!(concat!(env!("OUT_DIR"), "/planning_key_kind.rs"));
-include!(concat!(env!("OUT_DIR"), "/planning_timestamp_kind.rs"));
 include!(concat!(env!("OUT_DIR"), "/priority_token_p.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_display_title.rs"));
 include!(concat!(env!("OUT_DIR"), "/headline_comment_p.rs"));
@@ -158,7 +157,7 @@ fn scheme_source_title_aot_preserves_tag_boundary_whitespace() {
 }
 
 #[test]
-fn scheme_planning_aot_classifies_declared_keys_and_timestamp_boundaries() {
+fn scheme_planning_aot_classifies_declared_keys() {
     macro_rules! check_planning_aot {
         ($function:ident; $($input:expr => $expected:expr),+ $(,)?) => {
             $(assert_eq!($function($input), $expected, "input: {:?}", $input);)+
@@ -169,11 +168,6 @@ fn scheme_planning_aot_classifies_declared_keys_and_timestamp_boundaries() {
         "DEADLINE" => "deadline",
         "Closed" => "closed",
         "CLOCK" => "",
-    );
-    check_planning_aot!(planning_timestamp_kind;
-        "<2026-05-10 Sun>" => "active",
-        "[2026-05-10 Sun]" => "inactive",
-        "later" => "",
     );
 }
 

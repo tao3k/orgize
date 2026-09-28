@@ -27,6 +27,13 @@ still prints an upstream =rust-module= undefined warning despite its passing
 harness markers. These focused receipts do not constitute parser or release
 closure; check the exact pushed head and platform CI again after every change.
 
+The Ubuntu job at =4dbd274= exposed a clean-build failure masked by a stale
+local Cargo =OUT_DIR=: an integration test included
+=planning_timestamp_kind.rs= although no checked-in Scheme IR or build-support
+entry generated it. The obsolete test reference is removed; the Scheme event
+AST test already covers planning timestamp classification. A fresh CI run must
+confirm that no other missing generated artifacts remain.
+
 * Remaining ownership work
 
 ** Serial integration failure ledger
