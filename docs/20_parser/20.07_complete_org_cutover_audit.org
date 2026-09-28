@@ -17,11 +17,11 @@ a Rust Org recognizer is not a valid way to close those gaps.
 * Current gates
 
 At the current PR working tree on 2026-09-28, the Scheme suite reports
-=HARNESS-OK= and =OK=. The latest full Rust integration target reports *422
-passed, 24 failed, 2 ignored* after Scheme-owned =#+INCLUDE= and document
-keyword helpers were projected into the document prescan and settings. Rust
-library tests pass (63 passed, 1 ignored); strict workspace Clippy with
-=-D warnings= and formatting also pass after those changes. The Scheme suite
+=HARNESS-OK= and =OK=. The latest full Rust integration target reports *425
+passed, 23 failed, 2 ignored* after Scheme-owned table cookie classification
+was projected into column alignment metadata. Rust library tests pass (63
+passed, 1 ignored), strict workspace Clippy with =-D warnings= passes, and
+formatting passes after this table change. The Scheme suite
 still prints an upstream =rust-module= undefined warning despite its passing
 harness markers. These focused receipts do not constitute parser or release
 closure; check the exact pushed head and platform CI again after every change.
@@ -32,7 +32,7 @@ closure; check the exact pushed head and platform CI again after every change.
 |----------+------------------|
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are now covered in Scheme and Rust graph tests. List bullet tokens now include the exact horizontal separator, so the Scheme graph preserves =- =, repeated spaces, and tabs without Rust reconstruction. Keep event IR growth bounded: the table.el branch was reduced from a 3.63 MB duplicated strategy to a 2.55 MB single-fallback strategy. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, and inline timestamps now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
-| Owned semantic projection | Derive remaining link metadata, diagnostics, and lifecycle facts from graph fields without reparsing Org text in Rust. Title and rich-keyword objects, Scheme-tokenized affiliated attributes, filetags/inherited tags, effective properties and typed duration values, explicit and Scheme-generated headline anchors, timestamp metadata, clock duration, source-backed property/ID annotations, section-body spans for Elements indexing, title-object aliases for document targets and implicit link descriptions, document-level footnote registry, source-backed inline footnote subobjects via a bounded second call to the same Scheme-AOT parser, source/example block switches and body lines, Scheme-AOT link classification, document-local resolution, abbreviation template expansion, and source-backed INCLUDE arguments/options now project from the AOT graph. The footnote fragment path needs a dedicated performance receipt. |
+| Owned semantic projection | Derive remaining link metadata, diagnostics, and lifecycle facts from graph fields without reparsing Org text in Rust. Title and rich-keyword objects, Scheme-tokenized affiliated attributes, filetags/inherited tags, effective properties and typed duration values, explicit and Scheme-generated headline anchors, timestamp metadata, clock duration, source-backed property/ID annotations, section-body spans for Elements indexing, title-object aliases for document targets and implicit link descriptions, document-level footnote registry, source-backed inline footnote subobjects via a bounded second call to the same Scheme-AOT parser, source/example block switches and body lines, Scheme-AOT link classification, document-local resolution, abbreviation template expansion, source-backed INCLUDE arguments/options, and table column alignment cookies now project from the AOT graph. Table formulas remain unprojected. The footnote fragment path needs a dedicated performance receipt. |
 | Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting now calls Scheme-AOT pure functions. Nested =#+TAGS= group/shortcut interpretation in =settings.rs= remains a Rust semantic parser; move that whole family into Scheme-owned events or AOT functions. Keep Rust limited to graph projection, indexing, and primitive type conversion or side-effectful consumers. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
@@ -54,6 +54,6 @@ assertion; generated =.snap.new= files remain unapproved candidates. Numeric
 graph is otherwise unchanged. The bare-AST snapshot was reviewed and updated
 for Scheme-owned exact list bullets, a description body's separator-free text,
 an unnamed source block's absent =NAME=, and coalesced contiguous plain text;
-explicit assertions cover the first three. The 24 failing integration tests
+explicit assertions cover the first three. The 23 failing integration tests
 mean AST and consumer accuracy is not yet established across the full
 supported surface.

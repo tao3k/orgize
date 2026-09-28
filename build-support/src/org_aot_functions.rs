@@ -45,6 +45,8 @@ pub fn write_org_aot_functions() {
         "keyword_rest",
         "keyword_option_value",
         "keyword_option_present_p",
+        "table_column_cookie_kind",
+        "table_column_cookie_match_p",
     ] {
         let source = source_dir.join(format!("{name}.ir.json"));
         println!("cargo:rerun-if-changed={}", source.display());

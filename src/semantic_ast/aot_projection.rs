@@ -19,8 +19,8 @@ use super::model::{
     Checkbox, Citation, CiteReference, Clock, Diagnostic, DiagnosticKind, Document, Drawer,
     Element, ElementData, FootnoteDef, IncludeDirective, IncludeOption, Inlinetask, InlinetaskEnd,
     Keyword, KeywordAttribute, Link, List, ListItem, ListType, MarkupKind, Object, ObjectData,
-    ParsedAnnotation, ParsedAst, Planning, Property, Section, Table, TableCell, TableRow,
-    TodoKeyword, TodoState, UnsupportedSyntaxKind,
+    ParsedAnnotation, ParsedAst, Planning, Property, Section, TodoKeyword, TodoState,
+    UnsupportedSyntaxKind,
 };
 use super::preprocessing::{macro_definition, split_macro_args};
 use super::prescan::{SemanticPrescan, collect_document_keyword};
@@ -44,6 +44,8 @@ mod block_projection;
 mod include_projection;
 #[path = "aot_inline_fragment.rs"]
 mod inline_fragment;
+#[path = "aot_table_projection.rs"]
+mod table_projection;
 #[path = "aot_target_projection.rs"]
 mod target_projection;
 
@@ -600,45 +602,6 @@ impl<'a> GraphProjector<'a> {
             affiliated_keywords,
             data,
         })
-    }
-
-    fn table(&self, id: usize) -> Table<ParsedAnnotation> {
-        let rows = self
-            .record(id)
-            .child_ids
-            .iter()
-            .filter_map(|&row_id| {
-                let row = self.record(row_id);
-                if !matches!(row.kind, "table-row" | "table-rule-row") {
-                    return None;
-                }
-                let cells =
-                    row.child_ids
-                        .iter()
-                        .filter_map(|&cell_id| {
-                            let cell = self.record(cell_id);
-                            (cell.kind == "table-cell").then(|| TableCell {
-                                ann: self.annotation(cell.range),
-                                objects: vec![self.plain(
-                                    cell.range,
-                                    cell.field("text").unwrap_or_default().trim(),
-                                )],
-                            })
-                        })
-                        .collect();
-                Some(TableRow {
-                    ann: self.annotation(row.range),
-                    is_rule: row.kind == "table-rule-row",
-                    cells,
-                })
-            })
-            .collect();
-        Table {
-            rows,
-            column_alignments: Vec::new(),
-            formulas: Vec::new(),
-            parsed_formulas: Vec::new(),
-        }
     }
 
     fn list(&mut self, id: usize) -> List<ParsedAnnotation> {

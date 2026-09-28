@@ -58,6 +58,9 @@
                  keyword-rest keyword-rest-rust
                  keyword-option-value keyword-option-value-rust
                  keyword-option-present? keyword-option-present-rust)
+        (only-in "table-properties.ss"
+                 table-column-cookie-match? table-column-cookie-match-rust
+                 table-column-cookie-kind table-column-cookie-kind-rust)
         (only-in "affiliated-properties.ss"
                  org-affiliated-keyword? org-affiliated-keyword-rust)
         (only-in "catalog.ss" +org-affiliated-keywords+)
@@ -244,6 +247,22 @@
       (check (keyword-option-value "H:2 -:nil" "missing") => "")
       (check (keyword-option-present? "H:2 H:" "H") => #t)
       (check (keyword-option-present? "H -:nil" "H") => #f))
+    (test-case "table cookie classification is Scheme-owned and AOT projected"
+      (check-org-headline-ir table-column-cookie-match-rust
+       'table_column_cookie_match_p
+       "languages/org/v1/modules/org-elements/generated/table_column_cookie_match_p.ir.json")
+      (check-org-headline-ir table-column-cookie-kind-rust
+       'table_column_cookie_kind
+       "languages/org/v1/modules/org-elements/generated/table_column_cookie_kind.ir.json")
+      (check (table-column-cookie-match? "r3" "r") => #t)
+      (check (table-column-cookie-match? "r-1" "r") => #f)
+      (check (table-column-cookie-kind " <l> ") => "left")
+      (check (table-column-cookie-kind "<c12>") => "center")
+      (check (table-column-cookie-kind "<r3>") => "right")
+      (check (table-column-cookie-kind "<10>") => "width")
+      (check (table-column-cookie-kind "<l>junk>") => "")
+      (check (table-column-cookie-kind "<r-1>") => "")
+      (check (table-column-cookie-kind "Text") => ""))
     (test-case "citation header style is Scheme-owned and AOT projected"
       (check-org-headline-ir
        citation-style-rust 'citation_style
