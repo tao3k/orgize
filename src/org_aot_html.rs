@@ -452,7 +452,11 @@ impl HtmlRenderer<'_> {
     }
 
     fn render_footnote_definition(&mut self, id: usize) -> Result<(), String> {
-        let label = self.record(id).field("label").unwrap_or_default().to_owned();
+        let label = self
+            .record(id)
+            .field("label")
+            .unwrap_or_default()
+            .to_owned();
         let _ = write!(
             self.output,
             "<aside class=\"footnote\" id=\"fn-{}\">",

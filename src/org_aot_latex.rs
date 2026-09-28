@@ -201,7 +201,11 @@ impl LatexRenderer<'_> {
             "plain-list" => self.list(id)?,
             "item" => self.item(id)?,
             "footnote-definition" => {
-                let label = self.record(id).field("label").unwrap_or_default().to_owned();
+                let label = self
+                    .record(id)
+                    .field("label")
+                    .unwrap_or_default()
+                    .to_owned();
                 self.blank_line();
                 let _ = write!(
                     self.output,
