@@ -870,6 +870,14 @@ impl<'a> GraphProjector<'a> {
         for child in children {
             let (ref_range, key, ref_prefix, ref_suffix, ref_children) = {
                 let record = self.record(child);
+                if record.kind == "citation-malformed" {
+                    self.diagnostics.push(Diagnostic {
+                        range: record.range,
+                        kind: DiagnosticKind::Conversion,
+                        message: "malformed citation segment".to_owned(),
+                    });
+                    continue;
+                }
                 if record.kind != "citation-reference" {
                     continue;
                 }

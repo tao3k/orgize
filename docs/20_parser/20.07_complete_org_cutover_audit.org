@@ -17,11 +17,11 @@ a Rust Org recognizer is not a valid way to close those gaps.
 * Current gates
 
 At the current PR working tree on 2026-09-28, the Scheme suite reports
-=HARNESS-OK= and =OK=. The latest serial Rust integration target reports *441
-passed, 9 failed, 2 ignored* after closing Babel result replacement and the
-attachment projection family with direct location and field assertions. Earlier Rust
-library tests passed (63 passed, 1 ignored), strict workspace Clippy with
-=-D warnings= passed, and =cargo fmt --check= passes on this working tree. The Scheme suite
+=HARNESS-OK= and =OK=. The latest serial Rust integration target reports *443
+passed, 8 failed, 2 ignored* after closing Babel, attachment, and malformed
+citation recovery with source-backed assertions. Earlier Rust library tests
+passed (63 passed, 1 ignored), strict workspace Clippy with =-D warnings=
+passes, and =cargo fmt --check= passes on this working tree. The Scheme suite
 still prints an upstream =rust-module= undefined warning despite its passing
 harness markers. These focused receipts do not constitute parser or release
 closure; check the exact pushed head and platform CI again after every change.
@@ -39,7 +39,7 @@ it failed on semantic gaps, not a missing generated file.
 ** Serial integration failure ledger
 
 The serial run at =972cf48= reproduced 23 failures (425 passed, 2 ignored).
-The working tree now has 9 failures (441 passed, 2 ignored). Grouping is by
+The working tree now has 8 failures (443 passed, 2 ignored). Grouping is by
 the first missing ownership boundary, not by the last assertion or by a
 changed snapshot. Several consumers appear in more than one feature family;
 each test is counted once below. Re-run this ledger after each grouped repair
@@ -49,7 +49,6 @@ instead of approving =.snap.new= wholesale.
 |--------+---------------+----------------------|
 | Radio-target resolution | 5 =semantic_ast_projects_radio_links= cases | Scheme graph must identify radio-target declarations and text matches; Element projection must preserve longest-match, opt-in, and dedup semantics. |
 | Table formulas | =semantic_ast_projects_org_table_formulas=; =semantic_ast_projects_tangle_and_table_records=; =lint_table_formulas= | Associate each =TBLFM= with its table and project parsed assignments/references from Scheme, retaining keyword annotations. |
-| Citation recovery | =semantic_ast_projects_m15_alignment= malformed segment | Scheme parser must emit the diagnostic without a Rust syntax recognizer. |
 
 The archive/lifecycle pair, contract binding, agenda anchor, and list-bullet
 assertion now pass in the serial full integration target. The Git-scoped
@@ -62,6 +61,12 @@ locations point to the source block rather than its =#+NAME= keyword. Attachment
 link paths are Scheme-AOT classified; parsed properties, tags, and links now reach
 Orgize attachment inventory, lint, index, and traversal. Before a performance claim, benchmark table-heavy
 parsing and document projection against the prior AOT head.
+
+Malformed citation segments are now marked by the Scheme event algorithm,
+retained in the AOT graph, and projected to a diagnostic. The graph and grammar
+generated tables, embedded query/contract digests, and source-backed graph
+snapshots were updated together. The reviewed snapshot changes outside this
+new marker contain only shifted numeric syntax-kind IDs.
 
 | Boundary | Required closure |
 |----------+------------------|

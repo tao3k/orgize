@@ -53,7 +53,7 @@
                             OrgTarget OrgRadioTarget OrgStatisticsCookie OrgLineBreak
                             OrgExportSnippet OrgFootnoteReference
                             OrgInlineSourceBlock OrgInlineBabelCall OrgMacro OrgCitation
-                            OrgCitationReference
+                            OrgCitationReference OrgCitationMalformedReference
                             OrgTimestampActive OrgTimestampInactive OrgTimestampDiary
                             OrgEntity
                             OrgLaTeXFragment
@@ -77,7 +77,8 @@
                                 "target" "radio-target" "statistics-cookie" "line-break"
                                 "export-snippet" "footnote-reference"
                                 "inline-src-block" "inline-babel-call" "macro" "citation"
-                                "citation-reference" "timestamp" "timestamp"
+                                "citation-reference" "citation-malformed"
+                                "timestamp" "timestamp"
                                 "timestamp" "entity"
                                 "latex-fragment"
                                 "code" "verbatim" "bold" "italic"

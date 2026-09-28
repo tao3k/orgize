@@ -25,7 +25,7 @@ expression: document.records()
             2,
             5,
         ],
-        syntax_kind: 74,
+        syntax_kind: 75,
         category: "section",
         kind: "headline",
         range: 0..130,

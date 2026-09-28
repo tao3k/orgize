@@ -186,6 +186,8 @@
                (field 'CitationReferenceKey "key")
                (field 'CitationReferenceSuffix "suffix" 'append-or-empty)
                (field 'OrgCitationReferenceSuffix "suffix" 'node-text)))
+   (node 'OrgCitationMalformedReference "object" "citation-malformed"
+         (list (field 'CitationMalformedSegment "text")))
    (node 'OrgTimestampActive "object" "timestamp" timestamp-fields)
    (node 'OrgTimestampInactive "object" "timestamp" timestamp-fields)
    (node 'OrgTimestampDiary "object" "timestamp"

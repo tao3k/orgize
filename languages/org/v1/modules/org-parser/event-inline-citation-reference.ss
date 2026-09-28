@@ -39,13 +39,18 @@
             'OrgCitationReferenceSuffix
             '(state-offset citation-ref-key-end) until)
          (finish-node))
-        ((if (state citation-ref-seen-reference)
-             ,(citation-affix-events
-               'OrgCitationGlobalSuffix
-               '(state-offset citation-ref-segment-start) until)
-             ,(citation-affix-events
-               'OrgCitationGlobalPrefix
-               '(state-offset citation-ref-segment-start) until))))))
+        ((if (state citation-ref-malformed)
+             ((start-node OrgCitationMalformedReference)
+              (token CitationMalformedSegment
+                     (state-offset citation-ref-segment-start) ,until)
+              (finish-node))
+             ((if (state citation-ref-seen-reference)
+                  ,(citation-affix-events
+                    'OrgCitationGlobalSuffix
+                    '(state-offset citation-ref-segment-start) until)
+                  ,(citation-affix-events
+                    'OrgCitationGlobalPrefix
+                    '(state-offset citation-ref-segment-start) until))))))))
 
 (def (citation-reference-separator-forms)
   `(,@(citation-reference-segment-events citation-ref-index)
@@ -54,12 +59,19 @@
     (token CitationSeparator ,citation-ref-index ,citation-ref-next)
     (set-uint citation-ref-segment-start (offset ,citation-ref-next))
     (set-bool citation-ref-has-key (bool #f))
+    (set-bool citation-ref-malformed (bool #f))
     (set-bool citation-ref-key-scanning (bool #f))
     (set-uint citation-ref-opens (uint 0))
     (set-uint citation-ref-closes (uint 0))))
 
 (def (citation-reference-scan-forms)
-  `((if (state citation-ref-key-scanning)
+  `((if (and (not (state citation-ref-has-key))
+             (line-byte-equal? ,citation-ref-index 64)
+             (not (line-bytes-any-in? ,citation-ref-next
+                                      (line-step ,citation-ref-next)
+                                      ,citation-reference-key-bytes)))
+        ((set-bool citation-ref-malformed (bool #t))) ())
+    (if (state citation-ref-key-scanning)
         ((if (line-bytes-any-in? ,citation-ref-index ,citation-ref-next
                                  ,citation-reference-key-bytes)
              ((set-uint citation-ref-key-end (offset ,citation-ref-next)))
@@ -105,6 +117,7 @@
      (citation-ref-key-at 0) (citation-ref-key-start 0)
      (citation-ref-key-end 0)
      (citation-ref-has-key #f) (citation-ref-key-scanning #f)
+     (citation-ref-malformed #f)
      (citation-ref-seen-reference #f)
      (citation-ref-escaped #f)
      (citation-ref-opens 0) (citation-ref-closes 0))

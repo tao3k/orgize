@@ -9,6 +9,24 @@ include!(concat!(env!("OUT_DIR"), "/citation_style.rs"));
 include!(concat!(env!("OUT_DIR"), "/citation_variant.rs"));
 
 #[test]
+fn malformed_citation_marker_reaches_the_owned_diagnostic() {
+    let parsed = Org::parse("[cite:@ok; @].");
+    let malformed = parsed
+        .records()
+        .iter()
+        .find(|record| record.kind == "citation-malformed")
+        .expect("Scheme-classified malformed citation segment");
+    assert_eq!(malformed.field("text"), Some(" @"));
+    assert!(
+        parsed
+            .document()
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.message == "malformed citation segment")
+    );
+}
+
+#[test]
 fn scheme_citation_header_aot_projects_style_and_variant() {
     macro_rules! check_citation_header_aot {
         ($($head:expr => $style:expr, $variant:expr),+ $(,)?) => {

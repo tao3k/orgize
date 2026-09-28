@@ -60,6 +60,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgMacro", category: KindCategory::Node },
     KindSpec { name: "OrgCitation", category: KindCategory::Node },
     KindSpec { name: "OrgCitationReference", category: KindCategory::Node },
+    KindSpec { name: "OrgCitationMalformedReference", category: KindCategory::Node },
     KindSpec { name: "OrgCitationGlobalPrefix", category: KindCategory::Node },
     KindSpec { name: "OrgCitationGlobalSuffix", category: KindCategory::Node },
     KindSpec { name: "OrgCitationReferencePrefix", category: KindCategory::Node },
@@ -149,6 +150,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "CitationReferencePrefix", category: KindCategory::Token },
     KindSpec { name: "CitationReferenceMarker", category: KindCategory::Token },
     KindSpec { name: "CitationReferenceKey", category: KindCategory::Token },
+    KindSpec { name: "CitationMalformedSegment", category: KindCategory::Token },
     KindSpec { name: "CitationReferenceSuffix", category: KindCategory::Token },
     KindSpec { name: "TimestampDelimiter", category: KindCategory::Token },
     KindSpec { name: "TimestampDate", category: KindCategory::Token },
@@ -199,10 +201,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 75 },
-    TerminalSpec { name: "block-begin", syntax_kind: 80 },
-    TerminalSpec { name: "block-end", syntax_kind: 97 },
-    TerminalSpec { name: "text", syntax_kind: 98 },
+    TerminalSpec { name: "headline", syntax_kind: 76 },
+    TerminalSpec { name: "block-begin", syntax_kind: 81 },
+    TerminalSpec { name: "block-end", syntax_kind: 98 },
+    TerminalSpec { name: "text", syntax_kind: 99 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -377,7 +379,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:bec2538422bca4dd285afbd6d4a0f227debb7509d0d25c716d68dd18d69ffa39",
+    grammar_digest: "sha256:4e871af08c1a7c8f60efce5941c2b34b1d3a11a87e6dbac359a7f498be6d6e7e",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,

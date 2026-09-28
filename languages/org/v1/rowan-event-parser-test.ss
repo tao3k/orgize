@@ -191,6 +191,21 @@
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 21))))))
     (test-case "Scheme citation-reference Objects retain source-backed fields"
       (check-org-ast-with parse-org-rowan-events
+        "[cite:@ok; @].\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation
+            (CitationDelimiter 0 6)
+            (OrgCitationReference
+             (CitationReferenceMarker 6 7)
+             (CitationReferenceKey 7 9))
+            (CitationSeparator 9 10)
+            (OrgCitationMalformedReference
+             (CitationMalformedSegment 10 12))
+            (CitationDelimiter 12 13))
+           (TextLine 13 15)))))
+      (check-org-ast-with parse-org-rowan-events
         "[cite:@doe2020]\n"
         (OrgFile
          (OrgParagraph
