@@ -4,6 +4,8 @@
 (import (only-in :clan/poo/object .ref .slot? object?)
         (only-in :clan/poo/mop define-type Type. element?)
         (only-in :std/list/list every)
+        (only-in :gerbil-parser/graph-query-support
+                 graph-query-view? graph-query-context?)
         (only-in "../../graph-shape.ss"
                  org-v1-graph-shape org-v1-headline-extra-fields
                  org-graph-node-label org-graph-node-fields
@@ -124,12 +126,10 @@
 (def (org-element-graph-view-shape? value)
   (and (has-kind-and-slots?
         value +org-element-graph-kind+
-        '(schema records id-of parent-of kind-of field-of))
+        '(schema field-of))
        (equal? (.ref value 'schema) +org-element-schema+)
-       (list? (.ref value 'records))
-       (every procedure?
-              (map (lambda (slot) (.ref value slot))
-                   '(id-of parent-of kind-of field-of)))))
+       (graph-query-view? value)
+       (procedure? (.ref value 'field-of))))
 
 (define-type (OrgElementGraphView @ Type.)
   .element?: org-element-graph-view-shape?)
@@ -138,7 +138,8 @@
   (and (has-kind-and-slots? value +org-element-context-kind+
                             '(schema graph index))
        (equal? (.ref value 'schema) +org-element-schema+)
-       (element? OrgElementGraphView (.ref value 'graph))))
+       (element? OrgElementGraphView (.ref value 'graph))
+       (graph-query-context? (.ref value 'index))))
 
 (define-type (OrgElementQueryContext @ Type.)
   .element?: org-element-context-shape?)
