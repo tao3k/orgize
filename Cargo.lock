@@ -1615,7 +1615,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-rust-ir"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1f4f59698b0c5718623bd1d2362e066ae376ea95#1f4f59698b0c5718623bd1d2362e066ae376ea95"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=927b8ee89a76dc7a8c7fe759359a70f7d7277281#927b8ee89a76dc7a8c7fe759359a70f7d7277281"
 dependencies = [
  "prettyplease",
  "proc-macro2",
