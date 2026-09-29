@@ -31,6 +31,24 @@
 
 (def org-v1-rowan-structural-parser-test
   (test-suite "Org structural Elements and metadata"
+    (test-case "TAGS vocabulary is Scheme-owned source-backed structure"
+      (check-org-ast-with parse-org-rowan-events
+        "#+TAGS: { @work(w) @home(h) }\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 6) (KeywordTrivia 6 7)
+          (OrgKeywordRawValue
+           (KeywordTrivia 7 8)
+           (OrgTagVocabulary
+            (OrgTagExclusiveGroup
+             (TagGroupOpen 8 9) (TagTrivia 9 10)
+             (TagName 10 15) (TagShortcutOpen 15 16)
+             (TagShortcut 16 17) (TagShortcutClose 17 18)
+             (TagTrivia 18 19) (TagName 19 24)
+             (TagShortcutOpen 24 25) (TagShortcut 25 26)
+             (TagShortcutClose 26 27) (TagTrivia 27 28)
+             (TagGroupClose 28 29))))
+          (KeywordTrivia 29 30)))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
       (check-org-ast-with parse-org-rowan-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"

@@ -49,6 +49,8 @@ mod inline_fragment;
 mod radio_projection;
 #[path = "aot_table_projection.rs"]
 mod table_projection;
+#[path = "aot_tag_vocabulary.rs"]
+mod tag_vocabulary;
 #[path = "aot_target_projection.rs"]
 mod target_projection;
 
@@ -137,6 +139,9 @@ impl<'a> GraphProjector<'a> {
                     Ok(include) => prescan.includes.push(include),
                     Err(diagnostic) => prescan.diagnostics.push(diagnostic),
                 }
+            } else if keyword.key.eq_ignore_ascii_case("TAGS") {
+                prescan.tag_definitions.extend(self.tag_definitions(id));
+                prescan.metadata.push(keyword);
             } else {
                 collect_document_keyword(keyword, &mut prescan);
             }

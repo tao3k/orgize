@@ -31,6 +31,7 @@
         (only-in "event-table.ss"
                  table-event-initial table-close-form table-or-element-form)
         (only-in "event-table-formula.ss" table-formula-event-helpers)
+        (only-in "event-tag-vocabulary.ss" tag-vocabulary-event-helper)
         (only-in "event-list.ss"
                  list-close-all list-close-paragraph-form list-or-element-form)
         (only-in "event-special-block.ss"
@@ -598,7 +599,8 @@
 
 (def org-event-helpers
   (append paragraph-event-helpers table-formula-event-helpers
-          (list (make-org-event-helper
+          (list tag-vocabulary-event-helper
+                (make-org-event-helper
                  'include-value
                  (append event-include-initial event-source-header-initial)
                  (event-include-forms 'start 'end)))))

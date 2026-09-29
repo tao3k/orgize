@@ -24,10 +24,12 @@ Org Element queries now admit the Scheme POO headline properties =title=,
 =raw-value=, =priority=, =tags=, and =todo-keyword= in consumer-authored AOT
 packs, including bounded =contains= matching. The Cargo executor reads the
 Scheme-AOT headline results or the same Element graph; it does not parse a
-second headline grammar. The remaining =#+TAGS= group/shortcut parser in
-=src/semantic_ast/settings.rs= is not yet Scheme-owned: the current pure
-function AOT subset cannot return structured =TagDefinition= values. Do not
-replace that boundary with packed strings or call this semantic-parser closure.
+second headline grammar. =#+TAGS= now lowers through an Org-owned Scheme
+source-event helper into Rowan group, name, separator, and shortcut nodes.
+The old Rust text parser in =settings.rs= is removed; Rust only projects
+source-backed graph fields into the public typed =TagDefinition= shape. New
+syntax kinds append to the grammar table so existing Rowan kind IDs stay
+stable across this addition.
 
 * Current gates
 
@@ -65,10 +67,10 @@ with unchanged source-range and throughput receipts.
 
 | Boundary | Required closure |
 |----------+------------------|
-| Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are now covered in Scheme and Rust graph tests. List bullet tokens now include the exact horizontal separator, so the Scheme graph preserves =- =, repeated spaces, and tabs without Rust reconstruction. Keep event IR growth bounded: the table.el branch was reduced from a 3.63 MB duplicated strategy to a 2.55 MB single-fallback strategy. |
+| Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are now covered in Scheme and Rust graph tests. List bullet tokens now include the exact horizontal separator, so the Scheme graph preserves =- =, repeated spaces, and tabs without Rust reconstruction. Keep event IR growth bounded: the current TAGS-aware single-fallback strategy is 2.70 MB, below the former 3.63 MB duplicated strategy. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
 | Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
-| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting now calls Scheme-AOT pure functions. Nested =#+TAGS= group/shortcut interpretation in =settings.rs= remains a Rust semantic parser; move that whole family into Scheme-owned events or AOT functions. Keep Rust limited to graph projection, indexing, and primitive type conversion or side-effectful consumers. |
+| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields; no Rust source-text parser remains for that family. Keep Rust limited to graph projection, indexing, and primitive type conversion or side-effectful consumers. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
 

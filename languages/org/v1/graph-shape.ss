@@ -84,6 +84,18 @@
                (field 'SourceHeaderKey "attribute-key" 'each)
                (field 'SourceHeaderValue "attribute-value" 'each)
                (field 'OrgKeywordRawValue "raw-value" 'node-text)))
+   (node 'OrgTagVocabulary "component" "tag-vocabulary"
+         (list (field 'TagName "name" 'each)
+               (field 'TagShortcut "shortcut" 'each)
+               (field 'TagGroupSeparator "separator" 'each)))
+   (node 'OrgTagExclusiveGroup "component" "tag-exclusive-group"
+         (list (field 'TagName "name" 'each)
+               (field 'TagShortcut "shortcut" 'each)
+               (field 'TagGroupSeparator "separator" 'each)))
+   (node 'OrgTagInclusiveGroup "component" "tag-inclusive-group"
+         (list (field 'TagName "name" 'each)
+               (field 'TagShortcut "shortcut" 'each)
+               (field 'TagGroupSeparator "separator" 'each)))
    (node 'OrgBabelCall "element" "babel-call"
          (list (field 'KeywordKey "key")
                (field 'KeywordValue "value")

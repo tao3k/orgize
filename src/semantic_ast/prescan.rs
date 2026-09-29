@@ -1,9 +1,7 @@
 //! Document-level semantic prescan state and keyword routing.
 
 use super::org_contract_model::CONTRACT_ORG_PROPERTY;
-use super::settings::{
-    apply_options_keyword, link_abbreviation, parse_tag_definitions, parse_tags, split_words,
-};
+use super::settings::{apply_options_keyword, link_abbreviation, parse_tags, split_words};
 use super::{
     ArchiveLocation, Diagnostic, ExportSettings, IncludeDirective, Keyword, LinkAbbreviation,
     MacroDefinition, OrgDuration, ParsedAnnotation, Property, TagDefinition,
@@ -39,12 +37,6 @@ pub(super) fn collect_document_keyword(
             for tag in parse_tags(keyword.value.trim()) {
                 push_unique(&mut prescan.filetags, tag);
             }
-            prescan.metadata.push(keyword);
-        }
-        "TAGS" => {
-            prescan
-                .tag_definitions
-                .extend(parse_tag_definitions(keyword.value.trim()));
             prescan.metadata.push(keyword);
         }
         "OPTIONS" => {

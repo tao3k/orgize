@@ -217,6 +217,17 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "ClozeText", category: KindCategory::Token },
     KindSpec { name: "ClozeHint", category: KindCategory::Token },
     KindSpec { name: "ClozeId", category: KindCategory::Token },
+    KindSpec { name: "OrgTagVocabulary", category: KindCategory::Node },
+    KindSpec { name: "OrgTagExclusiveGroup", category: KindCategory::Node },
+    KindSpec { name: "OrgTagInclusiveGroup", category: KindCategory::Node },
+    KindSpec { name: "TagName", category: KindCategory::Token },
+    KindSpec { name: "TagShortcut", category: KindCategory::Token },
+    KindSpec { name: "TagShortcutOpen", category: KindCategory::Token },
+    KindSpec { name: "TagShortcutClose", category: KindCategory::Token },
+    KindSpec { name: "TagGroupOpen", category: KindCategory::Token },
+    KindSpec { name: "TagGroupClose", category: KindCategory::Token },
+    KindSpec { name: "TagGroupSeparator", category: KindCategory::Token },
+    KindSpec { name: "TagTrivia", category: KindCategory::Token },
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
@@ -398,7 +409,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:ea6a37760bc98a4b6d610b0026b5deefd8e396c33fe72fc5cadfcf67369eb6be",
+    grammar_digest: "sha256:851de8fc68cf92163541d796aacefd5f38127af34f59d1526531772b88246f72",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,

@@ -42,7 +42,8 @@
                             OrgFootnoteDefinition
                             OrgComment OrgDiarySexp
                             OrgHorizontalRule OrgFixedWidth
-                            OrgKeyword OrgBabelCall OrgPlanning OrgClock
+                            OrgKeyword OrgTagVocabulary OrgTagExclusiveGroup
+                            OrgTagInclusiveGroup OrgBabelCall OrgPlanning OrgClock
                             OrgPlainList OrgListItem
                             OrgTable OrgTableEl OrgTableRow OrgTableRuleRow OrgTableCell
                             OrgTableFormulaValue OrgTableFormulaAssignment
@@ -67,7 +68,8 @@
                                 "property-drawer" "drawer"
                                 "paragraph" "footnote-definition" "comment" "diary-sexp"
                                 "horizontal-rule" "fixed-width"
-                                "keyword" "babel-call"
+                                "keyword" "tag-vocabulary" "tag-exclusive-group"
+                                "tag-inclusive-group" "babel-call"
                                 "planning" "clock"
                                 "plain-list" "item" "table" "table-el" "table-row"
                                 "table-rule-row" "table-cell"
