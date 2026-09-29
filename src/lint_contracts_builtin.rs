@@ -5,9 +5,8 @@ use rowan::TextRange;
 use crate::{
     Org,
     contract_feature::{ContractOperator, ContractScopeNodeId, ContractSeverity},
+    lint::{LintFinding, LintSeverity, location_for_range},
 };
-
-use super::super::{LintFinding, LintSeverity, location_for_range};
 
 pub(super) fn contract_findings(org: &Org, source: &str) -> Vec<LintFinding> {
     let contract = crate::org_aot::org_contract_pack()
