@@ -5,14 +5,15 @@
         (only-in :gerbil-parser/src/compiler/rust-pure-aot
                  define-rust-pure string-words string-replace
                  string-first-word string-rest-after-first-word
-                 string-before string-after string-prefix?))
+                 string-before string-after string-prefix? ascii-ci=?))
 (export keyword-word keyword-word-rust
         keyword-words keyword-words-rust
         keyword-tag-words keyword-tag-words-rust
         keyword-first-word keyword-first-word-rust
         keyword-rest keyword-rest-rust
         keyword-option-value keyword-option-value-rust
-        keyword-option-present? keyword-option-present-rust)
+        keyword-option-present? keyword-option-present-rust
+        keyword-boolean-value keyword-boolean-value-rust)
 
 (define-rust-pure keyword-word keyword-word-rust
   ((word "&str")) "String"
@@ -53,3 +54,14 @@
            (and (equal? (string-before word ":") key)
                 (string-prefix? (string-after word key) ":")))
          (string-words value)))
+
+(define-rust-pure keyword-boolean-value keyword-boolean-value-rust
+  ((value "&str")) "&str"
+  (if (or (ascii-ci=? value "t")
+          (ascii-ci=? value "true")
+          (ascii-ci=? value "yes"))
+    "true"
+    (if (or (ascii-ci=? value "nil")
+            (ascii-ci=? value "false")
+            (ascii-ci=? value "no"))
+      "false" "")))

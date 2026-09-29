@@ -214,6 +214,14 @@ pub(crate) fn keyword_option_present(value: &str, key: &str) -> bool {
     document_keyword_functions::keyword_option_present_p(value, key)
 }
 
+pub(crate) fn keyword_boolean_value(value: &str) -> Option<bool> {
+    match document_keyword_functions::keyword_boolean_value(value) {
+        "true" => Some(true),
+        "false" => Some(false),
+        _ => None,
+    }
+}
+
 pub(crate) fn table_column_cookie_kind(cell: &str) -> &'static str {
     table_functions::table_column_cookie_kind(cell)
 }

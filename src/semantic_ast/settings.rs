@@ -133,11 +133,11 @@ pub(super) fn apply_options_keyword(value: &str, settings: &mut ExportSettings) 
     }
     let special_strings = crate::org_aot::keyword_option_value(value, "-");
     if crate::org_aot::keyword_option_present(value, "-") {
-        settings.special_strings = bool_option(&special_strings);
+        settings.special_strings = crate::org_aot::keyword_boolean_value(&special_strings);
     }
     let expand_entities = crate::org_aot::keyword_option_value(value, "e");
     if crate::org_aot::keyword_option_present(value, "e") {
-        settings.expand_entities = bool_option(&expand_entities);
+        settings.expand_entities = crate::org_aot::keyword_boolean_value(&expand_entities);
     }
 }
 
@@ -167,14 +167,6 @@ pub(super) fn expand_link_abbreviation(
         path,
         &percent_encode(path),
     ))
-}
-
-fn bool_option(value: &str) -> Option<bool> {
-    match value.to_ascii_lowercase().as_str() {
-        "t" | "true" | "yes" => Some(true),
-        "nil" | "false" | "no" => Some(false),
-        _ => None,
-    }
 }
 
 fn percent_encode(value: &str) -> String {

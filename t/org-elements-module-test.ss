@@ -58,7 +58,8 @@
                  keyword-first-word keyword-first-word-rust
                  keyword-rest keyword-rest-rust
                  keyword-option-value keyword-option-value-rust
-                 keyword-option-present? keyword-option-present-rust)
+                 keyword-option-present? keyword-option-present-rust
+                 keyword-boolean-value keyword-boolean-value-rust)
         (only-in "../languages/org/v1/modules/org-elements/table-properties.ss"
                  table-column-cookie-match? table-column-cookie-match-rust
                  table-column-cookie-kind table-column-cookie-kind-rust)
@@ -242,6 +243,8 @@
        "languages/org/v1/modules/org-elements/generated/keyword_option_value.ir.json")
       (check-org-headline-ir keyword-option-present-rust 'keyword_option_present_p
        "languages/org/v1/modules/org-elements/generated/keyword_option_present_p.ir.json")
+      (check-org-headline-ir keyword-boolean-value-rust 'keyword_boolean_value
+       "languages/org/v1/modules/org-elements/generated/keyword_boolean_value.ir.json")
       (check (keyword-word "  evidence ") => "evidence")
       (check (keyword-words " alpha  beta\tgamma ")
              => '("alpha" "beta" "gamma"))
@@ -254,7 +257,10 @@
       (check (keyword-option-value "H:2 H" "H") => "2")
       (check (keyword-option-value "H:2 -:nil" "missing") => "")
       (check (keyword-option-present? "H:2 H:" "H") => #t)
-      (check (keyword-option-present? "H -:nil" "H") => #f))
+      (check (keyword-option-present? "H -:nil" "H") => #f)
+      (check (keyword-boolean-value "YES") => "true")
+      (check (keyword-boolean-value "Nil") => "false")
+      (check (keyword-boolean-value "maybe") => ""))
     (test-case "table cookie classification is Scheme-owned and AOT projected"
       (check-org-headline-ir table-column-cookie-match-rust
        'table_column_cookie_match_p

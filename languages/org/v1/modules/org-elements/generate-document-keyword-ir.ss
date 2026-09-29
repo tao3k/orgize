@@ -8,7 +8,8 @@
                  keyword-word-rust keyword-words-rust
                  keyword-tag-words-rust keyword-first-word-rust
                  keyword-rest-rust keyword-option-value-rust
-                 keyword-option-present-rust))
+                 keyword-option-present-rust
+                 keyword-boolean-value-rust))
 
 (def arguments (command-line))
 (unless (> (length arguments) 2)
@@ -26,4 +27,5 @@
        (cons "keyword_first_word.ir.json" keyword-first-word-rust)
        (cons "keyword_rest.ir.json" keyword-rest-rust)
        (cons "keyword_option_value.ir.json" keyword-option-value-rust)
-       (cons "keyword_option_present_p.ir.json" keyword-option-present-rust)))
+       (cons "keyword_option_present_p.ir.json" keyword-option-present-rust)
+       (cons "keyword_boolean_value.ir.json" keyword-boolean-value-rust)))

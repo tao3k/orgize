@@ -14,6 +14,16 @@ Elements module, lowered to a Rust function by the generic AOT backend. Rust
 only slices already-parsed Objects and projects Link AST values; the displaced
 handwritten Rust matcher is not compiled or exported.
 
+On 2026-09-29, Orgize PR #18 head =ab65b31= passed Ubuntu, macOS, and Windows
+CI. Subsequent local work moves =#+OPTIONS= boolean-value interpretation to a
+Scheme pure function AOT-compiled to Rust; the Scheme suite, full all-feature
+Rust workspace tests, strict Clippy, and formatting checks pass locally. This
+new candidate still needs exact-head CI after push. The remaining =#+TAGS=
+group and shortcut parser in =src/semantic_ast/settings.rs= is not yet
+Scheme-owned: the current pure-function AOT subset cannot return structured
+=TagDefinition= values. Do not replace that type boundary with packed strings
+or treat the local setting change as full semantic-parser closure.
+
 * Current gates
 
 At the current candidate tree on 2026-09-28, all Scheme tests are under
