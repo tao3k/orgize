@@ -140,23 +140,28 @@
                            comment-line? comment-line-forms
                            org-table-or-element-form)
   `(,list-marker-form
-    (if (and (state list-present)
-             (uint-equal?
-              (line-marker-level ,heading-marker ,heading-separator) (uint 0)))
-        ,(list-marker-forms table-close-form fixed-width-close close-paragraph)
-        ((if (stack-nonempty? list-frames)
-             ((if (line-blank?)
-                  ((if (uint-equal? (state list-blank-count) (uint 0))
-                       (,list-close-paragraph
-                        (token ,(list-line-trivia-token list-rule) start end)
-                        (set-uint list-blank-count (uint 1)))
-                       (,@list-close-all ,(org-table-or-element-form))))
-                  ((if (uint-greater?
-                        (line-indent-column ,(list-line-tab-width list-rule))
-                        ,list-top)
-                       ((if ,comment-line?
-                            (,list-close-paragraph ,@(comment-line-forms))
-                            ,(list-text-line 'start))
-                        (set-uint list-blank-count (uint 0)))
-                       (,@list-close-all ,(org-table-or-element-form))))))
-             (,(org-table-or-element-form)))))))
+    (join-once list-line-handled
+      ((if (and (state list-present)
+                (uint-equal?
+                 (line-marker-level ,heading-marker ,heading-separator) (uint 0)))
+           (,@(list-marker-forms table-close-form fixed-width-close close-paragraph)
+            (set-bool list-line-handled (bool #t)))
+           ((if (stack-nonempty? list-frames)
+                ((if (line-blank?)
+                     ((if (uint-equal? (state list-blank-count) (uint 0))
+                          (,list-close-paragraph
+                           (token ,(list-line-trivia-token list-rule) start end)
+                           (set-uint list-blank-count (uint 1))
+                           (set-bool list-line-handled (bool #t)))
+                          (,@list-close-all)))
+                     ((if (uint-greater?
+                           (line-indent-column ,(list-line-tab-width list-rule))
+                           ,list-top)
+                          ((if ,comment-line?
+                               (,list-close-paragraph ,@(comment-line-forms))
+                               ,(list-text-line 'start))
+                           (set-uint list-blank-count (uint 0))
+                           (set-bool list-line-handled (bool #t)))
+                          (,@list-close-all)))))
+                ()))))
+      (,(org-table-or-element-form)))))

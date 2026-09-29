@@ -62,12 +62,16 @@ wholesale when further grammar nodes are added.
 
 Before a performance claim, benchmark table-heavy parsing, radio-link
 projection, and document projection against the prior AOT head. Build latency
-is also an open gate: the current 2.75 MB event IR expands to one 8.68 MB,
-112,824-line Rust source file after generic line-step folding and shared
-horizontal-skip lowering (formerly 12.1 MB and 154,270 lines). In a standalone
-same-input =rustc= comparison, optimized compilation fell from 663 s to 264 s;
-three alternating parsing runs showed comparable CPU times and identical event
-counts. The locked Orgize Release query scenario passes its 45 ms gate, but
+is also an open gate: a Scheme-authored shared branch continuation now keeps
+the event IR at 1.97 MB and the generated Rust at 5.65 MB / 80,916 lines,
+down from 2.75 MB and 8.68 MB / 112,824 lines. The generic AOT backend
+validates the explicit handled marker and emits the continuation only on the
+normal unhandled path; it is not an error-recovery fallback. A standalone
+5,000-parse comparison produced the same 58,510,000 events with near-parity
+CPU time. Optimized standalone =rustc= compilation was about 274 s versus
+264 s for the prior generated form under a loaded local machine, so this size
+reduction is not yet a compilation-latency win. The earlier locked Orgize
+Release query scenario passed its 45 ms gate, but
 these local measurements are not cross-platform CI closure. Integration and
 benchmark targets reuse the library's compiled event entry instead of
 including duplicate generated
@@ -78,7 +82,7 @@ with unchanged source-range and throughput receipts.
 
 | Boundary | Required closure |
 |----------+------------------|
-| Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are now covered in Scheme and Rust graph tests. List bullet tokens now include the exact horizontal separator, so the Scheme graph preserves =- =, repeated spaces, and tabs without Rust reconstruction. The shared Scheme header-event grammar now covers both source and dynamic block begin lines; its 2.75 MB IR remains below the former 3.63 MB duplicated strategy. |
+| Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are now covered in Scheme and Rust graph tests. List bullet tokens now include the exact horizontal separator, so the Scheme graph preserves =- =, repeated spaces, and tabs without Rust reconstruction. The shared Scheme header-event grammar now covers both source and dynamic block begin lines; the joined branch form reduces its IR to 1.97 MB from 2.75 MB. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
 | Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
 | Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments now project from Scheme-classified graph tokens; dynamic-block and clocktable consumers no longer parse the raw =#+BEGIN:= line. =block_metadata.rs= still lexes inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values in Rust. Migrate these remaining origins together before claiming complete semantic-parser removal. Keep Rust limited to graph projection, indexing, and primitive type conversion or side-effectful consumers. |
