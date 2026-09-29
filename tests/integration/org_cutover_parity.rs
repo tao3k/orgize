@@ -3,7 +3,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use orgize::Org;
+use orgize::{Org, ast::DiagnosticKind};
 
 fn org_fixtures(root: &Path) -> Vec<PathBuf> {
     let mut pending = vec![root.to_path_buf()];
@@ -61,7 +61,24 @@ fn tracked_org_fixtures_have_lossless_public_aot_graphs() {
     );
     for path in fixtures {
         let source = fs::read_to_string(&path).expect("tracked Org fixture is UTF-8");
-        assert_org_graph!(&source, Org::parse(&source));
+        let parsed = Org::parse(&source);
+        assert_org_graph!(&source, &parsed);
+        let unsupported: Vec<_> = parsed
+            .document()
+            .diagnostics
+            .into_iter()
+            .filter(|diagnostic| {
+                matches!(
+                    diagnostic.kind,
+                    DiagnosticKind::UnsupportedElement | DiagnosticKind::UnsupportedObject
+                )
+            })
+            .collect();
+        assert!(
+            unsupported.is_empty(),
+            "{}: {unsupported:?}",
+            path.display()
+        );
     }
 }
 

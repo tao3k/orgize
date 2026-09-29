@@ -53,3 +53,30 @@ fn named_source_block_uses_scheme_affiliation_in_owned_ast() {
     assert_eq!(blocks.len(), 1);
     assert_eq!(blocks[0].name.as_deref(), Some("task.rule"));
 }
+
+#[test]
+fn nested_elements_reuse_the_engine_ancestor_projection() {
+    let source = "#+TITLE: File\n* Parent\n** Child\n:PROPERTIES:\n:ID: child\n:END:\nBody\n";
+    let parsed = Org::parse(source);
+    let records = parsed.records();
+    let parent = records
+        .iter()
+        .find(|record| record.kind == "headline" && record.field("title") == Some("Parent"))
+        .expect("parent headline");
+    let child = records
+        .iter()
+        .find(|record| record.kind == "headline" && record.field("title") == Some("Child"))
+        .expect("child headline");
+    let property = records
+        .iter()
+        .find(|record| record.kind == "node-property")
+        .expect("nested property");
+    assert_eq!(parsed.nearest_headline_ancestor(parent.id), None);
+    assert_eq!(parsed.nearest_headline_ancestor(child.id), Some(parent.id));
+    assert_eq!(
+        parsed.nearest_headline_ancestor(property.id),
+        Some(child.id)
+    );
+    assert_eq!(parsed.keywords().count(), 1);
+    assert!(parsed.document().diagnostics.is_empty());
+}

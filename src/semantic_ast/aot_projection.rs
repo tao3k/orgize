@@ -194,14 +194,7 @@ impl<'a> GraphProjector<'a> {
     }
 
     fn nearest_headline(&self, id: usize) -> Option<usize> {
-        let mut parent = self.record(id).parent_id;
-        while let Some(ancestor) = parent {
-            if matches!(self.record(ancestor).kind, "headline" | "inlinetask") {
-                return Some(ancestor);
-            }
-            parent = self.record(ancestor).parent_id;
-        }
-        None
+        self.document.nearest_headline_ancestor(id)
     }
 
     fn section(

@@ -64,6 +64,7 @@ pub struct OrgAotDocument {
     configured_done: Vec<String>,
     headline_properties: Vec<Option<HeadlineProperties>>,
     graph_index: GraphIndex,
+    headline_ancestors: Vec<Option<usize>>,
     affiliations: OnceLock<HashMap<usize, Vec<usize>>>,
 }
 
@@ -244,6 +245,11 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
             message: format!("generated Element graph has invalid preorder: {error:?}"),
         })
     })?;
+    let headline_ancestors = graph_index
+        .nearest_ancestors_matching(&records, |record| {
+            matches!(record.kind, "headline" | "inlinetask")
+        })
+        .expect("validated graph index and records have the same preorder");
     let todo_directives = records
         .iter()
         .filter(|record| record.kind == "keyword")
@@ -303,6 +309,7 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
         configured_done: config.todo_keywords.1.clone(),
         headline_properties,
         graph_index,
+        headline_ancestors,
         affiliations: OnceLock::new(),
     })
 }
@@ -386,14 +393,11 @@ impl OrgAotDocument {
     }
 
     fn record_within_headline(&self, id: usize) -> bool {
-        let mut parent = self.records[id].parent_id;
-        while let Some(ancestor) = parent {
-            if matches!(self.records[ancestor].kind, "headline" | "inlinetask") {
-                return true;
-            }
-            parent = self.records[ancestor].parent_id;
-        }
-        false
+        self.nearest_headline_ancestor(id).is_some()
+    }
+
+    pub(crate) fn nearest_headline_ancestor(&self, id: usize) -> Option<usize> {
+        self.headline_ancestors.get(id).copied().flatten()
     }
 
     /// Replace a UTF-8-aligned byte range and reparse through the Scheme AOT engine.
