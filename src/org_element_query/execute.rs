@@ -33,13 +33,9 @@ fn admit_rule(rule: &OrgElementQueryRule) -> Result<(), OrgElementQueryError> {
     for group in rule.groups {
         for property in *group {
             match property.name {
-                "title" | "raw-value" | "priority" | "tags" => {
-                    return Err(OrgElementQueryError::UnsupportedField);
-                }
-                "todo-keyword"
-                    if matches!(node.kind, "headline" | "inlinetask")
-                        && property.matcher == OrgElementFieldMatch::Exact => {}
-                "todo-type" | "source-title" if matches!(node.kind, "headline" | "inlinetask") => {}
+                "title" | "raw-value" | "priority" | "tags" | "todo-keyword" | "todo-type"
+                | "source-title"
+                    if matches!(node.kind, "headline" | "inlinetask") => {}
                 name if node.fields.iter().any(|field| field.name == name) => {}
                 _ => return Err(OrgElementQueryError::InvalidRule),
             }
@@ -60,10 +56,15 @@ pub(crate) fn property_matches(
         OrgElementFieldMatch::Contains => actual.contains(value),
     };
     match name {
+        "title" | "priority" | "todo-keyword" => document
+            .headline_derived_field(record.id, name)
+            .is_some_and(matches),
         "todo-type" => document.headline_todo_type(record.id).is_some_and(matches),
-        "todo-keyword" => document.headline_todo_keyword_matches(record.id, value),
-        "source-title" if matches!(record.kind, "headline" | "inlinetask") => {
+        "raw-value" | "source-title" if matches!(record.kind, "headline" | "inlinetask") => {
             record.field("title").is_some_and(matches)
+        }
+        "tags" if matches!(record.kind, "headline" | "inlinetask") => {
+            record.values("tag").any(matches)
         }
         name => record.values(name).any(matches),
     }
@@ -87,7 +88,7 @@ impl OrgAotDocument {
     ///
     /// # Errors
     ///
-    /// Rejects unknown IDs, stale graph revisions and unsupported properties.
+    /// Rejects unknown IDs, stale graph revisions and invalid properties.
     pub fn query_with_pack(
         &self,
         pack: &OrgElementQueryPack,

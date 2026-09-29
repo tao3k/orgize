@@ -449,10 +449,14 @@ impl OrgAotDocument {
         }))
     }
 
-    pub(crate) fn headline_todo_keyword_matches(&self, record_id: usize, expected: &str) -> bool {
-        self.headline_details(record_id)
-            .and_then(|details| details.todo_keyword.as_deref())
-            .is_some_and(|keyword| keyword == expected)
+    pub(crate) fn headline_derived_field(&self, record_id: usize, name: &str) -> Option<&str> {
+        let details = self.headline_details(record_id)?;
+        match name {
+            "title" => Some(&details.display_title),
+            "priority" => details.priority_cookie.as_deref(),
+            "todo-keyword" => details.todo_keyword.as_deref(),
+            _ => None,
+        }
     }
 
     pub(crate) fn graph_index(&self) -> &GraphIndex {

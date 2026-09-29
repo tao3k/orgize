@@ -14,40 +14,32 @@ Elements module, lowered to a Rust function by the generic AOT backend. Rust
 only slices already-parsed Objects and projects Link AST values; the displaced
 handwritten Rust matcher is not compiled or exported.
 
-On 2026-09-29, Orgize PR #18 head =ab65b31= passed Ubuntu, macOS, and Windows
-CI. Subsequent local work moves =#+OPTIONS= boolean-value interpretation to a
-Scheme pure function AOT-compiled to Rust; the Scheme suite, full all-feature
-Rust workspace tests, strict Clippy, and formatting checks pass locally. This
-new candidate still needs exact-head CI after push. The remaining =#+TAGS=
-group and shortcut parser in =src/semantic_ast/settings.rs= is not yet
-Scheme-owned: the current pure-function AOT subset cannot return structured
-=TagDefinition= values. Do not replace that type boundary with packed strings
-or treat the local setting change as full semantic-parser closure.
+The current Orgize PR #18 candidate pins gerbil-parser PR #13 at
+=9c61c445175cab360ec6620324916ab36b2349d7= for both Scheme and Cargo.
+The parser head has green Rust/Rowan and Ubuntu/macOS Gerbil CI. The graph
+index supplies linear nearest-matching-ancestor projection; Orgize reuses it
+for headline scope instead of walking parent chains in separate Rust paths.
 
-Parser PR #13 at =7d3482b6be13367bd8c7a91d35465259a51ccb5f= removes the
-cross-module =rust-module__%= warning; its three platform/runtime CI jobs pass,
-and Orgize's Scheme suite passes against the rebuilt parser without that
-warning. Orgize now pins this exact parser revision for Scheme and Cargo.
-The prior Orgize head failed the Windows 256-document workspace performance
-gate at 474 ms against 400 ms. The candidate overlaps file reads while
-preserving deterministic path order and the original 400 ms gate; Windows CI
-must verify whether that addresses the platform failure.
+Org Element queries now admit the Scheme POO headline properties =title=,
+=raw-value=, =priority=, =tags=, and =todo-keyword= in consumer-authored AOT
+packs, including bounded =contains= matching. The Cargo executor reads the
+Scheme-AOT headline results or the same Element graph; it does not parse a
+second headline grammar. The remaining =#+TAGS= group/shortcut parser in
+=src/semantic_ast/settings.rs= is not yet Scheme-owned: the current pure
+function AOT subset cannot return structured =TagDefinition= values. Do not
+replace that boundary with packed strings or call this semantic-parser closure.
 
 * Current gates
 
-At the current candidate tree on 2026-09-28, all Scheme tests are under
-=t/*-test.ss= and the suite reports =MODULE-OK=, =HARNESS-OK=, and =OK=
-without error markers. The generic AOT backend's integration target reports
-*41 passed*. The latest all-feature Orgize integration target reports
-*454 passed, 0 failed, 2 ignored*: affiliated keyword source lines and the
-cloze Object are now projected from Scheme-owned events. The other code-test
-targets pass, including Markdown *6/6* and owned projection *7/7*. The
-default-parallelism full workspace command exits successfully, including Rust
-doctests *8/8*. A source-backed headline title and list bullet preserve
-their separator whitespace in the graph and typed AST; Markdown export removes
-only the duplicate output separator. These local receipts are not release
-closure. The current strict all-target Clippy/ASP Rust gate, performance
-receipts, and exact-head platform CI remain open before merging.
+At the current candidate tree, the 13 Scheme modules under =t/*-test.ss=
+report =MODULE-OK=, =HARNESS-OK=, and =OK= without error markers. The full
+Rust workspace reports *571 passed, 3 ignored*. Forty-six tracked Org fixtures
+roundtrip through the public Rowan graph and reject =UnsupportedElement/Object=
+in the owned projection. The consumer =:org-elements-query= source, generated
+Scheme module, Rust AOT pack, query execution, and direct graph snapshot are
+tested together. Strict all-target Clippy passes locally. These are local
+receipts, not exact-head release closure; the current performance gate and
+new-head platform CI must still be verified after this candidate is committed.
 
 * Remaining ownership work
 

@@ -78,8 +78,9 @@ do not duplicate them in the query. Property predicates compose with hygienic
 disjunction of conjunctions before generating Rust. Each named query still
 has one scope relation; negation, joins, ordering, and aggregation are not yet
 admitted and have no implicit Rust fallback.
-The exact `todo-keyword` predicate is also Scheme-AOT generated and checks the
-document's own TODO declarations; it does not assume a global keyword list.
+Headline `title`, `raw-value`, `priority`, `tags`, and `todo-keyword` queries
+reuse Scheme-AOT Element properties. Exact and contains matching of TODO
+keywords both honor the document's own declarations, not a global list.
 
 A consumer-owned example lives in
 [`tests/fixtures/org-elements/customer-queries.org`](tests/fixtures/org-elements/customer-queries.org).

@@ -68,6 +68,4 @@ pub enum OrgElementQueryError {
     InvalidScope,
     /// The query shape is not admitted by this executor.
     InvalidRule,
-    /// This derived property lacks an AOT implementation.
-    UnsupportedField,
 }
