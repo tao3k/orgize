@@ -35,7 +35,9 @@ stable across this addition.
 
 At the current candidate tree, the 13 Scheme modules under =t/*-test.ss=
 report =MODULE-OK=, =HARNESS-OK=, and =OK= without error markers. The full
-Rust workspace reports *573 passed, 3 ignored*. Forty-six tracked Org fixtures
+Rust workspace reports *586 passed, 4 ignored*; the workspace-admission
+performance scenario is separately run in Release mode under its unchanged
+400 ms gate. Forty-six tracked Org fixtures
 roundtrip through the public Rowan graph and reject =UnsupportedElement/Object=
 in the owned projection. The consumer =:org-elements-query= source, generated
 Scheme module, Rust AOT pack, query execution, and direct graph snapshot are
@@ -60,12 +62,18 @@ wholesale when further grammar nodes are added.
 
 Before a performance claim, benchmark table-heavy parsing, radio-link
 projection, and document projection against the prior AOT head. Build latency
-is also an open gate: the current 2.75 MB event IR expands to one 12.1 MB,
-154k-line Rust source file. Integration and benchmark targets now reuse the
-library's compiled event entry instead of including duplicate generated
+is also an open gate: the current 2.75 MB event IR expands to one 8.68 MB,
+112,824-line Rust source file after generic line-step folding and shared
+horizontal-skip lowering (formerly 12.1 MB and 154,270 lines). In a standalone
+same-input =rustc= comparison, optimized compilation fell from 663 s to 264 s;
+three alternating parsing runs showed comparable CPU times and identical event
+counts. The locked Orgize Release query scenario passes its 45 ms gate, but
+these local measurements are not cross-platform CI closure. Integration and
+benchmark targets reuse the library's compiled event entry instead of
+including duplicate generated
 copies. Distinct Cargo feature sets still recompile the large library function;
 runtime parallelism does not solve that compiler cost. The generic event AOT
-backend needs bounded function extraction or equivalent code-size reduction
+backend still needs further bounded code-size reduction
 with unchanged source-range and throughput receipts.
 
 | Boundary | Required closure |

@@ -91,11 +91,14 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --all-targets --all-features
 
+      - name: Run focused workspace admission performance gate
+        run: cargo test --release --test integration_test workspace_contract_scale_scenario_stays_in_budget -- --ignored
+
       - name: Run focused Org query performance gate
-        run: cargo test --release --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored --test-threads=1
+        run: cargo test --release --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored
 
       - name: Run plan ledger AOT performance gate
-        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --test-threads=1
+        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored
 
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}
