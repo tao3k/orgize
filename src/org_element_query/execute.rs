@@ -1,6 +1,6 @@
 //! Execute a typed Scheme-AOT query pack against a parsed Org Element graph.
 
-use gerbil_parser_rowan::GraphRecord;
+use gerbil_parser_rowan::{GraphIndexError, GraphRecord, GraphRelation};
 
 use crate::org_aot::{OrgAotDocument, org_graph_spec};
 
@@ -104,37 +104,42 @@ impl OrgAotDocument {
         if named_rules.next().is_some() {
             return Err(OrgElementQueryError::InvalidRule);
         }
-        let end = self
-            .element_subtree_end(scope_id)
-            .ok_or(OrgElementQueryError::InvalidScope)?;
-        admit_rule(rule)?;
-        let mut matches = Vec::new();
-        for record in &self.records()[scope_id..end] {
-            if record.kind != rule.node_kind {
-                continue;
-            }
-            let related = match rule.relation {
-                OrgElementRelation::Any => true,
-                OrgElementRelation::At => record.id == scope_id,
-                OrgElementRelation::ChildOf => record.parent_id == Some(scope_id),
-                OrgElementRelation::DescendantOf => record.id > scope_id,
-            };
-            if related
-                && rule.groups.iter().any(|group| {
-                    group.iter().all(|property| {
-                        property_matches(
-                            self,
-                            record,
-                            property.name,
-                            property.value,
-                            property.matcher,
-                        )
-                    })
-                })
-            {
-                matches.push(record.id);
-            }
+        if self.graph_index().subtree_end(scope_id).is_none() {
+            return Err(OrgElementQueryError::InvalidScope);
         }
-        Ok(matches)
+        admit_rule(rule)?;
+        let relation = match rule.relation {
+            OrgElementRelation::Any => GraphRelation::Any,
+            OrgElementRelation::At => GraphRelation::At,
+            OrgElementRelation::ChildOf => GraphRelation::ChildOf,
+            OrgElementRelation::DescendantOf => GraphRelation::DescendantOf,
+        };
+        self.graph_index()
+            .select(
+                self.records(),
+                scope_id,
+                rule.node_kind,
+                relation,
+                &[scope_id],
+                |record| {
+                    rule.groups.iter().any(|group| {
+                        group.iter().all(|property| {
+                            property_matches(
+                                self,
+                                record,
+                                property.name,
+                                property.value,
+                                property.matcher,
+                            )
+                        })
+                    })
+                },
+            )
+            .map_err(|error| match error {
+                GraphIndexError::InvalidScope => OrgElementQueryError::InvalidScope,
+                GraphIndexError::InvalidRecord | GraphIndexError::InvalidTarget => {
+                    OrgElementQueryError::InvalidRule
+                }
+            })
     }
 }

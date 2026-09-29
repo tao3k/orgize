@@ -193,13 +193,17 @@ fn memory_record_terms_match(
     }
     let records = document.records();
     let end = document
-        .element_subtree_end(headline_id)
+        .graph_index()
+        .subtree_end(headline_id)
         .unwrap_or(headline_id + 1);
     let mut cursor = headline_id + 1;
     while cursor < end {
         let node = &records[cursor];
         if node.kind == "headline" {
-            cursor = document.element_subtree_end(cursor).unwrap_or(cursor + 1);
+            cursor = document
+                .graph_index()
+                .subtree_end(cursor)
+                .unwrap_or(cursor + 1);
             continue;
         }
         if node.kind == "link" {

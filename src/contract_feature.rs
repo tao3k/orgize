@@ -3,9 +3,9 @@
 //! This layer knows no Org syntax or S-expression language. The Scheme module
 //! admits every kind, field, relation, and expectation before code generation.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use gerbil_parser_rowan::{GraphProjectionSpec, GraphRecord};
+use gerbil_parser_rowan::{GraphIndexError, GraphProjectionSpec, GraphRecord, GraphRelation};
 
 use crate::{
     org_aot::OrgAotDocument,
@@ -118,66 +118,6 @@ pub enum ContractExecutionError {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ContractScopeNodeId(pub usize);
 
-struct GraphIndex<'a> {
-    records: &'a [GraphRecord],
-    subtree_end: Vec<usize>,
-}
-
-impl<'a> GraphIndex<'a> {
-    fn new(records: &'a [GraphRecord]) -> Result<Self, ContractExecutionError> {
-        let mut subtree_end = vec![records.len(); records.len()];
-        let mut stack = Vec::<usize>::new();
-        for (position, record) in records.iter().enumerate() {
-            if record.id != position {
-                return Err(ContractExecutionError::InvalidGraph);
-            }
-            while stack.last().copied() != record.parent_id {
-                let Some(closed) = stack.pop() else {
-                    return Err(ContractExecutionError::InvalidGraph);
-                };
-                subtree_end[closed] = record.id;
-            }
-            stack.push(record.id);
-        }
-        Ok(Self {
-            records,
-            subtree_end,
-        })
-    }
-
-    fn descendant_or_self(&self, ancestor: usize, node: usize) -> bool {
-        ancestor <= node && node < self.subtree_end[ancestor]
-    }
-}
-
-fn descendant_intervals(targets: &[usize], subtree_end: &[usize]) -> Vec<(usize, usize)> {
-    let mut ranges: Vec<_> = targets
-        .iter()
-        .filter_map(|&target| {
-            let start = target + 1;
-            let end = subtree_end[target];
-            (start < end).then_some((start, end))
-        })
-        .collect();
-    ranges.sort_unstable_by_key(|&(start, _)| start);
-    let mut merged = Vec::<(usize, usize)>::with_capacity(ranges.len());
-    for (start, end) in ranges {
-        if let Some(last) = merged.last_mut()
-            && start <= last.1
-        {
-            last.1 = last.1.max(end);
-            continue;
-        }
-        merged.push((start, end));
-    }
-    merged
-}
-
-fn in_intervals(node: usize, intervals: &[(usize, usize)]) -> bool {
-    let position = intervals.partition_point(|&(start, _)| start <= node);
-    position > 0 && node < intervals[position - 1].1
-}
-
 fn target_ids(
     query: ContractQueryRule,
     scope_id: usize,
@@ -215,39 +155,33 @@ fn field_matches(
 
 fn select(
     query: ContractQueryRule,
-    graph: &GraphIndex<'_>,
     document: &OrgAotDocument,
     scope_id: usize,
     bindings: &HashMap<&'static str, Vec<usize>>,
 ) -> Result<Vec<usize>, ContractExecutionError> {
     let targets = target_ids(query, scope_id, bindings)?;
-    let child_targets: HashSet<_> = targets.iter().copied().collect();
-    let descendant_ranges = if query.relation == ContractRelation::DescendantOf {
-        descendant_intervals(&targets, &graph.subtree_end)
-    } else {
-        Vec::new()
+    let relation = match query.relation {
+        ContractRelation::Any => GraphRelation::Any,
+        ContractRelation::At => GraphRelation::At,
+        ContractRelation::ChildOf => GraphRelation::ChildOf,
+        ContractRelation::DescendantOf => GraphRelation::DescendantOf,
     };
-    let mut matches = Vec::new();
-    for record in graph.records {
-        if !graph.descendant_or_self(scope_id, record.id)
-            || record.kind != query.node_kind
-            || !field_matches(document, record, query)
-        {
-            continue;
-        }
-        let related = match query.relation {
-            ContractRelation::Any => true,
-            ContractRelation::At => child_targets.contains(&record.id),
-            ContractRelation::ChildOf => record
-                .parent_id
-                .is_some_and(|parent| child_targets.contains(&parent)),
-            ContractRelation::DescendantOf => in_intervals(record.id, &descendant_ranges),
-        };
-        if related {
-            matches.push(record.id);
-        }
-    }
-    Ok(matches)
+    document
+        .graph_index()
+        .select(
+            document.records(),
+            scope_id,
+            query.node_kind,
+            relation,
+            &targets,
+            |record| field_matches(document, record, query),
+        )
+        .map_err(|error| match error {
+            GraphIndexError::InvalidScope => ContractExecutionError::InvalidScope,
+            GraphIndexError::InvalidRecord | GraphIndexError::InvalidTarget => {
+                ContractExecutionError::InvalidGraph
+            }
+        })
 }
 
 /// Run an admitted, generated contract over the source-backed Element graph.
@@ -265,7 +199,6 @@ pub fn evaluate_contract(
         return Err(ContractExecutionError::StaleGraph);
     }
     let records = document.records();
-    let graph = GraphIndex::new(records)?;
     let scope_id = scope.0;
     if scope_id >= records.len() {
         return Err(ContractExecutionError::InvalidScope);
@@ -286,10 +219,10 @@ pub fn evaluate_contract(
             if bindings.contains_key(binding.name) {
                 return Err(ContractExecutionError::DuplicateBinding);
             }
-            let selected = select(binding.query, &graph, document, scope_id, &bindings)?;
+            let selected = select(binding.query, document, scope_id, &bindings)?;
             bindings.insert(binding.name, selected);
         }
-        let count = select(assertion.query, &graph, document, scope_id, &bindings)?.len();
+        let count = select(assertion.query, document, scope_id, &bindings)?.len();
         let passed = match assertion.expectation.operator {
             ContractOperator::AtLeast => count >= assertion.expectation.count,
             ContractOperator::Exactly => count == assertion.expectation.count,

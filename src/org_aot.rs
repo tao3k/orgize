@@ -7,8 +7,8 @@
 use std::{collections::HashMap, sync::OnceLock};
 
 use gerbil_parser_rowan::{
-    Diagnostic, GraphProjectionSpec, GraphRecord, LanguageSpec, Parse, ParseError, ParseReceipt,
-    SyntaxNode, parse_generated_events, project_syntax_graph,
+    Diagnostic, GraphIndex, GraphProjectionSpec, GraphRecord, LanguageSpec, Parse, ParseError,
+    ParseReceipt, SyntaxNode, parse_generated_events, project_syntax_graph,
 };
 use rowan::TextRange;
 
@@ -63,7 +63,7 @@ pub struct OrgAotDocument {
     configured_todo: Vec<String>,
     configured_done: Vec<String>,
     headline_properties: Vec<Option<HeadlineProperties>>,
-    subtree_end: Vec<usize>,
+    graph_index: GraphIndex,
     affiliations: OnceLock<HashMap<usize, Vec<usize>>>,
 }
 
@@ -237,6 +237,13 @@ pub(crate) fn org_expand_link_abbreviation(
 fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
     let records = project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
         .map_err(OrgAotError::Projection)?;
+    let graph_index = GraphIndex::new(&records).map_err(|error| {
+        OrgAotError::Projection(Diagnostic {
+            reason_kind: "invalid-graph-index",
+            byte_offset: 0,
+            message: format!("generated Element graph has invalid preorder: {error:?}"),
+        })
+    })?;
     let todo_directives = records
         .iter()
         .filter(|record| record.kind == "keyword")
@@ -286,12 +293,6 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
             })
         })
         .collect();
-    let mut subtree_end: Vec<usize> = (1..=records.len()).collect();
-    for record in records.iter().rev() {
-        if let Some(parent) = record.parent_id {
-            subtree_end[parent] = subtree_end[parent].max(subtree_end[record.id]);
-        }
-    }
     Ok(OrgAotDocument {
         parse,
         records,
@@ -301,7 +302,7 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
         configured_todo: config.todo_keywords.0.clone(),
         configured_done: config.todo_keywords.1.clone(),
         headline_properties,
-        subtree_end,
+        graph_index,
         affiliations: OnceLock::new(),
     })
 }
@@ -450,8 +451,8 @@ impl OrgAotDocument {
             .is_some_and(|keyword| keyword == expected)
     }
 
-    pub(crate) fn element_subtree_end(&self, record_id: usize) -> Option<usize> {
-        self.subtree_end.get(record_id).copied()
+    pub(crate) fn graph_index(&self) -> &GraphIndex {
+        &self.graph_index
     }
 
     /// Return the lossless Rowan root; its text equals the parsed source.

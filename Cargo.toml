@@ -26,7 +26,7 @@ syntax-org-fc = []
 md = ["dep:comrak"]
 
 [dependencies]
-gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "7d3482b6be13367bd8c7a91d35465259a51ccb5f", version = "0.1.0" }
+gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "dfff42f63092478aae38bef255afbd1e851526b6", version = "0.1.0" }
 blake3 = "1"
 chrono = { version = "0.4", optional = true }
 comrak = { version = "0.52", default-features = false, optional = true }

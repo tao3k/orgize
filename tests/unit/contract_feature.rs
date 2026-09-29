@@ -1,21 +1,8 @@
-//! Focused interval-index checks for the Scheme-AOT contract executor.
+//! Focused Scheme-AOT contract property checks.
 
-use super::{
-    ContractQueryRule, ContractRelation, descendant_intervals, field_matches, in_intervals,
-};
+use super::{ContractQueryRule, ContractRelation, field_matches};
 use crate::org_aot::parse_org_aot;
 use crate::org_element_query::{OrgElementFieldMatch, OrgElementPropertyRule};
-
-#[test]
-fn descendant_ranges_merge_nested_targets_without_including_uncovered_targets() {
-    let ends = [8, 5, 4, 4, 5, 8, 7, 8];
-    let ranges = descendant_intervals(&[2, 1, 5], &ends);
-    assert_eq!(ranges, vec![(2, 5), (6, 8)]);
-    assert!(!in_intervals(1, &ranges));
-    assert!(in_intervals(2, &ranges));
-    assert!(!in_intervals(5, &ranges));
-    assert!(in_intervals(7, &ranges));
-}
 
 #[test]
 fn field_query_uses_the_shared_element_property_semantics() {
