@@ -80,6 +80,8 @@ pub struct ContractAssertionRule {
     pub bindings: &'static [ContractBindingRule],
     pub query: ContractQueryRule,
     pub expectation: ContractExpectationRule,
+    pub message: Option<&'static str>,
+    pub fix: Option<&'static str>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

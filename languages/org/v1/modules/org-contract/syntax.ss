@@ -10,7 +10,11 @@
 ;;; The generated module supplies this wrapper; authors write only assertions.
 ;;; Reject arbitrary Scheme forms before any block expression is evaluated.
 (defsyntax (org-contract-block stx)
-  (syntax-case stx (assert-org-element)
+  (syntax-case stx (assert-org-element message fix)
+    ((_ (assert-org-element id severity bindings query expectation
+                            (message text) (fix repair)) ...)
+     (syntax (list (assert-org-element id severity bindings query expectation
+                                        (message text) (fix repair)) ...)))
     ((_ (assert-org-element id severity bindings query expectation) ...)
      (syntax (list (assert-org-element id severity bindings
                                         query expectation) ...)))))
@@ -31,7 +35,24 @@
      (syntax (make-org-contract-expectation 'at-most count)))))
 
 (defsyntax (assert-org-element stx)
-  (syntax-case stx (bindings bind org-elements expect)
+  (syntax-case stx (bindings bind org-elements expect message fix)
+    ((_ id severity
+        (bindings
+         (bind binding-name
+           (org-elements binding-kind binding-clause ...)) ...)
+        (org-elements kind query-clause ...)
+        (expect operator count)
+        (message text)
+        (fix repair))
+     (syntax
+      (make-org-contract-assertion
+       id (org-contract-severity severity)
+       (org-elements kind query-clause ...)
+       (org-contract-expect operator count)
+       (list (make-org-contract-binding
+              (symbol->string 'binding-name)
+              (org-elements binding-kind binding-clause ...)) ...)
+       text repair)))
     ((_ id severity
         (bindings
          (bind binding-name

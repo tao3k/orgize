@@ -34,6 +34,9 @@
 (def (nonempty-string? value)
   (and (string? value) (> (string-length value) 0)))
 
+(def (optional-string? value)
+  (or (not value) (string? value)))
+
 (def (org-contract-expectation-shape? value)
   (and (has-kind-and-slots? value +org-contract-expectation-kind+
                             '(schema operator count))
@@ -57,7 +60,7 @@
 
 (def (org-contract-assertion-shape? value)
   (and (has-kind-and-slots? value +org-contract-assertion-kind+
-                            '(schema id severity bindings query expectation))
+                            '(schema id severity bindings query expectation message fix))
        (equal? (.ref value 'schema) +org-contract-schema+)
        (nonempty-string? (.ref value 'id))
        (memq (.ref value 'severity) '(error warning info))
@@ -65,7 +68,9 @@
        (every (lambda (binding) (element? OrgContractBinding binding))
               (.ref value 'bindings))
        (org-element-query? (.ref value 'query))
-       (element? OrgContractExpectation (.ref value 'expectation))))
+       (element? OrgContractExpectation (.ref value 'expectation))
+       (optional-string? (.ref value 'message))
+       (optional-string? (.ref value 'fix))))
 
 (define-type (OrgContractAssertion @ Type.)
   .element?: org-contract-assertion-shape?)

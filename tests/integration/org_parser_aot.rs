@@ -870,7 +870,7 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
         orgize::org_aot::org_language_spec().grammar_digest
     );
     let records = document.records();
-    assert_eq!(orgize::org_aot::org_contract_pack().rules.len(), 4);
+    assert_eq!(orgize::org_aot::org_contract_pack().rules.len(), 5);
     let evidence = records
         .iter()
         .find(|record| record.kind == "headline" && record.field("title") == Some("Evidence"))

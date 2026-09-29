@@ -167,7 +167,16 @@ pub fn lint_org_with_options_and_runtime_policy(
     runtime_policy: &RuntimeLintExecutionPolicy,
 ) -> LintReport {
     let org = Org::parse(source);
-    lint_document_with_options_and_runtime_policy(&org.document(), source, options, runtime_policy)
+    let (mut findings, _) = collect_lint_findings(
+        &org.document(),
+        source,
+        options,
+        runtime_policy,
+        None,
+        Some(&org),
+    );
+    sort_lint_findings(&mut findings);
+    LintReport { findings }
 }
 
 /// Lints an already projected semantic document.
@@ -196,7 +205,8 @@ pub fn lint_document_with_options_and_runtime_policy(
     options: &LintOptions,
     runtime_policy: &RuntimeLintExecutionPolicy,
 ) -> LintReport {
-    let (mut findings, _) = collect_lint_findings(document, source, options, runtime_policy, None);
+    let (mut findings, _) =
+        collect_lint_findings(document, source, options, runtime_policy, None, None);
     sort_lint_findings(&mut findings);
     LintReport { findings }
 }
@@ -207,6 +217,7 @@ pub(crate) fn collect_lint_findings(
     options: &LintOptions,
     runtime_policy: &RuntimeLintExecutionPolicy,
     source_context: Option<&RuntimeValidationSourceContext>,
+    source_org: Option<&Org>,
 ) -> (Vec<LintFinding>, Vec<RuntimeValidationReceipt>) {
     let mut findings = Vec::new();
 
@@ -250,7 +261,7 @@ pub(crate) fn collect_lint_findings(
     findings.extend(task_blocker_findings(document, source));
     findings.extend(sdd_findings(document, source));
     findings.extend(crypt_findings(document, source));
-    findings.extend(builtin_contract_org_findings(document, source));
+    findings.extend(builtin_contract_org_findings(document, source, source_org));
     let org_contract_context = OrgContractEvaluationContext {
         source_path: options.source_path.clone(),
         metadata_keys: Vec::new(),

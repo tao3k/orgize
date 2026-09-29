@@ -21,6 +21,7 @@
                  org-contract-assertion-id org-contract-assertion-severity
                  org-contract-assertion-bindings org-contract-assertion-query
                  org-contract-assertion-expectation
+                 org-contract-assertion-message org-contract-assertion-fix
                  org-contract-definition-id org-contract-definition-scope
                  org-contract-definition-assertions))
 (export org-contract-rust-syntax org-contract-rust-source
@@ -99,7 +100,9 @@
                                (org-contract-assertion-bindings assertion))))
     (query (query-value (org-contract-assertion-query assertion)))
     (expectation (expectation-value
-                  (org-contract-assertion-expectation assertion)))))
+                  (org-contract-assertion-expectation assertion)))
+    (message (optional-string (org-contract-assertion-message assertion)))
+    (fix (optional-string (org-contract-assertion-fix assertion)))))
 
 (def (contract-value definition)
   (unless (org-contract-definition? definition)

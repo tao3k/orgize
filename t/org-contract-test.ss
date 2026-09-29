@@ -19,7 +19,9 @@
                  org-contract-evaluate-definition
                  org-contract-default-profile org-contract-profile?
                  org-contract-block assert-org-element
-                 org-contract-definition-id org-contract-definition-scope)
+                 org-contract-definition-id org-contract-definition-scope
+                 org-contract-definition-assertions
+                 org-contract-assertion-message org-contract-assertion-fix)
         (only-in "../languages/org/v1/modules/org-contract/generated/contract-source.ss" org-contract-definitions))
 (export org-contract-feature-test)
 
@@ -46,9 +48,10 @@
     (test-case "one Org document admits distinct POO contracts"
       (check (map org-contract-definition-id org-contract-definitions)
              => '("section.scope.v1" "document.headlines.v1"
-                  "document.properties.v1" "section.override-title.v1"))
+                  "document.properties.v1" "section.override-title.v1"
+                  "orgize.builtin.document-metadata.v1"))
       (check (map org-contract-definition-scope org-contract-definitions)
-             => '(subtree document document subtree)))
+             => '(subtree document document subtree document)))
     (test-case "one dedicated block expands multiple admitted assertions"
       (check
        (length
@@ -58,6 +61,18 @@
          (assert-org-element "second" warning
            (bindings) (org-elements link) (expect at-most 5))))
        => 2))
+    (test-case "built-in lint diagnostics belong to Scheme contract assertions"
+      (let* ((builtin (car (reverse org-contract-definitions)))
+             (assertions (org-contract-definition-assertions builtin))
+             (results (org-contract-evaluate-definition
+                       builtin sample-graph 0)))
+        (check (map org-contract-assertion-message assertions)
+               => '("document is missing a #+TITLE keyword"
+                    "document is missing document-level properties"))
+        (check (map org-contract-assertion-fix assertions)
+               => '("add a non-empty #+TITLE keyword near the top of the document"
+                    "add document-level properties with #+PROPERTY metadata"))
+        (check (map org-contract-result-passed? results) => '(#f #f))))
     (test-case "query vocabulary is bound to declared Org Element fields"
       (check (org-contract-profile? org-contract-default-profile) => #t)
       (check (org-element-query? (make-org-element-query "headline" "title" "Task"))

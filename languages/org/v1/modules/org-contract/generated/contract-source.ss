@@ -35,4 +35,18 @@
                 (at scope))
   (expect at-least 1))
   ))
+  (make-org-contract-definition "orgize.builtin.document-metadata.v1" 'document (org-contract-block
+(assert-org-element "document.has-title-keyword" warning
+  (bindings)
+  (org-elements keyword (property key "TITLE"))
+  (expect at-least 1)
+  (message "document is missing a #+TITLE keyword")
+  (fix "add a non-empty #+TITLE keyword near the top of the document"))
+(assert-org-element "document.has-properties" warning
+  (bindings)
+  (org-elements keyword (property key "PROPERTY"))
+  (expect at-least 1)
+  (message "document is missing document-level properties")
+  (fix "add document-level properties with #+PROPERTY metadata"))
+  ))
 ))

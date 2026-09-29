@@ -13,6 +13,10 @@ scheme-test parser_lib poo_flow_lib:
     mkdir -p target/gerbil-test
     GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test t/*-test.ss
 
+generate-contract-plan parser_lib poo_flow_lib:
+    mkdir -p target/gerbil-test
+    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-contract/generate-plan.ss languages/org/v1/modules/org-contract/generated/contract-plan.rs
+
 generate-radio-match-ir parser_lib poo_flow_lib:
     GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-elements/generate-radio-match-ir.ss languages/org/v1/modules/org-elements/generated
 

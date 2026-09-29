@@ -184,7 +184,7 @@ mod tests {
         assert!(generated.contains("(only-in \"/consumer/org-elements/interface.ss\""));
         assert_eq!(
             generated.matches("(make-org-contract-definition ").count(),
-            4
+            5
         );
         assert!(tangle(source, "", ELEMENTS_INTERFACE).is_err());
         assert!(tangle(source, CONTRACT_INTERFACE, "").is_err());

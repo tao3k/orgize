@@ -18,6 +18,7 @@
         org-contract-assertion-id org-contract-assertion-severity
         org-contract-assertion-bindings
         org-contract-assertion-query org-contract-assertion-expectation
+        org-contract-assertion-message org-contract-assertion-fix
         org-contract-definition-id org-contract-definition-scope
         org-contract-definition-assertions
         org-contract-result-assertion-id org-contract-result-matched-count
@@ -43,7 +44,8 @@
               query: query-value)))
 
 (def (make-org-contract-assertion id-value severity-value query-value
-                                  expectation-value (bindings-value '()))
+                                  expectation-value (bindings-value '())
+                                  (message-value #f) (fix-value #f))
   (admit! OrgContractAssertion
           (.o kind: +org-contract-assertion-kind+
               schema: +org-contract-schema+
@@ -51,7 +53,9 @@
               severity: severity-value
               bindings: bindings-value
               query: query-value
-              expectation: expectation-value)))
+              expectation: expectation-value
+              message: message-value
+              fix: fix-value)))
 
 (def (make-org-contract-definition id-value scope-value assertions-value)
   (admit! OrgContractDefinition
@@ -79,6 +83,8 @@
 (def (org-contract-assertion-bindings value) (.ref value 'bindings))
 (def (org-contract-assertion-query value) (.ref value 'query))
 (def (org-contract-assertion-expectation value) (.ref value 'expectation))
+(def (org-contract-assertion-message value) (.ref value 'message))
+(def (org-contract-assertion-fix value) (.ref value 'fix))
 (def (org-contract-definition-id value) (.ref value 'id))
 (def (org-contract-definition-scope value) (.ref value 'scope))
 (def (org-contract-definition-assertions value) (.ref value 'assertions))
