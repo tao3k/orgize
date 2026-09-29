@@ -24,6 +24,15 @@ Scheme-owned: the current pure-function AOT subset cannot return structured
 =TagDefinition= values. Do not replace that type boundary with packed strings
 or treat the local setting change as full semantic-parser closure.
 
+Parser PR #13 at =7d3482b6be13367bd8c7a91d35465259a51ccb5f= removes the
+cross-module =rust-module__%= warning; its three platform/runtime CI jobs pass,
+and Orgize's Scheme suite passes against the rebuilt parser without that
+warning. Orgize now pins this exact parser revision for Scheme and Cargo.
+The prior Orgize head failed the Windows 256-document workspace performance
+gate at 474 ms against 400 ms. The candidate overlaps file reads while
+preserving deterministic path order and the original 400 ms gate; Windows CI
+must verify whether that addresses the platform failure.
+
 * Current gates
 
 At the current candidate tree on 2026-09-28, all Scheme tests are under
