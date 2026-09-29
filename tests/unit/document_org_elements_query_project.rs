@@ -25,7 +25,7 @@ fn document_query_org_elements_aot_stays_inside_scenario_gate() {
     let scenario = asp_rust_scenario! {
         name: "document-query-org-elements-aot",
         package: "orgize",
-        description: "Forty-eight Org documents parse to one parser-owned element projection and answer a no-hit query",
+        description: "Forty-eight TAGS-aware Org documents parse to one parser-owned element projection and answer a no-hit query",
         fixture_root: "tests/unit/scenarios/document_query_org_elements_aot",
         tags: ["org-elements", "query", "performance"],
         commands: [
@@ -39,7 +39,7 @@ fn document_query_org_elements_aot_stays_inside_scenario_gate() {
             max_total: "45ms",
             regression_budget: "40ms",
             memory_budget_bytes: 8_388_608,
-            target_rationale: "Forty-eight Org documents must parse to one parser-owned element projection and answer a no-hit query inside the strict gate.",
+            target_rationale: "Forty-eight TAGS-aware Org documents must parse to one parser-owned element projection and answer a no-hit query inside the strict gate.",
             warmup_iterations: 0,
             measure_iterations: 3,
             metrics: [
@@ -56,7 +56,7 @@ fn document_query_org_elements_aot_stays_inside_scenario_gate() {
         fs::write(
             &path,
             format!(
-                "* Note {index}\n:PROPERTIES:\n:REVISION: {}\n:END:\nParser-owned body.\n",
+                "#+TAGS: {{ @work(w) @home(h) }} [ GTD : Control Persp ]\n* Note {index}\n:PROPERTIES:\n:REVISION: {}\n:END:\nParser-owned body.\n",
                 index + 1
             ),
         )
