@@ -10,7 +10,7 @@ use super::model::{
 };
 use super::query_plan;
 
-/// The maintained Scheme-AOT `:org-elements` query pack.
+/// The maintained Scheme-AOT `:org-elements-query` query pack.
 #[must_use]
 pub fn org_element_query_pack() -> &'static OrgElementQueryPack {
     &query_plan::QUERIES

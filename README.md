@@ -10,11 +10,9 @@ non-mutating by default: source blocks, links, agenda metadata, capture plans,
 publishing graphs, and runtime-adjacent Org features are projected as
 source-backed data instead of being executed.
 
-The opt-in AOT parser is available to Cargo consumers without installing
-Gerbil. Scheme declarations generate its syntax and Element tables, while a
-transitional Rust structural scanner currently builds its lossless Rowan tree.
-The complete Org recognition algorithm has not yet moved to Orgize's Scheme
-event generator. The shipped artifacts support:
+The public `Org::parse` facade and `parse_org_aot` use the Scheme-generated
+Org event algorithm to build a lossless Rowan tree and Element graph. Cargo
+consumers do not need Gerbil. The shipped artifacts support:
 
 ```rust
 use orgize::org_aot::{org_contract_pack, parse_org_aot};
@@ -31,9 +29,10 @@ returns the first value, while `record.values("name")` iterates all values in
 source order. For example, a planning line with both `SCHEDULED` and
 `DEADLINE` exposes two separate `key` and `value` entries.
 
-This is an opt-in parser surface while Org syntax coverage and the older
-`Org::parse` consumers are being migrated. The contract pack is generated from
-Orgize's Scheme declarations; its current evaluator is a Rust graph executor.
+Some higher-level consumers still use the older Rust contract-registry
+interpreter; that feature has not completed the Scheme-AOT cutover. The
+Scheme-owned contract pack is generated from Orgize declarations and evaluated
+over the Element graph by Rust.
 
 ## Python SDK
 
@@ -57,7 +56,7 @@ The Contract ABI is also independently consumable from C or Rust. It requires
 one Gambit runtime initialization per process; see
 [`bindings/c/include/orgize_standalone.h`](bindings/c/include/orgize_standalone.h).
 
-Named Element queries are declared in Orgize's `scheme :org-elements` blocks
+Named Element queries are declared in Orgize's `scheme :org-elements-query` blocks
 and compiled into a typed Rust pack at development time. Cargo consumers query
 without Gerbil at build or runtime:
 

@@ -33,7 +33,7 @@ pub struct OrgElementPropertyRule {
     pub matcher: OrgElementFieldMatch,
 }
 
-/// One named query compiled from `scheme :org-elements`.
+/// One named query compiled from `scheme :org-elements-query`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct OrgElementQueryRule {
     /// Stable query identity declared by the Org heading.
