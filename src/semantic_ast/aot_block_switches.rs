@@ -2,7 +2,7 @@
 
 use gerbil_parser_rowan::{GraphFieldValue, GraphRecord};
 
-use super::block_model::{BlockLineNumberMode, BlockLineNumbering, BlockSwitches};
+use super::block_model::{BlockHeaderArg, BlockLineNumberMode, BlockLineNumbering, BlockSwitches};
 
 pub(super) fn project_block_switches(
     record: &GraphRecord,
@@ -79,4 +79,37 @@ pub(super) fn project_block_parameters(record: &GraphRecord, source: &str) -> Op
         .get(key_start.checked_sub(1)?..end)
         .map(str::trim)
         .map(str::to_owned)
+}
+
+/// Project Scheme-classified header keys without lexing Org syntax in Rust.
+pub(super) fn project_block_header_args(record: &GraphRecord, source: &str) -> Vec<BlockHeaderArg> {
+    let mut keys = record
+        .fields
+        .iter()
+        .filter(|field| field.name == "header-key")
+        .collect::<Vec<_>>();
+    keys.sort_unstable_by_key(|field| field.range.start());
+    let header_end = record
+        .fields
+        .iter()
+        .filter(|field| field.name == "header")
+        .map(|field| usize::from(field.range.end()))
+        .max()
+        .unwrap_or_default();
+    keys.iter()
+        .enumerate()
+        .filter_map(|(index, key)| {
+            let start = usize::from(key.range.start()).checked_sub(1)?;
+            let end = keys
+                .get(index + 1)
+                .and_then(|next| usize::from(next.range.start()).checked_sub(1))
+                .unwrap_or(header_end);
+            let value = source.get(usize::from(key.range.end())..end)?.trim();
+            Some(BlockHeaderArg {
+                key: key.value.clone(),
+                value: (!value.is_empty()).then(|| value.to_owned()),
+                raw: source.get(start..end)?.trim().to_owned(),
+            })
+        })
+        .collect()
 }

@@ -35,7 +35,7 @@ stable across this addition.
 
 At the current candidate tree, the 13 Scheme modules under =t/*-test.ss=
 report =MODULE-OK=, =HARNESS-OK=, and =OK= without error markers. The full
-Rust workspace reports *572 passed, 3 ignored*. Forty-six tracked Org fixtures
+Rust workspace reports *573 passed, 3 ignored*. Forty-six tracked Org fixtures
 roundtrip through the public Rowan graph and reject =UnsupportedElement/Object=
 in the owned projection. The consumer =:org-elements-query= source, generated
 Scheme module, Rust AOT pack, query execution, and direct graph snapshot are
@@ -60,8 +60,8 @@ wholesale when further grammar nodes are added.
 
 Before a performance claim, benchmark table-heavy parsing, radio-link
 projection, and document projection against the prior AOT head. Build latency
-is also an open gate: the current 2.70 MB event IR expands to one 11.9 MB,
-152k-line Rust source file. Integration and benchmark targets now reuse the
+is also an open gate: the current 2.75 MB event IR expands to one 12.1 MB,
+154k-line Rust source file. Integration and benchmark targets now reuse the
 library's compiled event entry instead of including duplicate generated
 copies. Distinct Cargo feature sets still recompile the large library function;
 runtime parallelism does not solve that compiler cost. The generic event AOT
@@ -70,10 +70,10 @@ with unchanged source-range and throughput receipts.
 
 | Boundary | Required closure |
 |----------+------------------|
-| Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are now covered in Scheme and Rust graph tests. List bullet tokens now include the exact horizontal separator, so the Scheme graph preserves =- =, repeated spaces, and tabs without Rust reconstruction. Keep event IR growth bounded: the current TAGS-aware single-fallback strategy is 2.70 MB, below the former 3.63 MB duplicated strategy. |
+| Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are now covered in Scheme and Rust graph tests. List bullet tokens now include the exact horizontal separator, so the Scheme graph preserves =- =, repeated spaces, and tabs without Rust reconstruction. The shared Scheme header-event grammar now covers both source and dynamic block begin lines; its 2.75 MB IR remains below the former 3.63 MB duplicated strategy. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
 | Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
-| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields; no Rust source-text parser remains for that family. =block_metadata.rs= still lexes =:header= arguments in Rust for explicit source blocks, inherited =#+PROPERTY= values, and dynamic blocks. Migrate that whole input family to Scheme-owned structured syntax before claiming complete semantic-parser removal. Keep Rust limited to graph projection, indexing, and primitive type conversion or side-effectful consumers. |
+| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments now project from Scheme-classified graph tokens; dynamic-block and clocktable consumers no longer parse the raw =#+BEGIN:= line. =block_metadata.rs= still lexes inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values in Rust. Migrate these remaining origins together before claiming complete semantic-parser removal. Keep Rust limited to graph projection, indexing, and primitive type conversion or side-effectful consumers. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
 

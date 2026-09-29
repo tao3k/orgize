@@ -339,7 +339,7 @@
                  ,prefix-end ,name-start)
           (token ,(block-header-argument-token header)
                  ,name-start ,name-end)
-          (token ,(block-header-trivia-token header) ,name-end end)))
+          ,@(event-source-header-forms name-end)))
       (block-header-forms rule))))
 
 (def (container-open-form block-id otherwise)

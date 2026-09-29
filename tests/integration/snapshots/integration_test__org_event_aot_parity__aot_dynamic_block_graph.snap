@@ -69,6 +69,16 @@ expression: document.records()
                 value: "clocktable",
                 range: 28..38,
             },
+            GraphFieldValue {
+                name: "header-key",
+                value: "scope",
+                range: 40..45,
+            },
+            GraphFieldValue {
+                name: "header-value",
+                value: "file",
+                range: 46..50,
+            },
         ],
     },
     GraphRecord {

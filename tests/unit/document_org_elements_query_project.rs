@@ -29,7 +29,7 @@ fn document_query_org_elements_aot_stays_inside_scenario_gate() {
         fixture_root: "tests/unit/scenarios/document_query_org_elements_aot",
         tags: ["org-elements", "query", "performance"],
         commands: [
-            { label: "focused-release", argv: ["cargo", "test", "--release", "--lib", "document_query_org_elements_aot_stays_inside_scenario_gate", "--", "--ignored", "--test-threads=1"] }
+            { label: "focused-release", argv: ["cargo", "test", "--release", "--lib", "document_query_org_elements_aot_stays_inside_scenario_gate", "--", "--ignored"] }
         ],
         benchmark: {
             harness: "libtest",

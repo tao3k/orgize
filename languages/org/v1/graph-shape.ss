@@ -145,7 +145,12 @@
                (field 'OrgBlockBodyLine "raw-body" 'node-text)))
    (node 'OrgDynamicBlock "element" "dynamic-block"
          (list (field 'DynamicBlockName "name")
-               (field 'DynamicBlockHeaderTrivia "header")))
+               (field 'DynamicBlockHeaderTrivia "header")
+               (field 'SourceHeaderTrivia "header")
+               (field 'SourceHeaderKey "header")
+               (field 'SourceHeaderValue "header")
+               (field 'SourceHeaderKey "header-key" 'each)
+               (field 'SourceHeaderValue "header-value" 'each)))
    (node 'OrgSpecialBlock "element" "special-block"
          (list (field 'SpecialBlockName "name")
                (field 'BlockHeaderTrivia "header")))

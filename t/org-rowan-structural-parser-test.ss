@@ -90,6 +90,16 @@
           (SourceHeaderTrivia 51 52)
           (OrgBlockBodyLine (TextLine 52 57))
           (BlockEndLine 57 67)))))
+    (test-case "dynamic-block parameters share the Scheme-owned header grammar"
+      (check-org-ast-with parse-org-rowan-events
+        "#+BEGIN: clocktable :scope file\n#+END:\n"
+        (OrgFile
+         (OrgDynamicBlock
+          (BlockBeginLine 0 8) (DynamicBlockHeaderTrivia 8 9)
+          (DynamicBlockName 9 19)
+          (SourceHeaderTrivia 19 21) (SourceHeaderKey 21 26)
+          (SourceHeaderTrivia 26 27) (SourceHeaderValue 27 31)
+          (SourceHeaderTrivia 31 32) (BlockEndLine 32 39)))))
     (test-case "source switches are Scheme-classified before header arguments"
       (check-org-ast-with parse-org-rowan-events
         "#+begin_src rust -i -n 5 :exports both\nx\n#+end_src\n"

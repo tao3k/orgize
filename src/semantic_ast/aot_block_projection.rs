@@ -3,10 +3,10 @@
 use rowan::TextRange;
 
 use super::GraphProjector;
-use crate::ast::aot_block_switches::{project_block_parameters, project_block_switches};
-use crate::ast::block_metadata::{
-    BlockLineOptions, parse_block_header_args, parse_block_lines, split_block_lines,
+use crate::ast::aot_block_switches::{
+    project_block_header_args, project_block_parameters, project_block_switches,
 };
+use crate::ast::block_metadata::{BlockLineOptions, parse_block_lines, split_block_lines};
 use crate::ast::block_model::{BlockSwitches, SemanticFixedWidth};
 use crate::ast::model::{Block, BlockKind, Keyword, ParsedAnnotation};
 
@@ -29,15 +29,19 @@ impl GraphProjector<'_> {
             _ => BlockKind::Special(record.field("name").unwrap_or_default().to_owned()),
         };
         let children = record.child_ids.clone();
-        let name = affiliated_keywords
-            .iter()
-            .rev()
-            .find(|keyword| keyword.key.eq_ignore_ascii_case("NAME"))
-            .map(|keyword| keyword.value.trim().to_owned())
-            .or_else(|| record.field("name").map(str::to_owned));
+        let name = if kind == BlockKind::Dynamic {
+            record.field("name").map(str::to_owned)
+        } else {
+            affiliated_keywords
+                .iter()
+                .rev()
+                .find(|keyword| keyword.key.eq_ignore_ascii_case("NAME"))
+                .map(|keyword| keyword.value.trim().to_owned())
+                .or_else(|| record.field("name").map(str::to_owned))
+        };
         let language = record.field("language").map(str::to_owned);
         let parameters = project_block_parameters(record, self.source);
-        let header_args = parse_block_header_args(parameters.as_deref());
+        let header_args = project_block_header_args(record, self.source);
         let value = record.field("body").unwrap_or_default().to_owned();
         let body_range = record
             .field_range("raw-body")

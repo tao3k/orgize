@@ -292,7 +292,7 @@
         (OrgFile
          (OrgDynamicBlock
           (BlockBeginLine 0 8) (DynamicBlockHeaderTrivia 8 9)
-          (DynamicBlockName 9 13) (DynamicBlockHeaderTrivia 13 14)
+          (DynamicBlockName 9 13) (SourceHeaderTrivia 13 14)
           (OrgParagraph (OrgTextLine (TextLine 14 19)))
           (BlockEndLine 19 26))
          (OrgDrawer
@@ -463,7 +463,7 @@
         (OrgFile
          (OrgDynamicBlock
           (BlockBeginLine 0 10) (DynamicBlockHeaderTrivia 10 11)
-          (DynamicBlockName 11 15) (DynamicBlockHeaderTrivia 15 16)
+          (DynamicBlockName 11 15) (SourceHeaderTrivia 15 16)
           (OrgParagraph (OrgTextLine (TextLine 16 18)))
           (BlockEndLine 18 27))))
       (check-org-ast-with parse-org-rowan-events
