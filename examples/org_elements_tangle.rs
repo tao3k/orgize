@@ -42,11 +42,13 @@ fn tangle(source: &str, interface_module: &str) -> Result<String, String> {
     }
     for block in records.iter().filter(|record| {
         record.kind == "src-block"
-            && record.field("language") == Some("scheme")
+            && record
+                .field("language")
+                .is_some_and(|language| language.eq_ignore_ascii_case("scheme"))
             && record.field("header").is_some_and(|header| {
                 header
                     .split_ascii_whitespace()
-                    .any(|part| part == ":org-elements-query")
+                    .any(|part| part.eq_ignore_ascii_case(":org-elements-query"))
             })
     }) {
         let owner = owning_headline(&records, block.id)
@@ -117,6 +119,15 @@ mod tests {
     fn mixed_feature_tags_cannot_define_queries() {
         let source = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+begin_src scheme :org-elements-query :org-contract\n(org-elements headline)\n#+end_src\n";
         assert!(tangle(source, "../interface.ss").is_err());
+    }
+
+    #[test]
+    fn feature_header_is_case_insensitive_but_language_must_be_scheme() {
+        let upper = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+BEGIN_SRC SCHEME :ORG-ELEMENTS-QUERY\n(org-elements headline)\n#+END_SRC\n";
+        assert!(tangle(upper, "../interface.ss").is_ok());
+
+        let pseudo_language = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+BEGIN_SRC org-elements-query\n(org-elements headline)\n#+END_SRC\n";
+        assert!(tangle(pseudo_language, "../interface.ss").is_err());
     }
 
     #[test]

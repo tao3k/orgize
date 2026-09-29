@@ -50,11 +50,17 @@ pub fn feature_block<'a>(
         .filter(|record| {
             record.kind == "src-block" && owning_headline(records, record.id) == Some(section)
         })
-        .filter(|record| record.field("language") == Some("scheme"))
         .filter(|record| {
             record
-                .field("header")
-                .is_some_and(|header| header.split_ascii_whitespace().any(|part| part == feature))
+                .field("language")
+                .is_some_and(|language| language.eq_ignore_ascii_case("scheme"))
+        })
+        .filter(|record| {
+            record.field("header").is_some_and(|header| {
+                header
+                    .split_ascii_whitespace()
+                    .any(|part| part.eq_ignore_ascii_case(feature))
+            })
         })
         .collect();
     let [block] = blocks.as_slice() else {
@@ -63,7 +69,10 @@ pub fn feature_block<'a>(
     let header = block.field("header").unwrap_or_default();
     if header
         .split_ascii_whitespace()
-        .filter(|part| matches!(*part, ":org-elements-query" | ":org-contract"))
+        .filter(|part| {
+            part.eq_ignore_ascii_case(":org-elements-query")
+                || part.eq_ignore_ascii_case(":org-contract")
+        })
         .count()
         != 1
     {
