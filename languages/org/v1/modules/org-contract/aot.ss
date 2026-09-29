@@ -8,9 +8,9 @@
                  graph-projection-digest)
         (only-in "../../grammar.ss" org-v1-language-grammar)
         (only-in "../../graph.ss" org-v1-graph-projection)
+        (only-in "../org-elements/aot.ss" org-element-property-rust-value)
         (only-in "../org-elements/interface.ss"
-                 org-element-query-node-kind org-element-query-field-name
-                 org-element-query-field-value org-element-query-field-match
+                 org-element-query-node-kind
                  org-element-query-groups
                  org-element-query-relation
                  org-element-query-target)
@@ -65,19 +65,13 @@
 (def (query-value query)
   (let ((target (org-element-query-target query))
         (groups (org-element-query-groups query)))
-    (unless (and (= (length groups) 1)
-                 (<= (length (car groups)) 1))
-      (error "Org Contract AOT requires a single property predicate"))
     (rust-struct ContractQueryRule
       (node_kind (rust-string (org-element-query-node-kind query)))
-      (field_name (optional-string (org-element-query-field-name query)))
-      (field_value (optional-string (org-element-query-field-value query)))
-      (field_match
-       (rust-identifier
-        (case (org-element-query-field-match query)
-          ((exact) "ContractFieldMatch::Exact")
-          ((contains) "ContractFieldMatch::Contains")
-          (else (error "invalid Org Element field match")))))
+      (groups (rust-array
+               (map (lambda (group)
+                      (rust-array
+                       (map org-element-property-rust-value group)))
+                    groups)))
       (relation (relation-value (org-element-query-relation query)))
       (target_scope (rust-identifier (if (eq? target 'scope) "true" "false")))
       (target_binding (optional-string (and (string? target) target))))))

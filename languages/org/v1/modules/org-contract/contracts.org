@@ -11,7 +11,7 @@
 (assert-org-element "section.has-evidence-link" error
   (bindings
    (bind evidence
-     (org-elements headline (property title "Evidence")
+     (org-elements headline (property source-title "Evidence")
                    (child-of scope))))
   (org-elements link (descendant-of evidence))
   (expect at-least 1))
@@ -52,7 +52,7 @@
 #+begin_src scheme :org-contract
 (assert-org-element "section.title-has-override" error
   (bindings)
-  (org-elements headline (property-contains title "Override")
+  (org-elements headline (property-contains source-title "Override")
                 (at scope))
   (expect at-least 1))
 #+end_src

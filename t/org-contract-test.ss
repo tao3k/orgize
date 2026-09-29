@@ -32,8 +32,8 @@
 (def sample-graph
   (make-org-element-graph-view
    (list (fact 0 #f "org-data" #f #f)
-         (fact 1 0 "headline" "title" "Task")
-         (fact 2 1 "headline" "title" "Evidence")
+         (fact 1 0 "headline" "source-title" "Task")
+         (fact 2 1 "headline" "source-title" "Evidence")
          (fact 3 2 "link" "path" "https://example.test")
          (fact 4 1 "node-property" "key" "CONTRACT_ORG"))
    (lambda (record) (.ref record 'id))
@@ -89,7 +89,7 @@
              (headlines (org-element-map context "headline"
                                          (lambda (record) #t))))
         (check (length headlines) => 2)
-        (check (org-element-property context (cadr headlines) "title")
+        (check (org-element-property context (cadr headlines) "source-title")
                => "Evidence")
         (check (org-element-lineage? context 1 3) => #t)
         (check (org-element-lineage? context 2 1) => #f)))
@@ -97,7 +97,7 @@
       (let* ((evidence
               (make-org-contract-binding
                "evidence"
-               (make-org-element-query "headline" "title" "Evidence"
+               (make-org-element-query "headline" "source-title" "Evidence"
                                         'child-of 'scope)))
              (assertion
               (make-org-contract-assertion
@@ -123,7 +123,7 @@
                (assert-org-element "section.has-evidence-link" error
                  (bindings
                   (bind evidence
-                    (org-elements headline (property title "Evidence")
+                    (org-elements headline (property source-title "Evidence")
                                   (child-of scope))))
                  (org-elements link (descendant-of evidence))
                  (expect at-least 1))))

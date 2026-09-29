@@ -9,7 +9,7 @@ use gerbil_parser_rowan::{GraphProjectionSpec, GraphRecord};
 
 use crate::{
     org_aot::OrgAotDocument,
-    org_element_query::{OrgElementFieldMatch, element_property_matches},
+    org_element_query::{OrgElementPropertyRule, element_property_matches},
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -19,13 +19,6 @@ pub enum ContractRelation {
     At,
     ChildOf,
     DescendantOf,
-}
-
-/// Comparison applied to an Org Element field.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ContractFieldMatch {
-    Exact,
-    Contains,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -55,9 +48,7 @@ pub enum ContractScope {
 /// Immutable Rust projection of a Scheme Org Element query.
 pub struct ContractQueryRule {
     pub node_kind: &'static str,
-    pub field_name: Option<&'static str>,
-    pub field_value: Option<&'static str>,
-    pub field_match: ContractFieldMatch,
+    pub groups: &'static [&'static [OrgElementPropertyRule]],
     pub relation: ContractRelation,
     pub target_scope: bool,
     pub target_binding: Option<&'static str>,
@@ -209,14 +200,17 @@ fn field_matches(
     record: &GraphRecord,
     query: ContractQueryRule,
 ) -> bool {
-    let (Some(name), Some(expected)) = (query.field_name, query.field_value) else {
-        return query.field_name.is_none();
-    };
-    let matcher = match query.field_match {
-        ContractFieldMatch::Exact => OrgElementFieldMatch::Exact,
-        ContractFieldMatch::Contains => OrgElementFieldMatch::Contains,
-    };
-    element_property_matches(document, record, name, expected, matcher)
+    query.groups.iter().any(|group| {
+        group.iter().all(|property| {
+            element_property_matches(
+                document,
+                record,
+                property.name,
+                property.value,
+                property.matcher,
+            )
+        })
+    })
 }
 
 fn select(

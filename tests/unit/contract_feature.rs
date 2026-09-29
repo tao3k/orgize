@@ -1,10 +1,10 @@
 //! Focused interval-index checks for the Scheme-AOT contract executor.
 
 use super::{
-    ContractFieldMatch, ContractQueryRule, ContractRelation, descendant_intervals, field_matches,
-    in_intervals,
+    ContractQueryRule, ContractRelation, descendant_intervals, field_matches, in_intervals,
 };
 use crate::org_aot::parse_org_aot;
+use crate::org_element_query::{OrgElementFieldMatch, OrgElementPropertyRule};
 
 #[test]
 fn descendant_ranges_merge_nested_targets_without_including_uncovered_targets() {
@@ -27,9 +27,11 @@ fn field_query_uses_the_shared_element_property_semantics() {
         .expect("keyword Element");
     let query = ContractQueryRule {
         node_kind: "keyword",
-        field_name: Some("value"),
-        field_value: Some("Review plan"),
-        field_match: ContractFieldMatch::Exact,
+        groups: &[&[OrgElementPropertyRule {
+            name: "value",
+            value: "Review plan",
+            matcher: OrgElementFieldMatch::Exact,
+        }]],
         relation: ContractRelation::Any,
         target_scope: false,
         target_binding: None,
@@ -39,7 +41,11 @@ fn field_query_uses_the_shared_element_property_semantics() {
         &document,
         record,
         ContractQueryRule {
-            field_value: Some("missing"),
+            groups: &[&[OrgElementPropertyRule {
+                name: "value",
+                value: "missing",
+                matcher: OrgElementFieldMatch::Exact,
+            }]],
             ..query
         }
     ));
@@ -47,8 +53,11 @@ fn field_query_uses_the_shared_element_property_semantics() {
         &document,
         record,
         ContractQueryRule {
-            field_value: Some("Review"),
-            field_match: ContractFieldMatch::Contains,
+            groups: &[&[OrgElementPropertyRule {
+                name: "value",
+                value: "Review",
+                matcher: OrgElementFieldMatch::Contains,
+            }]],
             ..query
         }
     ));

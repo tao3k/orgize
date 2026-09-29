@@ -33,7 +33,7 @@ fn tangle(
     writeln!(output, "        (only-in {elements_interface:?}").unwrap();
     writeln!(
         output,
-        "                 org-elements property property-contains at child-of descendant-of))"
+        "                 org-elements property property-contains all-of any-of at child-of descendant-of))"
     )
     .unwrap();
     writeln!(output, "(export org-contract-definitions)").unwrap();

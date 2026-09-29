@@ -24,6 +24,9 @@
 #+begin_src scheme :org-contract
 (assert-org-element "customer.has-task-headline" warning
   (bindings)
-  (org-elements headline (property todo-type "todo"))
+  (org-elements headline
+    (all-of (property todo-type "todo")
+            (any-of (property-contains source-title "Review")
+                    (property-contains source-title "Audit"))))
   (expect at-least 1))
 #+end_src

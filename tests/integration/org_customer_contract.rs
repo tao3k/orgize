@@ -7,7 +7,7 @@ use orgize::{contract_feature::ContractScopeNodeId, org_aot::parse_org_aot};
 #[test]
 fn consumer_contract_pack_evaluates_custom_scope_and_todo_policy() {
     let document = parse_org_aot(
-        "#+TODO: WAIT | DONE\n* WAIT Review\nSee [[https://example.test][spec]].\n** DONE Child\n",
+        "#+TODO: WAIT | DONE\n* WAIT Review\nSee [[https://example.test][spec]].\n** DONE Child\n* WAIT Audit\n",
     )
     .expect("Scheme-AOT Org parser accepts the consumer document");
     let review = document
@@ -37,7 +37,7 @@ fn consumer_contract_pack_evaluates_custom_scope_and_todo_policy() {
         .evaluate_contract(todo_rule, ContractScopeNodeId(0))
         .expect("evaluate consumer document rule");
     assert_eq!(todo_result[0].assertion_id, "customer.has-task-headline");
-    assert_eq!(todo_result[0].matched_count, 1, "{:#?}", document.records());
+    assert_eq!(todo_result[0].matched_count, 2, "{:#?}", document.records());
     assert!(todo_result[0].passed);
 }
 

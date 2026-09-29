@@ -101,7 +101,9 @@ preserves upstream relative imports. During development,
 `just generate-contract-plan PARSER_LIB POO_FLOW_LIB SOURCE.ss OUTPUT.rs`
 admits the tangled POO declarations and emits a Rust pack. Cargo consumers
 compile the committed pack and call `OrgAotDocument::evaluate_contract` without
-installing Gerbil. This AOT path does not make host-loaded legacy contract
+installing Gerbil. Contract queries reuse Element `all-of`/`any-of` property
+groups and file-local TODO semantics rather than defining a second matcher.
+This AOT path does not make host-loaded legacy contract
 registries or CLI trace/capture use the generated pack yet.
 
 Live demo: <https://tao3k.github.io/orgize/>
