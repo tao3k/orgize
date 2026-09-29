@@ -3,6 +3,7 @@
 
 (import (only-in :std/test check check-exception test-case test-suite)
         (only-in :clan/poo/object .o .ref .slot?)
+        (only-in :gerbil-parser/graph-query-support graph-query-context?)
         (only-in "org-elements-test-support.ss"
                  check-org-element-catalog check-org-element-selection
                  check-org-named-query-selection
@@ -305,6 +306,7 @@
                                   (child-of scope)))
              (reordered (org-elements headline (child-of scope)
                                       (property title "Evidence"))))
+        (check (graph-query-context? (.ref context 'index)) => #t)
         (check (length headlines) => 1)
         (check (org-element-property context (car headlines) "title")
                => "Evidence")
