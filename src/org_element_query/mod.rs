@@ -5,6 +5,7 @@ mod model;
 mod query_plan;
 
 pub use execute::org_element_query_pack;
+pub(crate) use execute::property_matches as element_property_matches;
 pub use model::{
     OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryError, OrgElementQueryPack,
     OrgElementQueryRule, OrgElementRelation,

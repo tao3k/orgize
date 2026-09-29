@@ -70,6 +70,8 @@ mod org_aot_edit;
 mod org_case_insensitive_aot;
 #[path = "integration/org_citation_aot.rs"]
 mod org_citation_aot;
+#[path = "integration/org_customer_contract.rs"]
+mod org_customer_contract;
 #[path = "integration/org_dynamic_block.rs"]
 mod org_dynamic_block;
 #[path = "integration/org_element_query.rs"]

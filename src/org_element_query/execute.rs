@@ -5,8 +5,8 @@ use gerbil_parser_rowan::GraphRecord;
 use crate::org_aot::{OrgAotDocument, org_graph_spec};
 
 use super::model::{
-    OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryError, OrgElementQueryPack,
-    OrgElementQueryRule, OrgElementRelation,
+    OrgElementFieldMatch, OrgElementQueryError, OrgElementQueryPack, OrgElementQueryRule,
+    OrgElementRelation,
 };
 use super::query_plan;
 
@@ -48,18 +48,20 @@ fn admit_rule(rule: &OrgElementQueryRule) -> Result<(), OrgElementQueryError> {
     Ok(())
 }
 
-fn property_matches(
+pub(crate) fn property_matches(
     document: &OrgAotDocument,
     record: &GraphRecord,
-    property: &OrgElementPropertyRule,
+    name: &str,
+    value: &str,
+    matcher: OrgElementFieldMatch,
 ) -> bool {
-    let matches = |actual: &str| match property.matcher {
-        OrgElementFieldMatch::Exact => actual == property.value,
-        OrgElementFieldMatch::Contains => actual.contains(property.value),
+    let matches = |actual: &str| match matcher {
+        OrgElementFieldMatch::Exact => actual == value,
+        OrgElementFieldMatch::Contains => actual.contains(value),
     };
-    match property.name {
+    match name {
         "todo-type" => document.headline_todo_type(record.id).is_some_and(matches),
-        "todo-keyword" => document.headline_todo_keyword_matches(record.id, property.value),
+        "todo-keyword" => document.headline_todo_keyword_matches(record.id, value),
         "source-title" if matches!(record.kind, "headline" | "inlinetask") => {
             record.field("title").is_some_and(matches)
         }
@@ -119,9 +121,15 @@ impl OrgAotDocument {
             };
             if related
                 && rule.groups.iter().any(|group| {
-                    group
-                        .iter()
-                        .all(|property| property_matches(self, record, property))
+                    group.iter().all(|property| {
+                        property_matches(
+                            self,
+                            record,
+                            property.name,
+                            property.value,
+                            property.matcher,
+                        )
+                    })
                 })
             {
                 matches.push(record.id);

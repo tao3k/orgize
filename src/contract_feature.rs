@@ -7,6 +7,11 @@ use std::collections::{HashMap, HashSet};
 
 use gerbil_parser_rowan::{GraphProjectionSpec, GraphRecord};
 
+use crate::{
+    org_aot::OrgAotDocument,
+    org_element_query::{OrgElementFieldMatch, element_property_matches},
+};
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 /// Relationship between a selected Element and the query target.
 pub enum ContractRelation {
@@ -199,23 +204,25 @@ fn target_ids(
     }
 }
 
-fn field_matches(record: &GraphRecord, query: ContractQueryRule) -> bool {
+fn field_matches(
+    document: &OrgAotDocument,
+    record: &GraphRecord,
+    query: ContractQueryRule,
+) -> bool {
     let (Some(name), Some(expected)) = (query.field_name, query.field_value) else {
         return query.field_name.is_none();
     };
-    record
-        .fields
-        .iter()
-        .filter(|field| field.name == name)
-        .any(|field| match query.field_match {
-            ContractFieldMatch::Exact => field.value == expected,
-            ContractFieldMatch::Contains => field.value.contains(expected),
-        })
+    let matcher = match query.field_match {
+        ContractFieldMatch::Exact => OrgElementFieldMatch::Exact,
+        ContractFieldMatch::Contains => OrgElementFieldMatch::Contains,
+    };
+    element_property_matches(document, record, name, expected, matcher)
 }
 
 fn select(
     query: ContractQueryRule,
     graph: &GraphIndex<'_>,
+    document: &OrgAotDocument,
     scope_id: usize,
     bindings: &HashMap<&'static str, Vec<usize>>,
 ) -> Result<Vec<usize>, ContractExecutionError> {
@@ -230,7 +237,7 @@ fn select(
     for record in graph.records {
         if !graph.descendant_or_self(scope_id, record.id)
             || record.kind != query.node_kind
-            || !field_matches(record, query)
+            || !field_matches(document, record, query)
         {
             continue;
         }
@@ -257,12 +264,13 @@ fn select(
 pub fn evaluate_contract(
     contract: &ContractRule,
     graph_spec: &GraphProjectionSpec,
-    records: &[GraphRecord],
+    document: &OrgAotDocument,
     scope: ContractScopeNodeId,
 ) -> Result<Vec<ContractResult>, ContractExecutionError> {
     if contract.graph_digest != graph_spec.projection_digest {
         return Err(ContractExecutionError::StaleGraph);
     }
+    let records = document.records();
     let graph = GraphIndex::new(records)?;
     let scope_id = scope.0;
     if scope_id >= records.len() {
@@ -284,10 +292,10 @@ pub fn evaluate_contract(
             if bindings.contains_key(binding.name) {
                 return Err(ContractExecutionError::DuplicateBinding);
             }
-            let selected = select(binding.query, &graph, scope_id, &bindings)?;
+            let selected = select(binding.query, &graph, document, scope_id, &bindings)?;
             bindings.insert(binding.name, selected);
         }
-        let count = select(assertion.query, &graph, scope_id, &bindings)?.len();
+        let count = select(assertion.query, &graph, document, scope_id, &bindings)?.len();
         let passed = match assertion.expectation.operator {
             ContractOperator::AtLeast => count >= assertion.expectation.count,
             ContractOperator::Exactly => count == assertion.expectation.count,

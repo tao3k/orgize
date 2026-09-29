@@ -4,8 +4,7 @@ use super::{
     ContractFieldMatch, ContractQueryRule, ContractRelation, descendant_intervals, field_matches,
     in_intervals,
 };
-use gerbil_parser_rowan::{GraphFieldValue, GraphRecord};
-use rowan::{TextRange, TextSize};
+use crate::org_aot::parse_org_aot;
 
 #[test]
 fn descendant_ranges_merge_nested_targets_without_including_uncovered_targets() {
@@ -19,42 +18,37 @@ fn descendant_ranges_merge_nested_targets_without_including_uncovered_targets() 
 }
 
 #[test]
-fn field_query_matches_any_value_of_a_repeated_property() {
-    let record = GraphRecord {
-        id: 0,
-        parent_id: None,
-        child_ids: Vec::new(),
-        syntax_kind: 0,
-        category: "section",
-        kind: "headline",
-        range: TextRange::new(TextSize::from(0), TextSize::from(0)),
-        fields: vec![
-            GraphFieldValue {
-                name: "tags",
-                value: "work".into(),
-                range: TextRange::empty(TextSize::from(0)),
-            },
-            GraphFieldValue {
-                name: "tags",
-                value: "urgent".into(),
-                range: TextRange::empty(TextSize::from(0)),
-            },
-        ],
-    };
+fn field_query_uses_the_shared_element_property_semantics() {
+    let document = parse_org_aot("#+TITLE: Review plan\n").expect("Scheme-AOT fixture");
+    let record = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "keyword")
+        .expect("keyword Element");
     let query = ContractQueryRule {
-        node_kind: "headline",
-        field_name: Some("tags"),
-        field_value: Some("urgent"),
+        node_kind: "keyword",
+        field_name: Some("value"),
+        field_value: Some("Review plan"),
         field_match: ContractFieldMatch::Exact,
         relation: ContractRelation::Any,
         target_scope: false,
         target_binding: None,
     };
-    assert!(field_matches(&record, query));
+    assert!(field_matches(&document, record, query));
     assert!(!field_matches(
-        &record,
+        &document,
+        record,
         ContractQueryRule {
             field_value: Some("missing"),
+            ..query
+        }
+    ));
+    assert!(field_matches(
+        &document,
+        record,
+        ContractQueryRule {
+            field_value: Some("Review"),
+            field_match: ContractFieldMatch::Contains,
             ..query
         }
     ));

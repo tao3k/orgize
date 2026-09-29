@@ -577,6 +577,6 @@ impl OrgAotDocument {
         contract: &ContractRule,
         scope: ContractScopeNodeId,
     ) -> Result<Vec<ContractResult>, ContractExecutionError> {
-        evaluate_contract(contract, org_graph_spec(), &self.records, scope)
+        evaluate_contract(contract, org_graph_spec(), self, scope)
     }
 }

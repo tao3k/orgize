@@ -189,4 +189,19 @@ mod tests {
         assert!(tangle(source, "", ELEMENTS_INTERFACE).is_err());
         assert!(tangle(source, CONTRACT_INTERFACE, "").is_err());
     }
+
+    #[test]
+    fn consumer_contract_source_artifact_stays_in_sync() {
+        let source = include_str!("../tests/fixtures/org-contract/customer-contracts.org");
+        let generated = tangle(
+            source,
+            "../../../../languages/org/v1/modules/org-contract/interface.ss",
+            "../../../../languages/org/v1/modules/org-elements/interface.ss",
+        )
+        .expect("consumer feature source tangles through the Org Element graph");
+        assert_eq!(
+            generated,
+            include_str!("../tests/fixtures/org-contract/generated/customer-contract-source.ss")
+        );
+    }
 }

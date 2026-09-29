@@ -89,11 +89,20 @@ path, and the public Scheme AOT function emits a pack consumed by
 development environment; using its committed Rust artifact through Cargo does
 not.
 
-The `org_contract_tangle` example likewise accepts optional Contract and
-Element interface module paths for a consumer-owned generated Scheme source.
-Omitting both paths preserves the upstream relative imports. This only
-relocates imports; consumer Scheme admission, AOT generation and execution
-still require their own qualification.
+Contracts are a separate feature from Element queries. Define each in an Org
+source block with its own Scheme feature header: `#+begin_src scheme :org-contract`
+for assertions and `#+begin_src scheme :org-elements-query`
+for named searches. The header is not a pseudo-language name, and plain Scheme
+Babel blocks are neither feature. The
+[`customer-contracts.org`](tests/fixtures/org-contract/customer-contracts.org)
+fixture demonstrates a consumer-owned contract pack. `org_contract_tangle`
+accepts optional Contract and Element interface module paths; omitting both
+preserves upstream relative imports. During development,
+`just generate-contract-plan PARSER_LIB POO_FLOW_LIB SOURCE.ss OUTPUT.rs`
+admits the tangled POO declarations and emits a Rust pack. Cargo consumers
+compile the committed pack and call `OrgAotDocument::evaluate_contract` without
+installing Gerbil. This AOT path does not make host-loaded legacy contract
+registries or CLI trace/capture use the generated pack yet.
 
 Live demo: <https://tao3k.github.io/orgize/>
 
