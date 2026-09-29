@@ -18,8 +18,7 @@
         make-org-named-element-query
         org-named-element-query-id org-named-element-query-query
         make-org-element-relation-clause make-org-element-graph-view
-        org-element-query-node-kind org-element-query-field-name
-        org-element-query-field-value org-element-query-field-match
+        org-element-query-node-kind
         org-element-query-relation
         org-element-query-groups org-element-predicate-groups
         org-element-query-target org-element-clause-kind
@@ -136,19 +135,6 @@
 (def (org-element-query-node-kind value) (.ref value 'node-kind))
 (def (org-element-query-groups value) (.ref value 'groups))
 (def (org-element-predicate-groups value) (.ref value 'groups))
-(def (org-element-query-first-property value)
-  (let (groups (org-element-query-groups value))
-    (and (= (length groups) 1) (= (length (car groups)) 1)
-         (caar groups))))
-(def (org-element-query-field-name value)
-  (let (property (org-element-query-first-property value))
-    (and property (org-element-clause-name property))))
-(def (org-element-query-field-value value)
-  (let (property (org-element-query-first-property value))
-    (and property (org-element-clause-value property))))
-(def (org-element-query-field-match value)
-  (let (property (org-element-query-first-property value))
-    (if property (org-element-clause-match property) 'exact)))
 (def (org-element-query-relation value) (.ref value 'relation))
 (def (org-element-query-target value) (.ref value 'target))
 (def (org-element-clause-kind value) (.ref value 'clause-kind))
