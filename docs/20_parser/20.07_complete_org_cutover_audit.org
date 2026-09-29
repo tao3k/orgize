@@ -63,14 +63,17 @@ wholesale when further grammar nodes are added.
 Before a performance claim, benchmark table-heavy parsing, radio-link
 projection, and document projection against the prior AOT head. Build latency
 is also an open gate: a Scheme-authored shared branch continuation now keeps
-the event IR at 1.97 MB and the generated Rust at 5.65 MB / 80,916 lines,
-down from 2.75 MB and 8.68 MB / 112,824 lines. The generic AOT backend
+the event IR at 1.97 MB. The generic AOT backend's static future-scan macros
+reduce generated Rust to 5.43 MB / 75,480 lines, from the previous
+5.65 MB / 80,916 lines and the original 8.68 MB / 112,824 lines. The backend
 validates the explicit handled marker and emits the continuation only on the
 normal unhandled path; it is not an error-recovery fallback. A standalone
-5,000-parse comparison produced the same 58,510,000 events with near-parity
-CPU time. Optimized standalone =rustc= compilation was about 274 s versus
-264 s for the prior generated form under a loaded local machine, so this size
-reduction is not yet a compilation-latency win. The earlier locked Orgize
+5,000-parse comparison produced the same 58,510,000 events. Two local
+old/new runtime pairs took 198.2/92.6 s and 159.7/106.1 s respectively;
+the machine's concurrent load varied, so these are non-regression evidence,
+not a portable speedup claim. Optimized standalone =rustc= compilation took
+519 s under load, which is not comparable to the earlier 274 s measurement;
+compilation latency remains an open gate. The earlier locked Orgize
 Release query scenario passed its 45 ms gate, but
 these local measurements are not cross-platform CI closure. Integration and
 benchmark targets reuse the library's compiled event entry instead of
