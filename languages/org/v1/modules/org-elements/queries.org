@@ -5,7 +5,7 @@
 :QUERY_ID: tasks.open
 :END:
 
-#+begin_src scheme :org-elements
+#+begin_src scheme :org-elements-query
 (org-elements headline (property todo-type "todo")
               (descendant-of scope))
 #+end_src
@@ -15,7 +15,7 @@
 :QUERY_ID: tasks.waiting
 :END:
 
-#+begin_src scheme :org-elements
+#+begin_src scheme :org-elements-query
 (org-elements headline (property todo-keyword "WAIT")
               (descendant-of scope))
 #+end_src
@@ -25,7 +25,7 @@
 :QUERY_ID: tasks.review-or-audit
 :END:
 
-#+begin_src scheme :org-elements
+#+begin_src scheme :org-elements-query
 (org-elements headline
               (all-of (property todo-type "todo")
                       (any-of (property-contains source-title "Review")
@@ -38,7 +38,7 @@
 :QUERY_ID: tasks.done
 :END:
 
-#+begin_src scheme :org-elements
+#+begin_src scheme :org-elements-query
 (org-elements headline (property todo-type "done")
               (descendant-of scope))
 #+end_src
@@ -48,6 +48,6 @@
 :QUERY_ID: headlines.child
 :END:
 
-#+begin_src scheme :org-elements
+#+begin_src scheme :org-elements-query
 (org-elements headline (property source-title "DONE Child :work:"))
 #+end_src

@@ -5,7 +5,7 @@
 :QUERY_ID: customer.active-review
 :END:
 
-#+begin_src scheme :org-elements
+#+begin_src scheme :org-elements-query
 (org-elements headline
               (all-of (property todo-type "todo")
                       (property-contains source-title "Review"))
@@ -17,6 +17,6 @@
 :QUERY_ID: customer.cited-evidence
 :END:
 
-#+begin_src scheme :org-elements
+#+begin_src scheme :org-elements-query
 (org-elements citation-reference (property key "doe2020"))
 #+end_src

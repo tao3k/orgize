@@ -139,6 +139,18 @@ mod tests {
     }
 
     #[test]
+    fn elements_query_block_cannot_define_a_contract() {
+        let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
+        assert!(default_tangle(source).is_err());
+    }
+
+    #[test]
+    fn mixed_feature_tags_cannot_define_a_contract() {
+        let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-contract :org-elements-query\n(list)\n#+end_src\n";
+        assert!(default_tangle(source).is_err());
+    }
+
+    #[test]
     fn nested_block_does_not_satisfy_parent_contract() {
         let source = "* Parent\n:PROPERTIES:\n:CONTRACT_ID: parent\n:CONTRACT_SCOPE: subtree\n:END:\n** Child\n:PROPERTIES:\n:CONTRACT_ID: child\n:CONTRACT_SCOPE: subtree\n:END:\n#+begin_src scheme :org-contract\n(assert-org-element \"a\" error (bindings) (org-elements headline) (expect at-least 1))\n#+end_src\n";
         assert!(default_tangle(source).is_err());

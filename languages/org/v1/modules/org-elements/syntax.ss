@@ -11,7 +11,7 @@
         property property-contains all-of any-of
         at child-of descendant-of)
 
-;; A tagged :org-elements block admits one named query declaration only.
+;; A tagged :org-elements-query block admits one named query declaration only.
 (defsyntax (org-element-query stx)
   (syntax-case stx (org-elements)
     ((_ id (org-elements kind clause ...))

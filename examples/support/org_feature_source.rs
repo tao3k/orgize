@@ -60,6 +60,15 @@ pub fn feature_block<'a>(
     let [block] = blocks.as_slice() else {
         return Err(format!("expected exactly one scheme {feature} block"));
     };
+    let header = block.field("header").unwrap_or_default();
+    if header
+        .split_ascii_whitespace()
+        .filter(|part| matches!(*part, ":org-elements-query" | ":org-contract"))
+        .count()
+        != 1
+    {
+        return Err("a Scheme block must select exactly one Org feature".into());
+    }
     block
         .field("body")
         .ok_or_else(|| format!("scheme {feature} block has no body"))
