@@ -273,7 +273,7 @@ pub(crate) fn collect_lint_findings(
         &options.org_contract_registry,
         &org_contract_context,
     ));
-    findings.extend(todo_declaration_findings(source));
+    findings.extend(todo_declaration_findings(document, source));
 
     (findings, babel.receipts)
 }
@@ -486,13 +486,13 @@ fn is_bool_option(value: &str) -> bool {
     )
 }
 
-fn todo_declaration_findings(source: &str) -> Vec<LintFinding> {
-    duplicate_todo_declaration_findings(source, &todo_declaration_lines(source))
+fn todo_declaration_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
+    duplicate_todo_declaration_findings(source, &todo_declaration_lines(document, source))
 }
 
 fn duplicate_todo_declaration_findings(
     source: &str,
-    lines: &[TodoDeclarationLine<'_>],
+    lines: &[TodoDeclarationLine],
 ) -> Vec<LintFinding> {
     let mut findings = Vec::new();
     let mut seen = BTreeMap::<String, SeenTodoDeclaration>::new();
@@ -504,11 +504,11 @@ fn duplicate_todo_declaration_findings(
 
 fn push_todo_declaration_line_findings(
     source: &str,
-    line: &TodoDeclarationLine<'_>,
+    line: &TodoDeclarationLine,
     seen: &mut BTreeMap<String, SeenTodoDeclaration>,
     findings: &mut Vec<LintFinding>,
 ) {
-    for declaration in todo_declarations(line.value) {
+    for declaration in todo_declarations(&line.value) {
         if let Some(finding) = todo_declaration_duplicate_finding(source, line, declaration, seen) {
             findings.push(finding);
         }
@@ -517,7 +517,7 @@ fn push_todo_declaration_line_findings(
 
 fn todo_declaration_duplicate_finding(
     source: &str,
-    line: &TodoDeclarationLine<'_>,
+    line: &TodoDeclarationLine,
     declaration: TodoDeclaration,
     seen: &mut BTreeMap<String, SeenTodoDeclaration>,
 ) -> Option<LintFinding> {
@@ -562,49 +562,29 @@ fn todo_declaration_duplicate_message(
     }
 }
 
-fn todo_declaration_lines(source: &str) -> Vec<TodoDeclarationLine<'_>> {
+fn todo_declaration_lines(document: &ParsedAst, source: &str) -> Vec<TodoDeclarationLine> {
     let mut lines = Vec::new();
-    let mut in_block = false;
-    let mut position = 0;
-
-    for segment in source.split_inclusive('\n') {
-        let line = segment.trim_end_matches('\n').trim_end_matches('\r');
-        let trimmed = line.trim_start_matches([' ', '\t']);
-        if in_block {
-            if is_lint_keyword_line_with_prefix(trimmed, "end_") {
-                in_block = false;
+    document.visit(|node| {
+        if let crate::ast::AstRef::Keyword(keyword) = node {
+            if !is_todo_declaration_key(&keyword.key) {
+                return;
             }
-            position += segment.len();
-            continue;
+            let range_start = u32::from(keyword.ann.range.start()) as usize;
+            let range_end = u32::from(keyword.ann.range.end()) as usize;
+            let range_end = source
+                .get(range_start..range_end)
+                .map(|text| range_start + text.trim_end_matches(['\n', '\r']).len())
+                .unwrap_or(range_end);
+            lines.push(TodoDeclarationLine {
+                value: keyword.value.clone(),
+                range_start,
+                range_end,
+            });
         }
-
-        if is_lint_keyword_line_with_prefix(trimmed, "begin_") {
-            in_block = true;
-            position += segment.len();
-            continue;
-        }
-
-        let Some(value) = todo_declaration_line_value(trimmed) else {
-            position += segment.len();
-            continue;
-        };
-
-        lines.push(TodoDeclarationLine {
-            value,
-            range_start: position + line.len() - trimmed.len(),
-            range_end: position + line.len(),
-        });
-
-        position += segment.len();
-    }
-
+    });
+    lines.sort_by_key(|line| line.range_start);
+    lines.dedup_by_key(|line| line.range_start);
     lines
-}
-
-fn todo_declaration_line_value(line: &str) -> Option<&str> {
-    let rest = line.strip_prefix("#+")?;
-    let (key, value) = rest.split_once(':')?;
-    is_todo_declaration_key(key).then_some(value)
 }
 
 fn is_todo_declaration_key(key: &str) -> bool {
@@ -612,14 +592,6 @@ fn is_todo_declaration_key(key: &str) -> bool {
         key.to_ascii_uppercase().as_str(),
         "TODO" | "SEQ_TODO" | "TYP_TODO"
     )
-}
-
-fn is_lint_keyword_line_with_prefix(line: &str, prefix: &str) -> bool {
-    let Some(rest) = line.strip_prefix("#+") else {
-        return false;
-    };
-    rest.get(..prefix.len())
-        .is_some_and(|head| head.eq_ignore_ascii_case(prefix))
 }
 
 fn todo_declarations(value: &str) -> Vec<TodoDeclaration> {
@@ -668,8 +640,8 @@ struct TodoDeclaration {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct TodoDeclarationLine<'a> {
-    value: &'a str,
+struct TodoDeclarationLine {
+    value: String,
     range_start: usize,
     range_end: usize,
 }
