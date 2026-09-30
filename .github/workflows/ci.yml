@@ -98,7 +98,7 @@ jobs:
         run: cargo test --release --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored
 
       - name: Run plan ledger AOT performance gate
-        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored
+        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --nocapture
 
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}

@@ -51,6 +51,28 @@ fn semantic_ast_projects_table_visualization_plans() {
     );
 }
 
+#[test]
+fn radio_receivers_ignore_markers_inside_source_blocks() {
+    let source = "#+begin_src text\n# BEGIN RECEIVE ORGTBL phantom\n# END RECEIVE ORGTBL phantom\n#+end_src\n#+ORGTBL: SEND phantom orgtbl-to-latex\n| X |\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+
+    let plans = doc.table_visualization_plans();
+    assert_eq!(plans.len(), 1);
+    assert!(
+        plans[0]
+            .radio
+            .as_ref()
+            .is_some_and(|radio| radio.receiver.is_none())
+    );
+    assert!(
+        plans[0]
+            .warnings
+            .iter()
+            .any(|warning| warning.kind == TableVisualizationWarningKind::MissingRadioReceiver)
+    );
+}
+
 fn render_table_visualization_plans(
     plans: &[TableVisualizationPlan<orgize::ast::ParsedAnnotation>],
 ) -> String {
