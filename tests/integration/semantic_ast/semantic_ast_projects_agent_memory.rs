@@ -325,6 +325,7 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
     assert_eq!(hot_path.tags, ["agent", "plan"]);
     assert_eq!((hot_path.start_line, hot_path.end_line), (1, 11));
     assert_eq!(hot_path.state, MemoryRecordState::Current);
+    eprintln!("plan ledger projection (best of five): {elapsed:?}");
     assert!(
         elapsed < Duration::from_millis(100),
         "plan ledger projection exceeded 100ms gate: {elapsed:?}"

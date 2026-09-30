@@ -299,7 +299,7 @@ fn plan_ledger_records_from_paths(
     let worker_count = thread::available_parallelism()
         .map(|count| count.get())
         .unwrap_or(1)
-        .saturating_mul(2)
+        .saturating_mul(4)
         .min(paths.len().div_ceil(64));
     let chunk_size = paths.len().div_ceil(worker_count);
     thread::scope(|scope| {
