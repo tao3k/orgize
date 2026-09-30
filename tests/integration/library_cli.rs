@@ -31,6 +31,7 @@ impl OrgizeLibraryCliCommand {
         self
     }
 
+    #[cfg(unix)]
     pub(crate) fn env(
         &mut self,
         key: impl Into<OsString>,
