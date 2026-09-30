@@ -138,11 +138,14 @@ Rust retains the typed duplicate/range checks and diagnostic formatting.
 Regressions cover pseudo-directives and pseudo-headlines inside source blocks.
 The Babel CALL reference target is now a Scheme-emitted =BabelCallName= token
 and graph field. Rust no longer strips =#+call:= from an already-projected
-value or splits its target on punctuation. A shared Scheme helper limits this
-new context split to 776 generated Rust lines / 52,636 bytes over the prior
-=57,317=-line AOT product; the naive inlined branch cost 3,620 lines / 276,956
-bytes. This is a bounded size cost for one removed Rust syntax decision, not
-a runtime speedup claim. The current local Release gates remain unchanged;
+value or splits its target on punctuation. A shared Scheme keyword-value
+helper also collapses repeated TITLE, TAGS, INCLUDE, ATTR, HEADER, PROPERTY,
+table-formula, and CALL value dispatch. Against the prior =57,317=-line AOT
+product, the new event IR is 1,666,505 versus 1,720,411 bytes and generated
+Rust is 52,482 versus 57,317 lines (3,601,759 versus 3,965,820 bytes).
+The naive inlined Babel branch alone had reached 60,937 lines before the
+shared-helper revisions. These are reproducible code-size receipts, not a
+runtime speedup claim. The current local Release gates remain unchanged;
 Windows exact-head verification is still required for this slice.
 The remaining LOGBOOK path starts from an AOT-classified drawer, but interprets
 its raw body lines for lifecycle kinds, quoted states, timestamps, and links.

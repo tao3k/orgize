@@ -12,10 +12,11 @@
         (only-in "event-source-header.ss" event-source-header-forms)
         (only-in "event-babel-call.ss" event-babel-call-forms)
         (only-in "event-table-formula.ss" table-formula-marker)
-        (only-in "event-headline-tags.ss" event-headline-title-forms))
+        (only-in "event-headline-tags.ss" event-headline-title-forms)
+        (only-in "objects.ss" make-org-event-helper))
 (export headline-form headline-line-forms planning-start-condition
         heading-marker heading-separator
-        ascii-ci-pattern-at offset-after)
+        ascii-ci-pattern-at offset-after keyword-value-event-helper)
 
 (def (key-line-by-node node)
   (or (ormap (lambda (rule) (and (eq? (key-line-node rule) node) rule))
@@ -48,6 +49,50 @@
                `(line-starts-with-ascii-ci ,marker))
              rich-keyword-markers)))
 
+(def (keyword-value-forms value-start value-end)
+  `((if (and (uint-positive? (state keyword-table-open))
+             (line-starts-with-ascii-ci ,table-formula-marker))
+        ((start-node OrgTableFormulaValue)
+         (call-source-helper table-formula-assignments
+                             ,value-start ,value-end)
+         (finish-node))
+        ((if ,rich-keyword-condition
+             ((start-node OrgKeywordValue)
+              (call-source-helper inline-span ,value-start ,value-end
+                                  ((state inline-script-policy)))
+              (finish-node))
+             ((if (line-starts-with-ascii-ci "#+TAGS:")
+                  ((call-source-helper tag-vocabulary ,value-start ,value-end))
+                  ((if (line-starts-with-ascii-ci "#+INCLUDE:")
+                       ((call-source-helper include-value ,value-start ,value-end))
+                       ((if (line-starts-with-ascii-ci "#+ATTR_")
+                            ((start-node OrgKeywordAttributes)
+                             ,@(event-source-header-forms
+                                value-start value-end value-end)
+                             (finish-node))
+                            ((if (or (line-starts-with-ascii-ci "#+HEADER")
+                                     (line-starts-with-ascii-ci "#+PROPERTY:"))
+                                 ((start-node OrgSourceHeaderArgs)
+                                  ,@(event-source-header-forms
+                                     value-start value-end value-end)
+                                  (finish-node))
+                                 ((if (line-starts-with-ascii-ci ,babel-call-marker)
+                                      ,(event-babel-call-forms value-start value-end)
+                                      ((token KeywordValue ,value-start ,value-end)))))))))))))))))
+
+(def keyword-value-event-helper
+  (make-org-event-helper
+   'keyword-value-span
+   '((keyword-value-start 0)
+     (inline-script-policy 2) (keyword-table-open 0))
+   `((if (offset-less? start end)
+         ,(keyword-value-forms '(state-offset keyword-value-start)
+                               '(line-trim-end-from
+                                 (state-offset keyword-value-start)))
+         ()))
+   '(keyword-value-start inline-script-policy
+     keyword-table-open)))
+
 (def (keyword-node-forms key-end value-prefix-end optional-start optional-end)
   (let* ((value-start `(line-skip-horizontal ,value-prefix-end))
          (value-end `(line-trim-end-from ,value-start)))
@@ -63,33 +108,13 @@
           `((token KeywordTrivia ,key-end ,value-prefix-end)))
       (start-node OrgKeywordRawValue)
       (token KeywordTrivia ,value-prefix-end ,value-start)
-      (if (and (state table-open)
-               (line-starts-with-ascii-ci ,table-formula-marker))
-          ((start-node OrgTableFormulaValue)
-           (call-source-helper table-formula-assignments
-                               ,value-start ,value-end)
-           (finish-node))
-          ((if ,rich-keyword-condition
-          ((start-node OrgKeywordValue)
-           (call-source-helper inline-span ,value-start ,value-end
-                               ((state inline-script-policy)))
-           (finish-node))
-          ((if (line-starts-with-ascii-ci "#+TAGS:")
-               ((call-source-helper tag-vocabulary ,value-start ,value-end))
-               ((if (line-starts-with-ascii-ci "#+INCLUDE:")
-               ((call-source-helper include-value ,value-start ,value-end))
-               ((if (line-starts-with-ascii-ci "#+ATTR_")
-                    ((start-node OrgKeywordAttributes)
-                     ,@(event-source-header-forms value-start value-end value-end)
-                     (finish-node))
-                    ((if (or (line-starts-with-ascii-ci "#+HEADER")
-                             (line-starts-with-ascii-ci "#+PROPERTY:"))
-                         ((start-node OrgSourceHeaderArgs)
-                          ,@(event-source-header-forms value-start value-end value-end)
-                          (finish-node))
-                         ((if (line-starts-with-ascii-ci ,babel-call-marker)
-                              ,(event-babel-call-forms value-start value-end)
-                              ((token KeywordValue ,value-start ,value-end)))))))))))))))
+      (if (state table-open)
+          ((call-source-helper keyword-value-span start end
+                               ((offset ,value-start)
+                                (state inline-script-policy) (uint 1))))
+          ((call-source-helper keyword-value-span start end
+                               ((offset ,value-start)
+                                (state inline-script-policy) (uint 0)))))
       (finish-node)
       (token KeywordTrivia ,value-end end)
       (finish-node))))

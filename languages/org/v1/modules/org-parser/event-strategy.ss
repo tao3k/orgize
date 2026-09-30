@@ -20,7 +20,8 @@
         (only-in "event-headline.ss"
                  headline-form planning-start-condition
                  heading-marker heading-separator
-                 ascii-ci-pattern-at offset-after)
+                 ascii-ci-pattern-at offset-after
+                 keyword-value-event-helper)
         (only-in "event-inlinetask.ss"
                  inlinetask-event-initial inlinetask-start-condition
                  inlinetask-end-condition inlinetask-open-forms
@@ -612,6 +613,7 @@
 (def org-event-helpers
   (append paragraph-event-helpers table-formula-event-helpers
           (list event-source-header-helper event-babel-call-helper
+                keyword-value-event-helper
                 tag-vocabulary-event-helper
                 (make-org-event-helper
                  'include-value
