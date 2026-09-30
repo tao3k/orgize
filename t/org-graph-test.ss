@@ -91,6 +91,16 @@
                                 "code" "verbatim" "bold" "italic"
                                 "underline" "subscript" "superscript"
                                 "strike-through" "cloze"))))
+    (test-case "dynamic block exposes its Scheme closing line"
+      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+             (dynamic (car (filter (lambda (node)
+                                     (eq? (graph-node-syntax-kind node)
+                                          'OrgDynamicBlock))
+                                   nodes)))
+             (end-fields (filter (lambda (field)
+                                   (equal? (graph-field-name field) "end"))
+                                 (graph-node-fields dynamic))))
+        (check (map graph-field-mode end-fields) => '(append))))
     (test-case "planning keeps each key and value independently"
       (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
              (planning

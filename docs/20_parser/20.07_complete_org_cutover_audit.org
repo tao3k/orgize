@@ -32,19 +32,23 @@ stable across this addition.
 
 * Current gates
 
-At code commit =85f9e198741f5b4926724743d97af203a9d24fb5=,
-the 13 Scheme modules under =t/*-test.ss= report =MODULE-OK=,
-=HARNESS-OK=, and =OK= without error markers. The full Rust workspace
-reports *581 passed, 4 ignored*; strict all-target Clippy and C/Rust native
-contract smoke pass locally. The unchanged Release 2,000-file plan-ledger
-<100 ms gate passed at 36.12 ms best-of-five on this host. This times a batch
-directory walk, file reads, AOT parses, and projection; it is not a
-single-parse latency or portable speedup claim. The pinned backend head
-=9bbe7d0= passed exact-head Ubuntu and macOS CI. The Orgize PR head
-=85f9e19= passed all five exact-head required CI jobs (Ubuntu, macOS, and
-Windows Rust; Ubuntu and macOS Python), including the unchanged Windows
-plan-ledger gate at 59.04 ms. These gates establish the current candidate,
-not complete Org-mode conformance or a portable throughput improvement.
+The last pushed Orgize PR #18 head =6581804= passed all five exact-head CI
+jobs (Ubuntu, macOS, and Windows Rust; Ubuntu and macOS Python). Its unchanged
+Release 2,000-file plan-ledger gate measured 78.9255 ms best-of-five on
+Windows, below the 100 ms limit. The preceding parser-code head =f5a1ac1=
+first failed that gate at 103.2245 ms, then passed a diagnostic rerun at
+83.8839 ms and a failed-job rerun at 81.9714 ms. This is a variable batch
+of directory walking, file reads, AOT parses, and projection, not a
+single-parse latency or portable throughput-improvement claim. The pinned
+backend head =9bbe7d0= passed exact-head Ubuntu and macOS CI.
+
+The next unpushed graph-boundary slice locally passes 13 Scheme modules
+with =MODULE-OK=, =HARNESS-OK=, and final =OK=; the default-feature Rust
+workspace reports *584 passed, 4 ignored*. Strict all-target Clippy,
+C/Rust native contract smoke, and the three unchanged Release gates pass;
+the plan-ledger gate measured 47.57 ms best-of-five on this macOS host.
+Exact-head remote CI is still required before claiming this slice across
+platforms, and no green gate alone establishes complete Org-mode conformance.
 
 Forty-six tracked Org fixtures
 roundtrip through the public Rowan graph and reject =UnsupportedElement/Object=
@@ -168,12 +172,13 @@ The remaining LOGBOOK path starts from an AOT-classified drawer, but interprets
 its raw body lines for lifecycle kinds, quoted states, timestamps, and links.
 It is typed lifecycle interpretation, not a second block parser; moving those
 value spans into Scheme-owned graph fields requires a focused design and
-line-level regression coverage. Dynamic-block content counting likewise acts
-only on an AOT-classified block range and does not recognize block delimiters.
+line-level regression coverage. Dynamic-block content counting now uses the
+Scheme graph's closing-line range, rather than assuming the last raw line is
+the closer; it still interprets content after AOT block classification.
 
 | Boundary | Required closure |
 |----------+------------------|
-| Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are covered in Scheme and Rust graph tests. List bullet tokens include the exact horizontal separator, preserving =- =, repeated spaces, and tabs without Rust reconstruction. The shared Scheme header-event grammar covers source and dynamic block begin lines; the source-header helper now keeps current event IR at 1,720,411 bytes. |
+| Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are covered in Scheme and Rust graph tests. List bullet tokens include the exact horizontal separator, preserving =- =, repeated spaces, and tabs without Rust reconstruction. Shared source-header and keyword-value helpers keep the current event IR at 1,666,505 bytes. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
 | Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
 | Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, and priority-heading selection now use AOT context. LOGBOOK lifecycle extraction and output-only raw-text consumers still require an ownership audit: distinguish typed semantic interpretation and output formatting from a second Org syntax recognizer before migrating them. |

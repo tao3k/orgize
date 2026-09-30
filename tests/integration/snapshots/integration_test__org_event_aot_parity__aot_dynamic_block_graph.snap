@@ -79,6 +79,11 @@ expression: document.records()
                 value: "file",
                 range: 46..50,
             },
+            GraphFieldValue {
+                name: "end",
+                value: "#+END:\n",
+                range: 105..112,
+            },
         ],
     },
     GraphRecord {

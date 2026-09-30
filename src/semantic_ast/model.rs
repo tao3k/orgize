@@ -31,6 +31,8 @@ pub struct ParsedAnnotation {
     pub(crate) header_args: Vec<BlockHeaderArg>,
     // Scheme-classified Babel target span; avoid copying it into every AST node.
     pub(crate) babel_call_name_range: Option<TextRange>,
+    // Scheme-classified dynamic-block closing line for content projection.
+    pub(crate) dynamic_end_range: Option<TextRange>,
 }
 
 impl std::fmt::Debug for ParsedAnnotation {

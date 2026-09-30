@@ -102,3 +102,31 @@ fn dynamic_writer_name_is_not_replaced_by_an_affiliated_name() {
     assert_eq!(records[0].writer, DynamicBlockWriterKind::ClockTable);
     assert_eq!(doc.clock_table_plans().len(), 1);
 }
+
+#[test]
+fn dynamic_block_content_uses_scheme_closing_range() {
+    let source = "#+BEGIN: clocktable\r\n\r\n#+END:later\r\n  output\r\n#+END:\r\n";
+    let graph = parse_org_aot(source).expect("Scheme-AOT graph");
+    let dynamic = graph
+        .records()
+        .iter()
+        .find(|record| record.kind == "dynamic-block")
+        .expect("Scheme-classified dynamic block");
+    let end = dynamic
+        .field_range("end")
+        .expect("Scheme closing-line field");
+    assert_eq!(
+        &source[usize::from(end.start())..usize::from(end.end())],
+        "#+END:\r\n"
+    );
+
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.dynamic_block_records();
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].content_line_count, 3);
+    assert_eq!(
+        records[0].content_state,
+        DynamicBlockContentState::ExistingOutput
+    );
+}

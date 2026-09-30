@@ -5,6 +5,7 @@ use super::{
     DynamicBlockRecord, DynamicBlockWriterKind, Element, ElementData, ParsedAnnotation, Section,
     SectionIndexSource,
 };
+use crate::ast::block_metadata::split_block_lines;
 
 impl Document<ParsedAnnotation> {
     /// Projects native Org dynamic blocks without executing their writer functions.
@@ -80,7 +81,12 @@ fn dynamic_block_record(element: &Element<ParsedAnnotation>) -> Option<DynamicBl
         return None;
     }
     let name = block.name.as_ref()?;
-    let (content_state, content_line_count) = dynamic_block_content(&element.ann.raw);
+    let end = element
+        .ann
+        .dynamic_end_range
+        .expect("AOT dynamic block has a closing line");
+    let end_start = usize::from(end.start()) - usize::from(element.ann.range.start());
+    let (content_state, content_line_count) = dynamic_block_content(&element.ann.raw[..end_start]);
     Some(DynamicBlockRecord {
         source: SectionIndexSource::from_annotation(&element.ann),
         writer: writer_kind(name),
@@ -114,16 +120,13 @@ fn writer_kind(name: &str) -> DynamicBlockWriterKind {
     }
 }
 
-fn dynamic_block_content(raw: &str) -> (DynamicBlockContentState, usize) {
-    // The Scheme/Rowan block range already identifies the closing line.
-    let lines = raw.lines().collect::<Vec<_>>();
-    let body = lines
-        .get(1..lines.len().saturating_sub(1))
-        .unwrap_or_default();
-    let (has_nonblank_content, content_line_count) = body
-        .iter()
+fn dynamic_block_content(before_closing_line: &str) -> (DynamicBlockContentState, usize) {
+    // The Scheme graph identifies the closer; only the opening line is skipped.
+    let (has_nonblank_content, content_line_count) = split_block_lines(before_closing_line)
+        .into_iter()
+        .skip(1)
         .fold((false, 0usize), |(has_nonblank, count), line| {
-            (has_nonblank || !line.trim().is_empty(), count + 1)
+            (has_nonblank || !line.text.trim().is_empty(), count + 1)
         });
 
     (

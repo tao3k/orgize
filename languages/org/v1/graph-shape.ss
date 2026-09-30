@@ -160,6 +160,7 @@
                (field 'OrgBlockBodyLine "raw-body" 'node-text)))
    (node 'OrgDynamicBlock "element" "dynamic-block"
          (list (field 'DynamicBlockName "name")
+               (field 'BlockEndLine "end")
                (field 'DynamicBlockHeaderTrivia "header")
                (field 'SourceHeaderTrivia "header")
                (field 'SourceHeaderKey "header")

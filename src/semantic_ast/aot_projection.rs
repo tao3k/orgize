@@ -110,6 +110,7 @@ impl<'a> GraphProjector<'a> {
             raw: self.raw(range).to_owned(),
             header_args: Vec::new(),
             babel_call_name_range: None,
+            dynamic_end_range: None,
         }
     }
 
@@ -559,6 +560,9 @@ impl<'a> GraphProjector<'a> {
         let record = self.record(id);
         let range = record.range;
         let kind = record.kind;
+        let dynamic_end_range = (kind == "dynamic-block")
+            .then(|| record.field_range("end"))
+            .flatten();
         let mut data = match kind {
             "keyword" => ElementData::Keyword(self.keyword(id)?),
             "clock" => {
@@ -640,8 +644,10 @@ impl<'a> GraphProjector<'a> {
                 }
             }
         }
+        let mut ann = self.annotation(range);
+        ann.dynamic_end_range = dynamic_end_range;
         Some(Element {
-            ann: self.annotation(range),
+            ann,
             affiliated_keywords,
             data,
         })
