@@ -122,8 +122,36 @@ fn typed_source_blocks_preserve_escaped_header_text_across_blocks() {
 
 #[test]
 fn typed_source_block_document_rejects_org_end_marker_in_source() {
-    let error = OrgSourceBlock::new("rust", vec![], vec![], "#+end_src\nnot source").unwrap_err();
-    assert_eq!(error.reason_kind(), "org-source-block-input-invalid");
+    for body in ["#+end_src\nnot source", "#+EnD_SrC \r\nnot source"] {
+        let error = OrgSourceBlock::new("rust", vec![], vec![], body).unwrap_err();
+        assert_eq!(error.reason_kind(), "org-source-block-input-invalid");
+    }
+}
+
+#[test]
+fn typed_source_block_document_admits_aot_nonclosing_lookalikes() {
+    for body in [
+        "#+end_srcX\nnot a closer",
+        "prefix #+end_src\nnot a closer",
+        "  #+EnD_SrC \r\nnot a closer",
+        "#+end_src-other\r\nnot a closer",
+    ] {
+        let block = OrgSourceBlock::new("rust", vec![], vec![], body)
+            .expect("Scheme AOT owns source-block closing syntax");
+        let rendered = OrgSourceBlockDocument::new(vec![block])
+            .unwrap()
+            .render()
+            .expect("lookalike remains inside one AOT source block");
+        let parsed = parse_org_aot(&rendered).expect("rendered block reparses");
+        assert_eq!(
+            parsed
+                .records()
+                .iter()
+                .filter(|record| record.kind == "src-block")
+                .count(),
+            1
+        );
+    }
 }
 
 #[test]
