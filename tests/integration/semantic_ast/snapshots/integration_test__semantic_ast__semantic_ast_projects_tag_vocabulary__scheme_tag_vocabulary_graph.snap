@@ -48,7 +48,7 @@ expression: records
         child_ids: [
             3,
         ],
-        syntax_kind: 213,
+        syntax_kind: 214,
         category: "component",
         kind: "tag-vocabulary",
         range: 8..31,
@@ -71,7 +71,7 @@ expression: records
             2,
         ),
         child_ids: [],
-        syntax_kind: 215,
+        syntax_kind: 216,
         category: "component",
         kind: "tag-inclusive-group",
         range: 8..25,

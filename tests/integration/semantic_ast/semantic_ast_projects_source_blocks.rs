@@ -258,6 +258,74 @@ print(data)
 }
 
 #[test]
+fn semantic_ast_header_args_are_classified_in_the_scheme_graph() {
+    let org = Org::parse(
+        "#+HEADER: :var x=1 :results output\n\
+         * H\n\
+         :PROPERTIES:\n\
+         :header-args: :cache yes :results drawer\n\
+         :END:\n\
+         src_sh[:exports both :var x=1]{echo hi}\n",
+    );
+    for (kind, expected_keys) in [
+        ("keyword", vec!["var", "results"]),
+        ("node-property", vec!["cache", "results"]),
+        ("inline-src-block", vec!["exports", "var"]),
+    ] {
+        let record = org
+            .records()
+            .iter()
+            .find(|record| record.kind == kind)
+            .expect("Scheme graph record for header source");
+        assert_eq!(
+            record.values("header-key").collect::<Vec<_>>(),
+            expected_keys,
+            "{kind} header keys must come from Scheme tokens"
+        );
+    }
+}
+
+#[test]
+fn semantic_ast_scheme_header_keys_respect_quoted_and_escaped_values() {
+    let org = Org::parse(
+        "#+HEADER: :var 'x :inner y' :results output\n\
+         #+HEADER: :var a\\ :inner :exports both\n\
+         #+begin_src sh\n\
+         echo hi\n\
+         #+end_src\n",
+    );
+    let keywords = org
+        .records()
+        .iter()
+        .filter(|record| record.kind == "keyword")
+        .collect::<Vec<_>>();
+    assert_eq!(keywords.len(), 2);
+    assert_eq!(
+        keywords[0].values("header-key").collect::<Vec<_>>(),
+        ["var", "results"]
+    );
+    assert_eq!(
+        keywords[1].values("header-key").collect::<Vec<_>>(),
+        ["var", "exports"]
+    );
+    let records = org.document().source_block_records();
+    assert_eq!(records.len(), 1);
+    assert_eq!(
+        records[0]
+            .header_args
+            .iter()
+            .map(|arg| arg.raw.as_str())
+            .collect::<Vec<_>>(),
+        [
+            ":var 'x :inner y'",
+            ":results output",
+            ":var a\\ :inner",
+            ":exports both",
+        ]
+    );
+}
+
+#[test]
 fn semantic_ast_projects_source_block_records_property_header_args() {
     let doc = Org::parse(
         r#"#+PROPERTY: header-args :results output :exports results :var dataset=data_block

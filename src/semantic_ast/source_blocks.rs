@@ -173,7 +173,7 @@ fn collect_inline_source_records_in_objects(
                 let header_args = explicit_inline_source_header_args(
                     language.as_str(),
                     properties,
-                    parameters.as_deref(),
+                    &object.ann.header_args,
                 );
                 let normalized_header_args =
                     source_block_header_args(SourceBlockRecordKind::InlineSource, &header_args);

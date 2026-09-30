@@ -11,6 +11,7 @@ use rowan::TextRange;
 use crate::org_aot::{OrgAotDocument, org_image_link};
 
 use super::aot_attachment_projection::attachment_state;
+use super::aot_block_switches::project_block_header_args;
 use super::aot_footnote_resolution::resolve_document_footnotes;
 use super::aot_link_resolution::resolve_document_links;
 use super::aot_timestamp_projection::project_timestamp;
@@ -107,7 +108,14 @@ impl<'a> GraphProjector<'a> {
             start: self.lines.position(range.start()),
             end: self.lines.position(range.end()),
             raw: self.raw(range).to_owned(),
+            header_args: Vec::new(),
         }
+    }
+
+    fn header_annotation(&self, record: &GraphRecord, range: TextRange) -> ParsedAnnotation {
+        let mut ann = self.annotation(range);
+        ann.header_args = project_block_header_args(record, self.source);
+        ann
     }
 
     fn document(mut self) -> ParsedAst {
@@ -356,8 +364,16 @@ impl<'a> GraphProjector<'a> {
         let rich_span = record.field_range("rich-value");
         let children = record.child_ids.clone();
         let attributes = self.keyword_attributes(record);
+        let ann = if key.eq_ignore_ascii_case("HEADER")
+            || key.eq_ignore_ascii_case("HEADERS")
+            || key.eq_ignore_ascii_case("PROPERTY")
+        {
+            self.header_annotation(record, range)
+        } else {
+            self.annotation(range)
+        };
         Some(Keyword {
-            ann: self.annotation(range),
+            ann,
             key,
             optional,
             value,
@@ -474,7 +490,7 @@ impl<'a> GraphProjector<'a> {
     fn property(&self, record: &GraphRecord) -> Option<Property<ParsedAnnotation>> {
         let value = record.field("value")?.to_owned();
         Some(Property {
-            ann: self.annotation(record.field_range("value")?),
+            ann: self.header_annotation(record, record.field_range("value")?),
             key: record.field("key")?.to_owned(),
             duration: OrgDuration::parse(value.clone()),
             value,
@@ -738,6 +754,11 @@ impl<'a> GraphProjector<'a> {
         }
         let range = record.range;
         let kind = record.kind;
+        let ann = if kind == "inline-src-block" {
+            self.header_annotation(record, range)
+        } else {
+            self.annotation(range)
+        };
         let data = match kind {
             "code" => ObjectData::Code(record.field("value").unwrap_or_default().to_owned()),
             "verbatim" => {
@@ -818,10 +839,7 @@ impl<'a> GraphProjector<'a> {
                 }
             }
         };
-        Some(Object {
-            ann: self.annotation(range),
-            data,
-        })
+        Some(Object { ann, data })
     }
 
     fn link(&mut self, id: usize) -> ObjectData<ParsedAnnotation> {

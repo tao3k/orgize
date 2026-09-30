@@ -88,6 +88,7 @@
    (OrgSuperscript node (value))
    (OrgStrikeThrough node (value))
    (OrgSection node (heading element))
+   (OrgSourceHeaderArgs node (key value))
    (HeadlineLine token (text))
    (HeadlineTitle token (text))
    (HeadlineTagValue token (text))

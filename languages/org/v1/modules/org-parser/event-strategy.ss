@@ -179,7 +179,13 @@
          (token PropertyTrivia start ,property-key-start)
          (token PropertyKey ,property-key-start ,property-key-end)
          (token PropertyTrivia ,property-key-end ,property-value-start)
-         (token PropertyValue ,property-value-start ,property-value-end)
+         (if ,(ascii-ci-pattern-at property-key-start "header-args")
+             ((start-node OrgSourceHeaderArgs)
+              ,@(event-source-header-forms property-value-start
+                                           property-value-end
+                                           property-value-end)
+              (finish-node))
+             ((token PropertyValue ,property-value-start ,property-value-end)))
          (token PropertyTrivia ,property-value-end end)
          (finish-node))
         ((token TextLine start end)))

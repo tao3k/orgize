@@ -34,13 +34,16 @@
                => '("inlinetask"))
         (check (map org-graph-field-label (org-graph-node-fields keyword))
                => '("key" "optional" "value" "value" "value"
-                    "value" "include-raw-path" "include-path"
+                    "value" "value" "include-raw-path" "include-path"
                     "include-unclosed-path" "include-argument"
                     "include-option-key" "include-option-value"
-                    "rich-value" "attribute-key" "attribute-value" "raw-value"))
+                    "rich-value" "attribute-key" "attribute-value"
+                    "header" "header" "header" "header-key"
+                    "header-value" "raw-value"))
         (check (map org-graph-field-mode (org-graph-node-fields keyword))
                => '(one one one node-text node-text node-text node-text
-                       one one each each each node-text each each node-text))))
+                       node-text one one each each each node-text each each
+                       one one one each each node-text))))
     (test-case "runtime Contract consumes POO Element graph without generator"
       (let* ((graph
               (make-org-element-graph-view

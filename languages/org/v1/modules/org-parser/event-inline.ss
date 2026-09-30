@@ -25,6 +25,8 @@
                  inline-script-event-initial inline-script-upper-digit-bytes)
         (only-in "event-inline-cloze.ss"
                  cloze-event-initial cloze-open-forms cloze-scan-forms)
+        (only-in "event-source-header.ss"
+                 event-source-header-forms event-source-header-initial)
         (only-in "objects.ss"
                  make-org-inline-markup org-inline-markup-byte
                  org-inline-markup-id org-inline-markup-node))
@@ -403,8 +405,12 @@
     (if (state inline-code-has-first)
         ((token InlineCodeDelimiter (state-offset inline-code-name-end)
                 (state-offset inline-code-first-start))
-         (token InlineSourceParameters (state-offset inline-code-first-start)
-                (state-offset inline-code-first-end))
+         (start-node OrgSourceHeaderArgs)
+         ,@(event-source-header-forms
+            '(state-offset inline-code-first-start)
+            '(state-offset inline-code-first-end)
+            '(state-offset inline-code-first-end))
+         (finish-node)
          (token InlineCodeDelimiter (state-offset inline-code-first-end)
                 (state-offset inline-code-body-start)))
         ((token InlineCodeDelimiter (state-offset inline-code-name-end)
@@ -814,6 +820,7 @@
 
 (def event-inline-initial
   (append
+   event-source-header-initial
    latex-event-initial
    '((inline-cursor 0))
    inline-link-event-initial

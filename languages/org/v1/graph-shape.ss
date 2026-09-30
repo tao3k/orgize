@@ -72,6 +72,7 @@
                (field 'KeywordOptional "optional")
                (field 'KeywordValue "value")
                (field 'OrgKeywordValue "value" 'node-text)
+               (field 'OrgSourceHeaderArgs "value" 'node-text)
                (field 'OrgKeywordAttributes "value" 'node-text)
                (field 'OrgKeywordInclude "value" 'node-text)
                (field 'OrgIncludePath "include-raw-path" 'node-text)
@@ -83,6 +84,11 @@
                (field 'OrgKeywordValue "rich-value" 'node-text)
                (field 'SourceHeaderKey "attribute-key" 'each)
                (field 'SourceHeaderValue "attribute-value" 'each)
+               (field 'SourceHeaderTrivia "header")
+               (field 'SourceHeaderKey "header")
+               (field 'SourceHeaderValue "header")
+               (field 'SourceHeaderKey "header-key" 'each)
+               (field 'SourceHeaderValue "header-value" 'each)
                (field 'OrgKeywordRawValue "raw-value" 'node-text)))
    (node 'OrgTagVocabulary "component" "tag-vocabulary"
          (list (field 'TagName "name" 'each)
@@ -130,7 +136,13 @@
                (field 'FormulaRemoteReference "remote")))
    (node 'OrgNodeProperty "property" "node-property"
          (list (field 'PropertyKey "key")
-               (field 'PropertyValue "value")))
+               (field 'PropertyValue "value")
+               (field 'OrgSourceHeaderArgs "value" 'node-text)
+               (field 'SourceHeaderTrivia "header")
+               (field 'SourceHeaderKey "header")
+               (field 'SourceHeaderValue "header")
+               (field 'SourceHeaderKey "header-key" 'each)
+               (field 'SourceHeaderValue "header-value" 'each)))
    (node 'OrgSourceBlock "element" "src-block"
          (list (field 'SourceLanguage "language")
                (field 'BlockHeaderTrivia "header")
@@ -191,6 +203,12 @@
    (node 'OrgInlineSourceBlock "object" "inline-src-block"
          (list (field 'InlineSourceLanguage "language")
                (field 'InlineSourceParameters "parameters")
+               (field 'OrgSourceHeaderArgs "parameters" 'node-text)
+               (field 'SourceHeaderTrivia "header")
+               (field 'SourceHeaderKey "header")
+               (field 'SourceHeaderValue "header")
+               (field 'SourceHeaderKey "header-key" 'each)
+               (field 'SourceHeaderValue "header-value" 'each)
                (field 'InlineSourceBody "value" 'append-or-empty)))
    (node 'OrgInlineBabelCall "object" "inline-babel-call"
          (list (field 'InlineBabelCallName "call")

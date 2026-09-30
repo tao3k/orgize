@@ -26,7 +26,10 @@ impl GraphProjector<'_> {
         let mut relocate = |annotation: &ParsedAnnotation| {
             let start = usize::from(span.start()) + usize::from(annotation.range.start());
             let end = usize::from(span.start()) + usize::from(annotation.range.end());
-            self.annotation(TextRange::new((start as u32).into(), (end as u32).into()))
+            let mut relocated =
+                self.annotation(TextRange::new((start as u32).into(), (end as u32).into()));
+            relocated.header_args = annotation.header_args.clone();
+            relocated
         };
         if objects.is_empty() {
             vec![self.plain(span, source)]

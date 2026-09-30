@@ -1,6 +1,6 @@
 //! Source and example block metadata parsing for semantic projection.
 
-use super::{BlockCodeRef, BlockHeaderArg, BlockLine, BlockSwitches};
+use super::{BlockCodeRef, BlockLine, BlockSwitches};
 
 pub(super) struct BlockLineOptions<'a> {
     pub(super) switches: &'a BlockSwitches,
@@ -84,128 +84,6 @@ pub(super) fn parse_block_lines<A>(
             }
         })
         .collect()
-}
-
-pub(crate) fn parse_block_header_args(args: Option<&str>) -> Vec<BlockHeaderArg> {
-    let Some(args) = args else {
-        return Vec::new();
-    };
-    parse_keyword_args(args, ":")
-}
-
-fn parse_keyword_args(value: &str, prefix: &str) -> Vec<BlockHeaderArg> {
-    let tokens = split_keyword_tokens_with_ranges(value);
-    tokens
-        .iter()
-        .enumerate()
-        .filter_map(|(index, token)| block_header_arg(value, &tokens, index, token, prefix))
-        .collect()
-}
-
-fn block_header_arg(
-    source: &str,
-    tokens: &[KeywordToken],
-    index: usize,
-    token: &KeywordToken,
-    prefix: &str,
-) -> Option<BlockHeaderArg> {
-    let key = token
-        .value
-        .strip_prefix(prefix)
-        .filter(|key| !key.is_empty())?;
-    let end_index = next_keyword_arg_index(tokens, index + 1, prefix).unwrap_or(tokens.len());
-    let end = tokens
-        .get(end_index.saturating_sub(1))
-        .map(|token| token.end)
-        .unwrap_or(token.end);
-    let value = (index + 1 < end_index)
-        .then(|| source[tokens[index + 1].start..end].trim().to_string())
-        .filter(|value| !value.is_empty());
-
-    Some(BlockHeaderArg {
-        key: key.to_string(),
-        value,
-        raw: source[token.start..end].trim().to_string(),
-    })
-}
-
-fn next_keyword_arg_index(tokens: &[KeywordToken], start: usize, prefix: &str) -> Option<usize> {
-    tokens
-        .iter()
-        .enumerate()
-        .skip(start)
-        .find(|(_, token)| is_keyword_arg_token(token, prefix))
-        .map(|(index, _)| index)
-}
-
-fn is_keyword_arg_token(token: &KeywordToken, prefix: &str) -> bool {
-    token.value.starts_with(prefix) && token.value.len() > prefix.len()
-}
-
-#[derive(Clone, Debug)]
-struct KeywordToken {
-    start: usize,
-    end: usize,
-    value: String,
-}
-
-fn split_keyword_tokens_with_ranges(value: &str) -> Vec<KeywordToken> {
-    let mut tokens = Vec::new();
-    let mut cursor = 0;
-
-    while let Some(start) = next_keyword_token_start(value, cursor) {
-        let (token, next) = keyword_token(value, start);
-        tokens.push(token);
-        cursor = next;
-    }
-
-    tokens
-}
-
-fn next_keyword_token_start(value: &str, cursor: usize) -> Option<usize> {
-    value[cursor..]
-        .char_indices()
-        .find(|(_, ch)| !ch.is_whitespace())
-        .map(|(position, _)| cursor + position)
-}
-
-fn keyword_token(value: &str, start: usize) -> (KeywordToken, usize) {
-    let mut cursor = start;
-    let mut parsed = String::new();
-    let mut quote = None;
-    let mut escaped = false;
-
-    while cursor < value.len() {
-        let ch = value[cursor..].chars().next().unwrap();
-        cursor += ch.len_utf8();
-        if escaped {
-            parsed.push(ch);
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if quote == Some(ch) {
-            quote = None;
-        } else if quote.is_none() && matches!(ch, '"' | '\'') {
-            quote = Some(ch);
-        } else if quote.is_none() && ch.is_whitespace() {
-            break;
-        } else {
-            parsed.push(ch);
-        }
-    }
-
-    if escaped {
-        parsed.push('\\');
-    }
-
-    (
-        KeywordToken {
-            start,
-            end: value[..cursor].trim_end().len(),
-            value: parsed,
-        },
-        cursor,
-    )
 }
 
 #[derive(Clone, Copy)]

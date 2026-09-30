@@ -20,7 +20,8 @@
                  make-org-inline-script org-inline-script-node
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
-        (only-in "org-parser-test-support.ss" check-org-ast-with)
+        (only-in "org-parser-test-support.ss"
+                 check-org-ast-with org-events-cover-source?)
         (only-in "../languages/org/v1/rowan-event-fixture.ss" rowan-event-fixture-json)
         (only-in "../languages/org/v1/rowan-event-parser.ss"
                  parse-org-rowan-events
@@ -90,6 +91,20 @@
           (SourceHeaderTrivia 51 52)
           (OrgBlockBodyLine (TextLine 52 57))
           (BlockEndLine 57 67)))))
+    (test-case "header keys stay source-backed across quotes and escapes"
+      (let* ((source
+              "#+HEADER: :var 'x :inner y' :results output\nsrc_sh[:var a\\ :inner :exports both]{echo hi}\n")
+             (events (parse-org-rowan-events source))
+             (keys
+              (filter (lambda (event)
+                        (and (eq? (car event) 'token)
+                             (eq? (cadr event) 'SourceHeaderKey)))
+                      events)))
+        (check (org-events-cover-source? source events) => #t)
+        (check (map (lambda (event)
+                      (substring source (caddr event) (cadddr event)))
+                    keys)
+               => '("var" "results" "var" "exports"))))
     (test-case "dynamic-block parameters share the Scheme-owned header grammar"
       (check-org-ast-with parse-org-rowan-events
         "#+BEGIN: clocktable :scope file\n#+END:\n"
@@ -409,7 +424,10 @@
            (DrawerBeginLine 4 17)
            (OrgNodeProperty
             (PropertyTrivia 17 18) (PropertyKey 18 36)
-            (PropertyTrivia 36 38) (PropertyValue 38 52)
+            (PropertyTrivia 36 38)
+            (OrgSourceHeaderArgs
+             (SourceHeaderTrivia 38 39) (SourceHeaderKey 39 46)
+             (SourceHeaderTrivia 46 47) (SourceHeaderValue 47 52))
             (PropertyTrivia 52 53))
            (DrawerEndLine 53 59))))))
     (test-case "declared planning and clock keys retain headline context"

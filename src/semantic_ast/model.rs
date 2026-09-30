@@ -21,12 +21,27 @@ pub type ParsedAst = Document<ParsedAnnotation>;
 pub type BareAst = Document<()>;
 
 /// Source-backed annotation attached to semantic nodes projected from the syntax tree.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ParsedAnnotation {
     pub range: TextRange,
     pub start: SourcePosition,
     pub end: SourcePosition,
     pub raw: String,
+    // Scheme graph metadata retained for later source-block inheritance.
+    pub(crate) header_args: Vec<BlockHeaderArg>,
+}
+
+impl std::fmt::Debug for ParsedAnnotation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Keep the public source annotation display independent of its
+        // internal graph-projection sidecar.
+        f.debug_struct("ParsedAnnotation")
+            .field("range", &self.range)
+            .field("start", &self.start)
+            .field("end", &self.end)
+            .field("raw", &self.raw)
+            .finish()
+    }
 }
 
 /// One-based line and column position in the original Org source.

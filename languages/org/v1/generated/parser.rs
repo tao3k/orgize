@@ -85,6 +85,7 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "OrgSuperscript", category: KindCategory::Node },
     KindSpec { name: "OrgStrikeThrough", category: KindCategory::Node },
     KindSpec { name: "OrgSection", category: KindCategory::Node },
+    KindSpec { name: "OrgSourceHeaderArgs", category: KindCategory::Node },
     KindSpec { name: "HeadlineLine", category: KindCategory::Token },
     KindSpec { name: "HeadlineTitle", category: KindCategory::Token },
     KindSpec { name: "HeadlineTagValue", category: KindCategory::Token },
@@ -231,10 +232,10 @@ static KINDS: &[KindSpec] = &[
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
-    TerminalSpec { name: "headline", syntax_kind: 81 },
-    TerminalSpec { name: "block-begin", syntax_kind: 86 },
-    TerminalSpec { name: "block-end", syntax_kind: 103 },
-    TerminalSpec { name: "text", syntax_kind: 104 },
+    TerminalSpec { name: "headline", syntax_kind: 82 },
+    TerminalSpec { name: "block-begin", syntax_kind: 87 },
+    TerminalSpec { name: "block-end", syntax_kind: 104 },
+    TerminalSpec { name: "text", syntax_kind: 105 },
 ];
 
 static LEXICAL_RULES: &[LexicalRule] = &[
@@ -409,7 +410,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:851de8fc68cf92163541d796aacefd5f38127af34f59d1526531772b88246f72",
+    grammar_digest: "sha256:f3785039914835d1c5c0d0aded0e5d56384af08a2c9315b2f450fd69330ead77",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,
