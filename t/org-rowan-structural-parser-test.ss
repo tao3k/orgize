@@ -378,7 +378,8 @@
           (OrgBabelCall (KeywordTrivia 38 40) (KeywordKey 40 44)
                         (KeywordTrivia 44 45)
                         (OrgKeywordRawValue
-                         (KeywordTrivia 45 46) (KeywordValue 46 52))
+                         (KeywordTrivia 45 46) (BabelCallName 46 50)
+                         (KeywordValue 50 52))
                         (KeywordTrivia 52 53))))))
     (test-case "property drawer keys stay beneath the owning headline"
       (check-org-ast-with parse-org-rowan-events

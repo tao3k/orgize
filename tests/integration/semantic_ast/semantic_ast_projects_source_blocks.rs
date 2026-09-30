@@ -561,15 +561,24 @@ Inline call_load_data() and call_missing_inline().
 
 #[test]
 fn babel_call_references_consume_only_the_aot_value() {
-    let source = "#+CALL: target()\n#+CALL: #+call:literal()\n";
+    let source = "#+CALL: target()\n#+CALL: #+call:literal()\n#+CALL: configured[head](x=1)\n#+CALL: target(x=1)[head]\n#+CALL: ()\n";
     let graph = parse_org_aot(source).expect("Scheme AOT classifies Babel calls");
     let values = graph
         .records()
         .iter()
         .filter(|record| record.kind == "babel-call")
-        .map(|record| record.field("value"))
+        .map(|record| (record.field("name"), record.field("value")))
         .collect::<Vec<_>>();
-    assert_eq!(values, [Some("target()"), Some("#+call:literal()")]);
+    assert_eq!(
+        values,
+        [
+            (Some("target"), Some("target()")),
+            (Some("#+call:literal"), Some("#+call:literal()")),
+            (Some("configured"), Some("configured[head](x=1)")),
+            (Some("target"), Some("target(x=1)[head]")),
+            (None, Some("()")),
+        ]
+    );
 
     let doc = Org::parse(source).document();
     assert_clean_projection(&doc);
@@ -579,7 +588,10 @@ fn babel_call_references_consume_only_the_aot_value() {
         .filter(|reference| reference.kind == SourceBlockReferenceKind::BabelCall)
         .map(|reference| reference.target)
         .collect::<Vec<_>>();
-    assert_eq!(targets, ["target", "#+call:literal"]);
+    assert_eq!(
+        targets,
+        ["target", "#+call:literal", "configured", "target"]
+    );
 }
 
 #[test]

@@ -109,6 +109,7 @@ impl<'a> GraphProjector<'a> {
             end: self.lines.position(range.end()),
             raw: self.raw(range).to_owned(),
             header_args: Vec::new(),
+            babel_call_name_range: None,
         }
     }
 
@@ -363,7 +364,7 @@ impl<'a> GraphProjector<'a> {
         let rich_span = record.field_range("rich-value");
         let children = record.child_ids.clone();
         let attributes = self.keyword_attributes(record);
-        let ann = if key.eq_ignore_ascii_case("HEADER")
+        let mut ann = if key.eq_ignore_ascii_case("HEADER")
             || key.eq_ignore_ascii_case("HEADERS")
             || key.eq_ignore_ascii_case("PROPERTY")
         {
@@ -371,6 +372,9 @@ impl<'a> GraphProjector<'a> {
         } else {
             self.annotation(range)
         };
+        if record.kind == "babel-call" {
+            ann.babel_call_name_range = record.field_range("name");
+        }
         Some(Keyword {
             ann,
             key,

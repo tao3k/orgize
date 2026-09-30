@@ -105,6 +105,8 @@
                (field 'TagGroupSeparator "separator" 'each)))
    (node 'OrgBabelCall "element" "babel-call"
          (list (field 'KeywordKey "key")
+               (field 'BabelCallName "name")
+               (field 'BabelCallName "value")
                (field 'KeywordValue "value")
                (field 'OrgKeywordRawValue "raw-value" 'node-text)))
    (node 'OrgPlanning "element" "planning"

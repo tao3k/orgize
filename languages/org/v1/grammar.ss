@@ -232,7 +232,8 @@
    (TagGroupOpen token (text))
    (TagGroupClose token (text))
    (TagGroupSeparator token (text))
-   (TagTrivia token (text)))
+   (TagTrivia token (text))
+   (BabelCallName token (text)))
   (terminals
    (headline HeadlineLine)
    (block-begin BlockBeginLine)

@@ -29,6 +29,8 @@ pub struct ParsedAnnotation {
     pub raw: String,
     // Scheme graph metadata retained for later source-block inheritance.
     pub(crate) header_args: Vec<BlockHeaderArg>,
+    // Scheme-classified Babel target span; avoid copying it into every AST node.
+    pub(crate) babel_call_name_range: Option<TextRange>,
 }
 
 impl std::fmt::Debug for ParsedAnnotation {

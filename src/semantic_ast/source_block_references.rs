@@ -108,7 +108,11 @@ fn element_call_reference(
     let ElementData::BabelCall(keyword) = &element.data else {
         return None;
     };
-    let target = babel_call_target(&keyword.value)?;
+    let name_range = keyword.ann.babel_call_name_range?;
+    let keyword_start = usize::from(keyword.ann.range.start());
+    let start = usize::from(name_range.start()).checked_sub(keyword_start)?;
+    let end = usize::from(name_range.end()).checked_sub(keyword_start)?;
+    let target = keyword.ann.raw.get(start..end)?.to_owned();
     Some(source_block_reference(
         names,
         SourceBlockSource::from_annotation(&keyword.ann),
@@ -223,16 +227,6 @@ fn noweb_reference_name(raw: &str) -> Option<&str> {
         .unwrap_or(raw)
         .trim();
     (!target.is_empty() && !target.contains(char::is_whitespace)).then_some(target)
-}
-
-fn babel_call_target(value: &str) -> Option<String> {
-    let target = value
-        .trim()
-        .split(|ch: char| ch == '(' || ch == '[' || ch.is_whitespace())
-        .next()
-        .unwrap_or_default()
-        .trim();
-    (!target.is_empty()).then(|| target.to_string())
 }
 
 fn header_var_reference_target(assignment: &str, names: &BTreeSet<String>) -> Option<String> {

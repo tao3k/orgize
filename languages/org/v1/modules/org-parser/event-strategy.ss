@@ -27,6 +27,7 @@
                  inlinetask-end-forms inlinetask-pending-close-form)
         (only-in "event-source-header.ss"
                  event-source-header-helper event-source-header-forms)
+        (only-in "event-babel-call.ss" event-babel-call-helper)
         (only-in "event-include.ss" event-include-initial event-include-forms)
         (only-in "event-table.ss"
                  table-event-initial table-close-form table-or-element-form)
@@ -610,7 +611,8 @@
 
 (def org-event-helpers
   (append paragraph-event-helpers table-formula-event-helpers
-          (list event-source-header-helper tag-vocabulary-event-helper
+          (list event-source-header-helper event-babel-call-helper
+                tag-vocabulary-event-helper
                 (make-org-event-helper
                  'include-value
                  event-include-initial

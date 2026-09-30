@@ -10,6 +10,7 @@
         (only-in "event-paragraph.ss"
                  paragraph-close-form paragraph-line-form)
         (only-in "event-source-header.ss" event-source-header-forms)
+        (only-in "event-babel-call.ss" event-babel-call-forms)
         (only-in "event-table-formula.ss" table-formula-marker)
         (only-in "event-headline-tags.ss" event-headline-title-forms))
 (export headline-form headline-line-forms planning-start-condition
@@ -86,7 +87,9 @@
                          ((start-node OrgSourceHeaderArgs)
                           ,@(event-source-header-forms value-start value-end value-end)
                           (finish-node))
-                         ((token KeywordValue ,value-start ,value-end)))))))))))))
+                         ((if (line-starts-with-ascii-ci ,babel-call-marker)
+                              ,(event-babel-call-forms value-start value-end)
+                              ((token KeywordValue ,value-start ,value-end)))))))))))))))
       (finish-node)
       (token KeywordTrivia ,value-end end)
       (finish-node))))
