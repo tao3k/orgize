@@ -32,20 +32,19 @@ stable across this addition.
 
 * Current gates
 
-At code commit =10da8e6728cd79c7c6246c7b600d9eab88bd3bed=,
+At code commit =85f9e198741f5b4926724743d97af203a9d24fb5=,
 the 13 Scheme modules under =t/*-test.ss= report =MODULE-OK=,
 =HARNESS-OK=, and =OK= without error markers. The full Rust workspace
 reports *581 passed, 4 ignored*; strict all-target Clippy and C/Rust native
 contract smoke pass locally. The unchanged Release 2,000-file plan-ledger
-<100 ms gate passed at 27.02 ms best-of-five on this host. This times a batch
+<100 ms gate passed at 36.12 ms best-of-five on this host. This times a batch
 directory walk, file reads, AOT parses, and projection; it is not a
-single-parse latency or portable speedup claim. The upstream backend pin
-=dbd2fb5= passed Ubuntu Cargo and Bazel CI. Orgize's previous code head
-=71614e9= passed Ubuntu Rust/Python, Windows Rust, and macOS Rust CI; its macOS
-Python job failed before project build when a third-party installer repeatedly
-returned HTTP 500. CI must be checked at the final PR head; no older run
-qualifies later commits. Per the current progression rule, macOS availability
-does not block code work, but failed or unfinished checks are not green.
+single-parse latency or portable speedup claim. The pinned backend head
+=9bbe7d0= passed exact-head Ubuntu and macOS CI. The Orgize PR head
+=85f9e19= passed all five exact-head required CI jobs (Ubuntu, macOS, and
+Windows Rust; Ubuntu and macOS Python), including the unchanged Windows
+plan-ledger gate at 59.04 ms. These gates establish the current candidate,
+not complete Org-mode conformance or a portable throughput improvement.
 
 Forty-six tracked Org fixtures
 roundtrip through the public Rowan graph and reject =UnsupportedElement/Object=
@@ -55,8 +54,8 @@ tested together. The release-mode Org Element query scenario also passed at an
 earlier head after all 48 fixture documents gained
 TAGS group and shortcut declarations under the existing 45 ms gate. This
 is a runtime path receipt, not a TAGS-only microbenchmark or build-latency
-receipt. These are local receipts, not exact-head release closure; new-head
-platform CI must still be verified after this candidate is committed.
+receipt. The exact-head platform CI above is the release-gate evidence for
+the current candidate; these earlier fixture and query receipts remain local.
 
 * Remaining ownership work
 
@@ -123,11 +122,12 @@ forced-inline candidate generates 3,965,820 bytes / the same line count, down
 from 4,565,808 bytes / 65,676 lines before these backend slices. That pin passed
 backend Ubuntu/macOS CI but failed the downstream Windows 100 ms plan-ledger
 gate at 107.13 ms, with a diagnostic rerun at 109.96 ms (the prior downstream
-head passed at 73.30 ms). The forced-inline repair is pending downstream
-Windows verification; do not count the line-end helper slice as retained until
-it passes. The backend owns only event lowering; it does not classify Org
-tokens. Host-local Criterion samples were unstable
-enough that even the unchanged binary varied from 5.11 to 13.52 ms for 1,000
+head passed at 73.30 ms). The forced-inline repair subsequently passed the
+downstream Windows gate at 59.04 ms at exact Orgize head =85f9e19=, so the
+size slice is retained with that bounded performance receipt. The backend owns
+only event lowering; it does not classify Org tokens. Host-local Criterion
+samples were unstable enough that even the unchanged binary varied from 5.11
+to 13.52 ms for 1,000
 source headers; this is a code-size receipt, not a throughput-speedup claim.
 
 The Rust TODO declaration lint now consumes AOT-projected keywords rather than
@@ -136,6 +136,12 @@ Priority-cookie lint visits AOT section and inlinetask headings and takes
 their level from the AST rather than recognizing headlines by raw star scans.
 Rust retains the typed duplicate/range checks and diagnostic formatting.
 Regressions cover pseudo-directives and pseudo-headlines inside source blocks.
+The remaining LOGBOOK path starts from an AOT-classified drawer, but interprets
+its raw body lines for lifecycle kinds, quoted states, timestamps, and links.
+It is typed lifecycle interpretation, not a second block parser; moving those
+value spans into Scheme-owned graph fields requires a focused design and
+line-level regression coverage. Dynamic-block content counting likewise acts
+only on an AOT-classified block range and does not recognize block delimiters.
 
 | Boundary | Required closure |
 |----------+------------------|
