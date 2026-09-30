@@ -292,11 +292,15 @@ fn plan_ledger_records_from_paths(
         return Ok(records);
     }
 
+    // Reading independent files can overlap while the Scheme-AOT graph for
+    // each file is built. Bound workers by the work available, not a fixed
+    // machine-wide cap, and keep each worker's chunk large enough to amortize
+    // thread startup.
     let worker_count = thread::available_parallelism()
         .map(|count| count.get())
         .unwrap_or(1)
-        .min(4)
-        .min(paths.len());
+        .saturating_mul(2)
+        .min(paths.len().div_ceil(64));
     let chunk_size = paths.len().div_ceil(worker_count);
     thread::scope(|scope| {
         let mut handles = Vec::new();
