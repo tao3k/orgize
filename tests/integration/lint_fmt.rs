@@ -184,6 +184,20 @@ fn lint_todo_declarations_follow_aot_block_context() {
 }
 
 #[test]
+fn lint_priority_cookies_follow_aot_headline_context() {
+    let source =
+        "#+begin_src text\n* TODO [#bad] inside source\n#+end_src\n* TODO [#] real headline\n";
+    let report = lint_org(source);
+    let malformed = report
+        .findings
+        .iter()
+        .filter(|finding| finding.code == "ORG010")
+        .collect::<Vec<_>>();
+    assert_eq!(malformed.len(), 1);
+    assert_eq!(malformed[0].location.start.line, 4);
+}
+
+#[test]
 fn lint_reports_priority_property_issues_with_snapshot() {
     let report = lint_org(priority_property_issues_lint_fixture());
 

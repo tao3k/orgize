@@ -1,22 +1,31 @@
 //! Priority-cookie lint checks.
 
-use crate::ast::{PriorityProfile, PriorityRangeStatus, PriorityValue};
+use crate::ast::{
+    AstRef, ElementData, ParsedAst, PriorityProfile, PriorityRangeStatus, PriorityValue,
+};
 
 use super::lint_model::{LintFinding, LintSeverity, location_for_range_bounds};
 
 pub(crate) fn priority_cookie_findings(
+    document: &ParsedAst,
     source: &str,
     profile: &PriorityProfile,
 ) -> Vec<LintFinding> {
-    source
-        .split_inclusive('\n')
-        .scan(0, |position, segment| {
-            let current = *position;
-            *position += segment.len();
-            Some((current, segment))
-        })
-        .filter_map(|(position, segment)| {
-            priority_cookie_finding(source, position, segment, profile)
+    let mut starts = Vec::new();
+    document.visit(|node| match node {
+        AstRef::Section(section) => starts.push(u32::from(section.ann.range.start()) as usize),
+        AstRef::Element(element) if matches!(&element.data, ElementData::Inlinetask(_)) => {
+            starts.push(u32::from(element.ann.range.start()) as usize);
+        }
+        _ => {}
+    });
+    starts.sort_unstable();
+    starts.dedup();
+    starts
+        .into_iter()
+        .filter_map(|position| {
+            let line = source.get(position..)?.split_inclusive('\n').next()?;
+            priority_cookie_finding(source, position, line, profile)
         })
         .collect()
 }

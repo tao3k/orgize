@@ -239,7 +239,11 @@ pub(crate) fn collect_lint_findings(
         source,
     ));
     findings.extend(options_keyword_findings(&document.metadata, source));
-    findings.extend(priority_cookie_findings(source, &options.priority_profile));
+    findings.extend(priority_cookie_findings(
+        document,
+        source,
+        &options.priority_profile,
+    ));
     findings.extend(property_drawer_findings(
         document,
         source,
