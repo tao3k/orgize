@@ -1,7 +1,8 @@
 ;;; -*- Gerbil -*-
 ;;; Source-block header arguments are Scheme-owned, source-backed event tokens.
 
-(export event-source-header-initial event-source-header-forms)
+(import (only-in "objects.ss" make-org-event-helper))
+(export event-source-header-helper event-source-header-forms)
 
 (def header-index '(line-index source-header-byte-index))
 (def header-next `(line-step ,header-index))
@@ -24,15 +25,18 @@
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-")))
 
 (def (event-source-header-forms from (until '(line-content-end)) (finish 'end))
-  `((if (uint-positive? (state source-header-cursor))
-        ((set-uint source-header-mode (uint 0))) ())
-    (set-uint source-header-cursor (offset ,from))
-    (for-line-bytes source-header-byte-index ,from ,until
+  `((call-source-helper source-header-span ,from ,finish
+                        ((offset ,until)))))
+
+(def (source-header-body-forms)
+  `((set-uint source-header-cursor (offset start))
+    (for-line-bytes source-header-byte-index start
+                    (state-offset source-header-until)
       ,(source-header-step-forms))
     (if (uint-equal? (state source-header-mode) (uint 1))
         ((token SourceHeaderKey (state-offset source-header-key-start)
-                ,until)
-         (set-uint source-header-cursor (offset ,until))) ())
+                (state-offset source-header-until))
+         (set-uint source-header-cursor (offset (state-offset source-header-until)))) ())
     (if (or (uint-equal? (state source-header-mode) (uint 3))
             (uint-equal? (state source-header-mode) (uint 4))
             (uint-equal? (state source-header-mode) (uint 5))
@@ -40,8 +44,8 @@
             (uint-equal? (state source-header-mode) (uint 13))
             (uint-equal? (state source-header-mode) (uint 14)))
         ((token SourceHeaderValue (state-offset source-header-value-start)
-                ,until)
-         (set-uint source-header-cursor (offset ,until))) ())
+                (state-offset source-header-until))
+         (set-uint source-header-cursor (offset (state-offset source-header-until)))) ())
     (if (or (uint-equal? (state source-header-mode) (uint 9))
             (uint-equal? (state source-header-mode) (uint 10))
             (uint-equal? (state source-header-mode) (uint 11))
@@ -49,9 +53,9 @@
             (uint-equal? (state source-header-mode) (uint 16))
             (uint-equal? (state source-header-mode) (uint 17)))
         ((token SourceSwitchValue (state-offset source-header-value-start)
-                ,until)
-         (set-uint source-header-cursor (offset ,until))) ())
-    (token SourceHeaderTrivia (state-offset source-header-cursor) ,finish)))
+                (state-offset source-header-until))
+         (set-uint source-header-cursor (offset (state-offset source-header-until)))) ())
+    (token SourceHeaderTrivia (state-offset source-header-cursor) end)))
 
 (def (source-header-step-forms)
   `((if (uint-equal? (state source-header-mode) (uint 0))
@@ -222,3 +226,10 @@
   '((source-header-mode 0) (source-header-cursor 0)
     (source-header-key-start 0) (source-header-value-start 0)
     (source-header-switch-argument 0)))
+
+(def event-source-header-helper
+  (make-org-event-helper
+   'source-header-span
+   (cons '(source-header-until 0) event-source-header-initial)
+   (source-header-body-forms)
+   '(source-header-until)))

@@ -26,7 +26,7 @@
         (only-in "event-inline-cloze.ss"
                  cloze-event-initial cloze-open-forms cloze-scan-forms)
         (only-in "event-source-header.ss"
-                 event-source-header-forms event-source-header-initial)
+                 event-source-header-forms)
         (only-in "objects.ss"
                  make-org-inline-markup org-inline-markup-byte
                  org-inline-markup-id org-inline-markup-node))
@@ -820,7 +820,6 @@
 
 (def event-inline-initial
   (append
-   event-source-header-initial
    latex-event-initial
    '((inline-cursor 0))
    inline-link-event-initial

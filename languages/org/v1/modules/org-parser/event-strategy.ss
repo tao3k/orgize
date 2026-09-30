@@ -26,7 +26,7 @@
                  inlinetask-end-condition inlinetask-open-forms
                  inlinetask-end-forms inlinetask-pending-close-form)
         (only-in "event-source-header.ss"
-                 event-source-header-initial event-source-header-forms)
+                 event-source-header-helper event-source-header-forms)
         (only-in "event-include.ss" event-include-initial event-include-forms)
         (only-in "event-table.ss"
                  table-event-initial table-close-form table-or-element-form)
@@ -606,15 +606,14 @@
    latex-environment-initial
    paragraph-event-initial
    event-headline-tags-initial
-   inlinetask-event-initial
-   event-source-header-initial))
+   inlinetask-event-initial))
 
 (def org-event-helpers
   (append paragraph-event-helpers table-formula-event-helpers
-          (list tag-vocabulary-event-helper
+          (list event-source-header-helper tag-vocabulary-event-helper
                 (make-org-event-helper
                  'include-value
-                 (append event-include-initial event-source-header-initial)
+                 event-include-initial
                  (event-include-forms 'start 'end)))))
 
 (def inlinetask-pending-keep-condition
