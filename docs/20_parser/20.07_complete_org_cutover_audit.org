@@ -115,14 +115,16 @@ statistically significant runtime change (p = 0.75); the size reduction is
 established, but neither a throughput improvement nor a portable build-time
 improvement is claimed. The same-head Release plan-ledger gate passes locally.
 
-At backend pin =dbd2fb5=, 1,471 repeated token-emission sites call one
-generated forced-inline helper. The same Scheme IR now generates 4,098,558
-bytes / 59,409 Rust lines, down from 4,565,808 bytes / 65,676 lines at the
-preceding pin. The backend owns only event lowering; it does not classify Org
-tokens. Backend Ubuntu Cargo and Bazel CI passed the exact pin. Host-local
-Criterion samples were unstable enough that even the unchanged binary varied
-from 5.11 to 13.52 ms for 1,000 source headers; this is a code-size receipt,
-not a throughput-speedup claim.
+At backend pin =9fd3ef0=, 1,471 repeated token-emission sites call one
+generated forced-inline helper, and repeated line-end offset loops call
+shared pure helpers. The same Scheme IR now generates 3,965,804 bytes /
+57,317 Rust lines, down from 4,565,808 bytes / 65,676 lines before these
+backend slices. The backend owns only event lowering; it does not classify Org
+tokens. The preceding =dbd2fb5= pin passed backend Ubuntu Cargo and Bazel CI;
+the new pin passed local backend tests and downstream Orgize tests, while its
+exact-head CI remains pending. Host-local Criterion samples were unstable
+enough that even the unchanged binary varied from 5.11 to 13.52 ms for 1,000
+source headers; this is a code-size receipt, not a throughput-speedup claim.
 
 The Rust TODO declaration lint now consumes AOT-projected keywords rather than
 rescanning =#+TODO= and maintaining a second =begin_/end_= block state.
