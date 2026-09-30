@@ -146,7 +146,24 @@ Rust is 52,482 versus 57,317 lines (3,601,759 versus 3,965,820 bytes).
 The naive inlined Babel branch alone had reached 60,937 lines before the
 shared-helper revisions. These are reproducible code-size receipts, not a
 runtime speedup claim. The current local Release gates remain unchanged;
-Windows exact-head verification is still required for this slice.
+the exact =f5a1ac1= Windows gate first failed at 103.2245 ms against the
+unchanged 100 ms limit. Its automatic diagnostic rerun passed at 83.8839 ms,
+and rerunning the failed job on the same head passed at 81.9714 ms. The other
+four exact-head jobs passed. This is a marginal and variable batch gate, not
+evidence that the first failure disappeared or that the generated parser is
+103 ms per document.
+
+The plan-ledger Criterion scenario now separates generated events,
+events plus Rowan, and the full AOT graph for the same 2,000 in-memory
+documents. On one macOS host, a 30-sample event-only run centered at
+7.7801 ms for all 2,000 documents; a preceding-head 10-sample run centered
+at 7.8007 ms. Ten-sample current-head runs centered at 18.540 ms for
+events plus Rowan and 32.432 ms for the full AOT graph. Host variance was
+large across repeated short runs, so these receipts locate stages and
+establish a microsecond-scale per-document order of magnitude, not a
+statistically proven speedup or cross-platform performance guarantee. The
+Windows batch gate additionally includes 2,000 file reads and semantic
+projection, and still needs a more stable margin below 100 ms.
 The remaining LOGBOOK path starts from an AOT-classified drawer, but interprets
 its raw body lines for lifecycle kinds, quoted states, timestamps, and links.
 It is typed lifecycle interpretation, not a second block parser; moving those
