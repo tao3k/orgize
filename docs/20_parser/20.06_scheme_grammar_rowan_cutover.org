@@ -34,24 +34,23 @@ requires neither Gerbil nor =gerbil.pkg=. Source-backed event AST tests and
 graph/roundtrip fixtures verify this path.
 
 =modules/org-elements/catalog.ss= owns the Element/Object inventory and
-=graph-shape.ss= owns source-backed projection fields. All catalog Object
-names and the default-threshold =inlinetask= Element have typed graph
-projections, but full context, configurable inlinetask threshold, malformed-input,
-configuration, and public AST parity are not yet admitted. The public
-=Org::parse= still calls the handwritten Rust parser and must be replaced.
+=graph-shape.ss= owns source-backed projection fields. The public
+=Org::parse= now calls the Scheme-event AOT/Rowan parser; the handwritten
+=src/syntax= parser has been removed. This does not by itself close context,
+malformed-input, configuration, semantic projection, or performance parity.
 
 The Scheme event AOT also recognizes inline source blocks and inline Babel
 calls, including balanced body delimiters and optional header fields. Their
 language/name, body/arguments, and header values are source-backed graph
 fields; malformed or incomplete forms remain literal text. Focused Scheme AST
-and Cargo graph tests cover these objects, but the public =Org::parse= path
-still uses the handwritten parser and is not yet replaced.
+and Cargo graph tests cover these objects through the public AOT path.
 
-** Required upstream engine work
+** Original upstream engine requirements
 
 The generic upstream engine owns typed event IR compilation and Rowan
-construction, not Org recognition. Org still requires these gates before the
-public parser swap:
+construction, not Org recognition. These were the gates for the public parser
+swap. The current status and remaining semantic/performance closure are in
+=20.07_complete_org_cutover_audit.org=:
 
 1. Complete Org-owned Scheme context, restriction, configuration, and
    property algorithms in the event function; a typed catalog name alone is
@@ -59,10 +58,10 @@ public parser swap:
 2. The generated runtime must preserve malformed input with explicit recovery
    nodes/diagnostics and exact UTF-8 byte ranges, including CRLF and missing
    end delimiters.  A generic all-TEXT success is not admission.
-3. Generated typed kinds and fields must replace =src/syntax/kind.rs= and the
-   handwritten parser-facing =src/syntax/*.rs= modules. Redesign the public
-   =Org= facade and migrate or remove semantic/export clients that assume the
-   old AST shape; compatibility with an incorrect consumer is not a gate.
+3. Generated typed kinds and fields replace =src/syntax/kind.rs= and the
+   handwritten parser-facing =src/syntax/*.rs= modules. The public =Org=
+   facade and semantic/export clients must consume the AOT graph; compatibility
+   with an incorrect old consumer is not a gate.
 
 ** Cutover gate
 
@@ -73,7 +72,8 @@ exact source roundtrip. The old parser is evidence, not an authority; record
 source-backed intentional changes rather than forcing incorrect parity.
 Cover every upstream element/object kind, affiliated keyword,
 configuration-dependent behavior, malformed/recovery case, and real Org guide
-fixture. Expand this gate before deleting the old parser.
+fixture. Continue expanding this gate after deleting the old parser; deletion
+does not by itself establish full semantic or performance parity.
 
 Run performance scenarios on representative Org documents and pathological
 nested/ambiguous inputs with the ASP Rust Dev Gate.  Record throughput,
