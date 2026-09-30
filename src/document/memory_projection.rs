@@ -227,15 +227,26 @@ fn query_plan_ledger_records(
     walk_config: &DocumentWalkConfig,
     options: &OrgMemorySearchOptions,
 ) -> Result<Vec<OrgMemorySearchRecord>, String> {
+    let started = std::time::Instant::now();
     let root = memory_search_root(root, options);
     let mut files = Vec::new();
     collect_plan_ledger_paths(&root, walk_config, options, &mut files)?;
+    let walk_elapsed = started.elapsed();
     let mut records = plan_ledger_records_from_paths(&files, options)?;
+    let projection_elapsed = started.elapsed() - walk_elapsed;
     records.sort_by(|left, right| {
         left.path
             .cmp(&right.path)
             .then(left.start_line.cmp(&right.start_line))
     });
+    if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER").is_some() {
+        eprintln!(
+            "plan ledger stages: files={} workers={} walk={walk_elapsed:?} projection={projection_elapsed:?} total={:?}",
+            files.len(),
+            plan_ledger_worker_count(files.len()),
+            started.elapsed()
+        );
+    }
     Ok(records)
 }
 
@@ -296,11 +307,7 @@ fn plan_ledger_records_from_paths(
     // each file is built. Bound workers by the work available, not a fixed
     // machine-wide cap, and keep each worker's chunk large enough to amortize
     // thread startup.
-    let worker_count = thread::available_parallelism()
-        .map(|count| count.get())
-        .unwrap_or(1)
-        .saturating_mul(4)
-        .min(paths.len().div_ceil(64));
+    let worker_count = plan_ledger_worker_count(paths.len());
     let chunk_size = paths.len().div_ceil(worker_count);
     thread::scope(|scope| {
         let mut handles = Vec::new();
@@ -324,6 +331,17 @@ fn plan_ledger_records_from_paths(
         }
         Ok(records)
     })
+}
+
+fn plan_ledger_worker_count(path_count: usize) -> usize {
+    if path_count < 64 {
+        return 1;
+    }
+    thread::available_parallelism()
+        .map(|count| count.get())
+        .unwrap_or(1)
+        .saturating_mul(8)
+        .min(path_count.div_ceil(64))
 }
 
 fn collect_plan_ledger_file(
