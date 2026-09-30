@@ -83,6 +83,17 @@ runtime parallelism does not solve that compiler cost. The generic event AOT
 backend still needs further bounded code-size reduction
 with unchanged source-range and throughput receipts.
 
+The next backend pin lowers byte-set predicates with 16 or more values to
+typed 256-bit masks. On the same checked-in Org event IR, generated Rust is
+5,271,909 bytes / 73,903 lines, versus 5,427,404 bytes / 75,480 lines at
+the preceding pin. The 5,000-parse standalone harness again emitted
+58,510,000 events on both versions. Two host-local old/new runtime pairs were
+148.4/139.1 s and 147.7/128.5 s; these are not portable speedup claims.
+The optimized harness binary grew from 1,340,432 to 1,403,000 bytes, so
+binary size remains a second-order cost to watch. The full default Orgize
+Cargo suite passes with the new exact backend pin; optimized build latency
+and the broader parser/projection benchmarks remain open gates.
+
 | Boundary | Required closure |
 |----------+------------------|
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are now covered in Scheme and Rust graph tests. List bullet tokens now include the exact horizontal separator, so the Scheme graph preserves =- =, repeated spaces, and tabs without Rust reconstruction. The shared Scheme header-event grammar now covers both source and dynamic block begin lines; the joined branch form reduces its IR to 1.97 MB from 2.75 MB. |
