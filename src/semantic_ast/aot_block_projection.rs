@@ -1,5 +1,6 @@
 //! Source-backed block projection from Scheme-owned graph fields.
 
+use gerbil_parser_rowan::GraphRecord;
 use rowan::TextRange;
 
 use super::GraphProjector;
@@ -91,21 +92,11 @@ impl GraphProjector<'_> {
         }
     }
 
-    pub(super) fn fixed_width(&self, range: TextRange) -> SemanticFixedWidth<ParsedAnnotation> {
+    pub(super) fn fixed_width(&self, record: &GraphRecord) -> SemanticFixedWidth<ParsedAnnotation> {
+        let range = record.range;
         let source = self.raw(range);
         let source_lines = split_block_lines(source);
-        let mut value = String::with_capacity(source.len());
-        for line in &source_lines {
-            let content = line
-                .text
-                .split_once(':')
-                .map_or(line.text, |(_, text)| text);
-            let content = content.strip_prefix(' ').unwrap_or(content);
-            value.push_str(content);
-            if let Some(ending) = line.ending {
-                value.push_str(ending);
-            }
-        }
+        let value = record.values("value").collect::<String>();
         let switches = BlockSwitches::default();
         let lines = parse_block_lines(
             &value,

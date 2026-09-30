@@ -66,7 +66,8 @@
    (node 'OrgDiarySexp "element" "diary-sexp"
          (list (field 'DiarySexpValue "value")))
    (node 'OrgHorizontalRule "element" "horizontal-rule" '())
-   (node 'OrgFixedWidth "element" "fixed-width" '())
+   (node 'OrgFixedWidth "element" "fixed-width"
+         (list (field 'FixedWidthValue "value" 'each)))
    (node 'OrgKeyword "element" "keyword"
          (list (field 'KeywordKey "key")
                (field 'KeywordOptional "optional")

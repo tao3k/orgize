@@ -615,7 +615,7 @@ impl<'a> GraphProjector<'a> {
             }
             "comment" => ElementData::Comment(self.raw(range).to_owned()),
             "diary-sexp" => ElementData::DiarySexp(self.raw(range).to_owned()),
-            "fixed-width" => ElementData::FixedWidth(self.fixed_width(range)),
+            "fixed-width" => ElementData::FixedWidth(self.fixed_width(record)),
             "horizontal-rule" => ElementData::Rule,
             "latex-environment" => ElementData::LatexEnvironment(self.raw(range).to_owned()),
             _ => {

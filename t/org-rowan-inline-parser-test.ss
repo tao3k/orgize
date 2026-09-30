@@ -466,9 +466,9 @@
         "first\n: A\n:\n: B\nlast\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 6)))
-         (OrgFixedWidth (FixedWidthLine 6 10)
-                        (FixedWidthLine 10 12)
-                        (FixedWidthLine 12 16))
+         (OrgFixedWidth (FixedWidthPrefix 6 8) (FixedWidthValue 8 10)
+                        (FixedWidthPrefix 10 11) (FixedWidthValue 11 12)
+                        (FixedWidthPrefix 12 14) (FixedWidthValue 14 16))
          (OrgParagraph (OrgTextLine (TextLine 16 21))))))
     (test-case "POO-declared inline links preserve descriptions and malformed text"
       (check-org-ast-with parse-org-rowan-events

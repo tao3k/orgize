@@ -251,6 +251,29 @@ fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
         .expect("fixed-width is a typed Element");
     assert_eq!(fixed.range.start(), 6u32.into());
     assert_eq!(fixed.range.end(), 16u32.into());
+    assert_eq!(
+        fixed.values("value").collect::<Vec<_>>(),
+        ["A\n", "\n", "B\n"]
+    );
+
+    for (source, expected_value) in [(":", ""), (": ", ""), (":\n", "\n"), (": \n", "\n")] {
+        let events = generated_context_events::parse_org_rowan_events(source);
+        let parsed = parse_generated_events(
+            org_language_spec(),
+            generated_context_events::PARSER_DIGEST,
+            source,
+            &events,
+        )
+        .expect("empty fixed-width value remains lossless");
+        assert_eq!(parsed.syntax().to_string(), source);
+        let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+            .expect("empty fixed-width value projects");
+        let fixed = records
+            .iter()
+            .find(|record| record.kind == "fixed-width")
+            .expect("fixed-width record");
+        assert_eq!(fixed.values("value").collect::<String>(), expected_value);
+    }
 
     let nested = "#+begin_quote\n: A\n#+end_quote\n:PROPERTIES:\n:ID: x\n:END:\n";
     let events = generated_context_events::parse_org_rowan_events(nested);

@@ -438,7 +438,13 @@
         (if (not (state fixed-width-open))
             ((start-node OrgFixedWidth)
              (set-bool fixed-width-open (bool #t))) ())
-        (token FixedWidthLine start end)
+        (if (line-byte-equal? ,fixed-width-content-start 32)
+            ((token FixedWidthPrefix start
+                    (line-step ,fixed-width-content-start))
+             (token FixedWidthValue
+                    (line-step ,fixed-width-content-start) end))
+            ((token FixedWidthPrefix start ,fixed-width-content-start)
+             (token FixedWidthValue ,fixed-width-content-start end)))
         (set-bool after-heading (bool #f)))
        (,fixed-width-close ,@otherwise)))
 
