@@ -115,14 +115,18 @@ statistically significant runtime change (p = 0.75); the size reduction is
 established, but neither a throughput improvement nor a portable build-time
 improvement is claimed. The same-head Release plan-ledger gate passes locally.
 
-At backend pin =9fd3ef0=, 1,471 repeated token-emission sites call one
+At backend pin =9bbe7d0=, 1,471 repeated token-emission sites call one
 generated forced-inline helper, and repeated line-end offset loops call
-shared pure helpers. The same Scheme IR now generates 3,965,804 bytes /
-57,317 Rust lines, down from 4,565,808 bytes / 65,676 lines before these
-backend slices. The backend owns only event lowering; it does not classify Org
-tokens. The preceding =dbd2fb5= pin passed backend Ubuntu Cargo and Bazel CI;
-the new pin passed local backend tests and downstream Orgize tests, while its
-exact-head CI remains pending. Host-local Criterion samples were unstable
+shared forced-inline pure helpers. The same Scheme IR at the preceding
+=9fd3ef0= pin generated 3,965,804 bytes / 57,317 Rust lines; the
+forced-inline candidate generates 3,965,820 bytes / the same line count, down
+from 4,565,808 bytes / 65,676 lines before these backend slices. That pin passed
+backend Ubuntu/macOS CI but failed the downstream Windows 100 ms plan-ledger
+gate at 107.13 ms, with a diagnostic rerun at 109.96 ms (the prior downstream
+head passed at 73.30 ms). The forced-inline repair is pending downstream
+Windows verification; do not count the line-end helper slice as retained until
+it passes. The backend owns only event lowering; it does not classify Org
+tokens. Host-local Criterion samples were unstable
 enough that even the unchanged binary varied from 5.11 to 13.52 ms for 1,000
 source headers; this is a code-size receipt, not a throughput-speedup claim.
 
