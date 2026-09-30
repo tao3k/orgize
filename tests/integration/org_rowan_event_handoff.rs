@@ -294,6 +294,31 @@ fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
 }
 
 #[test]
+fn org_scheme_context_algorithm_aot_recognizes_only_the_bare_readonly_marker() {
+    let source = "#+READONLY\n#+READONLYX\n#+ALLPRIORITIES: A B C\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme bare READONLY events build a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("bare READONLY projects through the Org Element graph");
+    let keywords = records
+        .iter()
+        .filter(|record| record.kind == "keyword")
+        .collect::<Vec<_>>();
+    assert_eq!(keywords.len(), 2);
+    assert_eq!(keywords[0].field("key"), Some("READONLY"));
+    assert_eq!(keywords[0].field("raw-value"), Some(""));
+    assert_eq!(keywords[1].field("key"), Some("ALLPRIORITIES"));
+    assert!(records.iter().any(|record| record.kind == "paragraph"));
+}
+
+#[test]
 fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
     let source = "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n";
     let events = generated_context_events::parse_org_rowan_events(source);

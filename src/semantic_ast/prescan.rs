@@ -27,7 +27,8 @@ pub(super) fn collect_document_keyword(
 ) {
     let key = keyword.key.to_ascii_uppercase();
     match key.as_str() {
-        "TITLE" | "AUTHOR" | "DATE" | "CAPTION" | "PYTHON" | "PYTHON_FILE" | "PYTHON-FILE" => {
+        "TITLE" | "AUTHOR" | "DATE" | "CAPTION" | "PYTHON" | "PYTHON_FILE" | "PYTHON-FILE"
+        | "READONLY" | "ALLPRIORITIES" => {
             prescan.metadata.push(keyword);
         }
         key if key == CONTRACT_ORG_PROPERTY => {

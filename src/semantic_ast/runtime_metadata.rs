@@ -1,11 +1,13 @@
 //! Non-executing projections for runtime-adjacent Org metadata.
 
+use std::collections::HashSet;
+
 use super::{
-    Document, Element, ElementData, FeedStatusDrawerName, FeedStatusRecord, MobileFlaggedSection,
-    MobileIndexLink, MobileOriginalId, MobilePriorityDeclaration, MobileProperty,
-    MobileReadonlyKeyword, Object, ObjectData, ParsedAnnotation, Property, RuntimeMetadataBoundary,
-    RuntimeMetadataBoundaryKind, RuntimeMetadataPlan, RuntimeMetadataWarning,
-    RuntimeMetadataWarningKind, Section, SectionIndexSource, SourcePosition, TimerContext,
+    AstRef, Document, Element, ElementData, FeedStatusDrawerName, FeedStatusRecord,
+    MobileFlaggedSection, MobileIndexLink, MobileOriginalId, MobilePriorityDeclaration,
+    MobileProperty, MobileReadonlyKeyword, Object, ObjectData, ParsedAnnotation, Property,
+    RuntimeMetadataBoundary, RuntimeMetadataBoundaryKind, RuntimeMetadataPlan,
+    RuntimeMetadataWarning, RuntimeMetadataWarningKind, Section, SectionIndexSource, TimerContext,
     TimerRecord,
 };
 
@@ -40,76 +42,33 @@ impl Document<ParsedAnnotation> {
 }
 
 fn collect_mobile_keywords(document: &Document<ParsedAnnotation>, plan: &mut RuntimeMetadataPlan) {
-    for keyword in &document.metadata {
-        if keyword.key.eq_ignore_ascii_case("READONLY") {
-            plan.mobile.readonly.push(MobileReadonlyKeyword {
-                source: SectionIndexSource::from_annotation(&keyword.ann),
-                value: keyword.value.clone(),
-            });
-        } else if keyword.key.eq_ignore_ascii_case("ALLPRIORITIES") {
-            plan.mobile.all_priorities.push(MobilePriorityDeclaration {
-                source: SectionIndexSource::from_annotation(&keyword.ann),
-                values: split_words(keyword.value.as_str()),
-                raw: keyword.value.clone(),
-            });
+    let mut seen = HashSet::new();
+    document.fold((), |(), node| {
+        if let AstRef::Keyword(keyword) = node {
+            let source_start = u32::from(keyword.ann.range.start());
+            if !seen.insert(source_start) {
+                return;
+            }
+            if keyword.key.eq_ignore_ascii_case("READONLY") {
+                plan.mobile.readonly.push(MobileReadonlyKeyword {
+                    source: SectionIndexSource::from_annotation(&keyword.ann),
+                    value: keyword.value.clone(),
+                });
+            } else if keyword.key.eq_ignore_ascii_case("ALLPRIORITIES") {
+                plan.mobile.all_priorities.push(MobilePriorityDeclaration {
+                    source: SectionIndexSource::from_annotation(&keyword.ann),
+                    values: split_words(keyword.value.as_str()),
+                    raw: keyword.value.clone(),
+                });
+            }
         }
-    }
-    if plan.mobile.readonly.is_empty() || plan.mobile.all_priorities.is_empty() {
-        collect_mobile_marker_lines(document, plan);
-    }
-}
-
-fn collect_mobile_marker_lines(
-    document: &Document<ParsedAnnotation>,
-    plan: &mut RuntimeMetadataPlan,
-) {
-    let mut position = 0usize;
-    for (line_index, raw_line) in document.ann.raw.split_inclusive('\n').enumerate() {
-        let line = raw_line.trim_end_matches(['\r', '\n']);
-        let leading = line.len() - line.trim_start().len();
-        let trimmed = line.trim();
-        let source = source_for_line(line_index, leading, trimmed.len(), position);
-        if plan.mobile.readonly.is_empty() && trimmed.eq_ignore_ascii_case("#+READONLY") {
-            plan.mobile.readonly.push(MobileReadonlyKeyword {
-                source,
-                value: String::new(),
-            });
-        } else if plan.mobile.all_priorities.is_empty()
-            && trimmed
-                .get(..15)
-                .is_some_and(|prefix| prefix.eq_ignore_ascii_case("#+ALLPRIORITIES"))
-            && let Some((_, value)) = trimmed.split_once(':')
-        {
-            plan.mobile.all_priorities.push(MobilePriorityDeclaration {
-                source,
-                values: split_words(value),
-                raw: value.trim().to_string(),
-            });
-        }
-        position += raw_line.len();
-    }
-}
-
-fn source_for_line(
-    line_index: usize,
-    leading: usize,
-    trimmed_len: usize,
-    position: usize,
-) -> SectionIndexSource {
-    let range_start = position + leading;
-    let range_end = range_start + trimmed_len;
-    SectionIndexSource {
-        start: SourcePosition {
-            line: line_index + 1,
-            column: leading + 1,
-        },
-        end: SourcePosition {
-            line: line_index + 1,
-            column: leading + trimmed_len + 1,
-        },
-        range_start: range_start as u32,
-        range_end: range_end as u32,
-    }
+    });
+    plan.mobile
+        .readonly
+        .sort_by_key(|entry| entry.source.range_start);
+    plan.mobile
+        .all_priorities
+        .sort_by_key(|entry| entry.source.range_start);
 }
 
 fn collect_section(

@@ -242,6 +242,15 @@
            (KeywordTrivia 21 22)
            (OrgKeywordValue (OrgTextLine (TextLine 22 25))))
           (KeywordTrivia 25 26)))))
+    (test-case "bare READONLY is a keyword but a longer marker remains prose"
+      (check-org-ast-with parse-org-rowan-events
+        "#+READONLY\n#+READONLYX\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 10)
+          (OrgKeywordRawValue)
+          (KeywordTrivia 10 11))
+         (OrgParagraph (OrgTextLine (TextLine 11 23))))))
     (test-case "rich document keywords reuse Scheme inline Objects"
       (check-org-ast-with parse-org-rowan-events
         "#+TITLE: *Demo* Doc\n"

@@ -19,6 +19,52 @@ fn semantic_ast_projects_headline_title_objects_from_the_aot_graph() {
 }
 
 #[test]
+fn semantic_ast_title_objects_use_aot_spans_when_todo_text_repeats() {
+    let doc = Org::parse("* TODO TODO *Bold* TODO :work:\n").document();
+    let section = &doc.sections[0];
+    assert_eq!(section.raw_title, "TODO *Bold* TODO ");
+    let bold = section
+        .title
+        .iter()
+        .find(|object| {
+            matches!(
+                object.data,
+                ObjectData::Markup {
+                    kind: MarkupKind::Bold,
+                    ..
+                }
+            )
+        })
+        .expect("Scheme-owned title markup");
+    assert_eq!(u32::from(bold.ann.range.start()), 12);
+
+    let doc = Org::parse("*************** TODO TODO *Bold* TODO :work:\n").document();
+    let inlinetask = doc
+        .children
+        .iter()
+        .find_map(|element| match &element.data {
+            ElementData::Inlinetask(task) => Some(task),
+            _ => None,
+        })
+        .expect("Scheme-owned inlinetask");
+    assert_eq!(inlinetask.raw_title, "TODO *Bold* TODO ");
+    let bold = inlinetask
+        .title
+        .iter()
+        .find(|object| {
+            matches!(
+                object.data,
+                ObjectData::Markup {
+                    kind: MarkupKind::Bold,
+                    ..
+                }
+            )
+        })
+        .expect("Scheme-owned inlinetask title markup");
+    assert_eq!(u32::from(bold.ann.range.start()), 26);
+}
+
+#[test]
 fn semantic_ast_projects_rich_keyword_objects_from_the_aot_graph() {
     let doc = Org::parse("#+TITLE: *Demo* Doc\n").document();
     let title = doc

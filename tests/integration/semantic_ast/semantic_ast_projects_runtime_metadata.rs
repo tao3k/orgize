@@ -14,6 +14,8 @@ fn semantic_ast_projects_runtime_metadata_plan() {
     assert!(plan.feeds[0].readable);
     assert_eq!(plan.timers.len(), 3);
     assert_eq!(plan.mobile.readonly.len(), 1);
+    assert_eq!(plan.mobile.readonly[0].source.range_start, 0);
+    assert_eq!(plan.mobile.readonly[0].source.range_end, 11);
     assert_eq!(plan.mobile.all_priorities[0].values, ["A", "B", "C"]);
     assert_eq!(plan.mobile.index_links.len(), 2);
     assert_eq!(plan.mobile.flagged_sections.len(), 1);
@@ -25,6 +27,19 @@ fn semantic_ast_projects_runtime_metadata_plan() {
         "semantic_ast__m25_runtime_metadata_plan",
         render_runtime_metadata_plan(&doc)
     );
+}
+
+#[test]
+fn mobile_markers_follow_aot_keywords_inside_sections_not_source_blocks() {
+    let doc = Org::parse(
+        "* Section\n#+READONLY\n#+ALLPRIORITIES: A B\n#+begin_src org\n#+READONLY\n#+end_src\n",
+    )
+    .document();
+    assert_clean_projection(&doc);
+    let plan = doc.runtime_metadata_plan();
+    assert_eq!(plan.mobile.readonly.len(), 1);
+    assert_eq!(plan.mobile.all_priorities.len(), 1);
+    assert_eq!(plan.mobile.all_priorities[0].values, ["A", "B"]);
 }
 
 fn render_runtime_metadata_plan(doc: &ParsedAst) -> String {
