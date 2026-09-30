@@ -31,14 +31,16 @@ pub(super) fn parse_block_lines<A>(
                 .get(index)
                 .map(|line| line.text)
                 .unwrap_or(value_line.text);
-            let code_ref = code_ref_in_line(value_line.text, &label).map(|code_ref| BlockCodeRef {
+            let code_ref_match = code_ref_in_line(value_line.text, &label);
+            let value_without_code_ref =
+                remove_code_ref_match(value_line.text, code_ref_match.as_ref());
+            let code_ref = code_ref_match.map(|code_ref| BlockCodeRef {
                 line: number,
                 column: code_ref.column,
                 end_column: code_ref.end_column,
                 name: code_ref.name,
                 raw: code_ref.raw,
             });
-            let value_without_code_ref = remove_code_ref(value_line.text, &label);
             let expanded_value = tabs_to_spaces(value_line.text, options.tab_width);
 
             BlockLineDraft {
@@ -246,6 +248,14 @@ fn code_ref_at(line: &str, index: usize, label: &CodeRefLabel) -> Option<CodeRef
 
 fn remove_code_ref(line: &str, label: &CodeRefLabel) -> String {
     let Some(code_ref) = code_ref_in_line(line, label) else {
+        return line.to_string();
+    };
+
+    remove_code_ref_match(line, Some(&code_ref))
+}
+
+fn remove_code_ref_match(line: &str, code_ref: Option<&CodeRefMatch>) -> String {
+    let Some(code_ref) = code_ref else {
         return line.to_string();
     };
 

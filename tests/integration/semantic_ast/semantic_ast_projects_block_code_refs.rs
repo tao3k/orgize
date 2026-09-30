@@ -63,3 +63,27 @@ example line (ref:sample)
     );
     assert!(blocks[1].value.contains("(ref:sample)"));
 }
+
+#[test]
+fn semantic_ast_code_ref_projection_removes_only_first_valid_label() {
+    let doc = Org::parse(
+        "#+begin_src text -l \"// ref:%s\"\n  café // ref:first // ref:second\n#+end_src\n",
+    )
+    .document();
+    assert_clean_projection(&doc);
+
+    let ElementData::Block(block) = &doc.children[0].data else {
+        panic!("expected source block");
+    };
+    assert_eq!(block.code_refs.len(), 1);
+    assert_eq!(block.code_refs[0].name, "first");
+    assert_eq!(block.code_refs[0].column, 8);
+    assert_eq!(
+        block.lines[0].value_without_code_ref,
+        "  café // ref:second"
+    );
+    assert_eq!(
+        block.lines[0].normalized_value_without_code_ref,
+        "café // ref:second"
+    );
+}
