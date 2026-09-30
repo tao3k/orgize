@@ -9,6 +9,7 @@ use orgize::{
         SourceBlockResultValueType, SourceBlockTangleCommentsMode, SourceBlockTangleMode,
         SourceBlockTangleNowebMode,
     },
+    org_aot::parse_org_aot,
 };
 
 #[test]
@@ -556,6 +557,29 @@ Inline call_load_data() and call_missing_inline().
             ),
         ]
     );
+}
+
+#[test]
+fn babel_call_references_consume_only_the_aot_value() {
+    let source = "#+CALL: target()\n#+CALL: #+call:literal()\n";
+    let graph = parse_org_aot(source).expect("Scheme AOT classifies Babel calls");
+    let values = graph
+        .records()
+        .iter()
+        .filter(|record| record.kind == "babel-call")
+        .map(|record| record.field("value"))
+        .collect::<Vec<_>>();
+    assert_eq!(values, [Some("target()"), Some("#+call:literal()")]);
+
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let targets = doc
+        .source_block_references()
+        .into_iter()
+        .filter(|reference| reference.kind == SourceBlockReferenceKind::BabelCall)
+        .map(|reference| reference.target)
+        .collect::<Vec<_>>();
+    assert_eq!(targets, ["target", "#+call:literal"]);
 }
 
 #[test]
