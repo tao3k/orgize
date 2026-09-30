@@ -382,6 +382,31 @@ fn bench_org_plan_ledgers(c: &mut Criterion) {
         .collect::<Vec<_>>();
     let mut group = c.benchmark_group("OrgSchemePlanLedgers");
     group.throughput(Throughput::Elements(2_000));
+    group.bench_function("events/2k-documents", |b| {
+        b.iter(|| {
+            for source in &sources {
+                black_box(generated_context_events::parse_org_rowan_events(black_box(
+                    source,
+                )));
+            }
+        })
+    });
+    group.bench_function("events+rowan/2k-documents", |b| {
+        b.iter(|| {
+            for source in &sources {
+                let events = generated_context_events::parse_org_rowan_events(black_box(source));
+                black_box(
+                    parse_generated_events(
+                        org_language_spec(),
+                        generated_context_events::PARSER_DIGEST,
+                        source,
+                        &events,
+                    )
+                    .unwrap(),
+                );
+            }
+        })
+    });
     group.bench_function("aot/2k-documents", |b| {
         b.iter(|| {
             for source in &sources {
