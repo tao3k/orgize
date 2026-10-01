@@ -175,13 +175,18 @@ value spans into Scheme-owned graph fields requires a focused design and
 line-level regression coverage. Dynamic-block content counting now uses the
 Scheme graph's closing-line range, rather than assuming the last raw line is
 the closer; it still interprets content after AOT block classification.
+The Org query content renderer no longer treats =#+begin_src= or
+=#+begin_example= text prefixes as blocks. It preserves source/export block
+content only from Scheme-AOT =block= facts; list text not yet classified as a
+nested block is compacted as ordinary text. Recognizing such nested blocks is
+a Scheme parser coverage item, not a Rust output-side fallback.
 
 | Boundary | Required closure |
 |----------+------------------|
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are covered in Scheme and Rust graph tests. List bullet tokens include the exact horizontal separator, preserving =- =, repeated spaces, and tabs without Rust reconstruction. Shared source-header and keyword-value helpers keep the current event IR at 1,666,505 bytes. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
 | Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
-| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, and priority-heading selection now use AOT context. LOGBOOK lifecycle extraction and output-only raw-text consumers still require an ownership audit: distinguish typed semantic interpretation and output formatting from a second Org syntax recognizer before migrating them. |
+| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, priority-heading selection, and Org query block content now use AOT context. LOGBOOK lifecycle extraction still requires an ownership audit: distinguish typed semantic interpretation from a second Org syntax recognizer before migrating it. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
 
