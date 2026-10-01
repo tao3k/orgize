@@ -33,6 +33,8 @@ pub struct ParsedAnnotation {
     pub(crate) babel_call_name_range: Option<TextRange>,
     // Scheme-classified dynamic-block closing line for content projection.
     pub(crate) dynamic_end_range: Option<TextRange>,
+    // Scheme-classified drawer body span for typed runtime metadata projection.
+    pub(crate) drawer_body_range: Option<TextRange>,
 }
 
 impl std::fmt::Debug for ParsedAnnotation {

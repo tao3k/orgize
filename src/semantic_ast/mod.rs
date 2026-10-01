@@ -18,6 +18,7 @@ mod agent_planning;
 mod agent_planning_model;
 mod aot_attachment_projection;
 mod aot_block_switches;
+mod aot_drawer_projection;
 mod aot_footnote_resolution;
 mod aot_link_resolution;
 mod aot_projection;

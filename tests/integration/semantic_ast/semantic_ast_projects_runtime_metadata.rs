@@ -42,6 +42,17 @@ fn mobile_markers_follow_aot_keywords_inside_sections_not_source_blocks() {
     assert_eq!(plan.mobile.all_priorities[0].values, ["A", "B"]);
 }
 
+#[test]
+fn feed_status_body_uses_aot_drawer_bounds_with_crlf() {
+    let source = "* Inbox\r\n:FEEDSTATUS:\r\n((\"guid\" t \"hash\"))\r\n:FEEDSTATUS:\r\n:END:\r\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let plan = doc.runtime_metadata_plan();
+    assert_eq!(plan.feeds.len(), 1);
+    assert_eq!(plan.feeds[0].raw, "((\"guid\" t \"hash\"))\n:FEEDSTATUS:");
+    assert_eq!(plan.feeds[0].entry_count, 1);
+}
+
 fn render_runtime_metadata_plan(doc: &ParsedAst) -> String {
     let plan = doc.runtime_metadata_plan();
     let mut out = String::new();

@@ -57,7 +57,9 @@
          (list (field 'HeadlineLine "markers")))
    (node 'OrgPropertyDrawer "element" "property-drawer" '())
    (node 'OrgDrawer "element" "drawer"
-         (list (field 'DrawerName "name")))
+         (list (field 'DrawerName "name")
+               (field 'DrawerTrivia "header-trivia")
+               (field 'DrawerEndLine "end")))
    (node 'OrgParagraph "element" "paragraph" '())
    (node 'OrgFootnoteDefinition "element" "footnote-definition"
          (list (field 'FootnoteDefinitionLabel "label")))

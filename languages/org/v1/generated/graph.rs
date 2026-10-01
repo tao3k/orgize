@@ -3,14 +3,14 @@ use gerbil_parser_rowan::{GraphFieldMode, GraphFieldRule, GraphNodeRule, GraphPr
 
 pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
     grammar_digest: "sha256:05714eb852cb0ee7d16cc4fd5c9833edc0e7ff9e15d427d89cc1abf4c7228d42",
-    projection_digest: "sha256:78a199e96a3be4007e793bf36471111fcc92718b2f330aeb90e9cdf9ff4b80e4",
+    projection_digest: "sha256:3285095f203e8c46e4cd4503bc75b10ae05c94751000829699f6207960c128a4",
     rules: &[
         GraphNodeRule { syntax_kind: 0, category: "document", kind: "org-data", fields: &[] },
         GraphNodeRule { syntax_kind: 80, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 82, name: "markers", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 83, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 83, name: "title-body", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title-body", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 84, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 85, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 84, name: "tag", mode: GraphFieldMode::Each }, ] },
         GraphNodeRule { syntax_kind: 207, category: "element", kind: "inlinetask", fields: &[GraphFieldRule { token_kind: 82, name: "markers", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 83, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 83, name: "title-body", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title-body", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 84, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 85, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 84, name: "tag", mode: GraphFieldMode::Each }, ] },
         GraphNodeRule { syntax_kind: 208, category: "component", kind: "inlinetask-end", fields: &[GraphFieldRule { token_kind: 82, name: "markers", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 21, category: "element", kind: "property-drawer", fields: &[] },
-        GraphNodeRule { syntax_kind: 22, category: "element", kind: "drawer", fields: &[GraphFieldRule { token_kind: 114, name: "name", mode: GraphFieldMode::Append }, ] },
+        GraphNodeRule { syntax_kind: 22, category: "element", kind: "drawer", fields: &[GraphFieldRule { token_kind: 114, name: "name", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 115, name: "header-trivia", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 116, name: "end", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 25, category: "element", kind: "paragraph", fields: &[] },
         GraphNodeRule { syntax_kind: 26, category: "element", kind: "footnote-definition", fields: &[GraphFieldRule { token_kind: 134, name: "label", mode: GraphFieldMode::Append }, ] },
         GraphNodeRule { syntax_kind: 27, category: "element", kind: "comment", fields: &[GraphFieldRule { token_kind: 107, name: "source-line", mode: GraphFieldMode::Each }, ] },

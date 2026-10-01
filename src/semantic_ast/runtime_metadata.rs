@@ -197,7 +197,7 @@ fn collect_feed_status(
     section: Option<&Section<ParsedAnnotation>>,
     plan: &mut RuntimeMetadataPlan,
 ) {
-    let raw_body = drawer_body(element.ann.raw.as_str());
+    let raw_body = drawer_body(element);
     let readable = feed_status_is_readable(raw_body.as_str());
     if !readable {
         plan.warnings.push(RuntimeMetadataWarning {
@@ -235,12 +235,14 @@ fn collect_timers(
     }
 }
 
-fn drawer_body(raw: &str) -> String {
-    raw.lines()
-        .filter(|line| {
-            let trimmed = line.trim();
-            !trimmed.eq_ignore_ascii_case(":FEEDSTATUS:") && !trimmed.eq_ignore_ascii_case(":END:")
-        })
+fn drawer_body(element: &Element<ParsedAnnotation>) -> String {
+    let Some(body_range) = element.ann.drawer_body_range else {
+        return String::new();
+    };
+    let start = usize::from(body_range.start() - element.ann.range.start());
+    let end = usize::from(body_range.end() - element.ann.range.start());
+    element.ann.raw[start..end]
+        .lines()
         .map(str::trim)
         .filter(|line| !line.is_empty())
         .collect::<Vec<_>>()

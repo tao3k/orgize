@@ -101,6 +101,14 @@
                                    (equal? (graph-field-name field) "end"))
                                  (graph-node-fields dynamic))))
         (check (map graph-field-mode end-fields) => '(append))))
+    (test-case "drawer exposes its Scheme body boundaries"
+      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+             (drawer (car (filter (lambda (node)
+                                   (eq? (graph-node-syntax-kind node) 'OrgDrawer))
+                                 nodes)))
+             (fields (graph-node-fields drawer)))
+        (check (map graph-field-name fields)
+               => '("name" "header-trivia" "end"))))
     (test-case "planning keeps each key and value independently"
       (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
              (planning

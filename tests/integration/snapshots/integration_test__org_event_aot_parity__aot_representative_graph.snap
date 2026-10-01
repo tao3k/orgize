@@ -739,6 +739,16 @@ expression: document.records()
                 value: "LOGBOOK",
                 range: 538..545,
             },
+            GraphFieldValue {
+                name: "header-trivia",
+                value: ":\n",
+                range: 545..547,
+            },
+            GraphFieldValue {
+                name: "end",
+                value: ":END:\n",
+                range: 587..593,
+            },
         ],
     },
     GraphRecord {
