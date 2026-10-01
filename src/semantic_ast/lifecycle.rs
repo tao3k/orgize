@@ -1,10 +1,41 @@
 //! Opt-in lifecycle projection over ordinary Org LOGBOOK and archive metadata.
 
+use rowan::TextRange;
+
 use super::aot_drawer_projection::drawer_body;
 use super::{
     AstRef, Document, Drawer, Element, ElementData, LifecycleRecord, LifecycleRecordKind,
     ObjectData, OrgDuration, ParsedAnnotation, Section,
 };
+
+#[derive(Clone, Copy)]
+struct SourceSpan {
+    start: usize,
+    end: usize,
+}
+
+impl From<TextRange> for SourceSpan {
+    fn from(range: TextRange) -> Self {
+        Self {
+            start: usize::from(range.start()),
+            end: usize::from(range.end()),
+        }
+    }
+}
+
+struct ClockFact {
+    start: usize,
+    first_timestamp: Option<SourceSpan>,
+    has_duration: bool,
+    duration: Option<OrgDuration>,
+}
+
+#[derive(Default)]
+struct LogbookFacts {
+    links: Vec<SourceSpan>,
+    timestamps: Vec<SourceSpan>,
+    clocks: Vec<ClockFact>,
+}
 
 impl Document<ParsedAnnotation> {
     /// Projects Scheme-bounded LOGBOOK bodies into lifecycle records without mutating the AST.
@@ -89,13 +120,12 @@ fn collect_logbook_records(
         return;
     };
     let mut line_start = usize::from(body_range.start());
-    let mut link_sources = None;
+    let facts = aot_logbook_facts(drawer);
     for source_line in drawer_body(ann).split_inclusive('\n') {
         let line = source_line.strip_suffix('\n').unwrap_or(source_line);
         let line = line.strip_suffix('\r').unwrap_or(line);
         let line_end = line_start + line.len();
-        let kind =
-            lifecycle_record_kind(line, line_start..line_end, drawer, ann, &mut link_sources);
+        let kind = lifecycle_record_kind(line, line_start..line_end, &facts, ann);
         line_start += source_line.len();
         let Some(kind) = kind else {
             continue;
@@ -113,49 +143,47 @@ fn collect_logbook_records(
 fn lifecycle_record_kind(
     line: &str,
     source_range: std::ops::Range<usize>,
-    drawer: &Drawer<ParsedAnnotation>,
+    facts: &LogbookFacts,
     ann: &ParsedAnnotation,
-    link_sources: &mut Option<Vec<(usize, usize)>>,
 ) -> Option<LifecycleRecordKind> {
     let line = trim_logbook_line(line)?;
+    let timestamps = facts.timestamp_sources_in_line(ann, &source_range);
     Some(match crate::org_aot::logbook_line_kind(line) {
-        "state" => state_change_record(line),
+        "state" => state_change_record(line, timestamps.first().cloned()),
         "refile" => LifecycleRecordKind::Refile {
-            target: aot_link_source_in_line(drawer, ann, source_range, link_sources),
-            timestamp: first_timestamp_raw(line),
+            target: facts.first_link_source_in_line(ann, &source_range),
+            timestamp: timestamps.first().cloned(),
         },
-        "reschedule" => {
-            let timestamps = timestamps_raw(line);
-            LifecycleRecordKind::Reschedule {
-                from: timestamps.first().cloned(),
-                to: timestamps.get(1).cloned(),
-                timestamp: timestamps.last().cloned(),
-            }
-        }
-        "redeadline" => {
-            let timestamps = timestamps_raw(line);
-            LifecycleRecordKind::Redeadline {
-                from: timestamps.first().cloned(),
-                to: timestamps.get(1).cloned(),
-                timestamp: timestamps.last().cloned(),
-            }
-        }
-        "clock" => clock_record(line),
+        "reschedule" => LifecycleRecordKind::Reschedule {
+            from: timestamps.first().cloned(),
+            to: timestamps.get(1).cloned(),
+            timestamp: timestamps.last().cloned(),
+        },
+        "redeadline" => LifecycleRecordKind::Redeadline {
+            from: timestamps.first().cloned(),
+            to: timestamps.get(1).cloned(),
+            timestamp: timestamps.last().cloned(),
+        },
+        "clock" => clock_record(
+            line,
+            facts.clock_in_line(&source_range),
+            ann,
+            timestamps.first().cloned(),
+        ),
         _ => LifecycleRecordKind::Note {
-            timestamp: first_timestamp_raw(line),
+            timestamp: timestamps.first().cloned(),
         },
     })
 }
 
 fn trim_logbook_line(line: &str) -> Option<&str> {
-    let line = line.trim();
-    if line.is_empty() {
+    if line.trim().is_empty() {
         return None;
     }
-    Some(line.strip_prefix('-').map(str::trim_start).unwrap_or(line))
+    Some(crate::org_aot::logbook_content_line(line))
 }
 
-fn state_change_record(line: &str) -> LifecycleRecordKind {
+fn state_change_record(line: &str, timestamp: Option<String>) -> LifecycleRecordKind {
     let Some((to, from)) = crate::org_aot::logbook_state_values(line) else {
         return LifecycleRecordKind::MalformedLogbook {
             reason: "state-change LOGBOOK line is missing quoted TODO states".to_string(),
@@ -164,86 +192,120 @@ fn state_change_record(line: &str) -> LifecycleRecordKind {
     LifecycleRecordKind::StateChange {
         to: Some(to.to_string()),
         from: Some(from.to_string()),
-        timestamp: first_timestamp_raw(line),
+        timestamp,
     }
 }
 
-fn clock_record(line: &str) -> LifecycleRecordKind {
-    let duration = line
-        .split_once("=>")
-        .and_then(|(_, duration)| OrgDuration::parse(duration.trim().to_string()));
-    if line.contains("=>") && duration.is_none() {
+fn clock_record(
+    line: &str,
+    clock: Option<&ClockFact>,
+    ann: &ParsedAnnotation,
+    fallback_timestamp: Option<String>,
+) -> LifecycleRecordKind {
+    let (has_duration, duration) = if let Some(clock) = clock {
+        (clock.has_duration, clock.duration.clone())
+    } else {
+        let value = crate::org_aot::logbook_clock_duration_value(line);
+        (value.is_some(), value.and_then(OrgDuration::parse))
+    };
+    if has_duration && duration.is_none() {
         return LifecycleRecordKind::MalformedLogbook {
             reason: "CLOCK LOGBOOK line has an invalid duration summary".to_string(),
         };
     }
     LifecycleRecordKind::Clock {
         duration,
-        timestamp: first_timestamp_raw(line),
+        timestamp: clock
+            .and_then(|clock| clock.first_timestamp)
+            .and_then(|span| source_span_raw(ann, span))
+            .or(fallback_timestamp),
     }
 }
 
-fn timestamps_raw(line: &str) -> Vec<String> {
-    let mut timestamps = Vec::new();
-    let mut rest = line;
-    while let Some((timestamp, next)) = timestamp_raw(rest) {
-        timestamps.push(timestamp.to_string());
-        rest = &rest[next..];
+fn source_span_raw(ann: &ParsedAnnotation, span: SourceSpan) -> Option<String> {
+    let drawer_start = usize::from(ann.range.start());
+    ann.raw
+        .get(span.start.checked_sub(drawer_start)?..span.end.checked_sub(drawer_start)?)
+        .map(str::to_owned)
+}
+
+impl LogbookFacts {
+    fn timestamp_sources_in_line(
+        &self,
+        ann: &ParsedAnnotation,
+        source_range: &std::ops::Range<usize>,
+    ) -> Vec<String> {
+        let first = self
+            .timestamps
+            .partition_point(|span| span.start < source_range.start);
+        self.timestamps[first..]
+            .iter()
+            .take_while(|span| span.start < source_range.end)
+            .filter(|span| span.end <= source_range.end)
+            .filter_map(|span| source_span_raw(ann, *span))
+            .collect()
     }
-    timestamps
+
+    fn first_link_source_in_line(
+        &self,
+        ann: &ParsedAnnotation,
+        source_range: &std::ops::Range<usize>,
+    ) -> Option<String> {
+        let first = self
+            .links
+            .partition_point(|span| span.start < source_range.start);
+        self.links[first..]
+            .iter()
+            .take_while(|span| span.start < source_range.end)
+            .find(|span| span.end <= source_range.end)
+            .and_then(|span| source_span_raw(ann, *span))
+    }
+
+    fn clock_in_line(&self, source_range: &std::ops::Range<usize>) -> Option<&ClockFact> {
+        let first = self
+            .clocks
+            .partition_point(|clock| clock.start < source_range.start);
+        self.clocks
+            .get(first)
+            .filter(|clock| clock.start < source_range.end)
+    }
 }
 
-fn first_timestamp_raw(line: &str) -> Option<String> {
-    timestamp_raw(line).map(|(timestamp, _)| timestamp.to_string())
-}
-
-fn timestamp_raw(line: &str) -> Option<(&str, usize)> {
-    let start = line.find(['<', '['])?;
-    let close = match line.as_bytes()[start] {
-        b'<' => '>',
-        b'[' => ']',
-        _ => return None,
-    };
-    let end = line[start..].find(close)? + start + 1;
-    Some((&line[start..end], end))
-}
-
-fn aot_link_source_in_line(
-    drawer: &Drawer<ParsedAnnotation>,
-    ann: &ParsedAnnotation,
-    source_range: std::ops::Range<usize>,
-    link_sources: &mut Option<Vec<(usize, usize)>>,
-) -> Option<String> {
-    // Most LOGBOOK drawers have no refile target; visit AOT objects only on demand.
-    let links = link_sources.get_or_insert_with(|| aot_link_sources(drawer));
-    let first = links.partition_point(|(start, _)| *start < source_range.start);
-    links[first..]
-        .iter()
-        .take_while(|(start, _)| *start < source_range.end)
-        .find(|(_, end)| *end <= source_range.end)
-        .and_then(|(start, end)| {
-            let drawer_start = usize::from(ann.range.start());
-            ann.raw
-                .get(start.checked_sub(drawer_start)?..end.checked_sub(drawer_start)?)
-                .map(str::to_owned)
-        })
-}
-
-fn aot_link_sources(drawer: &Drawer<ParsedAnnotation>) -> Vec<(usize, usize)> {
-    let mut links = Vec::new();
+fn aot_logbook_facts(drawer: &Drawer<ParsedAnnotation>) -> LogbookFacts {
+    let mut facts = LogbookFacts::default();
     for child in &drawer.children {
-        child.visit_with(&mut |node| {
-            let AstRef::Object(object) = node else {
-                return;
-            };
-            if !matches!(object.data, ObjectData::Link(_)) {
-                return;
+        child.visit_with(&mut |node| match node {
+            AstRef::Object(object) => match &object.data {
+                ObjectData::Link(_) => facts.links.push(object.ann.range.into()),
+                ObjectData::Timestamp(_) => {
+                    facts.timestamps.push(
+                        object
+                            .ann
+                            .timestamp_first_point_range
+                            .unwrap_or(object.ann.range)
+                            .into(),
+                    );
+                    if let Some(second) = object.ann.timestamp_second_point_range {
+                        facts.timestamps.push(second.into());
+                    }
+                }
+                _ => {}
+            },
+            AstRef::Element(element) => {
+                if let ElementData::Clock(clock) = &element.data {
+                    facts.clocks.push(ClockFact {
+                        start: usize::from(element.ann.range.start()),
+                        first_timestamp: element.ann.timestamp_first_point_range.map(Into::into),
+                        has_duration: clock.duration.is_some(),
+                        duration: clock.parsed_duration.clone(),
+                    });
+                }
             }
-            let start = usize::from(object.ann.range.start());
-            let end = usize::from(object.ann.range.end());
-            links.push((start, end));
+            _ => {}
         });
     }
-    links.sort_unstable_by_key(|(start, _)| *start);
-    links
+    facts.links.sort_unstable_by_key(|span| span.start);
+    facts.timestamps.sort_unstable_by_key(|span| span.start);
+    facts.clocks.sort_unstable_by_key(|clock| clock.start);
+    facts
 }

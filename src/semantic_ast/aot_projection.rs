@@ -14,7 +14,7 @@ use super::aot_attachment_projection::attachment_state;
 use super::aot_block_switches::project_block_header_args;
 use super::aot_footnote_resolution::resolve_document_footnotes;
 use super::aot_link_resolution::resolve_document_links;
-use super::aot_timestamp_projection::project_timestamp;
+use super::aot_timestamp_projection::{project_timestamp, timestamp_point_ranges};
 use super::lifecycle_model::{ArchiveLocation, ArchiveState};
 use super::link_model::{LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use super::model::{
@@ -42,6 +42,8 @@ impl OrgAotDocument {
 
 #[path = "aot_block_projection.rs"]
 mod block_projection;
+#[path = "aot_clock_projection.rs"]
+mod clock_projection;
 #[path = "aot_include_projection.rs"]
 mod include_projection;
 #[path = "aot_inline_fragment.rs"]
@@ -112,6 +114,8 @@ impl<'a> GraphProjector<'a> {
             babel_call_name_range: None,
             dynamic_end_range: None,
             drawer_body_range: None,
+            timestamp_first_point_range: None,
+            timestamp_second_point_range: None,
         }
     }
 
@@ -567,22 +571,12 @@ impl<'a> GraphProjector<'a> {
         let drawer_body_range = (kind == "drawer")
             .then(|| super::aot_drawer_projection::drawer_body_range(record))
             .flatten();
+        let clock_first_point_range = (kind == "clock")
+            .then(|| self.clock_first_point_range(record))
+            .flatten();
         let mut data = match kind {
             "keyword" => ElementData::Keyword(self.keyword(id)?),
-            "clock" => {
-                let duration = record.field("duration").map(str::to_owned);
-                ElementData::Clock(Clock {
-                    value: record
-                        .child_ids
-                        .iter()
-                        .copied()
-                        .find(|&child| self.record(child).kind == "timestamp")
-                        .map(|child| self.timestamp(child)),
-                    parsed_duration: duration.as_deref().and_then(OrgDuration::parse),
-                    duration,
-                    raw: self.raw(range).to_owned(),
-                })
-            }
+            "clock" => ElementData::Clock(self.clock(record)),
             "babel-call" => ElementData::BabelCall(self.keyword(id)?),
             "inlinetask" => ElementData::Inlinetask(Box::new(self.inlinetask(id))),
             "paragraph" => ElementData::Paragraph(self.paragraph_objects(id)),
@@ -651,6 +645,7 @@ impl<'a> GraphProjector<'a> {
         let mut ann = self.annotation(range);
         ann.dynamic_end_range = dynamic_end_range;
         ann.drawer_body_range = drawer_body_range;
+        ann.timestamp_first_point_range = clock_first_point_range;
         Some(Element {
             ann,
             affiliated_keywords,
@@ -765,11 +760,17 @@ impl<'a> GraphProjector<'a> {
         }
         let range = record.range;
         let kind = record.kind;
-        let ann = if kind == "inline-src-block" {
+        let mut ann = if kind == "inline-src-block" {
             self.header_annotation(record, range)
         } else {
             self.annotation(range)
         };
+        if kind == "timestamp" {
+            (
+                ann.timestamp_first_point_range,
+                ann.timestamp_second_point_range,
+            ) = timestamp_point_ranges(record);
+        }
         let data = match kind {
             "code" => ObjectData::Code(record.field("value").unwrap_or_default().to_owned()),
             "verbatim" => {
@@ -982,11 +983,6 @@ impl<'a> GraphProjector<'a> {
             TextRange::new((start as u32).into(), (end as u32).into()),
             children,
         )
-    }
-
-    fn timestamp(&self, id: usize) -> Timestamp {
-        let record = self.record(id);
-        project_timestamp(record, self.raw(record.range))
     }
 
     fn unsupported(&mut self, range: TextRange, kind: &str, category: DiagnosticKind) {

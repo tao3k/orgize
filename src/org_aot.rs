@@ -229,6 +229,10 @@ pub(crate) fn logbook_line_kind(line: &str) -> &str {
     logbook_functions::logbook_line_kind(line)
 }
 
+pub(crate) fn logbook_content_line(line: &str) -> &str {
+    logbook_functions::logbook_content_line(line)
+}
+
 pub(crate) fn logbook_state_values(line: &str) -> Option<(&str, &str)> {
     (logbook_functions::logbook_state_quote_shape(line) == "complete").then(|| {
         (
@@ -236,6 +240,11 @@ pub(crate) fn logbook_state_values(line: &str) -> Option<(&str, &str)> {
             logbook_functions::logbook_state_from(line),
         )
     })
+}
+
+pub(crate) fn logbook_clock_duration_value(line: &str) -> Option<&str> {
+    (logbook_functions::logbook_clock_duration_shape(line) == "present")
+        .then(|| logbook_functions::logbook_clock_duration_value(line))
 }
 
 pub(crate) fn table_column_cookie_kind(cell: &str) -> &'static str {

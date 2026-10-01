@@ -4,10 +4,10 @@ use std::hint::black_box;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use gerbil_parser_rowan::{parse_generated_events, project_syntax_graph};
-use orgize::ParseConfig;
 use orgize::org_aot::{
     org_graph_spec, org_language_spec, parse_org_aot, parse_org_aot_with_config,
 };
+use orgize::{Org, ParseConfig};
 
 mod generated_context_events {
     pub use orgize::org_aot::{PARSER_DIGEST, parse_org_rowan_events};
@@ -430,6 +430,34 @@ fn bench_org_plan_ledgers(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_org_logbook_lifecycle(c: &mut Criterion) {
+    let mut source = String::from("* Work\n:LOGBOOK:\n");
+    for _ in 0..500 {
+        source.push_str("- State \"DONE\" from \"TODO\" [2026-05-14 Thu]\n");
+        source.push_str("- Refiled to [[file:next.org]] on [2026-05-14 Thu]\n");
+        source.push_str("- Rescheduled from [2026-05-14 Thu] to [2026-05-15 Fri]\n");
+        source.push_str("- CLOCK: [2026-05-14 Thu 10:00]--[2026-05-14 Thu 10:30] => 0:30\n");
+    }
+    source.push_str(":END:\n");
+    let document = Org::parse(&source).document();
+    assert_eq!(document.lifecycle_records().len(), 2_000);
+    let mut group = c.benchmark_group("OrgSchemeLogbookLifecycle");
+    group.throughput(Throughput::Elements(2_000));
+    group.bench_function("project/2k-records", |b| {
+        b.iter(|| black_box(document.lifecycle_records()))
+    });
+    group.bench_function("parse+project/2k-records", |b| {
+        b.iter(|| {
+            black_box(
+                Org::parse(black_box(&source))
+                    .document()
+                    .lifecycle_records(),
+            )
+        })
+    });
+    group.finish();
+}
+
 fn bench_org_nested_lists(c: &mut Criterion) {
     let source = list_source();
     let structural = parse_org_aot(&source).expect("structural list benchmark parses");
@@ -489,6 +517,7 @@ criterion_group!(
     bench_org_table_rows,
     bench_org_nested_lists,
     bench_org_source_headers,
-    bench_org_plan_ledgers
+    bench_org_plan_ledgers,
+    bench_org_logbook_lifecycle
 );
 criterion_main!(benches);

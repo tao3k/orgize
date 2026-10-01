@@ -233,11 +233,30 @@ with CRLF, Unicode, multi-link, second-line, and malformed-link regressions.
 This local link slice passed locked all-target/all-feature Rust tests, strict
 Clippy, all 13 Scheme modules, and the unchanged 2,000-file Release gate at
 45.188042 ms best-of-five on this macOS host; that is not a matched speedup
-claim. It has no remote CI receipt. Rust still trims list markers and
-interprets timestamps and durations.
-This is typed lifecycle interpretation, not a second block parser; moving
-value spans into Scheme-owned graph fields requires a focused design and
-line-level regression coverage.
+claim. The link slice was subsequently pushed as =97318ab=. Its four Ubuntu
+and macOS jobs passed; Windows passed functional tests but failed the first
+2,000-file plan-ledger gate at 101.3471 ms (100 ms limit). The same job's
+diagnostic rerun measured 81.0688 ms. A failed-job rerun (attempt 2) passed
+the exact head at 57.6623 ms without changing code or threshold. The next
+value-field slice projects
+LOGBOOK line trimming and list-item CLOCK duration boundaries from Scheme
+pure functions lowered to Rust AOT. Timestamp values come from the existing
+Scheme-AOT Timestamp object delimiter ranges; structural CLOCK durations
+come from the typed Clock element. Rust only maps source spans to LOGBOOK
+lines and interprets the typed =OrgDuration=. An invalid bracket expression
+no longer masquerades as a timestamp. A list-item =- CLOCK:= lacks a
+structural Clock node, so its duration marker boundary uses the Scheme pure
+function. Refile links, all six lifecycle line kinds, timestamp ranges,
+invalid dates, malformed durations, and CRLF cases have focused regressions.
+This is still typed lifecycle interpretation, not a second block parser or
+complete Org-mode conformance. The local slice passed 13 Scheme modules with
+=MODULE-OK=, =HARNESS-OK=, and final =OK=; locked all-target/all-feature Rust
+tests; strict Clippy; and the unchanged macOS Release plan-ledger gate at
+47.738708 ms best-of-five. Its new LOGBOOK-heavy Criterion scenario reports
+17.273--26.895 ms for projecting 2,000 records from an already parsed AST,
+and 69.475--96.419 ms for parsing plus projection on this Mac. These are
+absolute, variable measurements, not a matched speedup claim. These local
+receipts predate exact-head remote CI for this value-field slice.
 Dynamic-block content counting now uses the
 Scheme graph's closing-line range, rather than assuming the last raw line is
 the closer; it still interprets content after AOT block classification.
@@ -258,7 +277,7 @@ a Scheme parser coverage item, not a Rust output-side fallback.
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are covered in Scheme and Rust graph tests. List bullet tokens include the exact horizontal separator, preserving =- =, repeated spaces, and tabs without Rust reconstruction. Shared source-header and keyword-value helpers keep the current event IR at 1,666,505 bytes. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
 | Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
-| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, priority-heading selection, and Org query block content now use AOT context. FEEDSTATUS and LOGBOOK drawer envelopes use Scheme graph ranges; LOGBOOK line kinds and quoted state values use Scheme-AOT pure functions. LOGBOOK refile targets now use Scheme-AOT Link object ranges; timestamps and durations remain Rust typed interpretation pending a separate ownership decision. |
+| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, priority-heading selection, and Org query block content now use AOT context. FEEDSTATUS and LOGBOOK drawer envelopes use Scheme graph ranges; LOGBOOK line shape and quoted state values use Scheme-AOT pure functions. LOGBOOK refile targets and timestamp points use Scheme-AOT Link and Timestamp object ranges; structural CLOCK values use AOT Clock. Rust retains typed duration interpretation and source-range-to-line association. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
 

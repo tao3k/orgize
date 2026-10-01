@@ -65,10 +65,13 @@
                  keyword-option-present? keyword-option-present-rust
                  keyword-boolean-value keyword-boolean-value-rust)
         (only-in "../languages/org/v1/modules/org-elements/logbook-properties.ss"
+                 logbook-content-line logbook-content-line-rust
                  logbook-line-kind logbook-line-kind-rust
                  logbook-state-quote-shape logbook-state-quote-shape-rust
                  logbook-state-to logbook-state-to-rust
-                 logbook-state-from logbook-state-from-rust)
+                 logbook-state-from logbook-state-from-rust
+                 logbook-clock-duration-shape logbook-clock-duration-shape-rust
+                 logbook-clock-duration-value logbook-clock-duration-value-rust)
         (only-in "../languages/org/v1/modules/org-elements/table-properties.ss"
                  table-column-cookie-match? table-column-cookie-match-rust
                  table-column-cookie-kind table-column-cookie-kind-rust)
@@ -270,7 +273,14 @@
       (check (keyword-boolean-value "YES") => "true")
       (check (keyword-boolean-value "Nil") => "false")
       (check (keyword-boolean-value "maybe") => ""))
-    (test-case "LOGBOOK line kinds are Scheme-owned and AOT projected"
+    (test-case "LOGBOOK line shape and kinds are Scheme-owned and AOT projected"
+      (check-org-headline-ir logbook-content-line-rust 'logbook_content_line
+       "languages/org/v1/modules/org-elements/generated/logbook_content_line.ir.json")
+      (check (logbook-content-line "  - State \"DONE\"  ")
+             => "State \"DONE\"")
+      (check (logbook-content-line " - ") => "")
+      (check (logbook-content-line "  CLOCK: [2026-05-14 Thu]  ")
+             => "CLOCK: [2026-05-14 Thu]")
       (check-org-headline-ir logbook-line-kind-rust 'logbook_line_kind
        "languages/org/v1/modules/org-elements/generated/logbook_line_kind.ir.json")
       (check (logbook-line-kind "State \"DONE\" from \"TODO\"") => "state")
@@ -283,6 +293,20 @@
       (check (logbook-line-kind "Removed deadline") => "redeadline")
       (check (logbook-line-kind "CLOCK: [a]--[b]") => "clock")
       (check (logbook-line-kind "unclassified note") => "note"))
+    (test-case "LOGBOOK list-item CLOCK duration boundary is Scheme-owned"
+      (check-org-headline-ir logbook-clock-duration-shape-rust
+       'logbook_clock_duration_shape
+       "languages/org/v1/modules/org-elements/generated/logbook_clock_duration_shape.ir.json")
+      (check-org-headline-ir logbook-clock-duration-value-rust
+       'logbook_clock_duration_value
+       "languages/org/v1/modules/org-elements/generated/logbook_clock_duration_value.ir.json")
+      (check (logbook-clock-duration-shape "CLOCK: [a]--[b] => 0:30")
+             => "present")
+      (check (logbook-clock-duration-value "CLOCK: [a]--[b] => 0:30")
+             => "0:30")
+      (check (logbook-clock-duration-shape "CLOCK: [a]--[b]")
+             => "absent")
+      (check (logbook-clock-duration-value "CLOCK: [a] => ") => ""))
     (test-case "LOGBOOK quoted state values are Scheme-owned and AOT projected"
       (check-org-headline-ir logbook-state-quote-shape-rust
        'logbook_state_quote_shape

@@ -35,6 +35,10 @@ pub struct ParsedAnnotation {
     pub(crate) dynamic_end_range: Option<TextRange>,
     // Scheme-classified drawer body span for typed runtime metadata projection.
     pub(crate) drawer_body_range: Option<TextRange>,
+    // First timestamp point bounded by Scheme-classified delimiter fields.
+    pub(crate) timestamp_first_point_range: Option<TextRange>,
+    // Second point when the Scheme timestamp object is a source range.
+    pub(crate) timestamp_second_point_range: Option<TextRange>,
 }
 
 impl std::fmt::Debug for ParsedAnnotation {

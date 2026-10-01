@@ -1,16 +1,27 @@
 ;;; -*- Gerbil -*-
 ;;; Scheme-owned recognition of lifecycle line shapes inside LOGBOOK drawers.
 
-(import (only-in :gerbil-parser/src/compiler/rust-pure-aot
+(import (only-in :std/string/misc string-trim)
+        (only-in :gerbil-parser/src/compiler/rust-pure-aot
                  define-rust-pure scheme-pure->rust string-after string-before
-                 string-prefix?))
-(export logbook-line-kind logbook-line-kind-rust
+                 string-prefix? string-trim-start))
+(export logbook-content-line logbook-content-line-rust
+        logbook-line-kind logbook-line-kind-rust
         logbook-state-quote-shape logbook-state-quote-shape-rust
         logbook-state-to logbook-state-to-rust
-        logbook-state-from logbook-state-from-rust)
+        logbook-state-from logbook-state-from-rust
+        logbook-clock-duration-shape logbook-clock-duration-shape-rust
+        logbook-clock-duration-value logbook-clock-duration-value-rust)
 
 ;; The caller supplies one trimmed LOGBOOK line without its optional list dash.
 ;; Value extraction remains a separate semantic projection over that line.
+(define-rust-pure logbook-content-line logbook-content-line-rust
+  ((line "&str")) "&str"
+  (let* ((trimmed (string-trim line)))
+    (if (string-prefix? trimmed "-")
+      (string-trim-start (string-after trimmed "-"))
+      trimmed)))
+
 (def logbook-line-rules
   '(("state" "State ")
     ("note" "Note taken on")
@@ -72,3 +83,13 @@
          (after-second (string-after after-first "\""))
          (after-third (string-after after-second "\"")))
     (string-before after-third "\"")))
+
+;; List-item CLOCK lines are paragraphs rather than structural OrgClock nodes.
+;; Keep their duration boundary in Scheme while Rust owns the typed duration.
+(define-rust-pure logbook-clock-duration-shape logbook-clock-duration-shape-rust
+  ((line "&str")) "&'static str"
+  (if (equal? (string-before line "=>") line) "absent" "present"))
+
+(define-rust-pure logbook-clock-duration-value logbook-clock-duration-value-rust
+  ((line "&str")) "&str"
+  (string-trim (string-after line "=>")))

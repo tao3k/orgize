@@ -1,11 +1,30 @@
 //! Owned timestamp values projected only from Scheme-classified graph fields.
 
 use gerbil_parser_rowan::GraphRecord;
+use rowan::TextRange;
 
 use super::timestamp_model::{
     RepeaterKind, TimeUnit, Timestamp, TimestampKind, TimestampMoment, TimestampRepeater,
     TimestampWarning, WarningKind,
 };
+
+pub(super) fn timestamp_point_ranges(
+    record: &GraphRecord,
+) -> (Option<TextRange>, Option<TextRange>) {
+    let mut delimiters = record
+        .fields
+        .iter()
+        .filter(|field| field.name == "delimiter");
+    let first = delimiters
+        .next()
+        .zip(delimiters.next())
+        .map(|(opening, closing)| TextRange::new(opening.range.start(), closing.range.end()));
+    let second = delimiters
+        .next()
+        .zip(delimiters.next())
+        .map(|(opening, closing)| TextRange::new(opening.range.start(), closing.range.end()));
+    (first, second)
+}
 
 pub(super) fn project_timestamp(record: &GraphRecord, raw: &str) -> Timestamp {
     let kind = if record.field("diary-expression").is_some() {
