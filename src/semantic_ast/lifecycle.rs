@@ -100,44 +100,32 @@ fn collect_logbook_records(
 
 fn lifecycle_record_kind(line: &str) -> Option<LifecycleRecordKind> {
     let line = trim_logbook_line(line)?;
-    if line.starts_with("State ") {
-        return Some(state_change_record(line));
-    }
-    if line.starts_with("Note taken on") {
-        return Some(LifecycleRecordKind::Note {
-            timestamp: first_timestamp_raw(line),
-        });
-    }
-    if line.starts_with("Refiled") || line.starts_with("Refiling") {
-        return Some(LifecycleRecordKind::Refile {
+    Some(match crate::org_aot::logbook_line_kind(line) {
+        "state" => state_change_record(line),
+        "refile" => LifecycleRecordKind::Refile {
             target: link_target_raw(line),
             timestamp: first_timestamp_raw(line),
-        });
-    }
-    if line.starts_with("Rescheduled") {
-        let timestamps = timestamps_raw(line);
-        return Some(LifecycleRecordKind::Reschedule {
-            from: timestamps.first().cloned(),
-            to: timestamps.get(1).cloned(),
-            timestamp: timestamps.last().cloned(),
-        });
-    }
-    if line.starts_with("New deadline")
-        || line.starts_with("Deadline")
-        || line.starts_with("Removed deadline")
-    {
-        let timestamps = timestamps_raw(line);
-        return Some(LifecycleRecordKind::Redeadline {
-            from: timestamps.first().cloned(),
-            to: timestamps.get(1).cloned(),
-            timestamp: timestamps.last().cloned(),
-        });
-    }
-    if line.starts_with("CLOCK:") {
-        return Some(clock_record(line));
-    }
-    Some(LifecycleRecordKind::Note {
-        timestamp: first_timestamp_raw(line),
+        },
+        "reschedule" => {
+            let timestamps = timestamps_raw(line);
+            LifecycleRecordKind::Reschedule {
+                from: timestamps.first().cloned(),
+                to: timestamps.get(1).cloned(),
+                timestamp: timestamps.last().cloned(),
+            }
+        }
+        "redeadline" => {
+            let timestamps = timestamps_raw(line);
+            LifecycleRecordKind::Redeadline {
+                from: timestamps.first().cloned(),
+                to: timestamps.get(1).cloned(),
+                timestamp: timestamps.last().cloned(),
+            }
+        }
+        "clock" => clock_record(line),
+        _ => LifecycleRecordKind::Note {
+            timestamp: first_timestamp_raw(line),
+        },
     })
 }
 

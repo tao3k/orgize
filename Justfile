@@ -23,6 +23,9 @@ generate-radio-match-ir parser_lib poo_flow_lib:
 generate-document-keyword-ir parser_lib poo_flow_lib:
     GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-elements/generate-document-keyword-ir.ss languages/org/v1/modules/org-elements/generated
 
+generate-logbook-ir parser_lib poo_flow_lib:
+    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-elements/generate-logbook-ir.ss languages/org/v1/modules/org-elements/generated
+
 # Standalone Scheme Contract ABI; ordinary Cargo parsing never needs it.
 contract-library:
     {{ native_env }} python3 bindings/c/build-native-library.py --output target/liborgize.{{ lib_ext }}

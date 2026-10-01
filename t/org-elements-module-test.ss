@@ -64,6 +64,8 @@
                  keyword-option-value keyword-option-value-rust
                  keyword-option-present? keyword-option-present-rust
                  keyword-boolean-value keyword-boolean-value-rust)
+        (only-in "../languages/org/v1/modules/org-elements/logbook-properties.ss"
+                 logbook-line-kind logbook-line-kind-rust)
         (only-in "../languages/org/v1/modules/org-elements/table-properties.ss"
                  table-column-cookie-match? table-column-cookie-match-rust
                  table-column-cookie-kind table-column-cookie-kind-rust)
@@ -265,6 +267,19 @@
       (check (keyword-boolean-value "YES") => "true")
       (check (keyword-boolean-value "Nil") => "false")
       (check (keyword-boolean-value "maybe") => ""))
+    (test-case "LOGBOOK line kinds are Scheme-owned and AOT projected"
+      (check-org-headline-ir logbook-line-kind-rust 'logbook_line_kind
+       "languages/org/v1/modules/org-elements/generated/logbook_line_kind.ir.json")
+      (check (logbook-line-kind "State \"DONE\" from \"TODO\"") => "state")
+      (check (logbook-line-kind "Note taken on [2026-05-14 Thu]") => "note")
+      (check (logbook-line-kind "Refiled on [2026-05-14 Thu]") => "refile")
+      (check (logbook-line-kind "Refiling to [[file:notes.org]]") => "refile")
+      (check (logbook-line-kind "Rescheduled from [a] to [b]") => "reschedule")
+      (check (logbook-line-kind "New deadline from [a] to [b]") => "redeadline")
+      (check (logbook-line-kind "Deadline changed") => "redeadline")
+      (check (logbook-line-kind "Removed deadline") => "redeadline")
+      (check (logbook-line-kind "CLOCK: [a]--[b]") => "clock")
+      (check (logbook-line-kind "unclassified note") => "note"))
     (test-case "table cookie classification is Scheme-owned and AOT projected"
       (check-org-headline-ir table-column-cookie-match-rust
        'table_column_cookie_match_p

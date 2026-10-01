@@ -39,6 +39,8 @@ pub use headline_view::OrgHeadline;
 mod affiliation;
 #[path = "org_aot_link_functions.rs"]
 mod link_functions;
+#[path = "org_aot_logbook_functions.rs"]
+mod logbook_functions;
 #[path = "org_aot_table_functions.rs"]
 mod table_functions;
 #[path = "org_aot_todo_directive.rs"]
@@ -221,6 +223,10 @@ pub(crate) fn keyword_boolean_value(value: &str) -> Option<bool> {
         "false" => Some(false),
         _ => None,
     }
+}
+
+pub(crate) fn logbook_line_kind(line: &str) -> &str {
+    logbook_functions::logbook_line_kind(line)
 }
 
 pub(crate) fn table_column_cookie_kind(cell: &str) -> &'static str {

@@ -116,6 +116,28 @@ fn logbook_records_use_aot_drawer_bounds_with_crlf() {
 }
 
 #[test]
+fn logbook_kind_projection_preserves_alternate_prefixes_and_fallback() {
+    let source = "* Work\n:LOGBOOK:\n- Refiling to [[file:notes.org]]\n- Deadline changed [2026-05-14 Thu]\n- Removed deadline [2026-05-15 Fri]\n- unclassified note\n:END:\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 4);
+    assert!(matches!(
+        records[0].kind,
+        LifecycleRecordKind::Refile { .. }
+    ));
+    assert!(matches!(
+        records[1].kind,
+        LifecycleRecordKind::Redeadline { .. }
+    ));
+    assert!(matches!(
+        records[2].kind,
+        LifecycleRecordKind::Redeadline { .. }
+    ));
+    assert!(matches!(records[3].kind, LifecycleRecordKind::Note { .. }));
+}
+
+#[test]
 fn semantic_ast_projects_memory_uses_lifecycle_and_archive_evidence() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
