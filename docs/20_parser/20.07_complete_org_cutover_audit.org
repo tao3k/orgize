@@ -32,9 +32,9 @@ stable across this addition.
 
 * Current gates
 
-The last pushed Orgize PR #18 head =c305ae6= passed all five exact-head CI
+Orgize PR #18 code head =5a06ff2= passed all five exact-head CI
 jobs (Ubuntu, macOS, and Windows Rust; Ubuntu and macOS Python). Its unchanged
-Release 2,000-file plan-ledger gate measured 79.2515 ms best-of-five on
+Release 2,000-file plan-ledger gate measured 84.1777 ms best-of-five on
 Windows, below the 100 ms limit. The preceding parser-code head =f5a1ac1=
 first failed that gate at 103.2245 ms, then passed a diagnostic rerun at
 83.8839 ms and a failed-job rerun at 81.9714 ms. This is a variable batch
@@ -42,15 +42,14 @@ of directory walking, file reads, AOT parses, and projection, not a
 single-parse latency or portable throughput-improvement claim. The pinned
 backend head =9bbe7d0= passed exact-head Ubuntu and macOS CI.
 
-The next unpushed drawer-boundary slice locally passes 13 Scheme modules
-with =MODULE-OK=, =HARNESS-OK=, and final =OK=; the default-feature Rust
-workspace reports *584 passed, 4 ignored* at the preceding head, and the
-current all-target/all-feature run passes with 599 tests and 4 ignored.
+The drawer-boundary slice locally passed 13 Scheme modules with =MODULE-OK=,
+=HARNESS-OK=, and final =OK=; its all-target/all-feature Rust run passed
+599 tests with 4 ignored.
 Strict all-feature Clippy, C/Rust native contract smoke, and the three
 unchanged Release gates pass; the plan-ledger gate measured 44.164 ms
 best-of-five on this macOS host.
-Exact-head remote CI is still required before claiming this slice across
-platforms, and no green gate alone establishes complete Org-mode conformance.
+The code-head CI above closes this bounded slice across required platforms;
+no green gate alone establishes complete Org-mode conformance.
 
 Forty-six tracked Org fixtures
 roundtrip through the public Rowan graph and reject =UnsupportedElement/Object=
