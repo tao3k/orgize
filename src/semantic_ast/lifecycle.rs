@@ -2,8 +2,8 @@
 
 use super::aot_drawer_projection::drawer_body;
 use super::{
-    Document, Element, ElementData, LifecycleRecord, LifecycleRecordKind, OrgDuration,
-    ParsedAnnotation, Section,
+    AstRef, Document, Drawer, Element, ElementData, LifecycleRecord, LifecycleRecordKind,
+    ObjectData, OrgDuration, ParsedAnnotation, Section,
 };
 
 impl Document<ParsedAnnotation> {
@@ -44,7 +44,7 @@ fn collect_lifecycle_records_in_elements(
         match &element.data {
             ElementData::Drawer(drawer) => {
                 if drawer.name.eq_ignore_ascii_case("LOGBOOK") {
-                    collect_logbook_records(section, &element.ann, records);
+                    collect_logbook_records(section, drawer, &element.ann, records);
                 }
                 collect_lifecycle_records_in_elements(section, &drawer.children, records);
             }
@@ -81,11 +81,23 @@ fn collect_lifecycle_records_in_elements(
 
 fn collect_logbook_records(
     section: &Section<ParsedAnnotation>,
+    drawer: &Drawer<ParsedAnnotation>,
     ann: &ParsedAnnotation,
     records: &mut Vec<LifecycleRecord<ParsedAnnotation>>,
 ) {
-    for line in drawer_body(ann).lines() {
-        let Some(kind) = lifecycle_record_kind(line) else {
+    let Some(body_range) = ann.drawer_body_range else {
+        return;
+    };
+    let mut line_start = usize::from(body_range.start());
+    let mut link_sources = None;
+    for source_line in drawer_body(ann).split_inclusive('\n') {
+        let line = source_line.strip_suffix('\n').unwrap_or(source_line);
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        let line_end = line_start + line.len();
+        let kind =
+            lifecycle_record_kind(line, line_start..line_end, drawer, ann, &mut link_sources);
+        line_start += source_line.len();
+        let Some(kind) = kind else {
             continue;
         };
         records.push(LifecycleRecord {
@@ -98,12 +110,18 @@ fn collect_logbook_records(
     }
 }
 
-fn lifecycle_record_kind(line: &str) -> Option<LifecycleRecordKind> {
+fn lifecycle_record_kind(
+    line: &str,
+    source_range: std::ops::Range<usize>,
+    drawer: &Drawer<ParsedAnnotation>,
+    ann: &ParsedAnnotation,
+    link_sources: &mut Option<Vec<(usize, usize)>>,
+) -> Option<LifecycleRecordKind> {
     let line = trim_logbook_line(line)?;
     Some(match crate::org_aot::logbook_line_kind(line) {
         "state" => state_change_record(line),
         "refile" => LifecycleRecordKind::Refile {
-            target: link_target_raw(line),
+            target: aot_link_source_in_line(drawer, ann, source_range, link_sources),
             timestamp: first_timestamp_raw(line),
         },
         "reschedule" => {
@@ -190,8 +208,42 @@ fn timestamp_raw(line: &str) -> Option<(&str, usize)> {
     Some((&line[start..end], end))
 }
 
-fn link_target_raw(line: &str) -> Option<String> {
-    let start = line.find("[[")?;
-    let end = line[start + 2..].find("]]")? + start + 4;
-    Some(line[start..end].to_string())
+fn aot_link_source_in_line(
+    drawer: &Drawer<ParsedAnnotation>,
+    ann: &ParsedAnnotation,
+    source_range: std::ops::Range<usize>,
+    link_sources: &mut Option<Vec<(usize, usize)>>,
+) -> Option<String> {
+    // Most LOGBOOK drawers have no refile target; visit AOT objects only on demand.
+    let links = link_sources.get_or_insert_with(|| aot_link_sources(drawer));
+    let first = links.partition_point(|(start, _)| *start < source_range.start);
+    links[first..]
+        .iter()
+        .take_while(|(start, _)| *start < source_range.end)
+        .find(|(_, end)| *end <= source_range.end)
+        .and_then(|(start, end)| {
+            let drawer_start = usize::from(ann.range.start());
+            ann.raw
+                .get(start.checked_sub(drawer_start)?..end.checked_sub(drawer_start)?)
+                .map(str::to_owned)
+        })
+}
+
+fn aot_link_sources(drawer: &Drawer<ParsedAnnotation>) -> Vec<(usize, usize)> {
+    let mut links = Vec::new();
+    for child in &drawer.children {
+        child.visit_with(&mut |node| {
+            let AstRef::Object(object) = node else {
+                return;
+            };
+            if !matches!(object.data, ObjectData::Link(_)) {
+                return;
+            }
+            let start = usize::from(object.ann.range.start());
+            let end = usize::from(object.ann.range.end());
+            links.push((start, end));
+        });
+    }
+    links.sort_unstable_by_key(|(start, _)| *start);
+    links
 }

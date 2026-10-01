@@ -67,6 +67,13 @@ fn semantic_ast_projects_lifecycle_and_archive_metadata() {
             .iter()
             .any(|record| matches!(record.kind, LifecycleRecordKind::Refile { .. }))
     );
+    assert!(records.iter().any(|record| matches!(
+        &record.kind,
+        LifecycleRecordKind::Refile {
+            target: Some(target),
+            ..
+        } if target == "[[file:old.org][old]]"
+    )));
     assert!(
         records
             .iter()
@@ -135,6 +142,33 @@ fn logbook_kind_projection_preserves_alternate_prefixes_and_fallback() {
         LifecycleRecordKind::Redeadline { .. }
     ));
     assert!(matches!(records[3].kind, LifecycleRecordKind::Note { .. }));
+}
+
+#[test]
+fn logbook_refile_target_uses_first_aot_link_on_its_own_line() {
+    let source = "* Work\r\n:LOGBOOK:\r\n- Refiled from [[file:α.org][alpha]] via [[file:later.org]]\r\n- Refiled again to [[file:next.org]]\r\n- Refiled without a link\r\n- Refiled with [[broken] text\r\n:END:\r\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 4);
+    assert!(matches!(
+        &records[0].kind,
+        LifecycleRecordKind::Refile {
+            target: Some(target),
+            ..
+        } if target == "[[file:α.org][alpha]]"
+    ));
+    assert!(matches!(
+        &records[1].kind,
+        LifecycleRecordKind::Refile {
+            target: Some(target),
+            ..
+        } if target == "[[file:next.org]]"
+    ));
+    assert!(records[2..].iter().all(|record| matches!(
+        record.kind,
+        LifecycleRecordKind::Refile { target: None, .. }
+    )));
 }
 
 #[test]
