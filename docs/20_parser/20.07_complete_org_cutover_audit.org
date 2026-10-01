@@ -133,6 +133,13 @@ runtime parallelism does not solve that compiler cost. The generic event AOT
 backend still needs further bounded code-size reduction
 with unchanged source-range and throughput receipts.
 
+The =benches/parse.rs= dense-table fixture now exercises 128 tables with eight
+rows and a formula each, timing parse and document projection separately.
+A short host-local ten-sample smoke run on the current pin produced wide
+5.024–9.515 ms parse and 2.037–3.443 ms projection intervals. This checks
+that the benchmark executes; it is not a matched old/new comparison or a
+performance improvement claim.
+
 The subsequent backend pin lowered byte-set predicates with 16 or more values
 to typed 256-bit masks. On the same checked-in Org event IR, generated Rust was
 5,271,909 bytes / 73,903 lines, versus 5,427,404 bytes / 75,480 lines at
