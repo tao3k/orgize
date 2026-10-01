@@ -48,6 +48,9 @@ pub fn write_org_aot_functions() {
         "keyword_option_present_p",
         "keyword_boolean_value",
         "logbook_line_kind",
+        "logbook_state_quote_shape",
+        "logbook_state_to",
+        "logbook_state_from",
         "table_column_cookie_kind",
         "table_column_cookie_match_p",
     ] {

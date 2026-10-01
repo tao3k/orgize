@@ -229,6 +229,15 @@ pub(crate) fn logbook_line_kind(line: &str) -> &str {
     logbook_functions::logbook_line_kind(line)
 }
 
+pub(crate) fn logbook_state_values(line: &str) -> Option<(&str, &str)> {
+    (logbook_functions::logbook_state_quote_shape(line) == "complete").then(|| {
+        (
+            logbook_functions::logbook_state_to(line),
+            logbook_functions::logbook_state_from(line),
+        )
+    })
+}
+
 pub(crate) fn table_column_cookie_kind(cell: &str) -> &'static str {
     table_functions::table_column_cookie_kind(cell)
 }

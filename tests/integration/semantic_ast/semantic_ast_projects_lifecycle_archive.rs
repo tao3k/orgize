@@ -138,6 +138,36 @@ fn logbook_kind_projection_preserves_alternate_prefixes_and_fallback() {
 }
 
 #[test]
+fn logbook_state_values_follow_scheme_aot_quote_boundaries() {
+    let source = "* Work\n:LOGBOOK:\n- State \"DÖNE\" from \"TODO\" [2026-05-13 Wed]\n- State \"\" from \"\"\n- State \"DONE\" from \"TODO\n- State DONE from TODO\n:END:\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 4);
+    assert!(matches!(
+        &records[0].kind,
+        LifecycleRecordKind::StateChange {
+            to: Some(to),
+            from: Some(from),
+            ..
+        } if to == "DÖNE" && from == "TODO"
+    ));
+    assert!(matches!(
+        &records[1].kind,
+        LifecycleRecordKind::StateChange {
+            to: Some(to),
+            from: Some(from),
+            ..
+        } if to.is_empty() && from.is_empty()
+    ));
+    assert!(
+        records[2..]
+            .iter()
+            .all(|record| matches!(record.kind, LifecycleRecordKind::MalformedLogbook { .. }))
+    );
+}
+
+#[test]
 fn semantic_ast_projects_memory_uses_lifecycle_and_archive_evidence() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);

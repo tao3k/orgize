@@ -222,14 +222,17 @@ to Rust AOT, with Scheme IR and alternate-prefix regressions. One grouped
 Scheme rule table drives the runtime =ormap= classifier and a generation-time
 =foldr= that produces the allocation-free Rust AOT branch chain; the
 canonical function IR and generated Rust are unchanged by this source cleanup.
-Rust still trims
-list markers and interprets quoted states, timestamps, links, and durations.
+The last pushed head =9217d9b= passed all five exact-head CI jobs, with the
+Windows 2,000-file gate at 71.4574 ms. A subsequent local slice lowers three
+more Scheme-owned pure functions for state-change quote completeness and the
+two quoted TODO values; Rust no longer scans those quoted segments. Its
+all-target/all-feature Rust tests, 13 Scheme modules, strict Clippy, and
+2,000-file Release gate passed (52.408292 ms best-of-five on this macOS host).
+This subsequent slice is not pushed and has no remote CI receipt. Rust still
+trims list markers and interprets timestamps, links, and durations.
 This is typed lifecycle interpretation, not a second block parser; moving
 value spans into Scheme-owned graph fields requires a focused design and
-line-level regression coverage. This unpushed slice locally passed all 13
-Scheme modules, locked all-target/all-feature Rust tests, strict Clippy, and
-the three Release gates; its 2,000-file plan-ledger gate measured 53.089 ms
-best-of-five on this macOS host. It has no exact-head remote CI receipt.
+line-level regression coverage.
 Dynamic-block content counting now uses the
 Scheme graph's closing-line range, rather than assuming the last raw line is
 the closer; it still interprets content after AOT block classification.
@@ -250,7 +253,7 @@ a Scheme parser coverage item, not a Rust output-side fallback.
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are covered in Scheme and Rust graph tests. List bullet tokens include the exact horizontal separator, preserving =- =, repeated spaces, and tabs without Rust reconstruction. Shared source-header and keyword-value helpers keep the current event IR at 1,666,505 bytes. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
 | Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
-| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, priority-heading selection, and Org query block content now use AOT context. FEEDSTATUS and LOGBOOK drawer envelopes use Scheme graph ranges; LOGBOOK line kinds use a Scheme-AOT pure function, while typed values remain a Rust interpreter pending a separate ownership decision. |
+| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, priority-heading selection, and Org query block content now use AOT context. FEEDSTATUS and LOGBOOK drawer envelopes use Scheme graph ranges; LOGBOOK line kinds and quoted state values use Scheme-AOT pure functions. Timestamp, link, and duration values remain Rust typed interpretation pending a separate ownership decision. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
 

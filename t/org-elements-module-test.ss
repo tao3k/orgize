@@ -65,7 +65,10 @@
                  keyword-option-present? keyword-option-present-rust
                  keyword-boolean-value keyword-boolean-value-rust)
         (only-in "../languages/org/v1/modules/org-elements/logbook-properties.ss"
-                 logbook-line-kind logbook-line-kind-rust)
+                 logbook-line-kind logbook-line-kind-rust
+                 logbook-state-quote-shape logbook-state-quote-shape-rust
+                 logbook-state-to logbook-state-to-rust
+                 logbook-state-from logbook-state-from-rust)
         (only-in "../languages/org/v1/modules/org-elements/table-properties.ss"
                  table-column-cookie-match? table-column-cookie-match-rust
                  table-column-cookie-kind table-column-cookie-kind-rust)
@@ -280,6 +283,26 @@
       (check (logbook-line-kind "Removed deadline") => "redeadline")
       (check (logbook-line-kind "CLOCK: [a]--[b]") => "clock")
       (check (logbook-line-kind "unclassified note") => "note"))
+    (test-case "LOGBOOK quoted state values are Scheme-owned and AOT projected"
+      (check-org-headline-ir logbook-state-quote-shape-rust
+       'logbook_state_quote_shape
+       "languages/org/v1/modules/org-elements/generated/logbook_state_quote_shape.ir.json")
+      (check-org-headline-ir logbook-state-to-rust 'logbook_state_to
+       "languages/org/v1/modules/org-elements/generated/logbook_state_to.ir.json")
+      (check-org-headline-ir logbook-state-from-rust 'logbook_state_from
+       "languages/org/v1/modules/org-elements/generated/logbook_state_from.ir.json")
+      (check (logbook-state-quote-shape "State \"DONE\" from \"TODO\"")
+             => "complete")
+      (check (logbook-state-to "State \"DONE\" from \"TODO\"") => "DONE")
+      (check (logbook-state-from "State \"DONE\" from \"TODO\"") => "TODO")
+      (check (logbook-state-quote-shape "State \"\" from \"\"")
+             => "complete")
+      (check (logbook-state-to "State \"\" from \"\"") => "")
+      (check (logbook-state-from "State \"\" from \"\"") => "")
+      (check (logbook-state-quote-shape "State \"DONE\" from \"TODO")
+             => "incomplete")
+      (check (logbook-state-quote-shape "State DONE from TODO")
+             => "incomplete"))
     (test-case "table cookie classification is Scheme-owned and AOT projected"
       (check-org-headline-ir table-column-cookie-match-rust
        'table_column_cookie_match_p

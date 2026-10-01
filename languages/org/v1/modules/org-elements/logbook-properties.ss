@@ -2,8 +2,12 @@
 ;;; Scheme-owned recognition of lifecycle line shapes inside LOGBOOK drawers.
 
 (import (only-in :gerbil-parser/src/compiler/rust-pure-aot
-                 scheme-pure->rust string-prefix?))
-(export logbook-line-kind logbook-line-kind-rust)
+                 define-rust-pure scheme-pure->rust string-after string-before
+                 string-prefix?))
+(export logbook-line-kind logbook-line-kind-rust
+        logbook-state-quote-shape logbook-state-quote-shape-rust
+        logbook-state-to logbook-state-to-rust
+        logbook-state-from logbook-state-from-rust)
 
 ;; The caller supplies one trimmed LOGBOOK line without its optional list dash.
 ;; Value extraction remains a separate semantic projection over that line.
@@ -39,3 +43,32 @@
             `(if ,(logbook-prefix-form (cdr rule))
                  ,(car rule) ,otherwise))
           "note" logbook-line-rules)))
+
+;; The four delimiter checks preserve empty quoted states while distinguishing
+;; them from missing quotes. Rust consumes only these Scheme-authored values.
+(define-rust-pure logbook-state-quote-shape logbook-state-quote-shape-rust
+  ((line "&str")) "&'static str"
+  (let* ((before-first (string-before line "\""))
+         (after-first (string-after line "\""))
+         (to (string-before after-first "\""))
+         (after-second (string-after after-first "\""))
+         (before-third (string-before after-second "\""))
+         (after-third (string-after after-second "\""))
+         (from (string-before after-third "\"")))
+    (if (or (equal? before-first line)
+            (equal? to after-first)
+            (equal? before-third after-second)
+            (equal? from after-third))
+      "incomplete" "complete")))
+
+(define-rust-pure logbook-state-to logbook-state-to-rust
+  ((line "&str")) "&str"
+  (let* ((after-first (string-after line "\"")))
+    (string-before after-first "\"")))
+
+(define-rust-pure logbook-state-from logbook-state-from-rust
+  ((line "&str")) "&str"
+  (let* ((after-first (string-after line "\""))
+         (after-second (string-after after-first "\""))
+         (after-third (string-after after-second "\"")))
+    (string-before after-third "\"")))

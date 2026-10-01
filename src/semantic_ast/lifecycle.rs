@@ -138,15 +138,14 @@ fn trim_logbook_line(line: &str) -> Option<&str> {
 }
 
 fn state_change_record(line: &str) -> LifecycleRecordKind {
-    let quoted = quoted_segments(line);
-    if quoted.len() < 2 {
+    let Some((to, from)) = crate::org_aot::logbook_state_values(line) else {
         return LifecycleRecordKind::MalformedLogbook {
             reason: "state-change LOGBOOK line is missing quoted TODO states".to_string(),
         };
-    }
+    };
     LifecycleRecordKind::StateChange {
-        to: quoted.first().cloned(),
-        from: quoted.get(1).cloned(),
+        to: Some(to.to_string()),
+        from: Some(from.to_string()),
         timestamp: first_timestamp_raw(line),
     }
 }
@@ -164,20 +163,6 @@ fn clock_record(line: &str) -> LifecycleRecordKind {
         duration,
         timestamp: first_timestamp_raw(line),
     }
-}
-
-fn quoted_segments(line: &str) -> Vec<String> {
-    let mut segments = Vec::new();
-    let mut rest = line;
-    while let Some(start) = rest.find('"') {
-        rest = &rest[start + 1..];
-        let Some(end) = rest.find('"') else {
-            break;
-        };
-        segments.push(rest[..end].to_string());
-        rest = &rest[end + 1..];
-    }
-    segments
 }
 
 fn timestamps_raw(line: &str) -> Vec<String> {
