@@ -1,12 +1,14 @@
 //! Opt-in lifecycle projection over ordinary Org LOGBOOK and archive metadata.
 
+use super::aot_drawer_projection::drawer_body;
 use super::{
-    Document, Element, ElementData, LifecycleRecord, LifecycleRecordKind, OrgDuration, Section,
+    Document, Element, ElementData, LifecycleRecord, LifecycleRecordKind, OrgDuration,
+    ParsedAnnotation, Section,
 };
 
-impl<A: Clone> Document<A> {
-    /// Projects LOGBOOK-like content into lifecycle records without mutating the AST.
-    pub fn lifecycle_records(&self) -> Vec<LifecycleRecord<A>> {
+impl Document<ParsedAnnotation> {
+    /// Projects Scheme-bounded LOGBOOK bodies into lifecycle records without mutating the AST.
+    pub fn lifecycle_records(&self) -> Vec<LifecycleRecord<ParsedAnnotation>> {
         let mut records = Vec::new();
         for section in &self.sections {
             collect_section_lifecycle_records(section, &mut records);
@@ -15,9 +17,9 @@ impl<A: Clone> Document<A> {
     }
 }
 
-pub(super) fn collect_section_lifecycle_records<A: Clone>(
-    section: &Section<A>,
-    records: &mut Vec<LifecycleRecord<A>>,
+pub(super) fn collect_section_lifecycle_records(
+    section: &Section<ParsedAnnotation>,
+    records: &mut Vec<LifecycleRecord<ParsedAnnotation>>,
 ) {
     collect_lifecycle_records_in_elements(section, &section.children, records);
     for subsection in &section.subsections {
@@ -25,22 +27,24 @@ pub(super) fn collect_section_lifecycle_records<A: Clone>(
     }
 }
 
-pub(super) fn section_lifecycle_records<A: Clone>(section: &Section<A>) -> Vec<LifecycleRecord<A>> {
+pub(super) fn section_lifecycle_records(
+    section: &Section<ParsedAnnotation>,
+) -> Vec<LifecycleRecord<ParsedAnnotation>> {
     let mut records = Vec::new();
     collect_lifecycle_records_in_elements(section, &section.children, &mut records);
     records
 }
 
-fn collect_lifecycle_records_in_elements<A: Clone>(
-    section: &Section<A>,
-    elements: &[Element<A>],
-    records: &mut Vec<LifecycleRecord<A>>,
+fn collect_lifecycle_records_in_elements(
+    section: &Section<ParsedAnnotation>,
+    elements: &[Element<ParsedAnnotation>],
+    records: &mut Vec<LifecycleRecord<ParsedAnnotation>>,
 ) {
     for element in elements {
         match &element.data {
             ElementData::Drawer(drawer) => {
                 if drawer.name.eq_ignore_ascii_case("LOGBOOK") {
-                    collect_logbook_records(section, &element.ann, drawer.raw.as_str(), records);
+                    collect_logbook_records(section, &element.ann, records);
                 }
                 collect_lifecycle_records_in_elements(section, &drawer.children, records);
             }
@@ -75,13 +79,12 @@ fn collect_lifecycle_records_in_elements<A: Clone>(
     }
 }
 
-fn collect_logbook_records<A: Clone>(
-    section: &Section<A>,
-    ann: &A,
-    raw: &str,
-    records: &mut Vec<LifecycleRecord<A>>,
+fn collect_logbook_records(
+    section: &Section<ParsedAnnotation>,
+    ann: &ParsedAnnotation,
+    records: &mut Vec<LifecycleRecord<ParsedAnnotation>>,
 ) {
-    for line in raw.lines() {
+    for line in drawer_body(ann).lines() {
         let Some(kind) = lifecycle_record_kind(line) else {
             continue;
         };
@@ -140,10 +143,7 @@ fn lifecycle_record_kind(line: &str) -> Option<LifecycleRecordKind> {
 
 fn trim_logbook_line(line: &str) -> Option<&str> {
     let line = line.trim();
-    if line.is_empty()
-        || line.eq_ignore_ascii_case(":LOGBOOK:")
-        || line.eq_ignore_ascii_case(":END:")
-    {
+    if line.is_empty() {
         return None;
     }
     Some(line.strip_prefix('-').map(str::trim_start).unwrap_or(line))

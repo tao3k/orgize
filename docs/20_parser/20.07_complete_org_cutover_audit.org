@@ -32,9 +32,9 @@ stable across this addition.
 
 * Current gates
 
-Orgize PR #18 code head =5a06ff2= passed all five exact-head CI
+Orgize PR #18 audit head =cf8b13f= passed all five exact-head CI
 jobs (Ubuntu, macOS, and Windows Rust; Ubuntu and macOS Python). Its unchanged
-Release 2,000-file plan-ledger gate measured 84.1777 ms best-of-five on
+Release 2,000-file plan-ledger gate measured 82.2795 ms best-of-five on
 Windows, below the 100 ms limit. The preceding parser-code head =f5a1ac1=
 first failed that gate at 103.2245 ms, then passed a diagnostic rerun at
 83.8839 ms and a failed-job rerun at 81.9714 ms. This is a variable batch
@@ -50,6 +50,17 @@ unchanged Release gates pass; the plan-ledger gate measured 44.164 ms
 best-of-five on this macOS host.
 The code-head CI above closes this bounded slice across required platforms;
 no green gate alone establishes complete Org-mode conformance.
+
+The next local LOGBOOK slice takes drawer body bounds from the Scheme graph
+instead of filtering opening and closing marker strings from every raw line.
+A CRLF body with an in-body =:LOGBOOK:= line remains a lifecycle value.
+Lifecycle projection is now limited to source-annotated ASTs; the value
+interpreter still handles State, CLOCK, timestamps, and links in Rust.
+Local checks passed: 600 all-target/all-feature Rust tests (4 ignored),
+strict Clippy, 13 Scheme modules, C/Rust native contract smoke, and the three
+unchanged Release gates (2,000-file plan ledger 50.942458 ms best-of-five on
+this macOS host). Exact-head remote CI is required before cross-platform
+retention; this is not a throughput-speedup claim.
 
 Forty-six tracked Org fixtures
 roundtrip through the public Rowan graph and reject =UnsupportedElement/Object=
@@ -169,9 +180,9 @@ establish a microsecond-scale per-document order of magnitude, not a
 statistically proven speedup or cross-platform performance guarantee. The
 Windows batch gate additionally includes 2,000 file reads and semantic
 projection, and still needs a more stable margin below 100 ms.
-The remaining LOGBOOK path starts from an AOT-classified drawer, but interprets
-its raw body lines for lifecycle kinds, quoted states, timestamps, and links.
-It is typed lifecycle interpretation, not a second block parser; moving those
+The remaining LOGBOOK path takes its body envelope from the AOT drawer graph,
+but interprets lifecycle kinds, quoted states, timestamps, and links in Rust.
+This is typed lifecycle interpretation, not a second block parser; moving
 value spans into Scheme-owned graph fields requires a focused design and
 line-level regression coverage. Dynamic-block content counting now uses the
 Scheme graph's closing-line range, rather than assuming the last raw line is
@@ -180,7 +191,7 @@ FEEDSTATUS drawer body extraction now uses Scheme graph header-trivia and
 closing-line ranges; Rust retains value trimming, readability checks, and
 entry counting. A CRLF regression retains a body line equal to the drawer
 name rather than deleting it as a second pseudo-opener. This does not
-migrate the separate LOGBOOK lifecycle value parser or claim full Org
+migrate the separate LOGBOOK lifecycle value interpreter or claim full Org
 conformance.
 The Org query content renderer no longer treats =#+begin_src= or
 =#+begin_example= text prefixes as blocks. It preserves source/export block
@@ -193,7 +204,7 @@ a Scheme parser coverage item, not a Rust output-side fallback.
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are covered in Scheme and Rust graph tests. List bullet tokens include the exact horizontal separator, preserving =- =, repeated spaces, and tabs without Rust reconstruction. Shared source-header and keyword-value helpers keep the current event IR at 1,666,505 bytes. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
 | Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
-| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, priority-heading selection, and Org query block content now use AOT context. LOGBOOK lifecycle extraction still requires an ownership audit: distinguish typed semantic interpretation from a second Org syntax recognizer before migrating it. |
+| Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, priority-heading selection, and Org query block content now use AOT context. FEEDSTATUS and LOGBOOK drawer envelopes use Scheme graph ranges; LOGBOOK lifecycle values remain a typed Rust interpreter pending a separate ownership decision. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
 

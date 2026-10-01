@@ -101,6 +101,21 @@ fn semantic_ast_projects_lifecycle_and_archive_metadata() {
 }
 
 #[test]
+fn logbook_records_use_aot_drawer_bounds_with_crlf() {
+    let source = "* Work\r\n:LOGBOOK:\r\n- State \"DONE\" from \"TODO\" [2026-05-13 Wed]\r\n:LOGBOOK:\r\n:END:\r\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 2);
+    assert!(matches!(
+        records[0].kind,
+        LifecycleRecordKind::StateChange { .. }
+    ));
+    assert_eq!(records[1].raw, ":LOGBOOK:");
+    assert!(matches!(records[1].kind, LifecycleRecordKind::Note { .. }));
+}
+
+#[test]
 fn semantic_ast_projects_memory_uses_lifecycle_and_archive_evidence() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);

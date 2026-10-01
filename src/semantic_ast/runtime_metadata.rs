@@ -2,6 +2,8 @@
 
 use std::collections::HashSet;
 
+use super::aot_drawer_projection::drawer_body;
+
 use super::{
     AstRef, Document, Element, ElementData, FeedStatusDrawerName, FeedStatusRecord,
     MobileFlaggedSection, MobileIndexLink, MobileOriginalId, MobilePriorityDeclaration,
@@ -197,7 +199,12 @@ fn collect_feed_status(
     section: Option<&Section<ParsedAnnotation>>,
     plan: &mut RuntimeMetadataPlan,
 ) {
-    let raw_body = drawer_body(element);
+    let raw_body = drawer_body(&element.ann)
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n");
     let readable = feed_status_is_readable(raw_body.as_str());
     if !readable {
         plan.warnings.push(RuntimeMetadataWarning {
@@ -233,20 +240,6 @@ fn collect_timers(
             total_seconds: stamp.total_seconds,
         });
     }
-}
-
-fn drawer_body(element: &Element<ParsedAnnotation>) -> String {
-    let Some(body_range) = element.ann.drawer_body_range else {
-        return String::new();
-    };
-    let start = usize::from(body_range.start() - element.ann.range.start());
-    let end = usize::from(body_range.end() - element.ann.range.start());
-    element.ann.raw[start..end]
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .collect::<Vec<_>>()
-        .join("\n")
 }
 
 fn feed_status_is_readable(raw: &str) -> bool {
