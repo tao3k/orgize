@@ -218,7 +218,11 @@ Windows batch gate additionally includes 2,000 file reads and semantic
 projection, and still needs a more stable margin below 100 ms.
 The remaining LOGBOOK path takes its body envelope from the AOT drawer graph.
 Lifecycle line-kind recognition now calls a Scheme-owned pure function lowered
-to Rust AOT, with Scheme IR and alternate-prefix regressions. Rust still trims
+to Rust AOT, with Scheme IR and alternate-prefix regressions. One grouped
+Scheme rule table drives the runtime =ormap= classifier and a generation-time
+=foldr= that produces the allocation-free Rust AOT branch chain; the
+canonical function IR and generated Rust are unchanged by this source cleanup.
+Rust still trims
 list markers and interprets quoted states, timestamps, links, and durations.
 This is typed lifecycle interpretation, not a second block parser; moving
 value spans into Scheme-owned graph fields requires a focused design and
