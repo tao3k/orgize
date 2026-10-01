@@ -32,10 +32,10 @@ stable across this addition.
 
 * Current gates
 
-Orgize PR #18 audit head =cf8b13f= passed all five exact-head CI
+Orgize PR #18 LOGBOOK head =278896b= passed all five exact-head CI
 jobs (Ubuntu, macOS, and Windows Rust; Ubuntu and macOS Python). Its unchanged
-Release 2,000-file plan-ledger gate measured 82.2795 ms best-of-five on
-Windows, below the 100 ms limit. The preceding parser-code head =f5a1ac1=
+Release 2,000-file plan-ledger gate measured 35.681 ms best-of-five on
+Windows, below the 100 ms limit. The earlier parser-code head =f5a1ac1=
 first failed that gate at 103.2245 ms, then passed a diagnostic rerun at
 83.8839 ms and a failed-job rerun at 81.9714 ms. This is a variable batch
 of directory walking, file reads, AOT parses, and projection, not a
@@ -51,7 +51,7 @@ best-of-five on this macOS host.
 The code-head CI above closes this bounded slice across required platforms;
 no green gate alone establishes complete Org-mode conformance.
 
-The next local LOGBOOK slice takes drawer body bounds from the Scheme graph
+The LOGBOOK slice takes drawer body bounds from the Scheme graph
 instead of filtering opening and closing marker strings from every raw line.
 A CRLF body with an in-body =:LOGBOOK:= line remains a lifecycle value.
 Lifecycle projection is now limited to source-annotated ASTs; the value
@@ -59,8 +59,33 @@ interpreter still handles State, CLOCK, timestamps, and links in Rust.
 Local checks passed: 600 all-target/all-feature Rust tests (4 ignored),
 strict Clippy, 13 Scheme modules, C/Rust native contract smoke, and the three
 unchanged Release gates (2,000-file plan ledger 50.942458 ms best-of-five on
-this macOS host). Exact-head remote CI is required before cross-platform
-retention; this is not a throughput-speedup claim.
+this macOS host). Exact-head remote CI passed at =278896b=;
+this is not a throughput-speedup claim.
+
+The next backend pin =90ec6bd= shares bounded offset scans without changing
+the Scheme event IR. On the same checked-in IR, generated Rust changes from
+52,482 lines / 3,601,759 bytes to 48,770 lines / 3,357,551 bytes. A
+standalone 2,000-document event comparison emitted 140,000 events with the
+same complete fingerprint; host-local timings do not establish a runtime
+speedup. An isolated Orgize checkout using the local backend source passed
+the all-target/all-feature tests and strict Clippy, with a 45.343 ms
+best-of-five Release plan-ledger result. The exact remote commit pin also
+passes locked all-target/all-feature tests and strict Clippy; its local
+2,000-file Release gate measured 34.499 ms best-of-five. Backend and downstream
+exact-head CI remain required before retaining this pin.
+
+Native Gerbil execution is a separate performance candidate, not an implicit
+property of the Cargo AOT path. The current Scheme =run-event-fold= entry
+interprets the admitted strategy; compiling that executor to C and calling it
+through FFI would not specialize the Org event transitions. The existing
+=orgize-native= C ABI evaluates contracts, not parser events. A serious native
+parser comparison requires a specialized C lowering of the same Scheme IR and
+one bounded, bulk event transfer per document, then source-range parity and
+matched single-document and 2,000-document throughput receipts including
+Rowan/Graph projection. Gerbil actors may schedule native work, but Rust AOT
+does not run the Gerbil runtime, and concurrency alone is not evidence of
+faster CPU-bound parsing. Do not retain two production parser paths merely to
+keep an unqualified benchmark candidate.
 
 Forty-six tracked Org fixtures
 roundtrip through the public Rowan graph and reject =UnsupportedElement/Object=
