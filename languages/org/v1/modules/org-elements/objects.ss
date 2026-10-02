@@ -8,15 +8,17 @@
                  +org-element-clause-kind+ +org-element-graph-kind+
                  +org-element-predicate-kind+
                  +org-element-named-query-kind+
+                 +org-headline-properties-kind+
                  OrgElementQuery OrgElementQueryClause OrgElementGraphView
-                 OrgNamedElementQuery OrgElementPredicate))
+                 OrgNamedElementQuery OrgElementPredicate
+                 OrgHeadlineProperties OrgSourceMatchStrategy
+                 +org-source-match-strategy-kind+))
 (export make-org-element-query make-org-element-property-clause
         make-org-element-query-groups make-org-element-predicate
         make-org-named-element-query
         org-named-element-query-id org-named-element-query-query
         make-org-element-relation-clause make-org-element-graph-view
-        org-element-query-node-kind org-element-query-field-name
-        org-element-query-field-value org-element-query-field-match
+        org-element-query-node-kind
         org-element-query-relation
         org-element-query-groups org-element-predicate-groups
         org-element-query-target org-element-clause-kind
@@ -24,12 +26,41 @@
         org-element-clause-match
         org-element-graph-records
         org-element-graph-id-of org-element-graph-parent-of
-        org-element-graph-kind-of org-element-graph-field-of)
+        org-element-graph-kind-of org-element-graph-field-of
+        make-org-headline-properties org-headline-property-field
+        make-org-source-match-strategy)
+
+(def (make-org-source-match-strategy extra-word-characters)
+  (admit! OrgSourceMatchStrategy
+          (.o kind: +org-source-match-strategy-kind+
+              schema: +org-element-schema+
+              scan: 'utf8-character-boundaries
+              candidate: 'exact-target-prefix
+              boundary-unicode-alphanumeric: #t
+              boundary-extra: extra-word-characters
+              winner: 'longest-then-first)))
 
 (def (admit! type value)
   (unless (element? type value)
     (error "invalid Org Element POO value" value))
   value)
+
+(def (make-org-headline-properties source-title-value title-value
+                                   todo-keyword-value todo-type-value
+                                   priority-value tags-value)
+  (admit! OrgHeadlineProperties
+          (.o kind: +org-headline-properties-kind+
+              schema: +org-element-schema+
+              source-title: source-title-value title: title-value
+              todo-keyword: todo-keyword-value todo-type: todo-type-value
+              priority: priority-value tags: tags-value)))
+
+(def (org-headline-property-field value name)
+  (let (slot (if (equal? name "raw-value") 'title
+               (and (member name '("title" "source-title" "todo-keyword"
+                                   "todo-type" "priority" "tags"))
+                    (string->symbol name))))
+    (if slot (values #t (.ref value slot)) (values #f #f))))
 
 (def (make-org-element-query node-kind-value
                              (field-name-value #f) (field-value-value #f)
@@ -104,19 +135,6 @@
 (def (org-element-query-node-kind value) (.ref value 'node-kind))
 (def (org-element-query-groups value) (.ref value 'groups))
 (def (org-element-predicate-groups value) (.ref value 'groups))
-(def (org-element-query-first-property value)
-  (let (groups (org-element-query-groups value))
-    (and (= (length groups) 1) (= (length (car groups)) 1)
-         (caar groups))))
-(def (org-element-query-field-name value)
-  (let (property (org-element-query-first-property value))
-    (and property (org-element-clause-name property))))
-(def (org-element-query-field-value value)
-  (let (property (org-element-query-first-property value))
-    (and property (org-element-clause-value property))))
-(def (org-element-query-field-match value)
-  (let (property (org-element-query-first-property value))
-    (if property (org-element-clause-match property) 'exact)))
 (def (org-element-query-relation value) (.ref value 'relation))
 (def (org-element-query-target value) (.ref value 'target))
 (def (org-element-clause-kind value) (.ref value 'clause-kind))

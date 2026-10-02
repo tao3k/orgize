@@ -1,0 +1,138 @@
+---
+source: tests/integration/org_event_aot_parity.rs
+expression: document.records()
+---
+[
+    GraphRecord {
+        id: 0,
+        parent_id: None,
+        child_ids: [
+            1,
+        ],
+        syntax_kind: 0,
+        category: "document",
+        kind: "org-data",
+        range: 0..130,
+        fields: [],
+    },
+    GraphRecord {
+        id: 1,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            2,
+            5,
+        ],
+        syntax_kind: 80,
+        category: "section",
+        kind: "headline",
+        range: 0..130,
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "*",
+                range: 0..1,
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Dynamic overview",
+                range: 2..18,
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Dynamic overview",
+                range: 2..18,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 2,
+        parent_id: Some(
+            1,
+        ),
+        child_ids: [
+            3,
+        ],
+        syntax_kind: 12,
+        category: "element",
+        kind: "dynamic-block",
+        range: 19..112,
+        fields: [
+            GraphFieldValue {
+                name: "header",
+                value: "  :scope file\n",
+                range: 27..51,
+            },
+            GraphFieldValue {
+                name: "name",
+                value: "clocktable",
+                range: 28..38,
+            },
+            GraphFieldValue {
+                name: "header-key",
+                value: "scope",
+                range: 40..45,
+            },
+            GraphFieldValue {
+                name: "header-value",
+                value: "file",
+                range: 46..50,
+            },
+            GraphFieldValue {
+                name: "end",
+                value: "#+END:\n",
+                range: 105..112,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 3,
+        parent_id: Some(
+            2,
+        ),
+        child_ids: [
+            4,
+        ],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: 51..105,
+        fields: [],
+    },
+    GraphRecord {
+        id: 4,
+        parent_id: Some(
+            3,
+        ),
+        child_ids: [],
+        syntax_kind: 49,
+        category: "object",
+        kind: "link",
+        range: 73..103,
+        fields: [
+            GraphFieldValue {
+                name: "path",
+                value: "https://example.test",
+                range: 75..95,
+            },
+            GraphFieldValue {
+                name: "description",
+                value: "link",
+                range: 97..101,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 5,
+        parent_id: Some(
+            1,
+        ),
+        child_ids: [],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: 113..130,
+        fields: [],
+    },
+]

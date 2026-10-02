@@ -15,7 +15,8 @@
                  org-element-clause-name org-element-clause-value
                  org-element-clause-match
                  org-element-query-relation org-element-query-target))
-(export org-element-query-rust-syntax org-element-query-rust-source
+(export org-element-property-rust-value
+        org-element-query-rust-syntax org-element-query-rust-source
         generate-org-element-query-rust-module)
 
 (def (field-match-value value)
@@ -34,14 +35,8 @@
      ((descendant-of) "OrgElementRelation::DescendantOf")
      (else (error "unsupported Org Element relation" value)))))
 
-(def (property-value clause)
+(def (org-element-property-rust-value clause)
   (let (field (org-element-clause-name clause))
-    (when (member field '("title" "raw-value"
-                          "priority" "tags"))
-      (error "derived Element property lacks an AOT implementation" field))
-    (when (and (equal? field "todo-keyword")
-               (not (eq? (org-element-clause-match clause) 'exact)))
-      (error "TODO keyword AOT only admits exact matching"))
     (rust-struct OrgElementPropertyRule
       (name (rust-string field))
       (value (rust-string (org-element-clause-value clause)))
@@ -58,7 +53,8 @@
       (id (rust-string (org-named-element-query-id named)))
       (node_kind (rust-string (org-element-query-node-kind query)))
       (groups (rust-array
-               (map (lambda (group) (rust-array (map property-value group)))
+               (map (lambda (group)
+                      (rust-array (map org-element-property-rust-value group)))
                     (org-element-query-groups query))))
       (relation (relation-value (org-element-query-relation query)))
       (target_scope (rust-identifier (if (eq? target 'scope) "true" "false"))))))

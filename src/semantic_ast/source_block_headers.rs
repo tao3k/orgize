@@ -8,7 +8,6 @@ use super::{
     SourceBlockResultOptions, SourceBlockResultValueType, SourceBlockTangle,
     SourceBlockTangleComments, SourceBlockTangleCommentsMode, SourceBlockTangleMkdirp,
     SourceBlockTangleMode, SourceBlockTangleNoweb, SourceBlockTangleNowebMode,
-    block_metadata::parse_block_header_args,
 };
 
 pub(super) fn explicit_source_block_header_args(
@@ -26,7 +25,7 @@ pub(super) fn explicit_source_block_header_args(
                 keyword.key.eq_ignore_ascii_case("HEADER")
                     || keyword.key.eq_ignore_ascii_case("HEADERS")
             })
-            .flat_map(|keyword| parse_block_header_args(Some(&keyword.value))),
+            .flat_map(|keyword| keyword.ann.header_args.iter().cloned()),
     );
     header_args.extend(begin_line_args.iter().cloned());
     header_args
@@ -35,10 +34,10 @@ pub(super) fn explicit_source_block_header_args(
 pub(super) fn explicit_inline_source_header_args(
     language: &str,
     properties: &[Property<ParsedAnnotation>],
-    parameters: Option<&str>,
+    inline_header_args: &[BlockHeaderArg],
 ) -> Vec<BlockHeaderArg> {
     let mut header_args = property_header_args(properties, Some(language));
-    header_args.extend(parse_block_header_args(parameters));
+    header_args.extend_from_slice(inline_header_args);
     header_args
 }
 
@@ -51,14 +50,14 @@ fn property_header_args(
         properties
             .iter()
             .filter(|property| property.key.eq_ignore_ascii_case("header-args"))
-            .flat_map(|property| parse_block_header_args(Some(&property.value))),
+            .flat_map(|property| property.ann.header_args.iter().cloned()),
     );
     if let Some(language) = language {
         header_args.extend(
             properties
                 .iter()
                 .filter(|property| is_language_header_args_property(&property.key, language))
-                .flat_map(|property| parse_block_header_args(Some(&property.value))),
+                .flat_map(|property| property.ann.header_args.iter().cloned()),
         );
     }
     header_args

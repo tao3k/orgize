@@ -4,6 +4,8 @@
 (import (only-in :clan/poo/object .ref .slot? object?)
         (only-in :clan/poo/mop define-type Type. element?)
         (only-in :std/list/list every)
+        (only-in :gerbil-parser/graph-query-support
+                 graph-query-view? graph-query-context?)
         (only-in "../../graph-shape.ss"
                  org-v1-graph-shape org-v1-headline-extra-fields
                  org-graph-node-label org-graph-node-fields
@@ -13,10 +15,14 @@
         +org-element-context-kind+ +org-element-profile-kind+
         +org-element-named-query-kind+
         +org-element-predicate-kind+
+        +org-headline-properties-kind+
+        +org-source-match-strategy-kind+
         OrgElementQuery OrgElementQueryClause
         OrgElementPredicate org-element-predicate?
         OrgNamedElementQuery org-named-element-query?
         OrgElementGraphView OrgElementQueryContext OrgElementsProfile
+        OrgHeadlineProperties org-headline-properties?
+        OrgSourceMatchStrategy org-source-match-strategy?
         org-element-query? org-element-query-clause?
         org-element-graph-view?
         org-element-query-context? org-elements-profile?)
@@ -29,6 +35,8 @@
 (def +org-element-profile-kind+ 'org-elements-profile)
 (def +org-element-named-query-kind+ 'org-named-element-query)
 (def +org-element-predicate-kind+ 'org-element-predicate)
+(def +org-headline-properties-kind+ 'org-headline-properties)
+(def +org-source-match-strategy-kind+ 'org-source-match-strategy)
 
 (def (has-kind-and-slots? value kind slots)
   (and (object? value) (.slot? value 'kind)
@@ -47,7 +55,8 @@
 
 (def (org-element-field? rule name)
   (and rule
-       (or (and (equal? (org-graph-node-label rule) "headline")
+       (or (and (member (org-graph-node-label rule)
+                        '("headline" "inlinetask"))
                 (member name org-v1-headline-extra-fields))
            (let loop ((fields (org-graph-node-fields rule)))
              (cond
@@ -117,12 +126,10 @@
 (def (org-element-graph-view-shape? value)
   (and (has-kind-and-slots?
         value +org-element-graph-kind+
-        '(schema records id-of parent-of kind-of field-of))
+        '(schema field-of))
        (equal? (.ref value 'schema) +org-element-schema+)
-       (list? (.ref value 'records))
-       (every procedure?
-              (map (lambda (slot) (.ref value slot))
-                   '(id-of parent-of kind-of field-of)))))
+       (graph-query-view? value)
+       (procedure? (.ref value 'field-of))))
 
 (define-type (OrgElementGraphView @ Type.)
   .element?: org-element-graph-view-shape?)
@@ -131,7 +138,8 @@
   (and (has-kind-and-slots? value +org-element-context-kind+
                             '(schema graph index))
        (equal? (.ref value 'schema) +org-element-schema+)
-       (element? OrgElementGraphView (.ref value 'graph))))
+       (element? OrgElementGraphView (.ref value 'graph))
+       (graph-query-context? (.ref value 'index))))
 
 (define-type (OrgElementQueryContext @ Type.)
   .element?: org-element-context-shape?)
@@ -166,3 +174,43 @@
   (element? OrgElementQueryContext value))
 (def (org-elements-profile? value)
   (element? OrgElementsProfile value))
+
+(def (org-source-match-strategy-shape? value)
+  (and (has-kind-and-slots?
+        value +org-source-match-strategy-kind+
+        '(schema scan candidate boundary-unicode-alphanumeric
+                 boundary-extra winner))
+       (equal? (.ref value 'schema) +org-element-schema+)
+       (eq? (.ref value 'scan) 'utf8-character-boundaries)
+       (eq? (.ref value 'candidate) 'exact-target-prefix)
+       (boolean? (.ref value 'boundary-unicode-alphanumeric))
+       (string? (.ref value 'boundary-extra))
+       (eq? (.ref value 'winner) 'longest-then-first)))
+
+(define-type (OrgSourceMatchStrategy @ Type.)
+  .element?: org-source-match-strategy-shape?)
+
+(def (org-source-match-strategy? value)
+  (element? OrgSourceMatchStrategy value))
+
+(def (org-headline-properties-shape? value)
+  (and (has-kind-and-slots? value +org-headline-properties-kind+
+                            '(schema source-title title todo-keyword todo-type
+                                     priority tags))
+       (equal? (.ref value 'schema) +org-element-schema+)
+       (string? (.ref value 'source-title))
+       (string? (.ref value 'title))
+       (let (todo (.ref value 'todo-keyword))
+         (or (not todo) (string? todo)))
+       (let (state (.ref value 'todo-type))
+         (or (not state) (string? state)))
+       (let (priority (.ref value 'priority))
+         (or (not priority) (string? priority)))
+       (list? (.ref value 'tags))
+       (every string? (.ref value 'tags))))
+
+(define-type (OrgHeadlineProperties @ Type.)
+  .element?: org-headline-properties-shape?)
+
+(def (org-headline-properties? value)
+  (element? OrgHeadlineProperties value))

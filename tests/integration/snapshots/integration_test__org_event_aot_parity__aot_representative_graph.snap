@@ -1,0 +1,830 @@
+---
+source: tests/integration/org_event_aot_parity.rs
+expression: document.records()
+---
+[
+    GraphRecord {
+        id: 0,
+        parent_id: None,
+        child_ids: [
+            1,
+            2,
+            3,
+            27,
+        ],
+        syntax_kind: 0,
+        category: "document",
+        kind: "org-data",
+        range: 0..701,
+        fields: [],
+    },
+    GraphRecord {
+        id: 1,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [],
+        syntax_kind: 31,
+        category: "element",
+        kind: "keyword",
+        range: 0..43,
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "TITLE",
+                range: 2..7,
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "Git-scoped Org element regression",
+                range: 9..42,
+            },
+            GraphFieldValue {
+                name: "rich-value",
+                value: "Git-scoped Org element regression",
+                range: 9..42,
+            },
+            GraphFieldValue {
+                name: "raw-value",
+                value: " Git-scoped Org element regression",
+                range: 8..42,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 2,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [],
+        syntax_kind: 31,
+        category: "element",
+        kind: "keyword",
+        range: 43..62,
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "OPTIONS",
+                range: 45..52,
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "toc:nil",
+                range: 54..61,
+            },
+            GraphFieldValue {
+                name: "raw-value",
+                value: " toc:nil",
+                range: 53..61,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 3,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            4,
+            8,
+            12,
+        ],
+        syntax_kind: 80,
+        category: "section",
+        kind: "headline",
+        range: 63..448,
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "*",
+                range: 63..64,
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Introduction",
+                range: 65..77,
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Introduction",
+                range: 65..77,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 4,
+        parent_id: Some(
+            3,
+        ),
+        child_ids: [
+            5,
+            6,
+            7,
+        ],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: 79..184,
+        fields: [],
+    },
+    GraphRecord {
+        id: 5,
+        parent_id: Some(
+            4,
+        ),
+        child_ids: [],
+        syntax_kind: 49,
+        category: "object",
+        kind: "link",
+        range: 105..134,
+        fields: [
+            GraphFieldValue {
+                name: "path",
+                value: "https://orgmode.org",
+                range: 107..126,
+            },
+            GraphFieldValue {
+                name: "description",
+                value: "link",
+                range: 128..132,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 6,
+        parent_id: Some(
+            4,
+        ),
+        child_ids: [],
+        syntax_kind: 74,
+        category: "object",
+        kind: "bold",
+        range: 136..142,
+        fields: [
+            GraphFieldValue {
+                name: "value",
+                value: "bold",
+                range: 137..141,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 7,
+        parent_id: Some(
+            4,
+        ),
+        child_ids: [],
+        syntax_kind: 66,
+        category: "object",
+        kind: "timestamp",
+        range: 165..181,
+        fields: [
+            GraphFieldValue {
+                name: "delimiter",
+                value: "<",
+                range: 165..166,
+            },
+            GraphFieldValue {
+                name: "date",
+                value: "2026-09-23",
+                range: 166..176,
+            },
+            GraphFieldValue {
+                name: "day-name",
+                value: "Wed",
+                range: 177..180,
+            },
+            GraphFieldValue {
+                name: "delimiter",
+                value: ">",
+                range: 180..181,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 8,
+        parent_id: Some(
+            3,
+        ),
+        child_ids: [
+            9,
+            10,
+            11,
+        ],
+        syntax_kind: 80,
+        category: "section",
+        kind: "headline",
+        range: 184..331,
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "**",
+                range: 184..186,
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Source blocks",
+                range: 187..200,
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Source blocks",
+                range: 187..200,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 9,
+        parent_id: Some(
+            8,
+        ),
+        child_ids: [],
+        syntax_kind: 31,
+        category: "element",
+        kind: "keyword",
+        range: 202..223,
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "NAME",
+                range: 204..208,
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "example-code",
+                range: 210..222,
+            },
+            GraphFieldValue {
+                name: "raw-value",
+                value: " example-code",
+                range: 209..222,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 10,
+        parent_id: Some(
+            8,
+        ),
+        child_ids: [],
+        syntax_kind: 31,
+        category: "element",
+        kind: "keyword",
+        range: 223..276,
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "CAPTION",
+                range: 225..232,
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "A source block in the regression document",
+                range: 234..275,
+            },
+            GraphFieldValue {
+                name: "rich-value",
+                value: "A source block in the regression document",
+                range: 234..275,
+            },
+            GraphFieldValue {
+                name: "raw-value",
+                value: " A source block in the regression document",
+                range: 233..275,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 11,
+        parent_id: Some(
+            8,
+        ),
+        child_ids: [],
+        syntax_kind: 10,
+        category: "element",
+        kind: "src-block",
+        range: 276..330,
+        fields: [
+            GraphFieldValue {
+                name: "header",
+                value: " \n",
+                range: 287..293,
+            },
+            GraphFieldValue {
+                name: "language",
+                value: "text",
+                range: 288..292,
+            },
+            GraphFieldValue {
+                name: "body",
+                value: "this line is block content\n",
+                range: 293..320,
+            },
+            GraphFieldValue {
+                name: "raw-body",
+                value: "this line is block content\n",
+                range: 293..320,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 12,
+        parent_id: Some(
+            3,
+        ),
+        child_ids: [
+            13,
+            19,
+        ],
+        syntax_kind: 80,
+        category: "section",
+        kind: "headline",
+        range: 331..448,
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "**",
+                range: 331..333,
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Lists and tables",
+                range: 334..350,
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Lists and tables",
+                range: 334..350,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 13,
+        parent_id: Some(
+            12,
+        ),
+        child_ids: [
+            14,
+            16,
+        ],
+        syntax_kind: 37,
+        category: "element",
+        kind: "plain-list",
+        range: 352..396,
+        fields: [],
+    },
+    GraphRecord {
+        id: 14,
+        parent_id: Some(
+            13,
+        ),
+        child_ids: [
+            15,
+        ],
+        syntax_kind: 38,
+        category: "element",
+        kind: "item",
+        range: 352..365,
+        fields: [
+            GraphFieldValue {
+                name: "bullet",
+                value: "- ",
+                range: 352..354,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 15,
+        parent_id: Some(
+            14,
+        ),
+        child_ids: [],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: 354..365,
+        fields: [],
+    },
+    GraphRecord {
+        id: 16,
+        parent_id: Some(
+            13,
+        ),
+        child_ids: [
+            17,
+        ],
+        syntax_kind: 38,
+        category: "element",
+        kind: "item",
+        range: 365..396,
+        fields: [
+            GraphFieldValue {
+                name: "bullet",
+                value: "- ",
+                range: 365..367,
+            },
+            GraphFieldValue {
+                name: "trivia",
+                value: "\n",
+                range: 395..396,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 17,
+        parent_id: Some(
+            16,
+        ),
+        child_ids: [
+            18,
+        ],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: 367..395,
+        fields: [],
+    },
+    GraphRecord {
+        id: 18,
+        parent_id: Some(
+            17,
+        ),
+        child_ids: [],
+        syntax_kind: 75,
+        category: "object",
+        kind: "italic",
+        range: 384..394,
+        fields: [
+            GraphFieldValue {
+                name: "value",
+                value: "emphasis",
+                range: 385..393,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 19,
+        parent_id: Some(
+            12,
+        ),
+        child_ids: [
+            20,
+            23,
+            24,
+        ],
+        syntax_kind: 39,
+        category: "element",
+        kind: "table",
+        range: 396..447,
+        fields: [],
+    },
+    GraphRecord {
+        id: 20,
+        parent_id: Some(
+            19,
+        ),
+        child_ids: [
+            21,
+            22,
+        ],
+        syntax_kind: 41,
+        category: "element",
+        kind: "table-row",
+        range: 396..413,
+        fields: [],
+    },
+    GraphRecord {
+        id: 21,
+        parent_id: Some(
+            20,
+        ),
+        child_ids: [],
+        syntax_kind: 43,
+        category: "object",
+        kind: "table-cell",
+        range: 397..403,
+        fields: [
+            GraphFieldValue {
+                name: "text",
+                value: " Name ",
+                range: 397..403,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 22,
+        parent_id: Some(
+            20,
+        ),
+        child_ids: [],
+        syntax_kind: 43,
+        category: "object",
+        kind: "table-cell",
+        range: 404..411,
+        fields: [
+            GraphFieldValue {
+                name: "text",
+                value: " Value ",
+                range: 404..411,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 23,
+        parent_id: Some(
+            19,
+        ),
+        child_ids: [],
+        syntax_kind: 42,
+        category: "element",
+        kind: "table-rule-row",
+        range: 413..430,
+        fields: [],
+    },
+    GraphRecord {
+        id: 24,
+        parent_id: Some(
+            19,
+        ),
+        child_ids: [
+            25,
+            26,
+        ],
+        syntax_kind: 41,
+        category: "element",
+        kind: "table-row",
+        range: 430..447,
+        fields: [],
+    },
+    GraphRecord {
+        id: 25,
+        parent_id: Some(
+            24,
+        ),
+        child_ids: [],
+        syntax_kind: 43,
+        category: "object",
+        kind: "table-cell",
+        range: 431..437,
+        fields: [
+            GraphFieldValue {
+                name: "text",
+                value: " one  ",
+                range: 431..437,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 26,
+        parent_id: Some(
+            24,
+        ),
+        child_ids: [],
+        syntax_kind: 43,
+        category: "object",
+        kind: "table-cell",
+        range: 438..445,
+        fields: [
+            GraphFieldValue {
+                name: "text",
+                value: "     1 ",
+                range: 438..445,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 27,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            28,
+            30,
+            32,
+            34,
+            36,
+        ],
+        syntax_kind: 80,
+        category: "section",
+        kind: "headline",
+        range: 448..701,
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "*",
+                range: 448..449,
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Planning",
+                range: 450..458,
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Planning",
+                range: 450..458,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 28,
+        parent_id: Some(
+            27,
+        ),
+        child_ids: [
+            29,
+        ],
+        syntax_kind: 33,
+        category: "element",
+        kind: "planning",
+        range: 459..487,
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "SCHEDULED",
+                range: 459..468,
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "<2026-09-24 Thu>",
+                range: 470..486,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 29,
+        parent_id: Some(
+            28,
+        ),
+        child_ids: [],
+        syntax_kind: 66,
+        category: "object",
+        kind: "timestamp",
+        range: 470..486,
+        fields: [
+            GraphFieldValue {
+                name: "delimiter",
+                value: "<",
+                range: 470..471,
+            },
+            GraphFieldValue {
+                name: "date",
+                value: "2026-09-24",
+                range: 471..481,
+            },
+            GraphFieldValue {
+                name: "day-name",
+                value: "Thu",
+                range: 482..485,
+            },
+            GraphFieldValue {
+                name: "delimiter",
+                value: ">",
+                range: 485..486,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 30,
+        parent_id: Some(
+            27,
+        ),
+        child_ids: [
+            31,
+        ],
+        syntax_kind: 21,
+        category: "element",
+        kind: "property-drawer",
+        range: 487..536,
+        fields: [],
+    },
+    GraphRecord {
+        id: 31,
+        parent_id: Some(
+            30,
+        ),
+        child_ids: [],
+        syntax_kind: 23,
+        category: "property",
+        kind: "node-property",
+        range: 500..530,
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "ID",
+                range: 501..503,
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "git-scoped-fixture",
+                range: 511..529,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 32,
+        parent_id: Some(
+            27,
+        ),
+        child_ids: [
+            33,
+        ],
+        syntax_kind: 22,
+        category: "element",
+        kind: "drawer",
+        range: 537..593,
+        fields: [
+            GraphFieldValue {
+                name: "name",
+                value: "LOGBOOK",
+                range: 538..545,
+            },
+            GraphFieldValue {
+                name: "header-trivia",
+                value: ":\n",
+                range: 545..547,
+            },
+            GraphFieldValue {
+                name: "end",
+                value: ":END:\n",
+                range: 587..593,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 33,
+        parent_id: Some(
+            32,
+        ),
+        child_ids: [],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: 547..587,
+        fields: [],
+    },
+    GraphRecord {
+        id: 34,
+        parent_id: Some(
+            27,
+        ),
+        child_ids: [
+            35,
+        ],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: 594..650,
+        fields: [],
+    },
+    GraphRecord {
+        id: 35,
+        parent_id: Some(
+            34,
+        ),
+        child_ids: [],
+        syntax_kind: 55,
+        category: "object",
+        kind: "footnote-reference",
+        range: 638..647,
+        fields: [
+            GraphFieldValue {
+                name: "label",
+                value: "note",
+                range: 642..646,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 36,
+        parent_id: Some(
+            27,
+        ),
+        child_ids: [
+            37,
+        ],
+        syntax_kind: 26,
+        category: "element",
+        kind: "footnote-definition",
+        range: 650..701,
+        fields: [
+            GraphFieldValue {
+                name: "label",
+                value: "note",
+                range: 654..658,
+            },
+        ],
+    },
+    GraphRecord {
+        id: 37,
+        parent_id: Some(
+            36,
+        ),
+        child_ids: [],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: 659..701,
+        fields: [],
+    },
+]

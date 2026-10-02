@@ -5,9 +5,65 @@
 :QUERY_ID: customer.active-review
 :END:
 
-#+begin_src scheme :org-elements
+#+begin_src scheme :org-elements-query
 (org-elements headline
               (all-of (property todo-type "todo")
                       (property-contains source-title "Review"))
               (descendant-of scope))
+#+end_src
+
+* Cited evidence
+:PROPERTIES:
+:QUERY_ID: customer.cited-evidence
+:END:
+
+#+begin_src scheme :org-elements-query
+(org-elements citation-reference (property key "doe2020"))
+#+end_src
+
+* Normalized review title
+:PROPERTIES:
+:QUERY_ID: customer.normalized-title
+:END:
+
+#+begin_src scheme :org-elements-query
+(org-elements headline (property title "Review patch"))
+#+end_src
+
+* Priority reviews
+:PROPERTIES:
+:QUERY_ID: customer.priority
+:END:
+
+#+begin_src scheme :org-elements-query
+(org-elements headline (property priority "A"))
+#+end_src
+
+* Tagged reviews
+:PROPERTIES:
+:QUERY_ID: customer.tagged
+:END:
+
+#+begin_src scheme :org-elements-query
+(org-elements headline (property tags "work"))
+#+end_src
+
+* Raw headline value
+:PROPERTIES:
+:QUERY_ID: customer.raw-value
+:END:
+
+#+begin_src scheme :org-elements-query
+(org-elements headline (property raw-value "WAIT [#A] Review patch :work:"))
+#+end_src
+
+* Partial TODO keyword
+:PROPERTIES:
+:QUERY_ID: customer.todo-contains
+:END:
+
+#+begin_src scheme :org-elements-query
+(org-elements headline
+              (all-of (property-contains todo-keyword "WAI")
+                      (property-contains title "Review")))
 #+end_src

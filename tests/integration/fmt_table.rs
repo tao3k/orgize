@@ -26,6 +26,18 @@ fn fmt_aligns_official_style_tables_with_snapshot() {
     insta::assert_snapshot!(format_snapshot(official_style_table_alignment_fmt_fixture()));
 }
 
+#[test]
+fn fmt_uses_scheme_cells_for_escaped_table_pipes() {
+    insta::assert_snapshot!(
+        format_org("| Name | Value |\n|---+---|\n| a\\|b | 1 |\n", &FormatOptions::default()).output,
+        @r###"
+| Name | Value |
+|------+-------|
+| a\|b | 1     |
+"###
+    );
+}
+
 fn table_with_block_fmt_fixture() -> &'static str {
     include_str!("../fixtures/fmt/table-with-block.org")
 }

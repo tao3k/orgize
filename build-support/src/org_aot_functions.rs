@@ -9,12 +9,53 @@ pub fn write_org_aot_functions() {
     let output_dir = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo output dir"));
     for name in [
         "todo_directive_p",
+        "todo_word_name",
+        "todo_open_words",
+        "todo_done_words",
         "todo_state_from_directives",
         "todo_keyword_matches_p",
         "todo_keyword_from_directives",
         "headline_content_after_todo",
+        "headline_source_title",
+        "planning_key_kind",
+        "citation_style",
+        "citation_variant",
+        "priority_token_p",
+        "headline_priority_cookie",
         "headline_display_title",
+        "headline_anchor_slug",
+        "headline_comment_p",
+        "memory_headline_state",
         "org_image_link_p",
+        "org_link_kind",
+        "org_link_target_key",
+        "org_link_protocol",
+        "org_link_protocol_path",
+        "org_link_file_path",
+        "org_link_attachment_path",
+        "org_link_search",
+        "org_link_file_path_kind",
+        "org_link_search_kind",
+        "org_link_search_value",
+        "org_expand_link_abbreviation",
+        "org_affiliated_keyword_p",
+        "keyword_word",
+        "keyword_words",
+        "keyword_tag_words",
+        "keyword_first_word",
+        "keyword_rest",
+        "keyword_option_value",
+        "keyword_option_present_p",
+        "keyword_boolean_value",
+        "logbook_line_kind",
+        "logbook_content_line",
+        "logbook_state_quote_shape",
+        "logbook_state_to",
+        "logbook_state_from",
+        "logbook_clock_duration_shape",
+        "logbook_clock_duration_value",
+        "table_column_cookie_kind",
+        "table_column_cookie_match_p",
     ] {
         let source = source_dir.join(format!("{name}.ir.json"));
         println!("cargo:rerun-if-changed={}", source.display());
@@ -24,6 +65,13 @@ pub fn write_org_aot_functions() {
         fs::write(output_dir.join(format!("{name}.rs")), generated)
             .expect("write generated headline function");
     }
+    let matcher = source_dir.join("org_radio_next_match.ir.json");
+    println!("cargo:rerun-if-changed={}", matcher.display());
+    let ir = fs::read_to_string(matcher).expect("read Scheme-authored source matcher IR");
+    let generated = gerbil_scheme_rust_ir::compile_source_match_json(&ir)
+        .expect("Scheme-authored source matcher must compile to Rust");
+    fs::write(output_dir.join("org_radio_next_match.rs"), generated)
+        .expect("write generated source matcher");
 }
 
 /// Compile the Org-owned contextual event algorithm for Cargo-only consumers.

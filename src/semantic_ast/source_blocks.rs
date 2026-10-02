@@ -173,7 +173,7 @@ fn collect_inline_source_records_in_objects(
                 let header_args = explicit_inline_source_header_args(
                     language.as_str(),
                     properties,
-                    parameters.as_deref(),
+                    &object.ann.header_args,
                 );
                 let normalized_header_args =
                     source_block_header_args(SourceBlockRecordKind::InlineSource, &header_args);
@@ -272,8 +272,13 @@ fn source_block_result_from_element(
         .affiliated_keywords
         .iter()
         .find(|keyword| keyword.key.eq_ignore_ascii_case("RESULTS"))?;
+    // The result body is a separate AOT element; its affiliated keyword is
+    // part of the replaceable result, not part of the preceding source block.
+    let mut source = SourceBlockSource::from_annotation(&element.ann);
+    source.start = keyword.ann.start;
+    source.range_start = keyword.ann.range.start().into();
     Some(SourceBlockResult {
-        source: SourceBlockSource::from_annotation(&element.ann),
+        source,
         kind: SourceBlockResultKind::Keyword,
         hash: keyword
             .optional

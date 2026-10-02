@@ -1,4 +1,7 @@
-use crate::lint::{LintSeverity, lint_org};
+use crate::{
+    Org,
+    lint::{LintSeverity, lint_document, lint_org},
+};
 
 #[test]
 fn lint_reports_missing_document_title_and_properties() {
@@ -26,6 +29,25 @@ fn lint_accepts_document_title_and_properties() {
 
     assert_no_message(&report, "document is missing a #+TITLE keyword");
     assert_no_message(&report, "document is missing document-level properties");
+}
+
+#[test]
+fn linting_an_already_projected_document_uses_the_same_aot_contract() {
+    let source = "Missing metadata still needs linting.\n";
+    let document = Org::parse(source).document();
+    let report = lint_document(&document, source);
+    assert_finding(
+        &report,
+        "ORG044",
+        LintSeverity::Warning,
+        "document is missing a #+TITLE keyword",
+    );
+    assert_finding(
+        &report,
+        "ORG044",
+        LintSeverity::Warning,
+        "document is missing document-level properties",
+    );
 }
 
 fn assert_finding(

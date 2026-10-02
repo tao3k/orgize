@@ -130,13 +130,13 @@ fn run_export(args: Vec<String>) -> Result<ExitCode, String> {
 fn run_export_markdown(paths: Vec<String>) -> Result<ExitCode, String> {
     if paths.is_empty() {
         let source = read_stdin()?;
-        print!("{}", Org::parse(source).to_markdown());
+        print!("{}", Org::parse(source).try_to_markdown()?);
         return Ok(ExitCode::SUCCESS);
     }
 
     for path in collect_org_paths(&paths)? {
         let source = fs::read_to_string(&path).map_err(|error| format_path_error(&path, error))?;
-        print!("{}", Org::parse(source).to_markdown());
+        print!("{}", Org::parse(source).try_to_markdown()?);
     }
 
     Ok(ExitCode::SUCCESS)

@@ -87,6 +87,33 @@ fn semantic_ast_projects_m15_keyword_settings_and_abbreviations() {
 }
 
 #[test]
+fn semantic_ast_options_keep_last_declared_value_and_ignore_bare_words() {
+    let doc = Org::parse("#+OPTIONS: H:2 H -:nil e:t e:\n").document();
+    assert_clean_projection(&doc);
+    assert_eq!(doc.export_settings.headline_levels, Some(2));
+    assert_eq!(doc.export_settings.special_strings, Some(false));
+    assert_eq!(doc.export_settings.expand_entities, None);
+}
+
+#[test]
+fn semantic_ast_boolean_options_follow_scheme_aot_values() {
+    let enabled = Org::parse("#+OPTIONS: -:YES e:TRUE\n").document();
+    assert_clean_projection(&enabled);
+    assert_eq!(enabled.export_settings.special_strings, Some(true));
+    assert_eq!(enabled.export_settings.expand_entities, Some(true));
+
+    let disabled = Org::parse("#+OPTIONS: -:No e:FALSE\n").document();
+    assert_clean_projection(&disabled);
+    assert_eq!(disabled.export_settings.special_strings, Some(false));
+    assert_eq!(disabled.export_settings.expand_entities, Some(false));
+
+    let unknown = Org::parse("#+OPTIONS: -:maybe e:unknown\n").document();
+    assert_clean_projection(&unknown);
+    assert_eq!(unknown.export_settings.special_strings, None);
+    assert_eq!(unknown.export_settings.expand_entities, None);
+}
+
+#[test]
 fn semantic_ast_projects_m15_anchors_link_defaults_and_footnotes() {
     let doc = Org::parse(
         r#"* Anchor *Title*

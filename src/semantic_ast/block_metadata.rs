@@ -1,51 +1,11 @@
 //! Source and example block metadata parsing for semantic projection.
 
-use super::{
-    BlockCodeRef, BlockHeaderArg, BlockLine, BlockLineNumberMode, BlockLineNumbering, BlockSwitches,
-};
+use super::{BlockCodeRef, BlockLine, BlockSwitches};
 
 pub(super) struct BlockLineOptions<'a> {
     pub(super) switches: &'a BlockSwitches,
     pub(super) tab_width: usize,
     pub(super) preserve_indentation: bool,
-}
-
-pub(super) fn parse_block_switches(switches: Option<&str>) -> BlockSwitches {
-    let Some(raw) = switches else {
-        return BlockSwitches::default();
-    };
-
-    let mut parsed = BlockSwitches {
-        raw: Some(raw.to_string()),
-        ..BlockSwitches::default()
-    };
-    let mut tokens = split_block_switches(raw).into_iter().peekable();
-
-    while let Some(token) = tokens.next() {
-        match token.as_str() {
-            "-n" | "+n" => {
-                let start = tokens.peek().and_then(|value| value.parse::<usize>().ok());
-                if start.is_some() {
-                    tokens.next();
-                }
-                parsed.line_numbering = Some(BlockLineNumbering {
-                    mode: if token == "-n" {
-                        BlockLineNumberMode::New
-                    } else {
-                        BlockLineNumberMode::Continued
-                    },
-                    start,
-                });
-            }
-            "-i" => parsed.preserve_indentation = true,
-            "-k" => parsed.keep_labels = true,
-            "-r" => parsed.remove_labels = true,
-            "-l" => parsed.label_format = tokens.next(),
-            _ => {}
-        }
-    }
-
-    parsed
 }
 
 pub(super) fn parse_block_lines<A>(
@@ -71,14 +31,16 @@ pub(super) fn parse_block_lines<A>(
                 .get(index)
                 .map(|line| line.text)
                 .unwrap_or(value_line.text);
-            let code_ref = code_ref_in_line(value_line.text, &label).map(|code_ref| BlockCodeRef {
+            let code_ref_match = code_ref_in_line(value_line.text, &label);
+            let value_without_code_ref =
+                remove_code_ref_match(value_line.text, code_ref_match.as_ref());
+            let code_ref = code_ref_match.map(|code_ref| BlockCodeRef {
                 line: number,
                 column: code_ref.column,
                 end_column: code_ref.end_column,
                 name: code_ref.name,
                 raw: code_ref.raw,
             });
-            let value_without_code_ref = remove_code_ref(value_line.text, &label);
             let expanded_value = tabs_to_spaces(value_line.text, options.tab_width);
 
             BlockLineDraft {
@@ -124,157 +86,6 @@ pub(super) fn parse_block_lines<A>(
             }
         })
         .collect()
-}
-
-pub(super) fn parse_block_code_refs(value: &str, switches: Option<&str>) -> Vec<BlockCodeRef> {
-    let switches = parse_block_switches(switches);
-
-    block_code_refs(&parse_block_lines(
-        value,
-        None,
-        BlockLineOptions {
-            switches: &switches,
-            tab_width: 4,
-            preserve_indentation: switches.preserve_indentation,
-        },
-        |_| (),
-    ))
-}
-
-pub(super) fn block_code_refs<A>(lines: &[BlockLine<A>]) -> Vec<BlockCodeRef> {
-    lines
-        .iter()
-        .filter_map(|line| line.code_ref.clone())
-        .collect()
-}
-
-pub(crate) fn parse_block_header_args(args: Option<&str>) -> Vec<BlockHeaderArg> {
-    let Some(args) = args else {
-        return Vec::new();
-    };
-    parse_keyword_args(args, ":")
-}
-
-fn parse_keyword_args(value: &str, prefix: &str) -> Vec<BlockHeaderArg> {
-    let tokens = split_keyword_tokens_with_ranges(value);
-    tokens
-        .iter()
-        .enumerate()
-        .filter_map(|(index, token)| block_header_arg(value, &tokens, index, token, prefix))
-        .collect()
-}
-
-fn block_header_arg(
-    source: &str,
-    tokens: &[KeywordToken],
-    index: usize,
-    token: &KeywordToken,
-    prefix: &str,
-) -> Option<BlockHeaderArg> {
-    let key = token
-        .value
-        .strip_prefix(prefix)
-        .filter(|key| !key.is_empty())?;
-    let end_index = next_keyword_arg_index(tokens, index + 1, prefix).unwrap_or(tokens.len());
-    let end = tokens
-        .get(end_index.saturating_sub(1))
-        .map(|token| token.end)
-        .unwrap_or(token.end);
-    let value = (index + 1 < end_index)
-        .then(|| source[tokens[index + 1].start..end].trim().to_string())
-        .filter(|value| !value.is_empty());
-
-    Some(BlockHeaderArg {
-        key: key.to_string(),
-        value,
-        raw: source[token.start..end].trim().to_string(),
-    })
-}
-
-fn next_keyword_arg_index(tokens: &[KeywordToken], start: usize, prefix: &str) -> Option<usize> {
-    tokens
-        .iter()
-        .enumerate()
-        .skip(start)
-        .find(|(_, token)| is_keyword_arg_token(token, prefix))
-        .map(|(index, _)| index)
-}
-
-fn is_keyword_arg_token(token: &KeywordToken, prefix: &str) -> bool {
-    token.value.starts_with(prefix) && token.value.len() > prefix.len()
-}
-
-fn split_keyword_tokens(value: &str) -> Vec<String> {
-    split_keyword_tokens_with_ranges(value)
-        .into_iter()
-        .map(|token| token.value)
-        .collect()
-}
-
-#[derive(Clone, Debug)]
-struct KeywordToken {
-    start: usize,
-    end: usize,
-    value: String,
-}
-
-fn split_keyword_tokens_with_ranges(value: &str) -> Vec<KeywordToken> {
-    let mut tokens = Vec::new();
-    let mut cursor = 0;
-
-    while let Some(start) = next_keyword_token_start(value, cursor) {
-        let (token, next) = keyword_token(value, start);
-        tokens.push(token);
-        cursor = next;
-    }
-
-    tokens
-}
-
-fn next_keyword_token_start(value: &str, cursor: usize) -> Option<usize> {
-    value[cursor..]
-        .char_indices()
-        .find(|(_, ch)| !ch.is_whitespace())
-        .map(|(position, _)| cursor + position)
-}
-
-fn keyword_token(value: &str, start: usize) -> (KeywordToken, usize) {
-    let mut cursor = start;
-    let mut parsed = String::new();
-    let mut quote = None;
-    let mut escaped = false;
-
-    while cursor < value.len() {
-        let ch = value[cursor..].chars().next().unwrap();
-        cursor += ch.len_utf8();
-        if escaped {
-            parsed.push(ch);
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if quote == Some(ch) {
-            quote = None;
-        } else if quote.is_none() && matches!(ch, '"' | '\'') {
-            quote = Some(ch);
-        } else if quote.is_none() && ch.is_whitespace() {
-            break;
-        } else {
-            parsed.push(ch);
-        }
-    }
-
-    if escaped {
-        parsed.push('\\');
-    }
-
-    (
-        KeywordToken {
-            start,
-            end: value[..cursor].trim_end().len(),
-            value: parsed,
-        },
-        cursor,
-    )
 }
 
 #[derive(Clone, Copy)]
@@ -440,6 +251,14 @@ fn remove_code_ref(line: &str, label: &CodeRefLabel) -> String {
         return line.to_string();
     };
 
+    remove_code_ref_match(line, Some(&code_ref))
+}
+
+fn remove_code_ref_match(line: &str, code_ref: Option<&CodeRefMatch>) -> String {
+    let Some(code_ref) = code_ref else {
+        return line.to_string();
+    };
+
     let mut value = String::new();
     value.push_str(&line[..code_ref.remove_start]);
     value.push_str(&line[code_ref.end..]);
@@ -469,8 +288,4 @@ fn leading_spaces(value: &str) -> usize {
 
 fn drop_leading_spaces(value: &str, count: usize) -> String {
     value.chars().skip(count).collect()
-}
-
-fn split_block_switches(value: &str) -> Vec<String> {
-    split_keyword_tokens(value)
 }

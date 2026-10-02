@@ -338,6 +338,7 @@ pub fn lint_org_with_runtime_validation_evidence(
         options,
         runtime_policy,
         Some(source_context),
+        Some(&org),
     );
     sort_lint_findings(&mut findings);
     Ok(RuntimeValidationEvidenceReport {

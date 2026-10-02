@@ -1,8 +1,7 @@
-use std::{
-    env, fs,
-    path::PathBuf,
-    process::{Command, Output},
-};
+use std::{env, fs, path::PathBuf, process::Output};
+
+#[cfg(unix)]
+use std::process::Command;
 
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
@@ -812,6 +811,7 @@ fn stdout(output: &Output) -> String {
     String::from_utf8(output.stdout.clone()).unwrap()
 }
 
+#[cfg(unix)]
 fn source_path_to_json(path: &std::path::Path) -> serde_json::Value {
     serde_json::Value::String(path.to_string_lossy().into_owned())
 }

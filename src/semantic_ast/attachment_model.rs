@@ -54,29 +54,6 @@ pub struct AttachmentDirectory<A = ()> {
 }
 
 impl<A> AttachmentDirectory<A> {
-    pub(crate) fn from_property_parts(ann: A, key: &str, value: &str) -> Option<Self> {
-        let source = AttachmentDirectorySource::from_property_key(key)?;
-        let path = value.trim();
-        (!path.is_empty()).then(|| Self {
-            ann,
-            source,
-            path: path.to_string(),
-        })
-    }
-
-    pub(crate) fn from_id_parts(ann: A, id: &str) -> Option<Self> {
-        let id = id.trim();
-        let (layout, path) = attachment_id_path(id)?;
-        Some(Self {
-            ann,
-            source: AttachmentDirectorySource::IdDerived {
-                id: id.to_string(),
-                layout,
-            },
-            path: format!("data/{path}"),
-        })
-    }
-
     pub(crate) fn map_ann_with<B, F>(&self, f: &mut F) -> AttachmentDirectory<B>
     where
         F: FnMut(&A) -> B,
@@ -111,18 +88,6 @@ pub enum AttachmentDirectorySource {
     },
 }
 
-impl AttachmentDirectorySource {
-    fn from_property_key(key: &str) -> Option<Self> {
-        if key.eq_ignore_ascii_case("DIR") {
-            Some(Self::DirProperty)
-        } else if key.eq_ignore_ascii_case("ATTACH_DIR") {
-            Some(Self::AttachDirProperty)
-        } else {
-            None
-        }
-    }
-}
-
 /// Built-in Org attachment ID path layout.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AttachmentIdPathLayout {
@@ -153,69 +118,4 @@ pub enum AttachmentLinkSearchKind {
     CustomId,
     Regexp,
     Text,
-}
-
-pub(crate) fn attachment_link_from_path(path: &str) -> Option<AttachmentLink> {
-    let (protocol, target) = path.split_once(':')?;
-    if !protocol.eq_ignore_ascii_case("attachment") {
-        return None;
-    }
-    let (path, search) = target
-        .split_once("::")
-        .map(|(file_path, search)| (file_path.to_string(), attachment_link_search(search)))
-        .unwrap_or_else(|| (target.to_string(), None));
-    Some(AttachmentLink { path, search })
-}
-
-fn attachment_link_search(search: &str) -> Option<AttachmentLinkSearch> {
-    let kind = if search.starts_with('*') {
-        AttachmentLinkSearchKind::Headline
-    } else if search.starts_with('#') {
-        AttachmentLinkSearchKind::CustomId
-    } else if search.starts_with('/') && search.ends_with('/') && search.len() > 1 {
-        AttachmentLinkSearchKind::Regexp
-    } else if search.chars().all(|ch| ch.is_ascii_digit()) {
-        AttachmentLinkSearchKind::LineNumber
-    } else {
-        AttachmentLinkSearchKind::Text
-    };
-    Some(AttachmentLinkSearch {
-        raw: search.to_string(),
-        kind,
-    })
-}
-
-fn attachment_id_path(id: &str) -> Option<(AttachmentIdPathLayout, String)> {
-    if char_count(id) > 2 {
-        let (prefix, suffix) = split_after_chars(id, 2)?;
-        return Some((AttachmentIdPathLayout::Uuid, format!("{prefix}/{suffix}")));
-    }
-    if char_count(id) > 6 {
-        let (prefix, suffix) = split_after_chars(id, 6)?;
-        return Some((
-            AttachmentIdPathLayout::Timestamp,
-            format!("{prefix}/{suffix}"),
-        ));
-    }
-    let (prefix, _) = split_after_chars(id, 1)?;
-    Some((
-        AttachmentIdPathLayout::Fallback,
-        format!("__/{prefix}/{id}"),
-    ))
-}
-
-fn char_count(value: &str) -> usize {
-    value.chars().count()
-}
-
-fn split_after_chars(value: &str, count: usize) -> Option<(&str, &str)> {
-    if count == 0 {
-        return Some(("", value));
-    }
-    let index = value
-        .char_indices()
-        .nth(count)
-        .map(|(index, _)| index)
-        .or_else(|| (char_count(value) == count).then_some(value.len()))?;
-    Some(value.split_at(index))
 }

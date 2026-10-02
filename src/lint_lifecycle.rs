@@ -7,11 +7,11 @@ use std::{
 };
 
 use crate::{
-    Org,
     ast::{
         ArchiveLocation, AstRef, LifecycleRecordKind, ParsedAnnotation, ParsedAst, Property,
         Section,
     },
+    org_aot::parse_org_aot,
 };
 
 use super::lint_model::{LintFinding, LintOptions, LintSeverity, location_for_range};
@@ -219,8 +219,14 @@ fn heading_exists_in_file(path: &Path, heading: &str) -> bool {
     let Ok(source) = fs::read_to_string(path) else {
         return false;
     };
-    let doc = Org::parse(&source).document();
-    heading_exists_in_document(&doc, heading)
+    let needle = normalize_heading_target(heading);
+    parse_org_aot(&source).is_ok_and(|document| {
+        document.headlines().any(|headline| {
+            headline
+                .display_title()
+                .is_some_and(|title| title.trim() == needle)
+        })
+    })
 }
 
 fn heading_exists_in_document(document: &ParsedAst, heading: &str) -> bool {

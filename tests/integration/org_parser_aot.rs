@@ -25,19 +25,68 @@ fn token_name(token: &gerbil_parser_rowan::SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
-macro_rules! check_org_aot_element {
-    ($source:expr, $kind:expr, $field:expr => $value:expr) => {{
-        let document = orgize::org_aot::parse_org_aot($source)
-            .expect("Scheme-owned Org Element parser accepts the source");
-        let elements: Vec<_> = document
+#[test]
+fn scheme_declared_macro_objects_project_into_rowan_and_graph() {
+    check_org_aot_element!("{{{issue(42)}}}\n", "macro", "name" => "issue");
+    let document =
+        orgize::org_aot::parse_org_aot("{{{issue(42)}}}\n").expect("Scheme-owned Org macro object");
+    let macro_record = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "macro")
+        .expect("macro graph record");
+    assert_eq!(macro_record.field("arguments"), Some("42"));
+    assert_eq!(document.syntax().to_string(), "{{{issue(42)}}}\n");
+    let malformed = orgize::org_aot::parse_org_aot("{{{9bad}}} {{{broken\n")
+        .expect("invalid macros are lossless text");
+    assert!(
+        !malformed
             .records()
             .iter()
-            .filter(|record| record.kind == $kind)
-            .collect();
-        assert_eq!(elements.len(), 1);
-        assert_eq!(elements[0].field($field), Some($value));
-        assert_eq!(document.syntax().to_string(), $source);
-    }};
+            .any(|record| record.kind == "macro")
+    );
+    assert_eq!(malformed.syntax().to_string(), "{{{9bad}}} {{{broken\n");
+}
+
+#[test]
+fn scheme_declared_entities_require_catalog_names_and_preserve_postfix() {
+    check_org_aot_element!("\\alpha{}\n", "entity", "name" => "alpha");
+    let document =
+        orgize::org_aot::parse_org_aot("\\alpha{} \\_   \n").expect("Scheme-owned Org entities");
+    let entities: Vec<_> = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "entity")
+        .collect();
+    assert_eq!(entities.len(), 2);
+    assert_eq!(entities[0].field("post"), Some("{}"));
+    assert_eq!(entities[1].field("name"), Some("_"));
+    assert_eq!(entities[1].field("post"), Some("   "));
+    assert_eq!(document.syntax().to_string(), "\\alpha{} \\_   \n");
+    let unknown = orgize::org_aot::parse_org_aot("\\unknown \\centaur\n")
+        .expect("unknown entity names are text");
+    assert!(
+        !unknown
+            .records()
+            .iter()
+            .any(|record| record.kind == "entity")
+    );
+    let adjacent = orgize::org_aot::parse_org_aot("\\alpha\\beta [[https://example.org]]\n")
+        .expect("entity boundaries keep the next Object visible");
+    assert_eq!(
+        adjacent
+            .records()
+            .iter()
+            .filter(|record| record.kind == "entity")
+            .count(),
+        2
+    );
+    assert!(
+        adjacent
+            .records()
+            .iter()
+            .any(|record| record.kind == "link")
+    );
 }
 
 #[test]
@@ -73,6 +122,19 @@ fn scheme_emphasis_objects_project_into_rowan_and_element_graph() {
         assert_eq!(records[0].field("value"), Some(value), "{kind}");
     }
     assert_eq!(document.syntax().to_string(), source);
+    check_org_aot_element!("a *bo\nld* z\n", "bold", "value" => "bo\nld");
+    let repeated = "~code~ =verbatim=\n~code~ =verbatim=\n";
+    let repeated_document =
+        orgize::org_aot::parse_org_aot(repeated).expect("inline objects span physical lines");
+    assert_eq!(
+        repeated_document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "code" || record.kind == "verbatim")
+            .count(),
+        4
+    );
+    assert_eq!(repeated_document.syntax().to_string(), repeated);
 }
 
 #[test]
@@ -387,7 +449,7 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
             .filter_map(rowan::NodeOrToken::into_token)
             .find(|token| token_name(token) == "ListBullet")
             .expect("every admitted item has a typed bullet");
-        assert_eq!(bullet.text(), "-");
+        assert_eq!(bullet.text(), "- ");
         let range = item.text_range();
         assert_eq!(
             &source[usize::from(range.start())..usize::from(range.end())],
@@ -412,7 +474,7 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     assert!(
         children
             .iter()
-            .all(|item| item.field("bullet") == Some("-"))
+            .all(|item| item.field("bullet") == Some("- "))
     );
 }
 
@@ -455,6 +517,7 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
         .expect("one keyword");
     assert_eq!(keyword.field("key"), Some("TITLE"));
     assert_eq!(keyword.field("value"), Some("α fixture"));
+    assert_eq!(keyword.field("raw-value"), Some(" α fixture"));
     let planning = records
         .iter()
         .find(|record| record.kind == "planning")
@@ -568,17 +631,23 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             .collect();
         assert_eq!(headlines.len(), 8);
         for headline in &headlines {
-            let title = headline
+            let (range, title) = headline
                 .children_with_tokens()
-                .filter_map(rowan::NodeOrToken::into_token)
-                .find(|token| token_name(token) == "HeadlineTitle")
-                .expect("fixture headline has a typed title");
-            let range = title.text_range();
+                .find_map(|child| match child {
+                    rowan::NodeOrToken::Node(node) if name(&node) == "OrgHeadlineTitle" => {
+                        Some((node.text_range(), node.text().to_string()))
+                    }
+                    rowan::NodeOrToken::Token(token) if token_name(&token) == "HeadlineTitle" => {
+                        Some((token.text_range(), token.text().to_string()))
+                    }
+                    _ => None,
+                })
+                .expect("fixture headline has a source-backed title");
             assert_eq!(
                 &source[usize::from(range.start())..usize::from(range.end())],
-                title.text()
+                title
             );
-            assert!(!title.text().is_empty());
+            assert!(!title.is_empty());
         }
         assert_eq!(
             root.descendants()
@@ -634,9 +703,8 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
                 "https://example.test"
             );
             assert!(
-                tokens
-                    .iter()
-                    .any(|token| token_name(token) == "LinkDescription")
+                link.children()
+                    .any(|node| name(&node) == "OrgLinkDescription")
             );
         }
         let property_nodes: Vec<_> = root
@@ -802,7 +870,7 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
         orgize::org_aot::org_language_spec().grammar_digest
     );
     let records = document.records();
-    assert_eq!(orgize::org_aot::org_contract_pack().rules.len(), 4);
+    assert_eq!(orgize::org_aot::org_contract_pack().rules.len(), 5);
     let evidence = records
         .iter()
         .find(|record| record.kind == "headline" && record.field("title") == Some("Evidence"))

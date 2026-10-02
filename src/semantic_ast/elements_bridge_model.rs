@@ -89,6 +89,8 @@ pub struct OrgElementGraph<A = ()> {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OrgElementsAffiliatedProperties {
     pub name: Option<String>,
+    /// First source line of the element's affiliated keyword group, if any.
+    pub first_keyword_start_line: Option<usize>,
 }
 
 /// Stable node kind label in the Org elements flat index.

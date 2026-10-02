@@ -59,6 +59,33 @@ See [[attachment:id-wallpaper.jpg]] and [[attachment:missing-id.jpg]].
 "#;
 
 #[test]
+fn semantic_ast_projects_case_insensitive_attachment_protocol() {
+    let doc = Org::parse("* Files\n[[ATTACHMENT:UPPER.TXT]]\n").document();
+    assert_clean_projection(&doc);
+    assert_eq!(
+        first_section_link(&doc.sections[0])
+            .attachment
+            .as_ref()
+            .map(|attachment| attachment.path.as_str()),
+        Some("UPPER.TXT")
+    );
+}
+
+#[test]
+fn semantic_ast_projects_short_attachment_id_directory() {
+    let doc = Org::parse("* Files\n:PROPERTIES:\n:ID: x\n:END:\n").document();
+    assert_clean_projection(&doc);
+    assert_eq!(
+        doc.sections[0]
+            .attachment
+            .directory
+            .as_ref()
+            .map(|directory| directory.path.as_str()),
+        Some("data/__/x/x")
+    );
+}
+
+#[test]
 fn semantic_ast_projects_attachment_directories_and_links() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -136,6 +163,13 @@ fn semantic_ast_projects_attachment_directories_and_links() {
             .and_then(|attachment| attachment.search.as_ref())
             .map(|search| search.kind),
         Some(AttachmentLinkSearchKind::Regexp)
+    );
+    assert_eq!(
+        first_section_link(attach_dir)
+            .search
+            .as_ref()
+            .map(|search| search.normalized.as_str()),
+        Some("needle")
     );
 
     insta::assert_debug_snapshot!(

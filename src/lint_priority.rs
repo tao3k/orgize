@@ -1,22 +1,35 @@
 //! Priority-cookie lint checks.
 
-use crate::ast::{PriorityProfile, PriorityRangeStatus, PriorityValue};
+use crate::ast::{
+    AstRef, ElementData, ParsedAst, PriorityProfile, PriorityRangeStatus, PriorityValue,
+};
 
 use super::lint_model::{LintFinding, LintSeverity, location_for_range_bounds};
 
 pub(crate) fn priority_cookie_findings(
+    document: &ParsedAst,
     source: &str,
     profile: &PriorityProfile,
 ) -> Vec<LintFinding> {
-    source
-        .split_inclusive('\n')
-        .scan(0, |position, segment| {
-            let current = *position;
-            *position += segment.len();
-            Some((current, segment))
-        })
-        .filter_map(|(position, segment)| {
-            priority_cookie_finding(source, position, segment, profile)
+    let mut starts = Vec::new();
+    document.visit(|node| match node {
+        AstRef::Section(section) => {
+            starts.push((u32::from(section.ann.range.start()) as usize, section.level));
+        }
+        AstRef::Element(element) => {
+            if let ElementData::Inlinetask(task) = &element.data {
+                starts.push((u32::from(element.ann.range.start()) as usize, task.level));
+            }
+        }
+        _ => {}
+    });
+    starts.sort_unstable_by_key(|(position, _)| *position);
+    starts.dedup_by_key(|(position, _)| *position);
+    starts
+        .into_iter()
+        .filter_map(|(position, level)| {
+            let line = source.get(position..)?.split_inclusive('\n').next()?;
+            priority_cookie_finding(source, position, level, line, profile)
         })
         .collect()
 }
@@ -24,40 +37,26 @@ pub(crate) fn priority_cookie_findings(
 fn priority_cookie_finding(
     source: &str,
     position: usize,
+    level: usize,
     segment: &str,
     profile: &PriorityProfile,
 ) -> Option<LintFinding> {
     let line = segment.trim_end_matches('\n').trim_end_matches('\r');
-    let trimmed_start = line.len() - line.trim_start_matches([' ', '\t']).len();
-    let trimmed = &line[trimmed_start..];
-    let (start, end, message) = malformed_priority_cookie(trimmed, profile)?;
+    let (start, end, message) = malformed_priority_cookie(line, level, profile)?;
     Some(LintFinding {
         code: "ORG010",
         severity: LintSeverity::Warning,
         message,
-        location: location_for_range_bounds(
-            source,
-            position + trimmed_start + start,
-            position + trimmed_start + end,
-        ),
+        location: location_for_range_bounds(source, position + start, position + end),
     })
 }
 
 fn malformed_priority_cookie(
     line: &str,
+    level: usize,
     profile: &PriorityProfile,
 ) -> Option<(usize, usize, String)> {
-    let bytes = line.as_bytes();
-    let stars = bytes.iter().take_while(|byte| **byte == b'*').count();
-    if stars == 0
-        || !bytes
-            .get(stars)
-            .is_some_and(|byte| byte.is_ascii_whitespace())
-    {
-        return None;
-    }
-
-    let first = next_token(line, stars)?;
+    let first = next_token(line, level)?;
     if let Some(finding) = malformed_priority_token(line, first, profile) {
         return Some(finding);
     }
@@ -112,7 +111,8 @@ fn malformed_priority_token(
 }
 
 fn next_token(line: &str, start: usize) -> Option<(usize, usize)> {
-    let token_start = line[start..]
+    let token_start = line
+        .get(start..)?
         .char_indices()
         .find_map(|(position, ch)| (!ch.is_whitespace()).then_some(start + position))?;
     let token_end = line[token_start..]

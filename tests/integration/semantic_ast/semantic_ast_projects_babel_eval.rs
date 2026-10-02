@@ -77,6 +77,11 @@ echo old
 "#;
     let doc = Org::parse(source).document();
     let plan = doc.babel_eval_plan("verify").expect("eval plan");
+    let result = plan.record.result.as_ref().expect("existing results");
+    assert_eq!(
+        result.source.range_start as usize,
+        source.find("#+RESULTS:").expect("results keyword")
+    );
     let patch = plan.result_patch(
         source,
         &BabelEvalOutput {

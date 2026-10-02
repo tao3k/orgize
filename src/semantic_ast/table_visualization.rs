@@ -13,7 +13,7 @@ impl Document<ParsedAnnotation> {
     /// Projects `#+PLOT:` and `#+ORGTBL:` table intent without drawing,
     /// translating, or mutating table targets.
     pub fn table_visualization_plans(&self) -> Vec<TableVisualizationPlan<ParsedAnnotation>> {
-        let receivers = radio_receivers(self.ann.raw.as_str());
+        let receivers = radio_receivers(self);
         let mut collector = TableVisualizationCollector {
             receivers,
             plans: Vec::new(),
@@ -520,9 +520,58 @@ fn invalid_plot_warning(
     }
 }
 
-fn radio_receivers(source: &str) -> BTreeMap<String, RadioTableReceiver> {
+fn radio_receivers(document: &Document<ParsedAnnotation>) -> BTreeMap<String, RadioTableReceiver> {
+    // Only Scheme-AOT comment elements can declare receivers; opaque block text
+    // and ordinary paragraphs must not create radio-table targets.
     let mut receivers = BTreeMap::<String, RadioTableReceiver>::new();
-    for line in source.lines() {
+    collect_radio_receivers_in_elements(&document.children, &mut receivers);
+    for section in &document.sections {
+        collect_radio_receivers_in_section(section, &mut receivers);
+    }
+    receivers
+}
+
+fn collect_radio_receivers_in_section(
+    section: &Section<ParsedAnnotation>,
+    receivers: &mut BTreeMap<String, RadioTableReceiver>,
+) {
+    collect_radio_receivers_in_elements(&section.children, receivers);
+    for subsection in &section.subsections {
+        collect_radio_receivers_in_section(subsection, receivers);
+    }
+}
+
+fn collect_radio_receivers_in_elements(
+    elements: &[Element<ParsedAnnotation>],
+    receivers: &mut BTreeMap<String, RadioTableReceiver>,
+) {
+    for element in elements {
+        match &element.data {
+            ElementData::Comment(raw) => collect_radio_receiver_comment(raw, receivers),
+            ElementData::Drawer(drawer) => {
+                collect_radio_receivers_in_elements(&drawer.children, receivers);
+            }
+            ElementData::List(list) => {
+                for item in &list.items {
+                    collect_radio_receivers_in_elements(&item.children, receivers);
+                }
+            }
+            ElementData::Block(block) => {
+                collect_radio_receivers_in_elements(&block.children, receivers);
+            }
+            ElementData::FootnoteDef(footnote) => {
+                collect_radio_receivers_in_elements(&footnote.children, receivers);
+            }
+            ElementData::Inlinetask(task) => {
+                collect_radio_receivers_in_elements(&task.children, receivers);
+            }
+            _ => {}
+        }
+    }
+}
+
+fn collect_radio_receiver_comment(raw: &str, receivers: &mut BTreeMap<String, RadioTableReceiver>) {
+    for line in raw.lines() {
         if let Some(name) = radio_receiver_marker(line, "BEGIN RECEIVE ORGTBL") {
             receivers
                 .entry(name.clone())
@@ -544,7 +593,6 @@ fn radio_receivers(source: &str) -> BTreeMap<String, RadioTableReceiver> {
                 });
         }
     }
-    receivers
 }
 
 fn radio_receiver_marker(line: &str, marker: &str) -> Option<String> {

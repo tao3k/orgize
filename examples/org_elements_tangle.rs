@@ -13,7 +13,7 @@ fn tangle(source: &str, interface_module: &str) -> Result<String, String> {
     }
     let records = records(source)?;
     let mut output = String::from(
-        ";;; -*- Gerbil -*-\n;;; @generated from :org-elements blocks; do not edit.\n",
+        ";;; -*- Gerbil -*-\n;;; @generated from :org-elements-query blocks; do not edit.\n",
     );
     writeln!(
         output,
@@ -32,7 +32,7 @@ fn tangle(source: &str, interface_module: &str) -> Result<String, String> {
         if id.is_empty() || !seen.insert(id) {
             return Err(format!("empty or duplicate QUERY_ID: {id}"));
         }
-        let body = feature_block(&records, section.id, ":org-elements")?;
+        let body = feature_block(&records, section.id, ":org-elements-query")?;
         writeln!(output, "  (org-element-query {id:?}").unwrap();
         output.push_str(body);
         if !body.ends_with('\n') {
@@ -42,17 +42,19 @@ fn tangle(source: &str, interface_module: &str) -> Result<String, String> {
     }
     for block in records.iter().filter(|record| {
         record.kind == "src-block"
-            && record.field("language") == Some("scheme")
+            && record
+                .field("language")
+                .is_some_and(|language| language.eq_ignore_ascii_case("scheme"))
             && record.field("header").is_some_and(|header| {
                 header
                     .split_ascii_whitespace()
-                    .any(|part| part == ":org-elements")
+                    .any(|part| part.eq_ignore_ascii_case(":org-elements-query"))
             })
     }) {
         let owner = owning_headline(&records, block.id)
-            .ok_or(":org-elements block requires an owning headline")?;
+            .ok_or(":org-elements-query block requires an owning headline")?;
         if property(&records, owner, "QUERY_ID")?.is_none() {
-            return Err(":org-elements block requires QUERY_ID".into());
+            return Err(":org-elements-query block requires QUERY_ID".into());
         }
     }
     if seen.is_empty() {
@@ -104,17 +106,42 @@ mod tests {
     }
 
     #[test]
+    fn contract_and_obsolete_element_tags_cannot_define_queries() {
+        for tag in [":org-contract", ":org-elements"] {
+            let source = format!(
+                "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+begin_src scheme {tag}\n(org-elements headline)\n#+end_src\n"
+            );
+            assert!(tangle(&source, "../interface.ss").is_err(), "{tag}");
+        }
+    }
+
+    #[test]
+    fn mixed_feature_tags_cannot_define_queries() {
+        let source = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+begin_src scheme :org-elements-query :org-contract\n(org-elements headline)\n#+end_src\n";
+        assert!(tangle(source, "../interface.ss").is_err());
+    }
+
+    #[test]
+    fn feature_header_is_case_insensitive_but_language_must_be_scheme() {
+        let upper = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+BEGIN_SRC SCHEME :ORG-ELEMENTS-QUERY\n(org-elements headline)\n#+END_SRC\n";
+        assert!(tangle(upper, "../interface.ss").is_ok());
+
+        let pseudo_language = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+BEGIN_SRC org-elements-query\n(org-elements headline)\n#+END_SRC\n";
+        assert!(tangle(pseudo_language, "../interface.ss").is_err());
+    }
+
+    #[test]
     fn missing_or_duplicate_ids_fail_closed() {
         let missing =
-            "* Query\n#+begin_src scheme :org-elements\n(org-elements headline)\n#+end_src\n";
+            "* Query\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
         assert!(tangle(missing, "../interface.ss").is_err());
-        let duplicate = "* First\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements\n(org-elements headline)\n#+end_src\n* Second\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements\n(org-elements headline)\n#+end_src\n";
+        let duplicate = "* First\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n* Second\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
         assert!(tangle(duplicate, "../interface.ss").is_err());
     }
 
     #[test]
     fn consumer_can_select_its_own_interface_import() {
-        let source = "* Query\n:PROPERTIES:\n:QUERY_ID: consumer.work\n:END:\n#+begin_src scheme :org-elements\n(org-elements headline (property todo-type \"todo\"))\n#+end_src\n";
+        let source = "* Query\n:PROPERTIES:\n:QUERY_ID: consumer.work\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline (property todo-type \"todo\"))\n#+end_src\n";
         let generated = tangle(source, "/consumer/gerbil/org-elements/interface.ss")
             .expect("consumer query uses the same Org Elements interface");
         assert!(generated.contains("\"/consumer/gerbil/org-elements/interface.ss\""));
@@ -127,7 +154,7 @@ mod tests {
             source,
             "../../../../languages/org/v1/modules/org-elements/interface.ss",
         )
-        .expect("consumer Org source declares one tagged query");
+        .expect("consumer Org source declares tagged queries");
         assert_eq!(
             generated,
             include_str!("../tests/fixtures/org-elements/generated/customer-query-source.ss")

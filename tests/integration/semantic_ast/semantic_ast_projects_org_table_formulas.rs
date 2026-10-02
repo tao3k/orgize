@@ -31,6 +31,15 @@ fn semantic_ast_projects_org_table_formulas() {
     assert_eq!(table.parsed_formulas[0].assignments[0].lhs, "$2");
     assert_eq!(table.parsed_formulas[0].assignments[0].rhs, "vsum(@2..@4)");
     assert_eq!(table.parsed_formulas[0].assignments[0].flags, ["%.1f"]);
+    assert_eq!(table.parsed_formulas[0].assignments[0].references.len(), 3);
+    assert_eq!(
+        table.parsed_formulas[0].assignments[0].references[1].raw,
+        "@2"
+    );
+    assert_eq!(
+        table.parsed_formulas[0].assignments[0].references[2].raw,
+        "@4"
+    );
     assert_eq!(
         table.parsed_formulas[0].assignments[0].references[0].kind,
         TableFormulaReferenceKind::Field

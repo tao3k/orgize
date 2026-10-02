@@ -1,32 +1,60 @@
 ;;; -*- Gerbil -*-
 ;;; Source-block header arguments are Scheme-owned, source-backed event tokens.
 
-(export event-source-header-initial event-source-header-forms)
+(import (only-in "objects.ss" make-org-event-helper))
+(export event-source-header-helper event-source-header-forms)
 
 (def header-index '(line-index source-header-byte-index))
 (def header-next `(line-step ,header-index))
 (def header-space? `(line-bytes-any-in? ,header-index ,header-next (9 32)))
+(def header-after-switch `(line-step ,header-next))
+(def header-switch-boundary?
+  `(or (line-bytes-any-in? ,header-after-switch
+                           (line-step ,header-after-switch) (9 32))
+       (line-bytes-all-in? ,header-after-switch (line-content-end) ())))
+(def header-switch-sign?
+  `(and ,header-switch-boundary?
+        (or (and (line-byte-equal? ,header-index 45)
+                 (line-bytes-any-in? ,header-next (line-step ,header-next)
+                                     (105 107 108 110 114)))
+            (and (line-byte-equal? ,header-index 43)
+                 (line-byte-equal? ,header-next 110)))))
 (def header-key-bytes
   (map char->integer
        (string->list
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-")))
 
-(def (event-source-header-forms from)
-  `((if (uint-positive? (state source-header-cursor))
-        ((set-uint source-header-mode (uint 0))) ())
-    (set-uint source-header-cursor (offset ,from))
-    (for-line-bytes source-header-byte-index ,from (line-content-end)
+(def (event-source-header-forms from (until '(line-content-end)) (finish 'end))
+  `((call-source-helper source-header-span ,from ,finish
+                        ((offset ,until)))))
+
+(def (source-header-body-forms)
+  `((set-uint source-header-cursor (offset start))
+    (for-line-bytes source-header-byte-index start
+                    (state-offset source-header-until)
       ,(source-header-step-forms))
     (if (uint-equal? (state source-header-mode) (uint 1))
         ((token SourceHeaderKey (state-offset source-header-key-start)
-                (line-content-end))
-         (set-uint source-header-cursor (offset (line-content-end)))) ())
+                (state-offset source-header-until))
+         (set-uint source-header-cursor (offset (state-offset source-header-until)))) ())
     (if (or (uint-equal? (state source-header-mode) (uint 3))
             (uint-equal? (state source-header-mode) (uint 4))
-            (uint-equal? (state source-header-mode) (uint 5)))
+            (uint-equal? (state source-header-mode) (uint 5))
+            (uint-equal? (state source-header-mode) (uint 12))
+            (uint-equal? (state source-header-mode) (uint 13))
+            (uint-equal? (state source-header-mode) (uint 14)))
         ((token SourceHeaderValue (state-offset source-header-value-start)
-                (line-content-end))
-         (set-uint source-header-cursor (offset (line-content-end)))) ())
+                (state-offset source-header-until))
+         (set-uint source-header-cursor (offset (state-offset source-header-until)))) ())
+    (if (or (uint-equal? (state source-header-mode) (uint 9))
+            (uint-equal? (state source-header-mode) (uint 10))
+            (uint-equal? (state source-header-mode) (uint 11))
+            (uint-equal? (state source-header-mode) (uint 15))
+            (uint-equal? (state source-header-mode) (uint 16))
+            (uint-equal? (state source-header-mode) (uint 17)))
+        ((token SourceSwitchValue (state-offset source-header-value-start)
+                (state-offset source-header-until))
+         (set-uint source-header-cursor (offset (state-offset source-header-until)))) ())
     (token SourceHeaderTrivia (state-offset source-header-cursor) end)))
 
 (def (source-header-step-forms)
@@ -36,11 +64,24 @@
              ,(source-header-key-forms)
              ((if (uint-equal? (state source-header-mode) (uint 2))
                   ,(source-header-value-start-forms)
-                  ((if (uint-equal? (state source-header-mode) (uint 3))
+                  ((if (or (uint-equal? (state source-header-mode) (uint 3))
+                           (uint-equal? (state source-header-mode) (uint 14)))
                        ,(source-header-bare-value-forms)
                        ((if (uint-equal? (state source-header-mode) (uint 6))
                             ,(source-header-unrecognized-forms)
-                            ,(source-header-quoted-value-forms))))))))))))
+                            ((if (uint-equal? (state source-header-mode) (uint 7))
+                                 ,(source-header-switch-end-forms)
+                                 ((if (uint-equal? (state source-header-mode) (uint 8))
+                                      ,(source-header-switch-value-start-forms)
+                                      ((if (or (uint-equal? (state source-header-mode) (uint 9))
+                                               (uint-equal? (state source-header-mode) (uint 17)))
+                                           ,(source-header-switch-bare-value-forms)
+                                           ((if (or (uint-equal? (state source-header-mode) (uint 10))
+                                                    (uint-equal? (state source-header-mode) (uint 11))
+                                                    (uint-equal? (state source-header-mode) (uint 15))
+                                                    (uint-equal? (state source-header-mode) (uint 16)))
+                                                ,(source-header-switch-quoted-value-forms)
+                                                ,(source-header-quoted-value-forms))))))))))))))))))))
 
 (def (source-header-trivia-forms)
   `((if ,header-space?
@@ -54,7 +95,76 @@
               (set-uint source-header-cursor (offset ,header-next))
               (set-uint source-header-key-start (offset ,header-next))
               (set-uint source-header-mode (uint 1)))
-             ((set-uint source-header-mode (uint 6))))))))
+             ((if ,header-switch-sign?
+                  ((token SourceHeaderTrivia
+                          (state-offset source-header-cursor) ,header-index)
+                   (token SourceSwitchName ,header-index
+                          (line-step ,header-next))
+                   (set-uint source-header-cursor
+                             (offset (line-step ,header-next)))
+                   (set-uint source-header-switch-argument
+                             (uint 0))
+                   (if (or (line-byte-equal? ,header-next 108)
+                           (line-byte-equal? ,header-next 110))
+                       ((set-uint source-header-switch-argument (uint 1))) ())
+                   (set-uint source-header-mode (uint 7)))
+                  ((set-uint source-header-mode (uint 6))))))))))
+
+(def (source-header-switch-end-forms)
+  `((if ,header-space?
+        ((if (uint-positive? (state source-header-switch-argument))
+             ((set-uint source-header-mode (uint 8)))
+             ((set-uint source-header-mode (uint 0))))) ())))
+
+(def (source-header-switch-value-start-forms)
+  `((if ,header-space?
+        ()
+        ((if (and (line-byte-equal? ,header-index 58)
+                  (line-bytes-any-in? ,header-next
+                                      (line-step ,header-next)
+                                      ,header-key-bytes))
+             ((token SourceHeaderTrivia
+                     (state-offset source-header-cursor) ,header-next)
+              (set-uint source-header-cursor (offset ,header-next))
+              (set-uint source-header-key-start (offset ,header-next))
+              (set-uint source-header-mode (uint 1)))
+             ((token SourceHeaderTrivia
+                     (state-offset source-header-cursor) ,header-index)
+              (set-uint source-header-value-start (offset ,header-index))
+              (if (line-byte-equal? ,header-index 34)
+                  ((set-uint source-header-mode (uint 10)))
+                  ((if (line-byte-equal? ,header-index 39)
+                       ((set-uint source-header-mode (uint 15)))
+                       ((set-uint source-header-mode (uint 9))))))))))))
+
+(def (source-header-switch-bare-value-forms)
+  `((if (uint-equal? (state source-header-mode) (uint 17))
+        ((set-uint source-header-mode (uint 9)))
+        ((if (line-byte-equal? ,header-index 92)
+             ((set-uint source-header-mode (uint 17)))
+             ((if ,header-space?
+                  ((token SourceSwitchValue
+                          (state-offset source-header-value-start) ,header-index)
+                   (set-uint source-header-cursor (offset ,header-index))
+                   (set-uint source-header-mode (uint 0))) ())))))))
+
+(def (source-header-switch-quoted-value-forms)
+  `((if (uint-equal? (state source-header-mode) (uint 11))
+        ((set-uint source-header-mode (uint 10)))
+        ((if (uint-equal? (state source-header-mode) (uint 16))
+             ((set-uint source-header-mode (uint 15)))
+             ((if (line-byte-equal? ,header-index 92)
+                  ((if (uint-equal? (state source-header-mode) (uint 10))
+                       ((set-uint source-header-mode (uint 11)))
+                       ((set-uint source-header-mode (uint 16)))))
+                  ((if (or (and (uint-equal? (state source-header-mode) (uint 10))
+                                (line-byte-equal? ,header-index 34))
+                           (and (uint-equal? (state source-header-mode) (uint 15))
+                                (line-byte-equal? ,header-index 39)))
+                       ((token SourceSwitchValue
+                               (state-offset source-header-value-start) ,header-next)
+                        (set-uint source-header-cursor (offset ,header-next))
+                        (set-uint source-header-mode (uint 0))) ())))))))))
 
 (def (source-header-unrecognized-forms)
   `((if ,header-space?
@@ -79,26 +189,47 @@
          (set-uint source-header-value-start (offset ,header-index))
          (if (line-byte-equal? ,header-index 34)
              ((set-uint source-header-mode (uint 4)))
-             ((set-uint source-header-mode (uint 3))))))))
+             ((if (line-byte-equal? ,header-index 39)
+                  ((set-uint source-header-mode (uint 12)))
+                  ((set-uint source-header-mode (uint 3))))))))))
 
 (def (source-header-bare-value-forms)
-  `((if ,header-space?
-        ((token SourceHeaderValue (state-offset source-header-value-start)
-                ,header-index)
-         (set-uint source-header-cursor (offset ,header-index))
-         (set-uint source-header-mode (uint 0))) ())))
+  `((if (uint-equal? (state source-header-mode) (uint 14))
+        ((set-uint source-header-mode (uint 3)))
+        ((if (line-byte-equal? ,header-index 92)
+             ((set-uint source-header-mode (uint 14)))
+             ((if ,header-space?
+                  ((token SourceHeaderValue
+                          (state-offset source-header-value-start) ,header-index)
+                   (set-uint source-header-cursor (offset ,header-index))
+                   (set-uint source-header-mode (uint 0))) ())))))))
 
 (def (source-header-quoted-value-forms)
   `((if (uint-equal? (state source-header-mode) (uint 5))
         ((set-uint source-header-mode (uint 4)))
-        ((if (line-byte-equal? ,header-index 92)
-             ((set-uint source-header-mode (uint 5)))
-             ((if (line-byte-equal? ,header-index 34)
-                  ((token SourceHeaderValue
-                          (state-offset source-header-value-start) ,header-next)
-                   (set-uint source-header-cursor (offset ,header-next))
-                   (set-uint source-header-mode (uint 0))) ())))))))
+        ((if (uint-equal? (state source-header-mode) (uint 13))
+             ((set-uint source-header-mode (uint 12)))
+             ((if (line-byte-equal? ,header-index 92)
+                  ((if (uint-equal? (state source-header-mode) (uint 4))
+                       ((set-uint source-header-mode (uint 5)))
+                       ((set-uint source-header-mode (uint 13)))))
+                  ((if (or (and (uint-equal? (state source-header-mode) (uint 4))
+                                (line-byte-equal? ,header-index 34))
+                           (and (uint-equal? (state source-header-mode) (uint 12))
+                                (line-byte-equal? ,header-index 39)))
+                       ((token SourceHeaderValue
+                               (state-offset source-header-value-start) ,header-next)
+                        (set-uint source-header-cursor (offset ,header-next))
+                        (set-uint source-header-mode (uint 0))) ())))))))))
 
 (def event-source-header-initial
   '((source-header-mode 0) (source-header-cursor 0)
-    (source-header-key-start 0) (source-header-value-start 0)))
+    (source-header-key-start 0) (source-header-value-start 0)
+    (source-header-switch-argument 0)))
+
+(def event-source-header-helper
+  (make-org-event-helper
+   'source-header-span
+   (cons '(source-header-until 0) event-source-header-initial)
+   (source-header-body-forms)
+   '(source-header-until)))

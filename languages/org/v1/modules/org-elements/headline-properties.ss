@@ -6,25 +6,35 @@
         (only-in :gerbil-parser/src/compiler/rust-pure-aot
                  define-rust-pure string-before ascii-ci=?
                  string-after string-first-word
+                 string-trim-start
                  string-rest-after-first-word string-last-word
                  string-before-last-word string-prefix? string-suffix?
-                 string-words)
+                 string-words string-single-ascii-uppercase?
+                 string-unsigned-at-most? string-lowercase)
         (only-in "types.ss" org-element-graph-view?)
         (only-in "objects.ss"
                  make-org-element-graph-view
+                 make-org-headline-properties org-headline-property-field
                  org-element-graph-records org-element-graph-id-of
                  org-element-graph-parent-of org-element-graph-kind-of
                  org-element-graph-field-of))
 (export org-element-with-headline-properties
         todo-directive-rust
+        todo-word-name todo-word-name-rust
+        todo-open-words todo-open-words-rust
+        todo-done-words todo-done-words-rust
         todo-state-from-directives todo-state-from-directives-rust
         todo-keyword-from-directives todo-keyword-from-directives-rust
         headline-content-after-todo headline-content-after-todo-rust
+        headline-source-title headline-source-title-rust
+        planning-key-kind planning-key-kind-rust
         headline-display-title headline-display-title-rust
-        todo-keyword-matches? todo-keyword-matches-rust)
-
-(defstruct headline-properties (source-title title todo-keyword todo-type
-                                          priority tags))
+        headline-anchor-slug headline-anchor-slug-rust
+        headline-comment? headline-comment-rust
+        priority-token? priority-token-rust
+        headline-priority-cookie headline-priority-cookie-rust
+        todo-keyword-matches? todo-keyword-matches-rust
+        memory-headline-state memory-headline-state-rust)
 
 (def (split-first value)
   (let* ((text (string-trim value)) (size (string-length text)))
@@ -52,15 +62,36 @@
       (ascii-ci=? key "SEQ_TODO")
       (ascii-ci=? key "TYP_TODO")))
 
-;; File-local keyword Elements are the authority. The same executable Scheme
-;; function is lowered to Rust; callers never supply a separate TODO profile.
+;; A file-local directive's keyword words are an Org-owned algorithm.  The
+;; AOT functions return typed vectors, not generated source or a string wire.
+(define-rust-pure todo-word-name todo-word-name-rust
+  ((word "&str")) "String"
+  (string-before word "("))
+
+(define-rust-pure todo-open-words todo-open-words-rust
+  ((directive "&str")) "Vec<String>"
+  (using ((todo-word-name "&str"))
+    (map todo-word-name
+         (string-words (string-before directive "|")))))
+
+(define-rust-pure todo-done-words todo-done-words-rust
+  ((directive "&str")) "Vec<String>"
+  (using ((todo-word-name "&str"))
+    (map todo-word-name
+         (string-words (string-after directive "|")))))
+
+;; File-local keyword Elements override the caller's configured TODO profile.
+;; The same executable Scheme function is lowered to Rust.
 (define-rust-pure todo-state-from-directives todo-state-from-directives-rust
-  ((title "&str") (directives "&[String]")) "&'static str"
+  ((title "&str") (directives "&[String]")
+   (configured-todo "&[String]") (configured-done "&[String]")) "&'static str"
   (let* ((candidate (string-first-word title)))
     (if (equal? candidate "") ""
       (if (null? directives)
-        (if (equal? candidate "TODO") "todo"
-          (if (equal? candidate "DONE") "done" ""))
+        (if (ormap (lambda (word) (equal? candidate word)) configured-todo)
+          "todo"
+          (if (ormap (lambda (word) (equal? candidate word)) configured-done)
+            "done" ""))
         (if (ormap
              (lambda (directive)
                (let* ((open-side (string-before directive "|")))
@@ -82,42 +113,114 @@
 
 ;; The keyword value is a source-owned string, not a Rust re-parse of title.
 (define-rust-pure todo-keyword-from-directives todo-keyword-from-directives-rust
-  ((title "&str") (directives "&[String]")) "String"
-  (using ((todo-state-from-directives "&str" "&[String]"))
-    (if (equal? (todo-state-from-directives title directives) "")
+  ((title "&str") (directives "&[String]")
+   (configured-todo "&[String]") (configured-done "&[String]")) "String"
+  (using ((todo-state-from-directives "&str" "&[String]"
+                                      "&[String]" "&[String]"))
+    (if (equal? (todo-state-from-directives
+                 title directives configured-todo configured-done) "")
       ""
       (string-first-word title))))
 
 (define-rust-pure headline-content-after-todo headline-content-after-todo-rust
-  ((title "&str") (directives "&[String]")) "String"
-  (using ((todo-keyword-from-directives "&str" "&[String]"))
-    (if (equal? (todo-keyword-from-directives title directives) "")
+  ((title "&str") (directives "&[String]")
+   (configured-todo "&[String]") (configured-done "&[String]")) "String"
+  (using ((todo-keyword-from-directives "&str" "&[String]"
+                                        "&[String]" "&[String]"))
+    (if (equal? (todo-keyword-from-directives
+                 title directives configured-todo configured-done) "")
       (string-trim title)
       (string-rest-after-first-word title))))
 
+;; The source-backed title excludes the tag suffix but retains its preceding
+;; whitespace. TODO and priority are admitted by the same Scheme algorithms.
+(define-rust-pure headline-source-title headline-source-title-rust
+  ((title-body "&str") (todo-keyword "&str")) "String"
+  (using ((priority-token? "&str"))
+    (let* ((after-todo
+            (if (equal? todo-keyword "") title-body
+              (string-trim-start (string-after title-body todo-keyword))))
+           (first (string-first-word after-todo)))
+      (if (priority-token? first)
+        (string-trim-start (string-after after-todo first))
+        (string-trim-start after-todo)))))
+
+(define-rust-pure planning-key-kind planning-key-kind-rust
+  ((key "&str")) "&'static str"
+  (if (ascii-ci=? key "SCHEDULED") "scheduled"
+    (if (ascii-ci=? key "DEADLINE") "deadline"
+      (if (ascii-ci=? key "CLOSED") "closed" ""))))
+
+(define-rust-pure priority-token? priority-token-rust
+  ((word "&str")) "bool"
+  (let* ((after-prefix (string-after word "[#"))
+         (inner (string-before after-prefix "]")))
+    (and (string-prefix? word "[#")
+         (string-suffix? word "]")
+         (equal? (string-after after-prefix "]") "")
+         (or (string-single-ascii-uppercase? inner)
+             (string-unsigned-at-most? inner 64)))))
+
+;; Return only an admitted cookie's value.  The empty string means that the
+;; headline has no priority; the Rust projection never scans title syntax.
+(define-rust-pure headline-priority-cookie headline-priority-cookie-rust
+  ((content "&str")) "String"
+  (using ((priority-token? "&str"))
+    (let* ((word (string-first-word content))
+           (after-prefix (string-after word "[#")))
+      (if (priority-token? word)
+        (string-before after-prefix "]")
+        ""))))
+
 (define-rust-pure headline-display-title headline-display-title-rust
   ((content "&str") (has-tags "bool")) "String"
-  (let* ((trimmed (string-trim content))
-         (first (string-first-word trimmed))
-         (without-priority
-          (if (and (string-prefix? first "[#")
-                   (string-suffix? first "]"))
-            (string-rest-after-first-word trimmed)
-            trimmed)))
-    (if has-tags
-      (string-before-last-word without-priority)
-      (string-trim without-priority))))
+  (using ((priority-token? "&str"))
+    (let* ((trimmed (string-trim content))
+           (first (string-first-word trimmed))
+           (without-priority
+            (if (priority-token? first)
+              (string-rest-after-first-word trimmed)
+              trimmed)))
+      (if has-tags
+        (string-before-last-word without-priority)
+        (string-trim without-priority)))))
+
+(define-rust-pure headline-anchor-slug headline-anchor-slug-rust
+  ((title "&str")) "String"
+  (let* ((lower (string-lowercase title)))
+    (string-join (string-words lower) "-")))
+
+;; Org's COMMENT marker is a case-sensitive headline word after TODO and
+;; priority have been resolved. Structural keywords remain case-insensitive.
+(define-rust-pure headline-comment? headline-comment-rust
+  ((display-title "&str")) "bool"
+  (equal? (string-first-word display-title) "COMMENT"))
 
 ;; A query checks the source keyword only after the same Scheme-owned state
-;; algorithm admits it under file-local declarations. The dependency call is
+;; algorithm admits it under file-local or configured declarations. The call is
 ;; lowered to Rust with an explicit typed pure-function signature.
 (define-rust-pure todo-keyword-matches? todo-keyword-matches-rust
-  ((title "&str") (directives "&[String]") (expected "&str")) "bool"
-  (using ((todo-state-from-directives "&str" "&[String]"))
-    (let* ((state (todo-state-from-directives title directives))
+  ((title "&str") (directives "&[String]")
+   (configured-todo "&[String]") (configured-done "&[String]")
+   (expected "&str")) "bool"
+  (using ((todo-state-from-directives "&str" "&[String]"
+                                      "&[String]" "&[String]"))
+    (let* ((state (todo-state-from-directives
+                   title directives configured-todo configured-done))
            (candidate (string-first-word title)))
       (and (or (equal? state "todo") (equal? state "done"))
            (equal? candidate expected)))))
+
+;; Memory is a projection of admitted headline, planning and tag Elements.
+;; Rust supplies those typed Element facts; this Scheme function owns their
+;; lifecycle meaning in both the interpreter and the AOT consumer.
+(define-rust-pure memory-headline-state memory-headline-state-rust
+  ((todo-type "&str") (closed "bool") (planned "bool")
+   (archived "bool")) "&'static str"
+  (if archived "archived"
+    (if (or (equal? todo-type "done") closed) "closed"
+      (if (or (equal? todo-type "todo") planned) "current"
+        "background"))))
 
 (def (document-todo-directives records kind-of field-of)
   (let loop ((rest records) (directives '()))
@@ -130,18 +233,6 @@
         (if (and (string? key) (todo-directive? key) (string? value))
           (loop (cdr rest) (cons value directives))
           (loop (cdr rest) directives))))))
-
-(def (priority-token? word)
-  (let (size (string-length word))
-    (and (>= size 4)
-         (char=? (string-ref word 0) #\[)
-         (char=? (string-ref word 1) #\#)
-         (char=? (string-ref word (- size 1)) #\])
-         (let (inner (substring word 2 (- size 1)))
-           (or (and (= (string-length inner) 1)
-                    (char-alphabetic? (string-ref inner 0)))
-               (let (number (string->number inner))
-                 (and (integer? number) (<= 0 number 64))))))))
 
 (def (tag-char? char)
   (or (char-alphabetic? char) (char-numeric? char)
@@ -163,26 +254,29 @@
                         tags)
                 tags)))))
 
-(def (decode-headline title directives)
-  (let* ((state-value (todo-state-from-directives title directives))
+(def (decode-headline title directives configured-todo configured-done)
+  (let* ((state-value (todo-state-from-directives
+                       title directives configured-todo configured-done))
          (state (if (equal? state-value "") #f state-value))
-         (todo-value (todo-keyword-from-directives title directives))
+         (todo-value (todo-keyword-from-directives
+                      title directives configured-todo configured-done))
          (todo (and state (not (equal? todo-value "")) todo-value))
-         (after-todo (headline-content-after-todo title directives))
+         (after-todo (headline-content-after-todo
+                      title directives configured-todo configured-done))
          (next (split-first after-todo))
-         (priority (and (priority-token? (car next))
-                        (substring (car next) 2
-                                   (- (string-length (car next)) 1))))
+         (priority-value (headline-priority-cookie after-todo))
+         (priority (and (not (equal? priority-value "")) priority-value))
          (after-priority (if priority (cdr next) after-todo))
          (last (or (split-last after-priority)
                    (and (tag-token after-priority)
                         (cons "" after-priority))))
          (tags (and last (tag-token (cdr last)))))
-    (make-headline-properties
+    (make-org-headline-properties
      title (if tags (car last) (string-trim after-priority))
      todo state priority (or tags '()))))
 
-(def (org-element-with-headline-properties graph)
+(def (org-element-with-headline-properties
+      graph (configured-todo '("TODO")) (configured-done '("DONE")))
   (unless (org-element-graph-view? graph)
     (error "headline properties require an admitted Org Element graph" graph))
   (let* ((records (org-element-graph-records graph))
@@ -194,29 +288,19 @@
          (headlines (make-hash-table)))
     (for-each
      (lambda (record)
-       (when (equal? (kind-of record) "headline")
+       (when (member (kind-of record) '("headline" "inlinetask"))
          (let (title (field-of record "title"))
            (when (string? title)
              (hash-put! headlines (id-of record)
-                        (decode-headline title directives))))))
+                        (decode-headline title directives
+                                         configured-todo configured-done))))))
      records)
     (make-org-element-graph-view
      records id-of parent-of kind-of
      (lambda (record name)
        (let (properties (hash-get headlines (id-of record)))
          (if properties
-           (cond
-            ((equal? name "title") (headline-properties-title properties))
-            ((equal? name "source-title")
-             (headline-properties-source-title properties))
-            ((equal? name "raw-value")
-             (headline-properties-title properties))
-            ((equal? name "todo-keyword")
-             (headline-properties-todo-keyword properties))
-            ((equal? name "todo-type")
-             (headline-properties-todo-type properties))
-            ((equal? name "priority")
-             (headline-properties-priority properties))
-            ((equal? name "tags") (headline-properties-tags properties))
-            (else (field-of record name)))
+           (let-values (((known? projected)
+                         (org-headline-property-field properties name)))
+             (if known? projected (field-of record name)))
            (field-of record name)))))))

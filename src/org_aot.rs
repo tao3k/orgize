@@ -1,13 +1,18 @@
 //! Cargo-only Org parsing from Scheme-declared AOT language artifacts.
 //!
 //! The default AOT entrypoint runs the Org-owned Scheme event algorithm.
-//! The public `Org` facade still requires its separate typed-AST cutover.
+//! The public `Org` facade uses this parser; the owned semantic AST is a
+//! projection of its Scheme-generated Element graph.
+
+use std::{collections::HashMap, sync::OnceLock};
 
 use gerbil_parser_rowan::{
-    Diagnostic, GraphProjectionSpec, GraphRecord, LanguageSpec, Parse, ParseError, ParseReceipt,
-    SyntaxNode, parse_generated_events, project_syntax_graph,
+    Diagnostic, GraphIndex, GraphProjectionSpec, GraphRecord, LanguageSpec, Parse, ParseError,
+    ParseReceipt, SyntaxNode, parse_generated_events, project_syntax_graph,
 };
+use rowan::TextRange;
 
+use crate::config::ParseConfig;
 use crate::contract_feature::{
     ContractExecutionError, ContractPack, ContractResult, ContractRule, ContractScopeNodeId,
     evaluate_contract,
@@ -19,26 +24,66 @@ mod grammar;
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/graph.rs"]
 mod graph;
+#[path = "org_aot_citation_functions.rs"]
+mod citation_functions;
 #[path = "org_aot_contract_plan.rs"]
 mod contract_plan;
+#[path = "org_aot_document_keyword_functions.rs"]
+mod document_keyword_functions;
 #[path = "org_aot_headline_functions.rs"]
 mod headline_functions;
+#[path = "org_aot_headline_view.rs"]
+mod headline_view;
+pub use headline_view::OrgHeadline;
+#[path = "org_aot_affiliation.rs"]
+mod affiliation;
 #[path = "org_aot_link_functions.rs"]
 mod link_functions;
+#[path = "org_aot_logbook_functions.rs"]
+mod logbook_functions;
+#[path = "org_aot_table_functions.rs"]
+mod table_functions;
 #[path = "org_aot_todo_directive.rs"]
 mod todo_directive;
 #[rustfmt::skip]
 #[path = "org_aot_events.rs"]
 mod generated_context_events;
 
+// Reuse the library's compiled event function from integration and benchmark
+// targets instead of compiling the large generated function into each target.
+#[doc(hidden)]
+pub use generated_context_events::{PARSER_DIGEST, parse_org_rowan_events};
+
 /// A source-backed, lossless Rowan tree and its Scheme-declared Element graph.
 #[derive(Debug)]
 pub struct OrgAotDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
+    base_config: ParseConfig,
+    config: ParseConfig,
     todo_directives: Vec<String>,
-    todo_states: Vec<Option<&'static str>>,
-    subtree_end: Vec<usize>,
+    configured_todo: Vec<String>,
+    configured_done: Vec<String>,
+    headline_properties: Vec<Option<HeadlineProperties>>,
+    graph_index: GraphIndex,
+    headline_ancestors: Vec<Option<usize>>,
+    affiliations: OnceLock<HashMap<usize, Vec<usize>>>,
+}
+
+#[derive(Debug)]
+struct HeadlineProperties {
+    todo_type: Option<&'static str>,
+    details: OnceLock<HeadlineDetails>,
+}
+
+#[derive(Debug)]
+struct HeadlineDetails {
+    todo_keyword: Option<String>,
+    content_after_todo: String,
+    priority_cookie: Option<String>,
+    display_title: String,
+    source_title: String,
+    is_comment: bool,
 }
 
 /// An error from the parser or the generated Element projection contract.
@@ -59,7 +104,37 @@ pub enum OrgAotError {
 /// Returns the parser receipt on parse failure, or a projection diagnostic if
 /// the generated graph table is stale or invalid.
 pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
-    let events = generated_context_events::parse_org_rowan_events(source);
+    static DEFAULT_CONFIG: OnceLock<ParseConfig> = OnceLock::new();
+    parse_org_aot_events(
+        source,
+        generated_context_events::parse_org_rowan_events(source),
+        DEFAULT_CONFIG.get_or_init(ParseConfig::default),
+    )
+}
+
+/// Parse Org with the same Scheme-generated algorithm and a caller-provided configuration.
+///
+/// # Errors
+///
+/// Returns the parser receipt on parse failure, or a projection diagnostic if
+/// the generated graph table is stale or invalid.
+pub fn parse_org_aot_with_config(
+    source: &str,
+    config: &ParseConfig,
+) -> Result<OrgAotDocument, OrgAotError> {
+    let events = generated_context_events::parse_org_rowan_events_with_parameters(
+        source,
+        config.effective_inlinetask_min_level(),
+        config.inline_script_policy(),
+    );
+    parse_org_aot_events(source, events, config)
+}
+
+fn parse_org_aot_events(
+    source: &str,
+    events: Vec<gerbil_parser_rowan::TreeEvent>,
+    config: &ParseConfig,
+) -> Result<OrgAotDocument, OrgAotError> {
     let parse = parse_generated_events(
         &grammar::LANGUAGE,
         generated_context_events::PARSER_DIGEST,
@@ -67,16 +142,138 @@ pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
         &events,
     )
     .map_err(OrgAotError::Parse)?;
-    document_from_parse(parse)
+    document_from_parse(parse, config)
 }
 
 pub(crate) fn org_image_link(target: &str) -> bool {
     link_functions::org_image_link_p(target)
 }
 
-fn document_from_parse(parse: Parse) -> Result<OrgAotDocument, OrgAotError> {
+pub(crate) fn org_link_kind(path: &str) -> &'static str {
+    link_functions::org_link_kind(path)
+}
+
+pub(crate) fn org_link_target_key(path: &str) -> &str {
+    link_functions::org_link_target_key(path)
+}
+
+pub(crate) fn org_link_protocol(path: &str) -> &str {
+    link_functions::org_link_protocol(path)
+}
+
+pub(crate) fn org_link_protocol_path(path: &str) -> &str {
+    link_functions::org_link_protocol_path(path)
+}
+
+pub(crate) fn org_link_file_path(path: &str) -> &str {
+    link_functions::org_link_file_path(path)
+}
+
+pub(crate) fn org_link_attachment_path(path: &str) -> &str {
+    link_functions::org_link_attachment_path(path)
+}
+
+pub(crate) fn org_link_search(path: &str) -> &str {
+    link_functions::org_link_search(path)
+}
+
+pub(crate) fn org_link_file_path_kind(path: &str) -> &'static str {
+    link_functions::org_link_file_path_kind(path)
+}
+
+pub(crate) fn org_link_search_kind(search: &str) -> &'static str {
+    link_functions::org_link_search_kind(search)
+}
+
+pub(crate) fn org_link_search_value(search: &str) -> &str {
+    link_functions::org_link_search_value(search)
+}
+
+pub(crate) fn headline_anchor_slug(title: &str) -> String {
+    headline_functions::headline_anchor_slug(title)
+}
+
+pub(crate) fn keyword_words(value: &str) -> Vec<String> {
+    document_keyword_functions::keyword_words(value)
+}
+
+pub(crate) fn keyword_tag_words(value: &str) -> Vec<String> {
+    document_keyword_functions::keyword_tag_words(value)
+}
+
+pub(crate) fn keyword_first_word(value: &str) -> String {
+    document_keyword_functions::keyword_first_word(value)
+}
+
+pub(crate) fn keyword_rest(value: &str) -> String {
+    document_keyword_functions::keyword_rest(value)
+}
+
+pub(crate) fn keyword_option_value(value: &str, key: &str) -> String {
+    document_keyword_functions::keyword_option_value(value, key)
+}
+
+pub(crate) fn keyword_option_present(value: &str, key: &str) -> bool {
+    document_keyword_functions::keyword_option_present_p(value, key)
+}
+
+pub(crate) fn keyword_boolean_value(value: &str) -> Option<bool> {
+    match document_keyword_functions::keyword_boolean_value(value) {
+        "true" => Some(true),
+        "false" => Some(false),
+        _ => None,
+    }
+}
+
+pub(crate) fn logbook_line_kind(line: &str) -> &str {
+    logbook_functions::logbook_line_kind(line)
+}
+
+pub(crate) fn logbook_content_line(line: &str) -> &str {
+    logbook_functions::logbook_content_line(line)
+}
+
+pub(crate) fn logbook_state_values(line: &str) -> Option<(&str, &str)> {
+    (logbook_functions::logbook_state_quote_shape(line) == "complete").then(|| {
+        (
+            logbook_functions::logbook_state_to(line),
+            logbook_functions::logbook_state_from(line),
+        )
+    })
+}
+
+pub(crate) fn logbook_clock_duration_value(line: &str) -> Option<&str> {
+    (logbook_functions::logbook_clock_duration_shape(line) == "present")
+        .then(|| logbook_functions::logbook_clock_duration_value(line))
+}
+
+pub(crate) fn table_column_cookie_kind(cell: &str) -> &'static str {
+    table_functions::table_column_cookie_kind(cell)
+}
+
+pub(crate) fn org_expand_link_abbreviation(
+    replacement: &str,
+    path: &str,
+    encoded_path: &str,
+) -> String {
+    link_functions::org_expand_link_abbreviation(replacement, path, encoded_path)
+}
+
+fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
     let records = project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
         .map_err(OrgAotError::Projection)?;
+    let graph_index = GraphIndex::new(&records).map_err(|error| {
+        OrgAotError::Projection(Diagnostic {
+            reason_kind: "invalid-graph-index",
+            byte_offset: 0,
+            message: format!("generated Element graph has invalid preorder: {error:?}"),
+        })
+    })?;
+    let headline_ancestors = graph_index
+        .nearest_ancestors_matching(&records, |record| {
+            matches!(record.kind, "headline" | "inlinetask")
+        })
+        .expect("validated graph index and records have the same preorder");
     let todo_directives = records
         .iter()
         .filter(|record| record.kind == "keyword")
@@ -87,30 +284,57 @@ fn document_from_parse(parse: Parse) -> Result<OrgAotDocument, OrgAotError> {
         })
         .filter_map(|record| record.field("value").map(str::to_owned))
         .collect::<Vec<_>>();
-    let todo_states = records
+    let mut effective_config = config.clone();
+    if !todo_directives.is_empty() {
+        let mut open = Vec::new();
+        let mut done = Vec::new();
+        for directive in &todo_directives {
+            open.extend(
+                headline_functions::todo_open_words(directive)
+                    .into_iter()
+                    .filter(|word| !word.is_empty()),
+            );
+            done.extend(
+                headline_functions::todo_done_words(directive)
+                    .into_iter()
+                    .filter(|word| !word.is_empty()),
+            );
+        }
+        effective_config.todo_keywords = (open, done);
+    }
+    let headline_properties = records
         .iter()
         .map(|record| {
             let title = record
                 .field("title")
-                .filter(|_| record.kind == "headline")?;
-            match headline_functions::todo_state_from_directives(title, &todo_directives) {
+                .filter(|_| matches!(record.kind, "headline" | "inlinetask"))?;
+            let todo_type = match headline_functions::todo_state_from_directives(
+                title,
+                &todo_directives,
+                &config.todo_keywords.0,
+                &config.todo_keywords.1,
+            ) {
                 "" => None,
                 state => Some(state),
-            }
+            };
+            Some(HeadlineProperties {
+                todo_type,
+                details: OnceLock::new(),
+            })
         })
         .collect();
-    let mut subtree_end: Vec<usize> = (1..=records.len()).collect();
-    for record in records.iter().rev() {
-        if let Some(parent) = record.parent_id {
-            subtree_end[parent] = subtree_end[parent].max(subtree_end[record.id]);
-        }
-    }
     Ok(OrgAotDocument {
         parse,
         records,
+        base_config: config.clone(),
+        config: effective_config,
         todo_directives,
-        todo_states,
-        subtree_end,
+        configured_todo: config.todo_keywords.0.clone(),
+        configured_done: config.todo_keywords.1.clone(),
+        headline_properties,
+        graph_index,
+        headline_ancestors,
+        affiliations: OnceLock::new(),
     })
 }
 
@@ -139,18 +363,128 @@ pub fn org_contract_pack() -> &'static ContractPack {
 }
 
 impl OrgAotDocument {
-    pub(crate) fn headline_todo_keyword_matches(&self, record_id: usize, expected: &str) -> bool {
+    /// Parse Org through the Scheme-generated algorithm with default configuration.
+    #[must_use]
+    pub fn parse(source: impl AsRef<str>) -> Self {
+        Self::try_parse(source).expect("Scheme-generated Org parser rejected input")
+    }
+
+    /// Parse Org with structured AOT diagnostics.
+    ///
+    /// # Errors
+    /// Returns a parser or graph-projection error if the generated artifacts reject the source.
+    pub fn try_parse(source: impl AsRef<str>) -> Result<Self, OrgAotError> {
+        parse_org_aot(source.as_ref())
+    }
+
+    /// Return exact source text reconstructed from the lossless Rowan graph.
+    #[must_use]
+    pub fn to_org(&self) -> String {
+        self.syntax().to_string()
+    }
+
+    /// Return the configuration used for this document's AOT parse.
+    #[must_use]
+    pub fn config(&self) -> &ParseConfig {
+        &self.config
+    }
+
+    /// Iterate file-level keyword Elements from the Scheme AOT graph.
+    pub fn keywords(&self) -> impl Iterator<Item = &GraphRecord> {
         self.records
-            .get(record_id)
-            .filter(|record| record.kind == "headline")
-            .and_then(|record| record.field("title"))
-            .is_some_and(|title| {
-                headline_functions::todo_keyword_matches_p(title, &self.todo_directives, expected)
+            .iter()
+            .filter(|record| record.kind == "keyword" && !self.record_within_headline(record.id))
+    }
+
+    /// Join file-level `#+TITLE` values in source order.
+    #[must_use]
+    pub fn title(&self) -> Option<String> {
+        self.keywords()
+            .filter(|record| {
+                record
+                    .field("key")
+                    .is_some_and(|key| key.eq_ignore_ascii_case("TITLE"))
+            })
+            .filter_map(|record| record.field("value"))
+            .fold(None, |acc: Option<String>, value| {
+                let mut title = acc.unwrap_or_default();
+                if !title.is_empty() {
+                    title.push(' ');
+                }
+                title.push_str(value.trim());
+                Some(title)
             })
     }
 
-    pub(crate) fn element_subtree_end(&self, record_id: usize) -> Option<usize> {
-        self.subtree_end.get(record_id).copied()
+    fn record_within_headline(&self, id: usize) -> bool {
+        self.nearest_headline_ancestor(id).is_some()
+    }
+
+    pub(crate) fn nearest_headline_ancestor(&self, id: usize) -> Option<usize> {
+        self.headline_ancestors.get(id).copied().flatten()
+    }
+
+    /// Replace a UTF-8-aligned byte range and reparse through the Scheme AOT engine.
+    pub fn replace_range(&mut self, range: TextRange, replacement: impl AsRef<str>) {
+        let mut source = self.to_org();
+        source.replace_range(
+            usize::from(range.start())..usize::from(range.end()),
+            replacement.as_ref(),
+        );
+        *self = parse_org_aot_with_config(&source, &self.base_config)
+            .expect("Scheme-generated Org parser rejected edited source");
+    }
+
+    fn headline_details(&self, record_id: usize) -> Option<&HeadlineDetails> {
+        let properties = self.headline_properties.get(record_id)?.as_ref()?;
+        Some(properties.details.get_or_init(|| {
+            let record = &self.records[record_id];
+            let title = record.field("title").expect("projected headline title");
+            let todo_keyword = headline_functions::todo_keyword_from_directives(
+                title,
+                &self.todo_directives,
+                &self.configured_todo,
+                &self.configured_done,
+            );
+            let content_after_todo = headline_functions::headline_content_after_todo(
+                title,
+                &self.todo_directives,
+                &self.configured_todo,
+                &self.configured_done,
+            );
+            let display_title = headline_functions::headline_display_title(
+                &content_after_todo,
+                record.field("tag").is_some(),
+            );
+            let source_title = headline_functions::headline_source_title(
+                record.field("title-body").expect("projected source title"),
+                &todo_keyword,
+            );
+            let priority_cookie = headline_functions::headline_priority_cookie(&content_after_todo);
+            let is_comment = headline_functions::headline_comment_p(&display_title);
+            HeadlineDetails {
+                todo_keyword: (!todo_keyword.is_empty()).then_some(todo_keyword),
+                content_after_todo,
+                priority_cookie: (!priority_cookie.is_empty()).then_some(priority_cookie),
+                display_title,
+                source_title,
+                is_comment,
+            }
+        }))
+    }
+
+    pub(crate) fn headline_derived_field(&self, record_id: usize, name: &str) -> Option<&str> {
+        let details = self.headline_details(record_id)?;
+        match name {
+            "title" => Some(&details.display_title),
+            "priority" => details.priority_cookie.as_deref(),
+            "todo-keyword" => details.todo_keyword.as_deref(),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn graph_index(&self) -> &GraphIndex {
+        &self.graph_index
     }
 
     /// Return the lossless Rowan root; its text equals the parsed source.
@@ -171,49 +505,99 @@ impl OrgAotDocument {
         &self.records
     }
 
-    /// Query a headline's TODO type from this document's keyword Elements.
-    /// File-local TODO, SEQ_TODO and TYP_TODO declarations override defaults.
+    /// Return keyword record IDs attached to this Element by the Scheme-owned policy.
+    ///
+    /// Association is computed lazily in one graph pass, so ordinary parsing
+    /// does not pay for affiliated-keyword projections it never queries.
     #[must_use]
-    pub fn headline_todo_type(&self, record_id: usize) -> Option<&'static str> {
-        self.todo_states.get(record_id).copied().flatten()
+    pub fn affiliated_keyword_ids(&self, record_id: usize) -> &[usize] {
+        self.affiliations
+            .get_or_init(|| affiliation::project(&self.records, &self.syntax().to_string()))
+            .get(&record_id)
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
     }
 
-    /// Return the file-local TODO keyword recognized by the Scheme AOT algorithm.
+    /// Query a headline's Scheme-owned TODO type from keyword Elements and
+    /// configured states. File-local declarations override the configuration.
+    #[must_use]
+    pub fn headline_todo_type(&self, record_id: usize) -> Option<&'static str> {
+        self.headline_properties
+            .get(record_id)
+            .and_then(Option::as_ref)
+            .and_then(|properties| properties.todo_type)
+    }
+
+    /// Classify admitted headline, planning and inherited archive facts with
+    /// the Scheme-owned lifecycle function compiled into this Cargo package.
+    pub(crate) fn headline_memory_state(
+        &self,
+        record_id: usize,
+        closed: bool,
+        planned: bool,
+        archived: bool,
+    ) -> &'static str {
+        headline_functions::memory_headline_state(
+            self.headline_todo_type(record_id).unwrap_or(""),
+            closed,
+            planned,
+            archived,
+        )
+    }
+
+    /// Return the TODO keyword recognized by the Scheme AOT algorithm.
     #[must_use]
     pub fn headline_todo_keyword(&self, record_id: usize) -> Option<String> {
-        let title = self
-            .records
-            .get(record_id)
-            .filter(|record| record.kind == "headline")?
-            .field("title")?;
-        let keyword =
-            headline_functions::todo_keyword_from_directives(title, &self.todo_directives);
-        (!keyword.is_empty()).then_some(keyword)
+        self.headline_details(record_id)
+            .and_then(|details| details.todo_keyword.clone())
     }
 
     /// Return headline content after a Scheme-recognized TODO keyword.
     /// Priority and tags are retained until their Element projections run.
     #[must_use]
     pub fn headline_content_after_todo(&self, record_id: usize) -> Option<String> {
-        let title = self
-            .records
-            .get(record_id)
-            .filter(|record| record.kind == "headline")?
-            .field("title")?;
-        Some(headline_functions::headline_content_after_todo(
-            title,
-            &self.todo_directives,
-        ))
+        self.headline_details(record_id)
+            .map(|details| details.content_after_todo.clone())
     }
 
     /// Return the Scheme-AOT headline display title after TODO and decorations.
     #[must_use]
     pub fn headline_display_title(&self, record_id: usize) -> Option<String> {
-        let content = self.headline_content_after_todo(record_id)?;
-        let has_tags = self.records.get(record_id)?.field("tag").is_some();
-        Some(headline_functions::headline_display_title(
-            &content, has_tags,
-        ))
+        self.headline_details(record_id)
+            .map(|details| details.display_title.clone())
+    }
+
+    /// Return the Scheme-AOT title with source whitespace before tags intact.
+    #[must_use]
+    pub fn headline_source_title(&self, record_id: usize) -> Option<String> {
+        self.headline_details(record_id)
+            .map(|details| details.source_title.clone())
+    }
+
+    pub(crate) fn planning_key_kind(key: &str) -> &'static str {
+        headline_functions::planning_key_kind(key)
+    }
+
+    pub(crate) fn citation_style(head: &str) -> String {
+        citation_functions::citation_style(head)
+    }
+
+    pub(crate) fn citation_variant(head: &str) -> String {
+        citation_functions::citation_variant(head).to_owned()
+    }
+
+    /// Return a priority cookie admitted by the Scheme-AOT headline algorithm.
+    #[must_use]
+    pub fn headline_priority_cookie(&self, record_id: usize) -> Option<String> {
+        self.headline_details(record_id)
+            .and_then(|details| details.priority_cookie.clone())
+    }
+
+    /// Whether a headline carries Org's case-sensitive COMMENT marker.
+    #[must_use]
+    pub fn headline_is_comment(&self, record_id: usize) -> Option<bool> {
+        self.headline_details(record_id)
+            .map(|details| details.is_comment)
     }
 
     /// Evaluate a Scheme-AOT Org Contract against this document's Element graph.
@@ -226,6 +610,6 @@ impl OrgAotDocument {
         contract: &ContractRule,
         scope: ContractScopeNodeId,
     ) -> Result<Vec<ContractResult>, ContractExecutionError> {
-        evaluate_contract(contract, org_graph_spec(), &self.records, scope)
+        evaluate_contract(contract, org_graph_spec(), self, scope)
     }
 }

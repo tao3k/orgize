@@ -16,7 +16,9 @@
             header-root)))
 
 (defbuild-script
- '((gxc: "languages/org/v1/graph-shape.ss")
+ '((gxc: "languages/org/v1/modules/org-elements/graph-types.ss")
+   (gxc: "languages/org/v1/modules/org-elements/graph-objects.ss")
+   (gxc: "languages/org/v1/graph-shape.ss")
    (gxc: "languages/org/v1/modules/org-elements/types.ss")
    (gxc: "languages/org/v1/modules/org-elements/objects.ss")
    (gxc: "languages/org/v1/modules/org-elements/funs.ss")

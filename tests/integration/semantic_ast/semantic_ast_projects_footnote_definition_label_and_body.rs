@@ -1,6 +1,6 @@
 use orgize::{
     Org,
-    ast::{ElementData, ObjectData},
+    ast::{ElementData, MarkupKind, ObjectData},
 };
 
 #[test]
@@ -24,6 +24,7 @@ fn semantic_ast_projects_footnote_definition_label_and_body() {
     };
     assert!(body.iter().any(|object| matches!(
         &object.data,
-        ObjectData::Plain(value) if value.contains("*bold*")
+        ObjectData::Markup { kind: MarkupKind::Bold, children }
+            if matches!(&children[0].data, ObjectData::Plain(value) if value == "bold")
     )));
 }

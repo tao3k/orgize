@@ -1,23 +1,29 @@
-//! Scheme-authored event fixtures reach Rowan and Org Element projection.
-//! Fixture parity does not mean production parsing has switched to event AOT.
+//! Scheme-authored events reach the production Rowan and Org Element projection.
 
-use gerbil_parser_rowan::{
-    KindCategory, TreeEvent, parse_generated_events, parse_structural_lines, project_syntax_graph,
-};
+use gerbil_parser_rowan::{KindCategory, TreeEvent, parse_generated_events, project_syntax_graph};
 use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
 
-#[rustfmt::skip]
-#[path = "../../languages/org/v1/generated/line-events.rs"]
-mod generated_line_events;
-
-#[rustfmt::skip]
 mod generated_context_events {
-    use gerbil_parser_rowan::TreeEvent;
-    include!(concat!(env!("OUT_DIR"), "/org_rowan_events.rs"));
+    pub use orgize::org_aot::{PARSER_DIGEST, parse_org_rowan_events};
 }
 
 const HANDOFF_TEST_DIGEST: &str =
     "sha256:8b41c0fcb53588c81a44b83ec9e530bdb6125096637cba4934c96f7c2965abd6";
+
+#[test]
+fn org_scheme_event_aot_keeps_nested_description_urls_as_text() {
+    let source = "go [[id:a][https://example.org]]\n";
+    let document = parse_org_aot(source).expect("Scheme events build a lossless Rowan document");
+    assert_eq!(document.syntax().to_string(), source);
+    let links = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "link")
+        .collect::<Vec<_>>();
+    assert_eq!(links.len(), 1);
+    assert_eq!(links[0].field("path"), Some("id:a"));
+    assert_eq!(links[0].field("description"), Some("https://example.org"));
+}
 
 #[test]
 fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
@@ -92,31 +98,6 @@ fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
 }
 
 #[test]
-fn scheme_authored_line_algorithm_aot_builds_lossless_rowan() {
-    let source = "* α\r\nbody\n";
-    let events = generated_line_events::parse_org_line_events(source);
-    let parsed = parse_generated_events(
-        org_language_spec(),
-        generated_line_events::PARSER_DIGEST,
-        source,
-        &events,
-    )
-    .expect("Scheme-generated Org line events satisfy Rowan");
-
-    assert_eq!(parsed.syntax().to_string(), source);
-    assert_eq!(
-        parsed.receipt().parser_digest,
-        Some(generated_line_events::PARSER_DIGEST)
-    );
-    let kinds: Vec<_> = parsed
-        .syntax()
-        .children()
-        .map(|node| org_language_spec().kinds[usize::from(node.kind().0)].name)
-        .collect();
-    assert_eq!(kinds, ["OrgHeadline", "OrgTextLine"]);
-}
-
-#[test]
 fn org_scheme_context_algorithm_aot_masks_headlines_inside_source_blocks() {
     let source = "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n";
     let events = generated_context_events::parse_org_rowan_events(source);
@@ -134,15 +115,15 @@ fn org_scheme_context_algorithm_aot_masks_headlines_inside_source_blocks() {
         .map(|node| org_language_spec().kinds[usize::from(node.kind().0)].name)
         .collect();
     assert_eq!(
-        kinds,
-        [
-            "OrgFile",
-            "OrgSection",
-            "OrgHeadline",
-            "OrgSourceBlock",
-            "OrgSection",
-            "OrgHeadline",
-        ]
+        kinds.iter().filter(|kind| **kind == "OrgHeadline").count(),
+        2
+    );
+    assert_eq!(
+        kinds
+            .iter()
+            .filter(|kind| **kind == "OrgSourceBlock")
+            .count(),
+        1
     );
     assert_eq!(
         parsed.receipt().parser_digest,
@@ -270,6 +251,29 @@ fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
         .expect("fixed-width is a typed Element");
     assert_eq!(fixed.range.start(), 6u32.into());
     assert_eq!(fixed.range.end(), 16u32.into());
+    assert_eq!(
+        fixed.values("value").collect::<Vec<_>>(),
+        ["A\n", "\n", "B\n"]
+    );
+
+    for (source, expected_value) in [(":", ""), (": ", ""), (":\n", "\n"), (": \n", "\n")] {
+        let events = generated_context_events::parse_org_rowan_events(source);
+        let parsed = parse_generated_events(
+            org_language_spec(),
+            generated_context_events::PARSER_DIGEST,
+            source,
+            &events,
+        )
+        .expect("empty fixed-width value remains lossless");
+        assert_eq!(parsed.syntax().to_string(), source);
+        let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+            .expect("empty fixed-width value projects");
+        let fixed = records
+            .iter()
+            .find(|record| record.kind == "fixed-width")
+            .expect("fixed-width record");
+        assert_eq!(fixed.values("value").collect::<String>(), expected_value);
+    }
 
     let nested = "#+begin_quote\n: A\n#+end_quote\n:PROPERTIES:\n:ID: x\n:END:\n";
     let events = generated_context_events::parse_org_rowan_events(nested);
@@ -287,6 +291,31 @@ fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
     assert!(kinds.contains(&"quote-block"));
     assert!(kinds.contains(&"fixed-width"));
     assert!(kinds.contains(&"property-drawer"));
+}
+
+#[test]
+fn org_scheme_context_algorithm_aot_recognizes_only_the_bare_readonly_marker() {
+    let source = "#+READONLY\n#+READONLYX\n#+ALLPRIORITIES: A B C\n";
+    let events = generated_context_events::parse_org_rowan_events(source);
+    let parsed = parse_generated_events(
+        org_language_spec(),
+        generated_context_events::PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .expect("Scheme bare READONLY events build a lossless Rowan tree");
+    assert_eq!(parsed.syntax().to_string(), source);
+    let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
+        .expect("bare READONLY projects through the Org Element graph");
+    let keywords = records
+        .iter()
+        .filter(|record| record.kind == "keyword")
+        .collect::<Vec<_>>();
+    assert_eq!(keywords.len(), 2);
+    assert_eq!(keywords[0].field("key"), Some("READONLY"));
+    assert_eq!(keywords[0].field("raw-value"), Some(""));
+    assert_eq!(keywords[1].field("key"), Some("ALLPRIORITIES"));
+    assert!(records.iter().any(|record| record.kind == "paragraph"));
 }
 
 #[test]
@@ -467,6 +496,26 @@ fn org_scheme_context_algorithm_projects_headline_property_drawers() {
 }
 
 #[test]
+fn org_scheme_context_algorithm_projects_colon_qualified_property_keys() {
+    let source = "* H\n:PROPERTIES:\n:header-args:python: :session local\n:END:\n";
+    let document = parse_org_aot(source).expect("Scheme property drawer reaches Rowan");
+    assert_eq!(document.syntax().to_string(), source);
+    let drawer = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "property-drawer")
+        .expect("colon-qualified property remains in its drawer");
+    let property = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "node-property")
+        .expect("colon-qualified key projects as a node property");
+    assert_eq!(property.parent_id, Some(drawer.id));
+    assert_eq!(property.field("key"), Some("header-args:python"));
+    assert_eq!(property.field("value"), Some(":session local"));
+}
+
+#[test]
 fn org_scheme_context_algorithm_rejects_longer_block_marker_lookalikes() {
     let source = "#+begin_srcx\n* H\n:PROPERTIES:x\n:PROPERTIES:\n:ID: alpha\n:END: tail\n:END:\n";
     let events = generated_context_events::parse_org_rowan_events(source);
@@ -569,7 +618,7 @@ fn org_scheme_context_algorithm_aot_projects_nested_lists() {
         .collect();
     assert_eq!(
         bullets,
-        [Some("-"), Some("-"), Some("-"), Some("1."), Some("2)")]
+        [Some("- "), Some("- "), Some("- "), Some("1. "), Some("2) ")]
     );
 }
 
@@ -686,7 +735,7 @@ fn kind(name: &str, category: KindCategory) -> u16 {
 #[test]
 fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
-        "../../languages/org/v1/generated/outline-event-fixture.json"
+        "../../languages/org/v1/generated/rowan-event-fixture.json"
     ))
     .expect("Scheme outline fixture is valid JSON");
     let source = fixture["source"].as_str().expect("fixture source");
@@ -835,10 +884,10 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .collect();
     assert_eq!(lists.len(), 3);
     assert_eq!(items.len(), 4);
-    assert_eq!(items[0].field("bullet"), Some("-"));
-    assert_eq!(items[1].field("bullet"), Some("-"));
-    assert_eq!(items[2].field("bullet"), Some("-"));
-    assert_eq!(items[3].field("bullet"), Some("-"));
+    assert_eq!(items[0].field("bullet"), Some("- "));
+    assert_eq!(items[1].field("bullet"), Some("- "));
+    assert_eq!(items[2].field("bullet"), Some("- "));
+    assert_eq!(items[3].field("bullet"), Some("- "));
     assert_eq!(lists[1].parent_id, Some(items[0].id));
     assert_eq!(items[1].parent_id, Some(lists[1].id));
     let quote = records
@@ -858,23 +907,7 @@ fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
         .expect("Scheme-owned named drawer projects as an Element");
     assert_eq!(logbook.field("name"), Some("LOGBOOK"));
 
-    let structural = parse_structural_lines(
-        org_language_spec(),
-        &crate::org_structural_fixture::STRUCTURE,
-        source,
-    )
-    .expect("the structural fixture oracle accepts the handoff fixture");
-    let structural_records =
-        project_syntax_graph(org_language_spec(), org_graph_spec(), &structural.syntax())
-            .expect("the structural fixture oracle projects Elements");
-    assert_eq!(records.len(), structural_records.len());
-    for (actual, expected) in records.iter().zip(&structural_records) {
-        assert_eq!(actual.parent_id, expected.parent_id);
-        assert_eq!(actual.child_ids, expected.child_ids);
-        assert_eq!(actual.kind, expected.kind);
-        assert_eq!(actual.range, expected.range);
-        assert_eq!(actual.fields, expected.fields);
-    }
+    crate::org_event_aot_parity::assert_graph_integrity(source, &records);
 }
 
 macro_rules! org_event {

@@ -43,6 +43,43 @@ fn lint_reports_lifecycle_destination_issues_with_snapshot() {
     ));
 }
 
+#[test]
+fn external_lifecycle_heading_queries_use_scheme_aot_structure() {
+    let dir = test_dir("lint-lifecycle-aot-heading");
+    fs::write(
+        dir.join("destination.org"),
+        "#+sEq_ToDo: WAIT | DONE\n#+BeGiN_SrC text\n* Hidden\n#+eNd_sRc\n* WAIT [#A] Real :tag:\n",
+    )
+    .unwrap();
+    let options = LintOptions {
+        file_base_dir: Some(dir),
+        ..LintOptions::default()
+    };
+
+    let existing = lint_org_with_options("#+ARCHIVE: destination.org::* Real\n", &options);
+    assert!(
+        !existing
+            .findings
+            .iter()
+            .any(|finding| finding.code == "ORG018"),
+        "{:#?}",
+        existing.findings
+    );
+
+    let hidden = lint_org_with_options("#+ARCHIVE: destination.org::* Hidden\n", &options);
+    assert!(hidden.findings.iter().any(|finding| {
+        finding.code == "ORG018" && finding.message.contains("heading `* Hidden` was not found")
+    }));
+
+    let refile = lint_org_with_options(
+        "* TODO Work\n:LOGBOOK:\n- Refiled on [2026-05-14 Thu] from [[file:destination.org::* Hidden][hidden]]\n:END:\n",
+        &options,
+    );
+    assert!(refile.findings.iter().any(|finding| {
+        finding.code == "ORG019" && finding.message.contains("heading `* Hidden` was not found")
+    }));
+}
+
 fn lifecycle_archive_issues_lint_fixture() -> &'static str {
     include_str!("../fixtures/lint/lifecycle-archive-issues.org")
 }

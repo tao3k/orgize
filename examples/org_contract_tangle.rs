@@ -33,7 +33,7 @@ fn tangle(
     writeln!(output, "        (only-in {elements_interface:?}").unwrap();
     writeln!(
         output,
-        "                 org-elements property property-contains at child-of descendant-of))"
+        "                 org-elements property property-contains all-of any-of at child-of descendant-of))"
     )
     .unwrap();
     writeln!(output, "(export org-contract-definitions)").unwrap();
@@ -139,6 +139,27 @@ mod tests {
     }
 
     #[test]
+    fn elements_query_block_cannot_define_a_contract() {
+        let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
+        assert!(default_tangle(source).is_err());
+    }
+
+    #[test]
+    fn mixed_feature_tags_cannot_define_a_contract() {
+        let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-contract :org-elements-query\n(list)\n#+end_src\n";
+        assert!(default_tangle(source).is_err());
+    }
+
+    #[test]
+    fn contract_header_is_case_insensitive_but_language_must_be_scheme() {
+        let upper = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+BEGIN_SRC SCHEME :ORG-CONTRACT\n(assert-org-element \"x\" error (bindings) (org-elements headline) (expect at-least 1))\n#+END_SRC\n";
+        assert!(default_tangle(upper).is_ok());
+
+        let pseudo_language = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+BEGIN_SRC org-contract\n(assert-org-element \"x\" error (bindings) (org-elements headline) (expect at-least 1))\n#+END_SRC\n";
+        assert!(default_tangle(pseudo_language).is_err());
+    }
+
+    #[test]
     fn nested_block_does_not_satisfy_parent_contract() {
         let source = "* Parent\n:PROPERTIES:\n:CONTRACT_ID: parent\n:CONTRACT_SCOPE: subtree\n:END:\n** Child\n:PROPERTIES:\n:CONTRACT_ID: child\n:CONTRACT_SCOPE: subtree\n:END:\n#+begin_src scheme :org-contract\n(assert-org-element \"a\" error (bindings) (org-elements headline) (expect at-least 1))\n#+end_src\n";
         assert!(default_tangle(source).is_err());
@@ -163,9 +184,24 @@ mod tests {
         assert!(generated.contains("(only-in \"/consumer/org-elements/interface.ss\""));
         assert_eq!(
             generated.matches("(make-org-contract-definition ").count(),
-            4
+            5
         );
         assert!(tangle(source, "", ELEMENTS_INTERFACE).is_err());
         assert!(tangle(source, CONTRACT_INTERFACE, "").is_err());
+    }
+
+    #[test]
+    fn consumer_contract_source_artifact_stays_in_sync() {
+        let source = include_str!("../tests/fixtures/org-contract/customer-contracts.org");
+        let generated = tangle(
+            source,
+            "../../../../languages/org/v1/modules/org-contract/interface.ss",
+            "../../../../languages/org/v1/modules/org-elements/interface.ss",
+        )
+        .expect("consumer feature source tangles through the Org Element graph");
+        assert_eq!(
+            generated,
+            include_str!("../tests/fixtures/org-contract/generated/customer-contract-source.ss")
+        );
     }
 }

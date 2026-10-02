@@ -25,6 +25,17 @@ fn semantic_ast_projects_safe_tangle_plan_and_table_formula_records() {
             && file.blocks[0].tangle.shebang.as_deref() == Some("#!/usr/bin/env rust-script")
             && file.blocks[0].tangle.noweb.mode == SourceBlockTangleNowebMode::Expand
     }));
+    let named_block = tangle
+        .files
+        .iter()
+        .find(|file| file.target == "src/lib.rs")
+        .and_then(|file| file.blocks.first())
+        .expect("named Rust source block");
+    let block_source =
+        &SOURCE[named_block.source.range_start as usize..named_block.source.range_end as usize];
+    assert!(block_source.starts_with("#+begin_src rust"));
+    assert!(block_source.ends_with("#+end_src\n"));
+    assert_eq!(named_block.source.start.line, 2);
     assert!(
         tangle
             .files

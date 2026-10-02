@@ -269,6 +269,31 @@ pub fn bench_dense_m15_document(c: &mut Criterion) {
     group.finish();
 }
 
+pub fn bench_dense_table_parse(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::parse/dense-tables");
+    let org = dense_table_fixture();
+
+    group.throughput(Throughput::Bytes(org.len() as u64));
+    group.bench_with_input("many-tables-and-formulas.org", &org, |b, i| {
+        b.iter(|| black_box(Org::parse(black_box(i))))
+    });
+
+    group.finish();
+}
+
+pub fn bench_dense_table_document(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Org::document/dense-tables");
+    let org = dense_table_fixture();
+    let parsed = Org::parse(&org);
+
+    group.throughput(Throughput::Bytes(org.len() as u64));
+    group.bench_with_input("many-tables-and-formulas.org", &parsed, |b, i| {
+        b.iter(|| black_box(i.document()))
+    });
+
+    group.finish();
+}
+
 pub fn bench_dense_m15_export_projection(c: &mut Criterion) {
     let mut group = c.benchmark_group("Document::project_for_export/dense-m15");
     let org = dense_m15_projection_fixture();
@@ -436,6 +461,20 @@ fn dense_m15_projection_fixture() -> String {
     org
 }
 
+fn dense_table_fixture() -> String {
+    let mut org = String::new();
+    for table in 0..128 {
+        org.push_str(&format!(
+            "* Table {table}\n| Name | Value |\n|------+-------|\n"
+        ));
+        for row in 0..8 {
+            org.push_str(&format!("| item-{table}-{row} | {} |\n", table + row));
+        }
+        org.push_str("#+TBLFM: $2=$1*2\n\n");
+    }
+    org
+}
+
 fn dense_agenda_projection_fixture() -> String {
     let mut org = String::from(
         "#+FILETAGS: :agenda:bench:\n#+CATEGORY: bench-agenda\n#+TODO: TODO NEXT | DONE CANCELED\n\n",
@@ -540,6 +579,8 @@ criterion_group!(
     bench_dense_annotation_projection,
     bench_dense_semantic_radio_projection,
     bench_dense_m15_document,
+    bench_dense_table_parse,
+    bench_dense_table_document,
     bench_dense_m15_export_projection,
     bench_dense_agenda_projection,
     bench_dense_include_dated_projection

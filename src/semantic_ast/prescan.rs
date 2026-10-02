@@ -1,18 +1,14 @@
 //! Document-level semantic prescan state and keyword routing.
 
 use super::org_contract_model::CONTRACT_ORG_PROPERTY;
-use super::settings::{
-    apply_options_keyword, link_abbreviation, parse_tag_definitions, parse_tags, split_words,
-};
-use super::targets::TargetIndex;
+use super::settings::{apply_options_keyword, link_abbreviation, parse_tags, split_words};
 use super::{
-    ArchiveLocation, Diagnostic, ExportSettings, FootnoteEntry, IncludeDirective, Keyword,
-    LinkAbbreviation, MacroDefinition, OrgDuration, ParsedAnnotation, Property, TagDefinition,
+    ArchiveLocation, Diagnostic, ExportSettings, IncludeDirective, Keyword, LinkAbbreviation,
+    MacroDefinition, OrgDuration, ParsedAnnotation, Property, TagDefinition,
 };
 
 #[derive(Default)]
 pub(super) struct SemanticPrescan {
-    pub(super) target_index: TargetIndex,
     pub(super) metadata: Vec<Keyword<ParsedAnnotation>>,
     pub(super) filetags: Vec<String>,
     pub(super) tag_definitions: Vec<TagDefinition>,
@@ -22,7 +18,6 @@ pub(super) struct SemanticPrescan {
     pub(super) link_abbreviations: Vec<LinkAbbreviation>,
     pub(super) includes: Vec<IncludeDirective<ParsedAnnotation>>,
     pub(super) macro_definitions: Vec<MacroDefinition<ParsedAnnotation>>,
-    pub(super) footnotes: Vec<FootnoteEntry<ParsedAnnotation>>,
     pub(super) diagnostics: Vec<Diagnostic>,
 }
 
@@ -32,7 +27,8 @@ pub(super) fn collect_document_keyword(
 ) {
     let key = keyword.key.to_ascii_uppercase();
     match key.as_str() {
-        "TITLE" | "AUTHOR" | "DATE" | "CAPTION" | "PYTHON" | "PYTHON_FILE" | "PYTHON-FILE" => {
+        "TITLE" | "AUTHOR" | "DATE" | "CAPTION" | "PYTHON" | "PYTHON_FILE" | "PYTHON-FILE"
+        | "READONLY" | "ALLPRIORITIES" => {
             prescan.metadata.push(keyword);
         }
         key if key == CONTRACT_ORG_PROPERTY => {
@@ -42,12 +38,6 @@ pub(super) fn collect_document_keyword(
             for tag in parse_tags(keyword.value.trim()) {
                 push_unique(&mut prescan.filetags, tag);
             }
-            prescan.metadata.push(keyword);
-        }
-        "TAGS" => {
-            prescan
-                .tag_definitions
-                .extend(parse_tag_definitions(keyword.value.trim()));
             prescan.metadata.push(keyword);
         }
         "OPTIONS" => {
@@ -92,15 +82,12 @@ fn push_unique(values: &mut Vec<String>, value: String) {
 }
 
 fn keyword_property(keyword: &Keyword<ParsedAnnotation>) -> Option<Property<ParsedAnnotation>> {
-    let value = keyword.value.trim();
-    let (key, rest) = value
-        .split_once(char::is_whitespace)
-        .map(|(key, rest)| (key.trim(), rest.trim()))
-        .unwrap_or((value, ""));
+    let key = crate::org_aot::keyword_first_word(&keyword.value);
+    let rest = crate::org_aot::keyword_rest(&keyword.value);
     (!key.is_empty()).then(|| Property {
         ann: keyword.ann.clone(),
-        key: key.to_string(),
-        value: rest.to_string(),
-        duration: OrgDuration::parse(rest.to_string()),
+        key,
+        value: rest.clone(),
+        duration: OrgDuration::parse(rest),
     })
 }

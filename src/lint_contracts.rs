@@ -4,6 +4,7 @@ use std::path::Path;
 
 use rowan::TextRange;
 
+use super::{LintFinding, LintSeverity, location_for_range};
 use crate::Org;
 use crate::ast::{
     CONTRACT_ORG_PROPERTY, ElementData, Keyword, OrgContract, OrgContractAssertionEvaluation,
@@ -11,10 +12,8 @@ use crate::ast::{
     OrgContractRegistry, OrgContractScope, OrgElementQueryPredicate,
     OrgElementsIndexSummaryPredicate, OrgElementsIndexSummaryTextPredicate,
     OrgElementsIndexSummaryValue, ParsedAnnotation, ParsedAst, Property, Section,
-    evaluate_org_contract_with_context, parse_contract_references, parse_contracts_from_document,
+    evaluate_org_contract_with_context, parse_contract_references,
 };
-
-use super::{LintFinding, LintSeverity, location_for_range};
 
 #[path = "lint_contracts_builtin.rs"]
 mod builtin;
@@ -22,37 +21,16 @@ mod builtin;
 pub(crate) fn builtin_contract_org_findings(
     document: &ParsedAst,
     source: &str,
+    source_org: Option<&Org>,
 ) -> Vec<LintFinding> {
     if !has_top_level_body_text(document, source) || has_contract_org_override(document) {
         return Vec::new();
     }
-
-    let registry = builtin_lint_contract_registry();
-    let context = OrgContractEvaluationContext::default();
-    let mut findings = Vec::new();
-    for contract in &registry.contracts {
-        if contract.scope != OrgContractScope::Document {
-            continue;
-        }
-        push_contract_findings(
-            document,
-            source,
-            contract,
-            ContractScopeInstance::document(),
-            &context,
-            &mut findings,
-        );
-    }
-    findings
-}
-
-fn builtin_lint_contract_registry() -> OrgContractRegistry {
-    let mut contracts = Vec::new();
-    for (_name, source) in builtin::BUILTIN_LINT_CONTRACT_SOURCES {
-        let document = Org::parse(source).document();
-        contracts.extend(parse_contracts_from_document(&document, None).contracts);
-    }
-    OrgContractRegistry::new(contracts)
+    let fallback = source_org.is_none().then(|| Org::parse(source));
+    let org = source_org
+        .or(fallback.as_ref())
+        .expect("Org document available");
+    builtin::contract_findings(org, source)
 }
 
 fn has_top_level_body_text(document: &ParsedAst, source: &str) -> bool {

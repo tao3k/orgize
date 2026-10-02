@@ -7,6 +7,63 @@ use crate::export_cli::export_cli_common::{
 };
 
 #[test]
+fn org_query_content_preserves_only_aot_classified_blocks() {
+    let root = test_dir("org-query-aot-nested-block-content");
+    let path = root.join("nested.org");
+    std::fs::write(
+        &path,
+        "* Project\n- item   with    spaces\n  #+begin_src scheme\n    (display   \"x\")\n\n    (display \"y\")\n  #+end_src\n  #+begin_srcX fake\n    not  preserved\n  #+end_srcX\n\n#+begin_src scheme\n(display   \"true\")\n#+end_src\n",
+    )
+    .expect("write Org query fixture");
+
+    let output = crate::library_cli::orgize_cli_command()
+        .arg("query")
+        .arg("--kind")
+        .arg("listItem")
+        .arg("--content")
+        .arg(&path)
+        .output()
+        .expect("run Org list-item content query");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let content = String::from_utf8(output.stdout).expect("utf8 Org query content");
+    assert!(
+        content.contains("- item with spaces #+begin_src scheme (display \"x\")"),
+        "{content}"
+    );
+    assert!(!content.contains("    (display   \"x\")"), "{content}");
+    assert!(
+        content.contains("#+begin_srcX fake not preserved #+end_srcX"),
+        "{content}"
+    );
+
+    let block_output = crate::library_cli::orgize_cli_command()
+        .arg("query")
+        .arg("--kind")
+        .arg("block")
+        .arg("--field")
+        .arg("lang=scheme")
+        .arg("--content")
+        .arg(&path)
+        .output()
+        .expect("run AOT source-block content query");
+    assert!(
+        block_output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&block_output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8(block_output.stdout)
+            .expect("utf8 AOT block content")
+            .trim(),
+        "(display   \"true\")"
+    );
+}
+
+#[test]
 fn org_document_query_commands_run() {
     let guide = crate::library_cli::orgize_cli_command()
         .arg("guide")

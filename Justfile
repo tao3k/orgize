@@ -11,7 +11,20 @@ default:
 # Cargo consumers do not need Gerbil or this recipe.
 scheme-test parser_lib poo_flow_lib:
     mkdir -p target/gerbil-test
-    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test languages/org/v1/parser-test.ss languages/org/v1/line-event-parser-test.ss languages/org/v1/outline-events-test.ss languages/org/v1/rowan-event-parser-test.ss languages/org/v1/graph-test.ss languages/org/v1/modules/org-elements/elements-module-test.ss tests/fixtures/org-elements/customer-query-test.ss languages/org/v1/modules/org-contract/parser-test.ss languages/org/v1/modules/org-contract/contract-test.ss
+    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test t/*-test.ss
+
+generate-contract-plan parser_lib poo_flow_lib source="languages/org/v1/modules/org-contract/generated/contract-source.ss" output="languages/org/v1/modules/org-contract/generated/contract-plan.rs":
+    mkdir -p target/gerbil-test
+    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-contract/generate-plan.ss "{{ output }}" "{{ source }}"
+
+generate-radio-match-ir parser_lib poo_flow_lib:
+    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-elements/generate-radio-match-ir.ss languages/org/v1/modules/org-elements/generated
+
+generate-document-keyword-ir parser_lib poo_flow_lib:
+    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-elements/generate-document-keyword-ir.ss languages/org/v1/modules/org-elements/generated
+
+generate-logbook-ir parser_lib poo_flow_lib:
+    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-elements/generate-logbook-ir.ss languages/org/v1/modules/org-elements/generated
 
 # Standalone Scheme Contract ABI; ordinary Cargo parsing never needs it.
 contract-library:

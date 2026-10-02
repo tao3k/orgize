@@ -4,19 +4,31 @@ use std::hint::black_box;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use gerbil_parser_rowan::{parse_generated_events, project_syntax_graph};
-use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
+use orgize::org_aot::{
+    org_graph_spec, org_language_spec, parse_org_aot, parse_org_aot_with_config,
+};
+use orgize::{Org, ParseConfig};
 
-#[rustfmt::skip]
 mod generated_context_events {
-    use gerbil_parser_rowan::TreeEvent;
-    include!(concat!(env!("OUT_DIR"), "/org_rowan_events.rs"));
+    pub use orgize::org_aot::{PARSER_DIGEST, parse_org_rowan_events};
 }
 
-fn task_source() -> String {
+fn task_source(with_directive: bool) -> String {
     let mut source = String::with_capacity(200_000);
-    source.push_str("#+SEQ_TODO: WAIT | DONE\n* Team\n");
+    if with_directive {
+        source.push_str("#+SEQ_TODO: WAIT | DONE\n");
+    }
+    source.push_str("* Team\n");
     for _ in 0..2_500 {
         source.push_str("** WAIT Review\n** WAIT Audit\n** WAIT Other\n** DONE Review\n");
+    }
+    source
+}
+
+fn inlinetask_source() -> String {
+    let mut source = String::with_capacity(300_000);
+    for _ in 0..10_000 {
+        source.push_str("*************** TODO Inline\n");
     }
     source
 }
@@ -40,7 +52,21 @@ fn list_source() -> String {
 }
 
 fn bench_org_element_query(c: &mut Criterion) {
-    let source = task_source();
+    let source = task_source(true);
+    let configured_source = task_source(false);
+    let config = ParseConfig {
+        todo_keywords: (vec!["WAIT".into()], vec!["DONE".into()]),
+        ..Default::default()
+    };
+    let configured = parse_org_aot_with_config(&configured_source, &config)
+        .expect("configured benchmark document is valid Org");
+    assert_eq!(
+        configured
+            .headlines()
+            .filter(|headline| headline.todo_type().is_some())
+            .count(),
+        10_000
+    );
     let document = parse_org_aot(&source).expect("benchmark document is valid Org");
     let scope = document
         .records()
@@ -60,6 +86,14 @@ fn bench_org_element_query(c: &mut Criterion) {
     group.throughput(Throughput::Elements(10_000));
     group.bench_function("parse/10k-headlines", |b| {
         b.iter(|| black_box(parse_org_aot(black_box(&source)).unwrap()))
+    });
+    group.bench_function("parse/configured-todo/10k-headlines", |b| {
+        b.iter(|| {
+            black_box(
+                parse_org_aot_with_config(black_box(&configured_source), black_box(&config))
+                    .unwrap(),
+            )
+        })
     });
     group.bench_function("query/composite/10k-headlines", |b| {
         b.iter(|| {
@@ -173,6 +207,20 @@ fn bench_org_element_query(c: &mut Criterion) {
     aot_group.bench_function("events-rowan-elements/10k-target-objects", |b| {
         b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&target_objects)).unwrap()))
     });
+    let timestamp_objects = "<2026-09-23 Wed 10:00 ++1w -2d>\n".repeat(10_000);
+    let timestamp_records = orgize::org_aot::parse_org_aot(&timestamp_objects)
+        .expect("timestamp benchmark source builds a Rowan document");
+    assert_eq!(
+        timestamp_records
+            .records()
+            .iter()
+            .filter(|record| record.kind == "timestamp")
+            .count(),
+        10_000
+    );
+    aot_group.bench_function("events-rowan-elements/10k-timestamp-objects", |b| {
+        b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&timestamp_objects)).unwrap()))
+    });
     let terminal_objects = "[50%] [2/3] text\\\\\n".repeat(10_000);
     let terminal_records = orgize::org_aot::parse_org_aot(&terminal_objects)
         .expect("terminal-Object benchmark source builds a Rowan document");
@@ -224,6 +272,25 @@ fn bench_org_element_query(c: &mut Criterion) {
         b.iter(|| black_box(orgize::org_aot::parse_org_aot(black_box(&plain_lines)).unwrap()))
     });
     aot_group.finish();
+}
+
+fn bench_org_inlinetask_aot(c: &mut Criterion) {
+    let source = inlinetask_source();
+    let document = parse_org_aot(&source).expect("benchmark inlinetasks parse");
+    assert_eq!(
+        document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "inlinetask")
+            .count(),
+        10_000
+    );
+    let mut group = c.benchmark_group("OrgSchemeInlinetaskAot");
+    group.throughput(Throughput::Elements(10_000));
+    group.bench_function("parse/10k-unclosed-inlinetasks", |b| {
+        b.iter(|| black_box(parse_org_aot(black_box(&source)).unwrap()))
+    });
+    group.finish();
 }
 
 fn bench_org_table_rows(c: &mut Criterion) {
@@ -315,6 +382,31 @@ fn bench_org_plan_ledgers(c: &mut Criterion) {
         .collect::<Vec<_>>();
     let mut group = c.benchmark_group("OrgSchemePlanLedgers");
     group.throughput(Throughput::Elements(2_000));
+    group.bench_function("events/2k-documents", |b| {
+        b.iter(|| {
+            for source in &sources {
+                black_box(generated_context_events::parse_org_rowan_events(black_box(
+                    source,
+                )));
+            }
+        })
+    });
+    group.bench_function("events+rowan/2k-documents", |b| {
+        b.iter(|| {
+            for source in &sources {
+                let events = generated_context_events::parse_org_rowan_events(black_box(source));
+                black_box(
+                    parse_generated_events(
+                        org_language_spec(),
+                        generated_context_events::PARSER_DIGEST,
+                        source,
+                        &events,
+                    )
+                    .unwrap(),
+                );
+            }
+        })
+    });
     group.bench_function("aot/2k-documents", |b| {
         b.iter(|| {
             for source in &sources {
@@ -322,7 +414,101 @@ fn bench_org_plan_ledgers(c: &mut Criterion) {
             }
         })
     });
+    group.bench_function("aot+headline-title/2k-documents", |b| {
+        b.iter(|| {
+            for source in &sources {
+                let document = parse_org_aot(black_box(source)).unwrap();
+                let headline = document
+                    .records()
+                    .iter()
+                    .find(|record| record.kind == "headline")
+                    .expect("plan ledger headline");
+                black_box(document.headline_display_title(headline.id));
+            }
+        })
+    });
     group.finish();
+}
+
+fn bench_org_logbook_lifecycle(c: &mut Criterion) {
+    let mut source = String::from("* Work\n:LOGBOOK:\n");
+    for _ in 0..500 {
+        source.push_str("- State \"DONE\" from \"TODO\" [2026-05-14 Thu]\n");
+        source.push_str("- Refiled to [[file:next.org]] on [2026-05-14 Thu]\n");
+        source.push_str("- Rescheduled from [2026-05-14 Thu] to [2026-05-15 Fri]\n");
+        source.push_str("- CLOCK: [2026-05-14 Thu 10:00]--[2026-05-14 Thu 10:30] => 0:30\n");
+    }
+    source.push_str(":END:\n");
+    let document = Org::parse(&source).document();
+    assert_eq!(document.lifecycle_records().len(), 2_000);
+    let mut group = c.benchmark_group("OrgSchemeLogbookLifecycle");
+    group.throughput(Throughput::Elements(2_000));
+    group.bench_function("project/2k-records", |b| {
+        b.iter(|| black_box(document.lifecycle_records()))
+    });
+    group.bench_function("parse+project/2k-records", |b| {
+        b.iter(|| {
+            black_box(
+                Org::parse(black_box(&source))
+                    .document()
+                    .lifecycle_records(),
+            )
+        })
+    });
+    group.finish();
+}
+
+fn bench_org_inline_fragments(c: &mut Criterion) {
+    // Default features interpret the footnotes; the cloze-shaped text keeps
+    // the fixture stable for a matched before/after comparison.
+    let source = (0..500)
+        .map(|index| format!("text [fn:n{index}:See *bold* text] and {{{{*term*}}}}\n"))
+        .collect::<String>();
+    let parsed = Org::parse(&source);
+    let document = parsed.document();
+    assert!(document.diagnostics.is_empty());
+    assert_eq!(document.footnotes.len(), 500);
+    let mut group = c.benchmark_group("OrgSchemeInlineFragments");
+    group.throughput(Throughput::Elements(1_000));
+    group.bench_function("project/500-footnotes+500-clozes", |b| {
+        b.iter(|| black_box(parsed.document()))
+    });
+    group.bench_function("parse+project/500-footnotes+500-clozes", |b| {
+        b.iter(|| black_box(Org::parse(black_box(&source)).document()))
+    });
+    group.finish();
+}
+
+fn bench_org_cloze_fragments(c: &mut Criterion) {
+    #[cfg(feature = "syntax-org-fc")]
+    {
+        let source = "{{*term*}}\n".repeat(1_000);
+        let parsed = Org::parse(&source);
+        let document = parsed.document();
+        assert!(document.diagnostics.is_empty());
+        let cloze_count = document
+            .children
+            .iter()
+            .filter_map(|element| match &element.data {
+                orgize::ast::ElementData::Paragraph(objects) => Some(objects),
+                _ => None,
+            })
+            .flat_map(|objects| objects.iter())
+            .filter(|object| matches!(object.data, orgize::ast::ObjectData::Cloze { .. }))
+            .count();
+        assert_eq!(cloze_count, 1_000);
+        let mut group = c.benchmark_group("OrgSchemeClozeFragments");
+        group.throughput(Throughput::Elements(1_000));
+        group.bench_function("project/1k-clozes", |b| {
+            b.iter(|| black_box(parsed.document()))
+        });
+        group.bench_function("parse+project/1k-clozes", |b| {
+            b.iter(|| black_box(Org::parse(black_box(&source)).document()))
+        });
+        group.finish();
+    }
+    #[cfg(not(feature = "syntax-org-fc"))]
+    let _ = c;
 }
 
 fn bench_org_nested_lists(c: &mut Criterion) {
@@ -380,9 +566,13 @@ fn bench_org_nested_lists(c: &mut Criterion) {
 criterion_group!(
     benches,
     bench_org_element_query,
+    bench_org_inlinetask_aot,
     bench_org_table_rows,
     bench_org_nested_lists,
     bench_org_source_headers,
-    bench_org_plan_ledgers
+    bench_org_plan_ledgers,
+    bench_org_logbook_lifecycle,
+    bench_org_inline_fragments,
+    bench_org_cloze_fragments
 );
 criterion_main!(benches);

@@ -85,24 +85,6 @@ fn supplied_element_query_packs_fail_closed_before_scanning() {
         document.query_with_pack(&stale, "tasks.open", 0),
         Err(OrgElementQueryError::StaleGraph)
     );
-    let unsupported = OrgElementQueryPack {
-        graph_digest: org_element_query_pack().graph_digest,
-        rules: &[OrgElementQueryRule {
-            id: "headline.normalized-title",
-            node_kind: "headline",
-            groups: &[&[OrgElementPropertyRule {
-                name: "title",
-                value: "Task",
-                matcher: OrgElementFieldMatch::Exact,
-            }]],
-            relation: OrgElementRelation::Any,
-            target_scope: false,
-        }],
-    };
-    assert_eq!(
-        document.query_with_pack(&unsupported, "headline.normalized-title", 0),
-        Err(OrgElementQueryError::UnsupportedField)
-    );
     let invalid = OrgElementQueryPack {
         graph_digest: org_element_query_pack().graph_digest,
         rules: &[OrgElementQueryRule {
@@ -125,7 +107,7 @@ fn supplied_element_query_packs_fail_closed_before_scanning() {
 
 #[test]
 fn consumer_authored_scheme_query_pack_executes_without_gerbil() {
-    let source = "#+TODO: WAIT | DONE\n* Team\n** WAIT Review patch\n** DONE Review release\n** WAIT Audit\n";
+    let source = "#+TODO: WAIT | DONE\n* Team\n** WAIT [#A] Review patch :work:\nEvidence [cite:@doe2020]\n** DONE Review release\n** WAIT Audit\n";
     let document = orgize::org_aot::parse_org_aot(source)
         .expect("Cargo consumer parses from committed Scheme-AOT artifacts");
     let team = document
@@ -136,7 +118,7 @@ fn consumer_authored_scheme_query_pack_executes_without_gerbil() {
     let review = document
         .records()
         .iter()
-        .find(|record| record.field("title") == Some("WAIT Review patch"))
+        .find(|record| record.field("title") == Some("WAIT [#A] Review patch :work:"))
         .expect("review headline");
     assert_eq!(
         document.query_with_pack(
@@ -146,4 +128,28 @@ fn consumer_authored_scheme_query_pack_executes_without_gerbil() {
         ),
         Ok(vec![review.id])
     );
+    let citation_reference = document
+        .records()
+        .iter()
+        .find(|record| {
+            record.kind == "citation-reference" && record.field("key") == Some("doe2020")
+        })
+        .expect("Scheme citation reference is available to custom Element queries");
+    assert_eq!(
+        document.query_with_pack(&customer_query_plan::QUERIES, "customer.cited-evidence", 0),
+        Ok(vec![citation_reference.id])
+    );
+    for id in [
+        "customer.normalized-title",
+        "customer.priority",
+        "customer.tagged",
+        "customer.raw-value",
+        "customer.todo-contains",
+    ] {
+        assert_eq!(
+            document.query_with_pack(&customer_query_plan::QUERIES, id, team.id),
+            Ok(vec![review.id]),
+            "customer query {id} uses the Scheme-AOT headline projection"
+        );
+    }
 }

@@ -600,6 +600,7 @@ fn workspace_contract_rejects_duplicate_reference_options() {
 }
 
 #[test]
+#[ignore = "run as a focused workspace performance scenario"]
 fn workspace_contract_scale_scenario_stays_in_budget() {
     let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/unit/scenarios/contract_workspace/workspace_admission_scale");
@@ -623,7 +624,7 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
         fixture_root: "tests/unit/scenarios/contract_workspace/workspace_admission_scale",
         tags: ["org-contract", "workspace", "performance"],
         commands: [
-            { label: "focused", argv: ["cargo", "test", "workspace_contract_scale_scenario_stays_in_budget"] }
+            { label: "focused-release", argv: ["cargo", "test", "--release", "--test", "integration_test", "workspace_contract_scale_scenario_stays_in_budget", "--", "--ignored"] }
         ],
         benchmark: {
             harness: "libtest",

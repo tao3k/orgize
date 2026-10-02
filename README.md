@@ -10,11 +10,9 @@ non-mutating by default: source blocks, links, agenda metadata, capture plans,
 publishing graphs, and runtime-adjacent Org features are projected as
 source-backed data instead of being executed.
 
-The opt-in AOT parser is available to Cargo consumers without installing
-Gerbil. Scheme declarations generate its syntax and Element tables, while a
-transitional Rust structural scanner currently builds its lossless Rowan tree.
-The complete Org recognition algorithm has not yet moved to Orgize's Scheme
-event generator. The shipped artifacts support:
+The public `Org::parse` facade and `parse_org_aot` use the Scheme-generated
+Org event algorithm to build a lossless Rowan tree and Element graph. Cargo
+consumers do not need Gerbil. The shipped artifacts support:
 
 ```rust
 use orgize::org_aot::{org_contract_pack, parse_org_aot};
@@ -31,9 +29,10 @@ returns the first value, while `record.values("name")` iterates all values in
 source order. For example, a planning line with both `SCHEDULED` and
 `DEADLINE` exposes two separate `key` and `value` entries.
 
-This is an opt-in parser surface while Org syntax coverage and the older
-`Org::parse` consumers are being migrated. The contract pack is generated from
-Orgize's Scheme declarations; its current evaluator is a Rust graph executor.
+Some higher-level consumers still use the older Rust contract-registry
+interpreter; that feature has not completed the Scheme-AOT cutover. The
+Scheme-owned contract pack is generated from Orgize declarations and evaluated
+over the Element graph by Rust.
 
 ## Python SDK
 
@@ -57,7 +56,7 @@ The Contract ABI is also independently consumable from C or Rust. It requires
 one Gambit runtime initialization per process; see
 [`bindings/c/include/orgize_standalone.h`](bindings/c/include/orgize_standalone.h).
 
-Named Element queries are declared in Orgize's `scheme :org-elements` blocks
+Named Element queries are declared in Orgize's `scheme :org-elements-query` blocks
 and compiled into a typed Rust pack at development time. Cargo consumers query
 without Gerbil at build or runtime:
 
@@ -79,8 +78,9 @@ do not duplicate them in the query. Property predicates compose with hygienic
 disjunction of conjunctions before generating Rust. Each named query still
 has one scope relation; negation, joins, ordering, and aggregation are not yet
 admitted and have no implicit Rust fallback.
-The exact `todo-keyword` predicate is also Scheme-AOT generated and checks the
-document's own TODO declarations; it does not assume a global keyword list.
+Headline `title`, `raw-value`, `priority`, `tags`, and `todo-keyword` queries
+reuse Scheme-AOT Element properties. Exact and contains matching of TODO
+keywords both honor the document's own declarations, not a global list.
 
 A consumer-owned example lives in
 [`tests/fixtures/org-elements/customer-queries.org`](tests/fixtures/org-elements/customer-queries.org).
@@ -90,11 +90,22 @@ path, and the public Scheme AOT function emits a pack consumed by
 development environment; using its committed Rust artifact through Cargo does
 not.
 
-The `org_contract_tangle` example likewise accepts optional Contract and
-Element interface module paths for a consumer-owned generated Scheme source.
-Omitting both paths preserves the upstream relative imports. This only
-relocates imports; consumer Scheme admission, AOT generation and execution
-still require their own qualification.
+Contracts are a separate feature from Element queries. Define each in an Org
+source block with its own Scheme feature header: `#+begin_src scheme :org-contract`
+for assertions and `#+begin_src scheme :org-elements-query`
+for named searches. The header is not a pseudo-language name, and plain Scheme
+Babel blocks are neither feature. The
+[`customer-contracts.org`](tests/fixtures/org-contract/customer-contracts.org)
+fixture demonstrates a consumer-owned contract pack. `org_contract_tangle`
+accepts optional Contract and Element interface module paths; omitting both
+preserves upstream relative imports. During development,
+`just generate-contract-plan PARSER_LIB POO_FLOW_LIB SOURCE.ss OUTPUT.rs`
+admits the tangled POO declarations and emits a Rust pack. Cargo consumers
+compile the committed pack and call `OrgAotDocument::evaluate_contract` without
+installing Gerbil. Contract queries reuse Element `all-of`/`any-of` property
+groups and file-local TODO semantics rather than defining a second matcher.
+This AOT path does not make host-loaded legacy contract
+registries or CLI trace/capture use the generated pack yet.
 
 Live demo: <https://tao3k.github.io/orgize/>
 
@@ -107,6 +118,7 @@ let org = Org::parse("* DONE Title :tag:");
 let document = org.document();
 
 assert_eq!(document.sections[0].level, 1);
+// raw_title keeps the source space before the tag suffix.
 assert_eq!(document.sections[0].raw_title, "Title ");
 assert_eq!(document.sections[0].tags, ["tag"]);
 assert!(document.sections[0].children.iter().all(|element| {
@@ -117,7 +129,7 @@ assert!(document.sections[0].children.iter().all(|element| {
 Use `ParseConfig::parse` when a document needs custom parser settings:
 
 ```rust
-use orgize::{syntax_ast::Headline, Org, ParseConfig};
+use orgize::ParseConfig;
 
 let config = ParseConfig {
     todo_keywords: (vec!["TASK".to_string()], vec![]),
@@ -125,55 +137,44 @@ let config = ParseConfig {
 };
 
 let org = config.parse("* TASK Title 1");
-let headline = org.first_node::<Headline>().unwrap();
-assert_eq!(headline.todo_keyword().unwrap(), "TASK");
+let headline = &org.document().sections[0];
+assert_eq!(headline.todo.as_ref().map(|todo| todo.name.as_str()), Some("TASK"));
 ```
 
 ## Syntax Tree
 
-Use `Org::syntax_document()` for the lossless rowan-backed syntax tree:
+Use `Org::syntax()` for the lossless Scheme-AOT Rowan tree:
 
 ```rust
-use orgize::{rowan::ast::AstNode, syntax_ast::Headline, Org};
+use orgize::Org;
 
 let org = Org::parse("* Title");
-let syntax_doc = org.syntax_document();
-let headline = syntax_doc.syntax().children().find_map(Headline::cast).unwrap();
-
-assert_eq!(headline.title_raw(), "Title");
+assert_eq!(org.syntax().to_string(), "* Title");
+assert_eq!(org.records().iter().filter(|record| record.kind == "headline").count(), 1);
 ```
 
-## Traverse
+## Query Elements
 
 ```rust
-use orgize::{
-    export::{from_fn, Container, Event},
-    Org,
-};
+use orgize::Org;
 
-let mut headline_count = 0;
-let mut handler = from_fn(|event| {
-    if matches!(event, Event::Enter(Container::Headline(_))) {
-        headline_count += 1;
-    }
-});
-
-Org::parse("* 1\n** 2\n*** 3\n****4").traverse(&mut handler);
+let org = Org::parse("* 1\n** 2\n*** 3\n****4");
+let headline_count = org.records().iter().filter(|record| record.kind == "headline").count();
 assert_eq!(headline_count, 3);
 ```
 
 ## Modify
 
 ```rust
-use orgize::{syntax_ast::Headline, Org, TextRange};
+use orgize::{Org, TextRange};
 
 let mut org = Org::parse("hello\n* world");
-let headline = org.first_node::<Headline>().unwrap();
+let headline = org.records().iter().find(|record| record.kind == "headline").unwrap().range;
 
-org.replace_range(headline.text_range(), "** WORLD!");
-let headline = org.first_node::<Headline>().unwrap();
+org.replace_range(headline, "** WORLD!");
+let headline = org.records().iter().find(|record| record.kind == "headline").unwrap().range;
 
-assert_eq!(headline.level(), 2);
+assert_eq!(org.document().sections[0].level, 2);
 org.replace_range(TextRange::up_to(headline.start()), "");
 assert_eq!(org.to_org(), "** WORLD!");
 ```

@@ -1,0 +1,1 @@
+{"boundary":{"extra_word_characters":"_-","unicode_alphanumeric":true},"candidate":"exact_target_prefix","name":"org_radio_next_match","scan":"utf8_character_boundaries","schema":"gerbil-scheme-rust.source-match-ir.v1","winner":"longest_then_first"}

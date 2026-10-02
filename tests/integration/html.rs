@@ -1,6 +1,17 @@
 use orgize::{Org, export::HtmlExportOptions};
 
 #[test]
+fn headline_anchor_callback_uses_scheme_projected_title() {
+    let rendered = Org::parse("* A & B\n")
+        .try_to_html_with_headline_anchor(|title| format!("section-{title}"))
+        .expect("graph-backed HTML");
+    assert_eq!(
+        rendered,
+        "<main><h1><a id=\"section-A &amp; B\" href=\"#section-A &amp; B\">A &amp; B</a></h1></main>"
+    );
+}
+
+#[test]
 fn emphasis() {
     insta::assert_snapshot!(
         Org::parse("*bold*, /italic/,\n_underlined_, =verbatim= and ~code~").to_html(),
@@ -139,7 +150,7 @@ paragraph 3
 paragraph 4
 "#).to_html(),
         @r###"
-    <main><h1>title</h1><section><p></p><p>paragraph 1
+    <main><h1>title</h1><section><p>paragraph 1
     </p><p>paragraph 2
     </p><p>paragraph 3
     </p><p>paragraph 4
@@ -213,6 +224,42 @@ fn table() {
 |
 "#).to_html(),
         @"<main><section><table><thead><tr></tr></thead><tbody><tr></tr></tbody><tbody><tr></tr></tbody></table></section></main>"
+    );
+}
+
+#[test]
+fn table_formula_is_metadata_not_html_row() {
+    insta::assert_snapshot!(
+        Org::parse("| Name | Value |\n|------+-------|\n| alpha | 1 |\n#+TBLFM: @2$2=1\n").to_html(),
+        @"<main><section><table><thead><tr><td>Name</td><td>Value</td></tr></thead><tbody><tr><td>alpha</td><td>1</td></tr></tbody></table></section></main>"
+    );
+}
+
+#[test]
+fn inline_source_uses_scheme_classified_language_and_escaped_body() {
+    insta::assert_snapshot!(
+        Org::parse("before src_rust{let x = 1 < 2;} after").to_html(),
+        @r#"<main><section><p>before <code class="src src-rust">let x = 1 &lt; 2;</code> after</p></section></main>"#
+    );
+}
+
+#[test]
+fn inline_babel_call_is_escaped_source_text() {
+    insta::assert_snapshot!(
+        Org::parse("call_square(1 < 2)").to_html(),
+        @"<main><section><p>call_square(1 &lt; 2)</p></section></main>"
+    );
+}
+
+#[test]
+fn footnote_reference_and_definition_share_an_anchor() {
+    insta::assert_snapshot!(
+        Org::parse("A [fn:bench].\n\n[fn:bench] Note.\n").to_html(),
+        @r###"
+<main><section><p>A <sup class="footnote-reference"><a href="#fn-bench">bench</a></sup>.
+</p><aside class="footnote" id="fn-bench"><p> Note.
+</p></aside></section></main>
+"###
     );
 }
 

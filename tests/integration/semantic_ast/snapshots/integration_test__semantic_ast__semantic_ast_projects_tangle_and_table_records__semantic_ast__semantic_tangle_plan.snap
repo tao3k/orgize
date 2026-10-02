@@ -1,6 +1,5 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_tangle_and_table_records.rs
-assertion_line: 64
 expression: tangle
 ---
 SourceTanglePlan {
@@ -15,11 +14,11 @@ SourceTanglePlan {
                             column: 1,
                         },
                         end: SourcePosition {
-                            line: 10,
+                            line: 9,
                             column: 1,
                         },
                         range_start: 178,
-                        range_end: 232,
+                        range_end: 231,
                     },
                     name: None,
                     language: Some(
@@ -159,15 +158,15 @@ SourceTanglePlan {
                 SourceTangleBlock {
                     source: SourceBlockSource {
                         start: SourcePosition {
-                            line: 1,
+                            line: 2,
                             column: 1,
                         },
                         end: SourcePosition {
-                            line: 6,
+                            line: 5,
                             column: 1,
                         },
-                        range_start: 0,
-                        range_end: 178,
+                        range_start: 22,
+                        range_end: 177,
                     },
                     name: Some(
                         "explicit-rust",
@@ -355,11 +354,11 @@ SourceTanglePlan {
                     column: 1,
                 },
                 end: SourcePosition {
-                    line: 14,
+                    line: 13,
                     column: 1,
                 },
                 range_start: 232,
-                range_end: 282,
+                range_end: 281,
             },
             name: None,
             language: Some(

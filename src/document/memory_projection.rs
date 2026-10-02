@@ -9,9 +9,8 @@ use std::{
 };
 
 use crate::{
-    Org,
-    ast::{MemoryQuery, MemoryRecord, MemoryRecordState},
-    org_aot::parse_org_aot,
+    ast::MemoryRecordState,
+    org_aot::{OrgAotDocument, parse_org_aot},
 };
 
 use super::{
@@ -78,9 +77,6 @@ pub fn query_org_memory_records(
     files.sort();
     files.dedup();
 
-    let query = MemoryQuery::new()
-        .include_closed(options.include_closed)
-        .include_archived(options.include_archived);
     let mut records = Vec::new();
     for path in files
         .into_iter()
@@ -88,14 +84,9 @@ pub fn query_org_memory_records(
     {
         let source =
             fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-        let document = Org::parse(&source).document();
-        records.extend(
-            document
-                .memory_records(&query)
-                .into_iter()
-                .filter(|record| memory_record_matches_options(record, options))
-                .map(|record| memory_record_projection(path.clone(), record)),
-        );
+        let document = parse_org_aot(&source)
+            .map_err(|error| format!("{}: Org AOT parse: {error:?}", path.display()))?;
+        records.extend(project_memory_records(&document, &source, &path, options)?);
     }
     records.sort_by(|left, right| {
         left.path
@@ -105,20 +96,157 @@ pub fn query_org_memory_records(
     Ok(records)
 }
 
+fn project_memory_records(
+    document: &OrgAotDocument,
+    source: &str,
+    path: &Path,
+    options: &OrgMemorySearchOptions,
+) -> Result<Vec<OrgMemorySearchRecord>, String> {
+    let lines = LineIndex::new(source);
+    let mtime = modified_seconds(path);
+    let mut selected = Vec::new();
+    for headline in document.headlines() {
+        let Some(title) = headline.display_title() else {
+            return Err(format!("{}: headline lacks an AOT title", path.display()));
+        };
+        if headline.is_comment() {
+            continue;
+        }
+
+        let tags = headline.effective_tags();
+        let properties = headline
+            .properties()
+            .into_iter()
+            .map(|(key, value)| (key.to_owned(), value.to_owned()))
+            .collect();
+        let mut closed = false;
+        let mut planned = false;
+        for (key, _) in headline.planning() {
+            if key.eq_ignore_ascii_case("CLOSED") {
+                closed = true;
+            } else if key.eq_ignore_ascii_case("SCHEDULED") || key.eq_ignore_ascii_case("DEADLINE")
+            {
+                planned = true;
+            }
+        }
+        let archived = tags.iter().any(|tag| tag.eq_ignore_ascii_case("ARCHIVE"));
+        let state = match document.headline_memory_state(headline.id(), closed, planned, archived) {
+            "archived" => MemoryRecordState::Archived,
+            "closed" => MemoryRecordState::Closed,
+            "current" => MemoryRecordState::Current,
+            _ => MemoryRecordState::Background,
+        };
+        let start = usize::from(headline.range().start());
+        let end = usize::from(headline.range().end()).saturating_sub(1);
+        let record = OrgMemorySearchRecord {
+            path: path.to_path_buf(),
+            start_line: lines.line_for(start),
+            end_line: lines.line_for(end),
+            state,
+            level: headline.level(),
+            title,
+            todo: headline.todo_keyword(),
+            tags,
+            properties,
+            mtime,
+        };
+        if (!options.root_only || record.start_line == 1)
+            && (options.include_closed || record.state != MemoryRecordState::Closed)
+            && (options.include_archived || record.state != MemoryRecordState::Archived)
+            && memory_search_record_matches_scope(&record, options)
+            && memory_search_record_matches_contract(&record, options.contract.as_deref())
+            && memory_record_terms_match(document, headline.id(), &record, &options.terms)
+        {
+            selected.push(record);
+        }
+    }
+    Ok(selected)
+}
+
+fn memory_record_terms_match(
+    document: &OrgAotDocument,
+    headline_id: usize,
+    record: &OrgMemorySearchRecord,
+    terms: &[String],
+) -> bool {
+    if terms.is_empty() {
+        return true;
+    }
+    let mut pending = terms
+        .iter()
+        .map(|term| term.trim().to_ascii_lowercase())
+        .filter(|term| {
+            !term.is_empty()
+                && !record.title.to_ascii_lowercase().contains(term)
+                && !record
+                    .todo
+                    .as_ref()
+                    .is_some_and(|todo| todo.to_ascii_lowercase().contains(term))
+                && !record.properties.iter().any(|(key, value)| {
+                    key.to_ascii_lowercase().contains(term)
+                        || value.to_ascii_lowercase().contains(term)
+                })
+        })
+        .collect::<Vec<_>>();
+    if pending.is_empty() {
+        return true;
+    }
+    let records = document.records();
+    let end = document
+        .graph_index()
+        .subtree_end(headline_id)
+        .unwrap_or(headline_id + 1);
+    let mut cursor = headline_id + 1;
+    while cursor < end {
+        let node = &records[cursor];
+        if node.kind == "headline" {
+            cursor = document
+                .graph_index()
+                .subtree_end(cursor)
+                .unwrap_or(cursor + 1);
+            continue;
+        }
+        if node.kind == "link" {
+            pending.retain(|term| {
+                !["path", "description"].into_iter().any(|field| {
+                    node.field(field)
+                        .is_some_and(|value| value.to_ascii_lowercase().contains(term))
+                })
+            });
+            if pending.is_empty() {
+                return true;
+            }
+        }
+        cursor += 1;
+    }
+    false
+}
+
 fn query_plan_ledger_records(
     root: &Path,
     walk_config: &DocumentWalkConfig,
     options: &OrgMemorySearchOptions,
 ) -> Result<Vec<OrgMemorySearchRecord>, String> {
+    let started = std::time::Instant::now();
     let root = memory_search_root(root, options);
     let mut files = Vec::new();
     collect_plan_ledger_paths(&root, walk_config, options, &mut files)?;
+    let walk_elapsed = started.elapsed();
     let mut records = plan_ledger_records_from_paths(&files, options)?;
+    let projection_elapsed = started.elapsed() - walk_elapsed;
     records.sort_by(|left, right| {
         left.path
             .cmp(&right.path)
             .then(left.start_line.cmp(&right.start_line))
     });
+    if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER").is_some() {
+        eprintln!(
+            "plan ledger stages: files={} workers={} walk={walk_elapsed:?} projection={projection_elapsed:?} total={:?}",
+            files.len(),
+            plan_ledger_worker_count(files.len()),
+            started.elapsed()
+        );
+    }
     Ok(records)
 }
 
@@ -175,11 +303,11 @@ fn plan_ledger_records_from_paths(
         return Ok(records);
     }
 
-    let worker_count = thread::available_parallelism()
-        .map(|count| count.get())
-        .unwrap_or(1)
-        .min(4)
-        .min(paths.len());
+    // Reading independent files can overlap while the Scheme-AOT graph for
+    // each file is built. Bound workers by the work available, not a fixed
+    // machine-wide cap, and keep each worker's chunk large enough to amortize
+    // thread startup.
+    let worker_count = plan_ledger_worker_count(paths.len());
     let chunk_size = paths.len().div_ceil(worker_count);
     thread::scope(|scope| {
         let mut handles = Vec::new();
@@ -203,6 +331,17 @@ fn plan_ledger_records_from_paths(
         }
         Ok(records)
     })
+}
+
+fn plan_ledger_worker_count(path_count: usize) -> usize {
+    if path_count < 64 {
+        return 1;
+    }
+    thread::available_parallelism()
+        .map(|count| count.get())
+        .unwrap_or(1)
+        .saturating_mul(8)
+        .min(path_count.div_ceil(64))
 }
 
 fn collect_plan_ledger_file(
@@ -312,13 +451,6 @@ fn file_matches_options(path: &Path, options: &OrgMemorySearchOptions) -> bool {
     })
 }
 
-fn memory_record_matches_options(record: &MemoryRecord, options: &OrgMemorySearchOptions) -> bool {
-    (!options.root_only || record.source.start.line == 1)
-        && memory_record_matches_scope(record, options)
-        && memory_record_matches_terms(record, &options.terms)
-        && memory_record_matches_contract(record, options.contract.as_deref())
-}
-
 fn memory_search_record_matches_options(
     record: &OrgMemorySearchRecord,
     options: &OrgMemorySearchOptions,
@@ -336,15 +468,10 @@ fn memory_search_record_matches_scope(
     options: &OrgMemorySearchOptions,
 ) -> bool {
     options.session.as_deref().is_none_or(|expected| {
-        record
-            .properties
-            .get("SESSION_ID")
-            .is_some_and(|value| value == expected)
+        memory_property(record, "SESSION_ID").is_some_and(|value| value == expected)
     }) && options.plan.as_deref().is_none_or(|expected| {
-        record
-            .properties
-            .get("PLAN_ID")
-            .or_else(|| record.properties.get("ID"))
+        memory_property(record, "PLAN_ID")
+            .or_else(|| memory_property(record, "ID"))
             .is_some_and(|value| value == expected)
     })
 }
@@ -354,11 +481,16 @@ fn memory_search_record_matches_contract(
     contract: Option<&str>,
 ) -> bool {
     contract.is_none_or(|expected| {
-        record
-            .properties
-            .get("CONTRACT_ORG")
-            .is_some_and(|value| value == expected)
+        memory_property(record, "CONTRACT_ORG").is_some_and(|value| value == expected)
     })
+}
+
+fn memory_property<'a>(record: &'a OrgMemorySearchRecord, key: &str) -> Option<&'a str> {
+    record
+        .properties
+        .iter()
+        .find(|(candidate, _)| candidate.eq_ignore_ascii_case(key))
+        .map(|(_, value)| value.as_str())
 }
 
 fn memory_search_record_matches_terms(record: &OrgMemorySearchRecord, terms: &[String]) -> bool {
@@ -379,67 +511,6 @@ fn memory_search_record_matches_terms(record: &OrgMemorySearchRecord, terms: &[S
                     || value.to_ascii_lowercase().contains(&term)
             })
     })
-}
-
-fn memory_record_matches_scope(record: &MemoryRecord, options: &OrgMemorySearchOptions) -> bool {
-    options
-        .session
-        .as_deref()
-        .is_none_or(|expected| memory_record_property_eq(record, "SESSION_ID", expected))
-        && options
-            .plan
-            .as_deref()
-            .is_none_or(|expected| memory_record_property_eq(record, "PLAN_ID", expected))
-}
-
-fn memory_record_matches_contract(record: &MemoryRecord, contract: Option<&str>) -> bool {
-    contract.is_none_or(|expected| memory_record_property_eq(record, "CONTRACT_ORG", expected))
-}
-
-fn memory_record_property_eq(record: &MemoryRecord, key: &str, expected: &str) -> bool {
-    record
-        .properties
-        .iter()
-        .any(|property| property.key.eq_ignore_ascii_case(key) && property.value == expected)
-}
-
-fn memory_record_matches_terms(record: &MemoryRecord, terms: &[String]) -> bool {
-    terms.iter().all(|term| {
-        let term = term.trim().to_ascii_lowercase();
-        term.is_empty()
-            || record.title.to_ascii_lowercase().contains(&term)
-            || record
-                .todo
-                .as_ref()
-                .is_some_and(|todo| todo.name.to_ascii_lowercase().contains(&term))
-            || record.properties.iter().any(|property| {
-                property.key.to_ascii_lowercase().contains(&term)
-                    || property.value.to_ascii_lowercase().contains(&term)
-            })
-            || record.links.iter().any(|link| {
-                link.path.to_ascii_lowercase().contains(&term)
-                    || link.description.to_ascii_lowercase().contains(&term)
-            })
-    })
-}
-
-fn memory_record_projection(path: PathBuf, record: MemoryRecord) -> OrgMemorySearchRecord {
-    OrgMemorySearchRecord {
-        mtime: modified_seconds(&path),
-        path,
-        start_line: record.source.start.line,
-        end_line: record.source.end.line,
-        state: record.state,
-        level: record.level,
-        title: record.title,
-        todo: record.todo.map(|todo| todo.name),
-        tags: record.effective_tags,
-        properties: record
-            .properties
-            .into_iter()
-            .map(|property| (property.key, property.value))
-            .collect(),
-    }
 }
 
 fn modified_seconds(path: &Path) -> f64 {

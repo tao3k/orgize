@@ -68,7 +68,7 @@ fn parse_contracts_preserves_split_query_and_expect_blocks() {
 }
 
 #[test]
-fn parse_contracts_accepts_legacy_key_value_query_blocks() {
+fn parse_contracts_rejects_legacy_key_value_query_blocks() {
     let contract_fixture = r#"* agent-task-v1
 :PROPERTIES:
 :CONTRACT_ID: agent.task.v1
@@ -98,8 +98,7 @@ count >= 1
 
     assert_eq!(registry.contracts.len(), 1);
     let contract = &registry.contracts[0];
-    assert_eq!(contract.assertions.len(), 1);
-    assert_eq!(contract.assertions[0].id, "task.has-goal");
+    assert!(contract.assertions.is_empty());
 }
 
 #[test]

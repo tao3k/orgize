@@ -49,3 +49,22 @@ fn semantic_ast_projects_table_column_alignment_metadata() {
     assert_eq!(tables[1].rows.len(), 2);
     assert!(format!("{:?}", tables[1].rows[0].cells[0].objects).contains("<10>"));
 }
+
+#[test]
+fn semantic_ast_selects_first_complete_alignment_cookie_row() {
+    let doc = Org::parse("| <10> | <20> |\n| <l> | data |\n| <c> | <r3> |\n| Name | Count |\n")
+        .document();
+    assert_clean_projection(&doc);
+    let table = match &doc.children[0].data {
+        ElementData::Table(table) => table,
+        other => panic!("expected table, got {other:#?}"),
+    };
+    assert_eq!(
+        table.column_alignments,
+        [
+            Some(TableColumnAlignment::Center),
+            Some(TableColumnAlignment::Right),
+        ]
+    );
+    assert_eq!(table.rows.len(), 4);
+}

@@ -1,9 +1,9 @@
-//! Differential admission gate for the public parser and transitional AOT path.
+//! Single-authority admission gate for the public Scheme AOT Org parser.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use orgize::{Org, SyntaxKind, org_aot::parse_org_aot, rowan::ast::AstNode};
+use orgize::{Org, ast::DiagnosticKind};
 
 fn org_fixtures(root: &Path) -> Vec<PathBuf> {
     let mut pending = vec![root.to_path_buf()];
@@ -22,139 +22,37 @@ fn org_fixtures(root: &Path) -> Vec<PathBuf> {
     fixtures
 }
 
-macro_rules! check_org_cutover_parity {
-    ($path:expr, $source:expr) => {{
-        let source = $source;
-        let baseline = Org::parse(source);
-        let aot = parse_org_aot(source).expect("Scheme AOT parses tracked Org fixture");
-        assert_eq!(baseline.to_org(), source.as_str(), "{}", $path.display());
-        assert_eq!(
-            aot.syntax().to_string(),
-            source.as_str(),
-            "{}",
-            $path.display()
-        );
-        let baseline_headlines = baseline
-            .syntax_document()
-            .syntax()
-            .descendants()
-            .filter(|node| node.kind() == SyntaxKind::HEADLINE)
-            .count();
-        let aot_headlines = aot
-            .records()
-            .iter()
-            .filter(|record| record.kind == "headline")
-            .count();
-        assert_eq!(aot_headlines, baseline_headlines, "{}", $path.display());
-        let baseline_headline_ranges: Vec<_> = baseline
-            .syntax_document()
-            .syntax()
-            .descendants()
-            .filter(|node| node.kind() == SyntaxKind::HEADLINE)
-            .map(|node| node.text_range())
-            .collect();
-        let aot_headline_ranges: Vec<_> = aot
-            .syntax()
-            .descendants()
-            .filter(|node| {
-                orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name
-                    == "OrgSection"
-            })
-            .map(|node| node.text_range())
-            .collect();
-        assert_eq!(
-            aot_headline_ranges,
-            baseline_headline_ranges,
-            "{}: headline ranges",
-            $path.display()
-        );
-        let baseline_headline_depths: Vec<_> = baseline
-            .syntax_document()
-            .syntax()
-            .descendants()
-            .filter(|node| node.kind() == SyntaxKind::HEADLINE)
-            .map(|node| {
-                node.ancestors()
-                    .filter(|ancestor| ancestor.kind() == SyntaxKind::HEADLINE)
-                    .count()
-            })
-            .collect();
-        let aot_headline_depths: Vec<_> = aot
-            .syntax()
-            .descendants()
-            .filter(|node| {
-                orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name
-                    == "OrgSection"
-            })
-            .map(|node| {
-                node.ancestors()
-                    .filter(|ancestor| {
-                        orgize::org_aot::org_language_spec().kinds[usize::from(ancestor.kind().0)]
-                            .name
-                            == "OrgSection"
-                    })
-                    .count()
-            })
-            .collect();
-        assert_eq!(
-            aot_headline_depths,
-            baseline_headline_depths,
-            "{}: headline nesting",
-            $path.display()
-        );
-        for (baseline_kind, aot_kind) in [
-            (SyntaxKind::PROPERTY_DRAWER, "property-drawer"),
-            (SyntaxKind::DRAWER, "drawer"),
-            (SyntaxKind::LIST, "plain-list"),
-            (SyntaxKind::LIST_ITEM, "item"),
-            (SyntaxKind::ORG_TABLE, "table"),
-            (SyntaxKind::SOURCE_BLOCK, "src-block"),
-            (SyntaxKind::DYN_BLOCK, "dynamic-block"),
-            (SyntaxKind::BABEL_CALL, "babel-call"),
-            (SyntaxKind::QUOTE_BLOCK, "quote-block"),
-            (SyntaxKind::EXAMPLE_BLOCK, "example-block"),
-            (SyntaxKind::EXPORT_BLOCK, "export-block"),
-        ] {
-            let expected = baseline
-                .syntax_document()
-                .syntax()
-                .descendants()
-                .filter(|node| node.kind() == baseline_kind)
-                .count();
-            let actual = aot
-                .records()
-                .iter()
-                .filter(|record| record.kind == aot_kind)
-                .count();
-            assert_eq!(actual, expected, "{}: {aot_kind}", $path.display());
+macro_rules! assert_org_graph {
+    ($source:expr, $document:expr $(, $kind:literal => $count:expr)* $(,)?) => {{
+        let source: &str = ($source).as_ref();
+        let document = $document;
+        assert_eq!(document.to_org(), source);
+        assert_eq!(document.syntax().to_string(), source);
+        let records = document.records();
+        for (id, record) in records.iter().enumerate() {
+            assert_eq!(record.id, id, "graph record identity");
+            assert!(u32::from(record.range.end()) as usize <= source.len(), "source range");
+            if let Some(parent_id) = record.parent_id {
+                assert!(parent_id < id, "parent precedes child");
+                assert!(records[parent_id].child_ids.contains(&id), "parent-child link");
+            }
+            for &child_id in &record.child_ids {
+                assert_eq!(records[child_id].parent_id, Some(id), "child-parent link");
+            }
         }
-        let baseline_keywords = baseline
-            .syntax_document()
-            .syntax()
-            .descendants()
-            .filter(|node| {
-                matches!(
-                    node.kind(),
-                    SyntaxKind::KEYWORD | SyntaxKind::AFFILIATED_KEYWORD
-                )
-            })
-            .count();
-        let aot_keywords = aot
-            .records()
-            .iter()
-            .filter(|record| record.kind == "keyword")
-            .count();
-        assert_eq!(
-            aot_keywords,
-            baseline_keywords,
-            "{}: keyword lines",
-            $path.display()
-        );
+        $(
+            assert_eq!(
+                records.iter().filter(|record| record.kind == $kind).count(),
+                $count,
+                "{} count",
+                $kind,
+            );
+        )*
     }};
 }
 
 #[test]
-fn tracked_org_fixtures_match_core_structure_and_source_ranges() {
+fn tracked_org_fixtures_have_lossless_public_aot_graphs() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let fixtures = org_fixtures(&root);
     assert!(
@@ -163,6 +61,36 @@ fn tracked_org_fixtures_match_core_structure_and_source_ranges() {
     );
     for path in fixtures {
         let source = fs::read_to_string(&path).expect("tracked Org fixture is UTF-8");
-        check_org_cutover_parity!(path, &source);
+        let parsed = Org::parse(&source);
+        assert_org_graph!(&source, &parsed);
+        let unsupported: Vec<_> = parsed
+            .document()
+            .diagnostics
+            .into_iter()
+            .filter(|diagnostic| {
+                matches!(
+                    diagnostic.kind,
+                    DiagnosticKind::UnsupportedElement | DiagnosticKind::UnsupportedObject
+                )
+            })
+            .collect();
+        assert!(
+            unsupported.is_empty(),
+            "{}: {unsupported:?}",
+            path.display()
+        );
     }
+}
+
+#[test]
+fn public_parser_recognizes_case_folded_latex_environments() {
+    for source in ["\\BEGIN{AlIgN*}\nx\n\\EnD{aLiGn*}\n", "\\BEGIN{A}\\eNd{a}"] {
+        assert_org_graph!(source, Org::parse(source), "latex-environment" => 1);
+    }
+}
+
+#[test]
+fn public_parser_recognizes_case_folded_footnote_definitions() {
+    let source = "[FN:n] body\n* H\n";
+    assert_org_graph!(source, Org::parse(source), "footnote-definition" => 1);
 }

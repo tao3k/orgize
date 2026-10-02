@@ -91,11 +91,22 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --all-targets --all-features
 
+      - name: Run focused workspace admission performance gate
+        run: cargo test --release --test integration_test workspace_contract_scale_scenario_stays_in_budget -- --ignored
+
       - name: Run focused Org query performance gate
-        run: cargo test --release --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored --test-threads=1
+        run: cargo test --release --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored
 
       - name: Run plan ledger AOT performance gate
-        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --test-threads=1
+        id: plan_ledger_aot_gate
+        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --nocapture
+
+      - name: Profile failed plan ledger AOT gate
+        if: ${{ failure() && steps.plan_ledger_aot_gate.conclusion == 'failure' }}
+        continue-on-error: true
+        env:
+          ORGIZE_PROFILE_PLAN_LEDGER: "1"
+        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --nocapture
 
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}
