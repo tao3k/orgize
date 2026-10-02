@@ -458,6 +458,59 @@ fn bench_org_logbook_lifecycle(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_org_inline_fragments(c: &mut Criterion) {
+    // Default features interpret the footnotes; the cloze-shaped text keeps
+    // the fixture stable for a matched before/after comparison.
+    let source = (0..500)
+        .map(|index| format!("text [fn:n{index}:See *bold* text] and {{{{*term*}}}}\n"))
+        .collect::<String>();
+    let parsed = Org::parse(&source);
+    let document = parsed.document();
+    assert!(document.diagnostics.is_empty());
+    assert_eq!(document.footnotes.len(), 500);
+    let mut group = c.benchmark_group("OrgSchemeInlineFragments");
+    group.throughput(Throughput::Elements(1_000));
+    group.bench_function("project/500-footnotes+500-clozes", |b| {
+        b.iter(|| black_box(parsed.document()))
+    });
+    group.bench_function("parse+project/500-footnotes+500-clozes", |b| {
+        b.iter(|| black_box(Org::parse(black_box(&source)).document()))
+    });
+    group.finish();
+}
+
+fn bench_org_cloze_fragments(c: &mut Criterion) {
+    #[cfg(feature = "syntax-org-fc")]
+    {
+        let source = "{{*term*}}\n".repeat(1_000);
+        let parsed = Org::parse(&source);
+        let document = parsed.document();
+        assert!(document.diagnostics.is_empty());
+        let cloze_count = document
+            .children
+            .iter()
+            .filter_map(|element| match &element.data {
+                orgize::ast::ElementData::Paragraph(objects) => Some(objects),
+                _ => None,
+            })
+            .flat_map(|objects| objects.iter())
+            .filter(|object| matches!(object.data, orgize::ast::ObjectData::Cloze { .. }))
+            .count();
+        assert_eq!(cloze_count, 1_000);
+        let mut group = c.benchmark_group("OrgSchemeClozeFragments");
+        group.throughput(Throughput::Elements(1_000));
+        group.bench_function("project/1k-clozes", |b| {
+            b.iter(|| black_box(parsed.document()))
+        });
+        group.bench_function("parse+project/1k-clozes", |b| {
+            b.iter(|| black_box(Org::parse(black_box(&source)).document()))
+        });
+        group.finish();
+    }
+    #[cfg(not(feature = "syntax-org-fc"))]
+    let _ = c;
+}
+
 fn bench_org_nested_lists(c: &mut Criterion) {
     let source = list_source();
     let structural = parse_org_aot(&source).expect("structural list benchmark parses");
@@ -518,6 +571,8 @@ criterion_group!(
     bench_org_nested_lists,
     bench_org_source_headers,
     bench_org_plan_ledgers,
-    bench_org_logbook_lifecycle
+    bench_org_logbook_lifecycle,
+    bench_org_inline_fragments,
+    bench_org_cloze_fragments
 );
 criterion_main!(benches);

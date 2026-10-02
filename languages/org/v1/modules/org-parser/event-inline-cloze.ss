@@ -11,8 +11,15 @@
     (start-node OrgCloze)
     (token ClozeDelimiter (state-offset inline-cloze-open-at)
            (state-offset inline-cloze-text-start))
-    (token ClozeText (state-offset inline-cloze-text-start)
-           (state-offset inline-cloze-text-end))
+    (if (state inline-cloze-complex)
+        ((token ClozeText (state-offset inline-cloze-text-start)
+                (state-offset inline-cloze-text-end)))
+        ((start-node OrgClozeText)
+         (call-source-helper link-description-span
+                             (state-offset inline-cloze-text-start)
+                             (state-offset inline-cloze-text-end)
+                             ((state inline-script-policy)))
+         (finish-node)))
     (token ClozeDelimiter (state-offset inline-cloze-text-end)
            (line-step (state-offset inline-cloze-text-end)))
     ,@(if hint?
@@ -40,7 +47,8 @@
     (set-uint inline-cloze-text-start
               (offset ,(pattern-end link-index "{{")))
     (set-bool inline-cloze-latex (bool #f))
-    (set-bool inline-cloze-has-hint (bool #f))))
+    (set-bool inline-cloze-has-hint (bool #f))
+    (set-bool inline-cloze-complex (bool #f))))
 
 (def (cloze-id-open-forms)
   `((set-uint inline-cloze-id-open-at (offset ,link-index))
@@ -50,7 +58,9 @@
 (def (cloze-text-scan-forms)
   `((if (offset-less? ,link-index (state-offset inline-cloze-text-start))
         ()
-        ((if (line-byte-equal? ,link-index 36)
+        ((if (line-bytes-any-in? ,link-index ,inline-next (91 123))
+             ((set-bool inline-cloze-complex (bool #t))) ())
+         (if (line-byte-equal? ,link-index 36)
              ((set-bool inline-cloze-latex
                         (not (state inline-cloze-latex))))
              ((if (and (not (state inline-cloze-latex))
@@ -107,7 +117,7 @@
 
 (def cloze-event-initial
   '((inline-cloze-mode 0) (inline-cloze-latex #f)
-    (inline-cloze-has-hint #f)
+    (inline-cloze-has-hint #f) (inline-cloze-complex #f)
     (inline-cloze-open-at 0) (inline-cloze-text-start 0)
     (inline-cloze-text-end 0) (inline-cloze-hint-open-at 0)
     (inline-cloze-hint-start 0) (inline-cloze-hint-end 0)

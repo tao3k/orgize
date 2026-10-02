@@ -173,7 +173,8 @@
         (OrgFile
          (OrgParagraph
           (OrgTextLine
-           (OrgCloze (ClozeDelimiter 0 2) (ClozeText 2 6)
+           (OrgCloze (ClozeDelimiter 0 2)
+                     (OrgClozeText (OrgTextLine (TextLine 2 6)))
                      (ClozeDelimiter 6 7) (ClozeDelimiter 7 8))
            (TextLine 8 9)))))
       (check-org-ast-with parse-org-rowan-events
@@ -181,7 +182,8 @@
         (OrgFile
          (OrgParagraph
           (OrgTextLine
-           (OrgCloze (ClozeDelimiter 0 2) (ClozeText 2 6)
+           (OrgCloze (ClozeDelimiter 0 2)
+                     (OrgClozeText (OrgTextLine (TextLine 2 6)))
                      (ClozeDelimiter 6 7) (ClozeDelimiter 7 8)
                      (ClozeId 8 10) (ClozeDelimiter 10 11))
            (TextLine 11 12)))))
@@ -191,12 +193,26 @@
          (OrgParagraph
           (OrgTextLine
            (OrgCloze
-            (ClozeDelimiter 0 2) (ClozeText 2 8)
+            (ClozeDelimiter 0 2)
+            (OrgClozeText
+             (OrgTextLine
+              (OrgBold (InlineMarkupDelimiter 2 3)
+                       (InlineMarkupValue 3 7)
+                       (InlineMarkupDelimiter 7 8))))
             (ClozeDelimiter 8 9) (ClozeDelimiter 9 10)
             (ClozeHint 10 14) (ClozeDelimiter 14 15)
             (ClozeDelimiter 15 16) (ClozeId 16 23)
             (ClozeDelimiter 23 24))
-           (TextLine 24 25))))))
+           (TextLine 24 25)))))
+      (check-org-ast-with parse-org-rowan-events
+        "{{a[b]}}\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCloze (ClozeDelimiter 0 2)
+                     (ClozeText 2 6)
+                     (ClozeDelimiter 6 7) (ClozeDelimiter 7 8))
+           (TextLine 8 9))))))
     (test-case "Scheme macro Objects retain named and argument spans"
       (check-org-ast-with parse-org-rowan-events
         "x {{{title}}} y\n"
@@ -573,6 +589,24 @@
          (OrgParagraph
           (OrgTextLine (TextLine 0 37))))))
     (test-case "footnote references preserve label, inline definition, and balanced brackets"
+      (check-org-ast-with parse-org-rowan-events
+        "[fn:n:See *bold* text]\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgFootnoteReference
+            (FootnoteReferenceDelimiter 0 4)
+            (FootnoteReferenceLabel 4 5)
+            (FootnoteReferenceDelimiter 5 6)
+            (OrgFootnoteInlineDefinition
+             (OrgTextLine
+              (TextLine 6 10)
+              (OrgBold (InlineMarkupDelimiter 10 11)
+                       (InlineMarkupValue 11 15)
+                       (InlineMarkupDelimiter 15 16))
+              (TextLine 16 21)))
+            (FootnoteReferenceDelimiter 21 22))
+           (TextLine 22 23)))))
       (check-org-ast-with parse-org-rowan-events
         "x [fn:n] y\n"
         (OrgFile

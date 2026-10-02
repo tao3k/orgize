@@ -233,7 +233,10 @@
    (TagGroupClose token (text))
    (TagGroupSeparator token (text))
    (TagTrivia token (text))
-   (BabelCallName token (text)))
+   (BabelCallName token (text))
+   ;; Append fragment nodes so existing Rowan syntax-kind IDs remain stable.
+   (OrgFootnoteInlineDefinition node (object))
+   (OrgClozeText node (object)))
   (terminals
    (headline HeadlineLine)
    (block-begin BlockBeginLine)

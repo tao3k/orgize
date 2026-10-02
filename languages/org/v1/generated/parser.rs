@@ -231,6 +231,8 @@ static KINDS: &[KindSpec] = &[
     KindSpec { name: "TagGroupSeparator", category: KindCategory::Token },
     KindSpec { name: "TagTrivia", category: KindCategory::Token },
     KindSpec { name: "BabelCallName", category: KindCategory::Token },
+    KindSpec { name: "OrgFootnoteInlineDefinition", category: KindCategory::Node },
+    KindSpec { name: "OrgClozeText", category: KindCategory::Node },
 ];
 
 static TERMINALS: &[TerminalSpec] = &[
@@ -412,7 +414,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:05714eb852cb0ee7d16cc4fd5c9833edc0e7ff9e15d427d89cc1abf4c7228d42",
+    grammar_digest: "sha256:f6730cf8686a661909fbf24f06a844f29c23322bbbc3b62d1d303d706cdf4eff",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,

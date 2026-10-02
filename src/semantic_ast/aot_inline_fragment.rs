@@ -7,6 +7,26 @@ use crate::org_aot::parse_org_aot_with_config;
 use super::{GraphProjector, Object, ParsedAnnotation};
 
 impl GraphProjector<'_> {
+    /// Consume source-bounded child Objects unless Scheme marked a recursive
+    /// fragment that still needs the bounded AOT fragment parser.
+    pub(super) fn graph_fragment(
+        &mut self,
+        id: usize,
+        field: &str,
+    ) -> Vec<Object<ParsedAnnotation>> {
+        let record = self.record(id);
+        let Some(span) = record.field_range(field) else {
+            return Vec::new();
+        };
+        let fallback = record.field("fragment-fallback").is_some();
+        let children = record.child_ids.clone();
+        if fallback {
+            self.inline_fragment(span)
+        } else {
+            self.objects_in_span(span, &children)
+        }
+    }
+
     pub(super) fn inline_fragment(&self, span: TextRange) -> Vec<Object<ParsedAnnotation>> {
         let source = self.raw(span);
         let Ok(parsed) = parse_org_aot_with_config(source, self.document.config()) else {

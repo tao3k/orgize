@@ -307,9 +307,16 @@
           `((token FootnoteReferenceDelimiter
                    (state-offset inline-footnote-label-end)
                    (state-offset inline-footnote-definition-start))
-            (token FootnoteReferenceDefinition
-                   (state-offset inline-footnote-definition-start)
-                   ,link-index))
+            (if (state inline-footnote-complex)
+                ((token FootnoteReferenceDefinition
+                        (state-offset inline-footnote-definition-start)
+                        ,link-index))
+                ((start-node OrgFootnoteInlineDefinition)
+                 (call-source-helper link-description-span
+                                     (state-offset inline-footnote-definition-start)
+                                     ,link-index
+                                     ((state inline-script-policy)))
+                 (finish-node))))
           '())
       (token FootnoteReferenceDelimiter ,link-index ,close-end)
       (finish-node)
@@ -340,7 +347,9 @@
                        ((set-uint inline-footnote-mode (uint 0))))))))))))
 
 (def (footnote-definition-scan-forms)
-  `((if (line-byte-equal? ,link-index 91)
+  `((if (line-bytes-any-in? ,link-index ,inline-next (91 123))
+        ((set-bool inline-footnote-complex (bool #t))) ())
+    (if (line-byte-equal? ,link-index 91)
         ((set-uint inline-footnote-opens
                    (uint-add (state inline-footnote-opens) (uint 1))))
         ((if (line-byte-equal? ,link-index 93)
@@ -368,6 +377,7 @@
     (set-uint inline-footnote-label-count (uint 0))
     (set-uint inline-footnote-opens (uint 0))
     (set-uint inline-footnote-closes (uint 0))
+    (set-bool inline-footnote-complex (bool #f))
     (set-uint inline-markup-kind (uint 0))))
 
 (def (inline-code-open-forms kind marker)
@@ -636,15 +646,18 @@
                    (offset ,(pattern-end link-index "{{{")))) ())))
 
 (def (inline-bracket-open-forms nested-description? allow-citation?)
-  (let* ((fallback
-          `((if ,(pattern-at? link-index "[fn:")
-                ,(footnote-reference-open-forms)
-                ((if ,(pattern-at? link-index link-open)
-                     ,(if nested-description? '() (link-scan-forms))
-                     ((set-uint inline-delimited-kind
-                                (uint ,inline-cookie-first))
-                      (set-uint inline-cookie-open-at
-                                (offset ,link-index))))))))
+  (let* ((link-or-cookie
+          `((if ,(pattern-at? link-index link-open)
+                ,(if nested-description? '() (link-scan-forms))
+                ((set-uint inline-delimited-kind
+                           (uint ,inline-cookie-first))
+                 (set-uint inline-cookie-open-at
+                           (offset ,link-index))))))
+         (fallback
+          (if nested-description? link-or-cookie
+              `((if ,(pattern-at? link-index "[fn:")
+                    ,(footnote-reference-open-forms)
+                    ,link-or-cookie))))
          (citation-or-fallback
           (if allow-citation?
               `((if (or ,(pattern-at? link-index "[cite:")
@@ -678,15 +691,20 @@
                                  ,(markup-scan-forms))))))))))))))))
 
 (def (inline-free-scan-forms nested-description? allow-citation?)
-  (let (ordinary
-        `((if ,(pattern-at? link-index "{{{")
-               ,(macro-open-forms)
-               ((if (and (not (state inline-previous-lbrace))
+  (let* ((ordinary-free
+          `((if (line-byte-equal? ,link-index 92)
+                ,(entity-or-ordinary-free-forms nested-description? allow-citation?)
+                ,(inline-ordinary-free-scan-forms nested-description? allow-citation?))))
+         (maybe-cloze
+          (if nested-description? ordinary-free
+              `((if (and (not (state inline-previous-lbrace))
                          ,(pattern-at? link-index "{{"))
                     ,(cloze-open-forms)
-                    ((if (line-byte-equal? ,link-index 92)
-                         ,(entity-or-ordinary-free-forms nested-description? allow-citation?)
-                         ,(inline-ordinary-free-scan-forms nested-description? allow-citation?))))))))
+                    ,ordinary-free))))
+         (ordinary
+          `((if ,(pattern-at? link-index "{{{")
+                ,(macro-open-forms)
+                ,maybe-cloze))))
     (if nested-description?
       ordinary
       `((if (line-bytes-any-in? ,link-index ,inline-next (60 104))
@@ -698,7 +716,7 @@
         `((if (uint-positive? (state inline-timestamp-mode))
         ,(timestamp-scan-forms)
         ((if (uint-positive? (state inline-footnote-mode))
-        ,(footnote-reference-scan-forms)
+        ,(if nested-description? '() (footnote-reference-scan-forms))
         ((if (uint-positive? (state inline-export-mode))
              ,(export-snippet-scan-forms)
              ((if (uint-positive? (state inline-delimited-kind))
@@ -725,15 +743,18 @@
 (def (inline-non-code-scan-forms nested-description? allow-citation?)
   (let ((ordinary
          (inline-ordinary-non-code-scan-forms nested-description? allow-citation?)))
-    `((if (uint-positive? (state inline-cloze-mode))
-          ,(cloze-scan-forms)
-          ((if (uint-positive? (state inline-macro-mode))
-               ,(macro-scan-forms)
-               ,(if allow-citation?
-                    `((if (uint-positive? (state inline-citation-mode))
-                          ,(citation-scan-forms)
-                          ,ordinary))
-                    ordinary)))))))
+    (let (without-cloze
+          `((if (uint-positive? (state inline-macro-mode))
+                ,(macro-scan-forms)
+                ,(if allow-citation?
+                     `((if (uint-positive? (state inline-citation-mode))
+                           ,(citation-scan-forms)
+                           ,ordinary))
+                     ordinary))))
+      (if nested-description? without-cloze
+          `((if (uint-positive? (state inline-cloze-mode))
+                ,(cloze-scan-forms)
+                ,without-cloze))))))
 
 (def (inline-scan-forms nested-description? allow-citation?)
   `((if (and (uint-positive? (state inline-citation-mode))
@@ -845,6 +866,7 @@
     (inline-footnote-label-count 0)
     (inline-footnote-definition-start 0)
     (inline-footnote-opens 0) (inline-footnote-closes 0)
+    (inline-footnote-complex #f)
     (inline-code-kind 0) (inline-code-mode 0)
     (inline-code-left-boundary #t) (inline-code-open-at 0)
     (inline-code-name-start 0) (inline-code-name-end 0)

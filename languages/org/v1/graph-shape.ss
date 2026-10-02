@@ -205,7 +205,9 @@
                (field 'ExportSnippetValue "value" 'append-or-empty)))
    (node 'OrgFootnoteReference "object" "footnote-reference"
          (list (field 'FootnoteReferenceLabel "label")
-               (field 'FootnoteReferenceDefinition "definition")))
+               (field 'FootnoteReferenceDefinition "definition")
+               (field 'FootnoteReferenceDefinition "fragment-fallback")
+               (field 'OrgFootnoteInlineDefinition "definition" 'node-text)))
    (node 'OrgInlineSourceBlock "object" "inline-src-block"
          (list (field 'InlineSourceLanguage "language")
                (field 'InlineSourceParameters "parameters")
@@ -266,5 +268,7 @@
          (list (field 'InlineMarkupValue "value")))
    (node 'OrgCloze "object" "cloze"
          (list (field 'ClozeText "text")
+               (field 'ClozeText "fragment-fallback")
+               (field 'OrgClozeText "text" 'node-text)
                (field 'ClozeHint "hint")
                (field 'ClozeId "id")))))

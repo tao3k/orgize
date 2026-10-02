@@ -793,12 +793,16 @@ impl<'a> GraphProjector<'a> {
             },
             "cloze" => {
                 let text_span = record.field_range("text")?;
+                let hint = record.field("hint").map(str::to_owned);
+                let cloze_id = record.field("id").map(str::to_owned);
+                let raw_text = self.raw(text_span).to_owned();
+                let raw = self.raw(range).to_owned();
                 ObjectData::Cloze {
-                    text: self.inline_fragment(text_span),
-                    raw_text: self.raw(text_span).to_owned(),
-                    hint: record.field("hint").map(str::to_owned),
-                    id: record.field("id").map(str::to_owned),
-                    raw: self.raw(range).to_owned(),
+                    text: self.graph_fragment(id, "text"),
+                    raw_text,
+                    hint,
+                    id: cloze_id,
+                    raw,
                 }
             }
             "statistics-cookie" => ObjectData::StatisticCookie(self.raw(range).to_owned()),
@@ -819,10 +823,7 @@ impl<'a> GraphProjector<'a> {
             "footnote-reference" => ObjectData::FootnoteRef {
                 label: record.field("label").map(str::to_owned),
                 resolved_label: None,
-                definition: record
-                    .field_range("definition")
-                    .map(|span| self.inline_fragment(span))
-                    .unwrap_or_default(),
+                definition: self.graph_fragment(id, "definition"),
             },
             "citation" => ObjectData::Citation(self.citation(id)),
             "export-snippet" => ObjectData::ExportSnippet {

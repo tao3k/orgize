@@ -32,9 +32,9 @@ stable across this addition.
 
 * Current gates
 
-Orgize PR #18 LOGBOOK head =278896b= passed all five exact-head CI
+Orgize PR #18 LOGBOOK head =344c326= passed all five exact-head CI
 jobs (Ubuntu, macOS, and Windows Rust; Ubuntu and macOS Python). Its unchanged
-Release 2,000-file plan-ledger gate measured 35.681 ms best-of-five on
+Release 2,000-file plan-ledger gate measured 81.4664 ms best-of-five on
 Windows, below the 100 ms limit. The earlier parser-code head =f5a1ac1=
 first failed that gate at 103.2245 ms, then passed a diagnostic rerun at
 83.8839 ms and a failed-job rerun at 81.9714 ms. This is a variable batch
@@ -255,8 +255,32 @@ tests; strict Clippy; and the unchanged macOS Release plan-ledger gate at
 47.738708 ms best-of-five. Its new LOGBOOK-heavy Criterion scenario reports
 17.273--26.895 ms for projecting 2,000 records from an already parsed AST,
 and 69.475--96.419 ms for parsing plus projection on this Mac. These are
-absolute, variable measurements, not a matched speedup claim. These local
-receipts predate exact-head remote CI for this value-field slice.
+absolute, variable measurements, not a matched speedup claim. The later
+=344c326= exact-head CI result is recorded above.
+
+The subsequent inline-fragment slice gives simple footnote inline definitions
+and cloze text source-backed Scheme-AOT child Objects. Scheme marks fragments
+containing brackets or braces for the existing bounded recursive fragment
+parser, preserving nested syntax without creating a recursive event-helper
+cycle. Public projection consumes the child Objects directly otherwise; Rust
+still relocates annotations for that explicit complex fallback. Scheme AST and
+graph plus typed Rust regressions cover both paths and Unicode ranges. This
+does not claim complete recursive-fragment AOT coverage.
+On the same Mac, the matched default-feature Criterion source with 500 simple
+footnotes and 500 cloze-shaped strings measured 25.708--35.449 ms before and
+3.4614--3.8145 ms after for projection, and 45.653--68.693 ms before and
+19.266--27.112 ms after for parsing plus projection. The cloze-shaped strings
+are ordinary text with default features; this matched gain is a footnote
+fragment receipt, not a cloze or cross-platform speedup claim.
+With =syntax-org-fc= enabled, a separate 1,000-cloze Criterion fixture asserts
+1,000 typed cloze Objects and measures 3.6187--6.1582 ms for projection and
+15.132--21.809 ms for parsing plus projection. Those are noisy absolute local
+measurements with no matched before-state cloze benchmark.
+The local locked all-target/all-feature Rust suite, strict Clippy, and all 13
+Scheme modules passed; the unchanged macOS Release plan-ledger gate measured
+56.576583 ms best-of-five, below 100 ms. These are local receipts for this
+unpublished slice, not exact-head remote CI.
+
 Dynamic-block content counting now uses the
 Scheme graph's closing-line range, rather than assuming the last raw line is
 the closer; it still interprets content after AOT block classification.
@@ -276,7 +300,7 @@ a Scheme parser coverage item, not a Rust output-side fallback.
 |----------+------------------|
 | Org Scheme grammar and event algorithm | Finish contextual recovery and complete Elements/Objects, including source-backed title/object ranges and fixture ancestry. Colon-qualified property keys and table.el border blocks are covered in Scheme and Rust graph tests. List bullet tokens include the exact horizontal separator, preserving =- =, repeated spaces, and tabs without Rust reconstruction. Shared source-header and keyword-value helpers keep the current event IR at 1,666,505 bytes. |
 | AOT/Rowan graph | Project every source-backed semantic field used by the public parser, including affiliated keywords, tables, links, and user-configured headline state. Planning, clock, inline timestamps, and table-cell links now share Scheme-classified child Objects; the generic graph supports repeated node-text fields. Generic IR mechanics belong in gerbil-parser/gerbil-scheme-rust; Org syntax stays in orgize. |
-| Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Footnote fragments and radio matching still need current performance receipts. |
+| Owned semantic projection | Preserve Scheme-classified fields without reparsing Org syntax in Rust. Radio matches and table formulas now project from AOT results. Simple footnote fragments have a matched local performance receipt; complex recursive fragments and radio matching still need current performance receipts. |
 | Duplicate semantic parsing debt | Basic document keyword word, tag, option, and link-abbreviation splitting calls Scheme-AOT pure functions. =#+TAGS= groups and shortcuts are Scheme event syntax and Rowan graph fields. Source and dynamic begin-line header arguments, inherited =#+PROPERTY=, affiliated =#+HEADER=, drawer-local property, and inline-source header values now project from Scheme-classified graph tokens. =block_metadata.rs= no longer owns that header-argument lexer. Source-block constructor end-marker validation, TODO declaration lint, priority-heading selection, and Org query block content now use AOT context. FEEDSTATUS and LOGBOOK drawer envelopes use Scheme graph ranges; LOGBOOK line shape and quoted state values use Scheme-AOT pure functions. LOGBOOK refile targets and timestamp points use Scheme-AOT Link and Timestamp object ranges; structural CLOCK values use AOT Clock. Rust retains typed duration interpretation and source-range-to-line association. |
 | Consumers | Migrate contract, Elements query, lint, exporters, agenda, clock, and Python/wasm surfaces to the same graph and verify their behavior against Git-tracked fixtures. |
 | Performance and release | Benchmark parse and projection hot paths on current AOT code, resolve strict policy warnings, and require clean exact-head cross-platform CI. Old parser-v2 benchmark numbers are not valid AOT baselines. |
