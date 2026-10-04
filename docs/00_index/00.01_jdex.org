@@ -25,6 +25,7 @@ It follows a path-first contract:
 | `10.04` | `docs/10_architecture/10.04_wendao_section_index_adapter_contract.org` | Wendao adapter contract for consuming Orgize section index projections. |
 | `10.05` | `docs/10_architecture/10.05_agent_capture_protocol.org` | Agent-facing capture protocol over native Org artifacts and wasm DTOs. |
 | `10.06` | `docs/10_architecture/10.06_org_native_sdd_substrate.org` | Org-native SDD node, parent-edge, requirement, and status projection boundary. |
+| `10.08` | `docs/10_architecture/10.08_temporal_revisit_projection.org` | Source-grounded temporal revisit projection and Scheme ownership. |
 | `20.03` | `docs/20_parser/20.03_property_schema_registry_contract.org` | Host-loaded `PROPERTY_SCHEMA` registry contract, loader semantics, and fixtures. |
 | `90.01` | `docs/90_operations/90.01_implementation_status.org` | Implementation status, backlog, and validation notes. |
 | `90.02` | `docs/90_operations/90.02_verification_report_consumption.org` | Git-locked verification report consumption and optimization backlog. |
