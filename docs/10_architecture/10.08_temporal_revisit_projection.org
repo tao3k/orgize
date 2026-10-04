@@ -21,6 +21,8 @@ the same Element identities and source spans. The design must not turn their
 shared evidence into a standalone Memory source type or require every Org
 workflow to pass through a Memory card. The existing compact cards are one
 view for a consumer.
+The [[file:10.09_org_ecosystem_research.org][ecosystem research]] compares Org/Emacs practices with current Orgize
+interfaces and records the missing gates for this design.
 
 There are at least three independent questions:
 

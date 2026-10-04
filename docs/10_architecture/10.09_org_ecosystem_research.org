@@ -1,0 +1,125 @@
+* 10.09 Org Ecosystem Research for Temporal Review
+
+** Status and question
+
+Research note against Orgize PR #21 source head
+=16d2a8c3ac168d73b890262b29b756d4b4ec3361=, inspected on
+2026-10-05. The related module ownership proposal is
+[[file:../../languages/org/v1/modules/README.org][Org v1 module capability map]]. This note records observed interfaces,
+gaps, and falsifiable experiments. It does not claim that a review scheduler,
+cross-document note graph, or knowledge-consolidation engine is implemented.
+
+Can a Session query fleeting Org notes, revisit them with real outcomes, and
+produce durable, revisable knowledge without making an AI-specific Memory
+module the common root? The hypothesis is yes if source observations, query
+views, review attempts, and current factual assessments keep separate
+identities and authority.
+
+** What the Org ecosystem actually composes
+
+| Reference behavior | Mechanism to study | Current Orgize seam | Missing qualification |
+|--------------------+--------------------+---------------------+-----------------------|
+| [[https://github.com/alphapapa/org-ql][org-ql]] | Select Org entries with predicates over files, optionally order them; query and display are distinct | Scheme =org-elements/queries.org=, =syntax.ss= and =funs.ss= select one graph by bounded property predicates and lineage; Rust host index query has a richer Boolean AST | Scheme source query, multi-file scope, explicit-time predicates, ordering, and source-bound output need separate gates |
+| [[https://github.com/alphapapa/org-super-agenda][org-super-agenda]] | Group entries *after* base agenda selection; group precedence and leftover entries affect the view | Rust =agenda_view_plan= sorts/limits rows, while =agenda_block_view_plan= runs each section query independently | A single-input partition/grouping receipt and overlap/leftover tests; do not call independent block sections super-agenda parity |
+| [[https://orgmode.org/manual/Tracking-your-habits.html][Org habit]] | Scheduled repeater plus logged completion history supports a consistency view | Rust =HabitRecord= projects schedule/repeater/=LAST_REPEAT=; Scheme recognizes LOGBOOK line shapes | A source-ordered completion-event fold; current =HabitConsistency::Complete= means three fields are present, not that a history or streak was verified |
+| [[https://github.com/l3kn/org-fc][org-fc]] and [[https://orgmode.org/worg/org-contrib/org-drill.html][org-drill]] | Review grades change the next interval; an attempt's result matters more than seeing the card | Orgize retains heading/property/timestamp/LOGBOOK syntax; no typed review-attempt projection | Keep actual recall outcomes distinct from factual truth; =org-fc= can store history in an external TSV, which needs its own source identity if imported |
+| [[https://github.com/org-roam/org-roam/blob/main/doc/org-roam.org][org-roam]] | ID-bearing nodes, ordinary Org ID links, backlinks and a rebuildable cache connect notes | Orgize projects ID/link/section facts and the Element graph for one parsed document | Validate ID targets and index generations across documents and source cuts; a title match is not a link |
+| [[https://github.com/weirdNox/org-noter][org-noter]] | A note keeps the location of an external document or attachment being annotated | Orgize projects links, attachment metadata, and local source spans | A document revision/content identity is needed before an old annotation can speak for the current attachment |
+
+These are behavior references, not code to copy. In particular, =org-ql=
+selection and =org-super-agenda= grouping solve different problems. An
+=org-roam= index accelerates relations while its Org ID links remain the
+document evidence. Review grades measure recall performance; they cannot
+establish that a remembered claim is true. A Session may combine these
+capabilities without forcing all of them through =AgentMemorySnapshot=.
+
+** Exact current code boundary
+
+- [[file:../../languages/org/v1/modules/org-elements/syntax.ss][Scheme Element syntax]] exposes =property=, =property-contains=,
+  =all-of=, =any-of=, and one =at=/=child-of=/=descendant-of= relation. The
+  [[file:../../languages/org/v1/modules/org-elements/funs.ss][selector]] operates on a supplied graph. Its current DSL has no explicit
+  date comparison, sort, aggregation, cross-document join, or negative clause.
+- [[file:../../src/semantic_ast/elements_bridge_query.rs][Rust host index query]] has a separate richer =All=/=Any=/=Not=
+  predicate AST and limit. That does not establish Scheme DSL parity. The
+  [[file:../../src/semantic_ast/elements_bridge_model.rs][graph]] gives each record an =OrgElementId= based on one graph; it is not
+  a persistent Org =ID= across edits. Source spans alone do not bind that
+  graph to exact input bytes or a WorkTree cut.
+- [[file:../../src/semantic_ast/habits.rs][Habit projection]] reports =Complete= when a scheduled timestamp, a
+  repeater and =LAST_REPEAT= are present. It does not fold all logged DONE
+  events into a reviewed-history result. Scheme
+  [[file:../../languages/org/v1/modules/org-elements/logbook-properties.ss][LOGBOOK recognition]] is an input for that fold, not the fold itself.
+- [[file:../../src/semantic_ast/agenda_view.rs][Agenda block view]] invokes an independent agenda query per section. It
+  may repeat a row across sections; this is not a partition of one base
+  selection as in =org-super-agenda=.
+- [[file:../../src/semantic_ast/memory_model.rs][Memory cards]] still classify authority in Rust and nominate a historical
+  card as a possible supersession when a current card shares an anchor or
+  normalized title. The wording is only a *candidate*; title equality cannot
+  prove supersession. This logic belongs under source-capability review when
+  moving policy-bearing projection into Scheme.
+- POO Flow PR #34 has =modules/memory-core/org-selection.ss= calling the
+  Orgize Scheme selector and =modules/session/org-memory-selection.ss= gating
+  its result. The caller supplies graph, source digest and named query. That
+  code does not authenticate graph against bytes, derive an assessment, or
+  publish a head. Its required Memory store spec is narrower than the
+  proposed general Session revisit path.
+
+** Experiments that can falsify the design
+
+1. *Source identity.* Parse one Org note file at cuts C1 and C2, where an
+   inserted earlier heading changes graph-local Element numbers. A query
+   result must carry document identity, exact bytes digest, persistent Org ID
+   when supplied, span, query identity, and cut. C1's Element number alone
+   must not resolve as the same note at C2. Negative cases: duplicate titles,
+   reused file path, changed attachment bytes, and an unverified caller graph.
+2. *Agenda composition.* On one base agenda selection, make an item match two
+   groups and leave another unmatched. Compare an ordered partition plus
+   leftover against upstream =org-super-agenda= behavior. Verify that no
+   grouping creates a new source candidate and that current independent
+   =AgendaBlockViewPlan= sections are reported as a different operation.
+3. *Review history.* First, use an Org habit with a repeater and =LAST_REPEAT=
+   but no logged completion, then a cut with several logged completions.
+   =Complete= metadata must not masquerade as a verified streak. Separately,
+   use a flashcard with successful and failed recall grades. An overdue
+   schedule must not count as an attempt; a recorded attempt with no outcome
+   must not count as successful recall. Preserve each source-specific outcome
+   and recompute next due from explicit policy and evaluation time.
+4. *Knowledge versus recall.* Make a high-recall flashcard whose factual
+   assertion is disproved by a later test. Recall can improve while current
+   factual support becomes refuted. A synthesis Org heading should cite the
+   original notes, the counterexample, its valid scope and a next check.
+5. *Cross-document links.* Two files contain same-title notes, only one with
+   an =id:= link from the synthesis. Build an index, change one source, and
+   rebuild. Backlinks must follow stable IDs and current source cuts; same
+   title and stale cache rows must not add evidence or grant access.
+
+Measure candidate precision/recall, wrong-cut acceptance, duplicate or lost
+agenda rows, false completion/recall claims, false current-truth claims,
+unnecessary reviews, and ability to reconstruct a synthesis from its source
+episodes. A positive outcome in one measure does not imply the others.
+
+** Implementation order implied by the experiments
+
+1. Make a source-to-graph admission receipt over exact Org bytes, document
+   identity, cut, and parser/Element revision. Distinguish graph-local
+   =OrgElementId= from persistent Org =ID=. Reject a mismatched graph before
+   Session policy sees candidates.
+2. In =org-elements= Scheme, project typed planning, LOGBOOK, link and note
+   observations from parser facts with source spans. Add the minimum
+   explicit-time predicates and ordering needed for due-review experiments;
+   preserve raw events. Qualify generated Rust against Scheme fixtures.
+3. Compose agenda grouping as a view over one admitted candidate set. Keep
+   section-by-section block agendas separately named. Add cross-document
+   ID/link indexing in its search owner, returning source anchors and a
+   generation for target validation.
+4. Let Session own review attempt identity, grants, due policy, outcome and
+   current-cut reassessment. Treat a compact =MEMxxx= or =MEMORY.md=-style
+   summary as an output projection with links back to Org evidence. Literal
+   Markdown needs a source-preserving import or separate parser.
+5. Admit a new, versioned insight only with scope, supporting/contrary
+   episodes and an observable use or verification result. Retain failure and
+   uncertainty; permit later correction. Do not use review count, embedding
+   similarity, or an old =DONE= as the promotion rule.
+
+This order intentionally leaves the choice of review scheduling algorithm
+open. Compare time-only, source-change-only, and combined policies on the same
+fixtures before claiming better retention or fewer stale decisions.

@@ -96,4 +96,6 @@ Orgize does not parse Markdown as Org by assertion.
    a display row or a note title.
 
 See [[file:../../../../docs/10_architecture/10.08_temporal_revisit_projection.org][10.08 Temporal Revisit Projection]] for the proposed review contract and
-[[file:../../../../docs/10_architecture/10.03_agent_search_memory_org_mode_audit.org][10.03 Org mode audit]] for current consumer surfaces.
+[[file:../../../../docs/10_architecture/10.03_agent_search_memory_org_mode_audit.org][10.03 Org mode audit]] for current consumer surfaces. The
+[[file:../../../../docs/10_architecture/10.09_org_ecosystem_research.org][10.09 ecosystem research]] maps package behaviors to exact current seams and
+falsifiable experiments.
