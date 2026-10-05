@@ -19,6 +19,7 @@
                  org-element-graph-parent-of org-element-graph-kind-of
                  org-element-graph-field-of))
 (export org-element-with-headline-properties
+        todo-directive?
         todo-directive-rust
         todo-word-name todo-word-name-rust
         todo-open-words todo-open-words-rust

@@ -36,6 +36,14 @@ expand the selected set.  A note or review projection should likewise reuse
 the same Element IDs, spans, and LOGBOOK facts.  A heading title is a search
 hint, not identity, supersession, or proof.
 
+The narrow =org-elements/source-interface.ss= now projects at most 256 ordinary
+headline Elements from at most one MiB of supplied Org text. Rowan events own
+header spans and structure; the existing Scheme TODO algorithm owns file-local
+TODO state. The returned Element IDs include the source SHA-256 and byte span.
+This text-level projection does not authenticate a filesystem path, WorkTree
+cut, or caller grant. Its default parser configuration and headline-only scope
+must be kept explicit when a consumer binds it to a query result.
+
 On this source cut, the richer =AgendaViewPlan= / =AgendaBlockViewPlan= and
 =AgentCapturePlan= implementations remain in =src/semantic_ast/=, outside this
 Scheme module collection.  They are useful existing behavior and conformance
