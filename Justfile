@@ -12,6 +12,7 @@ default:
 scheme-test parser_lib poo_flow_lib:
     mkdir -p target/gerbil-test
     GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test t/*-test.ss
+    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" python3 tools/ci/watch-real-output.py gxi t/org-source-headlines-qualification.ss
 
 generate-contract-plan parser_lib poo_flow_lib source="languages/org/v1/modules/org-contract/generated/contract-source.ss" output="languages/org/v1/modules/org-contract/generated/contract-plan.rs":
     mkdir -p target/gerbil-test
