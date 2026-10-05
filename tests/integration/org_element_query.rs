@@ -74,8 +74,10 @@ fn named_query_observation_retains_effective_parse_configuration() {
     let default_observation = default
         .query_named_source_observation("tasks.open", 0)
         .expect("default query");
-    let mut config = ParseConfig::default();
-    config.todo_keywords = (vec!["WAIT".into()], vec!["DONE".into()]);
+    let config = ParseConfig {
+        todo_keywords: (vec!["WAIT".into()], vec!["DONE".into()]),
+        ..ParseConfig::default()
+    };
     let configured = parse_org_aot_with_config(source, &config).expect("configured parse");
     let configured_observation = configured
         .query_named_source_observation("tasks.open", 0)
