@@ -131,9 +131,9 @@
               (map (lambda (headline)
                      (let* ((start (vector-ref headline 0))
                             (end (vector-ref headline 1))
-                            (title (vector-ref headline 2))
+                            (title-value (vector-ref headline 2))
                             (state (todo-state-from-directives
-                                    title directives '("TODO") '("DONE")))
+                                    title-value directives '("TODO") '("DONE")))
                             (element-id
                              (string-append digest ":"
                                             (number->string start) ":"
@@ -143,7 +143,7 @@
                            identity: element-id
                            byte-start: start
                            byte-end: end
-                           title: title
+                           title: title-value
                            todo-type: state)))
                    (reverse headlines))))
         (.o kind: 'orgize.org-source-headline-elements

@@ -62,3 +62,13 @@ wasm: wasm-build
 
 wasm-clean:
     rm -rf wasm/dist
+
+# Focused original source producer gate, using the freshly compiled owner SDK.
+qualify-source-headlines:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    log="$(mktemp)"
+    trap 'rm -f "$log"' EXIT
+    timeout --foreground --signal=TERM --kill-after=1s 45s python3 tools/ci/watch-real-output.py gxi -:max-heap=1G,debug=q t/org-source-headlines-qualification.ss 2>&1 | tee "$log"
+    test "$(grep -c '^SOURCE-HEADLINE-CASE-OK ' "$log")" = 4
+    grep -Fx 'SOURCE-HEADLINE-OK' "$log" >/dev/null
