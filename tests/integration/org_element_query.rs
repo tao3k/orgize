@@ -65,8 +65,8 @@ fn named_query_observation_binds_graph_local_ids_to_exact_source() {
 #[test]
 fn named_query_observation_retains_effective_parse_configuration() {
     use orgize::{
-        org_aot::{parse_org_aot, parse_org_aot_with_config},
         ParseConfig,
+        org_aot::{parse_org_aot, parse_org_aot_with_config},
     };
 
     let source = "* WAIT Task\n";

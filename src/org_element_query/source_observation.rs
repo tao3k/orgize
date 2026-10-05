@@ -4,7 +4,7 @@
 //! still owns file identity, WorkTree cut, access grants, and publication.
 
 use crate::config::ParseConfig;
-use crate::org_aot::{org_event_parser_digest, org_graph_spec, OrgAotDocument};
+use crate::org_aot::{OrgAotDocument, org_event_parser_digest, org_graph_spec};
 use crate::org_aot_edit::org_source_digest;
 
 use super::execute::org_element_query_pack;
