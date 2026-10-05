@@ -11,4 +11,6 @@ pub use model::{
     OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryError, OrgElementQueryPack,
     OrgElementQueryRule, OrgElementRelation,
 };
-pub use source_observation::{OrgElementQueryMatch, OrgElementQuerySourceObservation};
+pub use source_observation::{
+    OrgElementQueryMatch, OrgElementQueryRecheckError, OrgElementQuerySourceObservation,
+};

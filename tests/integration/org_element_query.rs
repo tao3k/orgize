@@ -95,6 +95,74 @@ fn named_query_observation_retains_effective_parse_configuration() {
 }
 
 #[test]
+fn named_query_observation_rechecks_current_source_config_and_rule() {
+    use orgize::{
+        ParseConfig,
+        org_aot::{org_graph_spec, parse_org_aot_with_config},
+        org_element_query::{
+            OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryPack, OrgElementQueryRule,
+            OrgElementRelation,
+        },
+    };
+
+    let source = "#+SEQ_TODO: WAIT | DONE\n* WAIT Task\n";
+    let base = ParseConfig::default();
+    let document = parse_org_aot_with_config(source, &base).expect("source parse");
+    let observation = document
+        .query_named_source_observation("tasks.open", 0)
+        .expect("source-bound query");
+    assert!(
+        observation
+            .recheck_current_source(source, &base)
+            .expect("current source and rule recheck")
+    );
+    assert!(
+        !observation
+            .recheck_current_source("* Prelude\n* WAIT Task\n", &base)
+            .expect("changed source is stale")
+    );
+
+    let other_base = ParseConfig {
+        todo_keywords: (vec!["WAIT".into()], vec!["DONE".into()]),
+        ..base.clone()
+    };
+    let other_document =
+        parse_org_aot_with_config(source, &other_base).expect("alternate base parse");
+    assert_eq!(document.config(), other_document.config());
+    assert_ne!(document.base_config(), other_document.base_config());
+    assert!(
+        !observation
+            .recheck_current_source(source, &other_base)
+            .expect("changed base config is stale even with same effective config")
+    );
+
+    static SAME_RESULT_DIFFERENT_RULE: [OrgElementQueryRule; 1] = [OrgElementQueryRule {
+        id: "tasks.open",
+        node_kind: "headline",
+        groups: &[&[OrgElementPropertyRule {
+            name: "todo-type",
+            value: "todo",
+            matcher: OrgElementFieldMatch::Exact,
+        }]],
+        relation: OrgElementRelation::Any,
+        target_scope: false,
+    }];
+    let changed_pack = OrgElementQueryPack {
+        graph_digest: org_graph_spec().projection_digest,
+        rules: &SAME_RESULT_DIFFERENT_RULE,
+    };
+    assert_eq!(
+        document.query_with_pack(&changed_pack, "tasks.open", 0),
+        document.query_named("tasks.open", 0)
+    );
+    assert!(
+        !observation
+            .recheck_source_with_pack(source, &base, &changed_pack)
+            .expect("changed rule with same result is stale")
+    );
+}
+
+#[test]
 fn tagged_element_queries_inherit_custom_todo_state_and_scope() {
     let source = "#+SEQ_TODO: WAIT(w) | DONE(d)\n* Group\n** WAIT First\n** WAIT Review\n** WAIT Audit\n** DONE Child :work:\n* Other\n** WAIT Remote\n";
     let document = orgize::org_aot::parse_org_aot(source)

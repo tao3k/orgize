@@ -383,10 +383,16 @@ impl OrgAotDocument {
         self.syntax().to_string()
     }
 
-    /// Return the configuration used for this document's AOT parse.
+    /// Return the effective configuration after file-local Org directives.
     #[must_use]
     pub fn config(&self) -> &ParseConfig {
         &self.config
+    }
+
+    /// Return the configuration supplied to the AOT parser before file-local directives.
+    #[must_use]
+    pub fn base_config(&self) -> &ParseConfig {
+        &self.base_config
     }
 
     /// Iterate file-level keyword Elements from the Scheme AOT graph.

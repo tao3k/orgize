@@ -140,12 +140,18 @@ The local design branch now prototypes that first, narrower observation as
 =OrgAotDocument::query_named_source_observation=. It calls the existing
 Scheme-AOT named query and retains exact source digest/length, parser and
 Element projection digests, the full in-process query rule, effective parse
-configuration, scope, graph-local IDs, and spans. It offers a source-byte
-recheck, but has no stable serialized rule/configuration fingerprint, file
+configuration, scope, graph-local IDs, and spans. It also retains the base
+parse configuration. =recheck_current_source= reparses current bytes and
+reruns the maintained named query before comparing the complete observation;
+=recheck_source_with_pack= makes a same-ID rule change independently testable.
+A mere source-byte match does not pass this stronger recheck when the base
+configuration or rule changes. There is still no stable serialized
+rule/configuration fingerprint, file
 identity, WorkTree cut, or grant. Those remain required before Session can
 admit or publish the result. This prototype does not create a Rust parser or
 an independent query language. It currently reconstructs and hashes the full
-source for each observed query; cost at large document/query counts is not
+source for each observed query, and a full recheck reparses and reruns the
+query; cost at large document/query counts is not
 qualified. It also does not yet bind the separate Scheme =OrgElementGraphView=
 used by POO Flow to this AOT observation, so that end-to-end path remains
 untrusted for source admission.

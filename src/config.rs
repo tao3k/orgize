@@ -8,7 +8,7 @@ pub(crate) fn org_affiliated_keyword_names() -> &'static [&'static str] {
     org_elements::ORG_AFFILIATED_KEYWORDS
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 /// Controls Org subscript and superscript parsing.
 pub enum UseSubSuperscript {
     /// Disable subscript and superscript parsing.
@@ -44,7 +44,7 @@ pub enum RadioLinkProjection {
 }
 
 /// Parse configuration
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ParseConfig {
     /// Headline's todo keywords
     pub todo_keywords: (Vec<String>, Vec<String>),
