@@ -97,6 +97,59 @@ agenda rows, false completion/recall claims, false current-truth claims,
 unnecessary reviews, and ability to reconstruct a synthesis from its source
 episodes. A positive outcome in one measure does not imply the others.
 
+** First gate: bind a query result to the parse that produced it
+
+The source-to-graph edge is more specific than adding a digest field to an
+arbitrary graph. [[file:../../src/org_aot.rs][=OrgAotDocument=]] is built by the Scheme-generated event parser and
+holds the lossless Rowan tree and generated Element graph. Its =to_org=
+reconstructs the parsed source. The existing
+[[file:../../src/org_aot_edit.rs][source-edit boundary]] computes SHA-256 over exact UTF-8 bytes, reparses a
+candidate, and checks stable Org =ID= anchors before returning new text.
+That is a precedent for rechecking source, not a query receipt yet.
+
+Two later interfaces lose this binding: [[file:../../src/semantic_ast/elements_bridge.rs][=Document::org_elements_graph=]] returns a graph
+without the source digest, while the Scheme
+[[file:../../languages/org/v1/modules/org-elements/objects.ss][=make-org-element-graph-view=]] accepts caller-supplied records and accessors.
+Its POO shape check is structural admission, not proof that the view came from
+specific bytes. Conversely, [[file:../../src/org_element_query/execute.rs][=OrgAotDocument::query_named=]] executes a maintained
+Scheme-AOT query pack on the same parsed document, checks the pack's graph
+digest and scope, but returns bare graph-local numeric IDs. Its pack currently
+has a graph digest and query IDs, not a digest of each rule's full predicate.
+
+The smallest credible *query observation* therefore starts at the
+=OrgAotDocument= query call and binds the returned IDs to: exact source-byte
+digest and length, event-parser digest, Element-projection digest, effective
+parse configuration, complete named-query rule identity, scope ID, and record
+spans. Construct it from one parser-owned document and the query actually
+executed; do not expose a public constructor taking an arbitrary graph plus a
+caller-asserted digest. Org =ID= may provide a persistent target only when it
+is present and unambiguous. The graph-local numeric ID remains valid only
+inside this one receipt. The host must separately authenticate document
+identity, WorkTree cut, current access grant, and any external attachment;
+neither a content hash nor an Org =ID= proves those facts.
+
+Qualification cases: insert a heading before the target so numeric IDs move;
+change only line endings; hold bytes fixed while changing effective parse
+configuration; change a named rule without changing its ID; present duplicate
+Org =ID= properties; pass a caller-built graph with the correct byte digest;
+and reuse an old receipt after a WorkTree cut changes. Each case must either
+produce a distinct binding or be refused at the corresponding boundary. An
+in-process observation is not yet a durable, authorized Session receipt.
+
+The local design branch now prototypes that first, narrower observation as
+=OrgAotDocument::query_named_source_observation=. It calls the existing
+Scheme-AOT named query and retains exact source digest/length, parser and
+Element projection digests, the full in-process query rule, effective parse
+configuration, scope, graph-local IDs, and spans. It offers a source-byte
+recheck, but has no stable serialized rule/configuration fingerprint, file
+identity, WorkTree cut, or grant. Those remain required before Session can
+admit or publish the result. This prototype does not create a Rust parser or
+an independent query language. It currently reconstructs and hashes the full
+source for each observed query; cost at large document/query counts is not
+qualified. It also does not yet bind the separate Scheme =OrgElementGraphView=
+used by POO Flow to this AOT observation, so that end-to-end path remains
+untrusted for source admission.
+
 ** Implementation order implied by the experiments
 
 1. Make a source-to-graph admission receipt over exact Org bytes, document

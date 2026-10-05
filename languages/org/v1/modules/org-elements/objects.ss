@@ -123,6 +123,8 @@
 
 (def (make-org-element-graph-view records-value id-of-value parent-of-value
                                   kind-of-value field-of-value)
+  ;; This structurally admits a caller-supplied view. It does not attest that
+  ;; the records came from any declared Org source bytes or WorkTree cut.
   (admit! OrgElementGraphView
           (.o kind: +org-element-graph-kind+
               schema: +org-element-schema+
