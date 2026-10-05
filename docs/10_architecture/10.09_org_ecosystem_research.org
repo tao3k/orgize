@@ -150,6 +150,39 @@ qualified. It also does not yet bind the separate Scheme =OrgElementGraphView=
 used by POO Flow to this AOT observation, so that end-to-end path remains
 untrusted for source admission.
 
+** Why the current Scheme graph path cannot inherit that binding
+
+The [[file:../../languages/org/v1/rowan-event-parser.ss][Scheme event parser]] invokes =run-org-event-strategy=, whose Gerbil Parser
+=run-event-fold= returns an event list from the source. The maintained Rust
+AOT path applies those generated events to a lossless Rowan tree, then calls
+=project_syntax_graph= to create indexed Element records. The current Scheme
+Element selector does not consume that parser-owned Rust graph. Its
+=make-org-element-graph-view= takes arbitrary records and accessors, and
+Gerbil Parser's graph-query context checks duplicate IDs and missing parents,
+not the record bytes or parser lineage. Supplying a correct-looking digest
+beside such a view cannot close this gap: an attacker or buggy caller can
+reuse a digest with a different graph.
+
+The next bridge should accept an opaque parser-owned document/query handle,
+or a checked projection produced inside the same trusted source-to-graph
+operation. It should expose the selected spans and record IDs *together with*
+the source/configuration/rule observation. POO Flow may then attach an
+authenticated file and WorkTree cut and apply Session policy; it must not
+turn an arbitrary Scheme graph view into an admitted source by comparing two
+caller-supplied strings. The query predicate must remain the Orgize Scheme
+declaration or its generated AOT form, with parity checked on fixtures.
+
+An alternate pure Scheme materializer would need to consume the event list,
+construct and validate an Element graph with the same source span semantics,
+and prove parity with the generated Rowan projection. That work is not
+present at this cut. Until one bridge is qualified, the existing Scheme
+selection remains useful for candidate discovery but cannot publish a
+source-authenticated Session result. A negative fixture must pair genuine
+source bytes and digest with a forged graph whose IDs, parents or properties
+select a different candidate; the bridge must refuse that fixture before
+Session admission. Repeat with changed parser configuration, named-rule
+body, and WorkTree cut to test each boundary separately.
+
 ** Implementation order implied by the experiments
 
 1. Make a source-to-graph admission receipt over exact Org bytes, document
