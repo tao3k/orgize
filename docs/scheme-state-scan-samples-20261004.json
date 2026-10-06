@@ -1,0 +1,162 @@
+{
+  "decision": "rejected; no uniform benefit; not linked into native receipts",
+  "sample_scope": "Scheme fixture fold, not public AOT end-to-end throughput",
+  "samples": [
+    {
+      "fixture": "doc.org",
+      "kind": "baseline",
+      "round": 1,
+      "count": 20,
+      "median": 1876,
+      "p95": 3971,
+      "allocation": [
+        1917936
+      ],
+      "input": "(ORG-EVENT-INPUT \"baseline-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+      "ok": true
+    },
+    {
+      "fixture": "doc.org",
+      "kind": "baseline",
+      "round": 2,
+      "count": 20,
+      "median": 1904,
+      "p95": 34793,
+      "allocation": [
+        1917936
+      ],
+      "input": "(ORG-EVENT-INPUT \"baseline-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+      "ok": true
+    },
+    {
+      "fixture": "doc.org",
+      "kind": "candidate",
+      "round": 1,
+      "count": 20,
+      "median": 1748.5,
+      "p95": 22870,
+      "allocation": [
+        1917936
+      ],
+      "input": "(ORG-EVENT-INPUT \"candidate-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+      "ok": true
+    },
+    {
+      "fixture": "doc.org",
+      "kind": "candidate",
+      "round": 2,
+      "count": 20,
+      "median": 1734.5,
+      "p95": 3509,
+      "allocation": [
+        1917936
+      ],
+      "input": "(ORG-EVENT-INPUT \"candidate-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+      "ok": true
+    },
+    {
+      "fixture": "plain-links.org",
+      "kind": "baseline",
+      "round": 1,
+      "count": 20,
+      "median": 3337,
+      "p95": 57327,
+      "allocation": [
+        2260128
+      ],
+      "input": "(ORG-EVENT-INPUT \"baseline-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+      "ok": true
+    },
+    {
+      "fixture": "plain-links.org",
+      "kind": "baseline",
+      "round": 2,
+      "count": 20,
+      "median": 2377.5,
+      "p95": 104235,
+      "allocation": [
+        2260128
+      ],
+      "input": "(ORG-EVENT-INPUT \"baseline-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+      "ok": true
+    },
+    {
+      "fixture": "plain-links.org",
+      "kind": "candidate",
+      "round": 1,
+      "count": 20,
+      "median": 2173.5,
+      "p95": 35838,
+      "allocation": [
+        2260128
+      ],
+      "input": "(ORG-EVENT-INPUT \"candidate-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+      "ok": true
+    },
+    {
+      "fixture": "plain-links.org",
+      "kind": "candidate",
+      "round": 2,
+      "count": 20,
+      "median": 2158.5,
+      "p95": 2284,
+      "allocation": [
+        2260128
+      ],
+      "input": "(ORG-EVENT-INPUT \"candidate-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+      "ok": true
+    },
+    {
+      "fixture": "quote-heavy.org",
+      "kind": "baseline",
+      "round": 1,
+      "count": 20,
+      "median": 5101,
+      "p95": 13041,
+      "allocation": [
+        4927392
+      ],
+      "input": "(ORG-EVENT-INPUT \"baseline-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+      "ok": true
+    },
+    {
+      "fixture": "quote-heavy.org",
+      "kind": "baseline",
+      "round": 2,
+      "count": 20,
+      "median": 12760.5,
+      "p95": 178095,
+      "allocation": [
+        4927392
+      ],
+      "input": "(ORG-EVENT-INPUT \"baseline-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+      "ok": true
+    },
+    {
+      "fixture": "quote-heavy.org",
+      "kind": "candidate",
+      "round": 1,
+      "count": 20,
+      "median": 5917,
+      "p95": 74498,
+      "allocation": [
+        4927392
+      ],
+      "input": "(ORG-EVENT-INPUT \"candidate-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+      "ok": true
+    },
+    {
+      "fixture": "quote-heavy.org",
+      "kind": "candidate",
+      "round": 2,
+      "count": 20,
+      "median": 5895.5,
+      "p95": 100550,
+      "allocation": [
+        4927392
+      ],
+      "input": "(ORG-EVENT-INPUT \"candidate-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+      "ok": true
+    }
+  ]
+}

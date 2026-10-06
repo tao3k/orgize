@@ -1,6 +1,62 @@
 use orgize::{Org, export::HtmlExportOptions};
 
 #[test]
+fn explicit_startup_precedes_parallel_html_cases() {
+    // SAFETY: standalone fixture initializes before application workers.
+    unsafe { orgize::initialize_native_runtime() }.expect("native exporter startup");
+    let cases: &[(&str, fn())] = &[
+        (
+            "headline_anchor_callback_uses_scheme_projected_title",
+            headline_anchor_callback_uses_scheme_projected_title,
+        ),
+        ("emphasis", emphasis),
+        ("link", link),
+        ("section_and_headline", section_and_headline),
+        ("list", list),
+        ("snippet", snippet),
+        ("html_export_block", html_export_block),
+        (
+            "html_source_block_preserves_language_and_safe_data_attributes",
+            html_source_block_preserves_language_and_safe_data_attributes,
+        ),
+        ("paragraphs", paragraphs),
+        ("table", table),
+        (
+            "table_formula_is_metadata_not_html_row",
+            table_formula_is_metadata_not_html_row,
+        ),
+        (
+            "inline_source_uses_scheme_classified_language_and_escaped_body",
+            inline_source_uses_scheme_classified_language_and_escaped_body,
+        ),
+        (
+            "inline_babel_call_is_escaped_source_text",
+            inline_babel_call_is_escaped_source_text,
+        ),
+        (
+            "footnote_reference_and_definition_share_an_anchor",
+            footnote_reference_and_definition_share_an_anchor,
+        ),
+        ("line_break", line_break),
+        (
+            "html_export_options_control_special_strings_and_entities",
+            html_export_options_control_special_strings_and_entities,
+        ),
+    ];
+    std::thread::scope(|scope| {
+        for &(name, case) in cases {
+            scope.spawn(move || {
+                case();
+                println!("native-export case={name} OK");
+            });
+        }
+    });
+    println!(
+        "startup-native exporter=html cases={} complete OK",
+        cases.len()
+    );
+}
+
 fn headline_anchor_callback_uses_scheme_projected_title() {
     let rendered = Org::parse("* A & B\n")
         .try_to_html_with_headline_anchor(|title| format!("section-{title}"))
@@ -11,7 +67,6 @@ fn headline_anchor_callback_uses_scheme_projected_title() {
     );
 }
 
-#[test]
 fn emphasis() {
     insta::assert_snapshot!(
         Org::parse("*bold*, /italic/,\n_underlined_, =verbatim= and ~code~").to_html(),
@@ -22,7 +77,6 @@ fn emphasis() {
     );
 }
 
-#[test]
 fn link() {
     insta::assert_snapshot!(
         Org::parse("Visit[[http://example.com][link1]]or[[http://example.com][link1]].").to_html(),
@@ -40,7 +94,6 @@ fn link() {
     );
 }
 
-#[test]
 fn section_and_headline() {
     insta::assert_snapshot!(
         Org::parse(r#"
@@ -63,7 +116,6 @@ section 4
     );
 }
 
-#[test]
 fn list() {
     insta::assert_snapshot!(
         Org::parse(r#"
@@ -88,7 +140,6 @@ fn list() {
     );
 }
 
-#[test]
 fn snippet() {
     insta::assert_snapshot!(
         Org::parse("@@html:<del>@@delete this@@html:</del>@@").to_html(),
@@ -96,7 +147,6 @@ fn snippet() {
     );
 }
 
-#[test]
 fn html_export_block() {
     let rendered = Org::parse(
         r#"
@@ -115,7 +165,6 @@ fn html_export_block() {
     assert!(!rendered.contains(r#"\LaTeX{}"#));
 }
 
-#[test]
 fn html_source_block_preserves_language_and_safe_data_attributes() {
     let rendered = Org::parse(
         r#"
@@ -135,7 +184,6 @@ fn html_source_block_preserves_language_and_safe_data_attributes() {
     assert!(!rendered.contains("style="));
 }
 
-#[test]
 fn paragraphs() {
     insta::assert_snapshot!(
         Org::parse(r#"
@@ -159,7 +207,6 @@ paragraph 4
     );
 }
 
-#[test]
 fn table() {
     // don't has table header
     insta::assert_snapshot!(
@@ -227,7 +274,6 @@ fn table() {
     );
 }
 
-#[test]
 fn table_formula_is_metadata_not_html_row() {
     insta::assert_snapshot!(
         Org::parse("| Name | Value |\n|------+-------|\n| alpha | 1 |\n#+TBLFM: @2$2=1\n").to_html(),
@@ -235,7 +281,6 @@ fn table_formula_is_metadata_not_html_row() {
     );
 }
 
-#[test]
 fn inline_source_uses_scheme_classified_language_and_escaped_body() {
     insta::assert_snapshot!(
         Org::parse("before src_rust{let x = 1 < 2;} after").to_html(),
@@ -243,7 +288,6 @@ fn inline_source_uses_scheme_classified_language_and_escaped_body() {
     );
 }
 
-#[test]
 fn inline_babel_call_is_escaped_source_text() {
     insta::assert_snapshot!(
         Org::parse("call_square(1 < 2)").to_html(),
@@ -251,7 +295,6 @@ fn inline_babel_call_is_escaped_source_text() {
     );
 }
 
-#[test]
 fn footnote_reference_and_definition_share_an_anchor() {
     insta::assert_snapshot!(
         Org::parse("A [fn:bench].\n\n[fn:bench] Note.\n").to_html(),
@@ -263,7 +306,6 @@ fn footnote_reference_and_definition_share_an_anchor() {
     );
 }
 
-#[test]
 fn line_break() {
     insta::assert_debug_snapshot!(
         Org::parse("aa\\\\\nbb").to_html(),
@@ -271,7 +313,6 @@ fn line_break() {
     );
 }
 
-#[test]
 fn html_export_options_control_special_strings_and_entities() {
     let org = Org::parse(r#"a -- b --- c... don't \- \alpha{}"#);
     let rendered = org.to_html_with_options(HtmlExportOptions {

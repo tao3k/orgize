@@ -106,8 +106,6 @@ mod org_named_elements;
 mod org_parser_aot;
 #[path = "integration/org_public_aot_boundary.rs"]
 mod org_public_aot_boundary;
-#[path = "integration/org_rowan_event_handoff.rs"]
-mod org_rowan_event_handoff;
 #[path = "integration/org_script_aot.rs"]
 mod org_script_aot;
 #[path = "integration/org_timestamp_aot.rs"]
@@ -124,3 +122,6 @@ mod semantic_ast;
 mod source_block_document;
 #[path = "integration/task_cli.rs"]
 mod task_cli;
+
+#[path = "integration/native_consumer_fixture.rs"]
+mod native_consumer_fixture;

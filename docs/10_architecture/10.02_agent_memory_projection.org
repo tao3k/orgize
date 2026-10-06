@@ -5,6 +5,17 @@ memory projection API. The purpose is not to turn orgize into a memory database.
 The purpose is to let historical Org facts enter an agent's current decision in
 a controlled, auditable direction.
 
+The current architectural owner map is [[file:../../languages/org/v1/modules/README.org][Org v1 module capabilities]]. This
+document describes one existing consumer projection; its =AgentMemorySnapshot=
+API is not a requirement that agenda, notes, review, and search use Memory as
+their shared root type. Each capability keeps its native Org source evidence.
+
+[[file:10.08_temporal_revisit_projection.org][10.08 Temporal Revisit Projection]] refines the decision boundary: a
+recorded lifecycle state, a due review, and a currently verified claim are
+separate. On Orgize PR #21, the compact Memory API exists, while some of its
+authority classification still lives in Rust. The Scheme-owned projection
+and parity gate in 10.08 are proposed work.
+
 ** Source Contract
 
 The source format remains ordinary Org. The projection must not define new Org

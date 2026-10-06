@@ -3,20 +3,19 @@
 
 (import (only-in :std/string/misc string-trim)
         (only-in :gerbil-parser/src/compiler/rust-pure-aot
-                 define-rust-pure scheme-pure->rust string-after string-before
+                 string-after string-before
                  string-prefix? string-trim-start))
-(export logbook-content-line logbook-content-line-rust
-        logbook-line-kind logbook-line-kind-rust
-        logbook-state-quote-shape logbook-state-quote-shape-rust
-        logbook-state-to logbook-state-to-rust
-        logbook-state-from logbook-state-from-rust
-        logbook-clock-duration-shape logbook-clock-duration-shape-rust
-        logbook-clock-duration-value logbook-clock-duration-value-rust)
+(export logbook-content-line
+        logbook-line-kind
+        logbook-state-quote-shape
+        logbook-state-to
+        logbook-state-from
+        logbook-clock-duration-shape
+        logbook-clock-duration-value)
 
 ;; The caller supplies one trimmed LOGBOOK line without its optional list dash.
 ;; Value extraction remains a separate semantic projection over that line.
-(define-rust-pure logbook-content-line logbook-content-line-rust
-  ((line "&str")) "&str"
+(def (logbook-content-line line)
   (let* ((trimmed (string-trim line)))
     (if (string-prefix? trimmed "-")
       (string-trim-start (string-after trimmed "-"))
@@ -47,18 +46,11 @@
     (if (null? (cdr predicates)) (car predicates)
         (cons 'or predicates))))
 
-(def logbook-line-kind-rust
-  (scheme-pure->rust
-   'logbook-line-kind '((line . "&str")) "&str"
-   (foldr (lambda (rule otherwise)
-            `(if ,(logbook-prefix-form (cdr rule))
-                 ,(car rule) ,otherwise))
-          "note" logbook-line-rules)))
+
 
 ;; The four delimiter checks preserve empty quoted states while distinguishing
 ;; them from missing quotes. Rust consumes only these Scheme-authored values.
-(define-rust-pure logbook-state-quote-shape logbook-state-quote-shape-rust
-  ((line "&str")) "&'static str"
+(def (logbook-state-quote-shape line)
   (let* ((before-first (string-before line "\""))
          (after-first (string-after line "\""))
          (to (string-before after-first "\""))
@@ -72,13 +64,11 @@
             (equal? from after-third))
       "incomplete" "complete")))
 
-(define-rust-pure logbook-state-to logbook-state-to-rust
-  ((line "&str")) "&str"
+(def (logbook-state-to line)
   (let* ((after-first (string-after line "\"")))
     (string-before after-first "\"")))
 
-(define-rust-pure logbook-state-from logbook-state-from-rust
-  ((line "&str")) "&str"
+(def (logbook-state-from line)
   (let* ((after-first (string-after line "\""))
          (after-second (string-after after-first "\""))
          (after-third (string-after after-second "\"")))
@@ -86,10 +76,8 @@
 
 ;; List-item CLOCK lines are paragraphs rather than structural OrgClock nodes.
 ;; Keep their duration boundary in Scheme while Rust owns the typed duration.
-(define-rust-pure logbook-clock-duration-shape logbook-clock-duration-shape-rust
-  ((line "&str")) "&'static str"
+(def (logbook-clock-duration-shape line)
   (if (equal? (string-before line "=>") line) "absent" "present"))
 
-(define-rust-pure logbook-clock-duration-value logbook-clock-duration-value-rust
-  ((line "&str")) "&str"
+(def (logbook-clock-duration-value line)
   (string-trim (string-after line "=>")))

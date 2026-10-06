@@ -4,7 +4,6 @@ use orgize::{
     ast::{AstRef, ElementData, TableFormulaReferenceKind},
 };
 
-#[test]
 fn semantic_ast_projects_org_table_formulas() {
     let doc = Org::parse(
         "| a | b |\n#+TBLFM: $2=vsum(@2..@4);%.1f::$1=remote(other,$2)\n#+tblfm: @2=$3\n",
@@ -55,3 +54,8 @@ fn semantic_ast_projects_org_table_formulas() {
     });
     assert_eq!(formula_keyword_count, 2);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_org_table_formulas::semantic_ast_projects_org_table_formulas",
+    semantic_ast_projects_org_table_formulas,
+)];

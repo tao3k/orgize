@@ -1,9 +1,13 @@
 * 20.06 Scheme Grammar to Rowan Cutover
 
 The Org syntax declaration belongs in a versioned Gerbil language pack.  The
-normal Rust consumer must depend on the generated Org module and the generic
-=gerbil-parser-rowan= runtime only.  It must not invoke Gerbil at parse time,
-copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
+normal Rust consumer executes the statically linked Gerbil AOT/FFI program
+and uses the generic =gerbil-parser-rowan= projection runtime. It must not copy
+the Rowan sink into orgize or retain a second Rust parser as a fallback.
+The superseded Rust event-IR implementation has been deleted; older backend
+receipts below are historical evidence, not a second implementation to maintain.
+Current local admission is recorded in
+[[file:../native-org-public-cutover-20261003.org][the native public-entry receipt]].
 
 ** Baseline and authority
 
@@ -18,9 +22,10 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
   =fixtures.ss=/=corpus/= and element/object coverage remain cutover work. The
   Scheme pack owns Org precedence, ambiguity, syntax kinds, fields, recovery,
   and all context-sensitive recognition decisions.
-- Generate and commit immutable Rust tables from that pack.  Cargo consumers
-  use those tables without =gerbil.pkg=, an installed Gerbil, or build-time
-  Scheme.  Regeneration is an upstream development/release action.
+- Generate immutable kind/field tables as projections of that pack, not a
+  Rust parser. Source builds prepare and statically link the native Gerbil
+  AOT program; packaged consumers execute its C ABI without spawning a
+  Scheme interpreter. Native build-tool qualification is a separate gate.
 
 ** Current implementation
 
@@ -28,10 +33,11 @@ copy the Rowan sink into orgize, or retain a second Rust grammar as a fallback.
 =modules/org-parser/event-strategy.ss= composes the Scheme event algorithm.
 The shared =parser.ss= POO block declarations supply markers to that
 algorithm; they are not a second runtime parser. Gerbil executes the same
-event strategy in tests and AOT-lowers it through gerbil-parser and
-gerbil-scheme-rust into a Rust function consumed by Rowan. Cargo parsing
-requires neither Gerbil nor =gerbil.pkg=. Source-backed event AST tests and
-graph/roundtrip fixtures verify this path.
+event strategy in tests and compiles it through gerbil-parser and
+gerbil-scheme-rust into the linked native Gerbil AOT/FFI program. Rust admits
+and projects its event tape into Rowan; it does not execute a generated Rust
+recognizer. Source-backed event AST tests and graph/roundtrip fixtures verify
+this path. Older generated-Rust backend descriptions are historical only.
 
 =modules/org-elements/catalog.ss= owns the Element/Object inventory and
 =graph-shape.ss= owns source-backed projection fields. The public
@@ -65,11 +71,12 @@ swap. The current status and remaining semantic/performance closure are in
 
 ** Cutover gate
 
-For each pinned corpus case, compare the old parser and, where applicable,
-the pinned =org-element.el= reference with the Scheme-authored AOT product:
+For each pinned corpus case, compare explicit source-backed expectations and,
+where applicable, the pinned =org-element.el= reference with the native
+Scheme-authored AOT product:
 acceptance/rejection, tree hierarchy, field boundaries, diagnostics, and
-exact source roundtrip. The old parser is evidence, not an authority; record
-source-backed intentional changes rather than forcing incorrect parity.
+exact source roundtrip. Historical old-parser receipts are evidence, not an
+executable test oracle or authority; record source-backed intentional changes.
 Cover every upstream element/object kind, affiliated keyword,
 configuration-dependent behavior, malformed/recovery case, and real Org guide
 fixture. Continue expanding this gate after deleting the old parser; deletion
@@ -80,6 +87,6 @@ nested/ambiguous inputs with the ASP Rust Dev Gate.  Record throughput,
 allocation, and peak memory against main; do not weaken existing thresholds
 to absorb a generated-engine regression.
 
-Only after the complete differential and performance gates pass should the
-handwritten Rust lexer/combinator/element/object parser be removed.  Keeping
-both as a runtime selection path would create two grammar authorities.
+The handwritten Rust parser has already been removed. Its removal does not
+admit complete syntax, recovery or performance closure, and it must not be
+restored as an alternate runtime selection path.

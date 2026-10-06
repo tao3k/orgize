@@ -4,7 +4,6 @@ use orgize::ParseConfig;
 use orgize::config::UseSubSuperscript;
 use orgize::org_aot::{parse_org_aot, parse_org_aot_with_config};
 
-#[test]
 fn configured_inline_script_policy_reaches_scheme_aot_helper() {
     let source = "x_abc y_{z}\n";
     let count = |policy| {
@@ -48,7 +47,6 @@ fn configured_inline_script_policy_reaches_scheme_aot_helper() {
     );
 }
 
-#[test]
 fn scheme_script_objects_project_with_source_backed_values() {
     check_org_aot_element!("x_abc\n", "subscript", "value" => "abc");
     check_org_aot_element!("x_{a{b}c}\n", "subscript", "value" => "a{b}c");
@@ -56,7 +54,6 @@ fn scheme_script_objects_project_with_source_backed_values() {
     check_org_aot_element!("x^*\n", "superscript", "value" => "*");
 }
 
-#[test]
 fn script_guards_do_not_consume_identifiers_or_markup() {
     let source = "AB_2O x^a, _hello_\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -75,3 +72,18 @@ fn script_guards_do_not_consume_identifiers_or_markup() {
     );
     assert_eq!(document.syntax().to_string(), source);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_script_aot::configured_inline_script_policy_reaches_scheme_aot_helper",
+        configured_inline_script_policy_reaches_scheme_aot_helper,
+    ),
+    (
+        "org_script_aot::scheme_script_objects_project_with_source_backed_values",
+        scheme_script_objects_project_with_source_backed_values,
+    ),
+    (
+        "org_script_aot::script_guards_do_not_consume_identifiers_or_markup",
+        script_guards_do_not_consume_identifiers_or_markup,
+    ),
+];

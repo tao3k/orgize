@@ -149,61 +149,13 @@ fn fixed_global_allowed_values_for(
 }
 
 fn allowed_value_descriptor_key(key: &str) -> String {
-    format!("{}_ALL", key.trim_end_matches('+'))
+    super::org_native_values::scalar("descriptor-key", &[key])
 }
-
 fn descriptor_property_name(key: &str) -> Option<String> {
-    let trimmed = key.trim_end_matches('+');
-    if !trimmed.to_ascii_uppercase().ends_with("_ALL") {
-        return None;
-    }
-    let base = &trimmed[..trimmed.len() - "_ALL".len()];
-    (!base.is_empty()).then(|| base.to_string())
+    let row = super::org_native_values::optional("descriptor-name", key)?;
+    let [name]: [String; 1] = row.try_into().expect("native descriptor arity");
+    Some(name)
 }
-
 fn allowed_value_tokens(value: &str) -> Vec<String> {
-    let mut tokens = Vec::new();
-    let mut cursor = 0;
-    while let Some(start) = next_token_start(value, cursor) {
-        let (token, next) = allowed_value_token(value, start);
-        tokens.push(token);
-        cursor = next;
-    }
-    tokens
-}
-
-fn next_token_start(value: &str, cursor: usize) -> Option<usize> {
-    value[cursor..]
-        .char_indices()
-        .find(|(_, ch)| !ch.is_whitespace())
-        .map(|(position, _)| cursor + position)
-}
-
-fn allowed_value_token(value: &str, start: usize) -> (String, usize) {
-    let mut cursor = start;
-    let mut parsed = String::new();
-    let mut quote = None;
-    let mut escaped = false;
-    while cursor < value.len() {
-        let ch = value[cursor..].chars().next().unwrap();
-        cursor += ch.len_utf8();
-        if escaped {
-            parsed.push(ch);
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if quote == Some(ch) {
-            quote = None;
-        } else if quote.is_none() && matches!(ch, '"' | '\'') {
-            quote = Some(ch);
-        } else if quote.is_none() && ch.is_whitespace() {
-            break;
-        } else {
-            parsed.push(ch);
-        }
-    }
-    if escaped {
-        parsed.push('\\');
-    }
-    (parsed, cursor)
+    super::org_native_values::optional("property-tokens", value).expect("native property tokens")
 }

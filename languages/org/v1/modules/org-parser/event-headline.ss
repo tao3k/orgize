@@ -50,10 +50,12 @@
              rich-keyword-markers)))
 
 (def (keyword-value-forms value-start value-end)
-  `((if (and (uint-positive? (state keyword-table-open))
+  `((if (line-starts-with-ascii-ci "#+MACRO:")
+        ((call-source-helper macro-definition ,value-start ,value-end))
+        ((if (and (uint-positive? (state keyword-table-open))
              (line-starts-with-ascii-ci ,table-formula-marker))
         ((start-node OrgTableFormulaValue)
-         (call-source-helper table-formula-assignments
+         (call-source-helper table-formula-content
                              ,value-start ,value-end)
          (finish-node))
         ((if ,rich-keyword-condition
@@ -78,7 +80,7 @@
                                   (finish-node))
                                  ((if (line-starts-with-ascii-ci ,babel-call-marker)
                                       ,(event-babel-call-forms value-start value-end)
-                                      ((token KeywordValue ,value-start ,value-end)))))))))))))))))
+                                      ((token KeywordValue ,value-start ,value-end)))))))))))))))))))
 
 (def keyword-value-event-helper
   (make-org-event-helper

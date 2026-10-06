@@ -7,9 +7,7 @@
         (only-in "generated/customer-contract-source.ss"
                  org-contract-definitions))
 
-(def arguments (command-line))
-(unless (> (length arguments) 2)
-  (error "usage: generate-customer-contracts.ss OUTPUT.rs"))
+(export main)
 
-(generate-org-contract-rust-module
- (car (reverse arguments)) org-contract-definitions)
+(def (main output-path)
+  (generate-org-contract-rust-module output-path org-contract-definitions))

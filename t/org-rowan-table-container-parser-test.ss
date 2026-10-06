@@ -3,8 +3,6 @@
 
 (import (only-in :std/test check test-case test-suite)
         (only-in :clan/poo/object .o)
-        (only-in :std/encoding/json JSONReadOptions string->json)
-        (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks)
         (only-in "../languages/org/v1/parser.ss" org-v1-line-structure)
@@ -21,12 +19,13 @@
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
         (only-in "org-parser-test-support.ss" check-org-ast-with)
-        (only-in "../languages/org/v1/rowan-event-fixture.ss" rowan-event-fixture-json)
-        (only-in "../languages/org/v1/rowan-event-parser.ss"
+        (only-in "../languages/org/v1/rowan-event-fixture.ss" rowan-event-fixture)
+        (only-in "../languages/org/v1/generated/rowan-event-fixture.ss"
+                 rowan-event-fixture-events)
+        (only-in "../languages/org/v1/rowan-event-runtime.ss"
                  parse-org-rowan-events
                  parse-org-rowan-events-with-inlinetask-level
-                 parse-org-rowan-events-with-inline-script-policy
-                 parse_org_rowan_events))
+                 parse-org-rowan-events-with-inline-script-policy))
 (export org-v1-rowan-table-container-parser-test)
 
 (def org-v1-rowan-table-container-parser-test
@@ -41,9 +40,9 @@
           (OrgTable
            (OrgTableRow
             (TableSeparator 4 5)
-            (OrgTableCell (OrgTextLine (TextLine 5 8)))
+            (OrgTableCell (TableTrivia 5 6) (TableCellContent (OrgTextLine (TextLine 6 7))) (TableTrivia 7 8))
             (TableSeparator 8 9)
-            (OrgTableCell (OrgTextLine (TextLine 9 12)))
+            (OrgTableCell (TableTrivia 9 10) (TableCellContent (OrgTextLine (TextLine 10 11))) (TableTrivia 11 12))
             (TableSeparator 12 13)
             (TableTrivia 13 14))
            (OrgTableRuleRow (TableRuleText 14 24)))
@@ -55,7 +54,7 @@
          (OrgTable
           (OrgTableRow
            (TableSeparator 0 1)
-           (OrgTableCell (OrgTextLine (TextLine 1 4)))
+           (OrgTableCell (TableTrivia 1 2) (TableCellContent (OrgTextLine (TextLine 2 3))) (TableTrivia 3 4))
            (TableSeparator 4 5)
            (TableTrivia 5 6))
           (OrgKeyword
@@ -63,13 +62,13 @@
            (KeywordTrivia 13 14)
            (OrgKeywordRawValue
             (KeywordTrivia 14 15)
-            (OrgTableFormulaValue
-             (OrgTableFormulaAssignment
-              (OrgTableFormulaLhs
-               (OrgTableFormulaReference (FormulaFieldReference 15 17)))
+            (OrgTableFormulaValue (FormulaContent
+             (OrgTableFormulaAssignment (FormulaContent
+              (OrgTableFormulaLhs (FormulaContent
+               (OrgTableFormulaReference (FormulaFieldReference 15 17))))
               (FormulaEquals 17 18)
-              (OrgTableFormulaRhs
-               (OrgTableFormulaReference (FormulaFieldReference 18 20))))))
+              (OrgTableFormulaRhs (FormulaContent
+               (OrgTableFormulaReference (FormulaFieldReference 18 20)))))))))
            (KeywordTrivia 20 21))))))
     (test-case "formula row ranges keep two source-backed references"
       (check-org-ast-with parse-org-rowan-events
@@ -78,7 +77,7 @@
          (OrgTable
           (OrgTableRow
            (TableSeparator 0 1)
-           (OrgTableCell (OrgTextLine (TextLine 1 4)))
+           (OrgTableCell (TableTrivia 1 2) (TableCellContent (OrgTextLine (TextLine 2 3))) (TableTrivia 3 4))
            (TableSeparator 4 5)
            (TableTrivia 5 6))
           (OrgKeyword
@@ -86,15 +85,15 @@
            (KeywordTrivia 13 14)
            (OrgKeywordRawValue
             (KeywordTrivia 14 15)
-            (OrgTableFormulaValue
-             (OrgTableFormulaAssignment
-              (OrgTableFormulaLhs
-               (OrgTableFormulaReference (FormulaFieldReference 15 17)))
+            (OrgTableFormulaValue (FormulaContent
+             (OrgTableFormulaAssignment (FormulaContent
+              (OrgTableFormulaLhs (FormulaContent
+               (OrgTableFormulaReference (FormulaFieldReference 15 17))))
               (FormulaEquals 17 18)
-              (OrgTableFormulaRhs
+              (OrgTableFormulaRhs (FormulaContent
                (OrgTableFormulaReference (FormulaRowReference 18 20))
                (FormulaText 20 22)
-               (OrgTableFormulaReference (FormulaRowReference 22 24))))))
+               (OrgTableFormulaReference (FormulaRowReference 22 24)))))))))
            (KeywordTrivia 24 25))))))
     (test-case "formula assignments and flags remain structured Scheme nodes"
       (check-org-ast-with parse-org-rowan-events
@@ -103,7 +102,7 @@
          (OrgTable
           (OrgTableRow
            (TableSeparator 0 1)
-           (OrgTableCell (OrgTextLine (TextLine 1 4)))
+           (OrgTableCell (TableTrivia 1 2) (TableCellContent (OrgTextLine (TextLine 2 3))) (TableTrivia 3 4))
            (TableSeparator 4 5)
            (TableTrivia 5 6))
           (OrgKeyword
@@ -111,22 +110,22 @@
            (KeywordTrivia 13 14)
            (OrgKeywordRawValue
             (KeywordTrivia 14 15)
-            (OrgTableFormulaValue
-             (OrgTableFormulaAssignment
-              (OrgTableFormulaLhs
-               (OrgTableFormulaReference (FormulaFieldReference 15 17)))
+            (OrgTableFormulaValue (FormulaContent
+             (OrgTableFormulaAssignment (FormulaContent
+              (OrgTableFormulaLhs (FormulaContent
+               (OrgTableFormulaReference (FormulaFieldReference 15 17))))
               (FormulaEquals 17 18)
-              (OrgTableFormulaRhs
-               (OrgTableFormulaReference (FormulaFieldReference 18 20)))
+              (OrgTableFormulaRhs (FormulaContent
+               (OrgTableFormulaReference (FormulaFieldReference 18 20))))
               (FormulaFlagSeparator 20 21)
-              (FormulaFlag 21 22))
+              (FormulaFlagContent (FormulaFlag 21 22))))
              (FormulaSeparator 22 24)
-             (OrgTableFormulaAssignment
-              (OrgTableFormulaLhs
-               (OrgTableFormulaReference (FormulaFieldReference 24 26)))
+             (OrgTableFormulaAssignment (FormulaContent
+              (OrgTableFormulaLhs (FormulaContent
+               (OrgTableFormulaReference (FormulaFieldReference 24 26))))
               (FormulaEquals 26 27)
-              (OrgTableFormulaRhs
-               (OrgTableFormulaReference (FormulaRowReference 27 29))))))
+              (OrgTableFormulaRhs (FormulaContent
+               (OrgTableFormulaReference (FormulaRowReference 27 29)))))))))
            (KeywordTrivia 29 30))))))
     (test-case "table.el border and cells remain one Scheme Element"
       (check-org-ast-with parse-org-rowan-events
@@ -144,11 +143,11 @@
           (OrgTableRow
            (TableSeparator 0 1)
            (OrgTableCell
-            (OrgTextLine
-             (TextLine 1 2)
+            (TableTrivia 1 2)
+            (TableCellContent (OrgTextLine
              (OrgLink (LinkTrivia 2 4) (LinkTarget 4 8)
-                      (LinkTrivia 8 10))
-             (TextLine 10 11)))
+                      (LinkTrivia 8 10))))
+            (TableTrivia 10 11))
            (TableSeparator 11 12)
            (TableTrivia 12 13))))))
     (test-case "table delimiter escaping follows preceding backslash parity"
@@ -158,9 +157,9 @@
          (OrgTable
           (OrgTableRow
            (TableSeparator 0 1)
-           (OrgTableCell (OrgTextLine (TextLine 1 7)))
+           (OrgTableCell (TableTrivia 1 2) (TableCellContent (OrgTextLine (TextLine 2 6))) (TableTrivia 6 7))
            (TableSeparator 7 8)
-           (OrgTableCell (OrgTextLine (TextLine 8 11)))
+           (OrgTableCell (TableTrivia 8 9) (TableCellContent (OrgTextLine (TextLine 9 10))) (TableTrivia 10 11))
            (TableSeparator 11 12)
            (TableTrivia 12 13)))))
       (check-org-ast-with parse-org-rowan-events
@@ -169,11 +168,11 @@
          (OrgTable
           (OrgTableRow
            (TableSeparator 0 1)
-           (OrgTableCell (OrgTextLine (TextLine 1 5)))
+           (OrgTableCell (TableTrivia 1 2) (TableCellContent (OrgTextLine (TextLine 2 5))))
            (TableSeparator 5 6)
-           (OrgTableCell (OrgTextLine (TextLine 6 8)))
+           (OrgTableCell (TableCellContent (OrgTextLine (TextLine 6 7))) (TableTrivia 7 8))
            (TableSeparator 8 9)
-           (OrgTableCell (OrgTextLine (TextLine 9 12)))
+           (OrgTableCell (TableTrivia 9 10) (TableCellContent (OrgTextLine (TextLine 10 11))) (TableTrivia 11 12))
            (TableSeparator 12 13)
            (TableTrivia 13 14))))))
     (test-case "POO list markers retain nested and sibling item scopes"
@@ -477,19 +476,5 @@
            (BlockEndLine 32 44))
           (BlockEndLine 44 57)))))
     (test-case "Rowan fixture is projected by the same Scheme event algorithm"
-      (let* ((options (JSONReadOptions object-as-hash: #t))
-             (generated (string->json (rowan-event-fixture-json) options))
-             (saved (call-with-input-file
-                     "languages/org/v1/generated/rowan-event-fixture.json"
-                     (lambda (port)
-                       (string->json (read-all-as-string port) options)))))
-        (check (hash-get saved "source") => (hash-get generated "source"))
-        (check (hash-get saved "events") => (hash-get generated "events"))))
-    (test-case "AOT IR is a typed source-owned event function"
-      (let (ir (string->json parse_org_rowan_events
-                             (JSONReadOptions object-as-hash: #t
-                                              array-as-vector: #t)))
-        (check (hash-ref ir "schema")
-               => "gerbil-scheme-rust.event-function-ir.v1")
-        (check (hash-ref ir "name") => "parse_org_rowan_events")
-        (check (vector-length (hash-ref ir "line")) => 2)))))
+      (check (rowan-event-fixture) => rowan-event-fixture-events))
+    ))

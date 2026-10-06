@@ -23,12 +23,7 @@ impl fmt::Display for OrgElementsQueryExpressionError {
 
 impl Error for OrgElementsQueryExpressionError {}
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) enum QueryExpr {
-    Atom(String),
-    String(String),
-    List(Vec<QueryExpr>),
-}
+pub(super) use crate::org_aot::NativeExpressionValue as QueryExpr;
 
 impl QueryExpr {
     pub(super) fn as_atom(&self) -> Option<&str> {
@@ -54,6 +49,39 @@ impl QueryExpr {
             },
             Self::String(_) | Self::List(_) => None,
         }
+    }
+}
+
+// Fixed-arity lowering contracts shared by query and predicate projections.
+// Variadic combinators/selectors retain their existing owning compilers.
+pub(super) fn query_form_arity_is_valid(head: &str, length: usize) -> bool {
+    match head {
+        "not"
+        | "predicate"
+        | "positive-integer"
+        | "kind"
+        | "type"
+        | "category"
+        | "affiliated-name"
+        | "affiliatedName"
+        | "name"
+        | "context"
+        | "outline-path-prefix"
+        | "outlinePathPrefix"
+        | "outline-path-exact-len"
+        | "outlinePathExactLen"
+        | "outline-depth"
+        | "limit"
+        | "source-path"
+        | "source-path-contains"
+        | "source-filename"
+        | "source-filename-prefix"
+        | "source-filename-suffix"
+        | "source-filename-stem-uppercase" => length == 2,
+        "=" | "contains" | "summary" | "summary-contains" | "property" | "property-contains" => {
+            length == 3
+        }
+        _ => true,
     }
 }
 

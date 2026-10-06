@@ -1,0 +1,195 @@
+#+title: Implementation status - parser-export-and-release
+
+[[file:../90.01_implementation_status.org][Implementation status index]]
+
+** Parser v2 Alignment Backlog
+
+This checklist tracks Org features that are not fully covered by the current
+lossless parser plus semantic AST projection. It is derived from a local
+research pass over org-element-like parser classifications and exporter-side
+Org behavior. The reference checkout remains research-only: no foreign source,
+tests, generated output, build tooling, or runtime dependency is imported into
+this repository.
+
+*** M3 Parser Gaps
+
+- [X] Inlinetasks
+  - [X] Parse inlinetask headlines and bodies.
+  - [X] Parse objects inside inlinetask titles.
+- [X] Source/example block coderefs
+  - [X] Preserve per-line coderef cookies such as `(ref:name)`.
+  - [X] Respect custom `-l` coderef label formats.
+  - [X] Expose coderef metadata in semantic `BlockLine` records without losing
+        raw block text.
+  - [X] Preserve per-line source text, comma-unquoted semantic value, line
+        ending, annotation range, and optional coderef metadata.
+- [X] Source/example block indentation semantics
+  - [X] Model `-i` preserve-indentation behavior separately from raw source
+        retention.
+  - [X] Keep tab-width-sensitive normalization as an explicit exporter/indexer
+        choice.
+- [X] Fixed-width line projection
+  - [X] Project fixed-width areas into line-level semantic records with source,
+        value, normalized value, line ending, and annotation metadata.
+  - [X] Preserve indentation beyond the one Org marker space and apply the same
+        tab-width-aware normalization surface as source/example blocks.
+- [X] Source block header arguments
+  - [X] Project raw `:key value` parameters into structured semantic header
+        args.
+  - [X] Keep raw parameter text for round-trip and compatibility.
+- [X] Table column metadata
+  - [X] Detect column property rows such as `<l>`, `<c>`, and `<r>`.
+  - [X] Expose semantic column alignment metadata while preserving current
+        row/cell text.
+- [X] Quoted objects
+  - [X] Keep single/double quote punctuation as plain text because core Org
+        syntax does not define a dedicated quote object.
+  - [X] Verify objects inside quote punctuation continue to project normally.
+- [X] Inline Babel balanced contexts
+  - [X] Parse nested brackets in inline source and call header contexts.
+  - [X] Parse nested braces/parens in inline source bodies and call arguments.
+
+*** Pre/Post Processing Gaps
+
+- [X] Include keyword expansion
+  - [X] Parse `#+INCLUDE:` as a normal keyword without expansion.
+  - [X] Add an explicit expansion hook or side-table design before resolving
+        external files.
+- [X] Per-file TODO keyword declarations
+  - [X] Parse `#+TODO:`, `#+SEQ_TODO:`, and `#+TYP_TODO:` declarations.
+  - [X] Apply declarations before headline semantic projection, or expose a
+        two-pass projection API.
+- [X] Macro definitions and substitution
+  - [X] Collect `#+MACRO:` definitions.
+  - [X] Keep macro calls parsed even when substitution is disabled.
+  - [X] Add opt-in expansion semantics without changing the lossless tree.
+- [X] Internal link resolution
+  - [X] Build a document-local target table for headlines, custom IDs, org-id
+        IDs, targets, footnotes, radio targets, and coderefs.
+  - [X] Resolve `LinkTarget::Unresolved` where possible while keeping the
+        original link path.
+  - [X] Preserve diagnostics for ambiguous or missing targets.
+- [X] Full radio-link conformance
+  - [X] Current semantic projection links plain text against collected radio
+        targets.
+  - [X] Add opt-in two-pass behavior for edge cases that require preprocessing
+        before object parsing.
+
+*** M4 Traversal/Export Compatibility
+
+- [X] Keep the current HTML/export pipeline on the lossless syntax substrate.
+- [X] Cover semantic traversal shapes for exporter/indexer consumers.
+- [X] Verify `visit`, `visit_mut`, and `fold` reach all annotation-bearing
+      semantic node categories, including preprocessing and metadata nodes.
+
+*** M5 PR Closure And Release Readiness
+
+- [X] Document breaking parser v2 API boundaries.
+- [X] Document intentional gaps and deferred exporter work.
+- [X] Document the full local validation gate.
+- [X] Document the no-Haskell-dependency research boundary.
+- [X] Align the wasm demo with parser v2 feature coverage and expose semantic
+      AST output in the browser demo.
+
+*** M6 Semantic Projection Performance
+
+- [X] Reuse the document-local target index as the radio-link projection source.
+- [X] Avoid a second semantic pre-scan for radio target collection.
+- [X] Merge target indexing and preprocessing directive collection into one
+      semantic pre-scan.
+- [X] Scan each radio-link object run once and prefer the longest target at a
+      shared start position.
+- [X] Precompute object-run spans so radio-link prefix/description/suffix
+      slicing does not rescan the whole run from the first object.
+- [X] Return unmatched plain-text radio-link objects without cloning their
+      annotations or reallocating their text.
+- [X] Use capacity-aware macro definition lookup and reuse `$0` argument joins
+      within one macro expansion.
+- [X] Add a dense macro-expansion benchmark.
+- [X] Add a dense target/radio-link projection benchmark.
+- [X] Use hash-based target lookup and move collected target definitions into
+      the final semantic document without cloning the target table.
+- [X] Avoid allocating normalized target keys for link lookups that miss the
+      document-local target index.
+- [X] Use O(1) source-column projection for ASCII lines while preserving
+      character-accurate UTF-8 columns through per-line char indexes.
+- [X] Add a dense annotation projection benchmark.
+- [X] Append plain-text radio-link projection directly into the output object
+      buffer instead of allocating a temporary vector per source object.
+- [X] Preallocate radio-link projection buffers from input object counts.
+- [X] Scan block begin/content children once when projecting semantic block
+      metadata, value, and nested elements.
+
+*** M7 LaTeX Export
+
+- [X] Add a lossless traversal based `LatexExport` handler.
+- [X] Add `Org::to_latex()` as the public convenience API.
+- [X] Preserve raw LaTeX fragments, LaTeX environments, LaTeX export blocks,
+      and LaTeX snippets.
+- [X] Cover headline, paragraph, markup, block, list, table, link, timestamp,
+      citation, entity, and subtree rendering behavior with integration tests.
+- [X] Expose LaTeX output in the wasm parser demo.
+
+*** M8 Status TODO Burn-down
+
+- [X] Remove the stale `Link::caption()` paragraph-only limitation by resolving
+      the nearest ancestor caption keyword.
+- [X] Cover caption lookup through a captioned block ancestor in doctests.
+- [X] Replace the stale `element_nodes` blank-line TODO with the current
+      lossless parser invariant.
+- [X] Expand block parser coverage for export, quote, and special blocks.
+
+*** M9 Markdown Export API
+
+- [X] Add `Org::to_markdown()` as the public convenience API.
+- [X] Use `to_markdown()` in the Markdown example.
+- [X] Render source, example, and fixed-width content as fenced Markdown blocks.
+- [X] Preserve Markdown snippets and `#+begin_export markdown` blocks.
+- [X] Render timestamps, hard line breaks, and basic Org tables in Markdown.
+- [X] Expose Markdown output in the wasm parser demo.
+
+*** M10 Release-Candidate Hardening
+
+- [X] Cover semantic projection of lesser-used elements: comments, drawers,
+      fixed-width areas, LaTeX environments, dynamic blocks, verse/center/comment
+      blocks, and named special blocks.
+- [X] Make Markdown tables without Org rule rows render a Markdown header
+      delimiter instead of emitting a non-table pipe block.
+- [X] Add Criterion smoke coverage for `Org::to_markdown()` and
+      `Org::to_latex()` alongside parse, semantic projection, and HTML export.
+
+*** M11 ASP Rust Policy Coverage
+
+- [X] Keep root `build.rs` thin with `asp-rust-build-support` contract evidence.
+- [X] Add full `asp-rust` to root and `orgize-wasm` `[dev-dependencies]`.
+- [X] Add lightweight `asp-rust-build-support` to both build scripts while
+      running full source policy only from cargo-test gates.
+
+*** M12 Harness Advice Enforcement
+
+- [X] Enforce the default advice surface in the `src/lib.rs` cargo-test harness
+      gate.
+- [X] Verify the cargo-test gate now fails on current advisory findings instead
+      of hiding them behind passing test output.
+- [X] Close `AGENT-R004` public namespace conflicts between semantic AST and
+      retired `syntax_ast` wrappers without weakening the v2 public API boundary.
+- [X] Close `AGENT-R009` syntax parser owner-cycle findings by moving shared
+      parser contracts behind clearer owner boundaries.
+- [X] Close semantic AST model advice for primitive/stringly public state
+      (`AGENT-R020`, `AGENT-R028`) with typed domain carriers.
+- [X] Split or extract the semantic projection hot paths flagged by
+      `AGENT-R025`/`AGENT-R026`, including `conversion.rs` radio-link,
+      footnote, and object-run helpers.
+
+*** M13 Release/Performance Guard
+
+- [X] Verify PR #4 has no unresolved review threads before continuing the next
+      parser-v2 closeout slice.
+- [X] Add dense semantic radio-link projection benchmark coverage for parsed
+      object runs after the parser contract split.
+
+*** M14 Org-Id Resolution
+
+- [X] Collect headline `:ID:` properties as document-local org-id targets.
+- [X] Resolve matching `id:` links while preserving the original link path and
+      leaving unmatched external org-id links available as URI-like links.

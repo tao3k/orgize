@@ -2,9 +2,8 @@
 ;;; The Org-owned algorithm executes as Scheme before AOT lowering.
 
 (import (only-in :std/test check test-case test-suite)
+        (only-in :std/string/utf8 utf8->string)
         (only-in :clan/poo/object .o)
-        (only-in :std/encoding/json JSONReadOptions string->json)
-        (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks)
         (only-in "../languages/org/v1/parser.ss" org-v1-line-structure)
@@ -21,13 +20,11 @@
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
         (only-in "org-parser-test-support.ss"
-                 check-org-ast-with org-events-cover-source?)
-        (only-in "../languages/org/v1/rowan-event-fixture.ss" rowan-event-fixture-json)
-        (only-in "../languages/org/v1/rowan-event-parser.ss"
+                 check-org-ast-with org-events-cover-source? org-events->ast)
+        (only-in "../languages/org/v1/rowan-event-runtime.ss"
                  parse-org-rowan-events
                  parse-org-rowan-events-with-inlinetask-level
-                 parse-org-rowan-events-with-inline-script-policy
-                 parse_org_rowan_events))
+                 parse-org-rowan-events-with-inline-script-policy))
 (export org-v1-rowan-structural-parser-test)
 
 (def org-v1-rowan-structural-parser-test
@@ -84,10 +81,21 @@
          (OrgSourceBlock
           (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
           (SourceLanguage 12 16)
-          (SourceHeaderTrivia 16 18) (SourceHeaderKey 18 25)
-          (SourceHeaderTrivia 25 26) (SourceHeaderValue 26 32)
-          (SourceHeaderTrivia 32 34) (SourceHeaderKey 34 37)
-          (SourceHeaderTrivia 37 38) (SourceHeaderValue 38 51)
+          (SourceHeaderTrivia 16 17)
+          (SourceHeaderParameters
+           (SourceHeaderArgument
+            (SourceHeaderColon 17 18) (SourceHeaderKey 18 25)
+            (SourceHeaderTrivia 25 26)
+            (SourceHeaderArgumentValue
+             (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 26 32)))))
+           (SourceHeaderTrivia 32 33)
+           (SourceHeaderArgument
+            (SourceHeaderColon 33 34) (SourceHeaderKey 34 37)
+            (SourceHeaderTrivia 37 38)
+            (SourceHeaderArgumentValue
+             (SourceHeaderValue (SourceHeaderQuote 38 39)
+              (SourceHeaderValueContent (SourceHeaderText 39 50))
+              (SourceHeaderQuote 50 51)))))
           (SourceHeaderTrivia 51 52)
           (OrgBlockBodyLine (TextLine 52 57))
           (BlockEndLine 57 67)))))
@@ -112,8 +120,13 @@
          (OrgDynamicBlock
           (BlockBeginLine 0 8) (DynamicBlockHeaderTrivia 8 9)
           (DynamicBlockName 9 19)
-          (SourceHeaderTrivia 19 21) (SourceHeaderKey 21 26)
-          (SourceHeaderTrivia 26 27) (SourceHeaderValue 27 31)
+          (SourceHeaderTrivia 19 20)
+          (SourceHeaderParameters
+           (SourceHeaderArgument
+            (SourceHeaderColon 20 21) (SourceHeaderKey 21 26)
+            (SourceHeaderTrivia 26 27)
+            (SourceHeaderArgumentValue
+             (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 27 31))))))
           (SourceHeaderTrivia 31 32) (BlockEndLine 32 39)))))
     (test-case "source switches are Scheme-classified before header arguments"
       (check-org-ast-with parse-org-rowan-events
@@ -124,9 +137,15 @@
           (SourceLanguage 12 16) (SourceHeaderTrivia 16 17)
           (SourceSwitchName 17 19) (SourceHeaderTrivia 19 20)
           (SourceSwitchName 20 22) (SourceHeaderTrivia 22 23)
-          (SourceSwitchValue 23 24) (SourceHeaderTrivia 24 26)
-          (SourceHeaderKey 26 33) (SourceHeaderTrivia 33 34)
-          (SourceHeaderValue 34 38) (SourceHeaderTrivia 38 39)
+          (SourceSwitchValue (SourceSwitchNewLineNumber 23 24))
+          (SourceHeaderTrivia 24 25)
+          (SourceHeaderParameters
+           (SourceHeaderArgument
+            (SourceHeaderColon 25 26) (SourceHeaderKey 26 33)
+            (SourceHeaderTrivia 33 34)
+            (SourceHeaderArgumentValue
+             (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 34 38))))))
+          (SourceHeaderTrivia 38 39)
           (OrgBlockBodyLine (TextLine 39 41))
           (BlockEndLine 41 51)))))
     (test-case "example switches use the same Scheme classification"
@@ -136,7 +155,8 @@
          (OrgExampleBlock
           (BlockBeginLine 0 15) (SourceHeaderTrivia 15 16)
           (SourceSwitchName 16 18) (SourceHeaderTrivia 18 19)
-          (SourceSwitchValue 19 21) (SourceHeaderTrivia 21 22)
+          (SourceSwitchValue (SourceSwitchContinuedLineNumber 19 21))
+          (SourceHeaderTrivia 21 22)
           (OrgBlockBodyLine (TextLine 22 24))
           (BlockEndLine 24 38)))))
     (test-case "optional switch argument does not consume a header key"
@@ -146,11 +166,73 @@
          (OrgSourceBlock
           (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
           (SourceLanguage 12 16) (SourceHeaderTrivia 16 17)
-          (SourceSwitchName 17 19) (SourceHeaderTrivia 19 21)
-          (SourceHeaderKey 21 28) (SourceHeaderTrivia 28 29)
-          (SourceHeaderValue 29 33) (SourceHeaderTrivia 33 34)
+          (SourceSwitchName 17 19) (SourceHeaderTrivia 19 20)
+          (SourceHeaderParameters
+           (SourceHeaderArgument
+            (SourceHeaderColon 20 21) (SourceHeaderKey 21 28)
+            (SourceHeaderTrivia 28 29)
+            (SourceHeaderArgumentValue
+             (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 29 33))))))
+          (SourceHeaderTrivia 33 34)
           (OrgBlockBodyLine (TextLine 34 36))
           (BlockEndLine 36 46)))))
+    (test-case "switch argument roles and label spans are native Scheme"
+      (for-each
+       (lambda (fixture)
+         (let* ((source (string-append "#+begin_src rust " (car fixture)
+                                      "\r\nα\r\n#+end_src\r\n"))
+                (events (parse-org-rowan-events source))
+                (values (filter
+                         (lambda (event)
+                           (and (eq? (car event) 'token)
+                                (memq (cadr event)
+                                      '(SourceSwitchNewLineNumber
+                                        SourceSwitchContinuedLineNumber
+                                        SourceSwitchText))))
+                         events)))
+           (check (org-events-cover-source? source events) => #t)
+           (check (map (lambda (event)
+                         (list (cadr event)
+                               (utf8->string
+                                (subu8vector (string->utf8 source)
+                                             (caddr event) (cadddr event)))))
+                       values)
+                  => (cadr fixture))))
+       '(("-n 5 +n 12 -l \"λ:%s\""
+          ((SourceSwitchNewLineNumber "5")
+           (SourceSwitchContinuedLineNumber "12") (SourceSwitchText "λ:%s")))
+         ("-l \"\"" ())
+         ("-l \"unterminated" ((SourceSwitchText "\"unterminated")))
+         ("-l 'quoted'" ((SourceSwitchText "'quoted'")))
+         ("-n :exports both" ()))))
+    (test-case "number-only headers remain lossless at CRLF and EOF"
+      (for-each
+       (lambda (source)
+         (check (org-events-cover-source? source (parse-org-rowan-events source)) => #t))
+       '("#+begin_src rust -n 20\nfn main() {}\n#+end_src\n"
+         "#+begin_src rust +n 10\nprintln!(\"continued\");\n#+end_src\n"
+         "#+begin_example -n 3\n,* example\n#+end_example\n"
+         "#+begin_src rust -n 20 -r :exports code\nfn main() {}\n#+end_src\n")))
+    (test-case "empty header arguments retain native argument boundaries"
+      (check-org-ast-with parse-org-rowan-events
+        "#+begin_src rust :var :exports both :empty\nx\n#+end_src\n"
+        (OrgFile
+         (OrgSourceBlock
+          (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
+          (SourceLanguage 12 16) (SourceHeaderTrivia 16 17)
+          (SourceHeaderParameters
+           (SourceHeaderArgument (SourceHeaderColon 17 18) (SourceHeaderKey 18 21))
+           (SourceHeaderTrivia 21 22)
+           (SourceHeaderArgument
+            (SourceHeaderColon 22 23) (SourceHeaderKey 23 30)
+            (SourceHeaderTrivia 30 31)
+            (SourceHeaderArgumentValue
+             (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 31 35)))))
+           (SourceHeaderTrivia 35 36)
+           (SourceHeaderArgument (SourceHeaderColon 36 37) (SourceHeaderKey 37 42)))
+          (SourceHeaderTrivia 42 43)
+          (OrgBlockBodyLine (TextLine 43 45))
+          (BlockEndLine 45 55)))))
     (test-case "longer lookalike is not a declared switch"
       (check-org-ast-with parse-org-rowan-events
         "#+begin_src rust -invalid\nx\n#+end_src\n"
@@ -167,8 +249,13 @@
          (OrgSourceBlock
           (BlockBeginLine 0 11) (BlockHeaderTrivia 11 12)
           (SourceLanguage 12 16)
-          (SourceHeaderTrivia 16 24) (SourceHeaderKey 24 27)
-          (SourceHeaderTrivia 27 28) (SourceHeaderValue 28 30)
+          (SourceHeaderTrivia 16 23)
+          (SourceHeaderParameters
+           (SourceHeaderArgument
+            (SourceHeaderColon 23 24) (SourceHeaderKey 24 27)
+            (SourceHeaderTrivia 27 28)
+            (SourceHeaderArgumentValue
+             (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 28 30))))))
           (SourceHeaderTrivia 30 31)
           (OrgBlockBodyLine (TextLine 31 36))
           (BlockEndLine 36 46)))))
@@ -230,6 +317,69 @@
           (OrgListItem
            (ListBullet 26 28)
            (OrgParagraph (OrgTextLine (TextLine 28 33))))))))
+    (test-case "indented opaque blocks remain Elements inside their list item"
+      (check-org-ast-with parse-org-rowan-events
+        "- x\n  #+begin_example\n  body\n  #+end_example\n- y\n"
+        (OrgFile
+         (OrgPlainList
+          (OrgListItem
+           (ListBullet 0 2)
+           (OrgParagraph (OrgTextLine (TextLine 2 4)))
+           (OrgExampleBlock
+            (BlockBeginLine 4 21) (SourceHeaderTrivia 21 22)
+            (OrgBlockBodyLine (TextLine 22 29))
+            (BlockEndLine 29 45)))
+          (OrgListItem
+           (ListBullet 45 47)
+           (OrgParagraph (OrgTextLine (TextLine 47 49))))))))
+    (test-case "all declared opaque families preserve UTF-8 CRLF and peer ancestry"
+      (for-each
+       (lambda (fixture)
+         (let* ((source (string-append "- α\r\n  #+begin_" (car fixture)
+                                      "\r\n  * literal\r\n  #+end_" (cadr fixture)
+                                      "\r\n- β\r\n"))
+                (events (parse-org-rowan-events source))
+                (ast (org-events->ast events))
+                (items (cdr (cadr ast)))
+                (first (car items)))
+           (check (org-events-cover-source? source events) => #t)
+           (check (length items) => 2)
+           (check (map car items) => '(OrgListItem OrgListItem))
+           (check (caar (reverse (cdr first))) => (caddr fixture))
+           (check (car (cadr (cadr items))) => 'ListBullet)))
+       '(("src rust" "src" OrgSourceBlock)
+         ("example" "example" OrgExampleBlock)
+         ("comment" "comment" OrgCommentBlock)
+         ("export html" "export" OrgExportBlock))))
+    (test-case "indented standalone source headers retain exact field ranges"
+      (let* ((source "  #+BeGiN_SrC rust :results output\r\n  body\r\n  #+EnD_SrC\r\n")
+             (events (parse-org-rowan-events source))
+             (block (cadr (org-events->ast events))))
+        (check (org-events-cover-source? source events) => #t)
+        (check (car block) => 'OrgSourceBlock)
+        (check (cadr block) => '(BlockBeginLine 0 13))
+        (check (caddr block) => '(BlockHeaderTrivia 13 14))
+        (check (cadddr block) => '(SourceLanguage 14 18))))
+    (test-case "a list-owned opaque block can close at unterminated EOF"
+      (let* ((source "- α\n  #+begin_example\n  * literal\n  #+end_example")
+             (events (parse-org-rowan-events source))
+             (item (cadr (cadr (org-events->ast events)))))
+        (check (org-events-cover-source? source events) => #t)
+        (check (caar (reverse (cdr item))) => 'OrgExampleBlock)))
+    (test-case "unclosed list block recovers as text before the next headline"
+      (let* ((source "- α\n  #+begin_example\n  body\n* Next\n")
+             (events (parse-org-rowan-events source))
+             (ast (org-events->ast events))
+             (item (cadr (cadr ast))))
+        (check (org-events-cover-source? source events) => #t)
+        (check (map car (cdr item)) => '(ListBullet OrgParagraph))
+        (check (car (caddr ast)) => 'OrgSection)))
+    (test-case "dedented block closes the list instead of entering its item"
+      (let* ((source "- α\n#+begin_example\nbody\n#+end_example\n")
+             (events (parse-org-rowan-events source))
+             (ast (org-events->ast events)))
+        (check (org-events-cover-source? source events) => #t)
+        (check (map car (cdr ast)) => '(OrgPlainList OrgExampleBlock))))
     (test-case "hash-prefixed text and keywords are not comments"
       (check-org-ast-with parse-org-rowan-events
         "#not-comment\n#+TITLE: Yes\n"
@@ -267,6 +417,25 @@
                       (InlineMarkupDelimiter 14 15))
              (TextLine 15 19))))
           (KeywordTrivia 19 20)))))
+    (test-case "empty attribute content and absent values have distinct native nodes"
+      (check-org-ast-with parse-org-rowan-events
+        "#+ATTR_HTML: :x \"\" :y\n"
+        (OrgFile
+         (OrgKeyword
+          (KeywordTrivia 0 2) (KeywordKey 2 11) (KeywordTrivia 11 12)
+          (OrgKeywordRawValue
+           (KeywordTrivia 12 13)
+           (OrgKeywordAttributes
+            (SourceHeaderParameters
+             (SourceHeaderArgument
+              (SourceHeaderColon 13 14) (SourceHeaderKey 14 15)
+              (SourceHeaderTrivia 15 16)
+              (SourceHeaderArgumentValue
+               (SourceHeaderValue (SourceHeaderQuote 16 17)
+                (SourceHeaderValueContent) (SourceHeaderQuote 17 18))))
+             (SourceHeaderTrivia 18 19)
+             (SourceHeaderArgument (SourceHeaderColon 19 20) (SourceHeaderKey 20 21)))))
+          (KeywordTrivia 21 22)))))
     (test-case "attribute keywords tokenize quoted values in Scheme"
       (check-org-ast-with parse-org-rowan-events
         "#+ATTR_HTML: :class compact :width \"10 em\"\n"
@@ -277,14 +446,20 @@
           (OrgKeywordRawValue
            (KeywordTrivia 12 13)
            (OrgKeywordAttributes
-            (SourceHeaderTrivia 13 14)
-            (SourceHeaderKey 14 19)
-            (SourceHeaderTrivia 19 20)
-            (SourceHeaderValue 20 27)
-            (SourceHeaderTrivia 27 29)
-            (SourceHeaderKey 29 34)
-            (SourceHeaderTrivia 34 35)
-            (SourceHeaderValue 35 42)))
+            (SourceHeaderParameters
+             (SourceHeaderArgument
+              (SourceHeaderColon 13 14) (SourceHeaderKey 14 19)
+              (SourceHeaderTrivia 19 20)
+              (SourceHeaderArgumentValue
+               (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 20 27)))))
+             (SourceHeaderTrivia 27 28)
+             (SourceHeaderArgument
+              (SourceHeaderColon 28 29) (SourceHeaderKey 29 34)
+              (SourceHeaderTrivia 34 35)
+              (SourceHeaderArgumentValue
+               (SourceHeaderValue (SourceHeaderQuote 35 36)
+                (SourceHeaderValueContent (SourceHeaderText 36 41))
+                (SourceHeaderQuote 41 42)))))))
           (KeywordTrivia 42 43)))))
     (test-case "INCLUDE path and options are source-backed Scheme events"
       (check-org-ast-with parse-org-rowan-events
@@ -326,11 +501,23 @@
              (IncludeTrivia 30 31) (IncludeArgument 31 34)
              (IncludeTrivia 34 35) (IncludeArgument 35 38)
              (IncludeTrivia 38 39)
-             (SourceHeaderTrivia 39 40) (SourceHeaderKey 40 45)
-             (SourceHeaderTrivia 45 46) (SourceHeaderValue 46 52)
-             (SourceHeaderTrivia 52 54) (SourceHeaderKey 54 62)
-             (SourceHeaderTrivia 62 63) (SourceHeaderValue 63 64)
-             (SourceHeaderTrivia 64 66) (SourceHeaderKey 66 79))))
+             (SourceHeaderParameters
+              (SourceHeaderArgument
+               (SourceHeaderColon 39 40) (SourceHeaderKey 40 45)
+               (SourceHeaderTrivia 45 46)
+               (SourceHeaderArgumentValue
+                (SourceHeaderValue (SourceHeaderQuote 46 47)
+                 (SourceHeaderValueContent (SourceHeaderText 47 51))
+                 (SourceHeaderQuote 51 52))))
+              (SourceHeaderTrivia 52 53)
+              (SourceHeaderArgument
+               (SourceHeaderColon 53 54) (SourceHeaderKey 54 62)
+               (SourceHeaderTrivia 62 63)
+               (SourceHeaderArgumentValue
+                (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 63 64)))))
+              (SourceHeaderTrivia 64 65)
+              (SourceHeaderArgument
+               (SourceHeaderColon 65 66) (SourceHeaderKey 66 79))))))
           (KeywordTrivia 79 80))))
       (check-org-ast-with parse-org-rowan-events
         "#+INCLUDE: \"x.org\n"
@@ -436,8 +623,12 @@
             (PropertyTrivia 17 18) (PropertyKey 18 36)
             (PropertyTrivia 36 38)
             (OrgSourceHeaderArgs
-             (SourceHeaderTrivia 38 39) (SourceHeaderKey 39 46)
-             (SourceHeaderTrivia 46 47) (SourceHeaderValue 47 52))
+             (SourceHeaderParameters
+              (SourceHeaderArgument
+               (SourceHeaderColon 38 39) (SourceHeaderKey 39 46)
+               (SourceHeaderTrivia 46 47)
+               (SourceHeaderArgumentValue
+                (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 47 52)))))))
             (PropertyTrivia 52 53))
            (DrawerEndLine 53 59))))))
     (test-case "declared planning and clock keys retain headline context"
@@ -482,12 +673,16 @@
            (PlanningKey 4 13) (PlanningTrivia 13 15)
            (OrgPlanningValue
             (OrgTimestampActive
-             (TimestampDelimiter 15 16)
              (OrgTimestampPoint
-              (TimestampDate 16 26)
+              (TimestampDelimiter 15 16)
+              (TimestampDate (TimestampYear 16 20)
+                             (TimestampDateSeparator 20 21)
+                             (TimestampMonth 21 23)
+                             (TimestampDateSeparator 23 24)
+                             (TimestampDay 24 26))
               (TimestampTrivia 26 27)
-              (TimestampDayName 27 30))
-             (TimestampDelimiter 30 31)))
+              (TimestampDayName 27 30)
+              (TimestampDelimiter 30 31))))
            (PlanningTrivia 31 32))))))
     (test-case "clock timestamp and duration are Scheme-classified fields"
       (check-org-ast-with parse-org-rowan-events
@@ -500,14 +695,20 @@
            (ClockKey 4 9) (ClockTrivia 9 11)
            (OrgClockValue
             (OrgTimestampInactive
-             (TimestampDelimiter 11 12)
              (OrgTimestampPoint
-              (TimestampDate 12 22)
+              (TimestampDelimiter 11 12)
+              (TimestampDate (TimestampYear 12 16)
+                             (TimestampDateSeparator 16 17)
+                             (TimestampMonth 17 19)
+                             (TimestampDateSeparator 19 20)
+                             (TimestampDay 20 22))
               (TimestampTrivia 22 23)
               (TimestampDayName 23 26)
               (TimestampTrivia 26 27)
-              (TimestampTime 27 32))
-             (TimestampDelimiter 32 33))
+              (TimestampTime
+               (TimestampHour 27 29) (TimestampTimeSeparator 29 30)
+               (TimestampMinute 30 32))
+              (TimestampDelimiter 32 33)))
             (ClockTrivia 33 37)
             (ClockDuration 37 41))
            (ClockTrivia 41 42))))))

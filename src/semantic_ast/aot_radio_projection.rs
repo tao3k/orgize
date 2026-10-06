@@ -9,8 +9,8 @@ use crate::{
     config::RadioLinkProjection,
 };
 
-#[path = "aot_radio_generated_matcher.rs"]
-mod generated_matcher;
+#[path = "org_native_radio.rs"]
+mod native_radio;
 
 #[derive(Clone, Copy)]
 struct ObjectSpan {
@@ -57,9 +57,10 @@ impl GraphProjector<'_> {
     ) {
         let mut cursor = 0;
         let base = usize::from(ann.range.start());
-        while let Some((start, end, index)) =
-            generated_matcher::org_radio_next_match(&value, cursor, &self.radio_targets)
-        {
+        for (start, end, index) in native_radio::matches(&value, &self.radio_targets) {
+            if start < cursor {
+                continue;
+            }
             if cursor < start {
                 projected.push(self.plain_source_span(base + cursor, base + start));
             }
@@ -120,9 +121,10 @@ impl GraphProjector<'_> {
         let mut emitted_until = 0;
         let mut search_cursor = 0;
 
-        while let Some((start, end, index)) =
-            generated_matcher::org_radio_next_match(&raw, search_cursor, &self.radio_targets)
-        {
+        for (start, end, index) in native_radio::matches(&raw, &self.radio_targets) {
+            if start < search_cursor {
+                continue;
+            }
             if start < emitted_until {
                 search_cursor = end;
                 continue;

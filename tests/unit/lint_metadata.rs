@@ -3,7 +3,21 @@ use crate::{
     lint::{LintSeverity, lint_document, lint_org},
 };
 
-#[test]
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "lint_reports_missing_document_title_and_properties",
+        lint_reports_missing_document_title_and_properties,
+    ),
+    (
+        "lint_accepts_document_title_and_properties",
+        lint_accepts_document_title_and_properties,
+    ),
+    (
+        "linting_an_already_projected_document_uses_the_same_aot_contract",
+        linting_an_already_projected_document_uses_the_same_aot_contract,
+    ),
+];
+
 fn lint_reports_missing_document_title_and_properties() {
     let report = lint_org(
         "Steer\n\n    To pick up a draggable item, press the space bar.\n    While dragging, use the arrow keys to move the item.\n",
@@ -23,7 +37,6 @@ fn lint_reports_missing_document_title_and_properties() {
     );
 }
 
-#[test]
 fn lint_accepts_document_title_and_properties() {
     let report = lint_org("#+TITLE: Steer\n#+PROPERTY: ID steer\n\nSteer instructions.\n");
 
@@ -31,7 +44,6 @@ fn lint_accepts_document_title_and_properties() {
     assert_no_message(&report, "document is missing document-level properties");
 }
 
-#[test]
 fn linting_an_already_projected_document_uses_the_same_aot_contract() {
     let source = "Missing metadata still needs linting.\n";
     let document = Org::parse(source).document();

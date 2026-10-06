@@ -1,6 +1,6 @@
 //! Typed projection of Scheme-classified source-block switches.
 
-use gerbil_parser_rowan::{GraphFieldValue, GraphRecord};
+use gerbil_parser_rowan::GraphRecord;
 
 use super::block_model::{BlockHeaderArg, BlockLineNumberMode, BlockLineNumbering, BlockSwitches};
 
@@ -8,108 +8,80 @@ pub(super) fn project_block_switches(
     record: &GraphRecord,
     source: &str,
 ) -> (Option<String>, BlockSwitches) {
-    let names: Vec<_> = record
-        .fields
-        .iter()
-        .filter(|field| field.name == "switch-name")
-        .collect();
     let mut options = BlockSwitches::default();
-    let Some(first) = names.first() else {
-        return (None, options);
-    };
-    let mut end = usize::from(first.range.end());
-    for (index, name) in names.iter().enumerate() {
-        let next_start = names
-            .get(index + 1)
-            .map_or(usize::MAX, |next| usize::from(next.range.start()));
-        let value = switch_value(record, name, next_start);
-        end = end.max(usize::from(name.range.end()));
-        if let Some(value) = value {
-            end = end.max(usize::from(value.range.end()));
-        }
-        match name.value.as_str() {
-            "-i" => options.preserve_indentation = true,
-            "-r" => options.remove_labels = true,
-            "-k" => options.keep_labels = true,
-            "-n" | "+n" => {
+    for field in &record.fields {
+        match field.name {
+            "switch-new-line-start" | "switch-continued-line-start" => {
                 options.line_numbering = Some(BlockLineNumbering {
-                    mode: if name.value == "-n" {
+                    mode: if field.name == "switch-new-line-start" {
                         BlockLineNumberMode::New
                     } else {
                         BlockLineNumberMode::Continued
                     },
-                    start: value.and_then(|value| value.value.parse().ok()),
+                    start: field.value.parse().ok(),
                 });
             }
-            "-l" => {
-                options.label_format = value.map(|value| {
-                    value
-                        .value
-                        .strip_prefix('"')
-                        .and_then(|text| text.strip_suffix('"'))
-                        .unwrap_or(&value.value)
-                        .to_owned()
-                });
-            }
-            _ => unreachable!("Scheme emits only declared source switches"),
+            "switch-label-format" => options.label_format = Some(field.value.clone()),
+            "switch-name" => match field.value.as_str() {
+                "-i" => options.preserve_indentation = true,
+                "-r" => options.remove_labels = true,
+                "-k" => options.keep_labels = true,
+                "-n" | "+n" => {
+                    options.line_numbering = Some(BlockLineNumbering {
+                        mode: if field.value == "-n" {
+                            BlockLineNumberMode::New
+                        } else {
+                            BlockLineNumberMode::Continued
+                        },
+                        start: None,
+                    });
+                }
+                "-l" => options.label_format = None,
+                _ => unreachable!("Scheme emits only declared source switches"),
+            },
+            _ => {}
         }
     }
-    let start = usize::from(first.range.start());
-    let raw = source[start..end].to_owned();
-    options.raw = Some(raw.clone());
-    (Some(raw), options)
+    // The complete extent is declared by the Scheme graph projection, not
+    // reconstructed from neighbouring names, values or header syntax here.
+    let raw = record
+        .field_range("switches")
+        .map(|range| source[usize::from(range.start())..usize::from(range.end())].to_owned());
+    options.raw = raw.clone();
+    (raw, options)
 }
 
-fn switch_value<'a>(
-    record: &'a GraphRecord,
-    name: &GraphFieldValue,
-    next_start: usize,
-) -> Option<&'a GraphFieldValue> {
-    record.fields.iter().find(|field| {
-        field.name == "switch-value"
-            && field.range.start() >= name.range.end()
-            && usize::from(field.range.start()) < next_start
-    })
+pub(super) fn project_block_parameters(record: &GraphRecord) -> Option<String> {
+    record.field("header-parameters").map(str::to_owned)
 }
 
-pub(super) fn project_block_parameters(record: &GraphRecord, source: &str) -> Option<String> {
-    let key_start = usize::from(record.field_range("header-key")?.start());
-    let end = usize::from(record.field_range("header")?.end());
-    source
-        .get(key_start.checked_sub(1)?..end)
-        .map(str::trim)
-        .map(str::to_owned)
+/// Decode the native argument stream in its declared source order.
+pub(super) fn project_block_header_args(record: &GraphRecord) -> Vec<BlockHeaderArg> {
+    project_header_args(record, "argument-value")
 }
 
-/// Project Scheme-classified header keys without lexing Org syntax in Rust.
-pub(super) fn project_block_header_args(record: &GraphRecord, source: &str) -> Vec<BlockHeaderArg> {
-    let mut keys = record
-        .fields
-        .iter()
-        .filter(|field| field.name == "header-key")
-        .collect::<Vec<_>>();
-    keys.sort_unstable_by_key(|field| field.range.start());
-    let header_end = record
-        .fields
-        .iter()
-        .filter(|field| field.name == "header")
-        .map(|field| usize::from(field.range.end()))
-        .max()
-        .unwrap_or_default();
-    keys.iter()
-        .enumerate()
-        .filter_map(|(index, key)| {
-            let start = usize::from(key.range.start()).checked_sub(1)?;
-            let end = keys
-                .get(index + 1)
-                .and_then(|next| usize::from(next.range.start()).checked_sub(1))
-                .unwrap_or(header_end);
-            let value = source.get(usize::from(key.range.end())..end)?.trim();
-            Some(BlockHeaderArg {
-                key: key.value.clone(),
-                value: (!value.is_empty()).then(|| value.to_owned()),
-                raw: source.get(start..end)?.trim().to_owned(),
-            })
-        })
-        .collect()
+/// Keyword attributes and INCLUDE options decode native lexical content.
+pub(super) fn project_keyword_header_args(record: &GraphRecord) -> Vec<BlockHeaderArg> {
+    project_header_args(record, "argument-content")
+}
+
+fn project_header_args(record: &GraphRecord, value_field: &str) -> Vec<BlockHeaderArg> {
+    let mut args = Vec::new();
+    let mut key = None;
+    let mut value = None;
+    for field in &record.fields {
+        match field.name {
+            "argument-key" => key = Some(field.value.clone()),
+            name if name == value_field => value = Some(field.value.clone()),
+            "argument-raw" => {
+                args.push(BlockHeaderArg {
+                    key: key.take().expect("native header argument key"),
+                    value: value.take(),
+                    raw: field.value.clone(),
+                });
+            }
+            _ => {}
+        }
+    }
+    args
 }

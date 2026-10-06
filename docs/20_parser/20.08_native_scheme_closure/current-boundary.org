@@ -1,0 +1,166 @@
+#+title: Current native Scheme migration boundary
+
+[[file:../20.08_native_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Current boundary
+
+All 30 production semantic-wrapper warnings from record 20 are now closed.
+Sixteen unused functions are deleted; fourteen test-only functions move
+out of production source. The production owner retains eight used native
+interfaces in 89 lines. Both fresh runtime Release builds have zero
+production library warnings; all 84/24/457 catalogs pass, including all
+12 existing native value consumer cases. Query/Contract retain and pass
+their original gates. No warning suppression or coverage reduction is used.
+The Justfile warning guard also rejects both preserved 30-warning logs.
+Third-party/native linker warnings and latest parser/dependency/CI alignment
+remain separate. See
+[[file:21-production-wrapper-warning-closure.org][the complete wrapper-warning closure record]].
+The following 30-warning status belongs to the preceding snapshot.
+
+The latest boundary audit removes Rust dependency-path quote recognition
+and reuses the existing native Scheme =source-unquote= owner. Twelve unused
+outer wrappers are removed without suppressing remaining warnings.
+Both fresh runtime builds pass 84 native / 24 ordinary / 457 consumers
+at 12 callers, including Unicode/quote dependency controls. Query and
+Contract retain their original budgets; Scheme Query is near the limit
+at 44.802791ms. Program bcd28ab5 and the native Scheme sources are unchanged.
+Live upstream PR 13 is now e7139c35, fetched/audited but not selected;
+the pinned 619bf190 source and seven local AOT overlays remain preserved.
+Latest-source alignment, 30 production library warnings, clean dependency
+CI and historical tail analysis remain open. See
+[[file:20-dependency-native-owner.org][the dependency and wrapper audit record]].
+The following receipts belong to the preceding Rust consumer snapshot.
+
+The latest source-owner audit moves citation export keyword/token/plist
+policy and nocite classification to a pure Scheme batch owner. Rust retains
+graph traversal and typed admission. The new 317-module bcd28ab5 program
+passes all 173 native cases / 12 suites, both runtime 84/24/457 catalogs,
+both 23-case Rowan suites, both 25-case Python suites and both full
+33,000-admission matrices at 64 callers / 1/4/8 native domains. Exact
+program/corpus/semantic artifact controls and whole local admission pass.
+The local default selects bcd28ab5 with the preceding manifest backed up.
+Query/Contract pass their unchanged gates; stable performance gains,
+historical tail root cause and clean dependency/CI closure remain open.
+See [[file:19-citation-export-native-owner.org][the citation export owner record]].
+The following receipts belong to preceding snapshots, not this program.
+
+Preceding source alignment is =619bf19=, with an independently rebuilt
+316-module native program. The JSON event parity fixture is replaced by a
+preserved 255-event native Scheme golden and a real public AOT Rust consumer.
+Fresh Scheme 167-case qualification and both runtime 84/24/457 catalogs plus
+23 Rowan cases pass. Query passes its unchanged gate at 34.441958ms (Rust)
+and 22.071625ms (Scheme); both Python runtime builds pass all 25 cases.
+Both full 33,000-admission matrices at 64 callers and 1/4/8 native process
+domains pass with identical semantic artifacts. The previously missing local
+default manifest now selects this qualified program. Remaining citation-export
+source policy, warning, historical tail and clean dependency gates are tracked in
+[[file:18-parser-alignment-native-fixture.org][the latest alignment record]].
+The following =a99b3646= measurements are historical, not current admission.
+
+Preceding audit, 2026-10-06: parser pins aligned to =a99b3646=. Publishing
+BIND/OPTIONS/backend policy has a native Scheme batch owner; Rust retains
+graph traversal and typed admission. Both refreshed runtime catalogs pass
+84 native / 24 ordinary / 457 consumers; Publishing's six native cases pass.
+The current Rust Query gate fails at 286.836958ms > 45ms; a separate healthy
+profile does not reproduce or repair it. Scheme Query passes at 16.160625ms.
+Monitored Scheme suite startup failures are retained, not hidden by a longer
+timeout. Current Python and clean dependency/CI closure remain open. See
+[[file:16-publishing-native-owner.org][the current Publishing and parser alignment record]].
+The following test/build audit adds a native executable using the existing
+Gerbil standard suites: all 167 cases pass without Gerbil load-path environment
+variables and the failed-assertion control returns 42. Isolated static staging
+belongs to the bridge; the Darwin native linker is selected explicitly. The
+original dynamic startup failures remain evidence, not erased by this entry.
+An unchanged Rust Query control passes at 22.406541ms; it does not repair the
+original 286ms tail. See [[file:17-native-test-startup.org][native startup and build-owner qualification]].
+Both current =a99b3646= features also pass the full concurrent matrix: 33,000
+documents each with 64 callers and 1/4/8 native process domains, matching semantic
+artifacts. This is admission, not stable performance improvement. Live parser
+PR 13 is now =60101b7f=; that new revision is fetched/audited but not selected or
+qualified by these =a99b3646= receipts. Its full requalification remains open.
+
+Preceding combined snapshot: =1f0d87f3=. The 315-module
+program passes both runtime unit/Python catalogs, but retains a Scheme
+Contract budget failure (73.270209ms > 25ms). It is not globally admitted.
+PR 18's remote =cbe3750c= passes exact-head CI; the local dirty candidate is
+different. PR 21's 22-path Source Headline/Query group is now integrated
+locally, with four native Scheme cases and three additional parallel
+consumer cases. Combined requalification targets 457, not 454 consumers.
+Both combined runtime catalogs now pass 457 consumers and 84 native / 24
+ordinary cases; fresh Scheme suites pass 161 cases including Source Headline.
+The combined Scheme Query gate fails at 93.227666ms > 45ms. A separate
+profile control measures healthy Fold/GC samples, not the failing tail.
+Publishing was a genuine Rust-owned gap at that snapshot; record 16 moves it.
+See [[file:15-pr18-integrated-audit.org][the latest combined-tree audit]]; the snapshots below remain historical.
+
+Historical snapshot: selected 294-module native lifecycle/metadata program, 2026-10-05.
+Native identity
+=sha256:9629cdd77a8eb5750310c0e85a12259052832453b3e512b5651514ab157c7acf=.
+Its target artifacts are now absent; these receipts are historical qualification.
+Both runtime features pass 80 native / 27 ordinary / 454 consumer cases,
+all 142 normal-build Scheme cases and 33,000 matched concurrent admissions.
+The former native-program-history artifacts are also absent in this checkout.
+Stable throughput/tail-latency improvement is NOT admitted.
+
+Native Scheme already owns Org event recognition, timestamp/citation/source
+headers, MACRO consumers, literal/dynamic block facts, keyword prescan,
+Contract DIR recognition, headline/link/LOGBOOK/table-cookie families and
+indexed radio matching. The selected program also moves priority/duration,
+ARCHIVE, headline time/timers, metadata words/FEEDSTATUS, LINK normalization,
+clocktable bounds/windows/properties, PROPERTY_ALL, progress/tag values and
+inert org-protocol grammar to Scheme.
+
+Rust in that owner slice retains typed row projection, graph indexing, derived
+state arithmetic and explicit host codecs/effects, not source grammar fallback.
+See [[file:10-lifecycle-metadata-and-protocols.org][the integrated lifecycle/metadata receipt]] for all normal-build
+roots, original failures and exact executable gates.
+
+* Remaining source-consumer group
+
+The following owners now have Scheme implementations in the fresh 306-module
+program aligned to parser PR #13 revision =46f0c891=. Both runtime features
+pass 84 native / 24 ordinary / 454 consumer cases, 147 Scheme cases and the
+full 33,000-document matrix per feature. Performance admission still rejects
+the original Query failures, so the program is not selected as the default:
+
+- Include expansion: line-range selection/bounds, minlevel and mode in
+  =includes.rs=. Filesystem/path resolution remains a host boundary.
+- Babel downstream: header value tokenization/variable assignment in
+  =source_block_headers.rs=; noweb/reference/call/literal/balanced syntax in
+  =source_block_references.rs=. Native header event framing alone is insufficient.
+- Contract source references: CONTRACT_ORG links/macros/top-level separators,
+  aliases, block parameter lookup and severity in =org_contract.rs=.
+  Query/selector/expectation compilers already use native Scheme; typed
+  expectation projection must not be mistaken for a second raw parser.
+- Table visualization: PLOT/ORGTBL option grammar, radio option pairs,
+  column/bool values and RECEIVE comment markers in =table_visualization.rs=.
+
+Global Scheme semantic ownership and stable performance closure remain open.
+The remaining Contract link-shape, kind/scope, block role, named-assertion and
+source-name predicates now have native implementations. Their 306-module
+snapshot passes both original Query/Contract gates and both 33,000-document
+matrices. See [[file:12-contract-policy-and-pr21.org][the single-PR integration record]]; earlier negative
+receipts remain evidence, not replaced by this changed program.
+The additional Babel default/mode/result-token policies and table alignment
+cookie recognition now also have native Scheme owners.
+See [[file:11-source-consumers-and-parser-alignment.org][the current integrated source/revision record]] for fresh executable evidence;
+the previous selected program does not qualify the newly aligned parser.
+The remaining admission must resolve the original Query failure variability
+without widening its deadline or replacing negative evidence with a chosen
+passing run. A separately built persistent Fold-state experiment was withdrawn
+because matched controls did not establish a CPU/GC or end-to-end gain.
+
+Retain Rust transport, typed row admission, UTF-8 bounds/annotations, graph
+indexing and explicit environment/process/filesystem effects. Audit by role;
+deleting those safety boundaries or renaming scanners is not grammar migration.
+Keep records modular; documentation restructuring closes none of these gates.
+
+* Integrated downstream metadata candidate
+
+The follow-up role audit found Agenda raw match parsing, datetree prefixes,
+timestamp sorting, COLUMNS/summary/checkbox grammar, Clock Scope classification
+and PROPERTY_SCHEMA references still owned by Rust. Those source decisions now
+have native Scheme owners; Rust retains typed admission and graph execution.
+The fresh candidate has 308 modules, with six new Scheme cases passing.
+Its whole-feature/Python and concurrent admission is separate and in progress.
+See [[file:13-downstream-metadata-and-agenda.org][the cohesive downstream owner record]].

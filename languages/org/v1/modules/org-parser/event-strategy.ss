@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; Org-owned, compositional event strategy. POO parser declarations own markers;
-;;; the resulting forms execute in Scheme and AOT-lower to one Rust function.
+;;; the resulting forms execute in Scheme and its native AOT/FFI program.
 
 (import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks
@@ -31,8 +31,9 @@
         (only-in "event-babel-call.ss" event-babel-call-helper)
         (only-in "event-include.ss" event-include-initial event-include-forms)
         (only-in "event-table.ss"
-                 table-event-initial table-close-form table-or-element-form)
+                 table-event-initial table-close-form table-or-element-form table-content-helper)
         (only-in "event-table-formula.ss" table-formula-event-helpers)
+        (only-in "event-macro.ss" macro-event-helpers)
         (only-in "event-tag-vocabulary.ss" tag-vocabulary-event-helper)
         (only-in "event-list.ss"
                  list-close-all list-close-paragraph-form list-or-element-form)
@@ -216,46 +217,48 @@
 
 (def (block-header-forms rule)
   (let* ((opening (block-line-opening rule))
+         (marker-end (offset-after '(line-skip-horizontal start)
+                                   (string-length opening)))
          (begin-token (block-line-begin-token rule))
          (header (block-line-header rule)))
     (if (not header)
       (if (eq? (block-line-block-node rule) 'OrgExampleBlock)
-        `((token ,begin-token start (line-prefix-end ,opening))
-          ,@(event-source-header-forms `(line-prefix-end ,opening)))
+        `((token ,begin-token start ,marker-end)
+          ,@(event-source-header-forms marker-end))
         `((token ,begin-token start end)))
       (let ((argument-token (block-header-argument-token header))
             (trivia-token (block-header-trivia-token header))
             (argument-end
              `(line-scan-word
-               (line-skip-horizontal (line-prefix-end ,opening)))))
-        `((token ,begin-token start (line-prefix-end ,opening))
-          (if (line-has-word-after-prefix? ,opening)
+               (line-skip-horizontal ,marker-end))))
+        `((token ,begin-token start ,marker-end)
+          (if (offset-less? (line-skip-horizontal ,marker-end) (line-content-end))
               ((token ,trivia-token
-                      (line-prefix-end ,opening)
-                      (line-skip-horizontal (line-prefix-end ,opening)))
+                      ,marker-end
+                      (line-skip-horizontal ,marker-end))
                (token ,argument-token
-                      (line-skip-horizontal (line-prefix-end ,opening))
+                      (line-skip-horizontal ,marker-end)
                       ,argument-end)
                ,@(if (eq? (block-line-block-node rule) 'OrgSourceBlock)
                    (event-source-header-forms argument-end)
                    `((token ,trivia-token ,argument-end end))))
-              ((token ,trivia-token (line-prefix-end ,opening) end))))))))
+              ((token ,trivia-token ,marker-end end))))))))
 
-(def (opaque-open-form block-id otherwise)
+(def (opaque-open-form block-id otherwise (close-form close-paragraph))
   (let ((id (org-event-block-id block-id))
         (rule (org-event-block-rule block-id)))
-    `(if (and (line-prefix-boundary-ascii-ci ,(block-line-opening rule))
+    `(if (and ,(container-open-condition rule)
               ,(future-close-condition rule))
-         ,(append (list close-paragraph
+         ,(append (list close-form
                         (list 'start-node (block-line-block-node rule)))
                   (block-header-forms rule)
                   (list '(set-bool after-heading (bool #f))
                         `(set-uint active-opaque-block (uint ,id))))
          ,otherwise)))
 
-(def (opaque-open-chain)
+(def (opaque-open-chain (close-form close-paragraph))
   (let (chain (foldr (lambda (block rest)
-                       (list (opaque-open-form block rest)))
+                       (list (opaque-open-form block rest close-form)))
                      '() opaque-blocks))
     `((if (line-byte-equal? (line-skip-horizontal start) 35)
           ,chain ()))))
@@ -264,7 +267,7 @@
   (let ((id (org-event-block-id block-id))
         (rule (org-event-block-rule block-id)))
     `(if (uint-equal? (state active-opaque-block) (uint ,id))
-         ((if (line-marker-ascii-ci ,(block-line-closing rule))
+         ((if ,(container-close-condition rule)
               ((token ,(block-line-end-token rule) start end)
                (finish-node) (set-uint active-opaque-block (uint 0)))
               ,(if (memq (block-line-block-node rule)
@@ -480,6 +483,12 @@
   (table-or-element-form close-paragraph fixed-width-close
                          (non-table-element-form)))
 
+;; List continuation admits declared opaque Elements before paragraph text.
+;; Keep the owning Item open; close its paragraph only after block admission.
+;; A malformed opener has no side effects and remains ordinary list text.
+(def (list-opaque-element-forms)
+  (opaque-open-chain (list-close-paragraph-form #t)))
+
 
 (def footnote-label-start '(line-prefix-end "[fn:"))
 (def footnote-label-end `(line-scan-key ,footnote-label-start))
@@ -563,7 +572,7 @@
     (if (not (state footnote-line-handled))
         ,(list-or-element-form table-close-form fixed-width-close close-paragraph
                                comment-line? comment-line-forms
-                               org-table-or-element-form) ())
+                               org-table-or-element-form list-opaque-element-forms) ())
     (set-bool footnote-line-handled (bool #f))))
 
 (def (headline-or-element-form)
@@ -611,8 +620,8 @@
    inlinetask-event-initial))
 
 (def org-event-helpers
-  (append paragraph-event-helpers table-formula-event-helpers
-          (list event-source-header-helper event-babel-call-helper
+  (append paragraph-event-helpers table-formula-event-helpers macro-event-helpers
+          (list table-content-helper event-source-header-helper event-babel-call-helper
                 keyword-value-event-helper
                 tag-vocabulary-event-helper
                 (make-org-event-helper

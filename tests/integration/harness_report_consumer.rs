@@ -13,7 +13,6 @@ use asp_rust::{
     write_rust_verification_reports_with_options,
 };
 
-#[test]
 fn git_locked_asp_rust_report_exposes_actionable_performance_gaps() {
     let temp = TempProject::new("orgize-asp-rust-report-consumer");
     write_sample_project(temp.path());
@@ -137,3 +136,8 @@ fn write_sample_project(root: &Path) {
     )
     .expect("write api");
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "harness_report_consumer::git_locked_asp_rust_report_exposes_actionable_performance_gaps",
+    git_locked_asp_rust_report_exposes_actionable_performance_gaps,
+)];

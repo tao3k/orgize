@@ -1,4 +1,4 @@
-//! Cargo-only Org parsing from Scheme-declared AOT language artifacts.
+//! Native Gerbil Org parsing with Scheme-declared Rowan/Element projections.
 //!
 //! The default AOT entrypoint runs the Org-owned Scheme event algorithm.
 //! The public `Org` facade uses this parser; the owned semantic AST is a
@@ -24,46 +24,105 @@ mod grammar;
 #[rustfmt::skip]
 #[path = "../languages/org/v1/generated/graph.rs"]
 mod graph;
-#[path = "org_aot_citation_functions.rs"]
-mod citation_functions;
 #[path = "org_aot_contract_plan.rs"]
 mod contract_plan;
-#[path = "org_aot_document_keyword_functions.rs"]
-mod document_keyword_functions;
-#[path = "org_aot_headline_functions.rs"]
-mod headline_functions;
 #[path = "org_aot_headline_view.rs"]
 mod headline_view;
 pub use headline_view::OrgHeadline;
 #[path = "org_aot_affiliation.rs"]
 mod affiliation;
-#[path = "org_aot_link_functions.rs"]
-mod link_functions;
-#[path = "org_aot_logbook_functions.rs"]
-mod logbook_functions;
-#[path = "org_aot_table_functions.rs"]
-mod table_functions;
-#[path = "org_aot_todo_directive.rs"]
-mod todo_directive;
-#[rustfmt::skip]
-#[path = "org_aot_events.rs"]
-mod generated_context_events;
+#[path = "org_native_identity.rs"]
+mod event_identity;
+#[path = "org_native_semantic_functions.rs"]
+mod native_functions;
 
-// Reuse the library's compiled event function from integration and benchmark
-// targets instead of compiling the large generated function into each target.
-#[doc(hidden)]
-pub use generated_context_events::{PARSER_DIGEST, parse_org_rowan_events};
+#[path = "org_native_events/mod.rs"]
+mod native_events;
+#[path = "org_native_expression.rs"]
+mod native_expression;
+pub(crate) use native_expression::NativeExpressionValue;
+
+pub(crate) fn parse_native_expression_values(
+    source: &str,
+    grammar: &LanguageSpec,
+) -> Result<Vec<NativeExpressionValue>, String> {
+    native_events::parse_expression_values(source, grammar)
+}
+
+pub(crate) fn parse_native_expectation_values(
+    source: &str,
+    grammar: &LanguageSpec,
+) -> Result<Vec<NativeExpressionValue>, String> {
+    native_events::parse_expectation_values(source, grammar)
+}
+
+pub(crate) fn parse_native_contract_values(
+    source: &str,
+    grammar: &LanguageSpec,
+) -> Result<Vec<NativeExpressionValue>, String> {
+    native_events::parse_contract_values(source, grammar)
+}
+
+pub(crate) fn initialize_native_owner() -> Result<(), String> {
+    native_events::initialize_owner()
+}
+
+pub(crate) fn expand_native_macro_fields(operation: u8, fields: &[&str]) -> Result<String, String> {
+    native_events::expand_macro_fields(operation, fields)
+}
+
+pub(crate) fn native_semantic_rows(
+    operation: u8,
+    fields: &[&str],
+) -> Result<Vec<Vec<String>>, String> {
+    use self::native_expression::NativeExpressionValue;
+    native_events::semantic_fields(operation, fields)?
+        .into_iter()
+        .map(|value| {
+            let NativeExpressionValue::List(row) = value else {
+                return Err("native semantic row expected".into());
+            };
+            row.into_iter()
+                .map(|value| match value {
+                    NativeExpressionValue::String(value) => Ok(value),
+                    _ => Err("native semantic string expected".into()),
+                })
+                .collect()
+        })
+        .collect()
+}
+
+#[cfg(test)]
+pub(crate) fn parse_native_expression(
+    source: &str,
+    grammar: &'static LanguageSpec,
+) -> Result<Parse, OrgAotError> {
+    let events =
+        native_events::parse_expression_events(source, grammar).map_err(OrgAotError::Native)?;
+    parse_generated_events(
+        grammar,
+        event_identity::NATIVE_PARSER_DIGEST,
+        source,
+        &events,
+    )
+    .map_err(OrgAotError::Parse)
+}
+
+pub(crate) fn evaluate_native_contract(
+    input: crate::c_ffi::ContractInput,
+) -> Result<crate::c_ffi::ContractOutput, String> {
+    native_events::evaluate_contract(input)
+}
 
 /// A source-backed, lossless Rowan tree and its Scheme-declared Element graph.
+/// Native parsing requires explicit [`crate::initialize_native_runtime`] at
+/// exclusive host startup; parse calls never initialize the runtime implicitly.
 #[derive(Debug)]
 pub struct OrgAotDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
     base_config: ParseConfig,
     config: ParseConfig,
-    todo_directives: Vec<String>,
-    configured_todo: Vec<String>,
-    configured_done: Vec<String>,
     headline_properties: Vec<Option<HeadlineProperties>>,
     graph_index: GraphIndex,
     headline_ancestors: Vec<Option<usize>>,
@@ -89,15 +148,15 @@ struct HeadlineDetails {
 /// An error from the parser or the generated Element projection contract.
 #[derive(Debug)]
 pub enum OrgAotError {
+    /// The linked Gerbil program could not initialize, call, or project events.
+    Native(String),
     /// The generated parser rejected the source.
     Parse(ParseError),
     /// The generated Element projection did not match the parser artifact.
     Projection(Diagnostic),
 }
 
-/// Parse Org source through the Scheme-generated event algorithm and Element projection.
-///
-/// No Gerbil runtime or package is needed by a Cargo consumer.
+/// Parse Org source through the statically linked Gerbil event strategy and Element projection.
 ///
 /// # Errors
 ///
@@ -105,14 +164,10 @@ pub enum OrgAotError {
 /// the generated graph table is stale or invalid.
 pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
     static DEFAULT_CONFIG: OnceLock<ParseConfig> = OnceLock::new();
-    parse_org_aot_events(
-        source,
-        generated_context_events::parse_org_rowan_events(source),
-        DEFAULT_CONFIG.get_or_init(ParseConfig::default),
-    )
+    parse_org_aot_with_config(source, DEFAULT_CONFIG.get_or_init(ParseConfig::default))
 }
 
-/// Parse Org with the same Scheme-generated algorithm and a caller-provided configuration.
+/// Parse Org with the native Gerbil strategy and a caller-provided configuration.
 ///
 /// # Errors
 ///
@@ -122,133 +177,81 @@ pub fn parse_org_aot_with_config(
     source: &str,
     config: &ParseConfig,
 ) -> Result<OrgAotDocument, OrgAotError> {
-    let events = generated_context_events::parse_org_rowan_events_with_parameters(
+    let events = native_events::parse_events(
         source,
         config.effective_inlinetask_min_level(),
         config.inline_script_policy(),
-    );
+        &grammar::LANGUAGE,
+    )
+    .map_err(OrgAotError::Native)?;
     parse_org_aot_events(source, events, config)
 }
+
+pub(crate) const BATCH_MAX_DOCUMENTS: usize = native_events::BATCH_MAX_DOCUMENTS;
+pub(crate) const BATCH_MAX_SOURCE_BYTES: usize = native_events::BATCH_MAX_SOURCE_BYTES;
+
+/// Private bounded handoff; every document keeps its own receipt and offsets.
+pub(crate) fn parse_org_aot_batch(
+    sources: &[&str],
+    config: &ParseConfig,
+) -> Result<Vec<Result<OrgAotDocument, OrgAotError>>, OrgAotError> {
+    let outcomes = native_events::parse_events_batch(
+        sources,
+        config.effective_inlinetask_min_level(),
+        config.inline_script_policy(),
+        &grammar::LANGUAGE,
+    )
+    .map_err(OrgAotError::Native)?;
+    Ok(sources
+        .iter()
+        .zip(outcomes)
+        .map(|(source, events)| {
+            events
+                .map_err(OrgAotError::Native)
+                .and_then(|events| parse_org_aot_events(source, events, config))
+        })
+        .collect())
+}
+
+#[cfg(test)]
+#[path = "../tests/unit/org_native_batch.rs"]
+pub(crate) mod batch_tests;
 
 fn parse_org_aot_events(
     source: &str,
     events: Vec<gerbil_parser_rowan::TreeEvent>,
     config: &ParseConfig,
 ) -> Result<OrgAotDocument, OrgAotError> {
-    let parse = parse_generated_events(
-        &grammar::LANGUAGE,
-        generated_context_events::PARSER_DIGEST,
-        source,
-        &events,
-    )
+    let parse = crate::runtime_profile::stage("rowan.build", || {
+        parse_generated_events(
+            &grammar::LANGUAGE,
+            event_identity::NATIVE_PARSER_DIGEST,
+            source,
+            &events,
+        )
+    })
     .map_err(OrgAotError::Parse)?;
     document_from_parse(parse, config)
 }
 
 pub(crate) fn org_image_link(target: &str) -> bool {
-    link_functions::org_image_link_p(target)
+    native_functions::org_image_link_p(target)
 }
 
 pub(crate) fn org_link_kind(path: &str) -> &'static str {
-    link_functions::org_link_kind(path)
+    native_functions::org_link_kind(path)
 }
 
-pub(crate) fn org_link_target_key(path: &str) -> &str {
-    link_functions::org_link_target_key(path)
+pub(crate) fn org_link_protocol(path: &str) -> String {
+    native_functions::org_link_protocol(path)
 }
 
-pub(crate) fn org_link_protocol(path: &str) -> &str {
-    link_functions::org_link_protocol(path)
-}
-
-pub(crate) fn org_link_protocol_path(path: &str) -> &str {
-    link_functions::org_link_protocol_path(path)
-}
-
-pub(crate) fn org_link_file_path(path: &str) -> &str {
-    link_functions::org_link_file_path(path)
-}
-
-pub(crate) fn org_link_attachment_path(path: &str) -> &str {
-    link_functions::org_link_attachment_path(path)
-}
-
-pub(crate) fn org_link_search(path: &str) -> &str {
-    link_functions::org_link_search(path)
-}
-
-pub(crate) fn org_link_file_path_kind(path: &str) -> &'static str {
-    link_functions::org_link_file_path_kind(path)
-}
-
-pub(crate) fn org_link_search_kind(search: &str) -> &'static str {
-    link_functions::org_link_search_kind(search)
-}
-
-pub(crate) fn org_link_search_value(search: &str) -> &str {
-    link_functions::org_link_search_value(search)
+pub(crate) fn org_link_protocol_path(path: &str) -> String {
+    native_functions::org_link_protocol_path(path)
 }
 
 pub(crate) fn headline_anchor_slug(title: &str) -> String {
-    headline_functions::headline_anchor_slug(title)
-}
-
-pub(crate) fn keyword_words(value: &str) -> Vec<String> {
-    document_keyword_functions::keyword_words(value)
-}
-
-pub(crate) fn keyword_tag_words(value: &str) -> Vec<String> {
-    document_keyword_functions::keyword_tag_words(value)
-}
-
-pub(crate) fn keyword_first_word(value: &str) -> String {
-    document_keyword_functions::keyword_first_word(value)
-}
-
-pub(crate) fn keyword_rest(value: &str) -> String {
-    document_keyword_functions::keyword_rest(value)
-}
-
-pub(crate) fn keyword_option_value(value: &str, key: &str) -> String {
-    document_keyword_functions::keyword_option_value(value, key)
-}
-
-pub(crate) fn keyword_option_present(value: &str, key: &str) -> bool {
-    document_keyword_functions::keyword_option_present_p(value, key)
-}
-
-pub(crate) fn keyword_boolean_value(value: &str) -> Option<bool> {
-    match document_keyword_functions::keyword_boolean_value(value) {
-        "true" => Some(true),
-        "false" => Some(false),
-        _ => None,
-    }
-}
-
-pub(crate) fn logbook_line_kind(line: &str) -> &str {
-    logbook_functions::logbook_line_kind(line)
-}
-
-pub(crate) fn logbook_content_line(line: &str) -> &str {
-    logbook_functions::logbook_content_line(line)
-}
-
-pub(crate) fn logbook_state_values(line: &str) -> Option<(&str, &str)> {
-    (logbook_functions::logbook_state_quote_shape(line) == "complete").then(|| {
-        (
-            logbook_functions::logbook_state_to(line),
-            logbook_functions::logbook_state_from(line),
-        )
-    })
-}
-
-pub(crate) fn logbook_clock_duration_value(line: &str) -> Option<&str> {
-    (logbook_functions::logbook_clock_duration_shape(line) == "present")
-        .then(|| logbook_functions::logbook_clock_duration_value(line))
-}
-
-pub(crate) fn table_column_cookie_kind(cell: &str) -> &'static str {
-    table_functions::table_column_cookie_kind(cell)
+    native_functions::headline_anchor_slug(title)
 }
 
 pub(crate) fn org_expand_link_abbreviation(
@@ -256,81 +259,118 @@ pub(crate) fn org_expand_link_abbreviation(
     path: &str,
     encoded_path: &str,
 ) -> String {
-    link_functions::org_expand_link_abbreviation(replacement, path, encoded_path)
+    native_functions::org_expand_link_abbreviation(replacement, path, encoded_path)
 }
 
 fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
-    let records = project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
-        .map_err(OrgAotError::Projection)?;
-    let graph_index = GraphIndex::new(&records).map_err(|error| {
-        OrgAotError::Projection(Diagnostic {
-            reason_kind: "invalid-graph-index",
-            byte_offset: 0,
-            message: format!("generated Element graph has invalid preorder: {error:?}"),
-        })
-    })?;
-    let headline_ancestors = graph_index
-        .nearest_ancestors_matching(&records, |record| {
-            matches!(record.kind, "headline" | "inlinetask")
-        })
-        .expect("validated graph index and records have the same preorder");
-    let todo_directives = records
-        .iter()
-        .filter(|record| record.kind == "keyword")
-        .filter(|record| {
-            record
-                .field("key")
-                .is_some_and(todo_directive::todo_directive_p)
-        })
-        .filter_map(|record| record.field("value").map(str::to_owned))
-        .collect::<Vec<_>>();
-    let mut effective_config = config.clone();
-    if !todo_directives.is_empty() {
-        let mut open = Vec::new();
-        let mut done = Vec::new();
-        for directive in &todo_directives {
-            open.extend(
-                headline_functions::todo_open_words(directive)
-                    .into_iter()
-                    .filter(|word| !word.is_empty()),
-            );
-            done.extend(
-                headline_functions::todo_done_words(directive)
-                    .into_iter()
-                    .filter(|word| !word.is_empty()),
-            );
-        }
-        effective_config.todo_keywords = (open, done);
-    }
-    let headline_properties = records
-        .iter()
-        .map(|record| {
-            let title = record
-                .field("title")
-                .filter(|_| matches!(record.kind, "headline" | "inlinetask"))?;
-            let todo_type = match headline_functions::todo_state_from_directives(
-                title,
-                &todo_directives,
-                &config.todo_keywords.0,
-                &config.todo_keywords.1,
-            ) {
-                "" => None,
-                state => Some(state),
-            };
-            Some(HeadlineProperties {
-                todo_type,
-                details: OnceLock::new(),
+    let records = crate::runtime_profile::stage("graph.project", || {
+        project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
+    })
+    .map_err(OrgAotError::Projection)?;
+    let graph_index = crate::runtime_profile::stage("graph.index", || GraphIndex::new(&records))
+        .map_err(|error| {
+            OrgAotError::Projection(Diagnostic {
+                reason_kind: "invalid-graph-index",
+                byte_offset: 0,
+                message: format!("generated Element graph has invalid preorder: {error:?}"),
             })
+        })?;
+    let headline_ancestors = crate::runtime_profile::stage("graph.ancestors", || {
+        graph_index
+            .nearest_ancestors_matching(&records, |record| {
+                matches!(record.kind, "headline" | "inlinetask")
+            })
+            .expect("validated graph index and records have the same preorder")
+    });
+    let keyword_fields = records
+        .iter()
+        .filter(|r| r.kind == "keyword")
+        .flat_map(|r| {
+            [
+                r.field("key").unwrap_or_default(),
+                r.field("value").unwrap_or_default(),
+            ]
         })
-        .collect();
+        .collect::<Vec<_>>();
+    let titles = records
+        .iter()
+        .filter(|r| matches!(r.kind, "headline" | "inlinetask") && r.field("title").is_some())
+        .collect::<Vec<_>>();
+    let mut fields = Vec::<String>::new();
+    for list in [&config.todo_keywords.0, &config.todo_keywords.1] {
+        fields.push(list.len().to_string());
+        fields.extend_from_slice(list);
+    }
+    fields.push(keyword_fields.len().to_string());
+    fields.extend(keyword_fields.into_iter().map(str::to_owned));
+    fields.push((titles.len() * 3).to_string());
+    for r in &titles {
+        fields.extend([
+            r.field("title").unwrap().to_owned(),
+            r.field("title-body")
+                .expect("source headline title")
+                .to_owned(),
+            r.field("tag").is_some().to_string(),
+        ]);
+    }
+    let refs = fields.iter().map(String::as_str).collect::<Vec<_>>();
+    let rows = native_semantic_rows(17, &refs).map_err(OrgAotError::Native)?;
+    assert_eq!(rows.len(), titles.len() + 1, "native headline row count");
+    let config_row = &rows[0];
+    assert!(config_row.len() >= 2, "native TODO config row");
+    let open: usize = config_row[0].parse().expect("native open count");
+    let done: usize = config_row[1].parse().expect("native done count");
+    assert_eq!(
+        config_row.len(),
+        2 + open + done,
+        "native TODO config count"
+    );
+    let mut effective_config = config.clone();
+    effective_config.todo_keywords = (
+        config_row[2..2 + open].to_vec(),
+        config_row[2 + open..].to_vec(),
+    );
+    let mut headline_properties = std::iter::repeat_with(|| None)
+        .take(records.len())
+        .collect::<Vec<_>>();
+    for (r, row) in titles.into_iter().zip(rows.into_iter().skip(1)) {
+        let [
+            state,
+            keyword,
+            content_after_todo,
+            priority,
+            display_title,
+            source_title,
+            comment,
+        ]: [String; 7] = row.try_into().expect("native headline row arity");
+        let todo_type = match state.as_str() {
+            "" => None,
+            "todo" => Some("todo"),
+            "done" => Some("done"),
+            _ => panic!("native TODO state"),
+        };
+        let is_comment = match comment.as_str() {
+            "true" => true,
+            "false" => false,
+            _ => panic!("native comment flag"),
+        };
+        headline_properties[r.id] = Some(HeadlineProperties {
+            todo_type,
+            details: OnceLock::from(HeadlineDetails {
+                todo_keyword: (!keyword.is_empty()).then_some(keyword),
+                content_after_todo,
+                priority_cookie: (!priority.is_empty()).then_some(priority),
+                display_title,
+                source_title,
+                is_comment,
+            }),
+        });
+    }
     Ok(OrgAotDocument {
         parse,
         records,
         base_config: config.clone(),
         config: effective_config,
-        todo_directives,
-        configured_todo: config.todo_keywords.0.clone(),
-        configured_done: config.todo_keywords.1.clone(),
         headline_properties,
         graph_index,
         headline_ancestors,
@@ -344,10 +384,10 @@ pub fn org_language_spec() -> &'static LanguageSpec {
     &grammar::LANGUAGE
 }
 
-/// Digest of the Scheme-generated event algorithm used by `parse_org_aot`.
+/// Digest of the admitted native program's generated Scheme module contents.
 #[must_use]
 pub fn org_event_parser_digest() -> &'static str {
-    generated_context_events::PARSER_DIGEST
+    event_identity::NATIVE_PARSER_DIGEST
 }
 
 /// The generated Org Element graph contract and its projection digest.
@@ -363,16 +403,16 @@ pub fn org_contract_pack() -> &'static ContractPack {
 }
 
 impl OrgAotDocument {
-    /// Parse Org through the Scheme-generated algorithm with default configuration.
+    /// Parse Org through native Gerbil AOT/FFI with default configuration.
     #[must_use]
     pub fn parse(source: impl AsRef<str>) -> Self {
-        Self::try_parse(source).expect("Scheme-generated Org parser rejected input")
+        Self::try_parse(source).expect("native Gerbil Org parser failed")
     }
 
     /// Parse Org with structured AOT diagnostics.
     ///
     /// # Errors
-    /// Returns a parser or graph-projection error if the generated artifacts reject the source.
+    /// Returns a native-runtime, parser, or graph-projection error.
     pub fn try_parse(source: impl AsRef<str>) -> Result<Self, OrgAotError> {
         parse_org_aot(source.as_ref())
     }
@@ -383,10 +423,16 @@ impl OrgAotDocument {
         self.syntax().to_string()
     }
 
-    /// Return the configuration used for this document's AOT parse.
+    /// Return the effective configuration after file-local Org directives.
     #[must_use]
     pub fn config(&self) -> &ParseConfig {
         &self.config
+    }
+
+    /// Return the caller configuration before file-local directives.
+    #[must_use]
+    pub fn base_config(&self) -> &ParseConfig {
+        &self.base_config
     }
 
     /// Iterate file-level keyword Elements from the Scheme AOT graph.
@@ -432,45 +478,12 @@ impl OrgAotDocument {
             replacement.as_ref(),
         );
         *self = parse_org_aot_with_config(&source, &self.base_config)
-            .expect("Scheme-generated Org parser rejected edited source");
+            .expect("native Gerbil Org parser failed on edited source");
     }
 
     fn headline_details(&self, record_id: usize) -> Option<&HeadlineDetails> {
         let properties = self.headline_properties.get(record_id)?.as_ref()?;
-        Some(properties.details.get_or_init(|| {
-            let record = &self.records[record_id];
-            let title = record.field("title").expect("projected headline title");
-            let todo_keyword = headline_functions::todo_keyword_from_directives(
-                title,
-                &self.todo_directives,
-                &self.configured_todo,
-                &self.configured_done,
-            );
-            let content_after_todo = headline_functions::headline_content_after_todo(
-                title,
-                &self.todo_directives,
-                &self.configured_todo,
-                &self.configured_done,
-            );
-            let display_title = headline_functions::headline_display_title(
-                &content_after_todo,
-                record.field("tag").is_some(),
-            );
-            let source_title = headline_functions::headline_source_title(
-                record.field("title-body").expect("projected source title"),
-                &todo_keyword,
-            );
-            let priority_cookie = headline_functions::headline_priority_cookie(&content_after_todo);
-            let is_comment = headline_functions::headline_comment_p(&display_title);
-            HeadlineDetails {
-                todo_keyword: (!todo_keyword.is_empty()).then_some(todo_keyword),
-                content_after_todo,
-                priority_cookie: (!priority_cookie.is_empty()).then_some(priority_cookie),
-                display_title,
-                source_title,
-                is_comment,
-            }
-        }))
+        properties.details.get()
     }
 
     pub(crate) fn headline_derived_field(&self, record_id: usize, name: &str) -> Option<&str> {
@@ -537,7 +550,7 @@ impl OrgAotDocument {
         planned: bool,
         archived: bool,
     ) -> &'static str {
-        headline_functions::memory_headline_state(
+        native_functions::memory_headline_state(
             self.headline_todo_type(record_id).unwrap_or(""),
             closed,
             planned,
@@ -575,15 +588,7 @@ impl OrgAotDocument {
     }
 
     pub(crate) fn planning_key_kind(key: &str) -> &'static str {
-        headline_functions::planning_key_kind(key)
-    }
-
-    pub(crate) fn citation_style(head: &str) -> String {
-        citation_functions::citation_style(head)
-    }
-
-    pub(crate) fn citation_variant(head: &str) -> String {
-        citation_functions::citation_variant(head).to_owned()
+        native_functions::planning_key_kind(key)
     }
 
     /// Return a priority cookie admitted by the Scheme-AOT headline algorithm.

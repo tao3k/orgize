@@ -1,0 +1,102 @@
+#+title: Scheme-owned native build executor
+
+[[file:../20.08_native_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* 2026-10-05 Scheme-owned batch module C generation
+
+The bridge now sends every module-C cache miss, including the startup SCM,
+through one =gerbil interactive scheme/native-build.ss module-c= invocation.
+Scheme constructs the selected compiler operations without re-expanding SCM
+or changing module linker identities. Real per-module completions are streamed;
+they are not used as cache receipts.
+
+All fresh outputs are checked for nonempty contents before publishing any
+destination. Missing or empty later outputs preserve every previous file.
+The existing v2 output digest receipts remain authoritative; module-C input
+identity now includes the Scheme tool bytes. Per-file rename publication is
+not claimed to be a crash-atomic multi-file transaction.
+
+Rust policy initially rejected excessive source size, then an incomplete
+owner split and cyclic imports. These were repaired without policy waivers:
+=src/program/mod.rs= is a thin public interface; =pipeline.rs=, =artifact.rs=
+and =module_c.rs= have acyclic dependencies and explicit imports.
+
+The regular bridge gate passes nine cases in 0.90 seconds, including missing
+and empty batch outputs, complete publication and basename preservation.
+Seven Scheme rejection cases pass with explicit =CASE-OK= and final =OK= at
+=scheme-module-batch-fixture/archive-test.log=. A zero-exit module compiler
+without output is separately rejected at =no-module.log=.
+The explicitly executed Rust archive projection scenario passes in 6.02
+seconds and its resulting C fixture links and executes.
+
+The complete 269-module manifest regenerates 116 nonempty module/startup SCM
+outputs through one Scheme invocation. The batch compiler phase takes
+102.973 seconds and the complete native archive scenario takes 135.03 seconds.
+=cache-v2-native/scheme-module-batch-cold.log= retains the real completions.
+The linker C remains byte-for-byte equal to its pre-migration control.
+The 258 ordered archive members and concatenated payload remain identical:
+=067dd57744322beba36c536cc9a5dc1faa3e967c6d75d6e75d9cc7634ba80d9a=.
+The second complete scenario passes in 13.62 seconds with module-C cache hits
+and no =MODULE-C-OK= compilation lines; the warm-cache owner exits zero.
+These are build and cache receipts, not matched performance improvements.
+
+Object compilation and its normal 12-worker batch still remain in Rust.
+Fresh release parser/consumer execution and both high-concurrency runtime
+matrices remain open. This slice does not claim complete parser closure.
+
+* 2026-10-05 Scheme-owned native object executor
+
+The bridge now projects module, startup and linker object jobs into one
+=gerbil interactive scheme/native-build.ss objects= invocation. Scheme
+constructs the object compiler operations and submits them through the
+existing exported =add-compile-job!= / =execute-pending-compile-jobs!= APIs.
+The full batch retains =GERBIL_BUILD_CORES=12=. The former Rust object worker
+threads, atomic work queue and object-command flag construction are removed.
+This is a build-only migration; neither application runtime feature is changed.
+No Gambit/provider source or optimization level is changed.
+
+=object.rs= retains cache projection and artifact admission, with tool bytes,
+per-job options and existing explicit header-content identity in the new
+object fingerprint domain. Module C and all object kinds now share the
+validation-before-publication guard in =artifact.rs=. Missing/empty output
+or a native worker exception rejects publication and preserves old outputs.
+Per-file rename is not claimed to be a crash-atomic whole-batch transaction.
+
+The final regular Rust owner passes nine cases in 11.85 seconds without the
+intermediate unused-helper warning. Existing object-cache cases exercise the
+new production Scheme handoff rather than a retained Rust compiler path.
+Ten Scheme rejection cases pass with explicit =CASE-OK= and final =OK= at
+=scheme-object-batch-fixture/archive-test.log=. The native executor rejects
+a zero-exit compiler with no output at =no-object.log=. Two real C fixture
+objects compile through Scheme, link and execute. Their direct host-CC link
+prints macOS 26.0-versus-14.0 deployment warnings; execution does not qualify
+minimum-OS portability. The explicitly executed Rust archive projection case
+passes in 7.27 seconds, and its archive fixture links and executes.
+
+The complete admitted 269-module graph rebuilds 116 nonempty module/startup
+SCM outputs and 117 module/startup/linker objects. The object batch reports
+117 completed jobs with 12 workers and takes 500.186 seconds. The complete
+native archive scenario passes in 626.90 seconds. Its cold receipt is saved
+as =cache-v2-native/scheme-object-batch-cold.log=.
+The saved linker C control is still byte-for-byte equal. The 258 ordered
+archive members and concatenated payload remain exactly equal to the original:
+=067dd57744322beba36c536cc9a5dc1faa3e967c6d75d6e75d9cc7634ba80d9a=.
+The second complete scenario passes in 18.48 seconds with 117 object-cache
+hits and no =OBJECT-OK= or =MODULE-C-OK= recompilation lines. The maintained
+warm-cache owner exits zero. These timings are not matched performance wins.
+
+Successful compiler output is now visible instead of being discarded by a
+Rust buffered command. GCC reports disabled optimization passes on large
+generated functions. In particular, Fold runtime C has 36,044 lines and an
+=ext-dce disabled= diagnostic for 8,943 basic blocks / 42,205 registers, and
+a later =fold-mem-offsets= diagnostic for 9,709 blocks. It is the last object
+to finish. During the long tail, direct process checks showed running =cc1=
+with increasing CPU time and about 1.9 GiB resident memory; no synthetic
+heartbeat or timeout relaxation was used. This identifies build-cost evidence,
+not a measured parse-runtime hotspot. The warnings remain in the cold receipt.
+
+Module C, object compilation/scheduling, linker generation and final archive
+packaging now have Scheme build owners. Rust still projects Cargo link inputs
+and validates artifacts. Fresh release parser/consumer execution and both
+high-concurrency runtime matrices remain open; native syntax/semantic closure
+and runtime performance are not certified by archive equality alone.

@@ -10,7 +10,6 @@ use crate::export_cli::export_cli_common::{
 };
 
 #[cfg(feature = "md")]
-#[test]
 fn markdown_document_query_commands_run() {
     let guide = Command::new(env!("CARGO_BIN_EXE_orgize"))
         .arg("md")
@@ -305,3 +304,11 @@ fn markdown_document_query_commands_run() {
     assert_eq!(relative_file_packet["sourceSnapshot"]["leafCount"], 1);
     assert_document_query_evidence(&relative_file_packet);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    #[cfg(feature = "md")]
+    (
+        "export_cli::export_cli_markdown::markdown_document_query_commands_run",
+        markdown_document_query_commands_run,
+    ),
+];

@@ -1,0 +1,149 @@
+#+TITLE: Native Org runtime stage audit and measurement repair
+
+* Changes and authority
+
+=runtime-profile= is an explicit diagnostic feature, independent of the two
+execution-owner features. Ordinary builds compile the stage wrapper to the
+original operation without clocks or a thread-local collector. Profiling uses
+a synchronous request-local collector; nested measurements fail closed and
+panic cleanup resets the collector. Native roots never cross thread boundaries.
+The module shell contains only file-backed declarations and re-exports.
+
+The original public =Org::try_parse= path is unchanged in authority. Stage
+wrappers observe request encoding, native transport, event decoding, Rowan
+construction, graph projection/index/ancestor calculation. They do not provide
+another parser or a fallback. Native transport is explicitly inclusive of owner
+admission, Scheme execution, tape serialization and result transfer. It is NOT
+isolated Scheme parser CPU time or GC attribution.
+
+* Benchmark correctness repair
+
+=orgize.runtime-parallel.v2= distinguishes =qualification= (lossless round-trip
+plus complete tree/graph checksum) and =performance= (those checks disabled,
+artifact=null). Performance mode still executes the same public parse/projection
+and document destruction; it does not silently omit production graph work.
+Profiling and mode are part of comparator identity. A performance receipt is
+never semantic validation evidence. Qualification hashes must match the previous
+same-program/corpus receipts independently of diagnostic adapter changes.
+
+Supervisor queue and IPC-service durations are measured on each individual
+request. They partition that request's submission-to-response time; per-stage
+percentiles are reported independently and must not be subtracted. Native
+transport and supervisor IPC stages are inclusive; they must not be summed with
+their child phases. Validation/checksum and document destruction are timed
+separately. Stage diagnostic JSON formatting is not labelled as validation.
+Whole-batch throughput remains end-to-end, not bare Scheme parse throughput.
+
+The fixed-scale stage qualification is 1,000 and 10,000 distinct documents,
+64 Tokio callers and 8 independent exec'd native domains per feature. This is
+not a new production process-pool API or proof of per-domain actor parallelism.
+The previous three-domain-count matrix remains historical evidence for that
+different benchmark version. Only completed current receipts qualify this slice.
+
+* Verification status
+
+The first diagnostic layout triggered RUST-MOD-R008 (inline module). Splitting
+the implementation then triggered RUST-MOD-R001 (implementation in mod.rs).
+Both were repaired by separating collector/dispatch from the module shell;
+the current-source policy check passed without changing warning severity.
+Fresh matching binaries, unit/consumer and scale results are recorded only
+after their execution. Earlier intermediate binaries are not final receipts.
+
+Both =runtime-rust= and =runtime-scheme= without =runtime-profile= passed
+offline =cargo check --tests --benches --examples= via the maintained owner
+Justfile recipe (40.53 s and 35.54 s respectively). These are compile checks,
+not additional full runtime test passes. Dev opt-level 2, debug/assertion/overflow
+settings and release opt-level 3 were not reduced for this slice. No kernel
+patch, alternate parser or production process pool was introduced.
+
+** Current Rust diagnostic candidate
+
+The rebuilt =runtime-rust,runtime-profile= candidate passed all 54 native
+cases and all 23 pure/policy cases. The original ignored cases remain ignored.
+The complete 12-caller consumer catalog completed 454 cases: 453 passed and
+=lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget= failed
+at 167.546083 ms against its unchanged 25 ms limit. This failure blocks closure;
+an earlier candidate's green catalog is not evidence for this binary.
+
+Both Rust scale modes completed 11,000 documents (1,000 and 10,000, 64 callers,
+8 domains) and passed the diagnostic scale checks. Qualification artifacts
+matched the historical same-program/corpus artifacts. The performance mode has
+null artifacts and does not qualify semantic correctness.
+
+In the 10,000-document performance sample, mean native transport was 70.141 ms,
+graph projection 0.057 ms and Rowan construction 0.045 ms. Mean supervisor
+queue wait was 511.104 ms; inclusive IPC service was 73.431 ms. The measured
+native boundary therefore dominates this sample, but includes owner waiting,
+Scheme execution, tape generation and result transfer. It does not identify
+which of those sub-stages consumes CPU. Removing benchmark validation alone
+does not close the throughput or tail-latency problem.
+
+These are single sequential diagnostic samples on a shared host, not an
+interleaved reproducible speedup claim. Qualification reached 150.960 docs/s
+for 10,000 documents versus 108.762 docs/s in the performance sample; despite
+doing more checking it ran faster. Host/sample variability must be resolved
+before attributing a throughput difference to validation cost or an algorithm.
+Scheme diagnostic results use matching source and modes as recorded below.
+
+The preserved Rust diagnostic executable SHA-256 identities are:
+- unit: =19bd5cc763eb4ff7c2b8e409700bd1ff173fa7455a268ee1ee633fcb0ee0c16c=
+- consumer: =b6150dc45582ac6125a0fe32826e6accd33cabdf14499670484073a6f9c4c334=
+- corpus: =4322d0feeff0033959b01fb44a80a4a6ccc169133f5392b0e4077efeffeaab88=
+
+Performance-as-qualification and cross-mode comparison negative checks both
+rejected the invalid inputs. Native program identity remains
+=sha256:9554824bff01b10b2159ba7e413221a73a6cd712d5df140f3d2d98743f225740=.
+
+** Current Scheme diagnostic candidate
+
+The matching =runtime-scheme,runtime-profile= release build completed in
+9 minutes 04 seconds. All 54 native and 23 pure/policy cases passed. The
+complete 12-caller catalog again completed 454 cases with 453 passing and the
+same unchanged 25 ms query gate failing, this time at 144.605417 ms. This is
+not proof that a particular scheduler is the cause: both current owner
+candidates fail under the full catalog.
+
+Scheme performance mode completed both scale batches and passed scale and
+matching-mode comparison gates. In the 10,000-document sample it reached
+140.288 docs/s with 769.983 ms end-to-end p95. Mean native transport was
+55.406 ms, graph projection 0.042 ms, Rowan construction 0.034 ms, supervisor
+queue wait 397.133 ms and inclusive IPC service 56.920 ms.
+
+The current performance pair ranks Scheme above Rust, opposite to the
+historical qualification matrix. Both the benchmark mode/version and sampling
+conditions differ from that history. Even within current Rust samples the
+qualification/performance ordering is inconsistent with a simple checksum-cost
+explanation. No stable runtime winner or algorithmic speedup is established.
+Repeated interleaved samples and CPU attribution remain necessary.
+Scheme qualification also completed both batches and passed scale, historical
+artifact equality and matching-mode comparison checks. Thus all four current
+mode/backend receipts completed 44,000 documents in total, of which 22,000
+were qualified with lossless/structure checks. In the 10,000-document Scheme
+qualification sample throughput was 216.472 docs/s and end-to-end p95 was
+608.152 ms; the performance/qualification inversion again demonstrates why
+these sequential samples cannot establish the cost of validation.
+
+Focused reruns of the unchanged query gate failed for both preserved binaries:
+Rust 45.890417 ms and Scheme 56.929 ms. Removing competing catalog cases alone
+did not close the 25 ms budget in these runs. Cold-request work, native fold,
+expression/contract work and scheduling still require separate attribution.
+No focused rerun replaces the failing complete catalog receipt.
+
+Preserved Scheme executable SHA-256 identities:
+- unit: =d57d81249c48fa7e511775188902f08a9738b64159da9ca03ef8f3ea05db5064=
+- consumer: =42c5b9746ff2f0d611a58a30b612b6056517614c8b50a3c2c2d7d3ec49369806=
+- corpus: =00fe964d0ee99f1a3aa8833b232992d52a16efb0ae82b1a9836c9e7a0fde025c=
+
+* Remaining optimization gates
+
+1. Split native owner wait, Scheme fold, tape serialization and root/copy costs
+   with native monotonic timings; capture CPU, allocation and GC separately.
+2. Lower admitted fixed event-fold rules to direct native Scheme functions;
+   static declaration/type/state admission must not remain repeated hot work.
+   Keep POO strategy ownership and ordinary functional code, not a Rust parser.
+3. Use measured allocation/scanning costs to fuse intermediate event/tape
+   projections and prepare immutable graph rules once; retain document checks.
+4. Add diverse real-size/complexity corpora, repeated interleaved samples,
+   concurrency sweeps and open-loop overload/SLO qualification for both owners.
+
+This receipt does not claim these remaining optimization gates are complete.

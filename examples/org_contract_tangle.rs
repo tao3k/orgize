@@ -71,6 +71,8 @@ fn tangle(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // SAFETY: standalone entrypoint, before workers or children and host I/O.
+    unsafe { orgize::initialize_native_runtime() }?;
     let args: Vec<_> = env::args_os().collect();
     let (input, output, contract_interface, elements_interface) = match args.as_slice() {
         [_, input, output] => (

@@ -4,7 +4,6 @@ mod customer_contract_plan;
 
 use orgize::{contract_feature::ContractScopeNodeId, org_aot::parse_org_aot};
 
-#[test]
 fn consumer_contract_pack_evaluates_custom_scope_and_todo_policy() {
     let document = parse_org_aot(
         "#+TODO: WAIT | DONE\n* WAIT Review\nSee [[https://example.test][spec]].\n** DONE Child\n* WAIT Audit\n",
@@ -41,7 +40,6 @@ fn consumer_contract_pack_evaluates_custom_scope_and_todo_policy() {
     assert!(todo_result[0].passed);
 }
 
-#[test]
 fn consumer_contract_pack_reports_missing_evidence_without_rust_parser() {
     let document = parse_org_aot("* Review\nNo linked evidence.\n")
         .expect("Scheme-AOT Org parser accepts the consumer document");
@@ -58,3 +56,14 @@ fn consumer_contract_pack_reports_missing_evidence_without_rust_parser() {
     assert!(!result[0].passed);
     assert_eq!(rule.assertions[0].message, Some("review requires a link"));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_customer_contract::consumer_contract_pack_evaluates_custom_scope_and_todo_policy",
+        consumer_contract_pack_evaluates_custom_scope_and_todo_policy,
+    ),
+    (
+        "org_customer_contract::consumer_contract_pack_reports_missing_evidence_without_rust_parser",
+        consumer_contract_pack_reports_missing_evidence_without_rust_parser,
+    ),
+];

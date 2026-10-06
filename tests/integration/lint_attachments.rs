@@ -2,7 +2,6 @@ use std::{fs, path::PathBuf};
 
 use orgize::lint::{LintOptions, lint_org_with_options};
 
-#[test]
 fn lint_reports_attachment_path_issues_with_snapshot() {
     let dir = test_dir("lint-attachment-paths");
     fs::create_dir_all(dir.join("assets")).unwrap();
@@ -30,3 +29,8 @@ fn test_dir(name: &str) -> PathBuf {
     fs::create_dir_all(&dir).unwrap();
     dir
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "lint_attachments::lint_reports_attachment_path_issues_with_snapshot",
+    lint_reports_attachment_path_issues_with_snapshot,
+)];

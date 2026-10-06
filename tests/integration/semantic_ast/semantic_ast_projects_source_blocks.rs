@@ -12,7 +12,6 @@ use orgize::{
     org_aot::parse_org_aot,
 };
 
-#[test]
 fn semantic_ast_projects_source_block_records_with_results_and_tangle() {
     let doc = Org::parse(
         r#"#+NAME: demo-block
@@ -86,7 +85,6 @@ echo hi
     assert!(records[1].result.is_none());
 }
 
-#[test]
 fn semantic_ast_projects_source_block_result_options() {
     let doc = Org::parse(
         r#"#+PROPERTY: header-args :results file html replace :file "default.html"
@@ -128,7 +126,6 @@ echo hidden
     assert_eq!(hidden.unknown, ["unknown-mode"]);
 }
 
-#[test]
 fn semantic_ast_projects_source_block_execution_plan() {
     let doc = Org::parse(
         r#"#+PROPERTY: header-args :eval query :cache yes :session shared :dir ./workspace :noweb no-export
@@ -208,7 +205,6 @@ Inline src_sh[:exports none :eval no :noweb eval]{echo hi}
     );
 }
 
-#[test]
 fn semantic_ast_projects_source_block_records_affiliated_header_args() {
     let doc = Org::parse(
         r#"#+HEADER: :var data=dataset :results output
@@ -258,7 +254,6 @@ print(data)
     );
 }
 
-#[test]
 fn semantic_ast_header_args_are_classified_in_the_scheme_graph() {
     let org = Org::parse(
         "#+HEADER: :var x=1 :results output\n\
@@ -286,7 +281,6 @@ fn semantic_ast_header_args_are_classified_in_the_scheme_graph() {
     }
 }
 
-#[test]
 fn semantic_ast_scheme_header_keys_respect_quoted_and_escaped_values() {
     let org = Org::parse(
         "#+HEADER: :var 'x :inner y' :results output\n\
@@ -326,7 +320,6 @@ fn semantic_ast_scheme_header_keys_respect_quoted_and_escaped_values() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_source_block_records_property_header_args() {
     let doc = Org::parse(
         r#"#+PROPERTY: header-args :results output :exports results :var dataset=data_block
@@ -445,7 +438,6 @@ print("local")
     }));
 }
 
-#[test]
 fn semantic_ast_projects_inline_source_records_with_defaults_and_results_macro() {
     let doc = Org::parse(
         r#"Value src_sh[:exports both :var x=1]{echo $x}{{{results(=1=)}}}
@@ -500,7 +492,6 @@ fn semantic_ast_projects_inline_source_records_with_defaults_and_results_macro()
     );
 }
 
-#[test]
 fn semantic_ast_projects_literate_source_block_references() {
     let doc = Org::parse(
         r#"#+NAME: load_data
@@ -559,7 +550,6 @@ Inline call_load_data() and call_missing_inline().
     );
 }
 
-#[test]
 fn babel_call_references_consume_only_the_aot_value() {
     let source = "#+CALL: target()\n#+CALL: #+call:literal()\n#+CALL: configured[head](x=1)\n#+CALL: target(x=1)[head]\n#+CALL: ()\n";
     let graph = parse_org_aot(source).expect("Scheme AOT classifies Babel calls");
@@ -594,7 +584,6 @@ fn babel_call_references_consume_only_the_aot_value() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_lowercase_babel_keywords_and_native_headers() {
     let doc = Org::parse(
         r#"#+name: prep
@@ -690,3 +679,50 @@ echo "$topic"
     assert_eq!(references[0].target, "prep");
     assert!(references[0].resolved);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_records_with_results_and_tangle",
+        semantic_ast_projects_source_block_records_with_results_and_tangle,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_result_options",
+        semantic_ast_projects_source_block_result_options,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_execution_plan",
+        semantic_ast_projects_source_block_execution_plan,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_records_affiliated_header_args",
+        semantic_ast_projects_source_block_records_affiliated_header_args,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_header_args_are_classified_in_the_scheme_graph",
+        semantic_ast_header_args_are_classified_in_the_scheme_graph,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_scheme_header_keys_respect_quoted_and_escaped_values",
+        semantic_ast_scheme_header_keys_respect_quoted_and_escaped_values,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_records_property_header_args",
+        semantic_ast_projects_source_block_records_property_header_args,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_inline_source_records_with_defaults_and_results_macro",
+        semantic_ast_projects_inline_source_records_with_defaults_and_results_macro,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_literate_source_block_references",
+        semantic_ast_projects_literate_source_block_references,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::babel_call_references_consume_only_the_aot_value",
+        babel_call_references_consume_only_the_aot_value,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_lowercase_babel_keywords_and_native_headers",
+        semantic_ast_projects_lowercase_babel_keywords_and_native_headers,
+    ),
+];

@@ -1,6 +1,5 @@
 use orgize::{Org, ast::ElementData};
 
-#[test]
 fn semantic_ast_projects_clean_clock_duration() {
     let doc = Org::parse("* Work\nCLOCK: [2003-09-16 Tue 09:39] =>  1:00\n").document();
 
@@ -22,3 +21,8 @@ fn semantic_ast_projects_clean_clock_duration() {
     assert_eq!(clock.parsed_duration.as_ref().unwrap().total_seconds, 3_600);
     assert!(clock.raw.contains("=>  1:00"));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_clean_clock_duration::semantic_ast_projects_clean_clock_duration",
+    semantic_ast_projects_clean_clock_duration,
+)];

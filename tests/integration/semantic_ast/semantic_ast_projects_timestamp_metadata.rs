@@ -4,7 +4,6 @@ use orgize::{
     ast::{ElementData, ObjectData, RepeaterKind, TimeUnit, WarningKind},
 };
 
-#[test]
 fn semantic_ast_projects_timestamp_metadata() {
     let doc = Org::parse("SCHEDULED: <2003-09-16 Tue 09:39-10:39 +1w --2d>\n").document();
 
@@ -46,3 +45,8 @@ fn semantic_ast_projects_timestamp_metadata() {
     assert_eq!(warning.value, 2);
     assert_eq!(warning.unit, TimeUnit::Day);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_timestamp_metadata::semantic_ast_projects_timestamp_metadata",
+    semantic_ast_projects_timestamp_metadata,
+)];

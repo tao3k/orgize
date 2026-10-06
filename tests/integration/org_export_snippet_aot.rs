@@ -14,7 +14,6 @@ macro_rules! check_org_export_snippet {
     }};
 }
 
-#[test]
 fn scheme_export_snippets_keep_backend_value_and_source_spans() {
     let source = "go @@html:<b>x</b>@@ and @@-:@@\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("Scheme export snippets parse");
@@ -35,7 +34,6 @@ fn scheme_export_snippets_keep_backend_value_and_source_spans() {
     check_org_export_snippet!(snippets[1], source, "-", Some(""), "@@-:@@");
 }
 
-#[test]
 fn scheme_export_snippets_reject_malformed_and_opaque_context() {
     let source = "@@:x@@ @@h_t:x@@ @@html:x@\n#+begin_src text\n@@html:hidden@@\n#+end_src\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("malformed snippets parse");
@@ -49,3 +47,14 @@ fn scheme_export_snippets_reject_malformed_and_opaque_context() {
         0
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_export_snippet_aot::scheme_export_snippets_keep_backend_value_and_source_spans",
+        scheme_export_snippets_keep_backend_value_and_source_spans,
+    ),
+    (
+        "org_export_snippet_aot::scheme_export_snippets_reject_malformed_and_opaque_context",
+        scheme_export_snippets_reject_malformed_and_opaque_context,
+    ),
+];

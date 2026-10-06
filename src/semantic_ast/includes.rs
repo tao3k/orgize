@@ -64,33 +64,20 @@ fn include_line_selection(options: &[IncludeOption]) -> IncludeLineSelection {
 }
 
 fn parse_line_selection(raw: &str) -> IncludeLineSelection {
-    let value = raw.trim();
-    let Some((start, end)) = value.split_once('-') else {
-        return IncludeLineSelection::Invalid {
-            raw: raw.to_string(),
-        };
-    };
-    let start = parse_optional_line_bound(start);
-    let end = parse_optional_line_bound(end);
-    if start.is_none() && end.is_none() {
-        IncludeLineSelection::Invalid {
-            raw: raw.to_string(),
-        }
-    } else {
-        IncludeLineSelection::Range {
-            start,
-            end,
-            raw: raw.to_string(),
-        }
-    }
-}
-
-fn parse_optional_line_bound(value: &str) -> Option<usize> {
-    let value = value.trim();
-    if value.is_empty() {
-        None
-    } else {
-        value.parse::<usize>().ok().filter(|line| *line > 0)
+    let row = super::org_native_values::rows("include-lines", &[raw])
+        .pop()
+        .expect("native include selection");
+    let [kind, start, end]: [String; 3] = row.try_into().expect("native include arity");
+    match kind.as_str() {
+        "invalid" => IncludeLineSelection::Invalid {
+            raw: raw.to_owned(),
+        },
+        "range" => IncludeLineSelection::Range {
+            start: (!start.is_empty()).then(|| start.parse().expect("native line start")),
+            end: (!end.is_empty()).then(|| end.parse().expect("native line end")),
+            raw: raw.to_owned(),
+        },
+        _ => panic!("native include kind"),
     }
 }
 
@@ -99,14 +86,17 @@ fn include_min_level(options: &[IncludeOption]) -> Option<usize> {
         .iter()
         .find(|option| option.key.eq_ignore_ascii_case("minlevel"))
         .and_then(|option| option.value.as_deref())
-        .and_then(|value| value.trim().parse::<usize>().ok())
+        .and_then(|value| super::org_native_values::optional("unsigned", value))
+        .map(|row| row[0].parse().expect("native include minlevel"))
 }
 
 fn include_mode(arguments: &[String]) -> IncludeExpansionMode {
     let Some(first) = arguments.first() else {
         return IncludeExpansionMode::Org;
     };
-    match first.to_ascii_lowercase().as_str() {
+    let fields: Vec<&str> = arguments.iter().map(String::as_str).collect();
+    let _ = first;
+    match super::org_native_values::scalar("include-mode", &fields).as_str() {
         "example" => IncludeExpansionMode::Example,
         "src" => IncludeExpansionMode::Source {
             language: arguments.get(1).cloned(),

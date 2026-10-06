@@ -7,6 +7,8 @@ use slugify::slugify;
 use std::env::args;
 
 fn main() {
+    // SAFETY: standalone entrypoint, before workers or children and host I/O.
+    unsafe { orgize::initialize_native_runtime() }.expect("native startup");
     let args: Vec<_> = args().collect();
 
     if args.len() < 2 {

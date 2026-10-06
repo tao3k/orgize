@@ -5,7 +5,7 @@ use super::{
     DynamicBlockRecord, DynamicBlockWriterKind, Element, ElementData, ParsedAnnotation, Section,
     SectionIndexSource,
 };
-use crate::ast::block_metadata::split_block_lines;
+use crate::ast::block_metadata::native_number;
 
 impl Document<ParsedAnnotation> {
     /// Projects native Org dynamic blocks without executing their writer functions.
@@ -121,13 +121,20 @@ fn writer_kind(name: &str) -> DynamicBlockWriterKind {
 }
 
 fn dynamic_block_content(before_closing_line: &str) -> (DynamicBlockContentState, usize) {
-    // The Scheme graph identifies the closer; only the opening line is skipped.
-    let (has_nonblank_content, content_line_count) = split_block_lines(before_closing_line)
+    let rows = crate::org_aot::native_semantic_rows(11, &[before_closing_line])
+        .expect("initialized native dynamic content operation");
+    let [count, nonblank]: [String; 2] = rows
         .into_iter()
-        .skip(1)
-        .fold((false, 0usize), |(has_nonblank, count), line| {
-            (has_nonblank || !line.text.trim().is_empty(), count + 1)
-        });
+        .next()
+        .expect("native dynamic content row")
+        .try_into()
+        .expect("native dynamic content arity");
+    let content_line_count = native_number(&count);
+    let has_nonblank_content = match nonblank.as_str() {
+        "true" => true,
+        "false" => false,
+        _ => panic!("native dynamic content boolean"),
+    };
 
     (
         if has_nonblank_content {

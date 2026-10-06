@@ -5,9 +5,7 @@
 (import (only-in "aot.ss" generate-org-element-query-rust-module)
         (only-in "generated/query-source.ss" org-element-queries))
 
-(def arguments (command-line))
-(unless (> (length arguments) 2)
-  (error "usage: generate-queries.ss OUTPUT.rs"))
+(export main)
 
-(generate-org-element-query-rust-module
- (car (reverse arguments)) org-element-queries)
+(def (main output-path)
+  (generate-org-element-query-rust-module output-path org-element-queries))

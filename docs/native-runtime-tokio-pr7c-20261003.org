@@ -1,0 +1,214 @@
+#+title: Latest parser REV, bounded byte caches and Tokio qualification
+
+* Dependency and source ownership
+GitHub PR #13 was read at head 7c1533356585154c8b5d340f64ffefb289d18907.
+Its Rust/Rowan, Ubuntu native and macOS native checks were all successful.
+Orgize Cargo.toml, Cargo.lock and gerbil.pkg now use that exact published REV.
+The previous dirty recovery parser checkout is preserved unchanged.
+
+Native Scheme qualification uses the isolated gerbil-parser-pr-7c153335
+checkout plus local changes to event-fold-runtime.ss, event-strategy-aot.ss,
+the extracted event-source-lines.ss and its regression test. These local
+changes have NOT been committed, pushed or included in PR #13's green CI.
+The pinned REV is the published base, not a claim that it contains this patch.
+Rowan uses the published base without a parser path override.
+
+* Runtime-only closure and allocation optimization
+Two pure line traversal helpers are extracted out of the AOT generator facade.
+The facade reexports them, so the public semantic surface is unchanged.
+The native runtime stops importing the IR/compiler graph just to traverse lines.
+The declared program closure drops from 239 to 214 modules. All 15 parser
+modules in the resulting manifest resolve to the isolated PR checkout;
+none resolve to the old recovery parser directory.
+
+The fold uses a request-local single-entry line-byte cache and at most 128
+prefix-byte entries. The caches are discarded at return and are never global
+source-retention caches. No grammar algorithm is reimplemented in Rust.
+The candidate runtime SHA256 is
+2ed54398db7720452a8b6129e33b8164ebb577562b1ab6770c1118eeccd30fac;
+the unmodified base runtime SHA256 is
+5c5164a8413fea12f93c31d3f352e6e428431658a78ff3ddc8ebbe1988ab2424.
+
+Raw 20-sample Scheme A/B receipts are in scheme-byte-cache-pr7c-20261003.json.
+Both owners were built with gxi build.ss compile --optimized. Every sample
+equals the complete expected events, and source/event digests match across lanes.
+GC is collected before and after each timed parse; collections are untimed.
+
+| fixture | baseline allocated bytes | candidate allocated bytes | reduction | baseline median us | candidate median us |
+|---------+--------------------------+---------------------------+-----------+--------------------+---------------------|
+| doc.org |                  9870592 |                   8974992 |     9.07% |               2474 |                1920 |
+| plain-links.org |         13925968 |                  12159696 |    12.68% |             3673.5 |                2316 |
+| quote-heavy.org |         30726544 |                  26971776 |    12.22% |           excluded |              5564.5 |
+
+This is one local round, not a stable whole-corpus throughput claim. Quote-heavy
+baseline overlapped a build, so its elapsed-time comparison is excluded; its
+process-local allocation counters are retained. An initial timed-out baseline
+probe is also excluded. Module count is structural evidence, not a measured
+startup/binary-size gain. Profiles, native optimizer flags and kernel are unchanged.
+
+The upstream event-fold suite and Org's Scheme event aggregate both produced
+MODULE-OK, HARNESS-OK and final OK. A new upstream case crosses the 128-entry
+cache bound and checks Unicode/CRLF byte offsets and request isolation. An
+initial upstream test loaded a stale root parser observability module and
+printed ERROR despite exit zero: it is not counted as passing. The rerun with
+the explicit isolated parser library first passed. A relative header include
+in the native build spec was corrected to an absolute project header path.
+
+* Tokio application lane
+native-runtime-tokio-corpus-run uses the existing fixed-count org_runtime lane.
+Four Tokio async scheduler threads run 1/8 bounded callers. Each document is
+separately spawn_blocking-submitted and asynchronously awaited. Parse, native
+waiting, validation, checksum, drop and completion backpressure stay on blocking
+workers, not async scheduler threads. max_blocking_threads equals the caller
+limit. The native consumer remains single-worker in both features.
+
+Receipts distinguish driver=tokio from driver=std and bind the same corpus,
+program and benchmark source. Public parse latency excludes validation/checksum;
+submission-to-parse latency additionally includes blocking-pool admission.
+Wall throughput includes per-document submission/await and validation overhead.
+This is production-style integration of the existing synchronous API, not a
+new native async ABI or replacement of the Rust native-owner request queue.
+
+A read-only process snapshot during the Scheme scale run confirmed substantial
+browser/window-server load plus other Gerbil and development-environment jobs.
+Those processes were not changed. This round is valid for completed-count and
+artifact equality checks, but its elapsed-time figures are descriptive local
+observations, not qualified causal performance comparisons or a runtime winner.
+
+The first Scheme four-batch invocation hit its 600-second outer deadline.
+Its three fully completed stdout receipts are retained separately in
+native-runtime-tokio-pr7c-scheme-completed-before-deadline-20261003.json.
+The last batch only reported 2054/10000 and is excluded. The outer command
+returned 124, while Just reported signal 11 / exit 139 during termination;
+the root cause of that termination-path failure is not established and remains
+an open shutdown gate. It is not a green lifecycle receipt or silently ignored.
+A dedicated 10000-by-8 retry uses a fresh process and its own 600-second bound.
+
+* Completed Tokio scale receipts
+Both features completed 1000 and 10000 distinct generated documents with 1 and
+8 callers: 22000 counted parses per feature, 44000 total. Every counted parse
+passed lossless validation. The strict Just comparator passed all four pairs,
+matching the ed7540bf program, 2528a14b benchmark source, corpus, full tree/graph
+artifacts, four Tokio workers and blocking-caller limits. No incomplete batch
+is counted. The synthetic corpus averages about 552 bytes per document and
+derives from three fixtures; it is not 10000 independently authored large files.
+
+| documents | callers | Rust docs/s | Scheme docs/s | Rust parse p95 ms | Scheme parse p95 ms | Rust submission p95 ms | Scheme submission p95 ms |
+|-----------+---------+-------------+---------------+-------------------+---------------------+------------------------+--------------------------|
+|      1000 |       1 |       59.63 |         31.04 |             38.12 |               99.48 |                  38.12 |                    99.50 |
+|      1000 |       8 |       74.34 |         33.86 |            205.44 |              542.61 |                 207.56 |                   542.62 |
+|     10000 |       1 |       46.63 |         21.21 |             56.17 |              157.87 |                  56.74 |                   158.62 |
+|     10000 |       8 |       43.86 |         26.14 |            427.70 |              658.56 |                 428.13 |                   658.93 |
+
+These are descriptive observations under confirmed competing host load, NOT
+qualified performance rankings. There is one repetition and sequential order,
+without counterbalancing. Eight callers feed one native consumer in each lane;
+neither Tokio task count nor Scheme actor ownership establishes native SMP.
+The old std-driver/81e321d9 round is not an algorithm or Tokio A/B control.
+
+Raw Rust receipts are native-runtime-tokio-pr7c-rust-20261003.json (exit zero).
+Raw Scheme retry is native-runtime-tokio-pr7c-scheme-10000x8-retry-20261003.json
+(exit zero, 382.587 seconds). The assembled Scheme comparison file,
+native-runtime-tokio-pr7c-scheme-20261003.json, retains the three fully completed
+stdout batches from the timed-out invocation plus this complete retry; it is
+NOT a claim that the original four-batch invocation exited successfully.
+Its final row starts a fresh process. RSS fields are each process's cumulative
+high-water marks, not a single continuous Scheme memory trajectory, native-GC
+allocation measurement or leak proof.
+
+Reproduction uses maintained Just entrypoints:
+- native-runtime-tokio-corpus-run BINARY OUTPUT [documents] [callers] [repeats]
+- native-runtime-corpus-compare RUST_RECEIPT SCHEME_RECEIPT
+
+All counted rows completed; the termination-path failure and host-child
+ownership remain open independently of these successful artifact comparisons.
+
+* Fresh lifecycle boundary audit
+The maintained native-runtime-lifecycle-run entrypoint runs the new
+examples/runtime_lifecycle.rs supervisor. The supervisor never initializes
+Gerbil; each case runs in a fresh supervised process. It only queries SIGTERM
+disposition and stdin open-file flags, and never replaces handlers or restores
+flags. Native program identity is still ed7540bf. Raw eight-case receipts are
+native-runtime-lifecycle-20261003.json. Both supervisors correctly exit one.
+
+| case | runtime-rust | runtime-scheme |
+|------+--------------+----------------|
+| Baseline ordinary return | exit 0 | exit 0 |
+| Baseline SIGTERM | signal 15 | signal 15 |
+| Native ordinary return | exit 0; stdin gate red | exit 0; stdin gate red |
+| Native idle SIGTERM | no exit in 2s; supervised SIGKILL | no exit in 2s; supervised SIGKILL |
+
+For both native cases, stdin flags changed from 0 to 4 (O_NONBLOCK on this
+macOS host) and the SIGTERM handler changed from default to installed.
+The stdio field in this probe covers stdin only, not stdout/stderr. Its protocol
+tolerates WouldBlock to reach the signal check, but flag mutation remains a
+separate red gate. The initial blocking-stdin probe panicked on WouldBlock;
+those early/stale-binary attempts are excluded from signal qualification.
+All supervised processes were reaped. No unrelated processes were stopped.
+
+The same symptom in both lanes rules out describing this as only one queue's
+bug. The installed dcd677c source installs SIGTERM/child handlers and the
+current native service waits in a blocking C condition variable when idle.
+This is not a complete native green-thread I/O integration. The fresh idle
+probe did NOT reproduce signal 11; it does not establish the cause of the prior
+active-corpus termination crash, and no TLS-crash cause is inferred.
+
+The current unrestricted lazy first-parse initialization has no demonstrated
+host-resource ownership policy. A bridge-side restore AFTER setup would not
+qualify the race window during setup. Closing this under the no-kernel-change
+constraint requires an explicit host contract decision, not test serialization,
+an implicit process parser fallback, busy polling, or ignored failures.
+
+* Extended Tokio stream qualification
+Tokio's io-util feature is enabled only for development tests. The new focused
+case joins producers and consumers on 32 in-memory duplex streams, each with
+8 bytes of capacity (less than one document), then admits native parsing with
+8 semaphore permits. All stream reads/writes and native completions finish
+under a 20-second test deadline; permits return. Socket, file and process APIs
+are not claimed by this in-memory stream test.
+
+The updated eleven-case public suite passed on the same ed7540bf native program:
+- Rust: gerbil_rowan_cutover-2a6b8bd75f933118, 11 passed, 1.42 seconds.
+- Scheme: gerbil_rowan_cutover-b2b28273eb9b4265, 11 passed, 2.07 seconds.
+
+Both were release-profile binaries using the explicit local Apple linker
+diagnostic. Root dev opt-level 2/build override 2 and release opt-level 3/Thin LTO
+remain unchanged. The scale receipts above are the previous completed round,
+not a new 44000-parse rerun after this test-only feature addition.
+
+Decision needed before a lifecycle implementation changes the public contract:
+authorize an explicit startup-only native initialization boundary before the
+host starts Tokio workers, Python worker threads or subprocesses, with a
+declared host stdio/signal ownership policy and checked runtime admission; or
+retain unrestricted lazy initialization and require an upstream supported
+embedding ownership seam. Startup-only admission is a proposed contract, not
+an implemented fix or proof that the prior signal-11 fault is solved. A later
+patch must qualify native wakeup, cleanup, host-child and Python boundaries
+separately without kernel changes or a parser process fallback.
+
+Two new tests cover single-thread Tokio scheduler progress with 128 semaphore-
+bounded tasks and keeping the permit until running blocking/native work exits
+after its waiter is canceled. Fresh release test binaries linked against the
+214-module ed7540bf program passed all ten public cases in both features:
+runtime-rust in 0.39 seconds and runtime-scheme in 0.72 seconds. These supersede
+the earlier checks on the prior 81e321d9 program for this focused test suite.
+They are not a receipt for all Org semantics or the complete Tokio ecosystem.
+The fresh focused binaries are gerbil_rowan_cutover-849e566dc4db7204 (Rust)
+and gerbil_rowan_cutover-8fbeea1c629b41d7 (Scheme), under target/release/deps.
+
+Tokio remains a development dependency for integration and benchmarks. The
+production runtime-rust native owner still uses its bounded synchronous queue;
+this receipt must not be described as replacing that owner with a Tokio runtime.
+The covered ecosystem surface is task scheduling, bounded admission, cancellation
+and timer progress. Network/file I/O and tokio::process coexistence are not covered.
+
+The new native program identity is
+sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1.
+The explicit Apple linker diagnostic now covers all targets in the invocation:
+Cargo also builds the CLI for benchmarks, which previously still used crashing
+Apple ld. Target-scoped diagnostic Rust flags preserve optimization 3, Thin LTO
+and dead-strip. This is not a permanent toolchain fallback or portable receipt.
+
+SIGCHLD host-child ownership, fresh upstream publication, portable packaging,
+Python feature-specific qualification and exact-head consumer CI remain separate
+open gates. No Gambit kernel edits or remote mutations were made.

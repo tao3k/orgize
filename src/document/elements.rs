@@ -77,10 +77,64 @@ pub(super) fn index_sources(
     language: DocumentLanguage,
     sources: &[DocumentSource],
 ) -> Result<Vec<DocumentElement>, String> {
+    if language == DocumentLanguage::Org {
+        let config = crate::ParseConfig::default();
+        let mut remaining = sources;
+        let mut facts = Vec::new();
+        while !remaining.is_empty() {
+            let width = bounded_org_batch_len(remaining);
+            if width == 0 {
+                // An oversized document uses the same native single-document API.
+                facts.extend(index_source(
+                    language,
+                    &remaining[0].path,
+                    &remaining[0].source,
+                )?);
+                crate::runtime_profile::query_batch_completed(1);
+                remaining = &remaining[1..];
+                continue;
+            }
+            let (batch, rest) = remaining.split_at(width);
+            let inputs = batch
+                .iter()
+                .map(|source| source.source.as_str())
+                .collect::<Vec<_>>();
+            let documents = crate::org_aot::parse_org_aot_batch(&inputs, &config)
+                .map_err(|error| format!("Org AOT batch: {error:?}"))?;
+            for (source, document) in batch.iter().zip(documents) {
+                let document =
+                    document.map_err(|error| format!("{}: {error:?}", source.path.display()))?;
+                facts.extend(super::org_elements::index_org_document(
+                    &source.path,
+                    &source.source,
+                    &document,
+                )?);
+            }
+            remaining = rest;
+            crate::runtime_profile::query_batch_completed(width);
+        }
+        return Ok(facts);
+    }
     sources.iter().try_fold(Vec::new(), |mut facts, source| {
         facts.extend(index_source(language, &source.path, &source.source)?);
         Ok(facts)
     })
+}
+
+pub(super) fn bounded_org_batch_len(sources: &[DocumentSource]) -> usize {
+    let mut bytes = 0_usize;
+    let mut count = 0;
+    for source in sources.iter().take(crate::org_aot::BATCH_MAX_DOCUMENTS) {
+        let Some(size) = bytes.checked_add(source.source.len()) else {
+            break;
+        };
+        if size > crate::org_aot::BATCH_MAX_SOURCE_BYTES {
+            break;
+        }
+        bytes = size;
+        count += 1;
+    }
+    count
 }
 
 pub(super) fn query_project_with_config(
@@ -117,14 +171,14 @@ fn index_paths(
         .min(4)
         .min(sources.len());
     let chunk_size = sources.len().div_ceil(worker_count);
+    let observe_workers = crate::runtime_profile::is_active();
     thread::scope(|scope| {
         sources
             .chunks(chunk_size)
             .map(|chunk| {
                 scope.spawn(move || {
-                    chunk.iter().try_fold(Vec::new(), |mut facts, source| {
-                        facts.extend(index_source(language, &source.path, &source.source)?);
-                        Ok::<_, String>(facts)
+                    crate::runtime_profile::worker(observe_workers, || {
+                        index_sources(language, chunk)
                     })
                 })
             })
@@ -133,7 +187,8 @@ fn index_paths(
             .try_fold(Vec::new(), |mut facts, task| {
                 facts.extend(
                     task.join()
-                        .map_err(|_| "document parser worker panicked".to_string())??,
+                        .map_err(|_| "document parser worker panicked".to_string())?
+                        .receive()?,
                 );
                 Ok(facts)
             })

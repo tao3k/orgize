@@ -138,7 +138,7 @@
 
 (def (list-or-element-form table-close-form fixed-width-close close-paragraph
                            comment-line? comment-line-forms
-                           org-table-or-element-form)
+                           org-table-or-element-form continuation-element-forms)
   `(,list-marker-form
     (join-once list-line-handled
       ((if (and (state list-present)
@@ -159,7 +159,9 @@
                            ,list-top)
                           ((if ,comment-line?
                                (,list-close-paragraph ,@(comment-line-forms))
-                               ,(list-text-line 'start))
+                               (,@(continuation-element-forms)
+                                (if (uint-positive? (state active-opaque-block))
+                                    () ,(list-text-line 'start))))
                            (set-uint list-blank-count (uint 0))
                            (set-bool list-line-handled (bool #t)))
                           (,@list-close-all)))))

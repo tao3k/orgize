@@ -10,13 +10,91 @@ non-mutating by default: source blocks, links, agenda metadata, capture plans,
 publishing graphs, and runtime-adjacent Org features are projected as
 source-backed data instead of being executed.
 
-The public `Org::parse` facade and `parse_org_aot` use the Scheme-generated
-Org event algorithm to build a lossless Rowan tree and Element graph. Cargo
-consumers do not need Gerbil. The shipped artifacts support:
+The public `Org::parse` facade and `parse_org_aot` execute the Org-owned Scheme
+event strategy through the statically linked Gerbil AOT/FFI program, then build
+the Rowan tree and Element graph. There is no generated-Rust parser fallback.
+Source builds currently require a prepared native program manifest and the
+Gerbil toolchain; see the Justfile's `scheme-parser-build`,
+`scheme-parser-stage` and `native-parser-test-owner` entries. Packaging and
+release performance qualification are still pending.
+
+Choose exactly one execution-owner feature. `runtime-rust` (default) owns
+the request queue and thread-affine Gerbil handle in Rust. `runtime-scheme`
+uses an in-process native service for initialization and a Scheme actor
+consumer, without the Rust scheduling queue. Both use the same Scheme AOT
+parser and Rowan/Element projection. Scheme still owns GC in both modes.
+Select the latter with `default-features = false, features = ["runtime-scheme"]`.
+The Scheme service currently requires POSIX threads, with one worker: it is
+not a general green-thread I/O scheduler or proven SMP. Selecting both or
+neither is a compile error; `--all-features` is intentionally invalid.
+Both modes require explicit startup before application workers or children.
+Call `unsafe { orgize::initialize_native_runtime() }` in an exclusive startup
+window, with valid stdin/stdout/stderr, before using any native parser or
+contract API. Parsing does not initialize implicitly. The first call captures
+host control-signal dispositions and stdio flags, starts the selected native
+owner, then restores host resources before admitting requests. Later calls
+return the cached result; initialization failure is terminal, not retried.
+The host must not create children or concurrently use stdio/change signal
+dispositions during the first call. The linked parser must not use Scheme-owned
+stdio, terminals or subprocesses. Native heartbeat/processor signals remain
+runtime-owned. This is a POSIX startup contract, not general signal isolation,
+restart, dynamic unload or unrestricted embedding in an already-running host.
+
+Use `just native-runtime-bench-owner` and `just native-runtime-cold-owner`
+with the native manifest, compiler and owner checkout arguments, then the
+selected feature. Defaults preserve Release optimization 3. Both lanes use
+one consumer, 64 queued requests and a 2 MiB service stack. Criterion measures
+warm public parsing/projection on three existing fixtures with 1/2/4/8 callers;
+caller creation is excluded from timing. Cold samples use fresh benchmark
+processes, not runtime restarts or a production parser fallback. Receipts
+identify the backend and native program digest. Compare only matching digests,
+profiles and workloads. No performance winner has been qualified yet.
+
+For corpus-scale measurements, use `just native-runtime-corpus-run BINARY OUTPUT`:
+it parses exactly 1,000 and 10,000 distinct documents with 1 and 8 callers,
+without Criterion multiplying the document count during calibration. The
+deterministic corpus diversifies the three committed fixtures; it is not a
+collection of 10,000 independently authored documents. Every parse checks
+lossless roundtrip and hashes its complete tree/Element graph. Results include
+throughput, p50/p95/p99 public-call latency and cumulative process peak RSS.
+Wall throughput includes validation and checksum overhead; latency excludes
+those checks. A five-second completion stall fails the run. Compare the two
+generated files with `just native-runtime-corpus-compare RUST_JSON SCHEME_JSON`;
+the comparison rejects incomplete counts and mismatched input/output identities.
+
+Use `just native-runtime-tokio-corpus-run BINARY OUTPUT` for the matched Tokio
+application lane. Four Tokio scheduler threads asynchronously await at most
+1 or 8 blocking callers, selected by the same corpus arguments. Native parsing
+remains synchronous and thread-affine; it runs on Tokio's bounded blocking
+pool, never on an async scheduler thread. This measures Tokio integration, not
+a replacement of the Rust native-owner queue or parallel Scheme execution.
+Each document is separately submitted and asynchronously awaited; this is not
+one long blocking batch. Submission-to-parse latency additionally includes
+Tokio blocking-pool admission, separately from time inside the public parse.
+The receipts identify the driver and blocking-pool limit. The focused public
+parser tests also check single-thread Tokio scheduler progress under 128 tasks
+and retention of admission while a canceled waiter leaves blocking work running.
+They also exercise 32 capacity-limited in-memory async streams with native parse
+handoff; this does not qualify sockets, files or child-process integration.
+
+`just native-runtime-lifecycle-run BINARY` checks fresh-process normal exit,
+idle/active-loop SIGTERM, stdin flags, preservation of custom host handlers and
+host child exit statuses after explicit startup. The supervisor never starts
+the native runtime. Historical lazy-startup failures remain recorded in
+`docs/native-runtime-tokio-pr7c-20261003.org`; they are not fresh receipts for
+the explicit-startup implementation. Release/package and full consumer gates
+remain separate from these focused checks.
+See `docs/native-runtime-explicit-startup-20261003.org` for the new startup
+contract, fresh receipts and explicitly unqualified boundaries.
+
+The public API supports:
 
 ```rust
 use orgize::org_aot::{org_contract_pack, parse_org_aot};
 
+// SAFETY: first call is before application workers/children, with exclusive
+// host stdio/signal ownership; the linked parser uses neither Scheme I/O nor children.
+unsafe { orgize::initialize_native_runtime() }.expect("native startup");
 let document = parse_org_aot("* Evidence\n[[id:proof]]\n")?;
 assert_eq!(document.syntax().to_string(), "* Evidence\n[[id:proof]]\n");
 assert!(document.records().iter().any(|record| record.kind == "link"));
@@ -37,16 +115,20 @@ over the Element graph by Rust.
 ## Python SDK
 
 [`bindings/python`](bindings/python) contains the uv-managed `orgizepy` project.
-Its three APIs are deliberately separate: `orgizepy.parser` parses raw Org
-through the Scheme-AOT Rust/Rowan parser, `orgizepy.functions` exposes the
-generated headline functions, and `orgizepy.contract` evaluates explicit
-Element rows through the standalone Scheme/Gambit C ABI. The parser and
-functions do not require a Gerbil runtime.
+Its APIs are deliberately separate: `orgizepy.parser` parses raw Org
+through native Gerbil AOT and Rust/Rowan projection, `orgizepy.functions`
+reads the generated headline functions, and `orgizepy.contract` evaluates
+explicit Element rows through the existing PyO3/Rust extension. Parsing and Contract
+evaluation share the selected native runtime inside the maturin extension;
+Python does not load a second standalone Scheme runtime. The host-resource
+ownership gates above also apply to Python, not only Rust.
 
 ```python
 from orgizepy.parser import parse_org
 from orgizepy.functions import headline_functions
+from orgizepy import initialize_native_runtime
 
+initialize_native_runtime()
 document = parse_org("#+TODO: NEXT DONE\n* NEXT Ship SDK\n")
 headline = next(element for element in document.elements if element.kind == "headline")
 assert headline_functions(document, headline.id).todo_keyword == "NEXT"
@@ -57,8 +139,8 @@ one Gambit runtime initialization per process; see
 [`bindings/c/include/orgize_standalone.h`](bindings/c/include/orgize_standalone.h).
 
 Named Element queries are declared in Orgize's `scheme :org-elements-query` blocks
-and compiled into a typed Rust pack at development time. Cargo consumers query
-without Gerbil at build or runtime:
+and compiled into a typed Rust pack at development time. Query evaluation uses
+that pack; document parsing uses the linked Gerbil program described above:
 
 ```rust
 use orgize::org_aot::parse_org_aot;

@@ -1,6 +1,5 @@
 use orgize::lint::lint_org;
 
-#[test]
 fn lint_reports_progress_statistics_cookie_issues() {
     let source = r#"* TODO Recursive todo [1/2] [99%]
 :PROPERTIES:
@@ -33,7 +32,6 @@ fn lint_reports_progress_statistics_cookie_issues() {
     assert!(findings[3].message.contains("expected `[1/2]`"));
 }
 
-#[test]
 fn lint_accepts_direct_heading_progress_without_nested_child_tasks() {
     let source = r#"* TODO Mixed direct [2/3] [66%]
 :PROPERTIES:
@@ -50,7 +48,6 @@ fn lint_accepts_direct_heading_progress_without_nested_child_tasks() {
     assert_eq!(report.findings, Vec::new());
 }
 
-#[test]
 fn lint_reports_stale_direct_heading_progress() {
     let source = r#"* TODO Mixed direct [3/5] [60%]
 :PROPERTIES:
@@ -72,7 +69,6 @@ fn lint_reports_stale_direct_heading_progress() {
     assert!(findings[1].message.contains("expected `[66%]`"));
 }
 
-#[test]
 fn lint_reports_list_item_checkbox_statistics_cookie_issues() {
     let source = r#"* TODO Lists
 - Parent [0/3]
@@ -111,3 +107,22 @@ fn lint_reports_list_item_checkbox_statistics_cookie_issues() {
     assert_eq!(findings[2].code, "ORG028");
     assert!(findings[2].message.contains("expected `[2/3]`"));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "lint_progress::lint_reports_progress_statistics_cookie_issues",
+        lint_reports_progress_statistics_cookie_issues,
+    ),
+    (
+        "lint_progress::lint_accepts_direct_heading_progress_without_nested_child_tasks",
+        lint_accepts_direct_heading_progress_without_nested_child_tasks,
+    ),
+    (
+        "lint_progress::lint_reports_stale_direct_heading_progress",
+        lint_reports_stale_direct_heading_progress,
+    ),
+    (
+        "lint_progress::lint_reports_list_item_checkbox_statistics_cookie_issues",
+        lint_reports_list_item_checkbox_statistics_cookie_issues,
+    ),
+];

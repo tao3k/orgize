@@ -1,0 +1,71 @@
+#+title: Complete production semantic wrapper warning cleanup
+
+* Owner audit
+
+Audit date: 2026-10-06. This owner closes all 30 production library warnings
+identified by record 20, not just a selected subset. Each was an unused
+function in =org_native_semantic_functions.rs=; none was a native grammar,
+runtime lifecycle or ABI implementation failure.
+
+Sixteen wrappers with no actual callers are deleted: TODO word/open/done/
+keyword-match helpers (four), headline priority cookie (one), attachment
+path (one), LOGBOOK helpers (seven), table-cookie helpers (two) and the
+affiliated-keyword predicate (one). Their unused imports did not count as
+test coverage. Scheme implementations and the native ABI are not deleted.
+
+Fourteen functions used only by the existing native ABI tests move to
+=tests/integration/support/native_semantic_values.rs=. The test adapter
+contains only its 20 actually used probes; it does not include all of the
+production module a second time. All 12 existing consumer cases remain
+registered, with their assertions unchanged.
+
+The production module shrinks to 89 lines and contains eight
+actually used interfaces plus typed scalar/closed-category admission.
+Borrowed field references replace allocate/push boilerplate where an
+owned field vector is unnecessary. Scheme still drives the semantics.
+There is no warning suppression, feature disabling, test deletion,
+new parser, kernel patch or optimization-profile reduction.
+
+* Qualification boundary
+
+Fresh root: =target/native-wrapper-closure-20261006=.
+Both maintained Release library/consumer/benchmark build owners run against
+the unchanged 317-module program
+=sha256:bcd28ab5541bf22b1d68f336af4a8283acc6d6f3c272e0a266c27ed48b6d6c54=.
+Frozen =wrapper-*= binaries are distinct from record 20's binaries.
+The Scheme source program is unchanged; no new Scheme execution receipt
+is implied by the Rust warning cleanup.
+
+Rust Runtime builds pass with no production library warnings. The test
+file's unused imports/dead functions also disappear: the lib test and
+integration target retain only their native linker diagnostic.
+All 84 native / 24 ordinary units and all 457 consumers at 12 callers pass,
+including all 12 native semantic-value consumer cases. Consumer time is 16.76s.
+The original Query 45ms control passes at p95/max 30.232208ms; the
+original Contract 25ms control passes at 5.366709ms.
+
+Scheme Runtime also builds with zero production library warnings and no
+diagnostic in the audited wrapper/test files. All 84 native / 24 ordinary
+units and all 457 consumers at 12 callers pass, including the unchanged
+12 value consumer cases. Consumer time is 16.96s. Query p95/max is
+15.372709ms below the original 45ms limit; Contract is 3.488625ms below
+25ms. These are bounded admission receipts, not a stable speedup claim.
+
+=just native-semantic-wrapper-warning-check= rejects any production library
+warning and any diagnostic pointing into the three audited owner files.
+=just native-semantic-wrapper-admission-check= combines both builds and
+the unchanged native-unit/consumer/probe controls. Third-party dependency
+warnings, Cargo cache permissions and Darwin native linker diagnostics
+are separate and are not suppressed or advertised as globally clean.
+
+Both old 30-warning build logs are retained and rejected by the negative
+warning control. The combined admission passes, with its full output in
+=wrapper-admission.log=. Source formatting, documentation layout and
+=git diff --check= also pass.
+
+Python, Rowan standalone and full 1,000/10,000-document matrices are not
+rerun in this warning-only owner. Earlier receipts are not relabeled as
+fresh ones. Stable speedup, historical Query-tail root cause, latest parser
+revision alignment and clean published dependency CI remain separate.
+The current parser pin remains 619bf190; fetched e7139c35 is not admitted
+by these unchanged-program builds. No commit, push or new PR is performed.

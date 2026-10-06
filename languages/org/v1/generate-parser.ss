@@ -6,10 +6,7 @@
                  generate-language-rust-rowan-module)
         (only-in "grammar.ss" org-v1-language-grammar))
 
-(def arguments (command-line))
-(unless (> (length arguments) 2)
-  (error "usage: generate-parser.ss OUTPUT.rs"))
+(export main)
 
-(generate-language-rust-rowan-module
- (car (reverse arguments))
- org-v1-language-grammar)
+(def (main output-path)
+  (generate-language-rust-rowan-module output-path org-v1-language-grammar))

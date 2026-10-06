@@ -7,7 +7,6 @@ use orgize::{
     },
 };
 
-#[test]
 fn semantic_ast_projects_document_and_section_column_views() {
     let doc = OrgParser::parse(
         r#"#+COLUMNS: %25ITEM(Task) %TODO %3PRIORITY %Effort{:}
@@ -45,7 +44,6 @@ fn semantic_ast_projects_document_and_section_column_views() {
     assert_eq!(records[1].columns[1].title.as_deref(), Some("Effort"));
 }
 
-#[test]
 fn semantic_ast_projects_column_summary_plans() {
     let doc = OrgParser::parse(
         r#"#+COLUMNS: %25ITEM %Score{+;%.1f} %Effort{:} %Approved{X} %Progress{X%} %Estimate{est+} %TODO{+}
@@ -210,3 +208,14 @@ fn render_column_summary_row(
         render_column_summary_row(child, depth + 1, output);
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_column_views::semantic_ast_projects_document_and_section_column_views",
+        semantic_ast_projects_document_and_section_column_views,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_column_views::semantic_ast_projects_column_summary_plans",
+        semantic_ast_projects_column_summary_plans,
+    ),
+];

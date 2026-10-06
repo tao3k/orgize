@@ -24,7 +24,7 @@ expression: document.records()
             2,
             5,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 0..130,
@@ -75,9 +75,34 @@ expression: document.records()
                 range: 40..45,
             },
             GraphFieldValue {
+                name: "argument-key",
+                value: "scope",
+                range: 40..45,
+            },
+            GraphFieldValue {
+                name: "argument-content",
+                value: "file",
+                range: 46..50,
+            },
+            GraphFieldValue {
                 name: "header-value",
                 value: "file",
                 range: 46..50,
+            },
+            GraphFieldValue {
+                name: "argument-value",
+                value: "file",
+                range: 46..50,
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":scope file",
+                range: 39..50,
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":scope file",
+                range: 39..50,
             },
             GraphFieldValue {
                 name: "end",

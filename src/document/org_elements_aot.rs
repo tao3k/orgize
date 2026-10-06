@@ -111,6 +111,14 @@ impl<'a> IndexContext<'a> {
 
 pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement>, String> {
     let document = parse_org_aot(source).map_err(|error| format!("Org AOT parse: {error:?}"))?;
+    index_org_document(path, source, &document)
+}
+
+pub(super) fn index_org_document(
+    path: &Path,
+    source: &str,
+    document: &OrgAotDocument,
+) -> Result<Vec<DocumentElement>, String> {
     let records = document.records();
     let context = IndexContext::new(path, source, records);
     let headline_ranges = document

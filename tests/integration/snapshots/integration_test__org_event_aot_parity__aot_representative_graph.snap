@@ -89,7 +89,7 @@ expression: document.records()
             8,
             12,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 63..448,
@@ -156,7 +156,7 @@ expression: document.records()
             4,
         ),
         child_ids: [],
-        syntax_kind: 74,
+        syntax_kind: 78,
         category: "object",
         kind: "bold",
         range: 136..142,
@@ -174,7 +174,7 @@ expression: document.records()
             4,
         ),
         child_ids: [],
-        syntax_kind: 66,
+        syntax_kind: 70,
         category: "object",
         kind: "timestamp",
         range: 165..181,
@@ -183,6 +183,21 @@ expression: document.records()
                 name: "delimiter",
                 value: "<",
                 range: 165..166,
+            },
+            GraphFieldValue {
+                name: "year",
+                value: "2026",
+                range: 166..170,
+            },
+            GraphFieldValue {
+                name: "month",
+                value: "09",
+                range: 171..173,
+            },
+            GraphFieldValue {
+                name: "day",
+                value: "23",
+                range: 174..176,
             },
             GraphFieldValue {
                 name: "date",
@@ -199,6 +214,11 @@ expression: document.records()
                 value: ">",
                 range: 180..181,
             },
+            GraphFieldValue {
+                name: "point",
+                value: "<2026-09-23 Wed>",
+                range: 165..181,
+            },
         ],
     },
     GraphRecord {
@@ -211,7 +231,7 @@ expression: document.records()
             10,
             11,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 184..331,
@@ -336,7 +356,7 @@ expression: document.records()
             13,
             19,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 331..448,
@@ -450,7 +470,7 @@ expression: document.records()
             17,
         ),
         child_ids: [],
-        syntax_kind: 75,
+        syntax_kind: 79,
         category: "object",
         kind: "italic",
         range: 384..394,
@@ -505,6 +525,11 @@ expression: document.records()
         range: 397..403,
         fields: [
             GraphFieldValue {
+                name: "content",
+                value: "Name",
+                range: 398..402,
+            },
+            GraphFieldValue {
                 name: "text",
                 value: " Name ",
                 range: 397..403,
@@ -522,6 +547,11 @@ expression: document.records()
         kind: "table-cell",
         range: 404..411,
         fields: [
+            GraphFieldValue {
+                name: "content",
+                value: "Value",
+                range: 405..410,
+            },
             GraphFieldValue {
                 name: "text",
                 value: " Value ",
@@ -568,6 +598,11 @@ expression: document.records()
         range: 431..437,
         fields: [
             GraphFieldValue {
+                name: "content",
+                value: "one",
+                range: 432..435,
+            },
+            GraphFieldValue {
                 name: "text",
                 value: " one  ",
                 range: 431..437,
@@ -585,6 +620,11 @@ expression: document.records()
         kind: "table-cell",
         range: 438..445,
         fields: [
+            GraphFieldValue {
+                name: "content",
+                value: "1",
+                range: 443..444,
+            },
             GraphFieldValue {
                 name: "text",
                 value: "     1 ",
@@ -604,7 +644,7 @@ expression: document.records()
             34,
             36,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 448..701,
@@ -657,7 +697,7 @@ expression: document.records()
             28,
         ),
         child_ids: [],
-        syntax_kind: 66,
+        syntax_kind: 70,
         category: "object",
         kind: "timestamp",
         range: 470..486,
@@ -666,6 +706,21 @@ expression: document.records()
                 name: "delimiter",
                 value: "<",
                 range: 470..471,
+            },
+            GraphFieldValue {
+                name: "year",
+                value: "2026",
+                range: 471..475,
+            },
+            GraphFieldValue {
+                name: "month",
+                value: "09",
+                range: 476..478,
+            },
+            GraphFieldValue {
+                name: "day",
+                value: "24",
+                range: 479..481,
             },
             GraphFieldValue {
                 name: "date",
@@ -681,6 +736,11 @@ expression: document.records()
                 name: "delimiter",
                 value: ">",
                 range: 485..486,
+            },
+            GraphFieldValue {
+                name: "point",
+                value: "<2026-09-24 Thu>",
+                range: 470..486,
             },
         ],
     },

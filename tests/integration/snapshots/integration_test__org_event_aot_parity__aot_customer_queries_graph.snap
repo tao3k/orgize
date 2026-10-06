@@ -1,6 +1,5 @@
 ---
 source: tests/integration/org_event_aot_parity.rs
-assertion_line: 52
 expression: document.records()
 ---
 [
@@ -65,7 +64,7 @@ expression: document.records()
             3,
             5,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 45..341,
@@ -151,6 +150,21 @@ expression: document.records()
                 range: 136..154,
             },
             GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: 136..154,
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: 135..154,
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: 135..154,
+            },
+            GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline\n              (all-of (property todo-type \"todo\")\n                      (property-contains source-title \"Review\"))\n              (descendant-of scope))\n",
                 range: 155..330,
@@ -171,7 +185,7 @@ expression: document.records()
             7,
             9,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 341..522,
@@ -257,6 +271,21 @@ expression: document.records()
                 range: 433..451,
             },
             GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: 433..451,
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: 432..451,
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: 432..451,
+            },
+            GraphFieldValue {
                 name: "body",
                 value: "(org-elements citation-reference (property key \"doe2020\"))\n",
                 range: 452..511,
@@ -277,7 +306,7 @@ expression: document.records()
             11,
             13,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 522..711,
@@ -363,6 +392,21 @@ expression: document.records()
                 range: 625..643,
             },
             GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: 625..643,
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: 624..643,
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: 624..643,
+            },
+            GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline (property title \"Review patch\"))\n",
                 range: 644..700,
@@ -383,7 +427,7 @@ expression: document.records()
             15,
             17,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 711..877,
@@ -469,6 +513,21 @@ expression: document.records()
                 range: 799..817,
             },
             GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: 799..817,
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: 798..817,
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: 798..817,
+            },
+            GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline (property priority \"A\"))\n",
                 range: 818..866,
@@ -489,7 +548,7 @@ expression: document.records()
             19,
             21,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 877..1038,
@@ -575,6 +634,21 @@ expression: document.records()
                 range: 961..979,
             },
             GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: 961..979,
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: 960..979,
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: 960..979,
+            },
+            GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline (property tags \"work\"))\n",
                 range: 980..1027,
@@ -595,7 +669,7 @@ expression: document.records()
             23,
             25,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 1038..1236,
@@ -681,6 +755,21 @@ expression: document.records()
                 range: 1129..1147,
             },
             GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: 1129..1147,
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: 1128..1147,
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: 1128..1147,
+            },
+            GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline (property raw-value \"WAIT [#A] Review patch :work:\"))\n",
                 range: 1148..1225,
@@ -701,7 +790,7 @@ expression: document.records()
             27,
             29,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
         range: 1236..1505,
@@ -785,6 +874,21 @@ expression: document.records()
                 name: "header-key",
                 value: "org-elements-query",
                 range: 1333..1351,
+            },
+            GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: 1333..1351,
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: 1332..1351,
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: 1332..1351,
             },
             GraphFieldValue {
                 name: "body",

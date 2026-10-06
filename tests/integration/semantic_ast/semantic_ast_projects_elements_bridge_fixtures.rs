@@ -10,7 +10,6 @@ pub(super) use generated_elements::{
     ORG_RECURSIVE_OBJECT_KINDS,
 };
 
-#[test]
 fn semantic_ast_projects_scheme_object_context_contract() {
     use sha2::{Digest, Sha256};
 
@@ -41,7 +40,6 @@ fn semantic_ast_projects_scheme_object_context_contract() {
     assert!(!secondary("paragraph", "title"));
 }
 
-#[test]
 fn semantic_ast_projects_scheme_element_catalog_matches_approved_baseline() {
     insta::assert_snapshot!(
         "scheme_element_catalog",
@@ -152,4 +150,15 @@ pub(super) const ORG_ELEMENT_INTENTIONALLY_UNMAPPED_STANDARD_PROPERTIES: &[&str]
     ":robust-end",
     ":secondary",
     ":structure",
+];
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_fixtures::semantic_ast_projects_scheme_object_context_contract",
+        semantic_ast_projects_scheme_object_context_contract,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_fixtures::semantic_ast_projects_scheme_element_catalog_matches_approved_baseline",
+        semantic_ast_projects_scheme_element_catalog_matches_approved_baseline,
+    ),
 ];

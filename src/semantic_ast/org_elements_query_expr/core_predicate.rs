@@ -13,6 +13,9 @@ pub(super) fn compile_predicate_expression(
         return None;
     };
     let head = list_head(items)?;
+    if !super::core_types::query_form_arity_is_valid(head, items.len()) {
+        return None;
+    }
     match head {
         "and" => Some(OrgElementQueryPredicate::all(
             items[1..]

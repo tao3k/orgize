@@ -240,4 +240,4 @@ pub fn evaluate_contract(
 
 #[cfg(test)]
 #[path = "../tests/unit/contract_feature.rs"]
-mod tests;
+pub(crate) mod tests;

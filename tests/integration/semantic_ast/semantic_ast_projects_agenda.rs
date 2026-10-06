@@ -7,7 +7,6 @@ use orgize::{
     },
 };
 
-#[test]
 fn scheme_aot_planning_graph_keeps_all_fixture_timestamp_children() {
     let graph = orgize::org_aot::parse_org_aot(SOURCE).expect("Org AOT graph");
     let planning = graph
@@ -24,7 +23,6 @@ fn scheme_aot_planning_graph_keeps_all_fixture_timestamp_children() {
     }));
 }
 
-#[test]
 fn scheme_aot_owned_sections_keep_all_fixture_planning_timestamps() {
     let doc = Org::parse(SOURCE).document();
     assert_eq!(doc.sections.len(), 8);
@@ -46,7 +44,6 @@ fn scheme_aot_owned_sections_keep_all_fixture_planning_timestamps() {
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/agenda-planning.org");
 
-#[test]
 fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -160,7 +157,6 @@ fn semantic_ast_projects_planning_timestamps_to_agenda_entries() {
     });
 }
 
-#[test]
 fn semantic_ast_agenda_filters_done_archived_and_tags() {
     let doc = Org::parse(SOURCE).document();
     let query = AgendaQuery::single_day(AgendaDate::new(2026, 5, 14))
@@ -182,7 +178,6 @@ fn semantic_ast_agenda_filters_done_archived_and_tags() {
     assert_eq!(titles, ["Archived item", "Done item"]);
 }
 
-#[test]
 fn semantic_ast_agenda_filters_with_official_match_expression_subset() {
     let doc = Org::parse(
         r#"#+TODO: TODO WAITING | DONE
@@ -235,7 +230,6 @@ SCHEDULED: <2026-05-15 Fri>
     assert_eq!(titles, ["Work done", "Work wait"]);
 }
 
-#[test]
 fn semantic_ast_agenda_match_uses_official_special_properties() {
     let doc = Org::parse(
         r#"#+FILETAGS: :team:
@@ -263,7 +257,6 @@ Body <2026-05-15 Fri 12:00> and [2026-05-14 Thu].
     assert_eq!(titles, ["Memory seed", "Memory seed"]);
 }
 
-#[test]
 fn semantic_ast_agenda_projects_active_timestamps_only() {
     let doc = Org::parse("* TODO Event\nBody <2026-05-15 Fri 08:00> and [2026-05-15 Fri 09:00].\n")
         .document();
@@ -280,7 +273,6 @@ fn semantic_ast_agenda_projects_active_timestamps_only() {
     assert!(without_timestamps.is_empty());
 }
 
-#[test]
 fn semantic_ast_agenda_extracts_headline_time_of_day() {
     let doc = Org::parse(
         "* TODO Arthur Dent 8:30-1pm\nSCHEDULED: <2026-05-15 Fri>\n* TODO Ford <2026-05-15 Fri 12:45>\n",
@@ -327,7 +319,6 @@ fn semantic_ast_agenda_extracts_headline_time_of_day() {
     assert_eq!(arthur.end_time, None);
 }
 
-#[test]
 fn semantic_ast_agenda_reports_overdue_deadlines_on_window_start() {
     let doc = Org::parse("* TODO Late\nDEADLINE: <2026-05-10 Sun>\n").document();
     let entries = doc
@@ -343,3 +334,42 @@ fn semantic_ast_agenda_reports_overdue_deadlines_on_window_start() {
         Some(AgendaDeadlineState::Overdue { days_overdue: 4 })
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_agenda::scheme_aot_planning_graph_keeps_all_fixture_timestamp_children",
+        scheme_aot_planning_graph_keeps_all_fixture_timestamp_children,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda::scheme_aot_owned_sections_keep_all_fixture_planning_timestamps",
+        scheme_aot_owned_sections_keep_all_fixture_planning_timestamps,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda::semantic_ast_projects_planning_timestamps_to_agenda_entries",
+        semantic_ast_projects_planning_timestamps_to_agenda_entries,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda::semantic_ast_agenda_filters_done_archived_and_tags",
+        semantic_ast_agenda_filters_done_archived_and_tags,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda::semantic_ast_agenda_filters_with_official_match_expression_subset",
+        semantic_ast_agenda_filters_with_official_match_expression_subset,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda::semantic_ast_agenda_match_uses_official_special_properties",
+        semantic_ast_agenda_match_uses_official_special_properties,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda::semantic_ast_agenda_projects_active_timestamps_only",
+        semantic_ast_agenda_projects_active_timestamps_only,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda::semantic_ast_agenda_extracts_headline_time_of_day",
+        semantic_ast_agenda_extracts_headline_time_of_day,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda::semantic_ast_agenda_reports_overdue_deadlines_on_window_start",
+        semantic_ast_agenda_reports_overdue_deadlines_on_window_start,
+    ),
+];

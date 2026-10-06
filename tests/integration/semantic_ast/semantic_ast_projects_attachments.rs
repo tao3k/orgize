@@ -58,7 +58,6 @@ See [[attachment:id-wallpaper.jpg]] and [[attachment:missing-id.jpg]].
 :END:
 "#;
 
-#[test]
 fn semantic_ast_projects_case_insensitive_attachment_protocol() {
     let doc = Org::parse("* Files\n[[ATTACHMENT:UPPER.TXT]]\n").document();
     assert_clean_projection(&doc);
@@ -71,7 +70,6 @@ fn semantic_ast_projects_case_insensitive_attachment_protocol() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_short_attachment_id_directory() {
     let doc = Org::parse("* Files\n:PROPERTIES:\n:ID: x\n:END:\n").document();
     assert_clean_projection(&doc);
@@ -85,7 +83,6 @@ fn semantic_ast_projects_short_attachment_id_directory() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_attachment_directories_and_links() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -178,7 +175,6 @@ fn semantic_ast_projects_attachment_directories_and_links() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
     let temp = unique_temp_dir("orgize-attachment-vcs");
     fs::create_dir_all(temp.join("assets")).expect("create attachment directory");
@@ -422,3 +418,22 @@ fn unique_temp_dir(label: &str) -> PathBuf {
 fn path_str(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_attachments::semantic_ast_projects_case_insensitive_attachment_protocol",
+        semantic_ast_projects_case_insensitive_attachment_protocol,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_attachments::semantic_ast_projects_short_attachment_id_directory",
+        semantic_ast_projects_short_attachment_id_directory,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_attachments::semantic_ast_projects_attachment_directories_and_links",
+        semantic_ast_projects_attachment_directories_and_links,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_attachments::semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs",
+        semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs,
+    ),
+];

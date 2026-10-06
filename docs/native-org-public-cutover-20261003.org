@@ -1,0 +1,470 @@
+#+title: Public Org native Gerbil cutover - local admission receipt
+
+* Scope and ownership
+Public Org::parse and configured/edited-source parsing now use the Org-owned
+Scheme POO event strategy in the existing Gerbil AOT program. Rust consumes its
+rooted bytevector through gerbil-scheme's existing FFI API and performs the
+existing Rowan/Element projection. No generated-Rust parse fallback exists.
+The legacy generated Rust parser, its IR artifact, generator script and Scheme
+IR facade are deleted. Twenty-one structural tests now call the actual native
+parser, not a separate oracle. Seven old-path benchmark cases are removed;
+native scenarios remain in the existing Criterion benchmark.
+
+This is a local development qualification, not a published dependency pin,
+release, remote CI receipt, or performance improvement claim.
+
+Recovery checkout bases:
+- Orgize: 479b2763fa1924385a2df824d029e9ba35341bcd, existing PR 18.
+- gerbil-parser: 523b80fd80830bd207da6ee7c4e59fa24f8c32db plus local changes;
+  not a substitute for the newer remote PR 13 head.
+- gerbil-scheme-rust: 8bb8103b820a0c8d02446d6398197079c5275671 plus the
+  explicit Cargo CLI native-build checkout override, existing PR 18.
+- Gerbil 2591dcd / Gambit dcd677c, installed unpatched toolchain.
+
+The shared native-build change selects the installed gsc lib/bin/include via
+Gambit's existing runtime directory option. No Gambit kernel or provider file
+was modified. Native static archive creation succeeded. The staged dependency
+graph has 195 modules and no runtime LR/IR generator dependencies.
+
+* Executed public-entry admission
+All checks use maintained Justfile recipes with bounded external timeouts.
+native-parser-test-owner accepts manifest, exact gsc, explicit bridge checkout,
+and an optional Cargo integration target:
+- gerbil_rowan_cutover: 7 passed, including combined configuration, Unicode and
+  CRLF, malformed inputs, nested syntax, four concurrent callers, and three
+  existing benchmark fixtures. Runtime 0.16 seconds.
+- org_cutover_parity: 3 passed. The corpus test checks all 46 tracked Org
+  fixtures for lossless source, consistent graph links/ranges and no unsupported
+  projection diagnostics. Runtime 0.24 seconds.
+- org_aot_owned_projection: 7 passed, including source edits/reprojection,
+  TODO profiles, inlinetasks, lists, drawers, footnotes and inline objects.
+  Runtime 0.04 seconds.
+
+The concurrency test compares repeat native calls, not an independent parser.
+It must not be reported as generated-Rust oracle parity.
+Earlier Scheme admission: event tape 3 cases, Org event harness and parser
+fold/admission harness passed. Shared relocated-gsc unit cases: 2 passed.
+
+* First public-entry measurement
+native-parser-bench-owner reuses benches/parse.rs and its committed fixtures.
+Executed with profile dev: Rust opt-level 2, debug assertions and overflow
+checks enabled. Not a release benchmark. Criterion: 10 samples, 0.2 seconds
+warm-up, 1 second requested measurement per case, no plots.
+
+| Existing case    | Criterion time interval (ms) | Point estimate (ms) |
+|------------------+------------------------------+---------------------|
+| doc.org          | 6.1007 - 7.7382               |              6.9740 |
+| plain-links.org  | 7.8024 - 10.705               |              9.2644 |
+| quote-heavy.org  | 15.907 - 22.514               |              18.509 |
+
+No matched baseline was measured. No throughput improvement, stable tail,
+allocation improvement or production performance claim follows from this run.
+The older Scheme-fold measurements do not qualify the full native public path.
+
+* Remaining gates before publication
+- Release-profile matched baseline and current public-entry benchmarks.
+- The remaining integration suite and existing Scheme-authored fixture goldens.
+- Fresh Cargo/package preparation from declared immutable Scheme dependency pins;
+  current build intentionally fails closed without a prepared native manifest.
+- Publish/qualify owner changes and normalize the transient development Cargo.lock
+  path override before changing consumer pins or PR heads.
+- Parser receipt identity now hashes the admitted native module SCM contents in
+  compiler-supplied order, with length framing and a versioned domain. This is
+  not a hash of raw source, host/compiler binaries or complete linker output.
+- Existing process-wide runtime/host-signal and coexistence constraints are not
+  independently qualified by these public parser tests.
+
+No commits, pushes, merges or PR mutations were performed for this receipt.
+
+* Legacy deletion follow-up
+Deleted five tracked implementation/artifact files: src/org_aot_events.rs,
+generate-rowan-event-ir.ss, generated/rowan-events.ir.json,
+modules/org-parser/funs.ss and rowan-event-parser.ss. Removed their build hooks,
+public hidden Rust parser export, IR-only Scheme test and all active references.
+Deleted the old generated Rust function/identity cache and 18 obsolete Gerbil
+facade compilation artifacts. Source is recoverable from Git; caches regenerate.
+The remaining typed Rust Element/query projections are not a second parser.
+
+After deletion, org_rowan_event_handoff passed 23 cases (21 native structural
+cases plus two existing event-fixture/sink cases), gerbil_rowan_cutover passed
+7, org_cutover_parity passed 3 including all 46 fixtures, and
+org_aot_owned_projection passed 7. Both Scheme event/tape modules emitted
+MODULE-OK, HARNESS-OK and final OK. Formatting and diff checks passed.
+
+The Apple linker crashed with Bus error during two first link attempts; both
+focused targets linked and passed on a single bounded retry without source or
+toolchain changes. This remains an uninvestigated host-toolchain issue, not a
+reason to patch Gambit. The full integration target and all-tests/benches cargo
+check exceeded bounded compilation limits; they are not reported as green.
+
+The new native SCM content identity in this qualified development manifest is
+sha256:4ac282d533da2d57ffba98ab757f5da4f1cef64f59cd82c6ea346f9ea9bf219a.
+
+* Python SDK shared-runtime follow-up (local native admission)
+The Python parser remains the existing maturin/PyO3 API calling Rust's native
+Org parser. No second Python CFFI parser or JSON document transport is retained.
+Contract CFFI now loads that same extension and calls a Rust C ABI dispatcher;
+borrowed rows and strings are copied into owned requests before handoff to the
+same Gerbil owner thread as parsing. Python no longer initializes/shuts down a
+second Scheme runtime, and wheel builds no longer require a separate Contract
+dynamic library. The standalone C-consumer library remains separately scoped.
+
+The existing gerbil-scheme-rust program manifest/build owner now admits explicit
+C headers. Header bytes participate in native object-cache identity and source
+observations; ambient SDK/Nix include variables remain excluded. The consumer
+receipt domain is orgize.native-program-inputs.v2, binding ordered SCM and
+declared header bytes. The earlier 195-module digest above is historical, not
+the identity of this expanded program.
+
+Executed in this follow-up:
+- Python test environment prepared offline with the existing uv cache.
+- Scheme runtime package and graph-query static dependencies compiled.
+- Shared program staging emitted ORG-PARSER-STAGE OK: 214 modules, with the
+  explicit bindings/c/include/orgize.h input.
+- Formatting and scoped diff checks passed.
+
+The earlier 60-second batches stopped during cold harness compilation. The
+development Cargo graph contained both Git and checkout identities for the
+same harness and policy. Justfile owner overrides now select one checkout for
+native-build, harness and policy; this does not change published dependency pins.
+Read-only process samples showed increasing compiler CPU time, not an idle
+native runtime. A bounded 120-second maturin run completed in 1m49s, preserving
+the requested optimization profiles, built an abi3 wheel and installed the
+extension into the local test environment.
+
+Current expanded-program admission:
+- Python SDK: 13 passed in 1.40s. Includes parse/Contract/parse mixed calls from
+  four workers over twelve requests, repeated contracts, NUL rejection,
+  null-row/null-output ABI rejection, source edits and Unicode parsing.
+- Rust gerbil_rowan_cutover: 7 passed in 0.15s.
+- Rust org_rowan_event_handoff: 23 passed in 0.05s.
+- Rust org_cutover_parity: 3 passed in 0.28s, including all 46 tracked fixtures.
+- Rust org_aot_owned_projection: 7 passed in 0.04s.
+- Rust native decoder admission: 5 passed; truncation, foreign identity,
+  unknown kinds/tags, cross-category records, ranges and nesting are rejected.
+- Native build owner cache scenarios: 2 passed in 1.15s.
+- Native build owner relocated-command scenarios: 2 passed.
+- All root tests/benches cargo check passed in 10.95s under workspace dev/build
+  override optimization level 2. This is compilation, not full-suite execution.
+
+The first ordinary Rust binary link again produced an Apple linker Bus error;
+one bounded retry on unchanged inputs linked and passed. The SDK extension had
+already linked and passed independently. The host linker issue and macOS
+deployment-target warnings remain uninvestigated, not a Gambit kernel defect.
+
+The admitted expanded program identity is
+sha256:9586a261c090ea218e0ece64fde918832b258703b2620230b31596983f3676ea.
+This receipt does not qualify a repaired portable wheel, a fresh declared-pin
+package build, a published PR head, a full integration run or release throughput.
+
+Workspace-root dev uses opt-level 2, debug/debug assertions/overflow checks;
+dev build override stays 2. Release and release build override stay 3.
+No Gambit kernel edits, commits, pushes, merges or PR mutations were performed.
+
+* Closure audit: native host-child coexistence is RED
+The additional default-feature export targets passed: HTML 16, LaTeX 7 and
+Markdown 6. The full integration_test target then compiled in 31.75s and ran
+480 cases in 6.90s: 437 passed, 40 failed, 3 ignored. Many CLI child waits fail
+with ECHILD / No child processes; related failures report missing reaping or
+GitUnavailable. Do not classify all forty failures as parser semantic errors
+or as harmless test noise without checking each failure after the owner fix.
+
+The separate native_host_children target is a before/after admission test:
+Rust successfully waits for orgize --version before the first native parse,
+then performs 48 host child calls over four workers after initialization.
+It reproduced ECHILD in 1.01s. This test intentionally remains failing and
+registered as a publication gate; it is not ignored or serialized away.
+
+Read-only inspection of the pinned Gambit dcd677c source shows its SIGCHLD
+handler loops over waitpid(-1, ..., WNOHANG), and I/O setup installs that handler.
+This mechanism is consistent with the observed loss of Rust-owned child exit
+statuses. No Gambit source, kernel, signal handler or thread policy was changed
+in this audit. A proposed embedding fix must qualify both initialization-time
+coexistence and steady-state host child ownership, not merely restore a handler
+after initialization and overlook the setup race.
+
+Independent remaining closure gates:
+- gerbil.pkg still declares parser 3f25eb4542d41caa96d3a8e449cf39b18247fc05;
+  current qualification uses the explicit newer development checkout.
+- The pinned bridge 8bb8103 has deny_unknown_fields and no c_headers manifest
+  field. The extended manifest presently requires the local native-build owner
+  override, so a fresh declared-pin build is not qualified.
+- Release matched performance, repaired portable wheels, owner publication,
+  immutable pin updates and exact published-head CI remain unqualified.
+
+Thus the direct native parse/Rowan/Element/Python route is implemented, but the
+production-native embedding and reproducible publication loop are NOT closed.
+
+* Shared Python host-child gate and initialization policy boundary
+The new bindings/python/tests/test_host_children.py runs an isolated Python
+probe, verifies a child exit status of 23 before native initialization, then
+initializes the existing maturin parser and waits for twelve more host children.
+All twelve waits reproduced ECHILD. The focused gate failed in 0.43s; the full
+installed SDK suite reports 13 passed, 1 failed in 0.48s. The test is not ignored.
+It requires explicit before/after completion markers: Python subprocess may
+otherwise mask ECHILD as returncode 0. All spawned probe children are waited
+for or observed already reaped before the failure is reported.
+
+Justfile python-test-installed now accepts an optional pytest name filter; both
+checks used that maintained entrypoint. No runtime or Gambit kernel edit was
+made. Scoped git diff --check passed.
+
+Pinned dcd677c setup.c initializes OS/memory before invoking the program linker.
+Its setup_params reset fields provide heap/error hooks but no child-reaping
+ownership policy. os_setup.c unconditionally enters I/O module setup, which
+installs the process-wide SIGCHLD handler. Thus a program linker callback cannot
+prevent the earlier handler-installation window. Blocking SIGCHLD solely on
+the runtime owner thread would not fence other already-running host threads.
+Restoring a handler only after setup is not initialization-race qualification.
+
+A startup-only embedding contract would require explicit host-wide admission:
+no existing or newly spawned children during setup, no concurrent initialization
+from arbitrary host threads, and a defined policy for Scheme-owned children and
+cleanup-time signal restoration. This changes the current lazy public API
+contract and has not been authorized or implemented. Keeping unrestricted lazy
+initialization instead requires a supported runtime host-child ownership seam;
+none was found in the inspected pinned setup API. Do not silently introduce
+kernel patches, symbol interposition, process fallbacks or serialized tests to
+declare this gate green. Obtain direction before changing the host contract.
+
+* Native actor execution: first admitted slice, not public cutover
+The user selected Gerbil-native execution and rejected treating Rust/Python
+compatibility or a Rust single-thread scheduling queue as the target architecture.
+The private bindings/c/orgize-actor.ss module now owns bounded batch execution
+with native Gerbil spawn/name actors and their native mailboxes. It directly
+calls the existing POO parser's named functional kernel; actors return native
+Scheme events, not foreign pointers or bridge root tokens. Serialization remains
+outside the actor kernel. Results preserve input order and parser configuration.
+All actors are joined before reporting request errors; unwinding terminates
+remaining private workers. This is not another parser or process executor.
+
+build-parser.ss includes the module in the existing native package build.
+Justfile scheme-native-actor-build compiled it with gxc -O -S successfully.
+Justfile scheme-native-actor-test passed six declared cases and emitted
+MODULE-OK, HARNESS-OK and final OK. Cases cover empty batches, 1/2/4/8 actors,
+indexed Unicode/structural results, invalid-request recovery, caller mailbox
+isolation, parser configuration, and worker-policy rejection. Successful checks
+use the recovery parser/core/POO dependency libraries, not the unrelated original
+parser checkout used in one rejected dependency-loading probe.
+The existing Scheme Org event aggregate was also rerun successfully with
+MODULE-OK, HARNESS-OK and final OK on the same recovery dependencies.
+
+Initial tape-based test imports required compiler/machine, which is absent from
+the recovery runtime-only library. A source-loading probe crashed; an unrelated
+original parser library also required a mismatched std/misc/vector module.
+Neither probe admitted any actor behavior. Separating the native event kernel
+from the FFI tape removed those irrelevant compile-time imports; no parser or
+stdlib compatibility patches were retained.
+
+A temporary extension of the existing Scheme benchmark was attempted using
+the same doc.org input. ASP benchmark/gate was absent from the compiled recovery
+library; the source-loading attempt crashed before any input/sample receipts.
+The temporary benchmark extension was withdrawn, preserving the existing
+benchmark entrypoint. No actor speedup, allocation gain, SMP capability or Rust
+Release throughput is claimed.
+
+The public Rust/Python route is deliberately NOT switched yet. Its current
+GerbilRuntime is !Send and !Sync, and bridge root ownership is not a concurrent
+foreign-thread attachment contract. A native ingress/lifecycle seam must be
+qualified in the existing gerbil-scheme-rust owner before deleting the Rust
+queue; do not replace it with unchecked parallel calls or cosmetic actor wrappers.
+The SIGCHLD host-child failure also remains open. No kernel edits, optimizer
+downgrades, new compiler pipeline, commits, pushes or PR mutations were made.
+
+* Two execution-owner features and matched runtime baseline
+The subsequent user decision explicitly retains both owners, rather than
+deleting the Rust executor: runtime-rust is the default; runtime-scheme is
+selected with --no-default-features. Both/neither selections are rejected.
+RuntimeBackend and runtime_backend report the compile-time choice. Python's
+maturin crate forwards the same mutually exclusive features to Orgize, without
+another parser or Python runtime. GC remains Gerbil-owned in both modes.
+
+Rust owns its bounded request queue and thread-affine runtime handle. The
+Scheme lane bootstraps the same statically linked program on a native service
+thread and joins one native Scheme actor. C only admits borrowed requests
+until completion and transfers owned result bytes. The actor calls the existing
+Scheme event-tape kernel directly, not the C parse export. It catches per-job
+exceptions before continuing. Contract uses the same program and admission
+owner. No Scheme pointer or root token reaches caller threads. Both lanes
+currently have one consumer, 64 queued slots and a 2 MiB service stack. The
+idle C condition wait is not a general green-thread I/O scheduler or SMP proof.
+Process-lifetime ownership and no restart are deliberate in this baseline.
+
+The earlier prototype re-entered the parse C export from the Scheme actor.
+Its c2105d8f program measurements are superseded, not evidence of an intrinsic
+Scheme scheduler penalty. The redundant round trip was removed before the
+matched final comparison. The final 215-module program input digest is:
+sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af.
+
+scheme-parser-stage succeeded using the recovery parser/core/POO/bridge and
+Orgize libraries. A stale dynamic program-build module caused an initial
+keyword arity error: gxc -O -S refreshed Scheme text but not its old .o1.
+native-owner-program-build now uses gxc -O; no kernel fix was involved.
+The parser build owner also excludes its executable build-event-fold-program
+from library discovery. Both runtime features passed cargo check for tests,
+benches and examples. The standalone feature-policy recipe admitted each
+single feature and rejected both/neither with the intended compile errors.
+Both final lanes passed all eight public parse/contract isolation cases,
+including 8 callers x 16 interleaved parse and Contract requests, after the
+private direct-Scheme service revision. They used the explicit local linker
+diagnostic described below and the same 81e321d9 program input digest.
+
+New org_runtime Criterion scenarios reuse doc.org, plain-links.org and
+quote-heavy.org through public Org::parse and unchanged Rowan/Element
+projection. Single caller plus 2/4/8 persistent callers were each measured in
+both lanes: 12 scenarios per backend, sample size 10, 0.2 s warmup, 1 s target
+measurement (Criterion may extend it). Thread creation and input preparation
+are outside timing. For N callers, one iteration completes N documents; do
+not compare its batch latency directly to the single-caller latency.
+This measures the complete public route, not isolated queue micro-operations.
+
+Rust Release opt-level 3, build override 3, Thin LTO, codegen units 4 and the
+existing overflow/profile policies are unchanged. Native object compilation
+uses the existing owner's O2 in both lanes, unchanged by this work. Apple ld
+21 crashed while dead-stripping the static graph; local diagnostic reports
+ld-2026-10-03-124137.ips and ld-2026-10-03-124441.ips identify excessive recursive
+AtomFileConsolidator::markLive calls exhausting the linker's worker stack.
+The explicit native-runtime-link-owner diagnostic selects ld_classic only
+for the final target; it preserves optimization, LTO and dead-strip. This is
+not a permanent runtime fallback or portable-wheel qualification. Both final
+benchmark binaries used that same setting. The interrupted first build/run
+and old-digest comparison output are excluded from the final baseline.
+
+The matched Criterion baseline is named program-81e321d9. Its estimates live
+under target/criterion/OrgRuntime_runtime-{rust,scheme}_{fixture}/
+{scenario}/program-81e321d9/estimates.json. Warm single-caller sample means and
+95 percent bootstrap intervals, milliseconds per completed document:
+
+| fixture         | Rust mean | Rust interval | Scheme mean | Scheme interval |
+|-----------------+-----------+---------------+-------------+-----------------|
+| doc.org         |      5.91 |    4.36--7.64 |        4.81 |      4.41--5.28 |
+| plain-links.org |      7.12 |    5.90--8.95 |        7.64 |      6.20--9.49 |
+| quote-heavy.org |     15.36 |  12.52--19.02 |       14.26 |    12.50--16.29 |
+
+This noisy local snapshot does not qualify a stable overall winner. In
+particular it does not show Rust scheduling is universally faster, nor Scheme
+actors scale across processors. Neither feature fixes SIGCHLD ownership. The
+bridge's native/runtime.c lifecycle admission was made C11-atomic to avoid
+racing native/Rust initializers; native-owner-lifecycle-check compiled it
+successfully, but these benchmark binaries still use pinned 8bb8103b sys/runtime
+sources. This local bridge change is not yet integration-qualified or repinned.
+Python feature-specific rebuilds, fresh pins, complete integration semantics,
+portable wheels and exact-head CI remain open. No commit, push, PR write or
+Gambit kernel edit was performed.
+
+Cold runtime_cold examples were also linked through the same explicit local
+diagnostic and admitted ten fresh processes per feature. Each validates its
+first public parse and backend/program identities. Measurements start inside
+the child: native initialization plus first doc.org parse, not process launch
+time. The supervisor never initializes Gerbil, and every sample has an eight
+second deadline. Both complete runs exited successfully. Raw receipts are in
+docs/native-runtime-cold-20261003.json, with the same 81e321d9 program digest.
+
+| owner  | samples | mean ms | median ms | minimum ms | maximum ms |
+|--------+---------+---------+-----------+------------+------------|
+| Rust   |      10 |   37.19 |     36.73 |      33.62 |      44.11 |
+| Scheme |      10 |   41.74 |     37.22 |      32.29 |      69.15 |
+
+These small cold samples likewise do not qualify a lifecycle winner or tail
+latency guarantee. The median is similar and Scheme's mean includes two high
+samples. They do not qualify the separate host-child SIGCHLD gate: only the
+supervisor, which never initializes Gerbil, owns these benchmark children.
+
+* Fixed-count 1,000 and 10,000 document corpus lane
+The user rejected single-input timing as sufficient scale evidence. The
+existing org_runtime benchmark now has an explicit fixed-count corpus mode:
+native-runtime-corpus-run BINARY OUTPUT [documents] [callers] [repeats].
+Defaults are 1000,10000 documents; 1,8 callers; one repetition per combination.
+Criterion calibration is bypassed only in this mode, so every batch completes
+exactly its declared number of documents, not an undocumented sample multiplier.
+
+The deterministic corpus alternates doc.org, plain-links.org and quote-heavy.org,
+adding a unique numbered title, heading and link to each. All strings are checked
+distinct. These are synthetic variants of three structural fixture families,
+not 10,000 independently authored files or a comprehensive grammar corpus.
+The corpus has 551,950 bytes at 1,000 documents and 5,519,950 bytes at 10,000:
+roughly 552 bytes/document. Document count alone does not qualify large-file
+scaling; broader real-world document sizes and structures remain separate work.
+
+Every public Org::try_parse must reproduce its source without loss. Each result
+hashes both its complete Rowan tree and Element graph; an ordered aggregate hash
+is independent of completion order. Caller counts/repetitions must agree within
+each runtime. native-runtime-corpus-compare rejects wrong backends, duplicate
+batch identities, incomplete/distinct count differences and mismatched corpus,
+artifact, program, benchmark source, architecture, byte count or queue settings.
+Small 12-document smoke runs passed 1/8 callers x two repetitions in both lanes
+and passed this cross-backend comparison. Passing two Rust files as a comparison
+was rejected as intended. Those smoke runs are not the scale receipt.
+
+Corpus generation, native warmup and caller creation are outside batch timing.
+Wall throughput includes public parse/projection, lossless validation, tree/graph
+checksum, result drop and completion collection. Per-document p50/p95/p99/max
+latency includes request queue waiting and projection, but excludes validation
+and checksum work. It is not isolated scheduler cost. Process RSS is getrusage's
+cumulative high-water mark including Rust, native runtime, inputs, samples and
+thread stacks; it is not Scheme GC occupancy, live allocation or leak proof.
+One-second logs show actual completed documents. Five seconds without completion
+fails the process; no failed or partial run creates a passing receipt file.
+Both lanes preserve the same Release/native profile and explicit local linker
+diagnostic described above. They run sequentially, not concurrently with builds.
+
+Both scale runs exited successfully. Each feature completed 22,000 timed
+documents (1000 x two caller settings + 10000 x two caller settings), for
+44,000 timed parses overall, excluding smoke runs and native warmups. All four
+batch pairs passed native-runtime-corpus-compare, with the same 81e321d9 program
+and benchmark source BLAKE3:
+5257bef91422e6770e432de517f23b0f4a9accb7be62bcbca74d7b4602acfa41.
+Raw receipts, including complete source/artifact digests and latency tails:
+- docs/native-runtime-corpus-rust-20261003.json
+- docs/native-runtime-corpus-scheme-20261003.json
+
+Observed wall throughput and public-call latency, one local repetition:
+
+| documents | callers | Rust docs/s | Scheme docs/s | Rust p95 ms | Scheme p95 ms | Rust p99 ms | Scheme p99 ms |
+|-----------+---------+-------------+---------------+-------------+---------------+-------------+---------------|
+|      1000 |       1 |       42.44 |         91.54 |       70.09 |         21.71 |      138.24 |         28.11 |
+|      1000 |       8 |       66.07 |         87.00 |      265.66 |        150.24 |      382.19 |        261.52 |
+|     10000 |       1 |       76.44 |         50.44 |       26.40 |         64.12 |       53.28 |        122.79 |
+|     10000 |       8 |       92.34 |         89.57 |      124.03 |        124.99 |      146.38 |        157.31 |
+
+Wall seconds in the same row order: Rust 23.564, 15.135, 130.816, 108.296;
+Scheme 10.924, 11.495, 198.261, 111.643. Cumulative process peak RSS after the
+final batch was 40.48 MiB Rust and 40.31 MiB Scheme. These totals include the
+resident generated corpus and benchmark bookkeeping; neither proves GC-only
+memory equivalence, leak freedom or constant-memory scaling.
+
+At 10,000 documents / eight callers, observed throughput and p95 were close.
+The direction of the throughput difference reverses between the 1,000 and
+10,000 document cases. Progress logs also show large within-run rate changes.
+The sequential run order was not counterbalanced and machine contention was
+not controlled, so these single-repetition measurements do not establish a
+stable scheduler/lifecycle winner or attribute the difference to architecture.
+They do establish completion and matching output for the declared corpus scale.
+Eight callers still feed one native consumer, not eight parallel parsers.
+SIGCHLD ownership, Python feature-specific qualification, fresh dependency pins,
+portable packaging and exact-head CI remain the separate open gates above.
+
+* Updated parser and Tokio scale qualification
+The follow-up receipt is native-runtime-tokio-pr7c-20261003.org. Cargo and Scheme
+pins now use published parser PR #13 head 7c1533356585154c8b5d340f64ffefb289d18907;
+local, unpublished Scheme cache/runtime-closure changes were qualified separately.
+The ed7540bf native program passed ten focused public/Tokio tests in each feature.
+The Tokio 1000/10000-by-1/8 scale lane completed 44000 counted parses with matching
+full artifacts. The Scheme fourth batch required a fresh-process retry after
+the original whole-round deadline; the termination reported signal 11 and is
+an open shutdown gate, not hidden by the successful retry.
+
+The detailed receipt preserves raw inputs, elapsed figures and exclusions.
+Confirmed competing machine load prevents a reliable runtime performance ranking.
+Tokio is the application integration driver, not a replacement native-owner queue.
+The older std-driver figures above remain historical, not a matched speedup control.
+
+The subsequent lifecycle audit is RED in both features: initialization changes
+stdin to nonblocking and idle SIGTERM does not exit within two seconds. Fresh
+isolated receipts are native-runtime-lifecycle-20261003.json; normal return
+exits zero, and the prior active-corpus signal 11 was not reproduced here.
+The extended eleven-case Tokio/public suite passed in each feature, including
+in-memory stream backpressure. This does not repair process-wide ownership.
+Changing lazy initialization to explicit startup-only admission requires a
+host contract decision; no such API change, kernel edit or handler-restore
+workaround was silently introduced.

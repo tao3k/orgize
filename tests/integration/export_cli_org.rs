@@ -6,7 +6,6 @@ use crate::export_cli::export_cli_common::{
     assert_document_query_evidence, assert_document_selector_query_evidence, test_dir,
 };
 
-#[test]
 fn org_query_content_preserves_only_aot_classified_blocks() {
     let root = test_dir("org-query-aot-nested-block-content");
     let path = root.join("nested.org");
@@ -59,11 +58,11 @@ fn org_query_content_preserves_only_aot_classified_blocks() {
         String::from_utf8(block_output.stdout)
             .expect("utf8 AOT block content")
             .trim(),
-        "(display   \"true\")"
+        // The native Scheme grammar also classifies the list-owned block.
+        "(display   \"x\")\n\n    (display \"y\")\n(display   \"true\")"
     );
 }
 
-#[test]
 fn org_document_query_commands_run() {
     let guide = crate::library_cli::orgize_cli_command()
         .arg("guide")
@@ -840,7 +839,6 @@ fn orgize_command() -> crate::library_cli::OrgizeLibraryCliCommand {
     crate::library_cli::orgize_cli_command()
 }
 
-#[test]
 fn org_document_legacy_search_facade_is_rejected() {
     let usage = orgize_command().output().expect("render top-level usage");
     let usage = String::from_utf8_lossy(&usage.stderr);
@@ -857,7 +855,6 @@ fn org_document_legacy_search_facade_is_rejected() {
     }
 }
 
-#[test]
 fn orgize_version_reports_build_provenance() {
     let output = orgize_command()
         .args(["version", "--json"])
@@ -877,3 +874,22 @@ fn orgize_version_reports_build_provenance() {
     );
     assert!(receipt["sourceDirty"].is_boolean());
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "export_cli::export_cli_org::org_query_content_preserves_only_aot_classified_blocks",
+        org_query_content_preserves_only_aot_classified_blocks,
+    ),
+    (
+        "export_cli::export_cli_org::org_document_query_commands_run",
+        org_document_query_commands_run,
+    ),
+    (
+        "export_cli::export_cli_org::org_document_legacy_search_facade_is_rejected",
+        org_document_legacy_search_facade_is_rejected,
+    ),
+    (
+        "export_cli::export_cli_org::orgize_version_reports_build_provenance",
+        orgize_version_reports_build_provenance,
+    ),
+];

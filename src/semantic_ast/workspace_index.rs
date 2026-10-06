@@ -231,20 +231,9 @@ fn workspace_links(
 }
 
 fn link_resolution_key(path: &str) -> Option<String> {
-    let base = path
-        .split_once("::")
-        .map(|(base, _)| base)
-        .unwrap_or(path)
-        .trim();
-    if base.is_empty() || is_external_like_link(base) {
-        return None;
-    }
-    Some(base.to_string())
-}
-
-fn is_external_like_link(path: &str) -> bool {
-    path.contains(':')
-        && !(path.starts_with("id:") || path.starts_with("fn:") || path.starts_with("coderef:"))
+    let row = super::org_native_values::optional("workspace-link-key", path)?;
+    let [key]: [String; 1] = row.try_into().expect("native workspace link key arity");
+    Some(key)
 }
 
 fn resolve_link_target(
@@ -299,24 +288,14 @@ fn link_resolution_issue_kind(
     if resolved {
         return None;
     }
-    if key.starts_with("id:") {
-        Some(WorkspaceIssueKind::UnresolvedIdLink {
-            key: key.to_string(),
-        })
-    } else if key.starts_with('#') {
-        Some(WorkspaceIssueKind::UnresolvedCustomIdLink {
-            key: key.to_string(),
-        })
-    } else if key.starts_with("fn:") {
-        Some(WorkspaceIssueKind::UnresolvedFootnoteLink {
-            key: key.to_string(),
-        })
-    } else if key.starts_with("coderef:") {
-        Some(WorkspaceIssueKind::UnresolvedCodeRefLink {
-            key: key.to_string(),
-        })
-    } else {
-        None
+    let key = key.to_string();
+    match super::org_native_values::scalar("workspace-link-role", &[&key]).as_str() {
+        "id" => Some(WorkspaceIssueKind::UnresolvedIdLink { key }),
+        "custom-id" => Some(WorkspaceIssueKind::UnresolvedCustomIdLink { key }),
+        "footnote" => Some(WorkspaceIssueKind::UnresolvedFootnoteLink { key }),
+        "coderef" => Some(WorkspaceIssueKind::UnresolvedCodeRefLink { key }),
+        "other" => None,
+        _ => panic!("invalid native workspace link role"),
     }
 }
 

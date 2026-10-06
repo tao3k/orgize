@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Citation-reference Objects are parsed only after their enclosing citation
 ;;; has passed its Org-owned validity scan.  The bounded helper shares no
-;;; mutable state with its caller and AOT-compiles to one Rust function.
+;;; mutable state with its caller and executes in the native Scheme closure.
 
 (import (only-in "objects.ss" make-org-event-helper))
 (export citation-reference-helper citation-reference-key-bytes)
@@ -16,11 +16,25 @@
    (iota 128 128)))
 
 (def (citation-affix-events node from until)
-  `((if (offset-less? ,from ,until)
-        ((start-node ,node)
-         (call-source-helper citation-affix-span ,from ,until
-                             ((state inline-script-policy)))
-         (finish-node)) ())))
+  (let ((content (case node
+                   ((OrgCitationGlobalPrefix) 'CitationGlobalPrefixContent)
+                   ((OrgCitationGlobalSuffix) 'CitationGlobalSuffixContent)
+                   ((OrgCitationReferencePrefix) 'CitationReferencePrefixContent)
+                   ((OrgCitationReferenceSuffix) 'CitationReferenceSuffixContent)))
+        (start `(line-skip-horizontal ,from)))
+    ;; Keep the raw wrapper lossless; only Scheme decides the semantic span.
+    ;; A whitespace-only affix has no content node, even if skipping reaches
+    ;; beyond its bounded end in the enclosing source line.
+    `((if (offset-less? ,from ,until)
+          ((start-node ,node)
+           (if (offset-less? ,start ,until)
+               ((token TextLine ,from ,start)
+                (start-node ,content)
+                (call-source-helper citation-affix-span ,start ,until
+                                    ((state inline-script-policy)))
+                (finish-node))
+               ((token TextLine ,from ,until)))
+           (finish-node)) ()))))
 
 (def (citation-reference-segment-events until)
   `((if (state citation-ref-has-key)

@@ -1,12 +1,17 @@
 #!/usr/bin/env gxi
 ;;; -*- Gerbil -*-
-;;; Serialize the executable Scheme outline events for Rowan parity tests.
+;;; Generate a native Scheme event golden, never a JSON semantic transport.
 
-(import (only-in :std/encoding/json write-json)
-        (only-in "rowan-event-fixture.ss" rowan-event-fixture))
+(import (only-in "rowan-event-fixture.ss" rowan-event-fixture))
 
-(def arguments (command-line))
-(unless (> (length arguments) 2)
-  (error "usage: generate-rowan-event-fixture.ss OUTPUT.json"))
-(call-with-output-file (car (reverse arguments))
-  (lambda (port) (write-json port (rowan-event-fixture))))
+(export main)
+
+(def (main output)
+  (call-with-output-file output
+    (lambda (port)
+      (display ";;; -*- Gerbil -*-\n;;; Native Scheme event golden.\n" port)
+      (write '(export rowan-event-fixture-events) port)
+      (newline port)
+      (write (list 'def 'rowan-event-fixture-events
+                   (list 'quote (rowan-event-fixture))) port)
+      (newline port))))

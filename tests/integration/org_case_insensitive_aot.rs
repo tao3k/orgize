@@ -1,6 +1,5 @@
 //! ASCII case-insensitive Org structure remains Scheme-owned after AOT.
 
-#[test]
 fn org_structural_syntax_accepts_mixed_ascii_case_without_changing_source() {
     let source = "#+sEq_ToDo: WAIT | DONE\n\
                   * WAIT Parent\n\
@@ -28,3 +27,8 @@ fn org_structural_syntax_accepts_mixed_ascii_case_without_changing_source() {
     assert_eq!(headlines[0].todo_keyword().as_deref(), Some("WAIT"));
     assert_eq!(headlines[1].todo_keyword().as_deref(), Some("DONE"));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "org_case_insensitive_aot::org_structural_syntax_accepts_mixed_ascii_case_without_changing_source",
+    org_structural_syntax_accepts_mixed_ascii_case_without_changing_source,
+)];

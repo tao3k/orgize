@@ -5,7 +5,6 @@ use orgize::{
     config::UseSubSuperscript,
 };
 
-#[test]
 fn semantic_citation_affixes_respect_parse_config() {
     let config = ParseConfig {
         use_sub_superscript: UseSubSuperscript::Nil,
@@ -33,3 +32,8 @@ fn semantic_citation_affixes_respect_parse_config() {
         ObjectData::Plain(value) if value == "x_1"
     ));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_citation_affixes_respect_parse_config::semantic_citation_affixes_respect_parse_config",
+    semantic_citation_affixes_respect_parse_config,
+)];

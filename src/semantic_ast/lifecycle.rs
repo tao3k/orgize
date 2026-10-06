@@ -119,14 +119,23 @@ fn collect_logbook_records(
     let Some(body_range) = ann.drawer_body_range else {
         return;
     };
-    let mut line_start = usize::from(body_range.start());
+    let body_start = usize::from(body_range.start());
     let facts = aot_logbook_facts(drawer);
-    for source_line in drawer_body(ann).split_inclusive('\n') {
-        let line = source_line.strip_suffix('\n').unwrap_or(source_line);
-        let line = line.strip_suffix('\r').unwrap_or(line);
-        let line_end = line_start + line.len();
-        let kind = lifecycle_record_kind(line, line_start..line_end, &facts, ann);
-        line_start += source_line.len();
+    let body = drawer_body(ann);
+    let rows = crate::org_aot::native_semantic_rows(20, &[body])
+        .expect("initialized native logbook batch");
+    for row in rows {
+        assert_eq!(row.len(), 10, "native logbook arity");
+        let start: usize = row[0].parse().expect("native logbook start");
+        let end: usize = row[1].parse().expect("native logbook end");
+        assert!(
+            start <= end
+                && end <= body.len()
+                && body.is_char_boundary(start)
+                && body.is_char_boundary(end),
+            "native logbook bounds"
+        );
+        let kind = lifecycle_record_kind(&row, body_start + start..body_start + end, &facts, ann);
         let Some(kind) = kind else {
             continue;
         };
@@ -135,21 +144,23 @@ fn collect_logbook_records(
             section_anchor: section.anchor.clone(),
             section_title: section.raw_title.trim_end().to_string(),
             kind,
-            raw: line.trim().to_string(),
+            raw: row[2].trim().to_string(),
         });
     }
 }
 
 fn lifecycle_record_kind(
-    line: &str,
+    row: &[String],
     source_range: std::ops::Range<usize>,
     facts: &LogbookFacts,
     ann: &ParsedAnnotation,
 ) -> Option<LifecycleRecordKind> {
-    let line = trim_logbook_line(line)?;
+    if row[4].is_empty() {
+        return None;
+    }
     let timestamps = facts.timestamp_sources_in_line(ann, &source_range);
-    Some(match crate::org_aot::logbook_line_kind(line) {
-        "state" => state_change_record(line, timestamps.first().cloned()),
+    Some(match row[4].as_str() {
+        "state" => state_change_record(row, timestamps.first().cloned()),
         "refile" => LifecycleRecordKind::Refile {
             target: facts.first_link_source_in_line(ann, &source_range),
             timestamp: timestamps.first().cloned(),
@@ -165,7 +176,7 @@ fn lifecycle_record_kind(
             timestamp: timestamps.last().cloned(),
         },
         "clock" => clock_record(
-            line,
+            row,
             facts.clock_in_line(&source_range),
             ann,
             timestamps.first().cloned(),
@@ -176,28 +187,21 @@ fn lifecycle_record_kind(
     })
 }
 
-fn trim_logbook_line(line: &str) -> Option<&str> {
-    if line.trim().is_empty() {
-        return None;
-    }
-    Some(crate::org_aot::logbook_content_line(line))
-}
-
-fn state_change_record(line: &str, timestamp: Option<String>) -> LifecycleRecordKind {
-    let Some((to, from)) = crate::org_aot::logbook_state_values(line) else {
+fn state_change_record(row: &[String], timestamp: Option<String>) -> LifecycleRecordKind {
+    if row[5] != "complete" {
         return LifecycleRecordKind::MalformedLogbook {
             reason: "state-change LOGBOOK line is missing quoted TODO states".to_string(),
         };
-    };
+    }
     LifecycleRecordKind::StateChange {
-        to: Some(to.to_string()),
-        from: Some(from.to_string()),
+        to: Some(row[6].clone()),
+        from: Some(row[7].clone()),
         timestamp,
     }
 }
 
 fn clock_record(
-    line: &str,
+    row: &[String],
     clock: Option<&ClockFact>,
     ann: &ParsedAnnotation,
     fallback_timestamp: Option<String>,
@@ -205,7 +209,7 @@ fn clock_record(
     let (has_duration, duration) = if let Some(clock) = clock {
         (clock.has_duration, clock.duration.clone())
     } else {
-        let value = crate::org_aot::logbook_clock_duration_value(line);
+        let value = (row[8] == "present").then(|| row[9].clone());
         (value.is_some(), value.and_then(OrgDuration::parse))
     };
     if has_duration && duration.is_none() {

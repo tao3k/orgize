@@ -18,6 +18,8 @@ fn generated_kinds(root: &gerbil_parser_rowan::SyntaxNode) -> BTreeMap<&'static 
 }
 
 fn main() {
+    // SAFETY: standalone entrypoint, before workers or children and host I/O.
+    unsafe { orgize::initialize_native_runtime() }.expect("native startup");
     let source = include_str!("../tests/fixtures/org-elements/representative.org");
     let document = Org::parse(source);
     let event_root = document.syntax();

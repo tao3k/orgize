@@ -3,7 +3,6 @@ use orgize::{
     ast::{ElementData, MarkupKind, ObjectData},
 };
 
-#[test]
 fn semantic_ast_projects_inline_babel_and_footnote_details() {
     let source = r#"call_square[:results output](4)[:results html] and src_rust[:exports code]{let x = 1;} and [fn:note:See *bold* text]."#;
     let doc = Org::parse(source).document();
@@ -85,7 +84,6 @@ fn semantic_ast_projects_inline_babel_and_footnote_details() {
     );
 }
 
-#[test]
 fn inline_footnote_fragments_use_graph_children_and_preserve_complex_fallback() {
     let source = "[fn:n:See *大胆* text] [fn:m:See [brackets] *bold*]\n";
     let graph = orgize::org_aot::parse_org_aot(source).expect("Scheme inline graph");
@@ -144,7 +142,6 @@ fn inline_footnote_fragments_use_graph_children_and_preserve_complex_fallback() 
 }
 
 #[cfg(feature = "syntax-org-fc")]
-#[test]
 fn nested_cloze_in_footnote_uses_explicit_complex_fragment_fallback() {
     let source = "[fn:n:See {{*term*}} now]\n";
     let graph = orgize::org_aot::parse_org_aot(source).expect("Scheme inline graph");
@@ -191,3 +188,19 @@ fn nested_cloze_in_footnote_uses_explicit_complex_fragment_fallback() {
         source.find("*term*").unwrap()
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_inline_babel_and_footnote_details::semantic_ast_projects_inline_babel_and_footnote_details",
+        semantic_ast_projects_inline_babel_and_footnote_details,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_inline_babel_and_footnote_details::inline_footnote_fragments_use_graph_children_and_preserve_complex_fallback",
+        inline_footnote_fragments_use_graph_children_and_preserve_complex_fallback,
+    ),
+    #[cfg(feature = "syntax-org-fc")]
+    (
+        "semantic_ast::semantic_ast_projects_inline_babel_and_footnote_details::nested_cloze_in_footnote_uses_explicit_complex_fragment_fallback",
+        nested_cloze_in_footnote_uses_explicit_complex_fragment_fallback,
+    ),
+];

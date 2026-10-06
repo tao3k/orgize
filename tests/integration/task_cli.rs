@@ -1,6 +1,5 @@
 use std::{fs, path::PathBuf};
 
-#[test]
 fn task_list_renders_active_tasks_from_org_files() {
     let dir = test_dir("task-list-active");
     let path = dir.join("tasks.org");
@@ -19,7 +18,6 @@ fn task_list_renders_active_tasks_from_org_files() {
     assert!(!stdout.contains("DONE Finished routing"), "{stdout}");
 }
 
-#[test]
 fn task_list_done_view_renders_done_tasks() {
     let dir = test_dir("task-list-done");
     let path = dir.join("tasks.org");
@@ -69,3 +67,14 @@ fn test_dir(name: &str) -> PathBuf {
     fs::create_dir_all(&dir).unwrap();
     dir
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "task_cli::task_list_renders_active_tasks_from_org_files",
+        task_list_renders_active_tasks_from_org_files,
+    ),
+    (
+        "task_cli::task_list_done_view_renders_done_tasks",
+        task_list_done_view_renders_done_tasks,
+    ),
+];

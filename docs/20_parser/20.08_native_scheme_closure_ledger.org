@@ -1,0 +1,54 @@
+#+title: 20.08 Native Scheme Org syntax closure ledger
+
+* Current status and authority
+
+This is the entry index, not an append-only receipt dump. Native Scheme owns
+Org grammar and semantic decisions; Rust retains admitted transport, typed
+projection and explicit host execution. Generated Rust algorithms are not
+native Scheme execution evidence. Whole-parser semantic closure remains open.
+
+- [[file:20.08_native_scheme_closure/current-boundary.org][Current migration boundary and integrated next admission]]
+- [[file:20.08_native_scheme_closure/00-entry-and-native-authority.org][Authority and family-level evidence requirements]]
+
+* Modular qualification records
+
+- [[file:20.08_native_scheme_closure/22-local-checkpoint-and-source-provenance.org][Local checkpoint scope, source identity repair and unresolved publication gates]]
+
+- [[file:20.08_native_scheme_closure/21-production-wrapper-warning-closure.org][Complete 30-warning production wrapper cleanup and both-runtime admission]]
+
+- [[file:20.08_native_scheme_closure/20-dependency-native-owner.org][Dependency source policy, unused wrapper cleanup and live upstream audit]]
+
+- [[file:20.08_native_scheme_closure/19-citation-export-native-owner.org][Citation export native semantic owner and new-program qualification boundary]]
+
+- [[file:20.08_native_scheme_closure/18-parser-alignment-native-fixture.org][Latest parser alignment and native event fixture migration]]
+
+Each record preserves its original program identities, failures, receipts and
+bounded conclusion. Historical green checks do not qualify a later program.
+Read the record for the owner being changed; do not include all records into
+this page. Add a new bounded owner record instead of appending here.
+
+- [[file:20.08_native_scheme_closure/00-entry-and-native-authority.org][Entry, authority and native execution audit]]
+- [[file:20.08_native_scheme_closure/01-contained-elements.org][Contained Elements in list Items]]
+- [[file:20.08_native_scheme_closure/02-citation-and-bindings.org][Citation ownership and Python thin bindings]]
+- [[file:20.08_native_scheme_closure/03-parser-and-runtime-qualification.org][Parser revision and runtime requalification]]
+- [[file:20.08_native_scheme_closure/04-native-build-ownership.org][Scheme-owned native build executor]]
+- [[file:20.08_native_scheme_closure/05-timestamp-consumer-admission.org][Timestamp consumer and runtime admission]]
+- [[file:20.08_native_scheme_closure/06-source-header-consumers.org][Complete source-header consumers]]
+- [[file:20.08_native_scheme_closure/07-table-and-macro-consumers.org][Table content and complete MACRO consumers]]
+- [[file:20.08_native_scheme_closure/08-block-keyword-and-dir-consumers.org][Integrated block, keyword and DIR native consumers]]
+- [[file:20.08_native_scheme_closure/09-native-value-families.org][Native headline, link, lifecycle shape, cookies and radio consumers]]
+- [[file:20.08_native_scheme_closure/10-lifecycle-metadata-and-protocols.org][Integrated lifecycle, metadata, property, clocktable and protocol consumers]]
+- [[file:20.08_native_scheme_closure/11-source-consumers-and-parser-alignment.org][Integrated source consumers and current parser revision]]
+- [[file:20.08_native_scheme_closure/12-contract-policy-and-pr21.org][Complete Contract source policy and single PR integration]]
+- [[file:20.08_native_scheme_closure/13-downstream-metadata-and-agenda.org][Integrated downstream metadata and Agenda ownership]]
+- [[file:20.08_native_scheme_closure/14-integrated-latest-parser-closure.org][Integrated downstream closure on latest parser revision]]
+- [[file:20.08_native_scheme_closure/15-pr18-integrated-audit.org][PR 18 combined-tree audit and remaining native ownership]]
+- [[file:20.08_native_scheme_closure/16-publishing-native-owner.org][Native Publishing owner and latest parser alignment]]
+- [[file:20.08_native_scheme_closure/17-native-test-startup.org][Native test startup and executable build boundary]]
+
+* Maintenance
+
+Keep an individual index or owner record at most 500 lines. Split by semantic
+owner or executable admission boundary, never at an arbitrary line count.
+Run =just native-document-layout-check= after modifying this documentation.
+Source semantics and runtime qualification still use their existing gates.

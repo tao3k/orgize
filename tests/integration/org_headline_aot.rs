@@ -8,7 +8,6 @@ macro_rules! check_org_aot_headline_state {
     }};
 }
 
-#[test]
 fn scheme_headline_tags_project_without_rust_headline_scanning() {
     let source = "* TODO Plan :agent:plan:\n* Plan :bad::\n* 标题 :中文:\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("Scheme headline tags parse");
@@ -37,7 +36,6 @@ fn scheme_headline_tags_project_without_rust_headline_scanning() {
     );
 }
 
-#[test]
 fn scheme_aot_headline_state_classifies_projected_element_titles() {
     let source = "#+SEQ_TODO: WAIT(w) | DONE(d)\n#+TYP_TODO: HOLD(h) | FINISHED(f)\n* WAIT Parent\n** DONE Child\n* TODO prose\n* HOLD Review\n* FINISHED Shipped\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -90,7 +88,6 @@ fn scheme_aot_headline_state_classifies_projected_element_titles() {
     assert_eq!(document.headline_content_after_todo(0), None);
 }
 
-#[test]
 fn headline_state_uses_defaults_only_without_document_directives() {
     let document = orgize::org_aot::parse_org_aot("* TODO Open\n* DONE Closed\n* WAIT Plain\n")
         .expect("default TODO states derive from Org Element graph");
@@ -104,7 +101,6 @@ fn headline_state_uses_defaults_only_without_document_directives() {
     check_org_aot_headline_state!(document, headlines[2], "WAIT Plain" => None);
 }
 
-#[test]
 fn scheme_aot_headline_state_honors_parse_config_until_file_directive_overrides_it() {
     let configured = {
         let config = orgize::ParseConfig {
@@ -139,7 +135,6 @@ fn scheme_aot_headline_state_honors_parse_config_until_file_directive_overrides_
     assert_eq!(headlines[2].todo_type(), Some("done"));
 }
 
-#[test]
 fn scheme_headline_properties_are_stable_across_repeated_queries() {
     let source = "#+SEQ_TODO: WAIT | DONE\n* WAIT [#A] Review :work:\n* TODO Plain\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -178,7 +173,6 @@ fn scheme_headline_properties_are_stable_across_repeated_queries() {
     }
 }
 
-#[test]
 fn scheme_priority_cookie_validation_preserves_malformed_headlines() {
     macro_rules! check_display_title {
         ($($source:expr => $expected:expr),+ $(,)?) => {
@@ -206,7 +200,6 @@ fn scheme_priority_cookie_validation_preserves_malformed_headlines() {
     );
 }
 
-#[test]
 fn typed_aot_headline_view_uses_one_scheme_graph() {
     let source = "#+seq_todo: WAIT(w) | DONE(d)\n\
                   * WAIT Parent :agent:\n\
@@ -245,3 +238,34 @@ fn typed_aot_headline_view_uses_one_scheme_graph() {
     );
     assert!(document.headline(document.records().len()).is_none());
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_headline_aot::scheme_headline_tags_project_without_rust_headline_scanning",
+        scheme_headline_tags_project_without_rust_headline_scanning,
+    ),
+    (
+        "org_headline_aot::scheme_aot_headline_state_classifies_projected_element_titles",
+        scheme_aot_headline_state_classifies_projected_element_titles,
+    ),
+    (
+        "org_headline_aot::headline_state_uses_defaults_only_without_document_directives",
+        headline_state_uses_defaults_only_without_document_directives,
+    ),
+    (
+        "org_headline_aot::scheme_aot_headline_state_honors_parse_config_until_file_directive_overrides_it",
+        scheme_aot_headline_state_honors_parse_config_until_file_directive_overrides_it,
+    ),
+    (
+        "org_headline_aot::scheme_headline_properties_are_stable_across_repeated_queries",
+        scheme_headline_properties_are_stable_across_repeated_queries,
+    ),
+    (
+        "org_headline_aot::scheme_priority_cookie_validation_preserves_malformed_headlines",
+        scheme_priority_cookie_validation_preserves_malformed_headlines,
+    ),
+    (
+        "org_headline_aot::typed_aot_headline_view_uses_one_scheme_graph",
+        typed_aot_headline_view_uses_one_scheme_graph,
+    ),
+];

@@ -16,6 +16,8 @@ declared category and an unused `AC.ID` coordinate before adding a file.
 - [[file:10_architecture/10.04_wendao_section_index_adapter_contract.org][10.04 Wendao Section Index Adapter Contract]]
 - [[file:10_architecture/10.05_agent_capture_protocol.org][10.05 Agent Capture Protocol]]
 - [[file:10_architecture/10.06_org_native_sdd_substrate.org][10.06 Org-native SDD Substrate]]
+- [[file:10_architecture/10.08_temporal_revisit_projection.org][10.08 Temporal Revisit Projection]]
+- [[file:10_architecture/10.09_org_ecosystem_research.org][10.09 Org Ecosystem Research for Temporal Review]]
 - [[file:20_parser/20.03_property_schema_registry_contract.org][20.03 Property Schema Registry Contract]]
 - [[file:20_parser/20.04_org_elements_alignment_audit.org][20.04 Org Elements Alignment Audit]]
 - [[file:20_parser/20.05_parser_surface_map.org][20.05 Parser Surface Map]]

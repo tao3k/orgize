@@ -596,8 +596,10 @@
       ,@(if arguments?
             `((token MacroDelimiter (state-offset inline-macro-name-end)
                      (state-offset inline-macro-arguments-start))
-              (token MacroArguments (state-offset inline-macro-arguments-start)
-                     ,link-index))
+              (start-node MacroArguments)
+              (call-source-helper macro-arguments (state-offset inline-macro-arguments-start)
+                                  ,link-index)
+              (finish-node))
             '())
       (token MacroDelimiter
              ,(if arguments? link-index '(state-offset inline-macro-name-end))

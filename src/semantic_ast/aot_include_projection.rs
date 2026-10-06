@@ -2,8 +2,10 @@
 
 use super::{
     Diagnostic, DiagnosticKind, GraphProjector, IncludeDirective, IncludeOption, Keyword,
-    ParsedAnnotation, TextRange,
+    ParsedAnnotation,
 };
+
+use crate::ast::aot_block_switches::project_keyword_header_args;
 
 impl GraphProjector<'_> {
     pub(super) fn include_directive(
@@ -22,36 +24,14 @@ impl GraphProjector<'_> {
             .values("include-argument")
             .map(str::to_owned)
             .collect();
-        let mut options = Vec::new();
-        let mut fields = record
-            .fields
-            .iter()
-            .filter(|field| matches!(field.name, "include-option-key" | "include-option-value"))
-            .collect::<Vec<_>>();
-        fields.sort_unstable_by_key(|field| field.range.start());
-        for (index, key) in fields.iter().enumerate() {
-            if key.name != "include-option-key" {
-                continue;
-            }
-            let value = fields
-                .get(index + 1)
-                .filter(|field| field.name == "include-option-value");
-            let start = u32::from(key.range.start()).saturating_sub(1);
-            let end = value.map_or(key.range.end(), |value| value.range.end());
-            let raw = self.raw(TextRange::new(start.into(), end)).to_owned();
-            options.push(IncludeOption {
-                key: key.value.clone(),
-                value: value.map(|value| {
-                    value
-                        .value
-                        .strip_prefix('"')
-                        .and_then(|quoted| quoted.strip_suffix('"'))
-                        .unwrap_or(&value.value)
-                        .to_owned()
-                }),
-                raw,
-            });
-        }
+        let options = project_keyword_header_args(record)
+            .into_iter()
+            .map(|argument| IncludeOption {
+                key: argument.key,
+                value: argument.value,
+                raw: argument.raw,
+            })
+            .collect();
         Ok(IncludeDirective {
             ann: keyword.ann,
             path: path.to_owned(),

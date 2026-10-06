@@ -6,7 +6,6 @@ use orgize::{
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/source-example-block-lines.org");
 
-#[test]
 fn semantic_ast_projects_scheme_unquoted_block_body_with_source_ranges() {
     let doc = Org::parse("#+begin_src rust\n,* heading\n,#+keyword\n#+end_src\n").document();
     assert_clean_projection(&doc);
@@ -28,7 +27,6 @@ fn semantic_ast_projects_scheme_unquoted_block_body_with_source_ranges() {
     assert_eq!(block.lines[1].ann.start.line, 3);
 }
 
-#[test]
 fn semantic_ast_projects_source_and_example_block_lines() {
     let doc = Org::parse(SOURCE).document();
 
@@ -79,3 +77,14 @@ fn semantic_ast_projects_source_and_example_block_lines() {
         insta::assert_debug_snapshot!("semantic_ast__semantic_block_lines", bare_blocks);
     });
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_block_lines::semantic_ast_projects_scheme_unquoted_block_body_with_source_ranges",
+        semantic_ast_projects_scheme_unquoted_block_body_with_source_ranges,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_block_lines::semantic_ast_projects_source_and_example_block_lines",
+        semantic_ast_projects_source_and_example_block_lines,
+    ),
+];

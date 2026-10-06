@@ -279,59 +279,14 @@ fn collect_timestamp_in_cite_reference<A>(
 }
 
 pub(crate) fn timestamp_sort_key(value: &str) -> Option<(u16, u8, u8, u8, u8)> {
-    let bytes = value.as_bytes();
-    let mut index = 0;
-    while index + 10 <= bytes.len() {
-        if let Some(key) = timestamp_sort_key_at(value, index) {
-            return Some(key);
-        }
-        index += 1;
-    }
-    None
-}
-
-fn timestamp_sort_key_at(value: &str, index: usize) -> Option<(u16, u8, u8, u8, u8)> {
-    let bytes = value.as_bytes();
-    if index + 10 > bytes.len()
-        || !bytes[index].is_ascii_digit()
-        || !bytes[index + 1].is_ascii_digit()
-        || !bytes[index + 2].is_ascii_digit()
-        || !bytes[index + 3].is_ascii_digit()
-        || bytes[index + 4] != b'-'
-        || !bytes[index + 5].is_ascii_digit()
-        || !bytes[index + 6].is_ascii_digit()
-        || bytes[index + 7] != b'-'
-        || !bytes[index + 8].is_ascii_digit()
-        || !bytes[index + 9].is_ascii_digit()
-    {
-        return None;
-    }
-    let year = value[index..index + 4].parse().ok()?;
-    let month = value[index + 5..index + 7].parse().ok()?;
-    let day = value[index + 8..index + 10].parse().ok()?;
-    let (hour, minute) = timestamp_time_at(value, index + 10).unwrap_or((0, 0));
-    Some((year, month, day, hour, minute))
-}
-
-fn timestamp_time_at(value: &str, start: usize) -> Option<(u8, u8)> {
-    let bytes = value.as_bytes();
-    let mut index = start;
-    while index + 5 <= bytes.len() {
-        if bytes[index].is_ascii_digit()
-            && bytes[index + 1].is_ascii_digit()
-            && bytes[index + 2] == b':'
-            && bytes[index + 3].is_ascii_digit()
-            && bytes[index + 4].is_ascii_digit()
-        {
-            return Some((
-                value[index..index + 2].parse().ok()?,
-                value[index + 3..index + 5].parse().ok()?,
-            ));
-        }
-        if matches!(bytes[index], b'>' | b']') {
-            return None;
-        }
-        index += 1;
-    }
-    None
+    let row = super::org_native_values::optional("timestamp-sort-key", value)?;
+    let [year, month, day, hour, minute]: [String; 5] =
+        row.try_into().expect("native timestamp sort arity");
+    Some((
+        year.parse().expect("native sort year"),
+        month.parse().expect("native sort month"),
+        day.parse().expect("native sort day"),
+        hour.parse().expect("native sort hour"),
+        minute.parse().expect("native sort minute"),
+    ))
 }

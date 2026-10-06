@@ -8,6 +8,7 @@ mod agenda_filter;
 mod agenda_match;
 mod agenda_model;
 mod agenda_time;
+mod org_native_values;
 mod agenda_urgency;
 mod agenda_urgency_model;
 mod agenda_view;
@@ -34,6 +35,7 @@ mod capture;
 mod capture_command;
 mod capture_model;
 mod citation_export;
+mod citation_export_native;
 mod citation_export_model;
 mod clock_issue_model;
 mod clock_issues;
@@ -86,6 +88,8 @@ mod org_contract_evaluation;
 mod org_contract_evaluation_json;
 mod org_contract_model;
 mod org_elements_query_expr;
+#[cfg(test)]
+pub(crate) use org_elements_query_expr::EXPRESSION_NATIVE_CASES;
 mod org_interactive;
 mod org_interactive_model;
 mod preprocessing;
@@ -280,6 +284,7 @@ pub use model::{
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 pub use named_source_block_template::{NamedSourceBlockTemplate, NamedSourceBlockTemplateError};
+pub(crate) use org_contract::contract_block_syntax_error;
 pub use org_contract::{
     parse_contract_reference, parse_contract_reference_from_source, parse_contract_references,
     parse_contracts_from_document, validate_contract_source,

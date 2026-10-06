@@ -15,9 +15,70 @@
           (iota 128 128)))
 (def timestamp-time-bytes
   (append timestamp-digits '(45 58)))
-(def timestamp-modifier-bytes
-  (append timestamp-digits
-          (map char->integer (string->list "+-.hdwmy"))))
+(def timestamp-cookie-units '(104 100 119 109 121))
+
+;; The native event tree owns clock components and inline range boundaries.
+;; Rust only converts these classified decimal fields to its ABI value types.
+(def (timestamp-clock-events from until hour minute)
+  (let* ((colon `(line-scan-until ,from ":"))
+         (minute-start `(line-step ,colon)))
+    `((if (and (offset-less? ,from ,colon)
+               (offset-less? ,minute-start ,until)
+               (line-byte-equal? ,colon 58)
+               (line-bytes-all-in? ,from ,colon ,timestamp-digits)
+               (line-bytes-all-in? ,minute-start ,until ,timestamp-digits))
+          ((token ,hour ,from ,colon)
+           (token TimestampTimeSeparator ,colon ,minute-start)
+           (token ,minute ,minute-start ,until))
+          ((if (offset-less? ,from ,until)
+               ((token TimestampTimeText ,from ,until)) ()))))))
+
+(def (timestamp-time-events from until (second? #f))
+  (let (dash `(line-scan-until ,from "-"))
+    `((start-node ,(if second? 'TimestampSecondTime 'TimestampTime))
+      (if (offset-less? ,dash ,until)
+          (,@(timestamp-clock-events from dash
+                                     (if second? 'TimestampSecondHour 'TimestampHour)
+                                     (if second? 'TimestampSecondMinute 'TimestampMinute))
+           (token TimestampTimeRangeSeparator ,dash (line-step ,dash))
+           (start-node TimestampTimeEnd)
+           ,@(timestamp-clock-events `(line-step ,dash) until
+                                     'TimestampEndHour 'TimestampEndMinute)
+           (finish-node))
+          ,(timestamp-clock-events from until
+                                  (if second? 'TimestampSecondHour 'TimestampHour)
+                                  (if second? 'TimestampSecondMinute 'TimestampMinute)))
+      (finish-node))))
+
+;; Classify complete cookies here, not by a permissive byte alphabet followed
+;; by a Rust projection rejecting malformed signs, digits or units.
+(def (timestamp-cookie-forms from until prefixes node mark value unit otherwise)
+  (if (null? prefixes)
+    otherwise
+    (let* ((prefix (car prefixes))
+           (body (pattern-end from prefix))
+           (index '(line-index timestamp-cookie-byte-index))
+           (next `(line-step ,index))
+           (unit-at '(state-offset timestamp-cookie-unit-at)))
+      `((if ,(pattern-at? from prefix)
+            ((set-bool timestamp-cookie-valid (bool #t))
+             (for-line-bytes timestamp-cookie-byte-index ,body ,until
+               ((if (uint-equal? (offset ,next) (offset ,until))
+                    ((set-uint timestamp-cookie-unit-at (offset ,index))
+                     (if (line-bytes-any-in? ,index ,next ,timestamp-cookie-units)
+                         () ((set-bool timestamp-cookie-valid (bool #f)))))
+                    ((if (line-bytes-all-in? ,index ,next ,timestamp-digits)
+                         () ((set-bool timestamp-cookie-valid (bool #f))))))))
+             (if (and (state timestamp-cookie-valid)
+                      (offset-less? (line-step ,body) ,until))
+                 ((start-node ,node)
+                  (token ,mark ,from ,body)
+                  (token ,value ,body ,unit-at)
+                  (token ,unit ,unit-at ,until)
+                  (finish-node))
+                 ,otherwise))
+            ,(timestamp-cookie-forms from until (cdr prefixes)
+                                     node mark value unit otherwise))))))
 
 (def (timestamp-date-at? opening)
   (let ((year (pattern-end opening "<"))
@@ -109,30 +170,27 @@
 
 (def timestamp-field-index '(line-index timestamp-field-byte-index))
 (def timestamp-field-next `(line-step ,timestamp-field-index))
-(def (timestamp-field-events until)
+(def (timestamp-field-events until (second? #f))
   (let (from '(state-offset timestamp-field-start))
     `((if (offset-less? ,from ,until)
           ((if (line-bytes-all-in? ,from ,until
                                    ,timestamp-dayname-bytes)
-               ((token TimestampDayName ,from ,until))
+               ((token ,(if second? 'TimestampSecondDayName 'TimestampDayName)
+                       ,from ,until))
                ((if (and (line-bytes-all-in? ,from ,until
                                              ,timestamp-time-bytes)
                          (line-bytes-any-in? ,from ,until (58)))
-                    ((token TimestampTime ,from ,until))
-                    ((if (and (line-byte-equal? ,from 45)
-                              (line-bytes-all-in? ,from ,until
-                                                  ,timestamp-modifier-bytes))
-                         ((token TimestampDelay ,from ,until))
-                         ((if (and (line-bytes-any-in? ,from
-                                                        (line-step ,from)
-                                                        (43 46))
-                                   (line-bytes-all-in? ,from ,until
-                                                       ,timestamp-modifier-bytes))
-                              ((token TimestampRepeater ,from ,until))
-                              ((token TimestampTrivia ,from ,until))))))))))
+                    ,(timestamp-time-events from until second?)
+                    ,(timestamp-cookie-forms
+                      from until '("--" "-") 'TimestampDelay
+                      'TimestampDelayMark 'TimestampDelayValue 'TimestampDelayUnit
+                      (timestamp-cookie-forms
+                       from until '("++" ".+" "+") 'TimestampRepeater
+                       'TimestampRepeaterMark 'TimestampRepeaterValue 'TimestampRepeaterUnit
+                       `((token TimestampTrivia ,from ,until))))))))
           ()))))
 
-(def (timestamp-tail-events date-end close)
+(def (timestamp-tail-events date-end close (second? #f))
   `((if (offset-less? ,date-end ,close)
         ((if (uint-not-equal? (state timestamp-field-start)
                               (offset (line-step ,date-end)))
@@ -143,18 +201,32 @@
                          ,close
            ((if (line-bytes-any-in? ,timestamp-field-index
                                     ,timestamp-field-next (9 32))
-                (,@(timestamp-field-events timestamp-field-index)
+                (,@(timestamp-field-events timestamp-field-index second?)
                  (token TimestampTrivia ,timestamp-field-index
                         ,timestamp-field-next)
                  (set-uint timestamp-field-start
                            (offset ,timestamp-field-next))) ())))
-         ,@(timestamp-field-events close)) ())))
-(def (timestamp-point-events opening close)
+         ,@(timestamp-field-events close second?)) ())))
+(def (timestamp-point-events opening close (second? #f))
   (let ((date-start (timestamp-date-start opening))
         (date-end (timestamp-date-end opening)))
     `((start-node OrgTimestampPoint)
-      (token TimestampDate ,date-start ,date-end)
-      ,@(timestamp-tail-events date-end close)
+      (token TimestampDelimiter ,opening (line-step ,opening))
+      (start-node TimestampDate)
+      (token ,(if second? 'TimestampSecondYear 'TimestampYear)
+             ,date-start ,(pattern-end opening "<0000"))
+      (token TimestampDateSeparator ,(pattern-end opening "<0000")
+             ,(pattern-end opening "<0000-"))
+      (token ,(if second? 'TimestampSecondMonth 'TimestampMonth)
+             ,(pattern-end opening "<0000-")
+             ,(pattern-end opening "<0000-00"))
+      (token TimestampDateSeparator ,(pattern-end opening "<0000-00")
+             ,(pattern-end opening "<0000-00-"))
+      (token ,(if second? 'TimestampSecondDay 'TimestampDay)
+             ,(pattern-end opening "<0000-00-") ,date-end)
+      (finish-node)
+      ,@(timestamp-tail-events date-end close second?)
+      (token TimestampDelimiter ,close (line-step ,close))
       (finish-node))))
 
 (def (timestamp-range-form closer node close after-close separator otherwise)
@@ -168,13 +240,9 @@
               (line-byte-equal? ,second-close ,delimiter)
               (uint-equal? (offset (line-step ,second-close)) (offset end)))
          ((start-node ,node)
-          (token TimestampDelimiter start (line-step start))
           ,@(timestamp-point-events 'start close)
-          (token TimestampDelimiter ,close ,after-close)
           (token TimestampRangeSeparator ,after-close ,second-open)
-          (token TimestampDelimiter ,second-open (line-step ,second-open))
-          ,@(timestamp-point-events second-open second-close)
-          (token TimestampDelimiter ,second-close end)
+          ,@(timestamp-point-events second-open second-close #t)
           (finish-node))
          ,otherwise)))
 
@@ -192,9 +260,7 @@
                (line-byte-equal? ,close ,delimiter))
           ((if (uint-equal? (offset ,after-close) (offset end))
                ((start-node ,node)
-                (token TimestampDelimiter start (line-step start))
                 ,@(timestamp-point-events 'start close)
-                (token TimestampDelimiter ,close end)
                 (finish-node))
                (,range-form)))
           ((token TextLine start end))))))
@@ -231,7 +297,7 @@
            (token TimestampDiaryExpression (line-step start) ,sexp-end)
            (if (offset-less? ,sexp-end ,close)
                ((token TimestampTrivia ,sexp-end ,time-start)
-                (token TimestampTime ,time-start ,close)) ())
+                ,@(timestamp-time-events time-start close)) ())
            (token TimestampDelimiter ,close end)
            (finish-node))
           ((token TextLine start end))))))
@@ -239,6 +305,8 @@
 (def timestamp-candidate-helper
   (make-org-event-helper
    'timestamp-candidate '((timestamp-field-start 0)
+                          (timestamp-cookie-valid #t)
+                          (timestamp-cookie-unit-at 0)
                           (timestamp-diary-opens 1)
                           (timestamp-diary-closes 0)
                           (timestamp-diary-sexp-end 0))

@@ -1,0 +1,179 @@
+#+TITLE: Native strict Query request-stage audit (2026-10-04)
+
+* Scope and identity
+
+Orgize checkout HEAD: =479b2763fa1924385a2df824d029e9ba35341bcd=.
+This checkout already contains the uncommitted native migration.
+Candidate manifest: =target/helper-state-probe-20261004/aot/program.json=.
+The compiler-bound candidate identity must be checked in each test's
+=QUERY-IDENTITY= output; directory labels are not program identities.
+
+The default =target/gerbil-parser/program.json= remains byte-identical to
+=target/prefix-probe-candidate-20261004/program.json=.
+No candidate promotion, remote mutation, Gambit kernel patch, optimization
+profile change, queue-limit change, or caller/domain reduction is part of
+this diagnostic.
+
+* Diagnostic ownership
+
+=document_query_org_elements_aot_profiles_existing_scenario_gate= is an
+ignored, =runtime-profile=-only unit test. It shares the original fixture,
+query implementation, native ASP scenario measurement and 45 ms max gate
+with =document_query_org_elements_aot_stays_inside_scenario_gate=.
+The fixture remains 48 TAGS-aware documents, zero warmups, three measured
+iterations, and a parser-owned no-hit query with zero provider processes.
+
+The existing request-local collector records raw stage totals for each
+ASP iteration. There is no independent percentile calculator, external
+Scheme sampler, JSON request transport, or second parser.
+
+Stage boundaries:
+
+- =query.total_inclusive=: complete query work, including walking and reads.
+- =native.owner_admission=: admission and wait before native processing.
+- =native.owner_service_inclusive=: owner processing including copy.
+- =native.result_copy=: existing transport result-copy timing.
+- =native.completion_handoff=: completion-to-caller timing.
+- =native.scheme_fold= / =native.tape_encode=: inner Scheme wall durations.
+- =native.scheme_thread_cpu=: CPU of fold plus tape, not fold-only CPU.
+- Rowan and graph timings: existing Rust-owned projections.
+
+Inclusive stages overlap and must not be added together. Diagnostic clock
+overhead means profiled results do not replace unprofiled performance
+qualification or prove a speedup.
+
+* Maintained entry points
+
+Use =just native-runtime-library-build-owner= with the same explicit
+manifest, GSC and bridge source, selecting =runtime-rust,runtime-profile=
+or =runtime-scheme,runtime-profile= in Release.
+
+=just native-runtime-query-profile-run BINARY= first requires the actual
+diagnostic test to appear in libtest's inventory, then executes it alone.
+An unprofiled frozen helper-candidate binary was correctly rejected with
+exit 1; libtest's zero-test success cannot qualify the diagnostic.
+
+Formatting owner: =just native-runtime-query-profile-format=.
+
+* Results
+
+Rust diagnostic Release build passed in 9m26s. The frozen binary is
+=target/runtime-receipt-binaries/helper-query-profile-rust-unit-20261004=.
+It identifies =runtime-rust= and candidate
+=sha256:6e46ed6879040257e6a891553681c883aa2322f243f05c2ca4a0d66d8d5dbfa2=.
+The native aggregate passed all 54 cases; the separate pure/diagnostic
+lane passed 26 cases, with both performance scenarios explicitly ignored.
+
+The first focused diagnostic briefly overlapped the native library test
+and is not the selected measurement. Its failure log is retained. A
+second run after that test finished, before Scheme compilation started,
+also failed the unchanged 45 ms gate (exit 101):
+
+| ASP sample | Query inclusive ms | Owner admission ms | Owner service inclusive ms | Completion handoff ms | Fold wall ms | Tape wall ms | Fold+tape CPU ms |
+|------------+--------------------+--------------------+----------------------------+-----------------------+--------------+--------------+------------------|
+|          0 |         103.628250 |          32.749334 |                  53.523122 |             11.346751 |    44.854419 |     2.138543 |        17.221000 |
+|          1 |          44.235167 |          14.370544 |                  19.737588 |              4.060085 |    17.516623 |     1.477416 |        17.092000 |
+|          2 |          15.979041 |           1.972083 |                   9.109876 |              1.773669 |     7.988330 |     0.820752 |         8.703000 |
+
+ASP reports p50 44.235792 ms and p95/max 103.632625 ms. ASP includes
+collector setup/collection outside =query.total_inclusive=.
+Raw logs: =target/helper-state-probe-20261004/query-profile-rust-r2.log=,
+=query-profile-rust-unit.log= and =query-profile-rust-build.log=.
+
+This is diagnostic evidence under a contended host, not an unprofiled
+regression or stable runtime ranking. Cold zero-warmup iterations and
+clock overhead remain part of this diagnostic. Admission and handoff
+cannot be explained by fold CPU alone. No algorithmic cause attribution
+is asserted from that first Rust run.
+
+** Both owners after compilation
+
+Scheme diagnostic Release build passed in 9m30s. Its frozen binary is
+=target/runtime-receipt-binaries/helper-query-profile-scheme-unit-20261004=.
+It reports the same 6e46 candidate identity. Its native aggregate passed
+54 cases; the separate pure/diagnostic lane passed 25 cases, with the two
+performance scenarios ignored. Rust has one additional owner-reply test
+because that transport implementation is Rust-specific.
+
+After both builds and the Scheme library tests finished, four diagnostic
+processes ran serially, in Rust / Scheme / Scheme / Rust order:
+
+| Owner  | Log suffix | ASP p50 ms | ASP p95/max ms | Existing 45 ms gate |
+|--------+------------+------------+----------------+---------------------|
+| Rust   | rust-r3    | 114.234084 |     132.192958 | FAIL, exit 101      |
+| Scheme | scheme-r1  |  19.386958 |      28.810542 | PASS, exit 0        |
+| Scheme | scheme-r2  |  26.507833 |      34.401375 | PASS, exit 0        |
+| Rust   | rust-r4    | 121.188500 |     250.826917 | FAIL, exit 101      |
+
+Raw logs are =query-profile-LOG-SUFFIX.log= under
+=target/helper-state-probe-20261004/=.
+
+One informative Rust sample (rust-r4, sample 1, aggregate durations
+across the same 48 documents):
+
+| Stage                   | Duration ms |
+|-------------------------+-------------|
+| Query inclusive         |  250.826125 |
+| Owner admission         |  117.305253 |
+| Owner service inclusive |  102.689836 |
+| Completion handoff      |   23.188498 |
+| Scheme fold wall        |   64.627704 |
+| Tape wall               |    7.378959 |
+| Fold plus tape CPU      |   12.959000 |
+| Result copy             |    0.071041 |
+| Rowan build             |    0.458494 |
+| Graph projection        |    0.616374 |
+
+This query is sequential and has only one outstanding native request per
+process. Its admission delay is therefore not a 64-caller queue backlog.
+These measurements localize a substantial wait before owner processing,
+as well as a wall/CPU gap inside service. They do not distinguish OS
+descheduling, native runtime scheduling, and GC sufficiently to name a
+single root cause. Result-copy and Rust projections are not the dominant
+measured durations in this sample.
+
+** Original unprofiled gate
+
+The previously frozen 6e46 binaries were then run serially in the same
+Rust / Scheme / Scheme / Rust order. None uses =runtime-profile=:
+
+| Owner  | Log suffix | ASP p50 ms | ASP p95/max ms | Existing 45 ms gate |
+|--------+------------+------------+----------------+---------------------|
+| Rust   | rust-r1    |  65.999375 |     175.554167 | FAIL, exit 101      |
+| Scheme | scheme-r1  |  61.391167 |     282.292000 | FAIL, exit 101      |
+| Scheme | scheme-r2  |  27.529083 |      52.459292 | FAIL, exit 101      |
+| Rust   | rust-r2    | 129.199583 |     209.880542 | FAIL, exit 101      |
+
+Logs: =query-unprofiled-LOG-SUFFIX.log= under the same directory.
+Successful diagnostic gates do not supersede these unprofiled failures.
+The 5 ms target and reliable 45 ms maximum remain open for both owners.
+
+There was no own compiler or test overlap in either four-process sequence.
+Other host tasks remained active; a subsequent =uptime= reading showed
+load averages 61.22 / 82.55 / 108.50. This is context, not a per-sample
+CPU measurement or proof that host contention explains every delay.
+
+** Outcome and next boundary
+
+No production algorithm or runtime architecture was changed this turn.
+The executable diagnostic closes the observability gap, not the
+performance gate. Earlier wall-only evidence does not support a fixed
+claim that Scheme is intrinsically four times slower, nor does this small
+sequence establish the reverse ranking.
+
+Next investigate bounded native request batching / owner handoff against
+the existing functional Scheme =org-parse-batch= surface, preserving
+per-document order, errors and source identity. This is an optimization
+hypothesis, not an implemented capability or a kernel patch.
+Any implementation must requalify both owners without diagnostic clocks,
+retain 1,000/10,000-document high-concurrency testing, and keep the same
+strict gate. Do not replace large-corpus concurrency with one VM call or
+change zero warmups to turn this gate green.
+
+* Remaining closure boundaries
+
+The prior unprofiled Scheme strict Query failure is still open. The new
+diagnostic must localize it before an algorithm or runtime change is
+selected. Large-corpus qualification remains independently owned by the
+existing Tokio supervisor / native worker benchmark at 1,000 and 10,000
+documents; this small-query diagnostic is not its replacement.

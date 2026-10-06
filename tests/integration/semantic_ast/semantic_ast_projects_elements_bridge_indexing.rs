@@ -14,7 +14,6 @@ use super::semantic_ast_projects_elements_bridge_fixtures::{
     ORG_ELEMENT_INTENTIONALLY_UNMAPPED_STANDARD_PROPERTIES, difference, string_set, string_vec,
 };
 
-#[test]
 fn semantic_ast_projects_header_tags_and_org_elements_host_execution() {
     let doc = Org::parse(
         r#"#+TAGS: EMACS (e) COURSE (c) ENGLISH SECURITY (s) BOOK (b) EXERCISE (ex) READ(r) MATH (m) NSM LEARN
@@ -371,7 +370,6 @@ print(json.dumps(result, sort_keys=True))
     assert_eq!(result["pythonBlocks"][0], "python");
 }
 
-#[test]
 fn semantic_ast_projects_org_element_alignment_gap_has_snapshot() {
     let doc = Org::parse(
         r#"#+TITLE: Alignment Fixture
@@ -620,3 +618,14 @@ use super::semantic_ast_projects_elements_bridge_fixtures::{
 use super::semantic_ast_projects_elements_bridge_fixtures::{
     ORG_GREATER_ELEMENT_KINDS, ORG_RECURSIVE_OBJECT_KINDS,
 };
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_indexing::semantic_ast_projects_header_tags_and_org_elements_host_execution",
+        semantic_ast_projects_header_tags_and_org_elements_host_execution,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_indexing::semantic_ast_projects_org_element_alignment_gap_has_snapshot",
+        semantic_ast_projects_org_element_alignment_gap_has_snapshot,
+    ),
+];

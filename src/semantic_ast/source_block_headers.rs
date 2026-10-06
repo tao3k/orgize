@@ -64,21 +64,18 @@ fn property_header_args(
 }
 
 fn is_language_header_args_property(key: &str, language: &str) -> bool {
-    key.get(.."header-args:".len())
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("header-args:"))
-        && key["header-args:".len()..].eq_ignore_ascii_case(language)
+    super::org_native_values::scalar("header-language", &[key, language]) == "true"
 }
 
 pub(super) fn source_block_tangle(header_args: &[BlockHeaderArg]) -> Option<SourceBlockTangle> {
     let arg = last_header_arg(header_args, "tangle")?;
     let raw_value = arg.value.clone().unwrap_or_else(|| "yes".to_string());
     let normalized = unquote_header_value(raw_value.trim());
-    let mode = if normalized.eq_ignore_ascii_case("no") {
-        SourceBlockTangleMode::No
-    } else if normalized.eq_ignore_ascii_case("yes") {
-        SourceBlockTangleMode::Yes
-    } else {
-        SourceBlockTangleMode::File
+    let mode = match header_policy("tangle", &normalized).as_str() {
+        "no" => SourceBlockTangleMode::No,
+        "yes" => SourceBlockTangleMode::Yes,
+        "file" => SourceBlockTangleMode::File,
+        _ => panic!("native tangle policy"),
     };
     let target = (mode == SourceBlockTangleMode::File).then_some(normalized);
     Some(SourceBlockTangle {
@@ -95,14 +92,14 @@ pub(super) fn source_block_tangle(header_args: &[BlockHeaderArg]) -> Option<Sour
 fn source_block_tangle_mkdirp(header_args: &[BlockHeaderArg]) -> SourceBlockTangleMkdirp {
     let raw = header_value(header_args, "mkdirp").unwrap_or_else(|| "no".to_string());
     SourceBlockTangleMkdirp {
-        enabled: raw.eq_ignore_ascii_case("yes") || raw.eq_ignore_ascii_case("t"),
+        enabled: header_policy("mkdirp", &raw) == "true",
         raw,
     }
 }
 
 fn source_block_tangle_comments(header_args: &[BlockHeaderArg]) -> SourceBlockTangleComments {
     let raw = header_value(header_args, "comments").unwrap_or_else(|| "no".to_string());
-    let mode = match raw.to_ascii_lowercase().as_str() {
+    let mode = match header_policy("comments", &raw).as_str() {
         "no" => SourceBlockTangleCommentsMode::No,
         "link" => SourceBlockTangleCommentsMode::Link,
         "yes" => SourceBlockTangleCommentsMode::Yes,
@@ -120,21 +117,11 @@ fn source_block_tangle_shebang(header_args: &[BlockHeaderArg]) -> Option<String>
 
 fn source_block_tangle_noweb(header_args: &[BlockHeaderArg]) -> SourceBlockTangleNoweb {
     let raw = header_value(header_args, "noweb").unwrap_or_else(|| "no".to_string());
-    let tokens = split_header_value(&raw);
-    let mode = if tokens
-        .iter()
-        .any(|token| token.eq_ignore_ascii_case("strip-tangle"))
-    {
-        SourceBlockTangleNowebMode::Strip
-    } else if tokens.iter().any(|token| {
-        matches!(
-            token.to_ascii_lowercase().as_str(),
-            "yes" | "tangle" | "no-export" | "strip-export"
-        )
-    }) {
-        SourceBlockTangleNowebMode::Expand
-    } else {
-        SourceBlockTangleNowebMode::Disabled
+    let mode = match header_policy("noweb", &raw).as_str() {
+        "strip" => SourceBlockTangleNowebMode::Strip,
+        "expand" => SourceBlockTangleNowebMode::Expand,
+        "disabled" => SourceBlockTangleNowebMode::Disabled,
+        _ => panic!("native noweb policy"),
     };
     SourceBlockTangleNoweb { raw, mode }
 }
@@ -180,7 +167,7 @@ fn apply_result_header_arg(options: &mut SourceBlockResultOptions, arg: &SourceB
 }
 
 fn apply_result_token(options: &mut SourceBlockResultOptions, token: &str) {
-    match token.to_ascii_lowercase().as_str() {
+    match header_policy("result", token).as_str() {
         "file" => options.collection = Some(SourceBlockResultCollection::File),
         "list" => options.collection = Some(SourceBlockResultCollection::List),
         "vector" => options.collection = Some(SourceBlockResultCollection::Vector),
@@ -290,31 +277,15 @@ pub(super) fn source_block_header_args(
 }
 
 fn default_source_block_header_args(kind: SourceBlockRecordKind) -> Vec<SourceBlockHeaderArg> {
-    let defaults = match kind {
-        SourceBlockRecordKind::Block => [
-            ("eval", "yes"),
-            ("session", "none"),
-            ("results", "replace"),
-            ("exports", "code"),
-            ("cache", "no"),
-            ("noweb", "no"),
-            ("hlines", "no"),
-            ("tangle", "no"),
-        ],
-        SourceBlockRecordKind::InlineSource => [
-            ("eval", "yes"),
-            ("session", "none"),
-            ("results", "replace"),
-            ("exports", "results"),
-            ("cache", "no"),
-            ("noweb", "no"),
-            ("hlines", "yes"),
-            ("tangle", "no"),
-        ],
+    let kind = match kind {
+        SourceBlockRecordKind::Block => "block",
+        SourceBlockRecordKind::InlineSource => "inline",
     };
+    let defaults = super::org_native_values::rows("header-defaults", &[kind]);
     defaults
         .into_iter()
-        .map(|(key, value)| {
+        .map(|row| {
+            let [key, value]: [String; 2] = row.try_into().expect("native header default arity");
             let raw = format!(":{key} {value}");
             let arg = BlockHeaderArg {
                 key: key.to_string(),
@@ -351,7 +322,7 @@ fn source_block_header_arg(
 }
 
 fn source_block_header_arg_kind(key: &str) -> SourceBlockHeaderArgKind {
-    match key.to_ascii_lowercase().as_str() {
+    match header_policy("kind", key).as_str() {
         "cache" => SourceBlockHeaderArgKind::Cache,
         "dir" => SourceBlockHeaderArgKind::Dir,
         "eval" => SourceBlockHeaderArgKind::Eval,
@@ -375,61 +346,27 @@ fn source_block_header_arg_kind(key: &str) -> SourceBlockHeaderArgKind {
 }
 
 fn source_block_header_var(value: &str) -> SourceBlockHeaderVar {
-    let trimmed = value.trim();
-    if let Some((name, assignment)) = trimmed.split_once('=') {
-        SourceBlockHeaderVar {
-            name: name.trim().to_string(),
-            assignment: Some(assignment.trim().to_string()),
-        }
-    } else {
-        SourceBlockHeaderVar {
-            name: trimmed.to_string(),
-            assignment: None,
-        }
+    let row = super::org_native_values::rows("source-variable", &[value])
+        .pop()
+        .expect("native variable row");
+    let [name, assignment, present]: [String; 3] = row.try_into().expect("native variable arity");
+    SourceBlockHeaderVar {
+        name,
+        assignment: match present.as_str() {
+            "true" => Some(assignment),
+            "false" => None,
+            _ => panic!("native variable presence"),
+        },
     }
 }
-
 fn split_header_value(value: &str) -> Vec<String> {
-    let mut tokens = Vec::new();
-    let mut current = String::new();
-    let mut quote = None;
-    let mut escaped = false;
-
-    for ch in value.chars() {
-        if escaped {
-            current.push(ch);
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if quote == Some(ch) {
-            quote = None;
-        } else if quote.is_none() && matches!(ch, '"' | '\'') {
-            quote = Some(ch);
-        } else if quote.is_none() && ch.is_whitespace() {
-            if !current.is_empty() {
-                tokens.push(std::mem::take(&mut current));
-            }
-        } else {
-            current.push(ch);
-        }
-    }
-
-    if escaped {
-        current.push('\\');
-    }
-    if !current.is_empty() {
-        tokens.push(current);
-    }
-    tokens
+    super::org_native_values::rows("header-tokens", &[value])
+        .pop()
+        .expect("native header token row")
 }
-
 fn unquote_header_value(value: &str) -> String {
-    if value.len() >= 2
-        && ((value.starts_with('"') && value.ends_with('"'))
-            || (value.starts_with('\'') && value.ends_with('\'')))
-    {
-        value[1..value.len() - 1].to_string()
-    } else {
-        value.to_string()
-    }
+    super::org_native_values::scalar("source-unquote", &[value])
+}
+fn header_policy(mode: &str, value: &str) -> String {
+    super::org_native_values::scalar("header-policy", &[mode, value])
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env gxi
 ;;; -*- Gerbil -*-
-;;; Compile the parser-independent Scheme runtime. Generator tooling remains
-;;; in languages/org/v1 and is checked by the separate parser/AOT lane.
+;;; Compile the runtime and bounded source-headline interface. Native imports
+;;; close the current runtime graph; generator tooling stays in its own lane.
 
 (import (only-in :std/build-script defbuild-script))
 
@@ -24,6 +24,8 @@
    (gxc: "languages/org/v1/modules/org-elements/funs.ss")
    (gxc: "languages/org/v1/modules/org-elements/syntax.ss")
    (gxc: "languages/org/v1/modules/org-elements/runtime-interface.ss")
+   (gxc: "languages/org/v1/modules/org-elements/source-headlines.ss")
+   (gxc: "languages/org/v1/modules/org-elements/source-interface.ss")
    (gxc: "languages/org/v1/modules/org-contract/types.ss")
    (gxc: "languages/org/v1/modules/org-contract/objects.ss")
    (gxc: "languages/org/v1/modules/org-contract/funs.ss")

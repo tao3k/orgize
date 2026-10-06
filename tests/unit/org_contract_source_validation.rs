@@ -2,7 +2,33 @@ use std::path::Path;
 
 use crate::{Org, ast::validate_contract_source};
 
-#[test]
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "rejects_an_org_file_without_contract_definitions",
+        rejects_an_org_file_without_contract_definitions,
+    ),
+    (
+        "rejects_a_contract_without_valid_assertions",
+        rejects_a_contract_without_valid_assertions,
+    ),
+    (
+        "accepts_a_contract_with_a_valid_selector_assertion",
+        accepts_a_contract_with_a_valid_selector_assertion,
+    ),
+    (
+        "rejects_an_unsupported_contract_kind",
+        rejects_an_unsupported_contract_kind,
+    ),
+    (
+        "rejects_an_assertion_without_an_id_even_when_another_assertion_is_valid",
+        rejects_an_assertion_without_an_id_even_when_another_assertion_is_valid,
+    ),
+    (
+        "rejects_an_assertion_without_a_query",
+        rejects_an_assertion_without_a_query,
+    ),
+];
+
 fn rejects_an_org_file_without_contract_definitions() {
     let document = Org::parse("#+TITLE: Documentation policy\n* Rules\nPlain prose\n").document();
     let result = validate_contract_source(
@@ -18,7 +44,6 @@ fn rejects_an_org_file_without_contract_definitions() {
     );
 }
 
-#[test]
 fn rejects_a_contract_without_valid_assertions() {
     let document = Org::parse(
         "* Empty contract\n:PROPERTIES:\n:CONTRACT_ID: empty.contract\n:CONTRACT_SCOPE: document\n:END:\n",
@@ -34,7 +59,6 @@ fn rejects_a_contract_without_valid_assertions() {
     );
 }
 
-#[test]
 fn accepts_a_contract_with_a_valid_selector_assertion() {
     let document = Org::parse(
         "* Document contract\n:PROPERTIES:\n:CONTRACT_ID: document.contract\n:CONTRACT_SCOPE: document\n:END:\n** Has text\n:PROPERTIES:\n:ASSERT_ID: document.has-text\n:END:\n#+begin_src org-elements-selector\n(:org-element (:type paragraph))\n#+end_src\n",
@@ -47,7 +71,6 @@ fn accepts_a_contract_with_a_valid_selector_assertion() {
     assert_eq!(result.registry.contracts[0].assertions.len(), 1);
 }
 
-#[test]
 fn rejects_an_unsupported_contract_kind() {
     let document = Org::parse(
         "* Contract\n:PROPERTIES:\n:CONTRACT_ID: invalid.kind\n:CONTRACT_KIND: imaginary\n:END:\n",
@@ -63,7 +86,6 @@ fn rejects_an_unsupported_contract_kind() {
     );
 }
 
-#[test]
 fn rejects_an_assertion_without_an_id_even_when_another_assertion_is_valid() {
     let document = Org::parse(
         "* Contract\n:PROPERTIES:\n:CONTRACT_ID: mixed.assertions\n:CONTRACT_SCOPE: document\n:END:\n** Anonymous assertion\n#+begin_src org-elements-selector\n(:org-element (:type paragraph))\n#+end_src\n** Valid assertion\n:PROPERTIES:\n:ASSERT_ID: mixed.has-text\n:END:\n#+begin_src org-elements-selector\n(:org-element (:type paragraph))\n#+end_src\n",
@@ -80,7 +102,6 @@ fn rejects_an_assertion_without_an_id_even_when_another_assertion_is_valid() {
     );
 }
 
-#[test]
 fn rejects_an_assertion_without_a_query() {
     let document = Org::parse(
         "* Contract\n:PROPERTIES:\n:CONTRACT_ID: missing.query\n:CONTRACT_SCOPE: document\n:END:\n** Broken assertion\n:PROPERTIES:\n:ASSERT_ID: missing.query.assertion\n:END:\n",

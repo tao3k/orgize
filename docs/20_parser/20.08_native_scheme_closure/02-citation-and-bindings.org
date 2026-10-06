@@ -1,0 +1,351 @@
+#+title: Citation ownership and Python thin bindings
+
+[[file:../20.08_native_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* 2026-10-04 Citation header: delete the Rust IR execution family
+
+This slice removes real executable ownership, not just the adapter wording.
+The native Scheme citation scanner now records the first style separator and
+the admitted colon while performing its existing validity scan. It emits
+=OrgCitationHead=, =CitationStyle= and optional =CitationVariant= with exact
+source spans. Consecutive candidates reset styled/variant state. Empty style,
+empty/repeated adjacent separators, whitespace in the header, missing keys,
+escaped keys and unclosed candidates retain the existing recovery behavior.
+Nonempty multi-part variants and Unicode headers retain their admitted values.
+
+The old execution chain is deleted:
+- =src/org_aot_citation_functions.rs= and its =org_aot.rs= wrappers/import;
+- =citation_style= / =citation_variant= build registry entries;
+- =languages/org/v1/modules/org-elements/citation-functions.ss=;
+- =generate-citation-ir.ss= and the two committed citation IR files;
+- the citation IR-identity test/import in =t/org-elements-module-test.ss=;
+- the integration suite's generated-Rust includes and direct function oracle.
+
+The 7 existing citation consumer cases remain registered. The former IR-only
+header case now exercises =Org::parse= and its owned AST. The registry is
+reduced from 48 to 46 function inputs; the radio matcher remains unchanged.
+There is no compatibility branch or new per-field FFI export.
+
+Rust reads Scheme-classified =style= / =variant= fields. Absent fields decode
+the public AST's existing ="nil"= / empty sentinels; Rust does not inspect or
+split header source. Global prefix/suffix positioning now uses native graph
+ranges rather than header-length arithmetic. The =head= field is intentionally
+the contiguous native header, e.g. ="[cite/text:"=, not the former synthetic
+="[cite/text:]"= assembled from separated delimiter tokens. Its consumer
+expectation was updated explicitly, not by mass snapshot acceptance.
+
+Grammar/parser/graph and dependent Query/Contract packs moved together.
+Graph digest:
+=sha256:bf26ec6151a20c0d7e55cf05316e5cdde92af9d2a18606cdb2aa11f89ea78e03=.
+Selected program: =target/citation-native-20261004/native/program.json=,
+276 compiler-owned modules, program identity:
+=sha256:99b72288f71e833a5b0fae59c53a79240e5498a864f35d251119829542aa5b08=.
+The manifest selects the edited citation scanner from the new candidate
+overlay; unchanged reference parsing remains in the established dependency
+closure. The default program is not promoted.
+
+Fresh native Scheme gates passed:
+- 94 actual cases across the inline/structural/table suites, including the
+  new exact header CST and recovery case, final =OK=:
+  =target/citation-native-20261004/scheme-tests/event-test.log=.
+- 14 actual cases in the edited Elements module suite, final =OK=:
+  =target/citation-native-20261004/elements-tests/elements-test.log=.
+
+The new concurrent public parser case checks 5 header forms with rich affixes
+and exact source-backed fields under UTF-8/CRLF, 8 malformed candidates, and
+state reset across three consecutive citations. Linked runtime/consumer
+qualification is recorded below only after execution; staging or compilation
+alone is not a passing FFI test.
+
+Initial pre-split Rust inputs (superseded for final qualification):
+| Source | SHA256 |
+|--------+--------|
+| =src/org_aot.rs= | =4e22c9dad07fc8d239e93b90f34ca660da06b466eca1d7ed2e5e60c3d0c4c472= |
+| =src/semantic_ast/aot_projection.rs= | =723fef1e8b2e372db39a2297102bcf6d89e594134685d585390f400d653cc423= |
+| =build-support/src/org_aot_functions.rs= | =acee5a0564f0b2a357f82c909838632475dcd5165bcbeca4b750be0ae597b490= |
+| =tests/unit/aot_projection.rs= | =2b1567c1bfda05142734ac958d763ddf8edb00c29d9765a26b9285f5bbd805d7= |
+| =tests/integration/org_citation_aot.rs= | =8c0d3a290cf6cd99d86b34f0ce7c26dc8c119a706e0d19f3d0a10c68a8f2f5b4= |
+
+This closes only the citation-header execution owner after its linked gates.
+Rust affix trimming/projection, the other 46 IR functions, radio matching,
+timestamp time/range relationships and other audit families remain open.
+Full consumer catalog, Python/wheel, concurrent scale and strict performance
+qualification are separate gates. No runtime ranking/speedup or global Org
+closure is claimed; runtime features, profiles and kernel are unchanged.
+
+** Organization gate repair and evidence boundary
+
+The first linked Rust library passed all 61 concurrent native cases, but its
+ordinary suite failed =enforce_asp_rust_gate=: =RUST-MOD-R002= reported the
+projection owner at 1000 source lines. The 7 focused citation consumer cases
+passed on that first binary. These results do not qualify the final source.
+
+Citation projection was moved to its owned child directory. The organization
+rules also require a pure =mod.rs= interface, no sibling file/directory owner
+collision, and no deep relative imports. The final layout is:
+- =src/semantic_ast/aot_projection/mod.rs=: module interface only;
+- =src/semantic_ast/aot_projection/document.rs=: existing document projection;
+- =src/semantic_ast/aot_projection/citation.rs=: source-backed citation projection.
+
+The existing neighboring projection modules retain their ownership. No ASP
+threshold, runtime setting, grammar policy or release profile was weakened.
+The live-source ASP diagnostic check passed after this repair; it used the
+first binary and is not itself a rebuilt-source runtime qualification.
+
+Final projection inputs frozen before rebuilding both runtime features:
+| Source | SHA256 |
+|--------+--------|
+| =src/semantic_ast/aot_projection/mod.rs= | =8f118275950baab3c0df9ae291e302b243f59ba6b70e0e907a374dbd873f7ba1= |
+| =src/semantic_ast/aot_projection/document.rs= | =c92f1002655b0de137b220ea127af85c8d174550852d99f140d84f9c19b1debb= |
+| =src/semantic_ast/aot_projection/citation.rs= | =a312545e786a57422c8984dc8767963b5941ce9e74777542753056a036a40115= |
+
+The maintained closure build owner now accepts an optional =include_bench=
+parameter (default =true=). This functional gate uses =false= to avoid
+compiling the unrelated benchmark executable; the full integration catalog
+is still compiled, and no test count, workload, concurrency or threshold is
+reduced. No benchmark score is derived from these focused consumer runs.
+
+** Final linked Rust runtime qualification
+
+The final-layout =runtime-rust= closure owner compiled the release library and
+full integration catalog successfully. The frozen library binary
+=target/runtime-receipt-binaries/citation-header-rust-unit-r3-20261004=
+has SHA256 =c1aeaabf58e0b2fcdd085dd2d7c52cb96f4375fd0089171322262ab3e62c13e7=.
+The maintained library receipt passed all 61 concurrent native cases and the
+separate 27 ordinary/policy tests, including ASP and current graph identity.
+The 2 existing ignored performance tests remain ignored. Receipt:
+=target/citation-native-20261004/rust-qualification-r3/library-test.log=.
+
+The frozen consumer binary
+=target/runtime-receipt-binaries/citation-header-rust-consumer-r3-20261004=
+has SHA256 =aebaca2bc6d377fea75c96dc8c28c7a1c4a06c028abb7508c5da89b46850376c=.
+All 7 selected citation cases passed through the exact catalog/startup fixture;
+logs are under =target/citation-native-20261004/rust-consumer-r3/=.
+These are focused functional cases, not the complete consumer run or a
+1000/10000-document concurrent performance qualification.
+
+** Final linked Scheme runtime library qualification
+
+The final-layout =runtime-scheme= frozen library binary
+=target/runtime-receipt-binaries/citation-header-scheme-unit-r3-20261004=
+has SHA256 =4e739f91872da6cdb9e0db1a2efcdbbbaa22f1aab349a4f75cfbb1cbdd8f99f6=.
+Its maintained receipt passed all 61 concurrent native cases and the separate
+27 ordinary/policy tests, including ASP and current graph identity; 2 existing
+performance tests remain ignored. Receipt:
+=target/citation-native-20261004/scheme-qualification-r3/library-test.log=.
+The generated native identity matches the Rust configuration exactly:
+=sha256:99b72288f71e833a5b0fae59c53a79240e5498a864f35d251119829542aa5b08=.
+This is library execution evidence, not yet the consumer receipt.
+
+** Final linked Scheme consumer qualification and slice closure
+
+The =runtime-scheme= release closure owner also compiled the full integration
+catalog successfully. Its frozen consumer binary
+=target/runtime-receipt-binaries/citation-header-scheme-consumer-r3-20261004=
+has SHA256 =b425aec9f8ba29b523f611f9728b639da303e69fea63c823f322dcf55bc96a0c=.
+All 7 selected citation cases passed through the unchanged exact catalog and
+startup fixture. Logs: =target/citation-native-20261004/scheme-consumer-r3/=.
+
+Both final runtime builds use the same edited native program and graph.
+Final projection hashes were checked again after both builds and executions
+and match the frozen inputs. =git diff --check= also passed. The first
+organization failure and superseded binaries remain separate from these
+final receipts.
+
+The citation-header native execution slice is now qualified for both runtime
+features. Rust affix whitespace semantics, the remaining 46 IR functions and
+radio matcher remain migration debt. Full consumer execution, wheel/C FFI
+qualification, 1000/10000-document concurrency and strict performance gates
+remain open. The default native manifest is not promoted by this slice.
+No commit, push, kernel change or release-profile downgrade was performed.
+
+* 2026-10-04 Citation affix ownership, platform commands and parser PR refresh
+
+The next execution owner is citation affix leading horizontal whitespace.
+Scheme now emits four source-backed content nodes inside the unchanged raw
+affix wrappers. Leading ASCII space/tab remains lossless trivia outside the
+content node; whitespace-only affixes have no content node. Non-ASCII spacing
+remains semantic content. Graph fields expose =global-prefix-content=,
+=global-suffix-content=, =prefix-content= and =suffix-content= independently of
+the existing raw fields.
+
+Rust's citation adapter no longer trims source, computes string lengths,
+subtracts suffix lengths or reconstructs content ranges. It consumes optional
+Scheme field ranges through the existing generic object projection. The new
+public native case covers all four affixes, Unicode spacing, exact UTF-8/CRLF
+annotations, rich content and whitespace-only affixes. The changed module is
+72 source lines, compared with 100 before this slice.
+
+Before the dependency refresh, the native Scheme suite passed all 95 actual
+cases, including the new whitespace-only exact CST case, final =OK=.
+Receipt: =target/citation-affix-native-20261004/scheme-tests/event-test.log=.
+This receipt is explicitly pre-refresh, not evidence for the latest parser.
+
+The user's additional platform correction removed unconditional Darwin flags
+from recipes. =host_os= defaults to Just's =os()=; =scheme_env= owns Darwin
+=SDKROOT=/compiler handling, and =native_env= adds only its Rust linker setting.
+Darwin Rust flags, clock linker flags and wheel-repair selection are conditional.
+The maintained =native-platform-command-check= passed macOS/Linux command
+expansion checks. Linux expansions contain no =SDKROOT=, =APPLE_DARWIN=,
+=/usr/bin/cc= or Darwin =-Wl,= flags. Logs:
+=target/citation-affix-native-20261004/platform-check/=.
+This is command expansion, not Linux machine execution.
+
+Live GitHub read resolved parser PR #13 to
+=d5f5ea99575f0999ed9cd77a246f55e3cfc2341c=, replacing
+=e7c6761dc79202abe50931bd78ee3f0930d61f8f=. =Cargo.toml=, =gerbil.pkg= and
+=Cargo.lock= now agree on that full revision. The maintained dependency-update
+owner updated only =gerbil-parser-rowan=. The existing dirty parser checkout
+was preserved; a clean exact-revision checkout was created under
+=target/dependencies/gerbil-parser-d5f5ea9-20261004/= and is being compiled into
+an isolated dependency output, without installing/uninstalling a package.
+Rebased Scheme and linked runtime receipts must be recorded after execution.
+
+Python architecture audit did not add a new framework: parsing already forwards
+to the PyO3/maturin extension. The Contract Python layer still duplicates CFFI
+declarations, dynamic loading, allocations and a lock. Direct PyO3 Contract
+binding is a separate simplification opportunity; standalone C ABI remains a
+real external-consumer boundary. No Python implementation change is included
+in this slice, and wheel qualification remains open.
+
+** Exact-head rebase repair and native Scheme gates
+
+The isolated latest-revision parser package build succeeded and its checkout
+remained clean. The first fresh Orgize build exposed the removed internal
+=deflanguage-parser= entry in Contract and expectation parsers. Both now import
+the public =:gerbil-parser/language-support= =deflanguage-parser-loader= macro.
+No legacy compatibility entry was added. The fresh Orgize runtime/parser
+build then succeeded with the maintained 12-core build owner.
+
+Latest-revision native Scheme execution passed:
+- 95 actual Org event cases, final =OK=:
+  =target/citation-affix-d5f5ea9-20261004/scheme-tests/event-test.log=;
+- all 3 Contract parser cases (exact AST, Unicode/adjacent-string roundtrip,
+  malformed-list/unmatched-delimiter rejection), final =OK=:
+  =target/citation-affix-d5f5ea9-20261004/contract-tests/module-test.log=.
+
+Parser/graph and the dependent Query/Contract generators completed together.
+The new native manifest is
+=target/citation-affix-d5f5ea9-20261004/native/program.json=, 270 compiler-owned
+modules. All 51 selected =gerbil-parser/= module paths resolve to the isolated
+=parser-pr13-d5f5ea9-20261004= output; zero resolve to the old parser output or
+the old helper-state-sharing overlay. The Citation reference scanner resolves
+to the freshly rebuilt Orgize output. The old pre-refresh manifest is not
+used for the linked qualification.
+
+Frozen current inputs before linked runtime builds:
+| Source | SHA256 |
+|--------+--------|
+| =Cargo.toml= | =cec226e0c50cd43f090ad1ff3783fd2e21ca166a8b7a735b39ac716364ac6971= |
+| =Cargo.lock= | =a49db7459aa3dfab51eee8f4cef9c3d92380b8888427eca3d04bb48966a94d69= |
+| =gerbil.pkg= | =f91ff66d930b19d73b4309991c9872237a1e582217e9a92e1c9c2006212fa110= |
+| =src/semantic_ast/aot_projection/citation.rs= | =65f9b2445d8e2931710719ae9339e058afd87cfa9ca0314aba749bcba6aaee0d= |
+| =tests/unit/aot_projection.rs= | =56a2329bd572f910719b0e2bc18b49705e4fc4a44ae8d20b5780a03e2fa7624c= |
+| =languages/org/v1/modules/org-contract/parser.ss= | =97e589fd36e33301ee7b56c63e5b03a155aaef91dd08fa0e8dd744ef1c5707ce= |
+| =languages/org/v1/modules/org-contract/expectation-parser.ss= | =f1f5a515280cde6ddd5c970ab0a3eb458bd9bf5bf17989832575690472f69bfd= |
+
+Linked release execution, full consumer execution, wheel/C ABI and scale/
+performance receipts remain separate; the successful Scheme tests and source
+hashes alone do not qualify them. No runtime speedup is claimed from a pin
+refresh or changed module count.
+
+** Latest-head linked Rust receipt
+
+The release =runtime-rust= library and full integration-test catalog compiled
+successfully against native program
+=sha256:4065df73445890379db938690cba2ee8f096a3af8689308319c34537b25b4ce2=
+and graph shape
+=sha256:a3fdc35823a31d64f1457019b2a7b3bda711420b016e645a4a39551ea46885dd=.
+The frozen library passed all 62 concurrent native cases, including Scheme-owned
+Citation affix bounds, and 27 ordinary/policy cases. Two existing performance
+cases remained ignored. All seven focused Citation consumer cases passed.
+These are focused semantic receipts, not full consumer execution or scale tests.
+
+Receipts: =target/citation-affix-d5f5ea9-20261004/rust-qualification/= and
+=target/citation-affix-d5f5ea9-20261004/rust-consumer/=.
+Frozen binaries under =target/runtime-receipt-binaries/=:
+| Artifact | SHA256 |
+|----------+--------|
+| =citation-affix-d5f5ea9-rust-unit-20261004= | =8a39238350c8dc037ca0c8cc6a4b6fc628606060d9aacc7af2c3527c0d4d8b88= |
+| =citation-affix-d5f5ea9-rust-consumer-20261004= | =74c3a5d96ec9ba880a4c873abcc38d8280dcb80199a93422309a183327e4fcf2= |
+
+The corresponding =runtime-scheme= release build completed. Its frozen library
+also passed all 62 concurrent native cases and 27 ordinary/policy cases; the
+same two performance cases remained ignored. All seven focused Citation
+consumer cases passed on Scheme runtime too.
+Receipts: =target/citation-affix-d5f5ea9-20261004/scheme-qualification/= and
+=target/citation-affix-d5f5ea9-20261004/scheme-consumer/=.
+| Artifact | SHA256 |
+|----------+--------|
+| =citation-affix-d5f5ea9-scheme-unit-20261004= | =283d558e5475b041322345abc70ae7cdffff543c8cf7e9413886b94a858d1966= |
+| =citation-affix-d5f5ea9-scheme-consumer-20261004= | =3146fc6a568468665db89d5b06e1ae9011fa6f2f0901b110d5e4954036f98a0c= |
+
+Both runtime artifacts bind the same native program identity. The frozen source
+hashes were rechecked unchanged. Citation affix ownership is closed for this
+bounded semantic slice; complete Org migration, full consumer execution,
+1000/10000-document scale gates and repaired-wheel qualification remain open.
+
+** Python Contract thin-binding migration
+
+On the user's follow-up authorization, Contract now forwards through the existing
+PyO3 extension directly to =orgize::c_ffi::evaluate_contract= and its Scheme owner.
+Owned strings/rows cross the Rust boundary; execution releases the GIL.
+Python retains public immutable row/result values and error projection only.
+Production =cdef=, =dlopen=, C-pointer buffers and Python locking were removed.
+The =cffi= dependency and orphaned Python-specific standalone-library build
+recipe were removed; =uv.lock= dropped only =cffi= and =pycparser=.
+Standalone C exports remain, and their null-pointer/result-initialization
+regression uses standard-library ctypes only inside the consumer test.
+Installed-extension tests must pass before this Python slice is qualified.
+
+The rebuilt editable PyO3 extension on =runtime-rust= passed all 25 installed
+semantic tests against exact native identity =4065df734458...=.
+Receipt: =target/citation-affix-d5f5ea9-20261004/python-rust/installed-test.log=.
+However, total execution was 54.19 seconds with a long silent interval at the
+existing GIL progress test. Focused diagnostic repetition completed in 15.59
+seconds (14.97 seconds in that test); pytest's 5-second stack dump identified
+=parse_org(source)=, not Contract binding, as the active call.
+This is NOT a clean progress/performance gate. The installed-test owner now
+prints individual case names, reports slow durations, and dumps a real stack
+after five seconds; the receipt owner rejects such a timeout dump rather than
+turning eventual semantic completion into a resource-policy pass.
+No corpus reduction, timeout relaxation, lower compiler optimization or kernel
+patch was used. Scheme-runtime Python qualification and this parser stall remain
+open, independently of the already passed focused native Citation receipts.
+
+Scheme-runtime PyO3 rebuilding/installing also completed successfully. The same
+25 semantic cases passed, including runtime/program identity, mixed worker
+parsing/Contract calls, C consumer negative cases, source edits and host child/
+signal/stdio ownership. This run took 59.29 seconds; the GIL case took 56.75
+seconds and emitted a 5-second timeout dump. The maintained receipt owner
+correctly returned exit 1: semantic assertions passed but the progress gate did
+not. Receipt: =target/citation-affix-d5f5ea9-20261004/python-scheme/installed-test.log=.
+
+A one-second native stack sample during that exact Scheme-runtime call is saved
+as =target/citation-affix-d5f5ea9-20261004/python-scheme/gil-sample.txt=.
+The Python/Rust call stack is =parse_org_aot -> request_tape ->
+orgize_runtime_submit -> pthread_cond_wait=. The Scheme owner stack repeatedly
+shows garbage collection/marking and =event-fold-runtime=. This local sample
+locates the stall before tape delivery/Rowan projection, but does not prove a
+specific allocation bug, whole-run GC percentage, or runtime performance ranking.
+Next diagnosis must measure Scheme Fold allocation/retention without modifying
+the Gambit kernel. The source corpus and semantic assertions remain unchanged.
+
+Frozen editable extensions under =target/runtime-receipt-binaries/=:
+| Artifact | SHA256 |
+|----------+--------|
+| =python-contract-thin-rust-20261004.so= | =bd0b5957940180f2517da8d7aa8d680900b91220f992de4d852f90c03c7d69e4= |
+| =python-contract-thin-scheme-20261004.so= | =83052574f13d7787d00f62367e2d34dc8d81e412dc1907fc98950acc1874bcfa= |
+
+Python source inputs after both builds:
+| Source | SHA256 |
+|--------+--------|
+| =bindings/python/src/lib.rs= | =d6ae19270fae1b8bd492aac13dafc5322f9bc0d30db2590ce71e9ac62290cf80= |
+| =bindings/python/src/orgizepy/contract.py= | =9b1da59a65e5b35c42fcb71ae08aa568c4dd091ab53381f3ff254047167d7695= |
+| =bindings/python/uv.lock= | =2e5ab456b4fcbba42fb22b097b33eacf53716c2adeb9441c20b1c2e92e315b92= |
+
+The currently installed editable extension selects =runtime-scheme=. Both
+extensions bind native identity =4065df734458...=. Package-lock refresh is again
+successful offline; it removed only the two unused Python packages. Root Cargo
+and Gerbil pin/profile inputs stayed unchanged during this Python slice.
+No repaired-wheel, full C SDK, scale benchmark or complete Org closure is claimed.

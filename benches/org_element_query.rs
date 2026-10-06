@@ -3,15 +3,11 @@
 use std::hint::black_box;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use gerbil_parser_rowan::{parse_generated_events, project_syntax_graph};
+use gerbil_parser_rowan::project_syntax_graph;
 use orgize::org_aot::{
     org_graph_spec, org_language_spec, parse_org_aot, parse_org_aot_with_config,
 };
 use orgize::{Org, ParseConfig};
-
-mod generated_context_events {
-    pub use orgize::org_aot::{PARSER_DIGEST, parse_org_rowan_events};
-}
 
 fn task_source(with_directive: bool) -> String {
     let mut source = String::with_capacity(200_000);
@@ -52,6 +48,8 @@ fn list_source() -> String {
 }
 
 fn bench_org_element_query(c: &mut Criterion) {
+    // SAFETY: the first Criterion entrypoint precedes benchmark workers.
+    unsafe { orgize::initialize_native_runtime() }.expect("native benchmark startup");
     let source = task_source(true);
     let configured_source = task_source(false);
     let config = ParseConfig {
@@ -106,14 +104,7 @@ fn bench_org_element_query(c: &mut Criterion) {
     });
     group.finish();
 
-    let events = generated_context_events::parse_org_rowan_events(&source);
-    let parsed = parse_generated_events(
-        org_language_spec(),
-        generated_context_events::PARSER_DIGEST,
-        &source,
-        &events,
-    )
-    .expect("Scheme AOT benchmark events satisfy Rowan");
+    let parsed = parse_org_aot(&source).expect("Scheme AOT benchmark events satisfy Rowan");
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme AOT benchmark events project Elements");
     assert_eq!(
@@ -133,51 +124,9 @@ fn bench_org_element_query(c: &mut Criterion) {
 
     let mut aot_group = c.benchmark_group("OrgSchemeEventAot");
     aot_group.throughput(Throughput::Elements(10_000));
-    aot_group.bench_function("events-rowan/10k-headlines", |b| {
-        b.iter(|| {
-            let events = generated_context_events::parse_org_rowan_events(black_box(&source));
-            black_box(
-                parse_generated_events(
-                    org_language_spec(),
-                    generated_context_events::PARSER_DIGEST,
-                    &source,
-                    &events,
-                )
-                .unwrap(),
-            )
-        })
-    });
-    aot_group.bench_function("events-rowan-elements/10k-headlines", |b| {
-        b.iter(|| {
-            let events = generated_context_events::parse_org_rowan_events(black_box(&source));
-            let parsed = parse_generated_events(
-                org_language_spec(),
-                generated_context_events::PARSER_DIGEST,
-                &source,
-                &events,
-            )
-            .unwrap();
-            black_box(
-                project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-                    .unwrap(),
-            )
-        })
-    });
     let unmatched_blocks = "#+begin_src rust\n".repeat(10_000);
-    aot_group.bench_function("events-rowan/10k-unclosed-blocks", |b| {
-        b.iter(|| {
-            let events =
-                generated_context_events::parse_org_rowan_events(black_box(&unmatched_blocks));
-            black_box(
-                parse_generated_events(
-                    org_language_spec(),
-                    generated_context_events::PARSER_DIGEST,
-                    &unmatched_blocks,
-                    &events,
-                )
-                .unwrap(),
-            )
-        })
+    aot_group.bench_function("native/10k-unclosed-blocks", |b| {
+        b.iter(|| black_box(parse_org_aot(black_box(&unmatched_blocks)).unwrap()))
     });
     let inline_objects = "~code~ =verbatim=\n".repeat(10_000);
     let inline_records = orgize::org_aot::parse_org_aot(&inline_objects)
@@ -296,14 +245,7 @@ fn bench_org_inlinetask_aot(c: &mut Criterion) {
 fn bench_org_table_rows(c: &mut Criterion) {
     let source = table_source();
     let structural = parse_org_aot(&source).expect("structural table benchmark parses");
-    let events = generated_context_events::parse_org_rowan_events(&source);
-    let parsed = parse_generated_events(
-        org_language_spec(),
-        generated_context_events::PARSER_DIGEST,
-        &source,
-        &events,
-    )
-    .expect("Scheme table benchmark events satisfy Rowan");
+    let parsed = parse_org_aot(&source).expect("Scheme table benchmark events satisfy Rowan");
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme table benchmark projects Elements");
     for (kind, expected) in [("table", 1), ("table-row", 10_000), ("table-cell", 40_000)] {
@@ -325,22 +267,6 @@ fn bench_org_table_rows(c: &mut Criterion) {
     group.throughput(Throughput::Elements(10_000));
     group.bench_function("structural-elements/10k-rows", |b| {
         b.iter(|| black_box(parse_org_aot(black_box(&source)).unwrap()))
-    });
-    group.bench_function("events-rowan-elements/10k-rows", |b| {
-        b.iter(|| {
-            let events = generated_context_events::parse_org_rowan_events(black_box(&source));
-            let parsed = parse_generated_events(
-                org_language_spec(),
-                generated_context_events::PARSER_DIGEST,
-                &source,
-                &events,
-            )
-            .unwrap();
-            black_box(
-                project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-                    .unwrap(),
-            )
-        })
     });
     group.finish();
 }
@@ -382,31 +308,6 @@ fn bench_org_plan_ledgers(c: &mut Criterion) {
         .collect::<Vec<_>>();
     let mut group = c.benchmark_group("OrgSchemePlanLedgers");
     group.throughput(Throughput::Elements(2_000));
-    group.bench_function("events/2k-documents", |b| {
-        b.iter(|| {
-            for source in &sources {
-                black_box(generated_context_events::parse_org_rowan_events(black_box(
-                    source,
-                )));
-            }
-        })
-    });
-    group.bench_function("events+rowan/2k-documents", |b| {
-        b.iter(|| {
-            for source in &sources {
-                let events = generated_context_events::parse_org_rowan_events(black_box(source));
-                black_box(
-                    parse_generated_events(
-                        org_language_spec(),
-                        generated_context_events::PARSER_DIGEST,
-                        source,
-                        &events,
-                    )
-                    .unwrap(),
-                );
-            }
-        })
-    });
     group.bench_function("aot/2k-documents", |b| {
         b.iter(|| {
             for source in &sources {
@@ -514,14 +415,7 @@ fn bench_org_cloze_fragments(c: &mut Criterion) {
 fn bench_org_nested_lists(c: &mut Criterion) {
     let source = list_source();
     let structural = parse_org_aot(&source).expect("structural list benchmark parses");
-    let events = generated_context_events::parse_org_rowan_events(&source);
-    let parsed = parse_generated_events(
-        org_language_spec(),
-        generated_context_events::PARSER_DIGEST,
-        &source,
-        &events,
-    )
-    .expect("Scheme list benchmark events satisfy Rowan");
+    let parsed = parse_org_aot(&source).expect("Scheme list benchmark events satisfy Rowan");
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme list benchmark projects Elements");
     for (kind, expected) in [("plain-list", 2_501), ("item", 10_000)] {
@@ -543,22 +437,6 @@ fn bench_org_nested_lists(c: &mut Criterion) {
     group.throughput(Throughput::Elements(10_000));
     group.bench_function("structural-elements/10k-items", |b| {
         b.iter(|| black_box(parse_org_aot(black_box(&source)).unwrap()))
-    });
-    group.bench_function("events-rowan-elements/10k-items", |b| {
-        b.iter(|| {
-            let events = generated_context_events::parse_org_rowan_events(black_box(&source));
-            let parsed = parse_generated_events(
-                org_language_spec(),
-                generated_context_events::PARSER_DIGEST,
-                &source,
-                &events,
-            )
-            .unwrap();
-            black_box(
-                project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
-                    .unwrap(),
-            )
-        })
     });
     group.finish();
 }

@@ -4,7 +4,6 @@ use orgize::{
     ast::{ElementData, FileLinkPathKind, LinkSearchKind, LinkTarget, MarkupKind, ObjectData},
 };
 
-#[test]
 fn semantic_ast_projects_link_metadata() {
     let image_doc = Org::parse("#+CAPTION: Logo\n[[file:/tmp/logo.svg]]").document();
 
@@ -143,3 +142,8 @@ fn semantic_ast_projects_link_metadata() {
     assert_eq!(plain_link.raw_description, "");
     assert!(!plain_link.is_image());
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_link_metadata::semantic_ast_projects_link_metadata",
+    semantic_ast_projects_link_metadata,
+)];

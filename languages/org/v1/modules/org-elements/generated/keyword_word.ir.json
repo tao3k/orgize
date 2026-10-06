@@ -1,1 +1,0 @@
-{"result":"String","name":"keyword_word","schema":"gerbil-scheme-rust.rust-function-ir.v1","parameters":[{"ty":"&str","name":"word"}],"body":{"bindings":[],"result":{"method":"to_owned","receiver":{"method":"trim","receiver":{"value":"word","kind":"name"},"kind":"method","arguments":[]},"kind":"method","arguments":[]}}}

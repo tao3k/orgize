@@ -53,9 +53,9 @@ pub struct TimestampWarning {
 /// Org timestamp repeater mode.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RepeaterKind {
-    /// Cumulate repeater, written with `++`.
+    /// Cumulate repeater, written with `+`.
     Cumulate,
-    /// Catch-up repeater, written with `+`.
+    /// Catch-up repeater, written with `++`.
     CatchUp,
     /// Restart repeater, written with `.+`.
     Restart,

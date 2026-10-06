@@ -2,7 +2,12 @@
 
 use std::{collections::HashSet, path::Path};
 
+#[path = "../../languages/org/v1/modules/org-contract/generated/expectation.rs"]
+#[rustfmt::skip]
+mod expectation_grammar;
+
 use super::org_elements_query_expr::{
+    org_contract_block_is_admitted, org_query_block_is_admitted,
     parse_org_contract_expression_block, parse_org_elements_query_expression_block,
 };
 use super::{
@@ -125,7 +130,7 @@ fn collect_contract_source_diagnostics(
     if is_contract_section {
         let normalized_id = contract_id
             .as_deref()
-            .map(str::trim)
+            .map(|value| super::org_native_values::scalar("contract-policy", &["name", value]))
             .filter(|value| !value.is_empty());
         if normalized_id.is_none() {
             push_contract_source_diagnostic(
@@ -143,7 +148,7 @@ fn collect_contract_source_diagnostics(
                 diagnostics,
                 "CONTRACT-E005",
                 path,
-                normalized_id,
+                normalized_id.as_deref(),
                 format!(
                     "CONTRACT_ID uses unsupported CONTRACT_KIND `{}`",
                     kind.trim()
@@ -157,7 +162,7 @@ fn collect_contract_source_diagnostics(
                 diagnostics,
                 "CONTRACT-E006",
                 path,
-                normalized_id,
+                normalized_id.as_deref(),
                 format!(
                     "CONTRACT_ID uses unsupported CONTRACT_SCOPE `{}`",
                     scope.trim()
@@ -169,7 +174,7 @@ fn collect_contract_source_diagnostics(
             end,
             source_blocks,
             has_named_assertion_blocks,
-            normalized_id,
+            normalized_id.as_deref(),
             path,
             diagnostics,
         );
@@ -205,12 +210,10 @@ fn collect_assertion_source_diagnostics(
     let assertion_id = section_property_value(&section.properties, ASSERT_ID_PROPERTY);
     let assertion_severity = section_property_value(&section.properties, ASSERT_SEVERITY_PROPERTY);
     let has_unnamed_query = direct_blocks.iter().any(|block| {
-        let language = block.language.as_deref().unwrap_or_default().trim();
-        let is_query = language.eq_ignore_ascii_case("org-elements-query")
-            || language.eq_ignore_ascii_case("org-elements-query-expr")
-            || language.eq_ignore_ascii_case("org-elements-expr")
-            || language.eq_ignore_ascii_case("org-elements-selector")
-            || language.eq_ignore_ascii_case("org-contract");
+        let is_query = matches!(
+            contract_block_role(block).as_str(),
+            "query" | "selector" | "contract"
+        );
         is_query && (!has_named_assertion_blocks || !is_named_assertion_block(block))
     });
     let is_assertion_section =
@@ -219,7 +222,7 @@ fn collect_assertion_source_diagnostics(
     if is_assertion_section {
         let normalized_assertion_id = assertion_id
             .as_deref()
-            .map(str::trim)
+            .map(|value| super::org_native_values::scalar("contract-policy", &["name", value]))
             .filter(|value| !value.is_empty());
         if normalized_assertion_id.is_none() {
             push_contract_source_diagnostic(
@@ -292,93 +295,35 @@ fn push_contract_source_diagnostic(
 
 /// Parses a `CONTRACT_ORG` property/keyword value.
 pub fn parse_contract_reference(value: &str) -> OrgContractReference {
-    let raw = value.trim().to_string();
-    if raw.is_empty() {
-        return OrgContractReference {
-            raw,
-            path: None,
-            contract_id: None,
-        };
-    }
-
-    if let Some(reference) = org_link_contract_reference(&raw) {
-        return reference;
-    }
-
-    let normalized = macro_reference_argument(&raw).unwrap_or_else(|| raw.clone());
-
-    let without_file = normalized
-        .strip_prefix("file:")
-        .unwrap_or(&normalized)
-        .to_string();
-    if let Some((path, contract_id)) = without_file.split_once('#') {
-        return OrgContractReference {
-            raw,
-            path: contract_reference_path(path),
-            contract_id: (!contract_id.trim().is_empty()).then(|| contract_id.trim().to_string()),
-        };
-    }
-
-    if looks_like_file_reference(&without_file) {
-        return OrgContractReference {
-            raw,
-            path: Some(without_file),
-            contract_id: None,
-        };
-    }
-
+    let row = super::org_native_values::rows("contract-reference", &[value])
+        .pop()
+        .expect("native contract reference");
+    let [raw, path, has_path, contract_id, has_id]: [String; 5] =
+        row.try_into().expect("native reference arity");
+    let present = |flag: &str| match flag {
+        "true" => true,
+        "false" => false,
+        _ => panic!("native reference presence"),
+    };
     OrgContractReference {
         raw,
-        path: None,
-        contract_id: Some(normalized),
+        path: present(&has_path).then_some(path),
+        contract_id: present(&has_id).then_some(contract_id),
     }
 }
-
-/// Parses one or more contract references from a single `CONTRACT_ORG` value.
-///
-/// References are separated by ASCII whitespace or commas at the top level.
-/// Whitespace inside Org links and macro references remains part of that
-/// reference, so display labels such as `[[file:contract.org][Plan contract]]`
-/// stay intact.
+/// Native top-level reference grammar; links and macros remain atomic.
 pub fn parse_contract_references(value: &str) -> Vec<OrgContractReference> {
-    let values = split_contract_reference_values(value);
+    let values = super::org_native_values::rows("contract-values", &[value])
+        .pop()
+        .expect("native contract values");
     if values.is_empty() {
-        return vec![parse_contract_reference(value)];
+        vec![parse_contract_reference(value)]
+    } else {
+        values
+            .iter()
+            .map(|value| parse_contract_reference(value))
+            .collect()
     }
-    values.into_iter().map(parse_contract_reference).collect()
-}
-
-fn split_contract_reference_values(value: &str) -> Vec<&str> {
-    let mut values = Vec::new();
-    let mut start = None;
-    let mut square_depth = 0_u32;
-    let mut brace_depth = 0_u32;
-
-    for (index, character) in value.char_indices() {
-        let top_level_separator = square_depth == 0
-            && brace_depth == 0
-            && (character.is_ascii_whitespace() || character == ',');
-        if top_level_separator {
-            if let Some(value_start) = start.take() {
-                values.push(&value[value_start..index]);
-            }
-            continue;
-        }
-
-        start.get_or_insert(index);
-        match character {
-            '[' => square_depth = square_depth.saturating_add(1),
-            ']' => square_depth = square_depth.saturating_sub(1),
-            '{' => brace_depth = brace_depth.saturating_add(1),
-            '}' => brace_depth = brace_depth.saturating_sub(1),
-            _ => {}
-        }
-    }
-
-    if let Some(value_start) = start {
-        values.push(&value[value_start..]);
-    }
-    values
 }
 
 /// Parses a `CONTRACT_ORG` value and resolves a relative file target from its owning Org file.
@@ -456,7 +401,7 @@ fn parse_contract_section(
     has_named_assertion_blocks: bool,
 ) -> Option<OrgContract> {
     let id = section_property_value(&section.properties, CONTRACT_ID_PROPERTY)?;
-    if id.trim().is_empty() {
+    if id.is_empty() {
         return None;
     }
 
@@ -516,7 +461,7 @@ fn parse_assertion(
     source_blocks: &[SourceBlockRecord],
 ) -> Option<OrgContractAssertion> {
     let id = section_property_value(&section.properties, ASSERT_ID_PROPERTY)?;
-    if id.trim().is_empty() {
+    if id.is_empty() {
         return None;
     }
 
@@ -533,30 +478,27 @@ fn parse_assertion(
     let mut expect_source = None;
 
     for block in section_source_blocks(section, end, source_blocks) {
-        let language = block.language.as_deref().unwrap_or_default().trim();
-        if language.eq_ignore_ascii_case("org-elements-query")
-            || language.eq_ignore_ascii_case("org-elements-query-expr")
-            || language.eq_ignore_ascii_case("org-elements-expr")
-        {
-            query = parse_org_elements_query_expression_block(&block.value);
+        let role = contract_block_role(block);
+        if role == "query" {
+            query = Some(parse_org_elements_query_expression_block(&block.value)?);
             query_source = Some(block.source.clone());
-        } else if language.eq_ignore_ascii_case("org-elements-selector") {
-            query = parse_selector_block(&block.value);
+        } else if role == "selector" {
+            query = Some(parse_selector_block(&block.value)?);
             query_source = Some(block.source.clone());
-        } else if language.eq_ignore_ascii_case("org-contract") {
-            if let Some((parsed_bindings, parsed_query, parsed_expectation)) =
-                parse_org_contract_expression_block(&block.value)
+        } else if role == "contract" {
             {
+                let (parsed_bindings, parsed_query, parsed_expectation) =
+                    parse_org_contract_expression_block(&block.value)?;
                 bindings = parsed_bindings;
                 query = Some(parsed_query);
                 expectation = Some(parsed_expectation);
                 query_source = Some(block.source.clone());
                 expect_source = Some(block.source.clone());
             }
-        } else if language.eq_ignore_ascii_case("org-elements-expect") {
-            expectation = parse_expectation(&block.value);
+        } else if role == "expect" {
+            expectation = Some(parse_expectation(&block.value)?);
             expect_source = Some(block.source.clone());
-        } else if language.eq_ignore_ascii_case("jinja2") {
+        } else if role == "template" {
             match block_parameter_name(block).as_deref() {
                 Some("message") => message = Some(block.value.clone()),
                 Some("fix") => fix = Some(block.value.clone()),
@@ -586,10 +528,13 @@ fn parse_named_assertions(blocks: &[&SourceBlockRecord]) -> Vec<OrgContractAsser
 }
 
 fn is_named_assertion_block(block: &SourceBlockRecord) -> bool {
-    block_language_is(block, "org-contract")
-        && block.name.as_deref().map(str::trim).is_some_and(|name| {
-            !name.is_empty() && !name.ends_with(".message") && !name.ends_with(".fix")
-        })
+    contract_block_role(block) == "contract" && native_named_assertion_id(block).is_some()
+}
+
+fn native_named_assertion_id(block: &SourceBlockRecord) -> Option<String> {
+    let id =
+        super::org_native_values::scalar("contract-policy", &["named-id", block.name.as_deref()?]);
+    (!id.is_empty()).then_some(id)
 }
 
 fn parse_named_assertion(
@@ -600,11 +545,7 @@ fn parse_named_assertion(
         return None;
     }
 
-    let id = block
-        .name
-        .as_deref()
-        .map(str::trim)
-        .filter(|name| !name.is_empty())?;
+    let id = native_named_assertion_id(block)?;
 
     let (bindings, query, expectation) = parse_org_contract_expression_block(&block.value)?;
     let severity = block_parameter_value(block, ":severity")
@@ -614,7 +555,7 @@ fn parse_named_assertion(
     let fix = named_block_value(blocks, &format!("{id}.fix"), "jinja2");
 
     Some(OrgContractAssertion {
-        id: id.to_string(),
+        id,
         severity,
         bindings,
         query,
@@ -631,11 +572,10 @@ fn named_block_value(blocks: &[&SourceBlockRecord], name: &str, language: &str) 
         .iter()
         .find(|block| {
             block_language_is(block, language)
-                && block
-                    .name
-                    .as_deref()
-                    .map(str::trim)
-                    .is_some_and(|block_name| block_name == name)
+                && block.name.as_deref().is_some_and(|block_name| {
+                    super::org_native_values::scalar("contract-policy", &["name", block_name])
+                        == name
+                })
         })
         .map(|block| block.value.clone())
 }
@@ -678,27 +618,47 @@ fn block_parameter_name(block: &SourceBlockRecord) -> Option<String> {
 }
 
 fn block_parameter_value(block: &SourceBlockRecord, key: &str) -> Option<String> {
-    let parameters = block.parameters.as_deref()?;
-    let mut parts = parameters.split_whitespace();
-    while let Some(part) = parts.next() {
-        if part == key {
-            return parts.next().map(str::to_string);
-        }
-    }
-    None
+    let raw = block.parameters.as_deref()?;
+    super::org_native_values::rows("block-parameter", &[raw, key])
+        .pop()
+        .map(|row| {
+            let [value]: [String; 1] = row.try_into().expect("native block parameter arity");
+            value
+        })
 }
 
 fn block_language_is(block: &SourceBlockRecord, language: &str) -> bool {
-    block
-        .language
-        .as_deref()
-        .unwrap_or_default()
-        .trim()
-        .eq_ignore_ascii_case(language)
+    contract_block_role(block)
+        == super::org_native_values::scalar("contract-policy", &["language", language])
+}
+
+fn contract_block_role(block: &SourceBlockRecord) -> String {
+    super::org_native_values::scalar(
+        "contract-policy",
+        &["language", block.language.as_deref().unwrap_or_default()],
+    )
+}
+
+/// Admission of raw source blocks precedes registry extraction/evaluation.
+/// Reuse the owning compilers; never infer validity from a populated registry.
+pub(crate) fn contract_block_syntax_error(block: &SourceBlockRecord) -> Option<&'static str> {
+    let role = contract_block_role(block);
+    let valid = if role == "query" {
+        org_query_block_is_admitted(&block.value)
+    } else if role == "selector" {
+        parse_selector_block(&block.value).is_some()
+    } else if role == "expect" {
+        parse_expectation(&block.value).is_some()
+    } else if role == "contract" {
+        org_contract_block_is_admitted(&block.value)
+    } else {
+        return None;
+    };
+    (!valid).then_some("invalid or unsupported Org Query/Contract source-block syntax")
 }
 
 fn parse_selector_block(value: &str) -> Option<OrgContractQuery> {
-    let selector = OrgElementSelector::parse_plist(value.trim()).ok()?;
+    let selector = OrgElementSelector::parse_plist(value).ok()?;
     if selector.element_type == crate::ast::OrgElementsIndexKind::new("keyword") {
         return Some(OrgContractQuery {
             document_predicates: vec![crate::ast::OrgContractDocumentPredicate::MetadataExists(
@@ -722,42 +682,39 @@ fn parse_selector_block(value: &str) -> Option<OrgContractQuery> {
 }
 
 fn parse_expectation(value: &str) -> Option<OrgContractExpectation> {
-    let line = value
-        .lines()
-        .map(strip_block_comment)
-        .find(|line| !line.is_empty())?;
-
-    if line == "exists" {
-        return Some(OrgContractExpectation::Exists);
-    }
-    if line == "not exists" {
-        return Some(OrgContractExpectation::NotExists);
-    }
-    let rest = line.strip_prefix("count")?.trim();
-    for op in [
-        OrgContractCompareOp::Le,
-        OrgContractCompareOp::Lt,
-        OrgContractCompareOp::Ge,
-        OrgContractCompareOp::Gt,
-        OrgContractCompareOp::Eq,
-        OrgContractCompareOp::Ne,
-    ] {
-        if let Some(count) = rest
-            .strip_prefix(op.as_str())
-            .and_then(|value| value.trim().parse::<usize>().ok())
-        {
-            return Some(OrgContractExpectation::Count(op, count));
+    use crate::org_aot::NativeExpressionValue::Atom;
+    let values =
+        crate::org_aot::parse_native_expectation_values(value, &expectation_grammar::LANGUAGE)
+            .ok()?;
+    match values.as_slice() {
+        [Atom(exists)] if exists == "exists" => Some(OrgContractExpectation::Exists),
+        [Atom(not), Atom(exists)] if not == "not" && exists == "exists" => {
+            Some(OrgContractExpectation::NotExists)
         }
+        [Atom(count), Atom(operator), Atom(number)] if count == "count" => {
+            let op = match operator.as_str() {
+                "<=" => OrgContractCompareOp::Le,
+                "<" => OrgContractCompareOp::Lt,
+                ">=" => OrgContractCompareOp::Ge,
+                ">" => OrgContractCompareOp::Gt,
+                "==" => OrgContractCompareOp::Eq,
+                "!=" => OrgContractCompareOp::Ne,
+                _ => return None,
+            };
+            Some(OrgContractExpectation::Count(op, number.parse().ok()?))
+        }
+        _ => None,
     }
-    None
 }
 
 fn parse_severity(value: &str) -> Option<OrgContractSeverity> {
-    match value.trim().to_ascii_lowercase().as_str() {
-        "error" => Some(OrgContractSeverity::Error),
-        "warning" | "warn" => Some(OrgContractSeverity::Warning),
-        _ => None,
-    }
+    let row = super::org_native_values::optional("severity", value)?;
+    let [kind]: [String; 1] = row.try_into().expect("native severity arity");
+    Some(match kind.as_str() {
+        "error" => OrgContractSeverity::Error,
+        "warning" => OrgContractSeverity::Warning,
+        _ => panic!("native severity kind"),
+    })
 }
 
 fn section_property_value(properties: &[Property<ParsedAnnotation>], key: &str) -> Option<String> {
@@ -765,19 +722,9 @@ fn section_property_value(properties: &[Property<ParsedAnnotation>], key: &str) 
         .iter()
         .rev()
         .find(|property| property.key.eq_ignore_ascii_case(key))
-        .map(|property| property.value.trim().to_string())
-}
-
-fn strip_block_comment(line: &str) -> String {
-    let trimmed = line.trim();
-    if trimmed.starts_with('#') {
-        return String::new();
-    }
-    trimmed
-        .split_once(" #")
-        .map_or(trimmed, |(before, _)| before)
-        .trim()
-        .to_string()
+        .map(|property| {
+            super::org_native_values::scalar("contract-policy", &["name", &property.value])
+        })
 }
 
 fn contract_aliases(
@@ -789,13 +736,11 @@ fn contract_aliases(
     let mut seen = HashSet::new();
 
     if let Some(declared_aliases) = declared_aliases {
-        for alias in declared_aliases
-            .split(',')
-            .flat_map(|alias| alias.split_whitespace())
-            .map(str::trim)
-            .filter(|alias| !alias.is_empty())
+        for alias in super::org_native_values::rows("contract-aliases", &[&declared_aliases])
+            .pop()
+            .expect("native aliases")
         {
-            push_alias(&mut aliases, &mut seen, alias.to_string());
+            push_alias(&mut aliases, &mut seen, alias);
         }
     }
 
@@ -836,61 +781,4 @@ fn push_alias(aliases: &mut Vec<String>, seen: &mut HashSet<String>, alias: Stri
 
 fn normalize_path(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
-}
-
-fn org_link_contract_reference(value: &str) -> Option<OrgContractReference> {
-    let inner = value.strip_prefix("[[")?.strip_suffix("]]")?;
-    let (target, description) = inner
-        .split_once("][")
-        .map_or((inner.trim(), None), |(target, description)| {
-            (target.trim(), Some(description.trim()))
-        });
-    if target.is_empty() {
-        return None;
-    }
-
-    let without_file = target.strip_prefix("file:").unwrap_or(target).trim();
-    if let Some((path, contract_id)) = without_file.split_once('#') {
-        return Some(OrgContractReference {
-            raw: value.to_string(),
-            path: contract_reference_path(path),
-            contract_id: (!contract_id.trim().is_empty()).then(|| contract_id.trim().to_string()),
-        });
-    }
-
-    if looks_like_file_reference(without_file) {
-        return Some(OrgContractReference {
-            raw: value.to_string(),
-            path: contract_reference_path(without_file),
-            contract_id: description
-                .filter(|description| !description.is_empty())
-                .map(str::to_string),
-        });
-    }
-
-    None
-}
-
-fn contract_reference_path(value: &str) -> Option<String> {
-    let value = value.trim();
-    let value = value.strip_prefix("./").unwrap_or(value);
-    (!value.is_empty() && !value.starts_with('/')).then(|| value.replace('\\', "/"))
-}
-
-fn macro_reference_argument(value: &str) -> Option<String> {
-    let inner = value.strip_prefix("{{{")?.strip_suffix("}}}")?.trim();
-    let start = inner.find('(')?;
-    let end = inner.rfind(')')?;
-    (end > start + 1)
-        .then(|| inner[start + 1..end].trim().to_string())
-        .filter(|argument| !argument.is_empty())
-}
-
-fn looks_like_file_reference(value: &str) -> bool {
-    value.starts_with("./")
-        || value.starts_with("../")
-        || value.starts_with('/')
-        || value.ends_with(".org")
-        || value.contains('/')
-        || value.contains('\\')
 }

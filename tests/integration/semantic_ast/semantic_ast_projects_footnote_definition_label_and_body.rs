@@ -3,7 +3,6 @@ use orgize::{
     ast::{ElementData, MarkupKind, ObjectData},
 };
 
-#[test]
 fn semantic_ast_projects_footnote_definition_label_and_body() {
     let doc = Org::parse("#+CAPTION: A note\n[fn:WORD-1] See *bold* text\n").document();
 
@@ -28,3 +27,8 @@ fn semantic_ast_projects_footnote_definition_label_and_body() {
             if matches!(&children[0].data, ObjectData::Plain(value) if value == "bold")
     )));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_footnote_definition_label_and_body::semantic_ast_projects_footnote_definition_label_and_body",
+    semantic_ast_projects_footnote_definition_label_and_body,
+)];

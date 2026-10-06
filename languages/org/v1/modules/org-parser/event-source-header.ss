@@ -13,12 +13,12 @@
                            (line-step ,header-after-switch) (9 32))
        (line-bytes-all-in? ,header-after-switch (line-content-end) ())))
 (def header-switch-sign?
-  `(and ,header-switch-boundary?
-        (or (and (line-byte-equal? ,header-index 45)
+  `(and (or (and (line-byte-equal? ,header-index 45)
                  (line-bytes-any-in? ,header-next (line-step ,header-next)
                                      (105 107 108 110 114)))
             (and (line-byte-equal? ,header-index 43)
-                 (line-byte-equal? ,header-next 110)))))
+                 (line-byte-equal? ,header-next 110)))
+        ,header-switch-boundary?))
 (def header-key-bytes
   (map char->integer
        (string->list
@@ -28,34 +28,121 @@
   `((call-source-helper source-header-span ,from ,finish
                         ((offset ,until)))))
 
+;; Emit the argument's semantic role while its native scanner owner is known.
+;; The wrapper is not a public graph record: original ancestry/IDs stay intact.
+(def (source-switch-value-forms until (double-quote-close #f))
+  (let (from '(state-offset source-header-value-start))
+    `((start-node SourceSwitchValue)
+      (if (uint-equal? (state source-header-switch-kind) (uint 1))
+          ((token SourceSwitchNewLineNumber ,from ,until))
+          ((if (uint-equal? (state source-header-switch-kind) (uint 2))
+               ((token SourceSwitchContinuedLineNumber ,from ,until))
+               ,(if double-quote-close
+                    `((if (uint-equal? (state source-header-mode) (uint 10))
+                          ((token SourceSwitchQuote ,from (line-step ,from))
+                           (start-node SourceSwitchLabelFormat)
+                           (if (offset-less? (line-step ,from) ,double-quote-close)
+                               ((token SourceSwitchText (line-step ,from)
+                                       ,double-quote-close)) ())
+                           (finish-node)
+                           (token SourceSwitchQuote ,double-quote-close ,until))
+                          ((start-node SourceSwitchLabelFormat)
+                           (token SourceSwitchText ,from ,until)
+                           (finish-node))))
+                    `((start-node SourceSwitchLabelFormat)
+                      (token SourceSwitchText ,from ,until)
+                      (finish-node))))))
+      (finish-node))))
+
 (def (source-header-body-forms)
   `((set-uint source-header-cursor (offset start))
+    (set-uint source-header-effective-until (offset start))
     (for-line-bytes source-header-byte-index start
                     (state-offset source-header-until)
-      ,(source-header-step-forms))
+      ((if (line-bytes-any-in? ,header-index ,header-next (9 10 11 12 13 32))
+           () ((set-uint source-header-effective-until (offset ,header-next))))
+       ,@(source-header-step-forms)))
     (if (uint-equal? (state source-header-mode) (uint 1))
-        ((token SourceHeaderKey (state-offset source-header-key-start)
-                (state-offset source-header-until))
-         (set-uint source-header-cursor (offset (state-offset source-header-until)))) ())
+        ,(source-header-open-argument-forms '(state-offset source-header-effective-until)) ())
     (if (or (uint-equal? (state source-header-mode) (uint 3))
             (uint-equal? (state source-header-mode) (uint 4))
             (uint-equal? (state source-header-mode) (uint 5))
             (uint-equal? (state source-header-mode) (uint 12))
             (uint-equal? (state source-header-mode) (uint 13))
             (uint-equal? (state source-header-mode) (uint 14)))
-        ((token SourceHeaderValue (state-offset source-header-value-start)
-                (state-offset source-header-until))
-         (set-uint source-header-cursor (offset (state-offset source-header-until)))) ())
+        (,@(source-header-lexical-value-forms '(state-offset source-header-effective-until))
+         (set-uint source-header-cursor (state source-header-effective-until))) ())
     (if (or (uint-equal? (state source-header-mode) (uint 9))
             (uint-equal? (state source-header-mode) (uint 10))
             (uint-equal? (state source-header-mode) (uint 11))
             (uint-equal? (state source-header-mode) (uint 15))
             (uint-equal? (state source-header-mode) (uint 16))
             (uint-equal? (state source-header-mode) (uint 17)))
-        ((token SourceSwitchValue (state-offset source-header-value-start)
-                (state-offset source-header-until))
-         (set-uint source-header-cursor (offset (state-offset source-header-until)))) ())
+        (,@(source-switch-value-forms '(state-offset source-header-effective-until))
+         (set-uint source-header-cursor (state source-header-effective-until))) ())
+    ,@(source-header-close-argument-forms '(state-offset source-header-effective-until))
+    (if (state source-header-parameters-open)
+        ((finish-node)) ())
     (token SourceHeaderTrivia (state-offset source-header-cursor) end)))
+
+;; Preserve the lexical value's complete source while projecting its native
+;; semantic content. Only a balanced double-quoted value has quote delimiters;
+;; single quotes and recovery text remain literal, including empty content.
+(def (source-header-lexical-value-forms until (double-quote-close #f))
+  (let (from '(state-offset source-header-value-start))
+    `((start-node SourceHeaderValue)
+      ,@(if double-quote-close
+            `((if (uint-equal? (state source-header-mode) (uint 4))
+                  ((token SourceHeaderQuote ,from (line-step ,from))
+                   (start-node SourceHeaderValueContent)
+                   (if (offset-less? (line-step ,from) ,double-quote-close)
+                       ((token SourceHeaderText (line-step ,from) ,double-quote-close)) ())
+                   (finish-node)
+                   (token SourceHeaderQuote ,double-quote-close ,until))
+                  ((start-node SourceHeaderValueContent)
+                   (token SourceHeaderText ,from ,until)
+                   (finish-node))))
+            `((start-node SourceHeaderValueContent)
+              (token SourceHeaderText ,from ,until)
+              (finish-node)))
+      (finish-node))))
+
+;; Bounds are native byte offsets, including inline headers whose end precedes
+;; the physical line end. Keep trailing trivia outside semantic argument nodes.
+(def (source-header-trim-forms from until)
+  (let* ((index '(line-index source-header-trim-index))
+         (next `(line-step ,index)))
+    `((set-uint source-header-trim-end (offset ,from))
+      (for-line-bytes source-header-trim-index ,from ,until
+        ((if (line-bytes-any-in? ,index ,next (9 10 11 12 13 32))
+             () ((set-uint source-header-trim-end (offset ,next)))))))))
+
+(def (source-header-close-argument-forms until)
+  `((if (state source-header-argument-open)
+        (,@(source-header-trim-forms '(state-offset source-header-cursor) until)
+         (token SourceHeaderTrivia (state-offset source-header-cursor)
+                (state-offset source-header-trim-end))
+         (if (state source-header-argument-value-open)
+             ((finish-node)
+              (set-bool source-header-argument-value-open (bool #f))) ())
+         (finish-node)
+         (set-bool source-header-argument-open (bool #f))
+         (token SourceHeaderTrivia (state-offset source-header-trim-end) ,until)
+         (set-uint source-header-cursor (offset ,until))) ())))
+
+(def (source-header-open-argument-forms key-end)
+  (let ((colon '(state-offset source-header-colon-start))
+        (key '(state-offset source-header-key-start)))
+    `(,@(source-header-close-argument-forms colon)
+      (token SourceHeaderTrivia (state-offset source-header-cursor) ,colon)
+      (if (state source-header-parameters-open) ()
+          ((start-node SourceHeaderParameters)
+           (set-bool source-header-parameters-open (bool #t))))
+      (start-node SourceHeaderArgument)
+      (set-bool source-header-argument-open (bool #t))
+      (token SourceHeaderColon ,colon ,key)
+      (token SourceHeaderKey ,key ,key-end)
+      (set-uint source-header-cursor (offset ,key-end)))))
 
 (def (source-header-step-forms)
   `((if (uint-equal? (state source-header-mode) (uint 0))
@@ -90,9 +177,7 @@
                   (line-bytes-any-in? ,header-next
                                       (line-step ,header-next)
                                       ,header-key-bytes))
-             ((token SourceHeaderTrivia (state-offset source-header-cursor)
-                     ,header-next)
-              (set-uint source-header-cursor (offset ,header-next))
+             ((set-uint source-header-colon-start (offset ,header-index))
               (set-uint source-header-key-start (offset ,header-next))
               (set-uint source-header-mode (uint 1)))
              ((if ,header-switch-sign?
@@ -104,6 +189,11 @@
                              (offset (line-step ,header-next)))
                    (set-uint source-header-switch-argument
                              (uint 0))
+                   (set-uint source-header-switch-kind (uint 3))
+                   (if (line-byte-equal? ,header-next 110)
+                       ((if (line-byte-equal? ,header-index 45)
+                            ((set-uint source-header-switch-kind (uint 1)))
+                            ((set-uint source-header-switch-kind (uint 2))))) ())
                    (if (or (line-byte-equal? ,header-next 108)
                            (line-byte-equal? ,header-next 110))
                        ((set-uint source-header-switch-argument (uint 1))) ())
@@ -123,19 +213,21 @@
                   (line-bytes-any-in? ,header-next
                                       (line-step ,header-next)
                                       ,header-key-bytes))
-             ((token SourceHeaderTrivia
-                     (state-offset source-header-cursor) ,header-next)
-              (set-uint source-header-cursor (offset ,header-next))
+             ((set-uint source-header-colon-start (offset ,header-index))
               (set-uint source-header-key-start (offset ,header-next))
               (set-uint source-header-mode (uint 1)))
-             ((token SourceHeaderTrivia
+             ((if (and (or (uint-equal? (state source-header-switch-kind) (uint 1))
+                           (uint-equal? (state source-header-switch-kind) (uint 2)))
+                       ,header-switch-sign?)
+                  ,(source-header-trivia-forms)
+                  ((token SourceHeaderTrivia
                      (state-offset source-header-cursor) ,header-index)
               (set-uint source-header-value-start (offset ,header-index))
               (if (line-byte-equal? ,header-index 34)
                   ((set-uint source-header-mode (uint 10)))
                   ((if (line-byte-equal? ,header-index 39)
                        ((set-uint source-header-mode (uint 15)))
-                       ((set-uint source-header-mode (uint 9))))))))))))
+                       ((set-uint source-header-mode (uint 9))))))))))))))
 
 (def (source-header-switch-bare-value-forms)
   `((if (uint-equal? (state source-header-mode) (uint 17))
@@ -143,8 +235,7 @@
         ((if (line-byte-equal? ,header-index 92)
              ((set-uint source-header-mode (uint 17)))
              ((if ,header-space?
-                  ((token SourceSwitchValue
-                          (state-offset source-header-value-start) ,header-index)
+                  (,@(source-switch-value-forms header-index)
                    (set-uint source-header-cursor (offset ,header-index))
                    (set-uint source-header-mode (uint 0))) ())))))))
 
@@ -161,8 +252,7 @@
                                 (line-byte-equal? ,header-index 34))
                            (and (uint-equal? (state source-header-mode) (uint 15))
                                 (line-byte-equal? ,header-index 39)))
-                       ((token SourceSwitchValue
-                               (state-offset source-header-value-start) ,header-next)
+                       (,@(source-switch-value-forms header-next header-index)
                         (set-uint source-header-cursor (offset ,header-next))
                         (set-uint source-header-mode (uint 0))) ())))))))))
 
@@ -172,9 +262,7 @@
 
 (def (source-header-key-forms)
   `((if ,header-space?
-        ((token SourceHeaderKey (state-offset source-header-key-start)
-                ,header-index)
-         (set-uint source-header-cursor (offset ,header-index))
+        (,@(source-header-open-argument-forms header-index)
          (set-uint source-header-mode (uint 2)))
         ((if (line-bytes-any-in? ,header-index ,header-next
                                  ,header-key-bytes)
@@ -184,14 +272,22 @@
 (def (source-header-value-start-forms)
   `((if ,header-space?
         ()
-        ((token SourceHeaderTrivia (state-offset source-header-cursor)
+        ((if (and (line-byte-equal? ,header-index 58)
+                  (line-bytes-any-in? ,header-next (line-step ,header-next)
+                                      ,header-key-bytes))
+             ((set-uint source-header-colon-start (offset ,header-index))
+              (set-uint source-header-key-start (offset ,header-next))
+              (set-uint source-header-mode (uint 1)))
+             ((token SourceHeaderTrivia (state-offset source-header-cursor)
                 ,header-index)
+         (start-node SourceHeaderArgumentValue)
+         (set-bool source-header-argument-value-open (bool #t))
          (set-uint source-header-value-start (offset ,header-index))
          (if (line-byte-equal? ,header-index 34)
              ((set-uint source-header-mode (uint 4)))
              ((if (line-byte-equal? ,header-index 39)
                   ((set-uint source-header-mode (uint 12)))
-                  ((set-uint source-header-mode (uint 3))))))))))
+                  ((set-uint source-header-mode (uint 3))))))))))))
 
 (def (source-header-bare-value-forms)
   `((if (uint-equal? (state source-header-mode) (uint 14))
@@ -199,8 +295,7 @@
         ((if (line-byte-equal? ,header-index 92)
              ((set-uint source-header-mode (uint 14)))
              ((if ,header-space?
-                  ((token SourceHeaderValue
-                          (state-offset source-header-value-start) ,header-index)
+                  (,@(source-header-lexical-value-forms header-index)
                    (set-uint source-header-cursor (offset ,header-index))
                    (set-uint source-header-mode (uint 0))) ())))))))
 
@@ -217,15 +312,18 @@
                                 (line-byte-equal? ,header-index 34))
                            (and (uint-equal? (state source-header-mode) (uint 12))
                                 (line-byte-equal? ,header-index 39)))
-                       ((token SourceHeaderValue
-                               (state-offset source-header-value-start) ,header-next)
+                       (,@(source-header-lexical-value-forms header-next header-index)
                         (set-uint source-header-cursor (offset ,header-next))
                         (set-uint source-header-mode (uint 0))) ())))))))))
 
 (def event-source-header-initial
   '((source-header-mode 0) (source-header-cursor 0)
     (source-header-key-start 0) (source-header-value-start 0)
-    (source-header-switch-argument 0)))
+    (source-header-switch-argument 0) (source-header-switch-kind 0)
+    (source-header-colon-start 0) (source-header-trim-end 0)
+    (source-header-effective-until 0)
+    (source-header-parameters-open #f) (source-header-argument-open #f)
+    (source-header-argument-value-open #f)))
 
 (def event-source-header-helper
   (make-org-event-helper

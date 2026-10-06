@@ -26,7 +26,10 @@ pub struct OrgElementsIndexRecord<A = ()> {
     pub summary: OrgElementsIndexSummary,
 }
 
-/// Stable identifier for a record in the Org elements graph.
+/// Identifier for a record within one Org elements graph.
+///
+/// Rebuilding the graph after a source edit may assign a different number to
+/// the same Org heading. This is not the persistent Org `ID` property.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OrgElementId(usize);
 

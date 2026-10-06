@@ -173,11 +173,9 @@ fn expand_link_abbreviations<A>(document: &mut Document<A>) {
         let Some(expanded) = expand_link_abbreviation(protocol, path, &abbreviations) else {
             return;
         };
-        if let Some((protocol, path)) = expanded.split_once(':') {
-            link.target = LinkTarget::Uri {
-                protocol: protocol.to_string(),
-                path: path.to_string(),
-            };
+        if let Some(row) = super::org_native_values::optional("uri-split", &expanded) {
+            let [protocol, path]: [String; 2] = row.try_into().expect("native URI arity");
+            link.target = LinkTarget::Uri { protocol, path };
         }
     });
 }

@@ -4,7 +4,7 @@
 
 (import (only-in :std/string/misc string-trim)
         (only-in :gerbil-parser/src/compiler/rust-pure-aot
-                 define-rust-pure string-before ascii-ci=?
+                 string-before ascii-ci=?
                  string-after string-first-word
                  string-trim-start
                  string-rest-after-first-word string-last-word
@@ -19,22 +19,22 @@
                  org-element-graph-parent-of org-element-graph-kind-of
                  org-element-graph-field-of))
 (export org-element-with-headline-properties
-        todo-directive-rust
-        todo-word-name todo-word-name-rust
-        todo-open-words todo-open-words-rust
-        todo-done-words todo-done-words-rust
-        todo-state-from-directives todo-state-from-directives-rust
-        todo-keyword-from-directives todo-keyword-from-directives-rust
-        headline-content-after-todo headline-content-after-todo-rust
-        headline-source-title headline-source-title-rust
-        planning-key-kind planning-key-kind-rust
-        headline-display-title headline-display-title-rust
-        headline-anchor-slug headline-anchor-slug-rust
-        headline-comment? headline-comment-rust
-        priority-token? priority-token-rust
-        headline-priority-cookie headline-priority-cookie-rust
-        todo-keyword-matches? todo-keyword-matches-rust
-        memory-headline-state memory-headline-state-rust)
+        todo-word-name
+        todo-open-words
+        todo-done-words
+        todo-state-from-directives
+        todo-keyword-from-directives
+        headline-content-after-todo
+        headline-source-title
+        planning-key-kind
+        headline-display-title
+        headline-anchor-slug
+        headline-comment?
+        priority-token?
+        headline-priority-cookie
+        todo-keyword-matches?
+        memory-headline-state
+        todo-directive?)
 
 (def (split-first value)
   (let* ((text (string-trim value)) (size (string-length text)))
@@ -56,35 +56,27 @@
               (string-trim (substring value (+ index 1) size))))
        (else (loop (- index 1)))))))
 
-(define-rust-pure todo-directive? todo-directive-rust
-  ((key "&str")) "bool"
+(def (todo-directive? key)
   (or (ascii-ci=? key "TODO")
       (ascii-ci=? key "SEQ_TODO")
       (ascii-ci=? key "TYP_TODO")))
 
 ;; A file-local directive's keyword words are an Org-owned algorithm.  The
 ;; AOT functions return typed vectors, not generated source or a string wire.
-(define-rust-pure todo-word-name todo-word-name-rust
-  ((word "&str")) "String"
+(def (todo-word-name word)
   (string-before word "("))
 
-(define-rust-pure todo-open-words todo-open-words-rust
-  ((directive "&str")) "Vec<String>"
-  (using ((todo-word-name "&str"))
-    (map todo-word-name
-         (string-words (string-before directive "|")))))
+(def (todo-open-words directive)
+  (map todo-word-name
+         (string-words (string-before directive "|"))))
 
-(define-rust-pure todo-done-words todo-done-words-rust
-  ((directive "&str")) "Vec<String>"
-  (using ((todo-word-name "&str"))
-    (map todo-word-name
-         (string-words (string-after directive "|")))))
+(def (todo-done-words directive)
+  (map todo-word-name
+         (string-words (string-after directive "|"))))
 
 ;; File-local keyword Elements override the caller's configured TODO profile.
 ;; The same executable Scheme function is lowered to Rust.
-(define-rust-pure todo-state-from-directives todo-state-from-directives-rust
-  ((title "&str") (directives "&[String]")
-   (configured-todo "&[String]") (configured-done "&[String]")) "&'static str"
+(def (todo-state-from-directives title directives configured-todo configured-done)
   (let* ((candidate (string-first-word title)))
     (if (equal? candidate "") ""
       (if (null? directives)
@@ -112,47 +104,35 @@
             "done" ""))))))
 
 ;; The keyword value is a source-owned string, not a Rust re-parse of title.
-(define-rust-pure todo-keyword-from-directives todo-keyword-from-directives-rust
-  ((title "&str") (directives "&[String]")
-   (configured-todo "&[String]") (configured-done "&[String]")) "String"
-  (using ((todo-state-from-directives "&str" "&[String]"
-                                      "&[String]" "&[String]"))
-    (if (equal? (todo-state-from-directives
+(def (todo-keyword-from-directives title directives configured-todo configured-done)
+  (if (equal? (todo-state-from-directives
                  title directives configured-todo configured-done) "")
       ""
-      (string-first-word title))))
+      (string-first-word title)))
 
-(define-rust-pure headline-content-after-todo headline-content-after-todo-rust
-  ((title "&str") (directives "&[String]")
-   (configured-todo "&[String]") (configured-done "&[String]")) "String"
-  (using ((todo-keyword-from-directives "&str" "&[String]"
-                                        "&[String]" "&[String]"))
-    (if (equal? (todo-keyword-from-directives
+(def (headline-content-after-todo title directives configured-todo configured-done)
+  (if (equal? (todo-keyword-from-directives
                  title directives configured-todo configured-done) "")
       (string-trim title)
-      (string-rest-after-first-word title))))
+      (string-rest-after-first-word title)))
 
 ;; The source-backed title excludes the tag suffix but retains its preceding
 ;; whitespace. TODO and priority are admitted by the same Scheme algorithms.
-(define-rust-pure headline-source-title headline-source-title-rust
-  ((title-body "&str") (todo-keyword "&str")) "String"
-  (using ((priority-token? "&str"))
-    (let* ((after-todo
+(def (headline-source-title title-body todo-keyword)
+  (let* ((after-todo
             (if (equal? todo-keyword "") title-body
               (string-trim-start (string-after title-body todo-keyword))))
            (first (string-first-word after-todo)))
       (if (priority-token? first)
         (string-trim-start (string-after after-todo first))
-        (string-trim-start after-todo)))))
+        (string-trim-start after-todo))))
 
-(define-rust-pure planning-key-kind planning-key-kind-rust
-  ((key "&str")) "&'static str"
+(def (planning-key-kind key)
   (if (ascii-ci=? key "SCHEDULED") "scheduled"
     (if (ascii-ci=? key "DEADLINE") "deadline"
       (if (ascii-ci=? key "CLOSED") "closed" ""))))
 
-(define-rust-pure priority-token? priority-token-rust
-  ((word "&str")) "bool"
+(def (priority-token? word)
   (let* ((after-prefix (string-after word "[#"))
          (inner (string-before after-prefix "]")))
     (and (string-prefix? word "[#")
@@ -163,19 +143,15 @@
 
 ;; Return only an admitted cookie's value.  The empty string means that the
 ;; headline has no priority; the Rust projection never scans title syntax.
-(define-rust-pure headline-priority-cookie headline-priority-cookie-rust
-  ((content "&str")) "String"
-  (using ((priority-token? "&str"))
-    (let* ((word (string-first-word content))
+(def (headline-priority-cookie content)
+  (let* ((word (string-first-word content))
            (after-prefix (string-after word "[#")))
       (if (priority-token? word)
         (string-before after-prefix "]")
-        ""))))
+        "")))
 
-(define-rust-pure headline-display-title headline-display-title-rust
-  ((content "&str") (has-tags "bool")) "String"
-  (using ((priority-token? "&str"))
-    (let* ((trimmed (string-trim content))
+(def (headline-display-title content has-tags)
+  (let* ((trimmed (string-trim content))
            (first (string-first-word trimmed))
            (without-priority
             (if (priority-token? first)
@@ -183,40 +159,31 @@
               trimmed)))
       (if has-tags
         (string-before-last-word without-priority)
-        (string-trim without-priority)))))
+        (string-trim without-priority))))
 
-(define-rust-pure headline-anchor-slug headline-anchor-slug-rust
-  ((title "&str")) "String"
+(def (headline-anchor-slug title)
   (let* ((lower (string-lowercase title)))
     (string-join (string-words lower) "-")))
 
 ;; Org's COMMENT marker is a case-sensitive headline word after TODO and
 ;; priority have been resolved. Structural keywords remain case-insensitive.
-(define-rust-pure headline-comment? headline-comment-rust
-  ((display-title "&str")) "bool"
+(def (headline-comment? display-title)
   (equal? (string-first-word display-title) "COMMENT"))
 
 ;; A query checks the source keyword only after the same Scheme-owned state
 ;; algorithm admits it under file-local or configured declarations. The call is
 ;; lowered to Rust with an explicit typed pure-function signature.
-(define-rust-pure todo-keyword-matches? todo-keyword-matches-rust
-  ((title "&str") (directives "&[String]")
-   (configured-todo "&[String]") (configured-done "&[String]")
-   (expected "&str")) "bool"
-  (using ((todo-state-from-directives "&str" "&[String]"
-                                      "&[String]" "&[String]"))
-    (let* ((state (todo-state-from-directives
+(def (todo-keyword-matches? title directives configured-todo configured-done expected)
+  (let* ((state (todo-state-from-directives
                    title directives configured-todo configured-done))
            (candidate (string-first-word title)))
       (and (or (equal? state "todo") (equal? state "done"))
-           (equal? candidate expected)))))
+           (equal? candidate expected))))
 
 ;; Memory is a projection of admitted headline, planning and tag Elements.
 ;; Rust supplies those typed Element facts; this Scheme function owns their
 ;; lifecycle meaning in both the interpreter and the AOT consumer.
-(define-rust-pure memory-headline-state memory-headline-state-rust
-  ((todo-type "&str") (closed "bool") (planned "bool")
-   (archived "bool")) "&'static str"
+(def (memory-headline-state todo-type closed planned archived)
   (if archived "archived"
     (if (or (equal? todo-type "done") closed) "closed"
       (if (or (equal? todo-type "todo") planned) "current"

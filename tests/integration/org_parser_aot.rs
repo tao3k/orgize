@@ -25,7 +25,6 @@ fn token_name(token: &gerbil_parser_rowan::SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
-#[test]
 fn scheme_declared_macro_objects_project_into_rowan_and_graph() {
     check_org_aot_element!("{{{issue(42)}}}\n", "macro", "name" => "issue");
     let document =
@@ -48,7 +47,6 @@ fn scheme_declared_macro_objects_project_into_rowan_and_graph() {
     assert_eq!(malformed.syntax().to_string(), "{{{9bad}}} {{{broken\n");
 }
 
-#[test]
 fn scheme_declared_entities_require_catalog_names_and_preserve_postfix() {
     check_org_aot_element!("\\alpha{}\n", "entity", "name" => "alpha");
     let document =
@@ -89,7 +87,6 @@ fn scheme_declared_entities_require_catalog_names_and_preserve_postfix() {
     );
 }
 
-#[test]
 fn scheme_declared_babel_call_is_not_a_generic_keyword() {
     let source = "#+CALL: build(input=42)\n";
     check_org_aot_element!(source, "babel-call", "value" => "build(input=42)");
@@ -102,7 +99,6 @@ fn scheme_declared_babel_call_is_not_a_generic_keyword() {
     );
 }
 
-#[test]
 fn scheme_emphasis_objects_project_into_rowan_and_element_graph() {
     let source = "*bold* /italic/ _under_ +strike+\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -137,7 +133,6 @@ fn scheme_emphasis_objects_project_into_rowan_and_element_graph() {
     assert_eq!(repeated_document.syntax().to_string(), repeated);
 }
 
-#[test]
 fn headings_form_nested_sections_and_closed_blocks_remain_lossless() {
     let source = "é\r\n* Parent\n#+BEGIN_SRC rust\ncode\n#+END_SRC\n** Child\nbody\r* Sibling\n";
     let root = parse(source);
@@ -165,7 +160,6 @@ fn headings_form_nested_sections_and_closed_blocks_remain_lossless() {
     );
 }
 
-#[test]
 fn scheme_declared_paragraphs_preserve_line_breaks_and_link_ancestry() {
     let source = "* Task\r\nalpha\r\nbeta\n\n[[https://example.test][inside]]\n";
     let root = parse(source);
@@ -192,7 +186,6 @@ fn scheme_declared_paragraphs_preserve_line_breaks_and_link_ancestry() {
     );
 }
 
-#[test]
 fn scheme_declared_table_builds_rows_and_cells_without_paragraph_claims() {
     let source = "* Data\n| Name | Value |\n|------+-------|\n| é\\|x | 42 |\nAfter\n";
     let root = parse(source);
@@ -231,7 +224,6 @@ fn scheme_declared_table_builds_rows_and_cells_without_paragraph_claims() {
     );
 }
 
-#[test]
 fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend() {
     let source = "* Blocks\n#+begin_quote\nquoted\n#+end_quote\n#+begin_example\nliteral\n#+end_example\n#+begin_verse\nverse\n#+end_verse\n#+begin_center\ncentered\n#+end_center\n#+begin_comment\nhidden\n#+end_comment\n#+begin_export html\n<b>raw</b>\n#+end_export\nAfter\n";
     let root = parse(source);
@@ -283,7 +275,6 @@ fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend
     );
 }
 
-#[test]
 fn unmatched_greater_block_does_not_swallow_following_headline() {
     let source = "* First\n#+begin_quote\nunclosed\n** Next\nvisible\n";
     let root = parse(source);
@@ -302,7 +293,6 @@ fn unmatched_greater_block_does_not_swallow_following_headline() {
     );
 }
 
-#[test]
 fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
     let source = "* Task\n#+begin_quote\n[[id:inside]]\n| a | b |\n#+begin_example\n[[id:literal]]\n#+end_example\n#+end_quote\n#+begin_verse\n[[id:verse]]\n#+end_verse\n#+begin_center\n[[id:center]]\n#+end_center\n";
     let root = parse(source);
@@ -358,7 +348,6 @@ fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
     );
 }
 
-#[test]
 fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
     let source = "* Open\r\n#+begin_src rust\r\n** source text\r\n";
     let root = parse(source);
@@ -383,7 +372,6 @@ fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
     );
 }
 
-#[test]
 fn closed_source_block_masks_heading_looking_body_lines() {
     let source = "* One\n#+begin_src rust\n** Next\n#+end_src\n";
     let root = parse(source);
@@ -402,7 +390,6 @@ fn closed_source_block_masks_heading_looking_body_lines() {
     );
 }
 
-#[test]
 fn many_sibling_sections_keep_exact_source_order() {
     let source = "* item\n".repeat(10_000);
     let root = parse(&source);
@@ -410,7 +397,6 @@ fn many_sibling_sections_keep_exact_source_order() {
     assert_eq!(root.children().count(), 10_000);
 }
 
-#[test]
 fn git_tracked_org_document_is_lossless_at_the_current_structural_boundary() {
     let source = include_str!("../fixtures/org-elements/representative.org");
     let root = parse(source);
@@ -429,7 +415,6 @@ fn git_tracked_org_document_is_lossless_at_the_current_structural_boundary() {
     );
 }
 
-#[test]
 fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     let source = include_str!("../fixtures/org-elements/representative.org");
     let root = parse(source);
@@ -478,7 +463,6 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     );
 }
 
-#[test]
 fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
     let source = "#+TITLE: α fixture\n* Task\nSCHEDULED: <2026-09-24 Thu> DEADLINE: <2026-09-25 Fri>\nBody\nSCHEDULED: ordinary prose\n#+begin_src text\nliteral\n#+end_src\n";
     let root = parse(source);
@@ -532,7 +516,6 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
     );
 }
 
-#[test]
 fn clock_is_a_source_backed_element_between_paragraphs() {
     let source = "* Task\nBefore\nCLOCK: [2026-09-24 Thu 10:00]--[2026-09-24 Thu 11:00] => 1:00\nAfter\n#+begin_example\nCLOCK: literal\n#+end_example\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -579,7 +562,6 @@ fn clock_is_a_source_backed_element_between_paragraphs() {
     );
 }
 
-#[test]
 fn tracked_fixture_has_scheme_owned_keywords_and_planning() {
     let source = include_str!("../fixtures/org-elements/representative.org");
     let root = parse(source);
@@ -598,7 +580,6 @@ fn tracked_fixture_has_scheme_owned_keywords_and_planning() {
     );
 }
 
-#[test]
 fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
     let fixtures = [
         (
@@ -743,7 +724,6 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
     }
 }
 
-#[test]
 fn invalid_property_drawer_recovers_without_claiming_node_properties() {
     let source = "* Task\n:PROPERTIES:\nnot a property\n:END:\n** Next\n";
     let root = parse(source);
@@ -762,7 +742,6 @@ fn invalid_property_drawer_recovers_without_claiming_node_properties() {
     );
 }
 
-#[test]
 fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
     let fixtures = [
         (
@@ -857,7 +836,6 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
     }
 }
 
-#[test]
 fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
     let source = include_str!(
         "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org"
@@ -960,7 +938,6 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
     );
 }
 
-#[test]
 fn incomplete_link_remains_lossless_text() {
     let source = "* One\nparagraph [[unfinished\n** Next\n";
     let root = parse(source);
@@ -978,3 +955,7 @@ fn incomplete_link_remains_lossless_text() {
         2
     );
 }
+
+#[path = "org_parser_aot_cases.rs"]
+mod native_cases;
+pub(super) use native_cases::NATIVE_CASES;

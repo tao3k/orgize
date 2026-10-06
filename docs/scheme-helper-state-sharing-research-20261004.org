@@ -1,0 +1,76 @@
+#+title: Request-local Scheme helper defaults — 2026-10-04
+
+* Identity and scope
+Orgize branch =codex/native-org-recovery=, HEAD
+=479b2763fa1924385a2df824d029e9ba35341bcd=; parser detached HEAD
+=e7c6761dc79202abe50931bd78ee3f0930d61f8f=. Existing dirty edits are retained.
+This candidate adds to the preceding lazy-name-index experiment, not directly
+to the qualified prefix program. Candidate output:
+=target/helper-state-sharing-candidate-20261004=.
+Fold source SHA256:
+=8f80a4a6373b393f75517645fae178f448187d00fe313a4f89c6ff3897d403d2=.
+
+* Ownership and invariant
+The private helper initializer lazily constructs an identity-keyed cache on
+the first helper invocation. It retains at most 128 typed immutable default
+state prototypes per parse. Booleans, unsigned integers and empty frame stacks
+are the existing admitted defaults. Persistent parameter/state updates share
+unchanged entries without mutating prototypes. The exported
+=fold-initial-states= remains unchanged and returns fresh nonempty state lists.
+Root initialization is not cached. Parameter arity, argument types, bounds,
+helper lookup and recursion checks retain their live execution positions.
+
+Outside a request there is no retained prototype. Each =run-event-fold= binds
+a fresh pending marker, including exceptional exits. Mutable declarations
+are revalidated on subsequent requests; this does not authorize mutation of
+admitted IR during a parse. No global cache, public DSL, compatibility path,
+Gambit patch, feature removal, or profile/concurrency reduction is added.
+
+* Native evidence
+Maintained Justfile owners produced optimized loadable and static AOT modules.
+=scheme-event-fold-state-test= passed all 19 private cases;
+=scheme-event-fold-candidate-test= passed all 38 fold cases;
+=scheme-event-test= passed the aggregate Org syntax suite.
+All three test lanes required =MODULE-OK=, =HARNESS-OK= and final =OK=.
+The first full fold attempt failed because the supplied load path omitted
+=:core/observability/debug=. The corrected dependency path passed; no test or
+module was disabled. Parser =git diff --check= passed.
+
+Private cases cover identity reuse, lazy construction, 128-entry bound,
+invalid-default rejection, persistent duplicate-name updates, empty-stack
+defaults, successive and nested argument isolation, live missing-helper/
+arity/type/bounds rejection, and request binding restoration on error.
+
+* Native ASP A/B receipts
+The reference is =target/name-set-lazy-candidate-20261004/lib=. ASP's public
+Scenario API owns all 20 samples and statistics, with unchanged 100ms p95
+admission. Every sample parses ONE complete fixture, not 1000/10000 concurrent
+documents. Outputs are native =.ss= receipts in the candidate root.
+
+| Fixture/order | Baseline p50 ms | Candidate p50 ms | Baseline p95 ms | Candidate p95 ms | Gates |
+|---------------+-----------------+------------------+-----------------+------------------+-------|
+| doc.org, baseline then candidate | 1.723 | 1.599 | 2.196 | 11.698 | pass/pass |
+| entity-heavy.org, candidate then baseline | 4.081 | 5.671 | 60.295 | 25.785 | pass/pass |
+
+Source and lossless event identities match for each pair. Entity results are
+zero for doc, and 22 named plus one space entity for entity-heavy. Dynamic
+helper invocation counts and exclusive CPU attribution remain unmeasured.
+No compiler or test lane ran alongside timing legs. The doc receipt comparator
+did run alongside the entity candidate process; these are not isolated-host
+timings. A host snapshot was load 77.40/108.30/110.33.
+
+The mixed median/tail results do NOT establish a repeatable whole-parser
+speedup. Selected allocation deltas of zero are not proof of no allocation.
+The structural saving is one default-state construction per admitted helper
+declaration after its first invocation, within the cache cap.
+
+* Remaining gates
+The candidate is NOT promoted. The primary manifest remains byte-identical
+to the qualified prefix program
+=sha256:a8fa5deb44c22a1dedb65b76ebac50cafd9b71115d3ddda5638672f0aaccbe4f=.
+Module static generation is not new native FFI linking. Both Rust-scheduled
+and Scheme-lifecycle consumers, Python bindings, 1000/10000-document concurrent
+matrices and strict Query performance still need qualification against any
+promoted candidate. Next evidence should use helper-rich matched scenarios
+with declared operation units and repeatable native broad-consumer receipts,
+not infer helper hotspot dominance from this structural change.

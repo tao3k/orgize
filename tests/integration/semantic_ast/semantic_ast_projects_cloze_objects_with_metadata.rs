@@ -7,7 +7,6 @@ use orgize::{
 };
 
 #[cfg(feature = "syntax-org-fc")]
-#[test]
 fn semantic_ast_projects_cloze_objects_with_metadata() {
     let doc = Org::parse("{{*text*}{hint}@card-id}").document();
 
@@ -44,7 +43,6 @@ fn semantic_ast_projects_cloze_objects_with_metadata() {
 }
 
 #[cfg(feature = "syntax-org-fc")]
-#[test]
 fn cloze_text_uses_graph_children_and_complex_fallback() {
     let source = "{{*大胆*}} and {{*text* [brackets]}}";
     let graph = orgize::org_aot::parse_org_aot(source).expect("Scheme cloze graph");
@@ -101,3 +99,16 @@ fn cloze_text_uses_graph_children_and_complex_fallback() {
         );
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    #[cfg(feature = "syntax-org-fc")]
+    (
+        "semantic_ast::semantic_ast_projects_cloze_objects_with_metadata::semantic_ast_projects_cloze_objects_with_metadata",
+        semantic_ast_projects_cloze_objects_with_metadata,
+    ),
+    #[cfg(feature = "syntax-org-fc")]
+    (
+        "semantic_ast::semantic_ast_projects_cloze_objects_with_metadata::cloze_text_uses_graph_children_and_complex_fallback",
+        cloze_text_uses_graph_children_and_complex_fallback,
+    ),
+];

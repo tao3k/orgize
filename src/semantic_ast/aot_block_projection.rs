@@ -7,7 +7,7 @@ use super::GraphProjector;
 use crate::ast::aot_block_switches::{
     project_block_header_args, project_block_parameters, project_block_switches,
 };
-use crate::ast::block_metadata::{BlockLineOptions, parse_block_lines, split_block_lines};
+use crate::ast::block_metadata::{BlockLineOptions, parse_block_lines};
 use crate::ast::block_model::{BlockSwitches, SemanticFixedWidth};
 use crate::ast::model::{Block, BlockKind, Keyword, ParsedAnnotation};
 
@@ -41,8 +41,8 @@ impl GraphProjector<'_> {
                 .or_else(|| record.field("name").map(str::to_owned))
         };
         let language = record.field("language").map(str::to_owned);
-        let parameters = project_block_parameters(record, self.source);
-        let header_args = project_block_header_args(record, self.source);
+        let parameters = project_block_parameters(record);
+        let header_args = project_block_header_args(record);
         let value = record.field("body").unwrap_or_default().to_owned();
         let body_range = record
             .field_range("raw-body")
@@ -51,7 +51,6 @@ impl GraphProjector<'_> {
             usize::from(range.start())
         });
         let source = body_range.map(|range| self.raw(range));
-        let source_lines = split_block_lines(source.unwrap_or(&value));
         let (raw_switches, switches) = project_block_switches(record, self.source);
         let lines = parse_block_lines(
             &value,
@@ -61,10 +60,9 @@ impl GraphProjector<'_> {
                 tab_width: self.document.config().src_tab_width,
                 preserve_indentation: switches.preserve_indentation,
             },
-            |index| {
-                let line = &source_lines[index];
-                let start = body_start + line.start;
-                let end = body_start + line.end;
+            |start, end| {
+                let start = body_start + start;
+                let end = body_start + end;
                 self.annotation(TextRange::new((start as u32).into(), (end as u32).into()))
             },
         );
@@ -95,7 +93,6 @@ impl GraphProjector<'_> {
     pub(super) fn fixed_width(&self, record: &GraphRecord) -> SemanticFixedWidth<ParsedAnnotation> {
         let range = record.range;
         let source = self.raw(range);
-        let source_lines = split_block_lines(source);
         let value = record.values("value").collect::<String>();
         let switches = BlockSwitches::default();
         let lines = parse_block_lines(
@@ -106,10 +103,9 @@ impl GraphProjector<'_> {
                 tab_width: self.document.config().src_tab_width,
                 preserve_indentation: false,
             },
-            |index| {
-                let line = &source_lines[index];
-                let start = usize::from(range.start()) + line.start;
-                let end = usize::from(range.start()) + line.end;
+            |start, end| {
+                let start = usize::from(range.start()) + start;
+                let end = usize::from(range.start()) + end;
                 self.annotation(TextRange::new((start as u32).into(), (end as u32).into()))
             },
         );

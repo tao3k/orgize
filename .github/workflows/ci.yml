@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    name: test / ${{ matrix.os }}
+    name: test / ${{ matrix.os }} / ${{ matrix.runtime }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -24,6 +24,13 @@ jobs:
           - ubuntu-latest
           - macos-latest
           - windows-latest
+        runtime: [runtime-rust, runtime-scheme]
+        exclude:
+          - os: windows-latest
+            runtime: runtime-scheme
+
+    env:
+      RUNTIME_FEATURES: orgize/${{ matrix.runtime }},orgizepy/${{ matrix.runtime }},orgize/indexmap,orgize/chrono,orgize/tracing,orgize/datafusion-sql,orgize/syntax-org-fc,orgize/md
 
     steps:
       - name: Checkout code
@@ -89,28 +96,28 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run tests
-        run: cargo test --workspace --all-targets --all-features
+        run: cargo test --workspace --all-targets --no-default-features --features "${{ env.RUNTIME_FEATURES }}"
 
       - name: Run focused workspace admission performance gate
-        run: cargo test --release --test integration_test workspace_contract_scale_scenario_stays_in_budget -- --ignored
+        run: cargo test --release --no-default-features --features "${{ matrix.runtime }}" --test integration_test workspace_contract_scale_scenario_stays_in_budget -- --ignored
 
       - name: Run focused Org query performance gate
-        run: cargo test --release --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored
+        run: cargo test --release --no-default-features --features "${{ matrix.runtime }}" --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored
 
       - name: Run plan ledger AOT performance gate
         id: plan_ledger_aot_gate
-        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --nocapture
+        run: cargo test --release --no-default-features --features "${{ matrix.runtime }}" --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --nocapture
 
       - name: Profile failed plan ledger AOT gate
         if: ${{ failure() && steps.plan_ledger_aot_gate.conclusion == 'failure' }}
         continue-on-error: true
         env:
           ORGIZE_PROFILE_PLAN_LEDGER: "1"
-        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --nocapture
+        run: cargo test --release --no-default-features --features "${{ matrix.runtime }}" --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --nocapture
 
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets --no-default-features --features "${{ env.RUNTIME_FEATURES }}" -- -D warnings
 
       - name: Save sccache cache (fallback)
         if: ${{ always() && !cancelled() && env.SCCACHE_GHA_ENABLED != 'true' }}
@@ -159,11 +166,7 @@ jobs:
           gxpkg deps --install
           gerbil build
       - name: Verify Scheme Org parser and Contract
-        run: |
-          just scheme-test "$GERBIL_PATH/lib" "$GERBIL_PATH/lib"
-          generated="$(mktemp)"
-          gerbil env gxi languages/org/v1/generate-rowan-event-ir.ss "$generated"
-          cmp "$generated" languages/org/v1/generated/rowan-events.ir.json
+        run: just scheme-test "$GERBIL_PATH/lib" "$GERBIL_PATH/lib"
       - name: Verify independent C and Rust consumers
         run: just contract-smoke
       - name: Verify Python SDK

@@ -13,11 +13,15 @@ mod core_types;
 mod index;
 mod surface;
 
+#[cfg(test)]
+pub(crate) use core_parser::tests::NATIVE_CASES as EXPRESSION_NATIVE_CASES;
+
 use core::{FieldKind, QueryExpr, list_head};
 pub use core::{OrgElementsQueryExpressionError, org_elements_index_query_from_expr_str};
 pub(in crate::ast) use core::{
-    apply_org_elements_query_kind, parse_org_contract_expression_block,
-    parse_org_elements_query_expression_block,
+    apply_org_elements_query_kind, org_contract_block_is_admitted, org_query_block_is_admitted,
+    parse_org_contract_expression_block, parse_org_elements_query_expression_block,
+    selector_plist_properties,
 };
 pub(crate) use core::{
     parse_org_contract_pair_document_equality_block, parse_org_contract_pair_node_equality_block,

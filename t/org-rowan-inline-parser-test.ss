@@ -2,9 +2,9 @@
 ;;; The Org-owned algorithm executes as Scheme before AOT lowering.
 
 (import (only-in :std/test check test-case test-suite)
+        (only-in "../languages/org/v1/modules/org-parser/macro-funs.ss"
+                 expand-org-macro-template expand-org-property-macros)
         (only-in :clan/poo/object .o)
-        (only-in :std/encoding/json JSONReadOptions string->json)
-        (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks)
         (only-in "../languages/org/v1/parser.ss" org-v1-line-structure)
@@ -20,17 +20,50 @@
                  make-org-inline-script org-inline-script-node
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
-        (only-in "org-parser-test-support.ss" check-org-ast-with)
-        (only-in "../languages/org/v1/rowan-event-fixture.ss" rowan-event-fixture-json)
-        (only-in "../languages/org/v1/rowan-event-parser.ss"
+        (only-in "org-parser-test-support.ss" check-org-ast-with org-events-cover-source?)
+        (only-in "../languages/org/v1/rowan-event-runtime.ss"
                  parse-org-rowan-events
                  parse-org-rowan-events-with-inlinetask-level
-                 parse-org-rowan-events-with-inline-script-policy
-                 parse_org_rowan_events))
+                 parse-org-rowan-events-with-inline-script-policy))
 (export org-v1-rowan-inline-parser-test)
 
 (def org-v1-rowan-inline-parser-test
   (test-suite "Org inline source-backed Objects"
+    (test-case "native macro templates preserve placeholder and Unicode semantics"
+      (for-each
+       (lambda (row)
+         (check (expand-org-macro-template (car row) '("λ,a" "β")) => (cadr row)))
+       '(("" "") ("literal λ" "literal λ") ("$1/$2/$9" "λ,a/β/")
+         ("$0::$1::$0" "λ,a, β::λ,a::λ,a, β") ("$$/$x/$" "$/$x/$")
+         ("$10 $01 $$$1" "λ,a0 λ,a, β1 $λ,a")))
+      (check (expand-org-macro-template "$0/$1" '()) => "/")
+      ;; Argument indexing is built once, not traversed for every placeholder.
+      (for-each
+       (lambda (count)
+         (check (expand-org-macro-template
+                 (string-join (make-list count "$1") "")
+                 (make-list count "x")) => (make-string count #\x)))
+       '(1000 10000)))
+    (test-case "secondary property macros share native escaped argument events"
+      (let (definitions '(("x" . "old") ("x" . "$1/$2/$0")))
+        (check (expand-org-property-macros "λ/{{{x(a\\,b,c)}}}/β" definitions)
+          => "λ/a,b/c/a,b, c/β")
+        (check (expand-org-property-macros "* {{{x( a , b )}}}\r\nβ" definitions)
+          => "* a/b/a, b\r\nβ")
+        (check (expand-org-property-macros "{{{missing(x)}}} {{{x(abc)" definitions)
+          => "{{{missing(x)}}} {{{x(abc)")
+        (check (expand-org-property-macros "={{{x(a,b)}}}=" definitions)
+          => "={{{x(a,b)}}}=")))
+    (test-case "macro escaped commas are native argument content"
+      (check-org-ast-with parse-org-rowan-events "{{{x(a\\,b,c)}}}\n"
+        (OrgFile (OrgParagraph (OrgTextLine
+          (OrgMacro (MacroDelimiter 0 3) (MacroName 3 4) (MacroDelimiter 4 5)
+            (MacroArguments
+              (MacroArgumentContent (OrgMacroArgument
+                (MacroArgumentText 5 6) (MacroTrivia 6 7) (MacroArgumentText 7 9)))
+              (MacroTrivia 9 10)
+              (MacroArgumentContent (OrgMacroArgument (MacroArgumentText 10 11))))
+            (MacroDelimiter 11 15)) (TextLine 15 16))))))
     (test-case "POO strategy declarations reject untyped rule tuples"
       (let* ((block (make-org-event-block
                     1 (car (line-structure-blocks org-v1-line-structure))))
@@ -229,7 +262,8 @@
          (OrgParagraph
           (OrgTextLine
            (OrgMacro (MacroDelimiter 0 3) (MacroName 3 8)
-                     (MacroDelimiter 8 9) (MacroArguments 9 11)
+                     (MacroDelimiter 8 9)
+                     (MacroArguments (MacroArgumentContent (OrgMacroArgument (MacroArgumentText 9 11))))
                      (MacroDelimiter 11 15))
            (TextLine 15 16)))))
       (check-org-ast-with parse-org-rowan-events
@@ -242,7 +276,7 @@
          (OrgParagraph
           (OrgTextLine
            (OrgCitation
-            (CitationDelimiter 0 6)
+            (OrgCitationHead (CitationDelimiter 0 6))
             (OrgCitationReference
              (CitationReferenceMarker 6 7)
              (CitationReferenceKey 7 9))
@@ -256,7 +290,7 @@
         (OrgFile
          (OrgParagraph
           (OrgTextLine
-           (OrgCitation (CitationDelimiter 0 6)
+           (OrgCitation (OrgCitationHead (CitationDelimiter 0 6))
                         (OrgCitationReference
                          (CitationReferenceMarker 6 7)
                          (CitationReferenceKey 7 14))
@@ -273,7 +307,7 @@
         (OrgFile
          (OrgParagraph
           (OrgTextLine
-           (OrgCitation (CitationDelimiter 0 6)
+           (OrgCitation (OrgCitationHead (CitationDelimiter 0 6))
                         (OrgCitationReference
                          (CitationReferenceMarker 6 7)
                          (CitationReferenceKey 7 10))
@@ -284,10 +318,11 @@
         (OrgFile
          (OrgParagraph
           (OrgTextLine
-           (OrgCitation (CitationDelimiter 0 6)
+           (OrgCitation (OrgCitationHead (CitationDelimiter 0 6))
                         (OrgCitationReference
                          (OrgCitationReferencePrefix
-                          (OrgTextLine (TextLine 6 18)))
+                          (CitationReferencePrefixContent
+                           (OrgTextLine (TextLine 6 18))))
                          (CitationReferenceMarker 18 19)
                          (CitationReferenceKey 19 22))
                         (CitationDelimiter 22 23))
@@ -298,18 +333,25 @@
          (OrgParagraph
           (OrgTextLine
            (OrgCitation
-            (CitationDelimiter 0 11)
+            (OrgCitationHead (CitationDelimiter 0 6)
+                             (CitationStyle 6 10)
+                             (CitationDelimiter 10 11))
             (OrgCitationReference
              (OrgCitationReferencePrefix
-              (OrgTextLine (TextLine 11 15)))
+              (CitationReferencePrefixContent
+               (OrgTextLine (TextLine 11 15))))
              (CitationReferenceMarker 15 16)
              (CitationReferenceKey 16 23)
              (OrgCitationReferenceSuffix
-              (OrgTextLine (TextLine 23 29))))
+              (TextLine 23 24)
+              (CitationReferenceSuffixContent
+               (OrgTextLine (TextLine 24 29)))))
             (CitationSeparator 29 30)
             (OrgCitationReference
              (OrgCitationReferencePrefix
-              (OrgTextLine (TextLine 30 35)))
+              (TextLine 30 31)
+              (CitationReferencePrefixContent
+               (OrgTextLine (TextLine 31 35))))
              (CitationReferenceMarker 35 36)
              (CitationReferenceKey 36 43))
             (CitationDelimiter 43 44))
@@ -320,16 +362,18 @@
          (OrgParagraph
           (OrgTextLine
            (OrgCitation
-            (CitationDelimiter 0 6)
+            (OrgCitationHead (CitationDelimiter 0 6))
             (OrgCitationGlobalPrefix
-             (OrgTextLine (TextLine 6 9)))
+             (CitationGlobalPrefixContent
+              (OrgTextLine (TextLine 6 9))))
             (CitationSeparator 9 10)
             (OrgCitationReference
              (CitationReferenceMarker 10 11)
              (CitationReferenceKey 11 14))
             (CitationSeparator 14 15)
             (OrgCitationGlobalSuffix
-             (OrgTextLine (TextLine 15 18)))
+             (CitationGlobalSuffixContent
+              (OrgTextLine (TextLine 15 18))))
             (CitationDelimiter 18 19))
            (TextLine 19 20)))))
       (check-org-ast-with parse-org-rowan-events
@@ -338,12 +382,59 @@
          (OrgParagraph
           (OrgTextLine
            (TextLine 0 11)
-           (OrgCitation (CitationDelimiter 11 17)
+           (OrgCitation (OrgCitationHead (CitationDelimiter 11 17))
                         (OrgCitationReference
                          (CitationReferenceMarker 17 18)
                          (CitationReferenceKey 18 22))
                         (CitationDelimiter 22 23))
            (TextLine 23 24))))))
+    (test-case "citation header components are native Scheme source spans"
+      (check-org-ast-with parse-org-rowan-events
+        "[cite/noauthor/bare:@key]\r\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation
+            (OrgCitationHead (CitationDelimiter 0 6)
+                             (CitationStyle 6 14)
+                             (CitationDelimiter 14 15)
+                             (CitationVariant 15 19)
+                             (CitationDelimiter 19 20))
+            (OrgCitationReference
+             (CitationReferenceMarker 20 21)
+             (CitationReferenceKey 21 24))
+            (CitationDelimiter 24 25))
+           (TextLine 25 27)))))
+      (for-each
+       (lambda (source)
+         (let (events (parse-org-rowan-events source))
+           (check (org-events-cover-source? source events) => #t)
+           (check (filter (lambda (event)
+                            (and (eq? (car event) 'start)
+                                 (eq? (cadr event) 'OrgCitation)))
+                          events) => '())))
+       '("[cite/:@key]\r\n" "[cite/text/:@key]\n"
+         "[cite/text//bare:@key]\r\n" "[cite/text bare:@key]\n"
+         "[cite/text:no key]\n")))
+    (test-case "citation affix content ranges are native Scheme decisions"
+      (check-org-ast-with parse-org-rowan-events
+        "[cite: \t; \t@key \t; \t]\r\n"
+        (OrgFile
+         (OrgParagraph
+          (OrgTextLine
+           (OrgCitation
+            (OrgCitationHead (CitationDelimiter 0 6))
+            (OrgCitationGlobalPrefix (TextLine 6 8))
+            (CitationSeparator 8 9)
+            (OrgCitationReference
+             (OrgCitationReferencePrefix (TextLine 9 11))
+             (CitationReferenceMarker 11 12)
+             (CitationReferenceKey 12 15)
+             (OrgCitationReferenceSuffix (TextLine 15 17)))
+            (CitationSeparator 17 18)
+            (OrgCitationGlobalSuffix (TextLine 18 20))
+            (CitationDelimiter 20 21))
+           (TextLine 21 23))))))
     (test-case "timestamp dates are Scheme-owned source-backed Objects"
       (check-org-ast-with parse-org-rowan-events
         "<2026-09-23 Wed>\n"
@@ -351,12 +442,16 @@
          (OrgParagraph
           (OrgTextLine
            (OrgTimestampActive
-            (TimestampDelimiter 0 1)
             (OrgTimestampPoint
-             (TimestampDate 1 11)
+             (TimestampDelimiter 0 1)
+             (TimestampDate (TimestampYear 1 5)
+                            (TimestampDateSeparator 5 6)
+                            (TimestampMonth 6 8)
+                            (TimestampDateSeparator 8 9)
+                            (TimestampDay 9 11))
              (TimestampTrivia 11 12)
-             (TimestampDayName 12 15))
-           (TimestampDelimiter 15 16))
+             (TimestampDayName 12 15)
+             (TimestampDelimiter 15 16)))
            (TextLine 16 17)))))
       (check-org-ast-with parse-org-rowan-events
         "[2026-09-23]--[2026-09-24]\n"
@@ -364,13 +459,23 @@
          (OrgParagraph
           (OrgTextLine
            (OrgTimestampInactive
-            (TimestampDelimiter 0 1)
-            (OrgTimestampPoint (TimestampDate 1 11))
-            (TimestampDelimiter 11 12)
+            (OrgTimestampPoint
+             (TimestampDelimiter 0 1)
+             (TimestampDate (TimestampYear 1 5)
+                            (TimestampDateSeparator 5 6)
+                            (TimestampMonth 6 8)
+                            (TimestampDateSeparator 8 9)
+                            (TimestampDay 9 11))
+             (TimestampDelimiter 11 12))
             (TimestampRangeSeparator 12 14)
-            (TimestampDelimiter 14 15)
-            (OrgTimestampPoint (TimestampDate 15 25))
-           (TimestampDelimiter 25 26))
+            (OrgTimestampPoint
+             (TimestampDelimiter 14 15)
+             (TimestampDate (TimestampSecondYear 15 19)
+                            (TimestampDateSeparator 19 20)
+                            (TimestampSecondMonth 20 22)
+                            (TimestampDateSeparator 22 23)
+                            (TimestampSecondDay 23 25))
+             (TimestampDelimiter 25 26)))
            (TextLine 26 27)))))
       (check-org-ast-with parse-org-rowan-events
         "[2026-09-23]-[2026-09-24]\n"
@@ -378,13 +483,23 @@
          (OrgParagraph
           (OrgTextLine
            (OrgTimestampInactive
-            (TimestampDelimiter 0 1)
-            (OrgTimestampPoint (TimestampDate 1 11))
-            (TimestampDelimiter 11 12)
+            (OrgTimestampPoint
+             (TimestampDelimiter 0 1)
+             (TimestampDate (TimestampYear 1 5)
+                            (TimestampDateSeparator 5 6)
+                            (TimestampMonth 6 8)
+                            (TimestampDateSeparator 8 9)
+                            (TimestampDay 9 11))
+             (TimestampDelimiter 11 12))
             (TimestampRangeSeparator 12 13)
-            (TimestampDelimiter 13 14)
-            (OrgTimestampPoint (TimestampDate 14 24))
-            (TimestampDelimiter 24 25))
+            (OrgTimestampPoint
+             (TimestampDelimiter 13 14)
+             (TimestampDate (TimestampSecondYear 14 18)
+                            (TimestampDateSeparator 18 19)
+                            (TimestampSecondMonth 19 21)
+                            (TimestampDateSeparator 21 22)
+                            (TimestampSecondDay 22 24))
+             (TimestampDelimiter 24 25)))
            (TextLine 25 26)))))
       (check-org-ast-with parse-org-rowan-events
         "<2026-09-23 Wed 10:00-11:00 ++1w -2d>\n"
@@ -392,18 +507,31 @@
          (OrgParagraph
           (OrgTextLine
            (OrgTimestampActive
-            (TimestampDelimiter 0 1)
             (OrgTimestampPoint
-             (TimestampDate 1 11)
+             (TimestampDelimiter 0 1)
+             (TimestampDate (TimestampYear 1 5)
+                            (TimestampDateSeparator 5 6)
+                            (TimestampMonth 6 8)
+                            (TimestampDateSeparator 8 9)
+                            (TimestampDay 9 11))
              (TimestampTrivia 11 12)
              (TimestampDayName 12 15)
              (TimestampTrivia 15 16)
-             (TimestampTime 16 27)
+             (TimestampTime
+              (TimestampHour 16 18) (TimestampTimeSeparator 18 19)
+              (TimestampMinute 19 21) (TimestampTimeRangeSeparator 21 22)
+              (TimestampTimeEnd
+               (TimestampEndHour 22 24) (TimestampTimeSeparator 24 25)
+               (TimestampEndMinute 25 27)))
              (TimestampTrivia 27 28)
-             (TimestampRepeater 28 32)
+             (TimestampRepeater (TimestampRepeaterMark 28 30)
+                                (TimestampRepeaterValue 30 31)
+                                (TimestampRepeaterUnit 31 32))
              (TimestampTrivia 32 33)
-             (TimestampDelay 33 36))
-            (TimestampDelimiter 36 37))
+             (TimestampDelay (TimestampDelayMark 33 34)
+                             (TimestampDelayValue 34 35)
+                             (TimestampDelayUnit 35 36))
+             (TimestampDelimiter 36 37)))
            (TextLine 37 38)))))
       (check-org-ast-with parse-org-rowan-events
         "<%%(diary-float t 1 2)>\n"
@@ -424,9 +552,72 @@
             (TimestampDelimiter 0 1)
             (TimestampDiaryExpression 1 22)
             (TimestampTrivia 22 23)
-            (TimestampTime 23 34)
+            (TimestampTime
+             (TimestampHour 23 25) (TimestampTimeSeparator 25 26)
+             (TimestampMinute 26 28) (TimestampTimeRangeSeparator 28 29)
+             (TimestampTimeEnd
+              (TimestampEndHour 29 31) (TimestampTimeSeparator 31 32)
+              (TimestampEndMinute 32 34)))
             (TimestampDelimiter 34 35))
            (TextLine 35 36))))))
+    (test-case "timestamp clocks and range endpoints are classified by Scheme"
+      (let* ((source "<2026-09-23 9:05-10:06>\r\n")
+             (events (parse-org-rowan-events source))
+             (components
+              (filter (lambda (event)
+                        (and (eq? (car event) 'token)
+                             (memq (cadr event)
+                                   '(TimestampHour TimestampMinute
+                                     TimestampEndHour TimestampEndMinute
+                                     TimestampTimeRangeSeparator)))) events)))
+        (check (org-events-cover-source? source events) => #t)
+        (check (map (lambda (event)
+                      (list (cadr event) (caddr event) (cadddr event))) components)
+               => '((TimestampHour 12 13) (TimestampMinute 14 16)
+                    (TimestampTimeRangeSeparator 16 17)
+                    (TimestampEndHour 17 19) (TimestampEndMinute 20 22))))
+      (for-each
+       (lambda (clock)
+         (let* ((source (string-append "<2026-09-23 " clock ">\n"))
+                (events (parse-org-rowan-events source)))
+           (check (org-events-cover-source? source events) => #t)
+           (check (filter (lambda (event)
+                            (and (eq? (car event) 'token)
+                                 (memq (cadr event)
+                                       '(TimestampHour TimestampMinute)))) events)
+                  => '())))
+       '("10:" ":05" "10::05")))
+    (test-case "timestamp cookie admission is native Scheme, including recovery"
+      (for-each
+       (lambda (cookie)
+         (let* ((source (string-append "<2026-09-23 " cookie ">\r\n"))
+                (events (parse-org-rowan-events source))
+                (cookies (filter (lambda (event)
+                                   (and (eq? (car event) 'start)
+                                        (memq (cadr event)
+                                              '(TimestampRepeater TimestampDelay))))
+                                 events)))
+           (check (org-events-cover-source? source events) => #t)
+           (check (map cadr cookies)
+                  => (list (if (char=? (string-ref cookie 0) #\-)
+                             'TimestampDelay 'TimestampRepeater)))
+           (check (map caddr (filter (lambda (event)
+                                     (and (eq? (car event) 'token)
+                                          (memq (cadr event)
+                                                '(TimestampRepeaterMark TimestampDelayMark))))
+                                   events)) => '(12))))
+       '("+1h" "++12d" ".+3w" "+4m" "+5y" "-2d" "--4w"))
+      (for-each
+       (lambda (cookie)
+         (let* ((source (string-append "<2026-09-23 " cookie ">\n"))
+                (events (parse-org-rowan-events source)))
+           (check (org-events-cover-source? source events) => #t)
+           (check (filter (lambda (event)
+                            (and (eq? (car event) 'start)
+                                 (memq (cadr event)
+                                       '(TimestampRepeater TimestampDelay))))
+                          events) => '())))
+       '("+" "++w" ".1w" "+-1w" "+1ww" "+1.2w" "---2d" "-d" "-2" "+1q")))
     (test-case "the complete Org entity catalog drives source-backed Objects"
       (check-org-ast-with parse-org-rowan-events
         "\\cent \\alpha{} \\frac12{}test\n"

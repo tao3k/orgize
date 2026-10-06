@@ -8,8 +8,10 @@
                  table-line-separator-token
                  table-line-trivia-token table-line-rule-token)
         (only-in "../../parser.ss" org-v1-line-structure))
-(import (only-in "event-table-formula.ss" table-formula-marker))
-(export table-event-initial table-close-form table-or-element-form)
+(import (only-in "event-table-formula.ss" table-formula-marker)
+        (only-in "event-source-content.ss" source-content-initial source-content-forms)
+        (only-in "objects.ss" make-org-event-helper))
+(export table-event-initial table-close-form table-or-element-form table-content-helper)
 
 (def table-rule (line-structure-table org-v1-line-structure))
 (def table-byte
@@ -38,9 +40,19 @@
 
 (def (table-cell-forms until)
   `((start-node ,(table-line-cell-node table-rule))
-    (call-source-helper inline-span ,table-cell-start ,until
+    (call-source-helper table-cell-content ,table-cell-start ,until
                         ((state inline-script-policy)))
     (finish-node)))
+
+(def table-content-helper
+  (make-org-event-helper
+   'table-cell-content (append source-content-initial '((inline-script-policy 2)))
+   (source-content-forms
+    'TableCellContent 'TableTrivia
+    (lambda (from until)
+      `((call-source-helper inline-span ,from ,until
+                             ((state inline-script-policy))))))
+   '(inline-script-policy)))
 
 (def (table-row-form)
   `(if (and (line-bytes-all-in? ,table-indent ,table-content-end

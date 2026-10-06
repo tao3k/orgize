@@ -175,10 +175,7 @@ fn has_ordered_property(section: &Section<ParsedAnnotation>) -> bool {
 }
 
 fn is_truthy_property_value(value: &str) -> bool {
-    matches!(
-        value.trim().to_ascii_lowercase().as_str(),
-        "t" | "true" | "yes" | "1"
-    )
+    super::org_native_values::scalar("property-truthy", &[value]) == "true"
 }
 
 fn local_effort(properties: &[Property<ParsedAnnotation>]) -> Option<super::OrgDuration> {
@@ -371,37 +368,25 @@ fn statistic_cookie_parts(
     Option<u32>,
     Option<u8>,
 ) {
-    let value = raw.trim().trim_start_matches('[').trim_end_matches(']');
-    if let Some(percent) = value.strip_suffix('%').and_then(parse_percent) {
-        return (
+    let row =
+        super::org_native_values::optional("statistic-cookie", raw).expect("native statistic row");
+    let [kind, done, total, percent]: [String; 4] = row.try_into().expect("native statistic arity");
+    match kind.as_str() {
+        "percent" => (
             ProgressStatisticCookieKind::Percent,
             None,
             None,
-            Some(percent),
-        );
-    }
-    if let Some((done, total)) = parse_fraction_cookie(value) {
-        return (
+            Some(percent.parse().expect("native percent")),
+        ),
+        "fraction" => (
             ProgressStatisticCookieKind::Fraction,
-            Some(done),
-            Some(total),
+            Some(done.parse().expect("native fraction done")),
+            Some(total.parse().expect("native fraction total")),
             None,
-        );
+        ),
+        "unknown" => (ProgressStatisticCookieKind::Unknown, None, None, None),
+        _ => panic!("native statistic kind"),
     }
-    (ProgressStatisticCookieKind::Unknown, None, None, None)
-}
-
-fn parse_fraction_cookie(value: &str) -> Option<(u32, u32)> {
-    let (done, total) = value.split_once('/')?;
-    Some((done.trim().parse().ok()?, total.trim().parse().ok()?))
-}
-
-fn parse_percent(value: &str) -> Option<u8> {
-    value
-        .trim()
-        .parse::<u8>()
-        .ok()
-        .filter(|value| *value <= 100)
 }
 
 fn add_todo(summary: &mut ProgressTodoSummary, state: Option<TodoState>) {

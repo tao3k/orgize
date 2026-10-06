@@ -1,0 +1,155 @@
+# SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+# SPDX-License-Identifier: Apache-2.0 AND LGPL-2.1-or-later
+
+* 10.08 Temporal Revisit Projection
+
+** Status and decision
+
+Design for the Orgize PR #21 source cut
+=16d2a8c3ac168d73b890262b29b756d4b4ec3361=. No API in this document
+is claimed to exist yet. This refines [[file:10.02_agent_memory_projection.org][10.02 Agent Memory Projection]].
+
+"Memory" is a consumer view of a changing Org document, not a new Org source
+kind or a claim that an old fact remains true. The useful source operation is
+to make a past observation available for a future review, re-execution, or
+reflection. Orgize should project the *evidence for that temporal relation*;
+the consumer decides whether and when to revisit it.
+
+The capability home is the Scheme [[file:../../languages/org/v1/modules/README.org][Org v1 module collection]].
+Agenda, notes, links, capture, attachments, LOGBOOK, and review compose over
+the same Element identities and source spans. The design must not turn their
+shared evidence into a standalone Memory source type or require every Org
+workflow to pass through a Memory card. The existing compact cards are one
+view for a consumer.
+The [[file:10.09_org_ecosystem_research.org][ecosystem research]] compares Org/Emacs practices with current Orgize
+interfaces and records the missing gates for this design.
+
+There are at least three independent questions:
+
+| Question | Source evidence | Decision owner |
+|----------+-----------------+----------------|
+| What was written or done? | Org headline, ID, span, timestamp, planning line, property, LOGBOOK event, link | Orgize projection |
+| Is a revisit due? | scheduled/repeater signal and last recorded review event | caller policy and scheduler |
+| Does the claim still hold, or has learning stabilized? | new test or human review outcome bound to a source cut and evidence | POO Flow / MRR / human reviewer |
+
+A =DONE= heading or =CLOSED= timestamp records lifecycle. It does not prove a
+bug was fixed in the current WorkTree. Re-reading a diary records exposure; it
+does not establish factual truth or durable understanding. The due date is a
+request for work, not an epistemic verdict.
+
+** Current implementation boundary
+
+The Scheme =org-elements/headline-properties.ss= function
+=memory-headline-state= computes =archived/closed/current/background= from
+supplied Element facts, and Scheme owns the named Element query definitions.
+The wider =src/semantic_ast/memory.rs= classification and
+=src/semantic_ast/memory_model.rs= card authority logic are still Rust source
+on this cut; =src/document/memory_projection.rs= also walks files and applies
+filters. Therefore the existing =AgentMemorySnapshot= is useful output, but
+its full authority policy is not yet a Scheme-owned projection. This proposal
+does not add a second Rust Memory runtime to compensate for that gap.
+The current Rust card logic marks a historical record as a possible
+supersession candidate when a current card shares an anchor or normalized
+title. That is a search hint; title equality cannot establish that one claim
+replaces another. Explicit source links, claim scope and later evidence are
+needed before a consumer can decide supersession.
+
+** Document-local Scheme projection to build
+
+This projection extends =org-parser= events and =org-elements= properties and
+queries. It is not a separate =org-memory= module. A view inspired by
+=org-super-agenda= may group already selected agenda rows, but must preserve
+the original selection and source anchors. Note-oriented views may traverse
+ID/link/attachment relations, but a cross-file backlink index remains a
+consumer capability. Both examples show why a general Org capability is a
+better owner than an AI-specific Memory abstraction.
+
+Use existing Org syntax: headings, =ID=/=CUSTOM_ID=, planning timestamps,
+active/inactive timestamps and repeaters, TODO transitions, LOGBOOK notes,
+clock intervals, links, tags, properties, and source spans. The official Org
+manual already distinguishes repeated scheduling from logging that an instance
+was acted on; preserve both signals rather than flattening them into one state
+([[https://orgmode.org/manual/Repeated-tasks.html][Repeated tasks]]).
+
+The Scheme projection should emit typed POO values with these identities:
+
+- source anchor: document identity, exact source digest, Element ID, source
+  span, and named query identity;
+- temporal observation: the native Org construct, its source span, event time
+  when present, and the time at which this source snapshot was admitted;
+- revisit declaration: target anchor, purpose (=verify=, =recall=, or
+  =reflect=), source scheduling signal, and any recorded prior attempt;
+- candidate explanation: which source observations make the target due,
+  deferred, closed, superseded, or ambiguous under the supplied snapshot.
+
+The projection is pure and document-local. It must not consult the wall clock
+implicitly, read other files, schedule jobs, infer that a test passed, or
+promote a claim to knowledge. An explicit evaluation time may be supplied for
+a =due as of= query, and the output must retain that time and source cut. A
+repeater is a scheduling expression; only a recorded review outcome can
+advance a review history. Source edits create a new cut, not a silent rewrite
+of the old observation.
+
+A fleeting thought can enter as a timestamped Org note. A Session can query
+its Element anchor together with later links, LOGBOOK events and related
+notes, then ask for a new review. The current Element query DSL only provides
+bounded document-local predicates and lineage; cross-document association,
+time ordering, and review-outcome aggregation remain implementation work.
+When a reviewed idea becomes a reusable claim, write a new linked Org entry
+with the episodes and counterexamples that justify it. This is the concrete
+short-to-long learning path; it is not an automatic change in a card label.
+
+Existing =MEMxxx= cards can be viewed as a compact display of the projected
+observations and candidate explanations. Their =current= label must not be
+interpreted as a verified real-world claim. Once the Scheme projection is
+qualified, move the remaining policy-bearing Rust classification directly to
+the Scheme owner and generate only the required Rust/Rowan execution
+projection. Do not maintain two independent classifiers.
+
+** Two concrete source cases
+
+1. A bug heading has a stable ID, a =DONE=/=CLOSED= event, and a linked test
+   receipt. Orgize can report that these records exist and where they came
+   from. If the source cut changes or a new run fails, it still reports the old
+   closure as history. It does not emit "fixed now"; that needs fresh test
+   evidence and current-source admission by the caller.
+2. A diary heading has an ID, a repeated =SCHEDULED= timestamp, and LOGBOOK
+   review notes. Orgize can project each review event and the next stated
+   schedule. It does not infer durable understanding from the number of reads.
+   A caller may use spaced review outcomes to choose a later interval, but
+   that interval is a policy decision, not an Org parse fact.
+3. Several fleeting ideas, each with its own ID, timestamp, and source span,
+   link to a later synthesis heading. Orgize can expose the identities and
+   links in the queried document. The later heading is a separate authored
+   claim; the parser cannot infer that the earlier notes logically entail it.
+
+If a later insight is written as a separate Org heading, Orgize should expose
+its ID, source span, links back to the diary or bug episodes, and any ordinary
+properties and timestamps. It does not synthesize that insight or declare it
+true. This keeps consolidation auditable as a new claim with provenance rather
+than silently relabeling the old note as permanent knowledge.
+
+** Conformance and acceptance
+
+- Source identity is never a bare Element ID or heading text. Same-looking
+  headings in two documents remain distinct.
+- Two same-title headings are possible matches, never an automatic
+  supersession or policy inheritance edge.
+- An overdue repeater with no review outcome is =due=, never =completed=.
+- A recorded review with no result is history, never a successful recall.
+- =DONE=/=CLOSED= and a failing later test coexist as conflicting evidence;
+  the old record is preserved without current verification authority.
+- A changed source digest makes a prior projected candidate stale for the new
+  cut, while preserving the historical cut for audit.
+- Scheme and generated Rust projection agree on a bounded fixture corpus for
+  source spans, Element identity, lifecycle, repeaters, and LOGBOOK events.
+- The document-local projection does not rank across files or choose a
+  promotion threshold. Those decisions remain with consumers.
+
+The scheduler and policy experiment should compare time-only review with
+source-change and evidence-triggered review. Human recall and automated
+verification need separate outcome measures. Spaced repetition research
+supports scheduling reviews for retention, but it does not by itself prove
+software correctness or factual validity
+([[https://arxiv.org/abs/1602.07032][Reddy et al., 2016]],
+[[https://arxiv.org/abs/2608.17530][Atreya et al., 2026]]).

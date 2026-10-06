@@ -2,7 +2,6 @@
 
 use orgize::{Org, ParseConfig, org_aot::OrgAotDocument};
 
-#[test]
 fn public_parse_returns_the_scheme_aot_document() {
     let source = "* TODO One\nBody\n";
     let document: OrgAotDocument = Org::parse(source);
@@ -15,7 +14,6 @@ fn public_parse_returns_the_scheme_aot_document() {
     assert_eq!(document.document().sections[0].level, 1);
 }
 
-#[test]
 fn configured_public_parse_keeps_the_same_aot_boundary() {
     let config = ParseConfig {
         todo_keywords: (vec!["TASK".to_owned()], Vec::new()),
@@ -37,3 +35,14 @@ fn configured_public_parse_keeps_the_same_aot_boundary() {
         Some(orgize::org_aot::org_event_parser_digest())
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_public_aot_boundary::public_parse_returns_the_scheme_aot_document",
+        public_parse_returns_the_scheme_aot_document,
+    ),
+    (
+        "org_public_aot_boundary::configured_public_parse_keeps_the_same_aot_boundary",
+        configured_public_parse_keeps_the_same_aot_boundary,
+    ),
+];

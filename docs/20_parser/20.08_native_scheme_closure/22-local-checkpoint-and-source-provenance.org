@@ -1,0 +1,60 @@
+#+title: Local migration checkpoint and source provenance audit
+
+* Commit scope and authority
+
+Audit date: 2026-10-06. The user authorizes a local commit after audit.
+The isolated =codex/native-org-recovery= Orgize checkout contains the
+cohesive migration candidate: native AOT/FFI parsing, Scheme semantic owners,
+both explicit runtime features, thin existing maturin/PyO3 binding, modular
+lint implementation, native tests and preserved qualification records.
+Their interdependent replacements/deletions belong in one checkpoint,
+not a standalone wrapper commit on the old parser architecture.
+
+Only the Orgize owner paths are staged. Native compiled programs, test
+transcripts and frozen executables remain ignored target artifacts.
+The parent POO Flow =packages/lambda-aitia= changes, the seven parser AOT
+overlays and the bridge build/runtime overlays are preserved outside this
+commit. No remote push, merge, PR creation or cross-repository commit is
+authorized by this operation.
+
+Live PR 18 remains open on =codex/org-object-aot-completion= at
+=cbe3750c19973251eb80b3e7bab93413d2476fe7=. This local recovery-branch
+checkpoint does not update that remote head. PR 18 remains the intended
+integration target; its earlier CI does not qualify the dirty candidate.
+
+* Source identity repair
+
+The build helper's dirty probe used =--untracked-files=no=. A newly added
+native Scheme/Rust owner could therefore be missed when tracked files were
+otherwise clean. It now includes normal untracked files, while Git still
+excludes ignored build artifacts. This is source provenance, not grammar
+or native runtime behavior.
+
+The maintained Justfile source-revision gate executes both real filesystem/
+Git controls: removed legacy input tracks its existing ancestor/restoration;
+empty clean repository and ignored generated artifact stay clean, whereas
+untracked and staged source mark the checkout dirty. Both tests pass,
+with the log in =target/native-commit-audit-20261006/source-revision=.
+Workspace dev optimization 2/debug assertions/overflow checks are retained.
+
+* Admission and remaining gates
+
+Record 21's both-runtime 30-warning admission is rechecked before staging.
+Its fresh native units/ordinary units/consumer catalogs are 84/24/457 per
+feature, with all 12 native value consumer cases intact. The program remains
+=sha256:bcd28ab5541bf22b1d68f336af4a8283acc6d6f3c272e0a266c27ed48b6d6c54=.
+This checkpoint does not relabel earlier Python, standalone Rowan or full
+1,000/10,000-document matrices as freshly executed after the provenance fix.
+Post-commit builds must report the new commit identity, not the old dirty
+479b2763 artifact. Their receipts are a separate verification step.
+
+Global closure remains open: the published bridge 8bb8103b lacks locally
+used AOT staging/build APIs; the pinned parser 619bf190 requires preserved
+local AOT overlays. Fetched e7139c35 is not newly selected/qualified here.
+CI still has older native bootstrap and Python/Contract distribution steps.
+Those gaps are not repaired by making a local commit or copying old green
+checks. Source distribution, platform execution, strict whole-workspace
+lint and the historical Query tail need their own admission.
+
+This is an audited local migration checkpoint, not a claim that a clean
+remote checkout, release distribution or PR merge has been qualified.

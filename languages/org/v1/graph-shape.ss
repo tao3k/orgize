@@ -19,6 +19,39 @@
 (def (node rust category label fields)
   (make-org-graph-node rust category label fields))
 
+;; One native declaration family for every consumer of the shared header
+;; scanner. These wrappers remain transparent to public graph record ancestry.
+(def (with-source-header-projection declaration)
+  (let* ((fields (map (lambda (field)
+                       (if (eq? (org-graph-field-rust field) 'SourceHeaderValue)
+                           (make-org-graph-field
+                            'SourceHeaderValue (org-graph-field-label field)
+                            (if (eq? (org-graph-field-mode field) 'each)
+                                'each-node-text 'node-text))
+                           field))
+                     (org-graph-node-fields declaration)))
+         (has? (lambda (kind) (memq kind (map org-graph-field-rust fields))))
+         (header? (has? 'SourceHeaderTrivia))
+         (switch? (has? 'SourceSwitchName)))
+    (if (or header? switch?)
+        (node (org-graph-node-rust declaration)
+              (org-graph-node-category declaration)
+              (org-graph-node-label declaration)
+              (append fields
+                      (if header?
+                          (list (field 'SourceHeaderColon "header")
+                                (field 'SourceHeaderParameters "header-parameters" 'node-text)
+                                (field 'SourceHeaderKey "argument-key" 'each)
+                                (field 'SourceHeaderValueContent "argument-content" 'each-node-text)
+                                (field 'SourceHeaderArgumentValue "argument-value" 'each-node-text)
+                                (field 'SourceHeaderArgument "argument-raw" 'each-node-text))
+                          '())
+                      (if switch?
+                          (list (field 'SourceSwitchName "switches")
+                                (field 'SourceSwitchValue "switches" 'node-text))
+                          '())))
+        declaration)))
+
 (def org-v1-headline-extra-fields
   '("source-title" "raw-value" "todo-keyword" "todo-type"
     "priority" "tags"))
@@ -26,14 +59,43 @@
 (def timestamp-fields
   (list (field 'TimestampDelimiter "delimiter" 'each)
         (field 'TimestampRangeSeparator "range-separator" 'each)
-        (field 'TimestampDate "date" 'each)
+        (field 'TimestampTimeRangeSeparator "time-range-separator" 'each)
+        (field 'OrgTimestampPoint "point" 'each-node-text)
+        (field 'TimestampDate "date" 'each-node-text)
+        (field 'TimestampYear "year" 'each)
+        (field 'TimestampSecondYear "year" 'each)
+        (field 'TimestampMonth "month" 'each)
+        (field 'TimestampSecondMonth "month" 'each)
+        (field 'TimestampDay "day" 'each)
+        (field 'TimestampSecondDay "day" 'each)
+        (field 'TimestampSecondYear "second-year")
+        (field 'TimestampSecondMonth "second-month")
+        (field 'TimestampSecondDay "second-day")
         (field 'TimestampDayName "day-name" 'each)
-        (field 'TimestampTime "time" 'each)
-        (field 'TimestampRepeater "repeater" 'each)
-        (field 'TimestampDelay "delay" 'each)))
+        (field 'TimestampSecondDayName "day-name" 'each)
+        (field 'TimestampSecondDayName "second-day-name")
+        (field 'TimestampTime "time" 'each-node-text)
+        (field 'TimestampTime "first-time" 'node-text)
+        (field 'TimestampSecondTime "time" 'each-node-text)
+        (field 'TimestampSecondTime "second-time" 'node-text)
+        (field 'TimestampTimeEnd "inline-end-time" 'node-text)
+        (field 'TimestampHour "hour" 'each)
+        (field 'TimestampMinute "minute" 'each)
+        (field 'TimestampEndHour "inline-end-hour")
+        (field 'TimestampEndMinute "inline-end-minute")
+        (field 'TimestampSecondHour "second-hour")
+        (field 'TimestampSecondMinute "second-minute")
+        (field 'TimestampRepeater "repeater" 'each-node-text)
+        (field 'TimestampRepeaterMark "repeater-mark" 'each)
+        (field 'TimestampRepeaterValue "repeater-value" 'each)
+        (field 'TimestampRepeaterUnit "repeater-unit" 'each)
+        (field 'TimestampDelay "delay" 'each-node-text)
+        (field 'TimestampDelayMark "delay-mark" 'each)
+        (field 'TimestampDelayValue "delay-value" 'each)
+        (field 'TimestampDelayUnit "delay-unit" 'each)))
 
 (def org-v1-graph-shape
-  (list
+  (map with-source-header-projection (list
    (node 'OrgFile "document" "org-data" '())
    (node 'OrgSection "section" "headline"
          (list (field 'HeadlineLine "markers")
@@ -78,6 +140,9 @@
                (field 'OrgSourceHeaderArgs "value" 'node-text)
                (field 'OrgKeywordAttributes "value" 'node-text)
                (field 'OrgKeywordInclude "value" 'node-text)
+               (field 'MacroDefinitionContent "value" 'node-text)
+               (field 'MacroDefinitionName "macro-name")
+               (field 'MacroDefinitionTemplate "macro-template" 'node-text)
                (field 'OrgIncludePath "include-raw-path" 'node-text)
                (field 'IncludePathValue "include-path")
                (field 'IncludePathUnclosed "include-unclosed-path")
@@ -129,12 +194,17 @@
    (node 'OrgTableRow "element" "table-row" '())
    (node 'OrgTableRuleRow "element" "table-rule-row" '())
    (node 'OrgTableCell "object" "table-cell"
-         (list (field 'OrgTableCell "text" 'node-text)))
-   (node 'OrgTableFormulaValue "object" "table-formula-value" '())
+         (list (field 'OrgTableCell "text" 'node-text)
+               (field 'TableCellContent "content" 'node-text)))
+   (node 'OrgTableFormulaValue "object" "table-formula-value"
+         (list (field 'FormulaContent "content" 'node-text)))
    (node 'OrgTableFormulaAssignment "object" "table-formula-assignment"
-         (list (field 'FormulaFlag "flag" 'each)))
-   (node 'OrgTableFormulaLhs "object" "table-formula-lhs" '())
-   (node 'OrgTableFormulaRhs "object" "table-formula-rhs" '())
+         (list (field 'FormulaContent "content" 'node-text)
+               (field 'FormulaFlag "flag" 'each)))
+   (node 'OrgTableFormulaLhs "object" "table-formula-lhs"
+         (list (field 'FormulaContent "content" 'node-text)))
+   (node 'OrgTableFormulaRhs "object" "table-formula-rhs"
+         (list (field 'FormulaContent "content" 'node-text)))
    (node 'OrgTableFormulaReference "object" "table-formula-reference"
          (list (field 'FormulaFieldReference "field")
                (field 'FormulaRowReference "row")
@@ -157,7 +227,10 @@
                (field 'SourceHeaderKey "header-key" 'each)
                (field 'SourceHeaderValue "header-value" 'each)
                (field 'SourceSwitchName "switch-name" 'each)
-               (field 'SourceSwitchValue "switch-value" 'each)
+               (field 'SourceSwitchValue "switch-value" 'each-node-text)
+               (field 'SourceSwitchNewLineNumber "switch-new-line-start" 'each)
+               (field 'SourceSwitchContinuedLineNumber "switch-continued-line-start" 'each)
+               (field 'SourceSwitchLabelFormat "switch-label-format" 'each-node-text)
                (field 'TextLine "body")
                (field 'OrgBlockBodyLine "raw-body" 'node-text)))
    (node 'OrgDynamicBlock "element" "dynamic-block"
@@ -179,7 +252,10 @@
    (node 'OrgExampleBlock "element" "example-block"
          (list (field 'SourceHeaderTrivia "header")
                (field 'SourceSwitchName "switch-name" 'each)
-               (field 'SourceSwitchValue "switch-value" 'each)
+               (field 'SourceSwitchValue "switch-value" 'each-node-text)
+               (field 'SourceSwitchNewLineNumber "switch-new-line-start" 'each)
+               (field 'SourceSwitchContinuedLineNumber "switch-continued-line-start" 'each)
+               (field 'SourceSwitchLabelFormat "switch-label-format" 'each-node-text)
                (field 'TextLine "body")
                (field 'OrgBlockBodyLine "raw-body" 'node-text)))
    (node 'OrgVerseBlock "element" "verse-block" '())
@@ -225,26 +301,34 @@
                (field 'InlineBabelEndHeader "end-header")))
    (node 'OrgMacro "object" "macro"
          (list (field 'MacroName "name")
-               (field 'MacroArguments "arguments" 'append-or-empty)))
+               (field 'MacroArguments "arguments" 'node-text)))
+   (node 'OrgMacroArgument "object" "macro-argument"
+         (list (field 'MacroArgumentText "value" 'append-or-empty)))
    (node 'OrgCitation "object" "citation"
-         (list (field 'CitationDelimiter "head")
+         (list (field 'OrgCitationHead "head" 'node-text)
+               (field 'CitationStyle "style")
+               (field 'CitationVariant "variant")
                (field 'CitationGlobalPrefix "global-prefix" 'append-or-empty)
                (field 'OrgCitationGlobalPrefix "global-prefix" 'node-text)
                (field 'CitationGlobalSuffix "global-suffix" 'append-or-empty)
-               (field 'OrgCitationGlobalSuffix "global-suffix" 'node-text)))
+               (field 'OrgCitationGlobalSuffix "global-suffix" 'node-text)
+               (field 'CitationGlobalPrefixContent "global-prefix-content" 'node-text)
+               (field 'CitationGlobalSuffixContent "global-suffix-content" 'node-text)))
    (node 'OrgCitationReference "object" "citation-reference"
          (list (field 'CitationReferencePrefix "prefix" 'append-or-empty)
                (field 'OrgCitationReferencePrefix "prefix" 'node-text)
                (field 'CitationReferenceKey "key")
                (field 'CitationReferenceSuffix "suffix" 'append-or-empty)
-               (field 'OrgCitationReferenceSuffix "suffix" 'node-text)))
+               (field 'OrgCitationReferenceSuffix "suffix" 'node-text)
+               (field 'CitationReferencePrefixContent "prefix-content" 'node-text)
+               (field 'CitationReferenceSuffixContent "suffix-content" 'node-text)))
    (node 'OrgCitationMalformedReference "object" "citation-malformed"
          (list (field 'CitationMalformedSegment "text")))
    (node 'OrgTimestampActive "object" "timestamp" timestamp-fields)
    (node 'OrgTimestampInactive "object" "timestamp" timestamp-fields)
    (node 'OrgTimestampDiary "object" "timestamp"
          (list (field 'TimestampDiaryExpression "diary-expression")
-               (field 'TimestampTime "time" 'each)))
+               (field 'TimestampTime "time" 'each-node-text)))
    (node 'OrgEntity "object" "entity"
          (list (field 'EntityName "name")
                (field 'EntityPost "post" 'append-or-empty)))
@@ -271,4 +355,4 @@
                (field 'ClozeText "fragment-fallback")
                (field 'OrgClozeText "text" 'node-text)
                (field 'ClozeHint "hint")
-               (field 'ClozeId "id")))))
+               (field 'ClozeId "id"))))))

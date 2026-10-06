@@ -11,18 +11,15 @@ use super::timestamp_model::{
 pub(super) fn timestamp_point_ranges(
     record: &GraphRecord,
 ) -> (Option<TextRange>, Option<TextRange>) {
-    let mut delimiters = record
+    let mut points = record
         .fields
         .iter()
-        .filter(|field| field.name == "delimiter");
-    let first = delimiters
+        .filter(|field| field.name == "point")
+        .map(|field| field.range);
+    let first = points
         .next()
-        .zip(delimiters.next())
-        .map(|(opening, closing)| TextRange::new(opening.range.start(), closing.range.end()));
-    let second = delimiters
-        .next()
-        .zip(delimiters.next())
-        .map(|(opening, closing)| TextRange::new(opening.range.start(), closing.range.end()));
+        .or_else(|| record.field("diary-expression").map(|_| record.range));
+    let second = points.next();
     (first, second)
 }
 
@@ -34,116 +31,96 @@ pub(super) fn project_timestamp(record: &GraphRecord, raw: &str) -> Timestamp {
     } else {
         TimestampKind::Active
     };
-    let mut points: Vec<GraphTimestampPoint<'_>> = Vec::new();
-    for field in &record.fields {
-        match field.name {
-            "date" => points.push(GraphTimestampPoint {
-                date: &field.value,
-                day_name: None,
-                time: None,
-            }),
-            "day-name" => {
-                if let Some(point) = points.last_mut() {
-                    point.day_name = Some(&field.value);
-                }
-            }
-            "time" => {
-                if let Some(point) = points.last_mut() {
-                    point.time = Some(&field.value);
-                }
-            }
-            _ => {}
-        }
-    }
-    let first = points.first();
-    let inline_time_range = first
-        .and_then(|point| point.time)
-        .and_then(|time| time.split_once('-'));
-    let start = first.and_then(|point| {
+    let start = graph_timestamp_moment(
+        record,
+        ["year", "month", "day"],
+        ["first-time", "hour", "minute"],
+        "day-name",
+    );
+    let end = if record.field("second-year").is_some() {
         graph_timestamp_moment(
-            point,
-            inline_time_range.map_or(point.time, |range| Some(range.0)),
+            record,
+            ["second-year", "second-month", "second-day"],
+            ["second-time", "second-hour", "second-minute"],
+            "second-day-name",
         )
-    });
-    let end = points
-        .get(1)
-        .and_then(|point| graph_timestamp_moment(point, point.time))
-        .or_else(|| {
-            first.and_then(|point| {
-                inline_time_range.and_then(|(_, end)| graph_timestamp_moment(point, Some(end)))
-            })
-        });
+    } else if record.field("inline-end-time").is_some() {
+        graph_timestamp_moment(
+            record,
+            ["year", "month", "day"],
+            ["inline-end-time", "inline-end-hour", "inline-end-minute"],
+            "day-name",
+        )
+    } else {
+        None
+    };
     Timestamp {
         kind,
         raw: raw.to_owned(),
-        is_range: record.values("range-separator").next().is_some() || inline_time_range.is_some(),
+        is_range: record.field("range-separator").is_some()
+            || record.field("time-range-separator").is_some(),
         start,
         end,
-        repeater: record.field("repeater").and_then(graph_repeater_cookie),
-        warning: record.field("delay").and_then(graph_warning_cookie),
+        repeater: graph_repeater_cookie(record),
+        warning: graph_warning_cookie(record),
     }
 }
 
-struct GraphTimestampPoint<'a> {
-    date: &'a str,
-    day_name: Option<&'a str>,
-    time: Option<&'a str>,
-}
-
+// Fixed Scheme field bindings and decimal/enum conversion, not Org parsing.
 fn graph_timestamp_moment(
-    point: &GraphTimestampPoint<'_>,
-    time: Option<&str>,
+    record: &GraphRecord,
+    date: [&str; 3],
+    clock: [&str; 3],
+    day_name: &str,
 ) -> Option<TimestampMoment> {
-    let (year, month_day) = point.date.split_once('-')?;
-    let (month, day) = month_day.split_once('-')?;
-    let (hour, minute) = match time {
-        Some(time) => {
-            let (hour, minute) = time.split_once(':')?;
-            (Some(hour.parse().ok()?), Some(minute.parse().ok()?))
-        }
+    let (hour, minute) = match record.field(clock[0]) {
+        Some(_) => (
+            Some(record.field(clock[1])?.parse().ok()?),
+            Some(record.field(clock[2])?.parse().ok()?),
+        ),
         None => (None, None),
     };
     Some(TimestampMoment {
-        year: year.parse().ok()?,
-        month: month.parse().ok()?,
-        day: day.parse().ok()?,
-        day_name: point.day_name.map(str::to_owned),
+        year: record.field(date[0])?.parse().ok()?,
+        month: record.field(date[1])?.parse().ok()?,
+        day: record.field(date[2])?.parse().ok()?,
+        day_name: record.field(day_name).map(str::to_owned),
         hour,
         minute,
     })
 }
 
-fn graph_repeater_cookie(value: &str) -> Option<TimestampRepeater> {
-    let (kind, body) = if let Some(body) = value.strip_prefix("++") {
-        (RepeaterKind::CatchUp, body)
-    } else if let Some(body) = value.strip_prefix(".+") {
-        (RepeaterKind::Restart, body)
-    } else {
-        (RepeaterKind::Cumulate, value.strip_prefix('+')?)
+fn graph_repeater_cookie(record: &GraphRecord) -> Option<TimestampRepeater> {
+    let kind = match record.field("repeater-mark")? {
+        "++" => RepeaterKind::CatchUp,
+        ".+" => RepeaterKind::Restart,
+        "+" => RepeaterKind::Cumulate,
+        _ => return None,
     };
-    let (value, unit) = graph_cookie_value_and_unit(body)?;
+    let value = record.field("repeater-value")?.parse().ok()?;
+    let unit = graph_cookie_unit(record.field("repeater-unit")?)?;
     Some(TimestampRepeater { kind, value, unit })
 }
 
-fn graph_warning_cookie(value: &str) -> Option<TimestampWarning> {
-    let (kind, body) = if let Some(body) = value.strip_prefix("--") {
-        (WarningKind::First, body)
-    } else {
-        (WarningKind::All, value.strip_prefix('-')?)
+fn graph_warning_cookie(record: &GraphRecord) -> Option<TimestampWarning> {
+    let kind = match record.field("delay-mark")? {
+        "--" => WarningKind::First,
+        "-" => WarningKind::All,
+        _ => return None,
     };
-    let (value, unit) = graph_cookie_value_and_unit(body)?;
+    let value = record.field("delay-value")?.parse().ok()?;
+    let unit = graph_cookie_unit(record.field("delay-unit")?)?;
     Some(TimestampWarning { kind, value, unit })
 }
 
-fn graph_cookie_value_and_unit(body: &str) -> Option<(u32, TimeUnit)> {
-    let number = body.get(..body.len().checked_sub(1)?)?.parse().ok()?;
-    let unit = match body.as_bytes().last()? {
-        b'h' => TimeUnit::Hour,
-        b'd' => TimeUnit::Day,
-        b'w' => TimeUnit::Week,
-        b'm' => TimeUnit::Month,
-        b'y' => TimeUnit::Year,
+// Enum decoding of Scheme-classified fields, not a second cookie recognizer.
+fn graph_cookie_unit(unit: &str) -> Option<TimeUnit> {
+    Some(match unit {
+        "h" => TimeUnit::Hour,
+        "d" => TimeUnit::Day,
+        "w" => TimeUnit::Week,
+        "m" => TimeUnit::Month,
+        "y" => TimeUnit::Year,
         _ => return None,
-    };
-    Some((number, unit))
+    })
 }

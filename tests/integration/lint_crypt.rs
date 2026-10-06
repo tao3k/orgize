@@ -1,6 +1,5 @@
 use orgize::lint::lint_org;
 
-#[test]
 fn lint_reports_org_crypt_advice_with_snapshot() {
     let source = r#"* Secret note :crypt:
 Visible plaintext body should be encrypted by the editor workflow.
@@ -17,3 +16,8 @@ Visible plaintext body should be encrypted by the editor workflow.
         report.to_compact_text("crypt.org", source)
     ));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "lint_crypt::lint_reports_org_crypt_advice_with_snapshot",
+    lint_reports_org_crypt_advice_with_snapshot,
+)];

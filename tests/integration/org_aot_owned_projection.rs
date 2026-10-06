@@ -1,9 +1,25 @@
+#[test]
+fn explicit_startup_precedes_parallel_org_aot_owned_projection_cases() {
+    // SAFETY: initialize before creating application workers or children;
+    // these parser cases do not use Scheme-owned I/O or subprocesses.
+    unsafe { orgize::initialize_native_runtime() }.expect("native test startup");
+    std::thread::scope(|scope| {
+        scope.spawn(owned_projection_uses_scheme_graph_objects_and_list_structure);
+        scope.spawn(file_todo_profile_reverts_to_caller_config_after_source_edit);
+        scope.spawn(scheme_priority_cookie_reprojects_after_source_edit);
+        scope.spawn(owned_footnote_definition_uses_scheme_graph_label_and_body);
+        scope.spawn(keyword_graph_keeps_semantic_and_source_faithful_values_separate);
+        scope.spawn(owned_drawer_and_babel_call_use_scheme_element_children);
+        scope.spawn(owned_inlinetask_uses_scheme_begin_body_and_end_records);
+    });
+    println!("startup-native suite=org_aot_owned_projection concurrent-cases=7 complete OK");
+}
+
 use orgize::{
     Org, ParseConfig, TextRange,
     ast::{Checkbox, ElementData, ListType, ObjectData, TimestampKind},
 };
 
-#[test]
 fn owned_projection_uses_scheme_graph_objects_and_list_structure() {
     let doc = Org::parse(
         "* TODO Review :work:\nSee [[https://example.org][site]] at <2026-05-19 Tue>.\n- [X] done with src_rust{ok}\n",
@@ -71,7 +87,6 @@ fn owned_projection_uses_scheme_graph_objects_and_list_structure() {
     assert!(item_paragraph.iter().any(|object| matches!(&object.data, ObjectData::InlineSrc { language, value, .. } if language == "rust" && value == "ok")));
 }
 
-#[test]
 fn file_todo_profile_reverts_to_caller_config_after_source_edit() {
     let source = "#+TODO: WAIT(w) | DONE(d)\n* WAIT Task\n";
     let config = ParseConfig {
@@ -94,7 +109,6 @@ fn file_todo_profile_reverts_to_caller_config_after_source_edit() {
     );
 }
 
-#[test]
 fn scheme_priority_cookie_reprojects_after_source_edit() {
     let mut doc = Org::parse("* TODO [#A] Task\n");
     let headline_id = doc.headlines().next().expect("headline").id();
@@ -113,7 +127,6 @@ fn scheme_priority_cookie_reprojects_after_source_edit() {
     assert_eq!(doc.document().sections[0].priority.raw_cookie(), Some("64"));
 }
 
-#[test]
 fn owned_footnote_definition_uses_scheme_graph_label_and_body() {
     let doc = Org::parse("[fn:WORD-1] See *bold* text\n").document();
     assert!(doc.diagnostics.is_empty());
@@ -128,7 +141,6 @@ fn owned_footnote_definition_uses_scheme_graph_label_and_body() {
     ));
 }
 
-#[test]
 fn keyword_graph_keeps_semantic_and_source_faithful_values_separate() {
     for (source, expected_raw) in [
         ("#+CAPTION:  A note\n[fn:note] Body\n", "  A note"),
@@ -149,7 +161,6 @@ fn keyword_graph_keeps_semantic_and_source_faithful_values_separate() {
     }
 }
 
-#[test]
 fn owned_drawer_and_babel_call_use_scheme_element_children() {
     let doc = Org::parse("#+CALL: name()\n:LOGBOOK:\nInside\n:END:\n").document();
     assert!(doc.diagnostics.is_empty());
@@ -172,7 +183,6 @@ fn owned_drawer_and_babel_call_use_scheme_element_children() {
     ));
 }
 
-#[test]
 fn owned_inlinetask_uses_scheme_begin_body_and_end_records() {
     let source = "*************** TODO [#A] Inline\nBody\n*************** END\n";
     let parsed = Org::parse(source);
