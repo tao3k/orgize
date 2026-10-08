@@ -20,7 +20,7 @@ native-ci-tools-check:
 
 [private]
 native-ci-program-owner parser_source output:
-    just native-parser-revision-check "{{ parser_source }}" 1b698747249d9cd9566297b6c3bcf6a8509c1cc2
+    just native-parser-revision-check "{{ parser_source }}" 7d1ba3b12f4759e8f9907fa56b971ef8a32e1d4a
     just scheme-aligned-parser-build-receipt "{{ parser_source }}" "{{ output }}/parser" "{{ env_var('GERBIL_PATH') }}/lib"
     just scheme-parser-build-isolated "{{ output }}/org" "{{ output }}/parser/lib:{{ env_var('GERBIL_PATH') }}/lib"
     just scheme-aligned-program-stage-receipt "{{ justfile_directory() }}/target/gerbil-parser" "{{ output }}/org/lib:{{ output }}/parser/lib:{{ env_var('GERBIL_PATH') }}/lib" "{{ output }}/parser" "{{ output }}/org"

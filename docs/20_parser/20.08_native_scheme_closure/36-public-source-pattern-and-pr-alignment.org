@@ -86,3 +86,35 @@ The positive preflight, recipe ownership, YAML utility matrix and platform
 command checks pass locally. A restricted-PATH negative control exits 1
 at the missing-rg preflight, before =gxpkg deps --install=. This repairs
 the observed setup cause; subsequent exact-head native CI remains required.
+
+* Unversioned Language FFI revision
+
+Upstream PR #13 subsequently advances to
+=7d1ba3b12f4759e8f9907fa56b971ef8a32e1d4a=. It renames =language-v2.h=
+to =language.h=, =language-v2-native.ss= to =language-native.ss= and the
+corresponding handle symbols; format/version metadata remains explicit.
+Org has no reference to those removed Language names. Cargo.toml,
+Cargo.lock, gerbil.pkg and executable revision checks align normally; the
+lock update changes only the two parser package sources, without a patch.
+
+The fresh 184-module SDK/public imports, complete Org rebuild and 340-module
+AOT source-root admission pass. Program
+=sha256:746b32492ab7709c5d87c236b960d2dc1a8fc97822b6cf9d82c6cde9ac893003=
+passes all 178 native Scheme cases / 12 suites and the exit-42 failure control.
+Each Runtime passes 85 native units, its ordinary units, 457 consumers,
+11 cutover cases, 23 index cases and four-worker 1,000/10,000 Query
+full/hit/no-hit parity. Both maturin variants bind this program and pass 25
+Python assertions (Rust 1.61s, Scheme 1.49s), including the unchanged 5s
+progress gate. The default manifest and installed extension now select this
+Rust program; the previous manifest is retained recoverably.
+Each 64-caller / 1,4,8-domain six-batch matrix completes 33,000 distinct
+documents; worker completion/exit and cross-runtime program/corpus/artifact
+identity checks pass. Qualification-mode stage observations are retained,
+not promoted as an uninstrumented latency ranking.
+
+Receipts are from the local candidate rooted at =593e98c2= with alignment
+edits, not exact-head remote CI. They are retained under
+=target/native-parser-alignment-012389be/org-pr18-7d1ba3b-*=. The validated
+native object cache is reused only after content/header/environment admission.
+No new performance ranking, kernel modification or native result-lease
+completion follows from this revision update.
