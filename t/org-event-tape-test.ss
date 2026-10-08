@@ -1,8 +1,8 @@
 (import (only-in :std/test check test-case test-suite)
-        (only-in "../languages/org/rowan-event-tape.ss"
+        (only-in "../languages/org/native-event-tape.ss"
                  org-events->tape org-request->tape org-event-tape-header)
-        (only-in "../languages/org/rowan-event-runtime.ss"
-                 parse-org-rowan-events-with-parameters))
+        (only-in "../languages/org/native-event-runtime.ss"
+                 parse-org-native-events-with-parameters))
 (export org-event-tape-test)
 
 (def (request source level policy (operation 0))
@@ -106,7 +106,7 @@
          (let ((source "* α\r\nx^{β} x^2\n"))
            (check (org-request->tape (request source (car config) (cdr config)))
                   => (org-events->tape
-                      (parse-org-rowan-events-with-parameters
+                      (parse-org-native-events-with-parameters
                        source (car config) (cdr config))))))
        '((1 . 0) (15 . 1) (15 . 2))))
     (test-case "native expression requests carry their own grammar identity"

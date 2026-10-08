@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; Private native boundary projection; parsing remains the POO strategy's job.
-(import (only-in "rowan-event-runtime.ss" parse-org-rowan-events-with-parameters)
+(import (only-in "native-event-runtime.ss" parse-org-native-events-with-parameters)
         (only-in "modules/org-parser/macro-funs.ss"
                  expand-org-macro-template expand-org-property-macros)
         (only-in "modules/org-parser/block-line-funs.ss" org-block-line-facts org-block-document-plan org-dynamic-content-facts)
@@ -116,7 +116,7 @@
 (def (profile-org-tape source level policy)
   (let* ((begin (native-monotonic-ns))
          (cpu-begin (native-thread-cpu-ns))
-         (events (parse-org-rowan-events-with-parameters source level policy))
+         (events (parse-org-native-events-with-parameters source level policy))
          (fold-end (native-monotonic-ns))
          (tape (org-events->tape events))
          (tape-end (native-monotonic-ns))
@@ -174,7 +174,7 @@
                     (cons 0 (if profile?
                               (profile-org-tape source level policy)
                               (org-events->tape
-                               (parse-org-rowan-events-with-parameters source level policy))))))))
+                               (parse-org-native-events-with-parameters source level policy))))))))
              rows))
            (size (foldl (lambda (row total) (+ total 5 (u8vector-length (cdr row))))
                         6 outcomes))
@@ -239,7 +239,7 @@
         (org-batch-request->tape request level policy #f)))
      (else (let (source (utf8->string request 14 (u8vector-length request)))
     (case (u8vector-ref request 4)
-      ((0) (org-events->tape (parse-org-rowan-events-with-parameters source level policy)))
+      ((0) (org-events->tape (parse-org-native-events-with-parameters source level policy)))
       ((5) (profile-org-tape source level policy))
       ((1 2 3 4)
        (unless (and (= level 0) (= policy 0))

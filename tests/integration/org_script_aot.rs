@@ -1,4 +1,4 @@
-//! Scheme-owned script Objects must survive AOT into Rowan and Element Query.
+//! Scheme-owned script Objects must survive AOT into native navigation and Element Query.
 
 use orgize::ParseConfig;
 use orgize::config::UseSubSuperscript;

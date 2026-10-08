@@ -5,7 +5,7 @@
                  benchmark-run/result benchmark-receipt-pass?
                  benchmark-fixture-contract-pass?)
         (only-in :gerbil-parser/src/runtime/identity sha256-text)
-        (only-in "../../languages/org/rowan-event-runtime.ss" parse-org-rowan-events)
+        (only-in "../../languages/org/native-event-runtime.ss" parse-org-native-events)
         (only-in "../org-parser-test-support.ss" org-events-cover-source?))
 (export main)
 
@@ -36,7 +36,7 @@
       (error "refuse to overwrite benchmark receipt" output))
     (displayln "ORG-EVENT-BENCHMARK-SEMANTIC-BEGIN")
     (force-output)
-    (let (expected (parse-org-rowan-events source))
+    (let (expected (parse-org-native-events source))
       (unless (org-events-cover-source? source expected)
         (error "benchmark events do not partition the source" fixture))
       (displayln "ORG-EVENT-BENCHMARK-SAMPLING-BEGIN")
@@ -46,7 +46,7 @@
       ;; of every intermediate timed operation.
       (let-values (((measurement result)
                     (benchmark-run/result
-                     configuration (lambda () (parse-org-rowan-events source)))))
+                     configuration (lambda () (parse-org-native-events source)))))
         (unless (equal? result expected)
           (error "benchmark event semantics changed" label fixture))
         (let ((receipt

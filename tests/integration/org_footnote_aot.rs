@@ -1,4 +1,4 @@
-//! Scheme-owned footnote references and definitions in the Rowan Element graph.
+//! Scheme-owned footnote references and definitions in the native navigation Element graph.
 
 macro_rules! check_org_footnote {
     ($record:expr, $source:expr, $kind:expr, $label:expr, $definition:expr, $literal:expr) => {{

@@ -134,6 +134,24 @@ native-runtime-test-run binary filter="":
 native-runtime-consumer-test-run binary case="":
     ORGIZE_NATIVE_CONSUMER_CASE="{{ case }}" just native-runtime-test-run "{{ binary }}"
 
+# Compile the libFuzzer-native startup hook; execution is a separate gate.
+[group('runtime')]
+native-runtime-fuzz-check manifest gsc:
+    {{ native_env }} {{ native_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo check --offline --locked --manifest-path fuzz/Cargo.toml
+
+# Optional-feature admission uses the same host startup and linker policy.
+[private]
+native-runtime-consumer-feature-build-owner manifest gsc runtime features profile="release":
+    {{ native_env }} {{ native_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --locked --profile "{{ profile }}" --no-default-features --features "{{ runtime }},{{ features }}" --no-run --test integration_test -vv
+
+[group('runtime')]
+native-runtime-consumer-feature-build-receipt manifest gsc native_output output runtime features profile="release":
+    mkdir -p "{{ output }}"
+    ORGIZE_GERBIL_NATIVE_OUTPUT="{{ native_output }}" just native-runtime-consumer-feature-build-owner "{{ manifest }}" "{{ gsc }}" "{{ runtime }}" "{{ features }}" "{{ profile }}" 2>&1 | tee "{{ output }}/feature-build.log"
+    rg --quiet 'Finished .*profile' "{{ output }}/feature-build.log"
+    test "$(rg -c '^  Executable ' "{{ output }}/feature-build.log")" -eq 1
+    ! rg --quiet '^error:|^error\[' "{{ output }}/feature-build.log"
+
 # Focused diagnostic only; never replaces the full concurrent catalog gate.
 # Record host contention without changing or stopping unrelated workloads.
 [group('runtime')]
@@ -238,6 +256,7 @@ native-parser-dependency-update:
 [private]
 native-parser-lock-update:
     cargo update -p gerbil-parser-runtime -p gerbil-parser-artifact
+    cargo update --manifest-path fuzz/Cargo.toml -p gerbil-parser-runtime -p gerbil-parser-artifact
 
 # Normal pinned upstream dependencies, without local bridge overrides.
 [group('runtime')]

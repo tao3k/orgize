@@ -1,4 +1,4 @@
-//! Org-owned dynamic block declarations through the generic Rowan executor.
+//! Org-owned dynamic block declarations through the generic native navigation executor.
 
 use gerbil_parser_runtime::{SyntaxNode, SyntaxToken};
 

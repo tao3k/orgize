@@ -1,6 +1,6 @@
 //! Owned semantic AST for Org documents.
 //!
-//! The Scheme-AOT parser builds a lossless Rowan tree and Element graph. This
+//! The Scheme-AOT parser builds a lossless native navigation index and Element graph. This
 //! module projects that graph into owned, org-element-like values.
 
 mod agenda;

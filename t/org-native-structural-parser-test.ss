@@ -21,16 +21,16 @@
                  make-org-event-strategy org-event-strategy-root)
         (only-in "org-parser-test-support.ss"
                  check-org-ast-with org-events-cover-source? org-events->ast)
-        (only-in "../languages/org/rowan-event-runtime.ss"
-                 parse-org-rowan-events
-                 parse-org-rowan-events-with-inlinetask-level
-                 parse-org-rowan-events-with-inline-script-policy))
-(export org-rowan-structural-parser-test)
+        (only-in "../languages/org/native-event-runtime.ss"
+                 parse-org-native-events
+                 parse-org-native-events-with-inlinetask-level
+                 parse-org-native-events-with-inline-script-policy))
+(export org-native-structural-parser-test)
 
-(def org-rowan-structural-parser-test
+(def org-native-structural-parser-test
   (test-suite "Org structural Elements and metadata"
     (test-case "TAGS vocabulary is Scheme-owned source-backed structure"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+TAGS: { @work(w) @home(h) }\n"
         (OrgFile
          (OrgKeyword
@@ -48,7 +48,7 @@
              (TagGroupClose 28 29))))
           (KeywordTrivia 29 30)))))
     (test-case "source blocks mask headline syntax and sections retain nesting"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n"
         (OrgFile
          (OrgSection
@@ -66,7 +66,7 @@
                                      (OrgTextLine (TextLine 47 52)))
                                     (HeadlineTrivia 52 53)))))))
     (test-case "source block escape is Scheme-owned and retains raw lines"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+begin_src\n,* hi\n,#+foo\n#+end_src\n"
         (OrgFile
          (OrgSourceBlock
@@ -75,7 +75,7 @@
           (OrgBlockBodyLine (BlockEscape 18 19) (TextLine 19 25))
           (BlockEndLine 25 35)))))
     (test-case "source block arguments retain Scheme-owned keys and quoted values"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+begin_src rust :results output :var \"hello world\"\nbody\n#+end_src\n"
         (OrgFile
          (OrgSourceBlock
@@ -102,7 +102,7 @@
     (test-case "header keys stay source-backed across quotes and escapes"
       (let* ((source
               "#+HEADER: :var 'x :inner y' :results output\nsrc_sh[:var a\\ :inner :exports both]{echo hi}\n")
-             (events (parse-org-rowan-events source))
+             (events (parse-org-native-events source))
              (keys
               (filter (lambda (event)
                         (and (eq? (car event) 'token)
@@ -114,7 +114,7 @@
                     keys)
                => '("var" "results" "var" "exports"))))
     (test-case "dynamic-block parameters share the Scheme-owned header grammar"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+BEGIN: clocktable :scope file\n#+END:\n"
         (OrgFile
          (OrgDynamicBlock
@@ -129,7 +129,7 @@
              (SourceHeaderValue (SourceHeaderValueContent (SourceHeaderText 27 31))))))
           (SourceHeaderTrivia 31 32) (BlockEndLine 32 39)))))
     (test-case "source switches are Scheme-classified before header arguments"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+begin_src rust -i -n 5 :exports both\nx\n#+end_src\n"
         (OrgFile
          (OrgSourceBlock
@@ -149,7 +149,7 @@
           (OrgBlockBodyLine (TextLine 39 41))
           (BlockEndLine 41 51)))))
     (test-case "example switches use the same Scheme classification"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+begin_example +n 12\nx\n#+end_example\n"
         (OrgFile
          (OrgExampleBlock
@@ -160,7 +160,7 @@
           (OrgBlockBodyLine (TextLine 22 24))
           (BlockEndLine 24 38)))))
     (test-case "optional switch argument does not consume a header key"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+begin_src rust -n :exports both\nx\n#+end_src\n"
         (OrgFile
          (OrgSourceBlock
@@ -181,7 +181,7 @@
        (lambda (fixture)
          (let* ((source (string-append "#+begin_src rust " (car fixture)
                                       "\r\nα\r\n#+end_src\r\n"))
-                (events (parse-org-rowan-events source))
+                (events (parse-org-native-events source))
                 (values (filter
                          (lambda (event)
                            (and (eq? (car event) 'token)
@@ -208,13 +208,13 @@
     (test-case "number-only headers remain lossless at CRLF and EOF"
       (for-each
        (lambda (source)
-         (check (org-events-cover-source? source (parse-org-rowan-events source)) => #t))
+         (check (org-events-cover-source? source (parse-org-native-events source)) => #t))
        '("#+begin_src rust -n 20\nfn main() {}\n#+end_src\n"
          "#+begin_src rust +n 10\nprintln!(\"continued\");\n#+end_src\n"
          "#+begin_example -n 3\n,* example\n#+end_example\n"
          "#+begin_src rust -n 20 -r :exports code\nfn main() {}\n#+end_src\n")))
     (test-case "empty header arguments retain native argument boundaries"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+begin_src rust :var :exports both :empty\nx\n#+end_src\n"
         (OrgFile
          (OrgSourceBlock
@@ -234,7 +234,7 @@
           (OrgBlockBodyLine (TextLine 43 45))
           (BlockEndLine 45 55)))))
     (test-case "longer lookalike is not a declared switch"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+begin_src rust -invalid\nx\n#+end_src\n"
         (OrgFile
          (OrgSourceBlock
@@ -243,7 +243,7 @@
           (OrgBlockBodyLine (TextLine 26 28))
           (BlockEndLine 28 38)))))
     (test-case "header-like text without a leading separator remains trivia"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+begin_src rust x:bad :var ok\nbody\n#+end_src\n"
         (OrgFile
          (OrgSourceBlock
@@ -260,7 +260,7 @@
           (OrgBlockBodyLine (TextLine 31 36))
           (BlockEndLine 36 46)))))
     (test-case "unterminated blocks recover as text before the next heading"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* Parent\n#+BEGIN_SRC\n** body\n"
         (OrgFile
          (OrgSection
@@ -271,7 +271,7 @@
            (OrgHeadline (HeadlineLine 21 23) (HeadlineTrivia 23 24)
                         (HeadlineTitle 24 28) (HeadlineTrivia 28 29)))))))
     (test-case "unclosed recursive blocks preserve later headline structure"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* First\n#+begin_quote\nunclosed\n** Next\nvisible\n"
         (OrgFile
          (OrgSection
@@ -288,7 +288,7 @@
                         (HeadlineTitle 34 38) (HeadlineTrivia 38 39))
            (OrgParagraph (OrgTextLine (TextLine 39 47))))))))
     (test-case "malformed property body recovers as text, not a named drawer"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* Parent\n:PROPERTIES:\n:ID: one\nmalformed\n:END:\n** Next\n"
         (OrgFile
          (OrgSection
@@ -299,14 +299,14 @@
            (OrgHeadline (HeadlineLine 47 49) (HeadlineTrivia 49 50)
                         (HeadlineTitle 50 54) (HeadlineTrivia 54 55)))))))
     (test-case "adjacent Org comments form one typed element"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "# one\n# two\ntext\n#\n"
         (OrgFile
          (OrgComment (CommentLine 0 6) (CommentLine 6 12))
          (OrgParagraph (OrgTextLine (TextLine 12 17)))
          (OrgComment (CommentLine 17 19)))))
     (test-case "indented comments remain inside the owning list item"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "- item\n  # child\n  # next\n- peer\n"
         (OrgFile
          (OrgPlainList
@@ -318,7 +318,7 @@
            (ListBullet 26 28)
            (OrgParagraph (OrgTextLine (TextLine 28 33))))))))
     (test-case "indented opaque blocks remain Elements inside their list item"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "- x\n  #+begin_example\n  body\n  #+end_example\n- y\n"
         (OrgFile
          (OrgPlainList
@@ -338,7 +338,7 @@
          (let* ((source (string-append "- α\r\n  #+begin_" (car fixture)
                                       "\r\n  * literal\r\n  #+end_" (cadr fixture)
                                       "\r\n- β\r\n"))
-                (events (parse-org-rowan-events source))
+                (events (parse-org-native-events source))
                 (ast (org-events->ast events))
                 (items (cdr (cadr ast)))
                 (first (car items)))
@@ -353,7 +353,7 @@
          ("export html" "export" OrgExportBlock))))
     (test-case "indented standalone source headers retain exact field ranges"
       (let* ((source "  #+BeGiN_SrC rust :results output\r\n  body\r\n  #+EnD_SrC\r\n")
-             (events (parse-org-rowan-events source))
+             (events (parse-org-native-events source))
              (block (cadr (org-events->ast events))))
         (check (org-events-cover-source? source events) => #t)
         (check (car block) => 'OrgSourceBlock)
@@ -362,13 +362,13 @@
         (check (cadddr block) => '(SourceLanguage 14 18))))
     (test-case "a list-owned opaque block can close at unterminated EOF"
       (let* ((source "- α\n  #+begin_example\n  * literal\n  #+end_example")
-             (events (parse-org-rowan-events source))
+             (events (parse-org-native-events source))
              (item (cadr (cadr (org-events->ast events)))))
         (check (org-events-cover-source? source events) => #t)
         (check (caar (reverse (cdr item))) => 'OrgExampleBlock)))
     (test-case "unclosed list block recovers as text before the next headline"
       (let* ((source "- α\n  #+begin_example\n  body\n* Next\n")
-             (events (parse-org-rowan-events source))
+             (events (parse-org-native-events source))
              (ast (org-events->ast events))
              (item (cadr (cadr ast))))
         (check (org-events-cover-source? source events) => #t)
@@ -376,12 +376,12 @@
         (check (car (caddr ast)) => 'OrgSection)))
     (test-case "dedented block closes the list instead of entering its item"
       (let* ((source "- α\n#+begin_example\nbody\n#+end_example\n")
-             (events (parse-org-rowan-events source))
+             (events (parse-org-native-events source))
              (ast (org-events->ast events)))
         (check (org-events-cover-source? source events) => #t)
         (check (map car (cdr ast)) => '(OrgPlainList OrgExampleBlock))))
     (test-case "hash-prefixed text and keywords are not comments"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#not-comment\n#+TITLE: Yes\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 13)))
@@ -393,7 +393,7 @@
            (OrgKeywordValue (OrgTextLine (TextLine 22 25))))
           (KeywordTrivia 25 26)))))
     (test-case "bare READONLY is a keyword but a longer marker remains prose"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+READONLY\n#+READONLYX\n"
         (OrgFile
          (OrgKeyword
@@ -402,7 +402,7 @@
           (KeywordTrivia 10 11))
          (OrgParagraph (OrgTextLine (TextLine 11 23))))))
     (test-case "rich document keywords reuse Scheme inline Objects"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+TITLE: *Demo* Doc\n"
         (OrgFile
          (OrgKeyword
@@ -418,7 +418,7 @@
              (TextLine 15 19))))
           (KeywordTrivia 19 20)))))
     (test-case "empty attribute content and absent values have distinct native nodes"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+ATTR_HTML: :x \"\" :y\n"
         (OrgFile
          (OrgKeyword
@@ -437,7 +437,7 @@
              (SourceHeaderArgument (SourceHeaderColon 19 20) (SourceHeaderKey 20 21)))))
           (KeywordTrivia 21 22)))))
     (test-case "attribute keywords tokenize quoted values in Scheme"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+ATTR_HTML: :class compact :width \"10 em\"\n"
         (OrgFile
          (OrgKeyword
@@ -462,7 +462,7 @@
                 (SourceHeaderQuote 41 42)))))))
           (KeywordTrivia 42 43)))))
     (test-case "INCLUDE path and options are source-backed Scheme events"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+INCLUDE: x.org\n"
         (OrgFile
          (OrgKeyword
@@ -473,7 +473,7 @@
             (OrgIncludePath (IncludePathValue 11 16))
             (OrgIncludeTail)))
           (KeywordTrivia 16 17))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+INCLUDE: x.org src org\n"
         (OrgFile
          (OrgKeyword
@@ -486,7 +486,7 @@
              (IncludeTrivia 16 17) (IncludeArgument 17 20)
              (IncludeTrivia 20 21) (IncludeArgument 21 24))))
           (KeywordTrivia 24 25))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+INCLUDE: \"./chapter one.org\" src org :lines \"1-20\" :minlevel 2 :only-contents\n"
         (OrgFile
          (OrgKeyword
@@ -519,7 +519,7 @@
               (SourceHeaderArgument
                (SourceHeaderColon 65 66) (SourceHeaderKey 66 79))))))
           (KeywordTrivia 79 80))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+INCLUDE: \"x.org\n"
         (OrgFile
          (OrgKeyword
@@ -530,7 +530,7 @@
             (OrgIncludePath (IncludePathUnclosed 11 17))))
           (KeywordTrivia 17 18)))))
     (test-case "optional keyword hashes remain typed Scheme events"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+results[sha1]: prep-output\n"
         (OrgFile
          (OrgKeyword
@@ -541,17 +541,17 @@
                               (KeywordValue 17 28))
           (KeywordTrivia 28 29)))))
     (test-case "diary S-expressions are standalone source-backed Elements"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "%%(diary-anniversary 1 1 2000)\ntext\n%%not-diary\n"
         (OrgFile
          (OrgDiarySexp (DiarySexpValue 0 30) (DiarySexpTrivia 30 31))
          (OrgParagraph (OrgTextLine (TextLine 31 48)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "%%(x) \r\n"
         (OrgFile
          (OrgDiarySexp (DiarySexpValue 0 6) (DiarySexpTrivia 6 8)))))
     (test-case "file-local TODO and Babel CALL keys project as distinct Elements"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n"
         (OrgFile
          (OrgKeyword (KeywordTrivia 0 2) (KeywordKey 2 10)
@@ -569,7 +569,7 @@
                          (KeywordValue 50 52))
                         (KeywordTrivia 52 53))))))
     (test-case "property drawer keys stay beneath the owning headline"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\n:PROPERTIES:\n:ID: alpha\n:END:\nbody\n"
         (OrgFile
          (OrgSection
@@ -583,7 +583,7 @@
            (DrawerEndLine 28 34))
           (OrgParagraph (OrgTextLine (TextLine 34 39)))))))
     (test-case "indented property drawers preserve keys and trivia"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\n  :PROPERTIES:\n  :ID: x\n  :END:\n"
         (OrgFile
          (OrgSection
@@ -597,7 +597,7 @@
             (PropertyTrivia 27 28))
            (DrawerEndLine 28 36))))))
     (test-case "property keys scan source bytes until the declared colon"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\n:PROPERTIES:\n:A+B: yes\n:END:\n"
         (OrgFile
          (OrgSection
@@ -611,7 +611,7 @@
             (PropertyTrivia 26 27))
            (DrawerEndLine 27 33))))))
     (test-case "property keys retain internal colons before their final delimiter"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\n:PROPERTIES:\n:header-args:python: :session local\n:END:\n"
         (OrgFile
          (OrgSection
@@ -632,7 +632,7 @@
             (PropertyTrivia 52 53))
            (DrawerEndLine 53 59))))))
     (test-case "declared planning and clock keys retain headline context"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\nSCHEDULED: now\nCLOCK: 2\n* N\nDEADLINE: x\n"
         (OrgFile
          (OrgSection
@@ -651,7 +651,7 @@
                        (OrgPlanningValue (TextLine 42 43))
                        (PlanningTrivia 43 44))))))
     (test-case "one Planning Element keeps every declared key on its line"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\nSCHEDULED: <a> DEADLINE: <b>\n"
         (OrgFile
          (OrgSection
@@ -663,7 +663,7 @@
            (PlanningKey 19 27) (PlanningTrivia 27 29)
            (OrgPlanningValue (TextLine 29 32)) (PlanningTrivia 32 33))))))
     (test-case "planning timestamps are Scheme-classified child Objects"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\nSCHEDULED: <2026-05-15 Fri>\n"
         (OrgFile
          (OrgSection
@@ -685,7 +685,7 @@
               (TimestampDelimiter 30 31))))
            (PlanningTrivia 31 32))))))
     (test-case "clock timestamp and duration are Scheme-classified fields"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\nCLOCK: [2026-05-15 Fri 10:00] => 1:02\n"
         (OrgFile
          (OrgSection
@@ -713,7 +713,7 @@
             (ClockDuration 37 41))
            (ClockTrivia 41 42))))))
     (test-case "planning is not promoted after ordinary paragraph content"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\nbody\nSCHEDULED: later\n"
         (OrgFile
          (OrgSection
@@ -721,7 +721,7 @@
                        (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
           (OrgParagraph (OrgTextLine (TextLine 4 26)))))))
     (test-case "empty declared values keep source spans ordered"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* H\nSCHEDULED:  \n"
         (OrgFile
          (OrgSection

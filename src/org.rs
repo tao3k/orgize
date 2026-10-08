@@ -1,4 +1,4 @@
-//! The public Org facade is a native Gerbil AOT/FFI-backed Rowan document.
+//! Public Org documents parsed by native Gerbil AOT/FFI, with source-backed navigation.
 
 pub use crate::org_aot::OrgAotDocument as Org;
 

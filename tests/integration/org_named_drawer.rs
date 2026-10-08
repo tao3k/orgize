@@ -1,4 +1,4 @@
-//! Scheme-declared ordinary Org drawer through the generic Rowan block engine.
+//! Scheme-declared ordinary Org drawer through the generic native navigation block engine.
 
 use gerbil_parser_runtime::{SyntaxNode, SyntaxToken};
 

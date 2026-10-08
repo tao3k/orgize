@@ -1,9 +1,9 @@
-//! End-to-end source-backed timestamp Objects from Scheme through Rust/Rowan.
+//! End-to-end source-backed timestamp Objects from Scheme through Rust/native.
 
-fn scheme_timestamps_project_structured_fields_through_rowan() {
+fn scheme_timestamps_project_structured_fields_through_native_index() {
     let source = "<2026-09-23 Wed 10:00-11:00 ++1w -2d> [2026-09-23]--[2026-09-24] <%%(diary-float t 1 2)> <%%(diary-float t 4 2) 12:00-14:00>\n";
     let document = orgize::org_aot::parse_org_aot(source)
-        .expect("Scheme timestamp Objects build a lossless Rowan tree");
+        .expect("Scheme timestamp Objects build a lossless native navigation index");
     let timestamps = document
         .records()
         .iter()
@@ -32,6 +32,6 @@ fn scheme_timestamps_project_structured_fields_through_rowan() {
 }
 
 pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
-    "org_timestamp_aot::scheme_timestamps_project_structured_fields_through_rowan",
-    scheme_timestamps_project_structured_fields_through_rowan,
+    "org_timestamp_aot::scheme_timestamps_project_structured_fields_through_native_index",
+    scheme_timestamps_project_structured_fields_through_native_index,
 )];

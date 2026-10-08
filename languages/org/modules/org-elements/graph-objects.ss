@@ -1,5 +1,5 @@
 ;;; -*- Gerbil -*-
-;;; Source-owned graph declarations projected to Rust/Rowan at build time.
+;;; Source-owned graph declarations projected to Rust/native at build time.
 
 (import (only-in :clan/poo/object .o .ref)
         (only-in "graph-types.ss"

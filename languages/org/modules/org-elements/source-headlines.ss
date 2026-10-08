@@ -2,7 +2,7 @@
 ;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 ;;; SPDX-License-Identifier: Apache-2.0 AND LGPL-2.1-or-later
 
-;;; A bounded, source-derived headline Element projection. The Rowan event
+;;; A bounded, source-derived headline Element projection. The Scheme event
 ;;; parser owns structure and byte spans; Org Elements owns TODO interpretation.
 ;;; This API accepts text, not a caller-supplied graph or a WorkTree claim.
 (import (only-in :clan/poo/object .o .ref .slot? object?)
@@ -10,7 +10,7 @@
         (only-in :std/encoding/hex hex-encode)
         (only-in :std/list/list filter)
         (only-in :std/string/misc string-trim)
-        (only-in "../../rowan-event-runtime.ss" parse-org-rowan-events)
+        (only-in "../../native-event-runtime.ss" parse-org-native-events)
         (only-in "headline-properties.ss"
                  todo-directive? todo-state-from-directives))
 
@@ -19,7 +19,7 @@
         org-source-headline-parser-identity)
 
 (def org-source-headline-parser-identity
-  "orgize.org-v1.rowan-events+headline-properties.v1")
+  "orgize.org-v1.native-events+headline-properties.v1")
 
 (def (source-slice bytes start end)
   (utf8->string (subu8vector bytes start end)))
@@ -40,7 +40,7 @@
          (size (u8vector-length bytes)))
     (when (> size 1048576)
       (error "Org source headline projection exceeds one MiB"))
-    (let ((events (parse-org-rowan-events source))
+    (let ((events (parse-org-native-events source))
           (stack '()) (offset 0) (roots 0)
           (headlines '()) (keywords '()))
       (for-each

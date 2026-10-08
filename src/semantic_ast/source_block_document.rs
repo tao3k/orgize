@@ -297,7 +297,9 @@ fn admit_rendered_document(
     let document = parse_org_aot(source)
         .map_err(|_| rendering("rendered Org did not parse as the expected document"))?;
     if document.syntax().to_string() != source {
-        return Err(rendering("rendered Org did not round-trip through Rowan"));
+        return Err(rendering(
+            "rendered Org did not round-trip through native navigation",
+        ));
     }
     let records = document.records();
     let Some(root) = records.first().filter(|record| record.kind == "org-data") else {

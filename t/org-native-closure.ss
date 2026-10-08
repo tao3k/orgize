@@ -13,7 +13,7 @@
         "org-native-semantic-owner-test.ss"
         "org-elements-module-test.ss"
         "org-radio-match-test.ss"
-        "org-rowan-event-parser-test.ss"
+        "org-native-event-parser-test.ss"
         "org-source-headlines-qualification.ss")
 (export main)
 
@@ -27,9 +27,9 @@
                        org-native-lifecycle-value-test
                        org-native-semantic-owner-test
                        org-elements-module-test org-radio-match-test
-                       org-rowan-inline-parser-test
-                       org-rowan-structural-parser-test
-                       org-rowan-table-container-parser-test
+                       org-native-inline-parser-test
+                       org-native-structural-parser-test
+                       org-native-table-container-parser-test
                        org-source-headlines-test))
          (selected (if (null? args) suites
                      (list (test-suite "failure exit control"

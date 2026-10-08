@@ -1,4 +1,4 @@
-//! Scheme POO declaration -> gerbil-parser AOT table -> contextual Rowan CST.
+//! Scheme POO declaration -> gerbil-parser AOT table -> contextual native navigation index.
 
 use gerbil_parser_runtime::SyntaxNode;
 
@@ -25,7 +25,7 @@ fn token_name(token: &gerbil_parser_runtime::SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
-fn scheme_declared_macro_objects_project_into_rowan_and_graph() {
+fn scheme_declared_macro_objects_project_into_native_index_and_graph() {
     check_org_aot_element!("{{{issue(42)}}}\n", "macro", "name" => "issue");
     let document =
         orgize::org_aot::parse_org_aot("{{{issue(42)}}}\n").expect("Scheme-owned Org macro object");
@@ -99,7 +99,7 @@ fn scheme_declared_babel_call_is_not_a_generic_keyword() {
     );
 }
 
-fn scheme_emphasis_objects_project_into_rowan_and_element_graph() {
+fn scheme_emphasis_objects_project_into_native_index_and_element_graph() {
     let source = "*bold* /italic/ _under_ +strike+\n";
     let document = orgize::org_aot::parse_org_aot(source)
         .expect("Scheme-owned emphasis Objects parse through the event AOT");
@@ -817,7 +817,7 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
                 &source[usize::from(range.start())..usize::from(range.end())],
                 root.descendants()
                     .find(|node| node.text_range() == range)
-                    .expect("graph range belongs to a Rowan node")
+                    .expect("graph range belongs to a native navigation node")
                     .to_string()
             );
         }

@@ -38,7 +38,7 @@
    "languages/org/modules/org-parser/runtime-funs"
    "languages/org/modules/org-parser/objects"
    "languages/org/modules/org-parser/types"
-   "languages/org/rowan-event-runtime"
+   "languages/org/native-event-runtime"
    "languages/org/modules/org-parser/macro-funs"
    "languages/org/modules/org-parser/text-funs"
    "languages/org/modules/org-parser/block-line-funs"
@@ -78,7 +78,7 @@
       (darwin '((gxc: "bindings/c/native-clock" "-ld-options" "-Wl,-undefined,dynamic_lookup")
                 (gxc: "bindings/c/native-runtime-statistics" "-ld-options" "-Wl,-undefined,dynamic_lookup")))
       (else '("bindings/c/native-clock" "bindings/c/native-runtime-statistics")))
-   "languages/org/rowan-event-tape"
+   "languages/org/native-event-tape"
    "bindings/c/orgize-actor"
    ,@(cond-expand
       (darwin `((gxc: "bindings/c/orgize-scheme-runtime" "-cc-options" ,orgize-native-include "-ld-options" "-Wl,-undefined,dynamic_lookup")))

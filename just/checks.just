@@ -6,11 +6,13 @@
 native-dependency-check:
     test ! -d languages/org/v1
     ! rg --quiet 'languages/org/v1|org-v1-' src languages t tests bindings build.ss build-parser.ss build-support benches examples --glob '!*.snap'
-    ! rg --quiet 'gerbil-parser-rowan|^rowan\s*=|name = "rowan"' Cargo.toml Cargo.lock
+    ! rg --quiet 'gerbil-parser-rowan|^rowan\s*=|name = "rowan"' Cargo.toml Cargo.lock fuzz/Cargo.lock
     ! rg --quiet 'gerbil_parser_rowan|\browan::|pub use rowan' src tests benches examples languages --glob '*.rs'
     ! rg --fixed-strings --quiet 'rowan.build' src tests benches just/benchmark.just
-    rg --fixed-strings --quiet 'rev = "7fe23232701cdb2ff2da82ea587d72997eb4ac1e"' Cargo.toml
-    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@7fe23232701cdb2ff2da82ea587d72997eb4ac1e' gerbil.pkg
+    ! rg --quiet 'rowan-event|org-rowan|parse-org-rowan-events|rowan_admission' src languages bindings t tests build-parser.ss build.ss
+    ! rg --quiet '\b[Rr]owan\b' src languages bindings t tests --glob '!*.snap'
+    rg --fixed-strings --quiet 'rev = "d066e1a472359b9e3fcced67326b15bb5cf0cd4f"' Cargo.toml
+    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@d066e1a472359b9e3fcced67326b15bb5cf0cd4f' gerbil.pkg
     @echo 'ROWAN-FREE-DEPENDENCIES-OK: native view cutover is a separate gate'
 
 # Bounded native migration records and implementation owner checklists.
@@ -40,6 +42,7 @@ native-parser-revision-check source revision:
     test "$(git -C '{{ source }}' rev-parse HEAD)" = "{{ revision }}"
     rg --fixed-strings --quiet 'rev = "{{ revision }}"' Cargo.toml
     rg --fixed-strings --quiet 'git+https://github.com/tao3k/gerbil-parser?rev={{ revision }}#{{ revision }}' Cargo.lock
+    rg --fixed-strings --quiet 'git+https://github.com/tao3k/gerbil-parser?rev={{ revision }}#{{ revision }}' fuzz/Cargo.lock
     rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ revision }}' gerbil.pkg
     git -C "{{ source }}" diff --check
     git -C "{{ source }}" diff --quiet
@@ -50,7 +53,7 @@ native-parser-revision-check source revision:
 # parser/Org module must come from this candidate's explicit build roots.
 [private]
 native-parser-program-source-check manifest parser_output org_output program_output:
-    jq --exit-status --arg parser "{{ parser_output }}/lib/static/" --arg org "{{ org_output }}/lib/static/" --arg stage "{{ program_output }}/lib/static/" '.schema == "gerbil-scheme-rust.aot-program.v1" and ([.modules[] | select(.module | startswith("gerbil-parser/"))] | length > 0) and ([.modules[] | select(.module | startswith("orgize/"))] | length > 0) and all(.modules[]; if (.module | startswith("gerbil-parser/")) then (.scm | startswith($parser)) elif (.module == "orgize/bindings/c/native-clock" or .module == "orgize/bindings/c/native-runtime-statistics" or .module == "orgize/languages/org/rowan-event-tape") then (.scm | startswith($stage)) elif (.module | startswith("orgize/")) then (.scm | startswith($org)) else true end)' "{{ manifest }}"
+    jq --exit-status --arg parser "{{ parser_output }}/lib/static/" --arg org "{{ org_output }}/lib/static/" --arg stage "{{ program_output }}/lib/static/" '.schema == "gerbil-scheme-rust.aot-program.v1" and ([.modules[] | select(.module | startswith("gerbil-parser/"))] | length > 0) and ([.modules[] | select(.module | startswith("orgize/"))] | length > 0) and all(.modules[]; if (.module | startswith("gerbil-parser/")) then (.scm | startswith($parser)) elif (.module == "orgize/bindings/c/native-clock" or .module == "orgize/bindings/c/native-runtime-statistics" or .module == "orgize/languages/org/native-event-tape") then (.scm | startswith($stage)) elif (.module | startswith("orgize/")) then (.scm | startswith($org)) else true end)' "{{ manifest }}"
 
 [private]
 native-parser-program-source-negative-check previous parser_output org_output program_output:
@@ -60,7 +63,7 @@ native-parser-program-source-negative-check previous parser_output org_output pr
 [group('checks')]
 native-alignment-dependency-check parser_source bridge_source:
     just native-task-layout-check
-    just native-parser-revision-check "{{ parser_source }}" 7fe23232701cdb2ff2da82ea587d72997eb4ac1e
+    just native-parser-revision-check "{{ parser_source }}" d066e1a472359b9e3fcced67326b15bb5cf0cd4f
     test "$(git -C '{{ bridge_source }}' rev-parse HEAD)" = 1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4
     rg --fixed-strings --quiet 'rev = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"' build-support/Cargo.toml
     rg --fixed-strings --quiet 'github.com/tao3k/gerbil-scheme-rust@1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4' gerbil.pkg

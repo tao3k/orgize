@@ -1,4 +1,4 @@
-//! Scheme-owned inline source blocks and Babel calls in the Rowan Element graph.
+//! Scheme-owned inline source blocks and Babel calls in the native navigation Element graph.
 
 macro_rules! check_org_inline_code {
     ($record:expr, $source:expr, $kind:expr, $literal:expr, {$($name:literal => $value:expr),+ $(,)?}) => {{

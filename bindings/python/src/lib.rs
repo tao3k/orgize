@@ -145,7 +145,7 @@ impl ParsedOrg {
 
 #[pyfunction]
 fn parse_org(py: Python<'_>, source: &str) -> PyResult<ParsedOrg> {
-    // Only immutable Rust text and owned Rowan/Element data cross this boundary.
+    // Only immutable Rust text and owned native-index/Element data cross this boundary.
     // Scheme handles/roots stay on the selected native owner, not Python workers.
     py.detach(|| parse_org_aot(source))
         .map(|document| ParsedOrg { document })

@@ -27,8 +27,8 @@ fn explicit_startup_precedes_parallel_org_native_index_handoff_cases() {
         scope.spawn(org_scheme_context_algorithm_aot_projects_recursive_containers);
         scope.spawn(org_scheme_context_algorithm_aot_projects_indented_properties);
         scope.spawn(org_scheme_context_algorithm_aot_keeps_nonidentifier_property_keys);
-        scope.spawn(executable_scheme_outline_events_reach_rowan_and_element_projection);
-        scope.spawn(nested_org_events_reach_rowan_without_a_structural_engine_rule);
+        scope.spawn(executable_scheme_outline_events_reach_native_index_and_element_projection);
+        scope.spawn(nested_org_events_reach_native_index_without_a_structural_engine_rule);
     });
     println!("startup-native suite=org_native_index_handoff concurrent-cases=23 complete OK");
 }
@@ -45,7 +45,8 @@ const HANDOFF_TEST_DIGEST: &str =
 
 fn org_scheme_event_aot_keeps_nested_description_urls_as_text() {
     let source = "go [[id:a][https://example.org]]\n";
-    let document = parse_org_aot(source).expect("Scheme events build a lossless Rowan document");
+    let document =
+        parse_org_aot(source).expect("Scheme events build a lossless native navigation document");
     assert_eq!(document.syntax().to_string(), source);
     let links = document
         .records()
@@ -60,7 +61,7 @@ fn org_scheme_event_aot_keeps_nested_description_urls_as_text() {
 fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
     let source = "# first\n# second\ntext\n#+begin_quote\n# nested\n#+end_quote\n#\n";
     let document = orgize::org_aot::parse_org_aot(source)
-        .expect("Scheme comment strategy builds a lossless Rowan document");
+        .expect("Scheme comment strategy builds a lossless native navigation document");
     assert_eq!(document.syntax().to_string(), source);
     let comments: Vec<_> = document
         .records()
@@ -99,7 +100,7 @@ fn org_scheme_event_aot_projects_grouped_comments_and_nested_scope() {
 fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
     let source = "%%(diary-anniversary 1 1 2000)\n%%not-diary\n";
     let document = orgize::org_aot::parse_org_aot(source)
-        .expect("Scheme diary-sexp declaration reaches Rowan and Elements");
+        .expect("Scheme diary-sexp declaration reaches native navigation and Elements");
     assert_eq!(document.syntax().to_string(), source);
     let diary = document
         .records()
@@ -129,8 +130,8 @@ fn org_scheme_event_aot_projects_diary_sexp_without_claiming_percent_text() {
 
 fn org_scheme_context_algorithm_aot_masks_headlines_inside_source_blocks() {
     let source = "* Parent\n#+BeGiN_SrC rust\n** fake\n#+EnD_SrC\n** Child\n";
-    let parsed =
-        parse_org_aot(source).expect("Org Scheme context algorithm builds a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Org Scheme context algorithm builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let kinds: Vec<_> = parsed
         .syntax()
@@ -184,8 +185,8 @@ fn org_scheme_source_header_args_project_as_source_backed_fields() {
 
 fn org_scheme_context_algorithm_aot_projects_paragraph_elements() {
     let source = "alpha\nβ\n \t\nnext\n* H\n";
-    let parsed =
-        parse_org_aot(source).expect("Scheme paragraph transitions build a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme paragraph transitions build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme paragraphs project through the Org Element graph");
@@ -202,8 +203,8 @@ fn org_scheme_context_algorithm_aot_projects_paragraph_elements() {
 
 fn org_scheme_context_algorithm_aot_projects_horizontal_rules() {
     let source = "before\n-----\nafter\n";
-    let parsed =
-        parse_org_aot(source).expect("Scheme horizontal-rule events build a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme horizontal-rule events build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("horizontal rule projects through the Org Element graph");
@@ -232,8 +233,8 @@ fn org_scheme_context_algorithm_aot_projects_horizontal_rules() {
 
 fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
     let source = "first\n: A\n:\n: B\nlast\n";
-    let parsed =
-        parse_org_aot(source).expect("Scheme fixed-width events build a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme fixed-width events build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("fixed-width text projects through the Org Element graph");
@@ -276,8 +277,8 @@ fn org_scheme_context_algorithm_aot_groups_fixed_width_lines() {
 
 fn org_scheme_context_algorithm_aot_recognizes_only_the_bare_readonly_marker() {
     let source = "#+READONLY\n#+READONLYX\n#+ALLPRIORITIES: A B C\n";
-    let parsed =
-        parse_org_aot(source).expect("Scheme bare READONLY events build a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme bare READONLY events build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("bare READONLY projects through the Org Element graph");
@@ -294,8 +295,8 @@ fn org_scheme_context_algorithm_aot_recognizes_only_the_bare_readonly_marker() {
 
 fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
     let source = "#+SEQ_TODO: TODO | DONE \r\n* TODO Work\n#+CALL: name()\n";
-    let parsed =
-        parse_org_aot(source).expect("Scheme key-line algorithm builds a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme key-line algorithm builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme keyed lines project through Org Elements");
@@ -322,7 +323,7 @@ fn org_scheme_context_algorithm_projects_dynamic_keywords_for_todo_queries() {
 fn org_scheme_context_algorithm_projects_declared_planning_and_clock() {
     let source = "* H\nSCHEDULED: now\nCLOCK: 2\n* N\nDEADLINE: x\n";
     let parsed = parse_org_aot(source)
-        .expect("Scheme planning and clock algorithm builds a lossless Rowan tree");
+        .expect("Scheme planning and clock algorithm builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("declared key lines project through Org Elements");
@@ -349,8 +350,8 @@ fn org_scheme_context_algorithm_projects_declared_planning_and_clock() {
 
 fn org_scheme_context_algorithm_projects_escaped_tables_and_rule_rows() {
     let source = "* H\n| a\\|b | c |\n|---+---|\nplain\n";
-    let parsed =
-        parse_org_aot(source).expect("Scheme table algorithm builds a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme table algorithm builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme table rows project through Org Elements");
@@ -406,8 +407,8 @@ fn org_scheme_context_algorithm_projects_escaped_tables_and_rule_rows() {
 
 fn org_scheme_context_algorithm_projects_headline_property_drawers() {
     let source = "* H\n:PROPERTIES:\n:ID: alpha\n:END:\nbody\n";
-    let parsed =
-        parse_org_aot(source).expect("Scheme drawer algorithm builds a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme drawer algorithm builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme property drawer projects through Org Elements");
@@ -431,7 +432,7 @@ fn org_scheme_context_algorithm_projects_headline_property_drawers() {
 
 fn org_scheme_context_algorithm_projects_colon_qualified_property_keys() {
     let source = "* H\n:PROPERTIES:\n:header-args:python: :session local\n:END:\n";
-    let document = parse_org_aot(source).expect("Scheme property drawer reaches Rowan");
+    let document = parse_org_aot(source).expect("Scheme property drawer reaches native navigation");
     assert_eq!(document.syntax().to_string(), source);
     let drawer = document
         .records()
@@ -475,8 +476,8 @@ fn org_scheme_context_algorithm_rejects_longer_block_marker_lookalikes() {
 
 fn org_scheme_context_algorithm_projects_poo_declared_opaque_blocks() {
     let source = "#+BEGIN_SRC rust\n** fake\n#+END_SRC\n#+begin_example\n* hidden\n#+end_example\n#+begin_comment\n| x |\n#+end_comment\n#+begin_export html\n<b>x</b>\n#+end_export\n* Visible\n";
-    let parsed =
-        parse_org_aot(source).expect("Scheme opaque-block strategy builds a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme opaque-block strategy builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme opaque-block strategy projects Org Elements");
@@ -509,7 +510,8 @@ fn org_scheme_context_algorithm_projects_poo_declared_opaque_blocks() {
 
 fn org_scheme_context_algorithm_aot_projects_nested_lists() {
     let source = "- a\n  - b\n- c\n\n1. d\n2) e\n";
-    let parsed = parse_org_aot(source).expect("Scheme list strategy builds a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme list strategy builds a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
 
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
@@ -548,8 +550,8 @@ fn org_scheme_context_list_boundaries_keep_headlines_and_marker_types_distinct()
 
 fn org_scheme_context_algorithm_aot_projects_recursive_containers() {
     let source = "#+begin_quote\ntext\n- item\n#+end_quote\n#+BEGIN: note\nbody\n#+END:\n:LOGBOOK:\nentry\n:END:\n";
-    let parsed =
-        parse_org_aot(source).expect("Scheme recursive containers build a lossless Rowan tree");
+    let parsed = parse_org_aot(source)
+        .expect("Scheme recursive containers build a lossless native navigation index");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme containers project Org Elements");
@@ -611,10 +613,10 @@ fn kind(name: &str, category: KindCategory) -> u16 {
         .expect("Scheme grammar declares the requested syntax kind")
 }
 
-fn executable_scheme_outline_events_reach_rowan_and_element_projection() {
-    let source = include_str!("../../languages/org/fixtures/rowan-event-source.org");
+fn executable_scheme_outline_events_reach_native_index_and_element_projection() {
+    let source = include_str!("../../languages/org/fixtures/native-event-source.org");
     let parsed = orgize::Org::try_parse(source)
-        .expect("native Scheme events satisfy Rowan's source and nesting contract");
+        .expect("native Scheme events satisfy native navigation's source and nesting contract");
     assert_eq!(parsed.syntax().to_string(), source);
     let records = project_syntax_graph(org_language_spec(), org_graph_spec(), &parsed.syntax())
         .expect("Scheme events support Org Element projection");
@@ -777,7 +779,7 @@ macro_rules! org_event {
     };
 }
 
-fn nested_org_events_reach_rowan_without_a_structural_engine_rule() {
+fn nested_org_events_reach_native_index_without_a_structural_engine_rule() {
     let source = "* Parent\n#+begin_src rust\nfn main() {}\n#+end_src\n** Child\n";
     let block_start = source.find("#+begin_src").expect("source block opening");
     let body_start = source.find("fn main()").expect("source block body");
@@ -803,7 +805,7 @@ fn nested_org_events_reach_rowan_without_a_structural_engine_rule() {
         org_event!(finish),
     ];
     let parsed = parse_generated_events(org_language_spec(), HANDOFF_TEST_DIGEST, source, &events)
-        .expect("Org event stream satisfies the generic Rowan contract");
+        .expect("Org event stream satisfies the generic native navigation contract");
 
     assert_eq!(parsed.syntax().to_string(), source);
     assert_eq!(parsed.receipt().parser_digest, Some(HANDOFF_TEST_DIGEST));

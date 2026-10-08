@@ -3,7 +3,7 @@
 `orgizepy` is Orgize's Python SDK. It exposes the following APIs:
 
 - `orgizepy.parser.parse_org` parses raw Org text using the Scheme-declared,
-  native Gerbil AOT parser through the existing PyO3/Rust/Rowan API. It returns
+  native Gerbil AOT parser through the existing PyO3/Rust/native API. It returns
   typed Elements, including all projected fields.
 - `orgizepy.functions.headline_functions` reads the Scheme-AOT headline functions
   from a parsed document.

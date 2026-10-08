@@ -87,6 +87,13 @@ fn explicit_startup_precedes_parallel_consumer_cases() {
     let catalog_count = cases.len();
     let names: std::collections::HashSet<_> = cases.iter().map(|&(name, _)| name).collect();
     assert_eq!(names.len(), catalog_count, "duplicate consumer case names");
+    #[cfg(feature = "datafusion-sql")]
+    assert!(
+        names.contains(
+            "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_query_cases::semantic_ast_projects_org_elements_sql_query_uses_datafusion"
+        ),
+        "DataFusion SQL must execute inside the initialized consumer catalog"
+    );
     if !cfg!(any(
         feature = "md",
         feature = "syntax-org-fc",

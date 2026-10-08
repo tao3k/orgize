@@ -99,7 +99,7 @@ scheme-native-module-test suite output load_path:
 [private]
 scheme-event-test parser_lib poo_flow_lib:
     mkdir -p target/gerbil-test
-    GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test -v 3 t/org-rowan-event-parser-test.ss 2>&1 | tee target/gerbil-test/org-event-parser.log
+    GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test -v 3 t/org-native-event-parser-test.ss 2>&1 | tee target/gerbil-test/org-event-parser.log
     rg --quiet '^MODULE-OK' target/gerbil-test/org-event-parser.log
     rg --quiet '^HARNESS-OK' target/gerbil-test/org-event-parser.log
     rg --quiet '^OK$' target/gerbil-test/org-event-parser.log
@@ -117,7 +117,7 @@ scheme-native-closure-build output load_path:
     mkdir -p "{{ output }}"
     just scheme-native-closure-owner-build "{{ output }}" "{{ load_path }}"
     just scheme-native-closure-support-build "{{ output }}" "{{ load_path }}"
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O t/org-native-publishing-value-test.ss t/org-native-citation-export-test.ss t/org-native-metadata-value-test.ss t/org-native-source-value-test.ss t/org-native-lifecycle-value-test.ss t/org-native-semantic-owner-test.ss t/org-elements-module-test.ss t/org-radio-match-test.ss t/org-rowan-inline-parser-test.ss t/org-rowan-structural-parser-test.ss t/org-rowan-table-container-parser-test.ss t/org-rowan-event-parser-test.ss t/org-source-headlines-qualification.ss
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O t/org-native-publishing-value-test.ss t/org-native-citation-export-test.ss t/org-native-metadata-value-test.ss t/org-native-source-value-test.ss t/org-native-lifecycle-value-test.ss t/org-native-semantic-owner-test.ss t/org-elements-module-test.ss t/org-radio-match-test.ss t/org-native-inline-parser-test.ss t/org-native-structural-parser-test.ss t/org-native-table-container-parser-test.ss t/org-native-event-parser-test.ss t/org-source-headlines-qualification.ss
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O t/org-native-closure.ss
     just scheme-native-closure-link "{{ output }}" "{{ load_path }}"
 
@@ -147,7 +147,7 @@ scheme-native-document-value-build output load_path:
 [private]
 scheme-native-closure-support-build output load_path:
     mkdir -p "{{ output }}"
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -V -O languages/org/generated/rowan-event-fixture.ss languages/org/rowan-event-fixture.ss t/org-parser-test-support.ss 2>&1 | tee "{{ output }}/support-build.log" | rg '^compile |^invoke |^\.\.\. generate parser artifact|^\*\*\* ERROR|^--- Syntax Error|^\.\.\. (form|detail):'
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -V -O languages/org/generated/native-event-fixture.ss languages/org/native-event-fixture.ss t/org-parser-test-support.ss 2>&1 | tee "{{ output }}/support-build.log" | rg '^compile |^invoke |^\.\.\. generate parser artifact|^\*\*\* ERROR|^--- Syntax Error|^\.\.\. (form|detail):'
 
 [private]
 scheme-native-closure-owner-build output load_path:
@@ -209,8 +209,8 @@ scheme-parser-dependent-plans-generate output load_path:
 [private]
 scheme-structural-event-test output load_path:
     mkdir -p "{{ output }}"
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O t/org-rowan-structural-parser-test.ss
-    GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil test -v 3 t/org-rowan-structural-parser-test.ss 2>&1 | tee "{{ output }}/structural-test.log"
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O t/org-native-structural-parser-test.ss
+    GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil test -v 3 t/org-native-structural-parser-test.ss 2>&1 | tee "{{ output }}/structural-test.log"
     rg --quiet '^MODULE-OK' "{{ output }}/structural-test.log"
     rg --quiet '^HARNESS-OK' "{{ output }}/structural-test.log"
     rg --quiet '^OK$' "{{ output }}/structural-test.log"
@@ -219,17 +219,17 @@ scheme-structural-event-test output load_path:
 [private]
 scheme-event-fixture-generate output load_path destination:
     mkdir -p "{{ output }}"
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O languages/org/rowan-event-fixture.ss
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive languages/org/generate-rowan-event-fixture.ss "{{ destination }}"
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O languages/org/native-event-fixture.ss
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive languages/org/generate-native-event-fixture.ss "{{ destination }}"
 
 # Fresh child suites are required when editing grammar expectations. The caller
 # supplies the separately qualified parser overlay; this is not an AOT link gate.
 [private]
 scheme-event-fresh-test output load_path:
     mkdir -p "{{ output }}"
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O languages/org/generated/rowan-event-fixture.ss languages/org/rowan-event-fixture.ss
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O t/org-rowan-inline-parser-test.ss t/org-rowan-structural-parser-test.ss t/org-rowan-table-container-parser-test.ss t/org-rowan-event-parser-test.ss
-    GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil test -v 5 t/org-rowan-event-parser-test.ss 2>&1 | tee "{{ output }}/event-test.log"
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O languages/org/generated/native-event-fixture.ss languages/org/native-event-fixture.ss
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O t/org-native-inline-parser-test.ss t/org-native-structural-parser-test.ss t/org-native-table-container-parser-test.ss t/org-native-event-parser-test.ss
+    GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil test -v 5 t/org-native-event-parser-test.ss 2>&1 | tee "{{ output }}/event-test.log"
     rg --quiet '^CASE timestamp cookie admission is native Scheme, including recovery' "{{ output }}/event-test.log"
     rg --quiet '^CASE-OK timestamp cookie admission is native Scheme, including recovery$' "{{ output }}/event-test.log"
     rg --quiet '^CASE-OK citation header components are native Scheme source spans$' "{{ output }}/event-test.log"
@@ -299,7 +299,7 @@ scheme-parser-build-isolated output load_path cores="12":
 [private]
 scheme-parser-batch-stage-isolated output load_path:
     mkdir -p "{{ output }}"
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O -S -ld-options '{{ clock_linker }}' bindings/c/native-clock.ss bindings/c/native-runtime-statistics.ss languages/org/rowan-event-tape.ss
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O -S -ld-options '{{ clock_linker }}' bindings/c/native-clock.ss bindings/c/native-runtime-statistics.ss languages/org/native-event-tape.ss
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive bindings/c/stage-parser.ss "{{ output }}"
 
 # Contract's existing graph-query dependency needs static Scheme artifacts too.

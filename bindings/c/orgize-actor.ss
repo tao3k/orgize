@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Private native task boundary. The POO parser remains the semantic owner.
-(import (only-in "../../languages/org/rowan-event-runtime.ss"
-                 parse-org-rowan-events-with-parameters))
+(import (only-in "../../languages/org/native-event-runtime.ss"
+                 parse-org-native-events-with-parameters))
 (export org-parse-batch)
 
 ;; Each actor receives one batch partition in its own native mailbox. It owns
@@ -22,7 +22,7 @@
                (lambda (exception) (vector index #f exception))
                (lambda ()
                  (vector index #t
-                         (parse-org-rowan-events-with-parameters
+                         (parse-org-native-events-with-parameters
                           (vector-ref requests index) level policy)))))
           (loop (+ index stride) (cons outcome results)))
         (reverse results)))))

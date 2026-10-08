@@ -7,7 +7,7 @@
         "../languages/org/modules/org-parser/family-funs.ss"
         (only-in "../languages/org/modules/org-elements/radio-match.ss" org-radio-matches)
         (only-in "../languages/org/modules/org-contract/document-plan.ss" org-contract-document-plan)
-        (only-in "../languages/org/rowan-event-tape.ss"
+        (only-in "../languages/org/native-event-tape.ss"
                  org-request->tape expression-value-rows expectation-value-rows contract-value-rows))
 (export org-native-semantic-owner-test)
 

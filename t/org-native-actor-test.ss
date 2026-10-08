@@ -1,11 +1,11 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in "../bindings/c/orgize-actor.ss" org-parse-batch)
-        (only-in "../languages/org/rowan-event-runtime.ss"
-                 parse-org-rowan-events-with-parameters))
+        (only-in "../languages/org/native-event-runtime.ss"
+                 parse-org-native-events-with-parameters))
 (export org-native-actor-test)
 
 (def (parse source)
-  (parse-org-rowan-events-with-parameters source 15 2))
+  (parse-org-native-events-with-parameters source 15 2))
 
 (def org-native-actor-test
   (test-suite "Org native actor ownership"
@@ -37,7 +37,7 @@
            (check (org-parse-batch (list input input) workers: 2
                                    inlinetask-level: (car config)
                                    script-policy: (cdr config))
-                  => (let (events (parse-org-rowan-events-with-parameters
+                  => (let (events (parse-org-native-events-with-parameters
                                     input (car config) (cdr config)))
                        (list events events))))
          '((1 . 0) (15 . 1) (15 . 2)))))

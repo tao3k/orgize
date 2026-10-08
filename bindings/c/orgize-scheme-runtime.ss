@@ -2,7 +2,7 @@
 ;;; One native actor owns all Scheme ABI calls and GC root transfers. The
 ;;; blocking idle wait is intentional for this single-worker comparative lane;
 ;;; it is NOT a general green-thread I/O scheduler or an SMP implementation.
-(import (only-in "../../languages/org/rowan-event-tape.ss" org-request->tape))
+(import (only-in "../../languages/org/native-event-tape.ss" org-request->tape))
 (export orgize-scheme-runtime-link-anchor)
 (extern namespace: orgize/bindings/c/orgize-scheme-runtime
   take-job job-kind job-length copy-job publish-job process-contract-job

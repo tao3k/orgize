@@ -15,10 +15,10 @@ use super::{
     scheme_declared_babel_call_is_not_a_generic_keyword,
     scheme_declared_entities_require_catalog_names_and_preserve_postfix,
     scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend,
-    scheme_declared_macro_objects_project_into_rowan_and_graph,
+    scheme_declared_macro_objects_project_into_native_index_and_graph,
     scheme_declared_paragraphs_preserve_line_breaks_and_link_ancestry,
     scheme_declared_table_builds_rows_and_cells_without_paragraph_claims,
-    scheme_emphasis_objects_project_into_rowan_and_element_graph,
+    scheme_emphasis_objects_project_into_native_index_and_element_graph,
     tracked_fixture_has_scheme_owned_keywords_and_planning,
     unclosed_source_block_recovers_as_text_before_the_next_headline,
     unmatched_greater_block_does_not_swallow_following_headline,
@@ -26,8 +26,8 @@ use super::{
 
 pub(crate) const NATIVE_CASES: &[(&str, fn())] = &[
     (
-        "org_parser_aot::scheme_declared_macro_objects_project_into_rowan_and_graph",
-        scheme_declared_macro_objects_project_into_rowan_and_graph,
+        "org_parser_aot::scheme_declared_macro_objects_project_into_native_index_and_graph",
+        scheme_declared_macro_objects_project_into_native_index_and_graph,
     ),
     (
         "org_parser_aot::scheme_declared_entities_require_catalog_names_and_preserve_postfix",
@@ -38,8 +38,8 @@ pub(crate) const NATIVE_CASES: &[(&str, fn())] = &[
         scheme_declared_babel_call_is_not_a_generic_keyword,
     ),
     (
-        "org_parser_aot::scheme_emphasis_objects_project_into_rowan_and_element_graph",
-        scheme_emphasis_objects_project_into_rowan_and_element_graph,
+        "org_parser_aot::scheme_emphasis_objects_project_into_native_index_and_element_graph",
+        scheme_emphasis_objects_project_into_native_index_and_element_graph,
     ),
     (
         "org_parser_aot::headings_form_nested_sections_and_closed_blocks_remain_lossless",

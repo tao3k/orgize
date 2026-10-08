@@ -1,4 +1,4 @@
-//! Citation Objects are Scheme-owned and source-backed in Rowan.
+//! Citation Objects are Scheme-owned and source-backed in native navigation.
 
 use orgize::{
     Org,
@@ -66,7 +66,7 @@ fn public_ast_projects_scheme_citation_reference_fields() {
     assert_eq!(citation.references[1].id, "roe2021");
 }
 
-fn scheme_declared_citations_project_into_rowan_and_graph() {
+fn scheme_declared_citations_project_into_native_index_and_graph() {
     check_org_aot_element!("[cite:@doe2020]\n", "citation-reference", "key" => "doe2020");
     check_org_aot_element!(
         "[cite:@key\n[cite:@next]\n",
@@ -95,7 +95,7 @@ fn scheme_declared_citations_project_into_rowan_and_graph() {
 fn citation_references_keep_distinct_keys_and_source_fields() {
     let source = "[cite/text:see @doe2020 p. 42; cf. @roe2021]\n";
     let document = orgize::org_aot::parse_org_aot(source)
-        .expect("Scheme-owned references compile through Rowan");
+        .expect("Scheme-owned references compile through native navigation");
     let references: Vec<_> = document
         .records()
         .iter()
@@ -158,8 +158,8 @@ pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
         public_ast_projects_scheme_citation_reference_fields,
     ),
     (
-        "org_citation_aot::scheme_declared_citations_project_into_rowan_and_graph",
-        scheme_declared_citations_project_into_rowan_and_graph,
+        "org_citation_aot::scheme_declared_citations_project_into_native_index_and_graph",
+        scheme_declared_citations_project_into_native_index_and_graph,
     ),
     (
         "org_citation_aot::citation_references_keep_distinct_keys_and_source_fields",

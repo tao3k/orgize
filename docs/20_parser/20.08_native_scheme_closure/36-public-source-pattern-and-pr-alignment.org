@@ -180,3 +180,84 @@ all preparation inventory failures. This newer production delta is not admitted
 by the =007bf803= SDK or =7fe23232= linked receipts. The qualified normal pin
 remains =7fe23232= until fresh SDK/ABI and downstream admission qualify the new
 head; neither parallel work nor dependency history is overwritten.
+
+* FFI schema and native event namespace alignment
+
+The fresh =d2ca5d13= SDK passes all 184 production modules and public/phase
+imports, complete Org compilation and the new 341-module AOT source-root
+admission. Program
+=sha256:9f14cfdd5f2be6e6c38248d3c4141fb838e6c1bb36a924169c5ef3935d99e39e=
+passes 178 Scheme cases / 12 suites and the unchanged exit-42 assertion
+control. The new upstream FFI schema is consumed without references to removed
+parse-artifact or runtime-AOT versioned module paths.
+
+The remaining =rowan-event= Scheme paths and =parse-org-rowan-events= symbols
+move directly to =native-event= / =parse-org-native-events=, including C/actor
+ingress, macro and source-headline consumers, fixture generators and all test
+owners. Old paths and alias exports are absent. Current Rust/Python source
+documentation, test identifiers, exact consumer catalog and component notices
+no longer describe a removed dependency. The executable dependency gate rejects
+these stale names. Assertions and catalog registrations are retained.
+This is namespace/description convergence, not native result-lease completion.
+
+Upstream =d2ca5d13= Linux run =37796638426= passes preparation caches, C/Rust
+ABI/lifecycle and Source cost gates, then fails before Worker execution because
+=worker-control= has no compiled library interface. Commit
+=d066e1a472359b9e3fcced67326b15bb5cf0cd4f= assigns that shared fixture to the
+existing conformance build catalog. Its Just owner passes all five controls:
+shared runtime, persistent affinity, failure propagation, unchanged silence
+watchdog and duplicate ownership rejection. Normal pins and lockfile sources
+align to this commit. The SDK remains labelled =d2ca5d13=: the helper/Just-only
+delta changes no production Scheme/Rust/header/package source.
+
+Lifecycle audit still finds a substantive boundary: =NativeSession= and
+=NativeParsed= borrow an owner-thread runtime and cannot cross Tokio callers.
+Org currently returns owned event bytes from the owner and materializes a Rust
+navigation index and graph records. A native lease migration must keep language
+handles and payload release on that owner, bind per-request Org configuration
+and source identity, and preserve both Runtime and host shutdown contracts.
+Neither a filename migration nor an immutable pin update supplies those facts.
+
+Current =d066e1a4= host builds pass both Runtime chains: 85 native units,
+ordinary units, the exact 457-case default consumer catalog, 11 cutover,
+23 index cases and four-worker 1,000/10,000 full/hit/no-hit Query parity.
+Each 64-caller / 1,4,8-domain matrix admits 33,000 distinct documents,
+completed workers and matching program/corpus/artifact identities. Both
+maturin variants pass 25 assertions without changing the 5s progress policy.
+The selected manifest and installed default extension use the Rust variant
+of =9f14cfdd=. These local receipts do not rank uninstrumented runtimes.
+Parallel upstream =0a2a1a04= introduces another Scheme test/ABI namespace
+delta; it is not admitted by this frozen SDK and program.
+
+Refresh of the preceding =5e820653= PR #18 head identifies another real
+Linux failure: the optional DataFusion =tokio::test= runs outside the
+exclusive native startup catalog. It calls =Org::parse= before initialization.
+The case now creates its Tokio executor only inside the already initialized
+concurrent consumer catalog, preserving all SQL/Arrow assertions and checking
+feature-specific registration. No lazy startup, serialization of the catalog,
+kernel patch, ignored test or timeout change masks that failure.
+
+The first local DataFusion debug build succeeds, but its initial 208MiB
+test executable produces no libtest/case output before the unchanged 5s
+watchdog fails with exit 124. This is a pre-case launch observation, not a
+SQL assertion failure or proof of a particular loader/host cause. It remains
+a negative receipt; a later listing or warmed run cannot admit that first
+launch. Optional-feature qualification now has an explicit profile owner and
+uses the existing release configuration, without changing workspace profiles.
+The first build receipt also used the wrong Cargo profile label (=dev= versus
+=test=); that receipt-only check is repaired separately from semantic checks.
+
+Both release variants subsequently pass the SQL case on their first execution,
+without an executable warmup and under the unchanged 5s watch. Each complete
+feature consumer catalog passes 458 cases, retaining the three existing
+ignored entries. These are semantic/launch receipts, not a general repair of
+the first debug-launch negative observation or a latency ranking. The
+interrupted Rust release build is resumed into a separate receipt directory;
+the incomplete transcript is not presented as success.
+
+The old fuzz entrypoint also lacks native startup. It now uses libFuzzer's
+once-only initialization hook, parses through the public fallible native API,
+and asserts source round-trip for accepted documents. Its native compile check
+passes; this does not assert executed fuzz coverage. The generated fuzz
+lockfile pins the same parser and bridge revisions as the root lockfile.
+Normal dependency-update and revision owners cover both lockfiles.

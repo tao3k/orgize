@@ -21,13 +21,13 @@
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
         (only-in "org-parser-test-support.ss" check-org-ast-with org-events-cover-source?)
-        (only-in "../languages/org/rowan-event-runtime.ss"
-                 parse-org-rowan-events
-                 parse-org-rowan-events-with-inlinetask-level
-                 parse-org-rowan-events-with-inline-script-policy))
-(export org-rowan-inline-parser-test)
+        (only-in "../languages/org/native-event-runtime.ss"
+                 parse-org-native-events
+                 parse-org-native-events-with-inlinetask-level
+                 parse-org-native-events-with-inline-script-policy))
+(export org-native-inline-parser-test)
 
-(def org-rowan-inline-parser-test
+(def org-native-inline-parser-test
   (test-suite "Org inline source-backed Objects"
     (test-case "native macro templates preserve placeholder and Unicode semantics"
       (for-each
@@ -55,7 +55,7 @@
         (check (expand-org-property-macros "={{{x(a,b)}}}=" definitions)
           => "={{{x(a,b)}}}=")))
     (test-case "macro escaped commas are native argument content"
-      (check-org-ast-with parse-org-rowan-events "{{{x(a\\,b,c)}}}\n"
+      (check-org-ast-with parse-org-native-events "{{{x(a\\,b,c)}}}\n"
         (OrgFile (OrgParagraph (OrgTextLine
           (OrgMacro (MacroDelimiter 0 3) (MacroName 3 4) (MacroDelimiter 4 5)
             (MacroArguments
@@ -97,7 +97,7 @@
                     node: 'OrgBold))
                => #f)))
     (test-case "Scheme parses source-backed LaTeX math fragments"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "a \\(x\\) b\n"
         (OrgFile
          (OrgParagraph
@@ -105,7 +105,7 @@
            (TextLine 0 2)
            (OrgLaTeXFragment (LatexFragmentValue 2 7))
            (TextLine 7 10)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "\\[x\\] $$y$$ $z$\n"
         (OrgFile
          (OrgParagraph
@@ -116,10 +116,10 @@
            (TextLine 11 12)
            (OrgLaTeXFragment (LatexFragmentValue 12 15))
            (TextLine 15 16)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "$ x$ $x $\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 10)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "$unfinished [[id:x]]\n"
         (OrgFile
          (OrgParagraph
@@ -129,7 +129,7 @@
                     (LinkTrivia 18 20))
            (TextLine 20 21))))))
     (test-case "paragraphs group source lines and blank trivia closes the scope"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "alpha\nβ\n \t\nnext\n* H\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 9))
@@ -140,7 +140,7 @@
                                   (HeadlineTitle 19 20)
                                   (HeadlineTrivia 20 21))))))
     (test-case "headline tags are source-backed fields, not Rust title parsing"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* TODO Plan :agent:plan:\n"
         (OrgFile
          (OrgSection
@@ -150,7 +150,7 @@
            (HeadlineTagTrivia 12 13) (HeadlineTagValue 13 18)
            (HeadlineTagTrivia 18 19) (HeadlineTagValue 19 23)
            (HeadlineTagTrivia 23 24) (HeadlineTrivia 24 25)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "* Plan :bad::\n"
         (OrgFile
          (OrgSection
@@ -158,7 +158,7 @@
            (HeadlineLine 0 1) (HeadlineTrivia 1 2)
            (HeadlineTitle 2 13) (HeadlineTrivia 13 14))))))
     (test-case "inlinetask Element keeps its END and leaves following outline intact"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "*************** TODO Inline\nBody.\n*************** END\n* Next\n"
         (OrgFile
          (OrgInlinetask
@@ -172,7 +172,7 @@
           (OrgHeadline
            (HeadlineLine 54 55) (HeadlineTrivia 55 56)
            (HeadlineTitle 56 60) (HeadlineTrivia 60 61)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "*************** Note\nAfter text.\n"
         (OrgFile
          (OrgInlinetask
@@ -183,7 +183,7 @@
     (test-case "configured inlinetask threshold is Scheme algorithm state"
       (check-org-ast-with
        (lambda (source)
-         (parse-org-rowan-events-with-inlinetask-level source 4))
+         (parse-org-native-events-with-inlinetask-level source 4))
        "**** Inline\nBody.\n**** END\n"
        (OrgFile
         (OrgInlinetask
@@ -193,7 +193,7 @@
          (OrgParagraph (OrgTextLine (TextLine 12 18)))
          (OrgInlinetaskEnd (HeadlineLine 18 22)
                            (InlinetaskEndLine 22 27)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "**** Inline\n"
         (OrgFile
          (OrgSection
@@ -201,7 +201,7 @@
            (HeadlineLine 0 4) (HeadlineTrivia 4 5)
            (HeadlineTitle 5 11) (HeadlineTrivia 11 12))))))
     (test-case "Scheme cloze Objects retain text, hint, and identifier spans"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "{{text}}\n"
         (OrgFile
          (OrgParagraph
@@ -210,7 +210,7 @@
                      (OrgClozeText (OrgTextLine (TextLine 2 6)))
                      (ClozeDelimiter 6 7) (ClozeDelimiter 7 8))
            (TextLine 8 9)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "{{text}@id}\n"
         (OrgFile
          (OrgParagraph
@@ -220,7 +220,7 @@
                      (ClozeDelimiter 6 7) (ClozeDelimiter 7 8)
                      (ClozeId 8 10) (ClozeDelimiter 10 11))
            (TextLine 11 12)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "{{*text*}{hint}@card-id}\n"
         (OrgFile
          (OrgParagraph
@@ -237,7 +237,7 @@
             (ClozeDelimiter 15 16) (ClozeId 16 23)
             (ClozeDelimiter 23 24))
            (TextLine 24 25)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "{{a[b]}}\n"
         (OrgFile
          (OrgParagraph
@@ -247,7 +247,7 @@
                      (ClozeDelimiter 6 7) (ClozeDelimiter 7 8))
            (TextLine 8 9))))))
     (test-case "Scheme macro Objects retain named and argument spans"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x {{{title}}} y\n"
         (OrgFile
          (OrgParagraph
@@ -256,7 +256,7 @@
            (OrgMacro (MacroDelimiter 2 5) (MacroName 5 10)
                      (MacroDelimiter 10 13))
            (TextLine 13 16)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "{{{issue(42)}}}\n"
         (OrgFile
          (OrgParagraph
@@ -266,11 +266,11 @@
                      (MacroArguments (MacroArgumentContent (OrgMacroArgument (MacroArgumentText 9 11))))
                      (MacroDelimiter 11 15))
            (TextLine 15 16)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "{{{9bad}}} {{{broken\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 21))))))
     (test-case "Scheme citation-reference Objects retain source-backed fields"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite:@ok; @].\n"
         (OrgFile
          (OrgParagraph
@@ -285,7 +285,7 @@
              (CitationMalformedSegment 10 12))
             (CitationDelimiter 12 13))
            (TextLine 13 15)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite:@doe2020]\n"
         (OrgFile
          (OrgParagraph
@@ -296,13 +296,13 @@
                          (CitationReferenceKey 7 14))
                         (CitationDelimiter 14 15))
            (TextLine 15 16)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite/:@key]\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 13)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite:\\@key] [cite:@ ]\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 23)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite:@key] [cite:no key]\n"
         (OrgFile
          (OrgParagraph
@@ -313,7 +313,7 @@
                          (CitationReferenceKey 7 10))
                         (CitationDelimiter 10 11))
            (TextLine 11 26)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite:see [p. 12] @key]\n"
         (OrgFile
          (OrgParagraph
@@ -327,7 +327,7 @@
                          (CitationReferenceKey 19 22))
                         (CitationDelimiter 22 23))
            (TextLine 23 24)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite/text:see @doe2020 p. 42; cf. @roe2021]\n"
         (OrgFile
          (OrgParagraph
@@ -356,7 +356,7 @@
              (CitationReferenceKey 36 43))
             (CitationDelimiter 43 44))
            (TextLine 44 45)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite:see;@key;and]\n"
         (OrgFile
          (OrgParagraph
@@ -376,7 +376,7 @@
               (OrgTextLine (TextLine 15 18))))
             (CitationDelimiter 18 19))
            (TextLine 19 20)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite:@key\n[cite:@next]\n"
         (OrgFile
          (OrgParagraph
@@ -389,7 +389,7 @@
                         (CitationDelimiter 22 23))
            (TextLine 23 24))))))
     (test-case "citation header components are native Scheme source spans"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite/noauthor/bare:@key]\r\n"
         (OrgFile
          (OrgParagraph
@@ -407,7 +407,7 @@
            (TextLine 25 27)))))
       (for-each
        (lambda (source)
-         (let (events (parse-org-rowan-events source))
+         (let (events (parse-org-native-events source))
            (check (org-events-cover-source? source events) => #t)
            (check (filter (lambda (event)
                             (and (eq? (car event) 'start)
@@ -417,7 +417,7 @@
          "[cite/text//bare:@key]\r\n" "[cite/text bare:@key]\n"
          "[cite/text:no key]\n")))
     (test-case "citation affix content ranges are native Scheme decisions"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[cite: \t; \t@key \t; \t]\r\n"
         (OrgFile
          (OrgParagraph
@@ -436,7 +436,7 @@
             (CitationDelimiter 20 21))
            (TextLine 21 23))))))
     (test-case "timestamp dates are Scheme-owned source-backed Objects"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "<2026-09-23 Wed>\n"
         (OrgFile
          (OrgParagraph
@@ -453,7 +453,7 @@
              (TimestampDayName 12 15)
              (TimestampDelimiter 15 16)))
            (TextLine 16 17)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[2026-09-23]--[2026-09-24]\n"
         (OrgFile
          (OrgParagraph
@@ -477,7 +477,7 @@
                             (TimestampSecondDay 23 25))
              (TimestampDelimiter 25 26)))
            (TextLine 26 27)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[2026-09-23]-[2026-09-24]\n"
         (OrgFile
          (OrgParagraph
@@ -501,7 +501,7 @@
                             (TimestampSecondDay 22 24))
              (TimestampDelimiter 24 25)))
            (TextLine 25 26)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "<2026-09-23 Wed 10:00-11:00 ++1w -2d>\n"
         (OrgFile
          (OrgParagraph
@@ -533,7 +533,7 @@
                              (TimestampDelayUnit 35 36))
              (TimestampDelimiter 36 37)))
            (TextLine 37 38)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "<%%(diary-float t 1 2)>\n"
         (OrgFile
          (OrgParagraph
@@ -543,7 +543,7 @@
             (TimestampDiaryExpression 1 22)
             (TimestampDelimiter 22 23))
            (TextLine 23 24)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "<%%(diary-float t 4 2) 12:00-14:00>\n"
         (OrgFile
          (OrgParagraph
@@ -562,7 +562,7 @@
            (TextLine 35 36))))))
     (test-case "timestamp clocks and range endpoints are classified by Scheme"
       (let* ((source "<2026-09-23 9:05-10:06>\r\n")
-             (events (parse-org-rowan-events source))
+             (events (parse-org-native-events source))
              (components
               (filter (lambda (event)
                         (and (eq? (car event) 'token)
@@ -579,7 +579,7 @@
       (for-each
        (lambda (clock)
          (let* ((source (string-append "<2026-09-23 " clock ">\n"))
-                (events (parse-org-rowan-events source)))
+                (events (parse-org-native-events source)))
            (check (org-events-cover-source? source events) => #t)
            (check (filter (lambda (event)
                             (and (eq? (car event) 'token)
@@ -591,7 +591,7 @@
       (for-each
        (lambda (cookie)
          (let* ((source (string-append "<2026-09-23 " cookie ">\r\n"))
-                (events (parse-org-rowan-events source))
+                (events (parse-org-native-events source))
                 (cookies (filter (lambda (event)
                                    (and (eq? (car event) 'start)
                                         (memq (cadr event)
@@ -610,7 +610,7 @@
       (for-each
        (lambda (cookie)
          (let* ((source (string-append "<2026-09-23 " cookie ">\n"))
-                (events (parse-org-rowan-events source)))
+                (events (parse-org-native-events source)))
            (check (org-events-cover-source? source events) => #t)
            (check (filter (lambda (event)
                             (and (eq? (car event) 'start)
@@ -619,7 +619,7 @@
                           events) => '())))
        '("+" "++w" ".1w" "+-1w" "+1ww" "+1.2w" "---2d" "-d" "-2" "+1q")))
     (test-case "the complete Org entity catalog drives source-backed Objects"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "\\cent \\alpha{} \\frac12{}test\n"
         (OrgFile
          (OrgParagraph
@@ -632,7 +632,7 @@
            (OrgEntity (EntityDelimiter 15 16) (EntityName 16 22)
                       (EntityPost 22 24))
            (TextLine 24 29)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "\\_   x\n"
         (OrgFile
          (OrgParagraph
@@ -640,10 +640,10 @@
            (OrgEntity (EntityDelimiter 0 1) (EntityName 1 2)
                       (EntityPost 2 5))
            (TextLine 5 7)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "\\unknown \\centaur\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 18)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "\\alpha\\beta\n"
         (OrgFile
          (OrgParagraph
@@ -651,7 +651,7 @@
            (OrgEntity (EntityDelimiter 0 1) (EntityName 1 6))
            (OrgEntity (EntityDelimiter 6 7) (EntityName 7 11))
            (TextLine 11 12)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "\\alpha[[https://example.org]]\n"
         (OrgFile
          (OrgParagraph
@@ -662,14 +662,14 @@
                     (LinkTrivia 27 29))
            (TextLine 29 30))))))
     (test-case "five-dash horizontal rule interrupts a paragraph"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "before\n-----\nafter\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 7)))
          (OrgHorizontalRule (HorizontalRuleLine 7 13))
          (OrgParagraph (OrgTextLine (TextLine 13 19))))))
     (test-case "fixed-width lines form one Element and stop at prose"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "first\n: A\n:\n: B\nlast\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 6)))
@@ -678,7 +678,7 @@
                         (FixedWidthPrefix 12 14) (FixedWidthValue 14 16))
          (OrgParagraph (OrgTextLine (TextLine 16 21))))))
     (test-case "POO-declared inline links preserve descriptions and malformed text"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "go [[https://a][α]] and [[id:b]]\n[[broken\n"
         (OrgFile
          (OrgParagraph
@@ -693,7 +693,7 @@
                     (LinkTrivia 31 33))
            (TextLine 33 43))))))
     (test-case "angle and plain URLs are Scheme-owned link Objects"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "Visit <https://example.com/path>.\n"
         (OrgFile
          (OrgParagraph
@@ -702,7 +702,7 @@
            (OrgLink (LinkTrivia 6 7) (LinkTarget 7 31)
                     (LinkTrivia 31 32))
            (TextLine 32 34)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "Visit https://example.com/path.\n"
         (OrgFile
          (OrgParagraph
@@ -710,7 +710,7 @@
            (TextLine 0 6) (OrgLink (LinkTarget 6 30))
            (TextLine 30 32))))))
     (test-case "nested link descriptions keep URL text without recursive links"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "go [[id:a][https://example.org]]\n"
         (OrgFile
          (OrgParagraph
@@ -722,7 +722,7 @@
                     (LinkTrivia 30 32))
            (TextLine 32 33))))))
     (test-case "target and radio-target Objects retain source-backed value spans"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "a <<one two>> and <<<radio>>> z\n"
         (OrgFile
          (OrgParagraph
@@ -736,10 +736,10 @@
                            (InlineTargetValue 21 26)
                            (InlineTargetDelimiter 26 29))
            (TextLine 29 32)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x << bad>> and <<bad >>\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 24)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "<<β>>\r\n"
         (OrgFile
          (OrgParagraph
@@ -749,7 +749,7 @@
                       (InlineTargetDelimiter 4 6))
            (TextLine 6 8))))))
     (test-case "export snippets project backend, value, and lossless delimiters"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "hi @@html:<b>x</b>@@ ok\n"
         (OrgFile
          (OrgParagraph
@@ -762,7 +762,7 @@
             (ExportSnippetValue 10 18)
            (ExportSnippetDelimiter 18 20))
            (TextLine 20 24)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "a @@-:@@ b\n"
         (OrgFile
          (OrgParagraph
@@ -774,13 +774,13 @@
             (ExportSnippetDelimiter 5 6)
             (ExportSnippetDelimiter 6 8))
            (TextLine 8 11)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "a @@:x@@ and @@h_t:x@@ and @@html:x@\n"
         (OrgFile
          (OrgParagraph
           (OrgTextLine (TextLine 0 37))))))
     (test-case "footnote references preserve label, inline definition, and balanced brackets"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:n:See *bold* text]\n"
         (OrgFile
          (OrgParagraph
@@ -798,7 +798,7 @@
               (TextLine 16 21)))
             (FootnoteReferenceDelimiter 21 22))
            (TextLine 22 23)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x [fn:n] y\n"
         (OrgFile
          (OrgParagraph
@@ -809,7 +809,7 @@
             (FootnoteReferenceLabel 6 7)
             (FootnoteReferenceDelimiter 7 8))
            (TextLine 8 11)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x [fn::a [b]] z\n"
         (OrgFile
          (OrgParagraph
@@ -822,10 +822,10 @@
             (FootnoteReferenceDelimiter 12 13))
            (TextLine 13 16)))))
       ;; Org Mode's object dispatcher distinguishes the lowercase `f` here.
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x [Fn:n] y\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:n:a [b]]\n"
         (OrgFile
          (OrgParagraph
@@ -837,12 +837,12 @@
             (FootnoteReferenceDefinition 6 11)
             (FootnoteReferenceDelimiter 11 12))
            (TextLine 12 13)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x [fn:] [fn::] [fn:bad name] [fn:no-close\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 42))))))
     (test-case "inline source blocks preserve language and balanced body spans"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x src_rust{a{b}c} y\n"
         (OrgFile
          (OrgParagraph
@@ -855,7 +855,7 @@
             (InlineSourceBody 11 16)
             (InlineCodeDelimiter 16 17))
            (TextLine 17 20)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "src_go{}\n"
         (OrgFile
          (OrgParagraph
@@ -867,7 +867,7 @@
             (InlineCodeDelimiter 7 8))
            (TextLine 8 9))))))
     (test-case "inline Babel calls preserve optional headers and nested arguments"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "call_foo[x](a(b))[z]\n"
         (OrgFile
          (OrgParagraph
@@ -883,7 +883,7 @@
             (InlineBabelEndHeader 18 19)
             (InlineCodeDelimiter 19 20))
            (TextLine 20 21)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "call_foo(1)\n"
         (OrgFile
          (OrgParagraph
@@ -896,12 +896,12 @@
             (InlineCodeDelimiter 10 11))
            (TextLine 11 12))))))
     (test-case "incomplete inline code stays literal text"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "src_rust{unterminated\ncall_foo[x](unterminated\n"
         (OrgFile
          (OrgParagraph
           (OrgTextLine (TextLine 0 47)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "prefixsrc_rust{a}\n"
         (OrgFile
          (OrgParagraph
@@ -911,7 +911,7 @@
                          (InlineScriptValue 10 14))
            (TextLine 14 18))))))
     (test-case "Scheme script Objects preserve delimiters and nested braces"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x_abc y^2\n"
         (OrgFile
          (OrgParagraph
@@ -923,7 +923,7 @@
            (OrgSuperscript (InlineScriptDelimiter 7 8)
                            (InlineScriptValue 8 9))
            (TextLine 9 10)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x_{a{b}c} y^*\n"
         (OrgFile
          (OrgParagraph
@@ -936,21 +936,21 @@
            (OrgSuperscript (InlineScriptDelimiter 11 12)
                            (InlineScriptValue 12 13))
            (TextLine 13 14)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "AB_2O x^a,\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "_abc\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 5))))))
     (test-case "Scheme inline helper inherits configured script policy"
       (check-org-ast-with
        (lambda (source)
-         (parse-org-rowan-events-with-inline-script-policy source 0))
+         (parse-org-native-events-with-inline-script-policy source 0))
        "x_abc y_{z}\n"
        (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 12)))))
       (check-org-ast-with
        (lambda (source)
-         (parse-org-rowan-events-with-inline-script-policy source 1))
+         (parse-org-native-events-with-inline-script-policy source 1))
        "x_abc y_{z}\n"
        (OrgFile
         (OrgParagraph
@@ -961,7 +961,7 @@
                         (InlineScriptDelimiter 10 11))
           (TextLine 11 12))))))
     (test-case "footnote definitions contain elements and stop at headings"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:n] body\n* H\n"
         (OrgFile
          (OrgFootnoteDefinition
@@ -972,7 +972,7 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 12 13) (HeadlineTrivia 13 14)
                        (HeadlineTitle 14 15) (HeadlineTrivia 15 16)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[FN:n] body\n* H\n"
         (OrgFile
          (OrgFootnoteDefinition
@@ -983,10 +983,10 @@
          (OrgSection
           (OrgHeadline (HeadlineLine 12 13) (HeadlineTrivia 13 14)
                        (HeadlineTitle 14 15) (HeadlineTrivia 15 16)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:] invalid\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 14)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:n] body\n\n* H\n"
         (OrgFile
          (OrgFootnoteDefinition
@@ -999,7 +999,7 @@
           (OrgHeadline (HeadlineLine 13 14) (HeadlineTrivia 14 15)
                        (HeadlineTitle 15 16) (HeadlineTrivia 16 17))))))
     (test-case "footnote definitions retain one blank and end before two blanks"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:a] first\n\ncontinued\n"
         (OrgFile
          (OrgFootnoteDefinition
@@ -1009,7 +1009,7 @@
           (OrgParagraph (OrgTextLine (TextLine 6 13))
                         (OrgTextLine (TextLine 13 14)))
           (OrgParagraph (OrgTextLine (TextLine 14 24))))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:a] first\n\n\noutside\n"
         (OrgFile
          (OrgFootnoteDefinition
@@ -1021,7 +1021,7 @@
          (OrgTextLine (TextLine 14 15))
          (OrgParagraph (OrgTextLine (TextLine 15 23))))))
     (test-case "next definition and EOF flush terminate the preceding footnote"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:a] one\n[fn:b] two\n"
         (OrgFile
          (OrgFootnoteDefinition
@@ -1034,7 +1034,7 @@
           (FootnoteDefinitionLabel 15 16)
           (FootnoteDefinitionDelimiter 16 17)
           (OrgParagraph (OrgTextLine (TextLine 17 22))))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:a] one\n\n"
         (OrgFile
          (OrgFootnoteDefinition
@@ -1043,7 +1043,7 @@
           (FootnoteDefinitionDelimiter 5 6)
           (OrgParagraph (OrgTextLine (TextLine 6 11)))
           (OrgTextLine (TextLine 11 12)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[fn:a] one\n\n[fn:b] two\n"
         (OrgFile
          (OrgFootnoteDefinition
@@ -1058,7 +1058,7 @@
           (FootnoteDefinitionDelimiter 17 18)
           (OrgParagraph (OrgTextLine (TextLine 18 23)))))))
     (test-case "statistics cookies accept Org's percent and fraction shapes"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "a [50%] [2/3] [%] [/] z\n"
         (OrgFile
          (OrgParagraph
@@ -1072,24 +1072,24 @@
            (TextLine 17 18)
            (OrgStatisticsCookie (StatisticsCookieValue 18 21))
            (TextLine 21 24)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "[5] [5/a] [5%%] x\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 18))))))
     (test-case "line break is only an unescaped pair at the physical line end"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "a\\\\  \r\nnext\n"
         (OrgFile
          (OrgParagraph
           (OrgTextLine (TextLine 0 1)
                        (OrgLineBreak (LineBreakText 1 7))
                        (TextLine 7 12)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "a\\\\ x\na\\\\\\\n"
         (OrgFile
          (OrgParagraph
           (OrgTextLine (TextLine 0 11))))))
     (test-case "inline code and verbatim preserve delimiters and source values"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "a ~code~ =verb= z\n"
         (OrgFile
          (OrgParagraph
@@ -1103,11 +1103,11 @@
                         (InlineMarkupValue 10 14)
                         (InlineMarkupDelimiter 14 15))
            (TextLine 15 18)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x~y~ ~unclosed\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 15)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "~β~\r\n"
         (OrgFile
          (OrgParagraph
@@ -1116,12 +1116,12 @@
                     (InlineMarkupValue 1 3)
                     (InlineMarkupDelimiter 3 4))
            (TextLine 4 6)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "!~x~ ~a ~ ~b~c\n"
         (OrgFile
          (OrgParagraph (OrgTextLine (TextLine 0 15))))))
     (test-case "emphasis Objects use the same Scheme boundary strategy"
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "*bold* /italic/ _under_ +strike+\n"
         (OrgFile
          (OrgParagraph
@@ -1142,10 +1142,10 @@
                              (InlineMarkupValue 25 31)
                              (InlineMarkupDelimiter 31 32))
            (TextLine 32 33)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "x*y* *open\n"
         (OrgFile (OrgParagraph (OrgTextLine (TextLine 0 11)))))
-      (check-org-ast-with parse-org-rowan-events
+      (check-org-ast-with parse-org-native-events
         "a *bo\nld* z\n"
         (OrgFile
          (OrgParagraph

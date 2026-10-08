@@ -91,7 +91,7 @@ fn projects_little_endian_records_without_reinterpreting_source() {
 }
 
 #[test]
-fn rowan_admission_rejects_invalid_source_ranges_and_nesting() {
+fn native_index_admission_rejects_invalid_source_ranges_and_nesting() {
     let grammar = org_language_spec();
     for suffix in [vec![0], {
         let mut record = vec![1];

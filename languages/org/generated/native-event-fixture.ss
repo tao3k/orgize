@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
-;;; Native event golden; source is fixtures/rowan-event-source.org.
-(export rowan-event-fixture-events)
-(def rowan-event-fixture-events
+;;; Native event golden; source is fixtures/native-event-source.org.
+(export native-event-fixture-events)
+(def native-event-fixture-events
   '(
     (start OrgFile)
     (start OrgKeyword)

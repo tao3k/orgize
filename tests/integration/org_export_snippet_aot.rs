@@ -1,4 +1,4 @@
-//! Scheme-owned Org export snippets projected through the Rowan Element graph.
+//! Scheme-owned Org export snippets projected through the native navigation Element graph.
 
 macro_rules! check_org_export_snippet {
     ($record:expr, $source:expr, $backend:expr, $value:expr, $literal:expr) => {{

@@ -4,7 +4,56 @@
 
 * Current source candidate
 
-The qualified normal dependency pin is
+The normal dependency candidate now uses
+=d066e1a472359b9e3fcced67326b15bb5cf0cd4f=, including the shared Worker
+fixture build repair. Its fresh production SDK is explicitly labelled
+=d2ca5d13=; the two-file test-owner delta changes no production source.
+All 184 SDK modules/public imports, complete Org build, 341-module source-root
+admission, 178 Scheme cases / 12 suites and exit-42 control pass with program
+=9f14cfdd=. Old event-module paths and aliases move directly to =native-event=.
+The current dependency gate also rejects stale names in implementation,
+tests and Python descriptions. It does not assert native lease completion.
+All five shared Worker controls pass locally with original failure policies.
+
+Both newly linked Runtime chains pass 85 native units, ordinary units,
+457 consumer cases, 11 cutover and 23 index cases, plus four-worker
+1,000/10,000 full/hit/no-hit Query parity. Each 64-caller / 1,4,8-domain
+matrix passes 33,000 distinct documents with worker-exit and cross-runtime
+program/corpus/artifact admission. Both maturin variants pass 25 assertions
+with the unchanged 5s progress checks. The selected manifest and installed
+default extension use this Rust program. These are local qualification
+receipts, not stable latency admission or delivered-head CI.
+
+PR #18's preceding =5e820653= Linux CI exposes an optional-feature startup
+gap: a standalone DataFusion Tokio test parses before native initialization.
+Its SQL assertions now join the same initialized concurrent consumer catalog;
+a feature-specific catalog assertion prevents omission. Focused native feature
+qualification and the delivered commit's full CI remain separate gates.
+The first DataFusion debug executable fails the unchanged 5s watch before
+any case output; it is not a SQL failure and is not admitted by a warmed retry.
+Release feature qualification is separate; workspace profiles are unchanged.
+Both release variants pass the DataFusion case on their first execution,
+under the unchanged 5s watch, and their complete 458-case consumer catalogs.
+The fuzz entrypoint now uses libFuzzer's once-only native startup hook and
+checks source round-trip for successful fallible parses. Its native compile
+check passes; no fuzz-run qualification is claimed. Its new lockfile binds the
+same parser/bridge revisions and participates in normal pin-update checks.
+
+The substantive remaining ownership path is explicit: Org's owner returns event
+bytes; Rust still calls =parse_generated_events= and =project_syntax_graph=.
+Upstream owner-thread =NativeSession=/=NativeParsed= cannot simply be passed to
+Tokio callers. Native handles/result release, per-request Org configuration,
+source identity and host shutdown must migrate coherently before that boundary
+is declared closed. See [[file:36-public-source-pattern-and-pr-alignment.org][latest FFI and namespace evidence]].
+
+Parallel upstream =0a2a1a04= renames Scheme test/ABI responsibilities after this
+qualification began. It is a separate unadmitted SDK delta, not silently
+substituted into the current program. Exact-head CI, native result leases and
+stable Contract25 / Query45 admission remain open.
+
+* Previous qualification records
+
+The preceding qualified normal dependency pin was
 =7fe23232701cdb2ff2da82ea587d72997eb4ac1e=. Its cache-only delta from
 =007bf803= leaves parser/language/header/Rust/package sources unchanged.
 The SDK remains explicitly the fresh =007bf803= build: 184-module public/phase
