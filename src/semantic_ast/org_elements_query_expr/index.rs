@@ -27,6 +27,9 @@ fn compile_index_query_expression(expression: &QueryExpr) -> Option<OrgElementsI
         return None;
     };
     let head = list_head(items)?;
+    if !super::core_types::query_form_arity_is_valid(head, items.len()) {
+        return None;
+    }
     match head {
         "org-elements-query" | "query" | "and" => compile_index_and_query(&items[1..]),
         "predicate" => compile_index_predicate_query(compile_predicate_expression(items.get(1)?)?),
@@ -46,7 +49,9 @@ fn compile_index_query_expression(expression: &QueryExpr) -> Option<OrgElementsI
         }
         "category" => {
             let mut query = OrgElementsIndexQuery::new();
-            query.category = OrgElementsIndexCategory::from_label(&items.get(1)?.as_text()?);
+            query.category = Some(OrgElementsIndexCategory::from_label(
+                &items.get(1)?.as_text()?,
+            )?);
             Some(query)
         }
         "kind" | "type" => {

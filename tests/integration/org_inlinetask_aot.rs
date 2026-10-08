@@ -7,7 +7,6 @@ use orgize::org_element_query::{
     OrgElementRelation,
 };
 
-#[test]
 fn configured_inlinetask_level_uses_the_scheme_aot_algorithm() {
     let source = "* Parent\n**** Inline\nBody.\n**** END\n* Next\n";
     let default = parse_org_aot(source).expect("default AOT parses");
@@ -35,7 +34,6 @@ fn configured_inlinetask_level_uses_the_scheme_aot_algorithm() {
     assert!(configured.syntax().to_string().contains("**** END"));
 }
 
-#[test]
 fn closed_inlinetask_projects_element_body_and_next_outline() {
     let source = "* Parent\n*************** TODO Inline :work:\nSCHEDULED: <2026-05-10 Sun>\n:PROPERTIES:\n:CUSTOM_ID: inline-task\n:END:\nBody [[https://example.com][link]].\n*************** END\n* Next\n";
     let document = parse_org_aot(source).expect("Scheme-AOT inlinetask parses");
@@ -99,7 +97,6 @@ fn closed_inlinetask_projects_element_body_and_next_outline() {
     );
 }
 
-#[test]
 fn unclosed_inlinetask_does_not_consume_following_paragraph() {
     let source = "*************** Note\nAfter text.\n";
     check_org_aot_element!(source, "inlinetask", "title" => "Note");
@@ -117,7 +114,6 @@ fn unclosed_inlinetask_does_not_consume_following_paragraph() {
     assert!(usize::from(task.range.end()) <= usize::from(paragraph.range.start()));
 }
 
-#[test]
 fn unclosed_inlinetask_retains_affiliated_planning_and_properties() {
     let source = "*************** TODO Note\nSCHEDULED: <2026-05-10 Sun>\n:PROPERTIES:\n:CUSTOM_ID: note\n:END:\nAfter text.\n";
     check_org_aot_element!(source, "inlinetask", "title" => "TODO Note");
@@ -145,7 +141,6 @@ fn unclosed_inlinetask_retains_affiliated_planning_and_properties() {
     assert!(usize::from(task.range.end()) <= usize::from(paragraph.range.start()));
 }
 
-#[test]
 fn inlinetask_inherits_file_local_todo_vocabulary() {
     let source = "#+TODO: NEXT WAIT | DONE CANCELLED\n* Parent\n*************** NEXT Review\n*************** END\n";
     check_org_aot_element!(source, "inlinetask", "title" => "NEXT Review");
@@ -183,3 +178,26 @@ fn inlinetask_inherits_file_local_todo_vocabulary() {
         Ok(vec![task.id])
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_inlinetask_aot::configured_inlinetask_level_uses_the_scheme_aot_algorithm",
+        configured_inlinetask_level_uses_the_scheme_aot_algorithm,
+    ),
+    (
+        "org_inlinetask_aot::closed_inlinetask_projects_element_body_and_next_outline",
+        closed_inlinetask_projects_element_body_and_next_outline,
+    ),
+    (
+        "org_inlinetask_aot::unclosed_inlinetask_does_not_consume_following_paragraph",
+        unclosed_inlinetask_does_not_consume_following_paragraph,
+    ),
+    (
+        "org_inlinetask_aot::unclosed_inlinetask_retains_affiliated_planning_and_properties",
+        unclosed_inlinetask_retains_affiliated_planning_and_properties,
+    ),
+    (
+        "org_inlinetask_aot::inlinetask_inherits_file_local_todo_vocabulary",
+        inlinetask_inherits_file_local_todo_vocabulary,
+    ),
+];

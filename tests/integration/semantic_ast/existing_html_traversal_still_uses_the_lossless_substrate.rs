@@ -1,6 +1,5 @@
 use orgize::Org;
 
-#[test]
 fn existing_html_traversal_still_uses_the_lossless_substrate() {
     let html = Org::parse(
         r#"* title
@@ -20,3 +19,8 @@ quoted
         insta::assert_snapshot!("semantic_ast__semantic_ast_html_compatibility", html);
     });
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::existing_html_traversal_still_uses_the_lossless_substrate::existing_html_traversal_still_uses_the_lossless_substrate",
+    existing_html_traversal_still_uses_the_lossless_substrate,
+)];

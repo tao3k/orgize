@@ -6,10 +6,76 @@ use crate::{
         parse_contracts_from_document,
     },
 };
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 use std::path::Path;
 
-#[test]
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "document_predicates_filter_contract_assertions_by_source_path",
+        document_predicates_filter_contract_assertions_by_source_path,
+    ),
+    (
+        "native_document_dir_property_limits_contract_evaluation_by_source_path",
+        native_document_dir_property_limits_contract_evaluation_by_source_path,
+    ),
+    (
+        "native_section_dir_property_overrides_inherited_document_dir_scope",
+        native_section_dir_property_overrides_inherited_document_dir_scope,
+    ),
+    (
+        "native_dir_property_value_expands_environment_variables_and_org_macros",
+        native_dir_property_value_expands_environment_variables_and_org_macros,
+    ),
+    (
+        "native_dir_property_value_expands_command_substitution",
+        native_dir_property_value_expands_command_substitution,
+    ),
+    (
+        "contract_reference_paths_match_windows_style_relative_org_links",
+        contract_reference_paths_match_windows_style_relative_org_links,
+    ),
+    (
+        "query_level_or_matches_node_property_branches",
+        query_level_or_matches_node_property_branches,
+    ),
+    (
+        "contract_kind_sugar_can_restrict_properties_to_document_root",
+        contract_kind_sugar_can_restrict_properties_to_document_root,
+    ),
+    (
+        "table_column_nonempty_does_not_shift_across_an_empty_cell",
+        table_column_nonempty_does_not_shift_across_an_empty_cell,
+    ),
+    (
+        "predicate_or_groups_inside_and_are_intersected",
+        predicate_or_groups_inside_and_are_intersected,
+    ),
+    (
+        "named_org_contract_blocks_define_assertions_without_heading_properties",
+        named_org_contract_blocks_define_assertions_without_heading_properties,
+    ),
+    (
+        "custom_document_keywords_are_queryable_case_insensitively",
+        custom_document_keywords_are_queryable_case_insensitively,
+    ),
+    (
+        "contract_count_can_match_a_binding_to_require_complete_nodes",
+        contract_count_can_match_a_binding_to_require_complete_nodes,
+    ),
+    (
+        "contract_value_sets_can_require_exact_trace_coverage",
+        contract_value_sets_can_require_exact_trace_coverage,
+    ),
+    (
+        "contract_table_rows_can_require_named_columns_on_the_same_row",
+        contract_table_rows_can_require_named_columns_on_the_same_row,
+    ),
+    (
+        "contract_positive_integer_predicate_rejects_noncanonical_and_nonpositive_values",
+        contract_positive_integer_predicate_rejects_noncanonical_and_nonpositive_values,
+    ),
+];
+
 fn document_predicates_filter_contract_assertions_by_source_path() {
     let contract_source = r#"
 * Skill filename contract
@@ -64,7 +130,6 @@ fn document_predicates_filter_contract_assertions_by_source_path() {
     assert_eq!(lowercase.assertions[0].actual_count, 0);
 }
 
-#[test]
 fn native_document_dir_property_limits_contract_evaluation_by_source_path() {
     let contract = parse_single_contract(
         r#"
@@ -120,7 +185,6 @@ fn native_document_dir_property_limits_contract_evaluation_by_source_path() {
     assert_eq!(outside.assertions[0].actual_count, 0);
 }
 
-#[test]
 fn native_section_dir_property_overrides_inherited_document_dir_scope() {
     let contract = parse_single_contract(
         r#"
@@ -181,7 +245,6 @@ fn native_section_dir_property_overrides_inherited_document_dir_scope() {
     assert_eq!(outside.assertions[0].actual_count, 0);
 }
 
-#[test]
 fn native_dir_property_value_expands_environment_variables_and_org_macros() {
     let contract = parse_single_contract(
         r#"
@@ -240,9 +303,37 @@ fn native_dir_property_value_expands_environment_variables_and_org_macros() {
         macro_result.assertions[0].status,
         OrgContractAssertionStatus::Passed
     );
+    // DIR secondary values must use native argument cooking, including escaped
+    // commas, source-order overrides and literal malformed/unknown calls.
+    for (source, path) in [
+        (
+            "#+MACRO: root old\n#+MACRO: root /workspace/$1/$2/$0\n#+PROPERTY: DIR {{{root(λ\\,a, β)}}}\n* Native\n",
+            "/workspace/λ,a/β/λ,a, β/README.org",
+        ),
+        (
+            "#+PROPERTY: DIR /workspace/{{{unknown(x)}}}/\n* Native\n",
+            "/workspace/{{{unknown(x)}}}/README.org",
+        ),
+        (
+            "#+MACRO: root should-not-expand\n#+PROPERTY: DIR /workspace/={{{root}}}=/\n* Native\n",
+            "/workspace/={{{root}}}=/README.org",
+        ),
+    ] {
+        let document = Org::parse(source).document();
+        let result = evaluate_org_contract_with_context(
+            &document,
+            &contract,
+            OrgContractEvaluationScope::document(),
+            &OrgContractEvaluationContext::with_source_path(path),
+        );
+        assert_eq!(
+            result.assertions[0].status,
+            OrgContractAssertionStatus::Passed,
+            "{source}"
+        );
+    }
 }
 
-#[test]
 fn native_dir_property_value_expands_command_substitution() {
     let contract = parse_single_contract(
         r#"
@@ -282,7 +373,6 @@ fn native_dir_property_value_expands_command_substitution() {
     );
 }
 
-#[test]
 fn contract_reference_paths_match_windows_style_relative_org_links() {
     let contract_document = Org::parse(
         r#"
@@ -315,7 +405,6 @@ fn contract_reference_paths_match_windows_style_relative_org_links() {
     assert!(registry.resolve(&reference).is_some());
 }
 
-#[test]
 fn query_level_or_matches_node_property_branches() {
     let contract = parse_single_contract(
         r#"
@@ -362,7 +451,6 @@ fn query_level_or_matches_node_property_branches() {
     assert_eq!(evaluation.assertions[0].actual_count, 1);
 }
 
-#[test]
 fn contract_kind_sugar_can_restrict_properties_to_document_root() {
     let contract = parse_single_contract(
         r#"
@@ -413,7 +501,6 @@ fn contract_kind_sugar_can_restrict_properties_to_document_root() {
     assert_eq!(evaluation.assertions[0].actual_count, 0);
 }
 
-#[test]
 fn table_column_nonempty_does_not_shift_across_an_empty_cell() {
     let contract = parse_single_contract(
         r#"
@@ -457,7 +544,6 @@ fn table_column_nonempty_does_not_shift_across_an_empty_cell() {
     assert_eq!(evaluation.assertions[0].actual_count, 0);
 }
 
-#[test]
 fn predicate_or_groups_inside_and_are_intersected() {
     let contract = parse_single_contract(
         r#"
@@ -503,7 +589,6 @@ fn predicate_or_groups_inside_and_are_intersected() {
     }
 }
 
-#[test]
 fn named_org_contract_blocks_define_assertions_without_heading_properties() {
     let contract_source = r#"
 * Evidence link contract
@@ -566,7 +651,6 @@ Task must include a replayable evidence link.
     assert_eq!(evaluation.assertions[0].actual_count, 1);
 }
 
-#[test]
 fn custom_document_keywords_are_queryable_case_insensitively() {
     let contract = parse_single_contract(
         r#"
@@ -625,7 +709,6 @@ fn parse_single_contract(source: &str) -> crate::ast::OrgContract {
         .expect("contract parsed")
 }
 
-#[test]
 fn contract_count_can_match_a_binding_to_require_complete_nodes() {
     let contract = parse_single_contract(
         r#"
@@ -686,7 +769,6 @@ fn contract_count_can_match_a_binding_to_require_complete_nodes() {
     );
 }
 
-#[test]
 fn contract_value_sets_can_require_exact_trace_coverage() {
     let contract = parse_single_contract(
         r#"
@@ -768,7 +850,6 @@ fn contract_value_sets_can_require_exact_trace_coverage() {
     );
 }
 
-#[test]
 fn contract_table_rows_can_require_named_columns_on_the_same_row() {
     let contract = parse_single_contract(
         r#"
@@ -868,7 +949,6 @@ fn contract_table_rows_can_require_named_columns_on_the_same_row() {
     );
 }
 
-#[test]
 fn contract_positive_integer_predicate_rejects_noncanonical_and_nonpositive_values() {
     let contract = parse_single_contract(
         r#"

@@ -1,0 +1,163 @@
+[
+  {
+    "active_scope": "overlapping supervisor IPC requests to independent native domains; not sampled CPU utilization",
+    "adapter": "ec4bf5e096245ea5983ed968f7a4bc8babeea50ab285983670bb365122b03c8b",
+    "architecture": "aarch64",
+    "artifact": "1fcff741c145a41832bbc0579bb98143f6ba8eac182b279af92f94cb93a5e7ca",
+    "backend": "runtime-rust",
+    "benchmark": "36da9276bfbf123fa1f72f227883850afd3a6672b193b3db7652d2a03bc0f4af",
+    "bytes": 55150,
+    "callers": 64,
+    "completed": 100,
+    "corpus": "d33f61ddb68ec901803344742b5b87bf5dca3979a84c9a7129b2e87434d532b1",
+    "distinct_documents": 100,
+    "documents": 100,
+    "documents_per_second": 92.34989271357416,
+    "domains": 1,
+    "driver": "tokio-process-domains",
+    "elapsed_ns": 1082838291,
+    "end_to_end_latency_ns": {
+      "max": 845715750,
+      "p50": 338401416,
+      "p95": 515894208,
+      "p99": 610075750
+    },
+    "end_to_end_scope": "Tokio submission through bounded queue, IPC, native parse/projection, lossless validation, checksum and response; excludes startup/warmup",
+    "max_active_worker_requests": 1,
+    "max_in_flight": 64,
+    "native_queue_capacity_per_domain": 64,
+    "parse_latency_ns": {
+      "max": 244393333,
+      "p50": 5842291,
+      "p95": 12549167,
+      "p99": 92876125
+    },
+    "program": "sha256:9554824bff01b10b2159ba7e413221a73a6cd712d5df140f3d2d98743f225740",
+    "queue_capacity_per_domain": 64,
+    "repetition": 1,
+    "schema": "orgize.runtime-parallel.v1",
+    "tokio_workers": 4,
+    "worker_completed": [
+      100
+    ],
+    "worker_exit_success": true,
+    "worker_pids": [
+      47871
+    ],
+    "workload": "closed-loop bounded concurrent admissions; not an open-loop arrival-rate test"
+  },
+  {
+    "active_scope": "overlapping supervisor IPC requests to independent native domains; not sampled CPU utilization",
+    "adapter": "ec4bf5e096245ea5983ed968f7a4bc8babeea50ab285983670bb365122b03c8b",
+    "architecture": "aarch64",
+    "artifact": "1fcff741c145a41832bbc0579bb98143f6ba8eac182b279af92f94cb93a5e7ca",
+    "backend": "runtime-rust",
+    "benchmark": "36da9276bfbf123fa1f72f227883850afd3a6672b193b3db7652d2a03bc0f4af",
+    "bytes": 55150,
+    "callers": 64,
+    "completed": 100,
+    "corpus": "d33f61ddb68ec901803344742b5b87bf5dca3979a84c9a7129b2e87434d532b1",
+    "distinct_documents": 100,
+    "documents": 100,
+    "documents_per_second": 96.75923875257209,
+    "domains": 4,
+    "driver": "tokio-process-domains",
+    "elapsed_ns": 1033493042,
+    "end_to_end_latency_ns": {
+      "max": 923321625,
+      "p50": 518825417,
+      "p95": 885289709,
+      "p99": 895967083
+    },
+    "end_to_end_scope": "Tokio submission through bounded queue, IPC, native parse/projection, lossless validation, checksum and response; excludes startup/warmup",
+    "max_active_worker_requests": 4,
+    "max_in_flight": 64,
+    "native_queue_capacity_per_domain": 64,
+    "parse_latency_ns": {
+      "max": 243466000,
+      "p50": 16229459,
+      "p95": 154495792,
+      "p99": 220583875
+    },
+    "program": "sha256:9554824bff01b10b2159ba7e413221a73a6cd712d5df140f3d2d98743f225740",
+    "queue_capacity_per_domain": 16,
+    "repetition": 1,
+    "schema": "orgize.runtime-parallel.v1",
+    "tokio_workers": 4,
+    "worker_completed": [
+      24,
+      26,
+      24,
+      26
+    ],
+    "worker_exit_success": true,
+    "worker_pids": [
+      47935,
+      47936,
+      47937,
+      47938
+    ],
+    "workload": "closed-loop bounded concurrent admissions; not an open-loop arrival-rate test"
+  },
+  {
+    "active_scope": "overlapping supervisor IPC requests to independent native domains; not sampled CPU utilization",
+    "adapter": "ec4bf5e096245ea5983ed968f7a4bc8babeea50ab285983670bb365122b03c8b",
+    "architecture": "aarch64",
+    "artifact": "1fcff741c145a41832bbc0579bb98143f6ba8eac182b279af92f94cb93a5e7ca",
+    "backend": "runtime-rust",
+    "benchmark": "36da9276bfbf123fa1f72f227883850afd3a6672b193b3db7652d2a03bc0f4af",
+    "bytes": 55150,
+    "callers": 64,
+    "completed": 100,
+    "corpus": "d33f61ddb68ec901803344742b5b87bf5dca3979a84c9a7129b2e87434d532b1",
+    "distinct_documents": 100,
+    "documents": 100,
+    "documents_per_second": 593.5967225672925,
+    "domains": 8,
+    "driver": "tokio-process-domains",
+    "elapsed_ns": 168464542,
+    "end_to_end_latency_ns": {
+      "max": 124874917,
+      "p50": 51251708,
+      "p95": 119363541,
+      "p99": 124541583
+    },
+    "end_to_end_scope": "Tokio submission through bounded queue, IPC, native parse/projection, lossless validation, checksum and response; excludes startup/warmup",
+    "max_active_worker_requests": 8,
+    "max_in_flight": 64,
+    "native_queue_capacity_per_domain": 64,
+    "parse_latency_ns": {
+      "max": 74655709,
+      "p50": 7173625,
+      "p95": 25120333,
+      "p99": 70362417
+    },
+    "program": "sha256:9554824bff01b10b2159ba7e413221a73a6cd712d5df140f3d2d98743f225740",
+    "queue_capacity_per_domain": 8,
+    "repetition": 1,
+    "schema": "orgize.runtime-parallel.v1",
+    "tokio_workers": 4,
+    "worker_completed": [
+      15,
+      11,
+      15,
+      13,
+      9,
+      15,
+      14,
+      8
+    ],
+    "worker_exit_success": true,
+    "worker_pids": [
+      48071,
+      48072,
+      48073,
+      48074,
+      48075,
+      48076,
+      48077,
+      48078
+    ],
+    "workload": "closed-loop bounded concurrent admissions; not an open-loop arrival-rate test"
+  }
+]

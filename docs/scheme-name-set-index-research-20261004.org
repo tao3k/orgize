@@ -1,0 +1,137 @@
+#+title: Scheme static-name index research — 2026-10-04
+
+* Identity and decision
+Orgize branch =codex/native-org-recovery=, HEAD
+=479b2763fa1924385a2df824d029e9ba35341bcd=; parser detached HEAD
+=e7c6761dc79202abe50931bd78ee3f0930d61f8f=. Inherited dirty migration is preserved.
+The qualified primary program remains
+=sha256:a8fa5deb44c22a1dedb65b76ebac50cafd9b71115d3ddda5638672f0aaccbe4f=;
+its selected manifest is byte-identical to the preserved prefix candidate.
+The new name-set experiment is NOT promoted to that native program.
+
+Candidate root: =target/name-set-index-candidate-20261004=.
+Fold source SHA256:
+=8d9e4a0e9781256d435169674b5179414eeb505400c28d4a05dd99f446a7b31b=.
+Private test source SHA256:
+=1f960dea5e809d5826939c65c9a73aaa07cea5c77dca4e6f05cf60a6f8a21efe=.
+
+* Algorithm and ownership
+=line-bytes-in-set?= previously validated the entire sorted ASCII name table
+and searched it linearly on every evaluation. The candidate derives a vector
+index once on first use of each immutable IR table in a parse, then compares
+source byte spans against that vector using binary search. It does not allocate
+a substring or UTF-8 copy for comparison. ASCII admission establishes that
+character order and byte order agree.
+
+The identity-keyed derived-index cache is bounded at 128 tables and reset by
+=run-event-fold= on every request. No global cache retains source or caller IR.
+Tables may be changed by callers BETWEEN requests; each new request validates
+them again. This is not a concurrent mutable-IR guarantee within one admitted
+fold. State values, range validation and event ordering are not cached away.
+The original public =fold-static-name-set= validator remains unchanged.
+
+This trades repeated O(N) table admission/search for once-per-parse admission
+and O(log N) search comparisons (each comparison still examines name bytes).
+It does not accelerate unrelated fold predicates, state updates or other
+full-parser work. An additional per-parse hash table is currently allocated even
+if a document never evaluates a name-set predicate; lazy construction is a
+separate unimplemented candidate, not a claimed improvement.
+
+* Functional and compilation receipts
+All checks ran through maintained Justfile entrypoints with the declared heap.
+- =scheme-event-fold-candidate-build=: compiled optimized loadable modules.
+- =scheme-event-fold-state-test=: all 14 private cases passed, including a rerun
+  after adding cached-hit range rejection and cross-source predicate checks.
+- =scheme-event-fold-candidate-test=: all 38 event-fold cases passed.
+- =scheme-event-test=: aggregate Org inline/structural/table suite passed.
+  Each test receipt contained =MODULE-OK=, =HARNESS-OK= and final =OK=.
+- =scheme-event-fold-candidate-static=: optimized static AOT modules generated.
+- Parser and Orgize =git diff --check=: passed.
+
+The focused cases cover sorted ASCII membership, case distinctions, prefix
+overlap, empty/missing/Unicode names, UTF-8 source offsets, invalid or dotted
+tables, duplicate entries, 128-table capacity, range checks on cached hits, and
+mutable name changes between requests. This is not a full native Rust/Scheme
+consumer requalification: the new payload has not been staged into a program
+manifest or linked into those consumer binaries, nor into Python.
+
+* Native ASP batch probe
+The first micro-kernel calibration (100 operations) failed because an empty
+baseline leg returned zero wall duration. No valid micro-kernel receipt was
+published. No clock or ASP implementation was changed. An initial 100-fold
+Scenario attempt also failed admission before the adapter preserved failures
+(p50 758.791ms, p95 1012.135ms); it is not used as a matched receipt.
+
+The maintained probe now uses ASP's public =benchmark-run/result= Scenario API
+and =t/benchmarks/org-name-set/benchmark.ss=. One measured sample is exactly
+100 independent complete folds, each over 20 lines and the Org entity table.
+Twenty samples are collected by ASP. It is NOT 1000/10000 distinct documents or
+an FFI/runtime benchmark. Source, names, exact event result and contract are
+matched by native Scheme comparison; statistics are read from ASP unchanged.
+
+| Order | Baseline batch p50 ms | Candidate batch p50 ms | Baseline batch p95 ms | Candidate batch p95 ms | Gate baseline/candidate |
+|-------+-----------------------+------------------------+-----------------------+------------------------+-------------------------|
+| candidate then baseline | 745.806 | 11.118 | 1012.930 | 62.465 | fail/pass |
+| baseline then candidate | 728.373 | 15.700 | 925.324 | 69.637 | fail/pass |
+
+Receipts are =name-{baseline,candidate}-r{1,2}.ss= under the candidate root.
+Both matched-diagnostic comparisons passed identity/result validation while
+explicitly reporting the two failed baseline gates. Failed baseline execution
+returned exit 70; candidate executions returned 0. The 100ms diagnostic p95
+envelope was not relaxed. Candidate round one's maximum sample was 145.770ms,
+so even its admitted p95 is not an all-samples-under-100ms assertion.
+
+ASP process-statistics allocation deltas for selected candidate attempts were
+zero while baseline attempts showed about 210MB. Zero counter delta is NOT
+proof of allocation-free execution or an exact allocation ratio; the index and
+fold still allocate. No separate statistics implementation was introduced.
+
+* Full-parser counter-evidence
+The existing Org event benchmark uses the unchanged 20-sample/100ms p95 envelope
+for one complete fixture, not the batch probe above.
+
+| Fixture | Baseline p50 ms | Candidate p50 ms | Baseline p95 ms | Candidate p95 ms | Gate baseline/candidate |
+|---------+-----------------+------------------+-----------------+------------------+-------------------------|
+| doc.org (394 bytes) | 1.888 | 2.900 | 76.684 | 212.589 | pass/fail |
+| entity-heavy.org (308 bytes) | 4.353 | 5.727 | 134.069 | 115.463 | fail/fail |
+
+The first doc candidate used the pre-preservation adapter and therefore did not
+publish a receipt on failure. Its failed timing remains recorded here; it cannot
+be fed to the strict comparator. The baseline receipt is =doc-baseline.ss=.
+The doc baseline's closing phase briefly overlapped the subsequent private-test
+invocation; it is not an unloaded performance baseline.
+
+Both entity receipts were preserved even on failure, retaining ASP's =fail=
+status and returning exit 70. The explicit diagnostic comparison verified the
+same source/event identities and reported both failed gates. The default strict
+comparison correctly rejected them with exit 70. The event identity was
+=sha256:e527a18c7496312a02f4f125f701e78bd6b6a4b858ec64f2bf94fbf8b13259f3=.
+The fixture includes Unicode before entities, known/unknown names and suffixes.
+Lossless coverage and equality to untimed event admission passed in both runs.
+
+Host load snapshots were 78.73/89.17/105.64 early and 121.97/94.11/98.88 later.
+These establish substantial contention but do not exclusively explain any
+regression. Whole-fixture p50 did not improve. Consequently the isolated batch
+gain is NOT a general Org parser speedup, a cross-runtime ranking, or closure of
+the existing strict Query gate. No external processes were stopped here.
+
+* Benchmark audit changes
+The native Scheme adapters now preserve failed diagnostic receipts BEFORE
+returning failure. ASP measurement, sample counts, thresholds and default strict
+comparison admission remain unchanged. The separately named
+=scheme-event-benchmark-diagnostic-compare= matches semantics and reports gate
+statuses; it is not a replacement CI/performance gate. No JavaScript sampler,
+JSON Scheme statistics sidecar, kernel patch or lowered concurrency was added.
+Comparator boundary checks accepted an admitted receipt against itself (exit 0),
+rejected the failed entity pair in default strict mode (exit 70), and rejected
+different fixtures even in diagnostic mode (exit 70, =sourceBytes= mismatch).
+
+* Remaining research and release gates
+1. Establish a quiet matched full-parser baseline; test lazy per-parse name
+   index construction without obscuring the failed whole-fixture observations.
+2. Audit predicate frequency and other fold/state costs before attributing the
+   dominant whole-parser CPU interval to static-name search alone.
+3. Only after broad parser evidence supports promotion, stage a distinct native
+   program and qualify Rust, Scheme and Python consumers against that identity.
+4. Keep the 1000/10000-document high-concurrency matrices, strict Query gate and
+   repeated runtime comparisons open; small local probes cannot substitute.

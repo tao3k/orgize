@@ -44,7 +44,6 @@ SCHEDULED: <2026-05-14 Thu +1d>
 Background note without task lifecycle.
 "#;
 
-#[test]
 fn semantic_ast_projects_agent_memory_records_from_org_constructs() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -149,7 +148,6 @@ fn semantic_ast_projects_agent_memory_records_from_org_constructs() {
     assert_eq!(background.state, MemoryRecordState::Background);
 }
 
-#[test]
 fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -270,6 +268,8 @@ fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
 #[test]
 #[ignore = "release performance gate; run explicitly with --release --ignored"]
 fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
+    // SAFETY: this ignored scenario is selected alone, before application work.
+    unsafe { orgize::initialize_native_runtime() }.expect("native focused scenario startup");
     let root = temp_test_dir("orgize-plan-ledger-projection-gate");
     let artifacts = root.join("artifacts").join("org");
     let plans = artifacts.join("flow").join("plans");
@@ -333,7 +333,6 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
     let _ = fs::remove_dir_all(root);
 }
 
-#[test]
 fn plan_ledger_projection_obeys_scheme_block_context() {
     let root = temp_test_dir("orgize-plan-ledger-block-context");
     let plans = root.join("flow").join("plans");
@@ -357,7 +356,6 @@ fn plan_ledger_projection_obeys_scheme_block_context() {
     let _ = fs::remove_dir_all(root);
 }
 
-#[test]
 fn general_memory_search_uses_scheme_aot_elements_and_file_todo_profile() {
     let root = temp_test_dir("orgize-memory-aot-general");
     let path = root.join("memory.org");
@@ -434,3 +432,22 @@ fn temp_test_dir(prefix: &str) -> PathBuf {
     fs::create_dir_all(&path).expect("create temp dir");
     path
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::semantic_ast_projects_agent_memory_records_from_org_constructs",
+        semantic_ast_projects_agent_memory_records_from_org_constructs,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::semantic_ast_renders_agent_memory_snapshot_as_compact_cards",
+        semantic_ast_renders_agent_memory_snapshot_as_compact_cards,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::plan_ledger_projection_obeys_scheme_block_context",
+        plan_ledger_projection_obeys_scheme_block_context,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::general_memory_search_uses_scheme_aot_elements_and_file_todo_profile",
+        general_memory_search_uses_scheme_aot_elements_and_file_todo_profile,
+    ),
+];

@@ -1,5 +1,18 @@
 //! Single-authority admission gate for the public Scheme AOT Org parser.
 
+#[test]
+fn explicit_startup_precedes_parallel_org_cutover_parity_cases() {
+    // SAFETY: initialize before creating application workers or children;
+    // these parser cases do not use Scheme-owned I/O or subprocesses.
+    unsafe { orgize::initialize_native_runtime() }.expect("native test startup");
+    std::thread::scope(|scope| {
+        scope.spawn(tracked_org_fixtures_have_lossless_public_aot_graphs);
+        scope.spawn(public_parser_recognizes_case_folded_latex_environments);
+        scope.spawn(public_parser_recognizes_case_folded_footnote_definitions);
+    });
+    println!("startup-native suite=org_cutover_parity concurrent-cases=3 complete OK");
+}
+
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -51,7 +64,6 @@ macro_rules! assert_org_graph {
     }};
 }
 
-#[test]
 fn tracked_org_fixtures_have_lossless_public_aot_graphs() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
     let fixtures = org_fixtures(&root);
@@ -82,14 +94,12 @@ fn tracked_org_fixtures_have_lossless_public_aot_graphs() {
     }
 }
 
-#[test]
 fn public_parser_recognizes_case_folded_latex_environments() {
     for source in ["\\BEGIN{AlIgN*}\nx\n\\EnD{aLiGn*}\n", "\\BEGIN{A}\\eNd{a}"] {
         assert_org_graph!(source, Org::parse(source), "latex-environment" => 1);
     }
 }
 
-#[test]
 fn public_parser_recognizes_case_folded_footnote_definitions() {
     let source = "[FN:n] body\n* H\n";
     assert_org_graph!(source, Org::parse(source), "footnote-definition" => 1);

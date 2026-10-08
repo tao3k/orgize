@@ -1,7 +1,7 @@
 //! Clock values and source-backed timestamp points from Scheme graph records.
 
-use gerbil_parser_rowan::GraphRecord;
-use rowan::TextRange;
+use gerbil_parser_runtime::GraphRecord;
+use gerbil_parser_runtime::TextRange;
 
 use super::{
     Clock, GraphProjector, OrgDuration, Timestamp, project_timestamp, timestamp_point_ranges,

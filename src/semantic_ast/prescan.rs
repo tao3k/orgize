@@ -1,7 +1,6 @@
 //! Document-level semantic prescan state and keyword routing.
 
-use super::org_contract_model::CONTRACT_ORG_PROPERTY;
-use super::settings::{apply_options_keyword, link_abbreviation, parse_tags, split_words};
+use super::settings::{KeywordFacts, link_abbreviation_from_facts};
 use super::{
     ArchiveLocation, Diagnostic, ExportSettings, IncludeDirective, Keyword, LinkAbbreviation,
     MacroDefinition, OrgDuration, ParsedAnnotation, Property, TagDefinition,
@@ -23,29 +22,26 @@ pub(super) struct SemanticPrescan {
 
 pub(super) fn collect_document_keyword(
     keyword: Keyword<ParsedAnnotation>,
+    facts: KeywordFacts,
     prescan: &mut SemanticPrescan,
 ) {
-    let key = keyword.key.to_ascii_uppercase();
-    match key.as_str() {
+    match facts.field("route").expect("native keyword route") {
         "TITLE" | "AUTHOR" | "DATE" | "CAPTION" | "PYTHON" | "PYTHON_FILE" | "PYTHON-FILE"
-        | "READONLY" | "ALLPRIORITIES" => {
-            prescan.metadata.push(keyword);
-        }
-        key if key == CONTRACT_ORG_PROPERTY => {
+        | "READONLY" | "ALLPRIORITIES" | "CONTRACT_ORG" => {
             prescan.metadata.push(keyword);
         }
         "FILETAGS" => {
-            for tag in parse_tags(keyword.value.trim()) {
+            for tag in facts.values("tag") {
                 push_unique(&mut prescan.filetags, tag);
             }
             prescan.metadata.push(keyword);
         }
         "OPTIONS" => {
-            apply_options_keyword(keyword.value.trim(), &mut prescan.export_settings);
+            facts.apply_options(&mut prescan.export_settings);
             prescan.metadata.push(keyword);
         }
         "PROPERTY" => {
-            if let Some(property) = keyword_property(&keyword) {
+            if let Some(property) = keyword_property(&keyword, &facts) {
                 prescan.properties.push(property);
             }
             prescan.metadata.push(keyword);
@@ -58,15 +54,15 @@ pub(super) fn collect_document_keyword(
             prescan.metadata.push(keyword);
         }
         "SELECT_TAGS" => {
-            prescan.export_settings.select_tags = split_words(keyword.value.trim());
+            prescan.export_settings.select_tags = facts.values("word");
             prescan.metadata.push(keyword);
         }
         "EXCLUDE_TAGS" => {
-            prescan.export_settings.exclude_tags = split_words(keyword.value.trim());
+            prescan.export_settings.exclude_tags = facts.values("word");
             prescan.metadata.push(keyword);
         }
         "LINK" => {
-            if let Some(abbreviation) = link_abbreviation(&keyword) {
+            if let Some(abbreviation) = link_abbreviation_from_facts(&keyword, &facts) {
                 prescan.link_abbreviations.push(abbreviation);
             }
             prescan.metadata.push(keyword);
@@ -81,9 +77,15 @@ fn push_unique(values: &mut Vec<String>, value: String) {
     }
 }
 
-fn keyword_property(keyword: &Keyword<ParsedAnnotation>) -> Option<Property<ParsedAnnotation>> {
-    let key = crate::org_aot::keyword_first_word(&keyword.value);
-    let rest = crate::org_aot::keyword_rest(&keyword.value);
+fn keyword_property(
+    keyword: &Keyword<ParsedAnnotation>,
+    facts: &KeywordFacts,
+) -> Option<Property<ParsedAnnotation>> {
+    let key = facts
+        .field("first")
+        .expect("native keyword name")
+        .to_owned();
+    let rest = facts.field("rest").expect("native keyword rest").to_owned();
     (!key.is_empty()).then(|| Property {
         ann: keyword.ann.clone(),
         key,

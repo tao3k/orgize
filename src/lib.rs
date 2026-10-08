@@ -5,6 +5,7 @@ pub mod agent;
 /// Owned semantic AST projected from the Scheme-AOT Element graph.
 #[path = "semantic_ast/mod.rs"]
 pub mod ast;
+pub mod c_ffi;
 /// Command-line interface implementation.
 #[doc(hidden)]
 pub mod cli;
@@ -21,10 +22,13 @@ pub mod export;
 pub mod fmt;
 /// Org document linting helpers.
 pub mod lint;
-mod lint_runtime_validation;
+mod native_startup;
 mod org;
-/// Scheme-AOT Org parser and Element graph for Cargo-only consumers.
+pub use native_startup::initialize_native_runtime;
+/// Statically linked Gerbil Org parser and Scheme-declared Element graph.
 pub mod org_aot;
+pub mod runtime_backend;
+pub use runtime_backend::{RuntimeBackend, runtime_backend};
 /// Source-bound Org edits validated against the Scheme-AOT Element graph.
 pub mod org_aot_edit;
 mod org_aot_html;
@@ -33,17 +37,17 @@ mod org_aot_markdown;
 /// Scheme-AOT named Org Element queries over the generated graph.
 pub mod org_element_query;
 mod runtime;
+/// Opt-in diagnostic timings, not a parser or execution-owner selection.
+#[doc(hidden)]
+pub mod runtime_profile;
 #[cfg(test)]
 #[path = "../tests/unit/lib.rs"]
 mod tests;
 
-// Re-export of the rowan crate.
-pub use rowan;
-
 pub use config::ParseConfig;
-pub use gerbil_parser_rowan::{SyntaxKind, SyntaxNode, SyntaxToken};
+pub use gerbil_parser_runtime::{SyntaxKind, SyntaxNode, SyntaxToken};
+pub use gerbil_parser_runtime::{TextRange, TextSize};
 pub use org::Org;
-pub use rowan::{TextRange, TextSize};
 
 #[cfg(test)]
 asp_rust::asp_rust_cargo_test_gate!(
@@ -62,7 +66,7 @@ asp_rust::asp_rust_cargo_test_gate!(
             )
             .with_verification_profile_hint(
                 asp_rust::RustVerificationProfileHint::new(
-                    "src/lint_file_links.rs",
+                    "src/lint/rules/file_links.rs",
                     [asp_rust::RustOwnerResponsibility::PureDomainLogic],
                 )
                 .without_verification_tasks()

@@ -1,0 +1,267 @@
+#+title: Explicit native startup and host lifecycle admission
+
+* Identity and evidence boundary
+This receipt covers the historical 2743d83b startup/decoder build. The subsequent
+persistent-state candidate and 454-case consumer migration are tracked in
+native-runtime-consumer-state-sharing-20261003.org; the scale/SDK receipts here
+must not be attributed to that candidate.
+
+Orgize checkout: codex/native-org-recovery, base
+479b2763fa1924385a2df824d029e9ba35341bcd, with local uncommitted changes.
+Parser published base: PR 13, 7c1533356585154c8b5d340f64ffefb289d18907,
+plus the previously documented local Scheme line-byte cache optimization.
+Runtime/sys dependency remains 8bb8103b820a0c8d02446d6398197079c5275671.
+Only the three native build/harness support crates use explicit local patches.
+This patch makes no Gambit kernel changes; the dirty Gambit source checkout is
+not a build input. There is no process parser fallback or Legacy admission.
+
+Fresh staged native program (214 modules):
+sha256:2743d83b41a64b17bfb24f000cf0866dd21cc1090a8d76a96841b46c0118b6a2.
+The private startup C header is included in compiler-owned program identity.
+Historical ed7540bf receipts are NOT fresh explicit-startup qualification.
+Release remains opt-level 3, Thin LTO, codegen-units 4; workspace dev and
+dev.build-override remain opt-level 2. Apple final linking uses the explicitly
+named local ld_classic diagnostic recipe; portable release packaging is not
+qualified by this local build.
+
+* Breaking admission contract
+The host calls unsafe Rust initialize_native_runtime, Python
+orgizepy.initialize_native_runtime, or shared C ABI revision 2
+orgize_shared_runtime_initialize before application workers or children.
+Imports, parsing and Contract evaluation never start the owner implicitly.
+There is one process-lifetime owner. Repeated calls return the original startup
+result; initialization failure is terminal, and restart/unload is unsupported.
+
+The first call needs an exclusive host startup window: valid descriptors 0/1/2,
+no live or newly spawned children, concurrent native initialization, stdio
+users or signal-disposition changes. The linked Scheme parser may not use
+Scheme-owned stdio, terminals or subprocesses. The boundary captures host
+stdio flags and SIGINT/SIGTERM/SIGCHLD/SIGPIPE/SIGQUIT/SIGWINCH/SIGCONT
+dispositions, starts the selected owner, and restores those resources before
+publishing successful request admission. Restoration is attempted even if
+native initialization reports failure. No restoration runs on ordinary parses.
+The GIL does not establish process-wide startup exclusivity.
+
+Native heartbeat/processor signals remain runtime-owned. Blocked host signal
+mask policies, interruption during the startup window, shared external open
+file descriptions, closed/rebound stdio, dynamic unloading and native-owned
+terminal/subprocess behavior are not qualified. This is a POSIX parser-host
+contract, not general Gambit signal isolation or an unrestricted embedding API.
+
+* Fresh lifecycle gates
+native-runtime-explicit-startup-lifecycle-20261003.json retains all 18 raw rows:
+9 per runtime feature, each run in a fresh supervised child. All 18 passed.
+Two baseline rows per feature do not initialize the native runtime. Native
+rows cover normal exit, idle default SIGTERM, a preserved custom handler,
+12 child statuses with exit code 23 in each host-child case, and SIGTERM during
+an active parsing loop. The active case is not instruction-level proof of
+signal delivery inside a particular FFI call. Default SIGTERM cases exit with
+signal 15; custom-handler cases observe the callback and exit normally.
+The probe queries stdin flags and SIGTERM handler identity; it does not repair
+resources. Startup restoration belongs exclusively to the implementation.
+
+Both features passed the one composite public integration scenario with 11
+concurrent cases. It initializes before spawning eight ordinary workers and
+three concurrent Tokio scenarios, preserving native request concurrency.
+Tokio coverage includes 32 capacity-limited streams, 128 bounded tasks with
+scheduler heartbeat, and cancellation retaining admission for running blocking
+work. These are 11 scenarios in one Rust test, not 11 independently registered
+libtest tests.
+
+Both features additionally passed three composite integration suites with
+3 / 23 / 7 concurrent cases, including tracked fixture corpus, Scheme events,
+Rowan/Element projection and source edits. Each host-child integration passed
+48 post-startup CLI children across four host workers. Each suite initializes
+before its application workers; ordinary parse is not patched with test-only
+lazy initialization. These are four composite parser tests per feature with
+44 explicitly invoked cases, plus one host-child test, not 45 libtest tests.
+
+Each maturin feature build passed all 15 installed Python SDK tests on CPython
+3.13.11, including pre-startup rejection through both Python and shared C ABI,
+idempotent shared startup, fd 0/1/2 flags, a custom Python SIGTERM handler,
+12 host-child statuses and mixed Python/CFFI calls from four workers. Parsing,
+source hashing and edit validation now detach from the GIL while doing pure
+Rust/native work. Python object access remains attached, and no Scheme handle
+or GC root crosses to Python callers. The new parse progress test disables
+ordinary bytecode switching during a native call; a waiting host thread must
+run before parse returns. It passed in both selected features. It is a host
+progress gate, not a measured Python throughput speedup or native SMP claim.
+
+Python Rust's initial cold build and Scheme's first build attempt hit their
+300-second build deadlines; they are not passing receipts. Incremental retries
+completed (Scheme alone in 24.64 seconds before the GIL patch), then the SDK was
+rebuilt after the GIL patch and all tests rerun. A probe originally sampled
+stdout flags before its own first output; a Darwin flag transition [0,1,1] to
+[0,65537,1] was incorrectly attributed to import. Sampling after that output,
+before import/startup, preserves the full comparison and passes. No stdio
+assertion or child completion marker was removed.
+
+* Fresh fixed-count Tokio scale
+Both new release benchmark executables completed the whole four-batch matrix:
+1000/10000 distinct generated documents, each with 1/8 admitted callers,
+22000 counted parses per feature and 44000 total. Every counted parse passes
+lossless roundtrip and complete Rowan/Element artifact hashing. Both outer
+commands exited zero; no interrupted batch or historical receipt was spliced
+into these files:
+- native-runtime-explicit-startup-tokio-rust-20261003.json
+- native-runtime-explicit-startup-tokio-scheme-20261003.json
+
+Both native-runtime-corpus-matrix-check gates passed, checking the exact four
+batch keys and 22000 completed parses. native-runtime-corpus-compare passed all
+four matched pairs: corpus/source bytes, full artifacts, benchmark source,
+native program, architecture, Tokio driver/worker count, caller bound, native
+consumer count and queue capacity match. Each lane uses four Tokio scheduler
+threads, 1/8 bounded blocking callers, one native consumer and queue capacity 64.
+The benchmark's five-second no-completion watchdog remains enabled.
+
+These are distinct deterministic documents diversified from three committed
+fixtures, not a corpus of 10000 independently authored documents. Warmups,
+input preparation and explicit startup are outside the batch timer. Wall
+throughput includes validation and checksums; public-call latency excludes
+those checks. RSS is a cumulative whole-process high-water mark, not native
+GC live bytes or a per-batch allocation delta.
+
+| documents | callers | Rust docs/s | Scheme docs/s | Rust p95 ms | Scheme p95 ms |
+|-----------+---------+-------------+---------------+-------------+---------------|
+|      1000 |       1 |       29.03 |         35.31 |      133.62 |         89.41 |
+|      1000 |       8 |       40.30 |         55.15 |      609.37 |        341.98 |
+|     10000 |       1 |       45.91 |         45.56 |       54.06 |         65.67 |
+|     10000 |       8 |       78.40 |         82.15 |      160.20 |        146.03 |
+
+Own builds/SDK tests finished before these sequential benchmark invocations.
+A read-only snapshot during preparation observed several unrelated long-running
+devenv processes consuming CPU; those processes were not changed, and background
+quiescence was not established. One uncontrolled,
+fixed-order round is valid for completion/semantic equivalence and descriptive
+local timings, not a stable scheduler ranking or causal speedup from startup
+restoration, GIL detachment or the Scheme cache. The two feature choices remain
+available; no automatic winner is selected. Repeated, counterbalanced runs on
+an uncontaminated host are still required for a performance decision.
+
+* Consumer closure continuation and shared allocation reduction
+Both runtime features now pass the complete library binary: 27 registered
+tests passed, zero failed, and one pre-existing focused performance scenario
+remains ignored during ordinary execution. One registered native fixture
+explicitly invokes 42 original cases concurrently after exclusive startup;
+these are not 42 independently registered libtest tests. The original test
+functions and assertions remain intact. The maintained library qualification
+recipe executes the same binary in two fresh processes: the native fixture
+alone (all 42 cases remain concurrent), then the 26 pure/policy registered
+tests with that fixture excluded and the one original scenario ignored.
+Both processes pass in each feature. A full unfiltered library run also passed,
+but is not used as exclusive-startup evidence: libtest's other tests/reporting
+may do host work while the native fixture enters startup. No libtest thread
+limit or native request-concurrency reduction is used by qualification.
+Four source-mounted native cases found
+by the first full-library run were added to this startup fixture, rather than
+adding lazy initialization or serializing native requests.
+
+Both features also pass HTML (16), LaTeX (7), and Markdown (6) exporter cases,
+each inside one concurrent explicit-startup fixture. The optional md-feature
+GFM case is not included in these default-feature receipts. The four parser
+integration fixtures (44 invoked cases) and the four-worker/48-child host
+integration were rebuilt and passed again in both features. ASP's complete
+library policy gate passes too; decoder tests are file-backed in tests/unit,
+and compiler identity is mounted through a file-backed source module.
+
+The first full-library run was red: four native cases raced admission before
+startup, and the policy gate rejected inline decoder tests, a glob import, and
+an inline identity module. The green results above belong to the subsequent
+rebuilt binaries, not the first run. Release builds completed in 3m35s (Rust
+repair) and 4m07s (Scheme); the unchanged optimization/LTO settings remain in
+force. Local Justfile owns builds, filtered/full test execution, ignored
+scenario execution and formatting.
+
+The common OEV1 decoder now compares two borrowed prefixes, rather than
+allocating a formatted grammar-identity String for every parse. This removes
+one temporary allocation in both modes while preserving the wire contract and
+all five rejection/projection tests. It is not a parser-algorithm speedup claim.
+Scheme's native tape already decoded from its owned output buffer without a
+second Vec copy; that prior behavior is not counted as a new optimization.
+Rust still copies a rooted native bytevector on its owning thread before
+replying; no GC handle or raw Scheme pointer crosses application threads.
+
+New corpus receipts include an adapter digest over six compiled Rust boundary
+sources as well as native program and benchmark identities. The comparator
+requires equal adapter identity between matched features. Older receipts lack
+this field and are rejected by the current strict comparator (verified expected
+nonzero rejection); they remain historical evidence only, not exact adapter
+source qualification. Both pre-change benchmark executables were preserved under
+target/runtime-receipt-binaries before replacement.
+
+* Existing strict query performance gate is still red
+The ignored 48-document query scenario was explicitly run without changing its
+45ms max_total bound. After this task's compilation and ordinary test jobs had
+finished, sequential fresh runs produced:
+| feature | p50 ms | p95 / max ms | exit | original gate |
+|---------+--------+--------------+------+---------------|
+| runtime-rust | 88.413333 | 171.815416 | 101 | FAIL |
+| runtime-scheme | 89.171250 | 132.250375 | 101 | FAIL |
+
+An earlier Rust attempt overlapped the Scheme build and is not a clean
+performance qualification (p50 38.058875ms, max 274.444ms, exit 101). The
+sequential failures above are retained, not rerun until green. Whole-host
+quiescence was not established, so they do not isolate an algorithmic cause or
+prove a runtime winner. They do prove that this observed strict gate has not
+passed. Startup is outside its measurement closure; the measured work still
+includes walking/reading/indexing the 48 files and querying projected facts.
+No timeout, concurrency, semantic assertion or performance bound was relaxed.
+
+During the subsequent Scheme corpus run, the host's uptime observation at
+2026-10-03 16:52:20 Asia/Shanghai reported load averages 72.80 / 61.00 / 64.04.
+This is not a simultaneous measurement of the earlier query failures and does
+not isolate their cause. It does establish that host quiescence for the new
+corpus comparison has not been qualified. No unrelated host processes were
+stopped or modified to manufacture a performance receipt.
+
+* Fresh consumer-continuation Tokio matrix
+The rebuilt executables each completed four full batches: 1000/10000 generated
+distinct documents with 1/8 callers, one repetition, 22000 counted parses per
+feature and 44000 total. Both outer processes exited zero. Both matrix-complete
+checks and the strict cross-feature comparator passed. All four source,
+artifact, native program, adapter, benchmark and runtime-configuration matches
+are true. No interrupted output was spliced into these fresh files:
+- native-runtime-consumer-tokio-rust-20261003.json
+- native-runtime-consumer-tokio-scheme-20261003.json
+
+Shared compiled adapter digest:
+5b47134c1ac610db975b52cceb65bbcc2d391790e05dac2de22e498420cdb1e3.
+Shared benchmark source digest:
+98ab1bdb0e8666dcdee5185143ac006b96767d0b5cf65e2e1e0f638f9131076f.
+Native program remains the 2743d83b identity above. Both Cargo feature
+fingerprints use release profile 13654830769839931775.
+Rust executable SHA256:
+c17e935956daaae5a5e791d7629b85bd745361052312d03b4a5218e138a6e41b.
+Scheme executable SHA256:
+0c5d996e1b9d02aa3fc9877aa23e15564cc79309482b80747e45454d382334c1.
+
+| documents | callers | Rust docs/s | Scheme docs/s | Rust p95 ms | Scheme p95 ms |
+|-----------+---------+-------------+---------------+-------------+---------------|
+| 1000 | 1 | 36.9585 | 32.5976 | 82.2174 | 102.9030 |
+| 1000 | 8 | 49.5975 | 50.9856 | 377.7906 | 381.4703 |
+| 10000 | 1 | 53.0737 | 21.7325 | 40.2837 | 146.1516 |
+| 10000 | 8 | 81.3944 | 81.9223 | 143.9752 | 143.6942 |
+
+These are lossless/projection consistency receipts with descriptive timings,
+not a causal speedup or stable owner ranking. The high host load observation
+above occurred during Scheme's single-caller batch. The two features ran
+sequentially, after this task's builds/tests finished, but the host was not
+isolated and the order was not counterbalanced. Inputs remain diversified from
+three small fixtures (394/299/639 bytes), not 10000 independently authored or
+large documents. Timing and cumulative RSS scope remain as documented above.
+
+* Remaining closure gates
+Do not label this full repository/production closure: the automatically mounted
+integration_test aggregate migration and its observed performance failure are
+now recorded in native-runtime-consumer-state-sharing-20261003.org. Downstream
+host startup entrypoints still need verification. Optional exporter features and ignored performance
+scenarios are separate gates; the strict query scenario above is currently red.
+The installed Python extension was not rebuilt in this consumer continuation;
+the 15-per-feature SDK receipts above belong to the earlier startup/GIL build,
+not fresh wheel qualification of this decoder-allocation change. Shared C ABI
+revision 2 remains unchanged.
+The fresh scale matrix is now complete, but an uncontaminated repeated
+performance comparison remains open. Earlier 44000 Tokio parses retain
+historical semantic evidence only; they do not prove this startup build is
+faster. No runtime winner, portable/repaired wheel, SMP, native async I/O,
+remote CI, published upstream patch or release readiness is claimed here.

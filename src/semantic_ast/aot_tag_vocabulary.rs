@@ -1,7 +1,7 @@
 //! Materialize Scheme-AOT TAGS syntax from graph fields; no source lexer here.
 
-use gerbil_parser_rowan::{GraphFieldValue, GraphRecord};
-use rowan::{TextRange, TextSize};
+use gerbil_parser_runtime::{GraphFieldValue, GraphRecord};
+use gerbil_parser_runtime::{TextRange, TextSize};
 
 use super::GraphProjector;
 use crate::ast::{TagDefinition, TagDefinitionGroup};
@@ -74,8 +74,10 @@ impl GraphProjector<'_> {
                         && previous.shortcut.is_none()
                     {
                         previous.shortcut = Some(field.value.clone());
-                        *range =
-                            TextRange::new(range.start(), field.range.end() + TextSize::from(1));
+                        *range = TextRange::new(
+                            range.start(),
+                            TextSize::from(u32::from(field.range.end()) + 1),
+                        );
                         previous.raw = self.raw(*range).to_owned();
                     }
                 }

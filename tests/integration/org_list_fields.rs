@@ -1,6 +1,5 @@
 //! Source-backed list fields projected from Scheme-AOT syntax tokens.
 
-#[test]
 fn scheme_list_items_project_source_backed_indentation_and_spacing() {
     let source = "- one\n  - child\n";
     let document =
@@ -18,7 +17,6 @@ fn scheme_list_items_project_source_backed_indentation_and_spacing() {
     assert_eq!(document.syntax().to_string(), source);
 }
 
-#[test]
 fn scheme_list_bullet_keeps_exact_horizontal_separator() {
     let source = "-   one\n  -\tchild\n";
     let document =
@@ -32,3 +30,14 @@ fn scheme_list_bullet_keeps_exact_horizontal_separator() {
     assert_eq!(bullets, [Some("-   "), Some("-\t")]);
     assert_eq!(document.syntax().to_string(), source);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_list_fields::scheme_list_items_project_source_backed_indentation_and_spacing",
+        scheme_list_items_project_source_backed_indentation_and_spacing,
+    ),
+    (
+        "org_list_fields::scheme_list_bullet_keeps_exact_horizontal_separator",
+        scheme_list_bullet_keeps_exact_horizontal_separator,
+    ),
+];

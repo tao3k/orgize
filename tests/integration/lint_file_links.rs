@@ -2,7 +2,6 @@ use std::{fs, path::PathBuf};
 
 use orgize::lint::{LintOptions, lint_org_with_options};
 
-#[test]
 fn lint_reports_file_link_path_issues_with_snapshot() {
     let dir = test_dir("lint-file-link-paths");
     fs::write(dir.join("present.org"), "* Present\n").unwrap();
@@ -29,7 +28,6 @@ fn lint_reports_file_link_path_issues_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_enforces_skill_package_relative_paths() {
     let root = test_dir("lint-skill-package-relative-paths");
     let skills = root.join("skills");
@@ -78,7 +76,6 @@ orgize org contract trace --org-contract-registry <ASP_ORG_ROOT>/contracts/agent
     );
 }
 
-#[test]
 fn lint_enforces_template_package_relative_paths() {
     let root = test_dir("lint-template-package-relative-paths");
     let templates = root.join("templates");
@@ -127,3 +124,18 @@ fn test_dir(name: &str) -> PathBuf {
     fs::create_dir_all(&dir).unwrap();
     dir
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "lint_file_links::lint_reports_file_link_path_issues_with_snapshot",
+        lint_reports_file_link_path_issues_with_snapshot,
+    ),
+    (
+        "lint_file_links::lint_enforces_skill_package_relative_paths",
+        lint_enforces_skill_package_relative_paths,
+    ),
+    (
+        "lint_file_links::lint_enforces_template_package_relative_paths",
+        lint_enforces_template_package_relative_paths,
+    ),
+];

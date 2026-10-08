@@ -2,13 +2,10 @@
 ;;; Exact Scheme-side expectations for the document-local AOT matcher.
 
 (import (only-in :std/test check check-exception test-case test-suite)
-        (only-in :std/encoding/json JSONReadOptions string->json)
-        (only-in :std/misc/ports read-all-as-string)
-        (only-in "../languages/org/v1/modules/org-elements/types.ss" org-source-match-strategy?)
-        (only-in "../languages/org/v1/modules/org-elements/objects.ss" make-org-source-match-strategy)
-        (only-in "../languages/org/v1/modules/org-elements/radio-match.ss"
-                 org-radio-match-strategy org-next-radio-match
-                 org-radio-match-ir-json))
+        (only-in "../languages/org/modules/org-elements/types.ss" org-source-match-strategy?)
+        (only-in "../languages/org/modules/org-elements/objects.ss" make-org-source-match-strategy)
+        (only-in "../languages/org/modules/org-elements/radio-match.ss"
+                 org-radio-match-strategy org-next-radio-match org-radio-matches))
 (export org-radio-match-test)
 
 (defrules check-radio-match ()
@@ -19,17 +16,10 @@
 
 (def org-radio-match-test
   (test-suite "Org radio matcher POO and AOT strategy"
-    (test-case "the strategy is admitted and serializes a closed AOT algorithm"
+    (test-case "the strategy is admitted and executes a native matching plan"
       (check (org-source-match-strategy? org-radio-match-strategy) => #t)
-      (check (hash-get (string->json
-                        (org-radio-match-ir-json org-radio-match-strategy)
-                        (JSONReadOptions object-as-hash: #t))
-                       "schema")
-             => "gerbil-scheme-rust.source-match-ir.v1")
-      (check (call-with-input-file
-              "languages/org/v1/modules/org-elements/generated/org_radio_next_match.ir.json"
-              read-all-as-string)
-             => (org-radio-match-ir-json org-radio-match-strategy))
+      (check (org-radio-matches "é Alpha Beta Alpha" '("Alpha" "Alpha Beta" "Alpha"))
+             => '(("3" "13" "1") ("14" "19" "0")))
       (check-exception (make-org-source-match-strategy #f) true))
     (test-case "longest target wins; duplicates keep first declaration"
       (check-radio-match "Alpha Beta Alpha Alphabet" 0

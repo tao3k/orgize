@@ -376,129 +376,49 @@ fn expand_dir_path(value: &str, document: &ParsedAst) -> PathBuf {
     //
     // The Org parser keeps DIR as ordinary property text. Contract evaluation
     // is the boundary that turns it into an effective path scope.
-    let expanded_macros = expand_property_macros(value.trim(), document);
+    let expanded_macros = expand_property_macros(value, document);
     let expanded_commands = expand_command_substitutions(&expanded_macros);
     PathBuf::from(expand_environment_tokens(&expanded_commands))
 }
 
 fn expand_property_macros(value: &str, document: &ParsedAst) -> String {
-    let mut expanded = String::new();
-    let mut index = 0;
-    while index < value.len() {
-        let rest = &value[index..];
-        if let Some((name, arguments, consumed, original)) = org_macro_token(rest) {
-            if let Some(template) = document
+    let fields = std::iter::once(value)
+        .chain(
+            document
                 .macro_definitions
                 .iter()
-                .rev()
-                .find(|definition| definition.name == name)
-                .map(|definition| definition.template.as_str())
-            {
-                expanded.push_str(&expand_macro_template(template, &arguments));
-            } else {
-                expanded.push_str(original);
-            }
-            index += consumed;
-        } else {
-            let ch = rest
-                .chars()
-                .next()
-                .expect("non-empty slice has a first char");
-            expanded.push(ch);
-            index += ch.len_utf8();
-        }
-    }
-    expanded
+                .flat_map(|definition| [definition.name.as_str(), definition.template.as_str()]),
+        )
+        .collect::<Vec<_>>();
+    crate::org_aot::expand_native_macro_fields(15, &fields)
+        .expect("initialized native property macro operation")
 }
 
 fn expand_environment_tokens(value: &str) -> String {
-    let mut expanded = String::new();
-    let mut index = 0;
-    while index < value.len() {
-        let rest = &value[index..];
-        if let Some((token, consumed, original)) = dollar_path_token(rest) {
-            if let Some(resolved) = resolve_path_token(token) {
-                expanded.push_str(&resolved);
-            } else {
-                expanded.push_str(original);
-            }
-            index += consumed;
-        } else {
-            let ch = rest
-                .chars()
-                .next()
-                .expect("non-empty slice has a first char");
-            expanded.push(ch);
-            index += ch.len_utf8();
-        }
-    }
-    expanded
+    execute_dir_plan(value, 14, resolve_path_token)
 }
-
 fn expand_command_substitutions(value: &str) -> String {
+    execute_dir_plan(value, 13, run_command_substitution)
+}
+fn execute_dir_plan(value: &str, operation: u8, resolve: fn(&str) -> Option<String>) -> String {
+    let rows = crate::org_aot::native_semantic_rows(operation, &[value])
+        .expect("initialized native DIR plan operation");
     let mut expanded = String::new();
-    let mut index = 0;
-    while index < value.len() {
-        let rest = &value[index..];
-        if let Some((command, consumed, original)) = command_substitution_token(rest) {
-            if let Some(output) = run_command_substitution(command) {
-                expanded.push_str(&output);
-            } else {
-                expanded.push_str(original);
+    for row in rows {
+        let [kind, value, original]: [String; 3] =
+            row.try_into().expect("native DIR plan row arity");
+        match kind.as_str() {
+            "literal" => expanded.push_str(&value),
+            "command" if operation == 13 => {
+                expanded.push_str(resolve(&value).as_deref().unwrap_or(&original));
             }
-            index += consumed;
-        } else {
-            let ch = rest
-                .chars()
-                .next()
-                .expect("non-empty slice has a first char");
-            expanded.push(ch);
-            index += ch.len_utf8();
+            "environment" if operation == 14 => {
+                expanded.push_str(resolve(&value).as_deref().unwrap_or(&original));
+            }
+            _ => panic!("native DIR plan action"),
         }
     }
     expanded
-}
-
-fn command_substitution_token(input: &str) -> Option<(&str, usize, &str)> {
-    let rest = input.strip_prefix("$(")?;
-    let mut depth = 1usize;
-    let mut in_single_quote = false;
-    let mut in_double_quote = false;
-    let mut escaped = false;
-
-    for (index, ch) in rest.char_indices() {
-        if escaped {
-            escaped = false;
-            continue;
-        }
-        if ch == '\\' && !in_single_quote {
-            escaped = true;
-            continue;
-        }
-        if ch == '\'' && !in_double_quote {
-            in_single_quote = !in_single_quote;
-            continue;
-        }
-        if ch == '"' && !in_single_quote {
-            in_double_quote = !in_double_quote;
-            continue;
-        }
-        if in_single_quote || in_double_quote {
-            continue;
-        }
-        match ch {
-            '(' => depth += 1,
-            ')' => {
-                depth = depth.saturating_sub(1);
-                if depth == 0 {
-                    let consumed = 2 + index + ch.len_utf8();
-                    return Some((&rest[..index], consumed, &input[..consumed]));
-                }
-            }
-            _ => {}
-        }
-    }
-    None
 }
 
 fn run_command_substitution(command: &str) -> Option<String> {
@@ -516,85 +436,6 @@ fn run_command_substitution(command: &str) -> Option<String> {
         stdout.pop();
     }
     Some(stdout)
-}
-
-fn org_macro_token(input: &str) -> Option<(&str, Vec<String>, usize, &str)> {
-    let rest = input.strip_prefix("{{{")?;
-    let end = rest.find("}}}")?;
-    let body = &rest[..end];
-    let consumed = 3 + end + 3;
-    let (name, arguments) = parse_macro_body(body);
-    Some((name, arguments, consumed, &input[..consumed]))
-}
-
-fn parse_macro_body(body: &str) -> (&str, Vec<String>) {
-    let Some(open) = body.find('(') else {
-        return (body.trim(), Vec::new());
-    };
-    if !body.ends_with(')') {
-        return (body.trim(), Vec::new());
-    }
-    let name = body[..open].trim();
-    let args = body[open + 1..body.len() - 1]
-        .split(',')
-        .map(str::trim)
-        .filter(|arg| !arg.is_empty())
-        .map(ToString::to_string)
-        .collect();
-    (name, args)
-}
-
-fn expand_macro_template(template: &str, arguments: &[String]) -> String {
-    let mut expanded =
-        String::with_capacity(template.len() + arguments.iter().map(String::len).sum::<usize>());
-    let mut all_arguments = None;
-    let mut chars = template.chars().peekable();
-
-    while let Some(ch) = chars.next() {
-        if ch != '$' {
-            expanded.push(ch);
-            continue;
-        }
-
-        match chars.peek().copied() {
-            Some('$') => {
-                chars.next();
-                expanded.push('$');
-            }
-            Some('0') => {
-                chars.next();
-                expanded.push_str(all_arguments.get_or_insert_with(|| arguments.join(", ")));
-            }
-            Some(digit) if digit.is_ascii_digit() => {
-                chars.next();
-                let index = digit
-                    .to_digit(10)
-                    .expect("ASCII digit must convert to a number")
-                    .saturating_sub(1) as usize;
-                if let Some(argument) = arguments.get(index) {
-                    expanded.push_str(argument);
-                }
-            }
-            _ => expanded.push('$'),
-        }
-    }
-
-    expanded
-}
-
-fn dollar_path_token(input: &str) -> Option<(&str, usize, &str)> {
-    let rest = input.strip_prefix('$')?;
-    if let Some(rest) = rest.strip_prefix('{') {
-        let end = rest.find('}')?;
-        let consumed = 2 + end + 1;
-        return Some((&rest[..end], consumed, &input[..consumed]));
-    }
-    let token_len = rest
-        .char_indices()
-        .take_while(|(_, ch)| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-        .map(|(index, ch)| index + ch.len_utf8())
-        .last()?;
-    Some((&rest[..token_len], token_len + 1, &input[..token_len + 1]))
 }
 
 fn resolve_path_token(token: &str) -> Option<String> {

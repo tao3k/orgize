@@ -1,6 +1,6 @@
 //! Execute a typed Scheme-AOT query pack against a parsed Org Element graph.
 
-use gerbil_parser_rowan::{GraphIndexError, GraphRecord, GraphRelation};
+use gerbil_parser_runtime::{GraphIndexError, GraphRecord, GraphRelation};
 
 use crate::org_aot::{OrgAotDocument, org_graph_spec};
 

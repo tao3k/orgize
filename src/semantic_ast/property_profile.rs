@@ -1,5 +1,6 @@
 //! Property profile projection over native Org property descriptors.
 
+use super::property_native_plan::{FIXED, PropertyNativePlan};
 use super::{
     Document, ParsedAnnotation, Property, PropertyAllowedValueRecord, PropertyAllowedValueScope,
     PropertyInheritancePolicy, PropertyProfile, PropertySchemaRegistry, Section,
@@ -17,14 +18,23 @@ impl Document<ParsedAnnotation> {
         &self,
         registry: &PropertySchemaRegistry,
     ) -> PropertyProfile {
+        self.property_profile_with_native_plan(registry).0
+    }
+
+    pub(crate) fn property_profile_with_native_plan(
+        &self,
+        registry: &PropertySchemaRegistry,
+    ) -> (PropertyProfile, PropertyNativePlan) {
+        let plan = PropertyNativePlan::new(self);
         let mut inherited_keys = Vec::new();
-        let mut allowed_values = fixed_global_allowed_values();
+        let mut allowed_values = fixed_global_allowed_values(&plan);
         for property in &self.properties {
             push_inherited_key(&mut inherited_keys, &property.key);
             push_allowed_value_record(
                 &mut allowed_values,
                 property,
                 PropertyAllowedValueScope::Document,
+                &plan,
             );
         }
         for section in &self.sections {
@@ -33,38 +43,39 @@ impl Document<ParsedAnnotation> {
                 &mut Vec::new(),
                 &mut inherited_keys,
                 &mut allowed_values,
+                &plan,
             );
         }
 
-        PropertyProfile {
-            inheritance: PropertyInheritancePolicy::All,
-            inherited_keys,
-            allowed_values,
-            schema_applications: super::property_schema::property_schema_applications(
-                &self.properties,
-                &self.sections,
-                registry,
-            ),
-        }
+        (
+            PropertyProfile {
+                inheritance: PropertyInheritancePolicy::All,
+                inherited_keys,
+                allowed_values,
+                schema_applications: super::property_schema::property_schema_applications(
+                    &self.properties,
+                    &self.sections,
+                    registry,
+                ),
+            },
+            plan,
+        )
     }
 }
 
 pub(crate) fn property_allowed_values(
     properties: &[Property<ParsedAnnotation>],
     profile: &PropertyProfile,
-    key: &str,
+    property: &Property<ParsedAnnotation>,
+    plan: &PropertyNativePlan,
 ) -> Option<Vec<String>> {
-    let descriptor_key = allowed_value_descriptor_key(key);
+    let descriptor_key = &plan.property(property).descriptor_key;
     properties
         .iter()
         .rev()
         .find(|property| property.key.eq_ignore_ascii_case(&descriptor_key))
-        .map(|property| allowed_value_tokens(&property.value))
+        .map(|property| plan.property(property).tokens.clone())
         .or_else(|| fixed_global_allowed_values_for(profile, &descriptor_key))
-}
-
-pub(crate) fn is_allowed_value_descriptor(key: &str) -> bool {
-    descriptor_property_name(key).is_some()
 }
 
 fn collect_section_property_profile(
@@ -72,6 +83,7 @@ fn collect_section_property_profile(
     outline_path: &mut Vec<String>,
     inherited_keys: &mut Vec<String>,
     allowed_values: &mut Vec<PropertyAllowedValueRecord>,
+    plan: &PropertyNativePlan,
 ) {
     outline_path.push(section.raw_title.clone());
     for property in &section.properties {
@@ -84,10 +96,11 @@ fn collect_section_property_profile(
                 level: section.level,
                 title: section.raw_title.clone(),
             },
+            plan,
         );
     }
     for child in &section.subsections {
-        collect_section_property_profile(child, outline_path, inherited_keys, allowed_values);
+        collect_section_property_profile(child, outline_path, inherited_keys, allowed_values, plan);
     }
     outline_path.pop();
 }
@@ -96,14 +109,16 @@ fn push_allowed_value_record(
     allowed_values: &mut Vec<PropertyAllowedValueRecord>,
     property: &Property<ParsedAnnotation>,
     scope: PropertyAllowedValueScope,
+    plan: &PropertyNativePlan,
 ) {
-    if let Some(property_name) = descriptor_property_name(&property.key) {
+    let facts = plan.property(property);
+    if let Some(property_name) = &facts.descriptor_name {
         allowed_values.push(PropertyAllowedValueRecord {
             source: Some(SectionIndexSource::from_annotation(&property.ann)),
             scope,
-            property: property_name,
+            property: property_name.clone(),
             descriptor_key: property.key.clone(),
-            values: allowed_value_tokens(&property.value),
+            values: facts.tokens.clone(),
         });
     }
 }
@@ -117,21 +132,21 @@ fn push_inherited_key(keys: &mut Vec<String>, key: &str) {
     }
 }
 
-fn fixed_global_allowed_values() -> Vec<PropertyAllowedValueRecord> {
-    [
-        ("VISIBILITY_ALL", "folded children content all"),
-        ("CLOCK_MODELINE_TOTAL_ALL", "current today repeat all auto"),
-    ]
-    .into_iter()
-    .map(|(descriptor_key, value)| PropertyAllowedValueRecord {
-        source: None,
-        scope: PropertyAllowedValueScope::FixedGlobal,
-        property: descriptor_property_name(descriptor_key)
-            .expect("fixed descriptor key should end in _ALL"),
-        descriptor_key: descriptor_key.to_string(),
-        values: allowed_value_tokens(value),
-    })
-    .collect()
+fn fixed_global_allowed_values(plan: &PropertyNativePlan) -> Vec<PropertyAllowedValueRecord> {
+    FIXED
+        .into_iter()
+        .map(|(descriptor_key, value)| PropertyAllowedValueRecord {
+            source: None,
+            scope: PropertyAllowedValueScope::FixedGlobal,
+            property: plan
+                .fact(descriptor_key, value)
+                .descriptor_name
+                .clone()
+                .expect("fixed descriptor key should end in _ALL"),
+            descriptor_key: descriptor_key.to_string(),
+            values: plan.fact(descriptor_key, value).tokens.clone(),
+        })
+        .collect()
 }
 
 fn fixed_global_allowed_values_for(
@@ -146,64 +161,4 @@ fn fixed_global_allowed_values_for(
                 && record.descriptor_key.eq_ignore_ascii_case(descriptor_key)
         })
         .map(|record| record.values.clone())
-}
-
-fn allowed_value_descriptor_key(key: &str) -> String {
-    format!("{}_ALL", key.trim_end_matches('+'))
-}
-
-fn descriptor_property_name(key: &str) -> Option<String> {
-    let trimmed = key.trim_end_matches('+');
-    if !trimmed.to_ascii_uppercase().ends_with("_ALL") {
-        return None;
-    }
-    let base = &trimmed[..trimmed.len() - "_ALL".len()];
-    (!base.is_empty()).then(|| base.to_string())
-}
-
-fn allowed_value_tokens(value: &str) -> Vec<String> {
-    let mut tokens = Vec::new();
-    let mut cursor = 0;
-    while let Some(start) = next_token_start(value, cursor) {
-        let (token, next) = allowed_value_token(value, start);
-        tokens.push(token);
-        cursor = next;
-    }
-    tokens
-}
-
-fn next_token_start(value: &str, cursor: usize) -> Option<usize> {
-    value[cursor..]
-        .char_indices()
-        .find(|(_, ch)| !ch.is_whitespace())
-        .map(|(position, _)| cursor + position)
-}
-
-fn allowed_value_token(value: &str, start: usize) -> (String, usize) {
-    let mut cursor = start;
-    let mut parsed = String::new();
-    let mut quote = None;
-    let mut escaped = false;
-    while cursor < value.len() {
-        let ch = value[cursor..].chars().next().unwrap();
-        cursor += ch.len_utf8();
-        if escaped {
-            parsed.push(ch);
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if quote == Some(ch) {
-            quote = None;
-        } else if quote.is_none() && matches!(ch, '"' | '\'') {
-            quote = Some(ch);
-        } else if quote.is_none() && ch.is_whitespace() {
-            break;
-        } else {
-            parsed.push(ch);
-        }
-    }
-    if escaped {
-        parsed.push('\\');
-    }
-    (parsed, cursor)
 }

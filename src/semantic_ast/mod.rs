@@ -16,9 +16,12 @@ mod agenda_workspace;
 mod agenda_workspace_model;
 mod agent_planning;
 mod agent_planning_model;
+mod aot_anchor_plan;
 mod aot_attachment_projection;
+mod aot_block_plan;
 mod aot_block_switches;
 mod aot_drawer_projection;
+mod aot_duration_plan;
 mod aot_footnote_resolution;
 mod aot_link_resolution;
 mod aot_projection;
@@ -35,6 +38,7 @@ mod capture_command;
 mod capture_model;
 mod citation_export;
 mod citation_export_model;
+mod citation_export_native;
 mod clock_issue_model;
 mod clock_issues;
 mod clock_rollup;
@@ -86,6 +90,9 @@ mod org_contract_evaluation;
 mod org_contract_evaluation_json;
 mod org_contract_model;
 mod org_elements_query_expr;
+mod org_native_values;
+#[cfg(test)]
+pub(crate) use org_elements_query_expr::EXPRESSION_NATIVE_CASES;
 mod org_interactive;
 mod org_interactive_model;
 mod preprocessing;
@@ -94,6 +101,7 @@ mod progress;
 mod progress_model;
 mod projection;
 mod property_model;
+mod property_native_plan;
 mod property_profile;
 mod property_profile_model;
 mod property_schema;
@@ -117,6 +125,7 @@ mod source_block_headers;
 mod source_block_model;
 mod source_block_references;
 mod source_blocks;
+pub(crate) use source_blocks::SourceBlockSyntaxRecord;
 mod source_position;
 mod sparse_tree;
 mod sparse_tree_model;
@@ -280,6 +289,7 @@ pub use model::{
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 pub use named_source_block_template::{NamedSourceBlockTemplate, NamedSourceBlockTemplateError};
+pub(crate) use org_contract::{contract_block_syntax_error, contract_source_blocks};
 pub use org_contract::{
     parse_contract_reference, parse_contract_reference_from_source, parse_contract_references,
     parse_contracts_from_document, validate_contract_source,
@@ -323,7 +333,8 @@ pub use progress_model::{
 pub use property_model::{
     OrgDuration, Priority, PriorityCookie, PriorityProfile, PriorityRangeStatus, PriorityValue,
 };
-pub(crate) use property_profile::{is_allowed_value_descriptor, property_allowed_values};
+pub(crate) use property_native_plan::PropertyNativePlan;
+pub(crate) use property_profile::property_allowed_values;
 pub use property_profile_model::{
     PropertyAllowedValueRecord, PropertyAllowedValueScope, PropertyInheritancePolicy,
     PropertyProfile,

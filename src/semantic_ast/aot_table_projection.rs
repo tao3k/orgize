@@ -61,7 +61,13 @@ impl GraphProjector<'_> {
 
     fn table_formula(&self, keyword_id: usize) -> Option<TableFormula<ParsedAnnotation>> {
         let keyword = self.record(keyword_id);
-        let raw = keyword.field("raw-value")?.trim().to_owned();
+        let raw = keyword
+            .child_ids
+            .iter()
+            .map(|&id| self.record(id))
+            .find(|record| record.kind == "table-formula-value")?
+            .field("content")?
+            .to_owned();
         let assignments = keyword
             .child_ids
             .iter()
@@ -71,27 +77,29 @@ impl GraphProjector<'_> {
             .map(|&id| self.record(id))
             .filter(|record| record.kind == "table-formula-assignment")
             .map(|record| TableFormulaAssignment {
-                raw: self.raw(record.range).trim().to_owned(),
+                raw: record
+                    .field("content")
+                    .expect("native formula content")
+                    .to_owned(),
                 lhs: record
                     .child_ids
                     .iter()
                     .map(|&id| self.record(id))
                     .find(|side| side.kind == "table-formula-lhs")
-                    .map(|side| self.raw(side.range).trim().to_owned())
+                    .and_then(|side| side.field("content").map(str::to_owned))
                     .unwrap_or_default(),
                 rhs: record
                     .child_ids
                     .iter()
                     .map(|&id| self.record(id))
                     .find(|side| side.kind == "table-formula-rhs")
-                    .map(|side| self.raw(side.range).trim().to_owned())
+                    .and_then(|side| side.field("content").map(str::to_owned))
                     .unwrap_or_default(),
                 flags: record
                     .fields
                     .iter()
                     .filter(|field| field.name == "flag")
-                    .map(|field| field.value.trim().to_owned())
-                    .filter(|flag| !flag.is_empty())
+                    .map(|field| field.value.clone())
                     .collect(),
                 references: record
                     .child_ids
@@ -131,13 +139,10 @@ impl GraphProjector<'_> {
         let cell = self.record(id);
         let range = cell.range;
         let children = cell.child_ids.clone();
-        let text = self.raw(range);
-        let trimmed = text.trim();
-        let offset = usize::from(range.start()) + text.len() - text.trim_start().len();
-        let span = rowan::TextRange::new(
-            (offset as u32).into(),
-            ((offset + trimmed.len()) as u32).into(),
-        );
+        let trimmed = cell.field("content").expect("native table cell content");
+        let span = cell
+            .field_range("content")
+            .expect("native table cell extent");
         let objects = if children.is_empty() || trimmed.is_empty() {
             vec![self.plain(range, trimmed)]
         } else {
@@ -157,15 +162,23 @@ impl GraphProjector<'_> {
                 if row.kind != "table-row" {
                     return None;
                 }
-                let alignments = row
+                let cells = row
                     .child_ids
                     .iter()
                     .filter(|&&cell_id| self.record(cell_id).kind == "table-cell")
-                    .try_fold(Vec::new(), |mut alignments, &cell_id| {
-                        let cookie = crate::org_aot::table_column_cookie_kind(
-                            self.record(cell_id).field("text").unwrap_or_default(),
-                        );
-                        let alignment = match cookie {
+                    .map(|&cell_id| self.record(cell_id).field("text").unwrap_or_default())
+                    .collect::<Vec<_>>();
+                if cells.is_empty() {
+                    return None;
+                }
+                let rows = crate::org_aot::native_semantic_rows(21, &cells)
+                    .expect("initialized native table cookie batch");
+                assert_eq!(rows.len(), cells.len(), "native table cookie count");
+                let alignments = rows
+                    .into_iter()
+                    .try_fold(Vec::new(), |mut alignments, row| {
+                        assert_eq!(row.len(), 1, "native table cookie arity");
+                        let alignment = match row[0].as_str() {
                             "left" => Some(TableColumnAlignment::Left),
                             "center" => Some(TableColumnAlignment::Center),
                             "right" => Some(TableColumnAlignment::Right),

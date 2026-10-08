@@ -5,10 +5,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use orgize::Org;
 use orgize::org_aot::{org_graph_spec, org_language_spec};
 #[rustfmt::skip]
-#[path = "../languages/org/v1/generated/elements.rs"]
+#[path = "../languages/org/generated/elements.rs"]
 mod elements;
 
-fn generated_kinds(root: &gerbil_parser_rowan::SyntaxNode) -> BTreeMap<&'static str, usize> {
+fn generated_kinds(root: &gerbil_parser_runtime::SyntaxNode) -> BTreeMap<&'static str, usize> {
     let mut kinds = BTreeMap::new();
     for node in root.descendants() {
         let kind = org_language_spec().kinds[usize::from(node.kind().0)].name;
@@ -18,6 +18,8 @@ fn generated_kinds(root: &gerbil_parser_rowan::SyntaxNode) -> BTreeMap<&'static 
 }
 
 fn main() {
+    // SAFETY: standalone entrypoint, before workers or children and host I/O.
+    unsafe { orgize::initialize_native_runtime() }.expect("native startup");
     let source = include_str!("../tests/fixtures/org-elements/representative.org");
     let document = Org::parse(source);
     let event_root = document.syntax();

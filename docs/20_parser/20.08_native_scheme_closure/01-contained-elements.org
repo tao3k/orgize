@@ -1,0 +1,139 @@
+#+title: Contained Elements in list Items
+
+[[file:../20.08_native_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* First slice: opaque Elements inside list Items
+
+The official Org manual describes indented block constructs as belonging to
+list Items: [[https://orgmode.org/manual/Plain-Lists.html][Plain Lists]].
+The implementation reuses the existing declared source/example/comment/export
+rules, block headers, closing admission, body masking and recovery. It adds no
+Org recognition in Rust and no generic engine primitive or kernel change.
+
+The confirmed baseline parses an indented example block as an Item paragraph,
+even recognizing underscores in its begin/end markers as inline subscript
+Objects. The new expected AST requires an OrgExampleBlock inside the first
+Item and a subsequent sibling Item. A freshly compiled baseline suite fails
+that exact AST expectation in
+=target/list-opaque-syntax-20261004/baseline/structural-test.log=.
+
+An earlier import-only aggregate run was green because it could resolve an
+older compiled child test suite. That run does not qualify the new case.
+=scheme-structural-event-test= explicitly compiles the edited suite into an
+isolated output overlay before native gxtest, then requires MODULE-OK,
+HARNESS-OK, final OK and no error markers.
+
+The Scheme list continuation now attempts declared opaque Elements before
+paragraph text, while retaining the owning Item. Its paragraph closes only
+after successful block admission; a rejected opener has no transition side
+effects. Six regression cases cover exact offsets/ancestry, all four opaque
+families with UTF-8/CRLF and sibling Items, an unterminated EOF closing line,
+unclosed input before a headline, a dedented block outside the Item, and exact
+indented standalone source-header ranges.
+
+Candidate compilation and validation status must be recorded below before
+this slice can be called locally qualified. Native staging, linked FFI,
+full consumers and performance gates remain separate from Scheme AST tests.
+
+** Current local qualification
+
+The first dispatch-only candidate still failed the exact block AST case:
+the existing opaque recognizer checked only column zero. The second candidate
+uses the Scheme horizontal-indent offset for opening, closing and header
+fields, reusing existing container marker admission. Both failed baseline
+and first-candidate receipts are retained, not replaced by passing retries.
+
+The second candidate's three changed/dependent modules compiled through
+=just scheme-list-opaque-build= into
+=target/list-opaque-syntax-20261004/candidate-r2=.
+Its explicitly compiled structural suite passed its declared cases,
+including the six new cases, with MODULE-OK, HARNESS-OK, final OK and no
+error markers. Log: =candidate-r2/structural-test.log= in that directory tree.
+
+Source SHA256 (first slice, before the timestamp/test-harness change):
+- =event-list.ss=: =17a77e92f111244f011093a9c0e32af03d4d4b8fef10898f646a9341f765bea5=
+- =event-strategy.ss=: =c96beb9045b12cbb2b2d0ea0c629966d028c4792434dafad391382182b5ad7c9=
+- =org-rowan-structural-parser-test.ss=: =af719f7c195b7765249ee9911513e7f4ef3923197890757fb8dcfb0f09951708=
+
+=scheme-event-fresh-test= additionally compiles all three child suites and
+their aggregate before gxtest, avoiding an import-only stale-suite pass.
+Correction from the 2026-10-04 entry audit: this aggregate run had MODULE-OK,
+HARNESS-OK and final OK, but the aggregate suite merely evaluated three child
+suite values without registering cases. It was empty and does NOT qualify
+the claimed 95 cases. Log retained: =aggregate-r2/event-test.log=.
+The independently executed structural suite and linked Rust-runtime receipts
+above/below have different executable boundaries and are not this empty suite.
+These phases may overlap compilation on unrelated host workloads; no timing
+or performance conclusion is drawn from their wall duration.
+
+The first native staging completed but resolved the tape module from the
+older PR13 overlay. It is not eligible for current batch-protocol closure.
+The maintained batch staging owner refreshed the current tape and statistics
+modules into =native-r3=; that staging passed ORG-PARSER-STAGE OK with 276
+compiler-owned modules. The manifest resolves the list/strategy/runtime
+modules from =candidate-r2/lib/static= and the current tape from
+=native-r3/lib/static=. Default =target/gerbil-parser/program.json= remains
+byte-identical to the prior qualified prefix manifest (SHA256
+=f412ee93088cfb6e7333fa40073150191680f409e25e59caa5a1d7b9a9d728f9=).
+
+A new public =Org::parse= native-unit case checks all four opaque families,
+full UTF-8/CRLF source roundtrip, block-to-Item-to-List ancestry, exact range
+containment, sibling Item count, and body heading masking. It is a semantic
+projection assertion, not Rust recognition. Its linked-program result must
+be recorded separately from the Scheme AST and native staging receipts.
+Shipping/default promotion still requires both runtime choices, public
+consumers, Python and scale/performance gates.
+
+** Linked Rust-runtime qualification
+
+The initial scalar-tape staging's Release library build completed in 7m43s,
+but is retained only as =list-opaque-rust-r2-unqualified-20261004=; it is not
+a current batch-protocol qualification.
+
+The corrected =native-r3= program has compiler-owned identity
+=sha256:577271ece3e6dfb4cf77c5c2ae70acfccc53b9e03208219b0d61eb7b769ea49f=.
+Its normal, non-profiled =runtime-rust= Release library build passed in
+7m20s through the maintained native-build owner. The frozen executable
+=target/runtime-receipt-binaries/list-opaque-rust-unit-20261004=
+has SHA256 =a42d078b53261991e1008e88478b876a07ef35c5de1dc2797ad9facd01cfb532=.
+The existing library owner passed 58 concurrent native cases, including
+=public_parser_keeps_opaque_blocks_inside_list_items=, then 26 ordinary/policy
+cases. Two existing ignored performance scenarios remain ignored.
+Log: =target/list-opaque-rust-functional-20261004.log=.
+
+Public regression source SHA256 is
+=2feeabba6eb1a231bdf1fedfb88f5293265a48180984d3585835aab6ad82add7=.
+The source test itself owns no startup or lifecycle substitute; it is mounted
+in the existing exclusive-startup-then-concurrent-native-cases fixture.
+This run overlaps compilation of the other runtime choice and provides no
+performance ranking. Rust's passing units do not qualify Scheme, the full
+consumer catalog, Python/wheels, concurrent scale or the strict Query gate.
+
+** Linked Scheme-runtime qualification and handoff
+
+The same =native-r3= manifest passed the normal, non-profiled
+=runtime-scheme= Release library build in 6m15s. Its compiler-owned program
+identity is exactly the Rust identity above. Frozen executable
+=target/runtime-receipt-binaries/list-opaque-scheme-unit-20261004=
+SHA256 is =f98c44c6fa66966761b1c1e9aa1976af22ccc5a5f8265eb72ba6a498628943cc=.
+The maintained library fixture passed 58 concurrent native cases, including
+the new public parser assertion, then 26 ordinary/policy cases; two existing
+ignored performance scenarios remain ignored. Log:
+=target/list-opaque-scheme-functional-20261004.log=.
+
+This slice has independent structural Scheme AST and linked native receipts;
+its earlier fresh aggregate receipt is invalid as explained above. Qualification
+through actual aggregate child-suite execution must be recorded separately.
+Compiler-owned staging and the linked public parser passed under both runtime
+choices. No kernel, runtime ownership/concurrency policy, profile, or external
+PR was changed. No global parser/migration/performance closure is claimed.
+
+Next required admissions:
+1. Extend list containment to greater/container Elements, affiliation and
+   context restrictions with source-backed recovery cases.
+2. Run the complete consumer catalog and normal Python/wheel callers against
+   this exact selected program; inspect any changed snapshots individually.
+3. Run both actual concurrent 1000/10000-document workloads and the unchanged
+   strict Query gate before performance/default-program promotion.
+4. Complete the remaining Element/Object family ledger; a program swap or
+   green fixture count alone does not close the grammar.

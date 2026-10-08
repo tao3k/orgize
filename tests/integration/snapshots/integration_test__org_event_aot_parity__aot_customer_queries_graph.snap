@@ -1,6 +1,6 @@
 ---
 source: tests/integration/org_event_aot_parity.rs
-assertion_line: 52
+assertion_line: 37
 expression: document.records()
 ---
 [
@@ -20,7 +20,14 @@ expression: document.records()
         syntax_kind: 0,
         category: "document",
         kind: "org-data",
-        range: 0..1505,
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                1505,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -32,27 +39,62 @@ expression: document.records()
         syntax_kind: 31,
         category: "element",
         kind: "keyword",
-        range: 0..44,
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                44,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "title",
-                range: 2..7,
+                range: TextRange {
+                    start: TextSize(
+                        2,
+                    ),
+                    end: TextSize(
+                        7,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "Consumer-owned Org Element queries",
-                range: 9..43,
+                range: TextRange {
+                    start: TextSize(
+                        9,
+                    ),
+                    end: TextSize(
+                        43,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "rich-value",
                 value: "Consumer-owned Org Element queries",
-                range: 9..43,
+                range: TextRange {
+                    start: TextSize(
+                        9,
+                    ),
+                    end: TextSize(
+                        43,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "raw-value",
                 value: " Consumer-owned Org Element queries",
-                range: 8..43,
+                range: TextRange {
+                    start: TextSize(
+                        8,
+                    ),
+                    end: TextSize(
+                        43,
+                    ),
+                },
             },
         ],
     },
@@ -65,25 +107,53 @@ expression: document.records()
             3,
             5,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 45..341,
+        range: TextRange {
+            start: TextSize(
+                45,
+            ),
+            end: TextSize(
+                341,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 45..46,
+                range: TextRange {
+                    start: TextSize(
+                        45,
+                    ),
+                    end: TextSize(
+                        46,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Active reviews",
-                range: 47..61,
+                range: TextRange {
+                    start: TextSize(
+                        47,
+                    ),
+                    end: TextSize(
+                        61,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Active reviews",
-                range: 47..61,
+                range: TextRange {
+                    start: TextSize(
+                        47,
+                    ),
+                    end: TextSize(
+                        61,
+                    ),
+                },
             },
         ],
     },
@@ -98,7 +168,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 62..115,
+        range: TextRange {
+            start: TextSize(
+                62,
+            ),
+            end: TextSize(
+                115,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -110,17 +187,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 75..109,
+        range: TextRange {
+            start: TextSize(
+                75,
+            ),
+            end: TextSize(
+                109,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "QUERY_ID",
-                range: 76..84,
+                range: TextRange {
+                    start: TextSize(
+                        76,
+                    ),
+                    end: TextSize(
+                        84,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "customer.active-review",
-                range: 86..108,
+                range: TextRange {
+                    start: TextSize(
+                        86,
+                    ),
+                    end: TextSize(
+                        108,
+                    ),
+                },
             },
         ],
     },
@@ -133,32 +231,110 @@ expression: document.records()
         syntax_kind: 10,
         category: "element",
         kind: "src-block",
-        range: 116..340,
+        range: TextRange {
+            start: TextSize(
+                116,
+            ),
+            end: TextSize(
+                340,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "header",
                 value: "  :org-elements-query\n",
-                range: 127..155,
+                range: TextRange {
+                    start: TextSize(
+                        127,
+                    ),
+                    end: TextSize(
+                        155,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "language",
                 value: "scheme",
-                range: 128..134,
+                range: TextRange {
+                    start: TextSize(
+                        128,
+                    ),
+                    end: TextSize(
+                        134,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "header-key",
                 value: "org-elements-query",
-                range: 136..154,
+                range: TextRange {
+                    start: TextSize(
+                        136,
+                    ),
+                    end: TextSize(
+                        154,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        136,
+                    ),
+                    end: TextSize(
+                        154,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        135,
+                    ),
+                    end: TextSize(
+                        154,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        135,
+                    ),
+                    end: TextSize(
+                        154,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline\n              (all-of (property todo-type \"todo\")\n                      (property-contains source-title \"Review\"))\n              (descendant-of scope))\n",
-                range: 155..330,
+                range: TextRange {
+                    start: TextSize(
+                        155,
+                    ),
+                    end: TextSize(
+                        330,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "raw-body",
                 value: "(org-elements headline\n              (all-of (property todo-type \"todo\")\n                      (property-contains source-title \"Review\"))\n              (descendant-of scope))\n",
-                range: 155..330,
+                range: TextRange {
+                    start: TextSize(
+                        155,
+                    ),
+                    end: TextSize(
+                        330,
+                    ),
+                },
             },
         ],
     },
@@ -171,25 +347,53 @@ expression: document.records()
             7,
             9,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 341..522,
+        range: TextRange {
+            start: TextSize(
+                341,
+            ),
+            end: TextSize(
+                522,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 341..342,
+                range: TextRange {
+                    start: TextSize(
+                        341,
+                    ),
+                    end: TextSize(
+                        342,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Cited evidence",
-                range: 343..357,
+                range: TextRange {
+                    start: TextSize(
+                        343,
+                    ),
+                    end: TextSize(
+                        357,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Cited evidence",
-                range: 343..357,
+                range: TextRange {
+                    start: TextSize(
+                        343,
+                    ),
+                    end: TextSize(
+                        357,
+                    ),
+                },
             },
         ],
     },
@@ -204,7 +408,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 358..412,
+        range: TextRange {
+            start: TextSize(
+                358,
+            ),
+            end: TextSize(
+                412,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -216,17 +427,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 371..406,
+        range: TextRange {
+            start: TextSize(
+                371,
+            ),
+            end: TextSize(
+                406,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "QUERY_ID",
-                range: 372..380,
+                range: TextRange {
+                    start: TextSize(
+                        372,
+                    ),
+                    end: TextSize(
+                        380,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "customer.cited-evidence",
-                range: 382..405,
+                range: TextRange {
+                    start: TextSize(
+                        382,
+                    ),
+                    end: TextSize(
+                        405,
+                    ),
+                },
             },
         ],
     },
@@ -239,32 +471,110 @@ expression: document.records()
         syntax_kind: 10,
         category: "element",
         kind: "src-block",
-        range: 413..521,
+        range: TextRange {
+            start: TextSize(
+                413,
+            ),
+            end: TextSize(
+                521,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "header",
                 value: "  :org-elements-query\n",
-                range: 424..452,
+                range: TextRange {
+                    start: TextSize(
+                        424,
+                    ),
+                    end: TextSize(
+                        452,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "language",
                 value: "scheme",
-                range: 425..431,
+                range: TextRange {
+                    start: TextSize(
+                        425,
+                    ),
+                    end: TextSize(
+                        431,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "header-key",
                 value: "org-elements-query",
-                range: 433..451,
+                range: TextRange {
+                    start: TextSize(
+                        433,
+                    ),
+                    end: TextSize(
+                        451,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        433,
+                    ),
+                    end: TextSize(
+                        451,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        432,
+                    ),
+                    end: TextSize(
+                        451,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        432,
+                    ),
+                    end: TextSize(
+                        451,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "body",
                 value: "(org-elements citation-reference (property key \"doe2020\"))\n",
-                range: 452..511,
+                range: TextRange {
+                    start: TextSize(
+                        452,
+                    ),
+                    end: TextSize(
+                        511,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "raw-body",
                 value: "(org-elements citation-reference (property key \"doe2020\"))\n",
-                range: 452..511,
+                range: TextRange {
+                    start: TextSize(
+                        452,
+                    ),
+                    end: TextSize(
+                        511,
+                    ),
+                },
             },
         ],
     },
@@ -277,25 +587,53 @@ expression: document.records()
             11,
             13,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 522..711,
+        range: TextRange {
+            start: TextSize(
+                522,
+            ),
+            end: TextSize(
+                711,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 522..523,
+                range: TextRange {
+                    start: TextSize(
+                        522,
+                    ),
+                    end: TextSize(
+                        523,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Normalized review title",
-                range: 524..547,
+                range: TextRange {
+                    start: TextSize(
+                        524,
+                    ),
+                    end: TextSize(
+                        547,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Normalized review title",
-                range: 524..547,
+                range: TextRange {
+                    start: TextSize(
+                        524,
+                    ),
+                    end: TextSize(
+                        547,
+                    ),
+                },
             },
         ],
     },
@@ -310,7 +648,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 548..604,
+        range: TextRange {
+            start: TextSize(
+                548,
+            ),
+            end: TextSize(
+                604,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -322,17 +667,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 561..598,
+        range: TextRange {
+            start: TextSize(
+                561,
+            ),
+            end: TextSize(
+                598,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "QUERY_ID",
-                range: 562..570,
+                range: TextRange {
+                    start: TextSize(
+                        562,
+                    ),
+                    end: TextSize(
+                        570,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "customer.normalized-title",
-                range: 572..597,
+                range: TextRange {
+                    start: TextSize(
+                        572,
+                    ),
+                    end: TextSize(
+                        597,
+                    ),
+                },
             },
         ],
     },
@@ -345,32 +711,110 @@ expression: document.records()
         syntax_kind: 10,
         category: "element",
         kind: "src-block",
-        range: 605..710,
+        range: TextRange {
+            start: TextSize(
+                605,
+            ),
+            end: TextSize(
+                710,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "header",
                 value: "  :org-elements-query\n",
-                range: 616..644,
+                range: TextRange {
+                    start: TextSize(
+                        616,
+                    ),
+                    end: TextSize(
+                        644,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "language",
                 value: "scheme",
-                range: 617..623,
+                range: TextRange {
+                    start: TextSize(
+                        617,
+                    ),
+                    end: TextSize(
+                        623,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "header-key",
                 value: "org-elements-query",
-                range: 625..643,
+                range: TextRange {
+                    start: TextSize(
+                        625,
+                    ),
+                    end: TextSize(
+                        643,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        625,
+                    ),
+                    end: TextSize(
+                        643,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        624,
+                    ),
+                    end: TextSize(
+                        643,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        624,
+                    ),
+                    end: TextSize(
+                        643,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline (property title \"Review patch\"))\n",
-                range: 644..700,
+                range: TextRange {
+                    start: TextSize(
+                        644,
+                    ),
+                    end: TextSize(
+                        700,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "raw-body",
                 value: "(org-elements headline (property title \"Review patch\"))\n",
-                range: 644..700,
+                range: TextRange {
+                    start: TextSize(
+                        644,
+                    ),
+                    end: TextSize(
+                        700,
+                    ),
+                },
             },
         ],
     },
@@ -383,25 +827,53 @@ expression: document.records()
             15,
             17,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 711..877,
+        range: TextRange {
+            start: TextSize(
+                711,
+            ),
+            end: TextSize(
+                877,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 711..712,
+                range: TextRange {
+                    start: TextSize(
+                        711,
+                    ),
+                    end: TextSize(
+                        712,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Priority reviews",
-                range: 713..729,
+                range: TextRange {
+                    start: TextSize(
+                        713,
+                    ),
+                    end: TextSize(
+                        729,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Priority reviews",
-                range: 713..729,
+                range: TextRange {
+                    start: TextSize(
+                        713,
+                    ),
+                    end: TextSize(
+                        729,
+                    ),
+                },
             },
         ],
     },
@@ -416,7 +888,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 730..778,
+        range: TextRange {
+            start: TextSize(
+                730,
+            ),
+            end: TextSize(
+                778,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -428,17 +907,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 743..772,
+        range: TextRange {
+            start: TextSize(
+                743,
+            ),
+            end: TextSize(
+                772,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "QUERY_ID",
-                range: 744..752,
+                range: TextRange {
+                    start: TextSize(
+                        744,
+                    ),
+                    end: TextSize(
+                        752,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "customer.priority",
-                range: 754..771,
+                range: TextRange {
+                    start: TextSize(
+                        754,
+                    ),
+                    end: TextSize(
+                        771,
+                    ),
+                },
             },
         ],
     },
@@ -451,32 +951,110 @@ expression: document.records()
         syntax_kind: 10,
         category: "element",
         kind: "src-block",
-        range: 779..876,
+        range: TextRange {
+            start: TextSize(
+                779,
+            ),
+            end: TextSize(
+                876,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "header",
                 value: "  :org-elements-query\n",
-                range: 790..818,
+                range: TextRange {
+                    start: TextSize(
+                        790,
+                    ),
+                    end: TextSize(
+                        818,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "language",
                 value: "scheme",
-                range: 791..797,
+                range: TextRange {
+                    start: TextSize(
+                        791,
+                    ),
+                    end: TextSize(
+                        797,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "header-key",
                 value: "org-elements-query",
-                range: 799..817,
+                range: TextRange {
+                    start: TextSize(
+                        799,
+                    ),
+                    end: TextSize(
+                        817,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        799,
+                    ),
+                    end: TextSize(
+                        817,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        798,
+                    ),
+                    end: TextSize(
+                        817,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        798,
+                    ),
+                    end: TextSize(
+                        817,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline (property priority \"A\"))\n",
-                range: 818..866,
+                range: TextRange {
+                    start: TextSize(
+                        818,
+                    ),
+                    end: TextSize(
+                        866,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "raw-body",
                 value: "(org-elements headline (property priority \"A\"))\n",
-                range: 818..866,
+                range: TextRange {
+                    start: TextSize(
+                        818,
+                    ),
+                    end: TextSize(
+                        866,
+                    ),
+                },
             },
         ],
     },
@@ -489,25 +1067,53 @@ expression: document.records()
             19,
             21,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 877..1038,
+        range: TextRange {
+            start: TextSize(
+                877,
+            ),
+            end: TextSize(
+                1038,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 877..878,
+                range: TextRange {
+                    start: TextSize(
+                        877,
+                    ),
+                    end: TextSize(
+                        878,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Tagged reviews",
-                range: 879..893,
+                range: TextRange {
+                    start: TextSize(
+                        879,
+                    ),
+                    end: TextSize(
+                        893,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Tagged reviews",
-                range: 879..893,
+                range: TextRange {
+                    start: TextSize(
+                        879,
+                    ),
+                    end: TextSize(
+                        893,
+                    ),
+                },
             },
         ],
     },
@@ -522,7 +1128,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 894..940,
+        range: TextRange {
+            start: TextSize(
+                894,
+            ),
+            end: TextSize(
+                940,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -534,17 +1147,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 907..934,
+        range: TextRange {
+            start: TextSize(
+                907,
+            ),
+            end: TextSize(
+                934,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "QUERY_ID",
-                range: 908..916,
+                range: TextRange {
+                    start: TextSize(
+                        908,
+                    ),
+                    end: TextSize(
+                        916,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "customer.tagged",
-                range: 918..933,
+                range: TextRange {
+                    start: TextSize(
+                        918,
+                    ),
+                    end: TextSize(
+                        933,
+                    ),
+                },
             },
         ],
     },
@@ -557,32 +1191,110 @@ expression: document.records()
         syntax_kind: 10,
         category: "element",
         kind: "src-block",
-        range: 941..1037,
+        range: TextRange {
+            start: TextSize(
+                941,
+            ),
+            end: TextSize(
+                1037,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "header",
                 value: "  :org-elements-query\n",
-                range: 952..980,
+                range: TextRange {
+                    start: TextSize(
+                        952,
+                    ),
+                    end: TextSize(
+                        980,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "language",
                 value: "scheme",
-                range: 953..959,
+                range: TextRange {
+                    start: TextSize(
+                        953,
+                    ),
+                    end: TextSize(
+                        959,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "header-key",
                 value: "org-elements-query",
-                range: 961..979,
+                range: TextRange {
+                    start: TextSize(
+                        961,
+                    ),
+                    end: TextSize(
+                        979,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        961,
+                    ),
+                    end: TextSize(
+                        979,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        960,
+                    ),
+                    end: TextSize(
+                        979,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        960,
+                    ),
+                    end: TextSize(
+                        979,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline (property tags \"work\"))\n",
-                range: 980..1027,
+                range: TextRange {
+                    start: TextSize(
+                        980,
+                    ),
+                    end: TextSize(
+                        1027,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "raw-body",
                 value: "(org-elements headline (property tags \"work\"))\n",
-                range: 980..1027,
+                range: TextRange {
+                    start: TextSize(
+                        980,
+                    ),
+                    end: TextSize(
+                        1027,
+                    ),
+                },
             },
         ],
     },
@@ -595,25 +1307,53 @@ expression: document.records()
             23,
             25,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 1038..1236,
+        range: TextRange {
+            start: TextSize(
+                1038,
+            ),
+            end: TextSize(
+                1236,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 1038..1039,
+                range: TextRange {
+                    start: TextSize(
+                        1038,
+                    ),
+                    end: TextSize(
+                        1039,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Raw headline value",
-                range: 1040..1058,
+                range: TextRange {
+                    start: TextSize(
+                        1040,
+                    ),
+                    end: TextSize(
+                        1058,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Raw headline value",
-                range: 1040..1058,
+                range: TextRange {
+                    start: TextSize(
+                        1040,
+                    ),
+                    end: TextSize(
+                        1058,
+                    ),
+                },
             },
         ],
     },
@@ -628,7 +1368,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 1059..1108,
+        range: TextRange {
+            start: TextSize(
+                1059,
+            ),
+            end: TextSize(
+                1108,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -640,17 +1387,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 1072..1102,
+        range: TextRange {
+            start: TextSize(
+                1072,
+            ),
+            end: TextSize(
+                1102,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "QUERY_ID",
-                range: 1073..1081,
+                range: TextRange {
+                    start: TextSize(
+                        1073,
+                    ),
+                    end: TextSize(
+                        1081,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "customer.raw-value",
-                range: 1083..1101,
+                range: TextRange {
+                    start: TextSize(
+                        1083,
+                    ),
+                    end: TextSize(
+                        1101,
+                    ),
+                },
             },
         ],
     },
@@ -663,32 +1431,110 @@ expression: document.records()
         syntax_kind: 10,
         category: "element",
         kind: "src-block",
-        range: 1109..1235,
+        range: TextRange {
+            start: TextSize(
+                1109,
+            ),
+            end: TextSize(
+                1235,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "header",
                 value: "  :org-elements-query\n",
-                range: 1120..1148,
+                range: TextRange {
+                    start: TextSize(
+                        1120,
+                    ),
+                    end: TextSize(
+                        1148,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "language",
                 value: "scheme",
-                range: 1121..1127,
+                range: TextRange {
+                    start: TextSize(
+                        1121,
+                    ),
+                    end: TextSize(
+                        1127,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "header-key",
                 value: "org-elements-query",
-                range: 1129..1147,
+                range: TextRange {
+                    start: TextSize(
+                        1129,
+                    ),
+                    end: TextSize(
+                        1147,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        1129,
+                    ),
+                    end: TextSize(
+                        1147,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        1128,
+                    ),
+                    end: TextSize(
+                        1147,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        1128,
+                    ),
+                    end: TextSize(
+                        1147,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline (property raw-value \"WAIT [#A] Review patch :work:\"))\n",
-                range: 1148..1225,
+                range: TextRange {
+                    start: TextSize(
+                        1148,
+                    ),
+                    end: TextSize(
+                        1225,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "raw-body",
                 value: "(org-elements headline (property raw-value \"WAIT [#A] Review patch :work:\"))\n",
-                range: 1148..1225,
+                range: TextRange {
+                    start: TextSize(
+                        1148,
+                    ),
+                    end: TextSize(
+                        1225,
+                    ),
+                },
             },
         ],
     },
@@ -701,25 +1547,53 @@ expression: document.records()
             27,
             29,
         ],
-        syntax_kind: 80,
+        syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 1236..1505,
+        range: TextRange {
+            start: TextSize(
+                1236,
+            ),
+            end: TextSize(
+                1505,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 1236..1237,
+                range: TextRange {
+                    start: TextSize(
+                        1236,
+                    ),
+                    end: TextSize(
+                        1237,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Partial TODO keyword",
-                range: 1238..1258,
+                range: TextRange {
+                    start: TextSize(
+                        1238,
+                    ),
+                    end: TextSize(
+                        1258,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Partial TODO keyword",
-                range: 1238..1258,
+                range: TextRange {
+                    start: TextSize(
+                        1238,
+                    ),
+                    end: TextSize(
+                        1258,
+                    ),
+                },
             },
         ],
     },
@@ -734,7 +1608,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 1259..1312,
+        range: TextRange {
+            start: TextSize(
+                1259,
+            ),
+            end: TextSize(
+                1312,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -746,17 +1627,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 1272..1306,
+        range: TextRange {
+            start: TextSize(
+                1272,
+            ),
+            end: TextSize(
+                1306,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "QUERY_ID",
-                range: 1273..1281,
+                range: TextRange {
+                    start: TextSize(
+                        1273,
+                    ),
+                    end: TextSize(
+                        1281,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "customer.todo-contains",
-                range: 1283..1305,
+                range: TextRange {
+                    start: TextSize(
+                        1283,
+                    ),
+                    end: TextSize(
+                        1305,
+                    ),
+                },
             },
         ],
     },
@@ -769,32 +1671,110 @@ expression: document.records()
         syntax_kind: 10,
         category: "element",
         kind: "src-block",
-        range: 1313..1505,
+        range: TextRange {
+            start: TextSize(
+                1313,
+            ),
+            end: TextSize(
+                1505,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "header",
                 value: "  :org-elements-query\n",
-                range: 1324..1352,
+                range: TextRange {
+                    start: TextSize(
+                        1324,
+                    ),
+                    end: TextSize(
+                        1352,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "language",
                 value: "scheme",
-                range: 1325..1331,
+                range: TextRange {
+                    start: TextSize(
+                        1325,
+                    ),
+                    end: TextSize(
+                        1331,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "header-key",
                 value: "org-elements-query",
-                range: 1333..1351,
+                range: TextRange {
+                    start: TextSize(
+                        1333,
+                    ),
+                    end: TextSize(
+                        1351,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-key",
+                value: "org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        1333,
+                    ),
+                    end: TextSize(
+                        1351,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "argument-raw",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        1332,
+                    ),
+                    end: TextSize(
+                        1351,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "header-parameters",
+                value: ":org-elements-query",
+                range: TextRange {
+                    start: TextSize(
+                        1332,
+                    ),
+                    end: TextSize(
+                        1351,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "body",
                 value: "(org-elements headline\n              (all-of (property-contains todo-keyword \"WAI\")\n                      (property-contains title \"Review\")))\n",
-                range: 1352..1495,
+                range: TextRange {
+                    start: TextSize(
+                        1352,
+                    ),
+                    end: TextSize(
+                        1495,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "raw-body",
                 value: "(org-elements headline\n              (all-of (property-contains todo-keyword \"WAI\")\n                      (property-contains title \"Review\")))\n",
-                range: 1352..1495,
+                range: TextRange {
+                    start: TextSize(
+                        1352,
+                    ),
+                    end: TextSize(
+                        1495,
+                    ),
+                },
             },
         ],
     },

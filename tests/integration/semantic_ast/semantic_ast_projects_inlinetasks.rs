@@ -4,7 +4,6 @@ use orgize::{
     ast::{AstRef, ElementData, MarkupKind, ObjectData, TodoState},
 };
 
-#[test]
 fn semantic_ast_projects_closed_inlinetasks_with_body() {
     let doc = Org::parse(
         r#"Intro.
@@ -71,7 +70,6 @@ Body with [[https://example.com][link]].
     assert_eq!(counts, (1, 1));
 }
 
-#[test]
 fn semantic_ast_keeps_unclosed_inlinetask_from_consuming_following_paragraph() {
     let doc = Org::parse("*************** Note\nAfter text.\n").document();
 
@@ -90,7 +88,6 @@ fn semantic_ast_keeps_unclosed_inlinetask_from_consuming_following_paragraph() {
     ));
 }
 
-#[test]
 fn inlinetask_min_level_keeps_lower_star_headlines_in_the_outline() {
     let org = Org::parse("************** Outline\nBody.\n");
     let doc = org.document();
@@ -119,3 +116,18 @@ fn inlinetask_min_level_keeps_lower_star_headlines_in_the_outline() {
             if inlinetask.level == 4 && inlinetask.raw_title == "Inline"
     ));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_inlinetasks::semantic_ast_projects_closed_inlinetasks_with_body",
+        semantic_ast_projects_closed_inlinetasks_with_body,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_inlinetasks::semantic_ast_keeps_unclosed_inlinetask_from_consuming_following_paragraph",
+        semantic_ast_keeps_unclosed_inlinetask_from_consuming_following_paragraph,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_inlinetasks::inlinetask_min_level_keeps_lower_star_headlines_in_the_outline",
+        inlinetask_min_level_keeps_lower_star_headlines_in_the_outline,
+    ),
+];

@@ -1,46 +1,64 @@
 //! Org document facts projected from the Scheme-AOT Element graph.
 
+use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::path::Path;
 
-use gerbil_parser_rowan::GraphRecord;
-use rowan::TextRange;
+use gerbil_parser_runtime::GraphRecord;
+use gerbil_parser_runtime::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link, org_language_spec, parse_org_aot};
 
 use super::{
     line_index::LineIndex,
     model::{DocumentElement, document_structural_selector, selector_component},
+    query_match::{FactView, PreparedQuery},
 };
 
 struct IndexContext<'a> {
+    path_display: String,
     path: &'a Path,
     source: &'a str,
-    lines: LineIndex,
+    lines: OnceCell<LineIndex>,
     records: &'a [GraphRecord],
-    ordinals: Vec<usize>,
+    ordinals: OnceCell<Vec<usize>>,
+    selector_prefix: OnceCell<String>,
+    query: Option<&'a PreparedQuery>,
 }
 
 impl<'a> IndexContext<'a> {
-    fn new(path: &'a Path, source: &'a str, records: &'a [GraphRecord]) -> Self {
-        let mut sibling_counts = HashMap::new();
-        let ordinals = records
-            .iter()
-            .map(|record| {
-                let count = sibling_counts
-                    .entry((record.parent_id, record.syntax_kind))
-                    .or_insert(0usize);
-                *count += 1;
-                *count
-            })
-            .collect();
+    fn new(
+        path: &'a Path,
+        source: &'a str,
+        records: &'a [GraphRecord],
+        query: Option<&'a PreparedQuery>,
+    ) -> Self {
         Self {
+            path_display: path.display().to_string(),
             path,
             source,
-            lines: LineIndex::new(source),
             records,
-            ordinals,
+            query,
+            lines: OnceCell::new(),
+            ordinals: OnceCell::new(),
+            selector_prefix: OnceCell::new(),
         }
+    }
+
+    fn ordinals(&self) -> &[usize] {
+        self.ordinals.get_or_init(|| {
+            let mut sibling_counts = HashMap::new();
+            self.records
+                .iter()
+                .map(|record| {
+                    let count = sibling_counts
+                        .entry((record.parent_id, record.syntax_kind))
+                        .or_insert(0usize);
+                    *count += 1;
+                    *count
+                })
+                .collect()
+        })
     }
 
     fn fact(
@@ -51,7 +69,7 @@ impl<'a> IndexContext<'a> {
         range: TextRange,
         fields: Vec<(String, String)>,
         content: Option<String>,
-    ) -> DocumentElement {
+    ) -> Option<DocumentElement> {
         let start = usize::from(range.start());
         let end = usize::from(range.end());
         let raw = self.source.get(start..end).unwrap_or_default();
@@ -67,6 +85,19 @@ impl<'a> IndexContext<'a> {
                 text.clone()
             }
         });
+        if self.query.is_some_and(|query| {
+            !query.matches_view(FactView {
+                kind,
+                source_kind,
+                path: &self.path_display,
+                text: &text,
+                content: &content,
+                fields: &fields,
+            })
+        }) {
+            return None;
+        }
+        let ordinals = self.ordinals();
         let mut ancestry = Vec::new();
         let mut cursor = Some(record.id);
         while let Some(id) = cursor {
@@ -74,7 +105,7 @@ impl<'a> IndexContext<'a> {
             ancestry.push(format!(
                 "{}[{}]",
                 selector_component(ancestor.kind),
-                self.ordinals[id]
+                ordinals[id]
             ));
             cursor = ancestor.parent_id;
         }
@@ -93,26 +124,47 @@ impl<'a> IndexContext<'a> {
                 break;
             }
         }
-        DocumentElement {
+        let lines = self.lines.get_or_init(|| LineIndex::new(self.source));
+        let prefix = self
+            .selector_prefix
+            .get_or_init(|| document_structural_selector("org", self.path, &[]));
+        Some(DocumentElement {
             kind,
             source_kind,
-            path: self.path.display().to_string(),
-            structural_selector: document_structural_selector("org", self.path, &selector_parts),
-            line: self.lines.line_for(start),
-            end_line: self.lines.line_for(end.saturating_sub(1)),
+            path: self.path_display.clone(),
+            structural_selector: format!("{prefix}{}", selector_parts.join("/")),
+            line: lines.line_for(start),
+            end_line: lines.line_for(end.saturating_sub(1)),
             start_byte: start,
             end_byte: end,
             fields,
             text,
             content,
-        }
+        })
     }
 }
 
 pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement>, String> {
     let document = parse_org_aot(source).map_err(|error| format!("Org AOT parse: {error:?}"))?;
+    index_org_document(path, source, &document)
+}
+
+pub(super) fn index_org_document(
+    path: &Path,
+    source: &str,
+    document: &OrgAotDocument,
+) -> Result<Vec<DocumentElement>, String> {
+    index_org_document_with_query(path, source, document, None)
+}
+
+pub(super) fn index_org_document_with_query(
+    path: &Path,
+    source: &str,
+    document: &OrgAotDocument,
+    query: Option<&PreparedQuery>,
+) -> Result<Vec<DocumentElement>, String> {
     let records = document.records();
-    let context = IndexContext::new(path, source, records);
+    let context = IndexContext::new(path, source, records, query);
     let headline_ranges = document
         .syntax()
         .descendants()
@@ -146,7 +198,7 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                             property.field("value").unwrap_or_default().to_string(),
                         ),
                     ];
-                    facts.push(context.fact(
+                    facts.extend(context.fact(
                         "property",
                         "PropertyDrawer",
                         record,
@@ -161,7 +213,7 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                     .values("key")
                     .map(|key| (key.to_ascii_lowercase(), "true".to_string()))
                     .collect();
-                facts.push(context.fact(
+                facts.extend(context.fact(
                     "planning",
                     "SyntaxPlanning",
                     record,
@@ -180,7 +232,7 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                 let header = rows
                     .windows(3)
                     .any(|window| window == ["table-row", "table-rule-row", "table-row"]);
-                facts.push(context.fact(
+                facts.extend(context.fact(
                     "table",
                     "OrgTable",
                     record,
@@ -189,7 +241,7 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                     None,
                 ));
             }
-            "paragraph" => facts.push(context.fact(
+            "paragraph" => facts.extend(context.fact(
                 "paragraph",
                 "Paragraph",
                 record,
@@ -228,7 +280,7 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                         value.to_string(),
                     ));
                 }
-                facts.push(context.fact(
+                facts.extend(context.fact(
                     "block",
                     source_kind,
                     record,
@@ -249,7 +301,7 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                     .and_then(|item| item.field("bullet"))
                     .is_some_and(|bullet| bullet.starts_with(|ch: char| ch.is_ascii_digit()));
                 let descriptive = items.iter().any(|item| item.field("tag").is_some());
-                facts.push(context.fact(
+                facts.extend(context.fact(
                     "list",
                     "SyntaxList",
                     record,
@@ -294,7 +346,7 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                 if let Some(tag) = record.field("tag") {
                     fields.push(("tag".to_string(), tag.trim_end().to_string()));
                 }
-                facts.push(context.fact(
+                facts.extend(context.fact(
                     if checkbox.is_some() {
                         "checklistItem"
                     } else {
@@ -315,7 +367,7 @@ pub(super) fn index_org(path: &Path, source: &str) -> Result<Vec<DocumentElement
                     fields.push(("description".to_string(), description.to_string()));
                 }
                 let image = description.is_empty() && org_image_link(target);
-                facts.push(context.fact(
+                facts.extend(context.fact(
                     if image { "image" } else { "link" },
                     "SyntaxLink",
                     record,
@@ -353,7 +405,9 @@ fn push_headline(
                 .unwrap_or_default(),
         ),
     ];
-    if let Some(todo) = document.headline_todo_keyword(record.id) {
+    let todo = document.headline_todo_keyword(record.id);
+    let is_task = todo.is_some();
+    if let Some(todo) = todo {
         fields.push(("todo".to_string(), todo));
     }
     if let Some(todo_type) = document.headline_todo_type(record.id) {
@@ -362,9 +416,11 @@ fn push_headline(
             if todo_type == "done" { "Done" } else { "Todo" }.to_string(),
         ));
     }
-    facts.push(context.fact("heading", "Headline", record, range, fields.clone(), None));
-    if document.headline_todo_keyword(record.id).is_some() {
-        facts.push(context.fact("task", "Headline", record, range, fields, None));
+    if is_task {
+        facts.extend(context.fact("heading", "Headline", record, range, fields.clone(), None));
+        facts.extend(context.fact("task", "Headline", record, range, fields, None));
+    } else {
+        facts.extend(context.fact("heading", "Headline", record, range, fields, None));
     }
 }
 

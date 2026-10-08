@@ -2,31 +2,21 @@
 ;;; Domain-specific hygienic checks for Org Element catalog and graph queries.
 
 (import (only-in :std/test check)
-        (only-in :std/encoding/json JSONReadOptions string->json)
         (only-in :std/misc/ports read-all-as-string)
-        (only-in :gerbil-parser/src/compiler/rust-syntax
-                 rust-function-ir-json
-                 rust-function-form? rust-function-form-name
-                 rust-function-form-body rust-block-form-statements
-                 rust-block-form-result rust-let-form? rust-let-form-value
-                 rust-first-word-form? rust-if-form? rust-if-form-condition
-                 rust-if-form-alternate rust-any-form? rust-empty-form?)
         (only-in :std/list/list every)
-        (only-in "../languages/org/v1/modules/org-elements/config.ss"
+        (only-in "../languages/org/modules/org-elements/config.ss"
                  +org-element-kinds+ +org-greater-element-kinds+
                  +org-object-kinds+ +org-recursive-object-kinds+
                  +org-affiliated-keywords+ +org-object-restrictions+
                  +org-secondary-values+ org-object-allowed?
                  org-secondary-value?)
-        (only-in "../languages/org/v1/modules/org-elements/funs.ss" org-element-select org-element-property)
-        (only-in "../languages/org/v1/modules/org-elements/aot.ss" org-element-query-rust-source)
-        (only-in "../languages/org/v1/modules/org-elements/objects.ss"
+        (only-in "../languages/org/modules/org-elements/funs.ss" org-element-select org-element-property)
+        (only-in "../languages/org/modules/org-elements/aot.ss" org-element-query-rust-source)
+        (only-in "../languages/org/modules/org-elements/objects.ss"
                  org-named-element-query-id org-named-element-query-query))
 (export check-org-element-catalog check-org-element-selection
         check-org-named-query-selection
         check-org-headline-properties
-        check-org-headline-ir
-        check-org-headline-state-aot
         check-org-element-query-aot
         org-test-form-structured? org-test-source-structured?
         org-test-sources)
@@ -76,25 +66,7 @@
           (member kind +org-object-kinds+))
     #t #f))
 
-(def (json-tree-equivalent? left right)
-  (cond
-   ((and (hash-table? left) (hash-table? right))
-    (let ((keys (hash-keys left)) (other-keys (hash-keys right)))
-      (and (= (length keys) (length other-keys))
-           (let loop ((rest keys))
-             (or (null? rest)
-                 (and (member (car rest) other-keys)
-                      (json-tree-equivalent?
-                       (hash-get left (car rest))
-                       (hash-get right (car rest)))
-                      (loop (cdr rest))))))))
-   ((and (list? left) (list? right))
-    (and (= (length left) (length right))
-         (let loop ((values left) (expected right))
-           (or (null? values)
-               (and (json-tree-equivalent? (car values) (car expected))
-                    (loop (cdr values) (cdr expected)))))))
-   (else (equal? left right))))
+
 
 (defsyntax (check-org-element-catalog stx)
   (syntax-case stx ()
@@ -172,42 +144,3 @@
         (check (org-element-property context record "todo-type") => type)
         (check (org-element-property context record "priority") => priority)
         (check (org-element-property context record "tags") => tags))))))
-
-(defsyntax (check-org-headline-ir stx)
-  (syntax-case stx ()
-    ((_ function name fixture)
-     (syntax
-      (let* ((options (JSONReadOptions object-as-hash: #t))
-             (ir (string->json (rust-function-ir-json function) options))
-             (saved (call-with-input-file fixture
-                      (lambda (port)
-                        (string->json (read-all-as-string port) options)))))
-        (check (rust-function-form? function) => #t)
-        (check (rust-function-form-name function) => name)
-        (check (hash-get ir "schema")
-               => "gerbil-scheme-rust.rust-function-ir.v1")
-        (check (hash-get ir "name") => (symbol->string name))
-        (check (json-tree-equivalent? ir saved) => #t))))))
-
-(defsyntax (check-org-headline-state-aot stx)
-  (syntax-case stx ()
-    ((_ function)
-     (syntax
-      (let* ((value function)
-             (body (rust-function-form-body value))
-             (bindings (rust-block-form-statements body))
-             (branch (rust-block-form-result body))
-             (declared (rust-if-form-alternate branch)))
-        (check (rust-function-form? value) => #t)
-        (check (rust-function-form-name value)
-               => 'todo_state_from_directives)
-        (check (length bindings) => 1)
-        (check (rust-let-form? (car bindings)) => #t)
-        (check (rust-first-word-form?
-                (rust-let-form-value (car bindings))) => #t)
-        (check (rust-if-form? branch) => #t)
-        (check (rust-if-form? declared) => #t)
-        (check (rust-empty-form? (rust-if-form-condition declared)) => #t)
-        (check (rust-any-form?
-                (rust-if-form-condition
-                 (rust-if-form-alternate declared))) => #t))))))

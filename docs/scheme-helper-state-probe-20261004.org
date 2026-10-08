@@ -1,0 +1,74 @@
+#+title: Native helper-dense Scenario receipts — 2026-10-04
+
+* Exact ownership
+Orgize =codex/native-org-recovery= at
+=479b2763fa1924385a2df824d029e9ba35341bcd=; parser detached at
+=e7c6761dc79202abe50931bd78ee3f0930d61f8f=. Inherited dirty work is preserved.
+No production parser code changed in this follow-up. The helper candidate fold
+SHA256 remains =8f80a4a6373b393f75517645fae178f448187d00fe313a4f89c6ff3897d403d2=.
+The baseline is the preceding lazy-name-index module, NOT the qualified prefix
+primary. New owners are =t/benchmarks/org-helper-state.ss=,
+=org-helper-state/benchmark.ss= and =org-helper-state/compare.ss=, executed by
+the two maintained =scheme-helper-state-benchmark*= Justfile recipes.
+
+* Workload and semantic admission
+ASP's public =benchmark-run/result= owns all timing, GC, statistics, 20 samples
+and unchanged 100ms p95 admission. One sample is 10 independent folds over
+64 UTF-8 lines; each fold invokes two nested helpers per line (128 calls).
+Each helper uses the same admitted 35-slot declaration: 32 untouched unsigned
+defaults, an unsigned argument, a boolean and an empty frame stack. The inner
+helper changes its boolean and stack, testing persistent default isolation.
+The exact source, declarations, forms, helpers, events and contract live in
+native Scheme receipts. No external sampler, JSON statistics or JS timing exists.
+
+Before timing, the operation is checked against an independently constructed
+640-byte tape, not only another parser invocation. Returned benchmark output
+is checked against that tape after timing. This does not inspect every
+intermediate timed fold. Each fold starts a fresh request cache; ten folds do
+not share a prototype cache across requests. This is a synthetic helper-kernel
+Scenario, not Org syntax coverage, FFI/Tokio throughput, or 10000 documents.
+
+* Reversed-order results
+All four receipts are in =target/helper-state-probe-20261004=.
+All measured legs ran sequentially, without this task's compiler, tests or
+comparators overlapping them. Host load snapshots were 35.94/27.38/32.27 before
+the later legs and 65.29/38.98/36.20 after staging. These are not quiet-host data.
+
+| Round/order | Baseline p50 ms | Candidate p50 ms | Baseline p95 ms | Candidate p95 ms | Gates |
+|-------------+-----------------+------------------+-----------------+------------------+-------|
+| 1, baseline then candidate | 1.316 | 0.966 | 33.239 | 4.215 | pass/pass |
+| 2, candidate then baseline | 1.326 | 1.529 | 108.877 | 20.439 | fail/pass |
+
+Round two baseline exited 70 after preserving its failed receipt; its maximum
+sample was 125.059ms. The diagnostic comparator explicitly reports this failure,
+not a performance pass. Both pair comparisons pass exact source/declaration/
+helper/event/contract matching. A negative cross-schema comparison against an
+Org whole-fixture receipt correctly rejects =schema= with exit 70.
+
+The candidate p95 is lower in both rounds, but median improves once and worsens
+once. Minima are about 1.19ms baseline and 0.799ms candidate. This supports a
+bounded lower-work kernel hypothesis, not stable whole-parser acceleration.
+Zero selected memory deltas do not prove allocation-free execution.
+
+* Independent AOT closure preparation
+After all timing legs, =scheme-parser-stage-isolated= succeeds with
+=ORG-PARSER-STAGE OK= under =target/helper-state-probe-20261004/aot=.
+The compiler-owned =program.json= binds the candidate fold static SCM explicitly
+from =target/helper-state-sharing-candidate-20261004/lib/static=; it does not
+silently select the baseline fold. This prepares a separate full module closure
+for native linking, but is NOT Rust/Scheme FFI or consumer qualification.
+
+The normal manifest remains byte-identical to the qualified prefix program
+=sha256:a8fa5deb44c22a1dedb65b76ebac50cafd9b71115d3ddda5638672f0aaccbe4f=.
+No default selection, profile relaxation, concurrency reduction, kernel change,
+remote push or merge was performed. Orgize =git diff --check= passes.
+
+* Next acceptance boundary
+Do not promote this synthetic probe as a production improvement. The next gate
+is native linking and ordinary consumer validation of this separate manifest
+under both =runtime-rust= and =runtime-scheme=, followed by the maintained Tokio
+1000/10000-document admission and semantic checks. Native scale lanes must
+retain 64 callers and declared independent execution domains. Single-VM SMP
+and a general Scheme green-thread scheduler are separate capabilities; this
+module cache proves neither. Strict Query and Python qualification remain open
+for this candidate.

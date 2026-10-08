@@ -204,121 +204,18 @@ fn source_block_noweb_ref_names(record: &SourceBlockRecord) -> Vec<&str> {
 }
 
 fn noweb_references(value: &str) -> Vec<String> {
-    let mut references = Vec::new();
-    let mut rest = value;
-    while let Some(start) = rest.find("<<") {
-        rest = &rest[start + 2..];
-        let Some(end) = rest.find(">>") else {
-            break;
-        };
-        let raw = rest[..end].trim();
-        if let Some(reference) = noweb_reference_name(raw) {
-            references.push(reference.to_string());
-        }
-        rest = &rest[end + 2..];
-    }
-    references
+    super::org_native_values::rows("noweb-references", &[value])
+        .pop()
+        .expect("native noweb row")
 }
-
-fn noweb_reference_name(raw: &str) -> Option<&str> {
-    let target = raw
-        .split_once('(')
-        .map(|(name, _)| name)
-        .unwrap_or(raw)
-        .trim();
-    (!target.is_empty() && !target.contains(char::is_whitespace)).then_some(target)
-}
-
 fn header_var_reference_target(assignment: &str, names: &BTreeSet<String>) -> Option<String> {
-    let trimmed = assignment.trim();
-    if trimmed.is_empty() || is_literal_header_var_assignment(trimmed) {
-        return None;
+    let row = super::org_native_values::optional("var-target", assignment)?;
+    let [target, policy]: [String; 2] = row.try_into().expect("native reference arity");
+    match policy.as_str() {
+        "call" => Some(target),
+        "named" => names
+            .contains(&super::org_native_values::scalar("ascii-lower", &[&target]))
+            .then_some(target),
+        _ => panic!("native reference policy"),
     }
-
-    if let Some(target) = header_var_call_target(trimmed) {
-        return Some(target.to_string());
-    }
-
-    let target = trimmed
-        .split_once('[')
-        .map(|(name, _)| name)
-        .unwrap_or(trimmed)
-        .trim();
-    if target.is_empty() || target.contains(char::is_whitespace) || target.contains(':') {
-        return None;
-    }
-
-    names
-        .contains(&target.to_ascii_lowercase())
-        .then(|| target.to_string())
-}
-
-fn header_var_call_target(assignment: &str) -> Option<&str> {
-    let open = assignment.find('(')?;
-    if !assignment.ends_with(')') {
-        return None;
-    }
-    let target = assignment[..open]
-        .split_once('[')
-        .map(|(name, _)| name)
-        .unwrap_or(&assignment[..open])
-        .trim();
-    (!target.is_empty()
-        && !target.contains(char::is_whitespace)
-        && !target.contains(':')
-        && balanced_header_var_call(assignment))
-    .then_some(target)
-}
-
-fn balanced_header_var_call(assignment: &str) -> bool {
-    let mut depth = 0usize;
-    let mut bracket_depth = 0usize;
-    let mut quote = None;
-    let mut escaped = false;
-
-    for ch in assignment.chars() {
-        if escaped {
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if quote == Some(ch) {
-            quote = None;
-        } else if quote.is_none() && matches!(ch, '"' | '\'') {
-            quote = Some(ch);
-        } else if quote.is_none() {
-            match ch {
-                '(' => depth += 1,
-                ')' => {
-                    let Some(next_depth) = depth.checked_sub(1) else {
-                        return false;
-                    };
-                    depth = next_depth;
-                }
-                '[' => bracket_depth += 1,
-                ']' => {
-                    let Some(next_depth) = bracket_depth.checked_sub(1) else {
-                        return false;
-                    };
-                    bracket_depth = next_depth;
-                }
-                _ => {}
-            }
-        }
-    }
-
-    depth == 0 && bracket_depth == 0 && quote.is_none() && !escaped
-}
-
-fn is_literal_header_var_assignment(value: &str) -> bool {
-    value.starts_with('"')
-        || value.starts_with('\'')
-        || value.starts_with('[')
-        || value.starts_with('(')
-        || value.starts_with('{')
-        || value.starts_with('*')
-        || value.eq_ignore_ascii_case("nil")
-        || value.eq_ignore_ascii_case("t")
-        || value.eq_ignore_ascii_case("true")
-        || value.eq_ignore_ascii_case("false")
-        || value.parse::<f64>().is_ok()
 }

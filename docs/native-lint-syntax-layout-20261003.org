@@ -1,0 +1,81 @@
+#+TITLE: Native Query/Contract syntax admission and Rust lint ownership
+
+* Ownership
+
+The Rust lint implementation now lives entirely under =src/lint/=:
+
+- =mod.rs=: declarations and unchanged public reexports only.
+- =pipeline.rs=: ordered entrypoints, execution policy and finding collection.
+- =model.rs= and =render.rs=: result model, location projection and presentation.
+- =rules/=: document metadata, Query/Contract syntax and the existing domain rules.
+- =runtime_validation.rs=: bounded host execution and evidence, separate from syntax.
+
+There is no root-level =lint*.rs= implementation or compatibility forwarding module.
+CLI imports, the ASP file-link verification hint and Justfile formatting ownership
+follow the new paths. Existing public =orgize::lint= entrypoints remain unchanged.
+
+* Native syntax authority
+
+Query, Contract and selector expressions now use the canonical Scheme
+=parse-org-contract-expression= through the existing native parse transport.
+The generated Rust LanguageSpec remains a Rowan kind/catalog projection, not
+an executing lexer/LR parser. The independent Rust selector tokenizer was removed.
+
+Both runtime features use the same private =ONR1= request and =OEV1= event tape.
+Operation and grammar identity are checked; old nine-byte requests are rejected.
+No process parser, extra runtime owner, Gambit patch or startup fallback was added.
+
+The syntax stage reads parser-owned raw SourceBlockRecord values before registry
+evaluation. =ORG046= is an Error for invalid or unsupported Query, selector,
+expectation or Contract block syntax, including unregistered blocks.
+It reuses existing semantic lowering owners rather than declaring another grammar.
+Diagnostics currently point to the source block, not an exact expression token.
+
+Fixed-arity forms reject ignored extra arguments. Unknown category no longer
+silently becomes an unrestricted query. Contract compilation rejects unconsumed
+forms and duplicate binding declarations. An explicitly invalid expectation
+cannot fall back to =exists=.
+
+* Test migration and receipt boundary
+
+The two generated-CST tests moved to native-CST cases behind explicit startup;
+their comments/UTF-8/adjacent-string and malformed-input assertions remain.
+Three existing expression query tests also moved into that same native fixture.
+Six syntax scenarios were added: the fixture now contains 53 concurrent cases,
+up from 42. Pure guide assertions remain ordinary tests.
+
+The removed key-value query-format test now asserts syntax lint rejection as
+well as fail-closed extraction. Its coverage-ledger entry was explicitly renamed;
+the 454-case default integration catalog was not reduced.
+Ledger SHA256: =753dd354bf4fd8bd3b4cbfec4c893e9871e1a029ce2be94883ba143da4680064=.
+
+Scheme event-tape suite: MODULE-OK, HARNESS-OK, final OK, exit 0.
+Native program: =sha256:98b56d04adf9ac6b67666ce32d67dbfd6e8cace3640c2f9931785f319ae94d24=,
+269 linked modules (previous event-only candidate had 213).
+
+Before the directory move, both release feature binaries passed all 53 native
+cases and 21 pure/policy tests; one existing performance test remained ignored.
+After the directory move:
+
+- Both features: =just native-runtime-check-owner= passed all tests, benches and examples.
+- Both freshly linked release binaries: 53 concurrent native cases passed.
+- Both features: 21 pure/policy tests passed, one original ignored case retained.
+- Both freshly linked native fixtures passed with =/private/tmp= as cwd.
+  This is cwd-independence evidence, not an installed-wheel or all-filesystem-access proof.
+- Final =git diff --check= passed; no root-level =src/lint*.rs= files remain.
+
+Preserved executable SHA256:
+
+- =native-lint-layout-rust-20261003=:
+  =867b0544ac934d54a421f0e769c18a05381b77faa435a1ea28987568a55e223b=
+- =native-lint-layout-scheme-20261003=:
+  =b064eca30553ad10d2b7456a38e3b7da8fcd5ec64cb867d3e49bf0f5d65b90c2=
+
+* Remaining closure gates
+
+This syntax/layout slice is not a fresh full-consumer, wheel or performance receipt.
+The previous full consumer runs failed the unchanged 25 ms query gate in both
+features. The new native closure requires fresh 1,000/10,000-document, 1/8-caller
+Tokio comparisons, lifecycle/SDK validation and installed Python wheel checks.
+The larger native closure and startup footprint must be measured, not assumed
+to be faster. Keep release opt-level 3/Thin LTO and workspace dev opt-level 2.

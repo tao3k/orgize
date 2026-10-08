@@ -2,7 +2,21 @@
 
 use crate::org_aot::parse_org_aot;
 
-#[test]
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "adjacent_name_keyword_attaches_to_source_block",
+        adjacent_name_keyword_attaches_to_source_block,
+    ),
+    (
+        "blank_line_stops_affiliated_keyword_association",
+        blank_line_stops_affiliated_keyword_association,
+    ),
+    (
+        "adjacent_affiliated_keywords_attach_as_one_group",
+        adjacent_affiliated_keywords_attach_as_one_group,
+    ),
+];
+
 fn adjacent_name_keyword_attaches_to_source_block() {
     let document = parse_org_aot(
         "* Contract\n#+NAME: task.rule\n#+BEGIN_SRC org-contract\n(assert exists (headline))\n#+END_SRC\n",
@@ -21,7 +35,6 @@ fn adjacent_name_keyword_attaches_to_source_block() {
     assert_eq!(document.affiliated_keyword_ids(block.id), &[keyword.id]);
 }
 
-#[test]
 fn blank_line_stops_affiliated_keyword_association() {
     let document = parse_org_aot(
         "* Contract\n#+NAME: task.rule\n\n#+BEGIN_SRC org-contract\n(assert exists (headline))\n#+END_SRC\n",
@@ -35,7 +48,6 @@ fn blank_line_stops_affiliated_keyword_association() {
     assert!(document.affiliated_keyword_ids(block.id).is_empty());
 }
 
-#[test]
 fn adjacent_affiliated_keywords_attach_as_one_group() {
     let document = parse_org_aot(
         "#+NAME: task.rule\n#+ATTR_HTML: :data-poo-flow task\n#+BEGIN_SRC scheme\n(display 1)\n#+END_SRC\n",

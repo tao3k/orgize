@@ -5,7 +5,7 @@
 Research note against Orgize PR #21 source head
 =16d2a8c3ac168d73b890262b29b756d4b4ec3361=, inspected on
 2026-10-05. The related module ownership proposal is
-[[file:../../languages/org/v1/modules/README.org][Org v1 module capability map]]. This note records observed interfaces,
+[[file:../../languages/org/modules/README.org][Org module capability map]]. This note records observed interfaces,
 gaps, and falsifiable experiments. It does not claim that a review scheduler,
 cross-document note graph, or knowledge-consolidation engine is implemented.
 
@@ -35,9 +35,9 @@ capabilities without forcing all of them through =AgentMemorySnapshot=.
 
 ** Exact current code boundary
 
-- [[file:../../languages/org/v1/modules/org-elements/syntax.ss][Scheme Element syntax]] exposes =property=, =property-contains=,
+- [[file:../../languages/org/modules/org-elements/syntax.ss][Scheme Element syntax]] exposes =property=, =property-contains=,
   =all-of=, =any-of=, and one =at=/=child-of=/=descendant-of= relation. The
-  [[file:../../languages/org/v1/modules/org-elements/funs.ss][selector]] operates on a supplied graph. Its current DSL has no explicit
+  [[file:../../languages/org/modules/org-elements/funs.ss][selector]] operates on a supplied graph. Its current DSL has no explicit
   date comparison, sort, aggregation, cross-document join, or negative clause.
 - [[file:../../src/semantic_ast/elements_bridge_query.rs][Rust host index query]] has a separate richer =All=/=Any=/=Not=
   predicate AST and limit. That does not establish Scheme DSL parity. The
@@ -47,7 +47,7 @@ capabilities without forcing all of them through =AgentMemorySnapshot=.
 - [[file:../../src/semantic_ast/habits.rs][Habit projection]] reports =Complete= when a scheduled timestamp, a
   repeater and =LAST_REPEAT= are present. It does not fold all logged DONE
   events into a reviewed-history result. Scheme
-  [[file:../../languages/org/v1/modules/org-elements/logbook-properties.ss][LOGBOOK recognition]] is an input for that fold, not the fold itself.
+  [[file:../../languages/org/modules/org-elements/logbook-properties.ss][LOGBOOK recognition]] is an input for that fold, not the fold itself.
 - [[file:../../src/semantic_ast/agenda_view.rs][Agenda block view]] invokes an independent agenda query per section. It
   may repeat a row across sections; this is not a partition of one base
   selection as in =org-super-agenda=.
@@ -109,7 +109,7 @@ That is a precedent for rechecking source, not a query receipt yet.
 
 Two later interfaces lose this binding: [[file:../../src/semantic_ast/elements_bridge.rs][=Document::org_elements_graph=]] returns a graph
 without the source digest, while the Scheme
-[[file:../../languages/org/v1/modules/org-elements/objects.ss][=make-org-element-graph-view=]] accepts caller-supplied records and accessors.
+[[file:../../languages/org/modules/org-elements/objects.ss][=make-org-element-graph-view=]] accepts caller-supplied records and accessors.
 Its POO shape check is structural admission, not proof that the view came from
 specific bytes. Conversely, [[file:../../src/org_element_query/execute.rs][=OrgAotDocument::query_named=]] executes a maintained
 Scheme-AOT query pack on the same parsed document, checks the pack's graph
@@ -158,7 +158,7 @@ untrusted for source admission.
 
 ** Why the current Scheme graph path cannot inherit that binding
 
-The [[file:../../languages/org/v1/rowan-event-parser.ss][Scheme event parser]] invokes =run-org-event-strategy=, whose Gerbil Parser
+The [[file:../../languages/org/rowan-event-runtime.ss][Scheme event parser]] invokes =run-org-event-strategy=, whose Gerbil Parser
 =run-event-fold= returns an event list from the source. The maintained Rust
 AOT path applies those generated events to a lossless Rowan tree, then calls
 =project_syntax_graph= to create indexed Element records. The current Scheme

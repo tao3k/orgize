@@ -73,70 +73,11 @@ pub(super) fn clock_table_property_values(
 }
 
 fn parse_clock_table_property_names(raw: &str) -> Option<Vec<String>> {
-    let mut value = raw.trim();
-    if value.eq_ignore_ascii_case("nil") {
-        return Some(Vec::new());
-    }
-    if let Some(rest) = value.strip_prefix('\'') {
-        value = rest.trim_start();
-    }
-    let inner = value.strip_prefix('(')?.strip_suffix(')')?.trim();
-    clock_table_property_name_tokens(inner)
+    super::org_native_values::optional("clock-property-names", raw)
 }
-
-fn clock_table_property_name_tokens(value: &str) -> Option<Vec<String>> {
-    let mut tokens = Vec::new();
-    let mut token = String::new();
-    let mut quote = None;
-    let mut escaped = false;
-
-    for ch in value.chars() {
-        if escaped {
-            token.push(ch);
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if quote == Some(ch) {
-            quote = None;
-        } else if quote.is_none() && matches!(ch, '"' | '\'') {
-            quote = Some(ch);
-        } else if quote.is_none() && ch.is_whitespace() {
-            if !token.is_empty() {
-                tokens.push(std::mem::take(&mut token));
-            }
-        } else {
-            token.push(ch);
-        }
-    }
-
-    if escaped {
-        token.push('\\');
-    }
-    if quote.is_some() {
-        return None;
-    }
-    if !token.is_empty() {
-        tokens.push(token);
-    }
-    tokens
-        .iter()
-        .all(|token| !token.contains('(') && !token.contains(')'))
-        .then_some(tokens)
-}
-
 fn clock_table_truthy_parameter(parameters: &[ClockTableParameter], key: &str) -> bool {
-    parameter_value(parameters, key).is_some_and(|raw| {
-        let value = normalized_parameter_value(&raw).to_ascii_lowercase();
-        !matches!(value.as_str(), "" | "nil" | "false" | "0")
-    })
-}
-
-fn normalized_parameter_value(raw: &str) -> String {
-    raw.trim()
-        .trim_matches('"')
-        .trim_matches('\'')
-        .trim()
-        .to_string()
+    parameter_value(parameters, key)
+        .is_some_and(|raw| super::org_native_values::scalar("parameter-truthy", &[&raw]) == "true")
 }
 
 fn parameter_value(parameters: &[ClockTableParameter], key: &str) -> Option<String> {

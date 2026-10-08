@@ -4,7 +4,7 @@ use super::core_contract::{
     compile_contract_sequence, compile_pair_document_equality, compile_pair_node_equality,
     compile_query_expression, compile_workspace_reference,
 };
-use super::core_parser::{lower_root, parse_query_expression_syntax};
+use super::core_parser::parse_query_expression_values;
 pub use super::core_types::OrgElementsQueryExpressionError;
 pub(super) use super::core_types::{FieldKind, QueryExpr, list_head};
 use crate::ast::{
@@ -25,11 +25,50 @@ pub fn org_elements_index_query_from_expr_str(
     })
 }
 
-/// Parses one expression block as a query-only Org elements IR.
-pub(in crate::ast) fn parse_org_elements_query_expression_block(
+pub(in crate::ast) fn selector_plist_properties(
     value: &str,
-) -> Option<OrgContractQuery> {
-    parse_expressions(value).and_then(|expressions| match expressions.as_slice() {
+) -> Result<Vec<(String, String)>, crate::ast::OrgElementSelectorParseError> {
+    use crate::ast::OrgElementSelectorParseError::InvalidShape;
+    let expressions = parse_expressions(value).ok_or(InvalidShape)?;
+    selector_properties_from_values(&expressions)
+}
+
+pub(in crate::ast) fn selector_properties_from_values(
+    expressions: &[QueryExpr],
+) -> Result<Vec<(String, String)>, crate::ast::OrgElementSelectorParseError> {
+    use crate::ast::OrgElementSelectorParseError::{InvalidShape, OddPropertyList};
+    let [QueryExpr::List(items)] = expressions else {
+        return Err(InvalidShape);
+    };
+    let [QueryExpr::Atom(head), QueryExpr::List(properties)] = items.as_slice() else {
+        return Err(InvalidShape);
+    };
+    if head != ":org-element" {
+        return Err(InvalidShape);
+    }
+    if properties.len() % 2 != 0 {
+        return Err(OddPropertyList);
+    }
+    properties
+        .chunks(2)
+        .map(|pair| {
+            let key = pair[0].as_atom().ok_or(InvalidShape)?.to_string();
+            let value = pair[1].as_text().ok_or(InvalidShape)?;
+            Ok((key, value))
+        })
+        .collect()
+}
+
+pub(in crate::ast) fn query_values_are_admitted(expressions: &[QueryExpr]) -> bool {
+    super::index::compile_index_query_expressions(expressions).is_some()
+        || (!expressions.is_empty()
+            && expressions
+                .iter()
+                .all(|expression| compile_query_expression(expression).is_some()))
+}
+
+pub(in crate::ast) fn compile_query_values(expressions: &[QueryExpr]) -> Option<OrgContractQuery> {
+    match expressions {
         [expression] => compile_query_expression(expression),
         [] => None,
         expressions => {
@@ -39,22 +78,34 @@ pub(in crate::ast) fn parse_org_elements_query_expression_block(
             }
             Some(query)
         }
-    })
+    }
 }
 
-/// Parses one expression block as a contract assertion.
-pub(in crate::ast) fn parse_org_contract_expression_block(
-    value: &str,
+pub(in crate::ast) fn contract_values_are_admitted(
+    normalized: Option<&[QueryExpr]>,
+    raw: Option<&[QueryExpr]>,
+) -> bool {
+    if normalized.and_then(compile_contract_sequence).is_some() {
+        return true;
+    }
+    match raw {
+        Some([expression]) => {
+            compile_pair_node_equality(expression).is_some()
+                || compile_pair_document_equality(expression).is_some()
+                || compile_workspace_reference(expression).is_some()
+        }
+        _ => false,
+    }
+}
+
+pub(in crate::ast) fn compile_contract_values(
+    expressions: &[QueryExpr],
 ) -> Option<(
     Vec<OrgContractBinding>,
     OrgContractQuery,
     OrgContractExpectation,
 )> {
-    let expressions = parse_expressions(value)?;
-    match expressions.as_slice() {
-        [expression] => compile_contract_expression(expression),
-        _ => compile_contract_sequence(&expressions),
-    }
+    compile_contract_sequence(expressions)
 }
 
 pub(crate) fn parse_org_contract_pair_node_equality_block(
@@ -135,7 +186,6 @@ pub(in crate::ast) fn org_elements_query_summary_value(
 }
 
 fn parse_expressions(value: &str) -> Option<Vec<QueryExpr>> {
-    let syntax = parse_query_expression_syntax(value)?;
-    lower_root(&syntax)
+    parse_query_expression_values(value)
 }
-use super::core_contract::{compile_contract_expression, merge_query};
+use super::core_contract::merge_query;

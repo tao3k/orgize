@@ -1,0 +1,150 @@
+#+title: Scheme fold list-allocation optimization — 2026-10-04
+
+* Scope and evidence boundary
+The Scheme-owned fold is optimized directly; Rust continues to project its native
+event tape. Neither runtime ownership feature, concurrency, Gambit kernel, nor
+workspace dev/release profiles was changed. No remote mutation was performed.
+
+Three incremental experiments were isolated from the frozen compiled baseline
+=target/scheme-receipt-libs/inner-state-baseline-20261004=:
+1. Complete the line walk with the closing-event tail, eliminating full-list EOF copies.
+2. Cache only join-once immutable IR-shape admission, request-local and capped at 128 entries.
+   Runtime state and lexical-index shadowing checks remain live even on a cache hit.
+3. Share the final statement's forward event tail and reverse only its preceding prefix.
+
+The first two alone do not establish a consistent latency gain. The final combined
+candidate has deterministic allocation reductions in all 120 candidate samples:
+| Fixture | Baseline bytes/parse | Candidate bytes/parse | Reduction |
+| doc.org | 1917936 | 1347536 | 29.74% |
+| plain-links.org | 2260128 | 1779920 | 21.25% |
+| quote-heavy.org | 4927392 | 3736352 | 24.17% |
+
+* Matched Scheme microbenchmark
+Each experiment ran three fixtures, 20 GC-fenced measured samples each,
+two rounds with reversed baseline/candidate order, two untimed warmups,
+source and full-event SHA receipts, and exact event equality plus lossless
+source partition checks. 240 samples per experiment, 720 samples total.
+Historical external JSON receipts were removed at the user's request. The
+historical numbers below are not current ASP qualification evidence; rerun using
+=t/benchmarks/org-event-fold/benchmark.ss= and the public ASP Benchmark API.
+
+Final candidate median microseconds (baseline -> candidate):
+| Fixture | Round 1 | Round 2 |
+| doc.org | 1897 -> 1866.5 | 1865 -> 1815 |
+| plain-links.org | 2365.5 -> 2264 | 2388 -> 2294 |
+| quote-heavy.org | 5250.5 -> 4944 | 5963 -> 4950.5 |
+
+Do not turn these numbers into a public AOT throughput claim. Round 2 quote
+baseline has a 40005us p95 outlier; candidate doc p95 is above baseline in both
+rounds. Allocation is the robust result; tail latency remains noisy.
+
+* Source and compiled module identity
+Parser checkout: detached =7c1533356585154c8b5d340f64ffefb289d18907=, local source edits.
+Orgize checkout: =codex/native-org-recovery= at =479b2763fa1924385a2df824d029e9ba35341bcd=,
+inherited dirty migration preserved.
+Source =event-source-lines.ss=: =b1a6f165357c27b664f1aa24ecc9dca1b4df982bda9b5ad9dc3885ddc615da7f=.
+Source =event-fold-runtime.ss=: =513cf279f3c6f2ca7a42197350f86600b714f785b4d6377d9c20ae332657e050=.
+Static fold SCM: =5c5de382d589984547e1fd5ea3a3cecb6aa9d40d93d6b42cfeed214683b94b80=.
+Static source-lines SCM: =0f9629b3d7f18f33e385f5171d8d0df048c063b5e83ae8f57780ea83dd9eedfa=.
+Native staging resolves these exact candidate modules; 273 module closure.
+
+Highest loadable generations preserved for the final microbenchmark comparison
+(relative to =target/scheme-receipt-libs=; separate from static AOT SCM identity):
+#+begin_example
++429951734def63e7fbe3caf028f1abe72f9f3c79199247473408e73ffc404088  inner-state-baseline-20261004/gerbil-parser/src/compiler/event-fold-runtime.o3
+a34886184547ee9daca2153e850b7f5cf0977cf979e94faaa5e86a8bf788d6fc  inner-state-baseline-20261004/gerbil-parser/src/compiler/event-fold-runtime~0.o3
+f97a190811499dfec89f40825a3e73aaaf22cdd28cdb8ee18e2485ccb25b83e2  inner-state-baseline-20261004/gerbil-parser/src/compiler/event-source-lines.o1
+9263aaa1b62c971b6473fac429b892119deefb7969ad74b004f87013e57c5bb7  inner-state-baseline-20261004/gerbil-parser/src/compiler/event-source-lines~0.o1
+429951734def63e7fbe3caf028f1abe72f9f3c79199247473408e73ffc404088  fold-tail-share-20261004/gerbil-parser/src/compiler/event-fold-runtime.o3
+1e6349b4e27566153c8c38f2a1c44f7bc6c5c4490cff11fa1f07e102f3a0f484  fold-tail-share-20261004/gerbil-parser/src/compiler/event-fold-runtime~0.o3
+b27e3137433c9f4ceea23258775ab280b169940c1e14aec660717db392d32b24  fold-tail-share-20261004/gerbil-parser/src/compiler/event-source-lines.o3
+375a24d3a3cbd52e0617d11219a1bcd0112fc8b7ee4a70351427ac47a693f37a  fold-tail-share-20261004/gerbil-parser/src/compiler/event-source-lines~0.o3
+#+end_example
+
+* Semantic qualification
+Private state/source/shape/tail tests, full parser event-fold suite and Org event
+suite pass with MODULE-OK, HARNESS-OK and final OK, no failure markers.
+Added coverage: empty source; unterminated Unicode line; LF, CR and CRLF;
+completion once after final visitor; root/tail order; final state visibility;
+live scope collisions on shape-cache hits; cache capacity and invalid shape.
+
+* Native qualification
+Both native runtime features link program
+=sha256:fa74d75cb4972545983a07615b14a918447957b970c810edf0089344c2177fa2=.
+Adapter =23ca0cbb05270ec466134a927fbb70e4e097118654d509aaa43f7b028cfdf7af=;
+benchmark =06221f09987a99b6005daa29827bdbc5be6a7a9dd1e831dedc63e73a2f79f45a=.
+The adapter differs from the frozen transport baseline by its previously
+documented collector-comment correction; do not treat these cross-program runs
+as an exact-source algorithm-only throughput proof.
+
+Both features pass 54 concurrent native cases. Rust passes 26 additional
+policy/pure cases, Scheme 25, with the one existing ignored gate preserved.
+Both pass the complete 454-consumer/12-caller catalog (Rust 17.44s, Scheme 16.06s),
+including the unchanged strict query threshold. Three existing ignored scenarios
+remain ignored. Rust's initial complete batch finished all 454 with one failure:
+=eval_cli::runtime_validation_evidence_records_timeout_and_reaping= could not
+read =.typst-child.pid= at =tests/integration/eval_cli.rs:712= (47.19s batch).
+The unchanged case passes in isolation (5.10s), then the unchanged complete
+catalog passes. Root cause of this intermittent external-child fixture failure
+is not established; the failed batch must not be hidden by the successful retry.
+
+Without runtime-profile, tests/benches/examples cargo-check passes for both
+runtime features (dev opt2 with debug information), Rust 5.96s and Scheme 4.36s.
+
+The =native-runtime-fold-{rust,scheme}-performance-20261004.json= receipts each
+contain four batches: 1000/10000 distinct documents, 64 callers, eight independent
+native domains, two repetitions. Qualification receipts each contain two batches
+at the same scale. Main candidate completions total 66000; each batch is distinct,
+not 66000 globally unique sources. Matched-feature program/adapter/benchmark/
+corpus comparisons, completed counts, domain/caller activity, worker success and
+positive stage timings pass. Qualification semantic hashes match the earlier
+transport program's qualification hashes despite the intentional program change.
+
+The =native-runtime-fold-{rust,scheme}-old-control-20261004.json= receipts add
+22000 completions from unchanged transport-baseline executables. Each control
+passes identity comparison against its own historical receipt.
+
+Observed 10000-document performance (not a stable ranking or SLO):
+| Runtime | docs/s r1 / r2 | E2E p95 ms r1 / r2 | Owner thread CPU mean ms r1 / r2 |
+| Rust | 1094.32 / 1055.63 | 119.858 / 106.119 | 5.087 / 5.156 |
+| Scheme | 690.08 / 861.33 | 188.644 / 174.923 | 5.288 / 5.155 |
+The unchanged old controls yield 998.75 docs/s (Rust), 464.15 (Scheme); earlier
+identical Scheme executable runs exceeded 1300 docs/s. Qualification-mode rankings
+reverse this performance-mode ranking. Wall/queue variability is material and
+its OS/external cause is not measured. The deterministic allocation reduction is
+the accepted optimization result, not a claimed universal runtime winner.
+
+Frozen executables in =target/runtime-receipt-binaries= (SHA256):
+| fold-rust-unit-20261004 | d8b0c06bd0c70801f3795e324ddd49e589a51d995d0ccaaf8a4ef95685663da3 |
+| fold-rust-consumer-20261004 | 8d2b8f8287a9d89bd7c76b5cce8c4e11fc10ed2e0b722d2571a395c7426c8dc6 |
+| fold-rust-corpus-20261004 | aba28110af3982f7684b39a66ad79ff1daacf94af307c362ed34e030d6a09b86 |
+| fold-scheme-unit-20261004 | e258a742a5b84cf54cd53acb9c5deb4681415992118696612c1e7153aa8a43fc |
+| fold-scheme-consumer-20261004 | 70fdd9a10d363d2013c31aa9f05a5eb453e24ad499c56f11146cfdd0ce23ff52 |
+| fold-scheme-corpus-20261004 | b6afb1ea322c86654979c458091dff69fd93508883a70e9d1b41162dfe1edcc0 |
+
+The candidate compiled library is frozen at
+=target/scheme-receipt-libs/fold-tail-share-20261004=. Optimizations also compile
+into the parser checkout's ordinary =.gerbil/lib= and its 38 fold plus eight
+private regression cases pass. Its fold SCM differs from the qualified candidate
+SCM only in Gerbil's generated module timestamp, verified by direct diff; its
+hash therefore intentionally differs. Native receipts above still use the exact
+frozen candidate module content, not this later timestamp regeneration.
+
+* Python qualification and remaining boundary
+Local maturin abi3-Python>=3.11 extensions use the same native program and normal,
+non-profiled runtime route. Scheme's installed CPython3.13 extension passes all
+16 tests with exact program and backend identity admission (6.35s).
+Rust's installed extension also passes all 16 tests with the same exact native
+program identity and runtime-rust admission (1.79s); it is restored as the local
+default. The first Rust develop attempt reached its 240s build supervision limit
+and was terminated (124), with no successful installation or compiler error
+receipt. A bounded verbose retry preserves dev opt2/debug/assertions, completes
+the build in 25.52s and installs successfully; the source of the earlier build
+delay is not established. Justfile now accepts optional build verbosity for this
+diagnostic purpose, without altering the build profile or a performance gate.
+Frozen Python extensions:
+| fold-python-rust-20261004.so | c5994f6531f4d256fa247043dd37702fdef3f398462873e02bfc8a9609afda00 |
+| fold-python-scheme-20261004.so | 1def13321941519ee73c777e83823fa7db5a1b8858337e6ea837144a5fb0f1b2 |
+No release, remote CI, or repaired shipping-wheel closure is claimed. The typed
+fold's general IR interpreter remains: removing avoidable list allocation does
+not yet specialize admitted IR branches into direct parser code.

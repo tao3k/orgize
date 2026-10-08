@@ -56,14 +56,6 @@ impl<'a> TagMatcher<'a> {
     }
 }
 
-fn tag_value_candidates(value: &str) -> Vec<&str> {
-    let trimmed = value.trim();
-    if trimmed.starts_with(':') && trimmed.ends_with(':') {
-        trimmed
-            .split(':')
-            .filter(|candidate| !candidate.is_empty())
-            .collect()
-    } else {
-        vec![trimmed]
-    }
+fn tag_value_candidates(value: &str) -> Vec<String> {
+    super::org_native_values::optional("tag-values", value).expect("native tag values")
 }

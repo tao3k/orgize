@@ -1,9 +1,9 @@
 ;;; -*- Gerbil -*-
 ;;; @generated from the Org Element CST; do not edit.
-(import (only-in "../../../../languages/org/v1/modules/org-contract/interface.ss"
+(import (only-in "../../../../languages/org/modules/org-contract/interface.ss"
                  org-contract-block assert-org-element
                  make-org-contract-definition)
-        (only-in "../../../../languages/org/v1/modules/org-elements/interface.ss"
+        (only-in "../../../../languages/org/modules/org-elements/interface.ss"
                  org-elements property property-contains all-of any-of at child-of descendant-of))
 (export org-contract-definitions)
 (def org-contract-definitions (list

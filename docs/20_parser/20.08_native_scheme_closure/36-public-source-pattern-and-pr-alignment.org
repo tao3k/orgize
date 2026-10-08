@@ -1,0 +1,76 @@
+#+title: Public engine source patterns and PR alignment
+
+* Ownership
+
+PR #13 commit =819eca38d3981d6079390dff7e5c66e4985cdad6= centralizes
+=source-offset-after=, =source-pattern-end=, =source-pattern-at?= and
+=source-ascii-ci-pattern-at?= in gerbil-parser. These named pure functions
+project declaration-time literals into the existing event IR. They do not
+introduce another user DSL, parser, callback ABI or mutable global cache.
+Org retains grammar families, semantic policy and POO-native public models.
+Thirteen grammar consumers import the public parser interface directly;
+the old Org helper definitions and forwarding wrappers are removed.
+Byte offsets use the engine's UTF-8 length primitive. ASCII-insensitive
+matching rejects non-ASCII patterns rather than pretending to Unicode-fold.
+
+Request-local execution now owns UTF-8 views, prepared byte membership and
+private state slots. Helper frames are independent; join bindings are scoped.
+Nested helpers and loops thread one reversed event chain and reverse it only
+at publication. There is no kernel change or Rust-side grammar fallback.
+
+* Qualified source-pattern candidate
+
+The published convergence candidate on upstream =2c38e9f0= passes 56 fold
+native cases, fresh 184-module SDK phase/public imports, complete Org build,
+340-module AOT source-root admission, 178 native Org cases and the exit-42
+negative assertion control. Both maturin Runtime variants pass 25 Python
+CFFI assertions with program =54e30a63=. No progress timeout is relaxed.
+Matched 20-sample dense/entity diagnostics retain exact identities. Dense
+p95 is 56.839ms / 56.213ms; entity p95 is 3.439ms / 3.439ms. Both 100ms
+diagnostic envelopes pass. These do not establish an end-to-end ranking or
+stable Contract25 / Query45 admission.
+
+* Latest upstream and integration
+
+Upstream subsequently advances PR #13 to
+=1b698747249d9cd9566297b6c3bcf6a8509c1cc2=, retaining lexical Source edit
+history between foreign calls without retaining published trees. The SDK is
+rebuilt separately; =819eca3= receipts are not relabelled as latest-head tests.
+Cargo.toml, Cargo.lock, gerbil.pkg and executable revision checks use this
+normal immutable revision without a Cargo patch.
+
+This latest revision passes the fresh 184-module SDK/public imports, complete
+Org rebuild and 340-module AOT source-root admission. Program
+=sha256:5ed67786665e3182b18166f6777b85a8239ef1d7973851792376a000d4ee1feb=
+passes 178 Scheme cases / 12 suites and the exit-42 failure control. Each
+Runtime passes 85 native units, its ordinary pure/policy units, all 457 native
+consumers, 11 public cutover cases, 23 index handoff cases and four-worker
+1,000/10,000 Query full/hit/no-hit parity. Both 64-caller / 1,4,8-domain
+six-batch matrices admit 33,000 distinct documents each; cross-runtime
+program/corpus/artifact parity passes. These are qualification-mode receipts,
+not an uninstrumented performance ranking. Both maturin variants bind this
+same program and pass 25 Python assertions (Rust 0.44s, Scheme 1.34s), without
+the unchanged 5s timeout. Missing locked Python environment/maturin caches
+initially fail offline setup; normal dependency downloads repair environment
+setup, without changing versions or selecting a passing semantic retry.
+
+Receipts are from the local merge candidate rooted at =cbe3750c= and the
+recovery checkpoint, before its merge commit. Build metadata reports that
+candidate as dirty; these are not exact-head remote CI results. They are
+retained under =target/native-parser-alignment-012389be/org-pr18-1b69874-*=;
+the directory name is historical, not the current dependency revision.
+
+PR #18 is integrated with its existing =cbe3750c= source-headline fixes,
+not replaced by the divergent recovery checkout. Unversioned Org modules,
+modular Rust projections/lints, native event navigation and shared maturin
+bindings move together. The four Query observation cases remain registered
+in the explicit-startup concurrent native catalog; adding separate libtest
+attributes would duplicate execution and bypass its initialization boundary.
+
+The old CI assumed generated-Rust parsing and an independent Python Contract
+library. It now prepares the compiler-owned AOT manifest through Just owners
+before Rust or maturin builds. Native runners are Linux x86-64 and macOS
+arm64; no Windows native Gerbil release is currently admitted. YAML parsing,
+recipe ownership and Darwin/Linux command expansion are local checks, not
+proof of a remote installation or wheel repair. Exact-head CI remains a
+separate delivery gate. No new PR or kernel patch is introduced.

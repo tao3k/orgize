@@ -1,6 +1,6 @@
 //! Org-owned dynamic block declarations through the generic Rowan executor.
 
-use gerbil_parser_rowan::{SyntaxNode, SyntaxToken};
+use gerbil_parser_runtime::{SyntaxNode, SyntaxToken};
 
 fn node_name(node: &SyntaxNode) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name
@@ -10,7 +10,6 @@ fn token_name(token: &SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
-#[test]
 fn scheme_declared_dynamic_block_exposes_name_header_and_nested_elements() {
     let source = include_str!("../fixtures/org-elements/dynamic-block.org");
     let document = orgize::org_aot::parse_org_aot(source).expect("dynamic block parses");
@@ -58,7 +57,6 @@ fn scheme_declared_dynamic_block_exposes_name_header_and_nested_elements() {
     );
 }
 
-#[test]
 fn malformed_and_unclosed_dynamic_blocks_recover_as_text() {
     for source in [
         "#+BEGIN:\n#+END:\n",
@@ -77,3 +75,14 @@ fn malformed_and_unclosed_dynamic_blocks_recover_as_text() {
         );
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_dynamic_block::scheme_declared_dynamic_block_exposes_name_header_and_nested_elements",
+        scheme_declared_dynamic_block_exposes_name_header_and_nested_elements,
+    ),
+    (
+        "org_dynamic_block::malformed_and_unclosed_dynamic_blocks_recover_as_text",
+        malformed_and_unclosed_dynamic_blocks_recover_as_text,
+    ),
+];

@@ -3,7 +3,6 @@ use orgize::{Org, ast::ParsedAst};
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/m25-runtime-metadata.org");
 
-#[test]
 fn semantic_ast_projects_runtime_metadata_plan() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -29,7 +28,6 @@ fn semantic_ast_projects_runtime_metadata_plan() {
     );
 }
 
-#[test]
 fn mobile_markers_follow_aot_keywords_inside_sections_not_source_blocks() {
     let doc = Org::parse(
         "* Section\n#+READONLY\n#+ALLPRIORITIES: A B\n#+begin_src org\n#+READONLY\n#+end_src\n",
@@ -42,7 +40,6 @@ fn mobile_markers_follow_aot_keywords_inside_sections_not_source_blocks() {
     assert_eq!(plan.mobile.all_priorities[0].values, ["A", "B"]);
 }
 
-#[test]
 fn feed_status_body_uses_aot_drawer_bounds_with_crlf() {
     let source = "* Inbox\r\n:FEEDSTATUS:\r\n((\"guid\" t \"hash\"))\r\n:FEEDSTATUS:\r\n:END:\r\n";
     let doc = Org::parse(source).document();
@@ -117,3 +114,18 @@ fn render_runtime_metadata_plan(doc: &ParsedAst) -> String {
     }
     out
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_runtime_metadata::semantic_ast_projects_runtime_metadata_plan",
+        semantic_ast_projects_runtime_metadata_plan,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_runtime_metadata::mobile_markers_follow_aot_keywords_inside_sections_not_source_blocks",
+        mobile_markers_follow_aot_keywords_inside_sections_not_source_blocks,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_runtime_metadata::feed_status_body_uses_aot_drawer_bounds_with_crlf",
+        feed_status_body_uses_aot_drawer_bounds_with_crlf,
+    ),
+];

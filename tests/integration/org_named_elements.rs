@@ -2,7 +2,6 @@
 
 use orgize::org_aot::parse_org_aot;
 
-#[test]
 fn org_scheme_named_special_block_projects_name_and_recursive_body() {
     let source = "#+BEGIN_NOTE\ntext\n#+END_note\n";
     let document = parse_org_aot(source).expect("Scheme named block reaches Rowan");
@@ -43,7 +42,6 @@ fn org_scheme_named_special_block_projects_name_and_recursive_body() {
     assert_eq!(blocks[1].parent_id, Some(blocks[0].id));
 }
 
-#[test]
 fn org_scheme_latex_environment_preserves_named_opaque_body() {
     let source = "\\begin{align*}\nx\n\\end{align*}\n";
     let document = parse_org_aot(source).expect("Scheme LaTeX environment reaches Rowan");
@@ -75,7 +73,6 @@ fn org_scheme_latex_environment_preserves_named_opaque_body() {
     );
 }
 
-#[test]
 fn org_scheme_named_children_stop_at_their_parent_boundary() {
     for source in [
         "#+BEGIN_OUTER\n#+BEGIN_INNER\n#+END_outer\n#+END_inner\n",
@@ -99,3 +96,18 @@ fn org_scheme_named_children_stop_at_their_parent_boundary() {
         );
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_named_elements::org_scheme_named_special_block_projects_name_and_recursive_body",
+        org_scheme_named_special_block_projects_name_and_recursive_body,
+    ),
+    (
+        "org_named_elements::org_scheme_latex_environment_preserves_named_opaque_body",
+        org_scheme_latex_environment_preserves_named_opaque_body,
+    ),
+    (
+        "org_named_elements::org_scheme_named_children_stop_at_their_parent_boundary",
+        org_scheme_named_children_stop_at_their_parent_boundary,
+    ),
+];

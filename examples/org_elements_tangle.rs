@@ -65,6 +65,8 @@ fn tangle(source: &str, interface_module: &str) -> Result<String, String> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // SAFETY: standalone entrypoint, before workers or children and host I/O.
+    unsafe { orgize::initialize_native_runtime() }?;
     let args: Vec<_> = env::args_os().collect();
     let (input, output, interface_module) = match args.as_slice() {
         [_, input, output] => (input, output, "../interface.ss"),
@@ -90,12 +92,12 @@ mod tests {
 
     #[test]
     fn tagged_queries_are_projected_from_org_elements() {
-        let source = include_str!("../languages/org/v1/modules/org-elements/queries.org");
+        let source = include_str!("../languages/org/modules/org-elements/queries.org");
         let generated = tangle(source, "../interface.ss").expect("five named queries are admitted");
         assert_eq!(generated.matches("(org-element-query ").count(), 5);
         assert_eq!(
             generated,
-            include_str!("../languages/org/v1/modules/org-elements/generated/query-source.ss")
+            include_str!("../languages/org/modules/org-elements/generated/query-source.ss")
         );
     }
 
@@ -152,7 +154,7 @@ mod tests {
         let source = include_str!("../tests/fixtures/org-elements/customer-queries.org");
         let generated = tangle(
             source,
-            "../../../../languages/org/v1/modules/org-elements/interface.ss",
+            "../../../../languages/org/modules/org-elements/interface.ss",
         )
         .expect("consumer Org source declares tagged queries");
         assert_eq!(

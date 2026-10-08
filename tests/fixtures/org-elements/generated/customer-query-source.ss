@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; @generated from :org-elements-query blocks; do not edit.
-(import (only-in "../../../../languages/org/v1/modules/org-elements/interface.ss" org-element-query org-elements
+(import (only-in "../../../../languages/org/modules/org-elements/interface.ss" org-element-query org-elements
 property property-contains all-of any-of at child-of descendant-of))
 (export org-element-queries)
 (def org-element-queries (list

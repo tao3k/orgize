@@ -9,7 +9,6 @@ use orgize::{
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/tangle-and-table-formulas.org");
 
-#[test]
 fn semantic_ast_projects_safe_tangle_plan_and_table_formula_records() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -78,3 +77,8 @@ fn semantic_ast_projects_safe_tangle_plan_and_table_formula_records() {
         formula_records
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_tangle_and_table_records::semantic_ast_projects_safe_tangle_plan_and_table_formula_records",
+    semantic_ast_projects_safe_tangle_plan_and_table_formula_records,
+)];

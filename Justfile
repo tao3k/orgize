@@ -1,74 +1,32 @@
 set dotenv-load := false
-lib_ext := if os() == "macos" { "dylib" } else { "so" }
-native_env := if os() == "macos" { "env -u SDKROOT CC=/usr/bin/cc CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc" } else { "env" }
-rust_linker := if os() == "macos" { "-C linker=/usr/bin/cc" } else { "" }
-repair_command := if os() == "macos" { "delocate-wheel -w" } else { "auditwheel repair --wheel-dir" }
+set shell := ["bash", "-euo", "pipefail", "-c"]
+host_os := os()
+scheme_home := env_var_or_default("GERBIL_HOME", "")
+# Keep the fixed heap envelope while honoring an explicitly selected SDK.
+scheme_gambopt := "max-heap=1G,debug=q" + if scheme_home == "" { "" } else { ",~~bin=" + scheme_home + "/bin,~~lib=" + scheme_home + "/lib,~~include=" + scheme_home + "/include" }
+lib_ext := if host_os == "macos" { "dylib" } else { "so" }
+scheme_env := if host_os == "macos" { "env -u SDKROOT CC=/usr/bin/cc GERBIL_GCC=/usr/bin/cc" } else { "env" }
+native_env := scheme_env + (if host_os == "macos" { " CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc" } else { "" })
+native_link_args := if host_os == "macos" { "-C linker=/usr/bin/cc -C link-arg=-Wl,-ld_classic" } else { "" }
+native_rust_flags := if host_os == "macos" { "CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS=\"" + native_link_args + "\"" } else { "" }
+rust_linker := if host_os == "macos" { "-C linker=/usr/bin/cc" } else { "" }
+# Gerbil's loadable module resolves OS functions in its existing host process.
+clock_linker := if host_os == "macos" { "-Wl,-undefined,dynamic_lookup" } else { "" }
 
+repair_command := if host_os == "macos" { "delocate-wheel -w" } else { "auditwheel repair --wheel-dir" }
+
+# Native architecture task owners; imported recipes share these platform settings.
+import 'just/scheme.just'
+import 'just/runtime.just'
+import 'just/benchmark.just'
+import 'just/python.just'
+import 'just/checks.just'
+import 'just/development.just'
+import 'just/ci.just'
+
+# Daily entry points; inspect private owner recipes with just --dump.
 default:
     @just --list
 
-# Development-only: both arguments are compiled Gerbil lib directories.
-# Cargo consumers do not need Gerbil or this recipe.
-scheme-test parser_lib poo_flow_lib:
-    mkdir -p target/gerbil-test
-    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test t/*-test.ss
-    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" python3 tools/ci/watch-real-output.py gxi t/org-source-headlines-qualification.ss
-
-generate-contract-plan parser_lib poo_flow_lib source="languages/org/v1/modules/org-contract/generated/contract-source.ss" output="languages/org/v1/modules/org-contract/generated/contract-plan.rs":
-    mkdir -p target/gerbil-test
-    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-contract/generate-plan.ss "{{ output }}" "{{ source }}"
-
-generate-radio-match-ir parser_lib poo_flow_lib:
-    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-elements/generate-radio-match-ir.ss languages/org/v1/modules/org-elements/generated
-
-generate-document-keyword-ir parser_lib poo_flow_lib:
-    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-elements/generate-document-keyword-ir.ss languages/org/v1/modules/org-elements/generated
-
-generate-logbook-ir parser_lib poo_flow_lib:
-    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gxi languages/org/v1/modules/org-elements/generate-logbook-ir.ss languages/org/v1/modules/org-elements/generated
-
-# Standalone Scheme Contract ABI; ordinary Cargo parsing never needs it.
-contract-library:
-    {{ native_env }} python3 bindings/c/build-native-library.py --output target/liborgize.{{ lib_ext }}
-
-contract-smoke: contract-library
-    {{ native_env }} cc -I bindings/c/include bindings/c/tests/orgize-dynamic-harness.c -o target/orgize-dynamic-harness
-    target/orgize-dynamic-harness target/liborgize.{{ lib_ext }}
-    {{ native_env }} rustc --edition=2024 bindings/rust/native_smoke.rs -L native=target {{ rust_linker }} -o target/orgize-rust-smoke
-    LD_LIBRARY_PATH=target target/orgize-rust-smoke
-
-python-contract-library:
-    {{ native_env }} python3 bindings/c/build-native-library.py --output bindings/python/src/orgizepy/lib/liborgize.{{ lib_ext }}
-
-python-test: python-contract-library
-    {{ native_env }} uv sync --directory bindings/python --locked --extra test
-    {{ native_env }} uv run --directory bindings/python --offline pytest
-
-python-wheel: python-contract-library
-    {{ native_env }} uv build --directory bindings/python --wheel
-    unzip -l bindings/python/dist/orgizepy-*.whl | grep 'orgizepy/lib/liborgize.{{ lib_ext }}'
-
-python-wheel-repair: python-wheel
-    uv sync --directory bindings/python --locked --group wheel-repair
-    mkdir -p bindings/python/dist/repaired
-    {{ native_env }} uv run --directory bindings/python --no-sync {{ repair_command }} "{{ justfile_directory() }}/bindings/python/dist/repaired" "{{ justfile_directory() }}/bindings/python/dist/"orgizepy-*.whl
-
-wasm-build:
-    git submodule update --init --recursive wasm
-    cd wasm && CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=../target/orgize-wasm wasm-pack build -t web -d dist --out-name orgize
-    rm -f wasm/dist/.gitignore
-
-wasm: wasm-build
-
-wasm-clean:
-    rm -rf wasm/dist
-
-# Focused original source producer gate, using the freshly compiled owner SDK.
-qualify-source-headlines:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    log="$(mktemp)"
-    trap 'rm -f "$log"' EXIT
-    timeout --foreground --signal=TERM --kill-after=1s 45s python3 tools/ci/watch-real-output.py gxi -:max-heap=1G,debug=q t/org-source-headlines-qualification.ss 2>&1 | tee "$log"
-    test "$(grep -c '^SOURCE-HEADLINE-CASE-OK ' "$log")" = 4
-    grep -Fx 'SOURCE-HEADLINE-OK' "$log" >/dev/null
+format:
+    cargo fmt --all

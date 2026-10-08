@@ -1,16 +1,13 @@
 ;;; -*- Gerbil -*-
 ;;; Aggregate the independently owned Org event-parser test modules.
-(import (only-in :std/test test-suite)
-        (only-in "org-rowan-inline-parser-test.ss"
-                 org-v1-rowan-inline-parser-test)
+(import (only-in "org-rowan-inline-parser-test.ss"
+                 org-rowan-inline-parser-test)
         (only-in "org-rowan-structural-parser-test.ss"
-                 org-v1-rowan-structural-parser-test)
+                 org-rowan-structural-parser-test)
         (only-in "org-rowan-table-container-parser-test.ss"
-                 org-v1-rowan-table-container-parser-test))
-(export org-v1-rowan-event-parser-test)
-
-(def org-v1-rowan-event-parser-test
-  (test-suite "Org contextual Rowan event AOT"
-    org-v1-rowan-inline-parser-test
-    org-v1-rowan-structural-parser-test
-    org-v1-rowan-table-container-parser-test))
+                 org-rowan-table-container-parser-test))
+;; gxtest discovers each exported *-test suite. Evaluating suite values inside
+;; another test-suite only constructs an empty suite; it does not run them.
+(export org-rowan-inline-parser-test
+        org-rowan-structural-parser-test
+        org-rowan-table-container-parser-test)

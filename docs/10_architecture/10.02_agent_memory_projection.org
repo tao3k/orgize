@@ -5,7 +5,7 @@ memory projection API. The purpose is not to turn orgize into a memory database.
 The purpose is to let historical Org facts enter an agent's current decision in
 a controlled, auditable direction.
 
-The current architectural owner map is [[file:../../languages/org/v1/modules/README.org][Org v1 module capabilities]]. This
+The current architectural owner map is [[file:../../languages/org/modules/README.org][Org module capabilities]]. This
 document describes one existing consumer projection; its =AgentMemorySnapshot=
 API is not a requirement that agenda, notes, review, and search use Memory as
 their shared root type. Each capability keeps its native Org source evidence.

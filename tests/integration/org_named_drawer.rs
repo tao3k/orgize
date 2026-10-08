@@ -1,6 +1,6 @@
 //! Scheme-declared ordinary Org drawer through the generic Rowan block engine.
 
-use gerbil_parser_rowan::{SyntaxNode, SyntaxToken};
+use gerbil_parser_runtime::{SyntaxNode, SyntaxToken};
 
 fn parse(source: &str) -> SyntaxNode {
     orgize::org_aot::parse_org_aot(source)
@@ -16,7 +16,6 @@ fn token_name(token: &SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
-#[test]
 fn scheme_declared_named_drawer_preserves_name_and_nested_elements() {
     let source = "* Task\n:NOTE:  \nfirst\n[[https://example.test][link]]\n:END:\n** Next\n";
     let document = orgize::org_aot::parse_org_aot(source).unwrap();
@@ -59,7 +58,6 @@ fn scheme_declared_named_drawer_preserves_name_and_nested_elements() {
     );
 }
 
-#[test]
 fn named_drawer_recovery_does_not_swallow_following_headline() {
     let source = "* Task\n:NOTE:\nbody\n** Next\n";
     let root = parse(source);
@@ -78,7 +76,6 @@ fn named_drawer_recovery_does_not_swallow_following_headline() {
     );
 }
 
-#[test]
 fn malformed_named_drawer_openers_remain_text() {
     for source in [":END:\n", ":9BAD:\n", ":BAD: trailing\n"] {
         let root = parse(source);
@@ -91,3 +88,18 @@ fn malformed_named_drawer_openers_remain_text() {
         );
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_named_drawer::scheme_declared_named_drawer_preserves_name_and_nested_elements",
+        scheme_declared_named_drawer_preserves_name_and_nested_elements,
+    ),
+    (
+        "org_named_drawer::named_drawer_recovery_does_not_swallow_following_headline",
+        named_drawer_recovery_does_not_swallow_following_headline,
+    ),
+    (
+        "org_named_drawer::malformed_named_drawer_openers_remain_text",
+        malformed_named_drawer_openers_remain_text,
+    ),
+];

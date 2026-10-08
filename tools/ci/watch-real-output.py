@@ -12,6 +12,7 @@ import sys
 child = subprocess.Popen(
     sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True
 )
+print(f"CHILD-START pid={child.pid}", flush=True)
 try:
     with selectors.DefaultSelector() as ready:
         ready.register(child.stdout, selectors.EVENT_READ)

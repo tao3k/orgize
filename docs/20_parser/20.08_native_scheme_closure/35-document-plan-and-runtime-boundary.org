@@ -1,0 +1,409 @@
+#+title: Document projection plans and the native runtime boundary
+
+* Failure being repaired
+
+The preceding =e3d634d0= Scheme catalog completed all 457 consumers but
+failed Contract's unchanged 25ms gate at 107.184542ms. Its profiled native
+parse-thread CPU was 3.194ms; recorded parse/value owner service was 4.322ms,
+admission was 72.992ms and result handoff 29.276ms. Parse CPU is not a
+complete CPU measurement of every semantic operation or unprofiled C ABI call.
+These are different observations: admission is not Scheme computation,
+and a host-load receipt does not establish the cause of either tail.
+See [[file:34-property-plan-and-contract-tail.org][the complete negative receipts and alternating controls]].
+
+* Architecture and ownership
+
+AOT compiles the Scheme semantic owner; FFI admits counted native values.
+Neither removes the need to queue a request, wake the single owner, retain
+its root, copy a response and resume a caller. Both current runtime choices
+still serialize execution within each linked Scheme domain. Tokio caller
+concurrency is not a pool of independent Scheme VMs. A single actor that
+blocks on native ingress is not evidence of green-thread work stealing.
+
+The document projection previously called operation 10 once per block and
+operation 16 once per implicit headline anchor. A document-level plan now
+keeps the existing Scheme physical-line owner and batches block inputs.
+Each response has an explicit counted header, including empty blocks.
+The Rust adapter validates shape and UTF-8 ranges and constructs typed
+annotations; it does not scan lines, normalize indentation or parse labels.
+
+The block ingress batches at most 32 records and targets 256KiB of input
+fields. A single larger block remains accepted under the existing native
+line owner; this target is not a hard service-time or response-size bound.
+Plans are requested only by full semantic projection, not by minimal parse
+or filtered Query. No JSON interpreter or source-evaluation path is added.
+
+Headline display-object projection precedes one Scheme document-anchor
+operation. Scheme owns slug formation and traversal-order suffix allocation;
+explicit CUSTOM_ID/ID values do not consume an implicit suffix, and empty
+slugs remain absent. Rust applies admitted anchors before link resolution.
+The old Rust scalar forwarding and suffix-counting algorithm are deleted.
+
+The first Rust native-unit run exposed another crossing: =property()= called
+=OrgDuration::parse= separately for every node property, even non-duration
+values. Its new call-count assertion observed three replies instead of two
+and failed; the =rust/library/library-test.log= receipt is retained. The
+repair adds a bounded native =duration-plan= and typed record-ID admission.
+The updated fixture contains valid, saturated and Unicode-invalid properties,
+and expects exactly three replies for blocks, anchors and all four durations.
+Standalone public duration parsing still uses its native scalar owner; full
+document projection no longer does so per property.
+
+Contract and property lint retain their native document plans. Syntax lint
+uses lean source records rather than requesting unused Babel execution facts.
+Rust Query/Contract IR validation and owned view/result leases remain open
+semantic/lifecycle migration work, not disguised as completed FFI closure.
+
+Property-plan input framing now deduplicates exact key/value pairs before
+copying inherited values. Its deterministic byte order and native token owner
+are unchanged; this avoids duplicate host allocations, not native semantics.
+Feature-only =ast.block_document_plan=, =ast.anchor_document_plan= and
+=ast.property_duration_plan= spans
+separate these crossings from the shared operation-23 aggregate. Nested
+observations overlap and must not be added as exclusive stage costs.
+
+* Admission requirements
+
+The candidate must pass fresh Scheme source-root admission and native tests,
+both runtime unit/public catalogs, unchanged whole-catalog latency gates,
+alternating immutable-program controls, real 1,000/10,000 document parity
+and affected maturin consumers. Build wall time is not runtime evidence.
+No gate, caller count, timeout, profile or default-runtime selection changes.
+
+Batching removes crossings but cannot prove scheduler wakeup bounds. Native
+owner/result lifetime and long-job fairness require separate qualification;
+no Gambit/Gerbil kernel change or unsafe concurrent root transfer is used.
+
+* Candidate evidence
+
+Fresh isolated SDK compilation and 321-module program source-root admission
+pass. The source-root negative control rejects the preceding compiled program.
+The intermediate identity was
+=sha256:d9ddc97def5675da6410847b9faba48715fc9a13bb102e5fee51c6dfe8b9a85d=.
+Both five-target Release links and tests/benches/examples source checks passed;
+178 native Scheme cases/12 suites and the injected failure control passed.
+The subsequent Rust call-count failure above prevents intermediate acceptance.
+The duration repair has a new =final/program= staging receipt and fresh links;
+the source-root negative control also rejects the intermediate program.
+The maintained SDK copy now preserves source timestamps (=cp -p=)
+so upstream compiler currentness is not invalidated just by copying unchanged
+SCM inputs. This is build currentness, not a runtime performance claim.
+
+* Document-plan integrated result
+
+The repaired producer is
+=sha256:1c5ef23ec81cd38c8e0bac83d0b32292c3f42545c7038fbc729ec9c3eaf576a8=.
+Both five-target Release builds and source checks pass. Native Scheme passes
+178 cases/12 suites and its failure control. Both lanes pass 85 native units,
+35 Rust / 34 Scheme ordinary units (the same four ignored cases), 11 public
+cutover cases and 23 concurrent index cases.
+
+Both full 457-case/12-caller catalogs pass. Contract takes 14.206292ms in
+Rust and 16.322250ms in Scheme against the unchanged 25ms gate. All candidate
+controls execute 15 physical native parse/value replies, versus 23 in the
+preceding =e3d634d0= binaries. This count does not cover unprofiled C ABI calls.
+
+Twenty immutable alternating pairs per runtime retain the following results
+(milliseconds; equality with 25ms is also a failure):
+
+| Runtime | Version | Failures / 20 | Minimum | Median | Maximum |
+|---------+---------+---------------+---------+--------+---------|
+| Rust | e3d634d0 | 6 | 2.487375 | 14.961584 | 336.152166 |
+| Rust | 1c5ef23e | 7 | 1.576459 | 4.443959 | 146.102459 |
+| Scheme | e3d634d0 | 9 | 2.528833 | 14.919292 | 244.690333 |
+| Scheme | 1c5ef23e | 9 | 1.930500 | 21.576750 | 118.725250 |
+
+Neither matched gate passes; no stable speedup, p99, runtime ranking or
+default promotion is admitted. Measurements run after this task's compilation
+and other qualification workloads finish. No unrelated process is stopped.
+
+Rust's worst candidate (=final/rust-matched/candidate-3=) records 103.320ms
+owner service, 40.889ms admission and only 1.767ms measured Fold wall /
+1.546ms parse-thread CPU. Scheme's worst (=candidate-13=) records 95.597ms
+service, 73.022ms Fold wall but only 1.010ms parse-thread CPU. These differing
+unaccounted intervals are not evidence of a CPU-bound grammar algorithm.
+Next instrumentation must distinguish owner entry/exit, allocation/GC/root
+work and descheduling, and record native value CPU as well as parse CPU.
+Queue occupancy/active-job evidence is needed before attributing admission
+to head-of-line work. No kernel patch or priority workaround is inferred.
+
+* Large corpus observability repair
+
+The first 10,000-document Rust scale receipt returns 124 before
+=control-start=, with no completed corpus/owner checkpoint. It does not prove
+a parse stall. The test now reports completed native startup and each actual
+1,000-file write milestone. No periodic timer heartbeat, timeout increase,
+corpus reduction or pre-parsed fixture is added. Stalled initialization,
+writes and native work still fail the unchanged five-second watchdog.
+Compiler-free updated drivers pass four-worker 1,000/10,000 full-projection,
+filtered hit and no-hit parity in both runtimes. Whole 10,000-case test totals
+are 64.80s (Rust) and 78.72s (Scheme); they include corpus setup and multiple
+query/control legs, not one-query latency or a qualified runtime ranking.
+Receipts are =final/{rust,scheme}/observable-query-{1000,10000}=.
+Both current-producer maturin bindings pass all 25 existing Python tests,
+including runtime/program identity and Rust C ABI admission controls. No
+parallel Python parser/framework is added. Rust is restored in the existing
+virtual environment and all 25 tests pass again with the exact current program
+identity. Receipts are =final/{rust,scheme}-python-test= and
+=final/rust-python-final-test=; this is local qualification, not published CI.
+
+* Owner CPU and failure-path follow-up
+
+Opt-in transport profiling now measures owner-thread CPU around recorded
+native parse/value service. Rust includes returned-root copy/drop; Scheme
+includes input allocation, semantic work and result copy through C completion,
+but not subsequent Scheme stack unwinding or later GC of temporary values.
+This is not
+exclusive grammar CPU, GC attribution, queue-depth evidence or Contract C ABI
+coverage. The CPU interval is nested inside service wall time and cannot be
+added to Fold CPU. Ordinary unprofiled requests do not sample these clocks.
+Non-Unix Rust owner CPU is unavailable (zero), not qualified by the macOS run.
+
+The private Scheme ingress diagnostic buffer grows from four to five words;
+the public Contract ABI revision and normal ingress remain unchanged. A clock
+failure or regressing counter now frees any copied C result and returns null
+output/zero length. Queue controls inject this failure and protect both buffer
+ends with canaries; normal and Address/Undefined sanitizers pass. Parser/runtime
+qualification is separate and must bind the freshly linked producer.
+
+The final linked producer is
+=sha256:6fc50de60cc9cbd966c3f27136aae30e8d019e6fb80d1ad0a18f2329dfafd22e=.
+Both five-target Release builds, 85 native units, 35/34 ordinary units,
+11 public/Tokio and 23 concurrent index cases pass. Release source checks
+for tests, benches and examples also pass in both runtimes, including the
+production semantic-wrapper warning guard (=rust-source= / =scheme-source=).
+Both runtimes also pass
+four-worker 1,000/10,000 full/hit/no-hit parity (whole 10,000-test totals:
+Rust 109.79s, Scheme 108.92s; not a runtime ranking).
+
+The Rust catalog completes all 457 cases but fails Contract at 267.666709ms;
+admission is 240.564ms, service wall 22.811ms and owner CPU 1.659ms. Scheme's
+catalog passes at 7.727667ms. Neither a retry nor the Scheme result waives the
+Rust failure. Twenty alternating pairs against the immutable =1c5ef23e=
+document-plan binaries retain all results (milliseconds):
+
+| Runtime | Producer | Failures / 20 | Minimum | Median | Maximum |
+|---------+----------+---------------+---------+--------+---------|
+| Rust | 1c5ef23e | 6 | 2.495417 | 14.818312 | 122.993083 |
+| Rust | 6fc50de6 | 9 | 2.036833 | 21.207750 | 401.975458 |
+| Scheme | 1c5ef23e | 10 | 3.145708 | 23.173271 | 232.526417 |
+| Scheme | 6fc50de6 | 11 | 3.522792 | 31.344188 | 269.601917 |
+
+All 40 new samples have 15 recorded replies and the exact current producer.
+Owner CPU ranges from 1.203 to 2.648ms. Rust's worst (candidate-12) has
+338.713ms admission, 57.499ms handoff, 4.577ms service and 2.628ms owner CPU.
+Scheme's worst (candidate-8) has 123.820ms service but only 2.011ms owner CPU.
+These selected controls run one consumer case with twelve driver workers;
+they are not twelve simultaneous independent document workloads. They do
+not establish backlog from other consumer cases. Admission still combines
+pre-enqueue caller time, channel/queue wait and owner wakeup; separating those
+points and GC/blocking/descheduling remains necessary before a causal claim.
+CPU instrumentation is diagnostic, not an algorithmic speedup or gate closure.
+
+Receipts are =target/native-owner-cpu-20261008=; its final-build logs and
+immutable =binaries= own current qualification. Full 64-caller, 1/4/8-process
+domain matrices pass 1,000/10,000 distinct documents: 33,000 completions per
+runtime, exact current producer, independent worker processes and matching
+semantic artifacts across runtimes/domains. Both owner-stage projections
+admit the new CPU field. These are one-repeat qualification matrices, not
+pure parsing benchmarks or evidence of a stable runtime winner.
+
+Both current-producer maturin installations pass all 25 existing Python
+tests; restoring Rust passes all 25 again. Receipts are
+={rust,scheme}-python-test= and =rust-python-final-test=. The first Rust
+installation fails linking against Gerbil's stale OpenSSL 3.6.4 search path
+after Homebrew has installed 3.6.5. The failure remains in
+=rust-python-build=; =rust-python-current-host= succeeds with the verified
+stable =/opt/homebrew/opt/openssl@3/lib= supplied via =LIBRARY_PATH=.
+This local environment admission does not update upstream Gerbil metadata
+or qualify a portable packaged wheel.
+
+* Parser revision follow-up
+
+PR #13 is queried at =b01779899b8260df85a7c02004fac2f0d3244dbd=.
+Cargo runtime/artifact pins and the lockfile, Gerbil dependency and executable
+revision checks align to that head. Locked offline metadata and dependency
+admission pass; no Cargo patch override is used. The independent source copy
+is clean and leaves the existing dirty parser checkouts untouched. Local
+source cloning now copies objects rather than assuming permitted hard links.
+
+Fresh Scheme qualification is separate from the =6fc50de6= results above.
+The initial build fails because the host Gerbil has advanced to =1cfb032=,
+while the existing dependency SDK was compiled with =2591dcd=. The isolated
+comparison fixes both compiler PATH and GERBIL_HOME to the previous complete
+toolchain; fixing PATH alone fails to resolve =:gerbil/core=. The initial
+SDK mismatch logs remain under =target/native-parser-alignment-b0177989=.
+The next build reaches native FFI generation but attempts to launch the
+nonexistent baked-in =/Users/runner/work/_temp/gerbil-v19/2591dcd/bin/gsc=.
+The supported =GERBIL_GSC= override selects the matching installed compiler
+for the follow-up build; no compiler source or kernel is patched.
+An additional unqualified direct Cargo check fails writing its default
+build-gate cache outside the workspace. Maintained receipt recipes already
+select the workspace's =target/native-cache=; that check is not admitted as
+runtime evidence.
+The fixed-toolchain parser build subsequently returns zero, but the Orgize
+consumer rejects its incomplete SDK: =descriptor~1.o1= is absent and loading
+=descriptor~1.scm= reports an illegal =declare= expression. A successful
+incremental build exit is therefore not admitted as SDK closure. Regenerate
+the compiler-owned SDK with the corrected complete toolchain before admitting
+Orgize generation, linking, concurrent consumers or Python tests for this pin.
+Neither old receipts nor a pin update closes the new native/runtime gates.
+
+SDK admission now imports the descriptor phase and public parser interface
+after the build and retains =sdk-load.log=. The incomplete SDK fails this
+control. A fresh output also exposes the preceding failure's cause:
+Gambit's =##gambuild= cannot enter its baked-in =~~bin= directory.
+With an explicit =GERBIL_HOME=, Justfile now projects Gambit's supported
+=~~bin= / =~~lib= / =~~include= runtime options to that installation.
+The default 1GiB heap/debug envelope is unchanged; without an explicit home,
+the default path policy is unchanged. No generated-source or kernel patch,
+fake installation directory or extra build scheduler is introduced.
+Task references, Darwin/Linux command expansion and diff checks pass.
+
+The fresh =parser-relocated= SDK now completes with 396 loadable objects.
+=descriptor~1.o1= exists and the descriptor/public parser interface import
+passes in =sdk-load.log=. The preceding incomplete SDK still fails that
+same load control. This closes the local SDK installation-path failure,
+not Orgize native linking, runtime parity, Python or latency qualification
+against the new dependency. Those require fresh downstream receipts.
+
+The downstream compile next identifies the removed =deflanguage-grammar=
+frontend. Org's catalog now uses native =deflanguage= with one lexical Syntax
+and one Rules block; unused ABI token kinds are explicitly reserved through
+the upstream catalog projection. Contract and expectation declarations migrate
+from the retired flat frontend to the same Syntax/Rules contract. Release
+identities use =language-grammar-with-identity= after syntax compilation.
+No compatibility macro is added. Scheme generation of Org parser/graph,
+Contract/expectation tables, Query/Contract plans and customer packs passes.
+Org kind, terminal and graph-rule IDs are unchanged; grammar/projection
+identities are regenerated by their native owner, not manually substituted.
+
+The complete downstream Scheme module build passes. A fresh 327-module AOT
+manifest passes explicit parser/Org source-root admission; the previous
+=6fc50de6= manifest is correctly rejected by the same candidate-root check.
+Both =runtime-rust= and =runtime-scheme= Release source checks pass for tests,
+benches and examples, including the production semantic-wrapper warning
+guard. Receipts are =rust-source= / =scheme-source= under the alignment
+directory. This closes local declaration/build alignment to =b0177989=,
+not linked unit/consumer/Python or 1,000/10,000 concurrency requalification.
+The stable 25ms Contract admission and native view/IR ownership remain open.
+
+The subsequent naming correction separates declaration identity from version:
+=deflanguage org-mode= produces =org-mode-syntax=, and
+=language-grammar-with-identity= binds language =org-mode=, version =v1= and
+the existing =org-elements.v1= contract. All Scheme grammar owner references
+and public parse receipt expectations follow the new language name.
+At that checkpoint the =languages/org/v1= directory had not moved.
+The 327-module source checks above and
+the first linked build precede this correction; regeneration and a fresh
+program are required before accepting runtime receipts for the renamed source.
+
+The renamed =org-naming= complete Scheme build and native regeneration now
+pass, including Query/Contract plans and both customer packs. Generated parser
+and graph bind grammar =27f0c865=; all four packs bind projection =4c737fc8=.
+The fresh =program-org-mode/program.json= contains 327 modules and passes
+explicit parser/Org source-root admission. The pre-name =program/program.json=
+is correctly rejected against those roots. The pre-name Rust linked build
+completed, but is not admitted for this renamed candidate. Fresh linked runtime
+qualification remains pending; these source receipts close no latency gate.
+
+The follow-up directory migration now moves all 117 files from
+=languages/org/v1= to =languages/org=, with native imports, generated Rust
+includes, build/staging admission and test/fixture owners aligned. Source
+symbols use =org-*= rather than =org-v1-*=; release version =v1= remains in
+metadata. There is no old namespace adapter. The dependency check rejects the
+old directory and old source references. =org-unversioned= is the fresh build
+root for this migration; preceding =org-naming= / =program-org-mode= receipts
+do not admit it. Its interrupted Rust linked build remains diagnostic only.
+
+The complete =org-unversioned= Scheme build and regeneration pass. The
+existing generation recipe now also runs the Scheme element inventory owner.
+=program-unversioned= has 327 modules and no old-path module names; source-root
+admission passes and the previous =program-org-mode= manifest is rejected.
+The native parser declaration test finishes =OK=. Both Release source checks
+pass for tests, benches and examples, including the production warning guard,
+in =rust-unversioned-source= / =scheme-unversioned-source=. Dependency and
+task/document layout checks pass. Linked/Python/full concurrent qualification
+still requires this program's own receipts.
+
+The native graph test initially exposes stale expectations: the macro-argument
+node and expanded Scheme timestamp fields were absent. Its exact node/label
+and timestamp name/mode controls now follow the declared native graph,
+including the projection's default =append= mode. The corrected suite finishes
+=OK= in =org-unversioned-graph-qualified=; failed transcripts are retained
+separately rather than overwritten or counted as acceptance.
+
+Both =rust-unversioned-linked= and =scheme-unversioned-linked= now build all
+five Release executables against program =96edb199=. Immutable copies are
+=target/runtime-receipt-binaries/org-unversioned-{rust,scheme}-{0..4}= (library,
+cutover, consumers, index, corpus respectively). Each passes 85 native cases,
+35 Rust / 34 Scheme ordinary units (4 ignored), 11 public cutover cases and
+23 index handoff cases. Both complete all 457 consumers with 12 callers.
+Rust's first catalog failed only the element inventory snapshot's stale source
+path; review confirmed its element lists were unchanged. The approved snapshot
+now names =languages/org/modules/org-elements/catalog.ss=; its complete rerun
+passes in =consumers-path-fixed= while the first failure remains separate.
+Contract catalog samples are Rust 22.861459ms before that snapshot repair,
+6.426167ms after it, and Scheme 5.498833ms. They are not stable 25ms acceptance
+or an improvement claim. Rust's six 64-caller / 1,000 and 10,000-document /
+1,4,8-domain batches complete 33,000 documents with same-scale artifact parity;
+Scheme's same six-batch matrix also completes 33,000 documents and the maintained
+cross-runtime comparator passes with identical program/corpus/artifacts.
+
+Existing maturin Rust installation binds =96edb199= but its Python receipt
+fails: all 25 assertions pass, while the GIL progress test takes 10.29s and
+emits =Timeout (0:00:05)!=. This is not accepted or waived. Upstream fold
+predicates re-encode the whole paragraph within per-byte traversal. A separate
+=parser-byte-view-source= clone proposes one UTF-8 view per immutable statement
+frame, dynamically restoring callers after nested helpers. Its 37 native fold
+cases pass including a new nested Unicode control. On =doc.org=, equal source
+and event identities admit reference/candidate p50 5.286 / 4.747ms and p95
+5.537 / 4.841ms (20 samples); this is a local diagnostic, not end-to-end closure.
+The dense candidate benchmark still hits the unchanged 5s real-output watchdog.
+The fresh native =byte-view-bench-phases/fold= diagnostic confirms dense
+source parsing and semantic coverage complete before the timeout in ASP's
+20-sample phase. =byte-view-candidate-dense-phases.ss.run.log= preserves status
+124 without a p95 receipt. The small =doc.org= phase control completes all
+20 samples and passes admission; neither sample count nor timing owner changes.
+Phase output is outside measured thunks, not a synthetic heartbeat.
+
+The published PR head has advanced to =706bf035=. Normal manifests/lockfile
+and clean-source checks align to it; none of the =96edb199= receipts qualify
+that new pin. The fold file is unchanged between those published revisions.
+Its clean =target/native-parser-alignment-706bf035= SDK now passes full build
+and phase/public import. The complete Org rebuild, generated inventory/parser/
+graph/Query/Contract products and new AOT source-root gate pass. That program
+has 328 modules, adding upstream =src/runtime/embedded-image=; native parser
+declaration and all 9 graph cases also pass. Program =a79777ed= passes both
+Release source/warning guards and linked lanes: 85 native units, ordinary
+units, 457 consumers, 11 public cutover cases, 23 index handoff cases and
+four-worker 1,000/10,000 Query full/hit/no-hit parity. Each runtime completes
+33,000 documents across 64 callers and 1,4,8 independent domains; the maintained
+cross-runtime artifact comparator passes. Contract catalog samples are Rust
+7.943333ms and Scheme 10.011541ms, not stable latency admission or a ranking.
+The live PR recheck then advances to =012389be= (LR fragment transfer and
+Source scanner suffix certificate changes). Manifests, normal Cargo lock
+resolution and clean-source admission align to that exact new revision;
+the =a79777ed= receipts do not admit its new compiled closure.
+Its clean SDK/import, full Org rebuild/regeneration and new 328-module source
+gate pass; the old program is rejected. Parser declaration and all 9 graph
+cases pass. Both runtime Release source checks and production warning guards
+pass with =9991b416=, using content/header/env-checked native object caching
+without reusing old Org =.ssi= files. Linked/domain/Python qualification remains
+pending for that program; the installed Rust extension remains =96edb199=.
+The isolated proposal has been rebased locally to =706bf035= and its fresh
+SDK/import, 37 native fold cases and diagnostic AOT source-root checks pass.
+It remains unpublished and is intentionally rejected by the clean-source pin
+gate. Diagnostic Python execution is separate from published qualification;
+no local Cargo patch, kernel modification or deadline change is introduced.
+
+The first diagnostic Python program =f2ca0241= fails setup with native status 4;
+it mixed the new parser SDK with an older compiled Org closure. A complete
+=org-706-byte-view= Scheme rebuild/regeneration and fresh AOT stage instead
+produce =9d8c4a92=, which starts and passes all 25 existing Python cases in both
+runtimes. GIL progress takes Rust 0.51s / Scheme 0.26s without a 5s diagnostic.
+These are local candidate samples, not a matched runtime ranking or a published
+pin qualification. The dense benchmark watchdog remains failed. The candidate
+is isolated and unpublished; the prior Rust extension is restored after testing.
+Upstream's main checkout has other dirty files and a newer local unpublished
+HEAD, so this work has not committed or pushed into its existing PR.

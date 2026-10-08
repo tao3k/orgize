@@ -1,25 +1,14 @@
-//! The Scheme-authored Org TODO functions must compile and behave in Rust.
+//! The Scheme-authored Org TODO functions must execute natively through the same owned C FFI handoff.
 
-include!(concat!(env!("OUT_DIR"), "/todo_directive_p.rs"));
-include!(concat!(env!("OUT_DIR"), "/todo_state_from_directives.rs"));
-include!(concat!(env!("OUT_DIR"), "/todo_keyword_from_directives.rs"));
-include!(concat!(env!("OUT_DIR"), "/headline_content_after_todo.rs"));
-include!(concat!(env!("OUT_DIR"), "/headline_source_title.rs"));
-include!(concat!(env!("OUT_DIR"), "/planning_key_kind.rs"));
-include!(concat!(env!("OUT_DIR"), "/priority_token_p.rs"));
-include!(concat!(env!("OUT_DIR"), "/headline_display_title.rs"));
-include!(concat!(env!("OUT_DIR"), "/headline_comment_p.rs"));
-include!(concat!(env!("OUT_DIR"), "/memory_headline_state.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_image_link_p.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_link_kind.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_link_target_key.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_link_protocol.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_link_protocol_path.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_link_file_path.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_link_search.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_link_file_path_kind.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_link_search_kind.rs"));
-include!(concat!(env!("OUT_DIR"), "/org_link_search_value.rs"));
+#[path = "support/native_semantic_values.rs"]
+mod native_functions;
+use native_functions::{
+    headline_comment_p, headline_content_after_todo, headline_display_title, headline_source_title,
+    memory_headline_state, org_image_link_p, org_link_file_path, org_link_file_path_kind,
+    org_link_kind, org_link_protocol, org_link_protocol_path, org_link_search,
+    org_link_search_kind, org_link_search_value, org_link_target_key, planning_key_kind,
+    priority_token_p, todo_directive_p, todo_keyword_from_directives, todo_state_from_directives,
+};
 
 macro_rules! check_todo_state_aot {
     ($($title:expr, $directives:expr => $expected:expr),+ $(,)?) => {
@@ -35,7 +24,6 @@ macro_rules! check_todo_state_aot {
     };
 }
 
-#[test]
 fn scheme_todo_state_aot_uses_document_directives() {
     check_todo_state_aot!(
         "TODO Work", &[] => "todo",
@@ -49,7 +37,6 @@ fn scheme_todo_state_aot_uses_document_directives() {
     );
 }
 
-#[test]
 fn scheme_todo_state_aot_uses_config_only_without_file_directives() {
     let configured_todo = vec!["WAIT".to_string()];
     let configured_done = vec!["FINISHED".to_string()];
@@ -72,7 +59,6 @@ fn scheme_todo_state_aot_uses_config_only_without_file_directives() {
     );
 }
 
-#[test]
 fn scheme_todo_directive_aot_is_case_insensitive() {
     macro_rules! check_todo_directive_aot {
         ($($key:expr => $expected:expr),+ $(,)?) => {
@@ -89,7 +75,6 @@ fn scheme_todo_directive_aot_is_case_insensitive() {
     );
 }
 
-#[test]
 fn scheme_todo_keyword_value_aot_uses_file_local_declarations() {
     let directives = vec!["WAIT(w) | DONE(d)".to_string()];
     let configured_todo = vec!["TODO".to_string()];
@@ -123,7 +108,6 @@ fn scheme_todo_keyword_value_aot_uses_file_local_declarations() {
     );
 }
 
-#[test]
 fn scheme_headline_content_aot_preserves_remaining_text() {
     let directives = vec!["WAIT(w) | DONE(d)".to_string()];
     macro_rules! check_content {
@@ -142,7 +126,6 @@ fn scheme_headline_content_aot_preserves_remaining_text() {
     );
 }
 
-#[test]
 fn scheme_source_title_aot_preserves_tag_boundary_whitespace() {
     macro_rules! check_source_title_aot {
         ($($body:expr, $todo:expr => $expected:expr),+ $(,)?) => {
@@ -156,7 +139,6 @@ fn scheme_source_title_aot_preserves_tag_boundary_whitespace() {
     );
 }
 
-#[test]
 fn scheme_planning_aot_classifies_declared_keys() {
     macro_rules! check_planning_aot {
         ($function:ident; $($input:expr => $expected:expr),+ $(,)?) => {
@@ -171,7 +153,6 @@ fn scheme_planning_aot_classifies_declared_keys() {
     );
 }
 
-#[test]
 fn scheme_headline_display_title_aot_projects_decorations() {
     macro_rules! check_priority_token {
         ($($token:expr => $expected:expr),+ $(,)?) => {
@@ -207,7 +188,6 @@ fn scheme_headline_display_title_aot_projects_decorations() {
     );
 }
 
-#[test]
 fn scheme_memory_headline_state_aot_classifies_admitted_elements() {
     macro_rules! check_state {
         ($($todo:expr, $closed:expr, $planned:expr, $archived:expr => $expected:expr),+ $(,)?) => {
@@ -224,7 +204,6 @@ fn scheme_memory_headline_state_aot_classifies_admitted_elements() {
     );
 }
 
-#[test]
 fn scheme_comment_marker_aot_keeps_org_headline_case_rule() {
     macro_rules! check_comment {
         ($($title:expr => $expected:expr),+ $(,)?) => {
@@ -239,7 +218,6 @@ fn scheme_comment_marker_aot_keeps_org_headline_case_rule() {
     );
 }
 
-#[test]
 fn scheme_org_image_link_aot_classifies_targets() {
     macro_rules! check_image_target {
         ($($target:expr => $expected:expr),+ $(,)?) => {
@@ -254,7 +232,6 @@ fn scheme_org_image_link_aot_classifies_targets() {
     );
 }
 
-#[test]
 fn scheme_org_link_path_aot_classifies_internal_and_protocol_forms() {
     assert_eq!(org_link_kind("*Heading"), "headline");
     assert_eq!(org_link_kind("#custom"), "custom-id");
@@ -281,3 +258,54 @@ fn scheme_org_link_path_aot_classifies_internal_and_protocol_forms() {
     assert_eq!(org_link_search_kind("255"), "line-number");
     assert_eq!(org_link_search_value("*Heading"), "Heading");
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_headline_function_aot::scheme_todo_state_aot_uses_document_directives",
+        scheme_todo_state_aot_uses_document_directives,
+    ),
+    (
+        "org_headline_function_aot::scheme_todo_state_aot_uses_config_only_without_file_directives",
+        scheme_todo_state_aot_uses_config_only_without_file_directives,
+    ),
+    (
+        "org_headline_function_aot::scheme_todo_directive_aot_is_case_insensitive",
+        scheme_todo_directive_aot_is_case_insensitive,
+    ),
+    (
+        "org_headline_function_aot::scheme_todo_keyword_value_aot_uses_file_local_declarations",
+        scheme_todo_keyword_value_aot_uses_file_local_declarations,
+    ),
+    (
+        "org_headline_function_aot::scheme_headline_content_aot_preserves_remaining_text",
+        scheme_headline_content_aot_preserves_remaining_text,
+    ),
+    (
+        "org_headline_function_aot::scheme_source_title_aot_preserves_tag_boundary_whitespace",
+        scheme_source_title_aot_preserves_tag_boundary_whitespace,
+    ),
+    (
+        "org_headline_function_aot::scheme_planning_aot_classifies_declared_keys",
+        scheme_planning_aot_classifies_declared_keys,
+    ),
+    (
+        "org_headline_function_aot::scheme_headline_display_title_aot_projects_decorations",
+        scheme_headline_display_title_aot_projects_decorations,
+    ),
+    (
+        "org_headline_function_aot::scheme_memory_headline_state_aot_classifies_admitted_elements",
+        scheme_memory_headline_state_aot_classifies_admitted_elements,
+    ),
+    (
+        "org_headline_function_aot::scheme_comment_marker_aot_keeps_org_headline_case_rule",
+        scheme_comment_marker_aot_keeps_org_headline_case_rule,
+    ),
+    (
+        "org_headline_function_aot::scheme_org_image_link_aot_classifies_targets",
+        scheme_org_image_link_aot_classifies_targets,
+    ),
+    (
+        "org_headline_function_aot::scheme_org_link_path_aot_classifies_internal_and_protocol_forms",
+        scheme_org_link_path_aot_classifies_internal_and_protocol_forms,
+    ),
+];

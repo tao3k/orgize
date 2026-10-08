@@ -2,7 +2,7 @@
 //!
 //! Unmapped Element kinds fail explicitly; the old syntax parser is never used.
 
-use gerbil_parser_rowan::GraphRecord;
+use gerbil_parser_runtime::GraphRecord;
 
 use crate::entities::ENTITIES;
 use crate::export::{MarkdownExportOptions, special_strings};

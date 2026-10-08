@@ -3,7 +3,7 @@
 //! This layer does not recognize Org source. It only reads admitted graph
 //! records and calls Scheme-authored AOT headline functions.
 
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 
 use super::OrgAotDocument;
 
@@ -37,7 +37,7 @@ impl OrgAotDocument {
 }
 
 impl OrgHeadline<'_> {
-    fn record(&self) -> &gerbil_parser_rowan::GraphRecord {
+    fn record(&self) -> &gerbil_parser_runtime::GraphRecord {
         &self.document.records[self.id]
     }
 

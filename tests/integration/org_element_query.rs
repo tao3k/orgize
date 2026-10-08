@@ -14,7 +14,8 @@ macro_rules! check_org_aot_query {
     }};
 }
 
-#[test]
+// Registered in native_cases below: the harness initializes the native owner
+// before running these cases concurrently; do not also launch them via libtest.
 fn named_query_observation_binds_graph_local_ids_to_exact_source() {
     use orgize::{
         org_aot::{org_event_parser_digest, org_graph_spec, parse_org_aot},
@@ -62,7 +63,6 @@ fn named_query_observation_binds_graph_local_ids_to_exact_source() {
     assert!(later_observation.matches()[0].start_byte > first_observation.matches()[0].start_byte);
 }
 
-#[test]
 fn named_query_observation_retains_effective_parse_configuration() {
     use orgize::{
         ParseConfig,
@@ -94,7 +94,6 @@ fn named_query_observation_retains_effective_parse_configuration() {
     );
 }
 
-#[test]
 fn named_query_observation_rechecks_current_source_config_and_rule() {
     use orgize::{
         ParseConfig,
@@ -162,7 +161,6 @@ fn named_query_observation_rechecks_current_source_config_and_rule() {
     );
 }
 
-#[test]
 fn tagged_element_queries_inherit_custom_todo_state_and_scope() {
     let source = "#+SEQ_TODO: WAIT(w) | DONE(d)\n* Group\n** WAIT First\n** WAIT Review\n** WAIT Audit\n** DONE Child :work:\n* Other\n** WAIT Remote\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -203,7 +201,6 @@ fn tagged_element_queries_inherit_custom_todo_state_and_scope() {
     );
 }
 
-#[test]
 fn todo_keyword_query_obeys_file_local_declarations() {
     let source = "#+SEQ_TODO: HOLD | FINISHED\n* HOLD Review\n* WAIT is plain text\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -217,7 +214,6 @@ fn todo_keyword_query_obeys_file_local_declarations() {
     check_org_aot_query!(document, "tasks.open", 0 => [hold]);
 }
 
-#[test]
 fn supplied_element_query_packs_fail_closed_before_scanning() {
     use orgize::org_element_query::{
         OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryError, OrgElementQueryPack,
@@ -253,7 +249,6 @@ fn supplied_element_query_packs_fail_closed_before_scanning() {
     );
 }
 
-#[test]
 fn consumer_authored_scheme_query_pack_executes_without_gerbil() {
     let source = "#+TODO: WAIT | DONE\n* Team\n** WAIT [#A] Review patch :work:\nEvidence [cite:@doe2020]\n** DONE Review release\n** WAIT Audit\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -301,3 +296,34 @@ fn consumer_authored_scheme_query_pack_executes_without_gerbil() {
         );
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_element_query::named_query_observation_binds_graph_local_ids_to_exact_source",
+        named_query_observation_binds_graph_local_ids_to_exact_source,
+    ),
+    (
+        "org_element_query::named_query_observation_retains_effective_parse_configuration",
+        named_query_observation_retains_effective_parse_configuration,
+    ),
+    (
+        "org_element_query::named_query_observation_rechecks_current_source_config_and_rule",
+        named_query_observation_rechecks_current_source_config_and_rule,
+    ),
+    (
+        "org_element_query::tagged_element_queries_inherit_custom_todo_state_and_scope",
+        tagged_element_queries_inherit_custom_todo_state_and_scope,
+    ),
+    (
+        "org_element_query::todo_keyword_query_obeys_file_local_declarations",
+        todo_keyword_query_obeys_file_local_declarations,
+    ),
+    (
+        "org_element_query::supplied_element_query_packs_fail_closed_before_scanning",
+        supplied_element_query_packs_fail_closed_before_scanning,
+    ),
+    (
+        "org_element_query::consumer_authored_scheme_query_pack_executes_without_gerbil",
+        consumer_authored_scheme_query_pack_executes_without_gerbil,
+    ),
+];

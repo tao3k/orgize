@@ -1,0 +1,123 @@
+//! Priority-cookie lint checks.
+
+use crate::ast::{
+    AstRef, ElementData, ParsedAst, PriorityProfile, PriorityRangeStatus, PriorityValue,
+};
+
+use super::model::{LintFinding, LintSeverity, location_for_range_bounds};
+
+pub(crate) fn priority_cookie_findings(
+    document: &ParsedAst,
+    source: &str,
+    profile: &PriorityProfile,
+) -> Vec<LintFinding> {
+    let mut starts = Vec::new();
+    document.visit(|node| match node {
+        AstRef::Section(section) => {
+            starts.push((u32::from(section.ann.range.start()) as usize, section.level));
+        }
+        AstRef::Element(element) => {
+            if let ElementData::Inlinetask(task) = &element.data {
+                starts.push((u32::from(element.ann.range.start()) as usize, task.level));
+            }
+        }
+        _ => {}
+    });
+    starts.sort_unstable_by_key(|(position, _)| *position);
+    starts.dedup_by_key(|(position, _)| *position);
+    starts
+        .into_iter()
+        .filter_map(|(position, level)| {
+            let line = source.get(position..)?.split_inclusive('\n').next()?;
+            priority_cookie_finding(source, position, level, line, profile)
+        })
+        .collect()
+}
+
+fn priority_cookie_finding(
+    source: &str,
+    position: usize,
+    level: usize,
+    segment: &str,
+    profile: &PriorityProfile,
+) -> Option<LintFinding> {
+    let line = segment.trim_end_matches('\n').trim_end_matches('\r');
+    let (start, end, message) = malformed_priority_cookie(line, level, profile)?;
+    Some(LintFinding {
+        code: "ORG010",
+        severity: LintSeverity::Warning,
+        message,
+        location: location_for_range_bounds(source, position + start, position + end),
+    })
+}
+
+fn malformed_priority_cookie(
+    line: &str,
+    level: usize,
+    profile: &PriorityProfile,
+) -> Option<(usize, usize, String)> {
+    let first = next_token(line, level)?;
+    if let Some(finding) = malformed_priority_token(line, first, profile) {
+        return Some(finding);
+    }
+
+    let second = next_token(line, first.1)?;
+    malformed_priority_token(line, second, profile)
+}
+
+fn malformed_priority_token(
+    line: &str,
+    token: (usize, usize),
+    profile: &PriorityProfile,
+) -> Option<(usize, usize, String)> {
+    let raw = &line[token.0..token.1];
+    if !raw.starts_with("[#") {
+        return None;
+    }
+    let Some(close) = raw.find(']') else {
+        return Some((
+            token.0,
+            token.1,
+            "priority cookie is missing a closing `]`".to_string(),
+        ));
+    };
+    if close + 1 != raw.len() {
+        return Some((
+            token.0,
+            token.1,
+            format!("priority cookie `{raw}` has trailing text after `]`"),
+        ));
+    }
+    let value = &raw[2..close];
+    let Some(value) = PriorityValue::parse(value) else {
+        return Some((
+            token.0,
+            token.1,
+            format!("priority cookie `{raw}` is not a supported Org priority value"),
+        ));
+    };
+    if profile.range_status_for_value(&value) == PriorityRangeStatus::InRange {
+        return None;
+    }
+    Some((
+        token.0,
+        token.1,
+        format!(
+            "priority cookie `{raw}` is outside configured priority range {}..{}",
+            profile.highest().to_normalized_string(),
+            profile.lowest().to_normalized_string()
+        ),
+    ))
+}
+
+fn next_token(line: &str, start: usize) -> Option<(usize, usize)> {
+    let token_start = line
+        .get(start..)?
+        .char_indices()
+        .find_map(|(position, ch)| (!ch.is_whitespace()).then_some(start + position))?;
+    let token_end = line[token_start..]
+        .char_indices()
+        .find(|(_, ch)| ch.is_whitespace())
+        .map_or(line.len(), |(position, _)| token_start + position);
+    Some((token_start, token_end))
+}

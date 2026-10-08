@@ -4,7 +4,6 @@ use orgize::{
     ast::{ElementData, MarkupKind, ObjectData},
 };
 
-#[test]
 fn semantic_ast_projects_object_gap_repairs() {
     let doc = Org::parse(
         r#"[[https://example.com][*bold* description]] [2003-09-16 Tue 09:39]--[2003-09-16 Tue 10:39] {{{macro(1\,a, two)}}}"#,
@@ -54,3 +53,8 @@ fn semantic_ast_projects_object_gap_repairs() {
         .expect("macro object");
     assert_eq!(macro_arguments, &["1,a".to_string(), "two".to_string()]);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_object_gap_repairs::semantic_ast_projects_object_gap_repairs",
+    semantic_ast_projects_object_gap_repairs,
+)];

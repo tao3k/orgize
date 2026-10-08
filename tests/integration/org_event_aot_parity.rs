@@ -1,25 +1,10 @@
 //! Source-backed graph and recovery checks for the sole Scheme event parser.
 
-use gerbil_parser_rowan::GraphRecord;
+#[path = "../support/org_graph.rs"]
+mod graph_support;
+pub(crate) use graph_support::assert_graph_integrity;
 use orgize::org_aot::parse_org_aot;
 
-pub(crate) fn assert_graph_integrity(source: &str, records: &[GraphRecord]) {
-    for (index, record) in records.iter().enumerate() {
-        assert_eq!(record.id, index);
-        assert!(usize::from(record.range.end()) <= source.len());
-        if let Some(parent_id) = record.parent_id {
-            let parent = &records[parent_id];
-            assert!(parent.child_ids.contains(&index));
-            assert!(parent.range.start() <= record.range.start());
-            assert!(record.range.end() <= parent.range.end());
-        }
-        for &child_id in &record.child_ids {
-            assert_eq!(records[child_id].parent_id, Some(index));
-        }
-    }
-}
-
-#[test]
 fn tracked_org_fixtures_keep_source_and_element_ancestry() {
     for (name, source, required) in [
         (
@@ -53,7 +38,6 @@ fn tracked_org_fixtures_keep_source_and_element_ancestry() {
     }
 }
 
-#[test]
 fn representative_fixture_keeps_footnote_ancestry_and_source() {
     let source = include_str!("../fixtures/org-elements/representative.org");
     let document = parse_org_aot(source).expect("Scheme event parser accepts representative Org");
@@ -65,7 +49,6 @@ fn representative_fixture_keeps_footnote_ancestry_and_source() {
     insta::assert_debug_snapshot!("aot_representative_graph", document.records());
 }
 
-#[test]
 fn unclosed_blocks_recover_before_headlines_and_parent_boundaries() {
     for (source, expected_headlines) in [
         ("* Parent\n#+begin_src rust\nbody\n** Next\nvisible\n", 2),
@@ -97,3 +80,18 @@ fn unclosed_blocks_recover_before_headlines_and_parent_boundaries() {
         }
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_event_aot_parity::tracked_org_fixtures_keep_source_and_element_ancestry",
+        tracked_org_fixtures_keep_source_and_element_ancestry,
+    ),
+    (
+        "org_event_aot_parity::representative_fixture_keeps_footnote_ancestry_and_source",
+        representative_fixture_keeps_footnote_ancestry_and_source,
+    ),
+    (
+        "org_event_aot_parity::unclosed_blocks_recover_before_headlines_and_parent_boundaries",
+        unclosed_blocks_recover_before_headlines_and_parent_boundaries,
+    ),
+];

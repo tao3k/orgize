@@ -1,291 +1,62 @@
-//! Source and example block metadata parsing for semantic projection.
+//! Typed projection of native Scheme block-line facts, never source scanning.
 
-use super::{BlockCodeRef, BlockLine, BlockSwitches};
+use super::{BlockCodeRef, BlockLine};
 
-pub(super) struct BlockLineOptions<'a> {
-    pub(super) switches: &'a BlockSwitches,
-    pub(super) tab_width: usize,
-    pub(super) preserve_indentation: bool,
-}
-
-pub(super) fn parse_block_lines<A>(
-    value: &str,
-    source: Option<&str>,
-    options: BlockLineOptions<'_>,
-    mut ann_for_line: impl FnMut(usize) -> A,
+pub(super) fn project_block_lines<A>(
+    rows: Vec<Vec<String>>,
+    source: &str,
+    mut ann_for_range: impl FnMut(usize, usize) -> A,
 ) -> Vec<BlockLine<A>> {
-    let label = options
-        .switches
-        .label_format
-        .clone()
-        .and_then(|pattern| CodeRefLabel::from_pattern(&pattern))
-        .unwrap_or_else(default_code_ref_label);
-    let source_lines = source.map(split_block_lines).unwrap_or_default();
-
-    let line_drafts = split_block_lines(value)
-        .into_iter()
-        .enumerate()
-        .map(|(index, value_line)| {
-            let number = index + 1;
-            let source = source_lines
-                .get(index)
-                .map(|line| line.text)
-                .unwrap_or(value_line.text);
-            let code_ref_match = code_ref_in_line(value_line.text, &label);
-            let value_without_code_ref =
-                remove_code_ref_match(value_line.text, code_ref_match.as_ref());
-            let code_ref = code_ref_match.map(|code_ref| BlockCodeRef {
-                line: number,
-                column: code_ref.column,
-                end_column: code_ref.end_column,
-                name: code_ref.name,
-                raw: code_ref.raw,
-            });
-            let expanded_value = tabs_to_spaces(value_line.text, options.tab_width);
-
-            BlockLineDraft {
-                ann: ann_for_line(index),
+    rows.into_iter()
+        .map(|row| {
+            let [
                 number,
-                source: source.to_string(),
-                value: value_line.text.to_string(),
-                expanded_value,
-                value_without_code_ref,
-                line_ending: value_line.ending.map(ToString::to_string),
-                code_ref,
-            }
-        })
-        .collect::<Vec<_>>();
-
-    let removed_indent = if options.preserve_indentation {
-        0
-    } else {
-        line_drafts
-            .iter()
-            .map(|line| leading_spaces(&line.expanded_value))
-            .min()
-            .unwrap_or(0)
-    };
-
-    line_drafts
-        .into_iter()
-        .map(|line| {
-            let normalized_value = drop_leading_spaces(&line.expanded_value, removed_indent);
-            let normalized_value_without_code_ref = remove_code_ref(&normalized_value, &label);
-
+                raw,
+                text,
+                normal,
+                without,
+                normal_without,
+                indent,
+                ending,
+                start,
+                end,
+                column,
+                end_column,
+                name,
+                reference,
+            ]: [String; 14] = row.try_into().expect("native block line row arity");
+            let number = native_number(&number);
+            let start = native_number(&start);
+            let end = native_number(&end);
+            assert!(
+                start <= end
+                    && end <= source.len()
+                    && source.is_char_boundary(start)
+                    && source.is_char_boundary(end),
+                "native block source range"
+            );
             BlockLine {
-                ann: line.ann,
-                number: line.number,
-                source: line.source,
-                value: line.value,
-                normalized_value,
-                value_without_code_ref: line.value_without_code_ref,
-                normalized_value_without_code_ref,
-                removed_indent,
-                line_ending: line.line_ending,
-                code_ref: line.code_ref,
+                ann: ann_for_range(start, end),
+                number,
+                source: raw,
+                value: text,
+                normalized_value: normal,
+                value_without_code_ref: without,
+                normalized_value_without_code_ref: normal_without,
+                removed_indent: native_number(&indent),
+                line_ending: (!ending.is_empty()).then_some(ending),
+                code_ref: (!name.is_empty()).then(|| BlockCodeRef {
+                    line: number,
+                    column: native_number(&column),
+                    end_column: native_number(&end_column),
+                    name,
+                    raw: reference,
+                }),
             }
         })
         .collect()
 }
 
-#[derive(Clone, Copy)]
-pub(super) struct SplitBlockLine<'a> {
-    pub(super) text: &'a str,
-    pub(super) ending: Option<&'a str>,
-    pub(super) start: usize,
-    pub(super) end: usize,
-}
-
-pub(super) fn split_block_lines(value: &str) -> Vec<SplitBlockLine<'_>> {
-    if value.is_empty() {
-        return Vec::new();
-    }
-
-    let bytes = value.as_bytes();
-    let mut lines = Vec::new();
-    let mut start = 0;
-    let mut index = 0;
-
-    while index < bytes.len() {
-        match bytes[index] {
-            b'\n' => {
-                lines.push(SplitBlockLine {
-                    text: &value[start..index],
-                    ending: Some("\n"),
-                    start,
-                    end: index,
-                });
-                index += 1;
-                start = index;
-            }
-            b'\r' if index + 1 < bytes.len() && bytes[index + 1] == b'\n' => {
-                lines.push(SplitBlockLine {
-                    text: &value[start..index],
-                    ending: Some("\r\n"),
-                    start,
-                    end: index,
-                });
-                index += 2;
-                start = index;
-            }
-            b'\r' => {
-                lines.push(SplitBlockLine {
-                    text: &value[start..index],
-                    ending: Some("\r"),
-                    start,
-                    end: index,
-                });
-                index += 1;
-                start = index;
-            }
-            _ => index += 1,
-        }
-    }
-
-    if start < value.len() {
-        lines.push(SplitBlockLine {
-            text: &value[start..],
-            ending: None,
-            start,
-            end: value.len(),
-        });
-    }
-
-    lines
-}
-
-struct BlockLineDraft<A> {
-    ann: A,
-    number: usize,
-    source: String,
-    value: String,
-    expanded_value: String,
-    value_without_code_ref: String,
-    line_ending: Option<String>,
-    code_ref: Option<BlockCodeRef>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct CodeRefLabel {
-    prefix: String,
-    suffix: String,
-}
-
-impl CodeRefLabel {
-    fn from_pattern(pattern: &str) -> Option<Self> {
-        let marker = "%s";
-        let marker_index = pattern.find(marker)?;
-        Some(Self {
-            prefix: pattern[..marker_index].to_string(),
-            suffix: pattern[marker_index + marker.len()..].to_string(),
-        })
-    }
-}
-
-fn default_code_ref_label() -> CodeRefLabel {
-    CodeRefLabel {
-        prefix: "(ref:".to_string(),
-        suffix: ")".to_string(),
-    }
-}
-
-struct CodeRefMatch {
-    end: usize,
-    remove_start: usize,
-    column: usize,
-    end_column: usize,
-    name: String,
-    raw: String,
-}
-
-fn code_ref_in_line(line: &str, label: &CodeRefLabel) -> Option<CodeRefMatch> {
-    for (index, _) in line.match_indices(&label.prefix) {
-        if let Some(code_ref) = code_ref_at(line, index, label) {
-            return Some(code_ref);
-        }
-    }
-
-    None
-}
-
-fn code_ref_at(line: &str, index: usize, label: &CodeRefLabel) -> Option<CodeRefMatch> {
-    let after_prefix = line.get(index + label.prefix.len()..)?;
-    let suffix_position = if label.suffix.is_empty() {
-        after_prefix
-            .char_indices()
-            .find(|(_, ch)| ch.is_whitespace())
-            .map(|(position, _)| position)
-            .unwrap_or(after_prefix.len())
-    } else {
-        after_prefix.find(&label.suffix)?
-    };
-    let name = &after_prefix[..suffix_position];
-    if name.is_empty()
-        || !name
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | ':'))
-    {
-        return None;
-    }
-
-    let end = index + label.prefix.len() + suffix_position + label.suffix.len();
-    let mut before = line[..index].char_indices().rev();
-    let remove_start = before
-        .find_map(|(byte_index, ch)| (!ch.is_whitespace()).then_some(byte_index + ch.len_utf8()))
-        .unwrap_or(0);
-    let column = line[..index].chars().count() + 1;
-    let end_column = column + line[index..end].chars().count();
-
-    Some(CodeRefMatch {
-        end,
-        remove_start,
-        column,
-        end_column,
-        name: name.to_string(),
-        raw: line[index..end].to_string(),
-    })
-}
-
-fn remove_code_ref(line: &str, label: &CodeRefLabel) -> String {
-    let Some(code_ref) = code_ref_in_line(line, label) else {
-        return line.to_string();
-    };
-
-    remove_code_ref_match(line, Some(&code_ref))
-}
-
-fn remove_code_ref_match(line: &str, code_ref: Option<&CodeRefMatch>) -> String {
-    let Some(code_ref) = code_ref else {
-        return line.to_string();
-    };
-
-    let mut value = String::new();
-    value.push_str(&line[..code_ref.remove_start]);
-    value.push_str(&line[code_ref.end..]);
-    value
-}
-
-fn tabs_to_spaces(line: &str, tab_width: usize) -> String {
-    let leading_width = line.chars().take_while(|ch| ch.is_whitespace()).count();
-    let mut value = String::new();
-
-    for ch in line.chars().take(leading_width) {
-        if ch == '\t' {
-            for _ in 0..tab_width {
-                value.push(' ');
-            }
-        } else {
-            value.push(ch);
-        }
-    }
-    value.extend(line.chars().skip(leading_width));
-    value
-}
-
-fn leading_spaces(value: &str) -> usize {
-    value.chars().take_while(|ch| *ch == ' ').count()
-}
-
-fn drop_leading_spaces(value: &str, count: usize) -> String {
-    value.chars().skip(count).collect()
+pub(super) fn native_number(value: &str) -> usize {
+    value.parse().expect("admitted native unsigned value")
 }

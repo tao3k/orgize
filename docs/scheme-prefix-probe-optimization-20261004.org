@@ -1,0 +1,111 @@
+#+title: Substring-free Scheme prefix probes — 2026-10-04
+
+* Change and scope
+=gerbil-parser/src/compiler/event-source-lines.ss= now compares prefix
+characters directly instead of allocating a substring for each probe.
+Case-sensitive Unicode character semantics, empty prefixes, too-long prefixes
+and mutable string observations remain unchanged. No runtime feature, kernel,
+compatibility path, scheduling policy or Cargo optimization profile changed.
+
+Parser base is detached =e7c6761dc79202abe50931bd78ee3f0930d61f8f= plus
+inherited fold edits. Orgize base is =479b2763fa1924385a2df824d029e9ba35341bcd=
+on =codex/native-org-recovery= with inherited migration preserved.
+Current source-lines SHA256:
+=9cd5be308c1e46a742dc23a5fd18b61d43db83a70ebfa5c95b30442a50185c0b=.
+Current fold-runtime SHA256:
+=bdbfb2bf30d19ec04135070f040b1372b82a375936c25a957234dce916eff473=.
+
+* Native Scheme evidence
+The private state suite (12 cases), event-fold suite (38 cases), and Org event
+aggregate pass with MODULE-OK, HARNESS-OK and final OK; no error markers.
+The prefix test compares against the previous substring expression across
+Unicode, emoji, CR/LF, NUL, empty and length boundaries and mutable strings.
+
+ASP's public scenario API runs the same three complete Org fixtures in two
+reversed-order baseline/candidate rounds: twelve receipts, twenty samples each.
+Six native Scheme comparisons pass identical input/event identities and config.
+Receipts: =target/scheme-benchmark-receipts/prefix-{baseline,candidate}-{doc,plain-links,quote-heavy}-r{1,2}.ss=.
+Whole-document latency remains noisy: quote-heavy median improves in round one
+but worsens in round two (4734000 -> 4807000ns); no general speedup is claimed.
+
+The isolated =#+= prefix probe uses the public ASP micro-kernel API and its
+normal 20000 warmup, 100000-operation batches, twenty samples, CPU bracket-min
+baseline and p50 admission. Both baseline legs resolve at this batch size.
+Two native Scheme receipt comparisons pass: ASP nsPerOpCeiling is 35 -> 22
+in both rounds. ASP cumulative allocation observations are 152175376 bytes
+(baseline) versus 91374416/91375376 (candidate). These include the harness and
+GC publication boundaries; they are not independently flushed bytes/op.
+Runs overlapped native compilation, so retain the local scope and raw receipts;
+do not extrapolate these probes to document throughput or an unloaded-host SLO.
+Receipts: =target/scheme-benchmark-receipts/prefix-probe-{baseline,candidate}-r{1,2}.ss=.
+All sampling, statistics and admission remain ASP-owned; no JS/JSON sidecar.
+
+* AOT closure
+The compiler restaged 275 modules into
+=target/prefix-probe-candidate-20261004/program.json=, binding both changed
+source-lines and fold-runtime static SCM from the isolated candidate directory.
+Other modules resolve from the already rebuilt PR13 graph. The normal default
+manifest remains the previously qualified b549 program until public qualification
+passes. Native Rust/Scheme builds and consumers are qualified below.
+No remote mutations were performed.
+
+* Rust native qualification
+Release build passes in 3m02s. The candidate program is
+=sha256:a8fa5deb44c22a1dedb65b76ebac50cafd9b71115d3ddda5638672f0aaccbe4f=.
+The full native candidate also includes the preceding pending join cleanup and
+ASCII-admission edits; native comparisons against b549 are not prefix-only A/B.
+All 54 native cases and 22 ordinary unit/policy cases pass; one library performance
+case remains ignored. This lane intentionally does not enable runtime-profile,
+so its count differs from the previous profiled lane.
+All 454 consumers pass at twelve callers (18.16s), with three separate ignored
+scenarios still excluded. The 1000/10000-document qualification completes 11000
+distinct-per-batch documents with 64 callers, eight native domains and the real
+Tokio process-domain driver. Activity/count checks and semantic comparison
+against the preceding b549 qualification both pass.
+Receipt: =native-runtime-prefix-rust-qualification-20261004.json=, emitted by
+the maintained native Rust benchmark owner, not an external Scheme stats sidecar.
+Frozen unit/consumer/corpus executables: =target/runtime-receipt-binaries/prefix-rust-*-20261004=.
+
+* Scheme native and cross-runtime qualification
+Scheme Release build passes in 4m23s. All 54 native cases, 22 ordinary unit/policy
+cases, and 454 consumers (12 callers, 19.60s) pass. One library performance case
+and three separate integration cases remain explicitly ignored.
+The Scheme 1000/10000-document, 64-caller, eight-domain Tokio qualification also
+completes 11000 documents. Strict maintained cross-runtime comparison passes
+program, adapter, benchmark, source corpus and semantic artifact identities,
+completed counts, worker exits and actual concurrency activity.
+The semantic artifact comparison against the previous b549 Scheme qualification
+passes as well. Total qualification completions across features: 22000.
+Receipt: =native-runtime-prefix-scheme-qualification-20261004.json=.
+Frozen executables: =target/runtime-receipt-binaries/prefix-scheme-*-20261004=.
+These lanes intentionally have runtime-profile disabled. Their end-to-end timings
+include validation/checksums and overlapped consumer qualification; do not rank
+intrinsic parser performance or claim isolated Scheme CPU stage measurements.
+The full 1/4/8-domain matrix and profiled inner-stage gates are not rerun
+for this candidate yet.
+The obsolete partial ASP benchmark-support build recipe has been removed; all
+new Scheme measurements import the already built public ASP Benchmark API.
+
+* Python and default selection
+Both normal non-profiled maturin abi3 extensions build and install. Sixteen tests
+pass for Scheme (1.34s) and Rust (1.42s), including exact runtime/program identity.
+The installed Python default remains Rust. Extensions are frozen at
+=target/runtime-receipt-binaries/prefix-python-{rust,scheme}-20261004.so=.
+The normal compiler manifest now selects the qualified a8fa candidate; the prior
+b549 manifest is recoverable at
+=target/native-program-history/before-prefix-probe-20261004.json=.
+
+* Non-profiled repeated native performance
+Both frozen native benchmarks complete 1000/10000 documents, 64 callers, eight
+domains, two repetitions. The maintained cross-runtime comparison passes all
+identity/count/activity fields. With qualification, each runtime completed 33000
+parses, 66000 total (distinct within batches, not globally unique).
+Performance receipts: =native-runtime-prefix-{rust,scheme}-performance-20261004.json=.
+At 10000 documents, Rust observes 601.39/358.25 docs/s and p95 302.406/442.284ms;
+Scheme observes 979.30/981.10 docs/s and p95 128.967/127.461ms.
+These sequential runs do not establish an intrinsic runtime winner or candidate
+speedup. Rust has large same-executable variation. During Scheme execution,
+a read-only process snapshot showed eight workers at 60–72% CPU; the targeted
+snapshot showed no compiler, but this neither proves an unloaded host nor explains
+Rust's slowdown. No external process was modified. Inner Scheme CPU attribution
+and repeat matched historical controls remain open performance gates.

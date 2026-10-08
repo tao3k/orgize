@@ -20,13 +20,13 @@
                  inline-link-node inline-link-target-token
                  key-value-line-marker key-value-line-node
                  key-value-line-key-token key-value-line-value-token)
-        (only-in "../languages/org/v1/parser.ss" org-v1-line-structure))
-(export org-v1-parser-test)
+        (only-in "../languages/org/parser.ss" org-line-structure))
+(export org-parser-test)
 
-(def org-v1-parser-test
+(def org-parser-test
   (test-suite "Org POO parser declaration"
     (test-case "Org owns sections, drawers, and greater blocks"
-      (let* ((structure org-v1-line-structure)
+      (let* ((structure org-line-structure)
              (heading (line-structure-heading structure))
              (blocks (line-structure-blocks structure))
              (source-block (car blocks))

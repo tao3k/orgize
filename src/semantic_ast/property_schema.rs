@@ -216,73 +216,26 @@ fn property_by_key<'a>(
 }
 
 fn property_schema_reference(value: &str) -> PropertySchemaReference {
-    let raw = value.trim().to_string();
-    if raw.is_empty() {
-        return PropertySchemaReference {
-            raw,
-            normalized: String::new(),
-            kind: PropertySchemaReferenceKind::Empty,
-        };
-    }
-    if let Some(target) = org_file_link_target(raw.as_str()) {
-        return PropertySchemaReference {
-            raw,
-            normalized: target,
-            kind: PropertySchemaReferenceKind::OrgFileLink,
-        };
-    }
-    if let Some(argument) = macro_reference_argument(raw.as_str()) {
-        return PropertySchemaReference {
-            raw,
-            normalized: argument,
-            kind: PropertySchemaReferenceKind::Macro,
-        };
-    }
-    let kind = if is_file_reference(raw.as_str()) {
-        PropertySchemaReferenceKind::File
-    } else {
-        PropertySchemaReferenceKind::ContractId
+    let mut rows = super::org_native_values::rows("property-schema-reference", &[value]);
+    assert_eq!(rows.len(), 1, "native schema reference count");
+    let [raw, normalized, kind]: [String; 3] = rows
+        .pop()
+        .unwrap()
+        .try_into()
+        .expect("native schema reference arity");
+    let kind = match kind.as_str() {
+        "empty" => PropertySchemaReferenceKind::Empty,
+        "org-file-link" => PropertySchemaReferenceKind::OrgFileLink,
+        "macro" => PropertySchemaReferenceKind::Macro,
+        "file" => PropertySchemaReferenceKind::File,
+        "contract-id" => PropertySchemaReferenceKind::ContractId,
+        _ => unreachable!("native schema reference kind"),
     };
     PropertySchemaReference {
-        normalized: raw.clone(),
         raw,
+        normalized,
         kind,
     }
-}
-
-fn org_file_link_target(value: &str) -> Option<String> {
-    let inner = value.strip_prefix("[[")?.strip_suffix("]]")?;
-    let target = inner.split("][").next().unwrap_or(inner).trim();
-    target
-        .starts_with("file:")
-        .then(|| target.to_string())
-        .filter(|target| !target.is_empty())
-}
-
-fn macro_reference_argument(value: &str) -> Option<String> {
-    let inner = value.strip_prefix("{{{")?.strip_suffix("}}}")?.trim();
-    let start = inner.find('(')?;
-    let end = inner.rfind(')')?;
-    (end > start + 1)
-        .then(|| inner[start + 1..end].trim().to_string())
-        .filter(|argument| !argument.is_empty())
-}
-
-fn is_file_reference(value: &str) -> bool {
-    let without_fragment = value
-        .split_once('#')
-        .map_or(value, |(path, _fragment)| path);
-    let path = without_fragment
-        .split_once('?')
-        .map_or(without_fragment, |(path, _query)| path);
-    path.starts_with("file:")
-        || path.starts_with("./")
-        || path.starts_with("../")
-        || path.ends_with(".json")
-        || path.ends_with(".toml")
-        || path.ends_with(".yaml")
-        || path.ends_with(".yml")
-        || path.contains('/')
 }
 
 fn schema_finding(

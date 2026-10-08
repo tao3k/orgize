@@ -3,10 +3,38 @@
 
 * Verdict
 
+The current native syntax closure work is tracked in
+[[file:20.08_native_scheme_closure_ledger.org][20.08 Native Scheme closure ledger]].
+Historical green results below are bound to their original candidates; they
+do not qualify a newer grammar or the full current closure matrix.
+
 The public =Org::parse= and =ParseConfig::parse= paths use the Org-owned Scheme
-event algorithm AOT-compiled to Rust/Rowan. The handwritten =src/syntax= parser
-and its typed-syntax export API have been removed. Ordinary Cargo consumers do
-not run Gerbil or consume Python parser artifacts.
+event strategy through the linked native Gerbil AOT/FFI program. Both the old
+handwritten =src/syntax= parser and the generated-Rust event parser are removed;
+no second production parser or test-only parser oracle is retained.
+
+The older Rust event-IR backend receipts below are historical audit evidence,
+not current implementation or maintenance requirements. The source build's
+native manifest preparation and release qualification remain open; current
+local evidence is in
+[[file:../native-org-public-cutover-20261003.org][the native public-entry receipt]].
+
+Current Query/Contract expression-value and expectation grammar migration is
+tracked in [[file:../native-expression-values-20261003.org][the native expression-value receipt]].
+That expression-value receipt is an earlier bounded candidate. The subsequent
+[[file:../native-contract-normalization-20261003.org][Contract composition receipt]]
+records Scheme-owned composition admission and both features' current 54 native
+cases, 22 pure/policy tests and complete 454-case consumer catalogs, including
+the unchanged strict query-performance gate. Semantic ownership and installed
+wheel/recovery gates remain open; none of the historical results below closes them.
+
+Document count alone does not prove high concurrency. The old one-domain
+1/8-caller corpus is a queue/admission baseline, not multicore parsing evidence.
+[[file:../native-runtime-parallel-20261003.org][The high-concurrency qualification]]
+separates 64 in-flight Tokio callers from 1/4/8 independent exec'd native domains
+over 1,000 and 10,000 distinct documents. Its benchmark pool is not a production
+process-pool API, and it does not prove actor parallelism within one runtime.
+Only complete matched receipts qualify that lane.
 
 The Scheme source, AOT event IR, Rowan tree, and Element graph are the parsing
 authority. Org-specific radio matching is a POO strategy in the Scheme
@@ -14,7 +42,7 @@ Elements module, lowered to a Rust function by the generic AOT backend. Rust
 only slices already-parsed Objects and projects Link AST values; the displaced
 handwritten Rust matcher is not compiled or exported.
 
-The current Orgize PR #18 candidate pins gerbil-parser PR #13 at
+The historical Orgize PR #18 candidate described below pinned gerbil-parser PR #13 at
 =4f6d9d67a069d823cfabc33511783b58017e08b3= for both Scheme and Cargo.
 The graph index supplies linear nearest-matching-ancestor projection; Orgize reuses it
 for headline scope instead of walking parent chains in separate Rust paths.

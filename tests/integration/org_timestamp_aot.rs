@@ -1,6 +1,5 @@
 //! End-to-end source-backed timestamp Objects from Scheme through Rust/Rowan.
 
-#[test]
 fn scheme_timestamps_project_structured_fields_through_rowan() {
     let source = "<2026-09-23 Wed 10:00-11:00 ++1w -2d> [2026-09-23]--[2026-09-24] <%%(diary-float t 1 2)> <%%(diary-float t 4 2) 12:00-14:00>\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -31,3 +30,8 @@ fn scheme_timestamps_project_structured_fields_through_rowan() {
     assert_eq!(timestamps[3].field("time"), Some("12:00-14:00"));
     assert_eq!(document.syntax().to_string(), source);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "org_timestamp_aot::scheme_timestamps_project_structured_fields_through_rowan",
+    scheme_timestamps_project_structured_fields_through_rowan,
+)];

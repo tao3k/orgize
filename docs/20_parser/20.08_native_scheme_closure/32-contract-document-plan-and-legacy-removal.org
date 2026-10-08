@@ -1,0 +1,116 @@
+#+title: Scheme Contract document plan and replaced Rust entry removal
+
+[[file:../20.08_native_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Ownership and replacement
+
+The private Scheme =org-contract/document-plan.ss= owner accepts counted
+parser-owned section properties and ordered source blocks in one request.
+Scheme owns property selection/last-wins normalization, aliases, kind/scope/
+severity policy, block roles and native cooked expression/expectation/Contract
+composition streams. Malformed streams remain explicit per-block outcomes:
+they neither poison other blocks nor become default successful assertions.
+Framing is fully decoded before grammar work begins, with bounded count
+validation and no repeated remaining-list length scan.
+
+Rust =org_contract/source_plan.rs= admits row counts, closed tags, presence
+flags, balanced cooked-value nesting and source-local indices. Its borrowed
+document anchors the call-local section mapping; Rust addresses never cross
+FFI and are never dereferenced from wire data. Source identity and range come
+from the existing lean parser-owned projection, not another Org parse/tree.
+Registry extraction and diagnostics consume the same admitted plan.
+
+Removed paths include the Rust metadata-only batch requester, per-property
+normalization/classification calls, Contract/Expectation raw-source forwarding
+wrappers and the four unused string-based Query/Contract admission/compiler
+entrypoints. Their tests now exercise the public document-level path instead
+of resurrecting a test-only legacy parser. Syntax lint shares the same native
+admission; an empty source-block catalog does no work.
+
+The existing operation-23 ONR1/OXV1 identity-bound ABI carries the new private
+mode. There is no JSON transport, new parser, compatibility fallback, public
+authoring DSL or host evaluator callback. Pure native grammar functions
+produce cooked values. Host filesystem/path aliases and typed Query IR
+projection remain Rust responsibilities in this candidate.
+
+* Qualification boundary
+
+Initial receipts live under =target/native-contract-document-20261007=;
+the decoder repair is rebuilt independently under
+=target/native-contract-document-fixed-20261007=.
+The fresh Org SDK compiles and stages a 321-module program with explicit
+parser/Org/stage source roots. A Release source check passes after migrating
+the test that still imported a deleted scalar Contract wrapper.
+
+The new native Scheme cases cover property last-wins/default/invalid policy,
+isolated malformed block streams, rejected counted framing, native ABI
+framing and ordered 1,000/10,000-block metadata. Existing Rust native cases
+add physical-request assertions: registry plus diagnostics use one native
+request; multi-block syntax admission also uses one. No test count is removed.
+The repaired Scheme-runtime five-target Release link completes. Its 85
+native and 32 ordinary cases pass (four ignored), including both physical
+request assertions and the migrated composition test. These are functional
+checks while other owned compilation continues, not performance evidence.
+The repaired identity is
+=sha256:dd1ca949d0e03846234d4deb5680cc2e216d57969e2bea9d2138058b904dd560=.
+
+The initial linked Scheme functional run detects a real decoder failure:
+the named =blocks= loop and its accumulated list used the same identifier,
+so a nonempty block catalog attempted to call the list. This is fixed by
+distinct =out-blocks= accumulation, not by restoring the scalar wrappers.
+The standalone module-context shortcut stalls before producing real test
+output and fails the unchanged five-second watchdog. That redundant shortcut
+and its duplicate preflight test are withdrawn; the three new tests remain
+in the existing production-linked native harness. The repaired program and
+linked consumers must be rebuilt; the failed identity cannot qualify the
+repaired source. No progress heartbeat or import trace promotes a pass.
+
+Both runtime-feature five-target Release links complete. Each passes all 85
+native units, its 32/33 ordinary units (four ignored), 11 public/Tokio cutover
+cases and 23 index cases. The fresh standalone Scheme harness passes all
+178 cases in 12 suites and final =OK=; its injected failure exits 42 with
+=FAILED= and never =OK=. The two original decoder-failing cases now pass.
+Source-only checks are not linked execution.
+No deadline, fixture, caller count, release setting or Gambit kernel is changed.
+
+* Open architecture gates
+
+After all owned compilation exits, both complete 457-case/12-caller catalogs
+fail only the unchanged 25ms Contract scenario. Scheme observes 232.750834ms
+(215.394ms admission, 10.052ms handoff, 5.383ms Scheme CPU); Rust observes
+79.995792ms (42.597ms admission, 2.663ms handoff, 3.856ms Scheme CPU).
+Both execute 29 physical native requests, versus 39 in the preceding
+=ad948797= scenario. This admits the reduced crossing count, not stable
+latency, a runtime ranking or semantic closure. Aggregate recipes correctly
+remain nonzero. Their other legs are not hidden: both features pass four-worker
+1,000/10,000 Query controls with complete full-projection hit/no-hit parity,
+plus their separately executed public cutover/index legs. Both final Release
+source checks pass for tests, benches and examples without production-library
+warnings. These are local receipts, not remote CI.
+
+Twenty alternating, compilation-free Scheme controls retain eight baseline
+and eleven candidate 25ms failures. Baseline range is 2.410167--111.805084ms
+(median 22.210980ms); candidate range is 1.942459--112.370000ms
+(median 29.355833ms). Every baseline/candidate reports 39/29 native requests.
+Measured Scheme CPU medians are 1.051/0.9675ms; these small diagnostic samples
+do not establish a CPU or end-to-end speedup, p99 or latency closure.
+The candidate's wall-clock tail does not improve in this sample. Preserve
+these negative observations when prioritizing scheduler/native-view work.
+Immutable consumer binaries are saved as
+=target/runtime-receipt-binaries/scheme-contract-dd1ca949-document-plan= and
+=target/runtime-receipt-binaries/rust-contract-dd1ca949-document-plan=.
+
+The scale controls still observe 1,016 native requests at 1,000 documents and
+10,160 at 10,000 documents. Code inspection confirms that document projection
+still separately invokes =KeywordFacts::batch= for nonempty document keywords.
+That is a remaining architectural crossing, not a Rust grammar parser.
+Fusing admitted keyword facts into the native owned artifact/result boundary
+must preserve complete projection/identity parity before deleting that path.
+
+One native document-plan request is not a proof that the whole public
+Contract scenario performs one request or meets 25 milliseconds. Full catalog
+and matched immutable controls must measure the remaining source/reference/
+lint pipeline. Native view/result lease migration and bounded long-job
+scheduling remain separate gates. Rust still constructs typed Query IR from
+admitted cooked values; this candidate does not certify a fully Scheme-owned
+Query IR compiler or whole-parser semantic closure.

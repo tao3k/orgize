@@ -1,6 +1,5 @@
 use orgize::lint::lint_org;
 
-#[test]
 fn lint_reports_babel_source_block_issues_with_snapshot() {
     let source = babel_source_block_issues_lint_fixture();
     let report = lint_org(source);
@@ -28,3 +27,8 @@ fn lint_reports_babel_source_block_issues_with_snapshot() {
 fn babel_source_block_issues_lint_fixture() -> &'static str {
     include_str!("../fixtures/lint/babel-source-block-issues.org")
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "lint_babel::lint_reports_babel_source_block_issues_with_snapshot",
+    lint_reports_babel_source_block_issues_with_snapshot,
+)];

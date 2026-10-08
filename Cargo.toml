@@ -14,10 +14,13 @@ readme = "README.md"
 keywords = ["orgmode", "org-mode", "emacs", "parser"]
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["runtime-rust"]
 
 [features]
-default = []
+default = ["runtime-rust"]
+runtime-rust = []
+runtime-scheme = []
+runtime-profile = []
 indexmap = ["dep:indexmap"]
 chrono = ["dep:chrono"]
 tracing = ["dep:tracing"]
@@ -26,7 +29,10 @@ syntax-org-fc = []
 md = ["dep:comrak"]
 
 [dependencies]
-gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "4f6d9d67a069d823cfabc33511783b58017e08b3", version = "0.1.0" }
+gerbil-scheme = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4", version = "0.1.0", features = ["external-program"] }
+gerbil-scheme-sys = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4", version = "0.1.0", features = ["external-program"] }
+gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", rev = "1b698747249d9cd9566297b6c3bcf6a8509c1cc2", version = "0.1.0" }
+gerbil-parser-artifact = { git = "https://github.com/tao3k/gerbil-parser", rev = "1b698747249d9cd9566297b6c3bcf6a8509c1cc2", version = "0.1.0" }
 blake3 = "1"
 chrono = { version = "0.4", optional = true }
 comrak = { version = "0.52", default-features = false, optional = true }
@@ -34,7 +40,6 @@ datafusion = { version = "53", default-features = false, features = ["sql"], opt
 indexmap = { version = "2", optional = true }
 jetscii = "0.5"
 memchr = "2"
-rowan = "0.16"
 serde_json = "1"
 sha2 = "0.10"
 ignore = "0.4"
@@ -49,19 +54,27 @@ insta = "1"
 asp-rust = { git = "https://github.com/tao3k/asp-rust", rev = "2419414ee5379bad89506496e3eaab928df68daf", version = "0.1.2" }
 asp-rust-build-support = { git = "https://github.com/tao3k/asp-rust", rev = "2419414ee5379bad89506496e3eaab928df68daf", version = "0.1.0" }
 slugify = "0.1"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1", features = ["io-util", "macros", "rt-multi-thread", "sync", "time"] }
 tracing-subscriber = { version = "0.3", features = ["fmt"] }
 
 [build-dependencies]
 orgize-build-support = { path = "build-support" }
 
 [[test]]
-name = "gerbil_rowan_cutover"
-path = "tests/integration/gerbil_rowan_cutover.rs"
+name = "gerbil_native_cutover"
+path = "tests/integration/gerbil_native_cutover.rs"
+
+[[test]]
+name = "native_host_children"
+path = "tests/integration/native_host_children.rs"
 
 [[test]]
 name = "org_cutover_parity"
 path = "tests/integration/org_cutover_parity.rs"
+
+[[test]]
+name = "org_native_index_handoff"
+path = "tests/integration/org_native_index_handoff.rs"
 
 [[test]]
 name = "html"
@@ -84,6 +97,10 @@ name = "parse"
 harness = false
 
 [[bench]]
+name = "org_runtime"
+harness = false
+
+[[bench]]
 name = "org_element_query"
 harness = false
 
@@ -91,11 +108,25 @@ harness = false
 name = "parse"
 required-features = ["tracing"]
 
+# Workspace-root profiles apply equally to orgize, build-support and orgizepy.
+[profile.dev]
+opt-level = 2
+debug = true
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.build-override]
+opt-level = 2
+
+[profile.release.build-override]
+opt-level = 3
+
 [profile.release]
 # Thin LTO keeps useful cross-crate optimization without the full monolithic
 # link cost of fat LTO. This is the right default for CI and open-source
 # release builds where rebuild time matters.
 opt-level = 3
+overflow-checks = true
 lto = "thin"
 codegen-units = 4
 strip = "symbols"

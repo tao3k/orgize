@@ -1,6 +1,5 @@
 use std::{io::Write, process::Stdio};
 
-#[test]
 fn export_md_reads_stdin_and_writes_markdown() {
     let mut child = crate::library_cli::orgize_cli_command()
         .arg("export")
@@ -30,3 +29,8 @@ fn export_md_reads_stdin_and_writes_markdown() {
     assert!(stdout.contains("| Key | Value |"), "{stdout}");
     assert!(stdout.contains("| CUSTOM_ID | task-1 |"), "{stdout}");
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "export_cli::export_cli_stdin::export_md_reads_stdin_and_writes_markdown",
+    export_md_reads_stdin_and_writes_markdown,
+)];

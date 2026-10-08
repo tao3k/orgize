@@ -1,0 +1,120 @@
+#+title: Integrated source consumers and parser revision alignment
+
+[[file:../20.08_native_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Exact inputs, 2026-10-06
+
+Cargo.toml, Cargo.lock and gerbil.pkg pin gerbil-parser PR #13 head
+=46f0c891131b8fd9f732559f0105f9f847077f36=. The detached
+=../gerbil-parser-pr-46f0c891= checkout retains the owner-bounded native Fold
+work from the previous dirty parser checkout. Its upstream build specification
+and new final-token-offset validation are preserved; this is not an unmodified
+upstream source receipt. The existing dirty checkout is not reset.
+
+The previous Orgize target artifacts are absent. Earlier modular records are
+historical evidence only, not current executable admission. All new outputs
+live under =target/source-consumer-closure-46f0c891-20261006=.
+
+* Native semantic owners
+
+=source-value-funs.ss= owns Include line-range/minlevel values and mode,
+Babel value tokens/quoting/variable assignment, noweb names, balanced call and
+literal recognition, PLOT/ORGTBL tokens/options/columns/booleans and RECEIVE
+markers. =source-header-policy-funs.ss= also owns Babel defaults, language
+header selection, tangle/comments/noweb/result policies and alignment cookies.
+=contract-reference-funs.ss= owns CONTRACT_ORG links/macros/path
+syntax, top-level separators, aliases, block parameters and severity.
+These are private pure functions exposed only through the existing closed
+native binary value operation. There is no JSON semantic transport, Scheme
+reader/evaluator, dynamic symbol dispatch or Rust grammar fallback for them.
+
+Rust retains typed rows/presence checks, enum construction, named-reference
+graph membership, graph indexing and explicit host filesystem/environment
+effects. Five consumer modules and their source fingerprints change together.
+Two-token ORGTBL SEND headers no longer index a nonexistent third token.
+
+* Fresh executable evidence
+
+The aligned parser's normal native build passes all 155 build targets. Orgize's
+complete normal build graph passes after correcting an extra closing parenthesis
+in the new balanced-call scanner. The compiler stages a 305-module AOT program
+including the new native semantic owners. The final Babel-policy closure
+stages 306 modules; the earlier 305-module candidate is not selected.
+
+- =source-tests/module-test.log=: all 5 source grammar cases, final OK.
+- =lifecycle-tests/module-test.log=: all 11 lifecycle cases, final OK.
+- =event-tests/event-test.log=: all 103 unchanged event cases, final OK.
+- =owner-tests/module-test.log=: 9 owner cases, final OK.
+- =elements-tests/module-test.log=: 14 element cases, final OK.
+- =radio-tests/module-test.log=: 5 radio cases, final OK.
+
+These checks do not admit the Rust/Python public consumer chain or a performance
+improvement. =native-source-consumer-admission-check= requires the same new
+program on both runtime features, 84 native cases, the unchanged 454-case
+consumer catalog, Query scenarios and both full concurrent matrices before
+default selection. No profile, timeout, kernel or concurrency policy changes.
+
+* Startup fixture migration and remaining admission
+
+Both final Release builds pass. Both unchanged 454-case catalogs pass at
+12 callers. The first library processes pass 81 native cases but fail three
+ordinary CONTRACT_ORG reference tests: those tests now invoke the native owner
+without exclusive startup. Their original assertions move into the existing
+parallel native catalog, raising it to 84 cases and leaving 24 ordinary cases.
+The failed transcripts and immutable pre-fixture-migration binaries remain.
+This changes test ownership, not production runtime initialization or concurrency.
+
+Both fixed library processes pass 84 concurrent native and 24 ordinary cases.
+The unchanged consumer catalog passes 454 cases on each feature. The original
+Contract property-scope 25 ms gate passes on both features. Both full matrices
+pass 1,000/10,000 documents, 64 callers and 1/4/8 independent execution domains:
+33,000 completed documents per feature, 66,000 total, with matching semantic
+artifacts, program, adapter and benchmark identities.
+
+All source-consumer owners in this record are implemented, including the two
+additional Babel/table decisions found during audit. This bounded owner-group
+implementation does not establish global semantic closure. Remaining raw
+predicates in =org_contract_model.rs= and named assertion role selection still
+need a source-versus-model ownership audit.
+
+* Performance admission is not closed
+
+The original Query 45 ms gate fails on both features: Rust p50 40.128 ms,
+maximum 74.886 ms; Scheme p50 93.624 ms, maximum 147.665 ms. These transcripts
+remain at ={rust,scheme}-query/query-scenario.log=. A later same-binary control
+passes (Rust maximum 30.256 ms, Scheme maximum 30.678 ms), without code changes.
+This variability has no proven root cause. Passing control logs are separate;
+the admission recipe still rejects the initial negative evidence. No default
+program is selected.
+
+Runtime ranking reverses across matrix shapes. At 10,000 documents, Rust/Scheme
+throughput is 93.18/106.01 docs/s for one domain, 137.30/365.80 for four domains,
+and 478.85/461.29 for eight domains. These are raw qualification measurements,
+not a stable winner or admitted speed improvement.
+
+Diagnostic profiles identify native Scheme Fold at roughly 8.5--11.4 ms per
+48-document Query sample and VM GC CPU at 5.15--5.62 ms. Rowan construction and
+graph projection are much smaller. These scopes overlap; VM-wide statistics
+are not exclusive causal attribution, and instrumented timing is not a speed
+comparison against the unprofiled binaries.
+
+An isolated =persistent-state= experiment shared the immutable suffix after
+the last updated state binding, preserving all-matches behavior without
+mutating helper scopes. Its fresh 155-target parser build, 103 event cases and
+Release diagnostic runtime build pass. The experiment is withdrawn: it has
+no convincing CPU/GC improvement in the matched controls.
+
+The frozen base-before diagnostic binary has p50 15.977 ms, maximum 18.268 ms;
+the candidate has p50 22.821 ms, maximum 24.706 ms. The frozen base-after
+binary fails the unchanged 45 ms gate at maximum 77.490 ms, with 19.652 ms
+owner admission and 24.085 ms completion handoff in that sample. Neither a
+stable regression nor improvement can be assigned to the state update under
+this variability. These inclusive wall scopes must not be added to or
+subtracted from CPU scopes as disjoint quantities.
+
+Raw logs and the experimental binary remain under =persistent-state= and
+=target/runtime-receipt-binaries=. The parser source restores the original
+pure map update, and the baseline parser artifacts are rebuilt after the
+experiment. Fresh staging restores a 306-module program and the restored
+event suite again passes all 103 cases with final OK. No experimental program
+is selected.

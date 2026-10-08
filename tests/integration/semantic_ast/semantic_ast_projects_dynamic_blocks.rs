@@ -5,7 +5,6 @@ use orgize::{
     org_aot::parse_org_aot,
 };
 
-#[test]
 fn semantic_ast_projects_dynamic_block_registry_records_supported_and_unknown_writers() {
     let doc = Org::parse(
         r#"#+BEGIN: clocktable :scope file :maxlevel 1
@@ -82,7 +81,6 @@ fn semantic_ast_projects_dynamic_block_registry_records_supported_and_unknown_wr
     assert_eq!(custom.content_line_count, 0);
 }
 
-#[test]
 fn dynamic_writer_name_is_not_replaced_by_an_affiliated_name() {
     let source = "#+NAME: report\n#+BEGIN: clocktable :scope file\n#+END:\n";
     let graph = parse_org_aot(source).expect("Scheme-AOT graph");
@@ -103,7 +101,6 @@ fn dynamic_writer_name_is_not_replaced_by_an_affiliated_name() {
     assert_eq!(doc.clock_table_plans().len(), 1);
 }
 
-#[test]
 fn dynamic_block_content_uses_scheme_closing_range() {
     let source = "#+BEGIN: clocktable\r\n\r\n#+END:later\r\n  output\r\n#+END:\r\n";
     let graph = parse_org_aot(source).expect("Scheme-AOT graph");
@@ -130,3 +127,18 @@ fn dynamic_block_content_uses_scheme_closing_range() {
         DynamicBlockContentState::ExistingOutput
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_dynamic_blocks::semantic_ast_projects_dynamic_block_registry_records_supported_and_unknown_writers",
+        semantic_ast_projects_dynamic_block_registry_records_supported_and_unknown_writers,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_dynamic_blocks::dynamic_writer_name_is_not_replaced_by_an_affiliated_name",
+        dynamic_writer_name_is_not_replaced_by_an_affiliated_name,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_dynamic_blocks::dynamic_block_content_uses_scheme_closing_range",
+        dynamic_block_content_uses_scheme_closing_range,
+    ),
+];

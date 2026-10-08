@@ -60,6 +60,8 @@ const INPUT: &[(&str, &str)] = &[
 ];
 
 pub fn bench_parse(c: &mut Criterion) {
+    // SAFETY: the first Criterion entrypoint precedes benchmark workers.
+    unsafe { orgize::initialize_native_runtime() }.expect("native benchmark startup");
     let mut group = c.benchmark_group("Org::parse");
 
     for &(id, org) in INPUT {

@@ -1,0 +1,116 @@
+#+title: Native runtime closure audit — 2026-10-04
+
+* Identity and scope
+Orgize =codex/native-org-recovery= at =479b2763fa1924385a2df824d029e9ba35341bcd=,
+with inherited dirty migration preserved. The selected program remains
+=sha256:a8fa5deb44c22a1dedb65b76ebac50cafd9b71115d3ddda5638672f0aaccbe4f=.
+No parser algorithm, Gambit kernel, runtime concurrency or Cargo profile was
+changed for the audit. Existing Justfile owners execute all gates.
+
+The 1/4/8-domain workload executes independent native worker processes behind
+Tokio admissions. It is not one Gambit VM executing on 1/4/8 CPUs. The Scheme
+feature's native service owns setup and one Scheme actor per domain; the source
+explicitly does not claim a general green-thread I/O scheduler or SMP runtime.
+Feature choice changes lifecycle/execution ownership, not the parser algorithm.
+Independent-domain qualification cannot close that separate VM/SMP capability.
+
+* Strict Query gate: failed, not ignored evidence
+The frozen unprofiled prefix Rust and Scheme library binaries were explicitly
+run through =native-runtime-ignored-test-run=, selecting
+=document_query_org_elements_aot_stays_inside_scenario_gate=.
+The existing 48-document ASP scenario remains target 5ms / maximum 45ms,
+zero warmups and three measured iterations.
+Rust: p50 24.712167ms; p95/max 87.719958ms; exit 101.
+Scheme: p50 154.333375ms; p95/max 225.253333ms; exit 101.
+Neither gate passed. Prior 454-consumer/catalog passes exclude this ignored
+library scenario and cannot substitute for this strict performance result.
+
+* Environment evidence and limits
+A read-only CPU snapshot during this audit showed several long-running devenv
+processes at roughly 50–74% CPU and native compiler tasks, concurrently with the
+qualification workload. No external process was stopped or changed.
+This establishes concurrent host load, not that it exclusively caused any
+historical or current regression. Qualification counts/semantics and unloaded
+performance are separate claims. No limit or assertion is relaxed to get green.
+
+* Pending audit gates
+Complete 1000/10000-document, 64-caller, 1/4/8-domain qualification for both
+runtime features. Then qualify the existing runtime-profile collector against
+the same program, compare semantic digests, and measure Scheme fold, tape,
+owner admission/service, copy and handoff through the existing diagnostic owner.
+CPU scope is the Scheme fold plus tape interval, not isolated fold CPU.
+Overlapping stage durations must not be summed as independent end-to-end work.
+
+* First full-domain qualification attempt
+The unprofiled Rust matrix ran with an explicit 300-second outer deadline while
+the native diagnostic build was active. All three 1000-document domain batches
+completed; the 10000-document one-domain batch completed (about 257 seconds).
+The four-domain 10000-document batch was still making progress at 1641/10000
+when the outer deadline terminated the matrix (exit 124).
+The benchmark publishes a receipt only after the complete matrix. No complete
+matrix receipt was published and this attempt is not a pass. The 64 callers and
+1/4/8-domain choices, semantic checks and internal worker deadlines are unchanged.
+
+* Current-program Rust diagnostic qualification
+The =runtime-rust,runtime-profile= release closure build completed successfully
+in 8m26s, with all native compile workers and release optimization unchanged.
+The immutable =prefix-profile-rust-{unit,consumer,corpus}-20261004= executables
+preserve that build. The library gate passed all 54 native cases and 26 ordinary
+and diagnostic cases; the one ignored strict scenario is the failed gate above,
+not a pass. The injected panic/reset test's panic output is expected and its
+assertions passed. The profile-enabled integration executable is built but its
+consumer suite has not been rerun in this audit.
+
+The diagnostic corpus completed 1000 and 10000 distinct documents (11000 total),
+64 callers and eight native execution domains. All worker exits, active-domain
+counts and existing transport/inner-stage gates passed. The same-program artifact
+comparison against the unprofiled prefix qualification passed for both scales.
+Thus enabling the diagnostic envelope preserved the qualified semantic digests.
+Receipt: =native-runtime-prefix-profile-rust-qualification-20261004.json=.
+
+Existing native receipt projection is available through
+=just native-runtime-owner-stage-report RECEIPT=; it is not a Scheme sampler or
+an external JavaScript benchmark. Empty/non-array input is rejected. Projection
+of historical receipts tests the report only, not the current program's speed.
+
+At 10000 documents, mean milliseconds per completed document were:
+| Stage | Mean ms | Scope |
+|-------+---------+-------|
+| Scheme fold wall | 35.813673 | Inner wall interval |
+| Tape wall | 0.210803 | Inner wall interval |
+| Fold plus tape thread CPU | 4.848178 | Combined interval, not isolated fold CPU |
+| Owner admission | 4.286674 | Submission through owner admission |
+| Owner service | 36.675719 | Includes fold, tape, copy and root release |
+| Native copy | 0.025113 | Included inside service |
+| Completion handoff | 0.503989 | Service completion through reply reception |
+| Rowan | 0.025711 | Caller-side tree build |
+| Graph projection | 0.031407 | Caller-side owned graph |
+| Supervisor queue | 296.719023 | Bounded admission queue |
+
+These qualification timings include semantic validation and concurrent host
+load; they do not rank runtime features or prove a stable throughput change.
+The 31.176299ms fold+tape wall-minus-CPU residual includes waits and descheduling;
+it does not identify their exclusive cause. Copy/Rowan/graph are not the dominant
+measured wall stages here. Overlapping intervals must not be summed. Scheme
+profile qualification and matched repeated diagnostic performance remain open.
+
+* Full-domain retry deliberately stopped under host saturation
+After the diagnostic build and corpus exited, the same immutable unprofiled Rust
+binary retried the full 1/4/8-domain matrix with a 600-second outer deadline,
+unchanged 64 callers, semantic checks and internal worker deadlines. This was
+not a relaxed performance assertion; the longer envelope covered all six batches.
+All three 1000-document batches completed. During the one-domain 10000-document
+batch, =uptime= reported load averages =119.16,104.04,83.78= at 11:34:31 local time.
+That is aggregate host load, not CPU attribution to a particular task.
+
+The benchmark's exact process group =98130= was resolved read-only; it contained
+only this owned gtimeout/Justfile/corpus invocation and its native worker. It was
+deliberately terminated with SIGTERM at 3703/10000 after about 174 seconds in that
+batch (exit 143), before the outer deadline. A subsequent process inspection found
+no benchmark workers or members of that group. No other task was stopped.
+No complete =native-runtime-prefix-rust-domains-20261004.json= was published.
+This retry is incomplete, not a pass or a second deadline failure. A saturated
+host cannot support an intrinsic runtime ranking; the full matrices, repeated
+performance comparison, Scheme diagnostic qualification and strict Query gate
+remain open. No parser code, concurrency, optimization profile or threshold was
+changed to mask those gaps.

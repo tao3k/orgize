@@ -2,7 +2,6 @@ use std::fs;
 
 use super::WorkspaceFixture;
 
-#[test]
 fn workspace_contract_rejects_sentinel_mixed_with_identity_reference() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -23,7 +22,6 @@ fn workspace_contract_rejects_sentinel_mixed_with_identity_reference() {
     );
 }
 
-#[test]
 fn workspace_contract_rejects_sentinel_mixed_across_repeated_properties() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -43,3 +41,14 @@ fn workspace_contract_rejects_sentinel_mixed_across_repeated_properties() {
         "property REFINES must not mix allowed sentinel values with identity references",
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "contract_workspace::reference_sentinel::workspace_contract_rejects_sentinel_mixed_with_identity_reference",
+        workspace_contract_rejects_sentinel_mixed_with_identity_reference,
+    ),
+    (
+        "contract_workspace::reference_sentinel::workspace_contract_rejects_sentinel_mixed_across_repeated_properties",
+        workspace_contract_rejects_sentinel_mixed_across_repeated_properties,
+    ),
+];

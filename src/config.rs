@@ -1,7 +1,7 @@
 //! Parser configuration for Org syntax and semantic projection.
 
 #[allow(dead_code)] // The full Scheme catalog is generated together; parsing uses this slice first.
-#[path = "../languages/org/v1/generated/elements.rs"]
+#[path = "../languages/org/generated/elements.rs"]
 mod org_elements;
 
 pub(crate) fn org_affiliated_keyword_names() -> &'static [&'static str] {

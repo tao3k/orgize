@@ -1,1 +1,0 @@
-{"name":"logbook_clock_duration_value","schema":"gerbil-scheme-rust.rust-function-ir.v1","body":{"result":{"arguments":[],"method":"trim","receiver":{"delimiter":{"value":"=>","kind":"string"},"kind":"after","value":{"kind":"name","value":"line"}},"kind":"method"},"bindings":[]},"result":"&str","parameters":[{"ty":"&str","name":"line"}]}

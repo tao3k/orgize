@@ -1,1 +1,0 @@
-{"parameters":[{"ty":"&str","name":"word"}],"name":"todo_word_name","schema":"gerbil-scheme-rust.rust-function-ir.v1","result":"String","body":{"result":{"delimiter":{"value":"(","kind":"string"},"value":{"value":"word","kind":"name"},"owned":true,"kind":"before"},"bindings":[]}}

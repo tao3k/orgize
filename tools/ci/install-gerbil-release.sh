@@ -23,6 +23,12 @@ echo "$GERBIL_PREFIX/bin" >> "${GITHUB_PATH:?}"
 {
   echo "GERBIL_PREFIX=$GERBIL_PREFIX"
   echo "GERBIL_HOME=$GERBIL_HOME"
+  echo "GERBIL_GSC=$GERBIL_HOME/bin/gsc"
   echo "GAMBOPT=$GAMBOPT"
   echo "GERBIL_PATH=${GITHUB_WORKSPACE:?}/.gerbil-native"
+  if [[ $(uname -s) == Darwin ]]; then
+    # The released SDK can name a previous Homebrew Cellar version. Resolve
+    # link libraries through the installed formula's stable opt prefix.
+    echo "LIBRARY_PATH=$(brew --prefix openssl)/lib:$(brew --prefix sqlite)/lib:$(brew --prefix zlib)/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
+  fi
 } >> "${GITHUB_ENV:?}"

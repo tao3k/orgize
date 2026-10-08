@@ -5,7 +5,7 @@ use std::{fs, process::ExitCode};
 use super::driver_paths::{collect_org_paths, display_path, format_path_error, read_stdin};
 use crate::{
     ast::SddNodeRecord,
-    lint::{lint_model::LintOptions, lint_org_with_options},
+    lint::{lint_org_with_options, model::LintOptions},
     org::Org,
 };
 
