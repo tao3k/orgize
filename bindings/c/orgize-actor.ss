@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; Private native task boundary. The POO parser remains the semantic owner.
-(import (only-in "../../languages/org/v1/rowan-event-runtime.ss"
+(import (only-in "../../languages/org/rowan-event-runtime.ss"
                  parse-org-rowan-events-with-parameters))
 (export org-parse-batch)
 

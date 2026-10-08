@@ -3,7 +3,7 @@
 (import (only-in "orgize-native.ss" orgize-c-round-trip)
         (only-in "orgize-scheme-runtime.ss" orgize-scheme-runtime-link-anchor)
         (only-in :gerbil-scheme-rust/scheme/native gerbil-rs-root-bytevector)
-        (only-in "../../languages/org/v1/rowan-event-tape.ss" org-request->tape))
+        (only-in "../../languages/org/rowan-event-tape.ss" org-request->tape))
 (export main contract-link-anchor runtime-link-anchor)
 (def contract-link-anchor orgize-c-round-trip)
 (def runtime-link-anchor orgize-scheme-runtime-link-anchor)
@@ -24,5 +24,5 @@
        (let ((bytes (make-u8vector length)))
          (if (= (orgize/bindings/c/orgize-parser#copy-request input length bytes) 1)
            (gerbil-scheme-rust/scheme/native#gerbil-rs-root-bytevector
-            (orgize/languages/org/v1/rowan-event-tape#org-request->tape bytes))
+            (orgize/languages/org/rowan-event-tape#org-request->tape bytes))
            0))))))

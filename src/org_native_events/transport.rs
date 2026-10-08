@@ -2,7 +2,7 @@
 use super::batch;
 use crate::c_ffi::{ContractInput, ContractOutput};
 use crate::org_aot::{NativeExpressionValue, native_expression};
-use gerbil_parser_rowan::{KindCategory, LanguageSpec, TreeEvent};
+use gerbil_parser_runtime::{KindCategory, LanguageSpec, TreeEvent};
 // Native ingress references this crate's C ABI without calling it from Rust.
 // Retain its Rust ABI wrappers and native lifecycle archive in both lanes.
 #[cfg(not(feature = "runtime-scheme"))]
@@ -185,6 +185,8 @@ pub(crate) fn initialize_owner() -> Result<(), String> {
                             } => {
                                 let admission = submitted.elapsed();
                                 let service = submitted.child();
+                                #[cfg(all(feature = "runtime-profile", unix))]
+                                let cpu_begin = service.thread_cpu();
                                 let mut copy_ns = 0;
                                 let result = export
                                     .call(&bytes)
@@ -199,9 +201,19 @@ pub(crate) fn initialize_owner() -> Result<(), String> {
                                     .map_err(|error| error.to_string());
                                 // The root is dropped on this thread before its copied bytes
                                 // reach callers. No runtime handle or Scheme value is Send.
+                                #[cfg(all(feature = "runtime-profile", unix))]
+                                let cpu_ns = cpu_begin.map_or(0, |begin| {
+                                    service
+                                        .thread_cpu()
+                                        .expect("active owner CPU")
+                                        .checked_sub(begin)
+                                        .expect("native owner CPU regressed")
+                                });
+                                #[cfg(not(all(feature = "runtime-profile", unix)))]
+                                let cpu_ns = 0;
                                 let reply = crate::runtime_profile::OwnerReply::new(
                                     result,
-                                    [admission, service.elapsed(), copy_ns],
+                                    [admission, service.elapsed(), copy_ns, cpu_ns],
                                     submitted.child(),
                                 );
                                 let _ = response.send(reply);
@@ -310,13 +322,6 @@ pub(crate) fn parse_expression_values(
     parse_values(source, 2, grammar)
 }
 
-pub(crate) fn parse_expectation_values(
-    source: &str,
-    grammar: &LanguageSpec,
-) -> Result<Vec<NativeExpressionValue>, String> {
-    parse_values(source, 3, grammar)
-}
-
 fn parse_values(
     source: &str,
     operation: u8,
@@ -324,13 +329,6 @@ fn parse_values(
 ) -> Result<Vec<NativeExpressionValue>, String> {
     let tape = request_tape(source, operation, 0, 0)?;
     native_expression::decode(tape.as_ref(), grammar.grammar_digest)
-}
-
-pub(crate) fn parse_contract_values(
-    source: &str,
-    grammar: &LanguageSpec,
-) -> Result<Vec<NativeExpressionValue>, String> {
-    parse_values(source, 4, grammar)
 }
 
 fn request_tape(
@@ -368,7 +366,9 @@ fn request_bytes(
             bytes.extend_from_slice(source);
             Ok(bytes)
         })?;
-    crate::runtime_profile::stage("native.transport_inclusive", || transport_parse(bytes))
+    crate::runtime_profile::stage("native.transport_inclusive", || {
+        crate::runtime_profile::operation(bytes[4], || transport_parse(bytes))
+    })
 }
 
 /// Encode values only. Scheme owns template syntax and secondary-value calls.
@@ -504,11 +504,11 @@ fn transport_parse(bytes: Vec<u8>) -> Result<NativeTape, String> {
     // completion. The native actor copies its Scheme tape before waking us;
     // the result never contains a Scheme pointer or GC root.
     #[cfg(feature = "runtime-profile")]
-    let mut timings = [0_u64; 4];
+    let mut timings = [0_u64; 5];
     let status = {
         #[cfg(feature = "runtime-profile")]
         if crate::runtime_profile::is_active() {
-            // SAFETY: all four timing words stay live until synchronous completion.
+            // SAFETY: all five timing words stay live until synchronous completion.
             unsafe {
                 orgize_scheme_parse_profiled(
                     bytes.as_ptr(),
@@ -535,7 +535,10 @@ fn transport_parse(bytes: Vec<u8>) -> Result<NativeTape, String> {
     }
     #[cfg(feature = "runtime-profile")]
     if crate::runtime_profile::is_active() {
-        crate::runtime_profile::record_transport([timings[0], timings[1], timings[2]], timings[3]);
+        crate::runtime_profile::record_transport(
+            [timings[0], timings[1], timings[2], timings[4]],
+            timings[3],
+        );
     }
     Ok(NativeTape {
         pointer: std::ptr::NonNull::new(pointer).unwrap(),

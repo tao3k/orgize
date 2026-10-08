@@ -1,9 +1,9 @@
 //! Typed admission of Scheme-owned MACRO definition fields.
 
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 
 use super::{Keyword, MacroDefinition, ParsedAnnotation};
-use gerbil_parser_rowan::GraphRecord;
+use gerbil_parser_runtime::GraphRecord;
 
 pub(super) fn macro_definition(
     record: &GraphRecord,

@@ -1,7 +1,7 @@
 //! Typed AST projection of matches selected by the Scheme-AOT source matcher.
 //! This module does not search Org text or decide word boundaries/priority.
 
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 
 use super::{GraphProjector, Link, LinkDescriptionState, LinkMediaKind, LinkPath, LinkTarget};
 use crate::{

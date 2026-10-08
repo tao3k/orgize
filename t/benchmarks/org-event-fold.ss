@@ -5,7 +5,7 @@
                  benchmark-run/result benchmark-receipt-pass?
                  benchmark-fixture-contract-pass?)
         (only-in :gerbil-parser/src/runtime/identity sha256-text)
-        (only-in "../../languages/org/v1/rowan-event-runtime.ss" parse-org-rowan-events)
+        (only-in "../../languages/org/rowan-event-runtime.ss" parse-org-rowan-events)
         (only-in "../org-parser-test-support.ss" org-events-cover-source?))
 (export main)
 
@@ -26,45 +26,49 @@
       (namePredicateEvaluations . unmeasured))))
 
 (def (main label fixture contract output)
+  (displayln "ORG-EVENT-BENCHMARK-BEGIN " label " " fixture)
+  (force-output)
   (let* ((configuration (call-with-input-file contract read))
-         (source (call-with-input-file fixture read-all-as-string))
-         (expected (parse-org-rowan-events source)))
+         (source (call-with-input-file fixture read-all-as-string)))
     (unless (benchmark-fixture-contract-pass? configuration)
       (error "invalid ASP benchmark fixture" configuration))
     (when (and (not (equal? output "")) (file-exists? output))
       (error "refuse to overwrite benchmark receipt" output))
-    (unless (org-events-cover-source? source expected)
-      (error "benchmark events do not partition the source" fixture))
-    (displayln "ORG-EVENT-BENCHMARK-BEGIN " label " " fixture)
+    (displayln "ORG-EVENT-BENCHMARK-SEMANTIC-BEGIN")
     (force-output)
-    ;; ASP owns sampling, GC, timing, statistics and p95 admission.
-    ;; Check the returned admitted result outside timing; this is not a check
-    ;; of every intermediate timed operation.
-    (let-values (((measurement result)
-                  (benchmark-run/result
-                   configuration (lambda () (parse-org-rowan-events source)))))
-      (unless (equal? result expected)
-        (error "benchmark event semantics changed" label fixture))
-      (let ((receipt
-             `((schema . orgize.scheme-event-fold.asp.v1)
-               (label . ,label)
-               (fixture . ,fixture)
-               (contract . ,configuration)
-               (libraries . ,(getenv "GERBIL_LOADPATH" ""))
-               (sourceBytes . ,(u8vector-length (string->utf8 source)))
-               (sourceIdentity . ,(sha256-text source))
-               (eventIdentity . ,(sha256-text
-                                  (call-with-output-string
-                                   (lambda (port) (write expected port)))))
-               (entityResultSummary . ,(entity-result-summary source expected))
-               (benchmark . ,measurement))))
-        (unless (equal? output "")
-          (call-with-output-file output
-            (lambda (port) (write receipt port) (newline port))))
-        (write receipt)
-        (newline)
-        (force-output)
-        (unless (benchmark-receipt-pass? measurement)
-          (error "ASP benchmark admission failed; diagnostic receipt preserved"
-                 label output))))
-    (displayln "ORG-EVENT-BENCHMARK-OK")))
+    (let (expected (parse-org-rowan-events source))
+      (unless (org-events-cover-source? source expected)
+        (error "benchmark events do not partition the source" fixture))
+      (displayln "ORG-EVENT-BENCHMARK-SAMPLING-BEGIN")
+      (force-output)
+      ;; ASP owns sampling, GC, timing, statistics and p95 admission.
+      ;; Check the returned admitted result outside timing; this is not a check
+      ;; of every intermediate timed operation.
+      (let-values (((measurement result)
+                    (benchmark-run/result
+                     configuration (lambda () (parse-org-rowan-events source)))))
+        (unless (equal? result expected)
+          (error "benchmark event semantics changed" label fixture))
+        (let ((receipt
+               `((schema . orgize.scheme-event-fold.asp.v1)
+                 (label . ,label)
+                 (fixture . ,fixture)
+                 (contract . ,configuration)
+                 (libraries . ,(getenv "GERBIL_LOADPATH" ""))
+                 (sourceBytes . ,(u8vector-length (string->utf8 source)))
+                 (sourceIdentity . ,(sha256-text source))
+                 (eventIdentity . ,(sha256-text
+                                    (call-with-output-string
+                                     (lambda (port) (write expected port)))))
+                 (entityResultSummary . ,(entity-result-summary source expected))
+                 (benchmark . ,measurement))))
+          (unless (equal? output "")
+            (call-with-output-file output
+              (lambda (port) (write receipt port) (newline port))))
+          (write receipt)
+          (newline)
+          (force-output)
+          (unless (benchmark-receipt-pass? measurement)
+            (error "ASP benchmark admission failed; diagnostic receipt preserved"
+                   label output))))
+      (displayln "ORG-EVENT-BENCHMARK-OK"))))

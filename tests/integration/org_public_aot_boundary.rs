@@ -6,7 +6,7 @@ fn public_parse_returns_the_scheme_aot_document() {
     let source = "* TODO One\nBody\n";
     let document: OrgAotDocument = Org::parse(source);
     assert_eq!(document.to_org(), source);
-    assert_eq!(document.receipt().language, "org");
+    assert_eq!(document.receipt().language, "org-mode");
     assert_eq!(
         document.receipt().parser_digest,
         Some(orgize::org_aot::org_event_parser_digest())

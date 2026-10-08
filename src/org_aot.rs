@@ -1,4 +1,4 @@
-//! Native Gerbil Org parsing with Scheme-declared Rowan/Element projections.
+//! Native Gerbil Org parsing with source-backed navigation and Element projections.
 //!
 //! The default AOT entrypoint runs the Org-owned Scheme event algorithm.
 //! The public `Org` facade uses this parser; the owned semantic AST is a
@@ -6,11 +6,11 @@
 
 use std::{collections::HashMap, sync::OnceLock};
 
-use gerbil_parser_rowan::{
+use gerbil_parser_runtime::TextRange;
+use gerbil_parser_runtime::{
     Diagnostic, GraphIndex, GraphProjectionSpec, GraphRecord, LanguageSpec, Parse, ParseError,
     ParseReceipt, SyntaxNode, parse_generated_events, project_syntax_graph,
 };
-use rowan::TextRange;
 
 use crate::config::ParseConfig;
 use crate::contract_feature::{
@@ -19,10 +19,10 @@ use crate::contract_feature::{
 };
 
 #[rustfmt::skip]
-#[path = "../languages/org/v1/generated/parser.rs"]
+#[path = "../languages/org/generated/parser.rs"]
 mod grammar;
 #[rustfmt::skip]
-#[path = "../languages/org/v1/generated/graph.rs"]
+#[path = "../languages/org/generated/graph.rs"]
 mod graph;
 #[path = "org_aot_contract_plan.rs"]
 mod contract_plan;
@@ -33,6 +33,8 @@ pub use headline_view::OrgHeadline;
 mod affiliation;
 #[path = "org_native_identity.rs"]
 mod event_identity;
+#[path = "org_aot_keyword_view.rs"]
+mod keyword_view;
 #[path = "org_native_semantic_functions.rs"]
 mod native_functions;
 
@@ -47,20 +49,6 @@ pub(crate) fn parse_native_expression_values(
     grammar: &LanguageSpec,
 ) -> Result<Vec<NativeExpressionValue>, String> {
     native_events::parse_expression_values(source, grammar)
-}
-
-pub(crate) fn parse_native_expectation_values(
-    source: &str,
-    grammar: &LanguageSpec,
-) -> Result<Vec<NativeExpressionValue>, String> {
-    native_events::parse_expectation_values(source, grammar)
-}
-
-pub(crate) fn parse_native_contract_values(
-    source: &str,
-    grammar: &LanguageSpec,
-) -> Result<Vec<NativeExpressionValue>, String> {
-    native_events::parse_contract_values(source, grammar)
 }
 
 pub(crate) fn initialize_native_owner() -> Result<(), String> {
@@ -114,7 +102,7 @@ pub(crate) fn evaluate_native_contract(
     native_events::evaluate_contract(input)
 }
 
-/// A source-backed, lossless Rowan tree and its Scheme-declared Element graph.
+/// A source-backed navigation index and its Scheme-declared Element graph.
 /// Native parsing requires explicit [`crate::initialize_native_runtime`] at
 /// exclusive host startup; parse calls never initialize the runtime implicitly.
 #[derive(Debug)]
@@ -124,6 +112,7 @@ pub struct OrgAotDocument {
     base_config: ParseConfig,
     config: ParseConfig,
     headline_properties: Vec<Option<HeadlineProperties>>,
+    keyword_plans: keyword_view::KeywordPlans,
     graph_index: GraphIndex,
     headline_ancestors: Vec<Option<usize>>,
     affiliations: OnceLock<HashMap<usize, Vec<usize>>>,
@@ -219,10 +208,10 @@ pub(crate) mod batch_tests;
 
 fn parse_org_aot_events(
     source: &str,
-    events: Vec<gerbil_parser_rowan::TreeEvent>,
+    events: Vec<gerbil_parser_runtime::TreeEvent>,
     config: &ParseConfig,
 ) -> Result<OrgAotDocument, OrgAotError> {
-    let parse = crate::runtime_profile::stage("rowan.build", || {
+    let parse = crate::runtime_profile::stage("artifact.syntax_index", || {
         parse_generated_events(
             &grammar::LANGUAGE,
             event_identity::NATIVE_PARSER_DIGEST,
@@ -248,10 +237,6 @@ pub(crate) fn org_link_protocol(path: &str) -> String {
 
 pub(crate) fn org_link_protocol_path(path: &str) -> String {
     native_functions::org_link_protocol_path(path)
-}
-
-pub(crate) fn headline_anchor_slug(title: &str) -> String {
-    native_functions::headline_anchor_slug(title)
 }
 
 pub(crate) fn org_expand_link_abbreviation(
@@ -282,13 +267,16 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
             })
             .expect("validated graph index and records have the same preorder")
     });
-    let keyword_fields = records
+    let keyword_records = records
         .iter()
         .filter(|r| r.kind == "keyword")
+        .collect::<Vec<_>>();
+    let keyword_fields = keyword_records
+        .iter()
         .flat_map(|r| {
             [
                 r.field("key").unwrap_or_default(),
-                r.field("value").unwrap_or_default(),
+                r.field("raw-value").expect("source-backed keyword value"),
             ]
         })
         .collect::<Vec<_>>();
@@ -314,8 +302,17 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
         ]);
     }
     let refs = fields.iter().map(String::as_str).collect::<Vec<_>>();
-    let rows = native_semantic_rows(17, &refs).map_err(OrgAotError::Native)?;
-    assert_eq!(rows.len(), titles.len() + 1, "native headline row count");
+    let mut rows = native_semantic_rows(17, &refs).map_err(OrgAotError::Native)?;
+    if rows.len() < titles.len() + 1 {
+        return Err(OrgAotError::Native("truncated native document rows".into()));
+    }
+    let keyword_rows = rows.split_off(titles.len() + 1);
+    let keyword_ids = keyword_records
+        .iter()
+        .map(|record| record.id)
+        .collect::<Vec<_>>();
+    let keyword_plans = keyword_view::KeywordPlans::admit(&keyword_ids, keyword_rows)
+        .map_err(OrgAotError::Native)?;
     let config_row = &rows[0];
     assert!(config_row.len() >= 2, "native TODO config row");
     let open: usize = config_row[0].parse().expect("native open count");
@@ -372,6 +369,7 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
         base_config: config.clone(),
         config: effective_config,
         headline_properties,
+        keyword_plans,
         graph_index,
         headline_ancestors,
         affiliations: OnceLock::new(),
@@ -417,7 +415,7 @@ impl OrgAotDocument {
         parse_org_aot(source.as_ref())
     }
 
-    /// Return exact source text reconstructed from the lossless Rowan graph.
+    /// Return the original source retained by the navigation index.
     #[must_use]
     pub fn to_org(&self) -> String {
         self.syntax().to_string()
@@ -500,7 +498,7 @@ impl OrgAotDocument {
         &self.graph_index
     }
 
-    /// Return the lossless Rowan root; its text equals the parsed source.
+    /// Return the source-backed navigation root; no token text is duplicated.
     #[must_use]
     pub fn syntax(&self) -> SyntaxNode {
         self.parse.syntax()
@@ -516,6 +514,12 @@ impl OrgAotDocument {
     #[must_use]
     pub fn records(&self) -> &[GraphRecord] {
         &self.records
+    }
+
+    pub(crate) fn keyword_fact_rows(&self, record_id: usize) -> &[Vec<String>] {
+        self.keyword_plans
+            .get(record_id)
+            .expect("source-bound native keyword facts")
     }
 
     /// Return keyword record IDs attached to this Element by the Scheme-owned policy.

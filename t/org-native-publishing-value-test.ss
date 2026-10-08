@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 (import (only-in :std/test check test-case test-suite)
-        (only-in "../languages/org/v1/modules/org-parser/value-funs.ss" org-value-plan))
+        (only-in "../languages/org/modules/org-parser/value-funs.ss" org-value-plan))
 (export org-native-publishing-value-test)
 (def (plan key raw) (org-value-plan (list "publishing-keyword" key raw)))
 (def org-native-publishing-value-test

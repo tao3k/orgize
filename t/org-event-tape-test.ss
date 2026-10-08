@@ -1,7 +1,7 @@
 (import (only-in :std/test check test-case test-suite)
-        (only-in "../languages/org/v1/rowan-event-tape.ss"
+        (only-in "../languages/org/rowan-event-tape.ss"
                  org-events->tape org-request->tape org-event-tape-header)
-        (only-in "../languages/org/v1/rowan-event-runtime.ss"
+        (only-in "../languages/org/rowan-event-runtime.ss"
                  parse-org-rowan-events-with-parameters))
 (export org-event-tape-test)
 

@@ -29,9 +29,10 @@ syntax-org-fc = []
 md = ["dep:comrak"]
 
 [dependencies]
-gerbil-scheme = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "8bb8103b820a0c8d02446d6398197079c5275671", version = "0.1.0", features = ["external-program"] }
-gerbil-scheme-sys = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "8bb8103b820a0c8d02446d6398197079c5275671", version = "0.1.0", features = ["external-program"] }
-gerbil-parser-rowan = { git = "https://github.com/tao3k/gerbil-parser", rev = "619bf1905b9dfc9a4541d30e1daffe9190587254", version = "0.1.0" }
+gerbil-scheme = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4", version = "0.1.0", features = ["external-program"] }
+gerbil-scheme-sys = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4", version = "0.1.0", features = ["external-program"] }
+gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", rev = "012389bef4d6bbf240398d6f09c730160ed758a7", version = "0.1.0" }
+gerbil-parser-artifact = { git = "https://github.com/tao3k/gerbil-parser", rev = "012389bef4d6bbf240398d6f09c730160ed758a7", version = "0.1.0" }
 blake3 = "1"
 chrono = { version = "0.4", optional = true }
 comrak = { version = "0.52", default-features = false, optional = true }
@@ -39,7 +40,6 @@ datafusion = { version = "53", default-features = false, features = ["sql"], opt
 indexmap = { version = "2", optional = true }
 jetscii = "0.5"
 memchr = "2"
-rowan = "0.16"
 serde_json = "1"
 sha2 = "0.10"
 ignore = "0.4"
@@ -61,8 +61,8 @@ tracing-subscriber = { version = "0.3", features = ["fmt"] }
 orgize-build-support = { path = "build-support" }
 
 [[test]]
-name = "gerbil_rowan_cutover"
-path = "tests/integration/gerbil_rowan_cutover.rs"
+name = "gerbil_native_cutover"
+path = "tests/integration/gerbil_native_cutover.rs"
 
 [[test]]
 name = "native_host_children"
@@ -73,8 +73,8 @@ name = "org_cutover_parity"
 path = "tests/integration/org_cutover_parity.rs"
 
 [[test]]
-name = "org_rowan_event_handoff"
-path = "tests/integration/org_rowan_event_handoff.rs"
+name = "org_native_index_handoff"
+path = "tests/integration/org_native_index_handoff.rs"
 
 [[test]]
 name = "html"

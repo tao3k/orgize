@@ -5,6 +5,10 @@ use super::{ExportSettings, Keyword, LinkAbbreviation, ParsedAnnotation};
 pub(super) struct KeywordFacts(Vec<Vec<String>>);
 
 impl KeywordFacts {
+    pub(super) fn from_native_rows(rows: &[Vec<String>]) -> Self {
+        Self(rows.to_vec())
+    }
+
     pub(super) fn new(key: &str, value: &str) -> Self {
         Self::batch(&[(key, value)])
             .pop()

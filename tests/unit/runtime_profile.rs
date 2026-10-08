@@ -75,7 +75,13 @@ fn owner_reply_records_only_on_the_receiving_request() {
         let submitted = super::Stamp::start();
         let reply = std::thread::spawn(move || {
             assert!(!super::is_active());
-            super::OwnerReply::new(7, [11, 13, 17], submitted.child())
+            #[cfg(unix)]
+            {
+                let begin = submitted.thread_cpu().unwrap();
+                assert!(submitted.thread_cpu().unwrap() >= begin);
+                assert!(super::Stamp::start().thread_cpu().is_none());
+            }
+            super::OwnerReply::new(7, [11, 13, 17, 23], submitted.child())
         })
         .join()
         .unwrap();
@@ -84,19 +90,29 @@ fn owner_reply_records_only_on_the_receiving_request() {
     assert_eq!(timings["native.owner_admission"], 11);
     assert_eq!(timings["native.owner_service_inclusive"], 13);
     assert_eq!(timings["native.result_copy"], 17);
+    assert_eq!(timings["native.owner_thread_cpu_inclusive"], 23);
     assert!(timings.contains_key("native.completion_handoff"));
     assert!(measure(|| ()).1.is_empty());
 }
 
 #[test]
 fn transport_projection_retains_exact_request_local_values() {
-    let (_, timings) = measure(|| super::record_transport([11, 13, 17], 19));
+    let (_, timings) = measure(|| super::record_transport([11, 13, 17, 23], 19));
     assert_eq!(timings["native.owner_admission"], 11);
     assert_eq!(timings["native.owner_service_inclusive"], 13);
     assert_eq!(timings["native.result_copy"], 17);
     assert_eq!(timings["native.completion_handoff"], 19);
-    super::record_transport([1, 2, 3], 4);
+    assert_eq!(timings["native.owner_thread_cpu_inclusive"], 23);
+    super::record_transport([1, 2, 3, 5], 4);
     assert!(measure(|| ()).1.is_empty());
+    let (value, timings) = measure(|| super::operation(23, || 7));
+    assert_eq!(value, 7);
+    assert!(timings.contains_key("native.operation.23"));
+    assert!(
+        measure(|| super::operation(23, || 7))
+            .1
+            .contains_key("native.operation.23")
+    );
 }
 
 #[test]

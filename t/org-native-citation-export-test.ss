@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 (import (only-in :std/test check test-case test-suite)
-        (only-in "../languages/org/v1/modules/org-parser/value-funs.ss" org-value-plan))
+        (only-in "../languages/org/modules/org-parser/value-funs.ss" org-value-plan))
 (export org-native-citation-export-test)
 (def (plan key raw) (org-value-plan (list "citation-export-keywords" key raw)))
 (def org-native-citation-export-test

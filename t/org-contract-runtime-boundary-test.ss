@@ -3,14 +3,14 @@
 
 (import (only-in :std/test check test-case test-suite)
         (only-in :clan/poo/object .o .ref)
-        (only-in "../languages/org/v1/graph-shape.ss"
-                 org-v1-graph-shape org-graph-node-label
+        (only-in "../languages/org/graph-shape.ss"
+                 org-graph-shape org-graph-node-label
                  org-graph-node-rust org-graph-node-fields
                  org-graph-field-label org-graph-field-mode)
-        (only-in "../languages/org/v1/modules/org-elements/runtime-interface.ss"
+        (only-in "../languages/org/modules/org-elements/runtime-interface.ss"
                  make-org-element-graph-view make-org-element-query
                  org-element-query?)
-        (only-in "../languages/org/v1/modules/org-contract/runtime-interface.ss"
+        (only-in "../languages/org/modules/org-contract/runtime-interface.ss"
                  make-org-contract-assertion make-org-contract-expectation
                  org-contract-evaluate-assertion
                  org-contract-result-matched-count
@@ -23,14 +23,14 @@
       (let (keyword
             (car (filter (lambda (node)
                            (equal? (org-graph-node-label node) "keyword"))
-                         org-v1-graph-shape)))
-        (check (org-graph-node-rust (car org-v1-graph-shape)) => 'OrgFile)
-        (check (org-graph-node-label (cadr org-v1-graph-shape))
+                         org-graph-shape)))
+        (check (org-graph-node-rust (car org-graph-shape)) => 'OrgFile)
+        (check (org-graph-node-label (cadr org-graph-shape))
                => "headline")
         (check (map org-graph-node-label
                     (filter (lambda (node)
                               (equal? (org-graph-node-rust node) 'OrgInlinetask))
-                            org-v1-graph-shape))
+                            org-graph-shape))
                => '("inlinetask"))
         (check (map org-graph-field-label (org-graph-node-fields keyword))
                => '("key" "optional" "value" "value" "value"

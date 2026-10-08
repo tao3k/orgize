@@ -5,13 +5,13 @@
         (only-in :clan/poo/object .o)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks)
-        (only-in "../languages/org/v1/parser.ss" org-v1-line-structure)
-        (only-in "../languages/org/v1/modules/org-parser/types.ss"
+        (only-in "../languages/org/parser.ss" org-line-structure)
+        (only-in "../languages/org/modules/org-parser/types.ss"
                  org-event-block? org-named-block?
                  org-inline-markup? org-inline-script?
                  org-event-helper?
                  org-event-strategy?)
-        (only-in "../languages/org/v1/modules/org-parser/objects.ss"
+        (only-in "../languages/org/modules/org-parser/objects.ss"
                  make-org-event-block org-event-block-id
                  make-org-named-block
                  make-org-inline-markup org-inline-markup-node
@@ -19,16 +19,16 @@
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
         (only-in "org-parser-test-support.ss" check-org-ast-with)
-        (only-in "../languages/org/v1/rowan-event-fixture.ss" rowan-event-fixture)
-        (only-in "../languages/org/v1/generated/rowan-event-fixture.ss"
+        (only-in "../languages/org/rowan-event-fixture.ss" rowan-event-fixture)
+        (only-in "../languages/org/generated/rowan-event-fixture.ss"
                  rowan-event-fixture-events)
-        (only-in "../languages/org/v1/rowan-event-runtime.ss"
+        (only-in "../languages/org/rowan-event-runtime.ss"
                  parse-org-rowan-events
                  parse-org-rowan-events-with-inlinetask-level
                  parse-org-rowan-events-with-inline-script-policy))
-(export org-v1-rowan-table-container-parser-test)
+(export org-rowan-table-container-parser-test)
 
-(def org-v1-rowan-table-container-parser-test
+(def org-rowan-table-container-parser-test
   (test-suite "Org tables containers and AOT receipts"
     (test-case "POO table rows and rule rows AOT-fold into one table Element"
       (check-org-ast-with parse-org-rowan-events

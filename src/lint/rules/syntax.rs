@@ -2,11 +2,10 @@
 //! that survived extraction. This stage never evaluates a query or host program.
 
 use super::{LintFinding, LintSeverity, model::location_for_range_bounds};
-use crate::ast::{ParsedAst, contract_block_syntax_error};
+use crate::ast::{ParsedAst, contract_block_syntax_error, contract_source_blocks};
 
 pub(super) fn source_syntax_findings(document: &ParsedAst, source: &str) -> Vec<LintFinding> {
-    document
-        .source_block_records()
+    contract_source_blocks(document)
         .iter()
         .filter_map(|block| {
             let message = contract_block_syntax_error(block)?;

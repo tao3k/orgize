@@ -130,7 +130,7 @@ pub(super) fn adapter_identity() -> String {
         include_bytes!("../../src/semantic_ast/includes.rs").as_slice(),
         include_bytes!("../../src/semantic_ast/source_block_headers.rs").as_slice(),
         include_bytes!("../../src/semantic_ast/source_block_references.rs").as_slice(),
-        include_bytes!("../../src/semantic_ast/org_contract.rs").as_slice(),
+        include_bytes!("../../src/semantic_ast/org_contract/core.rs").as_slice(),
         include_bytes!("../../src/semantic_ast/org_contract_model.rs").as_slice(),
         include_bytes!("../../src/semantic_ast/agenda_match.rs").as_slice(),
         include_bytes!("../../src/semantic_ast/datetree.rs").as_slice(),

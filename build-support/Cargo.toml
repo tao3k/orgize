@@ -7,4 +7,4 @@ license = "MIT"
 
 [dependencies]
 sha2 = "0.10"
-gerbil-scheme-native-build = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "8bb8103b820a0c8d02446d6398197079c5275671" }
+gerbil-scheme-native-build = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4" }

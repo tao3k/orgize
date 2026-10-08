@@ -1,10 +1,27 @@
 ;;; -*- Gerbil -*-
 (import (only-in :std/test check test-case test-suite)
-        (only-in "../languages/org/v1/modules/org-parser/value-funs.ss" org-value-plan))
+        (only-in "../languages/org/modules/org-parser/value-funs.ss" org-value-plan))
 (export org-native-source-value-test)
 (def org-native-source-value-test
   (test-suite "Native downstream source grammar closure"
     (test-case "Include ranges and modes"
+      ;; Batch projection must match the existing scalar native algorithms.
+      (let* ((inputs '(("COLOR_ALL+" "'two words' red")
+                       ("COLOR+" "blue") ("_ALL" "")
+                       ("Mixed_all" "\"\" ünicode") ("é_ALL" "one\\ two")))
+             (rows (org-value-plan
+                    (cons "property-profile-plan" (apply append inputs)))))
+        (check (length rows) => (length inputs))
+        (for-each
+         (lambda (input row)
+           (let* ((key (car input)) (value (cadr input))
+                  (name-rows (org-value-plan (list "descriptor-name" key)))
+                  (name (and (pair? name-rows) (caar name-rows))))
+             (check row =>
+                    (append (car (org-value-plan (list "descriptor-key" key)))
+                            (list (if name "true" "false") (or name ""))
+                            (car (org-value-plan (list "property-tokens" value)))))))
+         inputs rows))
       (check (org-value-plan '("include-lines" "2-9")) => '(("range" "2" "9")))
       (check (org-value-plan '("include-lines" "-3")) => '(("range" "" "3")))
       (check (org-value-plan '("include-lines" "0-0")) => '(("invalid" "" "")))
@@ -54,4 +71,33 @@
       (check (org-value-plan '("contract-policy" "named-id" " id.fix ")) => '(("")))
       (check (org-value-plan '("contract-qualified-link" "[[file:a.org#id]]" "a.org" "id")) => '(("true")))
       (check (org-value-plan '("contract-qualified-link" " [[file:a.org#id]] " "a.org" "id")) => '(("false")))
-      (check (org-value-plan '("contract-qualified-link" "[[file:a.org]]" "a.org" "")) => '(("false"))))))
+      (check (org-value-plan '("contract-qualified-link" "[[file:a.org]]" "a.org" "")) => '(("false"))))
+    (test-case "Contract block batch matches scalar native policy"
+      (let* ((blocks '((" Org-Elements-Query-Expr " "  first " ":name message")
+                       ("org-contract" "id.message" ":severity WARN :name fix")
+                       ("JINJA2" "id.MESSAGE" "") ("unknown" "" ":name")))
+             (fields (apply append blocks))
+             (rows (org-value-plan (cons "contract-block-plans" fields))))
+        (check (length rows) => (length blocks))
+        (for-each
+          (lambda (block row)
+            (let ((language (car block)) (name (cadr block)) (parameters (caddr block)))
+              (check (list (car row)) => (car (org-value-plan (list "contract-policy" "language" language))))
+              (check (list (cadr row)) => (car (org-value-plan (list "contract-policy" "name" name))))
+              (check (list (caddr row)) => (car (org-value-plan (list "contract-policy" "named-id" name))))
+              (let ((pname (org-value-plan (list "block-parameter" parameters ":name")))
+                    (severity (org-value-plan (list "block-parameter" parameters ":severity"))))
+                (check (list (list-ref row 3) (list-ref row 4)) =>
+                       (if (pair? pname) (list "true" (caar pname)) '("false" "")))
+                (check (list (list-ref row 5) (list-ref row 6)) =>
+                       (if (pair? severity) (list "true" (caar severity)) '("false" ""))))))
+          blocks rows)))
+    (test-case "Contract block batches keep count order and absent values"
+      (check (org-value-plan '("contract-block-plans")) => '())
+      (check (with-catch (lambda (e) #t)
+               (lambda () (org-value-plan '("contract-block-plans" "truncated")) #f)) => #t)
+      (let* ((one '("org-contract" "中文" ":name message :severity warn"))
+             (fields (apply append (make-list 1000 one)))
+             (rows (org-value-plan (cons "contract-block-plans" fields))))
+        (check (length rows) => 1000)
+        (check (andmap (lambda (row) (equal? row '("contract" "中文" "中文" "true" "message" "true" "warn"))) rows) => #t)))))

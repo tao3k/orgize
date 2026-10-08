@@ -5,7 +5,7 @@
         (only-in :gerbil-parser/src/runtime/artifact
                  parse-artifact-roundtrip parse-artifact-success?)
         (only-in :gerbil-parser/src/testing/parser-ast check-parser-ast)
-        (only-in "../languages/org/v1/modules/org-contract/parser.ss" parse-org-contract-expression))
+        (only-in "../languages/org/modules/org-contract/parser.ss" parse-org-contract-expression))
 (export org-contract-parser-test)
 
 (def org-contract-parser-test

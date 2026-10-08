@@ -34,6 +34,12 @@ impl OrgElementSelector {
 
     pub fn parse_plist(input: &str) -> Result<Self, OrgElementSelectorParseError> {
         let properties = super::org_elements_query_expr::selector_plist_properties(input)?;
+        Self::from_native_properties(properties)
+    }
+
+    pub(crate) fn from_native_properties(
+        properties: Vec<(String, String)>,
+    ) -> Result<Self, OrgElementSelectorParseError> {
         let mut element_type = None;
         let mut name = None;
         let mut language = None;

@@ -1,6 +1,6 @@
 //! Source position lookup for semantic AST annotations.
 
-use rowan::TextSize;
+use gerbil_parser_runtime::TextSize;
 
 use super::SourcePosition;
 

@@ -7,8 +7,9 @@ then error("nonempty native stage receipt array required") else . end
   | if .profile_enabled != true or .completed != .documents or .documents <= 0
     or any(["native.scheme_fold", "native.tape_encode", "native.scheme_thread_cpu",
             "native.owner_admission", "native.owner_service_inclusive",
+            "native.owner_thread_cpu_inclusive",
             "native.result_copy", "native.completion_handoff",
-            "native.transport_inclusive", "rowan.build", "graph.project",
+            "native.transport_inclusive", "artifact.syntax_index", "graph.project",
             "supervisor.queue"][];
            ($stages[.].total | type) != "number")
     then error("complete profiled native stage receipt required") else . end
@@ -21,6 +22,7 @@ then error("nonempty native stage receipt array required") else . end
       owner_mean_ms: {
         admission: ($stages["native.owner_admission"].total / $count / 1000000),
         service_inclusive: ($stages["native.owner_service_inclusive"].total / $count / 1000000),
+        service_thread_cpu_inclusive: ($stages["native.owner_thread_cpu_inclusive"].total / $count / 1000000),
         copy: ($stages["native.result_copy"].total / $count / 1000000),
         handoff: ($stages["native.completion_handoff"].total / $count / 1000000),
         fold_wall: ($fold / 1000000), tape_wall: ($tape / 1000000),
@@ -29,11 +31,11 @@ then error("nonempty native stage receipt array required") else . end
       },
       caller_mean_ms: {
         transport_inclusive: ($stages["native.transport_inclusive"].total / $count / 1000000),
-        rowan: ($stages["rowan.build"].total / $count / 1000000),
+        syntax_index: ($stages["artifact.syntax_index"].total / $count / 1000000),
         graph: ($stages["graph.project"].total / $count / 1000000),
         supervisor_queue: ($stages["supervisor.queue"].total / $count / 1000000)
       },
-      cpu_scope: "owner thread during fold plus tape, not isolated fold CPU",
+      cpu_scope: "owner service CPU covers parse/value replies including copy/root work; fold plus tape CPU is a nested interval; neither covers unprofiled Contract C ABI",
       residual_scope: "wall minus CPU includes descheduling and waits; not exclusive attribution"
     }
 )

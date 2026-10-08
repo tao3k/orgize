@@ -1,6 +1,6 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in "../bindings/c/orgize-actor.ss" org-parse-batch)
-        (only-in "../languages/org/v1/rowan-event-runtime.ss"
+        (only-in "../languages/org/rowan-event-runtime.ss"
                  parse-org-rowan-events-with-parameters))
 (export org-native-actor-test)
 

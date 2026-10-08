@@ -8,6 +8,6 @@ pub(crate) use batch::{
 #[cfg(test)]
 pub(super) use transport::parse_expression_events;
 pub(super) use transport::{
-    evaluate_contract, expand_macro_fields, initialize_owner, parse_contract_values, parse_events,
-    parse_events_batch, parse_expectation_values, parse_expression_values, semantic_fields,
+    evaluate_contract, expand_macro_fields, initialize_owner, parse_events, parse_events_batch,
+    parse_expression_values, semantic_fields,
 };

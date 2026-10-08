@@ -15,7 +15,7 @@ to make a past observation available for a future review, re-execution, or
 reflection. Orgize should project the *evidence for that temporal relation*;
 the consumer decides whether and when to revisit it.
 
-The capability home is the Scheme [[file:../../languages/org/v1/modules/README.org][Org v1 module collection]].
+The capability home is the Scheme [[file:../../languages/org/modules/README.org][Org module collection]].
 Agenda, notes, links, capture, attachments, LOGBOOK, and review compose over
 the same Element identities and source spans. The design must not turn their
 shared evidence into a standalone Memory source type or require every Org

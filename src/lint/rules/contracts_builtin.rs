@@ -1,6 +1,6 @@
 //! Built-in lint evaluation over the Scheme-AOT Org Contract pack.
 
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 
 use crate::{
     Org,

@@ -36,6 +36,26 @@ fn block(language: &str, body: &str) -> String {
 }
 
 fn syntax_checks_unregistered_blocks() {
+    syntax_projection_preserves_source_fields_without_native_requests();
+    #[cfg(feature = "runtime-profile")]
+    {
+        let source = block("org-elements-query", "(")
+            + &block("org-elements-selector", "(:org-element (:type paragraph))")
+            + &block("org-elements-expect", "count >= 1");
+        let document = Org::parse(&source).document();
+        let (errors, stages) = crate::runtime_profile::measure(|| {
+            crate::ast::contract_source_blocks(&document)
+                .iter()
+                .filter(|block| crate::ast::contract_block_syntax_error(block).is_some())
+                .count()
+        });
+        assert_eq!(errors, 1, "malformed forms must not poison adjacent blocks");
+        assert_eq!(
+            stages.get("native.requests_completed"),
+            Some(&1),
+            "syntax admission must share one native plan: {stages:?}"
+        );
+    }
     let source = block("org-contract", "(assert exists (paragraph)");
     let document = Org::parse(&source).document();
     assert!(
@@ -52,6 +72,60 @@ fn syntax_checks_unregistered_blocks() {
             .count(),
         1
     );
+}
+
+fn syntax_projection_preserves_source_fields_without_native_requests() {
+    let source = r#"#+PROPERTY: header-args :results output :tangle no
+#+NAME: 中文块
+#+begin_src org-contract :name 测试 :severity error
+(assert exists (paragraph))
+#+end_src
+
+中文 src_rust[:results raw]{1 + 1} and *src_scheme{(+ 1 2)}*.
+
+* Scope
+:PROPERTIES:
+:header-args: :exports both
+:END:
+:DRAWER:
+#+begin_src rust
+42
+#+end_src
+:END:
+
+- item
+  #+begin_src scheme
+  (+ 2 3)
+  #+end_src
+
+| src_rust{7} |
+
+[fn:note] src_scheme{8}
+"#;
+    let document = Org::parse(source).document();
+    #[cfg(feature = "runtime-profile")]
+    let lean = {
+        let (records, observations) =
+            crate::runtime_profile::measure(|| document.source_block_syntax_records());
+        assert!(
+            observations.is_empty(),
+            "syntax projection must not call native policies"
+        );
+        records
+    };
+    #[cfg(not(feature = "runtime-profile"))]
+    let lean = document.source_block_syntax_records();
+    let full = document.source_block_records();
+    assert!(lean.len() >= 6, "exercise nested and inline source syntax");
+    assert_eq!(lean.len(), full.len());
+    for (syntax, babel) in lean.iter().zip(&full) {
+        assert_eq!(syntax.source, babel.source);
+        assert_eq!(syntax.kind, babel.kind);
+        assert_eq!(syntax.name, babel.name);
+        assert_eq!(syntax.language, babel.language);
+        assert_eq!(syntax.parameters, babel.parameters);
+        assert_eq!(syntax.value, babel.value);
+    }
 }
 
 fn syntax_rejects_malformed_and_unsupported_forms() {

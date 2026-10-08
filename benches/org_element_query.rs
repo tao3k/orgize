@@ -3,7 +3,7 @@
 use std::hint::black_box;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use gerbil_parser_rowan::project_syntax_graph;
+use gerbil_parser_runtime::project_syntax_graph;
 use orgize::org_aot::{
     org_graph_spec, org_language_spec, parse_org_aot, parse_org_aot_with_config,
 };

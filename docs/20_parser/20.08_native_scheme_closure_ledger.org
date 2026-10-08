@@ -12,6 +12,32 @@ native Scheme execution evidence. Whole-parser semantic closure remains open.
 
 * Modular qualification records
 
+- [[file:20.08_native_scheme_closure/35-document-plan-and-runtime-boundary.org][Document projection plans, 107ms audit and AOT/FFI ownership]]
+
+- [[file:20.08_native_scheme_closure/34-property-plan-and-contract-tail.org][Scheme property plan, repaired maturin linking and strict Contract tail outcome]]
+
+- [[file:20.08_native_scheme_closure/33-keyword-document-plan-and-qualification.org][Scheme keyword document plan and current-program qualification]]
+
+- [[file:20.08_native_scheme_closure/32-contract-document-plan-and-legacy-removal.org][Scheme document-local Contract plan and replaced Rust entry removal]]
+
+- [[file:20.08_native_scheme_closure/31-contract-batch-and-syntax-projection.org][Contract native batch plans and shared lean syntax projection]]
+
+- [[file:20.08_native_scheme_closure/30-request-completion-lock-and-build-cache.org][Request completion isolation, matched latency gates and bootstrap cache boundary]]
+
+- [[file:20.08_native_scheme_closure/29-fold-source-cache-and-native-ownership.org][Parse-scoped Fold byte cache, native qualification and unresolved owned artifact migration]]
+
+- [[file:20.08_native_scheme_closure/28-latest-revision-and-native-qualification.org][Latest published revision, resolved consumer/link failures and full qualification wiring]]
+
+- [[file:20.08_native_scheme_closure/27-upstream-alignment-and-task-owners.org][Published upstream alignment, simplified task owners and remaining failures]]
+
+- [[file:20.08_native_scheme_closure/26-rowan-removal-and-native-view-boundary.org][Rowan dependency removal, upstream parser alignment and unresolved native view cutover]]
+
+- [[file:20.08_native_scheme_closure/25-native-fold-state-and-consumer-admission.org][Native immutable Fold state candidate, both-runtime consumers and full concurrency admission]]
+
+- [[file:20.08_native_scheme_closure/24-query-algorithm-and-native-projection.org][Query algorithm audit, both-runtime fact projection and full native concurrency admission]]
+
+- [[file:20.08_native_scheme_closure/23-parser-source-root-admission.org][Parser e1252ed alignment and compiled source-root admission]]
+
 - [[file:20.08_native_scheme_closure/22-local-checkpoint-and-source-provenance.org][Local checkpoint scope, source identity repair and unresolved publication gates]]
 
 - [[file:20.08_native_scheme_closure/21-production-wrapper-warning-closure.org][Complete 30-warning production wrapper cleanup and both-runtime admission]]

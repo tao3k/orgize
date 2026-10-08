@@ -11,6 +11,7 @@ mod model;
 #[path = "org_elements_aot.rs"]
 mod org_elements;
 mod packets;
+mod query_match;
 mod source_selection;
 
 pub use command::{

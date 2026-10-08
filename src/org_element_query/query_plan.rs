@@ -5,4 +5,4 @@ use super::model::{
     OrgElementRelation,
 };
 
-include!("../../languages/org/v1/modules/org-elements/generated/query-pack.rs");
+include!("../../languages/org/modules/org-elements/generated/query-pack.rs");

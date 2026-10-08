@@ -13,7 +13,7 @@ Current local admission is recorded in
 
 - Use the named upstream =org-element.el= revision only as a comparison
   reference.  The executable element inventory belongs to
-  =languages/org/v1/modules/org-elements/catalog.ss=; its generated Rust projection and
+  =languages/org/modules/org-elements/catalog.ss=; its generated Rust projection and
   Git-tracked Org corpus are the test inputs.  Emacs Lisp is never an
   implementation or Cargo fixture.
 - Maintain =languages/org/<version>/grammar.ss=, the Org-owned Scheme event
@@ -29,7 +29,7 @@ Current local admission is recorded in
 
 ** Current implementation
 
-=languages/org/v1/grammar.ss= owns Org syntax kinds and
+=languages/org/grammar.ss= owns Org syntax kinds and
 =modules/org-parser/event-strategy.ss= composes the Scheme event algorithm.
 The shared =parser.ss= POO block declarations supply markers to that
 algorithm; they are not a second runtime parser. Gerbil executes the same

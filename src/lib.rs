@@ -44,13 +44,10 @@ pub mod runtime_profile;
 #[path = "../tests/unit/lib.rs"]
 mod tests;
 
-// Re-export of the rowan crate.
-pub use rowan;
-
 pub use config::ParseConfig;
-pub use gerbil_parser_rowan::{SyntaxKind, SyntaxNode, SyntaxToken};
+pub use gerbil_parser_runtime::{SyntaxKind, SyntaxNode, SyntaxToken};
+pub use gerbil_parser_runtime::{TextRange, TextSize};
 pub use org::Org;
-pub use rowan::{TextRange, TextSize};
 
 #[cfg(test)]
 asp_rust::asp_rust_cargo_test_gate!(

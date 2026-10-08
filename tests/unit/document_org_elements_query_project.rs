@@ -173,7 +173,7 @@ fn run_document_query_org_elements_scenario(profile: bool, batched: bool) {
                 "native.scheme_fold",
                 "native.tape_encode",
                 "native.scheme_thread_cpu",
-                "rowan.build",
+                "artifact.syntax_index",
                 "graph.project",
             ] {
                 assert!(stages.contains_key(required), "missing stage {required}");

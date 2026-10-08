@@ -5,7 +5,7 @@
 (def (main output-dir)
   (displayln "ORG-PARSER-STAGE begin")
   (force-output)
-  (gerbil-rs-stage-program "bindings/c/orgize-parser.ss" output-dir
-                          c-headers: '("bindings/c/include/orgize.h"
-                                       "bindings/c/include/orgize_runtime.h"))
+  ;; Headers are explicit native build contract inputs, not an extension to
+  ;; the upstream compiler manifest schema.
+  (gerbil-rs-stage-program "bindings/c/orgize-parser.ss" output-dir)
   (displayln "ORG-PARSER-STAGE OK"))

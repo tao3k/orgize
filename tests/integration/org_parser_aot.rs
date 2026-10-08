@@ -1,11 +1,11 @@
 //! Scheme POO declaration -> gerbil-parser AOT table -> contextual Rowan CST.
 
-use gerbil_parser_rowan::SyntaxNode;
+use gerbil_parser_runtime::SyntaxNode;
 
 fn parse(source: &str) -> SyntaxNode {
     let parsed = orgize::org_aot::parse_org_aot(source)
         .unwrap_or_else(|error| panic!("Org event AOT rejected source: {error:?}"));
-    assert_eq!(parsed.receipt().language, "org");
+    assert_eq!(parsed.receipt().language, "org-mode");
     assert_eq!(
         parsed.receipt().grammar_digest,
         orgize::org_aot::org_language_spec().grammar_digest
@@ -21,7 +21,7 @@ fn name(node: &SyntaxNode) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name
 }
 
-fn token_name(token: &gerbil_parser_rowan::SyntaxToken) -> &'static str {
+fn token_name(token: &gerbil_parser_runtime::SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
@@ -322,7 +322,7 @@ fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
             .count(),
         1
     );
-    let records = gerbil_parser_rowan::project_syntax_graph(
+    let records = gerbil_parser_runtime::project_syntax_graph(
         orgize::org_aot::org_language_spec(),
         orgize::org_aot::org_graph_spec(),
         &root,
@@ -431,7 +431,7 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     for item in &items {
         let bullet = item
             .children_with_tokens()
-            .filter_map(rowan::NodeOrToken::into_token)
+            .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
             .find(|token| token_name(token) == "ListBullet")
             .expect("every admitted item has a typed bullet");
         assert_eq!(bullet.text(), "- ");
@@ -441,7 +441,7 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
             item.to_string()
         );
     }
-    let records = gerbil_parser_rowan::project_syntax_graph(
+    let records = gerbil_parser_runtime::project_syntax_graph(
         orgize::org_aot::org_language_spec(),
         orgize::org_aot::org_graph_spec(),
         &root,
@@ -475,7 +475,7 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
     assert_eq!(name(&planning[0].parent().unwrap()), "OrgSection");
     let keys: Vec<_> = planning[0]
         .children_with_tokens()
-        .filter_map(rowan::NodeOrToken::into_token)
+        .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
         .filter(|token| token_name(token) == "PlanningKey")
         .map(|token| token.text().to_string())
         .collect();
@@ -615,10 +615,14 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             let (range, title) = headline
                 .children_with_tokens()
                 .find_map(|child| match child {
-                    rowan::NodeOrToken::Node(node) if name(&node) == "OrgHeadlineTitle" => {
+                    gerbil_parser_artifact::syntax::SyntaxElement::Node(node)
+                        if name(&node) == "OrgHeadlineTitle" =>
+                    {
                         Some((node.text_range(), node.text().to_string()))
                     }
-                    rowan::NodeOrToken::Token(token) if token_name(&token) == "HeadlineTitle" => {
+                    gerbil_parser_artifact::syntax::SyntaxElement::Token(token)
+                        if token_name(&token) == "HeadlineTitle" =>
+                    {
                         Some((token.text_range(), token.text().to_string()))
                     }
                     _ => None,
@@ -648,7 +652,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             .map(|block| {
                 let token = block
                     .children_with_tokens()
-                    .filter_map(rowan::NodeOrToken::into_token)
+                    .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
                     .find(|token| token_name(token) == "SourceLanguage")
                     .expect("every fixture source block declares its language");
                 let range = token.text_range();
@@ -673,7 +677,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             );
             let tokens: Vec<_> = link
                 .children_with_tokens()
-                .filter_map(rowan::NodeOrToken::into_token)
+                .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
                 .collect();
             assert_eq!(
                 tokens
@@ -701,7 +705,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             assert!(original.trim_start().starts_with(':'));
             let tokens: Vec<_> = node
                 .children_with_tokens()
-                .filter_map(rowan::NodeOrToken::into_token)
+                .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
                 .collect();
             let key = tokens
                 .iter()
@@ -766,7 +770,7 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
     for (source, expected_records, expected_blocks, expected_links, expected_paragraphs) in fixtures
     {
         let root = parse(source);
-        let records = gerbil_parser_rowan::project_syntax_graph(
+        let records = gerbil_parser_runtime::project_syntax_graph(
             orgize::org_aot::org_language_spec(),
             orgize::org_aot::org_graph_spec(),
             &root,

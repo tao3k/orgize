@@ -1,40 +1,12 @@
 //! Typed projection of native Scheme block-line facts, never source scanning.
 
-use super::{BlockCodeRef, BlockLine, BlockSwitches};
+use super::{BlockCodeRef, BlockLine};
 
-pub(super) struct BlockLineOptions<'a> {
-    pub(super) switches: &'a BlockSwitches,
-    pub(super) tab_width: usize,
-    pub(super) preserve_indentation: bool,
-}
-
-pub(super) fn parse_block_lines<A>(
-    value: &str,
-    source: Option<&str>,
-    options: BlockLineOptions<'_>,
+pub(super) fn project_block_lines<A>(
+    rows: Vec<Vec<String>>,
+    source: &str,
     mut ann_for_range: impl FnMut(usize, usize) -> A,
 ) -> Vec<BlockLine<A>> {
-    let width = options.tab_width.to_string();
-    let source = source.unwrap_or(value);
-    let rows = crate::org_aot::native_semantic_rows(
-        10,
-        &[
-            value,
-            source,
-            options
-                .switches
-                .label_format
-                .as_deref()
-                .unwrap_or("(ref:%s)"),
-            &width,
-            if options.preserve_indentation {
-                "true"
-            } else {
-                "false"
-            },
-        ],
-    )
-    .expect("initialized native block line operation");
     rows.into_iter()
         .map(|row| {
             let [

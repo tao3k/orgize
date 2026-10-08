@@ -3,8 +3,8 @@
 use std::collections::BTreeMap;
 
 use crate::ast::{
-    Inlinetask, ParsedAnnotation, ParsedAst, Property, PropertyProfile, PropertySchemaRegistry,
-    Section, is_allowed_value_descriptor, property_allowed_values,
+    Inlinetask, ParsedAnnotation, ParsedAst, Property, PropertyNativePlan, PropertyProfile,
+    PropertySchemaRegistry, Section, property_allowed_values,
 };
 
 use super::model::{LintFinding, LintSeverity, location_for_range, location_for_range_bounds};
@@ -15,21 +15,22 @@ pub(crate) fn property_drawer_findings(
     schema_registry: &PropertySchemaRegistry,
 ) -> Vec<LintFinding> {
     let mut findings = Vec::new();
-    let profile = document.property_profile_with_schema_registry(schema_registry);
+    let (profile, plan) = document.property_profile_with_native_plan(schema_registry);
     push_property_findings(&document.properties, &profile, source, &mut findings);
     push_allowed_value_findings(
         &document.properties,
         &document.properties,
         &profile,
+        &plan,
         source,
         &mut findings,
     );
     for section in &document.sections {
-        push_section_property_findings(section, &profile, source, &mut findings);
+        push_section_property_findings(section, &profile, &plan, source, &mut findings);
     }
     document.visit(|node| {
         if let crate::ast::AstRef::Inlinetask(task) = node {
-            push_inlinetask_property_findings(task, &profile, source, &mut findings);
+            push_inlinetask_property_findings(task, &profile, &plan, source, &mut findings);
         }
     });
     push_property_schema_findings(&profile, source, &mut findings);
@@ -39,6 +40,7 @@ pub(crate) fn property_drawer_findings(
 fn push_section_property_findings(
     section: &Section<ParsedAnnotation>,
     profile: &PropertyProfile,
+    plan: &PropertyNativePlan,
     source: &str,
     findings: &mut Vec<LintFinding>,
 ) {
@@ -47,17 +49,19 @@ fn push_section_property_findings(
         &section.properties,
         &section.effective_properties,
         profile,
+        plan,
         source,
         findings,
     );
     for child in &section.subsections {
-        push_section_property_findings(child, profile, source, findings);
+        push_section_property_findings(child, profile, plan, source, findings);
     }
 }
 
 fn push_inlinetask_property_findings(
     task: &Inlinetask<ParsedAnnotation>,
     profile: &PropertyProfile,
+    plan: &PropertyNativePlan,
     source: &str,
     findings: &mut Vec<LintFinding>,
 ) {
@@ -66,6 +70,7 @@ fn push_inlinetask_property_findings(
         &task.properties,
         &task.properties,
         profile,
+        plan,
         source,
         findings,
     );
@@ -93,11 +98,12 @@ fn push_allowed_value_findings(
     local_properties: &[Property<ParsedAnnotation>],
     effective_properties: &[Property<ParsedAnnotation>],
     profile: &PropertyProfile,
+    plan: &PropertyNativePlan,
     source: &str,
     findings: &mut Vec<LintFinding>,
 ) {
     findings.extend(local_properties.iter().filter_map(|property| {
-        allowed_value_finding(property, effective_properties, profile, source)
+        allowed_value_finding(property, effective_properties, profile, plan, source)
     }));
 }
 
@@ -105,12 +111,13 @@ fn allowed_value_finding(
     property: &Property<ParsedAnnotation>,
     effective_properties: &[Property<ParsedAnnotation>],
     profile: &PropertyProfile,
+    plan: &PropertyNativePlan,
     source: &str,
 ) -> Option<LintFinding> {
-    if property.value.trim().is_empty() || is_allowed_value_descriptor(&property.key) {
+    if property.value.trim().is_empty() || plan.property(property).descriptor_name.is_some() {
         return None;
     }
-    let values = property_allowed_values(effective_properties, profile, &property.key)?;
+    let values = property_allowed_values(effective_properties, profile, property, plan)?;
     if values.iter().any(|value| value == &property.value) {
         return None;
     }

@@ -1,6 +1,6 @@
 //! Build-time access to feature-tagged Scheme blocks through Org Element records.
 
-use gerbil_parser_rowan::GraphRecord;
+use gerbil_parser_runtime::GraphRecord;
 
 pub fn records(source: &str) -> Result<Vec<GraphRecord>, String> {
     orgize::org_aot::parse_org_aot(source)

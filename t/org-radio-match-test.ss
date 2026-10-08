@@ -2,9 +2,9 @@
 ;;; Exact Scheme-side expectations for the document-local AOT matcher.
 
 (import (only-in :std/test check check-exception test-case test-suite)
-        (only-in "../languages/org/v1/modules/org-elements/types.ss" org-source-match-strategy?)
-        (only-in "../languages/org/v1/modules/org-elements/objects.ss" make-org-source-match-strategy)
-        (only-in "../languages/org/v1/modules/org-elements/radio-match.ss"
+        (only-in "../languages/org/modules/org-elements/types.ss" org-source-match-strategy?)
+        (only-in "../languages/org/modules/org-elements/objects.ss" make-org-source-match-strategy)
+        (only-in "../languages/org/modules/org-elements/radio-match.ss"
                  org-radio-match-strategy org-next-radio-match org-radio-matches))
 (export org-radio-match-test)
 

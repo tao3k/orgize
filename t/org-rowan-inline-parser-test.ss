@@ -2,18 +2,18 @@
 ;;; The Org-owned algorithm executes as Scheme before AOT lowering.
 
 (import (only-in :std/test check test-case test-suite)
-        (only-in "../languages/org/v1/modules/org-parser/macro-funs.ss"
+        (only-in "../languages/org/modules/org-parser/macro-funs.ss"
                  expand-org-macro-template expand-org-property-macros)
         (only-in :clan/poo/object .o)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks)
-        (only-in "../languages/org/v1/parser.ss" org-v1-line-structure)
-        (only-in "../languages/org/v1/modules/org-parser/types.ss"
+        (only-in "../languages/org/parser.ss" org-line-structure)
+        (only-in "../languages/org/modules/org-parser/types.ss"
                  org-event-block? org-named-block?
                  org-inline-markup? org-inline-script?
                  org-event-helper?
                  org-event-strategy?)
-        (only-in "../languages/org/v1/modules/org-parser/objects.ss"
+        (only-in "../languages/org/modules/org-parser/objects.ss"
                  make-org-event-block org-event-block-id
                  make-org-named-block
                  make-org-inline-markup org-inline-markup-node
@@ -21,13 +21,13 @@
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root)
         (only-in "org-parser-test-support.ss" check-org-ast-with org-events-cover-source?)
-        (only-in "../languages/org/v1/rowan-event-runtime.ss"
+        (only-in "../languages/org/rowan-event-runtime.ss"
                  parse-org-rowan-events
                  parse-org-rowan-events-with-inlinetask-level
                  parse-org-rowan-events-with-inline-script-policy))
-(export org-v1-rowan-inline-parser-test)
+(export org-rowan-inline-parser-test)
 
-(def org-v1-rowan-inline-parser-test
+(def org-rowan-inline-parser-test
   (test-suite "Org inline source-backed Objects"
     (test-case "native macro templates preserve placeholder and Unicode semantics"
       (for-each
@@ -66,7 +66,7 @@
             (MacroDelimiter 11 15)) (TextLine 15 16))))))
     (test-case "POO strategy declarations reject untyped rule tuples"
       (let* ((block (make-org-event-block
-                    1 (car (line-structure-blocks org-v1-line-structure))))
+                    1 (car (line-structure-blocks org-line-structure))))
             (markup (make-org-inline-markup 42 3 'OrgBold))
             (script (make-org-inline-script 94 2 'OrgSuperscript))
             (helper (make-org-event-helper

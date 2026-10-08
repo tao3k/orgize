@@ -1,6 +1,6 @@
 //! Bounded native wire projection; document semantics remain Scheme-owned.
 use super::transport::decode;
-use gerbil_parser_rowan::{LanguageSpec, TreeEvent};
+use gerbil_parser_runtime::{LanguageSpec, TreeEvent};
 
 pub(crate) const MAX_DOCUMENTS: usize = 64;
 pub(crate) const MAX_SOURCE_BYTES: usize = 64 * 1024;

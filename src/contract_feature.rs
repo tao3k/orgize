@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use gerbil_parser_rowan::{GraphIndexError, GraphProjectionSpec, GraphRecord, GraphRelation};
+use gerbil_parser_runtime::{GraphIndexError, GraphProjectionSpec, GraphRecord, GraphRelation};
 
 use crate::{
     org_aot::OrgAotDocument,

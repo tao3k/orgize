@@ -2,7 +2,7 @@
 ;;; One native actor owns all Scheme ABI calls and GC root transfers. The
 ;;; blocking idle wait is intentional for this single-worker comparative lane;
 ;;; it is NOT a general green-thread I/O scheduler or an SMP implementation.
-(import (only-in "../../languages/org/v1/rowan-event-tape.ss" org-request->tape))
+(import (only-in "../../languages/org/rowan-event-tape.ss" org-request->tape))
 (export orgize-scheme-runtime-link-anchor)
 (extern namespace: orgize/bindings/c/orgize-scheme-runtime
   take-job job-kind job-length copy-job publish-job process-contract-job
@@ -20,11 +20,12 @@
        (process-contract-job job)))))
 
 (def (run-scheme-runtime)
-  ;; Publish before spawn: clients can safely queue while the actor starts.
-  (runtime-ready)
   (let (actor
         (spawn/name 'org-scheme-runtime
           (lambda ()
+            ;; Initialization must cover green-thread startup, not merely
+            ;; runtime creation. Publish only when the serving actor runs.
+            (runtime-ready)
             (let loop ()
               (let (job (take-job))
                 (when job

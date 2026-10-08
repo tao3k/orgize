@@ -4,7 +4,7 @@
 (import (only-in :std/test check check-exception test-case test-suite)
         (only-in :clan/poo/object .o .ref .slot?)
         (only-in :gerbil-parser/graph-query-support graph-query-context?)
-        (only-in "../languages/org/v1/modules/org-elements/types.ss"
+        (only-in "../languages/org/modules/org-elements/types.ss"
                  +org-element-schema+ +org-element-context-kind+
                  org-element-query-context?)
         (only-in "org-elements-test-support.ss"
@@ -16,7 +16,7 @@
 
                  org-test-form-structured? org-test-source-structured?
                  org-test-sources)
-        (only-in "../languages/org/v1/modules/org-elements/headline-properties.ss"
+        (only-in "../languages/org/modules/org-elements/headline-properties.ss"
 
                  todo-word-name
                  todo-open-words
@@ -36,9 +36,9 @@
                  headline-priority-cookie
                  todo-keyword-matches?
                  memory-headline-state )
-        (only-in "../languages/org/v1/modules/org-elements/objects.ss"
+        (only-in "../languages/org/modules/org-elements/objects.ss"
                  make-org-headline-properties org-headline-property-field)
-        (only-in "../languages/org/v1/modules/org-elements/link-properties.ss"
+        (only-in "../languages/org/modules/org-elements/link-properties.ss"
                  org-image-link?
                  org-link-kind
                  org-link-target-key
@@ -52,8 +52,8 @@
                  org-link-search-value
                  org-expand-link-abbreviation
                  )
-        (only-in "../languages/org/v1/modules/org-parser/keyword-funs.ss" org-keyword-facts)
-        (only-in "../languages/org/v1/modules/org-elements/logbook-properties.ss"
+        (only-in "../languages/org/modules/org-parser/keyword-funs.ss" org-keyword-facts)
+        (only-in "../languages/org/modules/org-elements/logbook-properties.ss"
                  logbook-content-line
                  logbook-line-kind
                  logbook-state-quote-shape
@@ -61,14 +61,14 @@
                  logbook-state-from
                  logbook-clock-duration-shape
                  logbook-clock-duration-value )
-        (only-in "../languages/org/v1/modules/org-elements/table-properties.ss"
+        (only-in "../languages/org/modules/org-elements/table-properties.ss"
                  table-column-cookie-match?
                  table-column-cookie-kind )
-        (only-in "../languages/org/v1/modules/org-elements/affiliated-properties.ss"
+        (only-in "../languages/org/modules/org-elements/affiliated-properties.ss"
                  org-affiliated-keyword? )
-        (only-in "../languages/org/v1/modules/org-elements/catalog.ss" +org-affiliated-keywords+)
-        (only-in "../languages/org/v1/modules/org-elements/generated/query-source.ss" org-element-queries)
-        (only-in "../languages/org/v1/modules/org-elements/interface.ss"
+        (only-in "../languages/org/modules/org-elements/catalog.ss" +org-affiliated-keywords+)
+        (only-in "../languages/org/modules/org-elements/generated/query-source.ss" org-element-queries)
+        (only-in "../languages/org/modules/org-elements/interface.ss"
                  +org-element-kinds+ org-elements-default-profile
                  make-org-element-graph-view make-org-element-query
                  make-org-element-query-context org-element-query?
@@ -136,16 +136,16 @@
       (check (org-test-form-structured? '(quote (display "fixture"))) => #t)
       (check (filter (lambda (path)
                        (not (org-test-source-structured? path)))
-                     (org-test-sources "languages/org/v1"))
+                     (org-test-sources "languages/org"))
              => '())
       (check (org-test-source-structured?
-              "languages/org/v1/modules/org-elements/headline-properties.ss")
+              "languages/org/modules/org-elements/headline-properties.ss")
              => #t)
       (check (org-test-source-structured?
-              "languages/org/v1/modules/org-elements/link-properties.ss")
+              "languages/org/modules/org-elements/link-properties.ss")
              => #t)
       (check (org-test-source-structured?
-              "languages/org/v1/modules/org-elements/affiliated-properties.ss")
+              "languages/org/modules/org-elements/affiliated-properties.ss")
              => #t))
     (test-case "affiliated keyword membership is Scheme-owned and AOT projected"
 
@@ -325,7 +325,7 @@
              (id-of (lambda (record) (.ref record 'id))))
         (check-org-element-query-aot
          org-element-queries
-         "languages/org/v1/modules/org-elements/generated/query-pack.rs")
+         "languages/org/modules/org-elements/generated/query-pack.rs")
         (check (length org-element-queries) => 5)
         (check-org-named-query-selection
          (car org-element-queries) context 0 '(0) id-of

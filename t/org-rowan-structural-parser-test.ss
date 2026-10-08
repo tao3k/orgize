@@ -6,13 +6,13 @@
         (only-in :clan/poo/object .o)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks)
-        (only-in "../languages/org/v1/parser.ss" org-v1-line-structure)
-        (only-in "../languages/org/v1/modules/org-parser/types.ss"
+        (only-in "../languages/org/parser.ss" org-line-structure)
+        (only-in "../languages/org/modules/org-parser/types.ss"
                  org-event-block? org-named-block?
                  org-inline-markup? org-inline-script?
                  org-event-helper?
                  org-event-strategy?)
-        (only-in "../languages/org/v1/modules/org-parser/objects.ss"
+        (only-in "../languages/org/modules/org-parser/objects.ss"
                  make-org-event-block org-event-block-id
                  make-org-named-block
                  make-org-inline-markup org-inline-markup-node
@@ -21,13 +21,13 @@
                  make-org-event-strategy org-event-strategy-root)
         (only-in "org-parser-test-support.ss"
                  check-org-ast-with org-events-cover-source? org-events->ast)
-        (only-in "../languages/org/v1/rowan-event-runtime.ss"
+        (only-in "../languages/org/rowan-event-runtime.ss"
                  parse-org-rowan-events
                  parse-org-rowan-events-with-inlinetask-level
                  parse-org-rowan-events-with-inline-script-policy))
-(export org-v1-rowan-structural-parser-test)
+(export org-rowan-structural-parser-test)
 
-(def org-v1-rowan-structural-parser-test
+(def org-rowan-structural-parser-test
   (test-suite "Org structural Elements and metadata"
     (test-case "TAGS vocabulary is Scheme-owned source-backed structure"
       (check-org-ast-with parse-org-rowan-events

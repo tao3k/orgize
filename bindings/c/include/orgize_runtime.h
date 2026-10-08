@@ -15,6 +15,12 @@ static uint64_t orgize_runtime_profile_now(void) {
   return (uint64_t)value.tv_sec * UINT64_C(1000000000) + (uint64_t)value.tv_nsec;
 }
 
+static uint64_t orgize_runtime_profile_cpu(void) {
+  struct timespec value;
+  if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &value) != 0 || value.tv_sec < 0) return 0;
+  return (uint64_t)value.tv_sec * UINT64_C(1000000000) + (uint64_t)value.tv_nsec;
+}
+
 /* Borrowed requests remain live until their blocking submit call returns.
  * Only the unique Scheme actor enters the Scheme ABI or touches GC roots.
  * This first comparative lane deliberately has one processor/one worker,
@@ -32,9 +38,10 @@ typedef struct orgize_runtime_job {
   const char *query_kind, *field, *value;
   orgize_contract_result result;
   struct orgize_runtime_job *next;
+  pthread_mutex_t completion_lock;
   pthread_cond_t completion;
   uint64_t *profile;
-  uint64_t profile_submitted, profile_started;
+  uint64_t profile_submitted, profile_started, profile_cpu_started;
   int profile_failed;
 } orgize_runtime_job;
 
@@ -55,6 +62,17 @@ static size_t orgize_runtime_queued;
 static orgize_runtime_job *orgize_runtime_head, *orgize_runtime_tail;
 static orgize_runtime_job *orgize_runtime_active;
 
+/* Queue membership and response publication have separate lock domains.
+ * A completed caller never reacquires the busy admission queue's mutex.
+ * When both are needed, always acquire queue then completion, never reverse. */
+static void orgize_runtime_notify(orgize_runtime_job *job, int status) {
+  pthread_mutex_lock(&job->completion_lock);
+  job->status = status;
+  job->done = 1;
+  pthread_cond_signal(&job->completion);
+  pthread_mutex_unlock(&job->completion_lock);
+}
+
 static void orgize_runtime_ready(void) {
   pthread_mutex_lock(&orgize_runtime_lock);
   orgize_runtime_state = 2;
@@ -68,14 +86,10 @@ static void orgize_runtime_failed(void) {
   while (orgize_runtime_head) {
     orgize_runtime_job *job = orgize_runtime_head;
     orgize_runtime_head = job->next;
-    job->status = -1;
-    job->done = 1;
-    pthread_cond_signal(&job->completion);
+    orgize_runtime_notify(job, -1);
   }
   if (orgize_runtime_active) {
-    orgize_runtime_active->status = -1;
-    orgize_runtime_active->done = 1;
-    pthread_cond_signal(&orgize_runtime_active->completion);
+    orgize_runtime_notify(orgize_runtime_active, -1);
     orgize_runtime_active = NULL;
   }
   orgize_runtime_tail = NULL;
@@ -132,6 +146,7 @@ static orgize_runtime_job *orgize_runtime_take(void) {
     orgize_runtime_active = job;
     if (job->profile) {
       job->profile_started = orgize_runtime_profile_now();
+      job->profile_cpu_started = orgize_runtime_profile_cpu();
       if (!job->profile_started || job->profile_started < job->profile_submitted)
         job->profile_failed = 1;
       else job->profile[0] = job->profile_started - job->profile_submitted;
@@ -144,19 +159,20 @@ static orgize_runtime_job *orgize_runtime_take(void) {
 
 static void orgize_runtime_complete(orgize_runtime_job *job, int status) {
   pthread_mutex_lock(&orgize_runtime_lock);
+  orgize_runtime_active = NULL;
+  pthread_mutex_unlock(&orgize_runtime_lock);
   if (job->profile) {
+    uint64_t cpu = orgize_runtime_profile_cpu();
     uint64_t now = orgize_runtime_profile_now();
-    if (!now || now < job->profile_started || job->profile_failed) status = -1;
+    if (!now || now < job->profile_started || !job->profile_cpu_started ||
+        cpu < job->profile_cpu_started || job->profile_failed) status = -1;
     else {
       job->profile[1] = now - job->profile_started;
       job->profile[3] = now;
+      job->profile[4] = cpu - job->profile_cpu_started;
     }
   }
-  job->status = status;
-  job->done = 1;
-  orgize_runtime_active = NULL;
-  pthread_cond_signal(&job->completion);
-  pthread_mutex_unlock(&orgize_runtime_lock);
+  orgize_runtime_notify(job, status);
 }
 
 /* The actor calls the Scheme parser directly. This only copies its live tape
@@ -200,13 +216,18 @@ int32_t orgize_scheme_runtime_initialize(void) {
 }
 
 static int orgize_runtime_submit(orgize_runtime_job *job) {
-  if (pthread_cond_init(&job->completion, NULL) != 0) return -1;
+  if (pthread_mutex_init(&job->completion_lock, NULL) != 0) return -1;
+  if (pthread_cond_init(&job->completion, NULL) != 0) {
+    pthread_mutex_destroy(&job->completion_lock);
+    return -1;
+  }
   pthread_mutex_lock(&orgize_runtime_lock);
   while (orgize_runtime_state == 2 && orgize_runtime_queued >= 64)
     pthread_cond_wait(&orgize_runtime_slots, &orgize_runtime_lock);
   if (orgize_runtime_state != 2) {
     pthread_mutex_unlock(&orgize_runtime_lock);
     pthread_cond_destroy(&job->completion);
+    pthread_mutex_destroy(&job->completion_lock);
     return -1;
   }
   ++orgize_runtime_queued;
@@ -214,10 +235,14 @@ static int orgize_runtime_submit(orgize_runtime_job *job) {
   else orgize_runtime_head = job;
   orgize_runtime_tail = job;
   pthread_cond_signal(&orgize_runtime_changed);
-  while (!job->done) pthread_cond_wait(&job->completion, &orgize_runtime_lock);
   pthread_mutex_unlock(&orgize_runtime_lock);
+  pthread_mutex_lock(&job->completion_lock);
+  while (!job->done) pthread_cond_wait(&job->completion, &job->completion_lock);
+  int status = job->status;
+  pthread_mutex_unlock(&job->completion_lock);
   pthread_cond_destroy(&job->completion);
-  return job->status;
+  pthread_mutex_destroy(&job->completion_lock);
+  return status;
 }
 
 static int32_t orgize_scheme_parse_impl(const uint8_t *input, size_t length,
@@ -232,7 +257,7 @@ static int32_t orgize_scheme_parse_impl(const uint8_t *input, size_t length,
   job.length = length;
   job.profile = profile;
   if (profile) {
-    memset(profile, 0, 4 * sizeof(uint64_t));
+    memset(profile, 0, 5 * sizeof(uint64_t));
     job.profile_submitted = orgize_runtime_profile_now();
     if (!job.profile_submitted) return -1;
   }
@@ -241,6 +266,11 @@ static int32_t orgize_scheme_parse_impl(const uint8_t *input, size_t length,
     uint64_t now = orgize_runtime_profile_now();
     if (!profile[3] || now < profile[3]) status = -1;
     else profile[3] = now - profile[3];
+  }
+  if (status != 0) {
+    free(job.output);
+    job.output = NULL;
+    job.output_length = 0;
   }
   *output = job.output;
   *output_length = job.output_length;

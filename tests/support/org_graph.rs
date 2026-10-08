@@ -1,4 +1,4 @@
-use gerbil_parser_rowan::GraphRecord;
+use gerbil_parser_runtime::GraphRecord;
 
 pub(crate) fn assert_graph_integrity(source: &str, records: &[GraphRecord]) {
     for (index, record) in records.iter().enumerate() {

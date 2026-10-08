@@ -1,5 +1,6 @@
 ---
 source: tests/integration/org_event_aot_parity.rs
+assertion_line: 37
 expression: document.records()
 ---
 [
@@ -15,7 +16,14 @@ expression: document.records()
         syntax_kind: 0,
         category: "document",
         kind: "org-data",
-        range: 0..504,
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                504,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -31,7 +39,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 0..128,
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                128,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -43,17 +58,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 13..46,
+        range: TextRange {
+            start: TextSize(
+                13,
+            ),
+            end: TextSize(
+                46,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "CONTRACT_ORG",
-                range: 14..26,
+                range: TextRange {
+                    start: TextSize(
+                        14,
+                    ),
+                    end: TextSize(
+                        26,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "document.scope.v1",
-                range: 28..45,
+                range: TextRange {
+                    start: TextSize(
+                        28,
+                    ),
+                    end: TextSize(
+                        45,
+                    ),
+                },
             },
         ],
     },
@@ -66,17 +102,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 46..90,
+        range: TextRange {
+            start: TextSize(
+                46,
+            ),
+            end: TextSize(
+                90,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "CONTRACT_ORG",
-                range: 47..59,
+                range: TextRange {
+                    start: TextSize(
+                        47,
+                    ),
+                    end: TextSize(
+                        59,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "document.contract-binding.v1",
-                range: 61..89,
+                range: TextRange {
+                    start: TextSize(
+                        61,
+                    ),
+                    end: TextSize(
+                        89,
+                    ),
+                },
             },
         ],
     },
@@ -89,17 +146,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 90..122,
+        range: TextRange {
+            start: TextSize(
+                90,
+            ),
+            end: TextSize(
+                122,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "CONTRACT_ORG",
-                range: 91..103,
+                range: TextRange {
+                    start: TextSize(
+                        91,
+                    ),
+                    end: TextSize(
+                        103,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "section.scope.v1",
-                range: 105..121,
+                range: TextRange {
+                    start: TextSize(
+                        105,
+                    ),
+                    end: TextSize(
+                        121,
+                    ),
+                },
             },
         ],
     },
@@ -115,22 +193,50 @@ expression: document.records()
         syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 128..294,
+        range: TextRange {
+            start: TextSize(
+                128,
+            ),
+            end: TextSize(
+                294,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 128..129,
+                range: TextRange {
+                    start: TextSize(
+                        128,
+                    ),
+                    end: TextSize(
+                        129,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Task A",
-                range: 130..136,
+                range: TextRange {
+                    start: TextSize(
+                        130,
+                    ),
+                    end: TextSize(
+                        136,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Task A",
-                range: 130..136,
+                range: TextRange {
+                    start: TextSize(
+                        130,
+                    ),
+                    end: TextSize(
+                        136,
+                    ),
+                },
             },
         ],
     },
@@ -145,22 +251,50 @@ expression: document.records()
         syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 137..182,
+        range: TextRange {
+            start: TextSize(
+                137,
+            ),
+            end: TextSize(
+                182,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "**",
-                range: 137..139,
+                range: TextRange {
+                    start: TextSize(
+                        137,
+                    ),
+                    end: TextSize(
+                        139,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Evidence",
-                range: 140..148,
+                range: TextRange {
+                    start: TextSize(
+                        140,
+                    ),
+                    end: TextSize(
+                        148,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Evidence",
-                range: 140..148,
+                range: TextRange {
+                    start: TextSize(
+                        140,
+                    ),
+                    end: TextSize(
+                        148,
+                    ),
+                },
             },
         ],
     },
@@ -175,7 +309,14 @@ expression: document.records()
         syntax_kind: 25,
         category: "element",
         kind: "paragraph",
-        range: 149..182,
+        range: TextRange {
+            start: TextSize(
+                149,
+            ),
+            end: TextSize(
+                182,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -187,17 +328,38 @@ expression: document.records()
         syntax_kind: 49,
         category: "object",
         kind: "link",
-        range: 149..181,
+        range: TextRange {
+            start: TextSize(
+                149,
+            ),
+            end: TextSize(
+                181,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "path",
                 value: "https://example.test",
-                range: 151..171,
+                range: TextRange {
+                    start: TextSize(
+                        151,
+                    ),
+                    end: TextSize(
+                        171,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "description",
                 value: "inside",
-                range: 173..179,
+                range: TextRange {
+                    start: TextSize(
+                        173,
+                    ),
+                    end: TextSize(
+                        179,
+                    ),
+                },
             },
         ],
     },
@@ -213,22 +375,50 @@ expression: document.records()
         syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 182..294,
+        range: TextRange {
+            start: TextSize(
+                182,
+            ),
+            end: TextSize(
+                294,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "**",
-                range: 182..184,
+                range: TextRange {
+                    start: TextSize(
+                        182,
+                    ),
+                    end: TextSize(
+                        184,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Task A Child",
-                range: 185..197,
+                range: TextRange {
+                    start: TextSize(
+                        185,
+                    ),
+                    end: TextSize(
+                        197,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Task A Child",
-                range: 185..197,
+                range: TextRange {
+                    start: TextSize(
+                        185,
+                    ),
+                    end: TextSize(
+                        197,
+                    ),
+                },
             },
         ],
     },
@@ -243,7 +433,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 198..249,
+        range: TextRange {
+            start: TextSize(
+                198,
+            ),
+            end: TextSize(
+                249,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -255,17 +452,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 211..243,
+        range: TextRange {
+            start: TextSize(
+                211,
+            ),
+            end: TextSize(
+                243,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "CONTRACT_ORG",
-                range: 212..224,
+                range: TextRange {
+                    start: TextSize(
+                        212,
+                    ),
+                    end: TextSize(
+                        224,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "section.scope.v1",
-                range: 226..242,
+                range: TextRange {
+                    start: TextSize(
+                        226,
+                    ),
+                    end: TextSize(
+                        242,
+                    ),
+                },
             },
         ],
     },
@@ -280,22 +498,50 @@ expression: document.records()
         syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 249..294,
+        range: TextRange {
+            start: TextSize(
+                249,
+            ),
+            end: TextSize(
+                294,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "***",
-                range: 249..252,
+                range: TextRange {
+                    start: TextSize(
+                        249,
+                    ),
+                    end: TextSize(
+                        252,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Evidence",
-                range: 253..261,
+                range: TextRange {
+                    start: TextSize(
+                        253,
+                    ),
+                    end: TextSize(
+                        261,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Evidence",
-                range: 253..261,
+                range: TextRange {
+                    start: TextSize(
+                        253,
+                    ),
+                    end: TextSize(
+                        261,
+                    ),
+                },
             },
         ],
     },
@@ -310,7 +556,14 @@ expression: document.records()
         syntax_kind: 25,
         category: "element",
         kind: "paragraph",
-        range: 262..294,
+        range: TextRange {
+            start: TextSize(
+                262,
+            ),
+            end: TextSize(
+                294,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -322,17 +575,38 @@ expression: document.records()
         syntax_kind: 49,
         category: "object",
         kind: "link",
-        range: 262..293,
+        range: TextRange {
+            start: TextSize(
+                262,
+            ),
+            end: TextSize(
+                293,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "path",
                 value: "https://example.test",
-                range: 264..284,
+                range: TextRange {
+                    start: TextSize(
+                        264,
+                    ),
+                    end: TextSize(
+                        284,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "description",
                 value: "child",
-                range: 286..291,
+                range: TextRange {
+                    start: TextSize(
+                        286,
+                    ),
+                    end: TextSize(
+                        291,
+                    ),
+                },
             },
         ],
     },
@@ -347,22 +621,50 @@ expression: document.records()
         syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 294..348,
+        range: TextRange {
+            start: TextSize(
+                294,
+            ),
+            end: TextSize(
+                348,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 294..295,
+                range: TextRange {
+                    start: TextSize(
+                        294,
+                    ),
+                    end: TextSize(
+                        295,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Task B",
-                range: 296..302,
+                range: TextRange {
+                    start: TextSize(
+                        296,
+                    ),
+                    end: TextSize(
+                        302,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Task B",
-                range: 296..302,
+                range: TextRange {
+                    start: TextSize(
+                        296,
+                    ),
+                    end: TextSize(
+                        302,
+                    ),
+                },
             },
         ],
     },
@@ -377,22 +679,50 @@ expression: document.records()
         syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 303..348,
+        range: TextRange {
+            start: TextSize(
+                303,
+            ),
+            end: TextSize(
+                348,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "**",
-                range: 303..305,
+                range: TextRange {
+                    start: TextSize(
+                        303,
+                    ),
+                    end: TextSize(
+                        305,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Evidence",
-                range: 306..314,
+                range: TextRange {
+                    start: TextSize(
+                        306,
+                    ),
+                    end: TextSize(
+                        314,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Evidence",
-                range: 306..314,
+                range: TextRange {
+                    start: TextSize(
+                        306,
+                    ),
+                    end: TextSize(
+                        314,
+                    ),
+                },
             },
         ],
     },
@@ -407,7 +737,14 @@ expression: document.records()
         syntax_kind: 25,
         category: "element",
         kind: "paragraph",
-        range: 315..348,
+        range: TextRange {
+            start: TextSize(
+                315,
+            ),
+            end: TextSize(
+                348,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -419,17 +756,38 @@ expression: document.records()
         syntax_kind: 49,
         category: "object",
         kind: "link",
-        range: 315..347,
+        range: TextRange {
+            start: TextSize(
+                315,
+            ),
+            end: TextSize(
+                347,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "path",
                 value: "https://example.test",
-                range: 317..337,
+                range: TextRange {
+                    start: TextSize(
+                        317,
+                    ),
+                    end: TextSize(
+                        337,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "description",
                 value: "task-b",
-                range: 339..345,
+                range: TextRange {
+                    start: TextSize(
+                        339,
+                    ),
+                    end: TextSize(
+                        345,
+                    ),
+                },
             },
         ],
     },
@@ -445,22 +803,50 @@ expression: document.records()
         syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 348..504,
+        range: TextRange {
+            start: TextSize(
+                348,
+            ),
+            end: TextSize(
+                504,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "*",
-                range: 348..349,
+                range: TextRange {
+                    start: TextSize(
+                        348,
+                    ),
+                    end: TextSize(
+                        349,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Override Parent",
-                range: 350..365,
+                range: TextRange {
+                    start: TextSize(
+                        350,
+                    ),
+                    end: TextSize(
+                        365,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Override Parent",
-                range: 350..365,
+                range: TextRange {
+                    start: TextSize(
+                        350,
+                    ),
+                    end: TextSize(
+                        365,
+                    ),
+                },
             },
         ],
     },
@@ -475,7 +861,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 366..426,
+        range: TextRange {
+            start: TextSize(
+                366,
+            ),
+            end: TextSize(
+                426,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -487,17 +880,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 379..420,
+        range: TextRange {
+            start: TextSize(
+                379,
+            ),
+            end: TextSize(
+                420,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "CONTRACT_ORG",
-                range: 380..392,
+                range: TextRange {
+                    start: TextSize(
+                        380,
+                    ),
+                    end: TextSize(
+                        392,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "section.override-title.v1",
-                range: 394..419,
+                range: TextRange {
+                    start: TextSize(
+                        394,
+                    ),
+                    end: TextSize(
+                        419,
+                    ),
+                },
             },
         ],
     },
@@ -512,22 +926,50 @@ expression: document.records()
         syntax_kind: 84,
         category: "section",
         kind: "headline",
-        range: 426..504,
+        range: TextRange {
+            start: TextSize(
+                426,
+            ),
+            end: TextSize(
+                504,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "markers",
                 value: "**",
-                range: 426..428,
+                range: TextRange {
+                    start: TextSize(
+                        426,
+                    ),
+                    end: TextSize(
+                        428,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title",
                 value: "Override Child",
-                range: 429..443,
+                range: TextRange {
+                    start: TextSize(
+                        429,
+                    ),
+                    end: TextSize(
+                        443,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "title-body",
                 value: "Override Child",
-                range: 429..443,
+                range: TextRange {
+                    start: TextSize(
+                        429,
+                    ),
+                    end: TextSize(
+                        443,
+                    ),
+                },
             },
         ],
     },
@@ -542,7 +984,14 @@ expression: document.records()
         syntax_kind: 21,
         category: "element",
         kind: "property-drawer",
-        range: 444..504,
+        range: TextRange {
+            start: TextSize(
+                444,
+            ),
+            end: TextSize(
+                504,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -554,17 +1003,38 @@ expression: document.records()
         syntax_kind: 23,
         category: "property",
         kind: "node-property",
-        range: 457..498,
+        range: TextRange {
+            start: TextSize(
+                457,
+            ),
+            end: TextSize(
+                498,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "CONTRACT_ORG",
-                range: 458..470,
+                range: TextRange {
+                    start: TextSize(
+                        458,
+                    ),
+                    end: TextSize(
+                        470,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "value",
                 value: "section.override-title.v1",
-                range: 472..497,
+                range: TextRange {
+                    start: TextSize(
+                        472,
+                    ),
+                    end: TextSize(
+                        497,
+                    ),
+                },
             },
         ],
     },

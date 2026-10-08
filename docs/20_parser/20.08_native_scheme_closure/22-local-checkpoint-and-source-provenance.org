@@ -48,8 +48,10 @@ This checkpoint does not relabel earlier Python, standalone Rowan or full
 Post-commit builds must report the new commit identity, not the old dirty
 479b2763 artifact. Their receipts are a separate verification step.
 
-Global closure remains open: the published bridge 8bb8103b lacks locally
-used AOT staging/build APIs; the pinned parser 619bf190 requires preserved
+Global closure remains open: bridge 8bb8103b exports the Rust archive APIs,
+but lacks the locally used =c-headers:= staging keyword, static runtime
+staging module and Scheme-owned native compilation executor. The pinned
+parser 619bf190 requires preserved
 local AOT overlays. Fetched e7139c35 is not newly selected/qualified here.
 CI still has older native bootstrap and Python/Contract distribution steps.
 Those gaps are not repaired by making a local commit or copying old green

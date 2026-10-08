@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 
 use super::{
     AstMut, Document, ElementData, FootnoteDefinition, FootnoteEntry, ObjectData, ParsedAnnotation,

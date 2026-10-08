@@ -1,7 +1,7 @@
 //! Consume the existing compiler-owned Gerbil program manifest.
 use gerbil_scheme_native_build::{
-    ProgramArchiveObservation, ProgramArchiveObserver, ProgramArchiveRequest,
-    build_program_archive_observed,
+    NativeHeaderInput, ProgramArchiveContract, ProgramArchiveObservation, ProgramArchiveObserver,
+    ProgramArchiveRequest, build_program_archive_with_contract,
 };
 use sha2::{Digest, Sha256};
 use std::{
@@ -44,7 +44,7 @@ pub fn write_org_native_program() {
         .map(PathBuf::from)
         .unwrap_or_else(|| root.join("target/gerbil-parser/program.json"));
     let manifest = manifest.canonicalize().expect(
-        "Org::parse requires the canonical Gerbil AOT program: prepare it with just scheme-parser-build and scheme-parser-stage; no generated-Rust fallback",
+        "Org::parse requires the canonical Gerbil AOT program: use just scheme-parser-build-isolated then scheme-aligned-program-stage-receipt; no generated-Rust fallback",
     );
     println!("cargo:rerun-if-changed={}", manifest.display());
     let gsc = PathBuf::from(
@@ -65,13 +65,32 @@ pub fn write_org_native_program() {
         .lock()
         .expect("native identity lock")
         .update(b"orgize.native-program-inputs.v2\0");
-    let receipt = build_program_archive_observed(
+    let include_directory = root.join("bindings/c/include");
+    let header_files = [
+        include_directory.join("orgize.h"),
+        include_directory.join("orgize_runtime.h"),
+    ];
+    let native_headers = [NativeHeaderInput {
+        include_directory: &include_directory,
+        header_files: &header_files,
+    }];
+    let receipt = build_program_archive_with_contract(
         ProgramArchiveRequest {
             manifest: &manifest,
             gsc: &gsc,
             archive_name: "orgize_gerbil_program",
             linker_name: "orgize_gerbil_program",
             out_dir: &native_out,
+        },
+        ProgramArchiveContract {
+            required_modules: &[
+                "gerbil-scheme-rust/scheme/native",
+                "orgize/bindings/c/orgize-parser",
+            ],
+            forbidden_modules: &[],
+            linker_main_symbol: "gerbil_scheme_rust_program_main",
+            additional_objects: &[],
+            native_headers: &native_headers,
         },
         &observer,
     )

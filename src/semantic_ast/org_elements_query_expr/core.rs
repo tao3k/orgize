@@ -4,7 +4,7 @@ use super::core_contract::{
     compile_contract_sequence, compile_pair_document_equality, compile_pair_node_equality,
     compile_query_expression, compile_workspace_reference,
 };
-use super::core_parser::{parse_contract_expression_values, parse_query_expression_values};
+use super::core_parser::parse_query_expression_values;
 pub use super::core_types::OrgElementsQueryExpressionError;
 pub(super) use super::core_types::{FieldKind, QueryExpr, list_head};
 use crate::ast::{
@@ -28,9 +28,16 @@ pub fn org_elements_index_query_from_expr_str(
 pub(in crate::ast) fn selector_plist_properties(
     value: &str,
 ) -> Result<Vec<(String, String)>, crate::ast::OrgElementSelectorParseError> {
-    use crate::ast::OrgElementSelectorParseError::{InvalidShape, OddPropertyList};
+    use crate::ast::OrgElementSelectorParseError::InvalidShape;
     let expressions = parse_expressions(value).ok_or(InvalidShape)?;
-    let [QueryExpr::List(items)] = expressions.as_slice() else {
+    selector_properties_from_values(&expressions)
+}
+
+pub(in crate::ast) fn selector_properties_from_values(
+    expressions: &[QueryExpr],
+) -> Result<Vec<(String, String)>, crate::ast::OrgElementSelectorParseError> {
+    use crate::ast::OrgElementSelectorParseError::{InvalidShape, OddPropertyList};
+    let [QueryExpr::List(items)] = expressions else {
         return Err(InvalidShape);
     };
     let [QueryExpr::Atom(head), QueryExpr::List(properties)] = items.as_slice() else {
@@ -52,23 +59,16 @@ pub(in crate::ast) fn selector_plist_properties(
         .collect()
 }
 
-/// Parses one expression block as a query-only Org elements IR.
-pub(in crate::ast) fn org_query_block_is_admitted(value: &str) -> bool {
-    let Some(expressions) = parse_expressions(value) else {
-        return false;
-    };
-    super::index::compile_index_query_expressions(&expressions).is_some()
+pub(in crate::ast) fn query_values_are_admitted(expressions: &[QueryExpr]) -> bool {
+    super::index::compile_index_query_expressions(expressions).is_some()
         || (!expressions.is_empty()
             && expressions
                 .iter()
                 .all(|expression| compile_query_expression(expression).is_some()))
 }
 
-/// Parses one expression block as a query-only Org elements IR.
-pub(in crate::ast) fn parse_org_elements_query_expression_block(
-    value: &str,
-) -> Option<OrgContractQuery> {
-    parse_expressions(value).and_then(|expressions| match expressions.as_slice() {
+pub(in crate::ast) fn compile_query_values(expressions: &[QueryExpr]) -> Option<OrgContractQuery> {
+    match expressions {
         [expression] => compile_query_expression(expression),
         [] => None,
         expressions => {
@@ -78,22 +78,18 @@ pub(in crate::ast) fn parse_org_elements_query_expression_block(
             }
             Some(query)
         }
-    })
+    }
 }
 
-/// Parses one expression block as a contract assertion.
-pub(in crate::ast) fn org_contract_block_is_admitted(value: &str) -> bool {
-    if parse_contract_expression_values(value)
-        .and_then(|forms| compile_contract_sequence(&forms))
-        .is_some()
-    {
+pub(in crate::ast) fn contract_values_are_admitted(
+    normalized: Option<&[QueryExpr]>,
+    raw: Option<&[QueryExpr]>,
+) -> bool {
+    if normalized.and_then(compile_contract_sequence).is_some() {
         return true;
     }
-    let Some(expressions) = parse_expressions(value) else {
-        return false;
-    };
-    match expressions.as_slice() {
-        [expression] => {
+    match raw {
+        Some([expression]) => {
             compile_pair_node_equality(expression).is_some()
                 || compile_pair_document_equality(expression).is_some()
                 || compile_workspace_reference(expression).is_some()
@@ -102,16 +98,14 @@ pub(in crate::ast) fn org_contract_block_is_admitted(value: &str) -> bool {
     }
 }
 
-/// Parses one expression block as a contract assertion.
-pub(in crate::ast) fn parse_org_contract_expression_block(
-    value: &str,
+pub(in crate::ast) fn compile_contract_values(
+    expressions: &[QueryExpr],
 ) -> Option<(
     Vec<OrgContractBinding>,
     OrgContractQuery,
     OrgContractExpectation,
 )> {
-    let expressions = parse_contract_expression_values(value)?;
-    compile_contract_sequence(&expressions)
+    compile_contract_sequence(expressions)
 }
 
 pub(crate) fn parse_org_contract_pair_node_equality_block(

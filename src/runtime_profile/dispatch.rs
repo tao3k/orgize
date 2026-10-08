@@ -33,6 +33,46 @@ pub(crate) fn stage<T>(name: &'static str, work: impl FnOnce() -> T) -> T {
     }
 }
 
+/// Attribute synchronous crossings without changing admission or scheduling.
+#[inline]
+pub(crate) fn operation<T>(operation: u8, work: impl FnOnce() -> T) -> T {
+    #[cfg(feature = "runtime-profile")]
+    {
+        const NAMES: [&str; 24] = [
+            "native.operation.00",
+            "native.operation.01",
+            "native.operation.02",
+            "native.operation.03",
+            "native.operation.04",
+            "native.operation.05",
+            "native.operation.06",
+            "native.operation.07",
+            "native.operation.08",
+            "native.operation.09",
+            "native.operation.10",
+            "native.operation.11",
+            "native.operation.12",
+            "native.operation.13",
+            "native.operation.14",
+            "native.operation.15",
+            "native.operation.16",
+            "native.operation.17",
+            "native.operation.18",
+            "native.operation.19",
+            "native.operation.20",
+            "native.operation.21",
+            "native.operation.22",
+            "native.operation.23",
+        ];
+        stage(NAMES[usize::from(operation)], work)
+    }
+    #[cfg(not(feature = "runtime-profile"))]
+    {
+        let _ = operation;
+        work()
+    }
+}
+
 #[cfg(feature = "runtime-profile")]
 pub(crate) fn record_native_batch(fields: [u64; 6]) {
     // VM/process interval sums are NOT exclusive costs when intervals overlap.

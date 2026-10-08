@@ -3,9 +3,9 @@
 
 (import (only-in :std/ffi C-declare C-ffi-macrology def-C-lambda def-C-type)
         (only-in :clan/poo/object .o .ref)
-        (only-in "../../languages/org/v1/modules/org-elements/runtime-interface.ss"
+        (only-in "../../languages/org/modules/org-elements/runtime-interface.ss"
                  make-org-element-graph-view make-org-element-query)
-        (only-in "../../languages/org/v1/modules/org-contract/runtime-interface.ss"
+        (only-in "../../languages/org/modules/org-contract/runtime-interface.ss"
                  make-org-contract-assertion make-org-contract-expectation
                  org-contract-evaluate-assertion
                  org-contract-result-matched-count
@@ -15,7 +15,7 @@
 (C-ffi-macrology)
 
 (C-declare #<<END-C
-#include "include/orgize.h"
+#include "orgize.h"
 
 /* Match Gambit's generated C types exactly; int64_t is long on Linux but
  * ___S64 is long long in the generated declaration. */

@@ -1,6 +1,6 @@
 //! Typed projection of Scheme-classified source-block switches.
 
-use gerbil_parser_rowan::GraphRecord;
+use gerbil_parser_runtime::GraphRecord;
 
 use super::block_model::{BlockHeaderArg, BlockLineNumberMode, BlockLineNumbering, BlockSwitches};
 

@@ -36,10 +36,6 @@ pub(super) fn planning_key_kind(key: &str) -> &'static str {
     label("planning-key-kind", &[key])
 }
 
-pub(super) fn headline_anchor_slug(title: &str) -> String {
-    scalar("headline-anchor-slug", &[title])
-}
-
 pub(super) fn memory_headline_state(
     todo_type: &str,
     closed: bool,

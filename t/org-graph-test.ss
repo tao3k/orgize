@@ -8,16 +8,16 @@
                  graph-projection? graph-projection-nodes
                  graph-node-syntax-kind graph-node-label graph-node-fields
                  graph-field-name graph-field-mode)
-        (only-in "../languages/org/v1/modules/org-elements/graph-types.ss"
+        (only-in "../languages/org/modules/org-elements/graph-types.ss"
                  org-graph-node? org-graph-field?)
-        (only-in "../languages/org/v1/modules/org-elements/graph-objects.ss"
+        (only-in "../languages/org/modules/org-elements/graph-objects.ss"
                  make-org-graph-node make-org-graph-field
                  org-graph-node-fields org-graph-field-mode)
-        (only-in "../languages/org/v1/graph-shape.ss" org-v1-graph-shape)
-        (only-in "../languages/org/v1/graph.ss" org-v1-graph-projection))
-(export org-v1-graph-test)
+        (only-in "../languages/org/graph-shape.ss" org-graph-shape)
+        (only-in "../languages/org/graph.ss" org-graph-projection))
+(export org-graph-test)
 
-(def org-v1-graph-test
+(def org-graph-test
   (test-suite "Org POO graph projection"
    (test-case "source graph shape is admitted as POO before projection"
      (let* ((field (make-org-graph-field 'HeadlineTitle "title" 'one))
@@ -25,7 +25,7 @@
                                        (list field))))
        (check (org-graph-field? field) => #t)
        (check (org-graph-node? node) => #t)
-       (check (every org-graph-node? org-v1-graph-shape) => #t)
+       (check (every org-graph-node? org-graph-shape) => #t)
        (check (org-graph-node-fields node) => (list field))
        (check (org-graph-field-mode field) => 'one)
        (check (org-graph-node? '(OrgSection section headline)) => #f)
@@ -34,8 +34,8 @@
                    label: "title" mode: 'unknown))
               => #f)))
    (test-case "one declaration owns the contract scenario record kinds"
-      (let (nodes (graph-projection-nodes org-v1-graph-projection))
-        (check (graph-projection? org-v1-graph-projection) => #t)
+      (let (nodes (graph-projection-nodes org-graph-projection))
+        (check (graph-projection? org-graph-projection) => #t)
       (check (map graph-node-syntax-kind nodes)
                => '(OrgFile OrgSection OrgInlinetask OrgInlinetaskEnd
                             OrgPropertyDrawer OrgDrawer OrgParagraph
@@ -55,7 +55,7 @@
                             OrgCommentBlock OrgExportBlock OrgLink
                             OrgTarget OrgRadioTarget OrgStatisticsCookie OrgLineBreak
                             OrgExportSnippet OrgFootnoteReference
-                            OrgInlineSourceBlock OrgInlineBabelCall OrgMacro OrgCitation
+                            OrgInlineSourceBlock OrgInlineBabelCall OrgMacro OrgMacroArgument OrgCitation
                             OrgCitationReference OrgCitationMalformedReference
                             OrgTimestampActive OrgTimestampInactive OrgTimestampDiary
                             OrgEntity
@@ -83,7 +83,7 @@
                                 "comment-block" "export-block" "link"
                                 "target" "radio-target" "statistics-cookie" "line-break"
                                 "export-snippet" "footnote-reference"
-                                "inline-src-block" "inline-babel-call" "macro" "citation"
+                                "inline-src-block" "inline-babel-call" "macro" "macro-argument" "citation"
                                 "citation-reference" "citation-malformed"
                                 "timestamp" "timestamp"
                                 "timestamp" "entity"
@@ -92,7 +92,7 @@
                                 "underline" "subscript" "superscript"
                                 "strike-through" "cloze"))))
     (test-case "dynamic block exposes its Scheme closing line"
-      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+      (let* ((nodes (graph-projection-nodes org-graph-projection))
              (dynamic (car (filter (lambda (node)
                                      (eq? (graph-node-syntax-kind node)
                                           'OrgDynamicBlock))
@@ -102,7 +102,7 @@
                                  (graph-node-fields dynamic))))
         (check (map graph-field-mode end-fields) => '(append))))
     (test-case "drawer exposes its Scheme body boundaries"
-      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+      (let* ((nodes (graph-projection-nodes org-graph-projection))
              (drawer (car (filter (lambda (node)
                                    (eq? (graph-node-syntax-kind node) 'OrgDrawer))
                                  nodes)))
@@ -110,7 +110,7 @@
         (check (map graph-field-name fields)
                => '("name" "header-trivia" "end"))))
     (test-case "planning keeps each key and value independently"
-      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+      (let* ((nodes (graph-projection-nodes org-graph-projection))
              (planning
               (car (filter (lambda (node)
                              (eq? (graph-node-syntax-kind node) 'OrgPlanning))
@@ -119,7 +119,7 @@
         (check (map graph-field-name fields) => '("key" "value"))
         (check (map graph-field-mode fields) => '(each each-node-text))))
     (test-case "clock value and duration are source-backed graph fields"
-      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+      (let* ((nodes (graph-projection-nodes org-graph-projection))
              (clock (car (filter (lambda (node)
                                    (eq? (graph-node-syntax-kind node) 'OrgClock))
                                  nodes)))
@@ -127,7 +127,7 @@
         (check (map graph-field-name fields) => '("value" "duration"))
         (check (map graph-field-mode fields) => '(node-text append))))
     (test-case "list item exposes Scheme-tokenized indentation and spacing"
-      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+      (let* ((nodes (graph-projection-nodes org-graph-projection))
              (item (car (filter (lambda (node)
                                   (eq? (graph-node-syntax-kind node)
                                        'OrgListItem))
@@ -138,7 +138,7 @@
         (check (map graph-field-mode fields)
                => '(append append append append each))))
     (test-case "timestamp graph fields preserve source-backed query properties"
-      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+      (let* ((nodes (graph-projection-nodes org-graph-projection))
              (timestamps
               (filter (lambda (node)
                         (memq (graph-node-syntax-kind node)
@@ -147,13 +147,24 @@
         (check (length timestamps) => 2)
         (check (map graph-field-name
                     (graph-node-fields (car timestamps)))
-               => '("delimiter" "range-separator" "date" "day-name"
-                    "time" "repeater" "delay"))
+               => '("delimiter" "range-separator" "time-range-separator"
+                    "point" "date" "year" "year" "month" "month" "day" "day"
+                    "second-year" "second-month" "second-day"
+                    "day-name" "day-name" "second-day-name"
+                    "time" "first-time" "time" "second-time" "inline-end-time"
+                    "hour" "minute" "inline-end-hour" "inline-end-minute"
+                    "second-hour" "second-minute"
+                    "repeater" "repeater-mark" "repeater-value" "repeater-unit"
+                    "delay" "delay-mark" "delay-value" "delay-unit"))
         (check (map graph-field-mode
                     (graph-node-fields (cadr timestamps)))
-               => '(each each each each each each each))))
+               => '(each each each each-node-text each-node-text
+                    each each each each each each append append append
+                    each each append each-node-text node-text each-node-text
+                    node-text node-text each each append append append append
+                    each-node-text each each each each-node-text each each each))))
     (test-case "export snippet value remains present when its source span is empty"
-      (let* ((nodes (graph-projection-nodes org-v1-graph-projection))
+      (let* ((nodes (graph-projection-nodes org-graph-projection))
              (snippet (car (filter
                             (lambda (node)
                               (eq? (graph-node-syntax-kind node)

@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 (import (only-in :std/test check test-case test-suite)
-        (only-in "../languages/org/v1/modules/org-parser/value-funs.ss" org-value-plan))
+        (only-in "../languages/org/modules/org-parser/value-funs.ss" org-value-plan))
 (export org-native-lifecycle-value-test)
 (def org-native-lifecycle-value-test
   (test-suite "Native lifecycle and metadata value closure"
@@ -10,6 +10,15 @@
       (for-each (lambda (text) (check (org-value-plan (list "priority" text)) => '()))
                 '("00" "064" "65" "a" "AB" "")))
     (test-case "duration units HMS decimals and saturation"
+      (for-each
+       (lambda (raw)
+         (let (scalar (org-value-plan (list "duration" raw)))
+           (check (org-value-plan (list "duration-plan" raw))
+                  => (if (null? scalar) '(("false" ""))
+                       (list (cons "true" (car scalar)))))))
+       '("" "1:30" "1:02:03" "2h" "1d3h5min" "1y" "1e308" "-1" "λ" "NaN"))
+      (check (org-value-plan '("duration-plan" "1:30" "λ" ""))
+             => '(("true" "5400") ("false" "") ("true" "0")))
       (for-each
        (lambda (example)
          (check (org-value-plan (list "duration" (car example))) => (list (list (cadr example)))))

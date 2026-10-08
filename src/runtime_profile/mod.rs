@@ -6,7 +6,7 @@ pub use collector::measure;
 mod dispatch;
 mod transport;
 mod worker;
-pub(crate) use dispatch::{is_active, stage};
+pub(crate) use dispatch::{is_active, operation, stage};
 #[cfg(all(feature = "runtime-profile", any(feature = "runtime-scheme", test)))]
 pub(crate) use transport::record_transport;
 #[cfg(not(feature = "runtime-scheme"))]

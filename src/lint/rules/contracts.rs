@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 
 use super::{LintFinding, LintSeverity, location_for_range};
 use crate::Org;

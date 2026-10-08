@@ -27,9 +27,9 @@
                        org-native-lifecycle-value-test
                        org-native-semantic-owner-test
                        org-elements-module-test org-radio-match-test
-                       org-v1-rowan-inline-parser-test
-                       org-v1-rowan-structural-parser-test
-                       org-v1-rowan-table-container-parser-test
+                       org-rowan-inline-parser-test
+                       org-rowan-structural-parser-test
+                       org-rowan-table-container-parser-test
                        org-source-headlines-test))
          (selected (if (null? args) suites
                      (list (test-suite "failure exit control"

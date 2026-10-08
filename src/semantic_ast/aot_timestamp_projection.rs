@@ -1,7 +1,7 @@
 //! Owned timestamp values projected only from Scheme-classified graph fields.
 
-use gerbil_parser_rowan::GraphRecord;
-use rowan::TextRange;
+use gerbil_parser_runtime::GraphRecord;
+use gerbil_parser_runtime::TextRange;
 
 use super::timestamp_model::{
     RepeaterKind, TimeUnit, Timestamp, TimestampKind, TimestampMoment, TimestampRepeater,

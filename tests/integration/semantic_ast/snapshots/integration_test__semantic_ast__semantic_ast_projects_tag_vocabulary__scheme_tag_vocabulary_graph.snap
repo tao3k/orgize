@@ -1,5 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_tag_vocabulary.rs
+assertion_line: 21
 expression: records
 ---
 [
@@ -12,7 +13,14 @@ expression: records
         syntax_kind: 0,
         category: "document",
         kind: "org-data",
-        range: 0..32,
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                32,
+            ),
+        },
         fields: [],
     },
     GraphRecord {
@@ -26,17 +34,38 @@ expression: records
         syntax_kind: 31,
         category: "element",
         kind: "keyword",
-        range: 0..32,
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                32,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "key",
                 value: "tags",
-                range: 2..6,
+                range: TextRange {
+                    start: TextSize(
+                        2,
+                    ),
+                    end: TextSize(
+                        6,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "raw-value",
                 value: " [ GTD : Control ] pc(p)",
-                range: 7..31,
+                range: TextRange {
+                    start: TextSize(
+                        7,
+                    ),
+                    end: TextSize(
+                        31,
+                    ),
+                },
             },
         ],
     },
@@ -51,17 +80,38 @@ expression: records
         syntax_kind: 232,
         category: "component",
         kind: "tag-vocabulary",
-        range: 8..31,
+        range: TextRange {
+            start: TextSize(
+                8,
+            ),
+            end: TextSize(
+                31,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "name",
                 value: "pc",
-                range: 26..28,
+                range: TextRange {
+                    start: TextSize(
+                        26,
+                    ),
+                    end: TextSize(
+                        28,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "shortcut",
                 value: "p",
-                range: 29..30,
+                range: TextRange {
+                    start: TextSize(
+                        29,
+                    ),
+                    end: TextSize(
+                        30,
+                    ),
+                },
             },
         ],
     },
@@ -74,22 +124,50 @@ expression: records
         syntax_kind: 234,
         category: "component",
         kind: "tag-inclusive-group",
-        range: 8..25,
+        range: TextRange {
+            start: TextSize(
+                8,
+            ),
+            end: TextSize(
+                25,
+            ),
+        },
         fields: [
             GraphFieldValue {
                 name: "name",
                 value: "GTD",
-                range: 10..13,
+                range: TextRange {
+                    start: TextSize(
+                        10,
+                    ),
+                    end: TextSize(
+                        13,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "separator",
                 value: ":",
-                range: 14..15,
+                range: TextRange {
+                    start: TextSize(
+                        14,
+                    ),
+                    end: TextSize(
+                        15,
+                    ),
+                },
             },
             GraphFieldValue {
                 name: "name",
                 value: "Control",
-                range: 16..23,
+                range: TextRange {
+                    start: TextSize(
+                        16,
+                    ),
+                    end: TextSize(
+                        23,
+                    ),
+                },
             },
         ],
     },

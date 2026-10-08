@@ -1,6 +1,6 @@
 use super::decode;
 use crate::org_aot::org_language_spec;
-use gerbil_parser_rowan::{KindCategory, TreeEvent};
+use gerbil_parser_runtime::{KindCategory, TreeEvent};
 
 fn header() -> Vec<u8> {
     format!("OEV1{}", org_language_spec().grammar_digest).into_bytes()
@@ -107,7 +107,7 @@ fn rowan_admission_rejects_invalid_source_ranges_and_nesting() {
         tape.extend(suffix);
         let events = decode(&tape, grammar).unwrap();
         assert!(
-            gerbil_parser_rowan::parse_generated_events(
+            gerbil_parser_runtime::parse_generated_events(
                 grammar,
                 crate::org_aot::org_event_parser_digest(),
                 "",

@@ -10,6 +10,7 @@ use super::{
     markdown_elements::index_markdown,
     model::{DocumentElement, DocumentLanguage, DocumentWalkConfig},
     org_elements::index_org,
+    query_match::PreparedQuery,
 };
 
 pub(super) struct DocumentSource {
@@ -77,6 +78,14 @@ pub(super) fn index_sources(
     language: DocumentLanguage,
     sources: &[DocumentSource],
 ) -> Result<Vec<DocumentElement>, String> {
+    index_sources_with_query(language, sources, None)
+}
+
+fn index_sources_with_query(
+    language: DocumentLanguage,
+    sources: &[DocumentSource],
+    query: Option<&PreparedQuery>,
+) -> Result<Vec<DocumentElement>, String> {
     if language == DocumentLanguage::Org {
         let config = crate::ParseConfig::default();
         let mut remaining = sources;
@@ -85,11 +94,12 @@ pub(super) fn index_sources(
             let width = bounded_org_batch_len(remaining);
             if width == 0 {
                 // An oversized document uses the same native single-document API.
-                facts.extend(index_source(
-                    language,
-                    &remaining[0].path,
-                    &remaining[0].source,
-                )?);
+                let elements = index_source(language, &remaining[0].path, &remaining[0].source)?;
+                facts.extend(
+                    elements
+                        .into_iter()
+                        .filter(|element| query.is_none_or(|query| query.matches(element))),
+                );
                 crate::runtime_profile::query_batch_completed(1);
                 remaining = &remaining[1..];
                 continue;
@@ -104,10 +114,16 @@ pub(super) fn index_sources(
             for (source, document) in batch.iter().zip(documents) {
                 let document =
                     document.map_err(|error| format!("{}: {error:?}", source.path.display()))?;
-                facts.extend(super::org_elements::index_org_document(
-                    &source.path,
-                    &source.source,
-                    &document,
+                facts.extend(crate::runtime_profile::stage(
+                    "query.fact_projection",
+                    || {
+                        super::org_elements::index_org_document_with_query(
+                            &source.path,
+                            &source.source,
+                            &document,
+                            query,
+                        )
+                    },
                 )?);
             }
             remaining = rest;
@@ -116,7 +132,11 @@ pub(super) fn index_sources(
         return Ok(facts);
     }
     sources.iter().try_fold(Vec::new(), |mut facts, source| {
-        facts.extend(index_source(language, &source.path, &source.source)?);
+        facts.extend(
+            index_source(language, &source.path, &source.source)?
+                .into_iter()
+                .filter(|element| query.is_none_or(|query| query.matches(element))),
+        );
         Ok(facts)
     })
 }
@@ -141,28 +161,37 @@ pub(super) fn query_project_with_config(
     language: DocumentLanguage,
     root: &Path,
     walk_config: &DocumentWalkConfig,
-    _terms: &[String],
-    _fields: &[String],
+    terms: &[String],
+    fields: &[String],
 ) -> Result<Vec<DocumentElement>, String> {
     let mut files = Vec::new();
     collect_document_paths(language, root, walk_config, &mut files)?;
     files.sort();
     files.dedup();
 
-    index_paths(language, &files)
+    let query = PreparedQuery::new(terms, &[], fields);
+    index_paths_with_query(language, &files, Some(&query))
 }
 
 fn index_paths(
     language: DocumentLanguage,
     paths: &[PathBuf],
 ) -> Result<Vec<DocumentElement>, String> {
-    let sources = load_sources(paths)?;
+    index_paths_with_query(language, paths, None)
+}
+
+fn index_paths_with_query(
+    language: DocumentLanguage,
+    paths: &[PathBuf],
+    query: Option<&PreparedQuery>,
+) -> Result<Vec<DocumentElement>, String> {
+    let sources = crate::runtime_profile::stage("query.source_load", || load_sources(paths))?;
     let total_bytes = sources
         .iter()
         .map(|source| source.source.len() as u64)
         .sum();
     if should_index_sequentially(language, sources.len(), total_bytes) {
-        return index_sources(language, &sources);
+        return index_sources_with_query(language, &sources, query);
     }
 
     let worker_count = thread::available_parallelism()
@@ -178,7 +207,7 @@ fn index_paths(
             .map(|chunk| {
                 scope.spawn(move || {
                     crate::runtime_profile::worker(observe_workers, || {
-                        index_sources(language, chunk)
+                        index_sources_with_query(language, chunk, query)
                     })
                 })
             })
@@ -226,9 +255,10 @@ fn index_source(
 
 /// Filter already-indexed elements with whitespace-delimited text matching.
 pub fn filter_elements(elements: &[DocumentElement], query: &str) -> Vec<DocumentElement> {
+    let query = PreparedQuery::new(&[query.to_owned()], &[], &[]);
     elements
         .iter()
-        .filter(|element| element.matches(query))
+        .filter(|element| query.matches(element))
         .cloned()
         .collect()
 }
@@ -240,13 +270,10 @@ pub fn filter_elements_by_query(
     kinds: &[String],
     fields: &[String],
 ) -> Vec<DocumentElement> {
+    let query = PreparedQuery::new(terms, kinds, fields);
     elements
         .into_iter()
-        .filter(|element| {
-            terms.iter().all(|term| element.matches(term))
-                && kinds.iter().all(|kind| element.kind_matches(kind))
-                && fields.iter().all(|field| element.field_matches(field))
-        })
+        .filter(|element| query.matches(element))
         .collect()
 }
 
@@ -366,50 +393,6 @@ impl DocumentElement {
             output.push('"');
         }
         output
-    }
-
-    pub(super) fn matches(&self, query: &str) -> bool {
-        let query = query.trim().to_ascii_lowercase();
-        if query.is_empty() {
-            return true;
-        }
-        query.split_whitespace().all(|term| self.matches_term(term))
-    }
-
-    fn matches_term(&self, term: &str) -> bool {
-        self.kind.to_ascii_lowercase().contains(term)
-            || self.source_kind.to_ascii_lowercase().contains(term)
-            || self.path.to_ascii_lowercase().contains(term)
-            || self.text.to_ascii_lowercase().contains(term)
-            || self.content.to_ascii_lowercase().contains(term)
-            || self.fields.iter().any(|(key, value)| {
-                key.to_ascii_lowercase().contains(term) || value.to_ascii_lowercase().contains(term)
-            })
-    }
-
-    fn kind_matches(&self, kind: &str) -> bool {
-        self.kind.eq_ignore_ascii_case(kind.trim())
-    }
-
-    fn field_matches(&self, field: &str) -> bool {
-        let field = field.trim();
-        if field.is_empty() {
-            return true;
-        }
-        let Some((key, value)) = field.split_once('=') else {
-            return self
-                .fields
-                .iter()
-                .any(|(existing_key, _)| existing_key.eq_ignore_ascii_case(field));
-        };
-        let key = key.trim();
-        let value = value.trim();
-        if key.eq_ignore_ascii_case("text") {
-            return self.text.contains(value);
-        }
-        self.fields.iter().any(|(existing_key, existing_value)| {
-            existing_key.eq_ignore_ascii_case(key) && existing_value.contains(value)
-        })
     }
 
     pub(super) fn content_text(&self) -> String {

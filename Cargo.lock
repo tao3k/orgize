@@ -646,7 +646,7 @@ dependencies = [
  "jetscii",
  "phf 0.13.1",
  "phf_codegen",
- "rustc-hash 2.1.3",
+ "rustc-hash",
  "smallvec",
  "typed-arena",
 ]
@@ -699,12 +699,6 @@ name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
-
-[[package]]
-name = "countme"
-version = "3.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7704b5fdd17b18ae31c4c1da5a2e0305a2bf17b5249300a9ee9ed7b72114c636"
 
 [[package]]
 name = "cpufeatures"
@@ -1675,18 +1669,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "gerbil-parser-rowan"
+name = "gerbil-parser-artifact"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-parser?rev=619bf1905b9dfc9a4541d30e1daffe9190587254#619bf1905b9dfc9a4541d30e1daffe9190587254"
+source = "git+https://github.com/tao3k/gerbil-parser?rev=012389bef4d6bbf240398d6f09c730160ed758a7#012389bef4d6bbf240398d6f09c730160ed758a7"
 dependencies = [
- "rowan",
+ "serde_json",
+ "sha2 0.10.9",
+]
+
+[[package]]
+name = "gerbil-parser-runtime"
+version = "0.1.0"
+source = "git+https://github.com/tao3k/gerbil-parser?rev=012389bef4d6bbf240398d6f09c730160ed758a7#012389bef4d6bbf240398d6f09c730160ed758a7"
+dependencies = [
+ "gerbil-parser-artifact",
  "sha2 0.10.9",
 ]
 
 [[package]]
 name = "gerbil-scheme"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=8bb8103b820a0c8d02446d6398197079c5275671#8bb8103b820a0c8d02446d6398197079c5275671"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
 dependencies = [
  "gerbil-scheme-rust-project-harness-policy",
  "gerbil-scheme-sys",
@@ -1695,6 +1698,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-native-build"
 version = "0.1.0"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
 dependencies = [
  "cbindgen",
  "cc",
@@ -1707,6 +1711,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-rust-project-harness"
 version = "0.1.2"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
 dependencies = [
  "cargo-lock",
  "cargo_toml",
@@ -1724,6 +1729,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-rust-project-harness-policy"
 version = "0.1.0"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
 dependencies = [
  "gerbil-scheme-rust-project-harness",
 ]
@@ -1731,7 +1737,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-sys"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=8bb8103b820a0c8d02446d6398197079c5275671#8bb8103b820a0c8d02446d6398197079c5275671"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
 dependencies = [
  "gerbil-scheme-native-build",
  "gerbil-scheme-rust-project-harness-policy",
@@ -2321,7 +2327,8 @@ dependencies = [
  "comrak",
  "criterion",
  "datafusion",
- "gerbil-parser-rowan",
+ "gerbil-parser-artifact",
+ "gerbil-parser-runtime",
  "gerbil-scheme",
  "gerbil-scheme-sys",
  "ignore",
@@ -2331,7 +2338,6 @@ dependencies = [
  "libc",
  "memchr",
  "orgize-build-support",
- "rowan",
  "serde_json",
  "sha2 0.10.9",
  "slugify",
@@ -2717,24 +2723,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
-name = "rowan"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "417a3a9f582e349834051b8a10c8d71ca88da4211e4093528e36b9845f6b5f21"
-dependencies = [
- "countme",
- "hashbrown 0.14.5",
- "rustc-hash 1.1.0",
- "text-size",
-]
-
-[[package]]
-name = "rustc-hash"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
-
-[[package]]
 name = "rustc-hash"
 version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3011,12 +2999,6 @@ dependencies = [
  "rustix",
  "windows-sys",
 ]
-
-[[package]]
-name = "text-size"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f18aa187839b2bdb1ad2fa35ead8c4c2976b64e4363c386d45ac0f7ee85c9233"
 
 [[package]]
 name = "thiserror"

@@ -6,7 +6,7 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in :std/error error-message)
         (only-in :clan/poo/object .ref)
-        "../languages/org/v1/modules/org-elements/source-interface.ss")
+        "../languages/org/modules/org-elements/source-interface.ss")
 (export org-source-headlines-test)
 (def org-source-headlines-test
   (test-suite "Source-backed headline projection"

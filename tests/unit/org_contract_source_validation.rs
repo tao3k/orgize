@@ -64,7 +64,17 @@ fn accepts_a_contract_with_a_valid_selector_assertion() {
         "* Document contract\n:PROPERTIES:\n:CONTRACT_ID: document.contract\n:CONTRACT_SCOPE: document\n:END:\n** Has text\n:PROPERTIES:\n:ASSERT_ID: document.has-text\n:END:\n#+begin_src org-elements-selector\n(:org-element (:type paragraph))\n#+end_src\n",
     )
     .document();
-    let result = validate_contract_source(&document, Some(Path::new("contracts/document.org")));
+    let run = || validate_contract_source(&document, Some(Path::new("contracts/document.org")));
+    #[cfg(feature = "runtime-profile")]
+    let (result, stages) = crate::runtime_profile::measure(run);
+    #[cfg(not(feature = "runtime-profile"))]
+    let result = run();
+    #[cfg(feature = "runtime-profile")]
+    assert_eq!(
+        stages.get("native.requests_completed"),
+        Some(&1),
+        "Contract registry and diagnostics must share one Scheme plan: {stages:?}"
+    );
 
     assert!(result.is_valid(), "{:?}", result.diagnostics);
     assert_eq!(result.registry.contracts.len(), 1);

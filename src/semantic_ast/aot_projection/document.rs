@@ -5,8 +5,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use gerbil_parser_rowan::GraphRecord;
-use rowan::TextRange;
+use gerbil_parser_runtime::GraphRecord;
+use gerbil_parser_runtime::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link};
 
@@ -67,7 +67,9 @@ struct GraphProjector<'a> {
     attached_keyword_ids: HashSet<usize>,
     radio_targets: Vec<String>,
     headline_aliases: HashMap<usize, Vec<Object<ParsedAnnotation>>>,
-    anchor_counts: HashMap<String, usize>,
+    anchor_inputs: Vec<(u32, String)>,
+    block_lines: HashMap<usize, Vec<Vec<String>>>,
+    property_durations: HashMap<usize, Option<u64>>,
     diagnostics: Vec<Diagnostic>,
 }
 
@@ -92,7 +94,13 @@ impl<'a> GraphProjector<'a> {
             attached_keyword_ids,
             radio_targets,
             headline_aliases: HashMap::new(),
-            anchor_counts: HashMap::new(),
+            anchor_inputs: Vec::new(),
+            block_lines: crate::runtime_profile::stage("ast.block_document_plan", || {
+                crate::ast::aot_block_plan::block_document_plan(document, source)
+            }),
+            property_durations: crate::runtime_profile::stage("ast.property_duration_plan", || {
+                crate::ast::aot_duration_plan::property_duration_plan(document)
+            }),
             diagnostics: Vec::new(),
         }
     }
@@ -143,12 +151,8 @@ impl<'a> GraphProjector<'a> {
             .into_iter()
             .filter_map(|id| self.keyword(id).map(|keyword| (id, keyword)))
             .collect::<Vec<_>>();
-        let inputs = keywords
-            .iter()
-            .map(|(_, keyword)| (keyword.key.as_str(), keyword.value.as_str()))
-            .collect::<Vec<_>>();
-        let facts = KeywordFacts::batch(&inputs);
-        for ((id, keyword), facts) in keywords.into_iter().zip(facts) {
+        for (id, keyword) in keywords {
+            let facts = KeywordFacts::from_native_rows(self.document.keyword_fact_rows(id));
             let route = facts.field("route").expect("native keyword route");
             if route == "MACRO" {
                 match macro_definition(self.record(id), keyword) {
@@ -214,6 +218,12 @@ impl<'a> GraphProjector<'a> {
             sections,
             diagnostics: self.diagnostics,
         };
+        crate::runtime_profile::stage("ast.anchor_document_plan", || {
+            crate::ast::aot_anchor_plan::apply_document_anchors(
+                &mut document.sections,
+                self.anchor_inputs,
+            );
+        });
         resolve_document_links(&mut document);
         resolve_document_footnotes(&mut document);
         document
@@ -299,20 +309,13 @@ impl<'a> GraphProjector<'a> {
                     .find(|property| property.key.eq_ignore_ascii_case("ID"))
             })
             .map(|property| property.value.clone());
-        let anchor = explicit_anchor.or_else(|| {
-            let slug = crate::org_aot::headline_anchor_slug(objects_text(&title).trim());
-            if slug.is_empty() {
-                return None;
-            }
-            let count = self.anchor_counts.entry(slug.clone()).or_default();
-            let anchor = if *count == 0 {
-                slug
-            } else {
-                format!("{slug}-{count}")
-            };
-            *count += 1;
-            Some(anchor)
-        });
+        if explicit_anchor.is_none() {
+            self.anchor_inputs.push((
+                u32::from(range.start()),
+                objects_text(&title).trim().to_owned(),
+            ));
+        }
+        let anchor = explicit_anchor;
         let mut children = Vec::new();
         let mut subsections = Vec::new();
         let property_archive_location = effective_properties
@@ -486,7 +489,14 @@ impl<'a> GraphProjector<'a> {
         Some(Property {
             ann: self.header_annotation(record, record.field_range("value")?),
             key: record.field("key")?.to_owned(),
-            duration: OrgDuration::parse(value.clone()),
+            duration: self
+                .property_durations
+                .get(&record.id)
+                .expect("native duration property")
+                .map(|total_seconds| OrgDuration {
+                    raw: value.clone(),
+                    total_seconds,
+                }),
             value,
         })
     }
@@ -499,7 +509,7 @@ impl<'a> GraphProjector<'a> {
         children: &[usize],
     ) -> Vec<Object<ParsedAnnotation>> {
         title_body_range
-            .filter(|span| !span.is_empty() && self.raw(*span).ends_with(raw_title))
+            .filter(|span| span.start() != span.end() && self.raw(*span).ends_with(raw_title))
             .and_then(|span| {
                 let title_start = usize::from(span.end()).checked_sub(raw_title.len())?;
                 let title_end = title_start + raw_title.len();
@@ -603,7 +613,7 @@ impl<'a> GraphProjector<'a> {
             }
             "comment" => ElementData::Comment(self.raw(range).to_owned()),
             "diary-sexp" => ElementData::DiarySexp(self.raw(range).to_owned()),
-            "fixed-width" => ElementData::FixedWidth(self.fixed_width(record)),
+            "fixed-width" => ElementData::FixedWidth(self.fixed_width(id)),
             "horizontal-rule" => ElementData::Rule,
             "latex-environment" => ElementData::LatexEnvironment(self.raw(range).to_owned()),
             _ => {

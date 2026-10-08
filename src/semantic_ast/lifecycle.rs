@@ -1,6 +1,6 @@
 //! Opt-in lifecycle projection over ordinary Org LOGBOOK and archive metadata.
 
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 
 use super::aot_drawer_projection::drawer_body;
 use super::{

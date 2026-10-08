@@ -35,6 +35,9 @@ pub fn evaluate_contract(input: ContractInput) -> Result<ContractOutput, String>
 /// Project a private native semantic plan through the existing owned handoff.
 /// Scheme validates the closed operation/argument schema and owns recognition.
 /// This is an interop boundary; the normal document API remains `Org::parse`.
-pub fn project_native_semantic_rows(operation: u8, fields: &[&str]) -> Result<Vec<Vec<String>>, String> {
+pub fn project_native_semantic_rows(
+    operation: u8,
+    fields: &[&str],
+) -> Result<Vec<Vec<String>>, String> {
     crate::org_aot::native_semantic_rows(operation, fields)
 }

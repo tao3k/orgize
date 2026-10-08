@@ -114,7 +114,7 @@ mod tests {
 
     #[test]
     fn tangling_uses_element_ancestry_and_org_metadata() {
-        let source = include_str!("../languages/org/v1/modules/org-contract/contracts.org");
+        let source = include_str!("../languages/org/modules/org-contract/contracts.org");
         let tangled = default_tangle(source).unwrap();
         assert!(tangled.contains("make-org-contract-definition \"section.scope.v1\" 'subtree"));
         assert!(
@@ -124,7 +124,7 @@ mod tests {
         assert!(!tangled.contains("(assert count"));
         assert_eq!(
             tangled,
-            include_str!("../languages/org/v1/modules/org-contract/generated/contract-source.ss")
+            include_str!("../languages/org/modules/org-contract/generated/contract-source.ss")
         );
     }
 
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn consumer_selects_both_owned_interface_imports() {
-        let source = include_str!("../languages/org/v1/modules/org-contract/contracts.org");
+        let source = include_str!("../languages/org/modules/org-contract/contracts.org");
         let generated = tangle(
             source,
             "/consumer/org-contract/interface.ss",
@@ -197,8 +197,8 @@ mod tests {
         let source = include_str!("../tests/fixtures/org-contract/customer-contracts.org");
         let generated = tangle(
             source,
-            "../../../../languages/org/v1/modules/org-contract/interface.ss",
-            "../../../../languages/org/v1/modules/org-elements/interface.ss",
+            "../../../../languages/org/modules/org-contract/interface.ss",
+            "../../../../languages/org/modules/org-elements/interface.ss",
         )
         .expect("consumer feature source tangles through the Org Element graph");
         assert_eq!(

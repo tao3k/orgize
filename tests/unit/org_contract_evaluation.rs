@@ -6,7 +6,7 @@ use crate::{
         parse_contracts_from_document,
     },
 };
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 use std::path::Path;
 
 pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
