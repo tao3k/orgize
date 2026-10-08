@@ -71,6 +71,25 @@ pub(crate) const NATIVE_CASES: &[(&str, fn())] = &[
     ),
 ];
 
+// Semantics run in every feature build; request observations require profiling.
+fn with_native_requests<T>(expected: Option<u64>, message: &str, action: impl FnOnce() -> T) -> T {
+    #[cfg(feature = "runtime-profile")]
+    {
+        let (result, stages) = crate::runtime_profile::measure(action);
+        let requests = stages.get("native.requests_completed").copied();
+        match expected {
+            Some(count) => assert_eq!(requests.unwrap_or(0), count, "{message}: {stages:?}"),
+            None => assert_eq!(requests, None, "{message}: {stages:?}"),
+        }
+        result
+    }
+    #[cfg(not(feature = "runtime-profile"))]
+    {
+        let _ = (expected, message);
+        action()
+    }
+}
+
 fn query_pushdown_preserves_complete_native_projection() {
     let blocks = crate::org_aot::parse_org_aot(
         "* Same\n#+begin_src text\n  λ (ref:a)\n#+end_src\n** Same\n#+begin_example\n#+end_example\n* Same\n:PROPERTIES:\n:CUSTOM_ID: fixed\n:EFFORT: 1:30\n:TOTAL: 1e308\n:BAD: λ\n:END:\n#+begin_quote\n  β\n#+end_quote\n* Same\n",
@@ -78,10 +97,10 @@ fn query_pushdown_preserves_complete_native_projection() {
     for record in blocks.records() {
         let _ = blocks.affiliated_keyword_ids(record.id);
     }
-    let (projected, stages) = crate::runtime_profile::measure(|| blocks.document());
-    assert_eq!(
-        stages["native.requests_completed"], 3,
-        "blocks, anchors and property durations each have one document owner: {stages:?}"
+    let projected = with_native_requests(
+        Some(3),
+        "blocks, anchors and property durations each have one document owner",
+        || blocks.document(),
     );
     assert_eq!(projected.sections[0].anchor.as_deref(), Some("same"));
     assert_eq!(
@@ -112,12 +131,12 @@ fn query_pushdown_preserves_complete_native_projection() {
     for record in blocks.records() {
         let _ = blocks.affiliated_keyword_ids(record.id);
     }
-    let (projected, stages) = crate::runtime_profile::measure(|| blocks.document());
-    assert_eq!(projected.children.len(), 33);
-    assert_eq!(
-        stages["native.requests_completed"], 2,
-        "block plan yields at the 32-record boundary"
+    let projected = with_native_requests(
+        Some(2),
+        "block plan yields at the 32-record boundary",
+        || blocks.document(),
     );
+    assert_eq!(projected.children.len(), 33);
     let keywords = crate::org_aot::parse_org_aot(
         "#+options: H:2 H:3 -:nil e:YES\n#+FILETAGS: :α:β:α:\n#+lınk: ignored\n",
     )
@@ -127,14 +146,10 @@ fn query_pushdown_preserves_complete_native_projection() {
     for record in keywords.records() {
         let _ = keywords.affiliated_keyword_ids(record.id);
     }
-    let (projected, stages) = crate::runtime_profile::measure(|| keywords.document());
-    assert_eq!(
-        stages
-            .get("native.requests_completed")
-            .copied()
-            .unwrap_or(0),
-        0,
-        "keyword projection must reuse the admitted Scheme document plan"
+    let projected = with_native_requests(
+        Some(0),
+        "keyword projection must reuse the admitted Scheme document plan",
+        || keywords.document(),
     );
     assert_eq!(projected.filetags, ["α", "β"]);
     assert_eq!(projected.export_settings.headline_levels, Some(3));
@@ -143,28 +158,29 @@ fn query_pushdown_preserves_complete_native_projection() {
     let properties = crate::Org::parse(
         "* Parent\n:PROPERTIES:\n:Color_ALL: 'two words' blue\n:END:\n** Child\n:PROPERTIES:\n:Color: blue\n:END:\n",
     ).document();
-    let ((profile, plan), stages) = crate::runtime_profile::measure(|| {
-        properties.property_profile_with_native_plan(&crate::ast::PropertySchemaRegistry::default())
-    });
-    assert_eq!(
-        stages["native.requests_completed"], 1,
-        "property descriptors and tokens must share one native request"
+    let (profile, plan) = with_native_requests(
+        Some(1),
+        "property descriptors and tokens must share one native request",
+        || {
+            properties
+                .property_profile_with_native_plan(&crate::ast::PropertySchemaRegistry::default())
+        },
     );
     let child = &properties.sections[0].subsections[0];
-    let (_, stages) = crate::runtime_profile::measure(|| {
-        assert_eq!(
-            crate::ast::property_allowed_values(
-                &child.effective_properties,
-                &profile,
-                &child.properties[0],
-                &plan,
-            ),
-            Some(vec!["two words".into(), "blue".into()])
-        );
-    });
-    assert!(
-        !stages.contains_key("native.requests_completed"),
-        "allowed-value lint must reuse the admitted native property plan"
+    with_native_requests(
+        None,
+        "allowed-value lint must reuse the admitted native property plan",
+        || {
+            assert_eq!(
+                crate::ast::property_allowed_values(
+                    &child.effective_properties,
+                    &profile,
+                    &child.properties[0],
+                    &plan,
+                ),
+                Some(vec!["two words".into(), "blue".into()])
+            );
+        },
     );
     use super::{
         elements::filter_elements_by_query,

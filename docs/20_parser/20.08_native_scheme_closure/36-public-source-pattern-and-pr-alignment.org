@@ -118,3 +118,65 @@ edits, not exact-head remote CI. They are retained under
 native object cache is reused only after content/header/environment admission.
 No new performance ranking, kernel modification or native result-lease
 completion follows from this revision update.
+
+* Preparation cache and non-profile feature closure
+
+The fresh =007bf803= preparation passes the 184-module SDK/public imports,
+complete Org build, 340-module source-root admission, 178 native Scheme cases
+in 12 suites and exit-42 negative assertion control. Program
+=sha256:7eb0ad2e609fa6e94a1e962609e1843ef32b843d3ef2d692f8c30ffd032c6cd6=
+passes both Runtime semantic chains: 85 native units, ordinary units,
+457 consumers, 11 cutover and 23 index cases, plus four-worker
+1,000/10,000 full/hit/no-hit Query parity.
+
+PR #18 run =37790110499= reveals an ordinary-feature compilation failure:
+five unconditional test references to =runtime_profile::measure=, which is
+correctly absent without =runtime-profile=. The private test helper now runs
+all semantic assertions in every feature build, observing request counts only
+when profiling exists. No production fallback API, forced profiling or test
+deletion is introduced. Both non-profile variants pass 85 native cases and
+28 ordinary units / 2 ignored. Their explicit regression binaries use the
+previous =746b3249= program; they do not qualify the new AOT program.
+The initial receipt invocation supplied profiling-specific catalog counts;
+the tests passed but that count check failed. Correct catalog inputs close
+the receipt without changing registrations or ignored annotations.
+
+PR #13 =007bf803= run =37792563734= fails both native platforms because the
+conformance preparation input inventory grows by 98 generated files during
+its own build. Static module phase products with =~0=/=~1= suffixes were
+not classified as owned outputs. Commit
+=7fe23232701cdb2ff2da82ea587d72997eb4ac1e= fixes that exact classification;
+Scheme controls cover phase ownership, foreign-module exclusion, unchanged
+hits, input/output corruption, restoration and input mutation rejection.
+The hard mutation and genuine-progress checks remain intact.
+
+Normal Cargo/Gerbil pins, both lockfile sources and revision owners now use
+=7fe23232= without a Cargo patch. Its delta changes only the cache helper,
+Scheme controls and a Just owner; parser =src/=, language modules, headers,
+Rust crates and package/build declarations are byte-identical to =007bf803=.
+The SDK is retained explicitly as the =007bf803= build, not relabelled as a
+fresh =7fe23232= compilation. Linked host builds for the new pin are separate
+receipts under =org-pr18-7fe23232-*=. Both newly linked Runtime chains pass
+85 native units, ordinary units, 457 consumers, 11 cutover, 23 index and
+four-worker 1,000/10,000 full/hit/no-hit Query parity with program =7eb0ad2e=.
+Exact-head remote CI and native lease cutover remain independent gates.
+
+Both 64-caller / 1,4,8-domain six-batch matrices pass 33,000 distinct
+documents each, worker completion/exit admission and cross-runtime
+program/corpus/artifact parity. These are qualification-mode observations,
+not an uninstrumented ranking or stable Contract25 / Query45 admission.
+Both maturin variants bind =7eb0ad2e= and pass all 25 assertions (Scheme
+1.52s, Rust 1.50s), including the unchanged 5s progress check. The selected
+default manifest and installed extension now use this Rust program; the old
+manifest remains recoverable. Local receipts are from =f7fa319f= with owned
+feature/pin edits, not the delivered commit's remote CI.
+
+During qualification, parallel upstream work advances PR #13 through
+=eec334cd= to =d2ca5d13fbbc8adf8b3c3cc247ec7dbb0a1891a6=. That delta includes
+FFI schema convergence, removal of old parse-artifact entrypoints, Source cost
+instrumentation and another generated-product category: compiler memo caches.
+The phase-output fix above is retained upstream, but does not by itself close
+all preparation inventory failures. This newer production delta is not admitted
+by the =007bf803= SDK or =7fe23232= linked receipts. The qualified normal pin
+remains =7fe23232= until fresh SDK/ABI and downstream admission qualify the new
+head; neither parallel work nor dependency history is overwritten.

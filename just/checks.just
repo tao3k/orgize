@@ -9,8 +9,8 @@ native-dependency-check:
     ! rg --quiet 'gerbil-parser-rowan|^rowan\s*=|name = "rowan"' Cargo.toml Cargo.lock
     ! rg --quiet 'gerbil_parser_rowan|\browan::|pub use rowan' src tests benches examples languages --glob '*.rs'
     ! rg --fixed-strings --quiet 'rowan.build' src tests benches just/benchmark.just
-    rg --fixed-strings --quiet 'rev = "7d1ba3b12f4759e8f9907fa56b971ef8a32e1d4a"' Cargo.toml
-    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@7d1ba3b12f4759e8f9907fa56b971ef8a32e1d4a' gerbil.pkg
+    rg --fixed-strings --quiet 'rev = "7fe23232701cdb2ff2da82ea587d72997eb4ac1e"' Cargo.toml
+    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@7fe23232701cdb2ff2da82ea587d72997eb4ac1e' gerbil.pkg
     @echo 'ROWAN-FREE-DEPENDENCIES-OK: native view cutover is a separate gate'
 
 # Bounded native migration records and implementation owner checklists.
@@ -60,7 +60,7 @@ native-parser-program-source-negative-check previous parser_output org_output pr
 [group('checks')]
 native-alignment-dependency-check parser_source bridge_source:
     just native-task-layout-check
-    just native-parser-revision-check "{{ parser_source }}" 7d1ba3b12f4759e8f9907fa56b971ef8a32e1d4a
+    just native-parser-revision-check "{{ parser_source }}" 7fe23232701cdb2ff2da82ea587d72997eb4ac1e
     test "$(git -C '{{ bridge_source }}' rev-parse HEAD)" = 1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4
     rg --fixed-strings --quiet 'rev = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"' build-support/Cargo.toml
     rg --fixed-strings --quiet 'github.com/tao3k/gerbil-scheme-rust@1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4' gerbil.pkg

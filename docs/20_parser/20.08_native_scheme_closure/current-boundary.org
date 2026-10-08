@@ -4,19 +4,39 @@
 
 * Current source candidate
 
-The normal declared revision now advances to
-=7d1ba3b12f4759e8f9907fa56b971ef8a32e1d4a= after upstream removes Language
-FFI version suffixes. Its fresh 184-module SDK/public imports, complete Org
-build and 340-module AOT source-root admission pass. Linked runtime admission
-is a separate batch; previous receipts are not relabelled as new-revision tests.
-The new batch passes with program =746b3249=: 178 Scheme cases / 12 suites
-and failure propagation, each Runtime's 85 native units / 457 consumers /
-11 cutover / 23 index cases, four-worker 1,000/10,000 Query parity and each
-64-caller / 1,4,8-domain six-batch matrix (33,000 distinct documents).
-Cross-runtime program/corpus/artifact parity passes. Both maturin variants
-pass 25 assertions and unchanged 5s checks; the default extension is the new
-Rust program. These local =593e98c2= plus alignment-edit receipts are not
-exact-head remote CI, stable latency admission or native result leases.
+The qualified normal dependency pin is
+=7fe23232701cdb2ff2da82ea587d72997eb4ac1e=. Its cache-only delta from
+=007bf803= leaves parser/language/header/Rust/package sources unchanged.
+The SDK remains explicitly the fresh =007bf803= build: 184-module public/phase
+imports, complete Org build, 340-module source-root admission, 178 native
+Scheme cases / 12 suites and exit-42 assertion control pass. Both newly linked
+Runtime chains at =7fe23232= pass 85 native units, ordinary units,
+457 consumers, 11 cutover, 23 index and four-worker 1,000/10,000 Query parity
+with program =7eb0ad2e=. Separate non-profile regression binaries pass 85
+native cases and 28 ordinary units / 2 ignored without forcing profiling on.
+Those regression binaries retain the previous =746b3249= program.
+Each current-pin 64-caller / 1,4,8-domain matrix passes 33,000 distinct
+documents and cross-runtime program/corpus/artifact parity. Both maturin
+variants pass 25 assertions with unchanged 5s progress checks; the selected
+default manifest and installed extension use the =7eb0ad2e= Rust program.
+These local =f7fa319f= plus owned-edit receipts are not exact-head remote CI
+or an uninstrumented performance ranking.
+
+Upstream parallel work subsequently reaches =d2ca5d13=. Its FFI schema and
+Source cost changes require fresh downstream admission; the current receipts
+do not qualify it. The native preparation cache repair remains incomplete
+until that head's independent memo-output classification passes remote CI.
+See [[file:36-public-source-pattern-and-pr-alignment.org][feature-boundary repair and exact evidence owners]].
+Exact-head remote CI, stable Contract25 / Query45 admission and native result
+leases remain open. Rust still materializes navigation through
+=parse_generated_events= and =project_syntax_graph= in =src/org_aot.rs=;
+upstream =NativeParsed=/=NativeArtifactView= lifetime ownership is not yet the
+Org document path. Updating a dependency pin does not remove that projection.
+
+The preceding =7d1ba3b= program =746b3249= passes both 33,000-document
+64-caller matrices and both maturin variants' 25 assertions with unchanged
+progress gates. Its local =593e98c2= plus alignment-edit receipts are retained
+as historical evidence, not relabelled as current-pin acceptance.
 
 The preceding Source-history revision
 =1b698747249d9cd9566297b6c3bcf6a8509c1cc2= passes with program =5ed67786=:
