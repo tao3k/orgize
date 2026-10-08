@@ -2,9 +2,21 @@
 # Package installation owns transitive POO/core dependencies; the parser SDK
 # itself is rebuilt from Cargo's declared immutable checkout, not an old lib.
 [group('checks')]
-native-ci-prepare:
+native-ci-prepare: native-ci-tools-check
     gxpkg deps --install
     just native-ci-program-owner "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "{{ justfile_directory() }}/target/native-ci"
+
+# Fail before building transitive packages when a runner lacks owner tools.
+[private]
+native-ci-tools-check:
+    command -v rg
+    command -v jq
+    command -v python3
+    command -v cargo
+    command -v git
+    command -v gerbil
+    command -v gxi
+    command -v gxpkg
 
 [private]
 native-ci-program-owner parser_source output:

@@ -74,3 +74,15 @@ arm64; no Windows native Gerbil release is currently admitted. YAML parsing,
 recipe ownership and Darwin/Linux command expansion are local checks, not
 proof of a remote installation or wheel repair. Exact-head CI remains a
 separate delivery gate. No new PR or kernel patch is introduced.
+
+* CI tool dependency repair
+
+Exact-head =90154eed= run =37787972976= fails all three Linux jobs during
+=native-parser-revision-check=: =rg: command not found=, exit 127. These
+jobs do not reach parser compilation or semantic admission. Both runner
+families now install ripgrep and jq explicitly for Rust and maturin lanes.
+=native-ci-prepare= checks owner tools before the transitive package build.
+The positive preflight, recipe ownership, YAML utility matrix and platform
+command checks pass locally. A restricted-PATH negative control exits 1
+at the missing-rg preflight, before =gxpkg deps --install=. This repairs
+the observed setup cause; subsequent exact-head native CI remains required.

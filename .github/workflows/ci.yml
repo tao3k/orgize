@@ -89,12 +89,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config ripgrep jq
       - name: Native system libraries
         if: runner.os == 'macOS'
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
-        run: brew install gcc openssl pkg-config sqlite zlib
+        run: brew install gcc openssl pkg-config sqlite zlib ripgrep jq
       - name: Install released Gerbil
         run: bash tools/ci/install-gerbil-release.sh
       - name: Prepare pinned native Scheme program
@@ -160,12 +160,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config patchelf
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config patchelf ripgrep jq
       - name: System libraries
         if: runner.os == 'macOS'
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
-        run: brew install gcc openssl pkg-config sqlite zlib
+        run: brew install gcc openssl pkg-config sqlite zlib ripgrep jq
       - name: Install released Gerbil
         run: bash tools/ci/install-gerbil-release.sh
       - name: Fetch pinned native dependencies
