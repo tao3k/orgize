@@ -46,10 +46,28 @@ Tokio callers. Native handles/result release, per-request Org configuration,
 source identity and host shutdown must migrate coherently before that boundary
 is declared closed. See [[file:36-public-source-pattern-and-pr-alignment.org][latest FFI and namespace evidence]].
 
-Parallel upstream =0a2a1a04= renames Scheme test/ABI responsibilities after this
-qualification began. It is a separate unadmitted SDK delta, not silently
-substituted into the current program. Exact-head CI, native result leases and
-stable Contract25 / Query45 admission remain open.
+Delivered =e4bf72e9= CI then exposes the same startup gap in the two tangle
+example executables: four Contract positives fail before initialization;
+several negative assertions incorrectly accept that native error as rejection.
+All original ten Contract and eight Query assertion functions now run after
+one exclusive startup per executable, on concurrent workers. Each worker
+first proves native parsing is available. Semantic rejection assertions reject
+native parse/ABI failures; exact catalog counts prevent partial admission.
+The release examples pass all 18 cases in both Runtime variants under the
+unchanged 5s observer. Deliberate case-panic controls propagate exit 101 and
+never publish a completion marker. Receipts are under
+=target/native-parser-alignment-012389be/org-pr18-example-startup/=.
+These focused receipts do not qualify the complete new head's remote CI or
+repair the separate DataFusion debug first-launch failure.
+
+Upstream =f4606c34a7729d36991450e02a8b110ad81c784f= includes Scheme
+test/ABI responsibility renames and FOLLOW/LR algorithm changes. Its checkout
+has been fast-forwarded for audit, not substituted into the current program.
+The preceding =f6dfc3b3= Linux library-object owner fails its unchanged 5s
+idle-output gate while compiling generated C. The latest head's Rust AOT CI
+passes; its Scheme jobs are still pending at readback. This does not admit a
+new Org SDK or dependency pin. Exact-head CI, native result leases and stable
+Contract25 / Query45 admission remain open.
 
 * Previous qualification records
 

@@ -1,5 +1,35 @@
 # runtime: native architecture task owner.
 
+# Both tanglers are independent host executables with one startup owner each.
+[private]
+native-runtime-example-build manifest gsc runtime:
+    {{ native_env }} {{ native_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --locked --no-default-features --features "{{ runtime }}" --profile release --no-run --example org_contract_tangle --example org_elements_tangle -vv
+
+[group('runtime')]
+native-runtime-example-build-receipt manifest gsc runtime output:
+    mkdir -p "{{ output }}"
+    just native-runtime-example-build "{{ manifest }}" "{{ gsc }}" "{{ runtime }}" 2>&1 | tee "{{ output }}/example-build.log" | rg '^   Compiling|^    Finished|^  Executable|^error|^warning: failed|^\[orgize .*orgize-native:.*state=(start|complete)'
+    rg --quiet 'Finished .*release.* profile' "{{ output }}/example-build.log"
+    test "$(rg -c '^  Executable' '{{ output }}/example-build.log')" -eq 2
+    ! rg --quiet '^error:' "{{ output }}/example-build.log"
+
+[group('runtime')]
+native-runtime-example-test-receipt binary suite count output:
+    mkdir -p "{{ output }}"
+    python3 tools/ci/watch-real-output.py "{{ binary }}" --nocapture 2>&1 | tee "{{ output }}/{{ suite }}.log"
+    rg --quiet '^startup-native suite={{ suite }} concurrent-cases={{ count }} complete OK$' "{{ output }}/{{ suite }}.log"
+    test "$(rg -c '^native-example case=.* OK$' '{{ output }}/{{ suite }}.log')" -eq "{{ count }}"
+    rg --quiet '^test result: ok\. 1 passed; 0 failed;' "{{ output }}/{{ suite }}.log"
+    ! rg --quiet 'FAILED|panicked at|^error:' "{{ output }}/{{ suite }}.log"
+
+[group('runtime')]
+native-runtime-example-failure-control binary case output:
+    mkdir -p "{{ output }}"
+    status=0; ORGIZE_NATIVE_EXAMPLE_CASE_PANIC="{{ case }}" python3 tools/ci/watch-real-output.py "{{ binary }}" --nocapture 2>&1 | tee "{{ output }}/example-failure-control.log" || status=$?; test "$status" -eq 101
+    rg --quiet '^native-example case={{ case }} FAILED$' "{{ output }}/example-failure-control.log"
+    rg --quiet '^test result: FAILED\. 0 passed; 1 failed;' "{{ output }}/example-failure-control.log"
+    ! rg --quiet '^startup-native .* complete OK$' "{{ output }}/example-failure-control.log"
+
 # Private queue synchronization only; native parser qualification stays separate.
 [private]
 native-runtime-queue-test-receipt gsc output sanitizer="":

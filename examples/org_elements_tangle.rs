@@ -87,10 +87,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[cfg(test)]
+#[path = "support/native_fixture.rs"]
+mod native_fixture;
+
+#[cfg(test)]
 mod tests {
     use super::tangle;
 
-    #[test]
     fn tagged_queries_are_projected_from_org_elements() {
         let source = include_str!("../languages/org/modules/org-elements/queries.org");
         let generated = tangle(source, "../interface.ss").expect("five named queries are admitted");
@@ -101,47 +104,41 @@ mod tests {
         );
     }
 
-    #[test]
     fn babel_without_feature_tag_cannot_define_a_query() {
         let source = "* Plain\n:PROPERTIES:\n:QUERY_ID: plain\n:END:\n#+begin_src scheme\n(org-elements headline)\n#+end_src\n";
-        assert!(tangle(source, "../interface.ss").is_err());
+        super::native_fixture::assert_rejected(tangle(source, "../interface.ss"));
     }
 
-    #[test]
     fn contract_and_obsolete_element_tags_cannot_define_queries() {
         for tag in [":org-contract", ":org-elements"] {
             let source = format!(
                 "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+begin_src scheme {tag}\n(org-elements headline)\n#+end_src\n"
             );
-            assert!(tangle(&source, "../interface.ss").is_err(), "{tag}");
+            super::native_fixture::assert_rejected(tangle(&source, "../interface.ss"));
         }
     }
 
-    #[test]
     fn mixed_feature_tags_cannot_define_queries() {
         let source = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+begin_src scheme :org-elements-query :org-contract\n(org-elements headline)\n#+end_src\n";
-        assert!(tangle(source, "../interface.ss").is_err());
+        super::native_fixture::assert_rejected(tangle(source, "../interface.ss"));
     }
 
-    #[test]
     fn feature_header_is_case_insensitive_but_language_must_be_scheme() {
         let upper = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+BEGIN_SRC SCHEME :ORG-ELEMENTS-QUERY\n(org-elements headline)\n#+END_SRC\n";
         assert!(tangle(upper, "../interface.ss").is_ok());
 
         let pseudo_language = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+BEGIN_SRC org-elements-query\n(org-elements headline)\n#+END_SRC\n";
-        assert!(tangle(pseudo_language, "../interface.ss").is_err());
+        super::native_fixture::assert_rejected(tangle(pseudo_language, "../interface.ss"));
     }
 
-    #[test]
     fn missing_or_duplicate_ids_fail_closed() {
         let missing =
             "* Query\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
-        assert!(tangle(missing, "../interface.ss").is_err());
+        super::native_fixture::assert_rejected(tangle(missing, "../interface.ss"));
         let duplicate = "* First\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n* Second\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
-        assert!(tangle(duplicate, "../interface.ss").is_err());
+        super::native_fixture::assert_rejected(tangle(duplicate, "../interface.ss"));
     }
 
-    #[test]
     fn consumer_can_select_its_own_interface_import() {
         let source = "* Query\n:PROPERTIES:\n:QUERY_ID: consumer.work\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline (property todo-type \"todo\"))\n#+end_src\n";
         let generated = tangle(source, "/consumer/gerbil/org-elements/interface.ss")
@@ -149,7 +146,6 @@ mod tests {
         assert!(generated.contains("\"/consumer/gerbil/org-elements/interface.ss\""));
     }
 
-    #[test]
     fn consumer_query_source_artifact_stays_in_sync() {
         let source = include_str!("../tests/fixtures/org-elements/customer-queries.org");
         let generated = tangle(
@@ -160,6 +156,47 @@ mod tests {
         assert_eq!(
             generated,
             include_str!("../tests/fixtures/org-elements/generated/customer-query-source.ss")
+        );
+    }
+    #[test]
+    fn explicit_startup_precedes_parallel_example_cases() {
+        super::native_fixture::run(
+            "org_elements_tangle",
+            8,
+            &[
+                (
+                    "tagged_queries_are_projected_from_org_elements",
+                    tagged_queries_are_projected_from_org_elements,
+                ),
+                (
+                    "babel_without_feature_tag_cannot_define_a_query",
+                    babel_without_feature_tag_cannot_define_a_query,
+                ),
+                (
+                    "contract_and_obsolete_element_tags_cannot_define_queries",
+                    contract_and_obsolete_element_tags_cannot_define_queries,
+                ),
+                (
+                    "mixed_feature_tags_cannot_define_queries",
+                    mixed_feature_tags_cannot_define_queries,
+                ),
+                (
+                    "feature_header_is_case_insensitive_but_language_must_be_scheme",
+                    feature_header_is_case_insensitive_but_language_must_be_scheme,
+                ),
+                (
+                    "missing_or_duplicate_ids_fail_closed",
+                    missing_or_duplicate_ids_fail_closed,
+                ),
+                (
+                    "consumer_can_select_its_own_interface_import",
+                    consumer_can_select_its_own_interface_import,
+                ),
+                (
+                    "consumer_query_source_artifact_stays_in_sync",
+                    consumer_query_source_artifact_stays_in_sync,
+                ),
+            ],
         );
     }
 }
