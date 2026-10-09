@@ -122,3 +122,20 @@ fn producer_carries_non_platform_dependencies() {
     fs::write(directory.join("libz.a"), "changed zlib").unwrap();
     assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
 }
+
+#[cfg(unix)]
+#[test]
+fn repeated_export_replaces_read_only_sdk_archives() {
+    use std::os::unix::fs::PermissionsExt;
+    let (root, directory, _) = fixture();
+    let source = root.0.join("sdk.a");
+    fs::write(&source, "current SDK archive").unwrap();
+    fs::set_permissions(&source, fs::Permissions::from_mode(0o444)).unwrap();
+    let destination = directory.join("libgambit.a");
+    fs::set_permissions(&destination, fs::Permissions::from_mode(0o444)).unwrap();
+    let mut files = BTreeMap::new();
+    copy_file(&source, &directory, "libgambit.a", &mut files).unwrap();
+    copy_file(&source, &directory, "libgambit.a", &mut files).unwrap();
+    assert_eq!(fs::read(&destination).unwrap(), b"current SDK archive");
+    assert_eq!(files["libgambit.a"], digest(&destination).unwrap());
+}

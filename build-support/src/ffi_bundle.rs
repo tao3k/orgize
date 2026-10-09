@@ -101,7 +101,14 @@ fn copy_file(
     name: &str,
     files: &mut BTreeMap<String, String>,
 ) -> Result<(), String> {
-    fs::copy(source, bundle.join(name)).map_err(|error| error.to_string())?;
+    // SDK archives can be read-only. Replace the destination directory entry
+    // instead of opening an earlier export for writing.
+    let staged = bundle.join(format!(".publish-{}-{name}", std::process::id()));
+    fs::copy(source, &staged).map_err(|error| format!("stage {}: {error}", source.display()))?;
+    if let Err(error) = fs::rename(&staged, bundle.join(name)) {
+        let _ = fs::remove_file(&staged);
+        return Err(format!("publish {name}: {error}"));
+    }
     files.insert(name.to_owned(), digest(&bundle.join(name))?);
     Ok(())
 }
