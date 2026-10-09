@@ -4,11 +4,11 @@
 
 * Current source candidate
 
-The current local candidate aligns parser
-=dd0719585d6d5e54f44beaa6877c95152e89c914= and native-build owner
-=5eb457b04c24614ff798a063d4600030e03df815= through normal Cargo dependency
-resolution, including the fuzz lockfile. The latter is delivered to the existing
-gerbil-scheme-rust PR #18. Its exact-head CI is a separate qualification gate.
+Parser =dd0719585d6d5e54f44beaa6877c95152e89c914= and native-build owner
+=b34d15c6a2f6c68ee5ce3a64975570f684e90bc2= use normal Cargo resolution,
+including fuzz, on existing upstream PR #18. Exact-head CI remains separate.
+Three stale phase assertions are corrected; 20 public and 20 private cases pass
+(five exclusions), with compiler-runtime discovery deferred to the compiler lane.
 
 Org declarations are build inputs: the engine generates bounded document and
 secondary inline Scheme products. The production runtime imports those
@@ -24,7 +24,7 @@ native-build owner and occur before C generation. Orgize only packages receipt a
 Export controls cover read-only SDK replacement and incomplete receipt rejection.
 Justfile derives the bridge revision from =gerbil.pkg= rather than repeating it.
 
-The bridge-aligned native main-path Rust library passes 85 startup cases,
+The preceding bridge-aligned native main-path Rust library passes 85 startup cases,
 28 ordinary cases, and two ignored performance controls. Actual FFI export carries
 the updated runtime revision and all declared static SDK archives. The producer
 reuses 242 validated native objects; SDK dependency admission takes 195ms.
@@ -33,9 +33,9 @@ gates, and delivered-head CI remain separate. No timeout, heap, release profile,
 or performance budget is relaxed. Direct cold package-build qualification is also
 separate from the explicit Justfile producer pipeline.
 
-Rust still materializes source-backed syntax/index projections from native
-events. This cutover does not claim native result-lease ownership completion
-or a measured end-to-end speedup.
+Rust still materializes source-backed syntax/index projections from native events.
+Native result-lease ownership completion and end-to-end speedup are not claimed.
+
 * Historical source and qualification receipts
 
 The normal dependency candidate now uses

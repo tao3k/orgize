@@ -106,6 +106,11 @@ native-parser-program-select manifest previous_label:
 native-build-test bridge_source filter="native_command":
     {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo test --offline --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-native-build --lib "{{ filter }}" -- --nocapture
 
+# Include public build/observation contracts, not only private library tests.
+[private]
+native-build-contract-test bridge_source:
+    {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo test --offline --locked --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-native-build --test unit_test -- --nocapture
+
 [private]
 native-owner-program-build source:
     mkdir -p "{{ source }}/.gerbil"

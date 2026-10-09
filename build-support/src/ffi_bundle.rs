@@ -11,7 +11,7 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-const RUNTIME_REVISION: &str = "5eb457b04c24614ff798a063d4600030e03df815";
+const RUNTIME_REVISION: &str = "b34d15c6a2f6c68ee5ce3a64975570f684e90bc2";
 const HEADERS: &[&str] = &["orgize.h", "orgize_runtime.h"];
 static NEXT_COPY: AtomicU64 = AtomicU64::new(0);
 
