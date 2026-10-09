@@ -1,0 +1,75 @@
+#+title: Native accumulation admission
+
+* Source identities
+
+Producer PR #13 publishes =a47941feb6c2679163bda390a3d5d8d62fb475e3=.
+The change retains upstream source-engine/observation work and eliminates
+EventFold event-spine copies in the engine, not in the Org grammar adapter.
+The complete 195-target SDK rebuild and public import check pass at that head.
+
+Orgize's executable source is =624a142d114beee594dc7f20b3e8f3e37049b403=,
+rebased onto PR #18's =ada21bf8=. Existing FFI bundle publication, consumer
+admission and explicit producer manifest handling remain intact. Cargo,
+=gerbil.pkg= and both Cargo locks bind the same parser revision. Just reads
+the REV from =gerbil.pkg=; it does not maintain another constant.
+
+Both immutable feature builds bind program
+=sha256:688ab8204e663e1fe1ebb0935f0bc410ca1695547259e6352624c6f476c225a6=.
+Receipts are under =target/acceptance/rust-chain= and
+=target/acceptance/scheme-chain-rust=. Artifact roots are caller-owned local
+qualification outputs, not runtime dependencies or published FFI bundles.
+
+* Semantic controls
+
+The native engine Fold catalog passes 63 cases, including the new source
+accumulation controls. The native Org catalog passes 178 cases with the new
+Fold code over the preceding SDK; its deliberate assertion failure still
+exits 42 and does not print final OK. This is not relabeled as an exact-head
+full SDK test. The final consumer builds use the complete =a47941fe= SDK.
+
+Both final runtime libraries pass 85 explicit-startup native cases; ordinary
+catalogs pass 35 Rust and 34 Scheme cases. Both pass 11 public cutover cases
+and 23 index handoff cases. Rust's 458-case, 12-caller consumer catalog passes.
+
+Scheme's first consumer catalog completes all 458 cases but fails one:
+the Contract fixture takes 77.635ms against its unchanged 25ms gate. Other
+compilation and large-project qualification were running concurrently.
+Its measured native owner CPU is 1.715ms; waiting/service observations are
+overlapping and must not be summed as exclusive costs. The failed receipt
+is retained under =consumers=; it is not suppressed by a later rerun.
+
+After other local owners finish, the unchanged full Scheme catalog passes all
+458 cases in =consumers-isolated=, including the Contract control at 4.389ms.
+That distinction supports workload-isolation diagnosis; it does not admit a
+25ms response bound under arbitrary external CPU or queue contention.
+
+Both feature builds pass the real project Query qualification at 1,000 and
+10,000 documents with four host workers, including full-projection parity
+and filtered no-hit/hit controls. These are concurrent semantic qualification
+receipts, not matched scheduling throughput benchmarks; some runs overlapped
+other owners. They do not establish that either Runtime is faster.
+
+* Performance boundary
+
+Separate, untraced 2,000-document plan-ledger scenarios with 32 host workers
+fail the unchanged 100ms gate: Rust best of five is 526.334ms; Scheme is
+551.324ms. The preceding Rust control was 533.334ms, but these are not matched
+throughput or tail-latency receipts. Event-spine removal is not a proven
+material speedup and does not close the dominant interpreted Fold strategy.
+
+PR #18's preceding =ada21bf8= Ubuntu Rust CI reaches the same scenario and
+fails at 1.089659s. Earlier =6503aef5= failed first on ASP owner structure;
+the two failures are different and must not be conflated.
+
+* Test cost and remaining work
+
+The unused downstream source-Fold recipe referenced deleted upstream files
+and is removed. Producer-native qualification owns the Fold catalog.
+The existing build-support owner now runs all five source identity/FFI bundle
+unit controls once, reusing release dependencies rather than compiling a
+second development dependency graph. No compatibility alias is retained.
+
+Full native strategy specialization must replace repeated data interpretation
+with engine-generated Scheme execution. Static predicate preparation and
+semantic crossing reduction remain engine responsibilities. There is no
+kernel change, timeout relaxation, legacy Rust syntax scanner, or new PR.

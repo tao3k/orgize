@@ -476,13 +476,14 @@ The untraced 2,000-document Rust plan-ledger gate still fails: best of five
 a 547.765ms best and 468--541ms native batch-owner CPU sums; these overlapping
 stage observations are not additive exclusive costs or a matched speedup.
 
-The next engine change threads one request-owned reversed event chain through
+The engine change published as =a47941fe= threads one request-owned reversed event chain through
 the native source-line traversal and final transitions, restoring output order
 only once. Its 63-case native Fold catalog passes, including mixed UTF-8 line
 endings and final-transition order. The obsolete unused downstream Fold source
 task referenced deleted upstream test files and is removed; the producer owns
-its native Fold qualification. Consumer and performance admission for this
-additional change remains separate from the =650283d0= receipts above.
+its native Fold qualification. The dependency declarations and both locks now
+pin =a47941fe=. New admission receipts and failures are recorded in
+[[file:38-native-accumulation-admission.org][Native accumulation admission]], separately from the =650283d0= controls above.
 
 Full direct native strategy specialization (E01), prepared static predicate data,
 semantic-crossing reduction, new-engine consumer receipts and the latency gate

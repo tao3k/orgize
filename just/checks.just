@@ -95,13 +95,11 @@ native-semantic-wrapper-warning-check output:
     ! rg --quiet '^error:|^error\[' "{{ output }}/release-build.log"
 
 [private]
-native-source-revision-test output:
+native-build-support-test output:
     mkdir -p "{{ output }}"
-    {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo test --offline -p orgize-build-support --lib source_revision::tests -- --nocapture 2>&1 | tee "{{ output }}/source-revision-test.log"
-    rg --quiet '^test source_revision::tests::absent_legacy_input_tracks_existing_ancestor_and_then_restoration \.\.\. ok$' "{{ output }}/source-revision-test.log"
-    rg --quiet '^test source_revision::tests::untracked_source_is_dirty_but_ignored_artifacts_are_not \.\.\. ok$' "{{ output }}/source-revision-test.log"
-    rg --quiet '^test result: ok\. 2 passed; 0 failed;' "{{ output }}/source-revision-test.log"
-    ! rg --quiet 'FAILED|panicked at' "{{ output }}/source-revision-test.log"
+    {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo test --offline --locked --release -p orgize-build-support --lib -- --nocapture 2>&1 | tee "{{ output }}/build-support-test.log"
+    rg --quiet '^test result: ok\. 5 passed; 0 failed;' "{{ output }}/build-support-test.log"
+    ! rg --quiet 'FAILED|panicked at' "{{ output }}/build-support-test.log"
 
 # Compile the ownership policy alone: no native build or parser substitutes.
 [group('checks')]

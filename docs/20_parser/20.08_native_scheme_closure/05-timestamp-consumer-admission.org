@@ -104,7 +104,7 @@ tracking and restored-file tracking; zero-test admission is rejected.
 Receipt: =source-revision-module-final/source-revision-test.log=.
 The broader Cargo build-support check initially fails before tests because
 the default build-gate cache is outside the writable workspace. The maintained
-=native-source-revision-test= owner now pins =XDG_CACHE_HOME= to the existing
+=native-build-support-test= owner now pins =XDG_CACHE_HOME= to the existing
 checkout-owned native cache, as the other native owners do. Its scoped Cargo
 test then passes the exact same restoration case, with one pass, zero failures
 and exit zero; no policy is bypassed. The final owner remains a normal Cargo
