@@ -35,6 +35,31 @@ scheme-aligned-parser-build source output load_path:
     mkdir -p "{{ output }}"
     cd "{{ source }}" && {{ scheme_env }} GERBIL_BUILD_CORES=12 GERBIL_BUILD_VERBOSE=1 GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gxi build.ss compile --optimized
 
+[private]
+scheme-native-fold-generate output load_path:
+    mkdir -p "{{ output }}"
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ load_path }}" gxi t/generate-org-native-fold.ss "{{ output }}/org-fold-generated.ss" "{{ output }}/org-fold-controls.ss"
+    ! rg --quiet 'event-fold-runtime|fold-statements|fold-predicate|run-event-fold|eval ' "{{ output }}/org-fold-generated.ss" "{{ output }}"/parse-org-compiled-events*.ss
+
+[private]
+scheme-native-fold-test output:
+    GAMBOPT="{{ scheme_gambopt }}" "{{ output }}/org-fold-native" "{{ output }}/org-fold-controls.ss" > "{{ output }}/org-fold-test.log" 2>&1
+    test "$(rg --count '^CASE-OK native-org$' '{{ output }}/org-fold-test.log')" = 24
+    rg --quiet '^OK$' "{{ output }}/org-fold-test.log"
+    ! rg --quiet 'ERROR|FAILED|FAILURE' "{{ output }}/org-fold-test.log"
+
+[private]
+scheme-native-fold-modules-build output load_path:
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gxi "{{ output }}/build-fold.ss"
+
+# One consumer gate: engine admission, bounded static units, native link, parity.
+[group('scheme')]
+scheme-native-fold-qualify output load_path:
+    just scheme-native-fold-generate "{{ output }}" "{{ load_path }}"
+    just scheme-native-fold-modules-build "{{ output }}" "{{ load_path }}"
+    just scheme-native-executable-link "{{ output }}/org-fold-generated.ss" "{{ output }}" "{{ load_path }}" org-fold-native
+    just scheme-native-fold-test "{{ output }}"
+
 [group('scheme')]
 scheme-aligned-parser-build-receipt source output load_path:
     mkdir -p "{{ output }}"
