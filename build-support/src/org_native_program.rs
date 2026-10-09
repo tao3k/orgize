@@ -35,7 +35,14 @@ pub fn write_org_native_program() {
     println!("cargo:rerun-if-env-changed=ORGIZE_GERBIL_PROGRAM_MANIFEST");
     println!("cargo:rerun-if-env-changed=GERBIL_GSC");
     println!("cargo:rerun-if-env-changed=ORGIZE_GERBIL_NATIVE_OUTPUT");
+    println!("cargo:rerun-if-env-changed=ORGIZE_FFI_BUNDLE");
+    println!("cargo:rerun-if-env-changed=ORGIZE_FFI_EXPORT");
     let root = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").expect("Cargo root"));
+    if let Some(bundle) = env::var_os("ORGIZE_FFI_BUNDLE") {
+        crate::ffi_bundle::consume(&root, &PathBuf::from(bundle))
+            .expect("admit producer-owned Orgize FFI bundle");
+        return;
+    }
     println!(
         "cargo:rerun-if-changed={}",
         root.join("bindings/c/include/orgize.h").display()
@@ -108,6 +115,10 @@ pub fn write_org_native_program() {
         format!("pub const NATIVE_PARSER_DIGEST: &str = {digest:?};\n"),
     )
     .expect("write native parser identity");
+    if let Some(bundle) = env::var_os("ORGIZE_FFI_EXPORT") {
+        crate::ffi_bundle::publish(&root, &PathBuf::from(bundle), &digest, &receipt)
+            .expect("publish producer-owned Orgize FFI bundle");
+    }
     for directive in receipt.cargo_directives {
         println!("{}", directive.line());
     }

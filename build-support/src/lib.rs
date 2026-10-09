@@ -1,5 +1,6 @@
 //! Build-time helpers for generated `orgize` source artifacts.
 
+mod ffi_bundle;
 mod org_native_program;
 mod source_revision;
 

@@ -1,11 +1,17 @@
 //! Bounded host I/O and handoff; all Org syntax comes from the native parser.
-use super::super::elements::{bounded_org_batch_len, load_sources};
-use super::{
-    DocumentLanguage, DocumentWalkConfig, LineIndex, MemoryRecordState, OrgMemorySearchOptions,
-    OrgMemorySearchRecord, file_matches_options, memory_search_record_matches_options,
-    memory_search_root,
+use super::records::{
+    file_matches_options, memory_search_record_matches_options, memory_search_root,
 };
+use super::{OrgMemorySearchOptions, OrgMemorySearchRecord};
+use crate::document::elements::{bounded_org_batch_len, load_sources};
 use crate::org_aot::{OrgAotDocument, parse_org_aot};
+use crate::{
+    ast::MemoryRecordState,
+    document::{
+        line_index::LineIndex,
+        model::{DocumentLanguage, DocumentWalkConfig},
+    },
+};
 use std::{
     collections::BTreeMap,
     fs,

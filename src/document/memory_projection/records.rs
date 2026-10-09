@@ -12,14 +12,13 @@ use crate::{
     org_aot::{OrgAotDocument, parse_org_aot},
 };
 
-use super::{
+use crate::document::{
     elements::collect_document_paths,
     line_index::LineIndex,
     model::{DocumentLanguage, DocumentWalkConfig},
 };
 
-mod plan_ledger;
-use plan_ledger::query_plan_ledger_records;
+use super::plan_ledger::query_plan_ledger_records;
 
 #[derive(Clone, Debug, Default)]
 pub struct OrgMemorySearchOptions {
@@ -224,7 +223,7 @@ fn memory_record_terms_match(
     false
 }
 
-fn memory_search_root(root: &Path, options: &OrgMemorySearchOptions) -> PathBuf {
+pub(super) fn memory_search_root(root: &Path, options: &OrgMemorySearchOptions) -> PathBuf {
     if options.plan_ledgers {
         let plans_root = root.join("flow").join("plans");
         if plans_root.is_dir() {
@@ -234,7 +233,7 @@ fn memory_search_root(root: &Path, options: &OrgMemorySearchOptions) -> PathBuf 
     root.to_path_buf()
 }
 
-fn file_matches_options(path: &Path, options: &OrgMemorySearchOptions) -> bool {
+pub(super) fn file_matches_options(path: &Path, options: &OrgMemorySearchOptions) -> bool {
     options.file_prefix.as_ref().is_none_or(|prefix| {
         path.file_name()
             .and_then(|name| name.to_str())
@@ -242,7 +241,7 @@ fn file_matches_options(path: &Path, options: &OrgMemorySearchOptions) -> bool {
     })
 }
 
-fn memory_search_record_matches_options(
+pub(super) fn memory_search_record_matches_options(
     record: &OrgMemorySearchRecord,
     options: &OrgMemorySearchOptions,
 ) -> bool {

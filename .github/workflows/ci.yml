@@ -33,6 +33,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           submodules: recursive
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup rust
         uses: dtolnay/rust-toolchain@stable
@@ -102,6 +103,10 @@ jobs:
       - name: Verify native Scheme owners
         run: just native-ci-scheme-test
 
+      - name: Select producer FFI bundle output
+        if: matrix.runtime == 'runtime-scheme'
+        run: echo "ORGIZE_FFI_EXPORT=$GITHUB_WORKSPACE/target/ffi-bundle" >> "$GITHUB_ENV"
+
       - name: Run tests
         run: just native-ci-rust-test "${{ env.RUNTIME_FEATURES }}"
 
@@ -125,6 +130,26 @@ jobs:
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: just native-ci-clippy "${{ env.RUNTIME_FEATURES }}"
+
+      - name: Qualify relocated FFI consumption
+        if: matrix.runtime == 'runtime-scheme'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mv target/ffi-bundle target/ffi-consumer
+          unset ORGIZE_FFI_EXPORT
+          export ORGIZE_FFI_BUNDLE="$GITHUB_WORKSPACE/target/ffi-consumer"
+          export ORGIZE_GERBIL_PROGRAM_MANIFEST="$GITHUB_WORKSPACE/target/absent-program.json"
+          just native-ci-rust-test "${{ env.RUNTIME_FEATURES }}"
+
+      - name: Publish qualified revision-bound FFI bundle
+        if: matrix.runtime == 'runtime-scheme'
+        uses: actions/upload-artifact@v4
+        with:
+          name: orgize-ffi-${{ github.event.pull_request.head.sha || github.sha }}-${{ runner.os }}-${{ runner.arch }}
+          path: target/ffi-consumer/
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Save sccache cache (fallback)
         if: ${{ always() && !cancelled() && env.SCCACHE_GHA_ENABLED != 'true' }}
@@ -206,6 +231,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           submodules: recursive
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
