@@ -3,20 +3,21 @@
 ;;; the resulting forms execute in Scheme and its native AOT/FFI program.
 
 (import (only-in :gerbil-parser/src/modules/parser/interface
-                 source-ascii-ci-pattern-at? source-offset-after source-pattern-end)
+                 source-ascii-ci-pattern-at? source-offset-after source-pattern-end
+                 make-source-block-boundary make-source-boundary-parent
+                 source-container-boundary-condition line-structure-heading)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks
                  block-line-block-node block-line-opening block-line-closing
                  block-line-body-line block-line-begin-token
                  block-line-body-token block-line-end-token block-line-header
-                 block-line-unclosed block-line-heading-bound block-line-indent
-                 block-line-contents
-                 key-value-line-marker
+                 block-line-indent
                  block-header-argument-token block-header-trivia-token)
         (only-in "../../parser.ss" org-line-structure)
         (only-in "event-paragraph.ss"
                  paragraph-event-initial paragraph-close-form paragraph-finish-form
-                 paragraph-line-form paragraph-event-helpers)
+                 paragraph-line-form paragraph-event-helpers
+                 paragraph-open-condition paragraph-span-forms paragraph-blank-forms)
         (only-in "event-headline-tags.ss"
                  event-headline-tags-initial)
         (only-in "event-headline.ss"
@@ -37,13 +38,13 @@
         (only-in "event-macro.ss" macro-event-helpers)
         (only-in "event-tag-vocabulary.ss" tag-vocabulary-event-helper)
         (only-in "event-list.ss"
-                 list-close-all list-close-paragraph-form list-or-element-form)
+                 list-event-initial list-close-paragraph list-close-all list-finish-forms list-or-element-form)
         (only-in "event-special-block.ss"
                  special-event-initial special-block-id special-closing
-                 special-future-scan
+                 special-boundary-query
                  special-open-form special-close-form)
         (only-in "event-latex-environment.ss"
-                 latex-environment-initial latex-future-scan
+                 latex-environment-initial latex-boundary-query
                  latex-open-form latex-body-form)
         (only-in "objects.ss"
                  make-org-event-block make-org-event-helper
@@ -75,59 +76,29 @@
   (numbered-blocks
    '(OrgDynamicBlock OrgDrawer OrgQuoteBlock OrgVerseBlock OrgCenterBlock)))
 
-(def (future-close-scan rule stop)
-  `(future-line-marker-before-boundary?
-    ,(block-line-closing rule) ,stop
-    ,heading-marker
-    ,heading-separator
-    ,(block-line-indent rule)
-    ,(eq? (block-line-contents rule) 'elements)
-    ,(let (body (block-line-body-line rule))
-       (if body (key-value-line-marker body) ""))))
-
-(def (container-future-condition scan base)
-  (foldr
-   (lambda (parent otherwise)
-     `(or (and (uint-equal? (stack-top container-frames)
-                            (uint ,(org-event-block-id parent)))
-               ,(scan (block-line-closing (org-event-block-rule parent))))
-          ,otherwise))
-   base container-blocks))
+(def boundary-heading (line-structure-heading org-line-structure))
+(def container-boundaries
+  (map (lambda (parent)
+         (make-source-boundary-parent
+           (org-event-block-id parent)
+           (block-line-closing (org-event-block-rule parent))))
+       container-blocks))
+(def named-container-boundaries
+  (append container-boundaries
+          (list (make-source-boundary-parent
+                  special-block-id special-closing
+                  'special-name-start 'special-name-end))))
 
 (def (future-close-condition rule)
-  (unless (and (eq? (block-line-unclosed rule) 'recover-as-text)
-               (block-line-heading-bound rule))
-    (error "Org event block requires declared text recovery and heading boundary"
-           (block-line-block-node rule)))
-  (container-future-condition
-   (lambda (stop) (future-close-scan rule stop))
-   `(and (uint-equal? (stack-top container-frames) (uint 0))
-         ,(future-close-scan rule ""))))
+  (source-container-boundary-condition
+    (make-source-block-boundary rule boundary-heading)
+    container-boundaries 'container-frames))
 (def (special-future-condition)
-  (container-future-condition
-   (lambda (stop)
-     (special-future-scan stop heading-marker heading-separator))
-   `(or (and (uint-equal? (stack-top container-frames) (uint 0))
-             ,(special-future-scan "" heading-marker heading-separator))
-         (and (uint-equal? (stack-top container-frames)
-                           (uint ,special-block-id))
-              ,(special-future-scan
-                "" heading-marker heading-separator
-                '(state-offset special-name-start)
-                '(state-offset special-name-end))))))
+  (source-container-boundary-condition
+    special-boundary-query named-container-boundaries 'container-frames))
 (def (latex-future-condition)
-  (container-future-condition
-   (lambda (stop)
-     (latex-future-scan stop heading-marker heading-separator))
-   `(or (and (uint-equal? (stack-top container-frames) (uint 0))
-             ,(latex-future-scan "" heading-marker heading-separator))
-         (and (uint-equal? (stack-top container-frames)
-                           (uint ,special-block-id))
-              ,(latex-future-scan
-                "" heading-marker heading-separator
-                '(state-offset special-name-start)
-                '(state-offset special-name-end)
-                special-closing "" #t)))))
+  (source-container-boundary-condition
+    latex-boundary-query named-container-boundaries 'container-frames))
 (def ascii-letter-bytes
   (map char->integer
        (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
@@ -487,7 +458,7 @@
 ;; Keep the owning Item open; close its paragraph only after block admission.
 ;; A malformed opener has no side effects and remains ordinary list text.
 (def (list-opaque-element-forms)
-  (opaque-open-chain (list-close-paragraph-form #t)))
+  (opaque-open-chain list-close-paragraph))
 
 
 (def footnote-label-start '(line-prefix-end "[fn:"))
@@ -539,10 +510,7 @@
     (if (line-bytes-all-in? ,footnote-content-start
                             (line-content-end) (9 32))
         ((token FootnoteDefinitionDelimiter ,footnote-content-start end))
-        ((start-node OrgParagraph)
-         (set-bool paragraph-open (bool #t))
-         (set-uint paragraph-start (offset ,footnote-content-start))
-         (set-uint paragraph-end (offset end))))
+        ,(paragraph-span-forms footnote-content-start 'end))
     (set-bool footnote-open (bool #t))
     (set-bool after-heading (bool #f))))
 
@@ -562,10 +530,8 @@
                         (set-bool footnote-blank-pending (bool #t))
                         (set-bool footnote-line-handled (bool #t)))))
                   ((if (state footnote-blank-pending)
-                       ((if (state paragraph-open)
-                            ((set-bool paragraph-post-blank (bool #t))
-                             (set-uint paragraph-blank-end
-                                       (offset (state-offset footnote-blank-end)))
+                       ((if ,paragraph-open-condition
+                            (,@(paragraph-blank-forms '(state-offset footnote-blank-end))
                              (set-bool footnote-blank-pending (bool #f)))
                             ,(footnote-pending-trivia))) ()))))
              ())))
@@ -605,11 +571,8 @@
    table-event-initial
    '((planning-value-start 0) (planning-value-end 0)
     (container-frames (uint-stack)) (container-closed #f)
-    (container-opened #f)
-    (list-frames (uint-stack)) (list-present #f) (list-ordered #f)
-    (list-column 0) (list-bullet-start 0) (_list-bullet-end 0)
-    (list-content-start 0) (list-paragraph-open #f) (list-blank-count 0)
-    (list-paragraph-start 0) (list-paragraph-end 0))
+    (container-opened #f))
+   list-event-initial
    '((footnote-open #f) (footnote-line-handled #f)
      (footnote-blank-pending #f)
      (footnote-blank-start 0) (footnote-blank-end 0))
@@ -657,8 +620,7 @@
     (if (state property-drawer-open) ((finish-node)) ())
     (if (or (state table-open) (state table-el-open))
         ((finish-node)) ())
-    ,(list-close-paragraph-form #f)
-    (close-all-frames list-frames 2)
+    ,@list-finish-forms
     (if (state fixed-width-open) ((finish-node)) ())
     ,paragraph-finish-form
     (if (state comment-open) ((finish-node)) ())

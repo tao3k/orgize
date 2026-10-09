@@ -88,12 +88,6 @@ scheme-native-module-fresh-test suite output load_path:
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O "{{ suite }}"
     just scheme-native-module-test "{{ suite }}" "{{ output }}" "{{ load_path }}"
 
-# Reuse an explicitly compiled module for isolated native startup diagnostics.
-[private]
-scheme-native-import-trace suite output load_path:
-    mkdir -p "{{ output }}"
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" python3 tools/ci/watch-real-output.py gerbil tools/ci/trace-native-import.ss -v 5 "{{ suite }}" 2>&1 | tee "{{ output }}/import-trace.log"
-
 [private]
 scheme-native-module-test suite output load_path:
     mkdir -p "{{ output }}"

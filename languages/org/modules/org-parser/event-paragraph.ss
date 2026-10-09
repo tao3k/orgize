@@ -1,7 +1,13 @@
 ;;; -*- Gerbil -*-
-;;; Paragraph lifetime and cross-line inline strategy owned by Org.
+;;; Org binds domain content; the engine compiles paragraph lifetime.
 
-(import (only-in "event-inline.ss"
+(import (only-in :gerbil-parser/src/modules/parser/interface
+                 line-structure-text make-source-event-scope source-paragraph-initial
+                 source-paragraph-close-form source-paragraph-line-form
+                 source-paragraph-open-condition source-paragraph-span-forms
+                 source-paragraph-blank-forms)
+        (only-in "../../parser.ss" org-line-structure)
+        (only-in "event-inline.ss"
                  event-inline-initial nested-description-event-initial
                  citation-affix-event-initial
                  event-text-line-forms)
@@ -11,45 +17,23 @@
         (only-in "objects.ss" make-org-event-helper))
 (export paragraph-event-initial paragraph-close-form paragraph-finish-form
         paragraph-line-form
-        paragraph-event-helpers)
+        paragraph-event-helpers paragraph-open-condition
+        paragraph-span-forms paragraph-blank-forms)
 
-(def paragraph-event-initial
-  '((paragraph-open #f) (paragraph-start 0) (paragraph-end 0)
-    (paragraph-blank-end 0) (paragraph-post-blank #f)))
-
-(def (paragraph-close-form* reset-state?)
-  `(if (state paragraph-open)
-       ((call-source-helper inline-span
-                            (state-offset paragraph-start)
-                            (state-offset paragraph-end)
-                            ((state inline-script-policy)))
-        (if (state paragraph-post-blank)
-            ((start-node OrgTextLine)
-             (token TextLine (state-offset paragraph-end)
-                    (state-offset paragraph-blank-end))
-             (finish-node)) ())
-        (finish-node)
-        ,@(if reset-state?
-            '((set-bool paragraph-open (bool #f))
-              (set-bool paragraph-post-blank (bool #f)))
-            '())) ()))
-
-(def paragraph-close-form (paragraph-close-form* #t))
-(def paragraph-finish-form (paragraph-close-form* #f))
-
+(def paragraph-rule (line-structure-text org-line-structure))
+(def paragraph-scope (make-source-event-scope 'org-paragraph))
+(def paragraph-event-initial (source-paragraph-initial paragraph-rule paragraph-scope))
+(def paragraph-open-condition (source-paragraph-open-condition paragraph-scope))
+(def (paragraph-span-forms from until)
+  (source-paragraph-span-forms paragraph-rule paragraph-scope from until))
+(def (paragraph-blank-forms until)
+  (source-paragraph-blank-forms paragraph-scope until))
+(def paragraph-close-form
+  (source-paragraph-close-form paragraph-rule paragraph-scope 'inline-span '(inline-script-policy)))
+(def paragraph-finish-form
+  (source-paragraph-close-form paragraph-rule paragraph-scope 'inline-span '(inline-script-policy) #f))
 (def (paragraph-line-form)
-  `(if (line-blank?)
-       ((if (state paragraph-open)
-            ((set-bool paragraph-post-blank (bool #t))
-             (set-uint paragraph-blank-end (offset end)))
-            ((start-node OrgTextLine)
-             (token TextLine start end) (finish-node))))
-       ((if (state paragraph-post-blank) (,paragraph-close-form) ())
-        (if (not (state paragraph-open))
-            ((start-node OrgParagraph)
-             (set-bool paragraph-open (bool #t))
-             (set-uint paragraph-start (offset start))) ())
-        (set-uint paragraph-end (offset end)))))
+  (source-paragraph-line-form paragraph-rule paragraph-scope 'inline-span '(inline-script-policy)))
 
 (def paragraph-event-helpers
   (list (make-org-event-helper

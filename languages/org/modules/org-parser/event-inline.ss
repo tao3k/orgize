@@ -6,7 +6,7 @@
         (only-in "event-inline-primitives.ss"
                  link-index inline-next)
         (only-in "event-inline-link.ss"
-                 link-open link-scan-forms inline-link-event-initial)
+                 link-open link-scan-forms inline-link-event-initial link-open-condition)
         (only-in "event-inline-url.ss"
                  url-link-event-initial url-link-open-forms
                  url-link-scan-forms url-link-final-forms)
@@ -723,7 +723,7 @@
            (uint-positive? (state inline-footnote-mode))
            (uint-positive? (state inline-export-mode))
            (uint-positive? (state inline-delimited-kind))
-           (state inline-open)
+           ,link-open-condition
            ,(source-pattern-at? link-index "<<"))
          (list (timestamp-scan-forms)
                (if nested-description? '() (footnote-reference-scan-forms))
@@ -805,7 +805,7 @@
              (uint-equal? (state inline-export-mode) (uint 0))
              (uint-equal? (state inline-delimited-kind) (uint 0))
              (uint-equal? (state inline-markup-kind) (uint 0))
-             (not (state inline-open)))
+             (not ,link-open-condition))
         ,(inline-script-open-forms) ())))
     (if (uint-positive? (state inline-entity-mode))
         ,(entity-name-scan-forms)

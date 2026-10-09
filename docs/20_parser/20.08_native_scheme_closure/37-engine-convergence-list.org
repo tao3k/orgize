@@ -1,0 +1,435 @@
+#+title: Org-to-engine convergence checklist
+
+* Audit scope and ownership
+
+Local source audit on 2026-10-09: Orgize baseline =9d2e9da4= and engine
+baseline =3edb3262=. Owned local changes follow those baselines. Org's declared
+dependency remains =7449072d=; a capability in the candidate checkout does not
+mean that downstream dependency alignment has been admitted.
+This checklist distinguishes implementation, deletion and qualification;
+creating an API or this document does not close a migration item.
+
+The baseline =languages/org/modules/org-parser/*.ss= contains 7,348 lines:
+=event-inline.ss= has 900, =event-strategy.ss= 673,
+=event-source-header.ss= 333 and =event-inline-timestamp.ss= 319.
+These counts include mechanisms, domain rules, value projections and data.
+The two Unicode data tables alone contain 561 lines. They are not all
+removable parser machinery; a smaller line count is not architectural proof.
+
+The substantive defect is that POO declarations still require downstream
+byte loops, scanner state, container stacks, future-close queries and event
+lifecycles. The engine must compile those mechanisms. Org should declare
+markers, priorities, boundary policies, node/field roles and domain semantics,
+not implement a generic parsing scheduler.
+
+* Existing capabilities versus missing composition
+
+- =src/modules/parser/line-structure-objects.ss= already declares HeadingLine,
+  BlockLine, InlineLink, TableLine and ListLine as POO objects. However,
+  =src/compiler/line-structure-runtime.ss= projects a Rust syntax table;
+  that is not the complete native Scheme declaration-compilation path.
+- =source-fragment-objects.ss= and =source-fragment-funs.ss= already provide
+  delimited fragments, first splits and reference scans. They do not yet
+  express all escape, nested-description and recovery policies required by
+  Org's hand-written table and inline scanners.
+- =event-fold-future.ss= already implements source-backed future queries and
+  caching. The Fold runtime already supports helpers and frames. Extend their
+  declaration/composition contracts rather than build another Fold runtime.
+- At the audit baseline, the public parser interface exposes Grammar and
+  source-pattern/priority projections; consumers import other capability
+  modules separately. Define clear public ownership without forwarding
+  wrappers or requiring a single enormous facade.
+
+* Engine convergence list
+
+API names below describe responsibilities, not promises of existing APIs.
+Every item requires an engine implementation, consumer replacement, deletion
+of the old downstream mechanism and executable admission.
+
+** E01 / P0: LineStructure to native Scheme event programs
+
+Evidence: [[file:../../../languages/org/parser.ss][parser.ss]] declares POO rules,
+but [[file:../../../languages/org/modules/org-parser/event-strategy.ss][event-strategy.ss]]
+still generates block/header/container recognition and event control flow.
+
+Engine: compile admitted line declarations into the existing native event
+program, including mode dispatch, opening/closing, prepared state and EOF.
+Do not return to generated Rust parsing or add a second interpreter.
+Org retains markers, node/token roles, priorities and semantic actions.
+Admission: one declaration drives native execution; delete replaced
+open/body/close chains. Match events, fields and source spans for ordinary,
+missing-terminator and EOF inputs.
+
+** E02 / P0: Container boundaries, future queries and recovery
+
+Original audit evidence: =future-close-scan=, =container-future-condition=,
+=special-future-condition= and =latex-future-condition= manually enumerated
+parent containers and stopping boundaries in =event-strategy.ss=.
+The local candidate below removes that composition and the duplicated
+special-block/LaTeX scans; it does not close the entire recovery contract.
+
+Engine: composable named terminators, parent constraints, heading boundaries,
+opaque regions and recovery. Reuse existing future-query caches with request
+and source-identity isolation. Org retains text-recovery, heading termination
+and case policies.
+Admission: nested, crossed and absent closes; identical names under different
+boundaries. Measure repeated scans and input-size growth. Do not widen timeouts
+or reuse a result outside its admitted boundary to manufacture a pass.
+
+** E03 / P0: Nested fragments and recognition/commit failure contracts
+
+Evidence: [[file:../../../languages/org/modules/org-parser/event-inline-link.ss][event-inline-link.ss]]
+previously maintained open/separator/failure state, helper calls and cursor
+updates. Cloze, scripts and citation affixes also compose nested fragments.
+
+Engine: admitted fragments with boundaries, escape, child rules and failure
+recovery; consistent cursor advancement and event commit. Failed recognition
+must not leak partial nodes or lose source bytes. Reuse existing helpers.
+Org retains permitted description objects, target validity, precedence and
+node roles.
+Admission: Unicode, nesting, truncation, ambiguity and invalid recovery;
+source round-trip, balanced nodes and correct subsequent recognition.
+Use a non-Org grammar to prove reuse rather than merely relocate Org code.
+
+** E04 / P0: Compile-time ownership of state, helpers and scopes
+
+Evidence: =org-event-initial= and =org-event-helpers= manually assemble named
+slots. =make-org-event-helper= / =make-org-event-strategy= wrap private
+initial/forms protocols in =objects.ss=.
+
+Engine: per-rule state types, helper parameters, scope, name allocation and
+frame lifetime; reuse =event-fold-state-frame.ss=. Do not promote Org private
+wrappers as the generic public API. Org retains request configuration and
+domain-state declarations.
+Normal authors use POO objects and named pure combinators, not raw alists,
+low-level forms or arbitrary callback hooks as their ordinary interface.
+Admission: repeated instances, colliding names, recursive helpers and invalid
+fields/types; no state leakage between requests. Admit semantic parity in
+the existing native AOT and interpreted paths separately.
+
+** E05 / P1: Escape/quote-aware splitting and lexical field scanning
+
+Evidence: [[file:../../../languages/org/modules/org-parser/event-table.ss][event-table.ss]]
+previously maintained escape state in =table-row-form=;
+[[file:../../../languages/org/modules/org-parser/event-source-header.ss][event-source-header.ss]]
+still implements bare/quoted/switch/value/trivia scanning and finalization.
+
+Engine: extend SourceFragment declarations with checked escape, quote,
+separator, trivia and source-backed fields. Org retains Babel/header-args
+key/switch semantics, table borders and formulas.
+Admission: empty fields, trailing separators, odd/even escapes, unclosed
+quotes, CRLF and multibyte fields. Delete the old byte loops; do not leave
+them underneath new wrappers.
+
+** E06 / P1: Hierarchy, indentation and continuous-text lifecycle
+
+Baseline evidence: =event-list.ss= packed columns/frames and closed list paragraphs;
+=event-paragraph.ss= previously managed span state. =event-strategy.ss= also
+coordinates footnote, fixed-width, comment and pending-blank transitions.
+
+Engine: indentation/hierarchy, continuous spans, pending trivia, container
+entry/exit and EOF composition. Reuse =scan-list-marker= and frame operations.
+Org retains markers, tab width, checkbox/counter/tag rules and blank-line
+termination policy.
+Admission: mixed indentation, deep lists, sibling transitions, trivia recovery
+and EOF. Engine owns node balance; delete downstream frame encoding and
+duplicated close/finish protocols.
+
+** E07 / P1: Inline priority and trigger-dispatch compilation
+
+Evidence: =event-inline.ss= uses =source-priority-forms= but still combines
+trigger bytes, markup/target lifecycles and active scanning paths manually.
+
+Engine: compile trigger classification, ordered choice, active modes and
+dispatch; reuse priority projections and prepared byte sets. Org retains
+precedence, left/right boundaries and the rule that a matched empty action
+suppresses later alternatives.
+Admission: matched ambiguity controls, predicates per byte and allocation
+counts on dense, sparse and invalid input. One wall-clock sample is not proof.
+
+** E08 / P1: Source views, physical lines and coordinate services
+
+Evidence: [[file:../../../languages/org/modules/org-parser/text-funs.ss][text-funs.ss]]
+implements UTF-8 widths, physical lines and prefix/find operations;
+=block-line-funs.ss= reconstructs source/value lines for derived content.
+These are semantic helper paths; profiling is required before claiming that
+the main parser repeatedly scans the whole document.
+
+Engine: source-backed line/slice views, checked search and byte/character
+coordinates. Cache ownership must include request, revision and slice identity.
+Org retains unescape/unindent semantics and derived-to-original mapping policy.
+Admission: CR/LF/CRLF, empty input, no final newline, multibyte and slice edges;
+count copied bytes and repeated line construction. Prefer official Gerbil
+Unicode facilities for generic mechanisms, but do not move Org entity names
+or case/whitespace policies without semantic verification.
+
+** E09 / P1: Stable authoring, compilation and runtime boundaries
+
+Evidence: =runtime-funs.ss= directly imports compiler-owned =run-event-fold=;
+consumers combine public, object-module and Org private descriptor imports.
+
+Engine: clear public declaration, compiled-program and request-execution
+boundaries with error/version contracts. E01-E08 use this surface; low-level
+IR remains engine-owned. Org retains metadata, grammar/semantic registration
+and thin invocation adapters.
+Admission: ordinary consumers do not call private compiler protocols;
+clean SDK public imports, AOT and FFI controls pass without compatibility
+aliases or new launcher/process frameworks.
+
+** E10 / P0: Companion closure item: native results and FFI lifetime
+
+Evidence: =src/org_aot.rs= still calls =parse_generated_events= and
+=project_syntax_graph=. This is not Org grammar and is outside the line count.
+
+Engine/bridge: native result/view ownership, leases, source identity, release,
+error propagation and cross-runtime completion; avoid another downstream
+navigation materialization. Org retains request configuration and typed thin
+interfaces. Rust/Tokio and Scheme scheduling choices remain supported.
+Admission: both runtimes, Rust/Python, release/cancel/shutdown negatives and
+source identity. Never hand a thread-bound NativeParsed to arbitrary Tokio
+callers without an admitted ownership design.
+
+* Implementation order and deletion policy
+
+1. E01/E04/E09 establish POO declarations to native programs. Do not add another
+   generic state machine or replacement framework in Org.
+2. E02/E03 establish boundaries, nesting and failure contracts; E05/E06 then
+   replace real header/table/list consumers. Each migration deletes its old
+   downstream implementation.
+3. E07/E08 reduce scanning/allocation after semantics are fixed. E10 remains
+   independently required for thin FFI closure; syntax work or pin updates
+   cannot establish its completion.
+
+Do not hardcode dates, TODO, Agenda, Contract policies, Babel semantics,
+entities or publishing rules into the generic engine. Extract reusable
+lexical mechanisms while keeping domain declarations in Scheme language
+modules. Copying Org files into the engine and renaming them is not sufficient.
+Engine tests own generic controls; Org tests own domain regressions. Avoid
+duplicating expensive suites. Use existing Just/native SS owners, not another
+shell/JavaScript runner. Full admission still requires both runtimes,
+1,000/10,000 concurrent documents, Rust/Python, source/event parity, allocation
+and stage observations. Separate cold startup from steady state; do not lower
+concurrency, widen deadlines or substitute historical green receipts.
+
+* Local implementation candidates
+
+** Table rows and paragraphs
+
+The independent gerbil-parser checkout adds =line-event-funs.ss= under
+=src/modules/parser/= and exports it through the public interface.
+It compiles admitted TableLine/TextLine declarations into the existing native
+Fold. The checkout lives physically inside Org's =target/= but remains a
+separate engine Git repository.
+
+Engine owns delimiter/escape scanning, source spans, state reset and paragraph
+open/pending-blank/close/EOF. Org declares rule-row/escape bytes, nodes and named
+helpers. The old downstream algorithms are deleted: =event-table.ss= changes
+from 112 to 70 lines and =event-paragraph.ss= from 67 to 42.
+Eight engine native cases and a fresh Org production build pass. The freshly
+linked =native-line-convergence-closure= passes 178 cases / 12 suites and
+final =OK=; deliberate failure exits 42 without =OK=. Those receipts precede
+the additional inline-link candidate and are not relabelled as its admission.
+
+** Inline links
+
+Engine =inline-link-event-funs.ss= owns recognition and commit through the
+same public interface. Org's old open/separator/target/close state machine is
+deleted; =event-inline-link.ss= changes from 84 to 14 lines, retaining only
+description helper/node and explicit recovery declarations.
+The engine distinguishes =recover-span= / =recover-region=; Org selects the
+latter. Opening-marker bytes cannot be separators; committed closing bytes
+cannot be consumed twice. The two engine suites pass 16 native cases.
+A fresh production build against the final declarations passes. The freshly
+linked =native-inline-convergence-closure= passes 178 cases / 12 suites,
+final =OK= and the exit-42 deliberate failure control without =OK=.
+These local candidate receipts do not admit remote CI, Rust/Python consumers
+or a new declared dependency revision.
+Engine ownership is recorded in =docs/architecture/native-line-convergence.org=.
+
+** Container boundary composition
+
+The engine admits SourceBoundaryQuery and SourceBoundaryParent POO values
+and owns parent dispatch through =source-container-boundary-condition=.
+It lowers fixed and source-named recovery into the existing cached native
+future queries. It adds neither another scanner nor a language callback DSL.
+Org declares literal container closers, special-block name state bindings,
+and LaTeX suffix/heading policy. The old =future-close-scan=,
+=container-future-condition=, =special-future-scan= and =latex-future-scan=
+implementations are deleted. These three consumers remove 82 lines and add
+40 lines of declarations and engine calls.
+
+Three focused engine suites pass 24 native cases, including non-Org parent
+stops, unrelated named closers, saved parent names, CRLF/EOF, heading and
+indentation policy, and invalid declarations. The POO constructors use
+distinct lexical value bindings; slot-name self-reference caused an
+initialization overflow during development and is fixed. The focused Just
+owner requires final =OK= and rejects error markers independently of the
+test process exit status. No duplicate full-suite lane is introduced.
+A fresh native Org production build passes. The newly linked
+=native-boundary-convergence-closure= passes 178 cases / 12 suites with final
+=OK=. Its deliberate failure control exits 42, emits =FAILED= / =ERROR CHECK=
+and does not emit =OK=. These qualify this local candidate only; they do not
+admit Rust/Python, scale, normal dependency pins or exact-head remote CI.
+
+** Rule-instance state ownership
+
+The engine now admits SourceEventScope POO declarations and allocates
+deterministic, Rust-safe identifiers from hexadecimal UTF-8 owner/role
+components. Table, paragraph and link projections require an explicit scope;
+their old unscoped call path is removed rather than retained as compatibility.
+The inline scanner's index/cursor are explicit external bindings. Helper
+parameters stay external even when they match a private role name.
+No runtime registry, allocator, scheduler or blanket tree rewrite is added.
+
+Org declares =org-table-row=, =org-paragraph= and =org-inline-link= scopes.
+Footnote paragraph initialization/pending blanks call engine span/blank
+transitions; inline dispatch uses the engine's open predicate. The remaining
+language scanner still owns its shared index/cursor and domain precedence.
+The engine frame executor is unchanged. Distinct instances require distinct
+owners; projections of one instance intentionally reuse its owner.
+
+Four native engine suites pass 30 cases. New controls exercise two paragraph
+instances in one frame, table state isolation, a truncated first link beside
+another rule, helper-parameter/private-role collisions, deterministic name
+allocation, Rust punctuation normalization and invalid scopes.
+The final scoped consumer production build passes. The freshly linked
+=native-scope-convergence-closure= passes 178 cases / 12 suites, final =OK=
+and the exit-42 failure control without =OK=. Footnote continuation/blank
+termination, paragraphs, table cells and nested descriptions remain covered.
+These are this candidate's local native receipts, not the preceding binary,
+normal dependency pin admission, Rust/Python qualification or exact-head CI.
+
+** List structure and continuous spans
+
+The engine's =list-event-funs.ss= projects admitted ListLine declarations into
+the existing scanner and event-fold operations. It owns packed indent/kind
+frames, sibling/type-change/dedent transitions, item/container balance,
+paragraph spans, first-blank trivia and EOF cleanup. No new executor, Rust
+parser, process runner or language callback DSL is introduced.
+
+Org declares =org-list= as its instance scope and selects separator-inclusive
+bullet spans. Its counter, checkbox, description-tag and element precedence
+grammar remains downstream. =event-list.ss= shrinks from 174 to 127 lines;
+=event-strategy.ss= deletes eleven manual list state bindings and delegates
+EOF and admitted opaque-block paragraph closure. The old frame arithmetic,
+close-all protocol and =list-close-paragraph-form= are deleted. List paragraphs
+omit two unused pending-blank slots and their reset/emit branches; ordinary
+paragraph behavior remains unchanged.
+
+Five engine suites pass 38 native cases. Eight new non-Org controls cover
+Unicode/CRLF and EOF, nesting/dedents, ordered-kind changes, declared tab width,
+one/two blank transitions, explicit bullet spans, disabled ordered markers,
+empty source and invalid policies. Source coverage and node balance are
+checked independently. The initial fixture used a list of strings instead of
+the admitted marker string; it was corrected, not bypassed. The final Org
+production build passes after replacing one stale opaque-block helper call.
+The freshly linked =native-list-convergence-closure= passes 178 cases / 12
+suites and final =OK=. Its deliberate failure control exits 42 with =FAILED=
+and =ERROR CHECK=, without =OK=. Existing list/block continuation, counters,
+checkboxes, tags and recovery remain covered. These receipts qualify the local
+candidate, not normal dependency pins, Rust/Python, concurrent scale or remote CI.
+
+** Published engine alignment
+
+The six engine migration commits were rebased without conflicts onto the
+existing PR #13's =bc9a56a83= compiler optimization head, then published as
+=21e50eedaa43462266130e27c61421438ec4d3b4=. A concurrent remote advance rejected
+the first push; it was integrated rather than overwritten or force-pushed.
+The final engine SDK, public imports, 38 focused native cases and Org
+production build pass. Earlier candidate receipts are not relabelled as
+post-rebase admission.
+
+Exact-head engine CI first exposed a missing runner tool: the native process
+step invoked Just before installing it. The CI-only =7f9bd47bbbbf7b3d49820ebf6306e247279c0b50=
+follow-up installs the official action at immutable SHA
+=f7e5d7c961414b23f5b25b2da9294395d08513ad=. YAML parsing and the existing
+Just recipe expansion pass. Runner execution then exposed strict-C11 fixture
+declaration errors for =getsid= and obsolete =usleep= on Ubuntu.
+Its only difference from =21e50eed= is five workflow lines, not parser source.
+
+The test-only =021f97a7182db95b7687757fa27ad09ad7a6261d= follow-up admits
+POSIX.1-2008 declarations and uses interruption-safe =nanosleep= for the
+same 20ms fixture progress interval. No kernel, warning fence or deadline
+changes. Strict C compilation and the existing native Just process controls
+pass on Darwin with process-topology access. A sandboxed attempt first failed
+at cold bootstrap and another was denied =ps= access; those are retained
+negative observations, not stable cold-start performance admission.
+Exact-head Linux/macOS CI remains a separate remote gate.
+
+Orgize's Cargo and Gerbil declarations, root/fuzz locks and Just revision
+checks select =021f97a7=. Normal Cargo update replaces
+only the two parser packages; no patch configuration is used. Clean source,
+pin equality, dependency-removal and native-program source-root checks pass.
+The bridge remains at its independently admitted =1e4f1f65= revision.
+The freshly linked =native-aligned-convergence-closure= passes 178 cases / 12
+suites, final =OK= and the exit-42 failure control. Both runtime feature modes
+pass 85 native unit cases, the 457-case concurrent consumer catalog, public
+cutover, native index handoff and 1,000/10,000-document parallel Query controls.
+No-hit/hit results preserve complete projection parity. Both modes use the
+same =sha256:8899173dd02df3cbfc3c1b4635f867e8a6294fa043fb41d16d5a8b2bce64b9ca=
+native program. Fresh consumer builds at =7f9bd47b= pass in both runtime modes.
+The subsequent =021f97a7= fixture-only diff does not change parser production
+source; these receipts are not relabelled as new exact-head consumer builds.
+Python's freshly installed extensions pass 25 tests in each runtime mode
+against that program identity. These are local semantic/scale receipts,
+not latency wins.
+
+The new 2,000-file projection controls still fail the unchanged 100ms gate:
+final-pin best-of-five samples are 602ms (Rust) and 597ms (Scheme). The Rust sample's
+walk costs 1.2ms versus 597ms projection with 32 host workers. Increasing the
+reader count is not a demonstrated fix; native handoff and graph projection
+need cost attribution and algorithmic closure. No limit was relaxed. The
+earlier =21e50eed= samples (611ms / 639ms) remain separate observations;
+they are not substituted for the final-pin measurements.
+
+The remaining execution boundary is concrete: =native-event-runtime.ss=
+delegates through =run-org-event-strategy= to engine =run-event-fold=.
+That entry constructs initial state and a frame on every request, while
+=fold-statements= walks strategy forms at runtime. AOT compiling this executor
+does not remove that form interpretation. E01/E04 must admit reusable engine
+compilation of an immutable strategy/layout with isolated request state;
+the downstream language must not add its own evaluator or compilation cache.
+Its relative cost still needs attribution: these source facts alone do not
+prove that interpretation explains the entire failed 100ms budget.
+
+The preceding PR #18 CI head =6a7c647c= fails the unchanged 100ms gate for
+2,000 plan-ledger records: Rust-mode best samples were 713ms on macOS and
+1.17s on Ubuntu. These are historical CI measurements, not this candidate's
+latency. The gate is neither relaxed nor removed. Whole graph materialization,
+per-request handoff and projection costs need measured qualification before
+downstream delivery or performance closure can be claimed.
+
+These candidates implement only parts of E01/E02/E03/E04/E05/E06/E09. Full nested
+composition, whole-program state/helper hygiene, complete recovery and native leases remain open.
+Deliver paired engine PR #13 / Orgize PR #18 changes and align REV only after
+candidate admission; do not create another PR or mark the whole list complete.
+
+** Recovery boundary (2026-10-09)
+
+The original checkout and its native build/receipt directories disappeared
+during consumer qualification. Recovery uses PR #18's =6a7c647c= baseline and
+65 actual file-change events retained in this chat's execution journal.
+The two unpublished documentation/import-trace checkpoints are reconstructed
+as source changes, not as their original Git objects. Rust formatting and
+normal root/fuzz lock updates are rerun. Each lock changes only the two
+parser packages to =021f97a7=; no patch configuration or profile change.
+Dependency alignment, document/task layout, Cargo metadata and diff checks
+pass. The Cargo source checkout has its ordinary untracked =.cargo-ok= marker;
+tracked-source cleanliness is not a claim that this marker is absent.
+
+The parallel CI producer proposal is preserved separately as
+=preserved-ci-proposal.patch= beside the recovery checkout. It is not applied
+or included in this candidate's commit; no active unrelated checkout changes.
+Missing binaries and logs are not recreated or relabelled as fresh receipts.
+
+The recovered plan-ledger adapter uses existing bounded native batches and
+the same native single-document entry for oversized inputs. A 130-document
+source-identity/Unicode/CRLF/oversized control is registered in the 458-case
+catalog. Its first attempt failed the catalog equality guard; source inventory
+is repaired, but linked execution remains unqualified. The batch candidate's
+first 2,000-document Rust gate still failed at 595ms best-of-five. This is not
+an improvement claim. Earlier 602ms / 597ms receipts remain historical.
+
+PR #13's exact =021f97a7= Ubuntu Scheme and Rust AOT jobs now pass; macOS
+remains pending at this observation. Rebuilt native consumer admission and
+the unchanged 100ms budget remain prerequisites for Orgize delivery.

@@ -12,6 +12,8 @@ native Scheme execution evidence. Whole-parser semantic closure remains open.
 
 * Modular qualification records
 
+- [[file:20.08_native_scheme_closure/37-engine-convergence-list.org][Engine convergence List: downstream mechanisms, API gaps and deletion gates]]
+
 - [[file:20.08_native_scheme_closure/36-public-source-pattern-and-pr-alignment.org][Public engine source patterns, request-local execution and existing PR integration]]
 
 - [[file:20.08_native_scheme_closure/35-document-plan-and-runtime-boundary.org][Document projection plans, 107ms audit and AOT/FFI ownership]]

@@ -356,6 +356,59 @@ fn plan_ledger_projection_obeys_scheme_block_context() {
     let _ = fs::remove_dir_all(root);
 }
 
+fn plan_ledger_batches_preserve_source_identity_and_limits() {
+    let root = temp_test_dir("orgize-plan-ledger-native-batch");
+    let plans = root.join("flow").join("plans");
+    fs::create_dir_all(&plans).unwrap();
+    let mut expected = Vec::new();
+    for index in 0..130 {
+        let path = plans.join(format!("agent-plan-{index:03}.org"));
+        let todo = if index % 7 == 0 { "DONE" } else { "TODO" };
+        let body = if index == 64 {
+            "λ".repeat(35_000)
+        } else {
+            format!("receipt {index}")
+        };
+        fs::write(&path, format!(
+            "* {todo} Plan λ {index} :agent:plan:\r\n:PROPERTIES:\r\n:CONTRACT_ORG: agent.plan.v1\r\n:PLAN_ID: {index}\r\n:END:\r\n#+begin_src text\r\n* Not a headline\r\n{body}\r\n#+end_src\r\n"
+        )).unwrap();
+        let mut options = OrgMemorySearchOptions::plan_ledgers();
+        options.include_closed = true;
+        let single =
+            query_org_memory_records(&path, &DocumentWalkConfig::default(), &options).unwrap();
+        assert_eq!(single.len(), 1);
+        assert_eq!(single[0].title, format!("Plan λ {index}"));
+        assert_eq!(single[0].end_line, 9);
+        expected.push(single.into_iter().next().unwrap());
+    }
+    let mut options = OrgMemorySearchOptions::plan_ledgers();
+    options.include_closed = true;
+    let batched =
+        query_org_memory_records(&root, &DocumentWalkConfig::default(), &options).unwrap();
+    assert_eq!(batched.len(), expected.len());
+    for (actual, expected) in batched.iter().zip(&expected) {
+        assert_eq!(actual.path, expected.path);
+        assert_eq!(
+            (actual.start_line, actual.end_line),
+            (expected.start_line, expected.end_line)
+        );
+        assert_eq!(actual.state, expected.state);
+        assert_eq!(actual.level, expected.level);
+        assert_eq!(actual.title, expected.title);
+        assert_eq!(actual.todo, expected.todo);
+        assert_eq!(actual.tags, expected.tags);
+        assert_eq!(actual.properties, expected.properties);
+        assert_eq!(actual.mtime, expected.mtime);
+    }
+    options.include_closed = false;
+    options.plan = Some("64".into());
+    let selected =
+        query_org_memory_records(&root, &DocumentWalkConfig::default(), &options).unwrap();
+    assert_eq!(selected.len(), 1);
+    assert_eq!(selected[0].title, "Plan λ 64");
+    let _ = fs::remove_dir_all(root);
+}
+
 fn general_memory_search_uses_scheme_aot_elements_and_file_todo_profile() {
     let root = temp_test_dir("orgize-memory-aot-general");
     let path = root.join("memory.org");
@@ -434,6 +487,10 @@ fn temp_test_dir(prefix: &str) -> PathBuf {
 }
 
 pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::plan_ledger_batches_preserve_source_identity_and_limits",
+        plan_ledger_batches_preserve_source_identity_and_limits,
+    ),
     (
         "semantic_ast::semantic_ast_projects_agent_memory::semantic_ast_projects_agent_memory_records_from_org_constructs",
         semantic_ast_projects_agent_memory_records_from_org_constructs,

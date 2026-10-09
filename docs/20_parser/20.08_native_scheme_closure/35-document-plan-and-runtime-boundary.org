@@ -433,3 +433,45 @@ This does not eliminate the isolation bootstrap's initial GXI startup, prove
 a throughput improvement, or close generic nested scanning/recovery APIs.
 The duplicate CI producer work and complete Rust/Python candidate admission
 remain separate gates; these Scheme receipts do not establish their closure.
+
+* Native test ownership and fresh closure qualification (2026-10-09)
+
+Parser test ownership migration is committed locally as =7d9296e8=, rebased
+onto PR #13's published =abdde864= FOLLOW seed-cache change. It is unpublished;
+Org's declared dependency remains =7449072d= until candidate admission passes.
+Production compiler imports no qualification test module. Native suites live
+under =t/=, and external-command support and C controls live under =t/support/=
+and =t/fixtures/=. CI no longer starts separate bootstrap/plan test scripts.
+
+Fresh =native-qualification-parser-sdk= and =native-qualification-org-sdk=
+builds pass. The freshly linked =native-qualification-closure= passes 178
+cases and the deliberate failure exits 42 without =OK=. This is not a receipt
+for the unchanged declared dependency, Rust/Python consumers or remote CI.
+
+The removed Org import-trace adapter redundantly expands source and fails the
+unchanged five-second silence fence; native test and AOT owners remain.
+Parser GXI runtime-object loading is still an uncommitted startup candidate.
+Fresh support artifacts under concurrent compilation fail the 1.5-second
+identity idle fence in =bootstrap=, before session acknowledgement. A direct
+entry and ordinary controls passing do not admit that cold-start candidate.
+No deadline, kernel or unrelated CI producer proposal is changed.
+
+* Native cold-start owner consolidation (2026-10-09)
+
+The earlier bootstrap failure is retained above as a negative receipt, not
+an accepted candidate. A native =t/fixtures/= diagnostic separated GXI
+initialization from compiled module loading. The single-consumer private
+POSIX FFI is now folded into =process-child.ss=; =process-os.ss= is removed.
+Qualification support compilation drops from eight modules to seven.
+
+Six concurrent first child-module loads exposed a second failure after
+session establishment: the idle monitor ignored that completed native stage.
+It now admits that acknowledgement once, only within the existing idle fence;
+polling the same witness cannot refresh progress. The total clock still starts
+before GXI. Single-run startup traces are not throughput benchmarks.
+
+Two fresh support roots pass concurrent cold identities, cancellation and
+isolation, Unicode backpressure, exit admission and the native plan/bootstrap
+suites, with unchanged deadlines. Candidate and remote admission remain open.
+No kernel, parser semantics, Rust/Python framework or
+unrelated CI producer proposal is changed; full migration is not claimed.

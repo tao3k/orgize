@@ -2,12 +2,14 @@
 ;;; Org-owned, source-named LaTeX environment with an opaque body.
 
 (import (only-in :gerbil-parser/src/modules/parser/interface
-                 source-ascii-ci-pattern-at? source-pattern-end)
+                 source-ascii-ci-pattern-at? source-pattern-end
+                 make-source-named-boundary line-structure-heading)
+        (only-in "../../parser.ss" org-line-structure)
         (only-in "objects.ss"
                  make-org-named-block org-named-block-opening
                  org-named-block-closing org-named-block-node
                  org-named-block-name-token))
-(export latex-environment-initial latex-future-scan
+(export latex-environment-initial latex-boundary-query
         latex-open-form latex-body-form)
 
 (def latex-rule
@@ -34,19 +36,10 @@
   '((latex-open #f) (latex-name-start 0) (latex-name-end 0)
     (latex-same-line-close #f) (latex-same-line-close-at 0)))
 
-(def (latex-future-scan stop heading-marker heading-separator
-                        (parent-name-from #f) (parent-name-until #f)
-                        (parent-prefix "") (parent-suffix "")
-                        (parent-ascii-ci? #f))
-  (append
-   `(future-named-line-marker-before-boundary?
-     ,latex-name-start ,latex-name-end
-     ,latex-closing "}" ,stop
-     ,heading-marker ,heading-separator #t #f #t)
-   (if parent-name-from
-     (list parent-name-from parent-name-until
-           parent-prefix parent-suffix parent-ascii-ci?)
-     '())))
+(def latex-boundary-query
+  (make-source-named-boundary latex-opening latex-closing "}"
+                             (line-structure-heading org-line-structure)
+                             "}" #t #f #t))
 
 (def latex-opening?
   `(and ,(source-ascii-ci-pattern-at? latex-indent latex-opening)
