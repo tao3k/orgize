@@ -43,6 +43,11 @@ pub fn write_org_native_program() {
             .expect("admit producer-owned Orgize FFI bundle");
         return;
     }
+    assert!(
+        env::var_os("ORGIZE_FFI_EXPORT").is_some()
+            || env::var_os("ORGIZE_GERBIL_PROGRAM_MANIFEST").is_some(),
+        "Set ORGIZE_FFI_BUNDLE to a qualified producer artifact; Scheme compilation requires an explicit producer manifest or export request"
+    );
     println!(
         "cargo:rerun-if-changed={}",
         root.join("bindings/c/include/orgize.h").display()

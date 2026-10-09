@@ -13,6 +13,11 @@ are included. System libraries remain host linker requirements. Only consume
 artifacts from a trusted successful producer run for the pinned source revision;
 file hashes provide integrity, not publisher authentication.
 
+Plain downstream Cargo builds require `ORGIZE_FFI_BUNDLE`. Scheme compilation
+is enabled only by an explicit producer manifest or export request. The Orgize
+producer recipes supply that manifest; an absent consumer bundle never triggers
+a parser rebuild.
+
 Producer builds set `ORGIZE_FFI_EXPORT` to package the compiler-owned link receipt.
 CI runs the existing Scheme and Rust qualification, relocates the bundle, reruns
 Rust tests with a deliberately absent program manifest, and uploads a separate
