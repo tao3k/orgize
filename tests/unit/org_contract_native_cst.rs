@@ -18,7 +18,7 @@ pub(crate) const NATIVE_CASES: &[(&str, fn())] = &[
 
 fn native_contract_composition_normalizes_bindings() {
     let registry = |source| {
-        let document = crate::Org::parse(&format!(
+        let document = crate::Org::parse(format!(
             "* Contract\n:PROPERTIES:\n:CONTRACT_ID: native.composition\n:END:\n** Assertion\n:PROPERTIES:\n:ASSERT_ID: native.bindings\n:END:\n#+begin_src org-contract\n{source}\n#+end_src\n"
         )).document();
         crate::ast::validate_contract_source(&document, None)

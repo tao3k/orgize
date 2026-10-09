@@ -151,7 +151,7 @@ fn collect_contract_source_diagnostics(
                 diagnostics,
                 "CONTRACT-E005",
                 path,
-                normalized_id.as_deref(),
+                normalized_id,
                 format!(
                     "CONTRACT_ID uses unsupported CONTRACT_KIND `{}`",
                     kind.trim()
@@ -165,7 +165,7 @@ fn collect_contract_source_diagnostics(
                 diagnostics,
                 "CONTRACT-E006",
                 path,
-                normalized_id.as_deref(),
+                normalized_id,
                 format!(
                     "CONTRACT_ID uses unsupported CONTRACT_SCOPE `{}`",
                     scope.trim()
@@ -177,7 +177,7 @@ fn collect_contract_source_diagnostics(
             end,
             plan,
             has_named_assertion_blocks,
-            normalized_id.as_deref(),
+            normalized_id,
             path,
             diagnostics,
         );

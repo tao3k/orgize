@@ -109,15 +109,15 @@ fn explicit_startup_precedes_parallel_consumer_cases() {
             "consumer migration must not lose or invent cases"
         );
     }
-    if let Ok(selected) = std::env::var("ORGIZE_NATIVE_CONSUMER_CASE") {
-        if !selected.is_empty() {
-            cases.retain(|&(name, _)| name == selected);
-            assert_eq!(
-                cases.len(),
-                1,
-                "unknown or duplicate consumer case: {selected}"
-            );
-        }
+    if let Ok(selected) = std::env::var("ORGIZE_NATIVE_CONSUMER_CASE")
+        && !selected.is_empty()
+    {
+        cases.retain(|&(name, _)| name == selected);
+        assert_eq!(
+            cases.len(),
+            1,
+            "unknown or duplicate consumer case: {selected}"
+        );
     }
     let count = cases.len();
     let callers = std::thread::available_parallelism().map_or(1, |count| count.get());

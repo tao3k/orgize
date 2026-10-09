@@ -29,3 +29,18 @@ This removes downstream **Orgize Scheme compilation**. The separately pinned
 bridge with the installed Gambit toolchain. It does not rebuild the Orgize parser.
 A completely compiler-free FFI runtime distribution requires producer support in
 that dependency as well; this bundle does not claim that capability.
+
+The private corpus handoff batches both syntax events and document metadata.
+Metadata packets admit at most 64 documents and 64 KiB of encoded fields;
+each document delegates to the existing Scheme document semantic function.
+The Rust adapter preserves source order and per-document failures, checks
+response framing, and builds the same source-backed syntax/Element projections. Oversized
+single-document configuration fields retain the existing individual call.
+This batching does not change public contract versions or performance budgets.
+
+The POO strategy owns a memoized helper-descriptor projection. Refining its
+helper slot creates the corresponding derived descriptors on the refined
+value; document calls do not reconstruct the invariant strategy IR. This is
+strategy-local POO derivation, with no process-wide document cache. The prepared
+event-fold program derives from the same strategy slots, so refining grammar or
+helpers also prepares the corresponding program.

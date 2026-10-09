@@ -73,9 +73,9 @@ pub(crate) fn property_allowed_values(
     properties
         .iter()
         .rev()
-        .find(|property| property.key.eq_ignore_ascii_case(&descriptor_key))
+        .find(|property| property.key.eq_ignore_ascii_case(descriptor_key))
         .map(|property| plan.property(property).tokens.clone())
-        .or_else(|| fixed_global_allowed_values_for(profile, &descriptor_key))
+        .or_else(|| fixed_global_allowed_values_for(profile, descriptor_key))
 }
 
 fn collect_section_property_profile(

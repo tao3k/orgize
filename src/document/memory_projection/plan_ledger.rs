@@ -143,17 +143,23 @@ fn plan_ledger_records_from_paths(
     // thread startup.
     let worker_count = plan_ledger_worker_count(paths.len());
     let chunk_size = paths.len().div_ceil(worker_count);
+    let profiled = crate::runtime_profile::is_active();
     thread::scope(|scope| {
         let mut handles = Vec::new();
         for chunk in paths.chunks(chunk_size) {
-            handles.push(scope.spawn(move || observe_plan_ledger_files(chunk, options)));
+            handles.push(scope.spawn(move || {
+                crate::runtime_profile::worker(profiled, || {
+                    observe_plan_ledger_files(chunk, options)
+                })
+            }));
         }
 
         let mut combined = PlanLedgerWork::new(Vec::new());
         for handle in handles {
             let work = handle
                 .join()
-                .map_err(|_| "plan ledger worker panicked".to_string())??;
+                .map_err(|_| "plan ledger worker panicked".to_string())?
+                .receive()?;
             combined.records.extend(work.records);
             #[cfg(feature = "runtime-profile")]
             for (stage, nanos) in work.timings {

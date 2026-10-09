@@ -16,13 +16,32 @@ pub(crate) const NATIVE_CASES: &[(&str, fn())] = &[
 ];
 
 fn preserves_order_utf8_and_configuration() {
+    let packet = super::native_semantic_rows(
+        24,
+        &[
+            "3", "4", "0", "0", "0", "0", "1", "invalid", "4", "0", "0", "0", "0",
+        ],
+    )
+    .unwrap();
+    assert_eq!(packet[0], ["ok", "1"]);
+    assert_eq!(packet[1], ["0", "0"]);
+    assert_eq!(packet[2][0], "error");
+    assert_eq!(packet[3], ["ok", "1"]);
+    assert_eq!(packet[4], ["0", "0"]);
+    for fields in [
+        &["65"][..],
+        &["1", "5", "0"][..],
+        &["1", "4", "0", "0", "0", "0", "trailing"][..],
+    ] {
+        assert!(super::native_semantic_rows(24, fields).is_err());
+    }
     let inputs = [
         "",
         "* α\r\nx^{β} x^2\n",
         "| a | b |\n",
         "#+begin_src rust\nlet x = 1;\n#+end_src\n",
-        "* duplicate\n",
-        "* duplicate\n",
+        "#+TODO: WAIT(w) | FINISHED(f)\n* WAIT [#A] 搜索 :tag:\n#+TITLE: λ\n",
+        "* TODO duplicate\n",
     ];
     for policy in [
         crate::config::UseSubSuperscript::Nil,
@@ -67,6 +86,50 @@ fn preserves_order_utf8_and_configuration() {
                 format!("{:?}", document.records()),
                 format!("{:?}", individual.records())
             );
+            assert_eq!(
+                document.config.todo_keywords,
+                individual.config.todo_keywords
+            );
+            for record in document.records() {
+                assert_eq!(
+                    document.headline_todo_type(record.id),
+                    individual.headline_todo_type(record.id)
+                );
+                for field in ["title", "todo-keyword", "priority"] {
+                    assert_eq!(
+                        document.headline_derived_field(record.id, field),
+                        individual.headline_derived_field(record.id, field)
+                    );
+                }
+            }
+        }
+    }
+    for word_count in [1024, 5000] {
+        let config = ParseConfig {
+            todo_keywords: (
+                vec!["CONFIGURED_WAIT".into(); word_count],
+                vec!["DONE".into()],
+            ),
+            ..ParseConfig::default()
+        };
+        let sources = ["* CONFIGURED_WAIT λ\n"; 8];
+        let individual = parse_org_aot_with_config(sources[0], &config).unwrap();
+        for document in parse_org_aot_batch(&sources, &config).unwrap() {
+            let document = document.unwrap();
+            assert_eq!(
+                document.config.todo_keywords,
+                individual.config.todo_keywords
+            );
+            for record in document.records() {
+                assert_eq!(
+                    document.headline_todo_type(record.id),
+                    individual.headline_todo_type(record.id)
+                );
+                assert_eq!(
+                    document.headline_todo_keyword(record.id),
+                    individual.headline_todo_keyword(record.id)
+                );
+            }
         }
     }
     assert!(

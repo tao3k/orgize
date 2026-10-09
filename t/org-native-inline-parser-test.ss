@@ -4,7 +4,7 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in "../languages/org/modules/org-parser/macro-funs.ss"
                  expand-org-macro-template expand-org-property-macros)
-        (only-in :clan/poo/object .o)
+        (only-in :clan/poo/object .o .cc)
         (only-in :gerbil-parser/src/modules/parser/line-structure-objects
                  line-structure-blocks)
         (only-in "../languages/org/parser.ss" org-line-structure)
@@ -19,7 +19,7 @@
                  make-org-inline-markup org-inline-markup-node
                  make-org-inline-script org-inline-script-node
                  make-org-event-helper org-event-helper-descriptor
-                 make-org-event-strategy org-event-strategy-root)
+                 make-org-event-strategy org-event-strategy-root org-event-strategy-helper-descriptors org-event-strategy-program)
         (only-in "org-parser-test-support.ss" check-org-ast-with org-events-cover-source?)
         (only-in "../languages/org/native-event-runtime.ss"
                  parse-org-native-events
@@ -89,6 +89,18 @@
         (check (org-event-helper? '(source-fragment () ())) => #f)
         (check (org-event-strategy? strategy) => #t)
         (check (org-event-strategy-root strategy) => 'OrgFile)
+        (check (org-event-strategy-helper-descriptors strategy)
+               => (list (org-event-helper-descriptor helper)))
+        (check (eq? (org-event-strategy-helper-descriptors strategy)
+                    (org-event-strategy-helper-descriptors strategy)) => #t)
+        (check (eq? (org-event-strategy-program strategy)
+                    (org-event-strategy-program strategy)) => #t)
+        (let (refined (.cc strategy helpers: '()))
+          (check (eq? (org-event-strategy-program refined)
+                      (org-event-strategy-program strategy)) => #f)
+          (check (org-event-strategy-helper-descriptors refined) => '())
+          (check (org-event-strategy-helper-descriptors strategy)
+                 => (list (org-event-helper-descriptor helper))))
         (check (org-event-block? '(1 . block)) => #f)
         (check (org-named-block? '("#+BEGIN_" . "#+END_")) => #f)
         (check (org-inline-markup? '(42 3 OrgBold)) => #f)

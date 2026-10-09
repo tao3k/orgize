@@ -99,6 +99,7 @@
        (.slot? value 'kind) (.slot? value 'root)
        (.slot? value 'initial) (.slot? value 'line-forms)
        (.slot? value 'finish-forms) (.slot? value 'helpers)
+       (.slot? value 'helper-descriptors) (.slot? value 'program)
        (.slot? value 'parameters)
        (eq? (.ref value 'kind) +org-event-strategy-kind+)
        (symbol? (.ref value 'root))

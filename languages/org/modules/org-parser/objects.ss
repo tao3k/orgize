@@ -27,7 +27,7 @@
         make-org-event-strategy org-event-strategy-root
         org-event-strategy-initial org-event-strategy-line-forms
         org-event-strategy-finish-forms org-event-strategy-helpers
-        org-event-strategy-program
+        org-event-strategy-program org-event-strategy-helper-descriptors
         org-event-strategy-parameters)
 
 (def (make-org-event-block id-value rule-value)
@@ -99,14 +99,16 @@
 (def (make-org-event-strategy root-value initial-value line-forms-value
                               finish-forms-value helpers-value
                               (parameters-value '()))
-  (let (value (.o kind: +org-event-strategy-kind+
+  (let (value (.o (:: self) kind: +org-event-strategy-kind+
                   root: root-value initial: initial-value
                   line-forms: line-forms-value
                   finish-forms: finish-forms-value
                   helpers: helpers-value
+                  helper-descriptors: (map org-event-helper-descriptor (.ref self 'helpers))
                   program: (prepare-event-fold-program
-                            root-value initial-value line-forms-value finish-forms-value
-                            (map org-event-helper-descriptor helpers-value))
+                            (.ref self 'root) (.ref self 'initial)
+                            (.ref self 'line-forms) (.ref self 'finish-forms)
+                            (.ref self 'helper-descriptors))
                   parameters: parameters-value))
     (unless (org-event-strategy? value)
       (error "invalid Org event strategy" value))
@@ -119,3 +121,6 @@
 (def (org-event-strategy-helpers value) (.ref value 'helpers))
 (def (org-event-strategy-parameters value) (.ref value 'parameters))
 (def (org-event-strategy-program value) (.ref value 'program))
+
+;; The immutable strategy owns its derived IR; document calls only read it.
+(def (org-event-strategy-helper-descriptors value) (.ref value 'helper-descriptors))

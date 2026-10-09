@@ -200,7 +200,7 @@ fn collect_feed_status(
     plan: &mut RuntimeMetadataPlan,
 ) {
     let body = drawer_body(&element.ann);
-    let row = super::org_native_values::optional("feed-status", &body).expect("native feed row");
+    let row = super::org_native_values::optional("feed-status", body).expect("native feed row");
     let [raw_body, readable, count]: [String; 3] = row.try_into().expect("native feed arity");
     let readable = match readable.as_str() {
         "true" => true,

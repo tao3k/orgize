@@ -179,7 +179,7 @@ pub(super) fn index_org_document_with_query(
                     .get(&usize::from(record.range.start()))
                     .copied()
                     .ok_or_else(|| "AOT section lacks its headline node".to_string())?;
-                push_headline(&context, &document, record, range, &mut facts);
+                push_headline(&context, document, record, range, &mut facts);
             }
             "property-drawer" => {
                 for property in record

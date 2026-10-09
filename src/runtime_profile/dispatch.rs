@@ -38,7 +38,7 @@ pub(crate) fn stage<T>(name: &'static str, work: impl FnOnce() -> T) -> T {
 pub(crate) fn operation<T>(operation: u8, work: impl FnOnce() -> T) -> T {
     #[cfg(feature = "runtime-profile")]
     {
-        const NAMES: [&str; 24] = [
+        const NAMES: [&str; 25] = [
             "native.operation.00",
             "native.operation.01",
             "native.operation.02",
@@ -63,6 +63,7 @@ pub(crate) fn operation<T>(operation: u8, work: impl FnOnce() -> T) -> T {
             "native.operation.21",
             "native.operation.22",
             "native.operation.23",
+            "native.operation.24",
         ];
         stage(NAMES[usize::from(operation)], work)
     }

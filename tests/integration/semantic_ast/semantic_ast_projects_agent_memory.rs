@@ -302,12 +302,24 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
     let (elapsed, records) = (0..5)
         .map(|_| {
             let started_at = Instant::now();
-            let records = query_org_memory_records(
-                &artifacts,
-                &DocumentWalkConfig::default(),
-                &OrgMemorySearchOptions::plan_ledgers(),
-            )
-            .expect("query plan ledgers");
+            let query = || {
+                query_org_memory_records(
+                    &artifacts,
+                    &DocumentWalkConfig::default(),
+                    &OrgMemorySearchOptions::plan_ledgers(),
+                )
+            };
+            #[cfg(feature = "runtime-profile")]
+            let records = {
+                let (records, stages) = orgize::runtime_profile::measure(query);
+                if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER").is_some() {
+                    eprintln!("plan ledger request-local stages (nanoseconds): {stages:?}");
+                }
+                records
+            };
+            #[cfg(not(feature = "runtime-profile"))]
+            let records = query();
+            let records = records.expect("query plan ledgers");
             (started_at.elapsed(), records)
         })
         .min_by_key(|(elapsed, _)| *elapsed)

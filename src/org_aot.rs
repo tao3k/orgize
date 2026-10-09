@@ -35,6 +35,8 @@ mod affiliation;
 mod event_identity;
 #[path = "org_aot_keyword_view.rs"]
 mod keyword_view;
+#[path = "org_aot_metadata_batch.rs"]
+mod metadata_batch;
 #[path = "org_native_semantic_functions.rs"]
 mod native_functions;
 
@@ -191,15 +193,17 @@ pub(crate) fn parse_org_aot_batch(
         &grammar::LANGUAGE,
     )
     .map_err(OrgAotError::Native)?;
-    Ok(sources
+    let prepared = sources
         .iter()
         .zip(outcomes)
         .map(|(source, events)| {
             events
                 .map_err(OrgAotError::Native)
-                .and_then(|events| parse_org_aot_events(source, events, config))
+                .and_then(|events| parse_event_artifact(source, events))
+                .and_then(|parse| prepare_document(parse, config))
         })
-        .collect())
+        .collect::<Vec<_>>();
+    metadata_batch::finish(prepared, config)
 }
 
 #[cfg(test)]
@@ -211,7 +215,14 @@ fn parse_org_aot_events(
     events: Vec<gerbil_parser_runtime::TreeEvent>,
     config: &ParseConfig,
 ) -> Result<OrgAotDocument, OrgAotError> {
-    let parse = crate::runtime_profile::stage("artifact.syntax_index", || {
+    document_from_parse(parse_event_artifact(source, events)?, config)
+}
+
+fn parse_event_artifact(
+    source: &str,
+    events: Vec<gerbil_parser_runtime::TreeEvent>,
+) -> Result<Parse, OrgAotError> {
+    crate::runtime_profile::stage("artifact.syntax_index", || {
         parse_generated_events(
             &grammar::LANGUAGE,
             event_identity::NATIVE_PARSER_DIGEST,
@@ -219,8 +230,7 @@ fn parse_org_aot_events(
             &events,
         )
     })
-    .map_err(OrgAotError::Parse)?;
-    document_from_parse(parse, config)
+    .map_err(OrgAotError::Parse)
 }
 
 pub(crate) fn org_image_link(target: &str) -> bool {
@@ -247,7 +257,17 @@ pub(crate) fn org_expand_link_abbreviation(
     native_functions::org_expand_link_abbreviation(replacement, path, encoded_path)
 }
 
-fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
+struct PreparedDocument {
+    parse: Parse,
+    records: Vec<GraphRecord>,
+    graph_index: GraphIndex,
+    headline_ancestors: Vec<Option<usize>>,
+    keyword_ids: Vec<usize>,
+    title_ids: Vec<usize>,
+    fields: Vec<String>,
+}
+
+fn prepare_document(parse: Parse, config: &ParseConfig) -> Result<PreparedDocument, OrgAotError> {
     let records = crate::runtime_profile::stage("graph.project", || {
         project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
     })
@@ -301,16 +321,48 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
             r.field("tag").is_some().to_string(),
         ]);
     }
-    let refs = fields.iter().map(String::as_str).collect::<Vec<_>>();
-    let mut rows = native_semantic_rows(17, &refs).map_err(OrgAotError::Native)?;
-    if rows.len() < titles.len() + 1 {
+    let keyword_ids = keyword_records.iter().map(|record| record.id).collect();
+    let title_ids = titles.iter().map(|record| record.id).collect();
+    Ok(PreparedDocument {
+        parse,
+        records,
+        graph_index,
+        headline_ancestors,
+        keyword_ids,
+        title_ids,
+        fields,
+    })
+}
+
+fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
+    let prepared = prepare_document(parse, config)?;
+    let refs = prepared
+        .fields
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+    let rows = native_semantic_rows(17, &refs).map_err(OrgAotError::Native)?;
+    finish_document(prepared, rows, config)
+}
+
+fn finish_document(
+    prepared: PreparedDocument,
+    mut rows: Vec<Vec<String>>,
+    config: &ParseConfig,
+) -> Result<OrgAotDocument, OrgAotError> {
+    let PreparedDocument {
+        parse,
+        records,
+        graph_index,
+        headline_ancestors,
+        keyword_ids,
+        title_ids,
+        fields: _,
+    } = prepared;
+    if rows.len() < title_ids.len() + 1 {
         return Err(OrgAotError::Native("truncated native document rows".into()));
     }
-    let keyword_rows = rows.split_off(titles.len() + 1);
-    let keyword_ids = keyword_records
-        .iter()
-        .map(|record| record.id)
-        .collect::<Vec<_>>();
+    let keyword_rows = rows.split_off(title_ids.len() + 1);
     let keyword_plans = keyword_view::KeywordPlans::admit(&keyword_ids, keyword_rows)
         .map_err(OrgAotError::Native)?;
     let config_row = &rows[0];
@@ -330,7 +382,7 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
     let mut headline_properties = std::iter::repeat_with(|| None)
         .take(records.len())
         .collect::<Vec<_>>();
-    for (r, row) in titles.into_iter().zip(rows.into_iter().skip(1)) {
+    for (id, row) in title_ids.into_iter().zip(rows.into_iter().skip(1)) {
         let [
             state,
             keyword,
@@ -351,7 +403,7 @@ fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocum
             "false" => false,
             _ => panic!("native comment flag"),
         };
-        headline_properties[r.id] = Some(HeadlineProperties {
+        headline_properties[id] = Some(HeadlineProperties {
             todo_type,
             details: OnceLock::from(HeadlineDetails {
                 todo_keyword: (!keyword.is_empty()).then_some(keyword),

@@ -391,7 +391,7 @@ pub(crate) fn semantic_fields(
     operation: u8,
     fields: &[&str],
 ) -> Result<Vec<NativeExpressionValue>, String> {
-    if !(8..=23).contains(&operation) || fields.is_empty() {
+    if !(8..=24).contains(&operation) || fields.is_empty() {
         return Err("invalid native semantic operation".into());
     }
     let mut bytes = Vec::new();
