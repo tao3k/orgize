@@ -387,7 +387,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=5eb457b04c24614ff798a063d4600030e03df815#5eb457b04c24614ff798a063d4600030e03df815"
 dependencies = [
  "gerbil-scheme-rust-project-harness-policy",
  "gerbil-scheme-sys",
@@ -396,11 +396,12 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-native-build"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=5eb457b04c24614ff798a063d4600030e03df815#5eb457b04c24614ff798a063d4600030e03df815"
 dependencies = [
  "cbindgen",
  "cc",
  "gerbil-scheme-rust-project-harness-policy",
+ "pkg-config",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -409,7 +410,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-rust-project-harness"
 version = "0.1.2"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=5eb457b04c24614ff798a063d4600030e03df815#5eb457b04c24614ff798a063d4600030e03df815"
 dependencies = [
  "cargo-lock",
  "cargo_toml",
@@ -427,7 +428,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-rust-project-harness-policy"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=5eb457b04c24614ff798a063d4600030e03df815#5eb457b04c24614ff798a063d4600030e03df815"
 dependencies = [
  "gerbil-scheme-rust-project-harness",
 ]
@@ -435,7 +436,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-sys"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4#1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=5eb457b04c24614ff798a063d4600030e03df815#5eb457b04c24614ff798a063d4600030e03df815"
 dependencies = [
  "gerbil-scheme-native-build",
  "gerbil-scheme-rust-project-harness-policy",
@@ -719,7 +720,6 @@ name = "orgize-build-support"
 version = "0.1.0"
 dependencies = [
  "gerbil-scheme-native-build",
- "pkg-config",
  "serde",
  "serde_json",
  "sha2 0.10.9",

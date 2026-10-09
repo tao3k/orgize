@@ -4,8 +4,8 @@
 (import (only-in :std/build-script defbuild-script))
 (def orgize-native-include
   (string-append "-I" (path-expand "bindings/c/include")))
-(defbuild-script
- `("languages/org/grammar"
+(def orgize-syntax-modules
+ '("languages/org/grammar"
    "languages/org/parser"
    "languages/org/modules/org-parser/entity-names"
    "languages/org/modules/org-parser/event-babel-call"
@@ -35,9 +35,13 @@
    "languages/org/modules/org-parser/event-table-formula"
    "languages/org/modules/org-parser/event-table"
    "languages/org/modules/org-parser/event-tag-vocabulary"
-   "languages/org/modules/org-parser/runtime-funs"
    "languages/org/modules/org-parser/objects"
-   "languages/org/modules/org-parser/types"
+   "languages/org/modules/org-parser/types"))
+
+(defbuild-script
+ (if (getenv "ORGIZE_BUILD_SYNTAX_ONLY" #f)
+   orgize-syntax-modules
+ `(,@orgize-syntax-modules
    "languages/org/native-event-runtime"
    "languages/org/modules/org-parser/macro-funs"
    "languages/org/modules/org-parser/text-funs"
@@ -85,4 +89,4 @@
       (else `((gxc: "bindings/c/orgize-scheme-runtime" "-cc-options" ,orgize-native-include))))
    ,@(cond-expand
       (darwin '((gxc: "bindings/c/orgize-parser" "-ld-options" "-Wl,-undefined,dynamic_lookup")))
-      (else '("bindings/c/orgize-parser")))))
+      (else '("bindings/c/orgize-parser"))))))

@@ -64,10 +64,10 @@ native-parser-program-source-negative-check previous parser_output org_output pr
 native-alignment-dependency-check parser_source bridge_source:
     just native-task-layout-check
     just native-parser-revision-check "{{ parser_source }}" "{{ parser_revision }}"
-    test "$(git -C '{{ bridge_source }}' rev-parse HEAD)" = 1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4
-    rg --fixed-strings --quiet 'rev = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"' build-support/Cargo.toml
-    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-scheme-rust@1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4' gerbil.pkg
-    ! rg --quiet 'source = "git\+https://github.com/tao3k/gerbil-scheme-rust\?rev=(?!1e4f1f65)' Cargo.lock --pcre2
+    test "$(git -C '{{ bridge_source }}' rev-parse HEAD)" = "{{ bridge_revision }}"
+    rg --fixed-strings --quiet 'rev = "{{ bridge_revision }}"' Cargo.toml build-support/Cargo.toml
+    rg --fixed-strings --quiet 'git+https://github.com/tao3k/gerbil-scheme-rust?rev={{ bridge_revision }}#{{ bridge_revision }}' Cargo.lock fuzz/Cargo.lock
+    ! rg --quiet 'source = "git\+https://github.com/tao3k/gerbil-scheme-rust\?rev=(?!{{ bridge_revision }})' Cargo.lock fuzz/Cargo.lock --pcre2
     ! rg --quiet -- "--config ['\"]patch[.]" Justfile just
     just native-dependency-check
 
@@ -98,7 +98,7 @@ native-semantic-wrapper-warning-check output:
 native-build-support-test output:
     mkdir -p "{{ output }}"
     {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo test --offline --locked --release -p orgize-build-support --lib -- --nocapture 2>&1 | tee "{{ output }}/build-support-test.log"
-    rg --quiet '^test result: ok\. 5 passed; 0 failed;' "{{ output }}/build-support-test.log"
+    rg --quiet '^test result: ok\. 8 passed; 0 failed;' "{{ output }}/build-support-test.log"
     ! rg --quiet 'FAILED|panicked at' "{{ output }}/build-support-test.log"
 
 # Compile the ownership policy alone: no native build or parser substitutes.

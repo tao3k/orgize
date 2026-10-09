@@ -288,6 +288,12 @@ native-parser-lock-update:
     cargo update -p gerbil-parser-runtime -p gerbil-parser-artifact
     cargo update --manifest-path fuzz/Cargo.toml -p gerbil-parser-runtime -p gerbil-parser-artifact
 
+# The bridge owns SDK discovery and complete native link receipts.
+[group('runtime')]
+native-bridge-lock-update:
+    cargo update -p gerbil-scheme -p gerbil-scheme-sys -p gerbil-scheme-native-build
+    cargo update --manifest-path fuzz/Cargo.toml -p gerbil-scheme -p gerbil-scheme-sys -p gerbil-scheme-native-build
+
 # Normal pinned upstream dependencies, without local bridge overrides.
 [group('runtime')]
 native-runtime-check-owner manifest gsc runtime="runtime-rust" profile="dev" verbosity="":

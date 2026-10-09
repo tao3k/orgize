@@ -38,13 +38,17 @@ response framing, and builds the same source-backed syntax/Element projections. 
 single-document configuration fields retain the existing individual call.
 This batching does not change public contract versions or performance budgets.
 
-The POO strategy owns a memoized helper-descriptor projection. Refining its
-helper slot creates the corresponding derived descriptors on the refined
-value; document calls do not reconstruct the invariant strategy IR. This is
-strategy-local POO derivation, with no process-wide document cache. The prepared
-event-fold program derives from the same strategy slots, so refining grammar or
-helpers also prepares the corresponding program.
+POO strategy declarations stay in the build lane. The engine lowers both
+document and secondary inline strategies into bounded native Scheme units.
+The runtime imports these generated products, not the generic EventFold
+interpreter or the declaration factory. Parameter overrides remain call-scoped.
+The producer archive contract requires both products and rejects an interpreted
+Fold or Org declaration module in the executable closure.
 
 The bundle carries static OpenSSL, zlib, and SQLite dependencies declared by Gambit. Platform C libraries remain platform links. Every carried archive is bound by its digest; consumer builds do not inherit producer library search paths.
 
-Producer export resolves declared OpenSSL, zlib and SQLite archives from the compiler receipt, or their package metadata when the receipt omits implicit system directories or contains stale SDK paths. Missing metadata or archives rejects publication. No producer directory is exported to consumers.
+Library discovery belongs to the shared native-build owner. Orgize packages
+only archives located by its link receipt; missing static archives fail export,
+without downstream package probing or environment-path discovery.
+Repeated exports replace read-only SDK
+inputs by publishing new files, without changing permissions on the SDK.

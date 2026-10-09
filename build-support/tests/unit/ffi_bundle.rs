@@ -123,19 +123,49 @@ fn producer_carries_non_platform_dependencies() {
     assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
 }
 
-#[cfg(unix)]
 #[test]
 fn repeated_export_replaces_read_only_sdk_archives() {
-    use std::os::unix::fs::PermissionsExt;
     let (root, directory, _) = fixture();
     let source = root.0.join("sdk.a");
-    fs::write(&source, "current SDK archive").unwrap();
-    fs::set_permissions(&source, fs::Permissions::from_mode(0o444)).unwrap();
-    let destination = directory.join("libgambit.a");
-    fs::set_permissions(&destination, fs::Permissions::from_mode(0o444)).unwrap();
+    fs::write(&source, "first archive").unwrap();
+    let mut permissions = fs::metadata(&source).unwrap().permissions();
+    permissions.set_readonly(true);
+    fs::set_permissions(&source, permissions.clone()).unwrap();
     let mut files = BTreeMap::new();
     copy_file(&source, &directory, "libgambit.a", &mut files).unwrap();
+    fs::set_permissions(directory.join("libgambit.a"), permissions).unwrap();
     copy_file(&source, &directory, "libgambit.a", &mut files).unwrap();
-    assert_eq!(fs::read(&destination).unwrap(), b"current SDK archive");
-    assert_eq!(files["libgambit.a"], digest(&destination).unwrap());
+    let replacement = root.0.join("replacement.a");
+    fs::write(&replacement, "second archive").unwrap();
+    copy_file(&replacement, &directory, "libgambit.a", &mut files).unwrap();
+    assert_eq!(
+        fs::read(directory.join("libgambit.a")).unwrap(),
+        b"second archive"
+    );
+    assert_eq!(fs::read(&source).unwrap(), b"first archive");
+    assert!(fs::metadata(&source).unwrap().permissions().readonly());
+    assert_eq!(
+        files["libgambit.a"],
+        digest(&directory.join("libgambit.a")).unwrap()
+    );
+    assert!(!fs::read_dir(&directory).unwrap().any(|entry| {
+        entry
+            .unwrap()
+            .file_name()
+            .to_string_lossy()
+            .ends_with(".tmp")
+    }));
+}
+
+#[test]
+fn producer_search_paths_are_authoritative_and_missing_archives_fail_closed() {
+    let (root, _, _) = fixture();
+    let path = root.0.join("target-libraries");
+    fs::create_dir(&path).unwrap();
+    fs::write(path.join("libcrypto.a"), "target crypto").unwrap();
+    assert_eq!(
+        receipt_dependency("libcrypto.a", &[path.clone()]).unwrap(),
+        path.join("libcrypto.a")
+    );
+    assert!(receipt_dependency("libforeign.a", &[path]).is_err());
 }

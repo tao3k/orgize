@@ -5,12 +5,15 @@ use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     env, fs,
+    io::Write,
     path::{Path, PathBuf},
     process::Command,
+    sync::atomic::{AtomicU64, Ordering},
 };
 
-const RUNTIME_REVISION: &str = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4";
+const RUNTIME_REVISION: &str = "5eb457b04c24614ff798a063d4600030e03df815";
 const HEADERS: &[&str] = &["orgize.h", "orgize_runtime.h"];
+static NEXT_COPY: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -65,52 +68,48 @@ fn bundle_library(library: &str) -> String {
     }
 }
 
-fn dependency_archive(library: &str, search: &[PathBuf]) -> Result<PathBuf, String> {
-    let name = library_file(library)?;
-    if let Some(source) = search
-        .iter()
-        .map(|path| path.join(&name))
-        .find(|path| path.is_file())
-    {
-        return Ok(source);
-    }
-    // Resolve declared SDK dependencies through their package metadata. System
-    // link directories may be implicit, and installed SDK paths may be stale.
-    let package = match library {
-        "static=crypto" => "libcrypto",
-        "static=ssl" => "libssl",
-        "static=z" => "zlib",
-        "static=sqlite3" => "sqlite3",
-        _ => return Err(format!("missing producer static dependency {library}")),
-    };
-    let directory = pkg_config::get_variable(package, "libdir")
-        .map_err(|error| format!("resolve producer dependency {package}: {error}"))?;
-    let source = PathBuf::from(directory).join(name);
-    if !source.is_file() {
-        return Err(format!(
-            "missing declared producer archive {}",
-            source.display()
-        ));
-    }
-    Ok(source)
-}
-
 fn copy_file(
     source: &Path,
     bundle: &Path,
     name: &str,
     files: &mut BTreeMap<String, String>,
 ) -> Result<(), String> {
-    // SDK archives can be read-only. Replace the destination directory entry
-    // instead of opening an earlier export for writing.
-    let staged = bundle.join(format!(".publish-{}-{name}", std::process::id()));
-    fs::copy(source, &staged).map_err(|error| format!("stage {}: {error}", source.display()))?;
-    if let Err(error) = fs::rename(&staged, bundle.join(name)) {
-        let _ = fs::remove_file(&staged);
+    // SDK archives may be read-only. Do not propagate their permissions into
+    // the export, or overwrite a previous export in place. Publish each file
+    // by rename so repeated Cargo profiles can replace it without chmod.
+    let bytes = fs::read(source).map_err(|error| format!("read {}: {error}", source.display()))?;
+    let temporary = bundle.join(format!(
+        ".{name}.{}-{}.tmp",
+        std::process::id(),
+        NEXT_COPY.fetch_add(1, Ordering::Relaxed)
+    ));
+    let mut output = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary)
+        .map_err(|error| format!("create {name}: {error}"))?;
+    let result = (|| {
+        output.write_all(&bytes)?;
+        drop(output);
+        fs::rename(&temporary, bundle.join(name))
+    })();
+    if let Err(error) = result {
+        let _ = fs::remove_file(&temporary);
         return Err(format!("publish {name}: {error}"));
     }
-    files.insert(name.to_owned(), digest(&bundle.join(name))?);
+    files.insert(
+        name.to_owned(),
+        format!("sha256:{:x}", Sha256::digest(bytes)),
+    );
     Ok(())
+}
+
+fn receipt_dependency(name: &str, search: &[PathBuf]) -> Result<PathBuf, String> {
+    search
+        .iter()
+        .map(|path| path.join(name))
+        .find(|path| path.is_file())
+        .ok_or_else(|| format!("incomplete native-build receipt: missing static dependency {name}"))
 }
 
 pub(crate) fn publish(
@@ -146,7 +145,7 @@ pub(crate) fn publish(
     for library in &libraries {
         let name = library_file(library)?;
         if library.starts_with("static=") {
-            let source = dependency_archive(library, &search)?;
+            let source = receipt_dependency(&name, &search)?;
             copy_file(&source, &directory, &name, &mut files)?;
         }
     }

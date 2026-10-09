@@ -98,8 +98,14 @@ pub fn write_org_native_program() {
             required_modules: &[
                 "gerbil-scheme-rust/scheme/native",
                 "orgize/bindings/c/orgize-parser",
+                "orgize/native-fold/parse-org-compiled-events",
+                "orgize/native-fold/parse-org-compiled-inline-events",
             ],
-            forbidden_modules: &[],
+            forbidden_modules: &[
+                "gerbil-parser/src/compiler/event-fold-runtime",
+                "orgize/languages/org/modules/org-parser/event-strategy",
+                "orgize/languages/org/modules/org-parser/runtime-funs",
+            ],
             linker_main_symbol: "gerbil_scheme_rust_program_main",
             additional_objects: &[],
             native_headers: &native_headers,

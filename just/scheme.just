@@ -307,8 +307,15 @@ scheme-parser-build load_path cores="12":
 [group('scheme')]
 scheme-parser-build-isolated output load_path cores="12":
     mkdir -p "{{ output }}"
+    {{ scheme_env }} ORGIZE_BUILD_SYNTAX_ONLY=1 GERBIL_BUILD_CORES="{{ cores }}" GERBIL_BUILD_VERBOSE=1 GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gxi build-parser.ss compile --optimized
+    just scheme-native-fold-production-build "{{ output }}" "{{ output }}/lib:{{ load_path }}"
     {{ scheme_env }} GERBIL_BUILD_CORES="{{ cores }}" GERBIL_BUILD_VERBOSE=1 GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gxi build.ss compile --optimized
     {{ scheme_env }} GERBIL_BUILD_CORES="{{ cores }}" GERBIL_BUILD_VERBOSE=1 GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gxi build-parser.ss compile --optimized
+
+[private]
+scheme-native-fold-production-build output load_path:
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ load_path }}" gxi languages/org/generate-native-fold.ss "{{ output }}"
+    ! rg --quiet 'event-fold-runtime|fold-statements|fold-predicate|run-event-fold|eval ' "{{ output }}"/parse-org-compiled*.ss
 
 # Refresh the private bounded batch projector in a separate compiler-owned
 # program. Its unchanged dependency closure comes from explicit compiled libs.
