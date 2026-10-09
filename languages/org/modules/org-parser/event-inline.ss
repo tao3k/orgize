@@ -2,7 +2,7 @@
 ;;; POO-declared inline links are folded as source-backed text-line events.
 
 (import (only-in :gerbil-parser/src/modules/parser/interface
-                 source-pattern-end source-pattern-at?)
+                 source-pattern-end source-pattern-at? source-priority-forms)
         (only-in "event-inline-primitives.ss"
                  link-index inline-next)
         (only-in "event-inline-link.ss"
@@ -674,25 +674,26 @@
           ,citation-or-fallback))))
 
 (def (inline-ordinary-free-scan-forms nested-description? allow-citation?)
-  `((if (and (state inline-code-left-boundary)
-             (line-byte-equal? ,link-index 115)
-             ,(source-pattern-at? link-index "src_"))
-        ,(inline-code-open-forms 1 "src_")
-        ((if (and (state inline-code-left-boundary)
-                  (line-byte-equal? ,link-index 99)
-                  ,(source-pattern-at? link-index "call_"))
-             ,(inline-code-open-forms 2 "call_")
-             ((if (line-byte-equal? ,link-index 91)
-                  ,(inline-bracket-open-forms nested-description? allow-citation?)
-                  ((if (line-byte-equal? ,link-index 60)
-                       ,(timestamp-open-forms)
-                       ((if ,(source-pattern-at? link-index "@@")
-                       ,(export-snippet-open-forms)
-                       ((if ,(line-break-at?)
-                            ,(line-break-events)
-                            ((if (line-byte-equal? ,link-index 36)
-                                 ,(latex-open-forms)
-                                 ,(markup-scan-forms))))))))))))))))
+  (source-priority-forms
+   `((and (state inline-code-left-boundary)
+          (line-byte-equal? ,link-index 115)
+          ,(source-pattern-at? link-index "src_"))
+     (and (state inline-code-left-boundary)
+          (line-byte-equal? ,link-index 99)
+          ,(source-pattern-at? link-index "call_"))
+     (line-byte-equal? ,link-index 91)
+     (line-byte-equal? ,link-index 60)
+     ,(source-pattern-at? link-index "@@")
+     ,(line-break-at?)
+     (line-byte-equal? ,link-index 36))
+   (list (inline-code-open-forms 1 "src_")
+         (inline-code-open-forms 2 "call_")
+         (inline-bracket-open-forms nested-description? allow-citation?)
+         (timestamp-open-forms)
+         (export-snippet-open-forms)
+         (line-break-events)
+         (latex-open-forms))
+   (markup-scan-forms)))
 
 (def (inline-free-scan-forms nested-description? allow-citation?)
   (let* ((ordinary-free
@@ -717,48 +718,43 @@
 
 (def (inline-ordinary-non-code-scan-forms nested-description? allow-citation?)
   (let (ordinary
-        `((if (uint-positive? (state inline-timestamp-mode))
-        ,(timestamp-scan-forms)
-        ((if (uint-positive? (state inline-footnote-mode))
-        ,(if nested-description? '() (footnote-reference-scan-forms))
-        ((if (uint-positive? (state inline-export-mode))
-             ,(export-snippet-scan-forms)
-             ((if (uint-positive? (state inline-delimited-kind))
-                  ((if (uint-greater? (state inline-delimited-kind) (uint 3))
-                       ,(statistics-cookie-scan-forms)
-                       ,(target-scan-forms)))
-                  ((if (state inline-open)
-                       ,(link-scan-forms nested-description?)
-                       ((if ,(source-pattern-at? link-index "<<")
-                            ((set-uint inline-markup-kind (uint 0))
-                             ,@(target-open-forms))
-                            ((if (and (uint-positive? (state inline-markup-kind))
-                                      ,(source-pattern-at? link-index link-open))
-                                 ((set-uint inline-markup-kind (uint 0))) ())
-                             (if (uint-positive? (state inline-markup-kind))
-                                 ,(markup-scan-forms)
-                                 ,(inline-free-scan-forms nested-description? allow-citation?))))))))))))))))
-    (if nested-description?
-      ordinary
-      `((if (uint-positive? (state inline-url-kind))
-             ,(url-link-scan-forms)
-             ,ordinary)))))
+        (source-priority-forms
+         `((uint-positive? (state inline-timestamp-mode))
+           (uint-positive? (state inline-footnote-mode))
+           (uint-positive? (state inline-export-mode))
+           (uint-positive? (state inline-delimited-kind))
+           (state inline-open)
+           ,(source-pattern-at? link-index "<<"))
+         (list (timestamp-scan-forms)
+               (if nested-description? '() (footnote-reference-scan-forms))
+               (export-snippet-scan-forms)
+               `((if (uint-greater? (state inline-delimited-kind) (uint 3))
+                     ,(statistics-cookie-scan-forms) ,(target-scan-forms)))
+               (link-scan-forms nested-description?)
+               `((set-uint inline-markup-kind (uint 0))
+                 ,@(target-open-forms)))
+         `((if (and (uint-positive? (state inline-markup-kind))
+                    ,(source-pattern-at? link-index link-open))
+               ((set-uint inline-markup-kind (uint 0))) ())
+           (if (uint-positive? (state inline-markup-kind))
+               ,(markup-scan-forms)
+               ,(inline-free-scan-forms nested-description? allow-citation?)))))
+    (if nested-description? ordinary
+      (source-priority-forms
+       '((uint-positive? (state inline-url-kind)))
+       (list (url-link-scan-forms)) ordinary))))
 
 (def (inline-non-code-scan-forms nested-description? allow-citation?)
-  (let ((ordinary
-         (inline-ordinary-non-code-scan-forms nested-description? allow-citation?)))
-    (let (without-cloze
-          `((if (uint-positive? (state inline-macro-mode))
-                ,(macro-scan-forms)
-                ,(if allow-citation?
-                     `((if (uint-positive? (state inline-citation-mode))
-                           ,(citation-scan-forms)
-                           ,ordinary))
-                     ordinary))))
-      (if nested-description? without-cloze
-          `((if (uint-positive? (state inline-cloze-mode))
-                ,(cloze-scan-forms)
-                ,without-cloze))))))
+  (source-priority-forms
+   (append (if nested-description? '()
+               '((uint-positive? (state inline-cloze-mode))))
+           '((uint-positive? (state inline-macro-mode)))
+           (if allow-citation?
+               '((uint-positive? (state inline-citation-mode))) '()))
+   (append (if nested-description? '() (list (cloze-scan-forms)))
+           (list (macro-scan-forms))
+           (if allow-citation? (list (citation-scan-forms)) '()))
+   (inline-ordinary-non-code-scan-forms nested-description? allow-citation?)))
 
 (def (inline-scan-forms nested-description? allow-citation?)
   `((if (and (uint-positive? (state inline-citation-mode))

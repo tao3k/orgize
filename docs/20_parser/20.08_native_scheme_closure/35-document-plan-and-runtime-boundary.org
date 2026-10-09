@@ -407,3 +407,29 @@ pin qualification. The dense benchmark watchdog remains failed. The candidate
 is isolated and unpublished; the prior Rust extension is restored after testing.
 Upstream's main checkout has other dirty files and a newer local unpublished
 HEAD, so this work has not committed or pushed into its existing PR.
+
+* Engine priority projection and native process replacement (2026-10-09)
+
+Parser PR #13 revision =7449072d= includes the latest =8b70acb2= FOLLOW
+closure changes. Its pure =source-priority-forms= projection now owns ordered
+choice construction. Org retains its predicates and domain actions; matching
+an empty action still suppresses later alternatives. Four inline dispatch
+projections use the shared operation without introducing another evaluator.
+
+Fresh parser SDK/import and Org production builds pass. The consumer inline
+catalog passes 38 cases; the fresh linked Scheme closure passes 178 cases and
+the deliberate assertion failure exits 42 without a final =OK=. Normal Cargo
+resolution synchronizes both lockfiles and the declared Scheme dependency.
+
+The parser qualification child now uses its existing native C FFI to replace
+itself with the target through =execvp=. The waiting GXI and exit-status
+sidecar are removed. Controls verify session-leader identity, UTF-8 argv,
+exec failure, signals, cancellation, escaped descendants and backpressure.
+Inherited Scheme interval timers are stopped before exec; no kernel change
+or standalone launcher binary is added. A private green-thread coordinator
+keeps invocation notifications out of the caller mailbox.
+
+This does not eliminate the isolation bootstrap's initial GXI startup, prove
+a throughput improvement, or close generic nested scanning/recovery APIs.
+The duplicate CI producer work and complete Rust/Python candidate admission
+remain separate gates; these Scheme receipts do not establish their closure.

@@ -1,5 +1,12 @@
 # scheme: native architecture task owner.
 
+# Qualify the consumer against an explicitly selected parser facade.
+[private]
+scheme-event-priority-test output load_path:
+    mkdir -p "{{ output }}"
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O languages/org/modules/org-parser/event-inline.ss t/org-native-inline-parser-test.ss
+    just scheme-native-module-test t/org-native-inline-parser-test.ss "{{ output }}" "{{ load_path }}"
+
 # OS clock calibration is a native test, not a production parser dependency.
 [private]
 scheme-native-runtime-statistics-test output:
