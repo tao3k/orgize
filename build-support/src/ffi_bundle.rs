@@ -65,6 +65,36 @@ fn bundle_library(library: &str) -> String {
     }
 }
 
+fn dependency_archive(library: &str, search: &[PathBuf]) -> Result<PathBuf, String> {
+    let name = library_file(library)?;
+    if let Some(source) = search
+        .iter()
+        .map(|path| path.join(&name))
+        .find(|path| path.is_file())
+    {
+        return Ok(source);
+    }
+    // Resolve declared SDK dependencies through their package metadata. System
+    // link directories may be implicit, and installed SDK paths may be stale.
+    let package = match library {
+        "static=crypto" => "libcrypto",
+        "static=ssl" => "libssl",
+        "static=z" => "zlib",
+        "static=sqlite3" => "sqlite3",
+        _ => return Err(format!("missing producer static dependency {library}")),
+    };
+    let directory = pkg_config::get_variable(package, "libdir")
+        .map_err(|error| format!("resolve producer dependency {package}: {error}"))?;
+    let source = PathBuf::from(directory).join(name);
+    if !source.is_file() {
+        return Err(format!(
+            "missing declared producer archive {}",
+            source.display()
+        ));
+    }
+    Ok(source)
+}
+
 fn copy_file(
     source: &Path,
     bundle: &Path,
@@ -109,11 +139,7 @@ pub(crate) fn publish(
     for library in &libraries {
         let name = library_file(library)?;
         if library.starts_with("static=") {
-            let source = search
-                .iter()
-                .map(|path| path.join(&name))
-                .find(|path| path.is_file())
-                .ok_or_else(|| format!("missing producer static dependency {library}"))?;
+            let source = dependency_archive(library, &search)?;
             copy_file(&source, &directory, &name, &mut files)?;
         }
     }

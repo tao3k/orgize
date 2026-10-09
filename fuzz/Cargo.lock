@@ -719,6 +719,7 @@ name = "orgize-build-support"
 version = "0.1.0"
 dependencies = [
  "gerbil-scheme-native-build",
+ "pkg-config",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -737,6 +738,12 @@ name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
+
+[[package]]
+name = "pkg-config"
+version = "0.3.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 
 [[package]]
 name = "potential_utf"

@@ -46,3 +46,5 @@ event-fold program derives from the same strategy slots, so refining grammar or
 helpers also prepares the corresponding program.
 
 The bundle carries static OpenSSL, zlib, and SQLite dependencies declared by Gambit. Platform C libraries remain platform links. Every carried archive is bound by its digest; consumer builds do not inherit producer library search paths.
+
+Producer export resolves declared OpenSSL, zlib and SQLite archives from the compiler receipt, or their package metadata when the receipt omits implicit system directories or contains stale SDK paths. Missing metadata or archives rejects publication. No producer directory is exported to consumers.
