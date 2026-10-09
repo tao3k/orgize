@@ -40,10 +40,10 @@ native-runtime-queue-test-receipt gsc output sanitizer="":
 
 # Qualify one immutable feature build; run after compilation, not alongside it.
 [group('runtime')]
-native-runtime-closure-test-receipt library consumers cutover index output runtime program:
+native-runtime-closure-test-receipt library consumers cutover index output runtime program ordinary_passed ignored:
     [[ "{{ runtime }}" == runtime-rust || "{{ runtime }}" == runtime-scheme ]]
     [[ "{{ program }}" =~ ^sha256:[0-9a-f]{64}$ ]]
-    just native-runtime-library-test-receipt "{{ library }}" "{{ output }}/library" {{ if runtime == "runtime-rust" { "35" } else { "34" } }} 4
+    just native-runtime-library-test-receipt "{{ library }}" "{{ output }}/library" "{{ ordinary_passed }}" "{{ ignored }}"
     just native-runtime-consumer-catalog-receipt "{{ consumers }}" "{{ output }}/consumers"
     rg --fixed-strings --quiet 'CONTRACT-CONTROL backend={{ runtime }} program={{ program }} ' "{{ output }}/consumers/consumer-catalog.log"
     just native-runtime-cutover-test-receipt "{{ cutover }}" "{{ output }}"
@@ -110,6 +110,11 @@ native-build-test bridge_source filter="native_command":
 [private]
 native-build-contract-test bridge_source:
     {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo test --offline --locked --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-native-build --test unit_test -- --nocapture
+
+# Qualify the upstream owner under the same Darwin SDK boundary as its tests.
+[private]
+native-build-clippy bridge_source:
+    {{ native_env }} {{ native_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo clippy --offline --locked --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-native-build --all-targets -- -D warnings
 
 [private]
 native-owner-program-build source:
@@ -213,7 +218,7 @@ native-runtime-consumer-matched-control reference candidate case output samples=
 [group('runtime')]
 native-runtime-consumer-catalog-receipt binary output:
     mkdir -p "{{ output }}"
-    just native-runtime-consumer-test-run "{{ binary }}" "" 2>&1 | tee "{{ output }}/consumer-catalog.log"
+    python3 tools/ci/watch-real-output.py just native-runtime-consumer-test-run "{{ binary }}" "" 2>&1 | tee "{{ output }}/consumer-catalog.log"
     rg --quiet '^startup-native consumer-cases=[1-9][0-9]* callers=[1-9][0-9]* complete OK$' "{{ output }}/consumer-catalog.log"
     rg --quiet '^test result: ok\.' "{{ output }}/consumer-catalog.log"
     ! rg --quiet 'FAILED|panicked at' "{{ output }}/consumer-catalog.log"
@@ -240,6 +245,15 @@ native-query-algorithm-contract-receipt binary output:
     just native-runtime-ignored-test-run "{{ binary }}" workspace_contract_scale_scenario_stays_in_budget 2>&1 | tee "{{ output }}/contract-scenario.log"
     rg --quiet '^test result: ok\.' "{{ output }}/contract-scenario.log"
     ! rg --quiet 'FAILED|panicked at' "{{ output }}/contract-scenario.log"
+
+# Measure the complete native ledger request, retaining its original 100ms gate.
+[private]
+native-runtime-plan-ledger-receipt binary output:
+    mkdir -p "{{ output }}"
+    "{{ binary }}" plan_ledger_memory_projection_stays_in_millisecond_budget --list | rg '^semantic_ast::semantic_ast_projects_agent_memory::plan_ledger_memory_projection_stays_in_millisecond_budget: test$'
+    ORGIZE_PROFILE_PLAN_LEDGER=1 ORGIZE_PROFILE_PLAN_LEDGER_STAGES=1 python3 tools/ci/watch-real-output.py just native-runtime-ignored-test-run "{{ binary }}" plan_ledger_memory_projection_stays_in_millisecond_budget 2>&1 | tee "{{ output }}/plan-ledger.log"
+    rg --quiet '^test result: ok\.' "{{ output }}/plan-ledger.log"
+    ! rg --quiet '^FAIL:|FAILED|panicked at' "{{ output }}/plan-ledger.log"
 
 # Diagnostic only: preserve the initial failed admission and every one of five
 # alternating reference/candidate pairs. Never stop at the first green sample.

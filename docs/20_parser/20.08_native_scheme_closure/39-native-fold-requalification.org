@@ -1,0 +1,124 @@
+#+title: Native Fold requalification and source-owned timeout controls
+
+* Candidate and ownership
+
+Parser =f2eb2b8b772c7680a107039e7aa5a49a4569b953= is resolved normally in
+=Cargo.toml=, both Cargo lockfiles, and =gerbil.pkg=. No Cargo patch is used.
+The engine owns literal dispatch indexes, bounded empty scans, borrowed LR
+semantic stacks, unary part construction, and private publication spines.
+
+The native-build owner is =2b154e616a131518936da89d3f176c63d3ce6ed0=,
+published on existing bridge PR #18. Its Linux Clippy rejection was an
+unnecessary expected-path clone in a test assertion. The borrowed assertion
+passes both receipt controls and strict owner Clippy; runtime code is unchanged.
+
+The downstream producer rebuilds the native SDK and 106 generated Org Fold
+units. Its fresh 400-module manifest admits both document and inline roots and
+rejects the generic EventFold interpreter, Org event declarations, and the
+removed =runtime-funs= module. These are source and program admission results,
+not complete runtime or performance qualification.
+
+* Source-owned engine controls
+
+=scheme-parser-projection-test= compiles the engine's existing Bash product
+fixture and runs its three stack, part-profile, and result-profile modules with
+=gerbil test=. All three modules and the final =OK= pass. A missing fixture
+previously produced =HARNESS-OK= and status zero alongside an error; that sample
+is rejected. Admission now requires three =MODULE-OK= rows, final =OK=, and no
+error or failure diagnostic.
+
+* Consumer timeout repair
+
+The full consumer catalog now runs under the existing five-second real-output
+watchdog. This exposed two deliberately silent negative fixtures whose own
+five-second timeout collided with that outer bound. Their fixture-only timeout
+is one second. Assertions still require timeout classification, rejected
+validation evidence, process-group termination, and child reaping. Production
+runtime defaults, successful controls, and the watchdog remain unchanged.
+
+The library's ordinary and ignored counts are explicit candidate inputs and
+are checked against its exact libtest catalog before execution. Profiled and
+unprofiled feature builds must not borrow each other's historical counts.
+
+The first 1,000-document query retained an obsolete per-document metadata
+request assertion: it expected 1,016 calls but observed 32. The source handoff
+now sends one event packet and one metadata-plan packet per bounded batch.
+Qualification asserts exactly twice the actual packet count for full, hit,
+and no-hit queries, while retaining the independent full-projection oracle,
+distinct-path inventory, worker counts, and completed-document counts.
+
+* Current local admission
+
+Program identity is
+=sha256:3da55ff875bcd5041db721aaa1d9f0625b3d8db1d2c873f8f54a4b721e9d4a36=.
+The test-only bridge repair leaves the Scheme program bytes unchanged. Its
+consumer rebuild reuses all 242 fingerprinted native objects.
+The local executables were built from the pre-commit dirty candidate based on
+Orgize =49923b04477742820fe739b7defb532ea70c7749=. They are not exact delivered-head
+provenance receipts; new-head CI and export/relocation remain separate.
+
+The =runtime-rust,runtime-profile= candidate passes 85 native startup cases,
+35 ordinary cases with four explicit exclusions, the complete 458-case consumer
+catalog, 11 cutover cases, and 23 index-handoff cases. Full, hit, and no-hit
+queries pass at both 1,000 and 10,000 distinct documents with four workers;
+native request counts are exactly 32 and 320. Logs are owned by
+=target/acceptance/native-closure-rust-2b154/=.
+
+The same-program =runtime-scheme,runtime-profile= candidate passes the same
+native, consumer, cutover, index, and query controls, with 34 ordinary library
+cases and four explicit exclusions. Its logs are owned by
+=target/acceptance/native-closure-scheme-2b154/=. Both six-batch matrices pass
+33,000 distinct documents each, with 64 Tokio callers and 1/4/8 independent
+domains. The comparison admits identical program, corpus, adapter, benchmark,
+and complete artifact checksums; throughput rankings are not stable claims.
+
+The source-aligned standalone Scheme executable passes 178 cases, 12 suites,
+and the exit-42 failed-assertion control. Eight export/source-identity controls
+also pass. These receipts are owned by =native-scheme-closure-f2eb/= and
+=native-build-support-2b154/= under =target/acceptance/=.
+
+The unchanged 45ms Query scenario passes for both backends: observed maxima
+are 15.9805ms (Rust) and 10.931875ms (Scheme). These are local scenario samples,
+not a whole-project 10,000-document latency claim.
+
+* Remaining performance gates and engine work
+
+The 256-document Contract control preserves its 400ms cold-sample maximum.
+Rust fails an initial overlapping diagnostic at 582.975834ms and a separate
+serial receipt at 475.601917ms. The Scheme serial receipt passes. These
+variable samples do not establish a scheduler ranking or close Rust admission.
+
+The complete 2,000-document ledger keeps its 100ms best-of-five gate. Serial
+profiled receipts fail at 390.697333ms (Rust) and 236.63525ms (Scheme). Both
+still return all 2,000 records and the checked target metadata. The ledger
+issues only 64 native requests, not one request per file: batching is present.
+It starts 32 host workers against one native owner per domain. Worker wait
+sums overlap and must not be reported as elapsed time.
+
+One serial Scheme sample records approximately 185ms of native batch-owner
+CPU and a separate, overlapping VM GC CPU interval of roughly 72ms. Its Rust
+record projection costs about 2ms in aggregate. Removing that loop or disabling
+concurrency cannot by itself satisfy the whole-request gate. The next engine
+work is a native, bounded field-projection plan that avoids publishing a full
+Org event/index graph for a root-ledger query, with a full-parser semantic
+oracle for TODO directives, properties, opaque bodies, ordering, and spans.
+This is an engine projection gap, not permission for a second Rust parser.
+See [[file:37-engine-convergence-list.org][the shared engine convergence List]].
+
+* Evidence boundary
+
+Older =dd071958= runtime, relocated-consumer, and Scheme closure receipts do
+not qualify this program. Fresh qualification uses separate Rust and Scheme
+feature executables, the complete consumer catalog, cutover and index controls,
+and 1,000/10,000-document query parity. Concurrent admission is qualified;
+unchanged performance gates have separate admission from semantic parity.
+
+During native compilation the host load average reached 133.27. Such samples
+are not stable performance comparisons. Native result leases, direct cold
+package-build admission, and exact-head cross-platform CI remain independent
+closure gates.
+
+While this fixed candidate was being qualified, parser PR #13 advanced to
+=ade6c930a811fd9f604d86dda311772e719b0e3a=. That checked-LR-action preparation
+increment has been audited but is not substituted into these immutable
+executables. This record does not claim latest-head parser qualification.

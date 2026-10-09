@@ -92,12 +92,18 @@ fn document_query_native_parallel_scale_qualification() {
     let chunk = count.div_ceil(expected_workers);
     let parser_packets: usize = (0..count)
         .step_by(chunk)
-        .map(|start| (count - start).min(chunk).div_ceil(64))
+        .map(|start| {
+            (count - start)
+                .min(chunk)
+                .div_ceil(crate::org_aot::BATCH_MAX_DOCUMENTS)
+        })
         .sum();
+    // Each small fixture packet needs one event request and one bounded
+    // metadata-plan request, not a second request for every document.
+    let expected_requests = (2 * parser_packets) as u64;
     assert_eq!(
-        stages["native.requests_completed"],
-        (count + parser_packets) as u64,
-        "one document plan per source plus bounded parser packets; no keyword re-entry"
+        stages["native.requests_completed"], expected_requests,
+        "one event packet plus one metadata packet; no per-document or keyword re-entry"
     );
     for name in [
         "query.total_inclusive",
@@ -159,6 +165,10 @@ fn document_query_native_parallel_scale_qualification() {
         assert_eq!(
             filtered_stages["query.workers_completed"],
             expected_workers as u64
+        );
+        assert_eq!(
+            filtered_stages["native.requests_completed"], expected_requests,
+            "filtered queries retain the same bounded native handoff"
         );
         assert!(filtered_stages.contains_key("query.fact_projection"));
         eprintln!(

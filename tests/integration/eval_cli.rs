@@ -6,6 +6,11 @@ use std::process::Command;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
+// Silent negative fixtures must finish below the outer five-second output
+// watchdog. Production runtime defaults are not changed.
+#[cfg(unix)]
+const SILENT_RUNTIME_FIXTURE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(1);
+
 fn eval_cli_renders_named_block_plan_without_running_code() {
     let dir = test_dir("eval-plan");
     fs::create_dir_all(&dir).unwrap();
@@ -364,7 +369,7 @@ wait
         ..orgize::lint::LintOptions::default()
     };
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_secs(5),
+        SILENT_RUNTIME_FIXTURE_TIMEOUT,
         1_048_576,
     )
     .unwrap()
@@ -685,7 +690,7 @@ exec tail -f /dev/null
     let context =
         orgize::lint::RuntimeValidationSourceContext::new(source_path, docs.clone(), dir).unwrap();
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_secs(5),
+        SILENT_RUNTIME_FIXTURE_TIMEOUT,
         1_048_576,
     )
     .unwrap()

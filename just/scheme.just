@@ -66,6 +66,15 @@ scheme-aligned-parser-build-receipt source output load_path:
     just scheme-aligned-parser-build "{{ source }}" "{{ output }}" "{{ load_path }}" 2>&1 | tee "{{ output }}/parser-build.log"
     just scheme-aligned-parser-sdk-check "{{ output }}" "{{ load_path }}" 2>&1 | tee "{{ output }}/sdk-load.log"
 
+# Source-owned controls for the aligned engine's result/stack reductions.
+[private]
+scheme-parser-projection-test source output load_path:
+    cd "{{ source }}" && {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O t/fixtures/bash-products.ss
+    cd "{{ source }}" && {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil test -v 3 t/lr-stack-reduction-test.ss t/part-profile-test.ss t/result-profile-test.ss 2>&1 | tee "{{ output }}/projection-test.log"
+    rg --quiet '^OK$' "{{ output }}/projection-test.log"
+    test "$(rg -c '^MODULE-OK' '{{ output }}/projection-test.log')" -eq 3
+    ! rg --quiet 'ERROR|FAILED|FAILURE' "{{ output }}/projection-test.log"
+
 # Import phase code and the public runtime surface; a cached build exit alone
 # cannot admit an SDK interrupted before its loadable objects were produced.
 [private]

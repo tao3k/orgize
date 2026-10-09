@@ -29,10 +29,10 @@ syntax-org-fc = []
 md = ["dep:comrak"]
 
 [dependencies]
-gerbil-scheme = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "b34d15c6a2f6c68ee5ce3a64975570f684e90bc2", version = "0.1.0", features = ["external-program"] }
-gerbil-scheme-sys = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "b34d15c6a2f6c68ee5ce3a64975570f684e90bc2", version = "0.1.0", features = ["external-program"] }
-gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", rev = "dd0719585d6d5e54f44beaa6877c95152e89c914", version = "0.1.0" }
-gerbil-parser-artifact = { git = "https://github.com/tao3k/gerbil-parser", rev = "dd0719585d6d5e54f44beaa6877c95152e89c914", version = "0.1.0" }
+gerbil-scheme = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "2b154e616a131518936da89d3f176c63d3ce6ed0", version = "0.1.0", features = ["external-program"] }
+gerbil-scheme-sys = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "2b154e616a131518936da89d3f176c63d3ce6ed0", version = "0.1.0", features = ["external-program"] }
+gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", rev = "f2eb2b8b772c7680a107039e7aa5a49a4569b953", version = "0.1.0" }
+gerbil-parser-artifact = { git = "https://github.com/tao3k/gerbil-parser", rev = "f2eb2b8b772c7680a107039e7aa5a49a4569b953", version = "0.1.0" }
 blake3 = "1"
 chrono = { version = "0.4", optional = true }
 comrak = { version = "0.52", default-features = false, optional = true }
