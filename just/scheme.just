@@ -53,16 +53,6 @@ scheme-aligned-program-stage-receipt output load_path parser_output org_output:
     just scheme-parser-batch-stage-isolated "{{ output }}" "{{ load_path }}" 2>&1 | tee "{{ output }}/program-stage.log"
     just native-parser-program-source-check "{{ output }}/program.json" "{{ parser_output }}" "{{ org_output }}" "{{ output }}"
 
-# This semantic test lane does not perform native-link qualification.
-[private]
-scheme-parser-fold-source-receipt source output load_path:
-    just --justfile "{{ source }}/Justfile" --working-directory "{{ source }}" build-event-fold-source-test "{{ output }}" "{{ load_path }}"
-    just scheme-native-executable-link "{{ source }}/t/event-fold-source-native.ss" "{{ output }}" "{{ output }}/lib:{{ load_path }}" fold-source
-    python3 tools/ci/watch-real-output.py "{{ output }}/fold-source" 2>&1 | tee "{{ output }}/fold-source-test.log"
-    rg --quiet '^HARNESS-OK' "{{ output }}/fold-source-test.log"
-    rg --quiet '^OK$' "{{ output }}/fold-source-test.log"
-    ! rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' "{{ output }}/fold-source-test.log"
-
 [group('scheme')]
 scheme-test parser_lib poo_flow_lib:
     mkdir -p target/gerbil-test

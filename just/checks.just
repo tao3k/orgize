@@ -11,8 +11,8 @@ native-dependency-check:
     ! rg --fixed-strings --quiet 'rowan.build' src tests benches just/benchmark.just
     ! rg --quiet 'rowan-event|org-rowan|parse-org-rowan-events|rowan_admission' src languages bindings t tests build-parser.ss build.ss
     ! rg --quiet '\b[Rr]owan\b' src languages bindings t tests --glob '!*.snap'
-    rg --fixed-strings --quiet 'rev = "021f97a7182db95b7687757fa27ad09ad7a6261d"' Cargo.toml
-    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@021f97a7182db95b7687757fa27ad09ad7a6261d' gerbil.pkg
+    rg --fixed-strings --quiet 'rev = "{{ parser_revision }}"' Cargo.toml
+    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ parser_revision }}' gerbil.pkg
     @echo 'ROWAN-FREE-DEPENDENCIES-OK: native view cutover is a separate gate'
 
 # Bounded native migration records and implementation owner checklists.
@@ -63,7 +63,7 @@ native-parser-program-source-negative-check previous parser_output org_output pr
 [group('checks')]
 native-alignment-dependency-check parser_source bridge_source:
     just native-task-layout-check
-    just native-parser-revision-check "{{ parser_source }}" 021f97a7182db95b7687757fa27ad09ad7a6261d
+    just native-parser-revision-check "{{ parser_source }}" "{{ parser_revision }}"
     test "$(git -C '{{ bridge_source }}' rev-parse HEAD)" = 1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4
     rg --fixed-strings --quiet 'rev = "1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4"' build-support/Cargo.toml
     rg --fixed-strings --quiet 'github.com/tao3k/gerbil-scheme-rust@1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4' gerbil.pkg

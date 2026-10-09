@@ -2,6 +2,7 @@
 ;;; POO strategy values are projected to event IR before runtime.
 
 (import (only-in :clan/poo/object .o .ref)
+        (only-in :gerbil-parser/src/compiler/event-fold-runtime prepare-event-fold-program)
         (only-in "types.ss"
                  +org-event-block-kind+ +org-named-block-kind+
                  +org-inline-markup-kind+
@@ -26,6 +27,7 @@
         make-org-event-strategy org-event-strategy-root
         org-event-strategy-initial org-event-strategy-line-forms
         org-event-strategy-finish-forms org-event-strategy-helpers
+        org-event-strategy-program
         org-event-strategy-parameters)
 
 (def (make-org-event-block id-value rule-value)
@@ -102,6 +104,9 @@
                   line-forms: line-forms-value
                   finish-forms: finish-forms-value
                   helpers: helpers-value
+                  program: (prepare-event-fold-program
+                            root-value initial-value line-forms-value finish-forms-value
+                            (map org-event-helper-descriptor helpers-value))
                   parameters: parameters-value))
     (unless (org-event-strategy? value)
       (error "invalid Org event strategy" value))
@@ -113,3 +118,4 @@
 (def (org-event-strategy-finish-forms value) (.ref value 'finish-forms))
 (def (org-event-strategy-helpers value) (.ref value 'helpers))
 (def (org-event-strategy-parameters value) (.ref value 'parameters))
+(def (org-event-strategy-program value) (.ref value 'program))

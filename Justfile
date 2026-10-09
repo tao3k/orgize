@@ -1,6 +1,7 @@
 set dotenv-load := false
 set shell := ["bash", "-euo", "pipefail", "-c"]
 host_os := os()
+parser_revision := replace_regex(read("gerbil.pkg"), '(?s)^.*github\.com/tao3k/gerbil-parser@([0-9a-f]{40}).*$', '$1')
 scheme_home := env_var_or_default("GERBIL_HOME", "")
 # Keep the fixed heap envelope while honoring an explicitly selected SDK.
 scheme_gambopt := "max-heap=1G,debug=q" + if scheme_home == "" { "" } else { ",~~bin=" + scheme_home + "/bin,~~lib=" + scheme_home + "/lib,~~include=" + scheme_home + "/include" }

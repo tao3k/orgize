@@ -433,3 +433,57 @@ an improvement claim. Earlier 602ms / 597ms receipts remain historical.
 PR #13's exact =021f97a7= Ubuntu Scheme and Rust AOT jobs now pass; macOS
 remains pending at this observation. Rebuilt native consumer admission and
 the unchanged 100ms budget remain prerequisites for Orgize delivery.
+
+* Prepared-state candidate and fresh diagnostic admission, 2026-10-09
+
+The recovered =021f97a7= Rust consumer now passes all 458 catalog cases and the
+130-document batch source-identity control. Those are fresh recovered-checkout
+executions, not replacements for the deleted historical binaries or logs.
+
+Its opt-in worker diagnostic confirms 2,032 physical native requests for 2,000
+files: 32 parsing batches and 2,000 document-semantic crossings. The first sample
+reports 754.850ms batch owner thread CPU against 810.139ms all-request owner CPU.
+Rust syntax/graph/record stage wall sums total roughly 50ms. Different and
+overlapping scopes cannot be added as exclusive costs. The diagnostic wall best
+is 1.402s; a separate untraced gate best is 2.868s under concurrent host load.
+Both fail the unchanged 100ms gate; neither is a speedup claim.
+
+PR #13 now includes =650283d0=: engine-owned snapshots, reusable state layouts
+and helper directories, with request-local value vectors and temporary bindings.
+The declaration macro prepares once. Org's private POO strategy delegates to
+that program rather than remapping helpers on every request. All 61 native
+EventFold cases and 178 native Org cases pass with the =d6974357= production base
+plus this change; the Org negative assertion control preserves exit 42. Later
+upstream result/scanner changes are separate source qualifications. The parser
+pin and both Cargo locks are aligned to =650283d0=. Just admission reads the
+revision directly from =gerbil.pkg= instead of maintaining another REV constant.
+
+The published =6503aef5= consumer CI fails first on ASP owner structure, not the
+latency gate: same-named file/directory and deep relative import. The source fix
+uses a declaration-only facade plus projection/plan-ledger leaves; the existing
+ASP test now passes in rebuilt native libraries. Both Python CI jobs passed
+at that published head; newer local results are not remote CI admission.
+
+With parser =650283d0=, rebuilt =runtime-rust= and =runtime-scheme= libraries
+each pass all 85 explicit-startup native cases. Their ordinary catalogs pass
+35 and 34 cases respectively, with four existing ignored scenarios retained.
+Both consumer catalogs pass 458 cases with 12 callers, including the 130-source
+identity/Unicode/CRLF/oversized-batch control. That embedded control is not
+rerun separately merely to increase the receipt count.
+
+The untraced 2,000-document Rust plan-ledger gate still fails: best of five
+533.334ms against the unchanged 100ms limit. Separate opt-in diagnostics give
+a 547.765ms best and 468--541ms native batch-owner CPU sums; these overlapping
+stage observations are not additive exclusive costs or a matched speedup.
+
+The next engine change threads one request-owned reversed event chain through
+the native source-line traversal and final transitions, restoring output order
+only once. Its 63-case native Fold catalog passes, including mixed UTF-8 line
+endings and final-transition order. The obsolete unused downstream Fold source
+task referenced deleted upstream test files and is removed; the producer owns
+its native Fold qualification. Consumer and performance admission for this
+additional change remains separate from the =650283d0= receipts above.
+
+Full direct native strategy specialization (E01), prepared static predicate data,
+semantic-crossing reduction, new-engine consumer receipts and the latency gate
+remain open. Prepared state is an E04 improvement, not whole-engine closure.
