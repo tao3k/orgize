@@ -44,3 +44,5 @@ value; document calls do not reconstruct the invariant strategy IR. This is
 strategy-local POO derivation, with no process-wide document cache. The prepared
 event-fold program derives from the same strategy slots, so refining grammar or
 helpers also prepares the corresponding program.
+
+The bundle carries static OpenSSL, zlib, and SQLite dependencies declared by Gambit. Platform C libraries remain platform links. Every carried archive is bound by its digest; consumer builds do not inherit producer library search paths.

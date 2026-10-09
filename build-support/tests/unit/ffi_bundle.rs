@@ -100,3 +100,25 @@ fn unbound_libraries_headers_and_paths_are_rejected() {
     fs::write(root.0.join("bindings/c/include/orgize.h"), "changed").unwrap();
     assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
 }
+
+#[test]
+fn producer_carries_non_platform_dependencies() {
+    for library in ["crypto", "ssl", "z", "sqlite3"] {
+        assert_eq!(bundle_library(library), format!("static={library}"));
+    }
+    for library in ["m", "dl", "static=gambit"] {
+        assert_eq!(bundle_library(library), library);
+    }
+    let (root, directory, mut bundle) = fixture();
+    bundle.libraries.push(bundle_library("z"));
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+    fs::write(directory.join("libz.a"), "producer zlib").unwrap();
+    bundle
+        .files
+        .insert("libz.a".into(), digest(&directory.join("libz.a")).unwrap());
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_ok());
+    fs::write(directory.join("libz.a"), "changed zlib").unwrap();
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+}

@@ -56,6 +56,15 @@ fn library_file(name: &str) -> Result<String, String> {
     Ok(format!("lib{name}.a"))
 }
 
+fn bundle_library(library: &str) -> String {
+    // These are Gambit dependencies, not platform-provided C libraries.
+    // Carry them with the producer artifact instead of retaining host paths.
+    match library {
+        "crypto" | "ssl" | "z" | "sqlite3" => format!("static={library}"),
+        _ => library.to_owned(),
+    }
+}
+
 fn copy_file(
     source: &Path,
     bundle: &Path,
@@ -94,7 +103,7 @@ pub(crate) fn publish(
         .cargo_directives
         .iter()
         .filter(|directive| directive.kind == CargoDirectiveKind::RustcLinkLib)
-        .map(|directive| directive.value.clone())
+        .map(|directive| bundle_library(&directive.value))
         .collect();
     let mut files = BTreeMap::new();
     for library in &libraries {
