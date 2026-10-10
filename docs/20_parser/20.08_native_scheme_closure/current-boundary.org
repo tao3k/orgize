@@ -4,9 +4,9 @@
 
 * Current source candidate
 
-Parser =f2eb2b8b772c7680a107039e7aa5a49a4569b953= and native-build owner
+Parser =3ba88c7398407a7048b1d9e09ab5587054b8e239= and native-build owner
 =2b154e616a131518936da89d3f176c63d3ce6ed0= use normal Cargo resolution,
-including fuzz, on existing upstream PR #18. Exact-head CI remains separate.
+including fuzz, on parser PR #13 and bridge PR #18. Exact-head CI remains separate.
 Three stale phase assertions are corrected; 20 public and 20 private cases pass
 (five exclusions), with compiler-runtime discovery deferred to the compiler lane.
 

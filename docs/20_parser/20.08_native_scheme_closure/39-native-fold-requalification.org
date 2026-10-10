@@ -1,8 +1,8 @@
 #+title: Native Fold requalification and source-owned timeout controls
 
-* Candidate and ownership
+* Preceding candidate and ownership
 
-Parser =f2eb2b8b772c7680a107039e7aa5a49a4569b953= is resolved normally in
+Parser =f2eb2b8b772c7680a107039e7aa5a49a4569b953= was resolved normally in
 =Cargo.toml=, both Cargo lockfiles, and =gerbil.pkg=. No Cargo patch is used.
 The engine owns literal dispatch indexes, bounded empty scans, borrowed LR
 semantic stacks, unary part construction, and private publication spines.
@@ -122,3 +122,70 @@ While this fixed candidate was being qualified, parser PR #13 advanced to
 =ade6c930a811fd9f604d86dda311772e719b0e3a=. That checked-LR-action preparation
 increment has been audited but is not substituted into these immutable
 executables. This record does not claim latest-head parser qualification.
+
+* Native publication follow-up
+
+Existing parser PR #13 now contains =3ba88c7398407a7048b1d9e09ab5587054b8e239=.
+It preserves the intervening checked-LR-action preparation and request-cost
+benchmark work. Orgize resolves this immutable revision normally in both
+runtime dependencies, both lockfiles and =gerbil.pkg=, without a local patch.
+
+The engine's generated native Fold now consumes its request-private outer
+event spine with =reverse!= instead of allocating a duplicate through
+=reverse=. Payloads, event order, source spans and the public ABI are unchanged.
+Six new retained-result/caller-mutation controls bring the independent native
+executable catalog to 96 passing cases. Four source-admission controls and the
+three LR/PartProfile/ResultProfile modules also pass. Full Org document and
+inline products are freshly regenerated; neither runtime uses a Rust scanner.
+
+The existing ResultProfile owns recognition construction; GraphProjection
+generates a Rust syntax projection table. Neither is an admitted native
+EventFold selection plan. Suppressing unnecessary graph/event publication
+therefore remains an engine-owned capability gap, not a downstream parser
+implementation task. Removing one outer event-spine allocation does not by
+itself qualify the unchanged 2,000-document 100ms ledger gate or the Rust
+400ms Contract gate. Earlier executable receipts above remain historical.
+
+The user reiterates a strictly sub-100ms admission target. The historical
+[[file:../20.07_complete_org_cutover_audit.org][complete Org cutover audit]] records the same complete 2,000-file ledger
+boundary: Windows head =f5a1ac1= passed a diagnostic rerun at 83.8839ms and a
+failed-job rerun at 81.9714ms; head =344c326= recorded 81.4664ms. Directory
+walking, file reads, AOT parsing and projection were included. These are not
+single-parse latencies or a newly replayed matched cross-platform comparison.
+The assertion remains =elapsed < 100ms=; 100ms itself is rejected. An older,
+separate Contract scenario's 400ms limit does not relax this target.
+
+The new linked program is
+=sha256:a0ea61681deb625681e04f6a7175d20e0f6be4d7c1c8e393caabd90e438c2c12=.
+Both runtime features pass the complete 458-case consumer catalog, 85 native
+startup cases, 11 cutover cases and 23 index handoff cases. Their ordinary
+library counts remain 35 (Rust) and 34 (Scheme), with four explicit exclusions.
+Full/control/hit/no-hit parity passes at 1,000 and 10,000 distinct documents,
+with exactly 32 and 320 native requests. The rebuilt standalone Scheme owner
+passes 178 cases across 12 suites and the independent exit-42 control.
+
+Fresh serial 2,000-document ledger receipts still fail: Rust best-of-five is
+273.635042ms and Scheme is 247.40675ms. Every request returns all 2,000 records
+and the checked metadata before the unchanged strict timing assertion rejects
+it. These samples do not prove a latency improvement over historical runs
+under different host contention, nor a return to the reported 83ms baseline.
+Logs are under =target/acceptance/native-closure-{rust,scheme}-3ba88c7/=. The
+source candidate is based on Orgize =5b5b7316= with normal revision updates;
+these local executables are not exact subsequent commit-head export receipts.
+
+Each backend also completes all six 1,000/10,000-document matrix rows, with
+64 Tokio callers and 1/4/8 independent native execution domains: 33,000
+distinct completions per backend. The comparison admits identical program,
+corpus, adapter, benchmark and artifact checksums, actual worker PID counts,
+maximum active worker requests, and successful worker exits. These profiled
+qualification rows are not a stable scheduler ranking or proof that the
+complete ledger request meets 100ms. Both original 45ms Query scenarios pass
+(maxima 6.348583ms and 6.019875ms), and both separate 256-document Contract
+controls pass their existing bound. No gate, runtime profile or timeout changes.
+
+During this fixed candidate's qualification, upstream PR #13 advanced again
+to =b61522e90fb496f2bbca8c29d83fee6e429c599f=. Its added semantic-sequence
+classification and region-scanner frame changes are not substituted into the
+immutable =3ba88c7= executables. Latest-head source alignment and runtime
+qualification remain separate; neither that upstream advance nor this local
+publication optimization closes the failing complete ledger target.
