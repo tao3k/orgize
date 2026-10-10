@@ -117,7 +117,9 @@ examples pass, including the HTML, LaTeX and Markdown targets and the two
 qualification configuration tests. A separate consumer execution under the
 unchanged real-output watchdog passes all 458 cases with 12 callers in
 8.42s. Its Contract control is 2.816167ms against 25ms. Scheme runtime startup
-also passes 85 cases; its complete target execution is still in progress.
+also passes 85 cases. Its complete tests and enabled examples pass, including
+458 consumer cases with 12 callers in 12.97s. These are semantic receipts,
+not evidence that the complete-ledger performance gate passes.
 
 The complete 2,000-file production ledger gate runs with
 =runtime-profile=false diagnostics=false= and fails at 545.370334ms,
@@ -139,10 +141,59 @@ to the compiler's object executor and dependency barrier. The 11-line
 native core count. It adds no GSC discovery, worker pool or runtime launcher.
 Just invokes it once through =gxi= for build-time linking; parser execution
 remains compiled native C FFI. Missing-source admission returns 70 rather
-than success. Positive linked qualification of this new entry remains open.
-The previous sequential closure build is allowed to finish independently;
-no shared compiler output is modified concurrently.
+than success. The new entry builds a separately named native executable;
+that executable passes all 178 cases in 12 suites and returns zero with the
+final =OK=. Its intentional failed assertion returns 42 and final =FAILED=,
+even though the harness prints =HARNESS-OK=. Both final status and process
+exit are therefore required. No shared compiler output is modified
+concurrently. This warm build is not a paired cold-build speed comparison.
 
 SDK linker messages still include an absent historical OpenSSL search path
 and GCC compact-unwind warnings. Successful execution does not qualify these
 as resolved SDK/toolchain issues. No kernel, heap, profile or gate is changed.
+
+* Historical 84ms migration audit
+
+The archived complete-cutover ledger records =f5a1ac1= Windows best-of-five
+results of 103.2245ms (initial failure), 83.8839ms (diagnostic rerun) and
+81.9714ms (failed-job rerun). It records 81.4664ms for =344c326=.
+These numbers are archived receipts, not newly rerun historical CI logs.
+The old and current production tests both query the complete 2,000-file
+ledger, check record metadata and enforce the strict 100ms gate. The old
+receipt must not be dismissed as a single-document microbenchmark.
+
+At =f5a1ac1=, =src/org_aot_events.rs= includes =org_rowan_events.rs= generated
+at build time. =src/org_aot.rs= executes that Rust event function, then
+=parse_generated_events= and =project_syntax_graph=. Scheme authors the
+algorithm, but no Scheme runtime or native FFI executes that historical hot
+path. The parser pin is =4f6d9d67a069d823cfabc33511783b58017e08b3=.
+This source distinction does not justify the current regression or authorize
+restoring the removed Rust/Rowan parser.
+
+| Property | Historical execution | Current native execution |
+|----------+----------------------+--------------------------|
+| File workers | Parse inline on each scoped worker | Submit parsing to native service |
+| CPU parser ownership | Independent generated Rust calls | One Rust-owned receiver or one Scheme actor |
+| Event representation | Generated Rust events directly | Scheme tape encoding, FFI transfer, host decoding |
+| Shared keyword value helper | Shared generated dispatch | Helper and both call sites retained |
+
+The worker-count formula remains available cores times eight, bounded by
+one worker per 64 files. However, =src/org_native_events/transport.rs= uses
+one =OWNER= and processes incoming requests sequentially. The Scheme lane
+in =bindings/c/orgize-scheme-runtime.ss= likewise uses one actor with one
+job loop. Multiple callers therefore do not preserve the historical CPU
+parsing parallelism. Green threads alone do not establish CPU parallelism
+for a CPU-bound parser. This is a concrete migration property gap, not a
+measured attribution of the entire 84-to-600ms difference.
+
+=keyword-value-event-helper= remains in =event-headline.ss= with both
+=keyword-value-span= call sites. There is no source evidence that this
+particular historical optimization was dropped. The remaining audit must
+compare backend lowering and full event semantics, not count source loops.
+
+Next performance qualification must isolate native owner service, event
+encoding, transfer/copy, decoding and ledger projection on a matched host
+and corpus, without concurrent builds. Engine/backend optimization and
+qualified native lifecycle/concurrency belong upstream. Do not introduce
+uncontrolled concurrent Gambit calls, kernel changes, parser subprocess
+fallbacks or a reduced corpus to recover a misleading passing number.
