@@ -2,6 +2,29 @@
 
 [[file:../90.01_implementation_status.org][Implementation status index]]
 
+** Scheme package consumer bootstrap
+
+The standard =build.ss= owns declaration bootstrap, generated Org fold modules
+and public runtime/source interfaces. Package loading uses =std/make= dynamic
+products; the existing explicit native producer lane retains its static fold
+profile. Consumers do not generate Org parsers. Both profiles use the same
+engine-owned source lowering.
+
+Generated source files are rewritten only when their contents change. The
+dynamic profile checks the SDK loader's selected versioned objects against the
+source timestamp. A missing or stale product invalidates only its owned static
+marker before =std/make= rebuilds the unit; incomplete products reject success.
+
+Local standard builds completed with exit zero under the original watchdog.
+A subsequent build reused all generated fold units. Removing one owned inline
+parser loader product caused exactly one fold unit to rebuild and completed
+with exit zero. Layout controls ignore installed =.gerbil-native= artifacts while
+still rejecting a forbidden source filename in the repository.
+
+The dynamic source-headline suite failed its five-second output watchdog before
+emitting test cases. This is retained as a failure, not a behavioral receipt.
+Fresh native consumer behavior and exact-head CI remain required.
+
 ** Parser v2 Alignment Backlog
 
 This checklist tracks Org features that are not fully covered by the current

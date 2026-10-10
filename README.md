@@ -18,6 +18,12 @@ Gerbil toolchain; see the Justfile's `scheme-parser-build`,
 `scheme-parser-stage` and `test` entries. Packaging and
 release performance qualification are still pending.
 
+For Scheme package consumers, `build.ss` owns the Org declaration bootstrap,
+generated parser modules and runtime interfaces. It compiles dynamic loading
+products through `std/make`; the existing native producer lane retains its
+static fold profile. Consumers import `languages/org/event-runtime` and the
+Org Element source interfaces without running Orgize's generator themselves.
+
 Choose exactly one execution-owner feature. `runtime-rust` (default) owns
 the request queue and thread-affine Gerbil handle in Rust. `runtime-scheme`
 uses an in-process native service for initialization and a Scheme actor
