@@ -82,10 +82,17 @@ scheme-aligned-parser-sdk-check output load_path:
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive -e '(import :gerbil-parser/src/language/descriptor :gerbil-parser/src/modules/parser/interface :gerbil-parser/src/compiler/event-fold-runtime)'
 
 [group('scheme')]
-scheme-aligned-program-stage-receipt output load_path parser_output org_output:
+scheme-aligned-program-stage-receipt output load_path parser_output org_output bridge_output:
     mkdir -p "{{ output }}"
     just scheme-parser-batch-stage-isolated "{{ output }}" "{{ load_path }}" 2>&1 | tee "{{ output }}/program-stage.log"
-    just native-parser-program-source-check "{{ output }}/program.json" "{{ parser_output }}" "{{ org_output }}" "{{ output }}"
+    just native-parser-program-source-check "{{ output }}/program.json" "{{ parser_output }}" "{{ org_output }}" "{{ output }}" "{{ bridge_output }}"
+
+# Cargo owns the bridge revision; its Scheme modules are private native-build
+# inputs, compiled into this isolated output rather than installed by gxpkg.
+[private]
+scheme-native-bridge-build source output:
+    mkdir -p "{{ output }}"
+    cd "{{ source }}" && {{ scheme_env }} GERBIL_BUILD_VERBOSE=1 GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" gxi build.ss compile --optimized
 
 [group('scheme')]
 scheme-test parser_lib poo_flow_lib:

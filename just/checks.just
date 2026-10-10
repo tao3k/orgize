@@ -4,6 +4,7 @@
 # removal of the event-to-navigation-index materialization path.
 [private]
 native-dependency-check:
+    ! rg --fixed-strings --quiet 'gerbil-scheme-rust' gerbil.pkg
     test ! -d languages/org/v1
     ! rg --quiet 'languages/org/v1|org-v1-' src languages t tests bindings build.ss build-parser.ss build-support benches examples --glob '!*.snap'
     ! rg --quiet 'gerbil-parser-rowan|^rowan\s*=|name = "rowan"' Cargo.toml Cargo.lock fuzz/Cargo.lock
@@ -52,19 +53,22 @@ native-parser-revision-check source revision:
 # Pin equality alone cannot admit an old compiled Scheme closure. Every
 # parser/Org module must come from this candidate's explicit build roots.
 [private]
-native-parser-program-source-check manifest parser_output org_output program_output:
-    jq --exit-status --arg parser "{{ parser_output }}/lib/static/" --arg org "{{ org_output }}/lib/static/" --arg stage "{{ program_output }}/lib/static/" '.schema == "gerbil-scheme-rust.aot-program.v1" and ([.modules[] | select(.module | startswith("gerbil-parser/"))] | length > 0) and ([.modules[] | select(.module | startswith("orgize/"))] | length > 0) and all(.modules[]; if (.module | startswith("gerbil-parser/")) then (.scm | startswith($parser)) elif (.module == "orgize/bindings/c/native-clock" or .module == "orgize/bindings/c/native-runtime-statistics" or .module == "orgize/languages/org/native-event-tape") then (.scm | startswith($stage)) elif (.module | startswith("orgize/")) then (.scm | startswith($org)) else true end)' "{{ manifest }}"
+native-parser-program-source-check manifest parser_output org_output program_output bridge_output:
+    jq --exit-status --arg parser "{{ parser_output }}/lib/static/" --arg org "{{ org_output }}/lib/static/" --arg stage "{{ program_output }}/lib/static/" --arg bridge "{{ bridge_output }}/lib/static/" '.schema == "gerbil-scheme-rust.aot-program.v1" and ([.modules[] | select(.module | startswith("gerbil-parser/"))] | length > 0) and ([.modules[] | select(.module | startswith("orgize/"))] | length > 0) and ([.modules[] | select(.module | startswith("gerbil-scheme-rust/"))] | length > 0) and all(.modules[]; if (.module | startswith("gerbil-parser/")) then (.scm | startswith($parser)) elif (.module | startswith("gerbil-scheme-rust/")) then (.scm | startswith($bridge)) elif (.module == "orgize/bindings/c/native-clock" or .module == "orgize/bindings/c/native-runtime-statistics" or .module == "orgize/languages/org/native-event-tape") then (.scm | startswith($stage)) elif (.module | startswith("orgize/")) then (.scm | startswith($org)) else true end)' "{{ manifest }}"
 
 [private]
-native-parser-program-source-negative-check previous parser_output org_output program_output:
+native-parser-program-source-negative-check previous parser_output org_output program_output bridge_output:
     jq --exit-status '.schema == "gerbil-scheme-rust.aot-program.v1" and (.modules | length > 0)' "{{ previous }}"
-    ! just native-parser-program-source-check "{{ previous }}" "{{ parser_output }}" "{{ org_output }}" "{{ program_output }}"
+    ! just native-parser-program-source-check "{{ previous }}" "{{ parser_output }}" "{{ org_output }}" "{{ program_output }}" "{{ bridge_output }}"
 
 [group('checks')]
 native-alignment-dependency-check parser_source bridge_source:
     just native-task-layout-check
     just native-parser-revision-check "{{ parser_source }}" "{{ parser_revision }}"
     test "$(git -C '{{ bridge_source }}' rev-parse HEAD)" = "{{ bridge_revision }}"
+    git -C "{{ bridge_source }}" diff --check
+    git -C "{{ bridge_source }}" diff --quiet
+    git -C "{{ bridge_source }}" diff --cached --quiet
     rg --fixed-strings --quiet 'rev = "{{ bridge_revision }}"' Cargo.toml build-support/Cargo.toml
     rg --fixed-strings --quiet 'git+https://github.com/tao3k/gerbil-scheme-rust?rev={{ bridge_revision }}#{{ bridge_revision }}' Cargo.lock fuzz/Cargo.lock
     ! rg --quiet 'source = "git\+https://github.com/tao3k/gerbil-scheme-rust\?rev=(?!{{ bridge_revision }})' Cargo.lock fuzz/Cargo.lock --pcre2

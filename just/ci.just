@@ -4,7 +4,7 @@
 [group('checks')]
 native-ci-prepare: native-ci-tools-check
     {{ scheme_env }} gxpkg deps --install
-    just native-ci-program-owner "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "{{ justfile_directory() }}/target/native-ci"
+    just native-ci-program-owner "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')" "{{ justfile_directory() }}/target/native-ci"
 
 # Fail before building transitive packages when a runner lacks owner tools.
 [private]
@@ -19,11 +19,12 @@ native-ci-tools-check:
     command -v gxpkg
 
 [private]
-native-ci-program-owner parser_source output:
-    just native-parser-revision-check "{{ parser_source }}" "{{ parser_revision }}"
+native-ci-program-owner parser_source bridge_source output:
+    just native-alignment-dependency-check "{{ parser_source }}" "{{ bridge_source }}"
+    just scheme-native-bridge-build "{{ bridge_source }}" "{{ output }}/bridge"
     just scheme-aligned-parser-build-receipt "{{ parser_source }}" "{{ output }}/parser" "{{ env_var('GERBIL_PATH') }}/lib"
-    just scheme-parser-build-isolated "{{ output }}/org" "{{ output }}/parser/lib:{{ env_var('GERBIL_PATH') }}/lib"
-    just scheme-aligned-program-stage-receipt "{{ justfile_directory() }}/target/gerbil-parser" "{{ output }}/org/lib:{{ output }}/parser/lib:{{ env_var('GERBIL_PATH') }}/lib" "{{ output }}/parser" "{{ output }}/org"
+    just scheme-parser-build-isolated "{{ output }}/org" "{{ output }}/bridge/lib:{{ output }}/parser/lib:{{ env_var('GERBIL_PATH') }}/lib"
+    just scheme-aligned-program-stage-receipt "{{ justfile_directory() }}/target/gerbil-parser" "{{ output }}/org/lib:{{ output }}/bridge/lib:{{ output }}/parser/lib:{{ env_var('GERBIL_PATH') }}/lib" "{{ output }}/parser" "{{ output }}/org" "{{ output }}/bridge"
 
 [group('checks')]
 native-ci-scheme-test:
