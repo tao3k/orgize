@@ -1,7 +1,7 @@
 set dotenv-load := false
 set shell := ["bash", "-euo", "pipefail", "-c"]
 host_os := os()
-bridge_revision := replace_regex(read("gerbil.pkg"), '(?s)^.*github\.com/tao3k/gerbil-scheme-rust@([0-9a-f]{40}).*$', '$1')
+bridge_revision := replace_regex(read("Cargo.toml"), '(?s)^.*gerbil-scheme = \{[^\n]*rev = "([0-9a-f]{40})"[^\n]*\}.*$', '$1')
 parser_revision := replace_regex(read("gerbil.pkg"), '(?s)^.*github\.com/tao3k/gerbil-parser@([0-9a-f]{40}).*$', '$1')
 scheme_home := env_var_or_default("GERBIL_HOME", "")
 # Keep the fixed heap envelope while honoring an explicitly selected SDK.
