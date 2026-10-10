@@ -14,11 +14,11 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub(super) fn worker() {
+pub(super) fn worker(performance: bool) {
     // SAFETY: fresh exec; no application threads or children before startup.
     unsafe { orgize::initialize_native_runtime() }.expect("isolated worker startup");
     for &(_, source) in super::INPUTS {
-        runtime_corpus::parse_sample(source, 0, Instant::now()).unwrap();
+        runtime_corpus::parse_sample(source, 0, Instant::now(), performance).unwrap();
     }
     let mut output = std::io::stdout().lock();
     writeln!(
@@ -39,6 +39,7 @@ pub(super) fn worker() {
             request["source"].as_str().unwrap(),
             index,
             Instant::now(),
+            performance,
         )
         .unwrap();
         writeln!(
@@ -88,6 +89,7 @@ fn batch(
     callers: usize,
     domains: usize,
     repetition: usize,
+    performance: bool,
 ) -> serde_json::Value {
     assert!(domains <= callers, "every domain needs an admitted caller");
     let mut children = Children(Vec::new());
@@ -101,6 +103,11 @@ fn batch(
     for _ in 0..domains {
         let mut child = Command::new(std::env::current_exe().unwrap())
             .arg("--native-corpus-worker")
+            .arg(if performance {
+                "performance"
+            } else {
+                "qualification"
+            })
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
@@ -302,7 +309,6 @@ fn batch(
     let mut artifact = blake3::Hasher::new();
     artifact.update(b"orgize.runtime-corpus-artifact.v1\0");
     let mut stage_samples = std::collections::BTreeMap::<String, Vec<u64>>::new();
-    let performance = std::env::var("ORGIZE_RUNTIME_CORPUS_MODE").as_deref() == Ok("performance");
     let mut parse_latencies = Vec::new();
     let mut end_to_end = Vec::new();
     for sample in samples {
@@ -346,7 +352,7 @@ fn batch(
         "native_stage_scope": "transport includes native owner admission, Scheme parse, event tape serialization and result transfer; not isolated Scheme CPU time",
         "driver": "tokio-process-domains", "tokio_workers": 4,
         "program": org_event_parser_digest(), "adapter": runtime_corpus::adapter_identity(),
-        "benchmark": blake3::hash(concat!(include_str!("runtime_parallel.rs"), include_str!("runtime_corpus.rs"), include_str!("../org_runtime.rs")).as_bytes()).to_hex().to_string(),
+        "benchmark": blake3::hash(concat!(include_str!("runtime_parallel.rs"), include_str!("runtime_corpus.rs"), include_str!("runtime_config.rs"), include_str!("../../examples/native_runtime_qualification.rs")).as_bytes()).to_hex().to_string(),
         "architecture": std::env::consts::ARCH, "corpus": runtime_corpus::source_identity(&documents),
         "artifact": if performance { None } else { Some(artifact.finalize().to_hex().to_string()) },
         "documents": documents.len(), "distinct_documents": documents.iter().collect::<std::collections::HashSet<_>>().len(),
@@ -364,28 +370,32 @@ fn batch(
     })
 }
 
-pub(super) fn run() {
-    let mode =
-        std::env::var("ORGIZE_RUNTIME_CORPUS_MODE").unwrap_or_else(|_| "qualification".into());
-    assert!(matches!(mode.as_str(), "qualification" | "performance"));
-    let sizes = runtime_corpus::configuration("ORGIZE_RUNTIME_CORPUS_DOCS", "1000,10000", 10000);
-    let callers = runtime_corpus::configuration("ORGIZE_RUNTIME_CORPUS_CALLERS", "64", 1024);
-    let domains = runtime_corpus::configuration("ORGIZE_RUNTIME_CORPUS_DOMAINS", "1,4,8", 64);
-    let repeats = runtime_corpus::configuration("ORGIZE_RUNTIME_CORPUS_REPEATS", "1", 10);
-    assert_eq!(repeats.len(), 1);
-    let output = std::env::var_os("ORGIZE_RUNTIME_CORPUS_OUTPUT").expect("receipt output required");
+pub(super) fn run(config: &super::runtime_config::Configuration) {
+    let mode = config.mode.as_str();
+    assert!(matches!(mode, "qualification" | "performance"));
+    let performance = mode == "performance";
+    let sizes = &config.documents;
+    let callers = &config.callers;
+    let domains = &config.domains;
+    let output = &config.output;
     assert!(
         !std::path::Path::new(&output).exists(),
         "refuse to overwrite receipts"
     );
     let mut receipts = Vec::new();
-    for count in sizes {
+    for &count in sizes {
         let documents = Arc::new(runtime_corpus::corpus(count));
         let mut reference = None;
-        for &callers in &callers {
-            for &domains in &domains {
-                for repetition in 1..=repeats[0] {
-                    let receipt = batch(Arc::clone(&documents), callers, domains, repetition);
+        for &callers in callers {
+            for &domains in domains {
+                for repetition in 1..=config.repeats {
+                    let receipt = batch(
+                        Arc::clone(&documents),
+                        callers,
+                        domains,
+                        repetition,
+                        performance,
+                    );
                     if let Some(expected) = &reference {
                         assert_eq!(expected, &receipt["artifact"]);
                     } else {

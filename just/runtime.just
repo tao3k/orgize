@@ -1,5 +1,16 @@
 # runtime: native architecture task owner.
 
+[group('runtime')]
+check runtime="runtime-rust":
+    {{ native_env }} cargo check --locked --no-default-features --features "{{ runtime }}" --tests --benches --examples
+
+# Isolate exclusive native startup from pure cases' host/stdio activity.
+# Cargo owns execution and failure status; no log parsing or binary discovery.
+[group('runtime')]
+test runtime="runtime-rust" profile="dev":
+    {{ native_env }} {{ native_rust_flags }} cargo test --locked --profile "{{ profile }}" --no-default-features --features "{{ runtime }}" --lib tests::explicit_startup_precedes_parallel_native_unit_cases -- --exact --nocapture
+    {{ native_env }} {{ native_rust_flags }} cargo test --locked --profile "{{ profile }}" --no-default-features --features "{{ runtime }}" --tests --examples -- --skip tests::explicit_startup_precedes_parallel_native_unit_cases --nocapture
+
 # Both tanglers are independent host executables with one startup owner each.
 [private]
 native-runtime-example-build manifest gsc runtime:
@@ -61,7 +72,7 @@ native-runtime-cutover-test-receipt binary output:
 
 # Exact test counts are candidate inputs, not historical migration constants.
 [group('runtime')]
-native-runtime-library-test-receipt binary output ordinary_passed="26" ignored="2":
+native-runtime-library-test-receipt binary output ordinary_passed ignored:
     mkdir -p "{{ output }}"
     "{{ binary }}" --list > "{{ output }}/library-catalog.log"
     test "$(rg -c ': test$' '{{ output }}/library-catalog.log')" -eq "$(({{ ordinary_passed }} + {{ ignored }} + 1))"
@@ -80,17 +91,6 @@ native-index-test-receipt binary output:
     rg --quiet '^startup-native suite=org_native_index_handoff concurrent-cases=23 complete OK$' "{{ output }}/native-index-test.log"
     rg --quiet '^test result: ok\. 1 passed; 0 failed;' "{{ output }}/native-index-test.log"
     ! rg --quiet '^FAIL:|^error:|panicked at|^test result: FAILED' "{{ output }}/native-index-test.log"
-
-# Separate same-program ASP legs: a failed gate never hides the other leg.
-[private]
-native-runtime-query-batch-run binary:
-    "{{ binary }}" document_query_org_elements_aot_stays_inside_scenario_gate --list | rg 'document_query_org_elements_aot_stays_inside_scenario_gate: test$'
-    "{{ binary }}" document_query_org_elements_aot_stays_inside_scenario_gate --ignored --nocapture --test-threads=1
-
-[private]
-native-runtime-query-individual-control-run binary:
-    "{{ binary }}" document_query_org_elements_aot_individual_control --list | rg 'document_query_org_elements_aot_individual_control: test$'
-    "{{ binary }}" document_query_org_elements_aot_individual_control --ignored --nocapture --test-threads=1
 
 # Select a qualified compiler-owned closure without rewriting its module paths.
 # Keep the previous default manifest recoverable; its old modules are untouched.
@@ -121,31 +121,9 @@ native-owner-program-build source:
     mkdir -p "{{ source }}/.gerbil"
     cd "{{ source }}" && {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="$PWD/.gerbil" gerbil compile -V -O scheme/native.ss scheme/program-build.ss 2>&1 | tee "$PWD/.gerbil/alignment-build.log" | rg '^compile |^invoke |^\*\*\* ERROR|^--- Syntax Error'
 
-# Consume the pinned upstream native-build owner.
-[private]
-native-parser-test-owner manifest gsc test="gerbil_native_cutover" runtime="runtime-rust":
-    {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --no-default-features --features "{{ runtime }}" --test "{{ test }}" -- --nocapture
-
-[private]
-native-parser-check-owner manifest gsc:
-    {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo check --offline -vv --tests --benches
-
-[private]
-native-parser-unit-owner manifest gsc:
-    {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --lib org_aot::native_events::tests -- --nocapture
-
 [private]
 native-runtime-cold-owner manifest gsc runtime="runtime-rust" profile="release" samples="10":
     {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo run --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --example runtime_cold -- "{{ samples }}"
-
-# Explicit local Apple ld recursion diagnostic. Only the selected final target
-# changes linker implementation; profiles, Thin LTO and dead-strip stay intact.
-# Cargo also builds CLI targets for benches/tests, so the explicit diagnostic
-# covers the whole Apple target invocation, not only the final selected target.
-# This is not a production/runtime fallback, nor a portable package receipt.
-[private]
-native-runtime-link-owner manifest gsc runtime kind name profile="release":
-    {{ native_env }} {{ native_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo rustc --offline -vv --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" "{{ kind }}" "{{ name }}"
 
 # Build the explicit-startup integration suites; execution remains separately bounded.
 [private]
@@ -164,15 +142,12 @@ native-query-algorithm-runtime-comparison-receipt output:
 
 [private]
 native-runtime-parallel-build-owner manifest gsc runtime="runtime-rust" profile="release":
-    {{ native_env }} {{ native_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo bench --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --bench org_runtime --no-run
+    {{ native_env }} {{ native_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo build --offline --locked --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --example native_runtime_qualification
 
-[private]
-native-runtime-test-run binary filter="":
-    "{{ binary }}" "{{ filter }}" --nocapture
 
 [private]
 native-runtime-consumer-test-run binary case="":
-    ORGIZE_NATIVE_CONSUMER_CASE="{{ case }}" just native-runtime-test-run "{{ binary }}"
+    ORGIZE_NATIVE_CONSUMER_CASE="{{ case }}" "{{ binary }}" --nocapture
 
 # Compile the libFuzzer-native startup hook; execution is a separate gate.
 [group('runtime')]
@@ -246,9 +221,21 @@ native-query-algorithm-contract-receipt binary output:
     rg --quiet '^test result: ok\.' "{{ output }}/contract-scenario.log"
     ! rg --quiet 'FAILED|panicked at' "{{ output }}/contract-scenario.log"
 
-# Measure the complete native ledger request, retaining its original 100ms gate.
+# Production admission: use an executable built without runtime-profile.
+# Clear inherited diagnostic flags; retain the original complete 100ms gate.
 [private]
 native-runtime-plan-ledger-receipt binary output:
+    mkdir -p "{{ output }}"
+    "{{ binary }}" plan_ledger_memory_projection_stays_in_millisecond_budget --list | rg '^semantic_ast::semantic_ast_projects_agent_memory::plan_ledger_memory_projection_stays_in_millisecond_budget: test$'
+    env -u ORGIZE_PROFILE_PLAN_LEDGER -u ORGIZE_PROFILE_PLAN_LEDGER_STAGES python3 tools/ci/watch-real-output.py just native-runtime-ignored-test-run "{{ binary }}" plan_ledger_memory_projection_stays_in_millisecond_budget 2>&1 | tee "{{ output }}/plan-ledger.log"
+    rg --quiet '^plan ledger mode: runtime-profile=false diagnostics=false$' "{{ output }}/plan-ledger.log"
+    rg --quiet '^test result: ok\.' "{{ output }}/plan-ledger.log"
+    ! rg --quiet '^FAIL:|FAILED|panicked at|plan ledger worker sums:|plan ledger request-local stages' "{{ output }}/plan-ledger.log"
+
+# Diagnostic only: clocks, per-document envelopes and stage collection change
+# the workload. Never promote this receipt to production admission or codec A/B.
+[private]
+native-runtime-plan-ledger-diagnostic-receipt binary output:
     mkdir -p "{{ output }}"
     "{{ binary }}" plan_ledger_memory_projection_stays_in_millisecond_budget --list | rg '^semantic_ast::semantic_ast_projects_agent_memory::plan_ledger_memory_projection_stays_in_millisecond_budget: test$'
     ORGIZE_PROFILE_PLAN_LEDGER=1 ORGIZE_PROFILE_PLAN_LEDGER_STAGES=1 python3 tools/ci/watch-real-output.py just native-runtime-ignored-test-run "{{ binary }}" plan_ledger_memory_projection_stays_in_millisecond_budget 2>&1 | tee "{{ output }}/plan-ledger.log"
@@ -289,13 +276,7 @@ native-runtime-query-scale-receipt binary documents output:
     ! rg --quiet '^FAIL:|FAILED|panicked at' "{{ output }}/query-scale.log"
 
 # Supervisor never initializes native runtime; each case is a fresh child.
-[private]
-native-runtime-lifecycle-run binary:
-    "{{ binary }}"
 
-[private]
-native-runtime-cold-run binary samples="10":
-    "{{ binary }}" "{{ samples }}"
 
 [group('runtime')]
 native-parser-dependency-update:

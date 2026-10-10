@@ -90,19 +90,7 @@ scheme-aligned-program-stage-receipt output load_path parser_output org_output:
 [group('scheme')]
 scheme-test parser_lib poo_flow_lib:
     mkdir -p target/gerbil-test
-    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test t/*-test.ss
-    just qualify-source-headlines "{{ justfile_directory() }}/target/gerbil-test" "{{ parser_lib }}:{{ poo_flow_lib }}"
-
-# Source projection retains all four original cases under native gxtest.
-[private]
-qualify-source-headlines output load_path:
-    mkdir -p "{{ output }}"
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O languages/org/modules/org-elements/source-headlines.ss languages/org/modules/org-elements/source-interface.ss
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -O t/org-source-headlines-qualification.ss
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" python3 tools/ci/watch-real-output.py gerbil test -v 5 t/org-source-headlines-qualification.ss 2>&1 | tee "{{ output }}/module-test.log"
-    test "$(rg -c '^CASE-OK ' '{{ output }}/module-test.log')" -eq 4
-    rg --quiet '^OK$' "{{ output }}/module-test.log"
-    ! rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' "{{ output }}/module-test.log"
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test -v 5 t/*-test.ss t/org-source-headlines-qualification.ss
 
 # This owner check does not replace whole-parser startup, performance or scale gates.
 # Native gxtest remains the test owner; always compile the requested module.
@@ -163,7 +151,7 @@ scheme-native-executable-link source output load_path binary cc_options="":
     # order so the first dependency root wins, while external SDKs stay read-only.
     IFS=: read -r -a libs <<< "{{ load_path }}"; for ((i=${#libs[@]}-1; i>=0; i--)); do if test -d "${libs[i]}/static"; then cp -p "${libs[i]}"/static/*.scm "{{ output }}/sdk/lib/static/"; fi; done
 
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ output }}/sdk/lib:{{ load_path }}" gerbil compile -V -O -exe -cc-options '{{ cc_options }}' -o "{{ output }}/{{ binary }}" "{{ source }}" 2>&1 | tee "{{ output }}/native-link.log" | rg '^compile |^invoke |^\.\.\. generate parser artifact|^\*\*\* ERROR|^--- Syntax Error|^\.\.\. (form|detail):'
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ output }}/sdk/lib:{{ load_path }}" gxi t/build-native-executable.ss "{{ source }}" "{{ output }}/{{ binary }}" "{{ cc_options }}" 2>&1 | tee "{{ output }}/native-link.log" | rg '^compile |^invoke |^\.\.\. (compile|execute|generate parser artifact)|^\*\*\* ERROR|^--- Syntax Error|^\.\.\. (form|detail):'
 
 [private]
 scheme-native-document-value-build output load_path:

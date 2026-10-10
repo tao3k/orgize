@@ -1,4 +1,4 @@
-//! Fixed-count corpus qualification in the existing org_runtime entrypoint.
+//! Fixed-count corpus qualification, separate from Criterion performance.
 //! Criterion calibration would multiply 10,000 documents by its sample count;
 //! this lane instead records exactly N distinct documents per batch/repetition.
 use orgize::{Org, org_aot::org_event_parser_digest, runtime_backend};
@@ -24,6 +24,7 @@ pub(super) fn parse_sample(
     source: &str,
     index: usize,
     submitted: Instant,
+    performance: bool,
 ) -> Result<Sample, String> {
     let started = Instant::now();
     #[cfg(feature = "runtime-profile")]
@@ -34,7 +35,6 @@ pub(super) fn parse_sample(
     let elapsed_ns = u64::try_from(started.elapsed().as_nanos()).unwrap();
     let submitted_to_parse_ns = u64::try_from(submitted.elapsed().as_nanos()).unwrap();
     let validation = Instant::now();
-    let performance = std::env::var("ORGIZE_RUNTIME_CORPUS_MODE").as_deref() == Ok("performance");
     if !performance && parsed.to_org() != source {
         return Err(format!("document {index}: lossless mismatch"));
     }
@@ -57,17 +57,6 @@ pub(super) fn parse_sample(
         artifact,
         stages,
     })
-}
-
-pub(super) fn configuration(key: &str, fallback: &str, max: usize) -> Vec<usize> {
-    let values: Vec<usize> = std::env::var(key)
-        .unwrap_or_else(|_| fallback.to_owned())
-        .split(',')
-        .map(|part| part.parse().expect("comma-separated positive integers"))
-        .collect();
-    assert!(!values.is_empty());
-    assert!(values.iter().all(|&value| value > 0 && value <= max));
-    values
 }
 
 pub(super) fn corpus(count: usize) -> Vec<String> {
@@ -230,7 +219,7 @@ fn batch(
                         // One submission and async await per document, not one
                         // long blocking batch with an idle Tokio scheduler.
                         let keep_going = tokio::task::spawn_blocking(move || {
-                            let sample = parse_sample(&documents[index], index, submitted);
+                            let sample = parse_sample(&documents[index], index, submitted, false);
                             let passed = sample.is_ok();
                             // Completion backpressure also stays off async workers.
                             completed.send(sample).is_ok() && passed
@@ -250,7 +239,7 @@ fn batch(
                         let Some(source) = documents.get(index) else {
                             break;
                         };
-                        let sample = parse_sample(source, index, Instant::now());
+                        let sample = parse_sample(source, index, Instant::now(), false);
                         let passed = sample.is_ok();
                         if completed.send(sample).is_err() || !passed {
                             break;
@@ -340,7 +329,7 @@ fn batch(
         "blocking_callers_limit": callers,
         "program": org_event_parser_digest(),
         "adapter": adapter_identity(),
-        "benchmark": blake3::hash(include_bytes!("runtime_corpus.rs")).to_hex().to_string(),
+        "benchmark": blake3::hash(concat!(include_str!("runtime_corpus.rs"), include_str!("runtime_config.rs"), include_str!("../../examples/native_runtime_qualification.rs")).as_bytes()).to_hex().to_string(),
         "architecture": std::env::consts::ARCH,
         "corpus": corpus_digest, "artifact": artifact.finalize().to_hex().to_string(),
         "documents": documents.len(), "distinct_documents": documents.len(),
@@ -365,37 +354,28 @@ fn batch(
     })
 }
 
-pub(super) fn run() {
+pub(super) fn run(config: &super::runtime_config::Configuration) {
+    let driver = config.mode.as_str();
+    let sizes = &config.documents;
+    let callers = &config.callers;
+    let output = Some(config.output.clone());
     assert!(
-        std::env::var("ORGIZE_RUNTIME_CORPUS_MODE").as_deref() != Ok("performance"),
-        "use the separately labelled parallel performance lane"
+        !config.output.exists(),
+        "refuse to overwrite corpus receipts"
     );
-    let driver = std::env::var("ORGIZE_RUNTIME_CORPUS_DRIVER").unwrap_or_else(|_| "std".into());
-    assert!(
-        matches!(driver.as_str(), "std" | "tokio"),
-        "select std or tokio corpus driver"
-    );
-    let sizes = configuration("ORGIZE_RUNTIME_CORPUS_DOCS", "1000,10000", 10000);
-    let callers = configuration("ORGIZE_RUNTIME_CORPUS_CALLERS", "1,8", 64);
-    let repeats = configuration("ORGIZE_RUNTIME_CORPUS_REPEATS", "1", 10);
-    assert_eq!(repeats.len(), 1);
-    let output = std::env::var_os("ORGIZE_RUNTIME_CORPUS_OUTPUT").map(std::path::PathBuf::from);
-    if let Some(path) = &output {
-        assert!(!path.exists(), "refuse to overwrite corpus receipts");
-    }
     // Input preparation and one native warmup are outside every batch timer.
     for &(_, source) in super::INPUTS {
         assert_eq!(Org::parse(source).to_org(), source);
     }
     let mut receipts = Vec::new();
-    for count in sizes {
+    for &count in sizes {
         let documents = Arc::new(corpus(count));
         let unique: std::collections::HashSet<_> = documents.iter().collect();
         assert_eq!(unique.len(), count, "each document must be different");
         let mut reference_artifact = None;
-        for &caller_count in &callers {
-            for repetition in 1..=repeats[0] {
-                let receipt = batch(&documents, caller_count, repetition, &driver);
+        for &caller_count in callers {
+            for repetition in 1..=config.repeats {
+                let receipt = batch(&documents, caller_count, repetition, driver);
                 let artifact = receipt["artifact"].as_str().unwrap().to_owned();
                 if let Some(reference) = &reference_artifact {
                     assert_eq!(

@@ -3,22 +3,18 @@
 # Measure the existing public-entry Criterion scenarios, not a new harness.
 [private]
 native-parser-bench-owner manifest gsc profile="release" filter='Org::parse/(doc|plain-links|quote-heavy)\.org':
-    {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo bench --offline --profile "{{ profile }}" --bench parse -- "{{ filter }}" --sample-size 10 --warm-up-time 0.2 --measurement-time 1 --noplot
+    {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo bench --offline --locked --profile "{{ profile }}" --bench parse -- "{{ filter }}"
 
 # Reuse Criterion's committed input files and ASP's Scheme timing/memory owner.
 # Matched execution-owner lanes; no parser/backend substitution.
-[private]
-native-runtime-bench-owner manifest gsc runtime="runtime-rust" profile="release":
-    {{ native_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo bench --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --bench org_runtime -- --sample-size 10 --warm-up-time 0.2 --measurement-time 1 --noplot
-
-[private]
-native-runtime-bench-run binary baseline="base":
-    "{{ binary }}" --bench --sample-size 10 --warm-up-time 0.2 --measurement-time 1 --noplot --save-baseline "{{ baseline }}"
+[group('benchmark')]
+bench runtime="runtime-rust" *args:
+    {{ native_env }} {{ native_rust_flags }} cargo bench --locked --no-default-features --features "{{ runtime }}" --bench org_runtime -- {{ args }}
 
 # Exactly N distinct documents per batch; does not use Criterion calibration.
 [private]
 native-runtime-corpus-run binary output documents="1000,10000" callers="1,8" repeats="1":
-    ORGIZE_RUNTIME_CORPUS_DOCS="{{ documents }}" ORGIZE_RUNTIME_CORPUS_CALLERS="{{ callers }}" ORGIZE_RUNTIME_CORPUS_REPEATS="{{ repeats }}" ORGIZE_RUNTIME_CORPUS_OUTPUT="{{ output }}" "{{ binary }}" --bench --noplot
+    "{{ binary }}" std "{{ output }}" "{{ documents }}" "{{ callers }}" 1 "{{ repeats }}"
 
 [private]
 native-runtime-corpus-compare rust_receipt scheme_receipt:
@@ -31,13 +27,13 @@ native-runtime-corpus-matrix-check receipt:
 
 [group('benchmark')]
 native-runtime-tokio-corpus-run binary output documents="1000,10000" callers="1,8" repeats="1":
-    ORGIZE_RUNTIME_CORPUS_DRIVER=tokio just native-runtime-corpus-run "{{ binary }}" "{{ output }}" "{{ documents }}" "{{ callers }}" "{{ repeats }}"
+    "{{ binary }}" tokio "{{ output }}" "{{ documents }}" "{{ callers }}" 1 "{{ repeats }}"
 
 # High-concurrency admissions plus independent native execution domains.
 # The supervisor never initializes Gerbil; workers exec and warm up before timing.
 [group('benchmark')]
 native-runtime-parallel-corpus-run binary output documents="1000,10000" callers="64" domains="1,4,8" repeats="1":
-    ORGIZE_RUNTIME_CORPUS_DOMAINS="{{ domains }}" just native-runtime-corpus-run "{{ binary }}" "{{ output }}" "{{ documents }}" "{{ callers }}" "{{ repeats }}"
+    "{{ binary }}" qualification "{{ output }}" "{{ documents }}" "{{ callers }}" "{{ domains }}" "{{ repeats }}"
 
 # Full native admission matrix with genuine completed-document progress.
 [private]
@@ -62,7 +58,12 @@ native-runtime-parallel-report receipt:
 
 [private]
 native-runtime-performance-run binary output documents="1000,10000" callers="64" domains="8" repeats="1":
-    ORGIZE_RUNTIME_CORPUS_MODE=performance just native-runtime-parallel-corpus-run "{{ binary }}" "{{ output }}" "{{ documents }}" "{{ callers }}" "{{ domains }}" "{{ repeats }}"
+    "{{ binary }}" performance "{{ output }}" "{{ documents }}" "{{ callers }}" "{{ domains }}" "{{ repeats }}"
+
+# Fixed-count semantic/lifecycle qualification, not Criterion timing admission.
+[group('runtime')]
+qualify runtime output mode="qualification" documents="1000,10000" callers="64" domains="1,4,8" repeats="1":
+    {{ native_env }} {{ native_rust_flags }} cargo run --locked --release --no-default-features --features "{{ runtime }}" --example native_runtime_qualification -- "{{ mode }}" "{{ output }}" "{{ documents }}" "{{ callers }}" "{{ domains }}" "{{ repeats }}"
 
 [private]
 native-runtime-stage-report receipt:

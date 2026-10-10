@@ -268,6 +268,11 @@ fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
 #[test]
 #[ignore = "release performance gate; run explicitly with --release --ignored"]
 fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
+    eprintln!(
+        "plan ledger mode: runtime-profile={} diagnostics={}",
+        cfg!(feature = "runtime-profile"),
+        std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER_STAGES").is_some()
+    );
     // SAFETY: this ignored scenario is selected alone, before application work.
     unsafe { orgize::initialize_native_runtime() }.expect("native focused scenario startup");
     let root = temp_test_dir("orgize-plan-ledger-projection-gate");
@@ -310,12 +315,14 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
                 )
             };
             #[cfg(feature = "runtime-profile")]
-            let records = {
+            let records = if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER_STAGES").is_some() {
                 let (records, stages) = orgize::runtime_profile::measure(query);
                 if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER").is_some() {
                     eprintln!("plan ledger request-local stages (nanoseconds): {stages:?}");
                 }
                 records
+            } else {
+                query()
             };
             #[cfg(not(feature = "runtime-profile"))]
             let records = query();

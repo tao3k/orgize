@@ -4,16 +4,16 @@
 
 * Current source candidate
 
-Parser =3ba88c7398407a7048b1d9e09ab5587054b8e239= and native-build owner
+Parser =a36c4d1ba23245d0768c60c9a2e08ca8ccc01e6d= and native-build owner
 =2b154e616a131518936da89d3f176c63d3ce6ed0= use normal Cargo resolution,
-including fuzz, on parser PR #13 and bridge PR #18. Exact-head CI remains separate.
-Three stale phase assertions are corrected; 20 public and 20 private cases pass
-(five exclusions), with compiler-runtime discovery deferred to the compiler lane.
+including fuzz, on parser PR #13 and bridge PR #18. Consumer qualification and CI remain pending.
+[[file:40-prefix-staging-consumer-qualification.org][Frozen-head consumer qualification]] is not latest-REV or codec A/B admission.
+[[file:41-native-test-entrypoints.org][Native entrypoint convergence]] separates Criterion from qualification; later counts are historical.
 
 Org declarations are build inputs: the engine generates bounded document and
 secondary inline Scheme products. The production runtime imports those
 products directly; its archive contract rejects the generic EventFold interpreter
-and Org strategy declaration modules. The fresh 400-module manifest admits both
+and Org strategy declaration modules. The fresh 418-module manifest admits both
 roots and no forbidden module. Earlier Scheme receipts cover 178 cases, 12 suites
 and exit-42 propagation; [[file:39-native-fold-requalification.org][fresh native Fold requalification]] remains separate.
 Declaration tests can still exercise the generic interpreter; it is not an

@@ -32,7 +32,9 @@ native-ci-scheme-test:
 # Reuse the same Darwin/native linker policy as local qualification.
 [group('checks')]
 native-ci-rust-test features:
-    {{ native_env }} {{ native_rust_flags }} cargo test --locked --workspace --all-targets --no-default-features --features "{{ features }}"
+    {{ native_env }} {{ native_rust_flags }} cargo test --locked --workspace --no-default-features --features "{{ features }}" --lib tests::explicit_startup_precedes_parallel_native_unit_cases -- --exact --nocapture
+    {{ native_env }} {{ native_rust_flags }} cargo test --locked --workspace --tests --examples --no-default-features --features "{{ features }}" -- --skip tests::explicit_startup_precedes_parallel_native_unit_cases --nocapture
+    {{ native_env }} {{ native_rust_flags }} cargo bench --locked --workspace --no-default-features --features "{{ features }}" -- --test
 
 [private]
 native-ci-scenario-test runtime target filter:

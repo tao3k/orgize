@@ -14,10 +14,8 @@ const INPUTS: &[(&str, &str)] = &[
     ("quote-heavy.org", include_str!("fixtures/quote-heavy.org")),
 ];
 
-#[path = "support/runtime_corpus.rs"]
-mod runtime_corpus;
-#[path = "support/runtime_parallel.rs"]
-mod runtime_parallel;
+#[path = "support/tokio_corpus.rs"]
+mod tokio_corpus;
 
 struct Callers {
     requests: Vec<mpsc::SyncSender<u64>>,
@@ -87,12 +85,12 @@ impl Drop for Callers {
 }
 
 fn benchmark(c: &mut Criterion) {
+    assert!(
+        !cfg!(feature = "runtime-profile"),
+        "Criterion production measurements must be unprofiled"
+    );
     // SAFETY: explicit benchmark startup precedes all caller/runtime workers.
     unsafe { orgize::initialize_native_runtime() }.expect("native benchmark startup");
-    if std::env::var_os("ORGIZE_RUNTIME_CORPUS_DOCS").is_some() {
-        runtime_corpus::run();
-        return;
-    }
     eprintln!(
         "org-runtime: backend={} program={} consumers=1 queue=64",
         runtime_backend().name(),
@@ -121,18 +119,11 @@ fn benchmark(c: &mut Criterion) {
         }
         group.finish();
     }
+    tokio_corpus::benchmark(c);
 }
 criterion_group!(benches, benchmark);
 
 fn main() {
-    // Dispatch before native startup: the supervisor must never initialize or
-    // fork an initialized native runtime. Each exec'd worker starts its own.
-    if std::env::args().any(|arg| arg == "--native-corpus-worker") {
-        runtime_parallel::worker();
-    } else if std::env::var_os("ORGIZE_RUNTIME_CORPUS_DOMAINS").is_some() {
-        runtime_parallel::run();
-    } else {
-        benches();
-        Criterion::default().configure_from_args().final_summary();
-    }
+    benches();
+    Criterion::default().configure_from_args().final_summary();
 }

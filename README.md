@@ -12,10 +12,10 @@ source-backed data instead of being executed.
 
 The public `Org::parse` facade and `parse_org_aot` execute the Org-owned Scheme
 event strategy through the statically linked Gerbil AOT/FFI program, then build
-the Rowan tree and Element graph. There is no generated-Rust parser fallback.
+the source-backed syntax index and Element graph. There is no Rust parser fallback.
 Source builds currently require a prepared native program manifest and the
 Gerbil toolchain; see the Justfile's `scheme-parser-build`,
-`scheme-parser-stage` and `native-parser-test-owner` entries. Packaging and
+`scheme-parser-stage` and `test` entries. Packaging and
 release performance qualification are still pending.
 
 Choose exactly one execution-owner feature. `runtime-rust` (default) owns
@@ -40,44 +40,36 @@ stdio, terminals or subprocesses. Native heartbeat/processor signals remain
 runtime-owned. This is a POSIX startup contract, not general signal isolation,
 restart, dynamic unload or unrestricted embedding in an already-running host.
 
-Use `just native-runtime-bench-owner` and `just native-runtime-cold-owner`
-with the native manifest, compiler and owner checkout arguments, then the
-selected feature. Defaults preserve Release optimization 3. Both lanes use
-one consumer, 64 queued requests and a 2 MiB service stack. Criterion measures
-warm public parsing/projection on three existing fixtures with 1/2/4/8 callers;
-caller creation is excluded from timing. Cold samples use fresh benchmark
-processes, not runtime restarts or a production parser fallback. Receipts
-identify the backend and native program digest. Compare only matching digests,
-profiles and workloads. No performance winner has been qualified yet.
+Use `just check runtime-rust`, `just test runtime-rust` and
+`just bench runtime-rust` (or `runtime-scheme`). These call Cargo directly.
+Set a nondefault native manifest once through
+`ORGIZE_GERBIL_PROGRAM_MANIFEST`; the bridge owns SDK/compiler discovery.
+Workspace optimization profiles remain unchanged. Native library startup is
+isolated from pure libtest cases because first initialization owns host stdio.
 
-For corpus-scale measurements, use `just native-runtime-corpus-run BINARY OUTPUT`:
-it parses exactly 1,000 and 10,000 distinct documents with 1 and 8 callers,
-without Criterion multiplying the document count during calibration. The
-deterministic corpus diversifies the three committed fixtures; it is not a
-collection of 10,000 independently authored documents. Every parse checks
-lossless roundtrip and hashes its complete tree/Element graph. Results include
-throughput, p50/p95/p99 public-call latency and cumulative process peak RSS.
-Wall throughput includes validation and checksum overhead; latency excludes
-those checks. A five-second completion stall fails the run. Compare the two
-generated files with `just native-runtime-corpus-compare RUST_JSON SCHEME_JSON`;
-the comparison rejects incomplete counts and mismatched input/output identities.
+Criterion owns sampling, calibration, baselines and reports. Existing warm
+fixture groups retain 1/2/4/8 callers. Tokio corpus groups measure complete
+1,000/10,000-document batches with 1/8/64 callers, four async scheduler threads
+and a bounded blocking pool. Each synchronous native call is separately
+submitted and awaited, never run on an async scheduler thread. Input generation,
+runtime creation and complete lossless preflight are outside timing. Timed
+batches include task admission, parse/projection, document drop and completions.
+One iteration means one full batch; throughput counts documents. Calibration
+can repeat batches, so this is not an exact-N receipt. Standard Criterion CLI
+options select filters and baselines. Profiled builds are rejected.
 
-Use `just native-runtime-tokio-corpus-run BINARY OUTPUT` for the matched Tokio
-application lane. Four Tokio scheduler threads asynchronously await at most
-1 or 8 blocking callers, selected by the same corpus arguments. Native parsing
-remains synchronous and thread-affine; it runs on Tokio's bounded blocking
-pool, never on an async scheduler thread. This measures Tokio integration, not
-a replacement of the Rust native-owner queue or parallel Scheme execution.
-Each document is separately submitted and asynchronously awaited; this is not
-one long blocking batch. Submission-to-parse latency additionally includes
-Tokio blocking-pool admission, separately from time inside the public parse.
-The receipts identify the driver and blocking-pool limit. The focused public
-parser tests also check single-thread Tokio scheduler progress under 128 tasks
-and retention of admission while a canceled waiter leaves blocking work running.
-They also exercise 32 capacity-limited in-memory async streams with native parse
-handoff; this does not qualify sockets, files or child-process integration.
+Fixed-count semantic/lifecycle qualification is separate:
+`just qualify runtime-rust OUTPUT` invokes the Cargo example for 1,000/10,000
+documents, 64 callers and 1/4/8 native domains. Explicit arguments replace
+ambient corpus mode variables. The `std`/`tokio` modes require one domain.
+The `qualification` mode checks lossless roundtrip and full graph/tree hashes;
+`performance` remains diagnostic-only, not Criterion or 100ms ledger admission.
+The deterministic corpus diversifies three fixtures; it is not 10,000
+independently authored documents. Complete-count, identity, artifact-parity,
+worker-exit and five-second progress checks remain. Multi-process domains
+belong only to this qualification experiment, not production parsing.
 
-`just native-runtime-lifecycle-run BINARY` checks fresh-process normal exit,
+`cargo test --test native_host_children` checks fresh-process normal exit,
 idle/active-loop SIGTERM, stdin flags, preservation of custom host handlers and
 host child exit statuses after explicit startup. The supervisor never starts
 the native runtime. Historical lazy-startup failures remain recorded in

@@ -1,6 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Private native boundary projection; parsing remains the POO strategy's job.
 (import (only-in "native-event-runtime.ss" parse-org-native-events-with-parameters)
+        (only-in :std/vector/u8vector little u8vector-uint-ref u8vector-uint-set!)
         (only-in "modules/org-parser/macro-funs.ss"
                  expand-org-macro-template expand-org-property-macros)
         (only-in "modules/org-parser/block-line-funs.ss" org-block-line-facts org-block-document-plan org-dynamic-content-facts)
@@ -72,10 +73,9 @@
 (def (put-unsigned! bytes offset width value)
   (unless (and (exact-integer? value) (<= 0 value) (< value (expt 256 width)))
     (error "Org tape integer out of range" value width))
-  (let loop ((index 0) (rest value))
-    (when (< index width)
-      (u8vector-set! bytes (+ offset index) (modulo rest 256))
-      (loop (+ index 1) (quotient rest 256)))))
+  ;; Generic official byte access supports unaligned wire fields. Keep the
+  ;; value admission above: the standard writer itself truncates large values.
+  (u8vector-uint-set! bytes offset value little width))
 
 ;; Linear flattening with core folds; no optional SRFI runtime dependency.
 (def (append-map project rows)
@@ -133,9 +133,7 @@
       bytes)))
 
 (def (read-unsigned bytes offset width)
-  (let loop ((index (- width 1)) (value 0))
-    (if (< index 0) value
-      (loop (- index 1) (+ (* value 256) (u8vector-ref bytes (+ offset index)))))))
+  (u8vector-uint-ref bytes offset little width))
 
 ;; One admitted owner request, at most 64 documents / 64KiB source. The
 ;; lifecycle feature still chooses the owner; this pure loop adds no scheduler.

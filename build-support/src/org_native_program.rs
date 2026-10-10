@@ -1,7 +1,7 @@
 //! Consume the existing compiler-owned Gerbil program manifest.
 use gerbil_scheme_native_build::{
     NativeHeaderInput, ProgramArchiveContract, ProgramArchiveObservation, ProgramArchiveObserver,
-    ProgramArchiveRequest, build_program_archive_with_contract,
+    ProgramArchiveRequest, build_program_archive_with_contract, discover_gambit_gsc_from_env,
 };
 use sha2::{Digest, Sha256};
 use std::{
@@ -34,6 +34,9 @@ impl ProgramArchiveObserver for CargoObserver {
 pub fn write_org_native_program() {
     println!("cargo:rerun-if-env-changed=ORGIZE_GERBIL_PROGRAM_MANIFEST");
     println!("cargo:rerun-if-env-changed=GERBIL_GSC");
+    println!("cargo:rerun-if-env-changed=GERBIL_HOME");
+    println!("cargo:rerun-if-env-changed=GERBIL_GXI");
+    println!("cargo:rerun-if-env-changed=PATH");
     println!("cargo:rerun-if-env-changed=ORGIZE_GERBIL_NATIVE_OUTPUT");
     println!("cargo:rerun-if-env-changed=ORGIZE_FFI_BUNDLE");
     println!("cargo:rerun-if-env-changed=ORGIZE_FFI_EXPORT");
@@ -59,10 +62,8 @@ pub fn write_org_native_program() {
         "Org::parse requires the canonical Gerbil AOT program: use just scheme-parser-build-isolated then scheme-aligned-program-stage-receipt; no generated-Rust fallback",
     );
     println!("cargo:rerun-if-changed={}", manifest.display());
-    let gsc = PathBuf::from(
-        env::var_os("GERBIL_GSC")
-            .expect("GERBIL_GSC must name the Gerbil toolchain's Gambit compiler"),
-    );
+    let gsc = discover_gambit_gsc_from_env()
+        .expect("resolve the Gerbil toolchain's Gambit compiler through the native-build owner");
     let out = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo output"));
     // Optional explicit reuse of the same compiler-owned program across Rust
     // profiles. The existing native owner still validates/fingerprints every

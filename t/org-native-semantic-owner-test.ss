@@ -8,7 +8,8 @@
         (only-in "../languages/org/modules/org-elements/radio-match.ss" org-radio-matches)
         (only-in "../languages/org/modules/org-contract/document-plan.ss" org-contract-document-plan)
         (only-in "../languages/org/native-event-tape.ss"
-                 org-request->tape expression-value-rows expectation-value-rows contract-value-rows))
+                 org-request->tape org-events->tape org-event-tape-header
+                 expression-value-rows expectation-value-rows contract-value-rows))
 (export org-native-semantic-owner-test)
 
 (def (contract-plan fields)
@@ -129,6 +130,22 @@
            (check (list-ref (car rows) 6) => "2")))
        '(1000 10000)))
     (test-case "large block tape and keyword batches retain counted framing"
+      ;; Independent arithmetic oracle; neither official codec nor decoder
+      ;; computes the expectation. Both u64 fields follow unaligned tags.
+      (for-each
+       (lambda (value)
+         (let* ((tape (org-events->tape
+                       (list '(start OrgFile) (list 'token 'TextLine value value) '(finish))))
+                (from (+ (u8vector-length org-event-tape-header) 6))
+                (expected (map (lambda (index)
+                                 (modulo (quotient value (expt 256 index)) 256)) (iota 8))))
+           (check (subu8vector tape from (+ from 16))
+                  => (list->u8vector (append expected expected)))))
+       '(0 255 256 4294967295 4294967296 9223372036854775808 18446744073709551615))
+      (for-each
+       (lambda (value)
+         (check-exception (org-events->tape (list (list 'token 'TextLine value 0))) true))
+       '(-1 1/2 18446744073709551616))
       (for-each
        (lambda (count)
          (let* ((text (string-join (make-list count "  λ (ref:x)\r\n") ""))
