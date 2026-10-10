@@ -4,7 +4,7 @@
 * Verdict
 
 The current native syntax closure work is tracked in
-[[file:20.08_native_scheme_closure_ledger.org][20.08 Native Scheme closure ledger]].
+[[file:20.08_scheme_closure_ledger.org][20.08 Native Scheme closure ledger]].
 Historical green results below are bound to their original candidates; they
 do not qualify a newer grammar or the full current closure matrix.
 
@@ -17,12 +17,12 @@ The older Rust event-IR backend receipts below are historical audit evidence,
 not current implementation or maintenance requirements. The source build's
 native manifest preparation and release qualification remain open; current
 local evidence is in
-[[file:../native-org-public-cutover-20261003.org][the native public-entry receipt]].
+[[file:../org-public-cutover-20261003.org][the native public-entry receipt]].
 
 Current Query/Contract expression-value and expectation grammar migration is
-tracked in [[file:../native-expression-values-20261003.org][the native expression-value receipt]].
+tracked in [[file:../expression-values-20261003.org][the native expression-value receipt]].
 That expression-value receipt is an earlier bounded candidate. The subsequent
-[[file:../native-contract-normalization-20261003.org][Contract composition receipt]]
+[[file:../contract-normalization-20261003.org][Contract composition receipt]]
 records Scheme-owned composition admission and both features' current 54 native
 cases, 22 pure/policy tests and complete 454-case consumer catalogs, including
 the unchanged strict query-performance gate. Semantic ownership and installed
@@ -30,7 +30,7 @@ wheel/recovery gates remain open; none of the historical results below closes th
 
 Document count alone does not prove high concurrency. The old one-domain
 1/8-caller corpus is a queue/admission baseline, not multicore parsing evidence.
-[[file:../native-runtime-parallel-20261003.org][The high-concurrency qualification]]
+[[file:../runtime-parallel-20261003.org][The high-concurrency qualification]]
 separates 64 in-flight Tokio callers from 1/4/8 independent exec'd native domains
 over 1,000 and 10,000 distinct documents. Its benchmark pool is not a production
 process-pool API, and it does not prove actor parallelism within one runtime.
@@ -110,7 +110,7 @@ Native Gerbil execution is a separate performance candidate, not an implicit
 property of the Cargo AOT path. The current Scheme =run-event-fold= entry
 interprets the admitted strategy; compiling that executor to C and calling it
 through FFI would not specialize the Org event transitions. The existing
-=orgize-native= C ABI evaluates contracts, not parser events. A serious native
+=orgize= C ABI evaluates contracts, not parser events. A serious native
 parser comparison requires a specialized C lowering of the same Scheme IR and
 one bounded, bulk event transfer per document, then source-range parity and
 matched single-document and 2,000-document throughput receipts including

@@ -104,7 +104,7 @@ fn push_section_column_property(
 }
 
 fn column_view_columns(value: &str) -> Vec<ColumnViewColumn> {
-    super::org_native_values::rows("column-values", &[value])
+    super::org_values::rows("column-values", &[value])
         .into_iter()
         .map(|row| {
             let [property, title, title_present, width, operator, format, raw]: [String; 7] =

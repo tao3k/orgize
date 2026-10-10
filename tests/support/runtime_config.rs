@@ -30,7 +30,7 @@ fn counts(value: &str, max: usize) -> Result<Vec<usize>, String> {
 impl Configuration {
     pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
         if args.len() != 6 {
-            return Err("usage: native_runtime_qualification MODE OUTPUT DOCUMENTS CALLERS DOMAINS REPEATS; MODE=std|tokio|qualification|performance".into());
+            return Err("usage: runtime_qualification MODE OUTPUT DOCUMENTS CALLERS DOMAINS REPEATS; MODE=std|tokio|qualification|performance".into());
         }
         let mode = &args[0];
         if !matches!(

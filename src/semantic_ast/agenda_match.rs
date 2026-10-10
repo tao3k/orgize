@@ -18,7 +18,7 @@ pub struct AgendaMatchQuery {
 impl AgendaMatchQuery {
     /// Parses an Org Agenda-style tag/property match expression.
     pub fn parse(expression: impl AsRef<str>) -> Result<Self, AgendaMatchParseError> {
-        let rows = super::org_native_values::rows("agenda-match", &[expression.as_ref()]);
+        let rows = super::org_values::rows("agenda-match", &[expression.as_ref()]);
         let first = rows
             .first()
             .expect("native Agenda response must not be empty");

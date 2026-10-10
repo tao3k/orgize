@@ -5,7 +5,7 @@ items describe their original implementation evidence, not complete native
 Scheme migration or admission at the currently selected program.
 
 For current native ownership and remaining work, read
-[[file:../20_parser/20.08_native_scheme_closure_ledger.org][the native Scheme closure index]].
+[[file:../20_parser/20.08_scheme_closure_ledger.org][the native Scheme closure index]].
 
 ** Modular status records
 
@@ -21,4 +21,4 @@ For current native ownership and remaining work, read
 
 Keep each owner record at most 500 lines and preserve the original checklist
 when moving it. Do not grow this index into another receipt dump.
-Run =just native-document-layout-check= after changes.
+Run =just document-layout-check= after changes.

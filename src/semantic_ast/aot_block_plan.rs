@@ -89,7 +89,7 @@ fn admit_batch(
     fields: &mut Vec<String>,
 ) {
     let refs = fields.iter().map(String::as_str).collect::<Vec<_>>();
-    let mut rows = super::org_native_values::rows("block-document-plan", &refs).into_iter();
+    let mut rows = super::org_values::rows("block-document-plan", &refs).into_iter();
     for id in ids.drain(..) {
         let header = rows.next().expect("native block plan header");
         let [tag, count]: [String; 2] = header.try_into().expect("native block plan header arity");

@@ -31,18 +31,18 @@ mod headline_view;
 pub use headline_view::OrgHeadline;
 #[path = "org_aot_affiliation.rs"]
 mod affiliation;
-#[path = "org_native_identity.rs"]
+#[path = "org_identity.rs"]
 mod event_identity;
 #[path = "org_aot_keyword_view.rs"]
 mod keyword_view;
 #[path = "org_aot_metadata_batch.rs"]
 mod metadata_batch;
-#[path = "org_native_semantic_functions.rs"]
+#[path = "org_semantic_functions.rs"]
 mod native_functions;
 
-#[path = "org_native_events/mod.rs"]
+#[path = "org_events/mod.rs"]
 mod native_events;
-#[path = "org_native_expression.rs"]
+#[path = "org_expression.rs"]
 mod native_expression;
 pub(crate) use native_expression::NativeExpressionValue;
 
@@ -207,7 +207,7 @@ pub(crate) fn parse_org_aot_batch(
 }
 
 #[cfg(test)]
-#[path = "../tests/unit/org_native_batch.rs"]
+#[path = "../tests/unit/org_batch.rs"]
 pub(crate) mod batch_tests;
 
 fn parse_org_aot_events(

@@ -130,7 +130,7 @@ pub struct SddParentRef {
 impl SddParentRef {
     /// Parses an Org `id:` parent reference from a property value.
     pub fn parse(raw: &str) -> Option<Self> {
-        let row = super::org_native_values::optional("sdd-parent-reference", raw)?;
+        let row = super::org_values::optional("sdd-parent-reference", raw)?;
         let [raw, target, label]: [String; 3] =
             row.try_into().expect("native SDD parent reference arity");
         Some(Self {

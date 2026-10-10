@@ -1,5 +1,5 @@
 //! Call-local admission of one Scheme-owned document source plan.
-use super::native_blocks::{self, ContractBlock};
+use super::blocks::{self, ContractBlock};
 use crate::ast::{
     ASSERT_ID_PROPERTY, ASSERT_SEVERITY_PROPERTY, CONTRACT_ALIAS_PROPERTY, CONTRACT_ID_PROPERTY,
     CONTRACT_KIND_PROPERTY, CONTRACT_SCOPE_PROPERTY, Document, OrgContractKind, OrgContractScope,
@@ -91,7 +91,7 @@ pub(super) fn plan_document_records(
         ]);
     }
     let fields = fields.iter().map(String::as_str).collect::<Vec<_>>();
-    let rows = crate::ast::org_native_values::rows("contract-document-plan", &fields);
+    let rows = crate::ast::org_values::rows("contract-document-plan", &fields);
     let mut facts = (0..source_sections.len()).map(|_| None).collect::<Vec<_>>();
     let mut blocks = (0..records.len()).map(|_| None).collect::<Vec<_>>();
     let mut records = records.into_iter().map(Some).collect::<Vec<_>>();
@@ -106,13 +106,13 @@ pub(super) fn plan_document_records(
                 assert!(slot.is_none(), "duplicate native section");
                 assert_eq!(row.len(), 17, "native section arity");
                 let values = std::array::from_fn(|i| {
-                    native_blocks::optional(&row[2 + i * 2], row[3 + i * 2].clone())
+                    blocks::optional(&row[2 + i * 2], row[3 + i * 2].clone())
                 });
                 *slot = Some(SectionFacts {
                     values,
-                    kind: native_blocks::kind(&row[14]),
-                    scope: native_blocks::scope(&row[15]),
-                    severity: native_blocks::severity(&row[16]),
+                    kind: blocks::kind(&row[14]),
+                    scope: blocks::scope(&row[15]),
+                    severity: blocks::severity(&row[16]),
                     aliases: Vec::new(),
                 });
             }
@@ -129,7 +129,7 @@ pub(super) fn plan_document_records(
                     .expect("native block bounds")
                     .take()
                     .expect("duplicate native block");
-                blocks[index] = Some(native_blocks::admit_block(record, row[2..].to_vec()));
+                blocks[index] = Some(blocks::admit_block(record, row[2..].to_vec()));
             }
             "forms" => {
                 assert_eq!(row.len(), 4, "native forms arity");

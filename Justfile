@@ -9,9 +9,9 @@ scheme_gambopt := "max-heap=1G,debug=q" + if scheme_home == "" { "" } else { ",~
 lib_ext := if host_os == "macos" { "dylib" } else { "so" }
 scheme_env := if host_os == "macos" { "env -u SDKROOT CC=/usr/bin/cc GERBIL_GCC=/usr/bin/cc" } else { "env" }
 export ORGIZE_GERBIL_PROGRAM_MANIFEST := env_var_or_default("ORGIZE_GERBIL_PROGRAM_MANIFEST", justfile_directory() + "/target/gerbil-parser/program.json")
-native_env := scheme_env + (if host_os == "macos" { " CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc" } else { "" })
-native_link_args := if host_os == "macos" { "-C linker=/usr/bin/cc -C link-arg=-Wl,-ld_classic" } else { "" }
-native_rust_flags := if host_os == "macos" { "CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS=\"" + native_link_args + "\"" } else { "" }
+platform_env := scheme_env + (if host_os == "macos" { " CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc" } else { "" })
+platform_link_args := if host_os == "macos" { "-C linker=/usr/bin/cc -C link-arg=-Wl,-ld_classic" } else { "" }
+platform_rust_flags := if host_os == "macos" { "CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS=\"" + platform_link_args + "\"" } else { "" }
 rust_linker := if host_os == "macos" { "-C linker=/usr/bin/cc" } else { "" }
 # Gerbil's loadable module resolves OS functions in its existing host process.
 clock_linker := if host_os == "macos" { "-Wl,-undefined,dynamic_lookup" } else { "" }

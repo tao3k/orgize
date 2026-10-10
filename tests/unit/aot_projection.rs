@@ -5,18 +5,18 @@ use crate::{
     ast::{ElementData, ObjectData},
 };
 
-#[path = "aot_projection/native_content.rs"]
-mod native_content;
-#[path = "aot_projection/native_lifecycle_values.rs"]
-mod native_lifecycle_values;
-#[path = "aot_projection/native_owner_plans.rs"]
-mod native_owner_plans;
-#[path = "aot_projection/native_source_values.rs"]
-mod native_source_values;
-#[path = "aot_projection/native_value_families.rs"]
-mod native_value_families;
-use native_content::{
-    public_keyword_and_include_headers_are_decoded_from_native_content,
+#[path = "aot_projection/content.rs"]
+mod content;
+#[path = "aot_projection/lifecycle_values.rs"]
+mod lifecycle_values;
+#[path = "aot_projection/owner_plans.rs"]
+mod owner_plans;
+#[path = "aot_projection/source_values.rs"]
+mod source_values;
+#[path = "aot_projection/value_families.rs"]
+mod value_families;
+use content::{
+    public_keyword_and_include_headers_are_decoded_from_content,
     public_macro_definitions_and_escaped_arguments_are_native,
     public_macro_expansion_and_property_calls_are_native,
     public_table_content_and_formula_extents_are_native,
@@ -24,56 +24,56 @@ use native_content::{
 
 pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
     (
-        "native_source_values_preserve_presence_and_inert_syntax",
-        native_source_values::native_source_values_preserve_presence_and_inert_syntax,
+        "source_values_preserve_presence_and_inert_syntax",
+        source_values::source_values_preserve_presence_and_inert_syntax,
     ),
     (
         "native_clock_windows_cover_leaps_weeks_and_bounds",
-        native_lifecycle_values::native_clock_windows_cover_leaps_weeks_and_bounds,
+        lifecycle_values::native_clock_windows_cover_leaps_weeks_and_bounds,
     ),
     (
         "native_property_tokens_and_progress_cookies_cover_quoting",
-        native_lifecycle_values::native_property_tokens_and_progress_cookies_cover_quoting,
+        lifecycle_values::native_property_tokens_and_progress_cookies_cover_quoting,
     ),
     (
         "native_protocol_plans_keep_parameter_presence_and_inert_intent",
-        native_lifecycle_values::native_protocol_plans_keep_parameter_presence_and_inert_intent,
+        lifecycle_values::native_protocol_plans_keep_parameter_presence_and_inert_intent,
     ),
     (
-        "native_lifecycle_values_preserve_public_numeric_domains",
-        native_lifecycle_values::native_lifecycle_values_preserve_public_numeric_domains,
+        "lifecycle_values_preserve_public_numeric_domains",
+        lifecycle_values::lifecycle_values_preserve_public_numeric_domains,
     ),
     (
         "native_unicode_lowercase_matches_host_reference",
-        native_lifecycle_values::native_unicode_lowercase_matches_host_reference,
+        lifecycle_values::native_unicode_lowercase_matches_host_reference,
     ),
     (
         "native_metadata_time_plans_reject_bad_framing_and_recover",
-        native_lifecycle_values::native_metadata_time_plans_reject_bad_framing_and_recover,
+        lifecycle_values::native_metadata_time_plans_reject_bad_framing_and_recover,
     ),
     (
-        "native_value_families_drive_public_consumers",
-        native_value_families::native_value_families_drive_public_consumers,
+        "value_families_drive_public_consumers",
+        value_families::value_families_drive_public_consumers,
     ),
     (
         "native_value_batches_handle_ten_thousand_entries",
-        native_value_families::native_value_batches_handle_ten_thousand_entries,
+        value_families::native_value_batches_handle_ten_thousand_entries,
     ),
     (
         "native_value_framing_rejects_without_poisoning_owner",
-        native_value_families::native_value_framing_rejects_without_poisoning_owner,
+        value_families::native_value_framing_rejects_without_poisoning_owner,
     ),
     (
         "block_lines_and_dynamic_content_are_native",
-        native_owner_plans::block_lines_and_dynamic_content_are_native,
+        owner_plans::block_lines_and_dynamic_content_are_native,
     ),
     (
         "keyword_prescan_is_one_native_plan",
-        native_owner_plans::keyword_prescan_is_one_native_plan,
+        owner_plans::keyword_prescan_is_one_native_plan,
     ),
     (
         "dir_recognition_is_native_and_host_order_is_preserved",
-        native_owner_plans::dir_recognition_is_native_and_host_order_is_preserved,
+        owner_plans::dir_recognition_is_native_and_host_order_is_preserved,
     ),
     (
         "public_macro_expansion_and_property_calls_are_native",
@@ -88,8 +88,8 @@ pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
         public_macro_definitions_and_escaped_arguments_are_native,
     ),
     (
-        "public_keyword_and_include_headers_are_decoded_from_native_content",
-        public_keyword_and_include_headers_are_decoded_from_native_content,
+        "public_keyword_and_include_headers_are_decoded_from_content",
+        public_keyword_and_include_headers_are_decoded_from_content,
     ),
     (
         "public_header_argument_structure_is_owned_by_scheme",

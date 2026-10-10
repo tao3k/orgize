@@ -16,5 +16,5 @@ pub(super) fn parse_query_expression_syntax(value: &str) -> Option<gerbil_parser
 }
 
 #[cfg(test)]
-#[path = "../../../tests/unit/org_contract_native_cst.rs"]
+#[path = "../../../tests/unit/org_contract_cst.rs"]
 pub(crate) mod tests;

@@ -231,7 +231,7 @@ fn workspace_links(
 }
 
 fn link_resolution_key(path: &str) -> Option<String> {
-    let row = super::org_native_values::optional("workspace-link-key", path)?;
+    let row = super::org_values::optional("workspace-link-key", path)?;
     let [key]: [String; 1] = row.try_into().expect("native workspace link key arity");
     Some(key)
 }
@@ -289,7 +289,7 @@ fn link_resolution_issue_kind(
         return None;
     }
     let key = key.to_string();
-    match super::org_native_values::scalar("workspace-link-role", &[&key]).as_str() {
+    match super::org_values::scalar("workspace-link-role", &[&key]).as_str() {
         "id" => Some(WorkspaceIssueKind::UnresolvedIdLink { key }),
         "custom-id" => Some(WorkspaceIssueKind::UnresolvedCustomIdLink { key }),
         "footnote" => Some(WorkspaceIssueKind::UnresolvedFootnoteLink { key }),

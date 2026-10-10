@@ -32,4 +32,4 @@
    (gxc: "languages/org/modules/org-contract/config.ss")
    (gxc: "languages/org/modules/org-contract/syntax.ss")
    (gxc: "languages/org/modules/org-contract/runtime-interface.ss")
-   (gxc: "bindings/c/orgize-native.ss")))
+   (gxc: "bindings/c/orgize.ss")))

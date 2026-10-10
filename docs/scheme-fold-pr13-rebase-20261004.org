@@ -76,4 +76,4 @@ The new graph has subsequently passed both native runtime unit/consumer suites,
 The normal compiler-owned manifest now selects the qualified new graph; the
 previous default is retained in native-program-history. Exact program identity,
 receipts, timing limitations and remaining boundaries are recorded in
-[[file:native-runtime-pr13-qualification-20261004.org][Current PR13 native qualification]].
+[[file:runtime-pr13-qualification-20261004.org][Current PR13 native qualification]].

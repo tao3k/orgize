@@ -2,7 +2,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org parser's native module graph; std/make owns ordering and compilation.
 (import (only-in :std/build-script defbuild-script))
-(def orgize-native-include
+(def orgize-include
   (string-append "-I" (path-expand "bindings/c/include")))
 (def orgize-syntax-modules
  '("languages/org/grammar"
@@ -42,7 +42,7 @@
  (if (getenv "ORGIZE_BUILD_SYNTAX_ONLY" #f)
    orgize-syntax-modules
  `(,@orgize-syntax-modules
-   "languages/org/native-event-runtime"
+   "languages/org/event-runtime"
    "languages/org/modules/org-parser/macro-funs"
    "languages/org/modules/org-parser/text-funs"
    "languages/org/modules/org-parser/block-line-funs"
@@ -79,14 +79,14 @@
    "languages/org/modules/org-contract/expectation-grammar"
    "languages/org/modules/org-contract/expectation-parser"
    ,@(cond-expand
-      (darwin '((gxc: "bindings/c/native-clock" "-ld-options" "-Wl,-undefined,dynamic_lookup")
-                (gxc: "bindings/c/native-runtime-statistics" "-ld-options" "-Wl,-undefined,dynamic_lookup")))
-      (else '("bindings/c/native-clock" "bindings/c/native-runtime-statistics")))
-   "languages/org/native-event-tape"
+      (darwin '((gxc: "bindings/c/clock" "-ld-options" "-Wl,-undefined,dynamic_lookup")
+                (gxc: "bindings/c/runtime-statistics" "-ld-options" "-Wl,-undefined,dynamic_lookup")))
+      (else '("bindings/c/clock" "bindings/c/runtime-statistics")))
+   "languages/org/event-tape"
    "bindings/c/orgize-actor"
    ,@(cond-expand
-      (darwin `((gxc: "bindings/c/orgize-scheme-runtime" "-cc-options" ,orgize-native-include "-ld-options" "-Wl,-undefined,dynamic_lookup")))
-      (else `((gxc: "bindings/c/orgize-scheme-runtime" "-cc-options" ,orgize-native-include))))
+      (darwin `((gxc: "bindings/c/orgize-scheme-runtime" "-cc-options" ,orgize-include "-ld-options" "-Wl,-undefined,dynamic_lookup")))
+      (else `((gxc: "bindings/c/orgize-scheme-runtime" "-cc-options" ,orgize-include))))
    ,@(cond-expand
       (darwin '((gxc: "bindings/c/orgize-parser" "-ld-options" "-Wl,-undefined,dynamic_lookup")))
       (else '("bindings/c/orgize-parser"))))))

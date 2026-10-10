@@ -216,7 +216,7 @@ fn property_by_key<'a>(
 }
 
 fn property_schema_reference(value: &str) -> PropertySchemaReference {
-    let mut rows = super::org_native_values::rows("property-schema-reference", &[value]);
+    let mut rows = super::org_values::rows("property-schema-reference", &[value]);
     assert_eq!(rows.len(), 1, "native schema reference count");
     let [raw, normalized, kind]: [String; 3] = rows
         .pop()

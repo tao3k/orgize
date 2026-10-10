@@ -14,8 +14,7 @@ pub struct ArchiveLocation<A = ()> {
 impl<A> ArchiveLocation<A> {
     pub(crate) fn from_value(ann: A, value: impl Into<String>) -> Self {
         let value = value.into();
-        let row =
-            super::org_native_values::optional("archive", &value).expect("native archive row");
+        let row = super::org_values::optional("archive", &value).expect("native archive row");
         let [trimmed, file, heading]: [String; 3] = row.try_into().expect("native archive arity");
         let file = (!file.is_empty()).then_some(file);
         let heading = (!heading.is_empty()).then_some(heading);
@@ -29,7 +28,7 @@ impl<A> ArchiveLocation<A> {
 
     /// Returns true when the archive destination has no usable target text.
     pub fn is_empty(&self) -> bool {
-        super::org_native_values::scalar("trim-empty", &[&self.value]) == "true"
+        super::org_values::scalar("trim-empty", &[&self.value]) == "true"
     }
 
     pub(crate) fn map_ann_with<B, F>(&self, f: &mut F) -> ArchiveLocation<B>

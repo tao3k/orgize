@@ -39,7 +39,7 @@ fn untracked_source_is_dirty_but_ignored_artifacts_are_not() {
     fs::write(root.join("ignored.scm"), "; generated artifact\n").unwrap();
     assert!(!git_dirty(&root));
 
-    let source = root.join("native-owner.ss");
+    let source = root.join("owner.ss");
     fs::write(&source, "; new semantic owner\n").unwrap();
     assert!(git_dirty(&root));
     fs::remove_file(&source).unwrap();
@@ -50,7 +50,7 @@ fn untracked_source_is_dirty_but_ignored_artifacts_are_not() {
         Command::new("git")
             .arg("-C")
             .arg(&root)
-            .args(["add", "native-owner.ss"])
+            .args(["add", "owner.ss"])
             .status()
             .unwrap()
             .success()

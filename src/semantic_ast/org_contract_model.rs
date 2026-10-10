@@ -51,7 +51,7 @@ impl OrgContractKind {
     }
 
     pub fn parse(value: &str) -> Option<Self> {
-        match super::org_native_values::scalar("contract-policy", &["kind", value]).as_str() {
+        match super::org_values::scalar("contract-policy", &["kind", value]).as_str() {
             CONTRACT_KIND_ORG_ELEMENTS => Some(Self::OrgElementsAssertions),
             _ => None,
         }
@@ -112,7 +112,7 @@ pub struct OrgContractReference {
 impl OrgContractReference {
     /// Returns whether this reference is an Org link with both a file path and contract id.
     pub fn is_path_qualified_org_link(&self) -> bool {
-        match super::org_native_values::scalar(
+        match super::org_values::scalar(
             "contract-qualified-link",
             &[
                 &self.raw,
@@ -174,7 +174,7 @@ impl OrgContractScope {
     }
 
     pub fn parse(value: &str) -> Option<Self> {
-        match super::org_native_values::scalar("contract-policy", &["scope", value]).as_str() {
+        match super::org_values::scalar("contract-policy", &["scope", value]).as_str() {
             "document" => Some(Self::Document),
             "subtree" => Some(Self::Subtree),
             _ => None,

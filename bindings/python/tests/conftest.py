@@ -3,7 +3,7 @@ import pytest
 
 
 @pytest.fixture(scope="session", autouse=True)
-def native_startup():
+def startup():
     from orgizepy import initialize_native_runtime
 
     initialize_native_runtime()

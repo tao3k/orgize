@@ -961,5 +961,5 @@ fn incomplete_link_remains_lossless_text() {
 }
 
 #[path = "org_parser_aot_cases.rs"]
-mod native_cases;
-pub(super) use native_cases::NATIVE_CASES;
+mod cases;
+pub(super) use cases::NATIVE_CASES;

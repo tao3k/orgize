@@ -14,7 +14,7 @@ macro_rules! check_org_aot_query {
     }};
 }
 
-// Registered in native_cases below: the harness initializes the native owner
+// Registered in cases below: the harness initializes the native owner
 // before running these cases concurrently; do not also launch them via libtest.
 fn named_query_observation_binds_graph_local_ids_to_exact_source() {
     use orgize::{

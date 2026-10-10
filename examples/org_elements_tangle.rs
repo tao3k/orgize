@@ -87,8 +87,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[cfg(test)]
-#[path = "support/native_fixture.rs"]
-mod native_fixture;
+#[path = "support/fixture.rs"]
+mod fixture;
 
 #[cfg(test)]
 mod tests {
@@ -106,7 +106,7 @@ mod tests {
 
     fn babel_without_feature_tag_cannot_define_a_query() {
         let source = "* Plain\n:PROPERTIES:\n:QUERY_ID: plain\n:END:\n#+begin_src scheme\n(org-elements headline)\n#+end_src\n";
-        super::native_fixture::assert_rejected(tangle(source, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(source, "../interface.ss"));
     }
 
     fn contract_and_obsolete_element_tags_cannot_define_queries() {
@@ -114,13 +114,13 @@ mod tests {
             let source = format!(
                 "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+begin_src scheme {tag}\n(org-elements headline)\n#+end_src\n"
             );
-            super::native_fixture::assert_rejected(tangle(&source, "../interface.ss"));
+            super::fixture::assert_rejected(tangle(&source, "../interface.ss"));
         }
     }
 
     fn mixed_feature_tags_cannot_define_queries() {
         let source = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+begin_src scheme :org-elements-query :org-contract\n(org-elements headline)\n#+end_src\n";
-        super::native_fixture::assert_rejected(tangle(source, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(source, "../interface.ss"));
     }
 
     fn feature_header_is_case_insensitive_but_language_must_be_scheme() {
@@ -128,15 +128,15 @@ mod tests {
         assert!(tangle(upper, "../interface.ss").is_ok());
 
         let pseudo_language = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+BEGIN_SRC org-elements-query\n(org-elements headline)\n#+END_SRC\n";
-        super::native_fixture::assert_rejected(tangle(pseudo_language, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(pseudo_language, "../interface.ss"));
     }
 
     fn missing_or_duplicate_ids_fail_closed() {
         let missing =
             "* Query\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
-        super::native_fixture::assert_rejected(tangle(missing, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(missing, "../interface.ss"));
         let duplicate = "* First\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n* Second\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
-        super::native_fixture::assert_rejected(tangle(duplicate, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(duplicate, "../interface.ss"));
     }
 
     fn consumer_can_select_its_own_interface_import() {
@@ -160,7 +160,7 @@ mod tests {
     }
     #[test]
     fn explicit_startup_precedes_parallel_example_cases() {
-        super::native_fixture::run(
+        super::fixture::run(
             "org_elements_tangle",
             8,
             &[

@@ -249,10 +249,7 @@ impl ExportDependencyGraphBuilder {
         validate_paths: bool,
         document_paths: &BTreeSet<String>,
     ) {
-        let target = normalize_local_path(&super::org_native_values::scalar(
-            "source-unquote",
-            &[target],
-        ));
+        let target = normalize_local_path(&super::org_values::scalar("source-unquote", &[target]));
         let target_id = if document_paths.contains(&target) {
             doc_id(target.as_str())
         } else {
@@ -416,7 +413,7 @@ fn dependency_base_dir(
 }
 
 fn resolve_dependency_path(path: &str, base_dir: Option<&str>) -> String {
-    let path = super::org_native_values::scalar("source-unquote", &[path]);
+    let path = super::org_values::scalar("source-unquote", &[path]);
     if is_absolute_or_special_path(&path) {
         normalize_local_path(&path)
     } else if let Some(base_dir) = base_dir.filter(|base_dir| !base_dir.is_empty()) {

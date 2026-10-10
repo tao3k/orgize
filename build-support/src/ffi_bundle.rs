@@ -1,5 +1,5 @@
 //! Revision-bound, relocatable Orgize program archives. Admission never compiles Scheme.
-use gerbil_scheme_native_build::{CargoDirectiveKind, NativeArchiveLinkReceipt};
+use gerbil_scheme_aot_build::{CargoDirectiveKind, NativeArchiveLinkReceipt};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -256,7 +256,7 @@ pub(crate) fn consume(root: &Path, directory: &Path) -> Result<(), String> {
     }
     let out = PathBuf::from(env::var_os("OUT_DIR").ok_or("missing OUT_DIR")?);
     fs::write(
-        out.join("org_native_identity.rs"),
+        out.join("org_identity.rs"),
         format!(
             "pub const NATIVE_PARSER_DIGEST: &str = {:?};\n",
             bundle.parser_digest

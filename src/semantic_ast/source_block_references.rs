@@ -204,17 +204,17 @@ fn source_block_noweb_ref_names(record: &SourceBlockRecord) -> Vec<&str> {
 }
 
 fn noweb_references(value: &str) -> Vec<String> {
-    super::org_native_values::rows("noweb-references", &[value])
+    super::org_values::rows("noweb-references", &[value])
         .pop()
         .expect("native noweb row")
 }
 fn header_var_reference_target(assignment: &str, names: &BTreeSet<String>) -> Option<String> {
-    let row = super::org_native_values::optional("var-target", assignment)?;
+    let row = super::org_values::optional("var-target", assignment)?;
     let [target, policy]: [String; 2] = row.try_into().expect("native reference arity");
     match policy.as_str() {
         "call" => Some(target),
         "named" => names
-            .contains(&super::org_native_values::scalar("ascii-lower", &[&target]))
+            .contains(&super::org_values::scalar("ascii-lower", &[&target]))
             .then_some(target),
         _ => panic!("native reference policy"),
     }

@@ -195,7 +195,7 @@ impl AgendaDate {
 
     /// Parses a strict `YYYY-MM-DD` date.
     pub fn parse_ymd(value: &str) -> Option<Self> {
-        let row = super::org_native_values::optional("agenda-date", value)?;
+        let row = super::org_values::optional("agenda-date", value)?;
         let [year, month, day]: [String; 3] = row.try_into().expect("native calendar date arity");
         Some(Self::new(
             year.parse().expect("native calendar year"),

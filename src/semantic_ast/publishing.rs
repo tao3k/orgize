@@ -105,7 +105,7 @@ fn project_publishing_keywords<A: Clone>(
         .flat_map(|keyword| [keyword.key.as_str(), keyword.value.as_str()])
         .collect::<Vec<_>>();
     let mut previous = 0;
-    for row in super::org_native_values::rows("publishing-keywords", &request) {
+    for row in super::org_values::rows("publishing-keywords", &request) {
         let (index, row) = row.split_first().expect("native publishing index");
         let index = index
             .parse::<usize>()

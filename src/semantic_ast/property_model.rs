@@ -92,7 +92,7 @@ pub enum PriorityValue {
 impl PriorityValue {
     /// Parses a priority cookie value.
     pub fn parse(raw: &str) -> Option<Self> {
-        let row = super::org_native_values::optional("priority", raw)?;
+        let row = super::org_values::optional("priority", raw)?;
         let [kind, value]: [String; 2] = row.try_into().expect("native priority arity");
         match kind.as_str() {
             "numeric" => Some(Self::Numeric(
@@ -274,7 +274,7 @@ impl OrgDuration {
     /// `1d3h5min`.
     pub fn parse(raw: impl Into<String>) -> Option<Self> {
         let raw = raw.into();
-        let row = super::org_native_values::optional("duration", &raw)?;
+        let row = super::org_values::optional("duration", &raw)?;
         let [seconds]: [String; 1] = row.try_into().expect("native duration arity");
         Some(Self {
             raw,

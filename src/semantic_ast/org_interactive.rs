@@ -29,7 +29,7 @@ impl Document<ParsedAnnotation> {
 fn parse_choice(
     record: &SourceBlockRecord,
 ) -> Result<OrgInteractiveChoice, OrgInteractiveParseError> {
-    let rows = super::org_native_values::rows("interactive-choice", &[&record.value]);
+    let rows = super::org_values::rows("interactive-choice", &[&record.value]);
     let first = rows
         .first()
         .expect("native interactive response must not be empty");

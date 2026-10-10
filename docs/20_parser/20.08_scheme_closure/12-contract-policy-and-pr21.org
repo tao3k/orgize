@@ -1,0 +1,53 @@
+#+title: Contract policy migration and single PR integration
+
+[[file:../20.08_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Native source policy
+
+The existing pure =contract-reference-funs.ss= owner now also decides qualified
+Org-link shape, contract kind/scope, Query/Contract/template block language
+roles, named assertion suffix exclusions and source name/property normalization.
+The closed value ABI adds =contract-policy= and =contract-qualified-link=.
+Rust constructs typed enums/booleans, joins named blocks and executes graph or
+filesystem effects. Typed graph property lookup and filename predicates are
+model execution, not raw Org source parsing.
+
+The normal native build and expanded five-case source suite pass. A fresh
+306-module candidate is staged under
+=target/contract-policy-closure-46f0c891-20261006=.
+The first Rust build exposes an owned-string/borrowed-string projection error;
+it is corrected with =as_deref=, and the original failed transcript remains.
+Both Release builds now pass. Each runtime feature passes 84 native / 24
+ordinary cases and the unchanged 454-case consumer catalog. The full freshly
+compiled Scheme semantic suite passes 147 cases with final OK on all six
+suites. Both original Query 45 ms gates and Contract 25 ms gates pass.
+Each feature completes the 33,000-document matrix (64 callers, 1/4/8 domains);
+matrix shape and cross-feature artifact admission pass for all 66,000 parses.
+The program is =sha256:231977cd7ea9e3b46329a91610fb162911fbe19299a77f743d1be0f37112286b=.
+Query p50/max are 13.788/20.694 ms (Rust) and 13.460/19.209 ms (Scheme).
+These receipts qualify this Contract policy snapshot only, not subsequent
+metadata/Agenda changes and not a stable throughput improvement. Earlier
+Query failures and the withdrawn Fold experiment remain negative evidence.
+
+* Consolidated into existing Orgize PR 18
+
+The user explicitly corrects the destination on 2026-10-06: all work belongs
+in [[https://github.com/tao3k/orgize/pull/18][PR 18]], with PR 21 closed.
+PR 18's source =codex/org-object-aot-completion= is fast-forwarded from
+=479b2763= to =cbe3750c19973251eb80b3e7bab93413d2476fe7=, preserving
+all 13 commits and 22 changed paths of PR 21. GitHub automatically marks
+PR 21 MERGED into that base branch; an explicit close reports already merged.
+PR 18 stays OPEN against main. Neither source branch nor history is deleted.
+PR 18 is attached to this task; no new PR is created.
+
+The isolated migration checkout remains on =codex/native-org-recovery= at
+=479b2763=. PR 21 is a descendant with 22 differing paths, including Source
+Headline/Query functionality absent from this checkout. Integration must
+preserve those changes and requalify the combined tree; directly replacing
+the PR branch with this dirty tree would lose work. This record is not a claim
+that local changes have already been pushed or that the PR has been merged.
+
+Exact-head CI run =37420362268= targets =cbe3750c= and is still in progress.
+This consolidation does not publish the dirty local migration candidate or
+establish its semantic/performance admission. The 22-path combined local
+integration and latest-candidate qualification remain required.

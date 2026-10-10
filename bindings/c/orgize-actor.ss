@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; Private native task boundary. The POO parser remains the semantic owner.
-(import (only-in "../../languages/org/native-event-runtime.ss"
+(import (only-in "../../languages/org/event-runtime.ss"
                  parse-org-native-events-with-parameters))
 (export org-parse-batch)
 

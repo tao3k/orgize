@@ -94,7 +94,7 @@ pub(super) fn link_abbreviation_from_facts(
         return None;
     }
     Some(LinkAbbreviation {
-        name: super::org_native_values::scalar("ascii-lower", &[name]),
+        name: super::org_values::scalar("ascii-lower", &[name]),
         replacement: replacement.to_owned(),
         raw_value: keyword.value.clone(),
     })
@@ -126,7 +126,7 @@ pub(super) fn abbreviation_index(
             .iter()
             .map(|abbreviation| abbreviation.name.as_str()),
     );
-    let mut rows = super::org_native_values::rows("link-abbreviation-index", &fields);
+    let mut rows = super::org_values::rows("link-abbreviation-index", &fields);
     assert!(rows.len() <= 1, "native abbreviation count");
     let [index]: [String; 1] = rows.pop()?.try_into().expect("native abbreviation arity");
     let index: usize = index.parse().expect("native abbreviation index");

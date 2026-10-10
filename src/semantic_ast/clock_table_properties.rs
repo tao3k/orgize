@@ -73,11 +73,11 @@ pub(super) fn clock_table_property_values(
 }
 
 fn parse_clock_table_property_names(raw: &str) -> Option<Vec<String>> {
-    super::org_native_values::optional("clock-property-names", raw)
+    super::org_values::optional("clock-property-names", raw)
 }
 fn clock_table_truthy_parameter(parameters: &[ClockTableParameter], key: &str) -> bool {
     parameter_value(parameters, key)
-        .is_some_and(|raw| super::org_native_values::scalar("parameter-truthy", &[&raw]) == "true")
+        .is_some_and(|raw| super::org_values::scalar("parameter-truthy", &[&raw]) == "true")
 }
 
 fn parameter_value(parameters: &[ClockTableParameter], key: &str) -> Option<String> {

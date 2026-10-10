@@ -12,7 +12,7 @@ pub(super) fn property_duration_plan(document: &OrgAotDocument) -> HashMap<usize
     let mut facts = HashMap::with_capacity(records.len());
     for chunk in records.chunks(32) {
         let fields = chunk.iter().map(|(_, value)| *value).collect::<Vec<_>>();
-        let rows = super::org_native_values::rows("duration-plan", &fields);
+        let rows = super::org_values::rows("duration-plan", &fields);
         assert_eq!(rows.len(), chunk.len(), "native property duration count");
         for ((id, _), row) in chunk.iter().zip(rows) {
             let [present, seconds]: [String; 2] =

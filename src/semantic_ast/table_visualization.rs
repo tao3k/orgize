@@ -196,7 +196,7 @@ fn is_alignment_cookie_row(row: &TableRow<ParsedAnnotation>) -> bool {
     !row.cells.is_empty()
         && row.cells.iter().all(|cell| {
             let value = objects_text(&cell.objects);
-            super::org_native_values::scalar("alignment-cookie", &[&value]) == "true"
+            super::org_values::scalar("alignment-cookie", &[&value]) == "true"
         })
 }
 
@@ -333,7 +333,7 @@ fn radio_table(
     Vec<TableVisualizationWarning>,
 ) {
     let mut warnings = Vec::new();
-    let Some(row) = super::org_native_values::optional("radio-header", &keyword.value) else {
+    let Some(row) = super::org_values::optional("radio-header", &keyword.value) else {
         warnings.push(TableVisualizationWarning {
             kind: TableVisualizationWarningKind::InvalidRadioTableDirective,
             message: "ORGTBL keyword must start with `SEND table-name`".to_owned(),
@@ -368,7 +368,7 @@ fn radio_table(
 }
 
 fn plot_options(value: &str) -> Vec<TableVisualizationOption> {
-    super::org_native_values::rows("plot-options", &[value])
+    super::org_values::rows("plot-options", &[value])
         .into_iter()
         .map(|row| {
             let [key, value, raw]: [String; 3] = row.try_into().expect("native plot option arity");
@@ -382,7 +382,7 @@ fn plot_options(value: &str) -> Vec<TableVisualizationOption> {
         .collect()
 }
 fn radio_options(value: &str) -> Vec<TableVisualizationOption> {
-    super::org_native_values::rows("radio-options", &[value])
+    super::org_values::rows("radio-options", &[value])
         .into_iter()
         .map(|row| {
             let [key, value, present, raw]: [String; 4] =
@@ -403,7 +403,7 @@ fn radio_options(value: &str) -> Vec<TableVisualizationOption> {
 }
 
 fn plot_option_kind(key: &str) -> TableVisualizationOptionKind {
-    match super::org_native_values::scalar("option-kind", &[key, "plot"]).as_str() {
+    match super::org_values::scalar("option-kind", &[key, "plot"]).as_str() {
         "title" => TableVisualizationOptionKind::Title,
         "ind" => TableVisualizationOptionKind::IndexColumn,
         "timeind" => TableVisualizationOptionKind::TimeIndexColumn,
@@ -420,7 +420,7 @@ fn plot_option_kind(key: &str) -> TableVisualizationOptionKind {
 }
 
 fn radio_option_kind(key: &str) -> TableVisualizationOptionKind {
-    match super::org_native_values::scalar("option-kind", &[key, "radio"]).as_str() {
+    match super::org_values::scalar("option-kind", &[key, "radio"]).as_str() {
         "skip" => TableVisualizationOptionKind::Skip,
         "skipcols" => TableVisualizationOptionKind::SkipColumns,
         "splice" => TableVisualizationOptionKind::Splice,
@@ -436,7 +436,7 @@ fn parse_positive_usize_option(
     let parsed = option
         .value
         .as_deref()
-        .and_then(|value| super::org_native_values::optional("positive", value))
+        .and_then(|value| super::org_values::optional("positive", value))
         .map(|row| row[0].parse::<usize>().expect("native positive integer"))
         .filter(|value| *value > 0);
     if parsed.is_none() {
@@ -456,7 +456,7 @@ fn parse_column_list_option(
         ));
         return Vec::new();
     };
-    let columns = super::org_native_values::rows("column-list", &[value])
+    let columns = super::org_values::rows("column-list", &[value])
         .pop()
         .expect("native columns")
         .into_iter()
@@ -478,7 +478,7 @@ fn parse_bool_option(
     let value = option
         .value
         .as_deref()
-        .and_then(|value| super::org_native_values::optional("plot-bool", value));
+        .and_then(|value| super::org_values::optional("plot-bool", value));
     match value.as_deref() {
         Some([value]) if value == "true" => Some(true),
         Some([value]) if value == "false" => Some(false),
@@ -579,7 +579,7 @@ fn collect_radio_receiver_comment(raw: &str, receivers: &mut BTreeMap<String, Ra
 }
 
 fn radio_receiver_marker(line: &str, marker: &str) -> Option<String> {
-    super::org_native_values::rows("radio-marker", &[line, marker])
+    super::org_values::rows("radio-marker", &[line, marker])
         .pop()
         .map(|row| {
             let [value]: [String; 1] = row.try_into().expect("native receiver marker arity");

@@ -10,7 +10,7 @@ mod reference_sentinel;
 #[path = "contract_workspace_required_target.rs"]
 mod required_target;
 
-pub(super) fn additional_native_cases() -> Vec<(&'static str, fn())> {
+pub(super) fn additional_cases() -> Vec<(&'static str, fn())> {
     let mut cases = reference_sentinel::NATIVE_CASES.to_vec();
     cases.extend_from_slice(required_target::NATIVE_CASES);
     cases
@@ -973,5 +973,5 @@ const REGISTRY: &str = r#"* Base
 "#;
 
 #[path = "contract_workspace_cases.rs"]
-mod native_cases;
-pub(super) use native_cases::NATIVE_CASES;
+mod cases;
+pub(super) use cases::NATIVE_CASES;

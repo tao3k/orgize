@@ -1,6 +1,6 @@
 //! Contract source owner interface.
+mod blocks;
 mod core;
-mod native_blocks;
 mod source_plan;
 pub(crate) use core::{contract_block_syntax_error, contract_source_blocks};
 pub use core::{

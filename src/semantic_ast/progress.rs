@@ -175,7 +175,7 @@ fn has_ordered_property(section: &Section<ParsedAnnotation>) -> bool {
 }
 
 fn is_truthy_property_value(value: &str) -> bool {
-    super::org_native_values::scalar("property-truthy", &[value]) == "true"
+    super::org_values::scalar("property-truthy", &[value]) == "true"
 }
 
 fn local_effort(properties: &[Property<ParsedAnnotation>]) -> Option<super::OrgDuration> {
@@ -368,8 +368,7 @@ fn statistic_cookie_parts(
     Option<u32>,
     Option<u8>,
 ) {
-    let row =
-        super::org_native_values::optional("statistic-cookie", raw).expect("native statistic row");
+    let row = super::org_values::optional("statistic-cookie", raw).expect("native statistic row");
     let [kind, done, total, percent]: [String; 4] = row.try_into().expect("native statistic arity");
     match kind.as_str() {
         "percent" => (

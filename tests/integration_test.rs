@@ -123,5 +123,5 @@ mod source_block_document;
 #[path = "integration/task_cli.rs"]
 mod task_cli;
 
-#[path = "integration/native_consumer_fixture.rs"]
-mod native_consumer_fixture;
+#[path = "integration/consumer_fixture.rs"]
+mod consumer_fixture;

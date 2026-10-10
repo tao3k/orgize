@@ -57,5 +57,5 @@ impl<'a> TagMatcher<'a> {
 }
 
 fn tag_value_candidates(value: &str) -> Vec<String> {
-    super::org_native_values::optional("tag-values", value).expect("native tag values")
+    super::org_values::optional("tag-values", value).expect("native tag values")
 }

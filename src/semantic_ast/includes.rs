@@ -64,7 +64,7 @@ fn include_line_selection(options: &[IncludeOption]) -> IncludeLineSelection {
 }
 
 fn parse_line_selection(raw: &str) -> IncludeLineSelection {
-    let row = super::org_native_values::rows("include-lines", &[raw])
+    let row = super::org_values::rows("include-lines", &[raw])
         .pop()
         .expect("native include selection");
     let [kind, start, end]: [String; 3] = row.try_into().expect("native include arity");
@@ -86,7 +86,7 @@ fn include_min_level(options: &[IncludeOption]) -> Option<usize> {
         .iter()
         .find(|option| option.key.eq_ignore_ascii_case("minlevel"))
         .and_then(|option| option.value.as_deref())
-        .and_then(|value| super::org_native_values::optional("unsigned", value))
+        .and_then(|value| super::org_values::optional("unsigned", value))
         .map(|row| row[0].parse().expect("native include minlevel"))
 }
 
@@ -96,7 +96,7 @@ fn include_mode(arguments: &[String]) -> IncludeExpansionMode {
     };
     let fields: Vec<&str> = arguments.iter().map(String::as_str).collect();
     let _ = first;
-    match super::org_native_values::scalar("include-mode", &fields).as_str() {
+    match super::org_values::scalar("include-mode", &fields).as_str() {
         "example" => IncludeExpansionMode::Example,
         "src" => IncludeExpansionMode::Source {
             language: arguments.get(1).cloned(),

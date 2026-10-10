@@ -38,7 +38,7 @@ mod capture_command;
 mod capture_model;
 mod citation_export;
 mod citation_export_model;
-mod citation_export_native;
+mod citation_export_owner;
 mod clock_issue_model;
 mod clock_issues;
 mod clock_rollup;
@@ -90,7 +90,7 @@ mod org_contract_evaluation;
 mod org_contract_evaluation_json;
 mod org_contract_model;
 mod org_elements_query_expr;
-mod org_native_values;
+mod org_values;
 #[cfg(test)]
 pub(crate) use org_elements_query_expr::EXPRESSION_NATIVE_CASES;
 mod org_interactive;
@@ -101,7 +101,7 @@ mod progress;
 mod progress_model;
 mod projection;
 mod property_model;
-mod property_native_plan;
+mod property_plan;
 mod property_profile;
 mod property_profile_model;
 mod property_schema;
@@ -333,7 +333,7 @@ pub use progress_model::{
 pub use property_model::{
     OrgDuration, Priority, PriorityCookie, PriorityProfile, PriorityRangeStatus, PriorityValue,
 };
-pub(crate) use property_native_plan::PropertyNativePlan;
+pub(crate) use property_plan::PropertyNativePlan;
 pub(crate) use property_profile::property_allowed_values;
 pub use property_profile_model::{
     PropertyAllowedValueRecord, PropertyAllowedValueScope, PropertyInheritancePolicy,

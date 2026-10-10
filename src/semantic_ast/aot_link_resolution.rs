@@ -191,9 +191,6 @@ fn project_link_search(row: &[String]) -> Option<LinkSearch> {
     Some(LinkSearch {
         raw: raw.to_owned(),
         kind,
-        normalized: super::org_native_values::scalar(
-            "link-search-normalize",
-            &[&row[8], raw, &row[9]],
-        ),
+        normalized: super::org_values::scalar("link-search-normalize", &[&row[8], raw, &row[9]]),
     })
 }

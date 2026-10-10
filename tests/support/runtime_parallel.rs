@@ -352,7 +352,7 @@ fn batch(
         "native_stage_scope": "transport includes native owner admission, Scheme parse, event tape serialization and result transfer; not isolated Scheme CPU time",
         "driver": "tokio-process-domains", "tokio_workers": 4,
         "program": org_event_parser_digest(), "adapter": runtime_corpus::adapter_identity(),
-        "benchmark": blake3::hash(concat!(include_str!("runtime_parallel.rs"), include_str!("runtime_corpus.rs"), include_str!("runtime_config.rs"), include_str!("../../examples/native_runtime_qualification.rs")).as_bytes()).to_hex().to_string(),
+        "benchmark": blake3::hash(concat!(include_str!("runtime_parallel.rs"), include_str!("runtime_corpus.rs"), include_str!("runtime_config.rs"), include_str!("../../examples/runtime_qualification.rs")).as_bytes()).to_hex().to_string(),
         "architecture": std::env::consts::ARCH, "corpus": runtime_corpus::source_identity(&documents),
         "artifact": if performance { None } else { Some(artifact.finalize().to_hex().to_string()) },
         "documents": documents.len(), "distinct_documents": documents.iter().collect::<std::collections::HashSet<_>>().len(),

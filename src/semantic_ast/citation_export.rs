@@ -22,7 +22,7 @@ impl Document<ParsedAnnotation> {
         for section in &self.sections {
             collect_section(section, &mut plan, &mut keywords);
         }
-        super::citation_export_native::project(&keywords, &mut plan);
+        super::citation_export_owner::project(&keywords, &mut plan);
         collect_warnings(&mut plan);
         plan
     }

@@ -62,7 +62,7 @@ scenarios still excluded. The 1000/10000-document qualification completes 11000
 distinct-per-batch documents with 64 callers, eight native domains and the real
 Tokio process-domain driver. Activity/count checks and semantic comparison
 against the preceding b549 qualification both pass.
-Receipt: =native-runtime-prefix-rust-qualification-20261004.json=, emitted by
+Receipt: =runtime-prefix-rust-qualification-20261004.json=, emitted by
 the maintained native Rust benchmark owner, not an external Scheme stats sidecar.
 Frozen unit/consumer/corpus executables: =target/runtime-receipt-binaries/prefix-rust-*-20261004=.
 
@@ -76,7 +76,7 @@ program, adapter, benchmark, source corpus and semantic artifact identities,
 completed counts, worker exits and actual concurrency activity.
 The semantic artifact comparison against the previous b549 Scheme qualification
 passes as well. Total qualification completions across features: 22000.
-Receipt: =native-runtime-prefix-scheme-qualification-20261004.json=.
+Receipt: =runtime-prefix-scheme-qualification-20261004.json=.
 Frozen executables: =target/runtime-receipt-binaries/prefix-scheme-*-20261004=.
 These lanes intentionally have runtime-profile disabled. Their end-to-end timings
 include validation/checksums and overlapped consumer qualification; do not rank

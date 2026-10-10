@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; Pure macro expansion; syntax and escaped arguments remain Scheme-owned.
-(import (only-in "../../native-event-runtime.ss" parse-org-inline-events))
+(import (only-in "../../event-runtime.ss" parse-org-inline-events))
 (export expand-org-macro-template expand-org-property-macros)
 
 (def (string-concatenate chunks) (string-join chunks ""))

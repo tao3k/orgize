@@ -2,12 +2,12 @@
 
 [group('python')]
 python-test:
-    {{ native_env }} {{ native_rust_flags }} uv sync --directory bindings/python --locked --extra test
-    {{ native_env }} {{ native_rust_flags }} uv run --directory bindings/python --offline pytest
+    {{ platform_env }} {{ platform_rust_flags }} uv sync --directory bindings/python --locked --extra test
+    {{ platform_env }} {{ platform_rust_flags }} uv run --directory bindings/python --offline pytest
 
 [private]
 python-wheel:
-    {{ native_env }} {{ native_rust_flags }} uv build --directory bindings/python --wheel
+    {{ platform_env }} {{ platform_rust_flags }} uv build --directory bindings/python --wheel
 
 # Explicit local native-build owner qualification without another Python backend.
 [group('python')]
@@ -20,18 +20,18 @@ python-lock offline="true":
 
 # Local native build tool only; never substitute a different Python backend.
 [private]
-python-native-build-tool version="1.15.0" offline="true":
+python-build-tool version="1.15.0" offline="true":
     uv pip install {{ if offline == "true" { "--offline" } else { "" } }} --python bindings/python/.venv/bin/python 'maturin=={{ version }}'
 
 [private]
-native-python-develop-owner manifest gsc maturin="maturin" runtime="runtime-rust" verbosity="-vv":
-    cd bindings/python && {{ native_env }} VIRTUAL_ENV="$PWD/.venv" XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" "{{ maturin }}" develop {{ verbosity }} --offline --uv --no-default-features --features "{{ runtime }}" -- {{ native_link_args }}
+python-develop-owner manifest gsc maturin="maturin" runtime="runtime-rust" verbosity="-vv":
+    cd bindings/python && {{ platform_env }} VIRTUAL_ENV="$PWD/.venv" XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" "{{ maturin }}" develop {{ verbosity }} --offline --uv --no-default-features --features "{{ runtime }}" -- {{ platform_link_args }}
 
 # Preserve the standard maturin build transcript for the same native program.
 [group('python')]
-native-python-develop-receipt manifest gsc native_output output runtime="runtime-rust":
+python-develop-receipt manifest gsc native_output output runtime="runtime-rust":
     mkdir -p "{{ output }}"
-    ORGIZE_GERBIL_NATIVE_OUTPUT="{{ native_output }}" just native-python-develop-owner "{{ manifest }}" "{{ gsc }}" "{{ justfile_directory() }}/bindings/python/.venv/bin/maturin" "{{ runtime }}" -vv 2>&1 | tee "{{ output }}/develop-build.log"
+    ORGIZE_GERBIL_NATIVE_OUTPUT="{{ native_output }}" just python-develop-owner "{{ manifest }}" "{{ gsc }}" "{{ justfile_directory() }}/bindings/python/.venv/bin/maturin" "{{ runtime }}" -vv 2>&1 | tee "{{ output }}/develop-build.log"
     rg --quiet 'Installed orgizepy' "{{ output }}/develop-build.log"
     ! rg --quiet '^error:|^error\[' "{{ output }}/develop-build.log"
 
@@ -41,17 +41,17 @@ python-test-installed filter="":
 
 # Inspect the installed extension without initializing its native runtime.
 [private]
-python-native-identity:
+python-identity:
     bindings/python/.venv/bin/python -c 'from orgizepy._orgize import _native_runtime_identity; print(*_native_runtime_identity())'
 
 [private]
-python-native-test-installed runtime program:
+python-test-qualified runtime program:
     ORGIZE_EXPECTED_NATIVE_RUNTIME="{{ runtime }}" ORGIZE_EXPECTED_NATIVE_PROGRAM="{{ program }}" just python-test-installed
 
 [group('python')]
-python-native-test-receipt runtime program output:
+python-test-receipt runtime program output:
     mkdir -p "{{ output }}"
-    just python-native-test-installed "{{ runtime }}" "{{ program }}" 2>&1 | tee "{{ output }}/installed-test.log"
+    just python-test-qualified "{{ runtime }}" "{{ program }}" 2>&1 | tee "{{ output }}/installed-test.log"
     rg --quiet '=+ [0-9]+ passed.*=+$' "{{ output }}/installed-test.log"
     ! rg --quiet '^FAILED|^ERROR|[0-9]+ failed|[0-9]+ errors?' "{{ output }}/installed-test.log"
     ! rg --quiet 'Timeout \(0:00:05\)!' "{{ output }}/installed-test.log"
@@ -60,4 +60,4 @@ python-native-test-receipt runtime program output:
 python-wheel-repair: python-wheel
     uv sync --directory bindings/python --locked --group wheel-repair
     mkdir -p bindings/python/dist/repaired
-    {{ native_env }} uv run --directory bindings/python --no-sync {{ repair_command }} "{{ justfile_directory() }}/bindings/python/dist/repaired" "{{ justfile_directory() }}/bindings/python/dist/"orgizepy-*.whl
+    {{ platform_env }} uv run --directory bindings/python --no-sync {{ repair_command }} "{{ justfile_directory() }}/bindings/python/dist/repaired" "{{ justfile_directory() }}/bindings/python/dist/"orgizepy-*.whl

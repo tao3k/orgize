@@ -279,7 +279,7 @@ fn collect_timestamp_in_cite_reference<A>(
 }
 
 pub(crate) fn timestamp_sort_key(value: &str) -> Option<(u16, u8, u8, u8, u8)> {
-    let row = super::org_native_values::optional("timestamp-sort-key", value)?;
+    let row = super::org_values::optional("timestamp-sort-key", value)?;
     let [year, month, day, hour, minute]: [String; 5] =
         row.try_into().expect("native timestamp sort arity");
     Some((

@@ -66,5 +66,5 @@ mod semantic_traversal_supports_exporter_and_indexer_shapes;
 pub(crate) mod support;
 mod traversal_visits_annotation_bearing_metadata_nodes;
 
-mod native_cases;
-pub(super) use native_cases::native_cases;
+mod cases;
+pub(super) use cases::cases;

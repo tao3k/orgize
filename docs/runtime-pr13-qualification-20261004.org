@@ -1,0 +1,103 @@
+#+TITLE: Current parser PR13 native qualification - 2026-10-04
+
+* Source and native program
+Parser base: =e7c6761dc79202abe50931bd78ee3f0930d61f8f= plus preserved
+uncommitted fold optimizations. Orgize checkout: =479b2763= plus existing
+uncommitted native migration. No remote mutation was performed.
+
+The isolated Org build now composes the existing =build.ss= and
+=build-parser.ss= owners. The first stage failed because the parser-only
+build omitted static Org Elements graph-types; compiling the runtime owner
+then the parser owner repaired the closure. This is a build-root repair,
+not a new scheduler, parser or runtime fallback. The normal Justfile parser
+build delegates to the same full-graph entrypoint, with 12 cores by default.
+
+Manifest: =target/org-pr13-e7c6761-20261004/program.json= (275 modules).
+Parser and Org static sources come from the freshly rebuilt roots. The
+native archive is =target/native-pr13-e7c6761-20261004/liborgize_gerbil_program.a=.
+Qualified native program identity:
+=sha256:b54911c53c817cc53e1e0b2da7d6d77400e5dd147cb2aafdabdaa7bf8858dc5b=.
+Release remains opt3, Thin LTO, four codegen units, symbols stripped; dev
+remains opt2/debug/assertions/overflow-checks. The existing Apple ld_classic
+diagnostic is retained; its deprecation/unwind warnings are not suppressed.
+No Gambit kernel changes were made.
+
+* Gates completed
+Fresh event-tape Scheme suite: MODULE-OK, HARNESS-OK, final OK.
+Rust release build: pass (2m33s), using the new parser Rust dependency pin.
+Rust native units: 54 cases plus 26 pure/policy tests pass, one performance
+test remains explicitly ignored. Panic isolation tests intentionally emit
+caught panic diagnostics and pass.
+Rust full consumers: 454 cases, 12 callers, all pass (17.23s). Three separate
+ignored scenarios are not claimed as executed.
+Rust scale: 1000/10000 documents, 64 callers, eight independent native domains,
+two performance repetitions plus one qualification repetition, 33000 completed
+parses. Counts, identities, activity and stage-timing gates pass. Qualification
+hashes match the historical fold baseline's semantic results.
+
+Receipts: =native-runtime-pr13-rust-{performance,qualification}-20261004.json=.
+The 10000-document performance repetitions observed 981.88/977.14 docs/s,
+E2E p95 124.232/123.560 ms, owner Scheme CPU mean 5.847/5.744 ms.
+These do not establish an AOT speedup over the historical program or a stable
+runtime ranking. During the slower qualification run, a read-only process
+snapshot showed other clang/rustc/cargo workloads consuming CPU. This is
+evidence of concurrent host load, not proof that it caused every timing change;
+no external process was stopped. Allocation microbenchmarks remain a distinct
+result from native scale CPU/wall timings.
+
+* Scheme and cross-runtime completion
+Scheme release build passes (4m21s). Its 54 native cases, 25 pure/policy
+tests and 454 consumers (12 callers, 16.90s) pass. One library performance
+case and three separate integration scenarios remain explicitly ignored.
+Scheme scale completes the same 33000 parses as Rust. Both performance
+repeat matrices and qualification scale gates pass. Strict cross-runtime
+comparisons admit the same program/adapter/benchmark/corpus identities and
+semantic hashes. Cross-program qualification hashes also match the historical
+fold program. Total current-program scale completions: 66000; each batch
+contains 1000 or 10000 distinct documents, not 66000 globally unique sources.
+
+| Runtime | 10000 docs/s r1/r2 | E2E p95 ms r1/r2 | Scheme owner CPU mean ms r1/r2 |
+| Rust | 981.88 / 977.14 | 124.232 / 123.560 | 5.847 / 5.744 |
+| Scheme | 978.44 / 943.16 | 175.966 / 172.191 | 4.714 / 4.891 |
+These sequential, profiled batches under variable external host load do not
+establish a stable winner or statistical speedup. Qualification-mode throughput
+ranking reverses; qualification includes lossless/checksum work that performance
+mode excludes. Small-fixture fold allocation savings are not a universal native
+throughput guarantee. Both feature choices remain intact.
+
+Frozen executable SHA256 values in =target/runtime-receipt-binaries=:
+| pr13-rust-unit-20261004 | 0a4179933df0e394cbfe91d8e6df44f9ecb000f1178d742e225b9ed5fd18ffe0 |
+| pr13-rust-consumer-20261004 | 3f532dd7c74d29a6c6a22f8dc7c7d3ea72e25f34f72b898d3a69d7d4a480b88e |
+| pr13-rust-corpus-20261004 | 9739ff299c607790ce35b3a8dcc74bfd528fe173fce0809fd6c298f40ed52db9 |
+| pr13-scheme-unit-20261004 | 51bde0adf360af5d350df2fecc2c9465556d36253a8f2a4df4c7bb5f8a07e557 |
+| pr13-scheme-consumer-20261004 | cb500724a370de691cc3b5d355238d9614d258aa0cdae03bffacbf851d279f0c |
+| pr13-scheme-corpus-20261004 | 1a998c1f7729efd2a66b94933e55f2915339eec47bd8e8b43824ae2fd5023977 |
+
+After these gates, =parser-program-select= copied the exact qualified
+compiler manifest to the normal =target/gerbil-parser/program.json= location.
+Its absolute module paths still bind the freshly rebuilt graph. The previous
+manifest remains recoverable at
+=target/native-program-history/before-pr13-e7c6761-20261004.json=; old modules
+and executables were not deleted. The two manifest files compare byte-for-byte.
+
+* Normal Python / native C ABI
+Both maturin abi3 Python>=3.11 local extensions build and install using normal,
+non-profiled runtime features and unchanged workspace dev settings. CPython
+3.13.11 runs all 16 tests with exact backend/program identity checks: Scheme
+1.81s, Rust 1.65s. This includes native shared-runtime initialization, host
+children, parser/source preservation, contracts and edits. The final installed
+local Python extension is runtime-rust, with the new b549 program identity.
+Frozen extension SHA256 values:
+| pr13-python-scheme-20261004.so | 7bfb38440866457d9fa1e52aaf36a3bfeeb4c4f73ffc1a24817ed051a12fe39c |
+| pr13-python-rust-20261004.so | caffdbf9c0c05dca7728792c66ec298a3d36c0f9d1fb2abdf94823eb40afdfbf |
+
+* Remaining boundary
+This completes the new-base local native/consumer/scale/Python qualification,
+not every Org language conformance obligation. No release, repaired shipping
+wheel, unprofiled native scale ranking or remote CI closure is claimed.
+The general Scheme fold IR interpreter remains. Native owner CPU measurements
+show Fold is still material; follow-up algorithm work must use a matched native
+program A/B with semantic admission, not assume the Scheme allocation result
+automatically improves native throughput. No new source commits or pushes were
+created. The standalone release CLI artifact was last built for runtime-scheme;
+Cargo's feature default and the installed Python default remain runtime-rust.

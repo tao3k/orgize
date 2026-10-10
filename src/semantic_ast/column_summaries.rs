@@ -273,7 +273,7 @@ fn is_special_summary_property(property: &str) -> bool {
 }
 
 fn column_summary_operator_kind(operator: &str) -> ColumnSummaryOperatorKind {
-    match super::org_native_values::scalar("column-summary-kind", &[operator]).as_str() {
+    match super::org_values::scalar("column-summary-kind", &[operator]).as_str() {
         "numeric-sum" => ColumnSummaryOperatorKind::NumericSum,
         "currency" => ColumnSummaryOperatorKind::Currency,
         "numeric-min" => ColumnSummaryOperatorKind::NumericMin,
@@ -376,7 +376,7 @@ fn format_number(value: f64, format: Option<&str>) -> String {
 }
 
 fn decimal_precision(format: &str) -> Option<usize> {
-    let row = super::org_native_values::optional("column-precision", format)?;
+    let row = super::org_values::optional("column-precision", format)?;
     let [precision]: [String; 1] = row.try_into().expect("native column precision arity");
     Some(precision.parse().expect("native column precision"))
 }
@@ -401,7 +401,7 @@ fn compute_checkbox(
 }
 
 fn checkbox_done(value: &str) -> bool {
-    match super::org_native_values::scalar("checkbox-done", &[value]).as_str() {
+    match super::org_values::scalar("checkbox-done", &[value]).as_str() {
         "true" => true,
         "false" => false,
         _ => unreachable!("native checkbox boolean"),

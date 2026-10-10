@@ -51,7 +51,7 @@ qualify runtime restart, dynamic unloading or general host-signal isolation.
 Shared C consumers must use ABI revision 2 and call
 `orgize_shared_runtime_initialize()` under the same startup contract; C and
 Python use the same owner and initializer, never a second runtime. Historical
-lazy-startup failures are recorded in `docs/native-runtime-tokio-pr7c-20261003.org`.
+lazy-startup failures are recorded in `docs/runtime-tokio-pr7c-20261003.org`.
 
 Raw wheels retain build-host dynamic library paths. The `python-wheel-repair`
 recipe relinks and bundles non-system dependencies; CI then tests the repaired

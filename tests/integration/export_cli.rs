@@ -3,7 +3,7 @@ mod export_cli_markdown;
 mod export_cli_org;
 mod export_cli_stdin;
 
-pub(super) fn native_cases() -> Vec<(&'static str, fn())> {
+pub(super) fn cases() -> Vec<(&'static str, fn())> {
     let mut cases = Vec::new();
     for group in [
         export_cli_markdown::NATIVE_CASES,

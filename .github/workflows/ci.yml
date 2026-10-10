@@ -99,37 +99,37 @@ jobs:
       - name: Install released Gerbil
         run: bash tools/ci/install-gerbil-release.sh
       - name: Prepare pinned native Scheme program
-        run: just native-ci-prepare
+        run: just ci-prepare
       - name: Verify native Scheme owners
-        run: just native-ci-scheme-test
+        run: just ci-scheme-test
 
       - name: Select producer FFI bundle output
         if: matrix.runtime == 'runtime-scheme'
         run: echo "ORGIZE_FFI_EXPORT=$GITHUB_WORKSPACE/target/ffi-bundle" >> "$GITHUB_ENV"
 
       - name: Run tests
-        run: just native-ci-rust-test "${{ env.RUNTIME_FEATURES }}"
+        run: just ci-rust-test "${{ env.RUNTIME_FEATURES }}"
 
       - name: Run focused workspace admission performance gate
-        run: just native-ci-scenario-test "${{ matrix.runtime }}" integration_test workspace_contract_scale_scenario_stays_in_budget
+        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test workspace_contract_scale_scenario_stays_in_budget
 
       - name: Run focused Org query performance gate
-        run: just native-ci-scenario-test "${{ matrix.runtime }}" lib document_query_org_elements_aot_stays_inside_scenario_gate
+        run: just ci-scenario-test "${{ matrix.runtime }}" lib document_query_org_elements_aot_stays_inside_scenario_gate
 
       - name: Run plan ledger AOT performance gate
         id: plan_ledger_aot_gate
-        run: just native-ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
+        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
 
       - name: Profile failed plan ledger AOT gate
         if: ${{ failure() && steps.plan_ledger_aot_gate.conclusion == 'failure' }}
         continue-on-error: true
         env:
           ORGIZE_PROFILE_PLAN_LEDGER: "1"
-        run: just native-ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
+        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
 
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: just native-ci-clippy "${{ env.RUNTIME_FEATURES }}"
+        run: just ci-clippy "${{ env.RUNTIME_FEATURES }}"
 
       - name: Qualify relocated FFI consumption
         if: matrix.runtime == 'runtime-scheme'
@@ -140,7 +140,7 @@ jobs:
           unset ORGIZE_FFI_EXPORT
           export ORGIZE_FFI_BUNDLE="$GITHUB_WORKSPACE/target/ffi-consumer"
           export ORGIZE_GERBIL_PROGRAM_MANIFEST="$GITHUB_WORKSPACE/target/absent-program.json"
-          just native-ci-rust-test "${{ env.RUNTIME_FEATURES }}"
+          just ci-rust-test "${{ env.RUNTIME_FEATURES }}"
 
       - name: Publish qualified revision-bound FFI bundle
         if: matrix.runtime == 'runtime-scheme'
@@ -196,9 +196,9 @@ jobs:
       - name: Fetch pinned native dependencies
         run: cargo fetch --locked
       - name: Prepare pinned native Scheme program
-        run: just native-ci-prepare
+        run: just ci-prepare
       - name: Verify native Scheme owners
-        run: just native-ci-scheme-test
+        run: just ci-scheme-test
       - name: Verify Python SDK through maturin
         run: just python-test
       - name: Build and repair maturin wheel

@@ -2,8 +2,8 @@
 (import (only-in :asp-gerbil-scheme/benchmark-api
                  benchmark-run/result benchmark-receipt-pass?)
         (only-in :gerbil-parser/src/compiler/event-fold-runtime run-event-fold)
-        (only-in :orgize/bindings/c/native-runtime-statistics
-                 native-runtime-statistics-snapshot native-runtime-statistics-delta)
+        (only-in :orgize/bindings/c/runtime-statistics
+                 runtime-statistics-snapshot runtime-statistics-delta)
         (only-in "org-helper-state/runtime-counters.ss" sum-runtime-counters))
 (export main)
 
@@ -56,7 +56,7 @@
     ;; Snapshot allocation may contribute to GC. This wrapper forces no GC;
     ;; ASP's own native GC precondition is included in the observed interval.
     (let ((stats-begin (and (equal? mode "diagnostic")
-                           (native-runtime-statistics-snapshot)))
+                           (runtime-statistics-snapshot)))
           (workload-samples '()))
       (let-values (((measurement result)
                   (benchmark-run/result fixture
@@ -66,17 +66,17 @@
                       (lambda ()
                       ;; Observe the existing ASP callback, not its GC
                       ;; precondition. Snapshot overhead remains visible.
-                      (let* ((begin (native-runtime-statistics-snapshot))
+                      (let* ((begin (runtime-statistics-snapshot))
                              (result (run-helper-batch operation))
-                             (end (native-runtime-statistics-snapshot)))
+                             (end (runtime-statistics-snapshot)))
                         (set! workload-samples
-                              (cons (native-runtime-statistics-delta begin end)
+                              (cons (runtime-statistics-delta begin end)
                                     workload-samples))
                         result))))))
         (let (runtime-counters
               (and stats-begin
-                   (native-runtime-statistics-delta
-                    stats-begin (native-runtime-statistics-snapshot))))
+                   (runtime-statistics-delta
+                    stats-begin (runtime-statistics-snapshot))))
           (unless (equal? result expected)
             (error "helper benchmark event semantics changed" label))
           (unless (= (length workload-samples) (if stats-begin 20 0))

@@ -102,8 +102,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[cfg(test)]
-#[path = "support/native_fixture.rs"]
-mod native_fixture;
+#[path = "support/fixture.rs"]
+mod fixture;
 
 #[cfg(test)]
 mod tests {
@@ -133,22 +133,22 @@ mod tests {
 
     fn missing_scope_fails_closed() {
         let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:END:\n#+begin_src scheme :org-contract\n(list)\n#+end_src\n";
-        super::native_fixture::assert_rejected(default_tangle(source));
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
     fn plain_scheme_babel_block_is_not_a_contract() {
         let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme\n(list)\n#+end_src\n";
-        super::native_fixture::assert_rejected(default_tangle(source));
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
     fn elements_query_block_cannot_define_a_contract() {
         let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
-        super::native_fixture::assert_rejected(default_tangle(source));
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
     fn mixed_feature_tags_cannot_define_a_contract() {
         let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-contract :org-elements-query\n(list)\n#+end_src\n";
-        super::native_fixture::assert_rejected(default_tangle(source));
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
     fn contract_header_is_case_insensitive_but_language_must_be_scheme() {
@@ -156,17 +156,17 @@ mod tests {
         assert!(default_tangle(upper).is_ok());
 
         let pseudo_language = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+BEGIN_SRC org-contract\n(assert-org-element \"x\" error (bindings) (org-elements headline) (expect at-least 1))\n#+END_SRC\n";
-        super::native_fixture::assert_rejected(default_tangle(pseudo_language));
+        super::fixture::assert_rejected(default_tangle(pseudo_language));
     }
 
     fn nested_block_does_not_satisfy_parent_contract() {
         let source = "* Parent\n:PROPERTIES:\n:CONTRACT_ID: parent\n:CONTRACT_SCOPE: subtree\n:END:\n** Child\n:PROPERTIES:\n:CONTRACT_ID: child\n:CONTRACT_SCOPE: subtree\n:END:\n#+begin_src scheme :org-contract\n(assert-org-element \"a\" error (bindings) (org-elements headline) (expect at-least 1))\n#+end_src\n";
-        super::native_fixture::assert_rejected(default_tangle(source));
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
     fn duplicate_contract_ids_are_rejected() {
         let source = "* One\n:PROPERTIES:\n:CONTRACT_ID: same\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-contract\n(assert-org-element \"a\" error (bindings) (org-elements headline) (expect at-least 1))\n#+end_src\n* Two\n:PROPERTIES:\n:CONTRACT_ID: same\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-contract\n(assert-org-element \"b\" error (bindings) (org-elements headline) (expect at-least 1))\n#+end_src\n";
-        super::native_fixture::assert_rejected(default_tangle(source));
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
     fn consumer_selects_both_owned_interface_imports() {
@@ -183,8 +183,8 @@ mod tests {
             generated.matches("(make-org-contract-definition ").count(),
             5
         );
-        super::native_fixture::assert_rejected(tangle(source, "", ELEMENTS_INTERFACE));
-        super::native_fixture::assert_rejected(tangle(source, CONTRACT_INTERFACE, ""));
+        super::fixture::assert_rejected(tangle(source, "", ELEMENTS_INTERFACE));
+        super::fixture::assert_rejected(tangle(source, CONTRACT_INTERFACE, ""));
     }
 
     fn consumer_contract_source_artifact_stays_in_sync() {
@@ -202,7 +202,7 @@ mod tests {
     }
     #[test]
     fn explicit_startup_precedes_parallel_example_cases() {
-        super::native_fixture::run(
+        super::fixture::run(
             "org_contract_tangle",
             10,
             &[

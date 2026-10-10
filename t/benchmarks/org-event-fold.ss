@@ -5,7 +5,7 @@
                  benchmark-run/result benchmark-receipt-pass?
                  benchmark-fixture-contract-pass?)
         (only-in :gerbil-parser/src/runtime/identity sha256-text)
-        (only-in "../../languages/org/native-event-runtime.ss" parse-org-native-events)
+        (only-in "../../languages/org/event-runtime.ss" parse-org-native-events)
         (only-in "../org-parser-test-support.ss" org-events-cover-source?))
 (export main)
 

@@ -22,9 +22,9 @@ pub mod export;
 pub mod fmt;
 /// Org document linting helpers.
 pub mod lint;
-mod native_startup;
 mod org;
-pub use native_startup::initialize_native_runtime;
+mod startup;
+pub use startup::initialize_native_runtime;
 /// Statically linked Gerbil Org parser and Scheme-declared Element graph.
 pub mod org_aot;
 pub mod runtime_backend;

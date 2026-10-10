@@ -1,7 +1,7 @@
 (import (only-in :std/test check test-case test-suite)
-        (only-in "../languages/org/native-event-tape.ss"
+        (only-in "../languages/org/event-tape.ss"
                  org-events->tape org-request->tape org-event-tape-header)
-        (only-in "../languages/org/native-event-runtime.ss"
+        (only-in "../languages/org/event-runtime.ss"
                  parse-org-native-events-with-parameters))
 (export org-event-tape-test)
 

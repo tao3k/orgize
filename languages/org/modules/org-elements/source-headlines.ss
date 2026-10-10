@@ -10,7 +10,7 @@
         (only-in :std/encoding/hex hex-encode)
         (only-in :std/list/list filter)
         (only-in :std/string/misc string-trim)
-        (only-in "../../native-event-runtime.ss" parse-org-native-events)
+        (only-in "../../event-runtime.ss" parse-org-native-events)
         (only-in "headline-properties.ss"
                  todo-directive? todo-state-from-directives))
 

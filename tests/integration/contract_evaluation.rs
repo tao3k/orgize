@@ -933,5 +933,5 @@ fn test_dir(name: &str) -> PathBuf {
 }
 
 #[path = "contract_evaluation_cases.rs"]
-mod native_cases;
-pub(super) use native_cases::NATIVE_CASES;
+mod cases;
+pub(super) use cases::NATIVE_CASES;

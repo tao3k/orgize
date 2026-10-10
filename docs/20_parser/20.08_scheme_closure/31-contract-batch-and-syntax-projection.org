@@ -1,0 +1,117 @@
+#+title: Contract batch plans and consumer-specific syntax projection
+
+[[file:../20.08_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Root cause and implementation
+
+The scenario budget is 25 milliseconds. No deadline, fixture, concurrency,
+Release profile or Gambit kernel is changed. Completion-mutex isolation alone
+did not close this gate: repeated native requests multiply admission and
+completion scheduling exposure even when individual Scheme work is cheap.
+
+Contract extraction previously requested the full Babel source-block record.
+That computed default headers, result/execution policies and tangle plans that
+Contract never consumes. Contract validation also projected that catalog twice.
+The new private syntax projection carries only source identity/range, kind,
+name, language, parameters and value. Contract and syntax lint use it; Babel
+retains the complete existing projection and results. Both projections use the
+same monomorphized traversal, preserving scope, order and nested containers;
+there is no second parser, tree, scanner or compatibility fallback.
+
+The Scheme owner now admits ordered language/name/parameter triples in one
+=contract-block-plans= value request. It returns role, normalized source name,
+named assertion identifier and explicitly optional name/severity parameters.
+Parameters are tokenized once per block. Rust checks row counts, arity, closed
+roles and presence flags, then uses call-local typed values; source grammar
+remains Scheme-owned. An empty catalog issues no request. Validation shares
+one planned catalog between registry extraction and diagnostics.
+
+This is not cross-document memoization. Request completion profiling adds a
+physical native request count, independent of duration observations. The
+profiling-disabled path still contains no clocks or collector operations.
+
+* Qualification boundary
+
+Fresh program identity:
+=sha256:ad948797cc0f9a2cb4e9b8b86a2500cc734fa42f57bc8f0d9591a5a1ed821f20=.
+Receipts are under =target/native-contract-plan-20261007=.
+
+The independently compiled native Scheme harness passes 175 cases in 12
+suites and final =OK=. Its injected failure exits 42 with =FAILED=, never =OK=.
+The two new cases compare batch metadata with native scalar semantics and
+cover UTF-8, empty catalogs, truncated input rejection and 1,000 ordered blocks.
+
+Rust native syntax tests additionally compare all six source fields against
+the complete Babel projection and assert the lean projection issues zero
+native policy requests. Existing source-block snapshots remain unchanged.
+
+The first Release build with the lean projection passes compilation. All 85
+native Rust unit cases pass. Ordinary admission initially fails the ASP module
+gate: file/directory owner-name collisions and glob/deep-relative imports were
+introduced by this refactor. Owners are moved into their own =mod.rs= files,
+imports made explicit, and final-source rebuild/admission is pending.
+
+Twenty alternating, owned-compilation-free comparisons retain 17 baseline
+and 15 candidate 25ms failures. Baseline observations range from 13.914750 to
+351.680417ms; candidate observations range from 7.459791 to 375.273125ms.
+These do not prove a speedup or closure. The candidate completes 39 physical
+native requests per scenario; failed samples have roughly 1--2ms Scheme CPU
+while admission/completion intervals dominate. A subsequent read-only host
+observation during the subsequent rebuild reports load averages
+69.18/82.49/77.07. This is not a contemporaneous load measurement for the
+matched controls and cannot establish their external load or prove causality.
+No unrelated host processes are terminated or runtime priorities
+changed to manufacture a passing receipt.
+
+* Remaining structural latency work
+
+Batching block metadata removes one repeated crossing family, not all 39
+crossings. The next owner boundary must compile the complete document-local
+Contract facts (section properties, kind/scope/severity, block roles and
+query/expectation plans) inside Scheme and return a typed aggregate once.
+Rust should admit that result and perform explicit host effects, rather than
+walking a metadata dependency chain through synchronous scalar requests.
+That aggregate must preserve source identity, ordering, absent/invalid values,
+query evidence and lifecycle ownership; it cannot be a Rust grammar rewrite.
+
+Long jobs on the single Scheme service can still block short jobs. Bounded
+cooperative work/admission and explicit backpressure are a separate scheduler
+design gate. Shorter compute and fewer handoffs reduce exposure, but do not
+guarantee a 25ms wall-clock deadline on an overloaded desktop OS. Neither
+spinning waiters, hiding queuing time, reducing test callers nor changing the
+deadline closes this architecture boundary.
+
+The refactor's module gate now passes in a focused scanner run. Owner
+=mod.rs= files contain declarations/exports only; implementations live in
+=org_contract/core.rs= and =source_blocks/traversal.rs=. The benchmark source
+corpus follows the moved implementation rather than a thin facade.
+Both five-target optimized Release links finish. Intermediate refactor
+failures (module layout, moved benchmark corpus path and an unused import)
+are repaired. The final import cleanup is admitted by Release source checks
+for tests, benches and examples in both runtime features, with the production
+library warning gate passing. These source checks are not runtime executions;
+linked observations below precede only that unused-import deletion.
+
+After owned compilation exits, both lanes pass 85 native units, their 32/33
+ordinary units (four ignored), 11 public/Tokio cutover and 23 index cases.
+The lean/full source parity and zero-native-request assertion pass. Both
+four-worker 1,000/10,000 Query legs pass complete hit/no-hit projection parity.
+Rust's full 457-case/12-caller catalog passes, observing Contract at
+22.962250ms. Scheme's same catalog completes all 457 cases but fails only
+Contract at 63.030667ms: 47.598ms admission, 12.317ms completion handoff and
+1.830ms Scheme CPU. The Scheme aggregate recipe correctly remains nonzero;
+its cutover/index/scale legs are separately run, not hidden by the failure.
+One passing Rust catalog does not establish stable latency or runtime ranking.
+
+Qualified consumer executables are preserved as
+=target/runtime-receipt-binaries/scheme-contract-ad948797-lean-syntax= and
+=target/runtime-receipt-binaries/rust-contract-ad948797-lean-syntax=.
+Receipts include =scheme-qualified-tests=, =rust-qualified-tests=,
+=scheme-final-source= and =rust-final-source= under the owner receipt root.
+Task/dependency/document guards and platform command-expansion checks pass;
+the platform check is not a Linux runtime execution.
+The saved =21bf523c= binary is the immutable completion-lock baseline. Alternating
+controls do not establish p99 or hard real-time behavior on a desktop host.
+The unchanged full concurrent catalog and both feature paths remain required.
+Whole-parser owned native artifact/lease migration is a separate open gate;
+this consumer optimization does not certify that migration.

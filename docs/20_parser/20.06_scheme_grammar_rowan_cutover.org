@@ -7,7 +7,7 @@ the Rowan sink into orgize or retain a second Rust parser as a fallback.
 The superseded Rust event-IR implementation has been deleted; older backend
 receipts below are historical evidence, not a second implementation to maintain.
 Current local admission is recorded in
-[[file:../native-org-public-cutover-20261003.org][the native public-entry receipt]].
+[[file:../org-public-cutover-20261003.org][the native public-entry receipt]].
 
 ** Baseline and authority
 

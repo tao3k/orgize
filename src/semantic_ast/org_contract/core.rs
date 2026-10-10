@@ -2,7 +2,7 @@
 
 use std::{collections::HashSet, path::Path};
 
-use super::native_blocks::ContractBlock;
+use super::blocks::ContractBlock;
 use super::source_plan::{SourcePlan, plan_document, plan_document_records};
 
 use crate::ast::org_elements_query_expr::{
@@ -294,7 +294,7 @@ fn push_contract_source_diagnostic(
 
 /// Parses a `CONTRACT_ORG` property/keyword value.
 pub fn parse_contract_reference(value: &str) -> OrgContractReference {
-    let row = crate::ast::org_native_values::rows("contract-reference", &[value])
+    let row = crate::ast::org_values::rows("contract-reference", &[value])
         .pop()
         .expect("native contract reference");
     let [raw, path, has_path, contract_id, has_id]: [String; 5] =
@@ -312,7 +312,7 @@ pub fn parse_contract_reference(value: &str) -> OrgContractReference {
 }
 /// Native top-level reference grammar; links and macros remain atomic.
 pub fn parse_contract_references(value: &str) -> Vec<OrgContractReference> {
-    let values = crate::ast::org_native_values::rows("contract-values", &[value])
+    let values = crate::ast::org_values::rows("contract-values", &[value])
         .pop()
         .expect("native contract values");
     if values.is_empty() {

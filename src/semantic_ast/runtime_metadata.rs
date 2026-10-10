@@ -200,7 +200,7 @@ fn collect_feed_status(
     plan: &mut RuntimeMetadataPlan,
 ) {
     let body = drawer_body(&element.ann);
-    let row = super::org_native_values::optional("feed-status", body).expect("native feed row");
+    let row = super::org_values::optional("feed-status", body).expect("native feed row");
     let [raw_body, readable, count]: [String; 3] = row.try_into().expect("native feed arity");
     let readable = match readable.as_str() {
         "true" => true,
@@ -250,7 +250,7 @@ struct TimerStamp {
 }
 
 fn timer_stamps(raw: &str) -> Vec<TimerStamp> {
-    super::org_native_values::rows("timer-stamps", &[raw])
+    super::org_values::rows("timer-stamps", &[raw])
         .into_iter()
         .map(|row| {
             let [raw, seconds]: [String; 2] = row.try_into().expect("native timer arity");
@@ -396,7 +396,7 @@ fn object_text(object: &Object<ParsedAnnotation>) -> String {
 }
 
 fn split_words(value: &str) -> Vec<String> {
-    super::org_native_values::words(value)
+    super::org_values::words(value)
 }
 
 fn runtime_boundaries() -> Vec<RuntimeMetadataBoundary> {

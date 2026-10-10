@@ -13,7 +13,7 @@ pub(crate) fn headline_time<A>(
     if !query.search_headline_time {
         return None;
     }
-    let row = super::org_native_values::optional("headline-time", &section.raw_title)?;
+    let row = super::org_values::optional("headline-time", &section.raw_title)?;
     assert!(row.len() == 2 || row.len() == 4, "native time arity");
     let time = |fields: &[String]| AgendaTime {
         hour: fields[0].parse().expect("native time hour"),

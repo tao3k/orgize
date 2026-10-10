@@ -69,14 +69,14 @@ independently authored documents. Complete-count, identity, artifact-parity,
 worker-exit and five-second progress checks remain. Multi-process domains
 belong only to this qualification experiment, not production parsing.
 
-`cargo test --test native_host_children` checks fresh-process normal exit,
+`cargo test --test host_children` checks fresh-process normal exit,
 idle/active-loop SIGTERM, stdin flags, preservation of custom host handlers and
 host child exit statuses after explicit startup. The supervisor never starts
 the native runtime. Historical lazy-startup failures remain recorded in
-`docs/native-runtime-tokio-pr7c-20261003.org`; they are not fresh receipts for
+`docs/runtime-tokio-pr7c-20261003.org`; they are not fresh receipts for
 the explicit-startup implementation. Release/package and full consumer gates
 remain separate from these focused checks.
-See `docs/native-runtime-explicit-startup-20261003.org` for the new startup
+See `docs/runtime-explicit-startup-20261003.org` for the new startup
 contract, fresh receipts and explicitly unqualified boundaries.
 
 The public API supports:

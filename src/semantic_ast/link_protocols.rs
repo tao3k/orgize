@@ -64,9 +64,9 @@ fn link_record(
     search: Option<LinkSearch>,
     abbreviations: &[super::LinkAbbreviation],
 ) -> Option<LinkProtocolRecord> {
-    let row = super::org_native_values::optional("uri-split", raw)?;
+    let row = super::org_values::optional("uri-split", raw)?;
     let [protocol, target]: [String; 2] = row.try_into().expect("native URI arity");
-    let protocol = super::org_native_values::scalar("ascii-lower", &[&protocol]);
+    let protocol = super::org_values::scalar("ascii-lower", &[&protocol]);
     let replacement = super::settings::abbreviation_index(&protocol, abbreviations)
         .map(|index| abbreviations[index].replacement.clone());
     let expanded = expand_link_abbreviation(&protocol, &target, abbreviations);
@@ -90,7 +90,7 @@ fn link_record(
 }
 
 fn link_protocol_kind(protocol: &str, is_abbreviation: bool) -> LinkProtocolKind {
-    let kind = super::org_native_values::scalar(
+    let kind = super::org_values::scalar(
         "link-protocol-kind",
         &[protocol, if is_abbreviation { "true" } else { "false" }],
     );
@@ -116,7 +116,7 @@ fn org_protocol_for_target(raw: &str) -> Option<OrgProtocolCall> {
     native_org_protocol(raw, "raw")
 }
 fn native_org_protocol(raw: &str, mode: &str) -> Option<OrgProtocolCall> {
-    let rows = super::org_native_values::rows("org-protocol", &[raw, mode]);
+    let rows = super::org_values::rows("org-protocol", &[raw, mode]);
     let mut rows = rows.into_iter();
     let [subprotocol, kind]: [String; 2] =
         rows.next()?.try_into().expect("native org-protocol header");

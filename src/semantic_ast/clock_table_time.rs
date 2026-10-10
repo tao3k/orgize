@@ -179,12 +179,12 @@ fn parse_clocktable_time_bound(raw: &str, role: BoundRole) -> Option<ParsedTimeB
         BoundRole::Start => "start",
         BoundRole::End => "end",
     };
-    let mut rows = super::org_native_values::rows("clock-bound", &[raw, role]);
+    let mut rows = super::org_values::rows("clock-bound", &[raw, role]);
     assert!(rows.len() <= 1, "native clock bound count");
     rows.pop().map(|row| native_time_bound(&row))
 }
 fn parse_clocktable_block_window(raw: &str) -> Option<ClockTableWindowFilter> {
-    let row = super::org_native_values::optional("clock-window", raw)?;
+    let row = super::org_values::optional("clock-window", raw)?;
     assert_eq!(row.len(), 12, "native clock window arity");
     let start = native_time_bound(&row[..6]);
     let end = native_time_bound(&row[6..]);

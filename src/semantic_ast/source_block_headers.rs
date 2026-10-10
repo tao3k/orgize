@@ -64,7 +64,7 @@ fn property_header_args(
 }
 
 fn is_language_header_args_property(key: &str, language: &str) -> bool {
-    super::org_native_values::scalar("header-language", &[key, language]) == "true"
+    super::org_values::scalar("header-language", &[key, language]) == "true"
 }
 
 pub(super) fn source_block_tangle(header_args: &[BlockHeaderArg]) -> Option<SourceBlockTangle> {
@@ -281,7 +281,7 @@ fn default_source_block_header_args(kind: SourceBlockRecordKind) -> Vec<SourceBl
         SourceBlockRecordKind::Block => "block",
         SourceBlockRecordKind::InlineSource => "inline",
     };
-    let defaults = super::org_native_values::rows("header-defaults", &[kind]);
+    let defaults = super::org_values::rows("header-defaults", &[kind]);
     defaults
         .into_iter()
         .map(|row| {
@@ -346,7 +346,7 @@ fn source_block_header_arg_kind(key: &str) -> SourceBlockHeaderArgKind {
 }
 
 fn source_block_header_var(value: &str) -> SourceBlockHeaderVar {
-    let row = super::org_native_values::rows("source-variable", &[value])
+    let row = super::org_values::rows("source-variable", &[value])
         .pop()
         .expect("native variable row");
     let [name, assignment, present]: [String; 3] = row.try_into().expect("native variable arity");
@@ -360,13 +360,13 @@ fn source_block_header_var(value: &str) -> SourceBlockHeaderVar {
     }
 }
 fn split_header_value(value: &str) -> Vec<String> {
-    super::org_native_values::rows("header-tokens", &[value])
+    super::org_values::rows("header-tokens", &[value])
         .pop()
         .expect("native header token row")
 }
 fn unquote_header_value(value: &str) -> String {
-    super::org_native_values::scalar("source-unquote", &[value])
+    super::org_values::scalar("source-unquote", &[value])
 }
 fn header_policy(mode: &str, value: &str) -> String {
-    super::org_native_values::scalar("header-policy", &[mode, value])
+    super::org_values::scalar("header-policy", &[mode, value])
 }

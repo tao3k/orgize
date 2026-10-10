@@ -447,7 +447,7 @@ fn clock_table_scope(parameters: &[ClockTableParameter]) -> ClockTableScope {
             value: Some("file".to_string()),
         };
     };
-    let kind = match super::org_native_values::scalar("clock-scope", &[&value]).as_str() {
+    let kind = match super::org_values::scalar("clock-scope", &[&value]).as_str() {
         "nil" => ClockTableScopeKind::Nil,
         "file" => ClockTableScopeKind::File,
         "subtree" => ClockTableScopeKind::Subtree,
@@ -590,7 +590,7 @@ fn scope_section<'a>(
             .value
             .as_deref()
             .and_then(|raw| {
-                let row = super::org_native_values::optional("clock-tree-level", raw)?;
+                let row = super::org_values::optional("clock-tree-level", raw)?;
                 let [level]: [String; 1] = row.try_into().expect("native clock tree level arity");
                 Some(level.parse::<usize>().expect("native clock tree level"))
             })

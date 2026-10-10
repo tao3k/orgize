@@ -8,13 +8,13 @@ generate-contract-plan parser_lib poo_flow_lib source="languages/org/modules/org
 # Standalone C consumers only; Python uses the shared maturin extension.
 [private]
 contract-library:
-    {{ native_env }} python3 bindings/c/build-native-library.py --output target/liborgize.{{ lib_ext }}
+    {{ platform_env }} python3 bindings/c/build-library.py --output target/liborgize.{{ lib_ext }}
 
 [group('development')]
 contract-smoke: contract-library
-    {{ native_env }} cc -I bindings/c/include bindings/c/tests/orgize-dynamic-harness.c -o target/orgize-dynamic-harness
+    {{ platform_env }} cc -I bindings/c/include bindings/c/tests/orgize-dynamic-harness.c -o target/orgize-dynamic-harness
     target/orgize-dynamic-harness target/liborgize.{{ lib_ext }}
-    {{ native_env }} rustc --edition=2024 bindings/rust/native_smoke.rs -L native=target {{ rust_linker }} -o target/orgize-rust-smoke
+    {{ platform_env }} rustc --edition=2024 bindings/rust/smoke.rs -L native=target {{ rust_linker }} -o target/orgize-rust-smoke
     LD_LIBRARY_PATH=target target/orgize-rust-smoke
 
 [private]

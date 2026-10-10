@@ -9,7 +9,7 @@ use crate::{
     config::RadioLinkProjection,
 };
 
-#[path = "org_native_radio.rs"]
+#[path = "org_radio.rs"]
 mod native_radio;
 
 #[derive(Clone, Copy)]

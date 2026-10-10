@@ -1,6 +1,6 @@
 //! Property profile projection over native Org property descriptors.
 
-use super::property_native_plan::{FIXED, PropertyNativePlan};
+use super::property_plan::{FIXED, PropertyNativePlan};
 use super::{
     Document, ParsedAnnotation, Property, PropertyAllowedValueRecord, PropertyAllowedValueScope,
     PropertyInheritancePolicy, PropertyProfile, PropertySchemaRegistry, Section,
