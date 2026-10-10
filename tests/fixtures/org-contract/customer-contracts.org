@@ -1,0 +1,32 @@
+#+title: Consumer-owned Org Contracts
+
+* Review evidence
+:PROPERTIES:
+:CONTRACT_ID: customer.review-evidence
+:CONTRACT_SCOPE: subtree
+:END:
+
+#+begin_src scheme :org-contract
+(assert-org-element "customer.review-has-link" error
+  (bindings)
+  (org-elements link (descendant-of scope))
+  (expect at-least 1)
+  (message "review requires a link")
+  (fix "add a linked source to the review"))
+#+end_src
+
+* Document tasks
+:PROPERTIES:
+:CONTRACT_ID: customer.has-task
+:CONTRACT_SCOPE: document
+:END:
+
+#+begin_src scheme :org-contract
+(assert-org-element "customer.has-task-headline" warning
+  (bindings)
+  (org-elements headline
+    (all-of (property todo-type "todo")
+            (any-of (property-contains source-title "Review")
+                    (property-contains source-title "Audit"))))
+  (expect at-least 1))
+#+end_src

@@ -4,7 +4,6 @@ use orgize::{
     ast::{AstRef, ElementData, LinkTarget, ObjectData, TargetKind},
 };
 
-#[test]
 fn semantic_ast_resolves_document_local_internal_links() {
     let doc = Org::parse(
         r#"* Anchor Heading
@@ -108,7 +107,6 @@ let x = 1; ref:init
     assert_eq!(target_count, doc.targets.len());
 }
 
-#[test]
 fn semantic_ast_diagnoses_ambiguous_and_missing_strict_internal_links() {
     let doc = Org::parse(
         r#"<<same>> <<same>>
@@ -152,7 +150,6 @@ fn semantic_ast_diagnoses_ambiguous_and_missing_strict_internal_links() {
     );
 }
 
-#[test]
 fn semantic_ast_treats_org_id_as_local_when_present() {
     let doc = Org::parse(
         r#"* First
@@ -190,3 +187,18 @@ fn semantic_ast_treats_org_id_as_local_when_present() {
             if protocol == "id" && path == "external-only"
     )));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_resolves_internal_links::semantic_ast_resolves_document_local_internal_links",
+        semantic_ast_resolves_document_local_internal_links,
+    ),
+    (
+        "semantic_ast::semantic_ast_resolves_internal_links::semantic_ast_diagnoses_ambiguous_and_missing_strict_internal_links",
+        semantic_ast_diagnoses_ambiguous_and_missing_strict_internal_links,
+    ),
+    (
+        "semantic_ast::semantic_ast_resolves_internal_links::semantic_ast_treats_org_id_as_local_when_present",
+        semantic_ast_treats_org_id_as_local_when_present,
+    ),
+];

@@ -1,4 +1,4 @@
-//! Scheme-owned footnote references and definitions in the Rowan Element graph.
+//! Scheme-owned footnote references and definitions in the native navigation Element graph.
 
 macro_rules! check_org_footnote {
     ($record:expr, $source:expr, $kind:expr, $label:expr, $definition:expr, $literal:expr) => {{
@@ -14,7 +14,6 @@ macro_rules! check_org_footnote {
     }};
 }
 
-#[test]
 fn scheme_footnotes_connect_source_backed_reference_and_definition() {
     let source = "Text[fn:note] and [fn::a [b]]\n[fn:note] The answer.\n* Next\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("Scheme footnotes parse");
@@ -56,7 +55,6 @@ fn scheme_footnotes_connect_source_backed_reference_and_definition() {
     );
 }
 
-#[test]
 fn scheme_footnote_definition_ends_before_two_blank_lines() {
     let source = "[fn:a] first\n\ncontinued\n\n\noutside\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("multiline footnote parses");
@@ -77,7 +75,6 @@ fn scheme_footnote_definition_ends_before_two_blank_lines() {
     );
 }
 
-#[test]
 fn scheme_footnote_definition_keeps_one_trailing_blank_at_eof() {
     let source = "[fn:a] first\n\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("footnote EOF parses");
@@ -98,7 +95,6 @@ fn scheme_footnote_definition_keeps_one_trailing_blank_at_eof() {
     );
 }
 
-#[test]
 fn scheme_footnote_definition_keeps_one_blank_before_the_next_definition() {
     let source = "[fn:a] one\n\n[fn:b] two\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("adjacent footnotes parse");
@@ -127,7 +123,6 @@ fn scheme_footnote_definition_keeps_one_blank_before_the_next_definition() {
     );
 }
 
-#[test]
 fn scheme_footnotes_reject_invalid_labels_and_opaque_source_text() {
     let source = "[fn:] invalid\n[fn:bad name]\n#+begin_src text\n[fn:hidden]\n#+end_src\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("invalid footnotes recover");
@@ -141,3 +136,26 @@ fn scheme_footnotes_reject_invalid_labels_and_opaque_source_text() {
         0
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_footnote_aot::scheme_footnotes_connect_source_backed_reference_and_definition",
+        scheme_footnotes_connect_source_backed_reference_and_definition,
+    ),
+    (
+        "org_footnote_aot::scheme_footnote_definition_ends_before_two_blank_lines",
+        scheme_footnote_definition_ends_before_two_blank_lines,
+    ),
+    (
+        "org_footnote_aot::scheme_footnote_definition_keeps_one_trailing_blank_at_eof",
+        scheme_footnote_definition_keeps_one_trailing_blank_at_eof,
+    ),
+    (
+        "org_footnote_aot::scheme_footnote_definition_keeps_one_blank_before_the_next_definition",
+        scheme_footnote_definition_keeps_one_blank_before_the_next_definition,
+    ),
+    (
+        "org_footnote_aot::scheme_footnotes_reject_invalid_labels_and_opaque_source_text",
+        scheme_footnotes_reject_invalid_labels_and_opaque_source_text,
+    ),
+];

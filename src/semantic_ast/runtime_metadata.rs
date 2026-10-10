@@ -1,11 +1,15 @@
 //! Non-executing projections for runtime-adjacent Org metadata.
 
+use std::collections::HashSet;
+
+use super::aot_drawer_projection::drawer_body;
+
 use super::{
-    Document, Element, ElementData, FeedStatusDrawerName, FeedStatusRecord, MobileFlaggedSection,
-    MobileIndexLink, MobileOriginalId, MobilePriorityDeclaration, MobileProperty,
-    MobileReadonlyKeyword, Object, ObjectData, ParsedAnnotation, Property, RuntimeMetadataBoundary,
-    RuntimeMetadataBoundaryKind, RuntimeMetadataPlan, RuntimeMetadataWarning,
-    RuntimeMetadataWarningKind, Section, SectionIndexSource, SourcePosition, TimerContext,
+    AstRef, Document, Element, ElementData, FeedStatusDrawerName, FeedStatusRecord,
+    MobileFlaggedSection, MobileIndexLink, MobileOriginalId, MobilePriorityDeclaration,
+    MobileProperty, MobileReadonlyKeyword, Object, ObjectData, ParsedAnnotation, Property,
+    RuntimeMetadataBoundary, RuntimeMetadataBoundaryKind, RuntimeMetadataPlan,
+    RuntimeMetadataWarning, RuntimeMetadataWarningKind, Section, SectionIndexSource, TimerContext,
     TimerRecord,
 };
 
@@ -40,76 +44,33 @@ impl Document<ParsedAnnotation> {
 }
 
 fn collect_mobile_keywords(document: &Document<ParsedAnnotation>, plan: &mut RuntimeMetadataPlan) {
-    for keyword in &document.metadata {
-        if keyword.key.eq_ignore_ascii_case("READONLY") {
-            plan.mobile.readonly.push(MobileReadonlyKeyword {
-                source: SectionIndexSource::from_annotation(&keyword.ann),
-                value: keyword.value.clone(),
-            });
-        } else if keyword.key.eq_ignore_ascii_case("ALLPRIORITIES") {
-            plan.mobile.all_priorities.push(MobilePriorityDeclaration {
-                source: SectionIndexSource::from_annotation(&keyword.ann),
-                values: split_words(keyword.value.as_str()),
-                raw: keyword.value.clone(),
-            });
+    let mut seen = HashSet::new();
+    document.fold((), |(), node| {
+        if let AstRef::Keyword(keyword) = node {
+            let source_start = u32::from(keyword.ann.range.start());
+            if !seen.insert(source_start) {
+                return;
+            }
+            if keyword.key.eq_ignore_ascii_case("READONLY") {
+                plan.mobile.readonly.push(MobileReadonlyKeyword {
+                    source: SectionIndexSource::from_annotation(&keyword.ann),
+                    value: keyword.value.clone(),
+                });
+            } else if keyword.key.eq_ignore_ascii_case("ALLPRIORITIES") {
+                plan.mobile.all_priorities.push(MobilePriorityDeclaration {
+                    source: SectionIndexSource::from_annotation(&keyword.ann),
+                    values: split_words(keyword.value.as_str()),
+                    raw: keyword.value.clone(),
+                });
+            }
         }
-    }
-    if plan.mobile.readonly.is_empty() || plan.mobile.all_priorities.is_empty() {
-        collect_mobile_marker_lines(document, plan);
-    }
-}
-
-fn collect_mobile_marker_lines(
-    document: &Document<ParsedAnnotation>,
-    plan: &mut RuntimeMetadataPlan,
-) {
-    let mut position = 0usize;
-    for (line_index, raw_line) in document.ann.raw.split_inclusive('\n').enumerate() {
-        let line = raw_line.trim_end_matches(['\r', '\n']);
-        let leading = line.len() - line.trim_start().len();
-        let trimmed = line.trim();
-        let source = source_for_line(line_index, leading, trimmed.len(), position);
-        if plan.mobile.readonly.is_empty() && trimmed.eq_ignore_ascii_case("#+READONLY") {
-            plan.mobile.readonly.push(MobileReadonlyKeyword {
-                source,
-                value: String::new(),
-            });
-        } else if plan.mobile.all_priorities.is_empty()
-            && trimmed
-                .get(..15)
-                .is_some_and(|prefix| prefix.eq_ignore_ascii_case("#+ALLPRIORITIES"))
-            && let Some((_, value)) = trimmed.split_once(':')
-        {
-            plan.mobile.all_priorities.push(MobilePriorityDeclaration {
-                source,
-                values: split_words(value),
-                raw: value.trim().to_string(),
-            });
-        }
-        position += raw_line.len();
-    }
-}
-
-fn source_for_line(
-    line_index: usize,
-    leading: usize,
-    trimmed_len: usize,
-    position: usize,
-) -> SectionIndexSource {
-    let range_start = position + leading;
-    let range_end = range_start + trimmed_len;
-    SectionIndexSource {
-        start: SourcePosition {
-            line: line_index + 1,
-            column: leading + 1,
-        },
-        end: SourcePosition {
-            line: line_index + 1,
-            column: leading + trimmed_len + 1,
-        },
-        range_start: range_start as u32,
-        range_end: range_end as u32,
-    }
+    });
+    plan.mobile
+        .readonly
+        .sort_by_key(|entry| entry.source.range_start);
+    plan.mobile
+        .all_priorities
+        .sort_by_key(|entry| entry.source.range_start);
 }
 
 fn collect_section(
@@ -238,8 +199,15 @@ fn collect_feed_status(
     section: Option<&Section<ParsedAnnotation>>,
     plan: &mut RuntimeMetadataPlan,
 ) {
-    let raw_body = drawer_body(element.ann.raw.as_str());
-    let readable = feed_status_is_readable(raw_body.as_str());
+    let body = drawer_body(&element.ann);
+    let row = super::org_values::optional("feed-status", body).expect("native feed row");
+    let [raw_body, readable, count]: [String; 3] = row.try_into().expect("native feed arity");
+    let readable = match readable.as_str() {
+        "true" => true,
+        "false" => false,
+        _ => panic!("native feed boolean"),
+    };
+    let entry_count = count.parse().expect("native feed count");
     if !readable {
         plan.warnings.push(RuntimeMetadataWarning {
             kind: RuntimeMetadataWarningKind::UnreadableFeedStatus,
@@ -253,7 +221,7 @@ fn collect_feed_status(
             .unwrap_or_default(),
         drawer: FeedStatusDrawerName::new(FEEDSTATUS_DRAWER),
         raw: raw_body.clone(),
-        entry_count: feed_status_entry_count(raw_body.as_str()),
+        entry_count,
         readable,
     });
 }
@@ -276,124 +244,22 @@ fn collect_timers(
     }
 }
 
-fn drawer_body(raw: &str) -> String {
-    raw.lines()
-        .filter(|line| {
-            let trimmed = line.trim();
-            !trimmed.eq_ignore_ascii_case(":FEEDSTATUS:") && !trimmed.eq_ignore_ascii_case(":END:")
-        })
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-fn feed_status_is_readable(raw: &str) -> bool {
-    let trimmed = raw.trim();
-    trimmed.is_empty() || trimmed.starts_with('(')
-}
-
-fn feed_status_entry_count(raw: &str) -> usize {
-    let bytes = raw.as_bytes();
-    let mut count = 0;
-    let mut index = 0;
-    while index < bytes.len() {
-        if bytes[index] == b'(' {
-            let mut next = index + 1;
-            while next < bytes.len() && bytes[next].is_ascii_whitespace() {
-                next += 1;
-            }
-            if bytes.get(next) == Some(&b'"') {
-                count += 1;
-            }
-        }
-        index += 1;
-    }
-    count
-}
-
 struct TimerStamp {
     raw: String,
     total_seconds: i64,
 }
 
 fn timer_stamps(raw: &str) -> Vec<TimerStamp> {
-    let bytes = raw.as_bytes();
-    let mut stamps = Vec::new();
-    let mut index = 0;
-    while index < bytes.len() {
-        if !is_timer_boundary_before(bytes, index) {
-            index += 1;
-            continue;
-        }
-        if let Some((stamp, next)) = parse_timer_at(bytes, index) {
-            stamps.push(stamp);
-            index = next;
-        } else {
-            index += 1;
-        }
-    }
-    stamps
-}
-
-fn parse_timer_at(bytes: &[u8], index: usize) -> Option<(TimerStamp, usize)> {
-    let mut cursor = index;
-    let sign = match bytes.get(cursor) {
-        Some(b'-') => {
-            cursor += 1;
-            -1
-        }
-        Some(b'+') => {
-            cursor += 1;
-            1
-        }
-        _ => 1,
-    };
-    let hour_start = cursor;
-    while cursor < bytes.len() && bytes[cursor].is_ascii_digit() {
-        cursor += 1;
-    }
-    if cursor == hour_start || bytes.get(cursor) != Some(&b':') {
-        return None;
-    }
-    let hours = std::str::from_utf8(&bytes[hour_start..cursor])
-        .ok()?
-        .parse::<i64>()
-        .ok()?;
-    cursor += 1;
-    let minutes = parse_two_digits(bytes, cursor)?;
-    if bytes.get(cursor + 2) != Some(&b':') {
-        return None;
-    }
-    cursor += 3;
-    let seconds = parse_two_digits(bytes, cursor)?;
-    cursor += 2;
-    if minutes > 59 || seconds > 59 || !is_timer_boundary_after(bytes, cursor) {
-        return None;
-    }
-    let raw = std::str::from_utf8(&bytes[index..cursor]).ok()?.to_string();
-    let total_seconds = sign * (hours * 3600 + minutes * 60 + seconds);
-    Some((TimerStamp { raw, total_seconds }, cursor))
-}
-
-fn parse_two_digits(bytes: &[u8], index: usize) -> Option<i64> {
-    let tens = *bytes.get(index)?;
-    let ones = *bytes.get(index + 1)?;
-    if !tens.is_ascii_digit() || !ones.is_ascii_digit() {
-        return None;
-    }
-    Some(((tens - b'0') * 10 + (ones - b'0')) as i64)
-}
-
-fn is_timer_boundary_before(bytes: &[u8], index: usize) -> bool {
-    if index == 0 {
-        return true;
-    }
-    !bytes[index - 1].is_ascii_alphanumeric() && bytes[index - 1] != b':'
-}
-
-fn is_timer_boundary_after(bytes: &[u8], index: usize) -> bool {
-    index >= bytes.len() || (!bytes[index].is_ascii_alphanumeric() && bytes[index] != b':')
+    super::org_values::rows("timer-stamps", &[raw])
+        .into_iter()
+        .map(|row| {
+            let [raw, seconds]: [String; 2] = row.try_into().expect("native timer arity");
+            TimerStamp {
+                raw,
+                total_seconds: seconds.parse().expect("native timer seconds"),
+            }
+        })
+        .collect()
 }
 
 fn original_id(section: &Section<ParsedAnnotation>) -> Option<(SectionIndexSource, String)> {
@@ -530,11 +396,7 @@ fn object_text(object: &Object<ParsedAnnotation>) -> String {
 }
 
 fn split_words(value: &str) -> Vec<String> {
-    value
-        .split_whitespace()
-        .map(str::to_string)
-        .filter(|part| !part.is_empty())
-        .collect()
+    super::org_values::words(value)
 }
 
 fn runtime_boundaries() -> Vec<RuntimeMetadataBoundary> {

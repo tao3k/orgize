@@ -1,0 +1,41 @@
+#+title: Native ASP Scheme fold benchmark correction — 2026-10-04
+
+* Authority
+The public =:asp-gerbil-scheme/benchmark-api= owns timing, sample statistics,
+runtime memory observation and p95 scenario admission. The native fixture lives
+in =t/benchmarks/org-event-fold/benchmark.ss=. Justfile is the execution entry.
+There is no external JavaScript sampler, percentile calculator or JSON sidecar.
+Six external Scheme fold JSON experiment files were removed. Historical Org
+tables are marked as historical, not current ASP qualification evidence.
+Existing Rust native corpus receipts and compiler manifests are separate owners
+and were not removed.
+
+* Receipts and checks
+=target/scheme-benchmark-receipts/asp-{baseline,candidate}-{doc,plain-links,quote-heavy}-r{1,2}.ss=
+contains twelve native readable Scheme receipts, twenty samples each.
+Every run exited zero and produced an admitted ASP receipt. Six comparisons via
+=just scheme-event-benchmark-compare= passed source/event identity, configuration,
+sample-count and admission checks. The comparison prints ASP's existing p50/p95
+fields; it does not recompute statistics.
+
+The initial candidate doc smoke run preceded round one's baseline runs; this is
+not a perfectly reversed-order experiment. Round two ran candidate then baseline.
+The final second-round p50 baseline/candidate nanoseconds were 1598000/1566000
+(doc), 2111000/2074000 (plain links), 4911000/4700000 (quote heavy).
+Quote-heavy p95 worsened from 8869000 to 16624000. No stable latency or public
+native throughput improvement is established.
+
+* Boundaries and first failed attempt
+An initial four-operation micro-kernel fixture failed because ASP's empty
+baseline CPU duration was zero (wall duration 999ns). The failure was preserved;
+no check was bypassed or ASP/Gambit kernel patched. Complete document parsing now
+uses ASP's supported scenario API instead of this inappropriate tiny micro-batch.
+
+The 25ms target plus 75ms regression allowance are ASP's existing diagnostic
+defaults, not a production SLO or replacement for existing strict project gates.
+Input I/O and untimed reference parsing precede measurement. The API-returned p95
+result is compared outside timing; not every intermediate timed result is checked.
+Memory counters are ASP observations, not independently GC-flushed bytes/parse;
+zero observed deltas must not be interpreted as zero parser allocations.
+These are Scheme fold diagnostics, not the 1000/10000-document concurrent native
+qualification. The qualified b549 native program was not rebuilt or changed.

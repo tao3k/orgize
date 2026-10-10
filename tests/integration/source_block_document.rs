@@ -1,11 +1,10 @@
+use orgize::Org;
 use orgize::ast::{
     ElementData, OrgSourceBlock, OrgSourceBlockDocument, OrgSourceBlockHeader,
     OrgSourceBlockHeaderValue, OrgSourceBlockKeyword,
 };
 use orgize::org_aot::parse_org_aot;
-use orgize::{Org, syntax_ast::SourceBlock};
 
-#[test]
 fn gql_remains_a_generic_keyword_before_a_source_block() {
     let org = Org::parse(
         "#+gql: Registry::refresh --calls--> Registry::publish\n#+begin_src rust\nfn refresh() {}\n#+end_src\n",
@@ -17,23 +16,27 @@ fn gql_remains_a_generic_keyword_before_a_source_block() {
         ElementData::Keyword(keyword) if keyword.key == "gql"
     ));
     assert_eq!(
-        org.first_node::<SourceBlock>().unwrap().language().unwrap(),
-        "rust"
+        org.records()
+            .iter()
+            .find(|record| record.kind == "src-block")
+            .and_then(|record| record.field("language")),
+        Some("rust")
     );
 }
 
-#[test]
 fn source_block_languages_do_not_require_a_global_registration() {
     let org = Org::parse("#+begin_src any-language\nbody\n#+end_src\n");
     let document = org.document();
     assert_eq!(document.children.len(), 1);
     assert_eq!(
-        org.first_node::<SourceBlock>().unwrap().language().unwrap(),
-        "any-language"
+        org.records()
+            .iter()
+            .find(|record| record.kind == "src-block")
+            .and_then(|record| record.field("language")),
+        Some("any-language")
     );
 }
 
-#[test]
 fn typed_source_block_document_round_trips_through_orgize() {
     let block = OrgSourceBlock::new(
         "rust",
@@ -80,7 +83,6 @@ fn typed_source_block_document_round_trips_through_orgize() {
     );
 }
 
-#[test]
 fn typed_source_blocks_preserve_escaped_header_text_across_blocks() {
     let first = OrgSourceBlock::new(
         "rust",
@@ -114,13 +116,42 @@ fn typed_source_blocks_preserve_escaped_header_text_across_blocks() {
     assert_eq!(blocks[1].field("language"), Some("scheme"));
 }
 
-#[test]
 fn typed_source_block_document_rejects_org_end_marker_in_source() {
-    let error = OrgSourceBlock::new("rust", vec![], vec![], "#+end_src\nnot source").unwrap_err();
-    assert_eq!(error.reason_kind(), "org-source-block-input-invalid");
+    // Scheme admits indented block delimiters both inside and outside lists.
+    for body in [
+        "#+end_src\nnot source",
+        "#+EnD_SrC \r\nnot source",
+        "  #+EnD_SrC \r\nnot source",
+    ] {
+        let error = OrgSourceBlock::new("rust", vec![], vec![], body).unwrap_err();
+        assert_eq!(error.reason_kind(), "org-source-block-input-invalid");
+    }
 }
 
-#[test]
+fn typed_source_block_document_admits_aot_nonclosing_lookalikes() {
+    for body in [
+        "#+end_srcX\nnot a closer",
+        "prefix #+end_src\nnot a closer",
+        "#+end_src-other\r\nnot a closer",
+    ] {
+        let block = OrgSourceBlock::new("rust", vec![], vec![], body)
+            .expect("Scheme AOT owns source-block closing syntax");
+        let rendered = OrgSourceBlockDocument::new(vec![block])
+            .unwrap()
+            .render()
+            .expect("lookalike remains inside one AOT source block");
+        let parsed = parse_org_aot(&rendered).expect("rendered block reparses");
+        assert_eq!(
+            parsed
+                .records()
+                .iter()
+                .filter(|record| record.kind == "src-block")
+                .count(),
+            1
+        );
+    }
+}
+
 fn typed_source_block_document_rejects_case_variant_header_duplicates() {
     let headers = vec![
         OrgSourceBlockHeader::new("runtime", OrgSourceBlockHeaderValue::text("bash").unwrap())
@@ -131,3 +162,34 @@ fn typed_source_block_document_rejects_case_variant_header_duplicates() {
     let error = OrgSourceBlock::new("sh", headers, vec![], "true").unwrap_err();
     assert_eq!(error.reason_kind(), "org-source-block-input-invalid");
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "source_block_document::gql_remains_a_generic_keyword_before_a_source_block",
+        gql_remains_a_generic_keyword_before_a_source_block,
+    ),
+    (
+        "source_block_document::source_block_languages_do_not_require_a_global_registration",
+        source_block_languages_do_not_require_a_global_registration,
+    ),
+    (
+        "source_block_document::typed_source_block_document_round_trips_through_orgize",
+        typed_source_block_document_round_trips_through_orgize,
+    ),
+    (
+        "source_block_document::typed_source_blocks_preserve_escaped_header_text_across_blocks",
+        typed_source_blocks_preserve_escaped_header_text_across_blocks,
+    ),
+    (
+        "source_block_document::typed_source_block_document_rejects_org_end_marker_in_source",
+        typed_source_block_document_rejects_org_end_marker_in_source,
+    ),
+    (
+        "source_block_document::typed_source_block_document_admits_aot_nonclosing_lookalikes",
+        typed_source_block_document_admits_aot_nonclosing_lookalikes,
+    ),
+    (
+        "source_block_document::typed_source_block_document_rejects_case_variant_header_duplicates",
+        typed_source_block_document_rejects_case_variant_header_duplicates,
+    ),
+];

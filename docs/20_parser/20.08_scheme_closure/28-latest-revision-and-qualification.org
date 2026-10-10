@@ -1,0 +1,123 @@
+#+title: Latest published revision and native qualification
+
+* Source and execution identity
+
+Parser PR 13 was rechecked remotely and advanced to
+=49a527f26ece29b91ed0e6a18c359e289b4ddbd2=; bridge PR 18 remains
+=1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4=.
+Cargo and Gerbil declarations and Cargo.lock use these exact revisions,
+without a patch override or modified upstream checkout.
+
+The parser delta from =92cb800b= affects only native test compilation
+scheduling, compiler diagnostic flags and one research document. A Git diff
+over =src/=, =rust/=, =languages/=, =build.ss= and =gerbil.pkg= is empty.
+The previously compiled production SDK remains source-identical; it is not
+claimed to be a new 49a527f2 SDK build. Official staging was rerun into
+=target/native-full-alignment-20261007-49a527f2/program= and its 319-module
+source-root guard passed. Generated module timestamps are input bytes, so
+fresh staging has a distinct exact program identity despite equal semantics:
+=sha256:6e9aa5e8553b0a47ca5aea3663b86759c963e02aded4dd1de12b6deca3c8268a=.
+
+* Resolved failures
+
+The six original consumer failures were caused by the upstream TextRange
+Debug representation change, not grammar, range or field changes. Eight
+snapshots, including the later cases in the same fixture, were updated only
+after their complete contents matched the old snapshots with this one
+display difference normalized. No source range, graph relationship or
+semantic value was removed from admission.
+
+The native Scheme executable now links through =gerbil compile= using an
+owned static SDK copy. Reverse dependency copy order retains first-root
+precedence; existing freshly compiled local test modules remain ahead of it.
+Compiler C/object outputs stay inside the test build, not external dependency
+checkouts. The 173 cases, 12 suites and final OK passed. The intentional
+failed assertion still exits 42; no timeout or assertion was relaxed.
+
+Latest-revision unprofiled Rust qualification passed 85 native cases,
+26 ordinary cases, all 457 consumer cases with 12 callers, 11 concurrent
+public/Tokio cutover cases and 23 native-index handoff cases. The Contract
+control was 5.211458ms against its unchanged 25ms limit. A prior run during
+concurrent compilation failed at 128.578375ms and remains a negative result.
+The contaminated concurrent matrix was explicitly stopped with exit 143;
+it is not a successful or comparative performance receipt.
+
+* Full qualification wiring
+
+The unified build now includes all five executables: library, consumers,
+public cutover, index handoff and benchmark. Its qualification feature set
+adds =runtime-profile= explicitly: the large Query test is cfg-gated by that
+feature. An unprofiled library cannot silently stand in for scale admission.
+The unified test entry checks executable inventories, exact backend/program,
+both cutover suites and the 1,000/10,000-document Query controls. Performance
+builds remain distinct from instrumented qualification builds.
+
+* Latest instrumented admission
+
+Both feature builds use the same 319-module program identity above.
+Rust passed 85 native / 33 ordinary cases with four intentional ignored
+cases, 457 consumers, 11 public/Tokio cutover cases and 23 index handoff
+cases. Its isolated Contract control passed at 10.409333ms. A run overlapping
+Python admission failed at 136.789709ms; that negative receipt is retained.
+Scheme passed the complete unified receipt: 85 native / 32 ordinary cases
+with four intentional ignored cases, 457 consumers at 12 callers, 11 public
+cutover cases, 23 index cases and Contract at 23.097125ms against 25ms.
+Both lanes passed the 1,000/10,000-document Query checks with four real
+workers, full projection parity and exact hit/no-hit controls. These are
+semantic qualification receipts, not stable relative performance claims.
+
+Both complete profiled domain matrices also passed: six groups per lane,
+=1,000/10,000 documents x 64 callers x 1/4/8 independent process domains=,
+33,000 admitted documents per lane. The maintained cross-feature comparison
+checks equal program, adapter, benchmark, corpus, semantic artifact, source
+bytes, queue configuration and admission scope. All identities matched.
+The semantic artifacts are =fc9e06ab...44eb= for 1,000 documents and
+=ac4b4a9c...b988= for 10,000, equal across features and domain counts.
+Receipts: =rust-matrix/matrix.json=, =scheme-matrix/matrix.json= and
+=runtime-comparison.log= beneath the latest qualification directory.
+The runs are sequential, single-repetition and instrumented; throughput
+ordering reverses between groups. They qualify migration, not a stable
+runtime winner or release-performance improvement.
+Both remote PR heads were rechecked after these runs and remained unchanged.
+
+* Dense-link regression remains open
+
+The existing Rust/PyO3/maturin Python extension built and all 25 assertions
+passed, but installed admission failed: the original 512-link GIL test
+triggered its five-second faulthandler deadline, including an isolated
+rerun. The result is not a Python closure receipt.
+
+The same 14,355-byte source is retained as =benches/fixtures/dense-links.org=.
+The native Scheme ASP benchmark produced a lossless event result but failed
+its unchanged 100ms envelope. Twenty samples had minimum 5.579556s,
+median 6.640845s and p95 25.443141s. Early samples overlapped compilation,
+so p95 is not an isolated performance estimate; even the minimum is a
+negative result. Receipt: =dense-links-scheme.ss= beneath the latest
+qualification directory. This establishes a slow Scheme-side path too,
+not a causal claim about a particular Fold instruction or Rust projection.
+
+The benchmark recipe omitted the existing real-output watchdog. It now
+uses the same five-second watchdog as native tests. No synthetic heartbeat,
+input reduction, increased timeout or Scheme kernel patch is introduced.
+The same dense-link input was rerun through the corrected task; the watchdog
+returned 124 after five seconds without real output. It cannot be admitted
+as a successful benchmark. Scheme-feature installed Python admission remains
+separate and was not newly qualified in this round.
+
+* Remaining architecture boundary
+
+Dependency alignment and removal of Rowan are not the same as borrowed native
+artifact cutover. Production =src/org_aot.rs= still admits Scheme TreeEvents
+with =parse_generated_events= and projects a graph from the flat source index.
+No Rust Org grammar fallback remains, but this index/materialization path is
+not the published =gerbil-parser-native::NativeParsed::view= path.
+The latter requires an Org GPA1 producer/catalog plus owner-thread session,
+language handle and result lifetime integration in both execution lanes.
+Do not mark this gate complete on the basis of Rowan dependency deletion.
+
+The historical profile key =rowan.build= currently measures event-to-flat-index
+admission, not a Rowan dependency or tree. It remains a misleading legacy
+label; borrowed GPA1 ownership must not be inferred from it.
+
+Exact-head remote CI, Python latency and native payload view ownership remain
+distinct gates. No commit, push or PR mutation occurred.

@@ -23,7 +23,6 @@ CLOCK: [2026-05-14 Thu 10:00]--[2026-05-14 Thu 10:30] =>  0:30
 * TODO Archived subtree :work:ARCHIVE:
 "#;
 
-#[test]
 fn semantic_ast_projects_lifecycle_and_archive_metadata() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -58,6 +57,65 @@ fn semantic_ast_projects_lifecycle_and_archive_metadata() {
     let records = doc.lifecycle_records();
     assert_eq!(records.len(), 6);
     assert!(
+        matches!(
+            &records[0].kind,
+            LifecycleRecordKind::StateChange { timestamp, .. }
+                if timestamp.as_deref() == Some("[2026-05-13 Wed]")
+        ),
+        "{:?}",
+        records[0].kind
+    );
+    assert!(
+        matches!(
+            &records[1].kind,
+            LifecycleRecordKind::Note { timestamp }
+                if timestamp.as_deref() == Some("[2026-05-14 Thu]")
+        ),
+        "{:?}",
+        records[1].kind
+    );
+    assert!(
+        matches!(
+            &records[2].kind,
+            LifecycleRecordKind::Refile { timestamp, .. }
+                if timestamp.as_deref() == Some("[2026-05-14 Thu]")
+        ),
+        "{:?}",
+        records[2].kind
+    );
+    assert!(
+        matches!(
+            &records[3].kind,
+            LifecycleRecordKind::Reschedule { from, to, timestamp }
+                if from.as_deref() == Some("<2026-05-14 Thu>")
+                    && to.as_deref() == Some("[2026-05-15 Fri]")
+                    && timestamp.as_deref() == Some("[2026-05-15 Fri]")
+        ),
+        "{:?}",
+        records[3].kind
+    );
+    assert!(
+        matches!(
+            &records[4].kind,
+            LifecycleRecordKind::Redeadline { from, to, timestamp }
+                if from.as_deref() == Some("<2026-05-16 Sat>")
+                    && to.as_deref() == Some("[2026-05-15 Fri]")
+                    && timestamp.as_deref() == Some("[2026-05-15 Fri]")
+        ),
+        "{:?}",
+        records[4].kind
+    );
+    assert!(
+        matches!(
+            &records[5].kind,
+            LifecycleRecordKind::Clock { timestamp, duration: Some(duration) }
+                if timestamp.as_deref() == Some("[2026-05-14 Thu 10:00]")
+                    && duration.total_seconds == 1_800
+        ),
+        "{:?}",
+        records[5].kind
+    );
+    assert!(
         records
             .iter()
             .any(|record| matches!(record.kind, LifecycleRecordKind::StateChange { .. }))
@@ -67,6 +125,13 @@ fn semantic_ast_projects_lifecycle_and_archive_metadata() {
             .iter()
             .any(|record| matches!(record.kind, LifecycleRecordKind::Refile { .. }))
     );
+    assert!(records.iter().any(|record| matches!(
+        &record.kind,
+        LifecycleRecordKind::Refile {
+            target: Some(target),
+            ..
+        } if target == "[[file:old.org][old]]"
+    )));
     assert!(
         records
             .iter()
@@ -100,7 +165,149 @@ fn semantic_ast_projects_lifecycle_and_archive_metadata() {
     insta::assert_debug_snapshot!("semantic_ast__semantic_lifecycle_records", compact);
 }
 
-#[test]
+fn logbook_records_use_aot_drawer_bounds_with_crlf() {
+    let source = "* Work\r\n:LOGBOOK:\r\n- State \"DONE\" from \"TODO\" [2026-05-13 Wed]\r\n:LOGBOOK:\r\n:END:\r\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 2);
+    assert!(matches!(
+        records[0].kind,
+        LifecycleRecordKind::StateChange { .. }
+    ));
+    assert_eq!(records[1].raw, ":LOGBOOK:");
+    assert!(matches!(records[1].kind, LifecycleRecordKind::Note { .. }));
+}
+
+fn logbook_kind_projection_preserves_alternate_prefixes_and_fallback() {
+    let source = "* Work\n:LOGBOOK:\n- Refiling to [[file:notes.org]]\n- Deadline changed [2026-05-14 Thu]\n- Removed deadline [2026-05-15 Fri]\n- unclassified note\n:END:\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 4);
+    assert!(matches!(
+        records[0].kind,
+        LifecycleRecordKind::Refile { .. }
+    ));
+    assert!(matches!(
+        records[1].kind,
+        LifecycleRecordKind::Redeadline { .. }
+    ));
+    assert!(matches!(
+        records[2].kind,
+        LifecycleRecordKind::Redeadline { .. }
+    ));
+    assert!(matches!(records[3].kind, LifecycleRecordKind::Note { .. }));
+}
+
+fn logbook_refile_target_uses_first_aot_link_on_its_own_line() {
+    let source = "* Work\r\n:LOGBOOK:\r\n- Refiled from [[file:α.org][alpha]] via [[file:later.org]]\r\n- Refiled again to [[file:next.org]]\r\n- Refiled without a link\r\n- Refiled with [[broken] text\r\n:END:\r\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 4);
+    assert!(matches!(
+        &records[0].kind,
+        LifecycleRecordKind::Refile {
+            target: Some(target),
+            ..
+        } if target == "[[file:α.org][alpha]]"
+    ));
+    assert!(matches!(
+        &records[1].kind,
+        LifecycleRecordKind::Refile {
+            target: Some(target),
+            ..
+        } if target == "[[file:next.org]]"
+    ));
+    assert!(records[2..].iter().all(|record| matches!(
+        record.kind,
+        LifecycleRecordKind::Refile { target: None, .. }
+    )));
+}
+
+fn logbook_timestamp_ranges_and_invalid_clock_use_aot_facts() {
+    let source = "* Work\n:LOGBOOK:\n- Rescheduled from [2026-05-14 Thu]--[2026-05-15 Fri] on [2026-05-16 Sat]\n- Note taken on [not-a-date]\nCLOCK: [2026-05-14 Thu 10:00] => tomorrow\n:END:\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 3);
+    assert!(
+        matches!(
+            &records[0].kind,
+            LifecycleRecordKind::Reschedule { from, to, timestamp }
+                if from.as_deref() == Some("[2026-05-14 Thu]")
+                    && to.as_deref() == Some("[2026-05-15 Fri]")
+                    && timestamp.as_deref() == Some("[2026-05-16 Sat]")
+        ),
+        "{:?}",
+        records[0].kind
+    );
+    assert!(
+        matches!(
+            &records[1].kind,
+            LifecycleRecordKind::Note { timestamp: None }
+        ),
+        "{:?}",
+        records[1].kind
+    );
+    assert!(
+        matches!(
+            &records[2].kind,
+            LifecycleRecordKind::MalformedLogbook { .. }
+        ),
+        "{:?}",
+        records[2].kind
+    );
+}
+
+fn logbook_list_item_clock_keeps_scheme_owned_duration_projection() {
+    let source = "* Work\n:LOGBOOK:\n- CLOCK: [2026-05-14 Thu 10:00]--[2026-05-14 Thu 10:30] => 0:30\n:END:\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 1);
+    assert!(
+        matches!(
+            &records[0].kind,
+            LifecycleRecordKind::Clock { duration: Some(duration), timestamp }
+                if duration.total_seconds == 1_800
+                    && timestamp.as_deref() == Some("[2026-05-14 Thu 10:00]")
+        ),
+        "{:?}",
+        records[0].kind
+    );
+}
+
+fn logbook_state_values_follow_scheme_aot_quote_boundaries() {
+    let source = "* Work\n:LOGBOOK:\n- State \"DÖNE\" from \"TODO\" [2026-05-13 Wed]\n- State \"\" from \"\"\n- State \"DONE\" from \"TODO\n- State DONE from TODO\n:END:\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.lifecycle_records();
+    assert_eq!(records.len(), 4);
+    assert!(matches!(
+        &records[0].kind,
+        LifecycleRecordKind::StateChange {
+            to: Some(to),
+            from: Some(from),
+            ..
+        } if to == "DÖNE" && from == "TODO"
+    ));
+    assert!(matches!(
+        &records[1].kind,
+        LifecycleRecordKind::StateChange {
+            to: Some(to),
+            from: Some(from),
+            ..
+        } if to.is_empty() && from.is_empty()
+    ));
+    assert!(
+        records[2..]
+            .iter()
+            .all(|record| matches!(record.kind, LifecycleRecordKind::MalformedLogbook { .. }))
+    );
+}
+
 fn semantic_ast_projects_memory_uses_lifecycle_and_archive_evidence() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -140,3 +347,38 @@ fn semantic_ast_projects_memory_uses_lifecycle_and_archive_evidence() {
             .any(|evidence| evidence.kind == MemoryEvidenceKind::ArchiveLocation)
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_lifecycle_archive::semantic_ast_projects_lifecycle_and_archive_metadata",
+        semantic_ast_projects_lifecycle_and_archive_metadata,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_lifecycle_archive::logbook_records_use_aot_drawer_bounds_with_crlf",
+        logbook_records_use_aot_drawer_bounds_with_crlf,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_lifecycle_archive::logbook_kind_projection_preserves_alternate_prefixes_and_fallback",
+        logbook_kind_projection_preserves_alternate_prefixes_and_fallback,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_lifecycle_archive::logbook_refile_target_uses_first_aot_link_on_its_own_line",
+        logbook_refile_target_uses_first_aot_link_on_its_own_line,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_lifecycle_archive::logbook_timestamp_ranges_and_invalid_clock_use_aot_facts",
+        logbook_timestamp_ranges_and_invalid_clock_use_aot_facts,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_lifecycle_archive::logbook_list_item_clock_keeps_scheme_owned_duration_projection",
+        logbook_list_item_clock_keeps_scheme_owned_duration_projection,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_lifecycle_archive::logbook_state_values_follow_scheme_aot_quote_boundaries",
+        logbook_state_values_follow_scheme_aot_quote_boundaries,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_lifecycle_archive::semantic_ast_projects_memory_uses_lifecycle_and_archive_evidence",
+        semantic_ast_projects_memory_uses_lifecycle_and_archive_evidence,
+    ),
+];

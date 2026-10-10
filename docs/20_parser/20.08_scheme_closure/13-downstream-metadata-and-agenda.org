@@ -1,0 +1,67 @@
+#+title: Integrated downstream metadata and Agenda ownership
+
+[[file:../20.08_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Cohesive source ownership
+
+An audit beyond Org::parse found raw grammar still in downstream Rust consumers.
+The native value ABI now delegates the following group to pure Scheme modules:
+
+- Datetree year/month/day title prefixes and bounded unsigned values.
+- Timestamp sorting date/time scans, including Unicode-safe source traversal.
+- COLUMNS property/width/title/summary declarations, preserving empty title presence.
+- Column summary operator names, precision and checkbox completion syntax.
+- Clock scope classification, including treeN and inert external expressions.
+- PROPERTY_SCHEMA Org links, macros, file references and contract ids.
+- Agenda match clauses, polarity, property comparisons, quoted and brace values;
+  UTF-8 error byte positions and recovery use the same native owner.
+
+=metadata-value-funs.ss= and =agenda-match-funs.ss= are explicit normal-build
+roots. Property schema shares the existing =contract-reference-funs.ss= owner.
+Rust retains only closed-tag/arity/index/numeric admission for these raw values,
+followed by typed graph traversal, lookup, ordering and arithmetic. Agenda's
+seven host lexer/parser helpers are removed; public types and query execution
+remain. No reader/evaluator, JSON grammar transport or kernel patch is added.
+
+The benchmark adapter fingerprint includes all seven downstream Rust owners,
+so previous fingerprints cannot silently qualify a changed host adapter.
+
+* Evidence boundary
+
+Fresh roots compile under =target/downstream-metadata-closure-46f0c891-20261006=.
+The final staged program contains 308 modules. Its six new native Scheme cases
+pass with final OK, covering malformed values, bounds, title presence, inert
+references, UTF-8 errors and recovery. The original failed test transcript is
+retained: its expected link normalization incorrectly removed the file: prefix;
+the test was corrected against the original public behavior, not the owner.
+
+The full seven-suite Scheme qualification passes 153 cases, with final OK.
+The first Release build found a remaining deleted tree-level call and a test
+type path error; both are corrected, and its failed transcript is retained.
+Clock tree level is now a native numeric value used by host graph traversal.
+The Rust Release build passes 84 native / 24 ordinary cases and all unchanged
+454 consumer cases at 12 callers. The Scheme Release build is in progress.
+Both runtime feature performance/concurrent receipts
+and the existing maturin Python layer must be rebuilt on this same program.
+The preceding 306-module Contract matrices are a baseline, not admission of
+this new candidate. No default program or remote PR head is changed.
+
+* Remaining global admission
+
+The additional role audit identified genuine source owners beyond this snapshot:
+=AgendaDate::parse_ymd=, the =org_interactive.rs= choice DSL, =SddParentRef::parse=
+and workspace link resolution's =::= / protocol source predicates. They now
+have implementations in the subsequent latest-revision candidate. This
+308-module snapshot does not qualify those changes.
+
+Source result prefix removal uses native affiliated-keyword annotations;
+capture normalization serializes typed capture values. Those are source
+assembly/host output roles, not a second recognizer. Agenda numeric comparison,
+preview formatting, URL percent decoding, path canonicalization and filesystem
+inventory likewise remain host arithmetic/codecs/effects. Query/Contract's
+expression reader already delegates to native Scheme; typed IR projection must
+not be confused with raw host reading.
+
+PR 21's additional Source
+Headline/Query changes must be preserved and the combined tree requalified;
+the isolated dirty checkout must not replace that branch wholesale.

@@ -1,10 +1,10 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org,
-    ast::{DynamicBlockContentState, DynamicBlockWriterKind},
+    ast::{DynamicBlockContentState, DynamicBlockWriterKind, ElementData},
+    org_aot::parse_org_aot,
 };
 
-#[test]
 fn semantic_ast_projects_dynamic_block_registry_records_supported_and_unknown_writers() {
     let doc = Org::parse(
         r#"#+BEGIN: clocktable :scope file :maxlevel 1
@@ -16,12 +16,21 @@ fn semantic_ast_projects_dynamic_block_registry_records_supported_and_unknown_wr
 | ITEM | TODO |
 #+END:
 
-#+BEGIN: custom :foo bar
+#+BEGIN: custom :foo bar :phrase "hello :world" :columns ITEM TODO :flag
 #+END:
 "#,
     )
     .document();
     assert_clean_projection(&doc);
+
+    let ElementData::Block(parsed) = &doc.children[0].data else {
+        panic!("first element must be the Scheme-classified dynamic block");
+    };
+    assert_eq!(
+        parsed.parameters.as_deref(),
+        Some(":scope file :maxlevel 1")
+    );
+    assert_eq!(parsed.header_args.len(), 2);
 
     let records = doc.dynamic_block_records();
     assert_eq!(records.len(), 3);
@@ -58,6 +67,78 @@ fn semantic_ast_projects_dynamic_block_registry_records_supported_and_unknown_wr
     assert_eq!(custom.writer, DynamicBlockWriterKind::Unknown);
     assert_eq!(custom.parameters[0].key, "foo");
     assert_eq!(custom.parameters[0].value.as_deref(), Some("bar"));
+    assert_eq!(custom.parameters[1].key, "phrase");
+    assert_eq!(
+        custom.parameters[1].value.as_deref(),
+        Some("\"hello :world\"")
+    );
+    assert_eq!(custom.parameters[1].raw, ":phrase \"hello :world\"");
+    assert_eq!(custom.parameters[2].key, "columns");
+    assert_eq!(custom.parameters[2].value.as_deref(), Some("ITEM TODO"));
+    assert_eq!(custom.parameters[3].key, "flag");
+    assert_eq!(custom.parameters[3].value, None);
     assert_eq!(custom.content_state, DynamicBlockContentState::Empty);
     assert_eq!(custom.content_line_count, 0);
 }
+
+fn dynamic_writer_name_is_not_replaced_by_an_affiliated_name() {
+    let source = "#+NAME: report\n#+BEGIN: clocktable :scope file\n#+END:\n";
+    let graph = parse_org_aot(source).expect("Scheme-AOT graph");
+    let dynamic = graph
+        .records()
+        .iter()
+        .find(|record| record.kind == "dynamic-block")
+        .expect("Scheme-classified dynamic block");
+    assert_eq!(dynamic.field("name"), Some("clocktable"));
+
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+
+    let records = doc.dynamic_block_records();
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].name, "clocktable");
+    assert_eq!(records[0].writer, DynamicBlockWriterKind::ClockTable);
+    assert_eq!(doc.clock_table_plans().len(), 1);
+}
+
+fn dynamic_block_content_uses_scheme_closing_range() {
+    let source = "#+BEGIN: clocktable\r\n\r\n#+END:later\r\n  output\r\n#+END:\r\n";
+    let graph = parse_org_aot(source).expect("Scheme-AOT graph");
+    let dynamic = graph
+        .records()
+        .iter()
+        .find(|record| record.kind == "dynamic-block")
+        .expect("Scheme-classified dynamic block");
+    let end = dynamic
+        .field_range("end")
+        .expect("Scheme closing-line field");
+    assert_eq!(
+        &source[usize::from(end.start())..usize::from(end.end())],
+        "#+END:\r\n"
+    );
+
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let records = doc.dynamic_block_records();
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].content_line_count, 3);
+    assert_eq!(
+        records[0].content_state,
+        DynamicBlockContentState::ExistingOutput
+    );
+}
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_dynamic_blocks::semantic_ast_projects_dynamic_block_registry_records_supported_and_unknown_writers",
+        semantic_ast_projects_dynamic_block_registry_records_supported_and_unknown_writers,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_dynamic_blocks::dynamic_writer_name_is_not_replaced_by_an_affiliated_name",
+        dynamic_writer_name_is_not_replaced_by_an_affiliated_name,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_dynamic_blocks::dynamic_block_content_uses_scheme_closing_range",
+        dynamic_block_content_uses_scheme_closing_range,
+    ),
+];

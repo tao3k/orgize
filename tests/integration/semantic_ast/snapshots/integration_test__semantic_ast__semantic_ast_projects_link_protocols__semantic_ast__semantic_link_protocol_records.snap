@@ -1,11 +1,19 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_link_protocols.rs
+assertion_line: 59
 expression: records
 ---
 [
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 0..33,
+            range: TextRange {
+                start: TextSize(
+                    0,
+                ),
+                end: TextSize(
+                    33,
+                ),
+            },
             start: SourcePosition {
                 line: 1,
                 column: 1,
@@ -29,7 +37,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 33..87,
+            range: TextRange {
+                start: TextSize(
+                    33,
+                ),
+                end: TextSize(
+                    87,
+                ),
+            },
             start: SourcePosition {
                 line: 2,
                 column: 1,
@@ -74,7 +89,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 91..116,
+            range: TextRange {
+                start: TextSize(
+                    91,
+                ),
+                end: TextSize(
+                    116,
+                ),
+            },
             start: SourcePosition {
                 line: 3,
                 column: 5,
@@ -98,7 +120,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 121..162,
+            range: TextRange {
+                start: TextSize(
+                    121,
+                ),
+                end: TextSize(
+                    162,
+                ),
+            },
             start: SourcePosition {
                 line: 3,
                 column: 35,
@@ -143,7 +172,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 169..244,
+            range: TextRange {
+                start: TextSize(
+                    169,
+                ),
+                end: TextSize(
+                    244,
+                ),
+            },
             start: SourcePosition {
                 line: 4,
                 column: 6,
@@ -179,7 +215,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 251..275,
+            range: TextRange {
+                start: TextSize(
+                    251,
+                ),
+                end: TextSize(
+                    275,
+                ),
+            },
             start: SourcePosition {
                 line: 5,
                 column: 6,
@@ -201,7 +244,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 280..308,
+            range: TextRange {
+                start: TextSize(
+                    280,
+                ),
+                end: TextSize(
+                    308,
+                ),
+            },
             start: SourcePosition {
                 line: 5,
                 column: 35,
@@ -223,7 +273,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 315..342,
+            range: TextRange {
+                start: TextSize(
+                    315,
+                ),
+                end: TextSize(
+                    342,
+                ),
+            },
             start: SourcePosition {
                 line: 6,
                 column: 6,
@@ -251,7 +308,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 343..369,
+            range: TextRange {
+                start: TextSize(
+                    343,
+                ),
+                end: TextSize(
+                    369,
+                ),
+            },
             start: SourcePosition {
                 line: 6,
                 column: 34,
@@ -273,7 +337,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 370..390,
+            range: TextRange {
+                start: TextSize(
+                    370,
+                ),
+                end: TextSize(
+                    390,
+                ),
+            },
             start: SourcePosition {
                 line: 6,
                 column: 61,
@@ -301,7 +372,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 399..421,
+            range: TextRange {
+                start: TextSize(
+                    399,
+                ),
+                end: TextSize(
+                    421,
+                ),
+            },
             start: SourcePosition {
                 line: 7,
                 column: 8,
@@ -323,7 +401,14 @@ expression: records
     },
     LinkProtocolRecord {
         ann: ParsedAnnotation {
-            range: 431..457,
+            range: TextRange {
+                start: TextSize(
+                    431,
+                ),
+                end: TextSize(
+                    457,
+                ),
+            },
             start: SourcePosition {
                 line: 7,
                 column: 40,

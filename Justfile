@@ -1,50 +1,35 @@
 set dotenv-load := false
-lib_ext := if os() == "macos" { "dylib" } else { "so" }
-native_env := if os() == "macos" { "env -u SDKROOT CC=/usr/bin/cc CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc" } else { "env" }
-rust_linker := if os() == "macos" { "-C linker=/usr/bin/cc" } else { "" }
-repair_command := if os() == "macos" { "delocate-wheel -w" } else { "auditwheel repair --wheel-dir" }
+set shell := ["bash", "-euo", "pipefail", "-c"]
+host_os := os()
+bridge_revision := replace_regex(read("Cargo.toml"), '(?s)^.*gerbil-scheme = \{[^\n]*rev = "([0-9a-f]{40})"[^\n]*\}.*$', '$1')
+parser_revision := replace_regex(read("gerbil.pkg"), '(?s)^.*github\.com/tao3k/gerbil-parser@([0-9a-f]{40}).*$', '$1')
+scheme_home := env_var_or_default("GERBIL_HOME", "")
+# Keep the fixed heap envelope while honoring an explicitly selected SDK.
+scheme_gambopt := "max-heap=1G,debug=q" + if scheme_home == "" { "" } else { ",~~bin=" + scheme_home + "/bin,~~lib=" + scheme_home + "/lib,~~include=" + scheme_home + "/include" }
+lib_ext := if host_os == "macos" { "dylib" } else { "so" }
+scheme_env := if host_os == "macos" { "env -u SDKROOT CC=/usr/bin/cc GERBIL_GCC=/usr/bin/cc" } else { "env" }
+export ORGIZE_GERBIL_PROGRAM_MANIFEST := env_var_or_default("ORGIZE_GERBIL_PROGRAM_MANIFEST", justfile_directory() + "/target/gerbil-parser/program.json")
+platform_env := scheme_env + (if host_os == "macos" { " CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc" } else { "" })
+platform_link_args := if host_os == "macos" { "-C linker=/usr/bin/cc -C link-arg=-Wl,-ld_classic" } else { "" }
+platform_rust_flags := if host_os == "macos" { "CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS=\"" + platform_link_args + "\"" } else { "" }
+rust_linker := if host_os == "macos" { "-C linker=/usr/bin/cc" } else { "" }
+# Gerbil's loadable module resolves OS functions in its existing host process.
+clock_linker := if host_os == "macos" { "-Wl,-undefined,dynamic_lookup" } else { "" }
 
+repair_command := if host_os == "macos" { "delocate-wheel -w" } else { "auditwheel repair --wheel-dir" }
+
+# Native architecture task owners; imported recipes share these platform settings.
+import 'just/scheme.just'
+import 'just/runtime.just'
+import 'just/benchmark.just'
+import 'just/python.just'
+import 'just/checks.just'
+import 'just/development.just'
+import 'just/ci.just'
+
+# Daily entry points; inspect private owner recipes with just --dump.
 default:
     @just --list
 
-# Development-only: both arguments are compiled Gerbil lib directories.
-# Cargo consumers do not need Gerbil or this recipe.
-scheme-test parser_lib poo_flow_lib:
-    mkdir -p target/gerbil-test
-    GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test languages/org/v1/parser-test.ss languages/org/v1/line-event-parser-test.ss languages/org/v1/outline-events-test.ss languages/org/v1/rowan-event-parser-test.ss languages/org/v1/graph-test.ss languages/org/v1/modules/org-elements/elements-module-test.ss tests/fixtures/org-elements/customer-query-test.ss languages/org/v1/modules/org-contract/parser-test.ss languages/org/v1/modules/org-contract/contract-test.ss
-
-# Standalone Scheme Contract ABI; ordinary Cargo parsing never needs it.
-contract-library:
-    {{ native_env }} python3 bindings/c/build-native-library.py --output target/liborgize.{{ lib_ext }}
-
-contract-smoke: contract-library
-    {{ native_env }} cc -I bindings/c/include bindings/c/tests/orgize-dynamic-harness.c -o target/orgize-dynamic-harness
-    target/orgize-dynamic-harness target/liborgize.{{ lib_ext }}
-    {{ native_env }} rustc --edition=2024 bindings/rust/native_smoke.rs -L native=target {{ rust_linker }} -o target/orgize-rust-smoke
-    LD_LIBRARY_PATH=target target/orgize-rust-smoke
-
-python-contract-library:
-    {{ native_env }} python3 bindings/c/build-native-library.py --output bindings/python/src/orgizepy/lib/liborgize.{{ lib_ext }}
-
-python-test: python-contract-library
-    {{ native_env }} uv sync --directory bindings/python --locked --extra test
-    {{ native_env }} uv run --directory bindings/python --offline pytest
-
-python-wheel: python-contract-library
-    {{ native_env }} uv build --directory bindings/python --wheel
-    unzip -l bindings/python/dist/orgizepy-*.whl | grep 'orgizepy/lib/liborgize.{{ lib_ext }}'
-
-python-wheel-repair: python-wheel
-    uv sync --directory bindings/python --locked --group wheel-repair
-    mkdir -p bindings/python/dist/repaired
-    {{ native_env }} uv run --directory bindings/python --no-sync {{ repair_command }} "{{ justfile_directory() }}/bindings/python/dist/repaired" "{{ justfile_directory() }}/bindings/python/dist/"orgizepy-*.whl
-
-wasm-build:
-    git submodule update --init --recursive wasm
-    cd wasm && CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=../target/orgize-wasm wasm-pack build -t web -d dist --out-name orgize
-    rm -f wasm/dist/.gitignore
-
-wasm: wasm-build
-
-wasm-clean:
-    rm -rf wasm/dist
+format:
+    cargo fmt --all

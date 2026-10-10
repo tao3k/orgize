@@ -1,11 +1,11 @@
 //! Dynamic block registry projection over parsed Org blocks.
 
-use super::block_metadata::parse_block_header_args;
 use super::{
     BlockHeaderArg, BlockKind, Document, DynamicBlockContentState, DynamicBlockParameter,
     DynamicBlockRecord, DynamicBlockWriterKind, Element, ElementData, ParsedAnnotation, Section,
     SectionIndexSource,
 };
+use crate::ast::block_metadata::native_number;
 
 impl Document<ParsedAnnotation> {
     /// Projects native Org dynamic blocks without executing their writer functions.
@@ -18,25 +18,6 @@ impl Document<ParsedAnnotation> {
         records.sort_by_key(|record| record.source.range_start);
         records
     }
-}
-
-#[derive(Clone, Debug)]
-pub(super) struct ParsedDynamicBlockBegin {
-    pub(super) name: String,
-    pub(super) parameters: String,
-}
-
-pub(super) fn dynamic_block_begin(raw: &str) -> Option<ParsedDynamicBlockBegin> {
-    let line = raw.lines().next()?.trim_start();
-    let lower = line.to_ascii_lowercase();
-    let rest = line
-        .get("#+BEGIN:".len()..)
-        .filter(|_| lower.starts_with("#+begin:"))?;
-    let rest = rest.trim_start();
-    let name_end = rest.find(char::is_whitespace).unwrap_or(rest.len());
-    let name = rest[..name_end].to_string();
-    let parameters = rest[name_end..].trim().to_string();
-    Some(ParsedDynamicBlockBegin { name, parameters })
 }
 
 fn collect_dynamic_blocks_in_section(
@@ -99,23 +80,26 @@ fn dynamic_block_record(element: &Element<ParsedAnnotation>) -> Option<DynamicBl
     if block.kind != BlockKind::Dynamic {
         return None;
     }
-    let parsed = dynamic_block_begin(&element.ann.raw)?;
-    let (content_state, content_line_count) = dynamic_block_content(&element.ann.raw);
+    let name = block.name.as_ref()?;
+    let end = element
+        .ann
+        .dynamic_end_range
+        .expect("AOT dynamic block has a closing line");
+    let end_start = usize::from(end.start()) - usize::from(element.ann.range.start());
+    let (content_state, content_line_count) = dynamic_block_content(&element.ann.raw[..end_start]);
     Some(DynamicBlockRecord {
         source: SectionIndexSource::from_annotation(&element.ann),
-        writer: writer_kind(&parsed.name),
-        name: parsed.name,
-        parameters: dynamic_block_parameters(&parsed.parameters),
+        writer: writer_kind(name),
+        name: name.clone(),
+        parameters: block
+            .header_args
+            .iter()
+            .cloned()
+            .map(dynamic_block_parameter)
+            .collect(),
         content_state,
         content_line_count,
     })
-}
-
-fn dynamic_block_parameters(parameters: &str) -> Vec<DynamicBlockParameter> {
-    parse_block_header_args((!parameters.trim().is_empty()).then_some(parameters))
-        .into_iter()
-        .map(dynamic_block_parameter)
-        .collect()
 }
 
 fn dynamic_block_parameter(parameter: BlockHeaderArg) -> DynamicBlockParameter {
@@ -136,14 +120,21 @@ fn writer_kind(name: &str) -> DynamicBlockWriterKind {
     }
 }
 
-fn dynamic_block_content(raw: &str) -> (DynamicBlockContentState, usize) {
-    let (has_nonblank_content, content_line_count) = raw
-        .lines()
-        .skip(1)
-        .take_while(|line| !line.trim().eq_ignore_ascii_case("#+END:"))
-        .fold((false, 0usize), |(has_nonblank, count), line| {
-            (has_nonblank || !line.trim().is_empty(), count + 1)
-        });
+fn dynamic_block_content(before_closing_line: &str) -> (DynamicBlockContentState, usize) {
+    let rows = crate::org_aot::native_semantic_rows(11, &[before_closing_line])
+        .expect("initialized native dynamic content operation");
+    let [count, nonblank]: [String; 2] = rows
+        .into_iter()
+        .next()
+        .expect("native dynamic content row")
+        .try_into()
+        .expect("native dynamic content arity");
+    let content_line_count = native_number(&count);
+    let has_nonblank_content = match nonblank.as_str() {
+        "true" => true,
+        "false" => false,
+        _ => panic!("native dynamic content boolean"),
+    };
 
     (
         if has_nonblank_content {

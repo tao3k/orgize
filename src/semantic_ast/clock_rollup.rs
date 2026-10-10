@@ -1,16 +1,14 @@
 //! Clock and clocktable projections over parsed Org sections.
 
-use super::block_metadata::parse_block_header_args;
 use super::clock_table_properties::{clock_table_property_columns, clock_table_property_values};
 use super::clock_table_time::{
     ClockTableWindowFilter, clipped_clock_seconds, clock_start_in_window, clock_table_time_window,
 };
-use super::dynamic_blocks::{ParsedDynamicBlockBegin, dynamic_block_begin};
 use super::tag_vocabulary::TagMatcher;
 use super::{AgendaMatchQuery, agenda_filter::section_matches_agenda_match};
 use super::{
-    BlockHeaderArg, BlockKind, Clock, ClockEffortStatus, ClockEffortSummary, ClockRollupRecord,
-    ClockSummary, ClockTableMatchFilter, ClockTableParameter, ClockTablePlan,
+    Block, BlockHeaderArg, BlockKind, Clock, ClockEffortStatus, ClockEffortSummary,
+    ClockRollupRecord, ClockSummary, ClockTableMatchFilter, ClockTableParameter, ClockTablePlan,
     ClockTablePropertyColumns, ClockTableRow, ClockTableScope, ClockTableScopeKind,
     ClockTableWarning, ClockTableWarningKind, Document, Element, ElementData, OrgDuration,
     ParsedAnnotation, Property, Section, SectionIndexSource,
@@ -353,29 +351,34 @@ fn collect_clock_table_plans_in_elements<'a>(
 
 fn clocktable_dynamic_block(
     element: &Element<ParsedAnnotation>,
-) -> Option<ParsedDynamicBlockBegin> {
+) -> Option<&Block<ParsedAnnotation>> {
     let ElementData::Block(block) = &element.data else {
         return None;
     };
     if block.kind != BlockKind::Dynamic {
         return None;
     }
-    let dynamic = dynamic_block_begin(&element.ann.raw)?;
-    dynamic
+    block
         .name
-        .eq_ignore_ascii_case("clocktable")
-        .then_some(dynamic)
+        .as_deref()
+        .is_some_and(|name| name.eq_ignore_ascii_case("clocktable"))
+        .then_some(block)
 }
 
 fn clock_table_plan<'a>(
     element: &Element<ParsedAnnotation>,
-    block: ParsedDynamicBlockBegin,
+    block: &Block<ParsedAnnotation>,
     current_section: Option<&'a Section<ParsedAnnotation>>,
     section_stack: &[&'a Section<ParsedAnnotation>],
     root_sections: &'a [Section<ParsedAnnotation>],
     tag_matcher: TagMatcher<'a>,
 ) -> ClockTablePlan {
-    let parameters = clock_table_parameters(&block.parameters);
+    let parameters = block
+        .header_args
+        .iter()
+        .cloned()
+        .map(clock_table_parameter)
+        .collect::<Vec<_>>();
     let scope = clock_table_scope(&parameters);
     let max_level = clock_table_max_level(&parameters);
     let tstart = parameter_value(&parameters, "tstart");
@@ -415,7 +418,7 @@ fn clock_table_plan<'a>(
 
     ClockTablePlan {
         source: SectionIndexSource::from_annotation(&element.ann),
-        name: block.name,
+        name: block.name.clone().unwrap_or_default(),
         parameters,
         scope,
         max_level,
@@ -427,13 +430,6 @@ fn clock_table_plan<'a>(
         rows,
         warnings,
     }
-}
-
-fn clock_table_parameters(parameters: &str) -> Vec<ClockTableParameter> {
-    parse_block_header_args((!parameters.trim().is_empty()).then_some(parameters))
-        .into_iter()
-        .map(clock_table_parameter)
-        .collect()
 }
 
 fn clock_table_parameter(parameter: BlockHeaderArg) -> ClockTableParameter {
@@ -451,11 +447,7 @@ fn clock_table_scope(parameters: &[ClockTableParameter]) -> ClockTableScope {
             value: Some("file".to_string()),
         };
     };
-    let normalized = value
-        .trim_matches('"')
-        .trim_matches('\'')
-        .to_ascii_lowercase();
-    let kind = match normalized.as_str() {
+    let kind = match super::org_values::scalar("clock-scope", &[&value]).as_str() {
         "nil" => ClockTableScopeKind::Nil,
         "file" => ClockTableScopeKind::File,
         "subtree" => ClockTableScopeKind::Subtree,
@@ -463,16 +455,10 @@ fn clock_table_scope(parameters: &[ClockTableParameter]) -> ClockTableScope {
         "agenda" => ClockTableScopeKind::Agenda,
         "agenda-with-archives" => ClockTableScopeKind::AgendaWithArchives,
         "file-with-archives" => ClockTableScopeKind::FileWithArchives,
-        value if tree_level(value).is_some() => ClockTableScopeKind::TreeLevel,
-        value if value.starts_with('(') || value.ends_with(')') => ClockTableScopeKind::External,
-        value
-            if value
-                .chars()
-                .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_') =>
-        {
-            ClockTableScopeKind::Unknown
-        }
-        _ => ClockTableScopeKind::External,
+        "tree-level" => ClockTableScopeKind::TreeLevel,
+        "unknown" => ClockTableScopeKind::Unknown,
+        "external" => ClockTableScopeKind::External,
+        _ => unreachable!("native clock scope kind"),
     };
     ClockTableScope {
         kind,
@@ -603,7 +589,11 @@ fn scope_section<'a>(
         ClockTableScopeKind::TreeLevel => scope
             .value
             .as_deref()
-            .and_then(tree_level)
+            .and_then(|raw| {
+                let row = super::org_values::optional("clock-tree-level", raw)?;
+                let [level]: [String; 1] = row.try_into().expect("native clock tree level arity");
+                Some(level.parse::<usize>().expect("native clock tree level"))
+            })
             .and_then(|level| {
                 section_stack
                     .iter()
@@ -631,13 +621,6 @@ fn clock_table_scope_is_document_local(scope: &ClockTableScope) -> bool {
             | ClockTableScopeKind::Tree
             | ClockTableScopeKind::TreeLevel
     )
-}
-
-fn tree_level(value: &str) -> Option<usize> {
-    value
-        .strip_prefix("tree")
-        .filter(|level| !level.is_empty())
-        .and_then(|level| level.parse().ok())
 }
 
 fn clock_table_rows<'a>(

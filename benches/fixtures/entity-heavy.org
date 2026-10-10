@@ -1,0 +1,7 @@
+#+TITLE: Native entity lookup fixture
+
+* Entities
+αβ before \AA \Alpha \beta \zeta \alpha \amp \euro \Omega \phi \infty.
+😀 before \AA \Alpha \beta \zeta \alpha \amp \euro \Omega \phi \infty.
+Unknown names remain source text: \alphaX \zzzz \AlphaX.
+Prefix and post-blank forms: \alpha{} \beta{} \_ \_{}.

@@ -1,0 +1,174 @@
+---
+source: tests/integration/semantic_ast/semantic_ast_projects_tag_vocabulary.rs
+assertion_line: 21
+expression: records
+---
+[
+    GraphRecord {
+        id: 0,
+        parent_id: None,
+        child_ids: [
+            1,
+        ],
+        syntax_kind: 0,
+        category: "document",
+        kind: "org-data",
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                32,
+            ),
+        },
+        fields: [],
+    },
+    GraphRecord {
+        id: 1,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            2,
+        ],
+        syntax_kind: 31,
+        category: "element",
+        kind: "keyword",
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                32,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "tags",
+                range: TextRange {
+                    start: TextSize(
+                        2,
+                    ),
+                    end: TextSize(
+                        6,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "raw-value",
+                value: " [ GTD : Control ] pc(p)",
+                range: TextRange {
+                    start: TextSize(
+                        7,
+                    ),
+                    end: TextSize(
+                        31,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 2,
+        parent_id: Some(
+            1,
+        ),
+        child_ids: [
+            3,
+        ],
+        syntax_kind: 232,
+        category: "component",
+        kind: "tag-vocabulary",
+        range: TextRange {
+            start: TextSize(
+                8,
+            ),
+            end: TextSize(
+                31,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "name",
+                value: "pc",
+                range: TextRange {
+                    start: TextSize(
+                        26,
+                    ),
+                    end: TextSize(
+                        28,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "shortcut",
+                value: "p",
+                range: TextRange {
+                    start: TextSize(
+                        29,
+                    ),
+                    end: TextSize(
+                        30,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 3,
+        parent_id: Some(
+            2,
+        ),
+        child_ids: [],
+        syntax_kind: 234,
+        category: "component",
+        kind: "tag-inclusive-group",
+        range: TextRange {
+            start: TextSize(
+                8,
+            ),
+            end: TextSize(
+                25,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "name",
+                value: "GTD",
+                range: TextRange {
+                    start: TextSize(
+                        10,
+                    ),
+                    end: TextSize(
+                        13,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "separator",
+                value: ":",
+                range: TextRange {
+                    start: TextSize(
+                        14,
+                    ),
+                    end: TextSize(
+                        15,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "name",
+                value: "Control",
+                range: TextRange {
+                    start: TextSize(
+                        16,
+                    ),
+                    end: TextSize(
+                        23,
+                    ),
+                },
+            },
+        ],
+    },
+]

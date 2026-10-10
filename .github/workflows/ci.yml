@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    name: test / ${{ matrix.os }}
+    name: test / ${{ matrix.os }} / ${{ matrix.runtime }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -22,23 +22,18 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
-          - windows-latest
+          - macos-26
+        runtime: [runtime-rust, runtime-scheme]
+
+    env:
+      RUNTIME_FEATURES: orgize/${{ matrix.runtime }},orgizepy/${{ matrix.runtime }},orgize/indexmap,orgize/chrono,orgize/tracing,orgize/datafusion-sql,orgize/syntax-org-fc,orgize/md
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
           submodules: recursive
-
-      - name: Configure Windows cargo git paths
-        if: ${{ matrix.os == 'windows-latest' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config --global core.longpaths true
-          echo "CARGO_HOME=D:/c" >> "$GITHUB_ENV"
-          echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup rust
         uses: dtolnay/rust-toolchain@stable
@@ -88,18 +83,73 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: cargo fmt --all -- --check
 
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - name: Native system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config ripgrep jq
+      - name: Native system libraries
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: brew install gcc openssl pkg-config sqlite zlib ripgrep jq
+      - name: Install released Gerbil
+        run: bash tools/ci/install-gerbil-release.sh
+      - name: Prepare pinned native Scheme program
+        run: just ci-prepare
+      - name: Verify native Scheme owners
+        run: just ci-scheme-test
+
+      - name: Select producer FFI bundle output
+        if: matrix.runtime == 'runtime-scheme'
+        run: echo "ORGIZE_FFI_EXPORT=$GITHUB_WORKSPACE/target/ffi-bundle" >> "$GITHUB_ENV"
+
       - name: Run tests
-        run: cargo test --workspace --all-targets --all-features
+        run: just ci-rust-test "${{ env.RUNTIME_FEATURES }}"
+
+      - name: Run focused workspace admission performance gate
+        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test workspace_contract_scale_scenario_stays_in_budget
 
       - name: Run focused Org query performance gate
-        run: cargo test --release --lib document_query_org_elements_aot_stays_inside_scenario_gate -- --ignored --test-threads=1
+        run: just ci-scenario-test "${{ matrix.runtime }}" lib document_query_org_elements_aot_stays_inside_scenario_gate
 
       - name: Run plan ledger AOT performance gate
-        run: cargo test --release --test integration_test plan_ledger_memory_projection_stays_in_millisecond_budget -- --ignored --test-threads=1
+        id: plan_ledger_aot_gate
+        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
+
+      - name: Profile failed plan ledger AOT gate
+        if: ${{ failure() && steps.plan_ledger_aot_gate.conclusion == 'failure' }}
+        continue-on-error: true
+        env:
+          ORGIZE_PROFILE_PLAN_LEDGER: "1"
+        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
 
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: just ci-clippy "${{ env.RUNTIME_FEATURES }}"
+
+      - name: Qualify relocated FFI consumption
+        if: matrix.runtime == 'runtime-scheme'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mv target/ffi-bundle target/ffi-consumer
+          unset ORGIZE_FFI_EXPORT
+          export ORGIZE_FFI_BUNDLE="$GITHUB_WORKSPACE/target/ffi-consumer"
+          export ORGIZE_GERBIL_PROGRAM_MANIFEST="$GITHUB_WORKSPACE/target/absent-program.json"
+          just ci-rust-test "${{ env.RUNTIME_FEATURES }}"
+
+      - name: Publish qualified revision-bound FFI bundle
+        if: matrix.runtime == 'runtime-scheme'
+        uses: actions/upload-artifact@v4
+        with:
+          name: orgize-ffi-${{ github.event.pull_request.head.sha || github.sha }}-${{ runner.os }}-${{ runner.arch }}
+          path: target/ffi-consumer/
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Save sccache cache (fallback)
         if: ${{ always() && !cancelled() && env.SCCACHE_GHA_ENABLED != 'true' }}
@@ -135,29 +185,23 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config patchelf
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config patchelf ripgrep jq
       - name: System libraries
         if: runner.os == 'macOS'
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
-        run: brew install gcc openssl pkg-config sqlite zlib
+        run: brew install gcc openssl pkg-config sqlite zlib ripgrep jq
       - name: Install released Gerbil
         run: bash tools/ci/install-gerbil-release.sh
-      - name: Build Scheme Contract package
-        run: |
-          gxpkg deps --install
-          gerbil build
-      - name: Verify Scheme Org parser and Contract
-        run: |
-          just scheme-test "$GERBIL_PATH/lib" "$GERBIL_PATH/lib"
-          generated="$(mktemp)"
-          gerbil env gxi languages/org/v1/generate-rowan-event-ir.ss "$generated"
-          cmp "$generated" languages/org/v1/generated/rowan-events.ir.json
-      - name: Verify independent C and Rust consumers
-        run: just contract-smoke
-      - name: Verify Python SDK
+      - name: Fetch pinned native dependencies
+        run: cargo fetch --locked
+      - name: Prepare pinned native Scheme program
+        run: just ci-prepare
+      - name: Verify native Scheme owners
+        run: just ci-scheme-test
+      - name: Verify Python SDK through maturin
         run: just python-test
-      - name: Build and repair Python wheel
+      - name: Build and repair maturin wheel
         run: just python-wheel-repair
       - name: Test installed wheel outside source tree
         shell: bash
@@ -166,38 +210,6 @@ jobs:
           uv pip install --python "$RUNNER_TEMP/orgizepy-wheel/bin/python" bindings/python/dist/repaired/orgizepy-*.whl
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/orgizepy-wheel/bin/python" \
-            "$GITHUB_WORKSPACE/bindings/python/tests/installed_smoke.py"
-      - name: Qualify complete SDK from source distribution
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          uv build --directory bindings/python --sdist
-          if output=$(uv build bindings/python/dist/orgizepy-*.tar.gz --wheel \
-            --out-dir "$RUNNER_TEMP/orgizepy-sdist-wheel" 2>&1); then
-            echo 'Source distribution unexpectedly produced a wheel without Contract'
-            exit 1
-          fi
-          case "$output" in
-            *'the complete orgizepy SDK requires'*) ;;
-            *) echo "$output"; exit 1 ;;
-          esac
-          mkdir -p "$RUNNER_TEMP/orgizepy-sdist-source" "$RUNNER_TEMP/orgizepy-sdist-gerbil"
-          tar -xzf bindings/python/dist/orgizepy-*.tar.gz \
-            -C "$RUNNER_TEMP/orgizepy-sdist-source"
-          cd "$RUNNER_TEMP/orgizepy-sdist-source/orgizepy-0.1.0"
-          export GERBIL_PATH="$RUNNER_TEMP/orgizepy-sdist-gerbil"
-          gxpkg deps --install
-          gxi -:max-heap=512M build.ss compile
-          python3 bindings/c/build-native-library.py \
-            --output src/orgizepy/lib/liborgize.so
-          uv build --wheel
-          "$GITHUB_WORKSPACE/bindings/python/.venv/bin/auditwheel" repair \
-            --wheel-dir "$RUNNER_TEMP/orgizepy-sdist-repaired" dist/orgizepy-*.whl
-          uv venv "$RUNNER_TEMP/orgizepy-sdist-install"
-          uv pip install --python "$RUNNER_TEMP/orgizepy-sdist-install/bin/python" \
-            "$RUNNER_TEMP"/orgizepy-sdist-repaired/orgizepy-*.whl
-          cd "$RUNNER_TEMP"
-          "$RUNNER_TEMP/orgizepy-sdist-install/bin/python" \
             "$GITHUB_WORKSPACE/bindings/python/tests/installed_smoke.py"
 
   gh-pages:
@@ -219,6 +231,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           submodules: recursive
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v6

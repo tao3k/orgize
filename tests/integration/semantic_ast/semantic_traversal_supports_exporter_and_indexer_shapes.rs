@@ -4,7 +4,6 @@ use orgize::{
     ast::{AstRef, ElementData, ObjectData},
 };
 
-#[test]
 fn semantic_traversal_supports_exporter_and_indexer_shapes() {
     let doc = Org::parse(
         r#"* Export Me
@@ -75,3 +74,8 @@ quoted
     assert_eq!(shape.table_cells, 4);
     assert_eq!(shape.footnotes, ["note".to_string()]);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_traversal_supports_exporter_and_indexer_shapes::semantic_traversal_supports_exporter_and_indexer_shapes",
+    semantic_traversal_supports_exporter_and_indexer_shapes,
+)];

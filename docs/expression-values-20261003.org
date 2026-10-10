@@ -1,0 +1,75 @@
+#+TITLE: Scheme-owned expression values and expectation grammar
+
+* Authority and implementation
+
+The public Org parser remains native Gerbil AOT. Both =runtime-rust= and
+=runtime-scheme= use the same native request owner, exception containment and
+call-scoped byte ownership. No Gambit modification or legacy parser was added.
+
+Query, Contract and selector expression consumers now request Scheme-cooked
+expression values directly, instead of building a Rowan CST and recursively
+lowering it again in Rust. The canonical expression grammar still admits the
+source once. Scheme owns quoted-string escapes, including the existing policy
+for unknown escapes. Rust only checks the typed tape's identity, UTF-8, lengths,
+tags and balanced list structure.
+
+The private =ONR1= operations are Org events (0), expression CST (1),
+expression values (2), and expectation values (3). =OXV1= value tapes carry
+the producing grammar digest. The existing lossless =OEV1= CST path remains
+available for native CST tests. It is not a fallback.
+
+=modules/org-contract/expectation-grammar.ss= declares exactly one expectation:
+=exists=, =not exists= or =count= with one of six comparisons and an unsigned
+decimal count. Whitespace and hash comments are grammar extras, including CRLF.
+Scheme rejects adjacent =notexists= words and counts beyond the native u64
+range. Rust performs enum projection and checked host-size conversion, not
+source-line splitting, comment stripping, operator scanning or string unescaping.
+
+* Qualification
+
+Scheme boundary tests cover both value operations, malformed syntax, grammar
+identity, nested/adjacent strings, Unicode escapes, all expectation comparisons,
+comments, invalid suffixes, multiple forms and overflow. The Rust decoder adds
+a pure malformed-wire test. Existing native fixtures retain all 53 concurrent
+cases with stronger expression/expectation assertions; no integration catalog
+entries or performance limits are removed.
+
+Both features' final-source =just runtime-check-owner= checks passed
+for tests, benches and examples. The Scheme boundary suite emitted MODULE-OK,
+HARNESS-OK and final OK, exit 0. Native program identity:
+=sha256:e32149cc7b6a5f1143dc59e12098dde4b7967bfa8080d6f84bb2b2eb90211cb6=,
+271 linked modules. Expectation grammar identity:
+=sha256:713a9b1b2a6da6e1c9ee7c4b8bf22bf7a5c5947094e8d64ce613da322abd4604=.
+
+Both final-source release binaries passed 53 concurrent native cases and
+22 pure/policy tests, with one original performance scenario still ignored.
+The same 53 cases passed in both features with =/private/tmp= as cwd. This is cwd-independence
+evidence, not an installed-wheel receipt.
+
+Preserved Rust executable =native-expression-values-rust-final-20261003=:
+=c41d61ad101613213a3f81c6cc389de49ed02d03b1b370b309dee1619e0bcaee=.
+
+Preserved Scheme executable =native-expression-values-scheme-final-20261003=:
+=d9ac969f6a8643740331ce7916dfe69864173bd4a65fb7ab16835660361a6ff4=.
+Both native program identities match the digest above. Final =git diff --check=
+passed. No Rust expression lexer, string unquote helper or expectation line
+scanner remains in these source paths.
+
+An earlier development check reached its 180-second native-compilation
+deadline and is not counted as a passed check. The initial Rust policy run
+rejected inline decoder tests and a parent glob; tests were moved into
+=tests/unit/org_expression.rs= with explicit imports, then the final
+source was relinked and requalified. No policy was weakened.
+
+* Remaining full-migration gates
+
+This slice removes the remaining Rust expression-string and expectation source
+scanners. It does not establish complete Org semantic or performance closure.
+The typed Query/Contract semantic compilers, form admission and metadata
+interpreters still have Rust ownership and require an explicit follow-up audit.
+Exact syntax-token diagnostics, full consumer/recovery conformance, lifecycle,
+installed Python wheel verification and matched 1,000/10,000-document Tokio
+comparisons remain separate gates. Old receipts cannot qualify this candidate.
+
+Workspace dev opt-level 2/build-override 2 and release opt-level 3/Thin LTO
+remain unchanged. Both scheduling choices and original concurrency stay enabled.

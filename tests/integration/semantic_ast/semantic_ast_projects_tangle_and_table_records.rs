@@ -9,7 +9,6 @@ use orgize::{
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/tangle-and-table-formulas.org");
 
-#[test]
 fn semantic_ast_projects_safe_tangle_plan_and_table_formula_records() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -25,6 +24,17 @@ fn semantic_ast_projects_safe_tangle_plan_and_table_formula_records() {
             && file.blocks[0].tangle.shebang.as_deref() == Some("#!/usr/bin/env rust-script")
             && file.blocks[0].tangle.noweb.mode == SourceBlockTangleNowebMode::Expand
     }));
+    let named_block = tangle
+        .files
+        .iter()
+        .find(|file| file.target == "src/lib.rs")
+        .and_then(|file| file.blocks.first())
+        .expect("named Rust source block");
+    let block_source =
+        &SOURCE[named_block.source.range_start as usize..named_block.source.range_end as usize];
+    assert!(block_source.starts_with("#+begin_src rust"));
+    assert!(block_source.ends_with("#+end_src\n"));
+    assert_eq!(named_block.source.start.line, 2);
     assert!(
         tangle
             .files
@@ -67,3 +77,8 @@ fn semantic_ast_projects_safe_tangle_plan_and_table_formula_records() {
         formula_records
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_tangle_and_table_records::semantic_ast_projects_safe_tangle_plan_and_table_formula_records",
+    semantic_ast_projects_safe_tangle_plan_and_table_formula_records,
+)];

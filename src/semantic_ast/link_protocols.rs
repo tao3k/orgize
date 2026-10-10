@@ -64,16 +64,15 @@ fn link_record(
     search: Option<LinkSearch>,
     abbreviations: &[super::LinkAbbreviation],
 ) -> Option<LinkProtocolRecord> {
-    let (protocol, target) = raw.split_once(':')?;
-    let protocol = protocol.to_ascii_lowercase();
-    let replacement = abbreviations
-        .iter()
-        .find(|abbreviation| abbreviation.name.eq_ignore_ascii_case(&protocol))
-        .map(|abbreviation| abbreviation.replacement.clone());
-    let expanded = expand_link_abbreviation(&protocol, target, abbreviations);
+    let row = super::org_values::optional("uri-split", raw)?;
+    let [protocol, target]: [String; 2] = row.try_into().expect("native URI arity");
+    let protocol = super::org_values::scalar("ascii-lower", &[&protocol]);
+    let replacement = super::settings::abbreviation_index(&protocol, abbreviations)
+        .map(|index| abbreviations[index].replacement.clone());
+    let expanded = expand_link_abbreviation(&protocol, &target, abbreviations);
     let kind = link_protocol_kind(&protocol, replacement.is_some());
     let org_protocol = if protocol == "org-protocol" {
-        org_protocol_call(target)
+        org_protocol_call(&target)
     } else {
         expanded.as_deref().and_then(org_protocol_for_target)
     };
@@ -91,75 +90,63 @@ fn link_record(
 }
 
 fn link_protocol_kind(protocol: &str, is_abbreviation: bool) -> LinkProtocolKind {
-    if is_abbreviation {
-        return LinkProtocolKind::Abbreviation;
-    }
-    match protocol {
-        "file" | "file+sys" | "file+emacs" | "file+shell" => LinkProtocolKind::File,
+    let kind = super::org_values::scalar(
+        "link-protocol-kind",
+        &[protocol, if is_abbreviation { "true" } else { "false" }],
+    );
+    match kind.as_str() {
+        "abbreviation" => LinkProtocolKind::Abbreviation,
+        "file" => LinkProtocolKind::File,
         "attachment" => LinkProtocolKind::Attachment,
-        "id" => LinkProtocolKind::InternalId,
-        "coderef" => LinkProtocolKind::CodeReference,
-        "http" | "https" | "ftp" | "doi" | "irc" => LinkProtocolKind::Web,
-        "mailto" | "news" | "gnus" | "rmail" | "mhe" | "bbdb" => LinkProtocolKind::Message,
-        "docview" | "help" | "info" | "shortdoc" => LinkProtocolKind::Documentation,
-        "shell" | "elisp" => LinkProtocolKind::Executable,
+        "internal-id" => LinkProtocolKind::InternalId,
+        "code-reference" => LinkProtocolKind::CodeReference,
+        "web" => LinkProtocolKind::Web,
+        "message" => LinkProtocolKind::Message,
+        "documentation" => LinkProtocolKind::Documentation,
+        "executable" => LinkProtocolKind::Executable,
         "org-protocol" => LinkProtocolKind::OrgProtocol,
-        _ => LinkProtocolKind::Custom,
+        "custom" => LinkProtocolKind::Custom,
+        _ => panic!("native protocol kind"),
     }
 }
-
 fn org_protocol_call(target: &str) -> Option<OrgProtocolCall> {
-    let body = target.trim_start_matches('/');
-    let subprotocol_end = body
-        .find(['?', '/', ':'])
-        .unwrap_or_else(|| body.trim_end_matches('/').len());
-    let subprotocol = body[..subprotocol_end].trim();
-    if subprotocol.is_empty() {
-        return None;
-    }
-    Some(OrgProtocolCall {
-        subprotocol: subprotocol.to_string(),
-        kind: org_protocol_kind(subprotocol),
-        parameters: org_protocol_parameters(body),
-    })
+    native_org_protocol(target, "target")
 }
-
 fn org_protocol_for_target(raw: &str) -> Option<OrgProtocolCall> {
-    let (protocol, target) = raw.trim().split_once(':')?;
-    protocol
-        .eq_ignore_ascii_case("org-protocol")
-        .then(|| org_protocol_call(target))
-        .flatten()
+    native_org_protocol(raw, "raw")
 }
-
-fn org_protocol_kind(subprotocol: &str) -> OrgProtocolKind {
-    match subprotocol {
+fn native_org_protocol(raw: &str, mode: &str) -> Option<OrgProtocolCall> {
+    let rows = super::org_values::rows("org-protocol", &[raw, mode]);
+    let mut rows = rows.into_iter();
+    let [subprotocol, kind]: [String; 2] =
+        rows.next()?.try_into().expect("native org-protocol header");
+    let kind = match kind.as_str() {
         "store-link" => OrgProtocolKind::StoreLink,
         "capture" => OrgProtocolKind::Capture,
         "open-source" => OrgProtocolKind::OpenSource,
-        _ => OrgProtocolKind::Custom,
-    }
-}
-
-fn org_protocol_parameters(body: &str) -> Vec<OrgProtocolParameter> {
-    let Some((_, query)) = body.split_once('?') else {
-        return Vec::new();
+        "custom" => OrgProtocolKind::Custom,
+        _ => panic!("native org-protocol kind"),
     };
-    query
-        .split('&')
-        .filter(|part| !part.is_empty())
-        .map(|part| {
-            let (key, value) = part
-                .split_once('=')
-                .map(|(key, value)| (key, Some(value)))
-                .unwrap_or((part, None));
+    let parameters = rows
+        .map(|row| {
+            let [raw, key, value, present]: [String; 4] =
+                row.try_into().expect("native protocol parameter");
             OrgProtocolParameter {
-                key: percent_decode(key),
-                value: value.map(percent_decode),
-                raw: part.to_string(),
+                raw,
+                key: percent_decode(&key),
+                value: match present.as_str() {
+                    "true" => Some(percent_decode(&value)),
+                    "false" => None,
+                    _ => panic!("native parameter presence"),
+                },
             }
         })
-        .collect()
+        .collect();
+    Some(OrgProtocolCall {
+        subprotocol,
+        kind,
+        parameters,
+    })
 }
 
 fn percent_decode(value: &str) -> String {

@@ -1,10 +1,53 @@
-use orgize::{
-    Org,
-    export::{LatexExport, LatexExportOptions},
-};
-use rowan::ast::AstNode;
+use orgize::{Org, export::LatexExportOptions};
 
 #[test]
+fn explicit_startup_precedes_parallel_latex_cases() {
+    // SAFETY: standalone fixture initializes before application workers.
+    unsafe { orgize::initialize_native_runtime() }.expect("native exporter startup");
+    let cases: &[(&str, fn())] = &[
+        (
+            "latex_export_escapes_text_and_renders_inline_markup",
+            latex_export_escapes_text_and_renders_inline_markup,
+        ),
+        (
+            "latex_export_renders_structural_blocks_lists_tables_and_links",
+            latex_export_renders_structural_blocks_lists_tables_and_links,
+        ),
+        (
+            "latex_table_formula_is_metadata_not_a_row",
+            latex_table_formula_is_metadata_not_a_row,
+        ),
+        (
+            "latex_footnote_definition_preserves_its_label_and_body",
+            latex_footnote_definition_preserves_its_label_and_body,
+        ),
+        (
+            "latex_export_preserves_latex_specific_input",
+            latex_export_preserves_latex_specific_input,
+        ),
+        (
+            "latex_export_can_render_subtrees",
+            latex_export_can_render_subtrees,
+        ),
+        (
+            "latex_export_options_control_special_strings_and_entities",
+            latex_export_options_control_special_strings_and_entities,
+        ),
+    ];
+    std::thread::scope(|scope| {
+        for &(name, case) in cases {
+            scope.spawn(move || {
+                case();
+                println!("native-export case={name} OK");
+            });
+        }
+    });
+    println!(
+        "startup-native exporter=latex cases={} complete OK",
+        cases.len()
+    );
+}
+
 fn latex_export_escapes_text_and_renders_inline_markup() {
     insta::assert_snapshot!(Org::parse(
         "* Heading & 100%\nText _ # $ & with *bold*, /em/, _under_, =verb=, ~code~, x^2, y_1, and \\\\alpha.\n"
@@ -12,7 +55,6 @@ fn latex_export_escapes_text_and_renders_inline_markup() {
     .to_latex());
 }
 
-#[test]
 fn latex_export_renders_structural_blocks_lists_tables_and_links() {
     insta::assert_snapshot!(
         Org::parse(
@@ -43,7 +85,36 @@ fn main() {
     );
 }
 
-#[test]
+fn latex_table_formula_is_metadata_not_a_row() {
+    let org = Org::parse("| Name | Value |\n|------+-------|\n| alpha | 1 |\n#+TBLFM: @2$2=1\n");
+    let table = org
+        .records()
+        .iter()
+        .find(|record| record.kind == "table")
+        .expect("Scheme must classify the table");
+    insta::assert_snapshot!(org.try_latex_record(table.id).unwrap(), @r"
+\begin{tabular}{ll}
+Name & Value \\
+\hline
+alpha & 1 \\
+\end{tabular}
+");
+}
+
+fn latex_footnote_definition_preserves_its_label_and_body() {
+    let org = Org::parse("A [fn:bench].\n\n[fn:bench] Note.\n");
+    let definition = org
+        .records()
+        .iter()
+        .find(|record| record.kind == "footnote-definition")
+        .expect("Scheme must classify the footnote definition");
+    insta::assert_snapshot!(org.try_latex_record(definition.id).unwrap(), @r###"
+\begin{quote}\textsuperscript{bench} Note.
+
+\end{quote}
+"###);
+}
+
 fn latex_export_preserves_latex_specific_input() {
     insta::assert_snapshot!(
         Org::parse(
@@ -67,16 +138,16 @@ See [cite:@doe2026; @roe2026 p. 42] on <2026-05-10 Sun>.
     );
 }
 
-#[test]
 fn latex_export_can_render_subtrees() {
     let org = Org::parse("* /hello/ *world*");
-    let bold = org.first_node::<orgize::syntax_ast::Bold>().unwrap();
-    let mut latex = LatexExport::default();
-    latex.render(bold.syntax());
-    assert_eq!(latex.finish(), r"\textbf{world}");
+    let bold = org
+        .records()
+        .iter()
+        .find(|record| record.kind == "bold")
+        .unwrap();
+    assert_eq!(org.try_latex_record(bold.id).unwrap(), r"\textbf{world}");
 }
 
-#[test]
 fn latex_export_options_control_special_strings_and_entities() {
     let org = Org::parse(r#"a -- b --- c... don't \- \alpha{}"#);
     let rendered = org.to_latex_with_options(LatexExportOptions {

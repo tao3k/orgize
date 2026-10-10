@@ -1,6 +1,5 @@
 //! Scheme event-AOT contract projection at the public Org AOT boundary.
 
-#[test]
 fn scheme_event_aot_evaluates_the_document_headline_contract() {
     let source = include_str!(
         "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org"
@@ -21,3 +20,8 @@ fn scheme_event_aot_evaluates_the_document_headline_contract() {
     assert_eq!(actual[0].matched_count, 3);
     assert!(actual[0].passed);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "org_event_aot_contract::scheme_event_aot_evaluates_the_document_headline_contract",
+    scheme_event_aot_evaluates_the_document_headline_contract,
+)];

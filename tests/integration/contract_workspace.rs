@@ -10,13 +10,18 @@ mod reference_sentinel;
 #[path = "contract_workspace_required_target.rs"]
 mod required_target;
 
+pub(super) fn additional_cases() -> Vec<(&'static str, fn())> {
+    let mut cases = reference_sentinel::NATIVE_CASES.to_vec();
+    cases.extend_from_slice(required_target::NATIVE_CASES);
+    cases
+}
+
 use asp_rust_build_support::{
     AspRustScenarioObservation, asp_rust_scenario, measure_asp_rust_scenario,
 };
 
 static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
 
-#[test]
 fn workspace_contract_admits_exact_reciprocal_pair() {
     let fixture = WorkspaceFixture::new();
     let output = fixture.run();
@@ -24,7 +29,6 @@ fn workspace_contract_admits_exact_reciprocal_pair() {
     assert!(String::from_utf8_lossy(&output.stdout).contains("2 documents, 4 evaluations"));
 }
 
-#[test]
 fn workspace_contract_rejects_unrouted_nested_org_file() {
     let fixture = WorkspaceFixture::new();
     fs::create_dir_all(fixture.root.join("cn/docs/nested")).unwrap();
@@ -43,7 +47,6 @@ fn workspace_contract_rejects_unrouted_nested_org_file() {
     fixture.assert_failure("expected exactly one workspace route, matched 0");
 }
 
-#[test]
 fn workspace_contract_rejects_a_second_path_pattern_language() {
     let fixture = WorkspaceFixture::new();
     fs::write(
@@ -55,7 +58,6 @@ fn workspace_contract_rejects_a_second_path_pattern_language() {
     fixture.assert_failure("PATH does not accept wildcard syntax");
 }
 
-#[test]
 fn workspace_contract_rejects_inexact_contract_composition() {
     let fixture = WorkspaceFixture::new();
     fs::write(
@@ -73,7 +75,6 @@ fn workspace_contract_rejects_inexact_contract_composition() {
     fixture.assert_failure("exact contract composition must be");
 }
 
-#[test]
 fn workspace_contract_rejects_nonreciprocal_and_escaping_counterparts() {
     let fixture = WorkspaceFixture::new();
     fs::write(fixture.root.join("outside.org"), "#+TITLE: Outside\n").unwrap();
@@ -115,7 +116,6 @@ fn workspace_contract_rejects_nonreciprocal_and_escaping_counterparts() {
     fixture.assert_failure("counterpart relation is not reciprocal");
 }
 
-#[test]
 fn workspace_contract_rejects_third_semantic_projection() {
     let fixture = WorkspaceFixture::new();
     fs::write(
@@ -144,7 +144,6 @@ fn workspace_contract_rejects_third_semantic_projection() {
     fixture.assert_failure("must identify exactly two documents; found 4");
 }
 
-#[test]
 fn workspace_contract_rejects_mismatched_paired_node_identities() {
     let fixture = WorkspaceFixture::new();
     let policy = POLICY.replace(
@@ -186,7 +185,6 @@ fn workspace_contract_rejects_mismatched_paired_node_identities() {
     fixture.assert_failure("must have identical unique paired node identities in PRINCIPLE_ID");
 }
 
-#[test]
 fn workspace_contract_rejects_duplicate_pair_group_declarations() {
     let fixture = WorkspaceFixture::new();
     let policy = POLICY.replace(
@@ -197,7 +195,6 @@ fn workspace_contract_rejects_duplicate_pair_group_declarations() {
     fixture.assert_failure("must declare PAIR_GROUP at most once");
 }
 
-#[test]
 fn workspace_contract_rejects_cross_group_counterparts() {
     let fixture = WorkspaceFixture::new();
     let policy = POLICY.replacen(":PAIR_GROUP: test.cn-en", ":PAIR_GROUP: test.other", 1);
@@ -205,7 +202,6 @@ fn workspace_contract_rejects_cross_group_counterparts() {
     fixture.assert_failure("counterpart belongs to pair group");
 }
 
-#[test]
 fn workspace_contract_rejects_mismatched_paired_node_metadata_from_contract_expression() {
     let fixture = WorkspaceFixture::new();
     let pair_contract = r#"
@@ -266,7 +262,6 @@ fn workspace_contract_rejects_mismatched_paired_node_metadata_from_contract_expr
     fixture.assert_failure("paired node `P-001` must have equal PRINCIPLE_STATUS metadata");
 }
 
-#[test]
 fn workspace_contract_rejects_mismatched_paired_document_metadata_from_contract_expression() {
     let fixture = WorkspaceFixture::new();
     let pair_contract = r#"
@@ -316,7 +311,6 @@ fn workspace_contract_rejects_mismatched_paired_document_metadata_from_contract_
     fixture.assert_failure("must have equal document property PRINCIPLE_REF");
 }
 
-#[test]
 fn workspace_contract_resolves_document_property_values_to_node_identities() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -338,7 +332,6 @@ fn workspace_contract_resolves_document_property_values_to_node_identities() {
     );
 }
 
-#[test]
 fn workspace_contract_resolves_node_property_values_and_allows_declared_sentinels() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -360,7 +353,6 @@ fn workspace_contract_resolves_node_property_values_and_allows_declared_sentinel
     );
 }
 
-#[test]
 fn workspace_contract_can_reject_self_references() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -369,7 +361,6 @@ fn workspace_contract_can_reject_self_references() {
     fixture.assert_failure("node `P-001` property REFINES must not reference its own identity");
 }
 
-#[test]
 fn workspace_contract_can_reject_reference_cycles() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -378,7 +369,6 @@ fn workspace_contract_can_reject_reference_cycles() {
     fixture.assert_failure("property REFINES must be acyclic; cycle: P-001 -> P-002 -> P-001");
 }
 
-#[test]
 fn workspace_contract_requires_reciprocal_node_references() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -402,7 +392,6 @@ fn workspace_contract_requires_reciprocal_node_references() {
     );
 }
 
-#[test]
 fn workspace_contract_requires_allowed_properties_on_reference_targets() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -445,7 +434,6 @@ fn workspace_contract_requires_allowed_properties_on_reference_targets() {
     );
 }
 
-#[test]
 fn workspace_contract_checks_target_property_on_every_projection() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -480,7 +468,6 @@ fn workspace_contract_checks_target_property_on_every_projection() {
     fixture.assert_failure("target property PRINCIPLE_STATUS must be one of accepted, superseded");
 }
 
-#[test]
 fn workspace_contract_compares_complete_target_property_values() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -518,7 +505,6 @@ fn workspace_contract_compares_complete_target_property_values() {
     fixture.assert_failure("target property PRINCIPLE_STATUS must be one of accepted, superseded");
 }
 
-#[test]
 fn workspace_contract_checks_reciprocal_property_on_every_projection() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -534,7 +520,6 @@ fn workspace_contract_checks_reciprocal_property_on_every_projection() {
     fixture.assert_failure("must be reciprocated by target property SUPERSEDED_BY");
 }
 
-#[test]
 fn workspace_contract_rejects_an_invalid_route_contract_expression() {
     let fixture = WorkspaceFixture::new();
     let policy = POLICY.replace(
@@ -546,7 +531,6 @@ fn workspace_contract_rejects_an_invalid_route_contract_expression() {
     fixture.assert_failure("contains an unsupported org-contract expression");
 }
 
-#[test]
 fn workspace_contract_rejects_duplicate_exact_contract_declarations() {
     let fixture = WorkspaceFixture::new();
     let policy = POLICY.replace(
@@ -558,7 +542,6 @@ fn workspace_contract_rejects_duplicate_exact_contract_declarations() {
     fixture.assert_failure("must declare CONTRACT_ORG_EXACT exactly once");
 }
 
-#[test]
 fn workspace_contract_rejects_node_only_options_on_document_references() {
     for option in [
         "(exclude-self true)",
@@ -581,7 +564,6 @@ fn workspace_contract_rejects_node_only_options_on_document_references() {
     }
 }
 
-#[test]
 fn workspace_contract_rejects_duplicate_reference_options() {
     let fixture = WorkspaceFixture::new();
     fixture.install_reference_policy();
@@ -600,7 +582,10 @@ fn workspace_contract_rejects_duplicate_reference_options() {
 }
 
 #[test]
+#[ignore = "run as a focused workspace performance scenario"]
 fn workspace_contract_scale_scenario_stays_in_budget() {
+    // SAFETY: this ignored scenario is selected alone, before application work.
+    unsafe { orgize::initialize_native_runtime() }.expect("native focused scenario startup");
     let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/unit/scenarios/contract_workspace/workspace_admission_scale");
     let benchmark = asp_rust::validate_rust_scenario_benchmark(&scenario_root)
@@ -623,7 +608,7 @@ fn workspace_contract_scale_scenario_stays_in_budget() {
         fixture_root: "tests/unit/scenarios/contract_workspace/workspace_admission_scale",
         tags: ["org-contract", "workspace", "performance"],
         commands: [
-            { label: "focused", argv: ["cargo", "test", "workspace_contract_scale_scenario_stays_in_budget"] }
+            { label: "focused-release", argv: ["cargo", "test", "--release", "--test", "integration_test", "workspace_contract_scale_scenario_stays_in_budget", "--", "--ignored"] }
         ],
         benchmark: {
             harness: "libtest",
@@ -986,3 +971,7 @@ const REGISTRY: &str = r#"* Base
 (assert exists (headline :summary (title "Required")))
 #+end_src
 "#;
+
+#[path = "contract_workspace_cases.rs"]
+mod cases;
+pub(super) use cases::NATIVE_CASES;

@@ -4,7 +4,6 @@ use orgize::{
     ast::{AstRef, ElementData, TableFormulaReferenceKind},
 };
 
-#[test]
 fn semantic_ast_projects_org_table_formulas() {
     let doc = Org::parse(
         "| a | b |\n#+TBLFM: $2=vsum(@2..@4);%.1f::$1=remote(other,$2)\n#+tblfm: @2=$3\n",
@@ -31,6 +30,15 @@ fn semantic_ast_projects_org_table_formulas() {
     assert_eq!(table.parsed_formulas[0].assignments[0].lhs, "$2");
     assert_eq!(table.parsed_formulas[0].assignments[0].rhs, "vsum(@2..@4)");
     assert_eq!(table.parsed_formulas[0].assignments[0].flags, ["%.1f"]);
+    assert_eq!(table.parsed_formulas[0].assignments[0].references.len(), 3);
+    assert_eq!(
+        table.parsed_formulas[0].assignments[0].references[1].raw,
+        "@2"
+    );
+    assert_eq!(
+        table.parsed_formulas[0].assignments[0].references[2].raw,
+        "@4"
+    );
     assert_eq!(
         table.parsed_formulas[0].assignments[0].references[0].kind,
         TableFormulaReferenceKind::Field
@@ -46,3 +54,8 @@ fn semantic_ast_projects_org_table_formulas() {
     });
     assert_eq!(formula_keyword_count, 2);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_org_table_formulas::semantic_ast_projects_org_table_formulas",
+    semantic_ast_projects_org_table_formulas,
+)];

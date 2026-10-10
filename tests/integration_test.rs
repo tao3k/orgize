@@ -1,5 +1,6 @@
-#[path = "integration/org_structural_fixture.rs"]
-mod org_structural_fixture;
+#[macro_use]
+#[path = "integration/org_aot_assertions.rs"]
+mod org_aot_assertions;
 
 #[path = "integration/agent_cli.rs"]
 mod agent_cli;
@@ -31,14 +32,8 @@ mod fmt_cli;
 mod fmt_links;
 #[path = "integration/fmt_table.rs"]
 mod fmt_table;
-#[path = "integration/gerbil_rowan_cutover.rs"]
-mod gerbil_rowan_cutover;
 #[path = "integration/harness_report_consumer.rs"]
 mod harness_report_consumer;
-#[path = "integration/html.rs"]
-mod html;
-#[path = "integration/latex.rs"]
-mod latex;
 #[path = "integration/library_cli.rs"]
 mod library_cli;
 #[path = "integration/lint_attachments.rs"]
@@ -67,14 +62,16 @@ mod lint_property_schema;
 mod lint_table_formulas;
 #[path = "integration/lint_task_blockers.rs"]
 mod lint_task_blockers;
-#[path = "integration/markdown.rs"]
-mod markdown;
 #[path = "integration/named_source_block_template.rs"]
 mod named_source_block_template;
 #[path = "integration/org_aot_edit.rs"]
 mod org_aot_edit;
-#[path = "integration/org_cutover_parity.rs"]
-mod org_cutover_parity;
+#[path = "integration/org_case_insensitive_aot.rs"]
+mod org_case_insensitive_aot;
+#[path = "integration/org_citation_aot.rs"]
+mod org_citation_aot;
+#[path = "integration/org_customer_contract.rs"]
+mod org_customer_contract;
 #[path = "integration/org_dynamic_block.rs"]
 mod org_dynamic_block;
 #[path = "integration/org_element_query.rs"]
@@ -95,16 +92,24 @@ mod org_headline_function_aot;
 mod org_inline_code_aot;
 #[path = "integration/org_inline_object_aot.rs"]
 mod org_inline_object_aot;
+#[path = "integration/org_inlinetask_aot.rs"]
+mod org_inlinetask_aot;
 #[path = "integration/org_list_aot.rs"]
 mod org_list_aot;
 #[path = "integration/org_list_fields.rs"]
 mod org_list_fields;
 #[path = "integration/org_named_drawer.rs"]
 mod org_named_drawer;
+#[path = "integration/org_named_elements.rs"]
+mod org_named_elements;
 #[path = "integration/org_parser_aot.rs"]
 mod org_parser_aot;
-#[path = "integration/org_rowan_event_handoff.rs"]
-mod org_rowan_event_handoff;
+#[path = "integration/org_public_aot_boundary.rs"]
+mod org_public_aot_boundary;
+#[path = "integration/org_script_aot.rs"]
+mod org_script_aot;
+#[path = "integration/org_timestamp_aot.rs"]
+mod org_timestamp_aot;
 #[path = "integration/parse.rs"]
 mod parse;
 #[path = "integration/scenario_benchmark.rs"]
@@ -117,3 +122,6 @@ mod semantic_ast;
 mod source_block_document;
 #[path = "integration/task_cli.rs"]
 mod task_cli;
+
+#[path = "integration/consumer_fixture.rs"]
+mod consumer_fixture;

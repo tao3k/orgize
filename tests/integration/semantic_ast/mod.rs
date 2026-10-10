@@ -65,3 +65,6 @@ mod semantic_traversal_covers_parser_v2_surface;
 mod semantic_traversal_supports_exporter_and_indexer_shapes;
 pub(crate) mod support;
 mod traversal_visits_annotation_bearing_metadata_nodes;
+
+mod cases;
+pub(super) use cases::cases;

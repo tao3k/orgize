@@ -1,0 +1,102 @@
+#+title: Native keyword document plan and qualification
+
+* Ownership and replacement
+
+Program =01a9576b= extends the existing document semantic request (operation
+17) with Scheme-owned keyword facts. The old private =org-headline-batch=
+entry is replaced by =org-document-batch=, not retained as a compatibility
+path. Keyword routing, words, tags, boolean options and last-option wins
+remain the existing =org-keyword-facts= algorithm in Scheme.
+
+Rust forwards source-backed raw keyword values with the existing TODO
+configuration and headline inputs. It admits counted, ordered fact rows
+against the current document's graph IDs, rejects malformed framing, and
+owns the resulting values for that document's lifetime. The isolated
+=org_aot_keyword_view.rs= owner performs transport admission, not grammar
+recognition. Tests live in =tests/unit/org_aot_keyword_view.rs=.
+
+The full semantic projection now reuses these facts instead of making a
+second keyword request. Affiliation is a distinct lazy Scheme policy; the
+focused reuse test admits that policy separately before measuring keyword
+reuse. The cold whole-catalog and scale scenarios are not prewarmed.
+Standalone keyword operations remain needed by existing standalone native
+consumers; they are not a fallback parser.
+
+* Resolved qualification failures
+
+The first Scheme library run failed the new zero-request assertion because
+it also counted the independent affiliation request. The repaired assertion
+isolates keyword reuse and preserves metadata, Unicode tag deduplication,
+ASCII case ownership and repeated-option semantics.
+
+The first Rust ordinary catalog rejected an inline source test module under
+=RUST-AGENT-PROJECT-003=. Its test body was moved to =tests/unit= and mounted
+with =#[path]=. The gate is not suppressed. Both repaired catalogs pass.
+Intermediate receipts retain their nonzero status; only the newly compiled
+=*-admitted*= artifacts qualify this source.
+
+* Local receipts
+
+Receipts are under =target/native-keyword-document-20261007=.
+
+- Fresh Org SDK and 321-module program staging/source-root admission pass.
+- Native Scheme harness: 178 cases, 12 suites, final =OK=; injected failure
+  returns 42 and =FAILED= without =OK=.
+- Both five-target Release builds and final source checks pass, including
+  the production-library wrapper warning gate.
+- Both runtime lanes pass 85 native units and ASP layout enforcement;
+  Scheme/Rust ordinary catalogs pass 33/34 tests, with four unchanged
+  explicitly qualified performance cases remaining ignored in that leg.
+- Both public/Tokio cutover catalogs pass 11 concurrent cases; both index
+  handoff catalogs pass 23 concurrent cases.
+- Both four-worker 1,000/10,000 Query controls pass complete full-projection
+  hit/no-hit parity and the exact physical-request assertion: 1,016/10,160.
+- Both existing maturin bindings are freshly built for this program and
+  each passes all 25 Python cases, including program/backend identity, GIL
+  release, worker-thread owner reuse, C ABI error admission and child-wait
+  ownership. Their unchanged five-second faulthandler checks report no stall.
+
+Darwin/Linux command-expansion checks, task layout, pinned dependency
+alignment and whitespace checks pass. Linux command expansion is not Linux
+execution. No remote CI, commit, push or PR mutation is admitted here.
+
+* Whole-catalog failure and architectural boundary
+
+Both 457-case catalogs run all 457 cases with 12 callers. Each fails only
+the unchanged 25ms Contract gate. This keyword change is not tail closure:
+
+| Runtime | Wall ms | Admission ms | Handoff ms | Scheme CPU ms | Requests |
+|---------+---------+--------------+------------+---------------+----------|
+| Scheme  | 103.665 |       70.123 |     24.942 |         3.386 |       29 |
+| Rust    | 143.884 |      135.359 |      1.746 |         1.019 |       29 |
+
+These are individual observations, not a runtime ranking or a speedup.
+The same 29 physical replies are observed in this Contract fixture; it does
+not exercise the replaced keyword re-entry. Admission/completion remains
+the dominant wall-time component in these failed observations.
+
+Twenty alternating reference/candidate controls per lane verify every
+sample's program identity (=dd1ca949= / =01a9576b=) and retain nonzero
+aggregate status. They run after the owned compilers and scale runs finish:
+
+| Runtime | Version   | Failures / 20 | Min ms | Median ms | Max ms |
+|---------+-----------+---------------+--------+-----------+--------|
+| Scheme  | Reference |            13 |  1.632 |    38.449 | 139.894 |
+| Scheme  | Candidate |             6 |  1.839 |    13.800 | 136.598 |
+| Rust    | Reference |             8 |  1.634 |     5.057 | 115.635 |
+| Rust    | Candidate |             6 |  1.744 |     4.828 | 272.745 |
+
+Both candidate lanes retain failures, and the Rust candidate retains the
+largest observed tail. Neither a stable 25ms closure nor a causal speedup
+is admitted from these samples.
+
+The minimal project Query index also does not run the full semantic keyword
+projection. Its 1,016/10,160 replies are bounded parser packets plus one
+document semantic plan per source, not repeated keyword projection calls.
+Batching those document plans is a separate structural optimization; the
+new keyword reuse assertion must not be promoted to that throughput claim.
+
+Rust Query IR semantic construction and owned native view/result lease
+handoff remain open. Whole-parser migration and stable 25ms admission are
+not declared complete. No kernel patch, concurrency reduction, corpus
+replacement, release-profile change or timeout relaxation is used.

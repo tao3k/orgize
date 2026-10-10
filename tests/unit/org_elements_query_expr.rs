@@ -4,7 +4,21 @@ use crate::ast::{
     org_elements_index_query_from_expr_str,
 };
 
-#[test]
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "parses_complete_index_query_expression_surface",
+        parses_complete_index_query_expression_surface,
+    ),
+    (
+        "parses_org_element_ast_relation_aliases",
+        parses_org_element_ast_relation_aliases,
+    ),
+    (
+        "parses_every_agent_facing_query_surface_example",
+        parses_every_agent_facing_query_surface_example,
+    ),
+];
+
 fn parses_complete_index_query_expression_surface() {
     let query = org_elements_index_query_from_expr_str(
         r#"
@@ -66,7 +80,6 @@ fn parses_complete_index_query_expression_surface() {
     assert_eq!(query.limit, Some(7));
 }
 
-#[test]
 fn parses_org_element_ast_relation_aliases() {
     let query = org_elements_index_query_from_expr_str(
         r#"
@@ -110,7 +123,6 @@ fn parses_org_element_ast_relation_aliases() {
     ));
 }
 
-#[test]
 fn parses_every_agent_facing_query_surface_example() {
     for example in ORG_ELEMENTS_QUERY_EXPRESSION_EXAMPLES {
         org_elements_index_query_from_expr_str(example)

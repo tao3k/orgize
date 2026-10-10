@@ -13,7 +13,7 @@ impl Document<ParsedAnnotation> {
     /// Projects `#+PLOT:` and `#+ORGTBL:` table intent without drawing,
     /// translating, or mutating table targets.
     pub fn table_visualization_plans(&self) -> Vec<TableVisualizationPlan<ParsedAnnotation>> {
-        let receivers = radio_receivers(self.ann.raw.as_str());
+        let receivers = radio_receivers(self);
         let mut collector = TableVisualizationCollector {
             receivers,
             plans: Vec::new(),
@@ -196,8 +196,7 @@ fn is_alignment_cookie_row(row: &TableRow<ParsedAnnotation>) -> bool {
     !row.cells.is_empty()
         && row.cells.iter().all(|cell| {
             let value = objects_text(&cell.objects);
-            let value = value.trim();
-            value.starts_with('<') && value.ends_with('>')
+            super::org_values::scalar("alignment-cookie", &[&value]) == "true"
         })
 }
 
@@ -333,22 +332,21 @@ fn radio_table(
     Option<RadioTable<ParsedAnnotation>>,
     Vec<TableVisualizationWarning>,
 ) {
-    let tokens = split_option_tokens(keyword.value.as_str());
     let mut warnings = Vec::new();
-    if tokens
-        .first()
-        .is_none_or(|token| !token.eq_ignore_ascii_case("SEND"))
-        || tokens.len() < 2
-    {
+    let Some(row) = super::org_values::optional("radio-header", &keyword.value) else {
         warnings.push(TableVisualizationWarning {
             kind: TableVisualizationWarningKind::InvalidRadioTableDirective,
-            message: "ORGTBL keyword must start with `SEND table-name`".to_string(),
+            message: "ORGTBL keyword must start with `SEND table-name`".to_owned(),
         });
         return (None, warnings);
-    }
-    let name = tokens[1].clone();
-    let translator = tokens.get(2).cloned();
-    let parameters = radio_options(&tokens[3..]);
+    };
+    let [name, translator, present]: [String; 3] = row.try_into().expect("native radio header");
+    let translator = match present.as_str() {
+        "true" => Some(translator),
+        "false" => None,
+        _ => panic!("native radio translator presence"),
+    };
+    let parameters = radio_options(&keyword.value);
     let receiver = receivers.get(name.as_str()).cloned();
     if receiver.is_none() {
         warnings.push(TableVisualizationWarning {
@@ -370,54 +368,42 @@ fn radio_table(
 }
 
 fn plot_options(value: &str) -> Vec<TableVisualizationOption> {
-    split_option_tokens(value)
+    super::org_values::rows("plot-options", &[value])
         .into_iter()
-        .filter_map(|token| {
-            let (key, value) = token.split_once(':')?;
-            let key = key.trim().to_string();
-            let value = trim_wrapping_quotes(value);
-            Some(TableVisualizationOption {
-                kind: plot_option_kind(key.as_str()),
+        .map(|row| {
+            let [key, value, raw]: [String; 3] = row.try_into().expect("native plot option arity");
+            TableVisualizationOption {
+                kind: plot_option_kind(&key),
                 key,
-                value: (!value.is_empty()).then(|| value.to_string()),
-                raw: token,
-            })
+                value: (!value.is_empty()).then_some(value),
+                raw,
+            }
+        })
+        .collect()
+}
+fn radio_options(value: &str) -> Vec<TableVisualizationOption> {
+    super::org_values::rows("radio-options", &[value])
+        .into_iter()
+        .map(|row| {
+            let [key, value, present, raw]: [String; 4] =
+                row.try_into().expect("native radio option arity");
+            let value = match present.as_str() {
+                "true" => Some(value),
+                "false" => None,
+                _ => panic!("native radio option presence"),
+            };
+            TableVisualizationOption {
+                kind: radio_option_kind(&key),
+                key,
+                value,
+                raw,
+            }
         })
         .collect()
 }
 
-fn radio_options(tokens: &[String]) -> Vec<TableVisualizationOption> {
-    let mut options = Vec::new();
-    let mut index = 0;
-    while index < tokens.len() {
-        let token = &tokens[index];
-        if let Some(key) = token.strip_prefix(':').filter(|key| !key.is_empty()) {
-            let mut raw = token.clone();
-            let mut value = None;
-            if tokens
-                .get(index + 1)
-                .is_some_and(|next| !next.starts_with(':'))
-            {
-                let next = &tokens[index + 1];
-                raw.push(' ');
-                raw.push_str(next);
-                value = Some(trim_wrapping_quotes(next).to_string());
-                index += 1;
-            }
-            options.push(TableVisualizationOption {
-                kind: radio_option_kind(key),
-                key: key.to_string(),
-                value,
-                raw,
-            });
-        }
-        index += 1;
-    }
-    options
-}
-
 fn plot_option_kind(key: &str) -> TableVisualizationOptionKind {
-    match key.to_ascii_lowercase().as_str() {
+    match super::org_values::scalar("option-kind", &[key, "plot"]).as_str() {
         "title" => TableVisualizationOptionKind::Title,
         "ind" => TableVisualizationOptionKind::IndexColumn,
         "timeind" => TableVisualizationOptionKind::TimeIndexColumn,
@@ -434,7 +420,7 @@ fn plot_option_kind(key: &str) -> TableVisualizationOptionKind {
 }
 
 fn radio_option_kind(key: &str) -> TableVisualizationOptionKind {
-    match key.to_ascii_lowercase().as_str() {
+    match super::org_values::scalar("option-kind", &[key, "radio"]).as_str() {
         "skip" => TableVisualizationOptionKind::Skip,
         "skipcols" => TableVisualizationOptionKind::SkipColumns,
         "splice" => TableVisualizationOptionKind::Splice,
@@ -450,7 +436,8 @@ fn parse_positive_usize_option(
     let parsed = option
         .value
         .as_deref()
-        .and_then(|value| value.parse::<usize>().ok())
+        .and_then(|value| super::org_values::optional("positive", value))
+        .map(|row| row[0].parse::<usize>().expect("native positive integer"))
         .filter(|value| *value > 0);
     if parsed.is_none() {
         warnings.push(invalid_plot_warning(option, "expected a positive integer"));
@@ -469,16 +456,12 @@ fn parse_column_list_option(
         ));
         return Vec::new();
     };
-    let inner = value
-        .trim()
-        .strip_prefix('(')
-        .and_then(|value| value.strip_suffix(')'))
-        .unwrap_or(value);
-    let columns = inner
-        .split(|ch: char| ch.is_whitespace() || ch == ',')
-        .filter(|part| !part.is_empty())
-        .filter_map(|part| part.parse::<usize>().ok().filter(|value| *value > 0))
-        .collect::<Vec<_>>();
+    let columns = super::org_values::rows("column-list", &[value])
+        .pop()
+        .expect("native columns")
+        .into_iter()
+        .map(|value| value.parse().expect("native column number"))
+        .collect::<Vec<usize>>();
     if columns.is_empty() {
         warnings.push(invalid_plot_warning(
             option,
@@ -492,15 +475,15 @@ fn parse_bool_option(
     option: &TableVisualizationOption,
     warnings: &mut Vec<TableVisualizationWarning>,
 ) -> Option<bool> {
-    match option
+    let value = option
         .value
         .as_deref()
-        .map(str::to_ascii_lowercase)
-        .as_deref()
-    {
-        Some("y" | "yes" | "t" | "true") => Some(true),
-        Some("n" | "no" | "nil" | "false") => Some(false),
-        _ => {
+        .and_then(|value| super::org_values::optional("plot-bool", value));
+    match value.as_deref() {
+        Some([value]) if value == "true" => Some(true),
+        Some([value]) if value == "false" => Some(false),
+        Some(_) => panic!("native plot bool arity/domain"),
+        None => {
             warnings.push(invalid_plot_warning(
                 option,
                 "expected y/yes/t/true or n/no/nil/false",
@@ -520,9 +503,58 @@ fn invalid_plot_warning(
     }
 }
 
-fn radio_receivers(source: &str) -> BTreeMap<String, RadioTableReceiver> {
+fn radio_receivers(document: &Document<ParsedAnnotation>) -> BTreeMap<String, RadioTableReceiver> {
+    // Only Scheme-AOT comment elements can declare receivers; opaque block text
+    // and ordinary paragraphs must not create radio-table targets.
     let mut receivers = BTreeMap::<String, RadioTableReceiver>::new();
-    for line in source.lines() {
+    collect_radio_receivers_in_elements(&document.children, &mut receivers);
+    for section in &document.sections {
+        collect_radio_receivers_in_section(section, &mut receivers);
+    }
+    receivers
+}
+
+fn collect_radio_receivers_in_section(
+    section: &Section<ParsedAnnotation>,
+    receivers: &mut BTreeMap<String, RadioTableReceiver>,
+) {
+    collect_radio_receivers_in_elements(&section.children, receivers);
+    for subsection in &section.subsections {
+        collect_radio_receivers_in_section(subsection, receivers);
+    }
+}
+
+fn collect_radio_receivers_in_elements(
+    elements: &[Element<ParsedAnnotation>],
+    receivers: &mut BTreeMap<String, RadioTableReceiver>,
+) {
+    for element in elements {
+        match &element.data {
+            ElementData::Comment(raw) => collect_radio_receiver_comment(raw, receivers),
+            ElementData::Drawer(drawer) => {
+                collect_radio_receivers_in_elements(&drawer.children, receivers);
+            }
+            ElementData::List(list) => {
+                for item in &list.items {
+                    collect_radio_receivers_in_elements(&item.children, receivers);
+                }
+            }
+            ElementData::Block(block) => {
+                collect_radio_receivers_in_elements(&block.children, receivers);
+            }
+            ElementData::FootnoteDef(footnote) => {
+                collect_radio_receivers_in_elements(&footnote.children, receivers);
+            }
+            ElementData::Inlinetask(task) => {
+                collect_radio_receivers_in_elements(&task.children, receivers);
+            }
+            _ => {}
+        }
+    }
+}
+
+fn collect_radio_receiver_comment(raw: &str, receivers: &mut BTreeMap<String, RadioTableReceiver>) {
+    for line in raw.lines() {
         if let Some(name) = radio_receiver_marker(line, "BEGIN RECEIVE ORGTBL") {
             receivers
                 .entry(name.clone())
@@ -544,70 +576,13 @@ fn radio_receivers(source: &str) -> BTreeMap<String, RadioTableReceiver> {
                 });
         }
     }
-    receivers
 }
 
 fn radio_receiver_marker(line: &str, marker: &str) -> Option<String> {
-    let upper = line.to_ascii_uppercase();
-    let start = upper.find(marker)? + marker.len();
-    let name = line[start..].split_whitespace().next()?;
-    let name = name
-        .trim_matches(|ch: char| !(ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')));
-    (!name.is_empty()).then(|| name.to_string())
-}
-
-fn split_option_tokens(value: &str) -> Vec<String> {
-    let mut tokens = Vec::new();
-    let mut start = None;
-    let mut cursor = 0;
-    let mut quote = None;
-    let mut escaped = false;
-    let mut paren_depth = 0usize;
-
-    while cursor < value.len() {
-        let ch = value[cursor..].chars().next().unwrap();
-        if start.is_none() && !ch.is_whitespace() {
-            start = Some(cursor);
-        }
-        cursor += ch.len_utf8();
-        if escaped {
-            escaped = false;
-        } else if ch == '\\' {
-            escaped = true;
-        } else if quote == Some(ch) {
-            quote = None;
-        } else if quote.is_none() && matches!(ch, '"' | '\'') {
-            quote = Some(ch);
-        } else if quote.is_none() && ch == '(' {
-            paren_depth += 1;
-        } else if quote.is_none() && ch == ')' {
-            paren_depth = paren_depth.saturating_sub(1);
-        } else if quote.is_none()
-            && paren_depth == 0
-            && ch.is_whitespace()
-            && let Some(token_start) = start.take()
-        {
-            let end = value[..cursor].trim_end().len();
-            tokens.push(value[token_start..end].to_string());
-        }
-    }
-
-    if let Some(token_start) = start {
-        tokens.push(value[token_start..].trim_end().to_string());
-    }
-    tokens
-}
-
-fn trim_wrapping_quotes(value: &str) -> &str {
-    value
-        .trim()
-        .strip_prefix('"')
-        .and_then(|value| value.strip_suffix('"'))
-        .unwrap_or_else(|| {
+    super::org_values::rows("radio-marker", &[line, marker])
+        .pop()
+        .map(|row| {
+            let [value]: [String; 1] = row.try_into().expect("native receiver marker arity");
             value
-                .trim()
-                .strip_prefix('\'')
-                .and_then(|value| value.strip_suffix('\''))
-                .unwrap_or(value.trim())
         })
 }

@@ -2,10 +2,8 @@ use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{
     Org, ParseConfig,
     ast::{AstRef, ElementData, MarkupKind, ObjectData, TodoState},
-    syntax_ast::SyntaxInlinetask,
 };
 
-#[test]
 fn semantic_ast_projects_closed_inlinetasks_with_body() {
     let doc = Org::parse(
         r#"Intro.
@@ -72,7 +70,6 @@ Body with [[https://example.com][link]].
     assert_eq!(counts, (1, 1));
 }
 
-#[test]
 fn semantic_ast_keeps_unclosed_inlinetask_from_consuming_following_paragraph() {
     let doc = Org::parse("*************** Note\nAfter text.\n").document();
 
@@ -91,7 +88,6 @@ fn semantic_ast_keeps_unclosed_inlinetask_from_consuming_following_paragraph() {
     ));
 }
 
-#[test]
 fn inlinetask_min_level_keeps_lower_star_headlines_in_the_outline() {
     let org = Org::parse("************** Outline\nBody.\n");
     let doc = org.document();
@@ -100,7 +96,11 @@ fn inlinetask_min_level_keeps_lower_star_headlines_in_the_outline() {
     assert!(doc.children.is_empty());
     assert_eq!(doc.sections.len(), 1);
     assert_eq!(doc.sections[0].level, 14);
-    assert!(org.first_node::<SyntaxInlinetask>().is_none());
+    assert!(
+        org.records()
+            .iter()
+            .all(|record| record.kind != "inlinetask")
+    );
 
     let doc = ParseConfig {
         inlinetask_min_level: 4,
@@ -116,3 +116,18 @@ fn inlinetask_min_level_keeps_lower_star_headlines_in_the_outline() {
             if inlinetask.level == 4 && inlinetask.raw_title == "Inline"
     ));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_inlinetasks::semantic_ast_projects_closed_inlinetasks_with_body",
+        semantic_ast_projects_closed_inlinetasks_with_body,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_inlinetasks::semantic_ast_keeps_unclosed_inlinetask_from_consuming_following_paragraph",
+        semantic_ast_keeps_unclosed_inlinetask_from_consuming_following_paragraph,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_inlinetasks::inlinetask_min_level_keeps_lower_star_headlines_in_the_outline",
+        inlinetask_min_level_keeps_lower_star_headlines_in_the_outline,
+    ),
+];

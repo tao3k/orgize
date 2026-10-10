@@ -56,17 +56,17 @@ WorkspaceIndex {
                         SectionIndexTextSlice {
                             source: SectionIndexSource {
                                 start: SourcePosition {
-                                    line: 9,
+                                    line: 10,
                                     column: 1,
                                 },
                                 end: SourcePosition {
                                     line: 13,
                                     column: 1,
                                 },
-                                range_start: 230,
+                                range_start: 250,
                                 range_end: 307,
                             },
-                            text: "#+NAME: alpha-block\n#+begin_src rust :tangle alpha.rs\nfn main() {}\n#+end_src",
+                            text: "#+begin_src rust :tangle alpha.rs\nfn main() {}\n#+end_src",
                         },
                     ],
                     todo: Some(

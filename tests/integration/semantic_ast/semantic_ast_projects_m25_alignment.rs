@@ -24,7 +24,6 @@ const WORKSPACE_B: &str = include_str!("../../fixtures/semantic_ast/m25-workspac
 const DEPENDENCY_A: &str = include_str!("../../fixtures/semantic_ast/m25-dependency-a.org");
 const DEPENDENCY_B: &str = include_str!("../../fixtures/semantic_ast/m25-dependency-b.org");
 
-#[test]
 fn semantic_ast_projects_m25_workspace_agenda_and_workflow_plans() {
     let doc_a = Org::parse(WORKSPACE_A).document();
     let doc_b = Org::parse(WORKSPACE_B).document();
@@ -97,8 +96,27 @@ fn semantic_ast_projects_m25_workspace_agenda_and_workflow_plans() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_m25_citation_capture_publishing_and_attachments() {
+    let edge = Org::parse(
+        "#+bibliography: \"refs.bib\"　\"\" \"two words\"\n#+cite_export: csl　apa en\n#+print_bibliography: ignored :::key one :flag :key two :\n\n[cite/nocite:@edge]\n",
+    ).document().citation_export_plan();
+    assert_eq!(edge.bibliographies[0].files, ["refs.bib", "two", "words"]);
+    assert_eq!(edge.processors[0].processor, "csl");
+    assert_eq!(edge.processors[0].style.as_deref(), Some("apa en"));
+    let options = &edge.print_bibliographies[0].options;
+    assert_eq!(options.len(), 4);
+    assert_eq!(options[0].key, "key");
+    assert_eq!(options[0].raw, ":::key");
+    assert_eq!(options[0].value.as_deref(), Some("one"));
+    assert_eq!(options[1].value, None);
+    assert_eq!(options[2].value.as_deref(), Some("two"));
+    assert_eq!(options[3].key, "");
+    assert_eq!(options[3].value, None);
+    assert!(
+        edge.citations
+            .iter()
+            .any(|citation| citation.nocite && citation.keys == ["edge"])
+    );
     let doc_a = Org::parse(WORKSPACE_A).document();
     let doc_b = Org::parse(WORKSPACE_B).document();
     assert_clean_projection(&doc_a);
@@ -194,8 +212,20 @@ fn semantic_ast_projects_m25_citation_capture_publishing_and_attachments() {
     let _ = fs::remove_dir_all(temp);
 }
 
-#[test]
 fn semantic_ast_projects_m25_export_dependency_graph() {
+    let quoted = Org::parse("#+SETUPFILE:　\"settings with spaces.org\" \n#+SETUPFILE: 'single.org'\n#+BIBLIOGRAPHY: 'refs.bib'\n").document();
+    let quoted_graph =
+        quoted.export_dependency_graph("site/source.org", &ExportDependencyGraphOptions::new());
+    for target in [
+        "setup:site/settings with spaces.org",
+        "setup:site/single.org",
+        "bibliography:site/refs.bib",
+    ] {
+        assert!(
+            quoted_graph.edges.iter().any(|edge| edge.target == target),
+            "{target}"
+        );
+    }
     let doc_a = Org::parse(DEPENDENCY_A).document();
     let doc_b = Org::parse(DEPENDENCY_B).document();
     assert_clean_projection(&doc_a);
@@ -449,3 +479,18 @@ fn unique_temp_dir(label: &str) -> PathBuf {
 fn path_str(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_m25_alignment::semantic_ast_projects_m25_workspace_agenda_and_workflow_plans",
+        semantic_ast_projects_m25_workspace_agenda_and_workflow_plans,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_m25_alignment::semantic_ast_projects_m25_citation_capture_publishing_and_attachments",
+        semantic_ast_projects_m25_citation_capture_publishing_and_attachments,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_m25_alignment::semantic_ast_projects_m25_export_dependency_graph",
+        semantic_ast_projects_m25_export_dependency_graph,
+    ),
+];

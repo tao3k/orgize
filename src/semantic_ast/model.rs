@@ -1,6 +1,6 @@
 //! Semantic AST data model.
 
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 
 use super::attachment_model::{AttachmentDirectory, AttachmentLink, AttachmentState};
 use super::block_model::{
@@ -21,12 +21,37 @@ pub type ParsedAst = Document<ParsedAnnotation>;
 pub type BareAst = Document<()>;
 
 /// Source-backed annotation attached to semantic nodes projected from the syntax tree.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ParsedAnnotation {
     pub range: TextRange,
     pub start: SourcePosition,
     pub end: SourcePosition,
     pub raw: String,
+    // Scheme graph metadata retained for later source-block inheritance.
+    pub(crate) header_args: Vec<BlockHeaderArg>,
+    // Scheme-classified Babel target span; avoid copying it into every AST node.
+    pub(crate) babel_call_name_range: Option<TextRange>,
+    // Scheme-classified dynamic-block closing line for content projection.
+    pub(crate) dynamic_end_range: Option<TextRange>,
+    // Scheme-classified drawer body span for typed runtime metadata projection.
+    pub(crate) drawer_body_range: Option<TextRange>,
+    // First timestamp point bounded by Scheme-classified delimiter fields.
+    pub(crate) timestamp_first_point_range: Option<TextRange>,
+    // Second point when the Scheme timestamp object is a source range.
+    pub(crate) timestamp_second_point_range: Option<TextRange>,
+}
+
+impl std::fmt::Debug for ParsedAnnotation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Keep the public source annotation display independent of its
+        // internal graph-projection sidecar.
+        f.debug_struct("ParsedAnnotation")
+            .field("range", &self.range)
+            .field("start", &self.start)
+            .field("end", &self.end)
+            .field("raw", &self.raw)
+            .finish()
+    }
 }
 
 /// One-based line and column position in the original Org source.

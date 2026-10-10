@@ -8,7 +8,6 @@ use orgize::{
     lint::{LintOptions, lint_org_with_options},
 };
 
-#[test]
 fn lint_reports_property_schema_contract_issues() {
     let report = lint_org_with_options(
         r#"* Capture
@@ -47,7 +46,6 @@ fn lint_reports_property_schema_contract_issues() {
     ));
 }
 
-#[test]
 fn lint_cli_loads_property_schema_registry_file_with_snapshot() {
     let fixture_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/lint");
 
@@ -67,7 +65,6 @@ fn lint_cli_loads_property_schema_registry_file_with_snapshot() {
     insta::assert_snapshot!(command_snapshot(output));
 }
 
-#[test]
 fn property_schema_registry_json_contract_has_snapshot() {
     let schema: serde_json::Value = serde_json::from_str(property_schema_json_schema()).unwrap();
     let fixture: serde_json::Value =
@@ -116,7 +113,6 @@ fn property_schema_registry_json_contract_has_snapshot() {
     ));
 }
 
-#[test]
 fn lint_cli_reports_invalid_property_schema_registry_with_snapshot() {
     let dir = test_dir("lint-invalid-property-schema-registry");
     fs::create_dir_all(&dir).unwrap();
@@ -221,3 +217,22 @@ fn test_dir(name: &str) -> PathBuf {
     }
     path
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "lint_property_schema::lint_reports_property_schema_contract_issues",
+        lint_reports_property_schema_contract_issues,
+    ),
+    (
+        "lint_property_schema::lint_cli_loads_property_schema_registry_file_with_snapshot",
+        lint_cli_loads_property_schema_registry_file_with_snapshot,
+    ),
+    (
+        "lint_property_schema::property_schema_registry_json_contract_has_snapshot",
+        property_schema_registry_json_contract_has_snapshot,
+    ),
+    (
+        "lint_property_schema::lint_cli_reports_invalid_property_schema_registry_with_snapshot",
+        lint_cli_reports_invalid_property_schema_registry_with_snapshot,
+    ),
+];

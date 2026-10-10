@@ -1,29 +1,14 @@
-//! Read-only differential inventory for the Org parser cutover.
-//!
-//! This intentionally reports mismatches instead of admitting the AOT parser
-//! as a public replacement before element, object, and typed-AST parity.
+//! Read-only coverage inventory for the public Scheme AOT Org parser.
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use gerbil_parser_rowan::{parse_structural_lines, project_syntax_graph};
-use orgize::org_aot::{org_graph_spec, org_language_spec, parse_org_aot};
-use orgize::{Org, SyntaxNode as PublicSyntaxNode, rowan::ast::AstNode};
+use orgize::Org;
+use orgize::org_aot::{org_graph_spec, org_language_spec};
 #[rustfmt::skip]
-#[path = "../languages/org/v1/generated/elements.rs"]
+#[path = "../languages/org/generated/elements.rs"]
 mod elements;
-#[rustfmt::skip]
-#[path = "../languages/org/v1/generated/structure.rs"]
-mod structure;
 
-fn public_kinds(root: &PublicSyntaxNode) -> BTreeMap<String, usize> {
-    let mut kinds = BTreeMap::new();
-    for node in root.descendants() {
-        *kinds.entry(format!("{:?}", node.kind())).or_insert(0) += 1;
-    }
-    kinds
-}
-
-fn generated_kinds(root: &gerbil_parser_rowan::SyntaxNode) -> BTreeMap<&'static str, usize> {
+fn generated_kinds(root: &gerbil_parser_runtime::SyntaxNode) -> BTreeMap<&'static str, usize> {
     let mut kinds = BTreeMap::new();
     for node in root.descendants() {
         let kind = org_language_spec().kinds[usize::from(node.kind().0)].name;
@@ -33,26 +18,16 @@ fn generated_kinds(root: &gerbil_parser_rowan::SyntaxNode) -> BTreeMap<&'static 
 }
 
 fn main() {
+    // SAFETY: standalone entrypoint, before workers or children and host I/O.
+    unsafe { orgize::initialize_native_runtime() }.expect("native startup");
     let source = include_str!("../tests/fixtures/org-elements/representative.org");
-    let public = Org::parse(source);
-    let public_root = public.syntax_document().syntax().clone();
-    let generated = parse_structural_lines(org_language_spec(), &structure::STRUCTURE, source)
-        .expect("structural fixture oracle should accept the pinned fixture");
-    let generated_root = generated.syntax();
-    let event_tree =
-        parse_org_aot(source).expect("Scheme AOT Org events should accept the fixture");
-    let event_root = event_tree.syntax();
+    let document = Org::parse(source);
+    let event_root = document.syntax();
 
-    assert_eq!(public_root.to_string(), source);
-    assert_eq!(generated_root.to_string(), source);
     assert_eq!(event_root.to_string(), source);
     assert_eq!(
-        generated.receipt().grammar_digest,
+        document.receipt().grammar_digest,
         org_language_spec().grammar_digest
-    );
-    assert_eq!(
-        generated.receipt().parser_digest,
-        Some(structure::STRUCTURE.parser_digest)
     );
 
     println!(
@@ -66,23 +41,13 @@ fn main() {
         elements::ORG_OBJECT_RESTRICTIONS.len(),
         elements::ORG_SECONDARY_VALUES.len()
     );
-    let public_kinds = public_kinds(&public_root);
     let event_kinds = generated_kinds(&event_root);
-    let generated_kinds = generated_kinds(&generated_root);
     println!(
-        "public node kinds in fixture ({}): {public_kinds:#?}",
-        public_kinds.len()
-    );
-    println!(
-        "generated node kinds in fixture ({}): {generated_kinds:#?}",
-        generated_kinds.len()
-    );
-    println!(
-        "Scheme event-AOT node kinds in fixture ({}): {event_kinds:#?}",
+        "public Scheme AOT node kinds in fixture ({}): {event_kinds:#?}",
         event_kinds.len()
     );
     let event_record_counts =
-        event_tree
+        document
             .records()
             .iter()
             .fold(BTreeMap::new(), |mut counts, record| {
@@ -90,32 +55,6 @@ fn main() {
                 counts
             });
     println!("Scheme event-AOT Element kinds: {event_record_counts:#?}");
-    let structural_records =
-        project_syntax_graph(org_language_spec(), org_graph_spec(), &generated_root)
-            .expect("structural fixture oracle projects Elements");
-    let event_records = event_tree.records();
-    if structural_records.as_slice() == event_records {
-        println!("structural/event Element graph: exact record parity");
-    } else {
-        let first_difference = structural_records
-            .iter()
-            .zip(event_records)
-            .position(|(structural, event)| structural != event)
-            .unwrap_or(structural_records.len().min(event_records.len()));
-        println!(
-            "structural/event Element graph differs: structural={}, event={}, first_index={first_difference}",
-            structural_records.len(),
-            event_records.len()
-        );
-        println!(
-            "first structural record: {:?}",
-            structural_records.get(first_difference)
-        );
-        println!(
-            "first event record: {:?}",
-            event_records.get(first_difference)
-        );
-    }
     let projected: BTreeSet<_> = org_graph_spec()
         .rules
         .iter()
@@ -139,7 +78,5 @@ fn main() {
         "Scheme catalog not yet projected as typed Object kinds ({}): {missing_objects:?}",
         missing_objects.len()
     );
-    println!(
-        "status: three-way source parity only; element/object and public-AST parity not admitted"
-    );
+    println!("status: public parser uses Scheme AOT; catalog projection gaps above remain open");
 }

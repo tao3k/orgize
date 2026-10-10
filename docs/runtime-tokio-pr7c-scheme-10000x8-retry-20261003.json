@@ -1,0 +1,42 @@
+[
+  {
+    "architecture": "aarch64",
+    "artifact": "1e3e0b0984afcdc7841a634366a446c3c50a322f553b9cc701e5c52ea62acbb2",
+    "backend": "runtime-scheme",
+    "benchmark": "2528a14b27c651619823e80b8ef4a195ae0c16712a16779afd9fd4c2980dd9cb",
+    "blocking_callers_limit": 8,
+    "bytes": 5519950,
+    "bytes_per_second": 14427.947805444446,
+    "callers": 8,
+    "completed": 10000,
+    "consumers": 1,
+    "corpus": "fafe669d528df7e5ced7a94eb4b7734ec69b495aea78d98a20c64690cad2181a",
+    "distinct_documents": 10000,
+    "documents": 10000,
+    "documents_per_second": 26.1378233597124,
+    "driver": "tokio",
+    "elapsed_ns": 382587328041,
+    "parse_latency_ns": {
+      "max": 1530685625,
+      "p50": 260280750,
+      "p95": 658561750,
+      "p99": 909660834
+    },
+    "process_peak_rss_bytes_after": 41943040,
+    "process_peak_rss_bytes_before": 39993344,
+    "program": "sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1",
+    "queue_capacity": 64,
+    "repetition": 1,
+    "rss_scope": "whole-process cumulative high-water mark, not native GC bytes or a live RSS delta",
+    "schema": "orgize.runtime-corpus.v1",
+    "submission_latency_scope": "driver submission through parse/projection completion; excludes validation/checksum, includes Tokio blocking-pool admission",
+    "submitted_to_parse_latency_ns": {
+      "max": 1535788583,
+      "p50": 260701167,
+      "p95": 658930208,
+      "p99": 912643958
+    },
+    "tokio_workers": 4,
+    "wall_time_includes": "parse, lossless validation, tree/graph checksum, drop and completion collection"
+  }
+]

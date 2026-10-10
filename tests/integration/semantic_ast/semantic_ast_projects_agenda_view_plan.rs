@@ -7,7 +7,6 @@ use orgize::{
     },
 };
 
-#[test]
 fn semantic_ast_projects_agenda_view_plan_receipts() {
     let doc = Org::parse(
         r#"* TODO Morning
@@ -61,7 +60,6 @@ SCHEDULED: <2026-05-15 Fri 13:00>
         && receipt.message.contains("exceeds limit 2")));
 }
 
-#[test]
 fn semantic_ast_projects_agenda_view_plan_applies_sort_strategy_subset() {
     let doc = Org::parse(
         r#"#+TODO: TODO WAITING | DONE
@@ -110,7 +108,6 @@ DEADLINE: <2026-05-15 Fri>
     );
 }
 
-#[test]
 fn semantic_ast_projects_agenda_block_view_plan_groups_named_sections() {
     let doc = Org::parse(
         r#"#+TODO: TODO WAITING | DONE
@@ -158,3 +155,18 @@ SCHEDULED: <2026-05-16 Sat>
             .contains("[AGENDA_SECTION] 2 Waiting")
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_agenda_view_plan::semantic_ast_projects_agenda_view_plan_receipts",
+        semantic_ast_projects_agenda_view_plan_receipts,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda_view_plan::semantic_ast_projects_agenda_view_plan_applies_sort_strategy_subset",
+        semantic_ast_projects_agenda_view_plan_applies_sort_strategy_subset,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agenda_view_plan::semantic_ast_projects_agenda_block_view_plan_groups_named_sections",
+        semantic_ast_projects_agenda_block_view_plan_groups_named_sections,
+    ),
+];

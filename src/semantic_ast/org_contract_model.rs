@@ -5,7 +5,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use rowan::TextRange;
+use gerbil_parser_runtime::TextRange;
 
 use super::{
     OrgElementId, OrgElementQueryPredicate, OrgElementsIndexCategory, OrgElementsIndexKind,
@@ -51,7 +51,7 @@ impl OrgContractKind {
     }
 
     pub fn parse(value: &str) -> Option<Self> {
-        match value.trim() {
+        match super::org_values::scalar("contract-policy", &["kind", value]).as_str() {
             CONTRACT_KIND_ORG_ELEMENTS => Some(Self::OrgElementsAssertions),
             _ => None,
         }
@@ -112,13 +112,20 @@ pub struct OrgContractReference {
 impl OrgContractReference {
     /// Returns whether this reference is an Org link with both a file path and contract id.
     pub fn is_path_qualified_org_link(&self) -> bool {
-        self.raw.starts_with("[[")
-            && self.raw.ends_with("]]")
-            && self.path.as_ref().is_some_and(|path| !path.is_empty())
-            && self
-                .contract_id
-                .as_ref()
-                .is_some_and(|contract_id| !contract_id.is_empty())
+        match super::org_values::scalar(
+            "contract-qualified-link",
+            &[
+                &self.raw,
+                self.path.as_deref().unwrap_or_default(),
+                self.contract_id.as_deref().unwrap_or_default(),
+            ],
+        )
+        .as_str()
+        {
+            "true" => true,
+            "false" => false,
+            _ => unreachable!("native qualified link boolean"),
+        }
     }
 }
 
@@ -167,7 +174,7 @@ impl OrgContractScope {
     }
 
     pub fn parse(value: &str) -> Option<Self> {
-        match value.trim().to_ascii_lowercase().as_str() {
+        match super::org_values::scalar("contract-policy", &["scope", value]).as_str() {
             "document" => Some(Self::Document),
             "subtree" => Some(Self::Subtree),
             _ => None,

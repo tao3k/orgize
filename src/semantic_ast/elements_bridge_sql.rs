@@ -244,7 +244,10 @@ fn sql_row(record: &OrgElementsIndexRecord<ParsedAnnotation>) -> OrgElementsSqlR
         summary_json: serde_json::to_string(&summary_json(&record.summary))
             .expect("summary JSON serialization should not fail"),
         language: summary_text(&record.summary, "language"),
-        source_start_line: record.ann.start.line,
+        source_start_line: record
+            .affiliated
+            .first_keyword_start_line
+            .unwrap_or(record.ann.start.line),
         source_start_column: record.ann.start.column,
         source_end_line: record.ann.end.line,
         source_end_column: record.ann.end.column,

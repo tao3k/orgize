@@ -2,7 +2,7 @@ use orgize::ast::{OrgElementsIndexRecord, OrgElementsIndexSummaryValue, ParsedAn
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
-#[path = "../../../languages/org/v1/generated/elements.rs"]
+#[path = "../../../languages/org/generated/elements.rs"]
 mod generated_elements;
 
 pub(super) use generated_elements::{
@@ -10,11 +10,10 @@ pub(super) use generated_elements::{
     ORG_RECURSIVE_OBJECT_KINDS,
 };
 
-#[test]
 fn semantic_ast_projects_scheme_object_context_contract() {
     use sha2::{Digest, Sha256};
 
-    let scheme_source = include_str!("../../../languages/org/v1/modules/org-elements/catalog.ss");
+    let scheme_source = include_str!("../../../languages/org/modules/org-elements/catalog.ss");
     assert_eq!(
         generated_elements::ELEMENTS_DIGEST,
         format!("sha256:{:x}", Sha256::digest(scheme_source.as_bytes()))
@@ -41,12 +40,11 @@ fn semantic_ast_projects_scheme_object_context_contract() {
     assert!(!secondary("paragraph", "title"));
 }
 
-#[test]
 fn semantic_ast_projects_scheme_element_catalog_matches_approved_baseline() {
     insta::assert_snapshot!(
         "scheme_element_catalog",
         serde_json::to_string_pretty(&serde_json::json!({
-            "source": "languages/org/v1/modules/org-elements/catalog.ss",
+            "source": "languages/org/modules/org-elements/catalog.ss",
             "allElements": ORG_ELEMENT_KINDS,
             "greaterElements": ORG_GREATER_ELEMENT_KINDS,
             "allObjects": ORG_OBJECT_KINDS,
@@ -152,4 +150,15 @@ pub(super) const ORG_ELEMENT_INTENTIONALLY_UNMAPPED_STANDARD_PROPERTIES: &[&str]
     ":robust-end",
     ":secondary",
     ":structure",
+];
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_fixtures::semantic_ast_projects_scheme_object_context_contract",
+        semantic_ast_projects_scheme_object_context_contract,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_fixtures::semantic_ast_projects_scheme_element_catalog_matches_approved_baseline",
+        semantic_ast_projects_scheme_element_catalog_matches_approved_baseline,
+    ),
 ];

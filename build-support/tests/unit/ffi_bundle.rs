@@ -1,0 +1,171 @@
+use super::*;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static NEXT: AtomicU64 = AtomicU64::new(0);
+struct Fixture(PathBuf);
+impl Drop for Fixture {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+fn fixture() -> (Fixture, PathBuf, Bundle) {
+    let root = env::temp_dir().join(format!(
+        "orgize-ffi-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    let directory = root.join("bundle");
+    fs::create_dir_all(&directory).unwrap();
+    fs::create_dir_all(root.join("bindings/c/include")).unwrap();
+    let mut files = BTreeMap::new();
+    for name in [
+        "liborgize_gerbil_program.a",
+        "libgambit.a",
+        "orgize.h",
+        "orgize_runtime.h",
+    ] {
+        fs::write(directory.join(name), name).unwrap();
+        files.insert(name.into(), digest(&directory.join(name)).unwrap());
+    }
+    for name in HEADERS {
+        fs::copy(
+            directory.join(name),
+            root.join("bindings/c/include").join(name),
+        )
+        .unwrap();
+    }
+    let bundle = Bundle {
+        schema: "orgize.ffi-bundle.v1".into(),
+        source_revision: "a".repeat(40),
+        target: "aarch64-apple-darwin".into(),
+        runtime_revision: RUNTIME_REVISION.into(),
+        parser_digest: format!("sha256:{}", "b".repeat(64)),
+        files,
+        libraries: vec![
+            "static=orgize_gerbil_program".into(),
+            "static=gambit".into(),
+            "m".into(),
+        ],
+    };
+    (Fixture(root), directory, bundle)
+}
+fn save(directory: &Path, bundle: &Bundle) {
+    fs::write(
+        directory.join("bundle.json"),
+        serde_json::to_vec(bundle).unwrap(),
+    )
+    .unwrap();
+}
+#[test]
+fn relocation_preserves_admission_without_compiler_inputs() {
+    let (root, directory, bundle) = fixture();
+    save(&directory, &bundle);
+    let moved = root.0.join("relocated");
+    fs::rename(directory, &moved).unwrap();
+    assert!(validate(&root.0, &moved, &bundle.source_revision, &bundle.target).is_ok());
+}
+#[test]
+fn foreign_identity_and_changed_inputs_are_rejected() {
+    let (root, directory, mut bundle) = fixture();
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, "foreign", &bundle.target).is_err());
+    assert!(validate(&root.0, &directory, &bundle.source_revision, "foreign").is_err());
+    bundle.runtime_revision = "foreign".into();
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+    bundle.runtime_revision = RUNTIME_REVISION.into();
+    save(&directory, &bundle);
+    fs::write(directory.join("libgambit.a"), "changed").unwrap();
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+}
+#[test]
+fn unbound_libraries_headers_and_paths_are_rejected() {
+    let (root, directory, mut bundle) = fixture();
+    bundle.files.remove("libgambit.a");
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+    bundle.files.insert(
+        "libgambit.a".into(),
+        digest(&directory.join("libgambit.a")).unwrap(),
+    );
+    bundle.files.insert("../escape".into(), "sha256:bad".into());
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+    bundle.files.remove("../escape");
+    bundle.files.insert(
+        "libgambit.a".into(),
+        digest(&directory.join("libgambit.a")).unwrap(),
+    );
+    save(&directory, &bundle);
+    fs::write(root.0.join("bindings/c/include/orgize.h"), "changed").unwrap();
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+}
+
+#[test]
+fn producer_carries_non_platform_dependencies() {
+    for library in ["crypto", "ssl", "z", "sqlite3"] {
+        assert_eq!(bundle_library(library), format!("static={library}"));
+    }
+    for library in ["m", "dl", "static=gambit"] {
+        assert_eq!(bundle_library(library), library);
+    }
+    let (root, directory, mut bundle) = fixture();
+    bundle.libraries.push(bundle_library("z"));
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+    fs::write(directory.join("libz.a"), "producer zlib").unwrap();
+    bundle
+        .files
+        .insert("libz.a".into(), digest(&directory.join("libz.a")).unwrap());
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_ok());
+    fs::write(directory.join("libz.a"), "changed zlib").unwrap();
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+}
+
+#[test]
+fn repeated_export_replaces_read_only_sdk_archives() {
+    let (root, directory, _) = fixture();
+    let source = root.0.join("sdk.a");
+    fs::write(&source, "first archive").unwrap();
+    let mut permissions = fs::metadata(&source).unwrap().permissions();
+    permissions.set_readonly(true);
+    fs::set_permissions(&source, permissions.clone()).unwrap();
+    let mut files = BTreeMap::new();
+    copy_file(&source, &directory, "libgambit.a", &mut files).unwrap();
+    fs::set_permissions(directory.join("libgambit.a"), permissions).unwrap();
+    copy_file(&source, &directory, "libgambit.a", &mut files).unwrap();
+    let replacement = root.0.join("replacement.a");
+    fs::write(&replacement, "second archive").unwrap();
+    copy_file(&replacement, &directory, "libgambit.a", &mut files).unwrap();
+    assert_eq!(
+        fs::read(directory.join("libgambit.a")).unwrap(),
+        b"second archive"
+    );
+    assert_eq!(fs::read(&source).unwrap(), b"first archive");
+    assert!(fs::metadata(&source).unwrap().permissions().readonly());
+    assert_eq!(
+        files["libgambit.a"],
+        digest(&directory.join("libgambit.a")).unwrap()
+    );
+    assert!(!fs::read_dir(&directory).unwrap().any(|entry| {
+        entry
+            .unwrap()
+            .file_name()
+            .to_string_lossy()
+            .ends_with(".tmp")
+    }));
+}
+
+#[test]
+fn producer_search_paths_are_authoritative_and_missing_archives_fail_closed() {
+    let (root, _, _) = fixture();
+    let path = root.0.join("target-libraries");
+    fs::create_dir(&path).unwrap();
+    fs::write(path.join("libcrypto.a"), "target crypto").unwrap();
+    assert_eq!(
+        receipt_dependency("libcrypto.a", &[path.clone()]).unwrap(),
+        path.join("libcrypto.a")
+    );
+    assert!(receipt_dependency("libforeign.a", &[path]).is_err());
+}
