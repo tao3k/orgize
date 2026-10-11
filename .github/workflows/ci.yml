@@ -107,9 +107,6 @@ jobs:
         if: matrix.runtime == 'runtime-scheme'
         run: echo "ORGIZE_FFI_EXPORT=$GITHUB_WORKSPACE/target/ffi-bundle" >> "$GITHUB_ENV"
 
-      - name: Run tests
-        run: just ci-rust-test "${{ env.RUNTIME_FEATURES }}"
-
       - name: Run focused workspace admission performance gate
         run: just ci-scenario-test "${{ matrix.runtime }}" integration_test workspace_contract_scale_scenario_stays_in_budget
 
@@ -126,6 +123,9 @@ jobs:
         env:
           ORGIZE_PROFILE_PLAN_LEDGER: "1"
         run: just ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
+
+      - name: Run tests
+        run: just ci-rust-test "${{ env.RUNTIME_FEATURES }}"
 
       - name: Run clippy
         if: ${{ matrix.os == 'ubuntu-latest' }}
