@@ -122,7 +122,8 @@ jobs:
         continue-on-error: true
         env:
           ORGIZE_PROFILE_PLAN_LEDGER: "1"
-        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
+          ORGIZE_PROFILE_PLAN_LEDGER_STAGES: "1"
+        run: just ci-scenario-test "${{ matrix.runtime }},runtime-profile" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
 
       - name: Run tests
         run: just ci-rust-test "${{ env.RUNTIME_FEATURES }}"
