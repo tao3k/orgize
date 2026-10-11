@@ -17,6 +17,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     thread,
+    time::{Duration, Instant},
 };
 
 pub(super) fn query_plan_ledger_records(
@@ -187,18 +188,26 @@ fn collect_plan_ledger_files(
 ) -> Result<Vec<OrgMemorySearchRecord>, String> {
     let mut records = Vec::new();
     let config = crate::ParseConfig::default();
+    let mut read_elapsed = Duration::ZERO;
+    let mut parse_elapsed = Duration::ZERO;
+    let mut project_elapsed = Duration::ZERO;
     // Bound both file retention and native handoff by the admitted wire limits.
     for chunk in paths.chunks(crate::org_aot::BATCH_MAX_DOCUMENTS) {
+        let phase_started = Instant::now();
         let sources =
             crate::runtime_profile::stage("plan_ledger.source_read", || load_sources(chunk))?;
+        read_elapsed += phase_started.elapsed();
         let mut remaining = sources.as_slice();
         while !remaining.is_empty() {
             let width = bounded_org_batch_len(remaining);
             if width == 0 {
                 let source = &remaining[0];
+                let phase_started = Instant::now();
                 let document = parse_org_aot(&source.source).map_err(|error| {
                     format!("{}: Org AOT parse: {error:?}", source.path.display())
                 })?;
+                parse_elapsed += phase_started.elapsed();
+                let phase_started = Instant::now();
                 if let Some(record) = plan_ledger_record_from_document(
                     &source.path,
                     &source.source,
@@ -207,6 +216,7 @@ fn collect_plan_ledger_files(
                 )? {
                     records.push(record);
                 }
+                project_elapsed += phase_started.elapsed();
                 remaining = &remaining[1..];
                 continue;
             }
@@ -215,8 +225,11 @@ fn collect_plan_ledger_files(
                 .iter()
                 .map(|source| source.source.as_str())
                 .collect::<Vec<_>>();
+            let phase_started = Instant::now();
             let documents = crate::org_aot::parse_org_aot_batch(&inputs, &config)
                 .map_err(|error| format!("Org AOT plan ledger batch: {error:?}"))?;
+            parse_elapsed += phase_started.elapsed();
+            let phase_started = Instant::now();
             for (source, document) in batch.iter().zip(documents) {
                 let document = document.map_err(|error| {
                     format!("{}: Org AOT parse: {error:?}", source.path.display())
@@ -230,8 +243,15 @@ fn collect_plan_ledger_files(
                     records.push(record);
                 }
             }
+            project_elapsed += phase_started.elapsed();
             remaining = rest;
         }
+    }
+    if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER").is_some() {
+        eprintln!(
+            "plan ledger worker phases: files={} read={read_elapsed:?} parse={parse_elapsed:?} project={project_elapsed:?}",
+            paths.len()
+        );
     }
     Ok(records)
 }
