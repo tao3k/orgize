@@ -31,6 +31,27 @@
     (test-case "foreign neighboring Evidence cannot satisfy the family"
       (let (p (.o (:: @ profile) directory: "tests/fixtures/org-directory/missing"))
         (check (.ref (org-directory-validate p) 'passed?) => #f)))
+    (test-case "portable Artifact Contract rejects rooted host paths across platforms"
+      (let* ((p (directory-mutation-fixture "portable-paths"))
+             (document (path-expand "main.org" (.ref p 'directory)))
+             (contract (path-expand "portable.org" (.ref (.ref p 'contracts) 'directory)))
+             (original (directory-test-read document)))
+        (directory-test-write contract
+          (directory-test-read "tests/fixtures/org-directory/portable.org"))
+        (for-each
+          (lambda (reference)
+            (directory-test-write document (string-append original "\n" reference "\n"))
+            (check (.ref (org-directory-validate p) 'passed?) => #t))
+          '("[[file:proof/result.org][result]]" "../proof/result.org"
+            "https://example.org/proof/run" "Quint / Lean" "docs/model.qnt"))
+        (for-each
+          (lambda (reference)
+            (directory-test-write document (string-append original "\n" reference "\n"))
+            (check (.ref (org-directory-validate p) 'passed?) => #f))
+          '("=/opt/build/run.log=" "[[file:/work/run.log][result]]"
+            "C:\\work\\run.log" "D:/build/run.log" "\\\\host\\share\\run.log"
+            "~/cache/run.log" "#+PROPERTY: RESULT /work/run.log"
+            "[[file:C:/build/run.log][result]]" "[[file:~/cache/run.log][result]]"))))
     (test-case "common DI alone cannot count as covered work documents"
       (check-exception
        (org-directory-validate (.o (:: @ profile) directory: common)) exception?)

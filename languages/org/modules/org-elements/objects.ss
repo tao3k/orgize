@@ -67,7 +67,7 @@
                              (relation-value 'any) (target-value #f)
                              (field-match-value 'exact))
   (unless (and (eq? (not field-name-value) (not field-value-value))
-               (memq field-match-value '(exact contains)))
+               (memq field-match-value '(exact contains local-path)))
     (error "invalid Org Element property arguments"))
   (make-org-element-query-groups
    node-kind-value

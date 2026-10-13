@@ -88,7 +88,7 @@
          ((property)
           (and (nonempty-string? (.ref value 'name))
                (string? (.ref value 'value))
-               (memq (.ref value 'match) '(exact contains))))
+               (memq (.ref value 'match) '(exact contains local-path))))
          ((relation)
           (and (memq (.ref value 'name) '(at child-of descendant-of))
                (not (.ref value 'match))

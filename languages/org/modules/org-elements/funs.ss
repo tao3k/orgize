@@ -23,7 +23,43 @@
 (export org-element-query-compose org-element-predicate-all
         org-element-predicate-any
         make-org-element-query-context org-element-map
-        org-element-property org-element-lineage? org-element-select)
+        org-element-property org-element-lineage? org-element-select
+        org-local-path-occurrence?)
+
+;; Literal host-local path detection in a native field. URI path separators,
+;; repo-relative paths and ordinary slash punctuation are not rooted paths.
+;; Encoded/constructed paths and reference-target existence remain separate.
+(def (org-local-path-occurrence? text)
+  (let (size (string-length text))
+    (def (at i) (and (< i size) (string-ref text i)))
+    (def (separator? c)
+      (or (not c) (char-whitespace? c)
+          (memv c '(#\[ #\] #\( #\) #\< #\> #\" #\' #\` #\= #\{ #\}))))
+    (def (boundary? i) (or (= i 0) (separator? (at (- i 1)))))
+    (def (path-char? c) (and c (not (separator? c))))
+    (def (slash? c) (and c (memv c '(#\/ #\\))))
+    (def (drive-letter? c)
+      (and c (or (char<=? #\a c #\z) (char<=? #\A c #\Z))))
+    (def (file-prefix? i)
+      (and (<= (+ i 5) size)
+           (string-ci=? (substring text i (+ i 5)) "file:")))
+    (let loop ((i 0))
+      (and (< i size)
+           (or (and (boundary? i)
+                    (or (and (eqv? (at i) #\/) (path-char? (at (+ i 1))))
+                        (and (eqv? (at i) #\\) (eqv? (at (+ i 1)) #\\)
+                             (path-char? (at (+ i 2))))
+                        (and (drive-letter? (at i)) (eqv? (at (+ i 1)) #\:)
+                             (slash? (at (+ i 2))))
+                        (and (eqv? (at i) #\~) (slash? (at (+ i 1))))
+                        (and (file-prefix? i)
+                             (or (slash? (at (+ i 5)))
+                                 (and (drive-letter? (at (+ i 5)))
+                                      (eqv? (at (+ i 6)) #\:)
+                                      (slash? (at (+ i 7))))
+                                 (and (eqv? (at (+ i 5)) #\~)
+                                      (slash? (at (+ i 6))))))))
+               (loop (+ i 1)))))))
 
 (def (conjoin-groups left right)
   (let (combined
@@ -133,7 +169,8 @@
                        (and (string? value)
                             (case matcher
                               ((exact) (equal? value expected))
-                              ((contains) (string-contains value expected)))))))
+                              ((contains) (string-contains value expected))
+                              ((local-path) (org-local-path-occurrence? value)))))))
                (if (list? actual)
                  (ormap matches? actual)
                  (matches? actual))))

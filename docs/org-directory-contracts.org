@@ -10,7 +10,7 @@ validation. A consumer supplies one POO declaration; Contract DI is nested.
         (only-in :clan/poo/object .o))
 (def engineering-documents
   (.o (:: @ OrgDirectoryProfile.)
-      workspace: "/absolute/workspace"
+      workspace: (current-directory)
       directory: "docs"
       contracts: (.o directory: "contracts")))
 #+end_src
@@ -60,9 +60,39 @@ Document role/owner properties remain authored data, not authenticated authority
 
 * Assurance scope
 
-=t/org-directory-test.ss= supplies 17 native positive/negative Cases. The existing
+Current-package preparation uses =just scheme-directory-dependencies= with
+the invoking =GERBIL_PATH= and =GERBIL_LOADPATH=. The helper selects explicit
+parser entry modules through the existing POO PackageSpec, retains its ASP
+policy gate and delegates execution to =std/make=. It does not provide a
+policy bypass or qualify the whole parser package. A rejected dependency
+closure leaves the Directory consumer validation obligation open.
+
+The native =(property-local-path field)= Query clause selects literal
+host-local path occurrences in that field. A common document Contract can
+require the root's =source-text= and reject matches with =(expect exactly 0)=.
+This applies to preamble, properties, source blocks and links without an
+adapter-side evaluator. Repository-relative references, external URLs and
+ordinary slash punctuation are not host-rooted paths. The predicate is a
+lexical guard, not target availability, revision binding or reproducibility
+proof; encoded/constructed paths require separate semantic checks.
+This predicate is qualified through the native Scheme Directory interface.
+The existing Rust static Query lowering rejects unsupported match kinds; this
+change does not claim a Rust implementation of the new predicate or a new
+Directory binding surface.
+
+See [[file:../tests/fixtures/org-directory/portable.org][the executable native Contract fixture]].
+
+=t/org-directory-test.ss= supplies 18 native positive/negative Cases. The existing
 Contract suite supplies seven regression Cases. AITIA separately consumes its
 real three-family Proofs index, each with the 13-assertion structural Contract.
+Run =just scheme-directory-test "$GERBIL_PATH" "$GERBIL_LOADPATH"= in the
+current package environment. Its POO PackageSpec selects the two existing
+gxtest suites without the optional Rust bridge and prepares a native executable;
+the native harness retains all 25 Cases and propagates failures as exit 42.
+Provide current OpenSSL =pkg-config= metadata for native linking. Execution
+retains five seconds without real output, a 120-second overall budget and the
+one-GiB heap. A cold dynamic =gerbil test= import exhausted the idle budget;
+prelinking changes preparation, not these safety limits or test semantics.
 Quint covers finite protocol transitions; LeanPOO consumer laws cover conjunction
 and current-context reassessment. Neither establishes automatic Scheme refinement.
 

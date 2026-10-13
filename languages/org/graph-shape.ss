@@ -96,7 +96,8 @@
 
 (def org-graph-shape
   (map with-source-header-projection (list
-   (node 'OrgFile "document" "org-data" '())
+   (node 'OrgFile "document" "org-data"
+         (list (field 'OrgFile "source-text" 'node-text)))
    (node 'OrgSection "section" "headline"
          (list (field 'HeadlineLine "markers")
                (field 'HeadlineTitle "title")
