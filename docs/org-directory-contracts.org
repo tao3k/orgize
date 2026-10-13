@@ -26,6 +26,8 @@ directory. Select source-only roots: scanning has no exclusion or Git watcher
 in this version. Hidden entries are not intentionally omitted. Symlinks and
 special files fail closed. Bounds are 16,384 entries, one MiB per source and
 4,096 mapped Elements. Empty input and empty required common directories fail.
+A directory containing only common DI sources also fails after DI exclusion;
+public Contract declarations cannot count as coverage of work documents.
 
 * Composition and applicability
 
@@ -58,7 +60,7 @@ Document role/owner properties remain authored data, not authenticated authority
 
 * Assurance scope
 
-=t/org-directory-test.ss= supplies 16 native positive/negative Cases. The existing
+=t/org-directory-test.ss= supplies 17 native positive/negative Cases. The existing
 Contract suite supplies seven regression Cases. AITIA separately consumes its
 real three-family Proofs index, each with the 13-assertion structural Contract.
 Quint covers finite protocol transitions; LeanPOO consumer laws cover conjunction

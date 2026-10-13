@@ -74,6 +74,8 @@
          (documents (filter (lambda (d) (not (member (.ref d 'path) common-paths)))
                             (.ref snapshot-value 'documents)))
          (stable-ids (make-hash-table)) (evaluations '()))
+    (when (null? documents)
+      (error "Org Directory has no work documents after common DI exclusion"))
     (for-each
      (lambda (document)
        (let* ((graph (.ref document 'graph)) (records (org-element-graph-records graph))

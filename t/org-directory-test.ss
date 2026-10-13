@@ -31,6 +31,14 @@
     (test-case "foreign neighboring Evidence cannot satisfy the family"
       (let (p (.o (:: @ profile) directory: "tests/fixtures/org-directory/missing"))
         (check (.ref (org-directory-validate p) 'passed?) => #f)))
+    (test-case "common DI alone cannot count as covered work documents"
+      (check-exception
+       (org-directory-validate (.o (:: @ profile) directory: common)) exception?)
+      (let* ((p (directory-mutation-fixture "nested-common"))
+             (root (path-directory (.ref p 'directory)))
+             (validation (org-directory-validate (.o (:: @ p) directory: root))))
+        (check (.ref validation 'passed?) => #t)
+        (check (length (.ref validation 'files)) => 1)))
     (test-case "common applicability uses declared role without CONTRACT_REF"
       (let* ((p (.o (:: @ profile) directory: "tests/fixtures/org-directory/automatic"))
              (validation (org-directory-validate p)))
