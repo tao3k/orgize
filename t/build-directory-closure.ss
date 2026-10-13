@@ -11,7 +11,8 @@
 (export main)
 (def profile
   (.o (:: @ asp-gerbil-scheme-library-package-prototype)
-      public-entry-modules: '("t/org-directory-test.ss" "t/org-contract-test.ss")))
+      public-entry-modules: '("t/org-directory-test.ss" "t/org-contract-test.ss"
+                               "t/org-elements-module-test.ss")))
 (def (main)
   (let (spec (asp-gerbil-scheme-package-policy-native-spec profile))
     (make spec srcdir: (current-directory)

@@ -86,13 +86,25 @@ See [[file:../tests/fixtures/org-directory/portable.org][the executable native C
 Contract suite supplies seven regression Cases. AITIA separately consumes its
 real three-family Proofs index, each with the 13-assertion structural Contract.
 Run =just scheme-directory-test "$GERBIL_PATH" "$GERBIL_LOADPATH"= in the
-current package environment. Its POO PackageSpec selects the two existing
+current package environment. Its POO PackageSpec selects the three existing
 gxtest suites without the optional Rust bridge and prepares a native executable;
-the native harness retains all 25 Cases and propagates failures as exit 42.
+the native harness includes 14 Elements regression Cases alongside the 25
+Directory/Contract Cases and propagates failures as exit 42.
 Provide current OpenSSL =pkg-config= metadata for native linking. Execution
 retains five seconds without real output, a 120-second overall budget and the
 one-GiB heap. A cold dynamic =gerbil test= import exhausted the idle budget;
 prelinking changes preparation, not these safety limits or test semantics.
+When the graph shape changes, run the existing Scheme generation owner
+=just scheme-timestamp-graph-generate "$GERBIL_PATH" "$GERBIL_LOADPATH"=.
+Graph, named Query, Contract and customer packs bind the same projection digest;
+hand-editing digest strings or relaxing generated-source equality is not admission.
+The managed Clippy commit hook checks =runtime-rust= and =runtime-scheme=
+separately, with every non-runtime feature declared by Cargo enabled in each
+lane. =--all-features= would violate the existing exclusive-runtime admission;
+the hook does not remove that compile-time guard. Regenerate the hook from
+=devenv.nix= after updating its owner, and supply the real compiler-owned
+program manifest plus installed native library metadata. These are preparation
+inputs, not a temporary Scheme SDK or permission to skip a hook.
 Quint covers finite protocol transitions; LeanPOO consumer laws cover conjunction
 and current-context reassessment. Neither establishes automatic Scheme refinement.
 

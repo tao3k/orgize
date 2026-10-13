@@ -4,7 +4,8 @@
 ;;; Link the existing native gxtest values before the bounded execution gate.
 (import (only-in :std/test/base TestHarness TestConfig TestModule test-run! test-result-ok?)
         (only-in "org-directory-test.ss" org-directory-test)
-        (only-in "org-contract-test.ss" org-contract-feature-test))
+        (only-in "org-contract-test.ss" org-contract-feature-test)
+        (only-in "org-elements-module-test.ss" org-elements-module-test))
 (export main)
 (def (main)
   (let (result
@@ -12,7 +13,7 @@
           (TestHarness "Org Directory and Contract"
                        (TestConfig verbosity: 5 capture-output?: #f)
                        (list (TestModule "Org Directory and Contract"
-                                         (list org-directory-test org-contract-feature-test)
+                                         (list org-directory-test org-contract-feature-test org-elements-module-test)
                                          '() void void)))))
     (if (test-result-ok? result)
       (begin (displayln "OK") (force-output) (exit 0))
