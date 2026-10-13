@@ -7,7 +7,7 @@ scheme-directory-test output load_path:
     set -euo pipefail
     case_root=$(mktemp -d "${TMPDIR:-/tmp}/org-directory-tests.XXXXXX")
     export ORGIZE_DIRECTORY_TEST_ROOT="$case_root"
-    just scheme-focused-module-test t/org-directory-test.ss "{{ output }}" "{{ load_path }}"
+    just scheme-module-fresh-test t/org-directory-test.ss "{{ output }}" "{{ load_path }}"
 
 # Qualify the consumer against an explicitly selected parser facade.
 [private]
@@ -106,7 +106,7 @@ scheme-bridge-build source output:
 [group('scheme')]
 scheme-test parser_lib poo_flow_lib:
     mkdir -p target/gerbil-test
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test -v 5 t/*-test.ss t/org-source-headlines-qualification.ss
+    {{ scheme_env }} ORGIZE_DIRECTORY_TEST_ROOT="$(mktemp -d)" GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ justfile_directory() }}/target/gerbil-test" GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" gerbil test -v 5 t/*-test.ss t/org-source-headlines-qualification.ss
 
 # This owner check does not replace whole-parser startup, performance or scale gates.
 # Native gxtest remains the test owner; always compile the requested module.

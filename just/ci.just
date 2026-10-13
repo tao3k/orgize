@@ -29,6 +29,7 @@ ci-program-owner parser_source bridge_source output:
 [group('checks')]
 ci-scheme-test:
     just scheme-closure-receipt "{{ justfile_directory() }}/target/native-ci/closure" "{{ justfile_directory() }}/target/native-ci/org/lib:{{ justfile_directory() }}/target/native-ci/parser/lib:{{ env_var('GERBIL_PATH') }}/lib"
+    just scheme-directory-test "{{ justfile_directory() }}/target/native-ci/directory" "{{ justfile_directory() }}/target/native-ci/org/lib:{{ justfile_directory() }}/target/native-ci/parser/lib:{{ env_var('GERBIL_PATH') }}/lib"
 
 # Reuse the same Darwin/native linker policy as local qualification.
 [group('checks')]
