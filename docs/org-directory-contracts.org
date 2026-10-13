@@ -1,0 +1,70 @@
+#+title: Native Directory Contract composition
+
+* User declaration
+
+The Orgize Contract interface owns scanning, source loading, composition and
+validation. A consumer supplies one POO declaration; Contract DI is nested.
+
+#+begin_src scheme
+(import :orgize/languages/org/modules/org-contract/interface
+        (only-in :clan/poo/object .o))
+(def engineering-documents
+  (.o (:: @ OrgDirectoryProfile.)
+      workspace: "/absolute/workspace"
+      directory: "docs"
+      contracts: (.o directory: "contracts")))
+#+end_src
+
+=org-directory-validate= returns an inert native POO result with files,
+per-Contract/per-scope evaluations, complete/passed flags and the exact input
+cut. =org-directory-validation-current?= rereads that inventory and source cut.
+Neither function issues permissions or authenticates a receipt. The declared
+Profile can be reused as a value; changing Profile identity requires reassessment.
+
+Relative paths use =workspace= when supplied, otherwise invocation working
+directory. Select source-only roots: scanning has no exclusion or Git watcher
+in this version. Hidden entries are not intentionally omitted. Symlinks and
+special files fail closed. Bounds are 16,384 entries, one MiB per source and
+4,096 mapped Elements. Empty input and empty required common directories fail.
+
+* Composition and applicability
+
+The maintained document-root Contract is mandatory outside overridable Profile
+layers. Additional =builtin=, common DI/direct =definitions= and =local= values
+are admitted native Contract definitions. They compose by conjunction; duplicate
+Contract IDs and assertion IDs within a Contract fail, never last-writer-win.
+Changing a Profile's configured requirements is not authorized tailoring; that
+decision remains with the adopting application's Governance owner.
+
+Common document Contracts apply at root 0. Common subtree Contracts apply to an
+explicit =CONTRACT_REF= or a declaratively matching role:
+
+#+begin_src org
+* Proof Artifact Contract
+:PROPERTIES:
+:CONTRACT_ID: project.proof.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_TARGET_PROPERTY: ARTIFACT_KIND
+:CONTRACT_TARGET_VALUE: proof-family
+:END:
+#+end_src
+
+The section contains an ordinary =scheme :org-contract= block. The source loader
+reads only inert assertions/queries/expectations into the maintained POO
+constructors, never =eval=. Local blocks automatically apply to their own
+containing section; they need no per-file loader. A reference to an absent
+definition is an unresolved obligation. Duplicate/empty stable IDs are refused.
+Document role/owner properties remain authored data, not authenticated authority.
+
+* Assurance scope
+
+=t/org-directory-test.ss= supplies 16 native positive/negative Cases. The existing
+Contract suite supplies seven regression Cases. AITIA separately consumes its
+real three-family Proofs index, each with the 13-assertion structural Contract.
+Quint covers finite protocol transitions; LeanPOO consumer laws cover conjunction
+and current-context reassessment. Neither establishes automatic Scheme refinement.
+
+Before/after equality is not an atomic snapshot or monotonic Git generation;
+unchanged restored bytes may retain content validity. Selective invalidation,
+event history, multi-root sharing, authenticated evidence admission and effect
+delivery belong to separate integration obligations, not this structural API.

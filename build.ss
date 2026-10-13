@@ -28,6 +28,7 @@
      (gxc: "languages/org/event-runtime.ss")
      (gxc: "languages/org/modules/org-elements/headline-properties.ss")
      (gxc: "languages/org/modules/org-elements/source-headlines.ss")
+     (gxc: "languages/org/modules/org-elements/source-graph.ss")
      (gxc: "languages/org/modules/org-elements/source-interface.ss")
      (gxc: "languages/org/modules/org-contract/types.ss")
      (gxc: "languages/org/modules/org-contract/objects.ss")
@@ -35,6 +36,10 @@
      (gxc: "languages/org/modules/org-contract/config.ss")
      (gxc: "languages/org/modules/org-contract/syntax.ss")
      (gxc: "languages/org/modules/org-contract/runtime-interface.ss")
+     (gxc: "languages/org/modules/org-contract/directory.ss")
+     (gxc: "languages/org/modules/org-contract/source.ss")
+     (gxc: "languages/org/modules/org-contract/directory-runtime.ss")
+     (gxc: "languages/org/modules/org-contract/interface.ss")
      (gxc: "bindings/c/orgize.ss"))))
 
 (import (only-in :std/misc/process run-process)

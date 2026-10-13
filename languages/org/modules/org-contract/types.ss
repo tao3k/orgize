@@ -15,7 +15,7 @@
         OrgContractProfile org-contract-expectation?
         org-contract-binding? org-contract-assertion?
         org-contract-definition? org-contract-result?
-        org-contract-profile?)
+        org-contract-profile? OrgDirectoryProfile org-directory-profile?)
 
 (def +org-contract-schema+ "orgize.org-contract.v1")
 (def +org-contract-expectation-kind+ 'org-contract-expectation)
@@ -112,6 +112,28 @@
 
 (define-type (OrgContractProfile @ Type.)
   .element?: org-contract-profile-shape?)
+
+(def (contract-definitions? values)
+  (and (list? values) (every org-contract-definition? values)))
+
+(def (org-directory-profile-shape? value)
+  (and (has-kind-and-slots? value 'org-directory-profile
+                            '(schema workspace directory builtin contracts local))
+       (equal? (.ref value 'schema) "orgize.directory-profile.v1")
+       (or (not (.ref value 'workspace)) (nonempty-string? (.ref value 'workspace)))
+       (nonempty-string? (.ref value 'directory))
+       (contract-definitions? (.ref value 'builtin))
+       (contract-definitions? (.ref value 'local))
+       (let (common (.ref value 'contracts))
+         (and (object? common) (.slot? common 'directory)
+              (or (not (.ref common 'directory)) (nonempty-string? (.ref common 'directory)))
+              (or (not (.slot? common 'definitions))
+                  (contract-definitions? (.ref common 'definitions)))))))
+
+(define-type (OrgDirectoryProfile @ Type.)
+  .element?: org-directory-profile-shape?)
+
+(def (org-directory-profile? value) (element? OrgDirectoryProfile value))
 
 (def (org-contract-expectation? value)
   (element? OrgContractExpectation value))

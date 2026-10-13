@@ -1,0 +1,20 @@
+;;; -*- Gerbil -*-
+;;; Test-only temporary source mutations, never repository fixture mutation.
+(import (only-in :clan/poo/object .o)
+        (only-in :std/misc/ports read-all-as-string)
+        (only-in "../languages/org/modules/org-contract/interface.ss" OrgDirectoryProfile.))
+(export directory-mutation-fixture directory-test-write directory-test-read)
+(def (directory-test-read path) (call-with-input-file path read-all-as-string))
+(def (directory-test-write path text)
+  (call-with-output-file path (lambda (port) (display text port))))
+(def (directory-mutation-fixture name)
+  (let* ((root (path-expand name (getenv "ORGIZE_DIRECTORY_TEST_ROOT")))
+         (documents (path-expand "documents" root))
+         (common (path-expand "common" root)))
+    (create-directory root) (create-directory documents) (create-directory common)
+    (directory-test-write (path-expand "main.org" documents)
+      (directory-test-read "tests/fixtures/org-directory/documents/main.org"))
+    (directory-test-write (path-expand "evidence.org" common)
+      (directory-test-read "tests/fixtures/org-directory/common/evidence.org"))
+    (.o (:: @ OrgDirectoryProfile.) directory: documents
+        contracts: (.o directory: common definitions: '()))))

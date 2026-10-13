@@ -1,5 +1,14 @@
 # scheme: native architecture task owner.
 
+# Prepare the native owner SDK first; this reuses the existing gxtest gate.
+[group('scheme')]
+scheme-directory-test output load_path:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case_root=$(mktemp -d "${TMPDIR:-/tmp}/org-directory-tests.XXXXXX")
+    export ORGIZE_DIRECTORY_TEST_ROOT="$case_root"
+    just scheme-focused-module-test t/org-directory-test.ss "{{ output }}" "{{ load_path }}"
+
 # Qualify the consumer against an explicitly selected parser facade.
 [private]
 scheme-event-priority-test output load_path:

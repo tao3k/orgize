@@ -1,0 +1,11 @@
+#+TITLE: Directory Contract Case
+:PROPERTIES:
+:ID: directory-case
+:END:
+* Family
+:PROPERTIES:
+:ID: directory-family
+:CONTRACT_REF: directory.evidence.v1
+:END:
+** Evidence
+[[file:receipt.org][source-bound result]]

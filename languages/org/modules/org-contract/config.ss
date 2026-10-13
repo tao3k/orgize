@@ -5,7 +5,14 @@
         (only-in "types.ss"
                  +org-contract-schema+ +org-contract-profile-kind+
                  org-contract-profile?))
-(export OrgContractProfile. org-contract-default-profile)
+(export OrgContractProfile. org-contract-default-profile OrgDirectoryProfile.)
+
+;; One downstream declaration refines this native prototype. Common Contract
+;; DI is nested; the kernel retains its mandatory baseline independently.
+(def OrgDirectoryProfile.
+  (.o kind: 'org-directory-profile schema: "orgize.directory-profile.v1"
+      workspace: #f directory: #f builtin: '()
+      contracts: (.o directory: #f definitions: '()) local: '()))
 
 (def OrgContractProfile.
   (.o kind: +org-contract-profile-kind+
