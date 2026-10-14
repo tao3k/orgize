@@ -94,6 +94,11 @@ Provide current OpenSSL =pkg-config= metadata for native linking. Execution
 retains five seconds without real output, a 120-second overall budget and the
 one-GiB heap. A cold dynamic =gerbil test= import exhausted the idle budget;
 prelinking changes preparation, not these safety limits or test semantics.
+The outer GNU timeout is =gtimeout= on macOS and =timeout= on Linux; macOS
+CI installs =coreutils= for both runtime and Python lanes. Its availability
+is checked before native preparation, with the same TERM/three-second kill
+grace and 120-second limit. Missing platform tooling is not a test failure
+that may be hidden by removing the bound.
 When the graph shape changes, run the existing Scheme generation owner
 =just scheme-timestamp-graph-generate "$GERBIL_PATH" "$GERBIL_LOADPATH"=.
 Graph, named Query, Contract and customer packs bind the same projection digest;

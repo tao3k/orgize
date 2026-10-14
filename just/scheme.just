@@ -10,11 +10,12 @@ scheme-directory-dependencies:
 scheme-directory-test output load_path:
     #!/usr/bin/env bash
     set -euo pipefail
+    command -v "{{ timeout_command }}"
     case_root=$(mktemp -d "${TMPDIR:-/tmp}/org-directory-tests.XXXXXX")
     export ORGIZE_DIRECTORY_TEST_ROOT="$case_root"
     just scheme-directory-native-build "{{ output }}" "{{ load_path }}"
     export GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" GAMBOPT="{{ scheme_gambopt }}"
-    timeout --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py "{{ output }}/bin/org-directory-tests" 2>&1 | tee "{{ output }}/org-directory-test.log"
+    {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py "{{ output }}/bin/org-directory-tests" 2>&1 | tee "{{ output }}/org-directory-test.log"
     test "$(rg --count '^CASE-OK ' '{{ output }}/org-directory-test.log')" = 39
     rg --quiet '^OK$' "{{ output }}/org-directory-test.log"
     ! rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' "{{ output }}/org-directory-test.log"
