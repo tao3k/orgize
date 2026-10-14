@@ -6,7 +6,6 @@ use orgize::{
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/m25-table-visualization.org");
 
-#[test]
 fn semantic_ast_projects_table_visualization_plans() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -48,6 +47,27 @@ fn semantic_ast_projects_table_visualization_plans() {
     insta::assert_snapshot!(
         "semantic_ast__m25_table_visualization_plans",
         render_table_visualization_plans(&plans)
+    );
+}
+
+fn radio_receivers_ignore_markers_inside_source_blocks() {
+    let source = "#+begin_src text\n# BEGIN RECEIVE ORGTBL phantom\n# END RECEIVE ORGTBL phantom\n#+end_src\n#+ORGTBL: SEND phantom orgtbl-to-latex\n| X |\n";
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+
+    let plans = doc.table_visualization_plans();
+    assert_eq!(plans.len(), 1);
+    assert!(
+        plans[0]
+            .radio
+            .as_ref()
+            .is_some_and(|radio| radio.receiver.is_none())
+    );
+    assert!(
+        plans[0]
+            .warnings
+            .iter()
+            .any(|warning| warning.kind == TableVisualizationWarningKind::MissingRadioReceiver)
     );
 }
 
@@ -129,3 +149,14 @@ fn render_table_visualization_plans(
     }
     out
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_table_visualization::semantic_ast_projects_table_visualization_plans",
+        semantic_ast_projects_table_visualization_plans,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_table_visualization::radio_receivers_ignore_markers_inside_source_blocks",
+        radio_receivers_ignore_markers_inside_source_blocks,
+    ),
+];

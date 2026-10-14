@@ -1,0 +1,75 @@
+#+title: Rowan removal, upstream revision alignment and native view boundary
+
+* Exact source and dependency update
+
+Date: 2026-10-07. Work remains in the isolated Orgize checkout; preceding
+Query/Fold edits and dirty parser/bridge overlays are preserved. Upstream
+parser PR 13 was read and fetched at
+=300dcc13a41669dfcb10b233071facc344f3e5b3=, without resetting the old checkouts.
+A fresh detached parser checkout at that exact revision builds all 173
+production targets successfully through the maintained Justfile owner.
+Its compiled library is under =target/native-rowan-removal-20261007/parser=.
+
+Cargo and Gerbil parser pins select this revision. Rowan and
+=gerbil-parser-rowan= are absent from Cargo.toml/Cargo.lock. Rust consumers
+use the upstream runtime/artifact vocabulary; Scheme generator entrypoints
+use =rust-runtime-support= and the runtime graph generator. The checked-in
+Rust products have mechanically aligned imports, not a claimed fresh full
+generation receipt. Both former Rowan-specific Rust integration targets
+are renamed to native cutover/navigation targets, preserving their cases.
+
+The normal update recipe is exactly =cargo fetch=. It requires no local
+bridge path or =--config patch= overrides. The unpatched fetch succeeds;
+all three bridge build-support packages now resolve from their existing
+upstream Git revision =8bb8103b=, not local paths. The normal check owner
+also uses pinned dependencies with =--locked= and no patch configuration.
+Older local build-qualification recipes still contain explicit bridge
+overrides; those are not evidence of a clean pinned build or this fetch.
+
+=just native-rowan-free-dependency-check= passes and =git diff --check=
+passes. A Release check of library/tests/benches/examples passes with the
+new parser crates and the preceding local bridge overrides. This is only
+Rust API compatibility evidence, using the preceding 318-module program;
+it does not qualify a new latest-parser native program or pinned bridge.
+An independent no-patch check fails: upstream bridge =8bb8103b= rejects
+the preceding program manifest's =c_headers= field. Its lifecycle compile
+also reports Gambit's =current-directory "~~bin"= missing-directory error.
+Neither error is a parser Rust import failure. Do not restore local patches,
+drop required manifest headers or patch the runtime kernel to hide them;
+align the published bridge source, official staging and toolchain together.
+
+* The second materialization is not closed
+
+Public parsing still follows native Scheme events ->
+=parse_generated_events= -> source-backed =SyntaxTree= index -> Element
+projection. Upstream runtime no longer allocates a Rowan green/red tree or
+copies individual token strings, but it still replays events to construct
+navigation entries. Removing Rowan is not equivalent to removing this pass.
+The old =rowan.build= diagnostic label remains historical plumbing, not
+evidence that a Rowan dependency or a borrowed native view is executing.
+
+The upstream direct FFI route is =gerbil-parser-native=: generate a language
+pack, attach =NativeSession= to the existing owner-thread VM, create the
+language handle, parse, and borrow =NativeParsed::view=. The artifact view
+retains the C payload and original source, and does not materialize a second
+CST. It still validates records and creates navigation indexes; zero copy
+does not mean zero allocation. Syntax rejection remains distinct from
+transport failure and must not become a fabricated accepted tree.
+
+Orgize has not yet migrated its custom =OEV1= batch transport, graph fields
+or document lifetime to that ABI. In particular sessions/results cannot
+cross threads: both runtime features must keep handles/results on their
+native owner, with explicit result release before handle/VM shutdown.
+Public graph/source projections and Python/C callers require equivalent
+ownership and identity controls. No unsafe Send/Sync, leaked C result,
+second VM, Rust grammar fallback or lowered concurrency is justified.
+
+* Remaining admission
+
+Generate the Org native language pack and semantic field artifact through
+Scheme; consume that artifact rather than replaying events into an owned
+syntax tree. Requalify Query/Contract/lints, source edits, diagnostics,
+both scheduling features, Python/C release behavior, the full consumer
+catalog and 1,000/10,000-document concurrent controls at the new program.
+Do not reuse record 25 receipts or claim a performance gain for this source.
+Default native manifest is unchanged; no commit, push or PR write occurs.

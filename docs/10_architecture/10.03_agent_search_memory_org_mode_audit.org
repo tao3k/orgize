@@ -11,6 +11,18 @@ project source-grounded semantic records, preserve spans and evidence, and
 render compact agent-support outputs that Wendao and other agent systems can
 consume.
 
+The [[file:../../languages/org/modules/README.org][Org module capability map]] places planning, notes, identity, links,
+and temporal review with their Scheme source owners. The existing Memory cards
+are a consumer view over those capabilities, rather than a new source kind.
+[[file:10.08_temporal_revisit_projection.org][10.08]] defines the proposed revisit contract.
+
+The broader Emacs ecosystem is also useful comparison evidence. In particular,
+[[https://github.com/alphapapa/org-super-agenda][org-super-agenda]] groups rows *after* the base agenda has selected them; it
+does not replace the agenda's source selection. Org note workflows combine
+capture, refile, stable IDs, links, attachments, annotations, and review. We
+compare these operations and their source evidence, rather than treating a
+particular notes package as an Org grammar extension.
+
 ** Source Anchors
 
 The most relevant official surfaces are:

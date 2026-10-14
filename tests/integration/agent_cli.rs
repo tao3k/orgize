@@ -1,6 +1,5 @@
 use std::{fs, path::PathBuf, process::Output};
 
-#[test]
 fn cli_agent_planning_renders_planning_cards() {
     let dir = test_dir("agent-planning");
     let path = dir.join("agent.org");
@@ -25,7 +24,6 @@ fn cli_agent_planning_renders_planning_cards() {
     assert!(stdout.contains("task: Capability SDD"), "{stdout}");
 }
 
-#[test]
 fn cli_sparse_tree_renders_match_cards() {
     let dir = test_dir("sparse-tree");
     let path = dir.join("agent.org");
@@ -86,3 +84,14 @@ fn test_dir(name: &str) -> PathBuf {
     fs::create_dir_all(&dir).unwrap();
     dir
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "agent_cli::cli_agent_planning_renders_planning_cards",
+        cli_agent_planning_renders_planning_cards,
+    ),
+    (
+        "agent_cli::cli_sparse_tree_renders_match_cards",
+        cli_sparse_tree_renders_match_cards,
+    ),
+];

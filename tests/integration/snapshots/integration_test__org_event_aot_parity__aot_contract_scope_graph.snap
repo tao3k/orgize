@@ -1,0 +1,1041 @@
+---
+source: tests/integration/org_event_aot_parity.rs
+assertion_line: 37
+expression: document.records()
+---
+[
+    GraphRecord {
+        id: 0,
+        parent_id: None,
+        child_ids: [
+            1,
+            5,
+            15,
+            19,
+        ],
+        syntax_kind: 0,
+        category: "document",
+        kind: "org-data",
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                504,
+            ),
+        },
+        fields: [],
+    },
+    GraphRecord {
+        id: 1,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            2,
+            3,
+            4,
+        ],
+        syntax_kind: 21,
+        category: "element",
+        kind: "property-drawer",
+        range: TextRange {
+            start: TextSize(
+                0,
+            ),
+            end: TextSize(
+                128,
+            ),
+        },
+        fields: [],
+    },
+    GraphRecord {
+        id: 2,
+        parent_id: Some(
+            1,
+        ),
+        child_ids: [],
+        syntax_kind: 23,
+        category: "property",
+        kind: "node-property",
+        range: TextRange {
+            start: TextSize(
+                13,
+            ),
+            end: TextSize(
+                46,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "CONTRACT_ORG",
+                range: TextRange {
+                    start: TextSize(
+                        14,
+                    ),
+                    end: TextSize(
+                        26,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "document.scope.v1",
+                range: TextRange {
+                    start: TextSize(
+                        28,
+                    ),
+                    end: TextSize(
+                        45,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 3,
+        parent_id: Some(
+            1,
+        ),
+        child_ids: [],
+        syntax_kind: 23,
+        category: "property",
+        kind: "node-property",
+        range: TextRange {
+            start: TextSize(
+                46,
+            ),
+            end: TextSize(
+                90,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "CONTRACT_ORG",
+                range: TextRange {
+                    start: TextSize(
+                        47,
+                    ),
+                    end: TextSize(
+                        59,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "document.contract-binding.v1",
+                range: TextRange {
+                    start: TextSize(
+                        61,
+                    ),
+                    end: TextSize(
+                        89,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 4,
+        parent_id: Some(
+            1,
+        ),
+        child_ids: [],
+        syntax_kind: 23,
+        category: "property",
+        kind: "node-property",
+        range: TextRange {
+            start: TextSize(
+                90,
+            ),
+            end: TextSize(
+                122,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "CONTRACT_ORG",
+                range: TextRange {
+                    start: TextSize(
+                        91,
+                    ),
+                    end: TextSize(
+                        103,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "section.scope.v1",
+                range: TextRange {
+                    start: TextSize(
+                        105,
+                    ),
+                    end: TextSize(
+                        121,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 5,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            6,
+            9,
+        ],
+        syntax_kind: 84,
+        category: "section",
+        kind: "headline",
+        range: TextRange {
+            start: TextSize(
+                128,
+            ),
+            end: TextSize(
+                294,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "*",
+                range: TextRange {
+                    start: TextSize(
+                        128,
+                    ),
+                    end: TextSize(
+                        129,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Task A",
+                range: TextRange {
+                    start: TextSize(
+                        130,
+                    ),
+                    end: TextSize(
+                        136,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Task A",
+                range: TextRange {
+                    start: TextSize(
+                        130,
+                    ),
+                    end: TextSize(
+                        136,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 6,
+        parent_id: Some(
+            5,
+        ),
+        child_ids: [
+            7,
+        ],
+        syntax_kind: 84,
+        category: "section",
+        kind: "headline",
+        range: TextRange {
+            start: TextSize(
+                137,
+            ),
+            end: TextSize(
+                182,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "**",
+                range: TextRange {
+                    start: TextSize(
+                        137,
+                    ),
+                    end: TextSize(
+                        139,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Evidence",
+                range: TextRange {
+                    start: TextSize(
+                        140,
+                    ),
+                    end: TextSize(
+                        148,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Evidence",
+                range: TextRange {
+                    start: TextSize(
+                        140,
+                    ),
+                    end: TextSize(
+                        148,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 7,
+        parent_id: Some(
+            6,
+        ),
+        child_ids: [
+            8,
+        ],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: TextRange {
+            start: TextSize(
+                149,
+            ),
+            end: TextSize(
+                182,
+            ),
+        },
+        fields: [],
+    },
+    GraphRecord {
+        id: 8,
+        parent_id: Some(
+            7,
+        ),
+        child_ids: [],
+        syntax_kind: 49,
+        category: "object",
+        kind: "link",
+        range: TextRange {
+            start: TextSize(
+                149,
+            ),
+            end: TextSize(
+                181,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "path",
+                value: "https://example.test",
+                range: TextRange {
+                    start: TextSize(
+                        151,
+                    ),
+                    end: TextSize(
+                        171,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "description",
+                value: "inside",
+                range: TextRange {
+                    start: TextSize(
+                        173,
+                    ),
+                    end: TextSize(
+                        179,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 9,
+        parent_id: Some(
+            5,
+        ),
+        child_ids: [
+            10,
+            12,
+        ],
+        syntax_kind: 84,
+        category: "section",
+        kind: "headline",
+        range: TextRange {
+            start: TextSize(
+                182,
+            ),
+            end: TextSize(
+                294,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "**",
+                range: TextRange {
+                    start: TextSize(
+                        182,
+                    ),
+                    end: TextSize(
+                        184,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Task A Child",
+                range: TextRange {
+                    start: TextSize(
+                        185,
+                    ),
+                    end: TextSize(
+                        197,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Task A Child",
+                range: TextRange {
+                    start: TextSize(
+                        185,
+                    ),
+                    end: TextSize(
+                        197,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 10,
+        parent_id: Some(
+            9,
+        ),
+        child_ids: [
+            11,
+        ],
+        syntax_kind: 21,
+        category: "element",
+        kind: "property-drawer",
+        range: TextRange {
+            start: TextSize(
+                198,
+            ),
+            end: TextSize(
+                249,
+            ),
+        },
+        fields: [],
+    },
+    GraphRecord {
+        id: 11,
+        parent_id: Some(
+            10,
+        ),
+        child_ids: [],
+        syntax_kind: 23,
+        category: "property",
+        kind: "node-property",
+        range: TextRange {
+            start: TextSize(
+                211,
+            ),
+            end: TextSize(
+                243,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "CONTRACT_ORG",
+                range: TextRange {
+                    start: TextSize(
+                        212,
+                    ),
+                    end: TextSize(
+                        224,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "section.scope.v1",
+                range: TextRange {
+                    start: TextSize(
+                        226,
+                    ),
+                    end: TextSize(
+                        242,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 12,
+        parent_id: Some(
+            9,
+        ),
+        child_ids: [
+            13,
+        ],
+        syntax_kind: 84,
+        category: "section",
+        kind: "headline",
+        range: TextRange {
+            start: TextSize(
+                249,
+            ),
+            end: TextSize(
+                294,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "***",
+                range: TextRange {
+                    start: TextSize(
+                        249,
+                    ),
+                    end: TextSize(
+                        252,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Evidence",
+                range: TextRange {
+                    start: TextSize(
+                        253,
+                    ),
+                    end: TextSize(
+                        261,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Evidence",
+                range: TextRange {
+                    start: TextSize(
+                        253,
+                    ),
+                    end: TextSize(
+                        261,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 13,
+        parent_id: Some(
+            12,
+        ),
+        child_ids: [
+            14,
+        ],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: TextRange {
+            start: TextSize(
+                262,
+            ),
+            end: TextSize(
+                294,
+            ),
+        },
+        fields: [],
+    },
+    GraphRecord {
+        id: 14,
+        parent_id: Some(
+            13,
+        ),
+        child_ids: [],
+        syntax_kind: 49,
+        category: "object",
+        kind: "link",
+        range: TextRange {
+            start: TextSize(
+                262,
+            ),
+            end: TextSize(
+                293,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "path",
+                value: "https://example.test",
+                range: TextRange {
+                    start: TextSize(
+                        264,
+                    ),
+                    end: TextSize(
+                        284,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "description",
+                value: "child",
+                range: TextRange {
+                    start: TextSize(
+                        286,
+                    ),
+                    end: TextSize(
+                        291,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 15,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            16,
+        ],
+        syntax_kind: 84,
+        category: "section",
+        kind: "headline",
+        range: TextRange {
+            start: TextSize(
+                294,
+            ),
+            end: TextSize(
+                348,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "*",
+                range: TextRange {
+                    start: TextSize(
+                        294,
+                    ),
+                    end: TextSize(
+                        295,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Task B",
+                range: TextRange {
+                    start: TextSize(
+                        296,
+                    ),
+                    end: TextSize(
+                        302,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Task B",
+                range: TextRange {
+                    start: TextSize(
+                        296,
+                    ),
+                    end: TextSize(
+                        302,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 16,
+        parent_id: Some(
+            15,
+        ),
+        child_ids: [
+            17,
+        ],
+        syntax_kind: 84,
+        category: "section",
+        kind: "headline",
+        range: TextRange {
+            start: TextSize(
+                303,
+            ),
+            end: TextSize(
+                348,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "**",
+                range: TextRange {
+                    start: TextSize(
+                        303,
+                    ),
+                    end: TextSize(
+                        305,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Evidence",
+                range: TextRange {
+                    start: TextSize(
+                        306,
+                    ),
+                    end: TextSize(
+                        314,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Evidence",
+                range: TextRange {
+                    start: TextSize(
+                        306,
+                    ),
+                    end: TextSize(
+                        314,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 17,
+        parent_id: Some(
+            16,
+        ),
+        child_ids: [
+            18,
+        ],
+        syntax_kind: 25,
+        category: "element",
+        kind: "paragraph",
+        range: TextRange {
+            start: TextSize(
+                315,
+            ),
+            end: TextSize(
+                348,
+            ),
+        },
+        fields: [],
+    },
+    GraphRecord {
+        id: 18,
+        parent_id: Some(
+            17,
+        ),
+        child_ids: [],
+        syntax_kind: 49,
+        category: "object",
+        kind: "link",
+        range: TextRange {
+            start: TextSize(
+                315,
+            ),
+            end: TextSize(
+                347,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "path",
+                value: "https://example.test",
+                range: TextRange {
+                    start: TextSize(
+                        317,
+                    ),
+                    end: TextSize(
+                        337,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "description",
+                value: "task-b",
+                range: TextRange {
+                    start: TextSize(
+                        339,
+                    ),
+                    end: TextSize(
+                        345,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 19,
+        parent_id: Some(
+            0,
+        ),
+        child_ids: [
+            20,
+            22,
+        ],
+        syntax_kind: 84,
+        category: "section",
+        kind: "headline",
+        range: TextRange {
+            start: TextSize(
+                348,
+            ),
+            end: TextSize(
+                504,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "*",
+                range: TextRange {
+                    start: TextSize(
+                        348,
+                    ),
+                    end: TextSize(
+                        349,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Override Parent",
+                range: TextRange {
+                    start: TextSize(
+                        350,
+                    ),
+                    end: TextSize(
+                        365,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Override Parent",
+                range: TextRange {
+                    start: TextSize(
+                        350,
+                    ),
+                    end: TextSize(
+                        365,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 20,
+        parent_id: Some(
+            19,
+        ),
+        child_ids: [
+            21,
+        ],
+        syntax_kind: 21,
+        category: "element",
+        kind: "property-drawer",
+        range: TextRange {
+            start: TextSize(
+                366,
+            ),
+            end: TextSize(
+                426,
+            ),
+        },
+        fields: [],
+    },
+    GraphRecord {
+        id: 21,
+        parent_id: Some(
+            20,
+        ),
+        child_ids: [],
+        syntax_kind: 23,
+        category: "property",
+        kind: "node-property",
+        range: TextRange {
+            start: TextSize(
+                379,
+            ),
+            end: TextSize(
+                420,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "CONTRACT_ORG",
+                range: TextRange {
+                    start: TextSize(
+                        380,
+                    ),
+                    end: TextSize(
+                        392,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "section.override-title.v1",
+                range: TextRange {
+                    start: TextSize(
+                        394,
+                    ),
+                    end: TextSize(
+                        419,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 22,
+        parent_id: Some(
+            19,
+        ),
+        child_ids: [
+            23,
+        ],
+        syntax_kind: 84,
+        category: "section",
+        kind: "headline",
+        range: TextRange {
+            start: TextSize(
+                426,
+            ),
+            end: TextSize(
+                504,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "markers",
+                value: "**",
+                range: TextRange {
+                    start: TextSize(
+                        426,
+                    ),
+                    end: TextSize(
+                        428,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title",
+                value: "Override Child",
+                range: TextRange {
+                    start: TextSize(
+                        429,
+                    ),
+                    end: TextSize(
+                        443,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "title-body",
+                value: "Override Child",
+                range: TextRange {
+                    start: TextSize(
+                        429,
+                    ),
+                    end: TextSize(
+                        443,
+                    ),
+                },
+            },
+        ],
+    },
+    GraphRecord {
+        id: 23,
+        parent_id: Some(
+            22,
+        ),
+        child_ids: [
+            24,
+        ],
+        syntax_kind: 21,
+        category: "element",
+        kind: "property-drawer",
+        range: TextRange {
+            start: TextSize(
+                444,
+            ),
+            end: TextSize(
+                504,
+            ),
+        },
+        fields: [],
+    },
+    GraphRecord {
+        id: 24,
+        parent_id: Some(
+            23,
+        ),
+        child_ids: [],
+        syntax_kind: 23,
+        category: "property",
+        kind: "node-property",
+        range: TextRange {
+            start: TextSize(
+                457,
+            ),
+            end: TextSize(
+                498,
+            ),
+        },
+        fields: [
+            GraphFieldValue {
+                name: "key",
+                value: "CONTRACT_ORG",
+                range: TextRange {
+                    start: TextSize(
+                        458,
+                    ),
+                    end: TextSize(
+                        470,
+                    ),
+                },
+            },
+            GraphFieldValue {
+                name: "value",
+                value: "section.override-title.v1",
+                range: TextRange {
+                    start: TextSize(
+                        472,
+                    ),
+                    end: TextSize(
+                        497,
+                    ),
+                },
+            },
+        ],
+    },
+]

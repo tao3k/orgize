@@ -2,9 +2,10 @@
 
 /// Agent-facing document command API.
 pub mod agent;
-/// Owned semantic AST projected from the lossless parser tree.
+/// Owned semantic AST projected from the Scheme-AOT Element graph.
 #[path = "semantic_ast/mod.rs"]
 pub mod ast;
+pub mod c_ffi;
 /// Command-line interface implementation.
 #[doc(hidden)]
 pub mod cli;
@@ -15,42 +16,38 @@ pub mod contract_feature;
 /// Document element mapping and parser-owned query API.
 pub mod document;
 mod entities;
-/// Event traversal and export helpers built on the lossless syntax tree.
+/// Presentation helpers for Scheme-AOT graph exporters.
 pub mod export;
 /// Conservative Org source formatter.
 pub mod fmt;
 /// Org document linting helpers.
 pub mod lint;
-mod lint_runtime_validation;
 mod org;
-/// Scheme-AOT Org parser and Element graph for Cargo-only consumers.
+mod startup;
+pub use startup::initialize_native_runtime;
+/// Statically linked Gerbil Org parser and Scheme-declared Element graph.
 pub mod org_aot;
+pub mod runtime_backend;
+pub use runtime_backend::{RuntimeBackend, runtime_backend};
 /// Source-bound Org edits validated against the Scheme-AOT Element graph.
 pub mod org_aot_edit;
+mod org_aot_html;
+mod org_aot_latex;
+mod org_aot_markdown;
 /// Scheme-AOT named Org Element queries over the generated graph.
 pub mod org_element_query;
-mod replace;
 mod runtime;
-mod syntax;
+/// Opt-in diagnostic timings, not a parser or execution-owner selection.
 #[doc(hidden)]
-pub mod syntax_ast;
-#[path = "ast/mod.rs"]
-mod syntax_ast_impl;
+pub mod runtime_profile;
 #[cfg(test)]
 #[path = "../tests/unit/lib.rs"]
 mod tests;
 
-// Re-export of the rowan crate.
-pub use rowan;
-
 pub use config::ParseConfig;
+pub use gerbil_parser_runtime::{SyntaxKind, SyntaxNode, SyntaxToken};
+pub use gerbil_parser_runtime::{TextRange, TextSize};
 pub use org::Org;
-pub use rowan::{TextRange, TextSize};
-pub use syntax::{
-    SyntaxElement, SyntaxElementChildren, SyntaxKind, SyntaxNode, SyntaxNodeChildren, SyntaxToken,
-};
-
-pub(crate) use syntax::combinator::lossless_parser;
 
 #[cfg(test)]
 asp_rust::asp_rust_cargo_test_gate!(
@@ -69,7 +66,7 @@ asp_rust::asp_rust_cargo_test_gate!(
             )
             .with_verification_profile_hint(
                 asp_rust::RustVerificationProfileHint::new(
-                    "src/lint_file_links.rs",
+                    "src/lint/rules/file_links.rs",
                     [asp_rust::RustOwnerResponsibility::PureDomainLogic],
                 )
                 .without_verification_tasks()

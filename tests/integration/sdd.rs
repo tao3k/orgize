@@ -2,7 +2,6 @@ use std::{fs, path::PathBuf};
 
 use orgize::{Org, lint::lint_org};
 
-#[test]
 fn sdd_status_projects_org_native_parent_edges() {
     let document = Org::parse(valid_sdd_fixture()).document();
     let status = document.sdd_status();
@@ -29,7 +28,6 @@ fn sdd_status_projects_org_native_parent_edges() {
     assert!(rendered.contains("rationale: Rust has deterministic admission control boundaries."));
 }
 
-#[test]
 fn sdd_lint_reports_identity_parent_kind_metadata_and_requirement_issues() {
     let source = r#"* System SDD :sdd:
 :PROPERTIES:
@@ -84,7 +82,6 @@ The system SHALL expose bad SDD evidence.
     assert!(compact.contains("SDD headings must not own direct task checklists"));
 }
 
-#[test]
 fn cli_sdd_status_renders_compact_projection() {
     let dir = test_dir("sdd-status");
     let path = dir.join("sdd.org");
@@ -102,7 +99,6 @@ fn cli_sdd_status_renders_compact_projection() {
     assert!(stdout.contains("- audit review: Precision Audit"));
 }
 
-#[test]
 fn cli_sdd_graph_diff_reports_semantic_outline_drift() {
     let dir = test_dir("sdd-graph-diff");
     let path = dir.join("sdd.org");
@@ -194,3 +190,22 @@ fn test_dir(name: &str) -> PathBuf {
     fs::create_dir_all(&dir).unwrap();
     dir
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "sdd::sdd_status_projects_org_native_parent_edges",
+        sdd_status_projects_org_native_parent_edges,
+    ),
+    (
+        "sdd::sdd_lint_reports_identity_parent_kind_metadata_and_requirement_issues",
+        sdd_lint_reports_identity_parent_kind_metadata_and_requirement_issues,
+    ),
+    (
+        "sdd::cli_sdd_status_renders_compact_projection",
+        cli_sdd_status_renders_compact_projection,
+    ),
+    (
+        "sdd::cli_sdd_graph_diff_reports_semantic_outline_drift",
+        cli_sdd_graph_diff_reports_semantic_outline_drift,
+    ),
+];

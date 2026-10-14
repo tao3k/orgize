@@ -2,6 +2,7 @@
 **/*.rs.bk
 /.devenv
 /.gerbil/
+/.gerbil-native/
 
 .vscode
 .gdb_history

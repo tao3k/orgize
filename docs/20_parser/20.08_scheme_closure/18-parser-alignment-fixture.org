@@ -1,0 +1,141 @@
+#+title: Parser 619bf19 alignment and native event fixture migration
+
+* Ownership and scope
+
+Audit date: 2026-10-06. Parser PR 13 was inspected at
+=619bf1905b9dfc9a4541d30e1daffe9190587254=. The existing isolated parser
+checkout was fast-forwarded from =a99b3646=; none of its seven local AOT
+overlay paths overlaps the upstream delta. Cargo.toml, Cargo.lock and
+gerbil.pkg now name the same revision. The maintained
+=just parser-revision-check= verifies all three pins, the checkout
+HEAD and whitespace admission while exposing the preserved overlay list.
+This is revision alignment, not publication of those local overlays.
+
+The public =Org::parse= / =Org::try_parse= facade remains the native
+=parse_org_aot= path. Native Scheme generates events; Rust admits their
+typed framing and executes lossless Rowan/graph projection. No legacy Rust
+source-parser fallback, kernel patch or optimization-profile change was added.
+
+* Native fixture migration
+
+The old =generated/rowan-event-fixture.json= is removed. Its exact 465-byte
+source now lives in =fixtures/rowan-event-source.org=. Its existing 255-event
+golden was mechanically preserved as a quoted native Scheme value in
+=generated/rowan-event-fixture.ss=, not regenerated against the candidate.
+The Scheme case compares the entire native event sequence against this
+unchanged golden, including token kinds, UTF-8 byte ranges and nesting.
+
+The Rust fixture consumer now calls public =Org::try_parse= on the same source,
+then retains all its previous losslessness, graph integrity and semantic
+assertions: headlines, keyword, source block, paragraph, table/cells, opaque
+blocks, property drawer, planning/clock, link, nested lists, quote, dynamic
+block and named drawer. It no longer decodes JSON or constructs the native
+parser's output from saved tuples. Separate handcrafted TreeEvent tests remain
+ABI-admission controls; they are not source-parser implementations.
+
+The existing Scheme generator now emits a native Scheme module. Inline and
+structural suites no longer import unused JSON/fixture helpers. Both normal
+event-suite and native executable build recipes compile the golden owner.
+The maintained Rust fixture gate observes the existing explicit-startup
+23-case concurrent suite with the unchanged five-second real-output observer.
+
+* Fresh qualification
+
+Fresh root: =target/native-alignment-619bf19-20261006=.
+Previous =a99b3646= or =1f0d87f3= executables do not qualify this candidate.
+
+- Parser normal build: 159 targets, successful compiler exit.
+- Complete Org SDK: normal build receipt passes.
+- Canonical native program: 316 modules.
+- Native program identity:
+  =sha256:ac93fdc9b1a761116c128fd406c25a4e3c2c2bd85a283dbdfbc9b31a9626a7d1=.
+- Native Scheme executable: 167 cases / 11 suites, final OK and exit zero.
+  Load-path environment is cleared. The failed-assertion control returns 42
+  and final FAILED; this is not inferred from HARNESS-OK.
+- Rust runtime: Release library/consumer/benchmark build passes; 84 native
+  units plus 24 ordinary units pass. The separate Rowan startup suite passes
+  all 23 concurrent cases. Whole consumer catalog passes 457 at 12 callers.
+- Rust Query: original 45ms gate passes; p50 33.677125ms,
+  p95/max 34.441958ms. Contract control is 22.991125ms under its original 25ms
+  gate. These are bounded current receipts, not stable performance gains.
+- Scheme runtime: Release library/consumer/benchmark build passes; 84 native
+  units plus 24 ordinary units and all 457 consumers pass. Its separate Rowan
+  suite also passes all 23 concurrent cases. Query p50 is 19.158541ms,
+  p95/max 22.071625ms under 45ms; Contract is 7.621ms under 25ms.
+- Existing maturin/PyO3 Rust-runtime build and all 25 Python tests pass,
+  with expected runtime and exact native-program identity enforced.
+- The same existing maturin/PyO3 Scheme-runtime build and all 25 Python tests
+  also pass with the same program identity. No standalone C Contract library
+  or additional Python binding framework was used.
+- Darwin/Linux command-shape check passes; Linux execution is not qualified.
+
+Both full concurrent matrices now pass: 1,000/10,000 distinct documents,
+64 callers, 1/4/8 independent native process domains, one repetition.
+Each feature completes 33,000 admissions, 66,000 total. Domain geometry,
+peak in-flight callers, real completed documents, worker exits, identical
+program/corpus and canonical semantic artifacts pass. Both features also
+match their previous A99 semantic artifacts under the cross-program semantic
+control; that control is not a performance comparison.
+
+Observed 10,000-document end-to-end results:
+
+| Native domains | Rust docs/s | Scheme docs/s | Rust p95 ms | Scheme p95 ms |
+|----------------+-------------+---------------+-------------+---------------|
+| 1              | 82.966      | 95.962        | 1054.034    | 854.139       |
+| 4              | 290.357     | 303.167       | 338.652     | 371.096       |
+| 8              | 412.708     | 363.950       | 350.390     | 378.342       |
+
+These single-repetition observations include bounded supervisor queueing,
+IPC, native parse/projection, validation/checksum, drop and response.
+Startup/warmup is excluded. Overlapping native requests do not measure CPU
+utilization, and this closed-loop workload is not open-loop arrival-rate
+admission. No stable runtime winner, repeatable speedup or repaired historical
+tail is inferred.
+
+=just native-parser-alignment-admission-check= passes for the exact revision
+and program. It checks pins, 167 native cases, failed-assertion exit propagation,
+both 84/24/457 catalogs, both 23-case Rowan suites, both 25-case Python suites,
+Query/Contract program controls and both full matched matrices. Historical
+green receipts were not copied into the candidate root.
+
+The previously absent local default manifest
+=target/gerbil-parser/program.json= now selects this qualified program through
+the existing maintained selection recipe, without rewriting its compiler-owned
+module paths. Byte equality with the qualified manifest passes. This is local
+native-program selection, not clean-checkout or remote CI admission.
+
+* Remaining closure gates
+
+The source-role audit found a genuine remaining downstream semantic owner:
+=citation_export.rs= still classifies BIBLIOGRAPHY/CITE_EXPORT/
+PRINT_BIBLIOGRAPHY keys, splits raw keyword values, strips quote characters
+and recognizes colon plist options in Rust. These are source policy, not
+typed ABI admission. Native inline Citation recognition does not close this
+export-policy consumer. Its cohesive next migration must include bibliography
+files, processor/style and optional plist values with matched Unicode,
+quote, empty/missing-value and repeated-option controls.
+
+=export_dependency_graph.rs= also strips wrapping quotes from source-derived
+dependency paths. Quote recognition belongs to Scheme; filesystem resolution,
+local-path normalization and dependency graph execution remain host consumers.
+Do not classify every Rust string operation as a second parser: capture/preview
+formatting, index key normalization and typed QueryExpr admission have different
+roles. The redundant file-prefix trimming before the native suffix predicate
+is an adapter simplification candidate, not a separate image parser.
+
+The original 286ms Query tail is still unexplained; a later passing candidate
+does not diagnose or repair it. The Rust library build still reports 42
+warnings, including unused post-migration adapter functions. Scoped ownership
+cleanup and strict lint qualification remain open; no blanket allow was added.
+
+Fresh remote dependency closure remains open. The pinned bridge =8bb8103b=
+does not export the isolated static-runtime staging helper present in the
+local overlay. Parser AOT overlays are also unpublished. Local patch-qualified
+builds therefore do not prove a clean checkout or exact-head remote CI.
+The Python sdist CI lane still expects the obsolete independent Contract-library
+requirement; its current maturin/PyO3 owner is the shared Rust native program.
+That packaging gate must be rebuilt around published native owners, not a new
+Python framework or compatibility fallback.
+
+Work remains assigned to PR 18. No commit, push, new PR or remote merge is
+part of this receipt. Historical negative receipts remain in records 15–17.

@@ -16,7 +16,6 @@ SCHEDULED: <2026-05-14 Thu -2d>
 <2026-05-14 Thu 09:00-09:30>
 "#;
 
-#[test]
 fn semantic_ast_projects_agent_planning_snapshot_from_agenda_rows() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -64,3 +63,8 @@ fn semantic_ast_projects_agent_planning_snapshot_from_agenda_rows() {
         "contract: Derived from official Org agenda syntax; no custom source syntax is required."
     ));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_agent_planning::semantic_ast_projects_agent_planning_snapshot_from_agenda_rows",
+    semantic_ast_projects_agent_planning_snapshot_from_agenda_rows,
+)];

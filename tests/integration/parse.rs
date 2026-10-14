@@ -29,9 +29,10 @@ const INPUT: &[&str] = &[
     "|\n\u{b}|",
 ];
 
-#[test]
 fn parse() {
     for input in INPUT {
         let _ = orgize::Org::parse(input);
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[("parse::parse", parse)];

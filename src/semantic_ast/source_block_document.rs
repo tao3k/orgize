@@ -161,11 +161,9 @@ impl OrgSourceBlock {
             return Err(invalid("source-block preamble keywords must be unique"));
         }
         let body = body.into();
-        if body.lines().any(|line| {
-            line.trim_start()
-                .get(..9)
-                .is_some_and(|prefix| prefix.eq_ignore_ascii_case("#+end_src"))
-        }) {
+        if body.as_bytes().windows(2).any(|window| window == b"#+")
+            && !body_keeps_aot_source_block_envelope(&body)
+        {
             return Err(invalid(
                 "source-block body cannot contain an Org source-block end marker",
             ));
@@ -193,6 +191,32 @@ impl OrgSourceBlock {
     pub fn body(&self) -> &str {
         &self.body
     }
+}
+
+fn body_keeps_aot_source_block_envelope(body: &str) -> bool {
+    let mut source = String::with_capacity(body.len() + 32);
+    source.push_str("#+begin_src text\n");
+    source.push_str(body);
+    if !body.ends_with('\n') {
+        source.push('\n');
+    }
+    source.push_str("#+end_src\n");
+
+    let Ok(document) = parse_org_aot(&source) else {
+        return false;
+    };
+    let records = document.records();
+    let Some(root) = records.first().filter(|record| record.kind == "org-data") else {
+        return false;
+    };
+    let [block_id] = root.child_ids.as_slice() else {
+        return false;
+    };
+    records.get(*block_id).is_some_and(|block| {
+        block.kind == "src-block"
+            && usize::from(block.range.start()) == 0
+            && usize::from(block.range.end()) == source.len()
+    })
 }
 
 /// A nonempty Org document containing only typed source blocks.
@@ -273,7 +297,9 @@ fn admit_rendered_document(
     let document = parse_org_aot(source)
         .map_err(|_| rendering("rendered Org did not parse as the expected document"))?;
     if document.syntax().to_string() != source {
-        return Err(rendering("rendered Org did not round-trip through Rowan"));
+        return Err(rendering(
+            "rendered Org did not round-trip through native navigation",
+        ));
     }
     let records = document.records();
     let Some(root) = records.first().filter(|record| record.kind == "org-data") else {

@@ -1,0 +1,119 @@
+#+title: Native Directory Contract composition
+
+* User declaration
+
+The Orgize Contract interface owns scanning, source loading, composition and
+validation. A consumer supplies one POO declaration; Contract DI is nested.
+
+#+begin_src scheme
+(import :orgize/languages/org/modules/org-contract/interface
+        (only-in :clan/poo/object .o))
+(def engineering-documents
+  (.o (:: @ OrgDirectoryProfile.)
+      workspace: (current-directory)
+      directory: "docs"
+      contracts: (.o directory: "contracts")))
+#+end_src
+
+=org-directory-validate= returns an inert native POO result with files,
+per-Contract/per-scope evaluations, complete/passed flags and the exact input
+cut. =org-directory-validation-current?= rereads that inventory and source cut.
+Neither function issues permissions or authenticates a receipt. The declared
+Profile can be reused as a value; changing Profile identity requires reassessment.
+
+Relative paths use =workspace= when supplied, otherwise invocation working
+directory. Select source-only roots: scanning has no exclusion or Git watcher
+in this version. Hidden entries are not intentionally omitted. Symlinks and
+special files fail closed. Bounds are 16,384 entries, one MiB per source and
+4,096 mapped Elements. Empty input and empty required common directories fail.
+A directory containing only common DI sources also fails after DI exclusion;
+public Contract declarations cannot count as coverage of work documents.
+
+* Composition and applicability
+
+The maintained document-root Contract is mandatory outside overridable Profile
+layers. Additional =builtin=, common DI/direct =definitions= and =local= values
+are admitted native Contract definitions. They compose by conjunction; duplicate
+Contract IDs and assertion IDs within a Contract fail, never last-writer-win.
+Changing a Profile's configured requirements is not authorized tailoring; that
+decision remains with the adopting application's Governance owner.
+
+Common document Contracts apply at root 0. Common subtree Contracts apply to an
+explicit =CONTRACT_REF= or a declaratively matching role:
+
+#+begin_src org
+* Proof Artifact Contract
+:PROPERTIES:
+:CONTRACT_ID: project.proof.v1
+:CONTRACT_SCOPE: subtree
+:CONTRACT_TARGET_PROPERTY: ARTIFACT_KIND
+:CONTRACT_TARGET_VALUE: proof-family
+:END:
+#+end_src
+
+The section contains an ordinary =scheme :org-contract= block. The source loader
+reads only inert assertions/queries/expectations into the maintained POO
+constructors, never =eval=. Local blocks automatically apply to their own
+containing section; they need no per-file loader. A reference to an absent
+definition is an unresolved obligation. Duplicate/empty stable IDs are refused.
+Document role/owner properties remain authored data, not authenticated authority.
+
+* Assurance scope
+
+Current-package preparation uses =just scheme-directory-dependencies= with
+the invoking =GERBIL_PATH= and =GERBIL_LOADPATH=. The helper selects explicit
+parser entry modules through the existing POO PackageSpec, retains its ASP
+policy gate and delegates execution to =std/make=. It does not provide a
+policy bypass or qualify the whole parser package. A rejected dependency
+closure leaves the Directory consumer validation obligation open.
+
+The native =(property-local-path field)= Query clause selects literal
+host-local path occurrences in that field. A common document Contract can
+require the root's =source-text= and reject matches with =(expect exactly 0)=.
+This applies to preamble, properties, source blocks and links without an
+adapter-side evaluator. Repository-relative references, external URLs and
+ordinary slash punctuation are not host-rooted paths. The predicate is a
+lexical guard, not target availability, revision binding or reproducibility
+proof; encoded/constructed paths require separate semantic checks.
+This predicate is qualified through the native Scheme Directory interface.
+The existing Rust static Query lowering rejects unsupported match kinds; this
+change does not claim a Rust implementation of the new predicate or a new
+Directory binding surface.
+
+See [[file:../tests/fixtures/org-directory/portable.org][the executable native Contract fixture]].
+
+=t/org-directory-test.ss= supplies 18 native positive/negative Cases. The existing
+Contract suite supplies seven regression Cases. AITIA separately consumes its
+real three-family Proofs index, each with the 13-assertion structural Contract.
+Run =just scheme-directory-test "$GERBIL_PATH" "$GERBIL_LOADPATH"= in the
+current package environment. Its POO PackageSpec selects the three existing
+gxtest suites without the optional Rust bridge and prepares a native executable;
+the native harness includes 14 Elements regression Cases alongside the 25
+Directory/Contract Cases and propagates failures as exit 42.
+Provide current OpenSSL =pkg-config= metadata for native linking. Execution
+retains five seconds without real output, a 120-second overall budget and the
+one-GiB heap. A cold dynamic =gerbil test= import exhausted the idle budget;
+prelinking changes preparation, not these safety limits or test semantics.
+The outer GNU timeout is =gtimeout= on macOS and =timeout= on Linux; macOS
+CI installs =coreutils= for both runtime and Python lanes. Its availability
+is checked before native preparation, with the same TERM/three-second kill
+grace and 120-second limit. Missing platform tooling is not a test failure
+that may be hidden by removing the bound.
+When the graph shape changes, run the existing Scheme generation owner
+=just scheme-timestamp-graph-generate "$GERBIL_PATH" "$GERBIL_LOADPATH"=.
+Graph, named Query, Contract and customer packs bind the same projection digest;
+hand-editing digest strings or relaxing generated-source equality is not admission.
+The managed Clippy commit hook checks =runtime-rust= and =runtime-scheme=
+separately, with every non-runtime feature declared by Cargo enabled in each
+lane. =--all-features= would violate the existing exclusive-runtime admission;
+the hook does not remove that compile-time guard. Regenerate the hook from
+=devenv.nix= after updating its owner, and supply the real compiler-owned
+program manifest plus installed native library metadata. These are preparation
+inputs, not a temporary Scheme SDK or permission to skip a hook.
+Quint covers finite protocol transitions; LeanPOO consumer laws cover conjunction
+and current-context reassessment. Neither establishes automatic Scheme refinement.
+
+Before/after equality is not an atomic snapshot or monotonic Git generation;
+unchanged restored bytes may retain content validity. Selective invalidation,
+event history, multi-root sharing, authenticated evidence admission and effect
+delivery belong to separate integration obligations, not this structural API.

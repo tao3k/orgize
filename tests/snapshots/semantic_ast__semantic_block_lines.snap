@@ -1,13 +1,13 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_block_lines.rs
-assertion_line: 57
+assertion_line: 79
 expression: bare_blocks
 ---
 [
     Block {
         kind: Source,
         name: Some(
-            "src",
+            "demo-source",
         ),
         language: Some(
             "rust",
@@ -135,9 +135,7 @@ expression: bare_blocks
     },
     Block {
         kind: Example,
-        name: Some(
-            "example",
-        ),
+        name: None,
         language: None,
         switches: Some(
             "+n 12",

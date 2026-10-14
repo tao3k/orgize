@@ -130,41 +130,13 @@ pub struct SddParentRef {
 impl SddParentRef {
     /// Parses an Org `id:` parent reference from a property value.
     pub fn parse(raw: &str) -> Option<Self> {
-        let raw = raw.trim();
-        if raw.is_empty() {
-            return None;
-        }
-
-        if let Some(inner) = raw
-            .strip_prefix("[[id:")
-            .and_then(|value| value.strip_suffix("]]"))
-        {
-            if let Some((target, label)) = inner.split_once("][") {
-                return Some(Self {
-                    raw: raw.to_string(),
-                    target_id: non_empty_string(target),
-                    label: non_empty_string(label),
-                });
-            }
-            return Some(Self {
-                raw: raw.to_string(),
-                target_id: non_empty_string(inner),
-                label: None,
-            });
-        }
-
-        if let Some(target) = raw.strip_prefix("id:") {
-            return Some(Self {
-                raw: raw.to_string(),
-                target_id: non_empty_string(target),
-                label: None,
-            });
-        }
-
+        let row = super::org_values::optional("sdd-parent-reference", raw)?;
+        let [raw, target, label]: [String; 3] =
+            row.try_into().expect("native SDD parent reference arity");
         Some(Self {
-            raw: raw.to_string(),
-            target_id: None,
-            label: None,
+            raw,
+            target_id: (!target.is_empty()).then_some(target),
+            label: (!label.is_empty()).then_some(label),
         })
     }
 }
@@ -268,14 +240,5 @@ fn push_record_card(output: &mut String, path: &str, record: &SddNodeRecord) {
         output.push_str("  slug: ");
         output.push_str(slug);
         output.push('\n');
-    }
-}
-
-fn non_empty_string(value: &str) -> Option<String> {
-    let value = value.trim();
-    if value.is_empty() {
-        None
-    } else {
-        Some(value.to_string())
     }
 }

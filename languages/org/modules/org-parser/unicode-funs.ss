@@ -1,0 +1,41 @@
+;;; -*- Gerbil -*-
+;;; Pure Unicode 17 default lowercase, including context-dependent final sigma.
+(import (only-in "unicode-context-data.ss" unicode-cased-ranges unicode-case-ignorable-ranges)
+        (only-in "unicode-lower-data.ss" unicode-lower-mappings))
+(export org-unicode-lower)
+(def (range-member? ranges n)
+  (let loop ((left 0) (right (vector-length ranges)))
+    (and (< left right)
+         (let* ((middle (quotient (+ left right) 2)) (range (vector-ref ranges middle)))
+           (cond ((< n (car range)) (loop left middle))
+                 ((> n (cadr range)) (loop (+ middle 1) right))
+                 (else #t))))))
+(def (simple-lower n)
+  (let loop ((left 0) (right (vector-length unicode-lower-mappings)))
+    (if (= left right) n
+      (let* ((middle (quotient (+ left right) 2))
+             (pair (vector-ref unicode-lower-mappings middle)))
+        (cond ((< n (car pair)) (loop left middle))
+              ((> n (car pair)) (loop (+ middle 1) right))
+              (else (cadr pair)))))))
+(def (org-unicode-lower text)
+  (let* ((end (string-length text)) (following (make-vector end #f)))
+    ;; Two linear walks, not a suffix scan for each sigma.
+    (let backwards ((i (- end 1)) (cased? #f))
+      (when (>= i 0)
+        (vector-set! following i cased?)
+        (let (n (char->integer (string-ref text i)))
+          (backwards (- i 1)
+                     (if (range-member? unicode-case-ignorable-ranges n) cased?
+                         (range-member? unicode-cased-ranges n))))))
+    (let forwards ((i 0) (cased? #f) (out '()))
+      (if (= i end) (list->string (reverse out))
+        (let* ((n (char->integer (string-ref text i)))
+               (lower (if (and (= n 931) cased? (not (vector-ref following i))) 962
+                          (simple-lower n)))
+               (next (if (= n 304) (cons (integer->char 775) (cons #\i out))
+                         (cons (integer->char lower) out))))
+          (forwards (+ i 1)
+                    (if (range-member? unicode-case-ignorable-ranges n) cased?
+                        (range-member? unicode-cased-ranges n))
+                    next))))))

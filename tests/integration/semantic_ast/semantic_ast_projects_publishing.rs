@@ -6,7 +6,6 @@ use orgize::{
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/publishing-settings.org");
 
-#[test]
 fn semantic_ast_projects_publishing_settings_without_executing_export() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -51,6 +50,36 @@ fn semantic_ast_projects_publishing_settings_without_executing_export() {
         "semantic_ast__semantic_publishing_settings",
         settings_without_annotations(settings)
     );
+
+    let edge = Org::parse(
+        "#+EXPORT_FILE_NAME: first\n#+EXPORT_FILE_NAME: 　路径.html \n\
+         #+BIND: 　name (lambda () (error x))　\n#+BIND: lone\n#+BIND: 　\n\
+         #+OPTIONS: H:3　num:t :empty key: key:a:b bad H:4 h:2\n",
+    )
+    .document()
+    .publishing_settings();
+    assert_eq!(edge.export_file_name.unwrap().value, "路径.html");
+    assert_eq!(edge.binds.len(), 2);
+    assert_eq!(edge.binds[0].name, "name");
+    assert_eq!(edge.binds[0].value, "(lambda () (error x))");
+    assert_eq!(edge.binds[1].value, "");
+    assert_eq!(
+        edge.options
+            .iter()
+            .map(|v| (v.key.as_str(), v.value.as_str()))
+            .collect::<Vec<_>>(),
+        vec![
+            ("H", "3"),
+            ("num", "t"),
+            ("", "empty"),
+            ("key", ""),
+            ("key", "a:b"),
+            ("H", "4"),
+            ("h", "2")
+        ]
+    );
+    assert_eq!(edge.options[0].kind, PublishingOptionKind::HeadlineLevels);
+    assert_eq!(edge.options[6].kind, PublishingOptionKind::Other);
 }
 
 fn settings_without_annotations(
@@ -128,3 +157,8 @@ fn settings_without_annotations(
             .collect(),
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_publishing::semantic_ast_projects_publishing_settings_without_executing_export",
+    semantic_ast_projects_publishing_settings_without_executing_export,
+)];

@@ -6,7 +6,27 @@ use orgize::{
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/source-example-block-lines.org");
 
-#[test]
+fn semantic_ast_projects_scheme_unquoted_block_body_with_source_ranges() {
+    let doc = Org::parse("#+begin_src rust\n,* heading\n,#+keyword\n#+end_src\n").document();
+    assert_clean_projection(&doc);
+    let block = doc
+        .children
+        .iter()
+        .find_map(|element| match &element.data {
+            ElementData::Block(block) => Some(block),
+            _ => None,
+        })
+        .expect("source block");
+    assert_eq!(block.value, "* heading\n#+keyword\n");
+    assert_eq!(block.lines.len(), 2);
+    assert_eq!(block.lines[0].source, ",* heading");
+    assert_eq!(block.lines[0].value, "* heading");
+    assert_eq!(block.lines[0].ann.start.line, 2);
+    assert_eq!(block.lines[1].source, ",#+keyword");
+    assert_eq!(block.lines[1].value, "#+keyword");
+    assert_eq!(block.lines[1].ann.start.line, 3);
+}
+
 fn semantic_ast_projects_source_and_example_block_lines() {
     let doc = Org::parse(SOURCE).document();
 
@@ -57,3 +77,14 @@ fn semantic_ast_projects_source_and_example_block_lines() {
         insta::assert_debug_snapshot!("semantic_ast__semantic_block_lines", bare_blocks);
     });
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_block_lines::semantic_ast_projects_scheme_unquoted_block_body_with_source_ranges",
+        semantic_ast_projects_scheme_unquoted_block_body_with_source_ranges,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_block_lines::semantic_ast_projects_source_and_example_block_lines",
+        semantic_ast_projects_source_and_example_block_lines,
+    ),
+];

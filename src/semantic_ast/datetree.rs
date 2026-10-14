@@ -58,21 +58,26 @@ fn datetree_entry(
 }
 
 fn parse_year_title(title: &str) -> Option<u16> {
-    title.get(..4)?.parse().ok()
+    let row = super::org_values::optional_fields("datetree-title", &["year", title])?;
+    let [year]: [String; 1] = row.try_into().expect("native datetree year arity");
+    Some(year.parse().expect("native datetree year"))
 }
 
 fn parse_month_title(title: &str) -> Option<(u16, u8)> {
-    let date = title.get(..7)?;
-    let (year, month) = date.split_once('-')?;
-    Some((year.parse().ok()?, month.parse().ok()?))
+    let row = super::org_values::optional_fields("datetree-title", &["month", title])?;
+    let [year, month]: [String; 2] = row.try_into().expect("native datetree month arity");
+    Some((
+        year.parse().expect("native datetree year"),
+        month.parse().expect("native datetree month"),
+    ))
 }
 
 fn parse_day_title(title: &str) -> Option<AgendaDate> {
-    let date = title.get(..10)?;
-    let mut parts = date.split('-');
+    let row = super::org_values::optional_fields("datetree-title", &["day", title])?;
+    let [year, month, day]: [String; 3] = row.try_into().expect("native datetree day arity");
     Some(AgendaDate::new(
-        parts.next()?.parse().ok()?,
-        parts.next()?.parse().ok()?,
-        parts.next()?.parse().ok()?,
+        year.parse().expect("native datetree year"),
+        month.parse().expect("native datetree month"),
+        day.parse().expect("native datetree day"),
     ))
 }

@@ -1,6 +1,5 @@
 use orgize::Org;
 
-#[test]
 fn named_source_block_template_is_ast_owned_and_fail_closed() {
     let source = r#"
 #+NAME: call
@@ -27,7 +26,6 @@ collaboration.list_agents({ path_prefix: "{{{ROOT}}}" })
     );
 }
 
-#[test]
 fn duplicate_named_source_block_is_rejected() {
     let source = r#"
 #+NAME: call
@@ -46,3 +44,14 @@ two
             .is_err()
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "named_source_block_template::named_source_block_template_is_ast_owned_and_fail_closed",
+        named_source_block_template_is_ast_owned_and_fail_closed,
+    ),
+    (
+        "named_source_block_template::duplicate_named_source_block_is_rejected",
+        duplicate_named_source_block_is_rejected,
+    ),
+];

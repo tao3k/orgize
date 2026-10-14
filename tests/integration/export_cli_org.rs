@@ -6,7 +6,63 @@ use crate::export_cli::export_cli_common::{
     assert_document_query_evidence, assert_document_selector_query_evidence, test_dir,
 };
 
-#[test]
+fn org_query_content_preserves_only_aot_classified_blocks() {
+    let root = test_dir("org-query-aot-nested-block-content");
+    let path = root.join("nested.org");
+    std::fs::write(
+        &path,
+        "* Project\n- item   with    spaces\n  #+begin_src scheme\n    (display   \"x\")\n\n    (display \"y\")\n  #+end_src\n  #+begin_srcX fake\n    not  preserved\n  #+end_srcX\n\n#+begin_src scheme\n(display   \"true\")\n#+end_src\n",
+    )
+    .expect("write Org query fixture");
+
+    let output = crate::library_cli::orgize_cli_command()
+        .arg("query")
+        .arg("--kind")
+        .arg("listItem")
+        .arg("--content")
+        .arg(&path)
+        .output()
+        .expect("run Org list-item content query");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let content = String::from_utf8(output.stdout).expect("utf8 Org query content");
+    assert!(
+        content.contains("- item with spaces #+begin_src scheme (display \"x\")"),
+        "{content}"
+    );
+    assert!(!content.contains("    (display   \"x\")"), "{content}");
+    assert!(
+        content.contains("#+begin_srcX fake not preserved #+end_srcX"),
+        "{content}"
+    );
+
+    let block_output = crate::library_cli::orgize_cli_command()
+        .arg("query")
+        .arg("--kind")
+        .arg("block")
+        .arg("--field")
+        .arg("lang=scheme")
+        .arg("--content")
+        .arg(&path)
+        .output()
+        .expect("run AOT source-block content query");
+    assert!(
+        block_output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&block_output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8(block_output.stdout)
+            .expect("utf8 AOT block content")
+            .trim(),
+        // The native Scheme grammar also classifies the list-owned block.
+        "(display   \"x\")\n\n    (display \"y\")\n(display   \"true\")"
+    );
+}
+
 fn org_document_query_commands_run() {
     let guide = crate::library_cli::orgize_cli_command()
         .arg("guide")
@@ -783,7 +839,6 @@ fn orgize_command() -> crate::library_cli::OrgizeLibraryCliCommand {
     crate::library_cli::orgize_cli_command()
 }
 
-#[test]
 fn org_document_legacy_search_facade_is_rejected() {
     let usage = orgize_command().output().expect("render top-level usage");
     let usage = String::from_utf8_lossy(&usage.stderr);
@@ -800,7 +855,6 @@ fn org_document_legacy_search_facade_is_rejected() {
     }
 }
 
-#[test]
 fn orgize_version_reports_build_provenance() {
     let output = orgize_command()
         .args(["version", "--json"])
@@ -820,3 +874,22 @@ fn orgize_version_reports_build_provenance() {
     );
     assert!(receipt["sourceDirty"].is_boolean());
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "export_cli::export_cli_org::org_query_content_preserves_only_aot_classified_blocks",
+        org_query_content_preserves_only_aot_classified_blocks,
+    ),
+    (
+        "export_cli::export_cli_org::org_document_query_commands_run",
+        org_document_query_commands_run,
+    ),
+    (
+        "export_cli::export_cli_org::org_document_legacy_search_facade_is_rejected",
+        org_document_legacy_search_facade_is_rejected,
+    ),
+    (
+        "export_cli::export_cli_org::orgize_version_reports_build_provenance",
+        orgize_version_reports_build_provenance,
+    ),
+];

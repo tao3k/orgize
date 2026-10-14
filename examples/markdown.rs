@@ -6,6 +6,8 @@ use orgize::Org;
 use std::{env::args, fs};
 
 fn main() {
+    // SAFETY: standalone entrypoint, before workers or children and host I/O.
+    unsafe { orgize::initialize_native_runtime() }.expect("native startup");
     let args: Vec<_> = args().collect();
 
     if args.len() < 2 {

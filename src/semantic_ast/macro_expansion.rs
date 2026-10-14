@@ -57,40 +57,10 @@ fn macro_definitions_by_name<A>(
     by_name
 }
 
-fn expand_macro_template(template: &str, arguments: &[String]) -> String {
-    let mut expanded =
-        String::with_capacity(template.len() + arguments.iter().map(String::len).sum::<usize>());
-    let mut all_arguments = None;
-    let mut chars = template.chars().peekable();
-
-    while let Some(ch) = chars.next() {
-        if ch != '$' {
-            expanded.push(ch);
-            continue;
-        }
-
-        match chars.peek().copied() {
-            Some('$') => {
-                chars.next();
-                expanded.push('$');
-            }
-            Some('0') => {
-                chars.next();
-                expanded.push_str(all_arguments.get_or_insert_with(|| arguments.join(", ")));
-            }
-            Some(digit) if digit.is_ascii_digit() => {
-                chars.next();
-                let index = digit
-                    .to_digit(10)
-                    .expect("ASCII digit must convert to a number")
-                    .saturating_sub(1) as usize;
-                if let Some(argument) = arguments.get(index) {
-                    expanded.push_str(argument);
-                }
-            }
-            _ => expanded.push('$'),
-        }
-    }
-
-    expanded
+pub(super) fn expand_macro_template(template: &str, arguments: &[String]) -> String {
+    let fields = std::iter::once(template)
+        .chain(arguments.iter().map(String::as_str))
+        .collect::<Vec<_>>();
+    crate::org_aot::expand_native_macro_fields(8, &fields)
+        .expect("initialized native macro template operation")
 }

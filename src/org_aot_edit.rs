@@ -106,7 +106,7 @@ fn validate_node_anchor(
             let end = usize::from(record.range.end());
             start <= edit.start_byte && edit.end_byte <= end
         })
-        .min_by_key(|record| usize::from(record.range.len()))
+        .min_by_key(|record| usize::from(record.range.end()) - usize::from(record.range.start()))
         .and_then(|record| nearest_headline(records, record.id));
     if span_owner != Some(owner) {
         return Err(OrgSourceEditError::WrongNode);
@@ -134,7 +134,7 @@ fn owner_for_id(document: &OrgAotDocument, node_id: &str) -> Result<usize, OrgSo
     }
 }
 
-fn nearest_headline(records: &[gerbil_parser_rowan::GraphRecord], id: usize) -> Option<usize> {
+fn nearest_headline(records: &[gerbil_parser_runtime::GraphRecord], id: usize) -> Option<usize> {
     let mut cursor = Some(id);
     while let Some(current) = cursor {
         let record = records.get(current)?;

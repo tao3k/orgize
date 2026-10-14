@@ -4,7 +4,6 @@ use orgize::{
     lint::{LintOptions, lint_org_with_options},
 };
 
-#[test]
 fn lint_builtin_document_metadata_runs_without_target_contract_org() {
     let report = lint_org_with_options(
         "Steer\n\n    To pick up a draggable item, press the space bar.\n",
@@ -34,7 +33,6 @@ fn lint_builtin_document_metadata_runs_without_target_contract_org() {
     );
 }
 
-#[test]
 fn lint_builtin_document_metadata_accepts_downstream_document_without_contract_org() {
     let report = lint_org_with_options(
         r#"#+TITLE: Steer
@@ -55,7 +53,6 @@ Steer instructions.
     );
 }
 
-#[test]
 fn lint_builtin_document_metadata_allows_document_contract_override() {
     let registry = document_contract_registry();
     let report = lint_org_with_options(
@@ -106,3 +103,18 @@ fn document_contract_source() -> &'static str {
 #+END_SRC
 "#
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "lint_builtin_contracts::lint_builtin_document_metadata_runs_without_target_contract_org",
+        lint_builtin_document_metadata_runs_without_target_contract_org,
+    ),
+    (
+        "lint_builtin_contracts::lint_builtin_document_metadata_accepts_downstream_document_without_contract_org",
+        lint_builtin_document_metadata_accepts_downstream_document_without_contract_org,
+    ),
+    (
+        "lint_builtin_contracts::lint_builtin_document_metadata_allows_document_contract_override",
+        lint_builtin_document_metadata_allows_document_contract_override,
+    ),
+];

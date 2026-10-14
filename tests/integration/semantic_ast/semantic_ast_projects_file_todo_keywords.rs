@@ -1,7 +1,6 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{Org, ast::TodoState};
 
-#[test]
 fn semantic_ast_applies_file_todo_keyword_declarations_before_headline_projection() {
     let org = Org::parse(
         r#"#+TODO: NEXT(n) WAIT(w@/!) | DONE (d) CANCELED(c)
@@ -73,3 +72,8 @@ fn semantic_ast_applies_file_todo_keyword_declarations_before_headline_projectio
         "TODO Default keyword is just title text"
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_file_todo_keywords::semantic_ast_applies_file_todo_keyword_declarations_before_headline_projection",
+    semantic_ast_applies_file_todo_keyword_declarations_before_headline_projection,
+)];

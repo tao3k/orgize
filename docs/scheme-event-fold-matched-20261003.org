@@ -1,0 +1,86 @@
+#+title: Scheme event-fold matched receipt, 2026-10-03
+* Scope and identity
+This is a development Scheme execution comparison, not public Rust Org::parse
+throughput, AOT/FFI end-to-end closure, a toolchain release, or a Gambit patch test.
+
+- Orgize source: 479b2763fa1924385a2df824d029e9ba35341bcd.
+- Parser baseline: 523b80fd80830bd207da6ee7c4e59fa24f8c32db, unmodified Scheme source.
+- Candidate: the same parser revision plus shared admission extraction and a
+  private request-local single-entry line-byte cache. No new public API.
+- Candidate runtime source SHA256: 0bf48a7d22c7946e87a0023cb63157654f9d954594dd78a56ecc3d4b7d936c3d.
+- Benchmark adapter SHA256: 3fcb0ed1f71faa561718b48e9212916a6ab606a805786f68b332e30e46158067.
+- Runtime: installed Gerbil 2591dcd on Gambit dcd677c, not the paused patched kernel.
+- Both event-fold owners compiled with the same default gxc configuration through
+  just build-event-fold, in separate .gerbil directories.
+- Common Core e85fd45303b208b23e5957fd316e7004994109a4 and gerbil-poo
+  099b381588360a8a49fd772f666a1a00351366f5 source dependencies.
+- Existing ASP timing/memory helpers at 52eb1f07d9815a851d335fe604249b6094114199.
+  This is explicit development instrumentation; production dependency pins were
+  not changed to point at this checkout.
+
+* Method
+The Justfile entry scheme-event-benchmark calls the existing ASP
+benchmark-elapsed-us and benchmark-memory-usage helpers on committed Criterion
+input files. Imports, input I/O, semantic admission and two warmups are untimed.
+Every sample's complete event list must equal its untimed expected value.
+Input and full event SHA256 digests match between baseline and candidate.
+
+Each cell below has 20 independent samples. Separate processes run sequentially;
+second-round baseline/candidate order is reversed for each fixture. No competing
+test/build was intentionally launched during the retained measurement batches.
+Both processes have a 1G heap cap and a 30-second external timeout.
+
+Gambit's allocation counter is published at GC: collect before the allocation
+snapshot and after the timed parse, outside timing. Early probes lacking the
+post-parse collection reported misleading constant deltas and are excluded.
+The first overlapping process probes are also excluded.
+
+* Retained measurements
+| Fixture | Round | Baseline median us | Candidate median us | Baseline p95 us | Candidate p95 us | Baseline allocation bytes | Candidate allocation bytes |
+|---------+-------+--------------------+---------------------+-----------------+------------------+---------------------------+----------------------------|
+| doc.org | 1 | 3354.5 | 2731.5 | 3946 | 2900 | 14767872 | 13870496 |
+| doc.org | 2 | 3449 | 2788 | 4281 | 6084 | 14767872 | 13870496 |
+| plain-links.org | 1 | 4925.5 | 3537 | 7239 | 3694 | 20392256 | 18624176 |
+| plain-links.org | 2 | 5050 | 3585 | 8143 | 4544 | 20392256 | 18624176 |
+| quote-heavy.org | 1 | 10707.5 | 8329 | 12591 | 30581 | 45576032 | 41820864 |
+| quote-heavy.org | 2 | 11444 | 7938.5 | 15953 | 8861 | 45576032 | 41820864 |
+
+The medians repeat a bounded improvement across these three small inputs.
+p95 is noisy: doc and quote-heavy have a worse candidate p95 in one round.
+No stable tail-latency improvement or general corpus speedup is claimed.
+
+* Discarded design and gates
+The earlier per-recursion parameterize cache allocated 19,007,568 bytes on
+doc.org versus baseline 14,767,872, without stable time improvement. It is
+replaced by one parse-local bounded cache entry; changing helper slices replaces
+that entry and caller identity is checked on reuse.
+
+Passed on the retained source:
+- just build-event-fold.
+- just test-event-fold: MODULE-OK for both modules, HARNESS-OK, final OK.
+  The files contain 38 event-fold cases and 6 admission cases.
+- just scheme-event-test: the existing Org event aggregate ends with MODULE-OK,
+  HARNESS-OK and OK. Its three imported suites declare 87 cases.
+- git diff --check.
+
+Remaining: larger existing fixtures, all supported Org configuration cases,
+and qualification of the existing public AOT/FFI consumer. No push or release
+was performed. The baseline/candidate parser source selection is a deliberate
+development override; Orgize's production gerbil.pkg pin remains unchanged.
+
+* Raw elapsed-us samples and semantic identities
+- baseline-doc-3: 3352, 3420, 3357, 4401, 3310, 3302, 3504, 3289, 3299, 3288, 3295, 3413, 3358, 3777, 3292, 3946, 3375, 3584, 3289, 3298.
+- candidate-doc-3: 2685, 2694, 2730, 2698, 2787, 2703, 2900, 2732, 2776, 3001, 2737, 2745, 2718, 2684, 2707, 2731, 2741, 2735, 2816, 2726.
+- baseline-doc-4: 3428, 4281, 3477, 3435, 3413, 3510, 3439, 3419, 3435, 3544, 3418, 3449, 3500, 3466, 3449, 3366, 5312, 3514, 3511, 3418.
+- candidate-doc-4: 2769, 2781, 2833, 2774, 6084, 2771, 2847, 2795, 3344, 6574, 2775, 2765, 2747, 2851, 2904, 2898, 2927, 2777, 2757, 2771.
+- doc.org input: sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af; events: sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b.
+- baseline-links-3: 4705, 4747, 4677, 4898, 6679, 4686, 4689, 13094, 6543, 4951, 5124, 5032, 7239, 4691, 6839, 4719, 5331, 4683, 4900, 5052.
+- candidate-links-3: 3602, 3599, 3659, 3503, 3694, 3622, 3799, 3538, 3528, 3578, 3409, 3379, 3612, 3536, 3516, 3405, 3502, 3446, 3556, 3474.
+- baseline-plain-links-4: 5089, 5009, 9128, 5011, 4936, 4894, 5110, 8143, 5107, 4863, 4883, 5100, 4988, 5229, 5129, 4961, 4926, 4898, 5317, 5642.
+- candidate-plain-links-4: 3823, 4544, 3573, 3665, 3498, 3655, 3501, 3491, 3597, 3565, 6039, 3606, 3526, 3554, 3483, 3492, 3634, 3602, 3480, 4409.
+- plain-links.org input: sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80; events: sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30.
+- baseline-quote-3: 10385, 10556, 10612, 10609, 11983, 10701, 10730, 10888, 10936, 10367, 10809, 10477, 10335, 10680, 10829, 10714, 10613, 25226, 12591, 10847.
+- candidate-quote-3: 8530, 30581, 11348, 14269, 86907, 11862, 7979, 8682, 7899, 8128, 12196, 8054, 25185, 7801, 7988, 7808, 8070, 8956, 7930, 7924.
+- baseline-quote-heavy-4: 11086, 15957, 11628, 15953, 11260, 11248, 11147, 11999, 15534, 13092, 11173, 11137, 12670, 13422, 11136, 11110, 11725, 11049, 11204, 15798.
+- candidate-quote-heavy-4: 7844, 7987, 7999, 13934, 8075, 7964, 7832, 7806, 7852, 7998, 8013, 7982, 7913, 8364, 7791, 7824, 8861, 7827, 7747, 7807.
+- quote-heavy.org input: sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0; events: sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f.

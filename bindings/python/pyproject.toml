@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE.orgizepy", "LICENSES/*", "THIRD_PARTY_NOTICES.md"]
-dependencies = ["cffi>=2.0"]
+dependencies = []
 
 [project.optional-dependencies]
 test = ["pytest>=8.0"]
@@ -25,7 +25,6 @@ wheel-repair = [
 python-source = "src"
 module-name = "orgizepy._orgize"
 bindings = "pyo3"
-include = [{ path = "src/orgizepy/lib/*", format = "wheel" }]
 
 [tool.pytest.ini_options]
 addopts = "-q"

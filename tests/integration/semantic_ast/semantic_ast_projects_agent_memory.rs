@@ -44,7 +44,6 @@ SCHEDULED: <2026-05-14 Thu +1d>
 Background note without task lifecycle.
 "#;
 
-#[test]
 fn semantic_ast_projects_agent_memory_records_from_org_constructs() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -149,7 +148,6 @@ fn semantic_ast_projects_agent_memory_records_from_org_constructs() {
     assert_eq!(background.state, MemoryRecordState::Background);
 }
 
-#[test]
 fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -270,6 +268,13 @@ fn semantic_ast_renders_agent_memory_snapshot_as_compact_cards() {
 #[test]
 #[ignore = "release performance gate; run explicitly with --release --ignored"]
 fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
+    eprintln!(
+        "plan ledger mode: runtime-profile={} diagnostics={}",
+        cfg!(feature = "runtime-profile"),
+        std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER_STAGES").is_some()
+    );
+    // SAFETY: this ignored scenario is selected alone, before application work.
+    unsafe { orgize::initialize_native_runtime() }.expect("native focused scenario startup");
     let root = temp_test_dir("orgize-plan-ledger-projection-gate");
     let artifacts = root.join("artifacts").join("org");
     let plans = artifacts.join("flow").join("plans");
@@ -302,12 +307,26 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
     let (elapsed, records) = (0..5)
         .map(|_| {
             let started_at = Instant::now();
-            let records = query_org_memory_records(
-                &artifacts,
-                &DocumentWalkConfig::default(),
-                &OrgMemorySearchOptions::plan_ledgers(),
-            )
-            .expect("query plan ledgers");
+            let query = || {
+                query_org_memory_records(
+                    &artifacts,
+                    &DocumentWalkConfig::default(),
+                    &OrgMemorySearchOptions::plan_ledgers(),
+                )
+            };
+            #[cfg(feature = "runtime-profile")]
+            let records = if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER_STAGES").is_some() {
+                let (records, stages) = orgize::runtime_profile::measure(query);
+                if std::env::var_os("ORGIZE_PROFILE_PLAN_LEDGER").is_some() {
+                    eprintln!("plan ledger request-local stages (nanoseconds): {stages:?}");
+                }
+                records
+            } else {
+                query()
+            };
+            #[cfg(not(feature = "runtime-profile"))]
+            let records = query();
+            let records = records.expect("query plan ledgers");
             (started_at.elapsed(), records)
         })
         .min_by_key(|(elapsed, _)| *elapsed)
@@ -325,6 +344,7 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
     assert_eq!(hot_path.tags, ["agent", "plan"]);
     assert_eq!((hot_path.start_line, hot_path.end_line), (1, 11));
     assert_eq!(hot_path.state, MemoryRecordState::Current);
+    eprintln!("plan ledger projection (best of five): {elapsed:?}");
     assert!(
         elapsed < Duration::from_millis(100),
         "plan ledger projection exceeded 100ms gate: {elapsed:?}"
@@ -332,7 +352,6 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
     let _ = fs::remove_dir_all(root);
 }
 
-#[test]
 fn plan_ledger_projection_obeys_scheme_block_context() {
     let root = temp_test_dir("orgize-plan-ledger-block-context");
     let plans = root.join("flow").join("plans");
@@ -356,6 +375,126 @@ fn plan_ledger_projection_obeys_scheme_block_context() {
     let _ = fs::remove_dir_all(root);
 }
 
+fn plan_ledger_batches_preserve_source_identity_and_limits() {
+    let root = temp_test_dir("orgize-plan-ledger-native-batch");
+    let plans = root.join("flow").join("plans");
+    fs::create_dir_all(&plans).unwrap();
+    let mut expected = Vec::new();
+    for index in 0..130 {
+        let path = plans.join(format!("agent-plan-{index:03}.org"));
+        let todo = if index % 7 == 0 { "DONE" } else { "TODO" };
+        let body = if index == 64 {
+            "λ".repeat(35_000)
+        } else {
+            format!("receipt {index}")
+        };
+        fs::write(&path, format!(
+            "* {todo} Plan λ {index} :agent:plan:\r\n:PROPERTIES:\r\n:CONTRACT_ORG: agent.plan.v1\r\n:PLAN_ID: {index}\r\n:END:\r\n#+begin_src text\r\n* Not a headline\r\n{body}\r\n#+end_src\r\n"
+        )).unwrap();
+        let mut options = OrgMemorySearchOptions::plan_ledgers();
+        options.include_closed = true;
+        let single =
+            query_org_memory_records(&path, &DocumentWalkConfig::default(), &options).unwrap();
+        assert_eq!(single.len(), 1);
+        assert_eq!(single[0].title, format!("Plan λ {index}"));
+        assert_eq!(single[0].end_line, 9);
+        expected.push(single.into_iter().next().unwrap());
+    }
+    let mut options = OrgMemorySearchOptions::plan_ledgers();
+    options.include_closed = true;
+    let batched =
+        query_org_memory_records(&root, &DocumentWalkConfig::default(), &options).unwrap();
+    assert_eq!(batched.len(), expected.len());
+    for (actual, expected) in batched.iter().zip(&expected) {
+        assert_eq!(actual.path, expected.path);
+        assert_eq!(
+            (actual.start_line, actual.end_line),
+            (expected.start_line, expected.end_line)
+        );
+        assert_eq!(actual.state, expected.state);
+        assert_eq!(actual.level, expected.level);
+        assert_eq!(actual.title, expected.title);
+        assert_eq!(actual.todo, expected.todo);
+        assert_eq!(actual.tags, expected.tags);
+        assert_eq!(actual.properties, expected.properties);
+        assert_eq!(actual.mtime, expected.mtime);
+    }
+    options.include_closed = false;
+    options.plan = Some("64".into());
+    let selected =
+        query_org_memory_records(&root, &DocumentWalkConfig::default(), &options).unwrap();
+    assert_eq!(selected.len(), 1);
+    assert_eq!(selected[0].title, "Plan λ 64");
+    let _ = fs::remove_dir_all(root);
+}
+
+fn general_memory_search_uses_scheme_aot_elements_and_file_todo_profile() {
+    let root = temp_test_dir("orgize-memory-aot-general");
+    let path = root.join("memory.org");
+    fs::write(
+        &path,
+        "#+seq_todo: WAIT(w) | FINISHED(f)\n\
+         * WAIT Parent :agent:\n\
+         :properties:\n\
+         :session_id: session-a\n\
+         :end:\n\
+         ** FINISHED Child\n\
+         [[id:child-ref][evidence]]\n\
+         ** Planned Child\n\
+         scheduled: <2026-09-27 Sun>\n\
+         #+begin_src text\n\
+         * Not a headline\n\
+         #+end_src\n\
+         ** [#A] COMMENT Hidden\n\
+         ** WAIT Archived :ARCHIVE:\n",
+    )
+    .expect("write Org memory source");
+
+    let records = query_org_memory_records(
+        &root,
+        &DocumentWalkConfig::default(),
+        &OrgMemorySearchOptions {
+            include_closed: true,
+            include_archived: true,
+            ..Default::default()
+        },
+    )
+    .expect("query Scheme AOT memory Elements");
+    assert_eq!(records.len(), 4);
+    assert_eq!(records[0].todo.as_deref(), Some("WAIT"));
+    assert_eq!(records[0].state, MemoryRecordState::Current);
+    assert_eq!(records[1].title, "Child");
+    assert_eq!(records[1].state, MemoryRecordState::Closed);
+    assert_eq!(records[1].tags, ["agent"]);
+    assert_eq!(records[2].state, MemoryRecordState::Current);
+    assert_eq!(records[3].state, MemoryRecordState::Archived);
+
+    let linked = query_org_memory_records(
+        &root,
+        &DocumentWalkConfig::default(),
+        &OrgMemorySearchOptions {
+            terms: vec!["child-ref".into()],
+            include_closed: true,
+            ..Default::default()
+        },
+    )
+    .expect("query AOT link Elements");
+    assert_eq!(linked.len(), 1);
+    assert_eq!(linked[0].title, "Child");
+    let scoped = query_org_memory_records(
+        &root,
+        &DocumentWalkConfig::default(),
+        &OrgMemorySearchOptions {
+            session: Some("session-a".into()),
+            ..Default::default()
+        },
+    )
+    .expect("query AOT property with case-insensitive Org key");
+    assert_eq!(scoped.len(), 1);
+    assert_eq!(scoped[0].title, "Parent");
+    let _ = fs::remove_dir_all(root);
+}
+
 fn temp_test_dir(prefix: &str) -> PathBuf {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -365,3 +504,26 @@ fn temp_test_dir(prefix: &str) -> PathBuf {
     fs::create_dir_all(&path).expect("create temp dir");
     path
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::plan_ledger_batches_preserve_source_identity_and_limits",
+        plan_ledger_batches_preserve_source_identity_and_limits,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::semantic_ast_projects_agent_memory_records_from_org_constructs",
+        semantic_ast_projects_agent_memory_records_from_org_constructs,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::semantic_ast_renders_agent_memory_snapshot_as_compact_cards",
+        semantic_ast_renders_agent_memory_snapshot_as_compact_cards,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::plan_ledger_projection_obeys_scheme_block_context",
+        plan_ledger_projection_obeys_scheme_block_context,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_agent_memory::general_memory_search_uses_scheme_aot_elements_and_file_todo_profile",
+        general_memory_search_uses_scheme_aot_elements_and_file_todo_profile,
+    ),
+];

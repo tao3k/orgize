@@ -2,7 +2,6 @@ use std::{fs, path::PathBuf};
 
 use orgize::document::{DocumentLanguage, DocumentWalkConfig, index_project_with_config};
 
-#[test]
 fn document_owner_admission_uses_git_scope_and_parser_structural_identity() {
     let root = test_dir("document-git-scope");
     fs::create_dir(root.join(".git")).expect("create Git scope marker");
@@ -53,3 +52,8 @@ fn test_dir(name: &str) -> PathBuf {
     fs::create_dir_all(&root).expect("create document Git scope fixture");
     root
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "document_git_scope::document_owner_admission_uses_git_scope_and_parser_structural_identity",
+    document_owner_admission_uses_git_scope_and_parser_structural_identity,
+)];

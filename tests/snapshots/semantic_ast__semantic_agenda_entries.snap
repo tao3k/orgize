@@ -1,6 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_agenda.rs
-assertion_line: 117
+assertion_line: 159
 expression: entries
 ---
 [
@@ -928,7 +928,7 @@ expression: entries
             "delay",
         ],
         anchor: Some(
-            "delayed-scheduled-8-30-1pm",
+            "delayed-scheduled-8:30-1pm",
         ),
         timestamp: Timestamp {
             kind: Active,
