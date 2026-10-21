@@ -29,3 +29,8 @@ wasm: wasm-build
 [private]
 wasm-clean:
     rm -rf wasm/dist
+
+# Test/build policy tools have their own manifest; production remains Parser-only.
+[group('checks')]
+prepare-dev:
+    cd dev && {{ scheme_env }} GERBIL_PATH="{{ env_var('GERBIL_PATH') }}" gxpkg deps --install
