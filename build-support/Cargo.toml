@@ -9,4 +9,4 @@ license = "MIT"
 sha2 = "0.10"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-gerbil-scheme-aot-build = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "2e465d95ee73dc6cb44dd637fd02faafe0c94a54" }
+gerbil-scheme-aot-build = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "cfbc10c47ddc41f6670bd78e46e1e9d856cbb870" }
