@@ -6,7 +6,6 @@ use orgize::{
     lint::{LintOptions, lint_org_with_options},
 };
 
-#[test]
 fn lint_contract_org_query_assertion_scenario_has_snapshot() {
     let registry = contract_registry();
     let failure_source = r#"* Task A
@@ -48,7 +47,6 @@ fn lint_contract_org_query_assertion_scenario_has_snapshot() {
     ));
 }
 
-#[test]
 fn parse_contracts_preserves_split_query_and_expect_blocks() {
     let contract_fixture =
         include_str!("../unit/scenarios/lint_contract/org_query_assertion/inputs/contract.org");
@@ -67,8 +65,7 @@ fn parse_contracts_preserves_split_query_and_expect_blocks() {
     );
 }
 
-#[test]
-fn parse_contracts_accepts_legacy_key_value_query_blocks() {
+fn syntax_lint_rejects_removed_key_value_query_format() {
     let contract_fixture = r#"* agent-task-v1
 :PROPERTIES:
 :CONTRACT_ID: agent.task.v1
@@ -98,11 +95,15 @@ count >= 1
 
     assert_eq!(registry.contracts.len(), 1);
     let contract = &registry.contracts[0];
-    assert_eq!(contract.assertions.len(), 1);
-    assert_eq!(contract.assertions[0].id, "task.has-goal");
+    assert!(contract.assertions.is_empty());
+    assert!(
+        orgize::lint::lint_org(contract_fixture)
+            .findings
+            .iter()
+            .any(|finding| finding.code == "ORG046")
+    );
 }
 
-#[test]
 fn lint_contract_binding_descendant_does_not_match_sibling_section() {
     let document = Org::parse(
         r#"* task-v1
@@ -161,7 +162,6 @@ No checklist here.
     );
 }
 
-#[test]
 fn lint_accepts_contract_org_when_assertion_query_matches() {
     let registry = contract_registry();
     let report = lint_org_with_options(
@@ -180,7 +180,6 @@ fn lint_accepts_contract_org_when_assertion_query_matches() {
     assert!(report.is_clean(), "{}", report.to_text("fixture.org"));
 }
 
-#[test]
 fn lint_reports_contract_org_query_assertion_failure_code() {
     let registry = contract_registry();
     let report = lint_org_with_options(
@@ -206,7 +205,6 @@ fn lint_reports_contract_org_query_assertion_failure_code() {
     );
 }
 
-#[test]
 fn lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget() {
     let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
@@ -227,21 +225,35 @@ fn lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget() {
         include_str!("../unit/scenarios/lint_contract/org_query_assertion/inputs/contract.org");
 
     let started_at = Instant::now();
-    let document = Org::parse(contract_fixture).document();
-    let registry = parse_contracts_from_document(&document, None);
-    let failure_report = lint_org_with_options(
-        r#"* Task A
+    let run = || {
+        let document = Org::parse(contract_fixture).document();
+        let registry = parse_contracts_from_document(&document, None);
+        lint_org_with_options(
+            r#"* Task A
 :PROPERTIES:
 :CONTRACT_ORG: agent.task.v1
 :END:
 ** Context
 "#,
-        &LintOptions {
-            org_contract_registry: registry.clone(),
-            ..LintOptions::default()
-        },
-    );
+            &LintOptions {
+                org_contract_registry: registry.clone(),
+                ..LintOptions::default()
+            },
+        )
+    };
+    #[cfg(feature = "runtime-profile")]
+    let (failure_report, stages) = orgize::runtime_profile::measure(run);
+    #[cfg(not(feature = "runtime-profile"))]
+    let failure_report = run();
     let elapsed = started_at.elapsed();
+    #[cfg(feature = "runtime-profile")]
+    eprintln!("CONTRACT-PROFILE stages_ns={stages:?}");
+
+    eprintln!(
+        "CONTRACT-CONTROL backend={} program={} elapsed={elapsed:?} max_total={max_total:?}",
+        orgize::runtime_backend().name(),
+        orgize::org_aot::org_event_parser_digest(),
+    );
 
     assert_eq!(
         failure_report
@@ -258,7 +270,6 @@ fn lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget() {
     );
 }
 
-#[test]
 fn lint_contract_org_document_default_and_section_override_has_snapshot() {
     let registry = contract_registry();
     let source = r#"#+CONTRACT_ORG: agent.task.v1
@@ -286,7 +297,6 @@ fn lint_contract_org_document_default_and_section_override_has_snapshot() {
     ));
 }
 
-#[test]
 fn lint_contract_org_elements_kind_queries_headline_properties_with_snapshot() {
     let registry = contract_registry();
     let failure_source = r#"* Task A
@@ -326,7 +336,6 @@ fn lint_contract_org_elements_kind_queries_headline_properties_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_contract_org_contract_block_queries_direct_child_with_snapshot() {
     let registry = contract_registry();
     let nested_goal_source = r#"* Task A
@@ -366,7 +375,6 @@ fn lint_contract_org_contract_block_queries_direct_child_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_contract_org_contract_block_supports_let_descendant_query_with_snapshot() {
     let registry = contract_registry();
     let sibling_link_source = r#"* Task A
@@ -409,7 +417,6 @@ No link here.
     ));
 }
 
-#[test]
 fn lint_cli_loads_org_contract_registry_file_with_snapshot() {
     let dir = test_dir("lint-contract-org");
     fs::write(dir.join("contract.org"), contract_source()).unwrap();
@@ -440,7 +447,6 @@ fn lint_cli_loads_org_contract_registry_file_with_snapshot() {
     insta::assert_snapshot!(command_snapshot(output));
 }
 
-#[test]
 fn lint_cli_builds_org_contract_registry_from_directory_inputs() {
     let dir = test_dir("lint-contract-directory-registry");
     let contracts_dir = dir.join("contracts");
@@ -476,7 +482,6 @@ fn lint_cli_builds_org_contract_registry_from_directory_inputs() {
     );
 }
 
-#[test]
 fn lint_accepts_org_elements_selector_contract_query_with_snapshot() {
     let document = Org::parse(selector_contract_source()).document();
     let registry = parse_contracts_from_document(&document, None);
@@ -503,7 +508,6 @@ print("ready")
     ));
 }
 
-#[test]
 fn lint_contract_org_contract_block_supports_summary_and_affiliated_conditions_with_snapshot() {
     let document = Org::parse(summary_condition_contract_source()).document();
     let registry = parse_contracts_from_document(&document, None);
@@ -818,3 +822,66 @@ fn command_snapshot(output: std::process::Output) -> String {
         String::from_utf8(output.stderr).unwrap()
     )
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "lint_contract::lint_contract_org_query_assertion_scenario_has_snapshot",
+        lint_contract_org_query_assertion_scenario_has_snapshot,
+    ),
+    (
+        "lint_contract::parse_contracts_preserves_split_query_and_expect_blocks",
+        parse_contracts_preserves_split_query_and_expect_blocks,
+    ),
+    (
+        "lint_contract::syntax_lint_rejects_removed_key_value_query_format",
+        syntax_lint_rejects_removed_key_value_query_format,
+    ),
+    (
+        "lint_contract::lint_contract_binding_descendant_does_not_match_sibling_section",
+        lint_contract_binding_descendant_does_not_match_sibling_section,
+    ),
+    (
+        "lint_contract::lint_accepts_contract_org_when_assertion_query_matches",
+        lint_accepts_contract_org_when_assertion_query_matches,
+    ),
+    (
+        "lint_contract::lint_reports_contract_org_query_assertion_failure_code",
+        lint_reports_contract_org_query_assertion_failure_code,
+    ),
+    (
+        "lint_contract::lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget",
+        lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget,
+    ),
+    (
+        "lint_contract::lint_contract_org_document_default_and_section_override_has_snapshot",
+        lint_contract_org_document_default_and_section_override_has_snapshot,
+    ),
+    (
+        "lint_contract::lint_contract_org_elements_kind_queries_headline_properties_with_snapshot",
+        lint_contract_org_elements_kind_queries_headline_properties_with_snapshot,
+    ),
+    (
+        "lint_contract::lint_contract_org_contract_block_queries_direct_child_with_snapshot",
+        lint_contract_org_contract_block_queries_direct_child_with_snapshot,
+    ),
+    (
+        "lint_contract::lint_contract_org_contract_block_supports_let_descendant_query_with_snapshot",
+        lint_contract_org_contract_block_supports_let_descendant_query_with_snapshot,
+    ),
+    (
+        "lint_contract::lint_cli_loads_org_contract_registry_file_with_snapshot",
+        lint_cli_loads_org_contract_registry_file_with_snapshot,
+    ),
+    (
+        "lint_contract::lint_cli_builds_org_contract_registry_from_directory_inputs",
+        lint_cli_builds_org_contract_registry_from_directory_inputs,
+    ),
+    (
+        "lint_contract::lint_accepts_org_elements_selector_contract_query_with_snapshot",
+        lint_accepts_org_elements_selector_contract_query_with_snapshot,
+    ),
+    (
+        "lint_contract::lint_contract_org_contract_block_supports_summary_and_affiliated_conditions_with_snapshot",
+        lint_contract_org_contract_block_supports_summary_and_affiliated_conditions_with_snapshot,
+    ),
+];

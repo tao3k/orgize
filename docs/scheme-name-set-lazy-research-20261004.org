@@ -1,0 +1,99 @@
+#+title: Lazy Scheme name-index follow-up — 2026-10-04
+
+* Identity and scope
+Orgize =codex/native-org-recovery= at
+=479b2763fa1924385a2df824d029e9ba35341bcd=; parser detached at
+=e7c6761dc79202abe50931bd78ee3f0930d61f8f=. Inherited dirty edits are retained.
+The new experiment is isolated under =target/name-set-lazy-candidate-20261004=.
+Its fold source SHA256 is
+=b4b6e1013e6dd98b20c8eab01a919382541ac3eddcb955868fe8459a78205958=.
+The primary manifest remains byte-identical to the qualified prefix program
+=sha256:a8fa5deb44c22a1dedb65b76ebac50cafd9b71115d3ddda5638672f0aaccbe4f=.
+Neither this lazy candidate nor the preceding name-index experiment is promoted.
+
+* Change and invariant
+The preceding candidate allocated its name-table hash at the start of every
+=run-event-fold=. The new candidate binds a private pending marker and creates
+the hash only on the first =fold-name-index= call. Later calls reuse the same
+request-local, identity-keyed, 128-table-bounded cache. Outside a request, the
+default remains no retained index. All name-table admission, membership and
+source-bound checks remain live in their original semantic positions.
+
+Tests prove that an unrelated predicate leaves the pending marker untouched,
+that the first name query creates exactly one retained table entry, subsequent
+queries reuse it, malformed tables are not retained, and the outer parameter
+binding is restored. Existing cross-request mutable-IR and cross-source tests
+remain green. No global source/IR cache, kernel change, concurrency reduction,
+Cargo optimization change, or new public authoring DSL was added.
+
+* Native test and build receipts
+All work used maintained Justfile entrypoints and the declared heap boundary.
+- =scheme-event-fold-candidate-build=: optimized loadable modules compiled.
+- =scheme-event-fold-state-test=: all 15 private kernel cases passed.
+- =scheme-event-fold-candidate-test=: all 38 fold cases passed.
+- =scheme-event-test=: aggregate native Org syntax suite passed.
+  All test lanes contained =MODULE-OK=, =HARNESS-OK= and final =OK=.
+- =scheme-event-fold-candidate-static=: optimized static AOT modules generated.
+- Parser and Orgize =git diff --check=: passed.
+
+This is module-level AOT generation, not a new linked native consumer program.
+Rust/Scheme/Python consumers have not been requalified against this candidate.
+
+* Branch evidence, not a frequency profiler
+In the Org Scheme grammar, the only =line-bytes-in-set?= producer found in
+=languages/org/v1= is =event-inline-entity.ss:entity-finish-forms=. The generic
+fold runtime's default-state lookups and updates apply to many other branches;
+name-table search cannot by itself explain all whole-parser work.
+
+The existing Scheme benchmark now projects untimed admitted =EntityName= result
+counts into its receipt. The =doc.org= fixture yields zero named/space entities.
+The Unicode-containing =entity-heavy.org= fixture yields 22 named entities and
+one underscore/space entity, identically under both candidates. Successful
+named recognition is evidence that the name-table path is exercised, but it
+does not count failed or intermediate predicate evaluations. Accordingly
+=namePredicateEvaluations= is explicitly =unmeasured=. No counter hook or
+instrumented timing was inserted into production parser execution.
+
+* Matched complete-fixture receipts
+ASP's public Scenario API still owns 20 samples, statistics and the unchanged
+100ms p95 diagnostic envelope. Each sample parses ONE whole fixture; this is
+not a 1000/10000-document concurrent benchmark. The eager reference is the
+preceding compiled name-index candidate, not the original prefix parser.
+No compiler or other test from this task ran alongside these four timing legs.
+
+| Fixture/order | Eager p50 ms | Lazy p50 ms | Eager p95 ms | Lazy p95 ms | Eager/lazy gate |
+|---------------+--------------+-------------+--------------+-------------+-----------------|
+| doc.org, eager then lazy | 1.584 | 1.620 | 1.658 | 42.212 | pass/pass |
+| entity-heavy.org, lazy then eager | 14.078 | 2.626 | 60.646 | 56.736 | pass/pass |
+
+The strict, default admitted comparators passed for both fixture pairs, with
+matching source/event identities and identical entity result summaries.
+Receipts: =doc-{eager,lazy}.ss= and =entity-{eager,lazy}.ss= in the lazy root.
+The =doc.org= event identity remains
+=sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b=;
+the entity fixture identity remains
+=sha256:e527a18c7496312a02f4f125f701e78bd6b6a4b858ec64f2bf94fbf8b13259f3=.
+
+Interpretation is deliberately bounded: doc p50 did not improve. The entity
+minima were 2.263ms eager and 2.247ms lazy, essentially alike, while their medians
+varied strongly. A host load snapshot was 114.26/116.35/107.60. Even four admitted
+receipts do NOT establish an unloaded, repeatable speedup or an intrinsic runtime
+ranking. Eager entity max was 103.016ms, so its p95 pass is not a maximum-sample
+pass. Allocation counter deltas were zero for selected attempts; this is not an
+allocation-free claim. The structural saving is avoidance of one unused hash
+construction when no name predicate is entered, not a measured global speedup.
+
+* Next broader seam and open gates
+=call-source-helper= calls =fold-initial-states= for each invocation;
+=fold-initial-states= validates and maps every declaration to a fresh state
+entry. State lookups use =assq= and persistent updates scan the state list. Those
+are concrete implementation seams, not a proven dominant CPU attribution.
+Sharing admitted immutable helper defaults is worth a separate A/B experiment,
+provided functional updates, helper arguments, duplicate-name behavior and
+request isolation remain unchanged. It must not mutate shared state cells.
+
+Exact dynamic predicate/state-update frequency remains unmeasured. Broad
+fixed-corpus results, the strict Query gate, native Rust/Scheme feature closure,
+Python qualification and 1000/10000-document repeated high-concurrency matrices
+remain open. Earlier failed timings and incomplete matrices are not replaced by
+these small-fixture passes.

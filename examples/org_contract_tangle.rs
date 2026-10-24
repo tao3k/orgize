@@ -33,7 +33,7 @@ fn tangle(
     writeln!(output, "        (only-in {elements_interface:?}").unwrap();
     writeln!(
         output,
-        "                 org-elements property property-contains at child-of descendant-of))"
+        "                 org-elements property property-contains all-of any-of at child-of descendant-of))"
     )
     .unwrap();
     writeln!(output, "(export org-contract-definitions)").unwrap();
@@ -71,6 +71,8 @@ fn tangle(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // SAFETY: standalone entrypoint, before workers or children and host I/O.
+    unsafe { orgize::initialize_native_runtime() }?;
     let args: Vec<_> = env::args_os().collect();
     let (input, output, contract_interface, elements_interface) = match args.as_slice() {
         [_, input, output] => (
@@ -100,6 +102,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[cfg(test)]
+#[path = "support/fixture.rs"]
+mod fixture;
+
+#[cfg(test)]
 mod tests {
     use super::tangle;
 
@@ -110,9 +116,8 @@ mod tests {
         tangle(source, CONTRACT_INTERFACE, ELEMENTS_INTERFACE)
     }
 
-    #[test]
     fn tangling_uses_element_ancestry_and_org_metadata() {
-        let source = include_str!("../languages/org/v1/modules/org-contract/contracts.org");
+        let source = include_str!("../languages/org/modules/org-contract/contracts.org");
         let tangled = default_tangle(source).unwrap();
         assert!(tangled.contains("make-org-contract-definition \"section.scope.v1\" 'subtree"));
         assert!(
@@ -122,37 +127,50 @@ mod tests {
         assert!(!tangled.contains("(assert count"));
         assert_eq!(
             tangled,
-            include_str!("../languages/org/v1/modules/org-contract/generated/contract-source.ss")
+            include_str!("../languages/org/modules/org-contract/generated/contract-source.ss")
         );
     }
 
-    #[test]
     fn missing_scope_fails_closed() {
         let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:END:\n#+begin_src scheme :org-contract\n(list)\n#+end_src\n";
-        assert!(default_tangle(source).is_err());
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
-    #[test]
     fn plain_scheme_babel_block_is_not_a_contract() {
         let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme\n(list)\n#+end_src\n";
-        assert!(default_tangle(source).is_err());
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
-    #[test]
+    fn elements_query_block_cannot_define_a_contract() {
+        let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
+        super::fixture::assert_rejected(default_tangle(source));
+    }
+
+    fn mixed_feature_tags_cannot_define_a_contract() {
+        let source = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-contract :org-elements-query\n(list)\n#+end_src\n";
+        super::fixture::assert_rejected(default_tangle(source));
+    }
+
+    fn contract_header_is_case_insensitive_but_language_must_be_scheme() {
+        let upper = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+BEGIN_SRC SCHEME :ORG-CONTRACT\n(assert-org-element \"x\" error (bindings) (org-elements headline) (expect at-least 1))\n#+END_SRC\n";
+        assert!(default_tangle(upper).is_ok());
+
+        let pseudo_language = "* Contract\n:PROPERTIES:\n:CONTRACT_ID: x\n:CONTRACT_SCOPE: document\n:END:\n#+BEGIN_SRC org-contract\n(assert-org-element \"x\" error (bindings) (org-elements headline) (expect at-least 1))\n#+END_SRC\n";
+        super::fixture::assert_rejected(default_tangle(pseudo_language));
+    }
+
     fn nested_block_does_not_satisfy_parent_contract() {
         let source = "* Parent\n:PROPERTIES:\n:CONTRACT_ID: parent\n:CONTRACT_SCOPE: subtree\n:END:\n** Child\n:PROPERTIES:\n:CONTRACT_ID: child\n:CONTRACT_SCOPE: subtree\n:END:\n#+begin_src scheme :org-contract\n(assert-org-element \"a\" error (bindings) (org-elements headline) (expect at-least 1))\n#+end_src\n";
-        assert!(default_tangle(source).is_err());
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
-    #[test]
     fn duplicate_contract_ids_are_rejected() {
         let source = "* One\n:PROPERTIES:\n:CONTRACT_ID: same\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-contract\n(assert-org-element \"a\" error (bindings) (org-elements headline) (expect at-least 1))\n#+end_src\n* Two\n:PROPERTIES:\n:CONTRACT_ID: same\n:CONTRACT_SCOPE: document\n:END:\n#+begin_src scheme :org-contract\n(assert-org-element \"b\" error (bindings) (org-elements headline) (expect at-least 1))\n#+end_src\n";
-        assert!(default_tangle(source).is_err());
+        super::fixture::assert_rejected(default_tangle(source));
     }
 
-    #[test]
     fn consumer_selects_both_owned_interface_imports() {
-        let source = include_str!("../languages/org/v1/modules/org-contract/contracts.org");
+        let source = include_str!("../languages/org/modules/org-contract/contracts.org");
         let generated = tangle(
             source,
             "/consumer/org-contract/interface.ss",
@@ -163,9 +181,69 @@ mod tests {
         assert!(generated.contains("(only-in \"/consumer/org-elements/interface.ss\""));
         assert_eq!(
             generated.matches("(make-org-contract-definition ").count(),
-            4
+            5
         );
-        assert!(tangle(source, "", ELEMENTS_INTERFACE).is_err());
-        assert!(tangle(source, CONTRACT_INTERFACE, "").is_err());
+        super::fixture::assert_rejected(tangle(source, "", ELEMENTS_INTERFACE));
+        super::fixture::assert_rejected(tangle(source, CONTRACT_INTERFACE, ""));
+    }
+
+    fn consumer_contract_source_artifact_stays_in_sync() {
+        let source = include_str!("../tests/fixtures/org-contract/customer-contracts.org");
+        let generated = tangle(
+            source,
+            "../../../../languages/org/modules/org-contract/interface.ss",
+            "../../../../languages/org/modules/org-elements/interface.ss",
+        )
+        .expect("consumer feature source tangles through the Org Element graph");
+        assert_eq!(
+            generated,
+            include_str!("../tests/fixtures/org-contract/generated/customer-contract-source.ss")
+        );
+    }
+    #[test]
+    fn explicit_startup_precedes_parallel_example_cases() {
+        super::fixture::run(
+            "org_contract_tangle",
+            10,
+            &[
+                (
+                    "tangling_uses_element_ancestry_and_org_metadata",
+                    tangling_uses_element_ancestry_and_org_metadata,
+                ),
+                ("missing_scope_fails_closed", missing_scope_fails_closed),
+                (
+                    "plain_scheme_babel_block_is_not_a_contract",
+                    plain_scheme_babel_block_is_not_a_contract,
+                ),
+                (
+                    "elements_query_block_cannot_define_a_contract",
+                    elements_query_block_cannot_define_a_contract,
+                ),
+                (
+                    "mixed_feature_tags_cannot_define_a_contract",
+                    mixed_feature_tags_cannot_define_a_contract,
+                ),
+                (
+                    "contract_header_is_case_insensitive_but_language_must_be_scheme",
+                    contract_header_is_case_insensitive_but_language_must_be_scheme,
+                ),
+                (
+                    "nested_block_does_not_satisfy_parent_contract",
+                    nested_block_does_not_satisfy_parent_contract,
+                ),
+                (
+                    "duplicate_contract_ids_are_rejected",
+                    duplicate_contract_ids_are_rejected,
+                ),
+                (
+                    "consumer_selects_both_owned_interface_imports",
+                    consumer_selects_both_owned_interface_imports,
+                ),
+                (
+                    "consumer_contract_source_artifact_stays_in_sync",
+                    consumer_contract_source_artifact_stays_in_sync,
+                ),
+            ],
+        );
     }
 }

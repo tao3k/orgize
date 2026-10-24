@@ -27,7 +27,6 @@ CLOSED: [2026-05-14 Thu]
 Archived child body.
 "#;
 
-#[test]
 fn semantic_ast_projects_source_grounded_section_index_records() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -159,7 +158,6 @@ fn semantic_ast_projects_source_grounded_section_index_records() {
     assert!(child.source.start.line < child.source.end.line);
 }
 
-#[test]
 fn semantic_ast_projects_section_index_keeps_display_title_and_planning_range() {
     let doc = Org::parse(
         r#"* [[https://example.com/wallpaper][Wallpaper]] :ATTACH:
@@ -184,3 +182,14 @@ SCHEDULED: <2020-12-19 Sat>-<2020-12-19 Sat>
     assert_eq!(scheduled.raw, "<2020-12-19 Sat>-<2020-12-19 Sat>");
     assert!(scheduled.is_range);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_section_index_records::semantic_ast_projects_source_grounded_section_index_records",
+        semantic_ast_projects_source_grounded_section_index_records,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_section_index_records::semantic_ast_projects_section_index_keeps_display_title_and_planning_range",
+        semantic_ast_projects_section_index_keeps_display_title_and_planning_range,
+    ),
+];

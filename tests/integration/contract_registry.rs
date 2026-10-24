@@ -1,6 +1,5 @@
 use std::fs;
 
-#[test]
 fn cli_trace_loads_dependencies_from_registry_only_aggregator() {
     let dir = test_dir("contract-trace-registry-only-aggregator");
     fs::create_dir_all(dir.join("contracts")).unwrap();
@@ -61,3 +60,8 @@ fn test_dir(name: &str) -> std::path::PathBuf {
     fs::create_dir_all(&root).unwrap();
     root
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "contract_registry::cli_trace_loads_dependencies_from_registry_only_aggregator",
+    cli_trace_loads_dependencies_from_registry_only_aggregator,
+)];

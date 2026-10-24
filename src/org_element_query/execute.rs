@@ -1,16 +1,16 @@
 //! Execute a typed Scheme-AOT query pack against a parsed Org Element graph.
 
-use gerbil_parser_rowan::GraphRecord;
+use gerbil_parser_runtime::{GraphIndexError, GraphRecord, GraphRelation};
 
 use crate::org_aot::{OrgAotDocument, org_graph_spec};
 
 use super::model::{
-    OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryError, OrgElementQueryPack,
-    OrgElementQueryRule, OrgElementRelation,
+    OrgElementFieldMatch, OrgElementQueryError, OrgElementQueryPack, OrgElementQueryRule,
+    OrgElementRelation,
 };
 use super::query_plan;
 
-/// The maintained Scheme-AOT `:org-elements` query pack.
+/// The maintained Scheme-AOT `:org-elements-query` query pack.
 #[must_use]
 pub fn org_element_query_pack() -> &'static OrgElementQueryPack {
     &query_plan::QUERIES
@@ -33,13 +33,9 @@ fn admit_rule(rule: &OrgElementQueryRule) -> Result<(), OrgElementQueryError> {
     for group in rule.groups {
         for property in *group {
             match property.name {
-                "title" | "raw-value" | "priority" | "tags" => {
-                    return Err(OrgElementQueryError::UnsupportedField);
-                }
-                "todo-keyword"
-                    if node.kind == "headline"
-                        && property.matcher == OrgElementFieldMatch::Exact => {}
-                "todo-type" | "source-title" if node.kind == "headline" => {}
+                "title" | "raw-value" | "priority" | "tags" | "todo-keyword" | "todo-type"
+                | "source-title"
+                    if matches!(node.kind, "headline" | "inlinetask") => {}
                 name if node.fields.iter().any(|field| field.name == name) => {}
                 _ => return Err(OrgElementQueryError::InvalidRule),
             }
@@ -48,19 +44,28 @@ fn admit_rule(rule: &OrgElementQueryRule) -> Result<(), OrgElementQueryError> {
     Ok(())
 }
 
-fn property_matches(
+pub(crate) fn property_matches(
     document: &OrgAotDocument,
     record: &GraphRecord,
-    property: &OrgElementPropertyRule,
+    name: &str,
+    value: &str,
+    matcher: OrgElementFieldMatch,
 ) -> bool {
-    let matches = |actual: &str| match property.matcher {
-        OrgElementFieldMatch::Exact => actual == property.value,
-        OrgElementFieldMatch::Contains => actual.contains(property.value),
+    let matches = |actual: &str| match matcher {
+        OrgElementFieldMatch::Exact => actual == value,
+        OrgElementFieldMatch::Contains => actual.contains(value),
     };
-    match property.name {
+    match name {
+        "title" | "priority" | "todo-keyword" => document
+            .headline_derived_field(record.id, name)
+            .is_some_and(matches),
         "todo-type" => document.headline_todo_type(record.id).is_some_and(matches),
-        "todo-keyword" => document.headline_todo_keyword_matches(record.id, property.value),
-        "source-title" if record.kind == "headline" => record.field("title").is_some_and(matches),
+        "raw-value" | "source-title" if matches!(record.kind, "headline" | "inlinetask") => {
+            record.field("title").is_some_and(matches)
+        }
+        "tags" if matches!(record.kind, "headline" | "inlinetask") => {
+            record.values("tag").any(matches)
+        }
         name => record.values(name).any(matches),
     }
 }
@@ -83,7 +88,7 @@ impl OrgAotDocument {
     ///
     /// # Errors
     ///
-    /// Rejects unknown IDs, stale graph revisions and unsupported properties.
+    /// Rejects unknown IDs, stale graph revisions and invalid properties.
     pub fn query_with_pack(
         &self,
         pack: &OrgElementQueryPack,
@@ -100,31 +105,42 @@ impl OrgAotDocument {
         if named_rules.next().is_some() {
             return Err(OrgElementQueryError::InvalidRule);
         }
-        let end = self
-            .element_subtree_end(scope_id)
-            .ok_or(OrgElementQueryError::InvalidScope)?;
-        admit_rule(rule)?;
-        let mut matches = Vec::new();
-        for record in &self.records()[scope_id..end] {
-            if record.kind != rule.node_kind {
-                continue;
-            }
-            let related = match rule.relation {
-                OrgElementRelation::Any => true,
-                OrgElementRelation::At => record.id == scope_id,
-                OrgElementRelation::ChildOf => record.parent_id == Some(scope_id),
-                OrgElementRelation::DescendantOf => record.id > scope_id,
-            };
-            if related
-                && rule.groups.iter().any(|group| {
-                    group
-                        .iter()
-                        .all(|property| property_matches(self, record, property))
-                })
-            {
-                matches.push(record.id);
-            }
+        if self.graph_index().subtree_end(scope_id).is_none() {
+            return Err(OrgElementQueryError::InvalidScope);
         }
-        Ok(matches)
+        admit_rule(rule)?;
+        let relation = match rule.relation {
+            OrgElementRelation::Any => GraphRelation::Any,
+            OrgElementRelation::At => GraphRelation::At,
+            OrgElementRelation::ChildOf => GraphRelation::ChildOf,
+            OrgElementRelation::DescendantOf => GraphRelation::DescendantOf,
+        };
+        self.graph_index()
+            .select(
+                self.records(),
+                scope_id,
+                rule.node_kind,
+                relation,
+                &[scope_id],
+                |record| {
+                    rule.groups.iter().any(|group| {
+                        group.iter().all(|property| {
+                            property_matches(
+                                self,
+                                record,
+                                property.name,
+                                property.value,
+                                property.matcher,
+                            )
+                        })
+                    })
+                },
+            )
+            .map_err(|error| match error {
+                GraphIndexError::InvalidScope => OrgElementQueryError::InvalidScope,
+                GraphIndexError::InvalidRecord | GraphIndexError::InvalidTarget => {
+                    OrgElementQueryError::InvalidRule
+                }
+            })
     }
 }

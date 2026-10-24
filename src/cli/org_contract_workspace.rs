@@ -72,14 +72,12 @@ pub(crate) fn run(args: Vec<String>) -> Result<ExitCode, String> {
     let mut discovered = Vec::new();
     collect_org_files(&root, &root, &policy.ignored_dirs, &mut discovered)?;
     discovered.sort();
-    let discovered_sources = discovered
-        .into_iter()
-        .map(|path| {
-            let source = fs::read_to_string(&path)
-                .map_err(|error| format!("{}: {error}", path.display()))?;
-            Ok((path, source))
-        })
-        .collect::<Result<Vec<_>, String>>()?;
+    let discovered_sources =
+        map_in_order(&discovered, "workspace reader worker panicked", |path| {
+            let source =
+                fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+            Ok((path.clone(), source))
+        })?;
     if let Some((target, required)) = required_maintained.as_ref()
         && !discovered_sources.iter().any(|(path, _)| path == target)
     {
@@ -663,38 +661,39 @@ struct MaintainedAdmission {
 fn load_maintained_documents(
     admissions: &[MaintainedAdmission],
 ) -> Result<Vec<MaintainedDocument>, String> {
-    if admissions.is_empty() {
+    map_in_order(
+        admissions,
+        "workspace parser worker panicked",
+        load_maintained_document,
+    )
+}
+
+fn map_in_order<Input: Sync, Output: Send>(
+    inputs: &[Input],
+    panic_message: &str,
+    map: impl Fn(&Input) -> Result<Output, String> + Sync,
+) -> Result<Vec<Output>, String> {
+    if inputs.is_empty() {
         return Ok(Vec::new());
     }
     let worker_count = std::thread::available_parallelism()
         .map(usize::from)
         .unwrap_or(1)
-        .min(4)
-        .min(admissions.len());
-    let chunk_size = admissions.len().div_ceil(worker_count);
+        .min(inputs.len());
+    let chunk_size = inputs.len().div_ceil(worker_count);
     std::thread::scope(|scope| {
-        admissions
+        inputs
             .chunks(chunk_size)
             .map(|chunk| {
-                scope.spawn(move || {
-                    chunk
-                        .iter()
-                        .map(load_maintained_document)
-                        .collect::<Result<Vec<_>, _>>()
-                })
+                let map = &map;
+                scope.spawn(move || chunk.iter().map(map).collect::<Result<Vec<_>, _>>())
             })
             .collect::<Vec<_>>()
             .into_iter()
-            .try_fold(
-                Vec::with_capacity(admissions.len()),
-                |mut documents, task| {
-                    documents.extend(
-                        task.join()
-                            .map_err(|_| "workspace parser worker panicked".to_string())??,
-                    );
-                    Ok(documents)
-                },
-            )
+            .try_fold(Vec::with_capacity(inputs.len()), |mut values, task| {
+                values.extend(task.join().map_err(|_| panic_message.to_string())??);
+                Ok(values)
+            })
     })
 }
 

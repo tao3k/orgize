@@ -1,0 +1,238 @@
+#+title: Implementation status - official-priority-audit
+
+[[file:../90.01_implementation_status.org][Implementation status index]]
+
+*** M24 Official Org Priority Audit
+
+This historical audit used the pinned official Org manual and front-line
+modules as reference evidence. The upstream implementation is not an input to
+Cargo, CI, tests, generated artifacts, or released packages.
+
+Priority is assigned by common Org usage and by how early/prominent the feature
+appears in the official manual and runtime modules:
+
+- P0 means it affects everyday agenda, search, planning, lint, or agent use.
+- P1 means it is a popular Org workflow and should be modeled as semantic
+      metadata/projection before exporters rely on it.
+- P2 means it is important for parity, but should stay opt-in or side-table
+      based until the core parser/projection surface is stable.
+
+**** Official Org Capability Alignment Table
+
+This table is the working queue for "what powerful Org-mode capabilities should
+orgize introduce next".  It deliberately favors parser-owned syntax, semantic
+projection, lint, and non-executing plans.  Interactive editing, filesystem
+mutation, code execution, network protocols, and global ranking remain outside
+orgize core unless represented as source-grounded metadata.
+
+| Rank | Official capability | Upstream anchors | Current orgize alignment | Missing alignment | Next slice |
+|------+---------------------+------------------+--------------------------+-------------------+------------|
+| P0 | Sparse tree and map-entries style result projection | `doc/org-manual.org` "Sparse Trees"; `lisp/org.el` `org-sparse-tree`, `org-scan-tags`, `org-map-entries` | Section index, match query, source ranges, ancestor paths, `SparseTreeProjection`, compact renderer, accepted receipts, opt-in skip receipts, wasm `sparseTreeJson`, and wasm `sparseTreeExplainJson` | No cross-document ranking or fusion, by design | Use sparse-tree cards as the substrate for Wendao ranking, memory authority enrichment, and UI snippets |
+| P0 | Agenda sorting, limiting, and custom command plans | `doc/org-manual.org` "Sorting of agenda items", "Custom Agenda Views"; `lisp/org-agenda.el` `org-agenda-sorting-strategy` | Agenda rows, match filters, default deterministic date sort, configurable `AgendaViewSortSpec` strategy subset, `AgendaViewPlan` sort keys, limit receipts, nested blocker evidence, named block-agenda section plans, wasm `agendaViewJson` `sortStrategy`, and wasm `agendaBlockJson` | No Emacs custom command execution, agenda-file scan, or skip receipts for pre-agenda filters | Use block agenda plans as the planning API substrate; keep command execution downstream |
+| P0 | TODO dependencies and blocked task evidence | `doc/org-manual.org` "TODO dependencies"; `lisp/org.el` `org-enforce-todo-dependencies`, `org-track-ordered-property-with-tag` | TODO state, lifecycle, planning rows, tags/properties, `TaskDependencyRecord` for open descendant TODOs, unresolved checkboxes, local `ORDERED` evidence, exact `TaskBlockerRecord` previous-sibling identity, wasm `taskBlockersJson`, agenda/planning embedding, and compact `ORG029` blocked-state advice | No transition-enforcement diagnostics or configurable dependency policy profile yet | Add policy/profile hooks only if downstream needs non-default dependency checks |
+| P0 | Progress and statistics cookies | `doc/org-manual.org` "Breaking Down Tasks into Subtasks", "Checkboxes"; `lisp/org.el` `org-update-statistics-cookies`; `lisp/org-list.el` `org-update-checkbox-count` | Statistics cookie syntax exists; lists and checkboxes are parsed; `ProgressStatsRecord` rolls up subtree TODOs, checkboxes, cookies, Effort, dependencies, and wasm `progressStatsJson`; `ORG027`/`ORG028` lint ambiguous and stale heading cookies; `ORG028` also checks list-item checkbox cookies with direct-child and `COOKIE_DATA: recursive` behavior | No source update plan or custom `org-checkbox-hierarchical-statistics` profile toggle beyond native `COOKIE_DATA: recursive` evidence | Keep source updates out of core; add profile hooks only if downstream needs non-default checkbox hierarchy policy |
+| P0 | Clock tables and effort rollups | `doc/org-manual.org` "Clocking Work Time", "The clock table", "Effort Estimates"; `lisp/org-clock.el` `org-clock-get-table-data`, `org-dblock-write:clocktable` | CLOCK lines and durations are parsed; effort durations are typed; progress stats expose local and subtree Effort seconds; `ClockRollupRecord` adds local/subtree clock totals and Effort delta status; `ClockTablePlan` projects file/subtree/tree/treeN clocktable rows without source mutation; absolute `:block`, `:tstart`, and `:tend` windows are applied and exposed as `time_window`; `:match` tags/property filters are applied and exposed as `match_filter`; `:properties`/`:inherit-props` are projected as property columns and row values; `ClockIssueFinding` reports default Org agenda-style no-end-time, long/short duration, overlap, and gap diagnostics; wasm exposes `clockRollupsJson`, `clockTablePlansJson`, `clockIssuesJson`, and snapshot fields | No generated table refresh, step-split tables, or agenda/external-file scope scan | Keep source refresh and agenda-file scan downstream; add downstream consumption receipts only where needed |
+| P0 | Property inheritance profile and allowed-value schema | `doc/org-manual.org` "Property Inheritance", "Column View"; `lisp/org.el` `org-use-property-inheritance`; `lisp/org-colview.el` summary/value metadata | Effective properties, special properties, column declarations, `PropertyProfile`, native `PROPERTY_ALL` allowed values, fixed global descriptors, host-loaded `PROPERTY_SCHEMA` registry validation, snapshot-covered schema applications, CLI `--property-schema-registry`, durable `20.03` registry contract, JSON Schema sidecar and fixture, wasm `propertyProfileJson`/`propertyProfileWithSchemasJson`/`snapshotWithSchemasJson`, `ORG030` allowed-value advice, and `ORG040` schema-contract advice | No caller-provided inheritance policy profile yet; current projection preserves orgize's existing all-property effective view | Add caller-selectable inheritance policy only if downstream needs non-default Org property inheritance behavior |
+| P1 | Refile target index and movement provenance | `doc/org-manual.org` "Refile and Copy"; `lisp/org-refile.el` `org-refile-get-targets`, `org-refile-use-outline-path`, `org-refile-allow-creating-parent-nodes` | LOGBOOK refile records, local destination lint, `RefileTargetIndex`, native all/tag/TODO/level/maxlevel selectors, outline display modes, non-executing `RefilePlan`, `RefileCreateParentPlan` for one missing final target heading under an existing parent, wasm `refileTargetsJson`, wasm `refilePlanJson`, and snapshot `refileTargets` | No source mutation, history/bookmark update, cache regeneration, or regexp target evaluation | Keep execution downstream; add richer refile provenance only if persisted movement logs need more detail |
+| P1 | Agent capture protocol without source mutation | `doc/org-manual.org` "Capture", "Tags", "Properties and Columns", "Dates and Times" as Org artifact anchors; `org-capture.el` is historical comparison only | Datetree, refile, lifecycle, links, properties, and timestamps can represent captured source after it exists | No Agent-facing request/plan DTO that turns interaction events into previewable native Org entries | Add `AgentCaptureRequest` and `AgentCapturePlan`, plus wasm `capturePlanJson`, while keeping article UI and patch application in org-zhixing/runtime |
+| P1 | Dynamic block registry and parameter projection | `doc/org-manual.org` "Dynamic Blocks"; `lisp/org.el` `org-dblock-update`; `lisp/org-clock.el`, `lisp/org-colview.el` writers | Dynamic blocks are parsed as syntax nodes; `DynamicBlockRecord` now projects block names, plist-like params, `clocktable`/`columnview`/`unknown` writer kind, existing-output state, wasm `dynamicBlocksJson`, and snapshot `dynamicBlocks` without executing writers | No generated output refresh or writer-specific freshness proof | Keep execution/source refresh downstream; use registry to drive agent warnings and UI receipts |
+| P1 | Link protocol and custom search registry | `doc/org-manual.org` "Handling Links", "Protocols for External Access"; `lisp/org-protocol.el`; `ol.el` link parameters | Link targets, file/link searches, abbreviations, attachments are typed; `LinkProtocolRecord` now projects built-in/custom protocol families, `#+LINK` definitions/usages, executable link risk categories, and inert `org-protocol` capture/store/open-source calls | No runtime `org-link-parameters` integration or handler execution, by design | Keep execution/opening downstream; use protocol records for frontend receipts, lint advice, and index filters |
+| P1 | Attachment VCS evidence | `doc/org-manual.org` "Automatic version-control with Git"; `lisp/org-attach-git.el` | Attachment directories and paths are projected; existence lint is optional | No git-annex/git tracking metadata or dirty/missing attachment evidence | Add optional filesystem-aware `AttachmentVcsEvidence` behind lint/helper APIs |
+| P1 | Column summary operators and captured columnview blocks | `doc/org-manual.org` "Column View", "Capturing column view"; `lisp/org-colview.el` `org-columns-summary-types-default`, `org-dblock-write:columnview` | Column declarations are parsed and exposed; `ColumnSummaryPlan` now collects section values and computes non-mutating summaries for `+`, `$`, `min`/`max`/`mean`, `X`/`X/`/`X%`, `:` time operators, and `est+` while preserving unsupported/custom operators | No generated columnview table capture or source property overwrite, by design | Keep table capture/source refresh downstream; use summary plans for UI previews, lint advice, and agent summaries |
+| P2 | Publishing project graph, sitemap, and index plans | `doc/org-manual.org` "Publishing"; `lisp/ox-publish.el` `org-publish-project-alist` | Publishing/export keywords are side-table metadata | No project graph, sitemap/index planning, or publish action plan | Add `PublishingProjectPlan` only from explicit source/config snapshots |
+| P2 | Org Crypt metadata | `doc/org-manual.org` "Org Crypt"; `lisp/org-crypt.el` | Crypt tags/properties are ordinary tags/properties today | No warning that encrypted bodies are opaque and headlines remain visible | Add `CryptState` projection and lint/advice; never decrypt in orgize |
+| P2 | Agenda clocking issues and idle-time diagnostics | `doc/org-manual.org` agenda clock commands; `lisp/org-agenda.el` `org-agenda-show-clocking-issues` | `ClockIssueFinding` projects no-end-time, long/short duration, overlap, and gap diagnostics over parsed document-local clock intervals with configurable Org-default thresholds | No idle-time/current-time calculation, agenda range overlay, or live clock mutation | Keep as read-only diagnostics; downstream agents decide whether to stop clocks or edit intervals |
+| P2 | Org Plot and radio table export support | `doc/org-manual.org` "Org Plot", "Tables in Arbitrary Syntax"; `lisp/org-plot.el`, table translators | Tables and formulas are parsed | No plot metadata or radio-table translation plan | Keep as side-table metadata only; implement after P0/P1 planning surfaces |
+
+**** P0 Agenda Match And Filtering Semantics
+
+Official anchors: `doc/org-manual.org` sections "Agenda Views",
+"Matching tags and properties", "Properties and Columns"; `lisp/org-agenda.el`
+match/filter code.
+
+- [X] Add an official-style match expression parser alongside the existing
+      required/excluded tag filters for `+tag`, `-tag`, top-level tag OR groups,
+      TODO state predicates, property predicates, and comparisons.
+- [X] Add `AgendaMatchQuery` or equivalent typed API instead of overloading raw
+      strings across consumers.
+- [X] Support inherited tags, file tags, document/category properties, TODO
+      keyword state, priority, and planning timestamp predicates in one query
+      evaluator.
+- [X] Add snapshot and field-level tests for match expressions that combine
+      tags and properties, including negative matches and missing properties.
+- [X] Expose match-query examples in wasm so agenda/indexer consumers can
+      inspect the active query and matched rows.
+
+**** P0 Workspace Index And Cross-File Resolution
+
+Official anchors: `doc/org-manual.org` sections "Handling Links",
+"Attachments", "Properties and Columns"; `lisp/org-id.el`, `lisp/org-attach.el`.
+
+- [X] Add a workspace-level semantic index builder over document-local section
+      records, without reparsing Org or adding a filesystem dependency.
+- [X] Aggregate cross-document targets, links, attachment directories/links,
+      source-block counts, and section summaries for site/index consumers.
+- [X] Emit deterministic diagnostics for duplicate `ID`/`CUSTOM_ID` targets and
+      unresolved or ambiguous internal links, including `id:` links with search
+      suffixes.
+
+**** P0 Priority, Effort, And Property Drawers
+
+Official anchors: `doc/org-manual.org` sections "Priorities", "Properties and
+Columns", "Clocking Work Time"; `lisp/org.el`, `lisp/org-colview.el`,
+`lisp/org-duration.el`.
+
+- [X] Replace `Section::priority: Option<String>` with a typed priority domain
+      carrying the normalized priority cookie and source value.
+- [X] Parse default priority semantics (`A`, `B`, `C`) into projection metadata
+      while keeping raw priority text for compatibility.
+- [X] Align priority cookie grammar with official
+      `org-priority-value-regexp`: uppercase `A-Z` or numeric `0..64`,
+      including two-digit numeric cookies such as `[#64]`.
+- [X] Parse common duration values from `EFFORT`, clock summaries, and
+      property drawer values into typed duration metadata.
+- [X] Add a property side-table/index for fast lookup by inherited and local
+      properties without reparsing drawers during agenda/lint projections.
+- [X] Add lint rules for malformed priority cookies, malformed duration values,
+      duplicate local properties, and common property typos that affect agenda
+      behavior.
+- [X] Add an explicit priority profile for Agent consumers that carries
+      `highest`, `lowest`, and `default`, so orgize can distinguish invalid
+      cookies from out-of-bounds cookies when a caller opts into numeric or
+      widened alphabetic priority ranges.
+- [X] Project the `org-get-priority` urgency score / sortable key next to the
+      normalized value for agenda and Wendao index consumers.
+- [X] Add profile-aware lint configuration once callers can pass non-default
+      priority bounds into lint runs.
+
+**** P0 Source Block Results And Tangle Metadata
+
+Official anchors: `doc/org-manual.org` section "Working with Source Code";
+`lisp/ob-core.el`, `lisp/ob-tangle.el`, `lisp/org-src.el`.
+
+- [X] Model `#+RESULTS:` blocks/keywords as first-class semantic records linked
+      to the preceding source or inline source block.
+- [X] Parse and normalize common Babel header args beyond the current raw
+      `:key value` projection: `:results`, `:exports`, `:eval`, `:session`,
+      `:var`, `:noweb`, `:tangle`, `:dir`, and `:cache`.
+- [X] Add a source-block side table for language, name, result, header args,
+      coderefs, and tangle target metadata.
+- [X] Add a source-block reference side table for literate programming:
+      =#+CALL:=, inline =call_name(...)=, and noweb =<<name>>= references are
+      resolved against local =#+NAME= and =:noweb-ref= declarations without
+      executing Babel.
+- [X] Add a safe, non-executing source tangle plan that groups blocks by
+      explicit or caller-provided targets and records disabled/inline/missing
+      target skips without writing files.
+- [X] Add lint rules for missing block names referenced by noweb, =#+CALL:=, or
+      inline calls, unsafe/eval-sensitive headers, duplicate =#+NAME:=, and
+      invalid tangle targets.
+- [X] Keep execution out of orgize; only parse, index, lint, format, and
+      project metadata.
+
+**** P1 Capture, Refile, Archive, And Lifecycle Metadata
+
+Official anchors: `doc/org-manual.org` sections "Capture and Attachments",
+"Refiling and Archiving", "TODO Items", "Progress Logging";
+`lisp/org-refile.el`, `lisp/org-archive.el`, with `lisp/org-capture.el` kept
+as historical comparison rather than an Agent API source.
+
+- [X] Parse lifecycle/logbook drawers into semantic records for state changes,
+      notes, refiles, reschedules, redeadlines, and clock history.
+- [X] Model archive semantics beyond the `ARCHIVE` tag: `ARCHIVE` property,
+      archive location keywords, and archived subtree intent.
+- [X] Add memory projection over standard Org constructs: heading, TODO state,
+      tags, properties, timestamps, drawers, and logbook events.
+- [X] Add compact agent-facing memory cards that distinguish current facts,
+      stale facts, superseded facts, closed items, and archived items without
+      defining new Org syntax.
+- [X] Add lint rules for malformed logbook lines, archive target issues, and
+      refile/archive metadata that cannot be resolved locally.
+  - [X] Cover malformed LOGBOOK state/CLOCK lines and empty archive
+        destinations.
+  - [X] Resolve and lint refile/archive destinations against local files and
+        headings.
+
+**** P1 Attachments And File Links
+
+Official anchors: `doc/org-manual.org` section "Capture and Attachments";
+`lisp/org-attach.el`, `lisp/org-attach-git.el`, `lisp/org-id.el`.
+
+- [X] Model attachment directories from `ID`, `DIR`, `ATTACH_DIR`, and
+      attachment tags without touching the filesystem by default.
+- [X] Resolve attachment links into typed semantic link metadata
+      with path kind, locality, and optional existence diagnostics for lint.
+- [X] Add lint checks for missing local attachment targets when linting a real
+      file path, while keeping parser output filesystem-independent.
+- [X] Extend the same typed path metadata and optional diagnostics to ordinary
+      `file:` links.
+- [X] Add formatter/path tests for file links and attachment-style links that
+      preserve source text exactly.
+
+**** P1 Tables, Formulas, And Column View
+
+Official anchors: `doc/org-manual.org` sections "Tables" and "Properties and
+Columns"; `lisp/org-table.el`, `lisp/org-colview.el`.
+
+- [X] Parse table formulas into typed references, assignments, and flags while
+      preserving raw `#+TBLFM:` source.
+- [X] Add document-level table formula side-table records for downstream lint,
+      indexing, and frontend inspection without walking table elements again.
+- [X] Add lint rules for malformed table formulas and formula references that
+      point outside the table shape.
+- [X] Extend `orgize fmt` table alignment to preserve formula boundaries,
+      hlines, cookies, and indentation across more official table examples.
+- [X] Model column view declarations (`COLUMNS`, `#+COLUMNS:`) as typed document
+      and subtree metadata for indexers and agent summaries.
+- [X] Add non-mutating `ColumnSummaryPlan` records for common Org summary
+      operators and collected section property values without refreshing source
+      tables or overwriting parent property drawers.
+
+**** P2 Export, Publishing, And Include Semantics
+
+Official anchors: `doc/org-manual.org` sections "Exporting", "Publishing",
+"Include Files"; `lisp/ox.el`, `lisp/ox-*.el`, `lisp/org-macro.el`.
+
+- [X] Expand the typed `#+OPTIONS:` model beyond `H`, `-`, and `e` to cover the
+      high-usage export toggles for TODOs, tags, timestamps, author/date/title,
+      drawers, planning, priorities, broken links, and section numbering via
+      the opt-in publishing side table; `ExportSettings` remains the minimal
+      compatibility surface used by current exporters.
+- [X] Model `#+BIND:`, `#+SETUPFILE:`, `#+EXPORT_FILE_NAME:`, and backend
+      `#+ATTR_*` settings as side-table metadata without executing Emacs Lisp.
+- [X] Model `#+TAGS:` vocabulary shortcuts and explicit `#+PYTHON:` directives;
+      expose a recursive org-elements JSON payload and opt-in host execution
+      API so Python, TypeScript, CLIs, and other tools can bind to semantic Org
+      sections, elements, objects, targets, footnotes, and source blocks without
+      running code during parse.
+- [X] Add a flat org-elements node index with stable ordinal/category/kind,
+      source range, outline path, context, and summary fields so downstream
+      tools can perform `org-element-map`-style filtering without recursively
+      walking the full payload themselves.
+- [X] Promote the flat node index from JSON-only output to a typed Rust API
+      (`Document::org_elements_index`) plus an index-only wasm projection
+      (`orgElementsIndexJson`) for lower-cost TypeScript/Python consumers.
+- [X] Add a typed `OrgElementsIndexQuery` and filtered JSON/wasm projection so
+      consumers can select category/kind/context/outline subsets without
+      loading or walking the whole org-elements tree.
+- [X] Add an explicit include expansion plan for `#+INCLUDE:` line/range/options
+      semantics; keep expansion opt-in and filesystem-aware only in lint/export
+      helper APIs.
+- [X] Keep publishing out of core parser execution, but parse publishing-related
+      links/options well enough for lint and export projection.
+
+**** P2 Diary, Habit, Datetree, And Calendar Extras
+
+Official anchors: `doc/org-manual.org` sections "Dates and Times", "Agenda
+Views", "Capture"; `lisp/org-habit.el`, `lisp/org-datetree.el`,
+`lisp/org-agenda.el`.
+
+- [X] Project parseable diary sexp timestamps such as `diary-date` as explicit
+      opt-in agenda rows instead of silently ignoring them.
+- [X] Add habit metadata projection for `STYLE: habit`, repeaters, scheduled
+      state, and consistency graph inputs, without implementing Emacs agenda
+      graph rendering.
+- [X] Recognize datetree shape for date-organized capture files and expose a
+      helper that maps dates to heading paths.
+- [X] Add tests for inactive timestamp inclusion as an explicit agenda option,
+      keeping the default inactive behavior unchanged.

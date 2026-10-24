@@ -1,0 +1,15 @@
+* Portable Artifact Contract
+:PROPERTIES:
+:CONTRACT_ID: orgize.test.portable-artifact.v1
+:CONTRACT_SCOPE: document
+:END:
+#+begin_src scheme :org-contract
+(assert-org-element "portable.source-present" error
+  (bindings)
+  (org-elements org-data (property-contains source-text "") (at scope))
+  (expect exactly 1))
+(assert-org-element "portable.no-host-path" error
+  (bindings)
+  (org-elements org-data (property-local-path source-text) (at scope))
+  (expect exactly 0))
+#+end_src

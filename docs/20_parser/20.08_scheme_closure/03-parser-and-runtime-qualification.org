@@ -1,0 +1,436 @@
+#+title: Parser revision and runtime requalification
+
+[[file:../20.08_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Fold replay onto parser PR13 d5f5ea9 (2026-10-04)
+
+The clean d5f5ea99575f0999ed9cd77a246f55e3cfc2341c parser build did not
+include the uncommitted Fold optimizations retained in the older e7c6761
+checkout. Those changes are preserved and replayed into an isolated d5f5ea9
+candidate at =target/dependencies/gerbil-parser-fold-d5f5ea9-20261004=.
+The affected tracked files have no upstream e7c6761-to-d5f5ea9 delta.
+Neither the old dirty checkout nor the clean d5f5ea9 baseline was overwritten.
+
+The candidate retains Scheme-owned persistent state/tail sharing, bounded
+request-local byte/join caches, helper prototypes, lazy ASCII name indexes and
+boolean short-circuiting. Source-line traversal is factored into a runtime-only
+module, preserving completion events and Unicode byte offsets. No Rust parsing,
+Python framework, Gambit kernel change or profile downgrade is introduced.
+Fold runtime source SHA256 is
+=8f80a4a6373b393f75517645fae178f448187d00fe313a4f89c6ff3897d403d2=.
+
+Receipts under =target/fold-replay-d5f5ea9-20261004/=:
+- =candidate/state-test.log=: 19 private state/cache boundary cases, final OK.
+- =parser-tests/module-test.log=: 38 Fold cases, final OK.
+- =org-tests/event-test.log=: 95 native Scheme Org event cases, final OK.
+- =candidate/event-fold-test.log=: initial macro-phase loading failure,
+  before assertions. Fresh compilation through the existing native module test
+  owner passed; the initial failure is not erased or counted as a semantic pass.
+
+Initial plain-links native ASP receipts agree on source and event hashes.
+Both legs passed their scenario gate, but ran alongside compilation and each
+other. These are diagnostic receipts, not an accepted speedup or runtime ranking.
+Matched sequential runs and linked Rust/Python qualification remain required.
+
+The initial isolated AOT staging failed because the general staging recipe
+compiled the clock but omitted the runtime statistics module required by the
+current tape projector. The recipe now delegates to the existing complete batch
+staging owner rather than adding another build path. Fold test recipes likewise
+reuse the fresh native module test owner. No new default program is selected.
+
+The repaired staging owner completed with =ORG-PARSER-STAGE OK=. Its manifest
+contains 269 modules, including 50 parser modules. The Fold and source-line
+modules resolve to the replay candidate; all remaining parser modules resolve
+to the clean d5f5ea9 build. No e7c6761 parser or old helper overlay is selected.
+The module count is a closure observation, not a performance result.
+Native Python rebuilding uses the existing maturin/PyO3 owner with
+=runtime-scheme= and this explicit manifest; a build in progress is not
+qualification and does not replace the earlier failed progress receipt.
+
+The deduplicated =scheme-event-fold-candidate-test= entrypoint was rerun:
+=parser-tests-owner/module-test.log= contains 38 CASE-OK lines and final OK,
+and the recipe exits zero. Root Cargo.toml, Cargo.lock and gerbil.pkg hashes
+remain unchanged from the preceding slice.
+
+The existing maturin/PyO3 owner completed in the unchanged optimized dev
+profile and installed =runtime-scheme= with native program identity
+=sha256:2aebff77086adfcf737339879413eda42856fd51e8d84e04675a1f5a4e601733=.
+=python-scheme/installed-test.log= records 25 passed in 6.19 seconds, including
+exact installed identity, shared parser/Contract worker ownership, child-wait
+ownership, negative C ABI admission and the unchanged GIL host-progress test.
+The receipt recipe exits zero and rejects any five-second timeout dump.
+This run has none. The 512-link GIL test call took 1.59 seconds; the preceding
+unoptimized d5f5ea9 Scheme build took 56.75 seconds on this test. This is a local
+test observation, not a matched repeated benchmark or a concurrency-scale claim.
+No corpus, assertion or progress timeout was reduced.
+
+The extension is preserved as
+=target/runtime-receipt-binaries/fold-replay-d5f5ea9-python-scheme-20261004.so=.
+Its SHA256 is
+=95ca2b02512ea8b1941cd896d1cd128c55a25b1b7f167cbcc50149a6c44b2ded=.
+The clean parser baseline remains available. Rust-runtime requalification,
+both release-linked runtime gates and 1000/10000-document high-concurrency
+benchmarks remain separate pending gates. The default AOT manifest remains
+unchanged; only this explicit editable Scheme-runtime extension is installed.
+
+A second sequential run, =python-scheme-repeat-2/installed-test.log=,
+also exits zero: 25 passed in 6.45 seconds, GIL host-progress call 2.04 seconds,
+no five-second timeout dump. Two local full-suite repetitions support the
+progress recovery, but do not qualify throughput, release performance or
+Rust-versus-Scheme scheduling superiority.
+
+* Release and high-concurrency requalification (2026-10-04)
+
+This slice keeps the same explicit Fold replay manifest and unchanged
+Cargo/Gerbil profiles/pins. The existing closure owner builds native units,
+the integration consumer catalog and the fixed-count runtime benchmark.
+No parser, kernel or Python framework implementation is added.
+
+The first =runtime-rust= release build exited 101 before linking or tests.
+The native module batch reported =gambuild-C: fork: Resource temporarily
+unavailable=, followed by =gambit.h: No such file or directory=.
+This is retained as a build failure, not a semantic or benchmark result.
+Read-only host inspection showed approximately 2140 process-list rows,
+=kern.maxproc= of 8000, =kern.maxprocperuid= of 5333 and one zombie at the later
+inspection. This does not prove a hard process-count limit was reached at the
+earlier failure. Disk space remained available. The same owner is retried with
+12 build workers, without killing unrelated processes, lowering concurrency
+or changing optimizer settings.
+
+Scale evidence must distinguish Tokio submission/queue concurrency from
+independent native execution domains. Planned matched matrices use 1000 and
+10000 distinct documents: the existing Tokio 1/8-caller control and the
+existing 64-in-flight-request, 1/4/8-domain qualification owner. Full lossless
+and tree/graph artifact admission stays enabled. A pending build or partial
+matrix does not qualify runtime superiority or complete Org migration.
+
+The unchanged retry completed all 115 module compilations and the native
+archive, but release linking then failed on missing linker symbols for
+=event-list-marker= and Org =runtime-funs=. Direct =nm= inspection located
+stale objects: =module_212.o= still exported =event-fold-future= and
+=module_214.o= still exported =event-fold-runtime=, although their input
+fingerprint sidecars were newer. The current C inputs and linker table require
+the new module symbols. The qualified Python build's corresponding objects
+export the expected symbols. No release executable or scale result is admitted.
+
+The narrow local fix is in the existing bridge build owner's =program.rs=:
+compile C/linker/object outputs into unique staging directories while retaining
+their compiler-owned basenames; reject missing/empty fresh outputs; publish
+only after validation. Version-2 cache receipts bind both input and output
+digests, rejecting legacy receipts and changed output contents. The old output
+is retained if compilation or validation fails. This does not modify the
+Gambit kernel, parser semantics, runtime queues or optimization profiles.
+The existing bridge cache scenario tests are extended to cover output
+corruption and a zero-exit compiler wrapper that produces no fresh object.
+
+The first cache test build failed before assertions because its build-gate
+cache directory was not writable. The Justfile owner now reuses the existing
+workspace =XDG_CACHE_HOME= setting, without bypassing the policy.
+=build-cache-writable/cache-test.log= then records three passed tests in
+0.73 seconds, including fresh-output basename retention, missing/empty
+output rejection, failed partial-output rejection, old-output preservation,
+staging cleanup and corrupted-output recompilation. The recipe exits zero.
+
+Release requalification now selects the existing explicit native-output
+projection at =target/fold-replay-d5f5ea9-20261004/cache-v2-native=.
+This new artifact directory avoids admitting the known stale indexed objects.
+The existing bridge owner still fingerprints every input/output. Both Rust
+features will consume this same Scheme closure; no source/profile change or
+alternate runtime is used to qualify it. At this point linked execution and
+scale matrices remain pending.
+
+On 2026-10-05 the cache-v2 release attempt exited 101 during sequential
+module-C generation, before the parallel object batch. At
+=core/object-family/funcs=, spawning the selected compiler returned
+=Resource temporarily unavailable (os error 35)= after 4 ms.
+The preceding sequential C generation took 53.822 seconds. This is another
+host child-process creation failure, not a parser assertion or runtime
+benchmark failure. Reducing object-build concurrency cannot repair a failure
+that occurred before that batch. No unrelated processes are terminated, no
+kernel/profile/gate is modified and no failed build is counted as qualified.
+
+The local bridge source inputs after the passing cache regression:
+| Source | SHA256 |
+|--------+--------|
+| =build-support/gerbil-scheme-aot-build/src/program.rs= | =5a5e983d8b62fc5d8a8737bfc7da40b15f9913d83c9271e68db002406f203f76= |
+| =build-support/gerbil-scheme-aot-build/tests/unit/program_cache_scenario.rs= | =fd3df856463d72caf07220138e1c89192c142f22665b5ac52956d2adf50226a8= |
+
+The cache repair has focused local test evidence, but has not yet passed a
+complete native release link. Both feature release qualification and all new
+1000/10000-document matrices remain pending until child-process execution
+resources are available. The earlier qualified editable Python extension and
+the default native manifest are unchanged. No remote commit, push or PR update
+is performed in this slice.
+
+** 2026-10-05 fresh linker output and option-order regression
+
+The next cache-v2 release attempt completed all 269 module-C generations
+(50.683 seconds), then failed closed after Gambit's zero-exit linker invocation
+did not produce the required fresh =program_link.c=. This failure is not
+attributed to host resource exhaustion: the preceding fresh-output refactor
+had placed =-o= after the module inputs, unlike the original command order.
+
+The existing bridge owner now constructs the command with =-o= and its
+fresh output path before all module inputs. Input ordering and the shared
+fingerprinted input list are preserved. A fourth focused regression checks
+the exact command arguments without spawning Gambit; missing/empty fresh
+output rejection remains in force.
+
+=build-cache-link-order/cache-test.log= records four passed tests, zero
+failures, in 0.84 seconds, and the maintained Justfile recipe exits zero.
+This is focused cache/command evidence, not native-link qualification.
+
+| Source | SHA256 |
+|--------+--------|
+| =build-support/gerbil-scheme-aot-build/src/program.rs= | =dacf8469f9e39e3d7a38b3885fa71876beb0f745466d971a708a0d7a92c3caf3= |
+| =build-support/gerbil-scheme-aot-build/tests/unit/program_cache_scenario.rs= | =048d61e1cc13d20535da626455cabdb393435c28fb735d19ba3288a6991cd21a= |
+
+Release linking is being requalified with the same Scheme program identity
+and optimization settings. Both feature executions and scale matrices remain
+pending; no failed attempt or focused cache test is admitted as closure.
+
+The corrected command completed the native object batch: 115 jobs with
+12 workers in 262.565 seconds. The =event-fold-runtime= object took
+172.621 seconds; these are compilation timings, not parse benchmarks.
+The startup/linker objects and native archive were generated successfully.
+Direct =nm= inspection of the new =module_212.o= and =module_214.o= confirms
+=event-list-marker= and Org =runtime-funs= respectively, replacing the
+previously observed wrong indexed symbols in this isolated output.
+
+The newly linked =runtime-rust= library executable then passed the maintained
+=native-citation-library-test-receipt= owner. Its explicit-startup fixture
+completed all 62 native semantic cases in 2.32 seconds. The second invocation
+passed 27 ordinary/policy tests in 7.53 seconds, with the two existing focused
+performance scenarios ignored as declared. Timestamp/Citation fields,
+syntax/Query/Contract/Lint behavior and current graph identity are asserted.
+The receipt is =rust-qualification-link-order/library-test.log=.
+
+At this checkpoint Cargo is still compiling the release integration-test
+executable. The complete build command, consumer execution, second feature
+qualification and scale matrices are not yet admitted. Linker compact-unwind
+warnings are retained; neither optimization profiles nor kernel code change.
+
+The maintained no-overwrite binary-save owner freezes the linked Rust
+library and benchmark for subsequent feature switching:
+| Artifact under =target/runtime-receipt-binaries/= | SHA256 |
+|--------+--------|
+| =fold-replay-d5f5ea9-cache-v2-rust-library-20261005= | =a38b5639f62c722897c55094cb2538789bc7ead16445ae38a34e36d63a6ef6cd= |
+| =fold-replay-d5f5ea9-cache-v2-rust-bench-20261005= | =9835eb7374e6dce727b9ab8a0efd6f13c501b135a7ffd55e9266d0688b3becd1= |
+
+Freezing a benchmark binary does not qualify any corpus measurement.
+
+** 2026-10-05 build-tool ownership and universal Gerbil entry point
+
+The complete =runtime-rust= release build subsequently exited zero in
+17m14s, producing the library, integration-test and runtime-benchmark
+executables. This closes the build command, not all consumer execution or
+the second runtime's scale matrix.
+
+Bridge-native build regressions and formatting now belong to the root
+=gerbil-scheme-rust/Justfile=. The duplicate Orgize recipes, including their
+fixed four-test admission count, are removed. The bridge owner uses Bash
+pipefail so a failed Cargo command cannot be hidden by tee.
+
+The user requires compiler dispatch through the universal =gerbil= binary,
+not an independent downstream GSC selector. A newly drafted selector was
+withdrawn before qualification. Current =gerbil help= and the installed
+dispatcher show no =gsc= subcommand; =compile= invokes GXC, not Gambit.
+The intended =gerbil gsc= route therefore needs a real upstream CLI change.
+The local Gerbil checkout at =.data/gerbil= requires a passing Gerbil MCP
+balance baseline before source edits; that checker is unavailable in this
+session. No Gerbil source or installed binary is modified, no shell shim is
+introduced, and the existing direct GSC contract is retained pending this
+prerequisite. The tool-entry-point migration is not claimed complete.
+
+The bridge-owned =build-test= command exits zero: six tests passed,
+zero failed, in 0.78 seconds. Its receipt is
+=bridge-owned-build-tests/build-test.log=. Linux command expansion
+uses =env= without SDKROOT cleanup or Darwin compiler/linker settings;
+this is a dry-run check, not Linux native execution.
+
+** 2026-10-05 existing universal compile entry qualification
+
+The prior proposal to require a new =gerbil gsc= command is withdrawn.
+The installed =gerbil help compile= exposes executable/static compilation
+and GSC option forwarding. Source inspection confirms these options are
+applied inside Gerbil module compilation, not an arbitrary GSC passthrough.
+
+All 33 Orgize Justfile source compiler invocations now use =gerbil compile=
+instead of the separate =gxc= entry. The existing platform expansion owner
+passes, and the existing native clock test passes with =MODULE-OK=,
+=HARNESS-OK= and final =OK= at =gerbil-cli-clock/clock-test.log=.
+The bridge standalone source compilation likewise uses =gerbil compile -O=
+for its native and program-build modules. Actual compilation exits zero at
+=bridge-gerbil-cli=; its command-construction/cache regression owner passes
+seven tests in 1.01 seconds at =bridge-gerbil-cli-tests/build-test.log=.
+This does not qualify a new standalone runtime executable.
+
+A generated-SCM probe through the existing module owner is retained as a
+negative result: the compile step returned zero but reinterpreted the static
+SCM as a new Orgize-path module, changing its namespace. Loading then failed
+on =make-hash-table__%=; the owner exits one. Its transcript is
+=generated-scm-cli-probe/module-test.log=. Recompiling generated SCM via
+=gerbil compile= is not an identity-preserving replacement for the native
+archive pipeline. Direct lower-level archive operations remain bridge-owned,
+not silently replaced or claimed closed. A compiler-owned archive interface
+must preserve the existing module/linker identities and entry symbol before
+Rust can stop orchestrating those individual operations.
+
+The seven focused Citation consumers on the previously built runtime-rust
+release candidate pass via the existing explicit-startup owner at
+=rust-consumer-cache-v2/*/consumer-test.log=. These executions qualify that
+previous release candidate, not a rebuilt candidate after the source-entry
+change. Neither the second runtime nor 1000/10000 matrices is newly qualified.
+
+** 2026-10-05 Scheme-owned final program archive
+
+The bridge's build-only =scheme/archive-build.ss= now owns final archive
+packaging through Gerbil compiler archiver selection/invocation. It receives
+ordered native objects, never re-expands generated SCM, and rejects empty
+graphs, missing inputs, existing output and a zero-exit archiver that emits
+no file. Rust's linked-program path no longer uses =cc::Build= to package
+the program archive. It supplies a fresh output, validates the archive
+signature/nonempty contents, atomically publishes and projects Cargo directives.
+The generic Rust archive API for unrelated consumers is unchanged.
+
+The new module is registered in the canonical bridge =build.ss= and its
+universal compiler command. It is a build tool, not an Org runtime dependency.
+Its source participates in downstream build-input observation; the source
+entry/packaging changes therefore still require fresh downstream release
+qualification, not reuse of the old executable's execution receipts.
+
+=scheme-archive-projection= contains the focused native receipt:
+three native Gerbil rejection cases pass with explicit =CASE-OK= and final
+=OK=; both the Scheme-produced fixture archive and the Rust-admitted archive
+link and execute as real C programs. A real =true= executable returning zero
+without output is rejected; =no-output.log= records the expected failure.
+The explicit Rust projection case passes in 1.74 seconds.
+
+The complete admitted 269-module Org manifest is also packaged through the
+new Scheme owner. The first standalone test invocation failed before packaging:
+=cc-rs= link-option discovery requires Cargo build-script =OPT_LEVEL= context.
+The maintained test owner supplies host/target and release settings explicitly,
+without changing production profiles. The corrected invocation passes in
+4.75 seconds; the Scheme archive phase takes 1.635 seconds and total archive
+publication takes 2.058 seconds. These are build timings, not parse benchmarks.
+
+The reference and new archives have the same 258 ordered members. Their
+concatenated member payload digests match:
+=067dd57744322beba36c536cc9a5dc1faa3e967c6d75d6e75d9cc7634ba80d9a=.
+The compare owner exits zero, retaining member lists and payload hashes in
+=cache-v2-native=. Direct symbol inspection retains =orgize_parse_events=,
+=orgize_contract_evaluate_scheme= and =gerbil_scheme_rust_program_main=.
+This validates archive contents, not a newly linked parser's execution.
+
+The bridge regular regression owner passes seven tests in 0.72 seconds.
+Its two explicitly ignored native scenarios were separately executed by
+their owning Justfile recipes; neither was treated as a skipped success.
+Module-C, object and linker generation still use the existing bridge Rust
+build owner. Their Scheme migration, fresh feature executables and both
+scale matrices remain open. No kernel/profile/concurrency relaxation,
+remote commit or push is performed.
+
+After registering the archive tool, =scheme-compile= succeeds for all three
+bridge Scheme build modules at =scheme-archive-registered=. The updated
+command regression passes seven regular tests in 0.90 seconds at
+=scheme-archive-registration-tests/build-test.log=. Both native
+archive scenarios retain their separately passing explicit receipts.
+
+** 2026-10-05 Scheme-owned program linker generation
+
+The build tool is renamed from =scheme/archive-build.ss= to
+=scheme/native-build.ss= as it now owns both archive packaging and linker
+generation. Canonical build registration, source compiler arguments, native
+tests and Rust handoff paths change together; no old-path shim is retained.
+Named Scheme functions validate the linker identity/fresh output and construct
+GSC link flags. Rust forwards the selected compiler and its existing installed
+library binding, preserves input ordering and retains cache/observer/publication
+guards. The linker-source cache domain changes to version two and includes
+the tool source bytes, so the prior cache cannot conceal the new path.
+
+The complete 269-module program gate really regenerated linker C through the
+Scheme owner and passed in 28.34 seconds. Its link generation phase took
+17.168 seconds; these are build timings under the current host load, not a
+matched build-speed benchmark or parsing measurement.
+=native-program-linker-compare= confirms the regenerated linker C equals
+the saved pre-migration control byte-for-byte. =native-program-archive-compare=
+again confirms all 258 ordered members and payload SHA256
+=067dd57744322beba36c536cc9a5dc1faa3e967c6d75d6e75d9cc7634ba80d9a=.
+The pre-migration source/control transcript is retained as
+=cache-v2-native/program_link.reference.c= and
+=scheme-archive-program-before-linker.log=.
+
+The native Scheme suite now passes four explicit cases, including invalid
+linker identity, at =scheme-linker-owner/archive-test.log=.
+A zero-exit linker that produces no file is separately rejected with the
+expected diagnostic at =scheme-linker-owner/no-linker.log=. The regular bridge
+Rust regression owner passes seven tests in 0.73 seconds at
+=scheme-linker-rust-tests/build-test.log=; the complete-program native
+scenario is explicitly executed rather than counted as an ignored success.
+
+Module-C generation and object compilation still remain in Rust build
+orchestration. A future handoff must batch these operations rather than adding
+a new Gerbil process for every module. New release consumer execution and
+both runtime matrices still require fresh qualification; no complete parser
+or performance closure is claimed by these build receipts.
+
+* 2026-10-05 fresh Release execution after Scheme build ownership
+
+The maintained =runtime-closure-build-receipt= owner retains Cargo's
+verbose transcript and admits exactly the library, integration consumer and
+runtime benchmark executables only after a successful Release completion.
+The Justfile shell now preserves pipeline failures with =pipefail=; logging
+cannot replace a failed compiler/test status with =tee='s success.
+
+The =runtime-rust= owner exits zero in 15m30s under the unchanged optimized
+Release profile. Its admitted native program identity is
+=sha256:371a533653b8b807013539a9df1e08568ce9f26c77540b88ef09adab467969d0=.
+The frozen =scheme-build-chain-371a5336-rust-{lib,consumer,bench}= executables
+have SHA-256 values, respectively:
+
+- =b34885903569673ddcb5c7dcb728c0bcc0151b1fb9708701af99090f68d6bba1=
+- =ba0cd91c81cbd21967478b01f753b01f52d5c1a787a3abb7fd381fc3f1829f7c=
+- =84481c0de65c878fe7936504a36900ea7eb810929d300b9a5bab30033ac1e878=
+
+Fresh library execution passes 62 native cases in 1.55s and 27 ordinary
+cases in 5.77s; two existing performance cases remain explicitly ignored.
+The timestamp/citation/graph-identity receipt checks pass. All seven focused
+citation consumer cases pass, with real case completion markers. This is
+focused consumer qualification, not certification of the complete catalog.
+Receipts are under =scheme-build-chain-release-rust/qualification= in the
+existing =fold-replay-d5f5ea9-20261004= output root.
+
+The separately executed existing Query scenario FAILS its unchanged 45ms
+maximum gate: p50=12.905875ms, p95=max=84.149833ms. The failure and exit 101
+are retained in =qualification/query/query-scenario.log=. This scenario has
+zero warmup iterations and three measured iterations; startup occurs before
+measurement. Several unrelated Rust compiler processes were still running
+near this execution. Contention is therefore a plausible confounder, not a
+proven root cause or permission to discard the failure. No performance win,
+gate waiver, added warmup or relaxed limit is claimed.
+
+The matched =runtime-scheme= Release build has started against the same
+manifest and native cache. Its executable qualification, full consumer
+catalogs, an uncontended Query requalification and both 1,000/10,000-document
+runtime matrices remain OPEN.
+
+The new maintained =runtime-consumer-catalog-receipt= owner uses an
+empty case selection: the existing fixture asserts exact equality to the
+454-name default catalog before executing it with 12 callers. The full run
+completes all 454 cases in 44.42s, with 445 passing and nine failing; exit
+101 is retained at =qualification/full-consumer/consumer-catalog.log=.
+No cases are removed and no snapshots are automatically accepted.
+
+| Failure group | Cases | Observed evidence / required next check |
+| Graph snapshots | 3 | Tag vocabulary, dynamic-block and representative graph snapshots differ; review structural and numeric-kind changes against Scheme output before regeneration |
+| Consumer-generated packs | 3 | Two Contract cases and one Query case reject =StaleGraph=; committed fixture packs still bind graph digest =sha256:0b55d23be23890e24064525ea0f473ef0736aaa8f234f1ac125a9d15297f9f9d=; use their existing Scheme generators, never remove stale-graph admission |
+| Source-block expectations | 2 | CLI returns indented nested Scheme source-block content as well as the root block; the typed-builder lookalike set includes an indented =#+EnD_SrC=; establish native Scheme closing/indentation semantics before updating old expectations or changing grammar |
+| Contract performance | 1 | Existing 25ms limit fails at 34.062542ms under concurrent build/catalog load; preserve the limit and qualify separately after load clears |
+
+This catalog result supersedes any interpretation of the seven focused
+citation passes as complete consumer closure. Independent source inspection
+also confirms open Rust semantic reconstruction in
+=aot_timestamp_projection.rs= (time splitting), =aot_block_switches.rs=
+(quoted switch values and header association), and =aot_include_projection.rs=
+(option association/quote stripping). The native =Org::parse= entry alone
+does not close those downstream Scheme ownership obligations.

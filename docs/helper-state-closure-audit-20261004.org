@@ -1,0 +1,136 @@
+#+title: Native helper-state candidate closure audit — 2026-10-04
+
+* Identity and authority
+Orgize =codex/native-org-recovery= at
+=479b2763fa1924385a2df824d029e9ba35341bcd= with inherited dirty migration preserved.
+Parser base =e7c6761dc79202abe50931bd78ee3f0930d61f8f=; native build owner checkout
+=8bb8103b820a0c8d02446d6398197079c5275671= with its inherited local repairs.
+The compiler-owned candidate manifest is
+=target/helper-state-probe-20261004/aot/program.json= (275 modules).
+It includes the preceding name-index and helper-default experiments, so a
+comparison with the prefix primary is NOT a helper-only A/B.
+Both feature build directories emit the same compiler-bound parser identity:
+=sha256:6e46ed6879040257e6a891553681c883aa2322f243f05c2ca4a0d66d8d5dbfa2=.
+Generated identity equality alone is not executable or scale qualification.
+No production source, kernel, runtime feature, concurrency or optimization
+profile was changed for this qualification.
+
+The default manifest remains the prefix program
+=sha256:a8fa5deb44c22a1dedb65b76ebac50cafd9b71115d3ddda5638672f0aaccbe4f=.
+This audit does not authorize promotion or remote changes.
+
+* Rust linked qualification
+=runtime-closure-build-owner= succeeds with the complete Release profile
+in 14m00s, producing library tests, integration consumers and native corpus
+benchmark. Native objects used 12 compiler workers. The runtime-profile feature
+is disabled. Frozen executables are
+=target/runtime-receipt-binaries/helper-probe-rust-{unit,consumer,corpus}-20261004=.
+Build transcript: =target/helper-state-probe-20261004/rust-build.log=.
+
+=runtime-library-test-run= passes all 54 native cases plus 22 ordinary
+cases. One separate strict library performance case remains ignored in this
+ordinary lane; it is NOT a performance pass.
+Transcript: =target/helper-state-probe-20261004/rust-unit.log=.
+The frozen Rust binary also passes all 54 native cases outside the repository
+working directory, through =runtime-library-detached-test-run=.
+Transcript: =target/helper-state-probe-20261004/rust-detached-unit.log=.
+
+The first full consumer attempt completes all 454 cases with 12 callers:
+453 pass, one fails, and three separate libtest cases remain ignored.
+The failure is =lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget=:
+=68.886708ms= exceeds the existing =25ms= gate at
+=tests/integration/lint_contract.rs:252=. The aggregate exits 101 after 41.12s.
+Transcript: =target/helper-state-probe-20261004/rust-consumer.log=.
+No case or assertion was removed, ignored, or relaxed.
+The timed interval covers Contract document parsing, Registry construction and
+Lint/Query execution. It is not isolated fold CPU time.
+
+* Environment and evidence boundary
+Rust functional tests overlapped this task's Scheme native compilation. They
+are not isolated performance measurements. Host load snapshots reached
+=180.47/153.34/113.65=, then =138.50/150.84/119.98= at Rust build completion.
+This proves loaded-host conditions, not that host load exclusively explains
+the failed gate. Read-only checks confirmed active compiler CPU work; no other
+task's process was stopped.
+
+The runtime feature exclusivity recipe passes after supplying the installed
+Rust toolchain PATH: each feature compiles separately, while both/neither are
+rejected. Its first raw-host attempt lacked =rustc= and was not a code failure.
+Workspace dev =opt-level=2=, build override =2=, and Release =opt-level=3=,
+ThinLTO and four codegen units remain unchanged.
+
+* Scheme linked qualification and Rust consumer recheck
+Scheme Release closure build succeeds in 14m06s. Its frozen executables are
+=target/runtime-receipt-binaries/helper-probe-scheme-{unit,consumer,corpus}-20261004=.
+All 54 native and 22 ordinary unit cases pass, with the separate strict library
+case still ignored in this ordinary lane. All 454 consumers pass at 12 callers
+in 38.87s; three separate libtest cases remain ignored.
+Transcripts: =scheme-{build,unit,consumer}.log= under the candidate probe root.
+
+After this task's compilation ends, the failed Rust 25ms case passes in an
+isolated focused invocation. Following both scale runs, a fresh FULL Rust
+consumer run of the same frozen executable passes all 454 cases at 12 callers
+in 29.08s, retaining the three explicit ignored cases. The library CLI helper
+execs =current_exe=, so this recheck does not substitute a Scheme CLI binary.
+Transcripts: =rust-query-focused.log= and =rust-consumer-r2.log=.
+The initial aggregate failure is retained; later success does not establish
+repeatable performance or prove the compiler was its exclusive cause.
+
+* Explicit strict Query gate
+The ignored =document_query_org_elements_aot_stays_inside_scenario_gate= is
+explicitly invoked against each frozen library binary AFTER compilation and
+BEFORE scale timing, sequentially. Existing limits are unchanged: 48 documents,
+zero warmups, three measured iterations, target 5ms and maximum 45ms.
+Rust passes the existing maximum assertion; successful output does not report
+individual p50/p95 values, so none are invented and the 5ms target is not claimed.
+Scheme fails with p50 =187.507167ms= and p95/max =236.055708ms=; exit 101.
+Transcripts: =rust-query-strict.log= and =scheme-query-strict.log=.
+Scheme strict performance remains an OPEN gate despite functional passes.
+
+* High-concurrency native scale receipts
+The existing native Rust corpus owner completes 1000 and 10000 distinct
+documents per feature, 64 callers, eight independent execution domains and
+one repetition. Total completions are 22000 across the two features, not 22000
+globally unique documents. Both runs publish complete qualification receipts:
+=target/helper-state-probe-20261004/{rust,scheme}-qualification.json=.
+This is the maintained Rust/Tokio owner, not an external Scheme/JS sampler.
+
+The maintained cross-runtime comparator passes exact program, adapter,
+benchmark, corpus, semantic artifact and workload identity; completed/distinct
+counts, 64 maximum in-flight requests, eight maximum active worker requests,
+eight unique worker PIDs, positive per-worker counts and successful worker
+exits also pass. Each feature's semantic artifact matches its previous prefix
+qualification through the maintained cross-program semantic checker.
+
+| Documents | Rust docs/s | Scheme docs/s | Rust e2e p95 ms | Scheme e2e p95 ms |
+|-----------+-------------+---------------+-----------------+-------------------|
+| 1000 | 216.30 | 108.24 | 564.610 | 911.322 |
+| 10000 | 121.52 | 126.88 | 989.349 | 843.782 |
+
+These are single loaded-host QUALIFICATION runs, including lossless validation
+and checksums, not repeated performance-mode receipts or an intrinsic runtime
+ranking. Startup/warmup is excluded. No compiler or test from this task overlaps
+these scale legs; the Rust semantic comparator runs during Scheme startup.
+External host load remains uncontrolled. Stage durations are inclusive and
+must not be summed as independent CPU work.
+
+At 10000 documents, supervisor queue mean is 457.371ms Rust / 439.037ms Scheme;
+inclusive IPC service mean is 65.672ms / 62.871ms. Queue wait is substantial,
+but reducing caller concurrency would change the required workload rather than
+fix request service cost. These unprofiled receipts do NOT isolate Scheme fold
+CPU, native-owner admission, result serialization or host descheduling.
+
+* Remaining acceptance boundary
+The candidate is NOT selected as the default. The normal manifest is still
+byte-identical to the qualified prefix manifest. This bounded eight-domain
+lane does not close the separate complete 1/4/8-domain matrix, a general Scheme
+green-thread scheduler or single-VM SMP.
+
+Next, qualify the existing runtime-profile owner against this same candidate
+under both features to separate native admission/service, fold+tape CPU/wall
+scope and Rust handoff stages. Correlate those receipts with the failing Scheme
+48-document Query path and repeat matched performance-mode runs. Optimize
+identified request-service work without changing the kernel, limits, required
+callers or runtime-feature choice. Python qualification against this candidate
+also remains open. Functional and eight-domain scale success do not close the
+strict Scheme performance gate or establish a whole-parser speedup.

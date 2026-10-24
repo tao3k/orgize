@@ -1,0 +1,1138 @@
+{
+  "schema": "orgize.scheme-state-sharing.receipt.v1",
+  "parser_base": "7c1533356585154c8b5d340f64ffefb289d18907",
+  "candidate_source_sha256": "7348bb2fd8e13e48ab4a36191d9a1cbc0c13044e209bda8ef691c693f1a93e2b",
+  "baseline_compiled_scm_sha256": "3616ad09d2837d6a0998210d5d597e2dc03b43799f2f0ce45e3d40158255a6a4",
+  "candidate_compiled_scm_sha256": "d84d7dbd049e693f59c5ee8e5587583a3d003a19d1dc6e19ec18aa1a9de67668",
+  "benchmark_adapter_sha256": "4512adbc4bb0dc8c21d07ca58cf2f0dc395524ff53448a216bbb13dc0249772d",
+  "rows": [
+    {
+      "round": 1,
+      "fixture": "doc.org",
+      "lane": "baseline",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 1957,
+          "bytes": 8974992
+        },
+        {
+          "us": 38676,
+          "bytes": 8974992
+        },
+        {
+          "us": 32323,
+          "bytes": 8974992
+        },
+        {
+          "us": 2290,
+          "bytes": 8974992
+        },
+        {
+          "us": 5556,
+          "bytes": 8974992
+        },
+        {
+          "us": 1861,
+          "bytes": 8974992
+        },
+        {
+          "us": 1871,
+          "bytes": 8974992
+        },
+        {
+          "us": 16203,
+          "bytes": 8974992
+        },
+        {
+          "us": 1906,
+          "bytes": 8974992
+        },
+        {
+          "us": 1881,
+          "bytes": 8974992
+        },
+        {
+          "us": 4231,
+          "bytes": 8974992
+        },
+        {
+          "us": 1969,
+          "bytes": 8974992
+        },
+        {
+          "us": 1917,
+          "bytes": 8974992
+        },
+        {
+          "us": 7306,
+          "bytes": 8974992
+        },
+        {
+          "us": 3428,
+          "bytes": 8974992
+        },
+        {
+          "us": 2037,
+          "bytes": 8974992
+        },
+        {
+          "us": 2903,
+          "bytes": 8974992
+        },
+        {
+          "us": 1897,
+          "bytes": 8974992
+        },
+        {
+          "us": 1857,
+          "bytes": 8974992
+        },
+        {
+          "us": 1852,
+          "bytes": 8974992
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-baseline-1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+      "source_digest": "sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af",
+      "events_digest": "sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b",
+      "median_us": 2003,
+      "p95_us": 32323
+    },
+    {
+      "round": 1,
+      "fixture": "doc.org",
+      "lane": "candidate",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 29042,
+          "bytes": 1917936
+        },
+        {
+          "us": 3255,
+          "bytes": 1917936
+        },
+        {
+          "us": 1944,
+          "bytes": 1917936
+        },
+        {
+          "us": 89205,
+          "bytes": 1917936
+        },
+        {
+          "us": 1883,
+          "bytes": 1917936
+        },
+        {
+          "us": 1872,
+          "bytes": 1917936
+        },
+        {
+          "us": 1885,
+          "bytes": 1917936
+        },
+        {
+          "us": 2242,
+          "bytes": 1917936
+        },
+        {
+          "us": 1928,
+          "bytes": 1917936
+        },
+        {
+          "us": 16990,
+          "bytes": 1917936
+        },
+        {
+          "us": 1906,
+          "bytes": 1917936
+        },
+        {
+          "us": 4299,
+          "bytes": 1917936
+        },
+        {
+          "us": 1878,
+          "bytes": 1917936
+        },
+        {
+          "us": 1944,
+          "bytes": 1917936
+        },
+        {
+          "us": 27605,
+          "bytes": 1917936
+        },
+        {
+          "us": 2627,
+          "bytes": 1917936
+        },
+        {
+          "us": 1951,
+          "bytes": 1917936
+        },
+        {
+          "us": 1895,
+          "bytes": 1917936
+        },
+        {
+          "us": 26051,
+          "bytes": 1917936
+        },
+        {
+          "us": 3840,
+          "bytes": 1917936
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-candidate-1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+      "source_digest": "sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af",
+      "events_digest": "sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b",
+      "median_us": 2096.5,
+      "p95_us": 29042
+    },
+    {
+      "round": 1,
+      "fixture": "plain-links.org",
+      "lane": "baseline",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 12492,
+          "bytes": 12159696
+        },
+        {
+          "us": 2318,
+          "bytes": 12159696
+        },
+        {
+          "us": 3570,
+          "bytes": 12159696
+        },
+        {
+          "us": 2295,
+          "bytes": 12159696
+        },
+        {
+          "us": 2290,
+          "bytes": 12159696
+        },
+        {
+          "us": 60513,
+          "bytes": 12159696
+        },
+        {
+          "us": 2346,
+          "bytes": 12159696
+        },
+        {
+          "us": 2293,
+          "bytes": 12159696
+        },
+        {
+          "us": 2285,
+          "bytes": 12159696
+        },
+        {
+          "us": 11060,
+          "bytes": 12159696
+        },
+        {
+          "us": 2362,
+          "bytes": 12159696
+        },
+        {
+          "us": 14545,
+          "bytes": 12159696
+        },
+        {
+          "us": 2365,
+          "bytes": 12159696
+        },
+        {
+          "us": 2287,
+          "bytes": 12159696
+        },
+        {
+          "us": 9763,
+          "bytes": 12159696
+        },
+        {
+          "us": 55047,
+          "bytes": 12159696
+        },
+        {
+          "us": 18678,
+          "bytes": 12159696
+        },
+        {
+          "us": 5898,
+          "bytes": 12159696
+        },
+        {
+          "us": 2317,
+          "bytes": 12159696
+        },
+        {
+          "us": 2284,
+          "bytes": 12159696
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-baseline-1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+      "source_digest": "sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80",
+      "events_digest": "sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30",
+      "median_us": 2363.5,
+      "p95_us": 55047
+    },
+    {
+      "round": 1,
+      "fixture": "plain-links.org",
+      "lane": "candidate",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 3813,
+          "bytes": 2260128
+        },
+        {
+          "us": 2863,
+          "bytes": 2260128
+        },
+        {
+          "us": 2394,
+          "bytes": 2260128
+        },
+        {
+          "us": 2382,
+          "bytes": 2260128
+        },
+        {
+          "us": 2387,
+          "bytes": 2260128
+        },
+        {
+          "us": 2383,
+          "bytes": 2260128
+        },
+        {
+          "us": 4868,
+          "bytes": 2260128
+        },
+        {
+          "us": 2440,
+          "bytes": 2260128
+        },
+        {
+          "us": 85591,
+          "bytes": 2260128
+        },
+        {
+          "us": 2379,
+          "bytes": 2260128
+        },
+        {
+          "us": 2391,
+          "bytes": 2260128
+        },
+        {
+          "us": 10621,
+          "bytes": 2260128
+        },
+        {
+          "us": 2420,
+          "bytes": 2260128
+        },
+        {
+          "us": 52109,
+          "bytes": 2260128
+        },
+        {
+          "us": 2477,
+          "bytes": 2260128
+        },
+        {
+          "us": 2378,
+          "bytes": 2260128
+        },
+        {
+          "us": 2368,
+          "bytes": 2260128
+        },
+        {
+          "us": 2409,
+          "bytes": 2260128
+        },
+        {
+          "us": 24128,
+          "bytes": 2260128
+        },
+        {
+          "us": 2388,
+          "bytes": 2260128
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-candidate-1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+      "source_digest": "sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80",
+      "events_digest": "sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30",
+      "median_us": 2414.5,
+      "p95_us": 52109
+    },
+    {
+      "round": 1,
+      "fixture": "quote-heavy.org",
+      "lane": "baseline",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 19674,
+          "bytes": 26971776
+        },
+        {
+          "us": 5034,
+          "bytes": 26971776
+        },
+        {
+          "us": 5025,
+          "bytes": 26971776
+        },
+        {
+          "us": 104590,
+          "bytes": 26971776
+        },
+        {
+          "us": 71387,
+          "bytes": 26971776
+        },
+        {
+          "us": 20037,
+          "bytes": 26971776
+        },
+        {
+          "us": 25223,
+          "bytes": 26971776
+        },
+        {
+          "us": 54162,
+          "bytes": 26971776
+        },
+        {
+          "us": 4998,
+          "bytes": 26971776
+        },
+        {
+          "us": 5003,
+          "bytes": 26971776
+        },
+        {
+          "us": 5009,
+          "bytes": 26971776
+        },
+        {
+          "us": 5023,
+          "bytes": 26971776
+        },
+        {
+          "us": 26002,
+          "bytes": 26971776
+        },
+        {
+          "us": 5089,
+          "bytes": 26971776
+        },
+        {
+          "us": 6296,
+          "bytes": 26971776
+        },
+        {
+          "us": 7929,
+          "bytes": 26971776
+        },
+        {
+          "us": 5013,
+          "bytes": 26971776
+        },
+        {
+          "us": 5030,
+          "bytes": 26971776
+        },
+        {
+          "us": 5055,
+          "bytes": 26971776
+        },
+        {
+          "us": 35982,
+          "bytes": 26971776
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-baseline-1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+      "source_digest": "sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0",
+      "events_digest": "sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f",
+      "median_us": 5692.5,
+      "p95_us": 71387
+    },
+    {
+      "round": 1,
+      "fixture": "quote-heavy.org",
+      "lane": "candidate",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 5132,
+          "bytes": 4927392
+        },
+        {
+          "us": 19213,
+          "bytes": 4927392
+        },
+        {
+          "us": 5563,
+          "bytes": 4927392
+        },
+        {
+          "us": 5143,
+          "bytes": 4927392
+        },
+        {
+          "us": 6901,
+          "bytes": 4927392
+        },
+        {
+          "us": 5298,
+          "bytes": 4927392
+        },
+        {
+          "us": 46702,
+          "bytes": 4927392
+        },
+        {
+          "us": 47201,
+          "bytes": 4927392
+        },
+        {
+          "us": 5160,
+          "bytes": 4927392
+        },
+        {
+          "us": 5164,
+          "bytes": 4927392
+        },
+        {
+          "us": 5120,
+          "bytes": 4927392
+        },
+        {
+          "us": 5141,
+          "bytes": 4927392
+        },
+        {
+          "us": 5124,
+          "bytes": 4927392
+        },
+        {
+          "us": 5136,
+          "bytes": 4927392
+        },
+        {
+          "us": 9982,
+          "bytes": 4927392
+        },
+        {
+          "us": 6292,
+          "bytes": 4927392
+        },
+        {
+          "us": 5127,
+          "bytes": 4927392
+        },
+        {
+          "us": 5173,
+          "bytes": 4927392
+        },
+        {
+          "us": 5190,
+          "bytes": 4927392
+        },
+        {
+          "us": 5217,
+          "bytes": 4927392
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-candidate-1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+      "source_digest": "sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0",
+      "events_digest": "sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f",
+      "median_us": 5181.5,
+      "p95_us": 46702
+    },
+    {
+      "round": 2,
+      "fixture": "doc.org",
+      "lane": "candidate",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 9432,
+          "bytes": 1917936
+        },
+        {
+          "us": 5913,
+          "bytes": 1917936
+        },
+        {
+          "us": 1887,
+          "bytes": 1917936
+        },
+        {
+          "us": 9503,
+          "bytes": 1917936
+        },
+        {
+          "us": 9207,
+          "bytes": 1917936
+        },
+        {
+          "us": 1871,
+          "bytes": 1917936
+        },
+        {
+          "us": 1905,
+          "bytes": 1917936
+        },
+        {
+          "us": 1894,
+          "bytes": 1917936
+        },
+        {
+          "us": 1904,
+          "bytes": 1917936
+        },
+        {
+          "us": 1892,
+          "bytes": 1917936
+        },
+        {
+          "us": 49976,
+          "bytes": 1917936
+        },
+        {
+          "us": 1879,
+          "bytes": 1917936
+        },
+        {
+          "us": 1880,
+          "bytes": 1917936
+        },
+        {
+          "us": 1904,
+          "bytes": 1917936
+        },
+        {
+          "us": 1900,
+          "bytes": 1917936
+        },
+        {
+          "us": 58932,
+          "bytes": 1917936
+        },
+        {
+          "us": 1897,
+          "bytes": 1917936
+        },
+        {
+          "us": 46718,
+          "bytes": 1917936
+        },
+        {
+          "us": 1920,
+          "bytes": 1917936
+        },
+        {
+          "us": 1941,
+          "bytes": 1917936
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-candidate-2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+      "source_digest": "sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af",
+      "events_digest": "sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b",
+      "median_us": 1904.5,
+      "p95_us": 49976
+    },
+    {
+      "round": 2,
+      "fixture": "doc.org",
+      "lane": "baseline",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 36855,
+          "bytes": 8974992
+        },
+        {
+          "us": 9152,
+          "bytes": 8974992
+        },
+        {
+          "us": 33248,
+          "bytes": 8974992
+        },
+        {
+          "us": 1898,
+          "bytes": 8974992
+        },
+        {
+          "us": 1841,
+          "bytes": 8974992
+        },
+        {
+          "us": 10809,
+          "bytes": 8974992
+        },
+        {
+          "us": 1847,
+          "bytes": 8974992
+        },
+        {
+          "us": 1878,
+          "bytes": 8974992
+        },
+        {
+          "us": 33424,
+          "bytes": 8974992
+        },
+        {
+          "us": 1863,
+          "bytes": 8974992
+        },
+        {
+          "us": 1907,
+          "bytes": 8974992
+        },
+        {
+          "us": 1843,
+          "bytes": 8974992
+        },
+        {
+          "us": 1895,
+          "bytes": 8974992
+        },
+        {
+          "us": 1870,
+          "bytes": 8974992
+        },
+        {
+          "us": 1827,
+          "bytes": 8974992
+        },
+        {
+          "us": 1925,
+          "bytes": 8974992
+        },
+        {
+          "us": 2952,
+          "bytes": 8974992
+        },
+        {
+          "us": 24728,
+          "bytes": 8974992
+        },
+        {
+          "us": 1901,
+          "bytes": 8974992
+        },
+        {
+          "us": 1942,
+          "bytes": 8974992
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-baseline-2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+      "source_digest": "sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af",
+      "events_digest": "sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b",
+      "median_us": 1904,
+      "p95_us": 33424
+    },
+    {
+      "round": 2,
+      "fixture": "plain-links.org",
+      "lane": "candidate",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 2406,
+          "bytes": 2260128
+        },
+        {
+          "us": 3492,
+          "bytes": 2260128
+        },
+        {
+          "us": 2387,
+          "bytes": 2260128
+        },
+        {
+          "us": 2419,
+          "bytes": 2260128
+        },
+        {
+          "us": 2394,
+          "bytes": 2260128
+        },
+        {
+          "us": 119614,
+          "bytes": 2260128
+        },
+        {
+          "us": 2446,
+          "bytes": 2260128
+        },
+        {
+          "us": 20898,
+          "bytes": 2260128
+        },
+        {
+          "us": 2391,
+          "bytes": 2260128
+        },
+        {
+          "us": 6591,
+          "bytes": 2260128
+        },
+        {
+          "us": 2373,
+          "bytes": 2260128
+        },
+        {
+          "us": 2398,
+          "bytes": 2260128
+        },
+        {
+          "us": 2400,
+          "bytes": 2260128
+        },
+        {
+          "us": 22249,
+          "bytes": 2260128
+        },
+        {
+          "us": 2363,
+          "bytes": 2260128
+        },
+        {
+          "us": 9435,
+          "bytes": 2260128
+        },
+        {
+          "us": 2393,
+          "bytes": 2260128
+        },
+        {
+          "us": 2400,
+          "bytes": 2260128
+        },
+        {
+          "us": 21402,
+          "bytes": 2260128
+        },
+        {
+          "us": 12070,
+          "bytes": 2260128
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-candidate-2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+      "source_digest": "sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80",
+      "events_digest": "sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30",
+      "median_us": 2412.5,
+      "p95_us": 22249
+    },
+    {
+      "round": 2,
+      "fixture": "plain-links.org",
+      "lane": "baseline",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 7277,
+          "bytes": 12159696
+        },
+        {
+          "us": 7958,
+          "bytes": 12159696
+        },
+        {
+          "us": 2355,
+          "bytes": 12159696
+        },
+        {
+          "us": 151274,
+          "bytes": 12159696
+        },
+        {
+          "us": 2374,
+          "bytes": 12159696
+        },
+        {
+          "us": 2309,
+          "bytes": 12159696
+        },
+        {
+          "us": 2385,
+          "bytes": 12159696
+        },
+        {
+          "us": 2335,
+          "bytes": 12159696
+        },
+        {
+          "us": 19073,
+          "bytes": 12159696
+        },
+        {
+          "us": 2330,
+          "bytes": 12159696
+        },
+        {
+          "us": 72771,
+          "bytes": 12159696
+        },
+        {
+          "us": 98688,
+          "bytes": 12159696
+        },
+        {
+          "us": 2336,
+          "bytes": 12159696
+        },
+        {
+          "us": 2325,
+          "bytes": 12159696
+        },
+        {
+          "us": 110180,
+          "bytes": 12159696
+        },
+        {
+          "us": 7369,
+          "bytes": 12159696
+        },
+        {
+          "us": 2333,
+          "bytes": 12159696
+        },
+        {
+          "us": 20636,
+          "bytes": 12159696
+        },
+        {
+          "us": 15579,
+          "bytes": 12159696
+        },
+        {
+          "us": 35673,
+          "bytes": 12159696
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-baseline-2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+      "source_digest": "sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80",
+      "events_digest": "sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30",
+      "median_us": 7323,
+      "p95_us": 110180
+    },
+    {
+      "round": 2,
+      "fixture": "quote-heavy.org",
+      "lane": "candidate",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 82386,
+          "bytes": 4927392
+        },
+        {
+          "us": 26150,
+          "bytes": 4927392
+        },
+        {
+          "us": 5197,
+          "bytes": 4927392
+        },
+        {
+          "us": 5202,
+          "bytes": 4927392
+        },
+        {
+          "us": 83663,
+          "bytes": 4927392
+        },
+        {
+          "us": 17988,
+          "bytes": 4927392
+        },
+        {
+          "us": 5152,
+          "bytes": 4927392
+        },
+        {
+          "us": 5197,
+          "bytes": 4927392
+        },
+        {
+          "us": 100887,
+          "bytes": 4927392
+        },
+        {
+          "us": 5164,
+          "bytes": 4927392
+        },
+        {
+          "us": 91925,
+          "bytes": 4927392
+        },
+        {
+          "us": 197793,
+          "bytes": 4927392
+        },
+        {
+          "us": 32556,
+          "bytes": 4927392
+        },
+        {
+          "us": 126698,
+          "bytes": 4927392
+        },
+        {
+          "us": 5168,
+          "bytes": 4927392
+        },
+        {
+          "us": 53258,
+          "bytes": 4927392
+        },
+        {
+          "us": 7866,
+          "bytes": 4927392
+        },
+        {
+          "us": 89426,
+          "bytes": 4927392
+        },
+        {
+          "us": 5198,
+          "bytes": 4927392
+        },
+        {
+          "us": 66091,
+          "bytes": 4927392
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-candidate-2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+      "source_digest": "sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0",
+      "events_digest": "sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f",
+      "median_us": 29353,
+      "p95_us": 126698
+    },
+    {
+      "round": 2,
+      "fixture": "quote-heavy.org",
+      "lane": "baseline",
+      "exit": 0,
+      "ok": true,
+      "samples": [
+        {
+          "us": 91825,
+          "bytes": 26971776
+        },
+        {
+          "us": 5068,
+          "bytes": 26971776
+        },
+        {
+          "us": 12822,
+          "bytes": 26971776
+        },
+        {
+          "us": 57837,
+          "bytes": 26971776
+        },
+        {
+          "us": 8014,
+          "bytes": 26971776
+        },
+        {
+          "us": 64510,
+          "bytes": 26971776
+        },
+        {
+          "us": 39182,
+          "bytes": 26971776
+        },
+        {
+          "us": 24785,
+          "bytes": 26971776
+        },
+        {
+          "us": 4965,
+          "bytes": 26971776
+        },
+        {
+          "us": 5055,
+          "bytes": 26971776
+        },
+        {
+          "us": 20204,
+          "bytes": 26971776
+        },
+        {
+          "us": 6913,
+          "bytes": 26971776
+        },
+        {
+          "us": 36470,
+          "bytes": 26971776
+        },
+        {
+          "us": 41093,
+          "bytes": 26971776
+        },
+        {
+          "us": 56669,
+          "bytes": 26971776
+        },
+        {
+          "us": 5028,
+          "bytes": 26971776
+        },
+        {
+          "us": 5138,
+          "bytes": 26971776
+        },
+        {
+          "us": 19820,
+          "bytes": 26971776
+        },
+        {
+          "us": 5056,
+          "bytes": 26971776
+        },
+        {
+          "us": 4971,
+          "bytes": 26971776
+        }
+      ],
+      "input": "(ORG-EVENT-INPUT \"state-baseline-2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+      "source_digest": "sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0",
+      "events_digest": "sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f",
+      "median_us": 16321,
+      "p95_us": 64510
+    }
+  ]
+}

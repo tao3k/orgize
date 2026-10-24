@@ -2,7 +2,6 @@ use std::path::Path;
 
 use crate::ast::{parse_contract_reference, parse_contract_reference_from_source};
 
-#[test]
 fn resolves_a_relative_file_link_from_the_owning_org_document() {
     let reference = parse_contract_reference_from_source(
         "[[file:../contracts/90.01_document_contract.org][tao3k.document]]",
@@ -17,7 +16,6 @@ fn resolves_a_relative_file_link_from_the_owning_org_document() {
     assert!(reference.is_path_qualified_org_link());
 }
 
-#[test]
 fn accepts_a_path_and_fragment_contract_link() {
     let reference = parse_contract_reference(
         "[[file:docs/contracts/90.01_document_contract.org#tao3k.document][Documentation contract]]",
@@ -31,9 +29,23 @@ fn accepts_a_path_and_fragment_contract_link() {
     assert!(reference.is_path_qualified_org_link());
 }
 
-#[test]
 fn rejects_a_bare_id_as_a_path_qualified_reference() {
     let reference = parse_contract_reference("tao3k.document");
 
     assert!(!reference.is_path_qualified_org_link());
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "resolves_a_relative_file_link_from_the_owning_org_document",
+        resolves_a_relative_file_link_from_the_owning_org_document,
+    ),
+    (
+        "accepts_a_path_and_fragment_contract_link",
+        accepts_a_path_and_fragment_contract_link,
+    ),
+    (
+        "rejects_a_bare_id_as_a_path_qualified_reference",
+        rejects_a_bare_id_as_a_path_qualified_reference,
+    ),
+];

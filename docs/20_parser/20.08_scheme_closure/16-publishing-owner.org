@@ -1,0 +1,126 @@
+#+title: Native Publishing owner and current parser alignment
+
+[[file:../20.08_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Ownership and executable boundary
+
+2026-10-06: Publishing source policy moves from Rust to the pure
+=org-parser/publishing-value-funs.ss= owner. Scheme classifies export/setup,
+backend and attribute keywords; trims Unicode whitespace; splits inert BIND
+values and OPTIONS at the first colon; admits every closed option kind.
+Empty fields, duplicate order, ASCII case rules and repeated ATTR_ prefix
+behavior are preserved. No BIND value is evaluated.
+
+Rust collects graph-local keyword references, makes one native batch crossing
+per nonempty document, admits ordered/bounded keyword indexes and closed row
+shapes, and attaches annotations. Includes remain the existing projection.
+It contains no Publishing split/trim/case/prefix source interpreter.
+The adapter fingerprint now includes this owner. This removes per-keyword
+crossings by construction, but is not a measured end-to-end speedup.
+
+The existing public Publishing consumer retains its snapshot and additionally
+checks Unicode whitespace, duplicate export replacement, optional BIND values,
+inert Scheme text and malformed/duplicate/colon-bearing OPTIONS. Its catalog
+registration remains unchanged: 457 consumers, not an invented extra count.
+
+* Parser revision and preserved overlays
+
+Live PR 13 head is =a99b3646e7ee68c1010ca47985c762d658fef611=.
+Cargo.toml, Cargo.lock and gerbil.pkg all align to it. The isolated parser
+checkout fast-forwards from =1f0d87f3=; none of the upstream 32 changed paths
+overlap the preserved seven-file Fold/source-line owner overlay.
+Upstream adds bounded binding/command/result profiles and runtime projections;
+its new documentation alone does not establish an Org performance gain.
+The native-build bridge also retains unpublished owner changes.
+Clean pinned-checkout reproducibility remains a separate dependency gate.
+
+PR 18 remains OPEN at =cbe3750c=; PR 21 is MERGED into its branch.
+No new migration PR, commit or push is made for this dirty candidate.
+The unrelated root lambda-aitia checkout remains untouched.
+
+* Receipts and negative evidence
+
+Receipt root: =target/publishing-native-closure-20261006=.
+Before the upstream refresh, =normal-v2= builds successfully and the
+316-module canonical program stages successfully. Six Publishing native
+gxtest cases and four Source Headline cases pass with final OK.
+These receipts are on =1f0d87f3= and do not qualify the refreshed program.
+
+The enlarged native suite retains a failure at
+=scheme-suite/owner-tests/module-test.log=: the existing five-second
+real-output monitor kills startup before any harness output. Metadata,
+source and lifecycle suites preceding it pass. The monitor deadline is not
+widened, fake progress is not injected, and no later control erases this run.
+Fresh native module recipes now use the same existing observation-only
+monitor; native gxtest remains the test owner.
+
+The refreshed parser build, whole-runtime consumers, original Query/Contract
+budgets, Python front door and concurrent matrix each need their own admission.
+The prior integrated Scheme Query failure (93.227666ms > 45ms), earlier
+Contract failure (73.270209ms > 25ms) and healthy profile controls remain in
+records 14/15. They are not superseded by Publishing unit success.
+
+* Refreshed executable candidate
+
+=aligned-a99b3646/parser= completes the 159-target upstream build with its
+owner overlay. =normal= completes the Org SDK build and =program= stages
+316 modules successfully. The linked Rust candidate reports program identity
+=sha256:97d4712da7beeb5c6bc2970dd1f58b2224a5c9244524e0b556331d759e47c840=.
+
+The current Publishing/metadata/source/lifecycle native gxtest groups pass
+6/10/5/11 cases. The larger suite still stops at owner startup without harness
+output; a separate =owner-startup-control= reproduces it with no other
+task build/test active. =source-headline-tests= also records startup failure
+while the Rust native archive build overlaps it. No host-contention cause is
+admitted from these samples, and the earlier six/four green cases remain
+explicitly on the older parser SDK.
+
+Rust Release build succeeds in 3m25s, then passes 84 native / 24 ordinary
+cases and 457 consumers at 12 callers (18.62s). The expanded public Publishing
+consumer passes with its original snapshot. Contract control is 4.88225ms
+within its unchanged 25ms gate.
+
+The first current Rust Query admission fails: p50 117.588417ms, p95/max
+286.836958ms exceeds 45ms. It runs after the unit/consumer processes finish,
+before the Scheme build starts. This is retained in =rust-query=; a new native
+program is not admitted as a performance improvement. Scheme runtime receipts
+follow below; Python and matched 33,000-document matrices still need receipts.
+
+Scheme Release build succeeds in 1m47s on the same native program. It also
+passes 84 native / 24 ordinary and 457 consumers at 12 callers (17.22s),
+including Publishing. Contract control is 6.068584ms within 25ms. Its first
+Query control passes, p50 14.256125ms / max 16.160625ms. This does not replace
+the current Rust failure or the historical Scheme failures.
+
+=just native-publishing-consumer-check= passes the narrow owner admission:
+fresh compiled Scheme owner, six actual cases/final OK, both complete
+consumer catalogs, expanded public Publishing case and matching native
+program identities. It deliberately does not select a whole-parser program.
+
+A separate Rust runtime-profile library builds in 54s and profiles the same
+48-document scenario with three samples. Its max 17.424542ms / p50
+14.853709ms is a healthy control, not reproduction of the failed request:
+
+| Inclusive observation | Sample 0 ms | Sample 1 ms | Sample 2 ms |
+|-----------------------+-------------+-------------+-------------|
+| owner service         | 12.944171   | 11.651210   | 10.175375   |
+| Scheme Fold           | 11.522373   | 10.396292   | 8.897915    |
+| VM GC wall interval   | 5.725145    | 5.202054    | 3.663063    |
+| owner admission       | 0.184876    | 0.274168    | 0.199750    |
+| completion handoff    | 0.215045    | 0.236414    | 0.161293    |
+
+GC counts are 3/3/2 and its interval is VM-wide. Inclusive stages overlap;
+do not sum them or attribute the 286ms failing tail from these healthy
+samples. Existing observers use native clocks/statistics without forced
+collection or kernel modifications. No scheduling winner or stable speedup
+is admitted. Fresh Python and concurrent matrices remain unqualified.
+
+* Remaining closure
+
+CI still lacks canonical native program preparation in its Rust matrix.
+The sdist lane still expects the obsolete Python Contract-library packaging
+failure and uses an independent C consumer library as a Python prerequisite.
+Repair requires genuine pinned dependency/build closure, not a second Python
+framework or silently deleting independent C consumer support.
+Capture/sparse-tree authoring normalization needs a role-specific audit;
+host flag parsing and typed graph arithmetic are not legacy Org parsers.

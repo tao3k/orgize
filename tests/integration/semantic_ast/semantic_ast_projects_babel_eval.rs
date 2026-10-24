@@ -6,7 +6,6 @@ use orgize::{
     },
 };
 
-#[test]
 fn semantic_ast_projects_named_babel_eval_plan_without_running_code() {
     let doc = Org::parse(
         r#"#+NAME: verify
@@ -32,7 +31,6 @@ echo ok
     assert!(plan.record.result.is_none());
 }
 
-#[test]
 fn semantic_ast_projects_babel_eval_patch_inserts_results() {
     let source = r#"#+NAME: verify
 #+BEGIN_SRC bash :results output replace
@@ -65,7 +63,6 @@ echo ok
     );
 }
 
-#[test]
 fn semantic_ast_projects_babel_eval_patch_replaces_existing_results() {
     let source = r#"#+NAME: verify
 #+BEGIN_SRC bash :results output replace
@@ -77,6 +74,11 @@ echo old
 "#;
     let doc = Org::parse(source).document();
     let plan = doc.babel_eval_plan("verify").expect("eval plan");
+    let result = plan.record.result.as_ref().expect("existing results");
+    assert_eq!(
+        result.source.range_start as usize,
+        source.find("#+RESULTS:").expect("results keyword")
+    );
     let patch = plan.result_patch(
         source,
         &BabelEvalOutput {
@@ -100,7 +102,6 @@ echo old
     );
 }
 
-#[test]
 fn semantic_ast_projects_babel_eval_reports_ambiguous_names() {
     let doc = Org::parse(
         r#"#+NAME: verify
@@ -124,3 +125,22 @@ echo two
         })
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_babel_eval::semantic_ast_projects_named_babel_eval_plan_without_running_code",
+        semantic_ast_projects_named_babel_eval_plan_without_running_code,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_babel_eval::semantic_ast_projects_babel_eval_patch_inserts_results",
+        semantic_ast_projects_babel_eval_patch_inserts_results,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_babel_eval::semantic_ast_projects_babel_eval_patch_replaces_existing_results",
+        semantic_ast_projects_babel_eval_patch_replaces_existing_results,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_babel_eval::semantic_ast_projects_babel_eval_reports_ambiguous_names",
+        semantic_ast_projects_babel_eval_reports_ambiguous_names,
+    ),
+];

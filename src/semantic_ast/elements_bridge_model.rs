@@ -26,7 +26,10 @@ pub struct OrgElementsIndexRecord<A = ()> {
     pub summary: OrgElementsIndexSummary,
 }
 
-/// Stable identifier for a record in the Org elements graph.
+/// Identifier for a record within one Org elements graph.
+///
+/// Rebuilding the graph after a source edit may assign a different number to
+/// the same Org heading. This is not the persistent Org `ID` property.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OrgElementId(usize);
 
@@ -89,6 +92,8 @@ pub struct OrgElementGraph<A = ()> {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OrgElementsAffiliatedProperties {
     pub name: Option<String>,
+    /// First source line of the element's affiliated keyword group, if any.
+    pub first_keyword_start_line: Option<usize>,
 }
 
 /// Stable node kind label in the Org elements flat index.

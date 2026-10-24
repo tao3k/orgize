@@ -4,7 +4,6 @@ use orgize::{
     ast::{BlockKind, ElementData},
 };
 
-#[test]
 fn semantic_ast_projects_lesser_elements_and_block_variants() {
     let doc = Org::parse(
         r#"# file comment
@@ -95,3 +94,8 @@ x=1
             .any(|kind| matches!(kind, BlockKind::Special(name) if name == "details"))
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_lesser_elements_and_blocks::semantic_ast_projects_lesser_elements_and_block_variants",
+    semantic_ast_projects_lesser_elements_and_block_variants,
+)];

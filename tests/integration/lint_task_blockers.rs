@@ -1,6 +1,5 @@
 use orgize::lint::lint_org;
 
-#[test]
 fn lint_reports_ordered_sibling_blocker_advice() {
     let source = r#"* TODO Project
 :PROPERTIES:
@@ -41,3 +40,8 @@ fn lint_reports_ordered_sibling_blocker_advice() {
     ));
     assert!(!rendered.contains("Nested B is blocked"));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "lint_task_blockers::lint_reports_ordered_sibling_blocker_advice",
+    lint_reports_ordered_sibling_blocker_advice,
+)];

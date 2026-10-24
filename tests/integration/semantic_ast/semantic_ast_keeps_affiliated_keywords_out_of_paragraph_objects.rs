@@ -3,7 +3,6 @@ use orgize::{
     ast::{ElementData, ObjectData},
 };
 
-#[test]
 fn semantic_ast_keeps_affiliated_keywords_out_of_paragraph_objects() {
     let doc = Org::parse("#+ATTR_HTML: :width 300px\n[[./img/a.jpg]]").document();
 
@@ -20,3 +19,8 @@ fn semantic_ast_keeps_affiliated_keywords_out_of_paragraph_objects() {
     assert_eq!(objects.len(), 1);
     assert!(matches!(objects[0].data, ObjectData::Link(_)));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_keeps_affiliated_keywords_out_of_paragraph_objects::semantic_ast_keeps_affiliated_keywords_out_of_paragraph_objects",
+    semantic_ast_keeps_affiliated_keywords_out_of_paragraph_objects,
+)];

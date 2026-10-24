@@ -1,0 +1,159 @@
+#+title: Integrated block, keyword and DIR native consumer admission
+
+[[file:../20.08_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Owner and executable identity
+
+Local dirty recovery checkout, branch =codex/native-org-recovery=,
+base HEAD =479b2763fa1924385a2df824d029e9ba35341bcd=, 2026-10-05.
+These are local native receipts, not remote CI or a merged upstream PR.
+
+Receipt root =R= is
+=target/fold-replay-d5f5ea9-20261004/semantic-owner-complete-migration/=.
+The final candidate is =R/candidate-v2/program.json=, 276 modules.
+Both runtime features report native program
+=sha256:dcd4a51b61dca2b75ca830f9add35026b3566da78260a8859803ab2426aa342b=.
+Earlier =candidate-v1= remains a failed control, not selected evidence.
+
+* Integrated ownership change
+
+The four private Scheme owners are =text-funs.ss=, =block-line-funs.ss=,
+=keyword-funs.ss= and =dir-path-funs.ss= under
+=languages/org/v1/modules/org-parser/=. They are included in the normal build
+graph, not only a manually assembled test closure.
+
+- Block facts own LF/CR/CRLF splitting, UTF-8 source byte ranges, leading tab
+  expansion, common indentation, numbering and custom code-reference labels.
+  Literal/fixed-width block annotations consume the same native source ranges;
+  dynamic content count/nonblank detection consumes a native plan too.
+- Keyword plans own ASCII routing, Unicode word/tag separation, first/rest,
+  last-option-wins and boolean classification. Document prescan submits all
+  keywords in one counted-field request, not one FFI call per keyword.
+- DIR processing uses native input trim/property macro expansion, command
+  plans and environment plans in that order. Quote/escape/nesting and malformed
+  marker recognition belong to Scheme. Process execution, environment lookup,
+  filesystem/path resolution and failure-preserving host effects remain Rust.
+
+The existing identity-bound =ONR1=/=OXV1= native binary framing is reused.
+This is not a JSON semantic bridge, an interpreted generated-SCM fallback,
+a second Python framework, or a Gambit kernel modification.
+
+Rust block/settings/DIR consumers now admit typed native rows. Their range,
+row-arity and framing checks are transport/projection checks, not replacement
+Org scanners. PROPERTY duration and ARCHIVE location parsing downstream of
+keyword routing are explicitly still open; LINK name normalization and
+abbreviation expansion/classification also need the remaining link admission.
+
+* Removed generated keyword execution family
+
+Deleted =src/org_aot_document_keyword_functions.rs=, the Scheme keyword IR
+description/generator, all eight keyword IR inputs, their Rust generator
+registrations and the obsolete Just recipe. The eight operations were word,
+words, tag words, first word, rest, option value, option presence and boolean.
+Existing Elements tests now exercise native keyword facts; behavior fixtures
+were retained, not removed merely to make the new architecture pass.
+Deleted tracked source can be recovered from Git.
+
+* Failure controls and bounded repairs
+
+- Initial Rust wiring had a private re-export and the wrong nested native-value
+  module path. Corrected those admission edges, not the external provider ABI.
+- The normal Darwin build exposed missing loadable-clock symbol options.
+  =build-parser.ss= uses Darwin-only dynamic symbol lookup options; Linux does
+  not inherit those linker flags. This is a local Darwin execution receipt,
+  not a Linux run.
+- Candidate V1 failed the embedded native large-block case with export status
+  3. V2 replaces =apply min= over all physical lines with a bounded two-argument
+  fold. The same embedded 1,000/10,000-line cases now pass on both features.
+  The old loadable pure Scheme control also passed: the control does NOT prove
+  a universal Scheme argument limit or a Gambit kernel root cause.
+- Loadable tape tests compile actual clock/statistics/tape modules. Generated
+  =-S= SCM is not interpreted as ordinary source to manufacture a test receipt.
+
+Failures remain under =R/rust-library-v1/=, =R/normal-build-v1/= and
+=R/owner-tape-suite-v3/=. The passing old pure control remains under
+=R/large-block-old-control/=. No timeout, profile or concurrency gate was relaxed.
+
+* Complete functional receipts
+
+Final normal build: =R/normal-build-v3/normal-build.log=.
+Its four new static owner artifacts are required by the admission gate.
+The normal closure passes all six native owner cases, including full native
+tape and keyword counted framing at 1,000/10,000 entries:
+=R/normal-owner-suite-v3/module-test.log=.
+The unchanged 103-case parser/event suite passes with final =OK=:
+=R/normal-events-v3/event-test.log=.
+The updated Elements semantic suite retains 14 passing cases:
+=R/elements-suite-v2/module-test.log=.
+
+Both =R/rust-library-v2/= and =R/scheme-library-v2/= pass 71 concurrent native
+startup cases and 27 ordinary unit cases, with the unchanged ASP gate.
+Both complete consumer catalogs pass 454 cases with 12 callers and zero
+failures: =R/rust-consumers-v2/= and =R/scheme-consumers-v2/=.
+That includes actual Contract DIR effects and ordering, syntax lint, Query,
+CLI, snapshots, malformed inputs and public semantic consumers.
+
+The unchanged Query 45ms gate passes at p95 14.534541ms / 9.063ms
+(Rust / Scheme), in =R/rust-query-v2/= and =R/scheme-query-v2/=.
+The complete catalogs retain Contract's unchanged 25ms gate at
+1.319583ms / 1.039917ms. Focused replays also pass at 9.593375ms / 1.172125ms.
+These are admissions, not a stable superiority or performance improvement claim.
+
+* Immutable executable receipts
+
+All executables are frozen under =target/runtime-receipt-binaries/= before
+building the other feature. Prefix =semantic-owner-276-=, suffix =-v2=:
+
+| Owner           | SHA-256                                                          |
+|-----------------+------------------------------------------------------------------|
+| rust-lib        | 7d3a1d93fd244576113762846e93427c47f8905ff7a2271144e4abb16efa990e |
+| rust-consumer   | 96a974a0b60ac195575066faaa608405ec645ffcc48e0b9837423ba265c84aa2 |
+| rust-bench      | 59e6aa6542f46f146250e1879f380c69d40f49ee0e13b8e8de740ddcb27db090 |
+| scheme-lib      | a5317dd26c9799b9a8f9d7efe49a1cd1c798eb96fd17e23b439946c6e729c633 |
+| scheme-consumer | 06b55ee668ff41b949a823e6c1310eb6ba6d5aea9edf6b00236066491162d717 |
+| scheme-bench    | 8e2908a019ccb924b1f27ef8a954b136eb9d65eaf126dcfdd84b9b605d350798 |
+
+* Concurrent admission and selection
+
+Qualification uses 1,000/10,000 distinct documents, 64 overlapping callers,
+and 1/4/8 independent native execution domains through the maintained Tokio
+driver. Each runtime must complete six batches, 33,000 documents, with all
+worker exits successful and matched lossless projection artifacts.
+Receipts are =R/candidate-v2/rust-parallel-final.json= and
+=R/candidate-v2/scheme-parallel-final.json=. These are qualification-mode
+end-to-end measurements, including validation/checksum, not pure parser CPU
+throughput, simultaneous single-VM Scheme execution or open-loop arrival tests.
+
+Both six-batch matrices pass: 33,000 documents per runtime, no worker failure,
+identical native program and lossless semantic artifacts. Cross-program
+semantic checks against the previous 272-module qualification also pass for
+both features. Builds and other tests completed before these scale runs.
+
+| Documents | Domains | Rust docs/s | Scheme docs/s | Rust p95 ms | Scheme p95 ms |
+|-----------+---------+-------------+---------------+-------------+---------------|
+|      1000 |       1 |      261.70 |        251.37 |      251.06 |        335.38 |
+|      1000 |       4 |      960.19 |        910.49 |       85.58 |         84.93 |
+|      1000 |       8 |     1174.56 |       1001.37 |       88.91 |        107.74 |
+|     10000 |       1 |      242.89 |        251.64 |      370.14 |        270.88 |
+|     10000 |       4 |      876.75 |        994.71 |       93.01 |         78.60 |
+|     10000 |       8 |     1127.64 |       1380.13 |       94.68 |         63.42 |
+
+One repetition is qualification evidence, not a stable winner or an optimized
+parser-only result. Both runtime features remain available; no result selects
+a runtime for the user or hides the negative latency samples.
+
+The integrated =just native-semantic-owner-admission-check= passes and requires normal
+build artifacts, complete native suites/catalogs, Query receipts, removed
+keyword-family plumbing and both matched concurrent matrices. Selection must
+follow that gate and preserve the previous manifest through
+=just parser-program-select=. Selection completed locally; the previous
+manifest is =target/native-program-history/macro-runtime-272-before-semantic-owner-276.json=.
+
+* Remaining whole-parser boundary
+
+Generated Rust headline/TODO, link, logbook, table column-cookie and radio
+execution remain. Priority/duration, archive and agenda-time source parsing
+also remain Rust. =runtime_metadata.rs= has a separate word splitter outside
+the removed keyword execution family. See [[file:current-boundary.org][the current owner queue]].
+This integrated admission does not close those families, stable performance,
+upstream CI, or whole-parser native semantic ownership.

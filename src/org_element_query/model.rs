@@ -33,7 +33,7 @@ pub struct OrgElementPropertyRule {
     pub matcher: OrgElementFieldMatch,
 }
 
-/// One named query compiled from `scheme :org-elements`.
+/// One named query compiled from `scheme :org-elements-query`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct OrgElementQueryRule {
     /// Stable query identity declared by the Org heading.
@@ -68,6 +68,4 @@ pub enum OrgElementQueryError {
     InvalidScope,
     /// The query shape is not admitted by this executor.
     InvalidRule,
-    /// This derived property lacks an AOT implementation.
-    UnsupportedField,
 }

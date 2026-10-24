@@ -15,64 +15,66 @@ impl<A: Clone> Document<A> {
             includes: self.includes.clone(),
             ..PublishingSettings::default()
         };
+        let mut keywords = Vec::new();
         for element in &self.children {
-            collect_publishing_from_element(element, &mut settings);
+            collect_publishing_from_element(element, &mut keywords);
         }
         for section in &self.sections {
-            collect_publishing_from_section(section, &mut settings);
+            collect_publishing_from_section(section, &mut keywords);
         }
+        project_publishing_keywords(&keywords, &mut settings);
         settings
     }
 }
 
-fn collect_publishing_from_section<A: Clone>(
-    section: &Section<A>,
-    settings: &mut PublishingSettings<A>,
+fn collect_publishing_from_section<'a, A>(
+    section: &'a Section<A>,
+    keywords: &mut Vec<&'a Keyword<A>>,
 ) {
     for element in &section.children {
-        collect_publishing_from_element(element, settings);
+        collect_publishing_from_element(element, keywords);
     }
     for subsection in &section.subsections {
-        collect_publishing_from_section(subsection, settings);
+        collect_publishing_from_section(subsection, keywords);
     }
 }
 
-fn collect_publishing_from_element<A: Clone>(
-    element: &Element<A>,
-    settings: &mut PublishingSettings<A>,
+fn collect_publishing_from_element<'a, A>(
+    element: &'a Element<A>,
+    keywords: &mut Vec<&'a Keyword<A>>,
 ) {
     for keyword in &element.affiliated_keywords {
-        collect_publishing_keyword(keyword, settings);
+        keywords.push(keyword);
     }
     match &element.data {
         ElementData::Keyword(keyword) | ElementData::BabelCall(keyword) => {
-            collect_publishing_keyword(keyword, settings);
+            keywords.push(keyword);
         }
         ElementData::Drawer(drawer) => {
             for child in &drawer.children {
-                collect_publishing_from_element(child, settings);
+                collect_publishing_from_element(child, keywords);
             }
         }
         ElementData::List(list) => {
             for item in &list.items {
                 for child in &item.children {
-                    collect_publishing_from_element(child, settings);
+                    collect_publishing_from_element(child, keywords);
                 }
             }
         }
         ElementData::Block(block) => {
             for child in &block.children {
-                collect_publishing_from_element(child, settings);
+                collect_publishing_from_element(child, keywords);
             }
         }
         ElementData::FootnoteDef(footnote) => {
             for child in &footnote.children {
-                collect_publishing_from_element(child, settings);
+                collect_publishing_from_element(child, keywords);
             }
         }
         ElementData::Inlinetask(task) => {
             for child in &task.children {
-                collect_publishing_from_element(child, settings);
+                collect_publishing_from_element(child, keywords);
             }
         }
         ElementData::Paragraph(_)
@@ -89,76 +91,73 @@ fn collect_publishing_from_element<A: Clone>(
     }
 }
 
-fn collect_publishing_keyword<A: Clone>(
-    keyword: &Keyword<A>,
+fn project_publishing_keywords<A: Clone>(
+    keywords: &[&Keyword<A>],
     settings: &mut PublishingSettings<A>,
 ) {
-    let key = keyword.key.to_ascii_uppercase();
-    match key.as_str() {
-        "EXPORT_FILE_NAME" => {
-            settings.export_file_name = Some(publishing_keyword(keyword));
-        }
-        "SETUPFILE" => settings.setup_files.push(publishing_keyword(keyword)),
-        "BIND" => {
-            if let Some(bind) = publishing_bind(keyword) {
-                settings.binds.push(bind);
+    // Scheme returns closed tagged rows in source order. Rust admits their shape
+    // and attaches graph annotations; it never reinterprets the keyword text.
+    if keywords.is_empty() {
+        return;
+    }
+    let request = keywords
+        .iter()
+        .flat_map(|keyword| [keyword.key.as_str(), keyword.value.as_str()])
+        .collect::<Vec<_>>();
+    let mut previous = 0;
+    for row in super::org_values::rows("publishing-keywords", &request) {
+        let (index, row) = row.split_first().expect("native publishing index");
+        let index = index
+            .parse::<usize>()
+            .expect("native publishing index integer");
+        assert!(index >= previous, "native publishing source order");
+        previous = index;
+        let keyword = keywords.get(index).expect("native publishing index bounds");
+        let fields = row.iter().map(String::as_str).collect::<Vec<_>>();
+        match fields.as_slice() {
+            [
+                tag @ ("export-file-name" | "setup-file" | "backend-keyword"),
+                value,
+            ] => {
+                let projected = PublishingKeyword {
+                    ann: keyword.ann.clone(),
+                    key: keyword.key.clone(),
+                    value: (*value).to_owned(),
+                };
+                match *tag {
+                    "export-file-name" => settings.export_file_name = Some(projected),
+                    "setup-file" => settings.setup_files.push(projected),
+                    _ => settings.backend_keywords.push(projected),
+                }
             }
-        }
-        "OPTIONS" => {
-            settings.options.extend(publishing_options(keyword));
-        }
-        key if key.starts_with("ATTR_") => settings.attributes.push(publishing_attribute(
-            keyword,
-            key.trim_start_matches("ATTR_"),
-        )),
-        key if is_backend_export_keyword(key) => {
-            settings.backend_keywords.push(publishing_keyword(keyword));
-        }
-        _ => {}
-    }
-}
-
-fn publishing_keyword<A: Clone>(keyword: &Keyword<A>) -> PublishingKeyword<A> {
-    PublishingKeyword {
-        ann: keyword.ann.clone(),
-        key: keyword.key.clone(),
-        value: keyword.value.trim().to_string(),
-    }
-}
-
-fn publishing_bind<A: Clone>(keyword: &Keyword<A>) -> Option<PublishingBind<A>> {
-    let raw = keyword.value.trim();
-    let (name, value) = raw
-        .split_once(char::is_whitespace)
-        .map(|(name, value)| (name.trim(), value.trim()))
-        .unwrap_or((raw, ""));
-    (!name.is_empty()).then(|| PublishingBind {
-        ann: keyword.ann.clone(),
-        name: name.to_string(),
-        value: value.to_string(),
-        raw: keyword.value.clone(),
-    })
-}
-
-fn publishing_options<A: Clone>(keyword: &Keyword<A>) -> Vec<PublishingOption<A>> {
-    keyword
-        .value
-        .split_whitespace()
-        .filter_map(|token| {
-            let (key, value) = token.split_once(':')?;
-            Some(PublishingOption {
+            ["bind", name, value] => settings.binds.push(PublishingBind {
                 ann: keyword.ann.clone(),
-                key: key.to_string(),
-                value: value.to_string(),
-                raw: token.to_string(),
-                kind: publishing_option_kind(key),
-            })
-        })
-        .collect()
+                name: (*name).to_owned(),
+                value: (*value).to_owned(),
+                raw: keyword.value.clone(),
+            }),
+            ["option", key, value, raw, kind] => settings.options.push(PublishingOption {
+                ann: keyword.ann.clone(),
+                key: (*key).to_owned(),
+                value: (*value).to_owned(),
+                raw: (*raw).to_owned(),
+                kind: admit_option_kind(kind),
+            }),
+            ["attribute", backend] => settings.attributes.push(PublishingAttribute {
+                ann: keyword.ann.clone(),
+                backend: (*backend).to_owned(),
+                optional: keyword.optional.clone(),
+                attributes: keyword.attributes.clone(),
+                raw: keyword.value.clone(),
+            }),
+            _ => panic!("invalid native publishing row"),
+        }
+    }
 }
 
-fn publishing_option_kind(key: &str) -> PublishingOptionKind {
-    match key {
+// Closed ABI tags only; source classification belongs to Scheme.
+fn admit_option_kind(tag: &str) -> PublishingOptionKind {
+    match tag {
         "H" => PublishingOptionKind::HeadlineLevels,
         "num" => PublishingOptionKind::SectionNumbering,
         "-" => PublishingOptionKind::SpecialStrings,
@@ -175,25 +174,7 @@ fn publishing_option_kind(key: &str) -> PublishingOptionKind {
         "p" => PublishingOptionKind::Planning,
         "pri" => PublishingOptionKind::Priorities,
         "broken-links" => PublishingOptionKind::BrokenLinks,
-        _ => PublishingOptionKind::Other,
+        "other" => PublishingOptionKind::Other,
+        _ => panic!("invalid native publishing option tag"),
     }
-}
-
-fn publishing_attribute<A: Clone>(keyword: &Keyword<A>, backend: &str) -> PublishingAttribute<A> {
-    PublishingAttribute {
-        ann: keyword.ann.clone(),
-        backend: backend.to_ascii_lowercase(),
-        optional: keyword.optional.clone(),
-        attributes: keyword.attributes.clone(),
-        raw: keyword.value.clone(),
-    }
-}
-
-fn is_backend_export_keyword(key: &str) -> bool {
-    key.starts_with("HTML_")
-        || key.starts_with("LATEX_")
-        || key.starts_with("MD_")
-        || key.starts_with("BEAMER_")
-        || key.starts_with("ODT_")
-        || matches!(key, "EXPORT_TITLE" | "EXPORT_AUTHOR" | "EXPORT_DATE")
 }
