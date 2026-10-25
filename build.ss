@@ -43,11 +43,15 @@
      (gxc: "bindings/c/orgize.ss"))))
 
 (import (only-in :std/misc/process run-process)
+        (only-in :gerbil-parser/src/build-support/compiler-profile initialize-compiler-build!)
         (prefix-in runtime-build runtime-))
 (export main)
 
 (def (main . arguments)
-  (when (or (null? arguments) (equal? (car arguments) "compile"))
+  ;; Parent policy must precede every generator child. A dependency's build
+  ;; process cannot initialize this process's native compiler environment.
+  (initialize-compiler-build!)
+  (when (or (null? arguments) (member (car arguments) '("compile" "clean")))
     (let (previous (getenv "ORGIZE_BUILD_SYNTAX_ONLY" #f))
       (dynamic-wind
         (lambda () (setenv "ORGIZE_BUILD_SYNTAX_ONLY" "1"))
@@ -62,6 +66,7 @@
             (setenv "ORGIZE_BUILD_SYNTAX_ONLY")))))
     (run-process
       (list "gxi" "languages/org/generate-fold.ss"
-            (getenv "GERBIL_PATH" (path-expand "~/.gerbil")) "dynamic")
+            (getenv "GERBIL_PATH" (path-expand "~/.gerbil")) "dynamic"
+            (if (and (pair? arguments) (equal? (car arguments) "clean")) "clean" "compile"))
       stdin-redirection: #f stdout-redirection: #f))
   (apply runtime-main arguments))

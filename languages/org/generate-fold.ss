@@ -2,7 +2,8 @@
 ;;; Build-only Org declarations; the engine owns all native lowering.
 (import (only-in :gerbil-parser/src/compiler/event-fold-scheme-modules
                  event-fold-scheme-module-sources)
-        (only-in :std/make make)
+        (only-in :std/make make make-clean)
+        (only-in :yuanxu/module-system/building/artifacts clean-build-artifacts!)
         (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil/runtime/loader __find-library-module)
         (only-in :gerbil-parser/src/compiler/event-fold-scheme-build
@@ -44,9 +45,13 @@
           (runtime-products output name))))
     names))
 
-(def (main output (profile "static"))
+(def (main output (profile "static") (action "compile"))
   (unless (member profile '("static" "dynamic"))
     (error "unknown Org fold build profile" profile))
+  (unless (member action '("compile" "clean"))
+    (error "unknown Org fold build action" action))
+  (when (and (equal? action "clean") (not (equal? profile "dynamic")))
+    (error "Org fold clean requires the dynamic package profile" profile))
   (let* ((helpers (map org-event-helper-descriptor org-event-helpers))
          (document
           (event-fold-scheme-module-sources
@@ -59,36 +64,47 @@
            'parse-org-compiled-inline-events org-mode-language-grammar 'OrgFile '()
            '((call-source-helper inline-span start end ((uint 2)))) '() helpers))
          (units (append document inline)))
-    (write-generated-source (path-expand "gerbil.pkg" output)
-                            "(package: orgize/fold)\n")
-    (for-each
-     (lambda (unit)
-       (write-generated-source
-         (path-expand (string-append (car unit) ".ss") output) (cdr unit)))
-     units)
-    (if (equal? profile "dynamic")
-      ;; Package loading needs dynamic products in addition to native inputs.
-      ;; The producer owns both profiles; consumers do not generate parsers.
+    (if (equal? action "clean")
       (begin
-        ;; std/make's SDK output set includes SSI/static inputs. Invalidate the
-        ;; owned static marker when an interrupted job left dynamic products
-        ;; absent or older than their source, then let std/make rebuild them.
+        (make-clean (map car units) srcdir: output prefix: "orgize/fold"
+                    libdir: (path-expand "lib" output))
+        ;; SDK Make owns its declared products; Core already owns complete
+        ;; dynamic generations for these exact identities, including .oN.
+        (clean-build-artifacts!
+          (map (lambda (unit) (string->symbol (string-append "orgize/fold/" (car unit)))) units)
+          (path-expand "lib" output))
+        (displayln "CLEAN-OK native-org-document-and-inline"))
+      (begin
+        (write-generated-source (path-expand "gerbil.pkg" output)
+                                "(package: orgize/fold)\n")
         (for-each
-          (lambda (unit)
-            (let* ((name (car unit))
-                   (source (path-expand (string-append name ".ss") output))
-                   (marker (path-expand
-                             (string-append "lib/static/orgize__fold__" name ".scm")
-                             output)))
-              (unless (andmap (lambda (product)
-                               (runtime-product-fresh? source product))
-                             (runtime-products output name))
-                (when (file-exists? marker) (delete-file marker)))))
-          units)
-        (make (map car units)
-              srcdir: output prefix: "orgize/fold"
-              libdir: (path-expand "lib" output) optimize: #t)
-        (require-runtime-products! output (map car units)))
-      (compile-event-fold-scheme-units output (map car units)))
-    (displayln "GENERATION-OK native-org-document-and-inline")
+         (lambda (unit)
+           (write-generated-source
+             (path-expand (string-append (car unit) ".ss") output) (cdr unit)))
+         units)
+        (if (equal? profile "dynamic")
+          ;; Package loading needs dynamic products in addition to native inputs.
+          ;; The producer owns both profiles; consumers do not generate parsers.
+          (begin
+            ;; std/make's SDK output set includes SSI/static inputs. Invalidate the
+            ;; owned static marker when an interrupted job left dynamic products
+            ;; absent or older than their source, then let std/make rebuild them.
+            (for-each
+              (lambda (unit)
+                (let* ((name (car unit))
+                       (source (path-expand (string-append name ".ss") output))
+                       (marker (path-expand
+                                 (string-append "lib/static/orgize__fold__" name ".scm")
+                                 output)))
+                  (unless (andmap (lambda (product)
+                                   (runtime-product-fresh? source product))
+                                 (runtime-products output name))
+                    (when (file-exists? marker) (delete-file marker)))))
+              units)
+            (make (map car units)
+                  srcdir: output prefix: "orgize/fold"
+                  libdir: (path-expand "lib" output) optimize: #t)
+            (require-runtime-products! output (map car units)))
+          (compile-event-fold-scheme-units output (map car units)))
+        (displayln "GENERATION-OK native-org-document-and-inline")))
     (force-output)))
