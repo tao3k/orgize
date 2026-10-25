@@ -1,4 +1,4 @@
 (package:
  orgize
 depend:
- ("github.com/tao3k/gerbil-parser@58e031c5d92cf024a1994b0e966eb6d2217e4ede"))
+ ("github.com/tao3k/gerbil-parser@81577e2b4038a8466003fbefc6908b055b04d4af"))
