@@ -33,4 +33,4 @@ wasm-clean:
 # Test/build policy tools have their own manifest; production remains Parser-only.
 [group('checks')]
 prepare-dev:
-    cd dev && {{ scheme_env }} GERBIL_PATH="{{ env_var('GERBIL_PATH') }}" gxpkg deps --install
+    cd dev && {{ scheme_env }} GERBIL_PATH="{{ env_var('GERBIL_PATH') }}" GAMBOPT="${GAMBOPT:+${GAMBOPT},}max-heap=2G,debug=q" gxpkg deps --install

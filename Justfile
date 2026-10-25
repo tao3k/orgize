@@ -1,5 +1,7 @@
 set dotenv-load := false
 set shell := ["bash", "-euo", "pipefail", "-c"]
+# Fixed native/CI package worker budget, including inherited SDK children.
+export GERBIL_BUILD_CORES := "2"
 host_os := os()
 timeout_command := if host_os == "macos" { "gtimeout" } else { "timeout" }
 bridge_revision := replace_regex(read("Cargo.toml"), '(?s)^.*gerbil-scheme = \{[^\n]*rev = "([0-9a-f]{40})"[^\n]*\}.*$', '$1')

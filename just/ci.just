@@ -3,7 +3,7 @@
 # itself is rebuilt from Cargo's declared immutable checkout, not an old lib.
 [group('checks')]
 ci-prepare: ci-tools-check
-    {{ scheme_env }} gxpkg deps --install
+    {{ scheme_env }} GAMBOPT="${GAMBOPT:+${GAMBOPT},}max-heap=2G,debug=q" gxpkg deps --install
     just prepare-dev
     just ci-program-owner "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')" "{{ justfile_directory() }}/target/native-ci"
 

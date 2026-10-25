@@ -290,3 +290,9 @@ compiler-policy, syntax, fold and runtime transitions; they are not heartbeats
 or qualification receipts. `t/package-build-test.ss` checks metadata isolation,
 cleanup ownership and invalid actions. A passing cleanup test does not establish
 full-package cold-build performance.
+
+The Just package entrance fixes `GERBIL_BUILD_CORES=2`. Production and optional
+development dependency installation append the existing 2GiB maximum to the
+selected SDK options. Focused test launchers retain their 1GiB fence. This
+resource alignment does not establish cold-build latency or repair a prior
+Core/Parser dependency timeout.
