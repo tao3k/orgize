@@ -27,24 +27,30 @@
   path)
 (def package-build-test
   (test-suite "Native generated fold build ownership"
-    (test-case "package spec does not activate grammar or generator phases"
-      (let* ((entry (path-expand "../build.ss" (path-directory (this-source-file))))
-             (code
-              `(begin
-                 (import :gerbil/expander)
-                 (let ((evaluate (gx#current-expander-module-eval)))
-                   (parameterize
-                    ((gx#current-expander-module-eval
-                      (lambda (context)
-                        (when (memq (gx#expander-context-id context)
-                                    '(orgize/languages/org/grammar orgize/languages/org/generate-fold))
-                          (error "metadata request activated a generator"))
-                        (evaluate context))))
-                    (load ,entry)
-                    ((eval 'main) "spec")))))
-             (output (run-process (list "gxi" "-:max-heap=1G,debug=q" "-e" (object->string code))
-                       stdout-redirection: #t coprocess: read-all-as-string)))
-        (check-equal? (list? (call-with-input-string output read)) #t)))
+    (test-case "package and syntax specs import as modules without activating generators"
+      (for-each
+        (lambda (relative)
+          (let* ((entry (path-expand relative (path-directory (this-source-file))))
+                 (code
+                  `(begin
+                     (import :gerbil/expander)
+                     (let ((evaluate (gx#current-expander-module-eval)))
+                       (parameterize
+                        ((gx#current-expander-module-eval
+                          (lambda (context)
+                            (when (and (gx#module-context? context)
+                                       (memq (gx#expander-context-id context)
+                                        '(orgize/languages/org/grammar orgize/languages/org/generate-fold)))
+                              (error "metadata request activated a generator"))
+                            (evaluate context))))
+                        (parameterize ((gx#current-expander-context (gx#make-top-context)))
+                          (gx#eval-syntax '(import :gerbil/core))
+                          (gx#eval-syntax '(import (only-in ,entry main)))
+                          (gx#eval-syntax '(main "spec")))))))
+                 (output (run-process (list "gxi" "-:max-heap=1G,debug=q" "-e" (object->string code))
+                           stdout-redirection: #t coprocess: read-all-as-string)))
+            (check-equal? (list? (call-with-input-string output read)) #t)))
+        '("../build.ss" "../build-parser.ss")))
     (test-case "clean removes every owned generation and preserves adjacent products and sources"
       (call-with-temporary-directory "org-fold-clean-test"
         (lambda (root)

@@ -1,7 +1,8 @@
 #!/usr/bin/env gxi
 ;;; -*- Gerbil -*-
 ;;; Org parser's native module graph; std/make owns ordering and compilation.
-(import (only-in :std/build-script defbuild-script))
+(import (only-in :std/build-script defbuild-script)
+        (only-in :std/source this-source-file))
 (def orgize-include
   (string-append "-I" (path-expand "bindings/c/include")))
 (def orgize-syntax-modules
