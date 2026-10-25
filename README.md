@@ -296,3 +296,18 @@ development dependency installation append the existing 2GiB maximum to the
 selected SDK options. Focused test launchers retain their 1GiB fence. This
 resource alignment does not establish cold-build latency or repair a prior
 Core/Parser dependency timeout.
+
+Dependency installation calls the SDK's public `pkg-install` and shared build
+context in `build-dependencies.ss`, as Agentic's existing native entry does. The
+SDK retains revision/tag selection, transitive resolution and native builds.
+Automatic editor TAGS generation is separated into `just package-tags`: the
+previous CI completed dependency compilation and then exhausted its 2GiB heap
+in `gxtags`. No compiler target or source/currentness check is removed. Empty,
+malformed and incompatible-revision controls verify readiness/refusal and
+unchanged checkout/tag state; actual package installation is a separate gate.
+
+For the frozen Core0353d86 / Parser36f62d9 cohort, actual SDK installation
+completes in58.92s with all three package children exporting2 workers and no
+editor-index process or survivors. This is ordinary installation, not a repair
+of a previous cold timeout. Native/Cargo/fuzz Parser source projections and the
+existing source-alignment gate agree on the same immutable revision.
