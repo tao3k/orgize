@@ -90,3 +90,5 @@
    ,@(cond-expand
       (darwin '((gxc: "bindings/c/orgize-parser" "-ld-options" "-Wl,-undefined,dynamic_lookup")))
       (else '("bindings/c/orgize-parser"))))))
+
+(export main)

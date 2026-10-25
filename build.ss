@@ -42,13 +42,25 @@
      (gxc: "languages/org/modules/org-contract/interface.ss")
      (gxc: "bindings/c/orgize.ss"))))
 
-(import (only-in :std/misc/process run-process)
+(import (only-in :std/source this-source-file)
+        (only-in :gerbil/expander current-expander-context make-top-context eval-syntax)
         (only-in :gerbil-parser/src/build-support/compiler-profile initialize-compiler-build!)
         (prefix-in runtime-build runtime-))
 (export main)
 
+;; Reuse the SDK compiler/module cache across this package's ordered phases.
+;; Metadata requests remain inert: no grammar or generator is loaded here.
+(def build-root (path-directory (this-source-file)))
+(def (script-main relative)
+  (parameterize ((current-expander-context (make-top-context)))
+    (eval-syntax '(import :gerbil/core))
+    (eval-syntax `(import (only-in ,(path-expand relative build-root) main)))
+    (eval-syntax 'main)))
+(def parser-builder (delay (script-main "build-parser.ss")))
+(def fold-builder (delay (script-main "languages/org/generate-fold.ss")))
+
 (def (main . arguments)
-  ;; Parent policy must precede every generator child. A dependency's build
+  ;; Parent policy must precede every generator phase. A dependency's build
   ;; process cannot initialize this process's native compiler environment.
   (initialize-compiler-build!)
   (when (or (null? arguments) (member (car arguments) '("compile" "clean")))
@@ -56,17 +68,13 @@
       (dynamic-wind
         (lambda () (setenv "ORGIZE_BUILD_SYNTAX_ONLY" "1"))
         (lambda ()
-          (run-process
-            (cons "gxi" (cons "build-parser.ss"
-                             (if (null? arguments) '("compile") arguments)))
-            stdin-redirection: #f stdout-redirection: #f))
+          (apply (force parser-builder)
+                 (if (null? arguments) '("compile") arguments)))
         (lambda ()
           (if previous
             (setenv "ORGIZE_BUILD_SYNTAX_ONLY" previous)
             (setenv "ORGIZE_BUILD_SYNTAX_ONLY")))))
-    (run-process
-      (list "gxi" "languages/org/generate-fold.ss"
-            (getenv "GERBIL_PATH" (path-expand "~/.gerbil")) "dynamic"
-            (if (and (pair? arguments) (equal? (car arguments) "clean")) "clean" "compile"))
-      stdin-redirection: #f stdout-redirection: #f))
+    ((force fold-builder)
+      (getenv "GERBIL_PATH" (path-expand "~/.gerbil")) "dynamic"
+      (if (and (pair? arguments) (equal? (car arguments) "clean")) "clean" "compile")))
   (apply runtime-main arguments))

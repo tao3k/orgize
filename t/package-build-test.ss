@@ -2,6 +2,8 @@
 (import :std/test
         (only-in :std/io/tempfile call-with-temporary-directory)
         (only-in :std/error Error?)
+        (only-in :std/misc/process run-process)
+        (only-in :std/misc/ports read-all-as-string)
         (only-in :std/source this-source-file)
         (only-in :gerbil/expander current-expander-context make-top-context eval-syntax)
         (only-in :gerbil-parser/src/build-support/compiler-profile call-with-compiler-import-progress))
@@ -25,6 +27,24 @@
   path)
 (def package-build-test
   (test-suite "Native generated fold build ownership"
+    (test-case "package spec does not activate grammar or generator phases"
+      (let* ((entry (path-expand "../build.ss" (path-directory (this-source-file))))
+             (code
+              `(begin
+                 (import :gerbil/expander)
+                 (let ((evaluate (gx#current-expander-module-eval)))
+                   (parameterize
+                    ((gx#current-expander-module-eval
+                      (lambda (context)
+                        (when (memq (gx#expander-context-id context)
+                                    '(orgize/languages/org/grammar orgize/languages/org/generate-fold))
+                          (error "metadata request activated a generator"))
+                        (evaluate context))))
+                    (load ,entry)
+                    ((eval 'main) "spec")))))
+             (output (run-process (list "gxi" "-:max-heap=1G,debug=q" "-e" (object->string code))
+                       stdout-redirection: #t coprocess: read-all-as-string)))
+        (check-equal? (list? (call-with-input-string output read)) #t)))
     (test-case "clean removes every owned generation and preserves adjacent products and sources"
       (call-with-temporary-directory "org-fold-clean-test"
         (lambda (root)
