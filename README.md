@@ -275,3 +275,18 @@ maps, release evidence, and architecture records live under `docs/`.
 - `indexmap`: indexmap-backed collections where enabled
 - `md`: Markdown export support through `comrak`
 - `syntax-org-fc`: syntax support for Org-fc-style use cases
+
+### Package build action ownership
+
+`languages/org/generate-fold.ss` validates the profile/action before dispatch.
+Its dynamic `clean` path discovers only the declared document/inline generated
+unit families and delegates artifact removal to Core; it does not import the
+grammar or compiler. `fold-generator.ss` owns generation and compilation with
+the complete unit catalog and runtime-product check. Generated source and
+neighboring products survive cleanup.
+
+The package entry retains a 180-second deadline. Phase records identify actual
+compiler-policy, syntax, fold and runtime transitions; they are not heartbeats
+or qualification receipts. `t/package-build-test.ss` checks metadata isolation,
+cleanup ownership and invalid actions. A passing cleanup test does not establish
+full-package cold-build performance.

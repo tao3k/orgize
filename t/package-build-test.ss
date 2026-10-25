@@ -51,6 +51,30 @@
                            stdout-redirection: #t coprocess: read-all-as-string)))
             (check-equal? (list? (call-with-input-string output read)) #t)))
         '("../build.ss" "../build-parser.ss")))
+    (test-case "clean does not evaluate a grammar or compiler"
+      (call-with-temporary-directory "org-fold-clean-inert"
+        (lambda (root)
+          (def code
+            `(begin
+              (import :gerbil/expander
+                (only-in :gerbil-parser/src/build-support/compiler-profile call-with-compiler-import-progress))
+              (define entry
+                (parameterize ((current-output-port (current-error-port)))
+                  (call-with-compiler-import-progress
+                    (lambda ()
+                      (parameterize ((gx#current-expander-context (gx#make-top-context)))
+                        (gx#eval-syntax '(import :gerbil/core))
+                        (gx#eval-syntax '(import (only-in ,generator-path main)))
+                        (gx#eval-syntax 'main))))))
+              (entry ,root "dynamic" "clean")
+              ;; Read the SDK's actual loading registry. Import/eval parameter
+              ;; hooks alone do not intercept every compiled-library load.
+              (when (or (assoc "orgize/languages/org/grammar~0" (list-modules))
+                        (assoc "gerbil-parser/src/compiler/event-fold-scheme-modules~0" (list-modules)))
+                (error "clean loaded a grammar or compiler"))))
+          (def output (run-process (list "gxi" "-:max-heap=1G,debug=q" "-e" (object->string code))
+                        stdout-redirection: #t coprocess: read-all-as-string))
+          (check-equal? (and (string-contains output "CLEAN-OK") #t) #t))))
     (test-case "clean removes every owned generation and preserves adjacent products and sources"
       (call-with-temporary-directory "org-fold-clean-test"
         (lambda (root)
@@ -62,10 +86,14 @@
                 "lib/orgize/fold/parse-org-compiled-events~0.o1"
                 "lib/static/orgize__fold__parse-org-compiled-events.scm")))
           (def neighbor (write-fixture root "lib/orgize/fold/neighbor.o1"))
+          (def malformed (write-fixture root "lib/orgize/fold/parse-org-compiled-events-part-01.o1"))
+          (def orphan (write-fixture root "lib/orgize/fold/parse-org-compiled-events-part-77~1.o3"))
           (def source (write-fixture root "parse-org-compiled-events.ss"))
           (fold-main root "dynamic" "clean")
           (check-equal? (ormap file-exists? owned) #f)
           (check-equal? (file-exists? neighbor) #t)
+          (check-equal? (file-exists? malformed) #t)
+          (check-equal? (file-exists? orphan) #f)
           (check-equal? (file-exists? source) #t)
           ;; Repeated clean is idempotent; it must not widen ownership.
           (fold-main root "dynamic" "clean")

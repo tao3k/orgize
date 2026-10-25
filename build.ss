@@ -1,4 +1,4 @@
-#!/usr/bin/env gxi
+#!/usr/bin/env -S timeout --signal=TERM --kill-after=5s 180s gxi
 ;;; -*- Gerbil -*-
 ;;; Orgize owns declaration bootstrap, generated parser products and runtime.
 (module runtime-build
@@ -60,10 +60,21 @@
 (def fold-builder (delay (script-main "languages/org/generate-fold.ss")))
 
 (def (main . arguments)
-  ;; Parent policy must precede every generator phase. A dependency's build
-  ;; process cannot initialize this process's native compiler environment.
+  (def operation (if (null? arguments) "compile" (car arguments)))
+  (def active? (and (member operation '("compile" "clean")) #t))
+  (def started (##current-time-point))
+  (def (phase name)
+    ;; Actual entry transitions only; metadata/spec output stays SDK-owned.
+    (when active?
+      (displayln "PACKAGE-BUILD-PHASE orgize operation=" operation " stage=" name
+                 " elapsed-s=" (- (##current-time-point) started))
+      (force-output)))
+  ;; A dependency child cannot initialize this package process's host policy.
+  (phase 'compiler-policy-enter)
   (initialize-compiler-build!)
-  (when (or (null? arguments) (member (car arguments) '("compile" "clean")))
+  (phase 'compiler-policy-returned)
+  (when active?
+    (phase 'syntax-enter)
     (let (previous (getenv "ORGIZE_BUILD_SYNTAX_ONLY" #f))
       (dynamic-wind
         (lambda () (setenv "ORGIZE_BUILD_SYNTAX_ONLY" "1"))
@@ -74,7 +85,11 @@
           (if previous
             (setenv "ORGIZE_BUILD_SYNTAX_ONLY" previous)
             (setenv "ORGIZE_BUILD_SYNTAX_ONLY")))))
+    (phase 'syntax-returned)
+    (phase 'fold-enter)
     ((force fold-builder)
       (getenv "GERBIL_PATH" (path-expand "~/.gerbil")) "dynamic"
-      (if (and (pair? arguments) (equal? (car arguments) "clean")) "clean" "compile")))
-  (apply runtime-main arguments))
+      (if (equal? operation "clean") "clean" "compile"))
+    (phase 'fold-returned))
+  (phase 'runtime-enter)
+  (begin0 (apply runtime-main arguments) (phase 'runtime-returned)))
