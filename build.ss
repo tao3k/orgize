@@ -1,6 +1,8 @@
-#!/usr/bin/env -S timeout --signal=TERM --kill-after=5s 180s gxi
+#!/usr/bin/env -S timeout --signal=TERM --kill-after=5s 600s gxi
 ;;; -*- Gerbil -*-
 ;;; Orgize owns declaration bootstrap, generated parser products and runtime.
+;;; Complete cold compilation includes generated parsers on small CI runners.
+;;; This build-only envelope does not change native runtime/test watchdogs.
 (module runtime-build
   (export main)
   (import (only-in :std/build-script defbuild-script)
