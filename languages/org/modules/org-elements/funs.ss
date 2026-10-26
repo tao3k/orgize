@@ -8,6 +8,7 @@
                  graph-query-map graph-query-lineage? graph-query-select)
         (only-in "types.ss"
                  +org-element-schema+ +org-element-context-kind+
+                 OrgElementRow OrgElementId OrgElementKind
                  OrgElementQueryContext org-element-query?
                  org-element-query-clause? org-element-predicate?
                  org-element-graph-view? org-element-query-context?)
@@ -123,7 +124,8 @@
         (.o kind: +org-element-context-kind+
             schema: +org-element-schema+
             graph: graph-value
-            index: (make-graph-query-context graph-value)))
+            index: (make-graph-query-context OrgElementRow OrgElementId OrgElementKind
+                                             graph-value)))
     (unless (element? OrgElementQueryContext value)
       (error "invalid Org Element query context"))
     value))

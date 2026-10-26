@@ -3,6 +3,8 @@
 
 (import (only-in :clan/poo/object .ref .slot? object?)
         (only-in :clan/poo/mop define-type Type. element?)
+        (only-in :clan/poo/type Record String)
+        (only-in :clan/poo/number UInt)
         (only-in :std/list/list every)
         (only-in :gerbil-parser/graph-query-support
                  graph-query-view? graph-query-context?)
@@ -10,7 +12,8 @@
                  org-graph-shape org-headline-extra-fields
                  org-graph-node-label org-graph-node-fields
                  org-graph-field-label))
-(export +org-element-schema+ +org-element-query-kind+
+(export OrgElementRow OrgElementId OrgElementKind
+        +org-element-schema+ +org-element-query-kind+
         +org-element-clause-kind+ +org-element-graph-kind+
         +org-element-context-kind+ +org-element-profile-kind+
         +org-element-named-query-kind+
@@ -26,6 +29,12 @@
         org-element-query? org-element-query-clause?
         org-element-graph-view?
         org-element-query-context? org-elements-profile?)
+
+;; Org adapters publish extensible POO rows with unsigned node identities
+;; and textual Org kind labels. Parser owns callback validation and indexing.
+(def OrgElementRow (Record))
+(def OrgElementId UInt)
+(def OrgElementKind String)
 
 (def +org-element-schema+ "orgize.org-elements.v1")
 (def +org-element-query-kind+ 'org-element-query)
@@ -128,7 +137,7 @@
         value +org-element-graph-kind+
         '(schema field-of))
        (equal? (.ref value 'schema) +org-element-schema+)
-       (graph-query-view? value)
+       (graph-query-view? OrgElementRow OrgElementId OrgElementKind value)
        (procedure? (.ref value 'field-of))))
 
 (define-type (OrgElementGraphView @ Type.)
