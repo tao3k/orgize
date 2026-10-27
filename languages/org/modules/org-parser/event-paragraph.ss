@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org binds domain content; the engine compiles paragraph lifetime.
 
-(import (only-in :gerbil-parser/src/modules/parser/interface
+(import (only-in :gerbil-parser/src/declarations
                  line-structure-text make-source-event-scope source-paragraph-initial
                  source-paragraph-close-form source-paragraph-line-form
                  source-paragraph-open-condition source-paragraph-span-forms

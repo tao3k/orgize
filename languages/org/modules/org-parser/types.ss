@@ -3,7 +3,7 @@
 
 (import (only-in :clan/poo/object .ref .slot? object?)
         (only-in :clan/poo/mop define-type Type. element?)
-        (only-in :gerbil-parser/src/modules/parser/line-structure-objects
+        (only-in :gerbil-parser/src/declarations
                  block-line?))
 (export +org-event-block-kind+ +org-named-block-kind+ +org-inline-markup-kind+
         +org-inline-script-kind+

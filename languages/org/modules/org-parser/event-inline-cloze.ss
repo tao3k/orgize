@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org-fc cloze delimiters are recognized by the Org-owned event algorithm.
 
-(import (only-in :gerbil-parser/src/modules/parser/interface
+(import (only-in :gerbil-parser/src/declarations
                  source-pattern-end source-pattern-at?)
         (only-in "event-inline-primitives.ss"
                  link-index inline-next))

@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org list transitions projected from the declared POO list rule.
 
-(import (only-in :gerbil-parser/src/modules/parser/interface
+(import (only-in :gerbil-parser/src/declarations
                  make-source-event-scope source-event-name
                  line-structure-list line-structure-text list-line-trivia-token
                  source-list-initial source-list-scan-form source-list-present-condition

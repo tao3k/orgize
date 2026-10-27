@@ -4,7 +4,7 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in :std/list/list every)
         (only-in :clan/poo/object .o)
-        (only-in :gerbil-parser/src/modules/parser/graph-projection-objects
+        (only-in :gerbil-parser/graph-projection-support
                  graph-projection? graph-projection-nodes
                  graph-node-syntax-kind graph-node-label graph-node-fields
                  graph-field-name graph-field-mode)

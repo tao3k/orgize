@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org-owned POO contextual structure; gerbil-parser AOT resolves kind IDs.
 
-(import (only-in :gerbil-parser/src/modules/parser/line-structure-objects
+(import (only-in :gerbil-parser/src/declarations
                  make-line-structure make-heading-line make-heading-fields
                  make-block-line make-block-header make-key-value-line
                  make-inline-link make-text-line make-table-line make-list-line

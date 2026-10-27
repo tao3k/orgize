@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; POO-declared inline links are folded as source-backed text-line events.
 
-(import (only-in :gerbil-parser/src/modules/parser/interface
+(import (only-in :gerbil-parser/src/declarations
                  source-pattern-end source-pattern-at? source-priority-forms)
         (only-in "event-inline-primitives.ss"
                  link-index inline-next)

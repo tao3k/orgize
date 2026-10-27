@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org-owned, source-named LaTeX environment with an opaque body.
 
-(import (only-in :gerbil-parser/src/modules/parser/interface
+(import (only-in :gerbil-parser/src/declarations
                  source-ascii-ci-pattern-at? source-pattern-end
                  make-source-named-boundary line-structure-heading)
         (only-in "../../parser.ss" org-line-structure)

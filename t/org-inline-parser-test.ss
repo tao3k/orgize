@@ -5,7 +5,7 @@
         (only-in "../languages/org/modules/org-parser/macro-funs.ss"
                  expand-org-macro-template expand-org-property-macros)
         (only-in :clan/poo/object .o .cc)
-        (only-in :gerbil-parser/src/modules/parser/line-structure-objects
+        (only-in :gerbil-parser/src/declarations
                  line-structure-blocks)
         (only-in "../languages/org/parser.ss" org-line-structure)
         (only-in "../languages/org/modules/org-parser/types.ss"

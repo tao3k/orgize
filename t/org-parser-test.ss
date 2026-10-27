@@ -2,7 +2,7 @@
 ;;; Org parser declaration remains a checked POO value before AOT projection.
 
 (import (only-in :std/test check test-case test-suite)
-        (only-in :gerbil-parser/src/modules/parser/line-structure-objects
+        (only-in :gerbil-parser/src/declarations
                  line-structure? line-structure-heading line-structure-blocks
                  line-structure-table table-line-delimiter
                  line-structure-list list-line-unordered-markers list-line-ordered

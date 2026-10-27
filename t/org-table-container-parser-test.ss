@@ -3,7 +3,7 @@
 
 (import (only-in :std/test check test-case test-suite)
         (only-in :clan/poo/object .o)
-        (only-in :gerbil-parser/src/modules/parser/line-structure-objects
+        (only-in :gerbil-parser/src/declarations
                  line-structure-blocks)
         (only-in "../languages/org/parser.ss" org-line-structure)
         (only-in "../languages/org/modules/org-parser/types.ss"

@@ -24,7 +24,7 @@
         (for-syntax
          (only-in :gerbil-parser/src/language/descriptor
                  language-grammar-ir language-grammar-machine)
-        (only-in :gerbil-parser/src/compiler/machine parser-machine-grammar-digest)
+        (only-in :gerbil-parser/src/runtime/machine parser-machine-grammar-digest)
         (only-in "grammar.ss" org-mode-language-grammar)
         (only-in "modules/org-contract/grammar.ss" org-contract-language-grammar)
         (only-in "modules/org-contract/expectation-grammar.ss" org-expectation-language-grammar)))
