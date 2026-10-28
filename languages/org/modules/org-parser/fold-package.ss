@@ -13,9 +13,9 @@
     (lambda (unit)
       (write-source (path-expand (string-append (car unit) ".ss") output) (cdr unit))) units)
   ;; Compilation units are native build roots, not an invented business Module.
-  (write-source (path-expand "gerbil.pkg" output) "(package: orgize-fold)\n")
+  (write-source (path-expand "gerbil.pkg" output) "(package: orgize-fold prelude: :tao3k/yuanxu/prelude)\n")
   (write-source (path-expand "init.ss" output)
-    "(import :yuanxu/module-system/selection/init-syntax)\n(yuanxu! :load-modules \".\" mode: explicit rename: Generated)\n")
+    "(yuanxu! :load-modules \".\" mode: explicit rename: Generated)\n")
   (write-source (path-expand "build.ss" output)
     (call-with-output-string
       (lambda (port)

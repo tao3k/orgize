@@ -1671,7 +1671,7 @@ dependencies = [
 [[package]]
 name = "gerbil-parser-artifact"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-parser?rev=811e18e4b72a2cc049755fa39567a6a6bc671f4c#811e18e4b72a2cc049755fa39567a6a6bc671f4c"
+source = "git+https://github.com/tao3k/gerbil-parser?rev=7bb566d51bee2c222bfe467cae4ff74dcd9daa2c#7bb566d51bee2c222bfe467cae4ff74dcd9daa2c"
 dependencies = [
  "serde_json",
  "sha2 0.10.9",
@@ -1680,7 +1680,7 @@ dependencies = [
 [[package]]
 name = "gerbil-parser-runtime"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-parser?rev=811e18e4b72a2cc049755fa39567a6a6bc671f4c#811e18e4b72a2cc049755fa39567a6a6bc671f4c"
+source = "git+https://github.com/tao3k/gerbil-parser?rev=7bb566d51bee2c222bfe467cae4ff74dcd9daa2c#7bb566d51bee2c222bfe467cae4ff74dcd9daa2c"
 dependencies = [
  "gerbil-parser-artifact",
  "sha2 0.10.9",

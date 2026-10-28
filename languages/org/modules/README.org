@@ -22,7 +22,9 @@ annotation, archive, and review ecosystem, not one package or a new Org type.
 * Native selection and build ownership
 
 [[file:../../../../init.ss][Orgize init]] selects these three capabilities and the independent C binding
-owner through =yuanxu! :load-modules=. Each =interface.ss= is a Module declaration;
+owner through =yuanxu! :load-modules=. The package selects the shared
+=:tao3k/yuanxu/prelude=; init does not import the internal selection implementation.
+Each =interface.ss= is a Module declaration;
 =func.ss= owns its public functions and imports its narrow implementation units.
 Yuanxu derives the source closure from the admitted standard roles. There is no
 =library-roots= inventory, alternate loader, or repeated module catalog. Build

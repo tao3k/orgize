@@ -125,3 +125,49 @@ wire consumer and Scheme runtime entry alongside the C parser entry, tape and
 inline folds, each exactly once. This matches the actual compiler-owned closure
 without forcing unused event-list code into the C program. Forbidden compiler
 modules, native headers, source fingerprints and bundle checks remain enforced.
+
+* Shared public prelude (2026-10-29)
+
+Yuanxu's unique =:tao3k/yuanxu/prelude= now supplies the public =yuanxu!=
+declaration. It introduces the existing native selection macro only on use,
+preserving the caller's lexical context and source location. Ordinary prelude
+imports load neither the Module System nor user Modules, and execute no build.
+There is no second parser, module loader, declaration grammar or product prelude.
+
+Yuanxu, Parser, Orgize and the generated fold package select that same language
+through native =gerbil.pkg= metadata. Maintained init entries invoke =yuanxu!=
+directly instead of importing =module-system/selection/init-syntax=. Runtime
+functions keep their ordinary module identities; the prelude does not export
+all Parser or Org operations or confer source-admission authority.
+
+Upstream Yuanxu =a720fd6b746ba056c3aa6f2b8b5c344938198e52= completed its native
+source build under 2 GiB/300 seconds. The prelude, module-init-import and
+package-identity Suites passed nine cases under 1 GiB/120 seconds using the
+installed macOS ARM64 SDK. These results are local qualification, not a release
+or remote CI receipt. Parser and Orgize qualification is recorded separately.
+
+Parser =7bb566d51bee2c222bfe467cae4ff74dcd9daa2c= now pins that Yuanxu revision.
+Orgize's native dependency, Cargo and fuzz locks select the same Parser commit;
+the maintained pin-alignment gate passed. Native dependency installation then
+built and registered this cohort in the SDK. The installed older SDK's tagged
+=gerbil pkg update= completed checkout but rejected its subsequent dependency
+step; the ordinary =gerbil deps --install= completed after the update. An
+initial dependency-build attempt omitted the repository's macOS compiler
+settings and failed on Nix SDK headers; the rerun used the existing platform
+settings and passed. No uninstall, source alias or alternate loader was used.
+
+| Local gate | Result | Existing fence |
+|------------+--------+----------------|
+| Yuanxu source build | Exit 0 | 2 GiB / 300 seconds |
+| Yuanxu prelude, init import, package identity | 9 cases / 4 Suites, OK | 1 GiB / 120 seconds |
+| Parser native build | Exit 0 | 2 GiB / 600 seconds |
+| Parser runtime, graph query, source grammar | 19 cases / 3 Suites, OK | 1 GiB / 120 seconds |
+| Orgize build and native staging | Exit 0, STAGE OK | 2 GiB / 600 seconds |
+| Orgize standard tests | 230 cases / 18 Suites, OK | 1 GiB / 120 seconds |
+| Native program source origins | Passed, 443 modules | Existing exact-root checks |
+
+The separate Parser language-source-contract attempt was blocked by its ASP
+development-only benchmark dependency and is not a passing Suite. These are
+local warm qualification results on the installed SDK. The historical released
+SDK startup, output-progress and failed-Suite exit observations are retained;
+remote CI and cold-build acceptance are not inferred from these results.
