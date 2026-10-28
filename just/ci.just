@@ -7,6 +7,7 @@ ci_build_gambopt := replace(scheme_gambopt, "max-heap=1G", "max-heap=2G")
 [group('checks')]
 ci-prepare:
     command -v gerbil
+    just public-parser-interface-check
     {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" gerbil deps --install
     just alignment-dependency-check "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')"
     cd "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')" && {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" {{ timeout_command }} --signal=TERM --kill-after=5s 600s gerbil build --optimized

@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Private AOT projection of admitted Scheme/POO contracts to Rust values.
 
-(import (only-in :gerbil-parser/src/compiler/rust-syntax
+(import (only-in :gerbil-parser/rust-syntax-support
                  rust-struct rust-static rust-array rust-some rust-none
                  rust-number rust-string rust-identifier rust-render)
         (only-in :gerbil-parser/graph-projection-support

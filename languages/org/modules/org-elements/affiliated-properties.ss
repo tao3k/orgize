@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Native Scheme affiliated keyword membership.
 
-(import (only-in :gerbil-parser/src/compiler/rust-pure-aot
+(import (only-in :gerbil-parser/text-support
                  ascii-ci=? string-before))
 (export org-affiliated-keyword?)
 

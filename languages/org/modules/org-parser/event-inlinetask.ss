@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org-owned high-level inline tasks; generic event IR only supplies lookahead.
 
-(import (only-in :gerbil-parser/src/declarations
+(import (only-in :gerbil-parser/language-support/grammar
                  source-offset-after)
         (only-in "event-headline.ss"
                  headline-line-forms heading-marker heading-separator

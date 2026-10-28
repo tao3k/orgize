@@ -2,7 +2,7 @@
 ;;; Source-backed Org citation Objects; the Scheme state machine AOT-lowers
 ;;; alongside the other inline event strategies.
 
-(import (only-in :gerbil-parser/src/declarations
+(import (only-in :gerbil-parser/language-support/grammar
                  source-pattern-end source-pattern-at?)
         (only-in "event-inline-primitives.ss"
                  link-index inline-next)

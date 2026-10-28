@@ -171,3 +171,65 @@ development-only benchmark dependency and is not a passing Suite. These are
 local warm qualification results on the installed SDK. The historical released
 SDK startup, output-progress and failed-Suite exit observations are retained;
 remote CI and cold-build acceptance are not inferred from these results.
+
+* Product prelude identity and downstream imports (2026-10-29 correction)
+
+The shared-base recommendation above conflated infrastructure and product
+language identities. Parser owns =:tao3k/parser/prelude=, based on
+=:tao3k/yuanxu/prelude=. Parser, Orgize and generated fold packages now select
+the Parser entry. It supplies deferred =deflanguage=, =defgrammar-syntax= and
+=deftext-profile= alongside the inherited common language. Importing it alone
+does not initialize the Module System or Parser engines.
+
+Yuanxu now registers a package's verified root prelude context through its
+existing source-registration API. The declared package language, actual source
+identity and confined root path must agree. Native closure traversal and Module
+library projection include that owned prelude even when its native namespace
+is different from the ordinary library prefix. No Parser-specific loader,
+namespace alias or source catalog is used. Independent consumer tests require
+the installed prelude artifact; a source-only build exit is insufficient.
+
+The downstream import audit migrated 52 Scheme/Just files from implementation
+paths to reviewed Parser interfaces. =only-in= continues to select names.
+
+| Capability | Public interface |
+|------------+------------------|
+| Product language and common Module declarations | =:tao3k/parser/prelude= |
+| Grammar objects, contextual declarations, identity | =language-support/grammar= |
+| ParseArtifact and events | =artifact-support= |
+| Graph constructors and accessors | =graph-projection-support= / =graph-query-support= |
+| Pure text operations | =text-support= |
+| Native line traversal | =source-line-support= |
+| Immutable Fold program admission | =event-fold-program-support= |
+| Generator and compiler services | =language-build-support= |
+| Immutable Rust syntax values | =rust-syntax-support= |
+| Test assertions | =language-test-support= |
+
+Pure text definitions were moved out of =src/compiler/rust-pure-aot.ss= into
+=text-support.ss=; Rust lowering reuses the same definitions. Public text imports
+are tested to load no compiler modules. Build, test and foreign scanner services
+retain separate entrypoints. Existing public roots discover their dependencies
+through the native closure; no new =library-roots= inventory was added.
+
+CI's =public-parser-interface-check= rejects new downstream
+=:gerbil-parser/src/= references in maintained Scheme/Just sources. Private
+module identities retained in producer admission/origin assertions still refer
+to the actual implementation owners; those are not downstream import APIs.
+
+Final published cohort: Yuanxu =83517bfe1a34eb80a4281f740c94305ee4b0b21f= and
+Parser =8e9f83cbe452ea2af0d44ae9dd0fd8c3975858c7=. Native dependencies, primary
+Cargo and fuzz locks agree; the pin gate and native dependency installation
+completed. Final Orgize build/staging passed within 2 GiB/600 seconds and its
+standard test command passed 230 cases / 18 Suites within 1 GiB/120 seconds.
+The existing exact source-origin gate passed for all 461 native modules; no
+forbidden event-fold executor or legacy compiler text module entered the
+request program. Core source build plus 13 cases / 5 Suites, and Parser source
+build plus 22 cases / 4 Suites passed their existing local gates. The product
+prelude has real installed compiler and macro artifacts. The original local
+manifest and unrelated staged changes were retained.
+
+These warm local results supersede the shared-base recommendation, not the
+historical SDK, cold-build, performance or remote CI limitations. The initial
+source-bound build exit without an installed product prelude was rejected;
+actual native closure/publication and independent consumers now provide the
+qualification. Validation logs remain local under =target/yuanxu-migration/=.

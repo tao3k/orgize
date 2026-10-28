@@ -2,7 +2,7 @@
 ;;; Native Scheme table metadata predicates.
 
 (import (only-in :std/string/misc string-trim)
-        (only-in :gerbil-parser/src/compiler/rust-pure-aot
+        (only-in :gerbil-parser/text-support
                  string-after string-before string-prefix?
                  string-suffix? string-unsigned-at-most?))
 (export table-column-cookie-match?

@@ -4,7 +4,7 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in :clan/poo/object .o .ref)
         (only-in "../languages/org/modules/org-elements/graph-shape.ss" org-graph-shape)
-        (only-in :gerbil-parser/src/graph/graph-projection-objects graph-node-label
+        (only-in :gerbil-parser/graph-projection-support graph-node-label
                  graph-node-syntax-kind graph-node-fields
                  graph-field-name graph-field-mode)
         (only-in "../languages/org/modules/org-elements/runtime-interface.ss"

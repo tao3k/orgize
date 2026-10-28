@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org Entity recognition is one bounded source-backed inline strategy.
 
-(import (only-in :gerbil-parser/src/declarations
+(import (only-in :gerbil-parser/language-support/grammar
                  source-pattern-end source-pattern-at?)
         (only-in "entity-names.ss" org-entity-names)
         (only-in "event-inline-primitives.ss"

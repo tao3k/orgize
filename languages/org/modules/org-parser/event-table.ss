@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org table event policy projected from the declared line structure.
 
-(import (only-in :gerbil-parser/src/declarations
+(import (only-in :gerbil-parser/language-support/grammar
                  source-table-row-initial source-table-row-forms make-source-event-scope
                  line-structure-table table-line-delimiter
                  table-line-table-node)

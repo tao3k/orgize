@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Native Scheme link classification; Rust only admits projected values.
 
-(import (only-in :gerbil-parser/src/compiler/rust-pure-aot
+(import (only-in :gerbil-parser/text-support
                  string-before string-after
                  string-replace
                  string-prefix? string-suffix?

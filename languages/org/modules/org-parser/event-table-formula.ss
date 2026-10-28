@@ -9,7 +9,7 @@
                  source-delimited-fragment-initial source-delimited-fragment-forms
                  source-first-split-initial source-first-split-forms
                  source-reference-scan-initial source-reference-scan-forms)
-        (only-in :gerbil-parser/src/declarations
+        (only-in :gerbil-parser/language-support/grammar
                  line-structure-key-lines key-line-node
                  key-line-prefix key-line-separator)
         (only-in "parser.ss" org-line-structure)

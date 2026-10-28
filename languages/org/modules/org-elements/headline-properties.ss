@@ -3,7 +3,7 @@
 ;;; No second headline node or parser-engine semantics are introduced.
 
 (import (only-in :std/string/misc string-trim)
-        (only-in :gerbil-parser/src/compiler/rust-pure-aot
+        (only-in :gerbil-parser/text-support
                  string-before ascii-ci=?
                  string-after string-first-word
                  string-trim-start

@@ -5,7 +5,7 @@
         (only-in :clan/poo/number UInt)
         (only-in :std/list/list every)
         (only-in :gerbil-parser/graph-query-support GraphQueryViewContract graph-query-context?)
-        (only-in :gerbil-parser/src/graph/graph-projection-objects
+        (only-in :gerbil-parser/graph-projection-support
                  graph-node-label graph-node-fields graph-field-name)
         (only-in "graph-shape.ss" org-graph-shape org-headline-extra-fields))
 (export OrgElementRow OrgElementId OrgElementKind

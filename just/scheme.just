@@ -79,7 +79,7 @@ scheme-parser-projection-test source output load_path:
 # cannot admit an SDK interrupted before its loadable objects were produced.
 [private]
 scheme-aligned-parser-sdk-check output load_path:
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive -e '(import :gerbil-parser/src/language/descriptor :gerbil-parser/graph-query-support :gerbil-parser/src/compiler/event-fold-runtime)'
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive -e '(import :gerbil-parser/language-support/grammar :gerbil-parser/graph-query-support :gerbil-parser/rust-runtime-event-support)'
 
 [group('scheme')]
 scheme-aligned-program-stage-receipt output load_path parser_output org_output bridge_output:

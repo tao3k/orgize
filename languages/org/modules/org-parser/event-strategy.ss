@@ -2,11 +2,11 @@
 ;;; Org-owned, compositional event strategy. POO parser declarations own markers;
 ;;; the resulting forms execute in Scheme and its native AOT/FFI program.
 
-(import (only-in :gerbil-parser/src/declarations
+(import (only-in :gerbil-parser/language-support/grammar
                  source-ascii-ci-pattern-at? source-offset-after source-pattern-end
                  make-source-block-boundary make-source-boundary-parent
                  source-container-boundary-condition line-structure-heading)
-        (only-in :gerbil-parser/src/declarations
+        (only-in :gerbil-parser/language-support/grammar
                  line-structure-blocks
                  block-line-block-node block-line-opening block-line-closing
                  block-line-body-line block-line-begin-token

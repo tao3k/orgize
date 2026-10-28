@@ -115,3 +115,8 @@ runtime-feature-policy:
     rustc --edition 2024 --crate-type lib --cfg 'feature="runtime-scheme"' src/runtime_backend.rs -o target/runtime-policy/scheme.rlib
     ! rustc --edition 2024 --crate-type lib --cfg 'feature="runtime-rust"' --cfg 'feature="runtime-scheme"' src/runtime_backend.rs -o target/runtime-policy/both.rlib
     ! rustc --edition 2024 --crate-type lib src/runtime_backend.rs -o target/runtime-policy/neither.rlib
+
+# Downstream imports use reviewed interfaces; private origin IDs remain valid evidence.
+[group('checks')]
+public-parser-interface-check:
+    ! rg --line-number --glob '*.ss' --glob '*.just' ':gerbil-parser/(src)/' build.ss languages/org bindings/c t just

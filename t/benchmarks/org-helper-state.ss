@@ -1,7 +1,7 @@
 #!/usr/bin/env gxi
 (import (only-in :asp-gerbil-scheme/benchmark-api
                  benchmark-run/result benchmark-receipt-pass?)
-        (only-in :gerbil-parser/src/compiler/event-fold-runtime run-event-fold)
+        (only-in :gerbil-parser/rust-runtime-event-support run-event-fold)
         (only-in :orgize/languages/org/modules/org-parser/runtime-statistics
                  runtime-statistics-snapshot runtime-statistics-delta)
         (only-in "org-helper-state/runtime-counters.ss" sum-runtime-counters))

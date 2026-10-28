@@ -2,7 +2,7 @@
 ;;; Org-owned projection declarations shared by generator and runtime.
 
 (import (only-in :gerbil-parser/graph-projection-support make-graph-node make-graph-field)
-        (only-in :gerbil-parser/src/graph/graph-projection-objects
+        (only-in :gerbil-parser/graph-projection-support
                  graph-node-syntax-kind graph-node-category graph-node-label graph-node-fields
                  graph-field-token graph-field-name graph-field-mode))
 (export org-graph-shape org-headline-extra-fields)

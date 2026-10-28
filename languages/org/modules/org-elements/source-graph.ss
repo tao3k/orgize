@@ -7,7 +7,7 @@
         (only-in :std/string/misc string-trim)
         (only-in :orgize/languages/org/modules/org-parser/event-runtime parse-org-native-events)
         (only-in "graph-shape.ss" org-graph-shape)
-        (only-in :gerbil-parser/src/graph/graph-projection-objects graph-node-syntax-kind graph-node-label graph-node-fields
+        (only-in :gerbil-parser/graph-projection-support graph-node-syntax-kind graph-node-label graph-node-fields
                  graph-field-token graph-field-name graph-field-mode)
         (only-in "values.ss" make-org-element-graph-view)
         (only-in "headline-properties.ss" org-element-with-headline-properties))

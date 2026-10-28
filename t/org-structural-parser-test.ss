@@ -4,7 +4,7 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in :std/string/utf8 utf8->string)
         (only-in :clan/poo/object .o)
-        (only-in :gerbil-parser/src/declarations
+        (only-in :gerbil-parser/language-support/grammar
                  line-structure-blocks)
         (only-in "../languages/org/modules/org-parser/parser.ss" org-line-structure)
         (only-in "../languages/org/modules/org-parser/value-types.ss"

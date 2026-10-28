@@ -2,7 +2,7 @@
 ;;; Scheme-owned recognition of lifecycle line shapes inside LOGBOOK drawers.
 
 (import (only-in :std/string/misc string-trim)
-        (only-in :gerbil-parser/src/compiler/rust-pure-aot
+        (only-in :gerbil-parser/text-support
                  string-after string-before
                  string-prefix? string-trim-start))
 (export logbook-content-line

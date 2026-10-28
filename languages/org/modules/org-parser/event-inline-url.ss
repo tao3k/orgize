@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Scheme-owned angle and plain URL Objects for the Org inline event fold.
 
-(import (only-in :gerbil-parser/src/declarations
+(import (only-in :gerbil-parser/language-support/grammar
                  source-pattern-at? source-pattern-end)
         (only-in "event-inline-primitives.ss"
                  link-index inline-next))

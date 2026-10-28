@@ -3,7 +3,7 @@
 ;;; Scheme and is also the sole source of the AOT matcher IR.
 
 (import (only-in :clan/poo/object .ref)
-        (only-in :gerbil-parser/src/compiler/rust-pure-aot string-prefix?)
+        (only-in :gerbil-parser/text-support string-prefix?)
         (only-in "value-types.ss" org-source-match-strategy?)
         (only-in "values.ss" make-org-source-match-strategy))
 (export org-radio-match-strategy org-next-radio-match org-radio-matches)

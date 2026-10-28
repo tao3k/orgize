@@ -8,7 +8,7 @@
 (import (only-in "text-funs.ss" org-physical-lines org-trim)
         (only-in "keyword-funs.ss" org-keyword-facts)
         (only-in :std/string/misc string-trim)
-        (only-in :gerbil-parser/src/compiler/rust-pure-aot
+        (only-in :gerbil-parser/text-support
                  string-first-word string-rest-after-first-word))
 (export org-family-call org-document-batch org-link-batch org-affiliation-batch org-logbook-batch org-table-batch)
 

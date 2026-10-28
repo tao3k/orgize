@@ -2,7 +2,7 @@
 (import (only-in :clan/poo/object .slot?)
         (only-in :clan/poo/mop define-type Type. element?)
         (only-in :clan/poo/type Record Exactly Symbol String List Enum)
-        (only-in :gerbil-parser/src/language/line-structure-objects block-line?))
+        (only-in :gerbil-parser/language-support/grammar block-line?))
 (export +org-event-block-kind+ +org-named-block-kind+ +org-inline-markup-kind+
         +org-inline-script-kind+
         +org-event-helper-kind+

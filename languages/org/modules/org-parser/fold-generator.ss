@@ -1,10 +1,10 @@
 ;;; -*- Gerbil -*-
 ;;; Org owns strategy declarations and generated text; Gerbil owns products.
-(import (only-in :gerbil-parser/src/compiler/event-fold-scheme-modules
+(import (only-in :gerbil-parser/language-build-support
                  event-fold-scheme-module-sources)
-        (only-in :gerbil-parser/src/build-support/compiler-profile run-build-tool)
+        (only-in :gerbil-parser/language-build-support run-build-tool)
         (only-in "fold-package.ss" write-fold-package)
-        (only-in :gerbil-parser/src/compiler/event-fold-scheme-build
+        (only-in :gerbil-parser/language-build-support
                  compile-event-fold-scheme-units)
         (only-in "grammar.ss" org-mode-language-grammar)
         (only-in "event-strategy.ss"

@@ -1,9 +1,9 @@
 ;;; -*- Gerbil -*-
 ;;; POO-declared Org headlines, planning, and keyed lines lower to event IR.
 
-(import (only-in :gerbil-parser/src/declarations
+(import (only-in :gerbil-parser/language-support/grammar
                  source-offset-after source-pattern-end source-ascii-ci-pattern-at?)
-        (only-in :gerbil-parser/src/declarations
+        (only-in :gerbil-parser/language-support/grammar
                  line-structure-heading line-structure-key-lines
                  key-line-node key-line-prefix key-line-keys key-line-separator
                  key-line-key-token key-line-value-token key-line-trivia-token

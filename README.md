@@ -20,7 +20,8 @@ Packaging and release performance qualification are still pending.
 For Scheme package consumers, `gerbil build --optimized` runs the existing Org
 fold producer and Yuanxu's native build projection. `init.ss` selects the Parser,
 Element, Contract and C Modules through `yuanxu! :load-modules`, supplied by
-the shared `:tao3k/yuanxu/prelude` selected in `gerbil.pkg`. Their `func.ss`
+the Parser-owned `:tao3k/parser/prelude` selected in `gerbil.pkg`. It inherits
+Yuanxu's common language. Their `func.ss`
 roles own public functions; callers can also import narrow source interfaces.
 
 Choose exactly one execution-owner feature. `runtime-rust` (default) owns

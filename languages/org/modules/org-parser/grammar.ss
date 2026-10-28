@@ -2,7 +2,7 @@
 ;;; Org v1 grammar. Contextual structure is declared in parser.ss.
 
 (import (only-in :gerbil-parser/language-support/grammar deflanguage)
-        (only-in :gerbil-parser/src/language/descriptor language-grammar-with-identity))
+        (only-in :gerbil-parser/language-support/grammar language-grammar-with-identity))
 (export org-mode-language-grammar)
 
 (deflanguage org-mode

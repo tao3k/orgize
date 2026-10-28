@@ -1,5 +1,5 @@
 ;;; Org declares description semantics; gerbil-parser owns link recognition.
-(import (only-in :gerbil-parser/src/declarations
+(import (only-in :gerbil-parser/language-support/grammar
                  line-structure-text text-line-inline-link inline-link-opening
                  make-source-event-scope source-inline-link-initial
                  source-inline-link-scan-forms source-inline-link-open-condition)

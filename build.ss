@@ -10,7 +10,7 @@
         (only-in :clan/poo/object .get)
         (only-in :yuanxu/module-system/building/source-package register-module-build-source!)
         (only-in :yuanxu/module-system/building/script defbuild-script)
-        (only-in :gerbil-parser/src/build-support/compiler-profile
+        (only-in :gerbil-parser/language-build-support
                  initialize-compiler-build! run-build-tool)
         (only-in "./init.ss" orgize.init.exports))
 (export main)

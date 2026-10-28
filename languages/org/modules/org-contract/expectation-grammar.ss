@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; One expectation per block; comments and whitespace are grammar extras.
 (import (only-in :gerbil-parser/language-support/grammar deflanguage)
-        (only-in :gerbil-parser/src/language/descriptor language-grammar-with-identity))
+        (only-in :gerbil-parser/language-support/grammar language-grammar-with-identity))
 (export org-expectation-language-grammar org-expectation-grammar
         org-expectation-parser-ir org-expectation-parser)
 

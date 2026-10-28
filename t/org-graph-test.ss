@@ -6,7 +6,7 @@
         (only-in :clan/poo/object .o)
         (only-in :gerbil-parser/graph-projection-support
                  make-graph-node make-graph-field make-graph-projection graph-projection?)
-        (only-in :gerbil-parser/src/graph/graph-projection-objects
+        (only-in :gerbil-parser/graph-projection-support
                  graph-projection-nodes graph-node-syntax-kind graph-node-label graph-node-fields
                  graph-field-name graph-field-mode)
         (only-in "../languages/org/modules/org-elements/graph-shape.ss" org-graph-shape)

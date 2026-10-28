@@ -2,7 +2,7 @@
 ;;; Org-owned contract expression syntax; gerbil-parser owns the AOT engine.
 
 (import (only-in :gerbil-parser/language-support/grammar deflanguage)
-        (only-in :gerbil-parser/src/language/descriptor language-grammar-with-identity))
+        (only-in :gerbil-parser/language-support/grammar language-grammar-with-identity))
 (export org-contract-language-grammar
         org-contract-grammar
         org-contract-parser-ir
