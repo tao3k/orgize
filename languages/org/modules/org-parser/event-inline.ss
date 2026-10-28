@@ -29,7 +29,7 @@
                  cloze-event-initial cloze-open-forms cloze-scan-forms)
         (only-in "event-source-header.ss"
                  event-source-header-forms)
-        (only-in "objects.ss"
+        (only-in "values.ss"
                  make-org-inline-markup org-inline-markup-byte
                  org-inline-markup-id org-inline-markup-node))
 (export event-inline-initial nested-description-event-initial

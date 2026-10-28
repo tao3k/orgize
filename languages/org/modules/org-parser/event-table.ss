@@ -5,10 +5,10 @@
                  source-table-row-initial source-table-row-forms make-source-event-scope
                  line-structure-table table-line-delimiter
                  table-line-table-node)
-        (only-in "../../parser.ss" org-line-structure))
+        (only-in "parser.ss" org-line-structure))
 (import (only-in "event-table-formula.ss" table-formula-marker)
         (only-in "event-source-content.ss" source-content-initial source-content-forms)
-        (only-in "objects.ss" make-org-event-helper))
+        (only-in "values.ss" make-org-event-helper))
 (export table-event-initial table-close-form table-or-element-form table-content-helper)
 
 (def table-rule (line-structure-table org-line-structure))

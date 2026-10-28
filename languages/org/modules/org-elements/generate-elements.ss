@@ -73,6 +73,6 @@
 
 (def arguments (command-line))
 (unless (>= (length arguments) 3)
-  (error "usage: gxi languages/org/generate-elements.ss OUTPUT"))
+  (error "usage: gxi languages/org/modules/org-elements/generate-elements.ss OUTPUT"))
 (call-with-output-file (car (reverse arguments))
   (lambda (port) (emit-elements port)))

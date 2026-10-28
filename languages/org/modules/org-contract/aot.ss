@@ -6,16 +6,16 @@
                  rust-number rust-string rust-identifier rust-render)
         (only-in :gerbil-parser/graph-projection-support
                  graph-projection-digest)
-        (only-in "../../grammar.ss" org-mode-language-grammar)
-        (only-in "../../graph.ss" org-graph-projection)
-        (only-in "../org-elements/aot.ss" org-element-property-rust-value)
-        (only-in "../org-elements/interface.ss"
+        (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
+        (only-in :orgize/languages/org/modules/org-elements/graph org-graph-projection)
+        (only-in :orgize/languages/org/modules/org-elements/aot org-element-property-rust-value)
+        (only-in :orgize/languages/org/modules/org-elements/func
                  org-element-query-node-kind
                  org-element-query-groups
                  org-element-query-relation
                  org-element-query-target)
-        (only-in "types.ss" org-contract-definition?)
-        (only-in "objects.ss"
+        (only-in "value-types.ss" org-contract-definition?)
+        (only-in "values.ss"
                  org-contract-expectation-operator org-contract-expectation-count
                  org-contract-binding-name org-contract-binding-query
                  org-contract-assertion-id org-contract-assertion-severity

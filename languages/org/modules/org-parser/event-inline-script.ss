@@ -2,7 +2,7 @@
 ;;; Org-owned subscript/superscript strategies projected to source-backed events.
 
 (import (only-in "event-inline-primitives.ss" link-index inline-next)
-        (only-in "objects.ss" make-org-inline-script
+        (only-in "values.ss" make-org-inline-script
                  org-inline-script-byte org-inline-script-id
                  org-inline-script-node))
 (export inline-script-trigger-bytes inline-script-upper-digit-bytes

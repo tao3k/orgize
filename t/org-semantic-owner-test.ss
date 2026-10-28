@@ -5,9 +5,12 @@
         "../languages/org/modules/org-parser/keyword-funs.ss"
         "../languages/org/modules/org-parser/dir-path-funs.ss"
         "../languages/org/modules/org-parser/family-funs.ss"
+        (only-in "../languages/org/modules/org-elements/headline-properties.ss"
+                 todo-state-from-directives todo-keyword-from-directives
+                 headline-content-after-todo)
         (only-in "../languages/org/modules/org-elements/radio-match.ss" org-radio-matches)
         (only-in "../languages/org/modules/org-contract/document-plan.ss" org-contract-document-plan)
-        (only-in "../languages/org/event-tape.ss"
+        (only-in "../bindings/c/event-tape.ss"
                  org-request->tape org-events->tape org-event-tape-header
                  expression-value-rows expectation-value-rows contract-value-rows))
 (export org-semantic-owner-test)
@@ -35,6 +38,30 @@
 
 (def org-semantic-owner-test
   (test-suite "Native semantic owner closure"
+    (test-case "document keyword-set reuse equals scalar semantic owners"
+      (let ((titles '("" "plain α" "TODO item" "DONE item" "NEXT item"
+                      "WAIT item" "  NEXT α" "NEXT(x) literal" "NEXT"))
+            (configured-open '("TODO")) (configured-done '("DONE")))
+        (for-each
+         (lambda (directives)
+           (let* ((keywords (foldr (lambda (directive rest)
+                                    (append (list "TODO" directive) rest)) '() directives))
+                  (triples (foldr (lambda (title rest)
+                                   (append (list title title "false") rest)) '() titles))
+                  (packet (foldr (lambda (fields rest)
+                                  (append (list (number->string (length fields))) fields rest))
+                                 '() (list configured-open configured-done keywords triples)))
+                  (rows (take (cdr (org-document-batch packet)) (length titles))))
+             (for-each
+              (lambda (title row)
+                (check (take row 3)
+                       => (list (todo-state-from-directives title directives configured-open configured-done)
+                                (todo-keyword-from-directives title directives configured-open configured-done)
+                                (headline-content-after-todo title directives configured-open configured-done))))
+              titles rows)))
+         '(() ("NEXT(x) WAIT(w) | DONE(d)")
+           ("NEXT | NEXT DONE") ("| DONE")
+           ("NEXT | DONE" "WAIT | FINISHED")))))
     (test-case "Contract document properties use native last wins and policy defaults"
       (let (rows (contract-plan '("1" "4" "CONTRACT_ID" " old " "contract_id" " λ "
                                  "CONTRACT_ALIAS" "a,b a" "SEVERITY" "warning" "0")))

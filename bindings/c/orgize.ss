@@ -3,9 +3,9 @@
 
 (import (only-in :std/ffi C-declare C-ffi-macrology def-C-lambda def-C-type)
         (only-in :clan/poo/object .o .ref)
-        (only-in "../../languages/org/modules/org-elements/runtime-interface.ss"
+        (only-in :orgize/languages/org/modules/org-elements/runtime-interface
                  make-org-element-graph-view make-org-element-query)
-        (only-in "../../languages/org/modules/org-contract/runtime-interface.ss"
+        (only-in :orgize/languages/org/modules/org-contract/runtime-interface
                  make-org-contract-assertion make-org-contract-expectation
                  org-contract-evaluate-assertion
                  org-contract-result-matched-count

@@ -1,37 +1,35 @@
+# Compilation uses the qualified 2 GiB heap; runtime tests keep scheme_gambopt.
+ci_build_gambopt := replace(scheme_gambopt, "max-heap=1G", "max-heap=2G")
+
 # CI prepares the same compiler-owned program used by Rust and maturin.
 # Package installation owns transitive POO/core dependencies; the parser SDK
-# itself is rebuilt from Cargo's declared immutable checkout, not an old lib.
+# is installed once by the native package manager at the aligned immutable pin.
 [group('checks')]
-ci-prepare: ci-tools-check
-    {{ scheme_env }} GAMBOPT="${GAMBOPT:+${GAMBOPT},}max-heap=2G,debug=q" gerbil env gxi -:max-heap=2G,debug=q build-dependencies.ss
-    just prepare-dev
-    just ci-program-owner "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')" "{{ justfile_directory() }}/target/native-ci"
-
-# Fail before building transitive packages when a runner lacks owner tools.
-[private]
-ci-tools-check:
-    command -v rg
-    command -v jq
-    command -v python3
-    command -v cargo
-    command -v git
+ci-prepare:
     command -v gerbil
-    command -v gxi
-    command -v gxpkg
+    {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" gerbil deps --install
+    just alignment-dependency-check "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')"
+    cd "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')" && {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" {{ timeout_command }} --signal=TERM --kill-after=5s 600s gerbil build --optimized
+    {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" {{ timeout_command }} --signal=TERM --kill-after=5s 600s gerbil build --optimized
+    just parser-program-source-check "{{ justfile_directory() }}/target/gerbil-parser/program.json" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}"
 
-[private]
-ci-program-owner parser_source bridge_source output:
-    just alignment-dependency-check "{{ parser_source }}" "{{ bridge_source }}"
-    just scheme-bridge-build "{{ bridge_source }}" "{{ output }}/bridge"
-    just scheme-aligned-parser-build-receipt "{{ parser_source }}" "{{ output }}/parser" "{{ env_var('GERBIL_PATH') }}/lib"
-    just scheme-parser-build-isolated "{{ output }}/org" "{{ output }}/bridge/lib:{{ output }}/parser/lib:{{ env_var('GERBIL_PATH') }}/lib"
-    just scheme-aligned-program-stage-receipt "{{ justfile_directory() }}/target/gerbil-parser" "{{ output }}/org/lib:{{ output }}/bridge/lib:{{ output }}/parser/lib:{{ env_var('GERBIL_PATH') }}/lib" "{{ output }}/parser" "{{ output }}/org" "{{ output }}/bridge"
-
+# gxtest owns discovery, execution and exit status. The observer only keeps
+# the existing five-second output deadline; it cannot select or run Suites.
 [group('checks')]
 ci-scheme-test:
-    just scheme-module-test t/org-elements-graph-types-test.ss "{{ justfile_directory() }}/target/native-ci/graph-types" "{{ justfile_directory() }}/target/native-ci/org/lib:{{ justfile_directory() }}/target/native-ci/parser/lib:{{ env_var('GERBIL_PATH') }}/lib"
-    just scheme-closure-receipt "{{ justfile_directory() }}/target/native-ci/closure" "{{ justfile_directory() }}/target/native-ci/org/lib:{{ justfile_directory() }}/target/native-ci/parser/lib:{{ env_var('GERBIL_PATH') }}/lib"
-    just scheme-directory-test "{{ justfile_directory() }}/target/native-ci/directory" "{{ justfile_directory() }}/target/native-ci/org/lib:{{ justfile_directory() }}/target/native-ci/parser/lib:{{ env_var('GERBIL_PATH') }}/lib"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p target/native-ci
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py gerbil test -v 5 orgize-test.ss 2>&1 | tee target/native-ci/scheme-test.log
+    test "$(rg -c '^CASE-OK ' target/native-ci/scheme-test.log)" -eq 230
+    test "$(rg -c '^SUITE-OK ' target/native-ci/scheme-test.log)" -eq 18
+    rg --quiet '^OK$' target/native-ci/scheme-test.log
+    ! rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' target/native-ci/scheme-test.log
+    status=0
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py gerbil test -v 5 t/fixtures/cli-failure.ss > target/native-ci/failure-control.log 2>&1 || status=$?
+    test "$status" -eq 42
+    rg --quiet '^ERROR CHECK ' target/native-ci/failure-control.log
+    ! rg --quiet '^OK$' target/native-ci/failure-control.log
 
 # Reuse the same Darwin/native linker policy as local qualification.
 [group('checks')]

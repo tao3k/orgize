@@ -1,0 +1,127 @@
+#+title: 20.10 Native CLI and MOP Reuse Audit
+#+date: 2026-10-28
+
+* Correction to 20.09
+
+This record supersedes 20.09's API/build/test ownership recommendations.
+The previous =funs.ss= public entry was not Yuanxu's native =func.ss= role.
+Compensating with business =library-roots= inventories repeated dependency
+ownership already provided by =yuanxu! :load-modules=.
+
+[[file:../../init.ss][Root init]] selects the three Org Modules and native C Module. Their
+=func.ss= roles import ordinary implementation units; =config.ss= owns
+profiles; =interface.ss= declares the Module. Yuanxu admits roles and derives
+the native source closure. OrgContract is fully selected through these roles.
+No business =library-roots=, compatibility API, source scanner, or alternate
+loader remains. Explicit Build roots are retained only for foreign compiler
+leaves and their actual platform options.
+
+The dependency direction is Parser, then Element, then Contract, then native
+integration. The tape consumer composes these capabilities and therefore lives
+in =bindings/c/event-tape.ss=. It does not belong to the base Parser Module.
+Cross-module sources use admitted owner identities. Foreign clock definitions
+are compiled as native leaves; profiling accepts clock procedures so the
+functional role remains interpretable. C entrypoints and profiling fixtures
+supply the same native monotonic/thread CPU clocks.
+
+* Reuse rather than another object system
+
+Contract, Element and Parser business data use POO =define-type= and =Record=
+with native union, list, enum, optional-field and scalar contracts.
+Constructors call native =validate=. Yuanxu's =defpoo-object-family= generates
+accessors, as it does in Parser. Handwritten structural validators and repeated
+accessor definitions have been removed.
+
+Org graph declarations construct Parser's existing graph node/field objects.
+The duplicate Org graph Types, constructors and conversion pass are removed.
+Native Parser graph-query contracts remain shared dependencies. Orgize retains
+Org-specific catalog membership, query bounds, source semantics and grammar
+constraints. Lazy strategy programs are not forced merely to test membership.
+Generic/MOP reuse follows the owning protocol; introducing a new dispatch
+framework would repeat the same mistake.
+
+* Native command ownership
+
+- =gerbil deps --install= owns package installation and transitive dependencies.
+- =gerbil build --optimized= runs the Parser-backed fold producer, the standard
+  generated-package build adapter, native Module build and program staging.
+- =gerbil test -v 5 orgize-test.ss= owns discovery and execution of exported
+  standard Suites. Orgize supplies only the roster and fixture lifecycle.
+
+The generated fold package retains the Parser emitter's exact unit catalog.
+An empty explicit Module selection is sufficient for those compiler-owned
+roots; artificial Module role files are unnecessary. The duplicate Org
+bootstrap, dependency installer, closure runner, executable test projection
+and Core lifecycle tests have been removed.
+
+CI runs the Scheme lane once per OS, uses the native commands above and checks
+an intentional failing Suite's exit status. The generic output observer is
+retained solely to preserve the existing five-second idle-output requirement.
+It does not discover, select or execute Suites. The source build now uses 2 GiB/600 seconds, as authorized after the local
+qualification below. Tests retain the 1 GiB/120-second fence.
+
+* Evidence and open gates
+
+Parser is aligned at =811e18e4b72a2cc049755fa39567a6a6bc671f4c= across native,
+Cargo and fuzz consumers. This is an uncommitted local candidate, not a remote
+CI or release receipt.
+
+Before the final native-role correction, the installed SDK completed a 2 GiB
+native build including program staging and passed 230 cases in 18 Suites.
+Those results do not qualify the final role/ownership edits. Final candidate
+results are recorded below after running those commands.
+
+Existing negative evidence is retained: the earlier 1 GiB build exhausted its
+heap, and the CI five-second output gate expired during local SDK startup.
+The installed older SDK reports failed test output with exit zero, which the
+new negative control correctly rejects. The repository's pinned release SDK
+passed archive SHA verification and top-level help, but its build help and
+failure-control command produced no output before a separate ten-second smoke
+deadline on this host. This does not establish identical behavior on hosted CI.
+No custom test runner, weakened timeout or replacement SDK pin is used to
+conceal these failures. Cold full-build and remote CI acceptance remain open.
+
+The native-role candidate completed =gerbil build --optimized= with exit zero
+under the installed SDK's 2 GiB diagnostic configuration, including
+=ORG-PARSER-STAGE OK=. Its staged program contains 443 modules; the existing
+exact source-origin gate passed against the local Org/Parser and bridge roots.
+The subsequent unchanged 1 GiB fence refused the generated package with
+=stale module scope generation= (exit 70). This is distinct from the earlier
+heap overflow and does not establish CI acceptance. A final diagnostic rebuild
+also covers both native C execution owners' clock callback wiring.
+
+=git diff --check=, =just --dump=, =cargo fmt --all -- --check= and the Parser
+revision-alignment gate passed. The documented =cargo run -- lint docs
+development.org= command stopped in the native build prerequisite because no
+qualified =ORGIZE_FFI_BUNDLE= or explicit producer manifest was selected; this
+was not a completed documentation-lint pass.
+
+Final candidate: =native-cli-build-module-roles-final.log= records exit zero
+and =ORG-PARSER-STAGE OK= under the 2 GiB diagnostic configuration. Native
+=gerbil test -v 5 orgize-test.ss= then passed all 230 cases / 18 Suites and
+exited zero under the unchanged 1 GiB/120-second fence. The exact source-origin
+gate passed again after the final rebuild. Logs are local artifacts under
+=target/yuanxu-migration/=; these are warm local results, not cold or remote CI
+qualification. The repository manifest was restored to its pre-build contents.
+
+* CI build heap update
+
+Following the explicit request to use 2 GiB in CI, =ci-prepare= now applies one
+=ci_build_gambopt= setting to native dependency installation, bridge build and
+Orgize build. It preserves the selected SDK paths from =scheme_gambopt=.
+Runtime tests still use the 1 GiB setting. The 600-second build deadline,
+120-second test deadline, output observer and negative controls are unchanged.
+The earlier 1 GiB refusal remains historical evidence; increasing the heap does
+not prove that the stale-scope refusal or released-SDK startup issue is fixed.
+Remote CI with this configuration has not yet been run.
+
+* Producer contract alignment during submission
+
+The commit hook rejected the staged C program because Rust's required-module
+contract still named the old event-list consumer. The C request ABI uses the
+direct tape consumer; event-list parsing remains an independent Scheme API,
+qualified by the native Suites. The producer contract now requires the native
+wire consumer and Scheme runtime entry alongside the C parser entry, tape and
+inline folds, each exactly once. This matches the actual compiler-owned closure
+without forcing unused event-list code into the C program. Forbidden compiler
+modules, native headers, source fingerprints and bundle checks remain enforced.

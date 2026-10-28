@@ -10,7 +10,7 @@
                  source-list-content-offset source-list-item-open-forms
                  source-list-paragraph-span-forms source-list-paragraph-close-form
                  source-list-close-forms source-list-first-blank-forms source-list-reset-blank-form)
-        (only-in "../../parser.ss" org-line-structure)
+        (only-in "parser.ss" org-line-structure)
         (only-in "event-headline.ss" heading-marker heading-separator))
 (export list-event-initial list-close-paragraph list-close-all list-finish-forms list-or-element-form)
 

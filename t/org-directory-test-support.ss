@@ -2,7 +2,7 @@
 ;;; Test-only temporary source mutations, never repository fixture mutation.
 (import (only-in :clan/poo/object .o)
         (only-in :std/misc/ports read-all-as-string)
-        (only-in "../languages/org/modules/org-contract/interface.ss" OrgDirectoryProfile.))
+        (only-in "../languages/org/modules/org-contract/config.ss" OrgDirectoryProfile.))
 (export directory-mutation-fixture directory-test-write directory-test-read)
 (def (directory-test-read path) (call-with-input-file path read-all-as-string))
 (def (directory-test-write path text)

@@ -75,12 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     unsafe { orgize::initialize_native_runtime() }?;
     let args: Vec<_> = env::args_os().collect();
     let (input, output, contract_interface, elements_interface) = match args.as_slice() {
-        [_, input, output] => (
-            input,
-            output,
-            "../interface.ss",
-            "../../org-elements/interface.ss",
-        ),
+        [_, input, output] => (input, output, "../func.ss", "../../org-elements/func.ss"),
         [_, input, output, contract, elements] => (
             input,
             output,
@@ -109,8 +104,8 @@ mod fixture;
 mod tests {
     use super::tangle;
 
-    const CONTRACT_INTERFACE: &str = "../interface.ss";
-    const ELEMENTS_INTERFACE: &str = "../../org-elements/interface.ss";
+    const CONTRACT_INTERFACE: &str = "../func.ss";
+    const ELEMENTS_INTERFACE: &str = "../../org-elements/func.ss";
 
     fn default_tangle(source: &str) -> Result<String, String> {
         tangle(source, CONTRACT_INTERFACE, ELEMENTS_INTERFACE)
@@ -173,12 +168,12 @@ mod tests {
         let source = include_str!("../languages/org/modules/org-contract/contracts.org");
         let generated = tangle(
             source,
-            "/consumer/org-contract/interface.ss",
-            "/consumer/org-elements/interface.ss",
+            "/consumer/org-contract/func.ss",
+            "/consumer/org-elements/func.ss",
         )
         .expect("consumer contracts use upstream interfaces");
-        assert!(generated.contains("(only-in \"/consumer/org-contract/interface.ss\""));
-        assert!(generated.contains("(only-in \"/consumer/org-elements/interface.ss\""));
+        assert!(generated.contains("(only-in \"/consumer/org-contract/func.ss\""));
+        assert!(generated.contains("(only-in \"/consumer/org-elements/func.ss\""));
         assert_eq!(
             generated.matches("(make-org-contract-definition ").count(),
             5
@@ -191,8 +186,8 @@ mod tests {
         let source = include_str!("../tests/fixtures/org-contract/customer-contracts.org");
         let generated = tangle(
             source,
-            "../../../../languages/org/modules/org-contract/interface.ss",
-            "../../../../languages/org/modules/org-elements/interface.ss",
+            "../../../../languages/org/modules/org-contract/func.ss",
+            "../../../../languages/org/modules/org-elements/func.ss",
         )
         .expect("consumer feature source tangles through the Org Element graph");
         assert_eq!(

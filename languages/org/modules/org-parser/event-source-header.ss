@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Source-block header arguments are Scheme-owned, source-backed event tokens.
 
-(import (only-in "objects.ss" make-org-event-helper))
+(import (only-in "values.ss" make-org-event-helper))
 (export event-source-header-helper event-source-header-forms)
 
 (def header-index '(line-index source-header-byte-index))

@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Definitions and escaped invocation arguments share native source ownership.
 
-(import (only-in "objects.ss" make-org-event-helper)
+(import (only-in "values.ss" make-org-event-helper)
         (only-in "event-source-content.ss"
                  source-content-initial source-content-forms source-space-at?))
 (export macro-event-helpers)

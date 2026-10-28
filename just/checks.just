@@ -6,11 +6,11 @@
 dependency-check:
     ! rg --fixed-strings --quiet 'gerbil-scheme-rust' gerbil.pkg
     test ! -d languages/org/v1
-    ! rg --quiet 'languages/org/v1|org-v1-' src languages t tests bindings build.ss build-parser.ss build-support benches examples --glob '!*.snap'
+    ! rg --quiet 'languages/org/v1|org-v1-' src languages t tests bindings build.ss build-support benches examples --glob '!*.snap'
     ! rg --quiet 'gerbil-parser-rowan|^rowan\s*=|name = "rowan"' Cargo.toml Cargo.lock fuzz/Cargo.lock
     ! rg --quiet 'gerbil_parser_rowan|\browan::|pub use rowan' src tests benches examples languages --glob '*.rs'
     ! rg --fixed-strings --quiet 'rowan.build' src tests benches just/benchmark.just
-    ! rg --quiet 'rowan-event|org-rowan|parse-org-rowan-events|rowan_admission' src languages bindings t tests build-parser.ss build.ss
+    ! rg --quiet 'rowan-event|org-rowan|parse-org-rowan-events|rowan_admission' src languages bindings t tests build.ss
     ! rg --quiet '\b[Rr]owan\b' src languages bindings t tests --glob '!*.snap'
     rg --fixed-strings --quiet 'rev = "{{ parser_revision }}"' Cargo.toml
     rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ parser_revision }}' gerbil.pkg
@@ -55,7 +55,7 @@ parser-revision-check source revision:
 [private]
 parser-program-source-check manifest parser_output org_output program_output bridge_output:
     jq --exit-status '([.modules[] | select(.module == "gerbil-scheme-rust/scheme/runtime")] | length) == 1 and all(.modules[]; .module != "gerbil-scheme-rust/scheme/native")' "{{ manifest }}"
-    jq --exit-status --arg parser "{{ parser_output }}/lib/static/" --arg org "{{ org_output }}/lib/static/" --arg stage "{{ program_output }}/lib/static/" --arg bridge "{{ bridge_output }}/lib/static/" '.schema == "gerbil-scheme-rust.aot-program.v1" and ([.modules[] | select(.module | startswith("gerbil-parser/"))] | length > 0) and ([.modules[] | select(.module | startswith("orgize/"))] | length > 0) and ([.modules[] | select(.module | startswith("gerbil-scheme-rust/"))] | length > 0) and all(.modules[]; if (.module | startswith("gerbil-parser/")) then (.scm | startswith($parser)) elif (.module | startswith("gerbil-scheme-rust/")) then (.scm | startswith($bridge)) elif (.module == "orgize/bindings/c/clock" or .module == "orgize/bindings/c/runtime-statistics" or .module == "orgize/languages/org/event-tape") then (.scm | startswith($stage)) elif (.module | startswith("orgize/")) then (.scm | startswith($org)) else true end)' "{{ manifest }}"
+    jq --exit-status --arg parser "{{ parser_output }}/lib/static/" --arg org "{{ org_output }}/lib/static/" --arg stage "{{ program_output }}/lib/static/" --arg bridge "{{ bridge_output }}/lib/static/" '.schema == "gerbil-scheme-rust.aot-program.v1" and ([.modules[] | select(.module | startswith("gerbil-parser/"))] | length > 0) and ([.modules[] | select(.module | startswith("orgize/"))] | length > 0) and ([.modules[] | select(.module | startswith("gerbil-scheme-rust/"))] | length > 0) and all(.modules[]; if (.module | startswith("gerbil-parser/")) then (.scm | startswith($parser)) elif (.module | startswith("gerbil-scheme-rust/")) then (.scm | startswith($bridge)) elif (.module == "orgize/languages/org/modules/org-parser/clock" or .module == "orgize/languages/org/modules/org-parser/runtime-statistics" or .module == "orgize/bindings/c/event-tape") then (.scm | startswith($stage)) elif (.module | startswith("orgize/") or startswith("orgize-fold/")) then (.scm | startswith($org)) else true end)' "{{ manifest }}"
 
 [private]
 parser-program-source-negative-check previous parser_output org_output program_output bridge_output:

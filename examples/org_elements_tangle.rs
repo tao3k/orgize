@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     unsafe { orgize::initialize_native_runtime() }?;
     let args: Vec<_> = env::args_os().collect();
     let (input, output, interface_module) = match args.as_slice() {
-        [_, input, output] => (input, output, "../interface.ss"),
+        [_, input, output] => (input, output, "../func.ss"),
         [_, input, output, interface] => (
             input,
             output,
@@ -96,7 +96,7 @@ mod tests {
 
     fn tagged_queries_are_projected_from_org_elements() {
         let source = include_str!("../languages/org/modules/org-elements/queries.org");
-        let generated = tangle(source, "../interface.ss").expect("five named queries are admitted");
+        let generated = tangle(source, "../func.ss").expect("five named queries are admitted");
         assert_eq!(generated.matches("(org-element-query ").count(), 5);
         assert_eq!(
             generated,
@@ -106,7 +106,7 @@ mod tests {
 
     fn babel_without_feature_tag_cannot_define_a_query() {
         let source = "* Plain\n:PROPERTIES:\n:QUERY_ID: plain\n:END:\n#+begin_src scheme\n(org-elements headline)\n#+end_src\n";
-        super::fixture::assert_rejected(tangle(source, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(source, "../func.ss"));
     }
 
     fn contract_and_obsolete_element_tags_cannot_define_queries() {
@@ -114,43 +114,43 @@ mod tests {
             let source = format!(
                 "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+begin_src scheme {tag}\n(org-elements headline)\n#+end_src\n"
             );
-            super::fixture::assert_rejected(tangle(&source, "../interface.ss"));
+            super::fixture::assert_rejected(tangle(&source, "../func.ss"));
         }
     }
 
     fn mixed_feature_tags_cannot_define_queries() {
         let source = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+begin_src scheme :org-elements-query :org-contract\n(org-elements headline)\n#+end_src\n";
-        super::fixture::assert_rejected(tangle(source, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(source, "../func.ss"));
     }
 
     fn feature_header_is_case_insensitive_but_language_must_be_scheme() {
         let upper = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+BEGIN_SRC SCHEME :ORG-ELEMENTS-QUERY\n(org-elements headline)\n#+END_SRC\n";
-        assert!(tangle(upper, "../interface.ss").is_ok());
+        assert!(tangle(upper, "../func.ss").is_ok());
 
         let pseudo_language = "* Query\n:PROPERTIES:\n:QUERY_ID: tasks.open\n:END:\n#+BEGIN_SRC org-elements-query\n(org-elements headline)\n#+END_SRC\n";
-        super::fixture::assert_rejected(tangle(pseudo_language, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(pseudo_language, "../func.ss"));
     }
 
     fn missing_or_duplicate_ids_fail_closed() {
         let missing =
             "* Query\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
-        super::fixture::assert_rejected(tangle(missing, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(missing, "../func.ss"));
         let duplicate = "* First\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n* Second\n:PROPERTIES:\n:QUERY_ID: same\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline)\n#+end_src\n";
-        super::fixture::assert_rejected(tangle(duplicate, "../interface.ss"));
+        super::fixture::assert_rejected(tangle(duplicate, "../func.ss"));
     }
 
     fn consumer_can_select_its_own_interface_import() {
         let source = "* Query\n:PROPERTIES:\n:QUERY_ID: consumer.work\n:END:\n#+begin_src scheme :org-elements-query\n(org-elements headline (property todo-type \"todo\"))\n#+end_src\n";
-        let generated = tangle(source, "/consumer/gerbil/org-elements/interface.ss")
+        let generated = tangle(source, "/consumer/gerbil/org-elements/func.ss")
             .expect("consumer query uses the same Org Elements interface");
-        assert!(generated.contains("\"/consumer/gerbil/org-elements/interface.ss\""));
+        assert!(generated.contains("\"/consumer/gerbil/org-elements/func.ss\""));
     }
 
     fn consumer_query_source_artifact_stays_in_sync() {
         let source = include_str!("../tests/fixtures/org-elements/customer-queries.org");
         let generated = tangle(
             source,
-            "../../../../languages/org/modules/org-elements/interface.ss",
+            "../../../../languages/org/modules/org-elements/func.ss",
         )
         .expect("consumer Org source declares tagged queries");
         assert_eq!(

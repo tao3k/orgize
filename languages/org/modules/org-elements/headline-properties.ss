@@ -11,8 +11,8 @@
                  string-before-last-word string-prefix? string-suffix?
                  string-words string-single-ascii-uppercase?
                  string-unsigned-at-most? string-lowercase)
-        (only-in "types.ss" org-element-graph-view?)
-        (only-in "objects.ss"
+        (only-in "value-types.ss" org-element-graph-view?)
+        (only-in "values.ss"
                  make-org-element-graph-view
                  make-org-headline-properties org-headline-property-field
                  org-element-graph-records org-element-graph-id-of

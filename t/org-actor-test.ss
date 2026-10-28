@@ -1,6 +1,6 @@
 (import (only-in :std/test check test-case test-suite)
         (only-in "../bindings/c/orgize-actor.ss" org-parse-batch)
-        (only-in "../languages/org/event-runtime.ss"
+        (only-in "../languages/org/modules/org-parser/event-runtime.ss"
                  parse-org-native-events-with-parameters))
 (export org-actor-test)
 

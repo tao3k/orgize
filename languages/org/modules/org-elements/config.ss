@@ -4,7 +4,7 @@
 (import (only-in :clan/poo/object .o)
         (only-in :gerbil-parser/graph-projection-support
                  graph-projection?)
-        (only-in "types.ss"
+        (only-in "value-types.ss"
                  +org-element-schema+ +org-element-profile-kind+
                  org-elements-profile?)
         (only-in "catalog.ss"
@@ -13,7 +13,7 @@
                  +org-affiliated-keywords+ +org-object-restrictions+
                  +org-secondary-values+ org-object-allowed?
                  org-secondary-value?)
-        (only-in "../../graph.ss" org-graph-projection))
+        (only-in "graph.ss" org-graph-projection))
 (export OrgElementsProfile. org-elements-default-profile
         +org-element-kinds+ +org-greater-element-kinds+
         +org-object-kinds+ +org-recursive-object-kinds+

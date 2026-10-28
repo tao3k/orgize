@@ -1,13 +1,13 @@
 ;;; -*- Gerbil -*-
 ;;; Pure Org contract query and assertion algorithms over a typed graph view.
 
-(import (only-in "types.ss" org-contract-definition?)
-        (only-in "../org-elements/runtime-interface.ss"
+(import (only-in "value-types.ss" org-contract-definition?)
+        (only-in :orgize/languages/org/modules/org-elements/runtime-interface
                  org-element-graph-view? make-org-element-query-context
                  org-element-select org-element-query-target
                  org-element-graph-records org-element-graph-id-of
                  org-element-graph-parent-of org-element-graph-kind-of)
-        (only-in "objects.ss"
+        (only-in "values.ss"
                  make-org-contract-result
                  org-contract-expectation-operator org-contract-expectation-count
                  org-contract-binding-name org-contract-binding-query

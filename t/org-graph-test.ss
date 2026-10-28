@@ -1,38 +1,28 @@
 ;;; -*- Gerbil -*-
 ;;; Org graph rules are source-owned POO declarations.
 
-(import (only-in :std/test check test-case test-suite)
+(import (only-in :std/test check check-exception test-case test-suite)
         (only-in :std/list/list every)
         (only-in :clan/poo/object .o)
         (only-in :gerbil-parser/graph-projection-support
-                 graph-projection? graph-projection-nodes
-                 graph-node-syntax-kind graph-node-label graph-node-fields
+                 make-graph-node make-graph-field make-graph-projection graph-projection?)
+        (only-in :gerbil-parser/src/graph/graph-projection-objects
+                 graph-projection-nodes graph-node-syntax-kind graph-node-label graph-node-fields
                  graph-field-name graph-field-mode)
-        (only-in "../languages/org/modules/org-elements/graph-types.ss"
-                 org-graph-node? org-graph-field?)
-        (only-in "../languages/org/modules/org-elements/graph-objects.ss"
-                 make-org-graph-node make-org-graph-field
-                 org-graph-node-fields org-graph-field-mode)
-        (only-in "../languages/org/graph-shape.ss" org-graph-shape)
-        (only-in "../languages/org/graph.ss" org-graph-projection))
+        (only-in "../languages/org/modules/org-elements/graph-shape.ss" org-graph-shape)
+        (only-in "../languages/org/modules/org-elements/graph.ss" org-graph-projection))
 (export org-graph-test)
 
 (def org-graph-test
   (test-suite "Org POO graph projection"
-   (test-case "source graph shape is admitted as POO before projection"
-     (let* ((field (make-org-graph-field 'HeadlineTitle "title" 'one))
-            (node (make-org-graph-node 'OrgSection "section" "headline"
-                                       (list field))))
-       (check (org-graph-field? field) => #t)
-       (check (org-graph-node? node) => #t)
-       (check (every org-graph-node? org-graph-shape) => #t)
-       (check (org-graph-node-fields node) => (list field))
-       (check (org-graph-field-mode field) => 'one)
-       (check (org-graph-node? '(OrgSection section headline)) => #f)
-       (check (org-graph-field?
-               (.o kind: 'org-graph-field rust: 'HeadlineTitle
-                   label: "title" mode: 'unknown))
-              => #f)))
+   (test-case "source graph shape uses Parser's admitted object family directly"
+     (let* ((field (make-graph-field 'HeadlineTitle "title"))
+            (node (make-graph-node 'OrgSection "section" "headline" (list field))))
+       (check (graph-projection? (make-graph-projection (list node))) => #t)
+       (check (graph-projection? (make-graph-projection org-graph-shape)) => #t)
+       (check (graph-node-fields node) => (list field))
+       (check (graph-field-mode field) => 'append)
+       (check-exception (make-graph-field 'HeadlineTitle "title" 'unknown) exception?)))
    (test-case "one declaration owns the contract scenario record kinds"
       (let (nodes (graph-projection-nodes org-graph-projection))
         (check (graph-projection? org-graph-projection) => #t)

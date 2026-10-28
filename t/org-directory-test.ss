@@ -1,10 +1,11 @@
 ;;; -*- Gerbil -*-
 ;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 ;;; SPDX-License-Identifier: Apache-2.0 AND LGPL-2.1-or-later
-(import (only-in :std/test check check-exception test-case test-suite)
+(import (only-in "../languages/org/modules/org-contract/config.ss" OrgDirectoryProfile.)
+        (only-in :std/test check check-exception test-case test-suite)
         (only-in :clan/poo/object .o .ref)
-        (only-in "../languages/org/modules/org-contract/interface.ss"
-                 OrgDirectoryProfile. org-directory-profile?
+        (only-in "../languages/org/modules/org-contract/func.ss"
+                  org-directory-profile?
                  org-directory-validate org-directory-validation-current?
                  org-directory-contracts make-org-contract-definition)
         (only-in "org-directory-test-support.ss"

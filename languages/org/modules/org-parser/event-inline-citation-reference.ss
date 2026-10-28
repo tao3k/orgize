@@ -3,7 +3,7 @@
 ;;; has passed its Org-owned validity scan.  The bounded helper shares no
 ;;; mutable state with its caller and executes in the native Scheme closure.
 
-(import (only-in "objects.ss" make-org-event-helper))
+(import (only-in "values.ss" make-org-event-helper))
 (export citation-reference-helper citation-reference-key-bytes)
 
 (def citation-ref-index '(line-index citation-ref-byte-index))

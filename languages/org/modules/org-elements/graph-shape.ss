@@ -1,42 +1,36 @@
 ;;; -*- Gerbil -*-
 ;;; Org-owned projection declarations shared by generator and runtime.
 
-(import (only-in "modules/org-elements/graph-objects.ss"
-                 make-org-graph-node make-org-graph-field
-                 org-graph-node-rust org-graph-node-category
-                 org-graph-node-label org-graph-node-fields
-                 org-graph-field-rust org-graph-field-label
-                 org-graph-field-mode))
+(import (only-in :gerbil-parser/graph-projection-support make-graph-node make-graph-field)
+        (only-in :gerbil-parser/src/graph/graph-projection-objects
+                 graph-node-syntax-kind graph-node-category graph-node-label graph-node-fields
+                 graph-field-token graph-field-name graph-field-mode))
+(export org-graph-shape org-headline-extra-fields)
 
-(export org-graph-shape org-headline-extra-fields
-        org-graph-node-rust org-graph-node-category
-        org-graph-node-label org-graph-node-fields
-        org-graph-field-rust org-graph-field-label org-graph-field-mode)
-
-(def (field rust label (mode 'one))
-  (make-org-graph-field rust label mode))
+(def (field rust label (mode 'append))
+  (make-graph-field rust label mode))
 
 (def (node rust category label fields)
-  (make-org-graph-node rust category label fields))
+  (make-graph-node rust category label fields))
 
 ;; One native declaration family for every consumer of the shared header
 ;; scanner. These wrappers remain transparent to public graph record ancestry.
 (def (with-source-header-projection declaration)
   (let* ((fields (map (lambda (field)
-                       (if (eq? (org-graph-field-rust field) 'SourceHeaderValue)
-                           (make-org-graph-field
-                            'SourceHeaderValue (org-graph-field-label field)
-                            (if (eq? (org-graph-field-mode field) 'each)
+                       (if (eq? (graph-field-token field) 'SourceHeaderValue)
+                           (make-graph-field
+                            'SourceHeaderValue (graph-field-name field)
+                            (if (eq? (graph-field-mode field) 'each)
                                 'each-node-text 'node-text))
                            field))
-                     (org-graph-node-fields declaration)))
-         (has? (lambda (kind) (memq kind (map org-graph-field-rust fields))))
+                     (graph-node-fields declaration)))
+         (has? (lambda (kind) (memq kind (map graph-field-token fields))))
          (header? (has? 'SourceHeaderTrivia))
          (switch? (has? 'SourceSwitchName)))
     (if (or header? switch?)
-        (node (org-graph-node-rust declaration)
-              (org-graph-node-category declaration)
-              (org-graph-node-label declaration)
+        (node (graph-node-syntax-kind declaration)
+              (graph-node-category declaration)
+              (graph-node-label declaration)
               (append fields
                       (if header?
                           (list (field 'SourceHeaderColon "header")

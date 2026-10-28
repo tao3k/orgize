@@ -1,7 +1,7 @@
 #!/usr/bin/env gxi
 (import (only-in :asp-gerbil-scheme/benchmark-api
                  micro-kernel-run/result micro-kernel-receipt-pass?)
-        (only-in :gerbil-parser/src/compiler/event-source-lines line-starts-with?))
+        (only-in :gerbil-parser/src/runtime/source-lines line-starts-with?))
 (export main)
 
 (def (main label contract output)

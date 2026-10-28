@@ -5,11 +5,11 @@
 (import (only-in :clan/poo/object .o .ref)
         (only-in :std/list/list find)
         (only-in :std/string/misc string-trim)
-        (only-in "../../event-runtime.ss" parse-org-native-events)
-        (only-in "../../graph-shape.ss" org-graph-shape
-                 org-graph-node-rust org-graph-node-label org-graph-node-fields
-                 org-graph-field-rust org-graph-field-label org-graph-field-mode)
-        (only-in "objects.ss" make-org-element-graph-view)
+        (only-in :orgize/languages/org/modules/org-parser/event-runtime parse-org-native-events)
+        (only-in "graph-shape.ss" org-graph-shape)
+        (only-in :gerbil-parser/src/graph/graph-projection-objects graph-node-syntax-kind graph-node-label graph-node-fields
+                 graph-field-token graph-field-name graph-field-mode)
+        (only-in "values.ss" make-org-element-graph-view)
         (only-in "headline-properties.ss" org-element-with-headline-properties))
 (export org-source-element-graph org-source-element-field)
 
@@ -22,7 +22,7 @@
          (rules (make-hash-table)) (stack '()) (records '())
          (offset 0) (roots 0) (next-id 0))
     (when (> size 1048576) (error "Org graph exceeds one MiB"))
-    (for-each (lambda (rule) (hash-put! rules (org-graph-node-rust rule) rule))
+    (for-each (lambda (rule) (hash-put! rules (graph-node-syntax-kind rule) rule))
               org-graph-shape)
     (def (slice start end) (utf8->string (subu8vector bytes start end)))
     ;; frame: native kind, rule, ID, mapped parent, start, mutable fields.
@@ -38,12 +38,12 @@
         (when rule
           (for-each
            (lambda (field)
-             (let (mode (org-graph-field-mode field))
-               (when (and (eq? kind (org-graph-field-rust field))
+             (let (mode (graph-field-mode field))
+               (when (and (eq? kind (graph-field-token field))
                           (if node? (memq mode '(node-text each-node-text))
                               (not (memq mode '(node-text each-node-text)))))
-                 (put frame (org-graph-field-label field) text mode))))
-           (org-graph-node-fields rule)))))
+                 (put frame (graph-field-name field) text mode))))
+           (graph-node-fields rule)))))
     (for-each
      (lambda (event)
        (unless (pair? event) (error "invalid Org event" event))
@@ -87,10 +87,10 @@
                           (let (declaration (vector-ref candidate 1))
                             (and declaration
                                  (find (lambda (field)
-                                         (and (eq? kind (org-graph-field-rust field))
-                                              (memq (org-graph-field-mode field)
+                                         (and (eq? kind (graph-field-token field))
+                                              (memq (graph-field-mode field)
                                                     '(node-text each-node-text))))
-                                       (org-graph-node-fields declaration))))) stack))
+                                       (graph-node-fields declaration))))) stack))
               (when owner (project owner kind text #t)))
             (set! stack (cdr stack))
             (when (eq? kind 'OrgNodeProperty)
@@ -110,7 +110,7 @@
             (when rule
               (set! records
                     (cons (.o id: id-value parent: parent-value
-                              kind: (org-graph-node-label rule)
+                              kind: (graph-node-label rule)
                               fields: fields-value start: start-value end: end-value)
                           records)))))
          (else (error "unknown Org event" event))))

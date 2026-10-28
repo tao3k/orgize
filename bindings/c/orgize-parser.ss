@@ -1,9 +1,11 @@
 ;;; -*- Gerbil -*-
 ;;; One export in the existing linked Gerbil program, not another runtime.
-(import (only-in "orgize.ss" orgize-c-round-trip)
+(import (only-in :orgize/languages/org/modules/org-parser/clock
+                 native-monotonic-ns native-thread-cpu-ns)
+        (only-in "orgize.ss" orgize-c-round-trip)
         (only-in "orgize-scheme-runtime.ss" orgize-scheme-runtime-link-anchor)
         (only-in :gerbil-scheme-rust/scheme/runtime gerbil-rs-root-bytevector)
-        (only-in "../../languages/org/event-tape.ss" org-request->tape))
+        (only-in :orgize/bindings/c/event-tape org-request->tape))
 (export main contract-link-anchor runtime-link-anchor)
 (def contract-link-anchor orgize-c-round-trip)
 (def runtime-link-anchor orgize-scheme-runtime-link-anchor)
@@ -24,5 +26,7 @@
        (let ((bytes (make-u8vector length)))
          (if (= (orgize/bindings/c/orgize-parser#copy-request input length bytes) 1)
            (gerbil-scheme-rust/scheme/runtime#gerbil-rs-root-bytevector
-            (orgize/languages/org/event-tape#org-request->tape bytes))
+            (orgize/bindings/c/event-tape#org-request->tape bytes
+              orgize/languages/org/modules/org-parser/clock#native-monotonic-ns
+              orgize/languages/org/modules/org-parser/clock#native-thread-cpu-ns))
            0))))))

@@ -4,7 +4,7 @@
 
 (import (only-in :gerbil-parser/graph-projection-support
                  generate-graph-projection-runtime-module)
-        (only-in "grammar.ss" org-mode-language-grammar)
+        (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
         (only-in "graph.ss" org-graph-projection))
 
 (export main)

@@ -2,7 +2,7 @@
 ;;; Maintained Org-native contract profile; no expression-language mode.
 
 (import (only-in :clan/poo/object .o)
-        (only-in "types.ss"
+        (only-in "value-types.ss"
                  +org-contract-schema+ +org-contract-profile-kind+
                  org-contract-profile?))
 (export OrgContractProfile. org-contract-default-profile OrgDirectoryProfile.)

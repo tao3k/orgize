@@ -1,11 +1,11 @@
 ;;; -*- Gerbil -*-
 ;;; Hygienic declarative Org Element query syntax over POO clauses.
 
-(import (only-in "objects.ss"
+(import (only-in "values.ss"
                  make-org-element-property-clause
                  make-org-element-relation-clause
                  make-org-named-element-query)
-        (only-in "funs.ss" org-element-query-compose
+        (only-in "query.ss" org-element-query-compose
                  org-element-predicate-all org-element-predicate-any))
 (export org-elements org-element-query
         property property-contains property-local-path all-of any-of

@@ -1,9 +1,10 @@
 ;;; -*- Gerbil -*-
 ;;; Contract behavior is Scheme/POO over Org Element facts, not S-expressions.
 
-(import (only-in :std/test check check-exception test-case test-suite)
+(import (only-in "../languages/org/modules/org-contract/config.ss" org-contract-default-profile)
+        (only-in :std/test check check-exception test-case test-suite)
         (only-in :clan/poo/object .o .ref)
-        (only-in "../languages/org/modules/org-elements/interface.ss"
+        (only-in "../languages/org/modules/org-elements/func.ss"
                  make-org-element-query make-org-element-graph-view
                  make-org-element-query-context org-element-map
                  org-element-property org-element-lineage?
@@ -11,13 +12,13 @@
                  org-element-graph-parent-of org-element-graph-kind-of
                  org-element-query? org-elements property child-of
                  descendant-of)
-        (only-in "../languages/org/modules/org-contract/interface.ss"
+        (only-in "../languages/org/modules/org-contract/func.ss"
                  make-org-contract-expectation
                  make-org-contract-binding make-org-contract-assertion
                  make-org-contract-definition org-contract-result-passed?
                  org-contract-result-matched-count
                  org-contract-evaluate-definition
-                 org-contract-default-profile org-contract-profile?
+                  org-contract-profile?
                  org-contract-block assert-org-element
                  org-contract-definition-id org-contract-definition-scope
                  org-contract-definition-assertions

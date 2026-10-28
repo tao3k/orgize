@@ -1,9 +1,15 @@
-(import (only-in :std/test check test-case test-suite)
-        (only-in "../languages/org/event-tape.ss"
+(import (only-in :orgize/languages/org/modules/org-parser/clock
+                 native-monotonic-ns native-thread-cpu-ns)
+        (only-in :std/test check test-case test-suite)
+        (only-in :std/misc/ports read-all-as-string)
+        (rename-in (only-in "../bindings/c/event-tape.ss"
                  org-events->tape org-request->tape org-event-tape-header)
-        (only-in "../languages/org/event-runtime.ss"
+                   (org-request->tape pure-request->tape))
+        (only-in "../languages/org/modules/org-parser/event-runtime.ss"
                  parse-org-native-events-with-parameters))
 (export org-event-tape-test)
+(def (org-request->tape request)
+  (pure-request->tape request native-monotonic-ns native-thread-cpu-ns))
 
 (def (request source level policy (operation 0))
   (let* ((source-bytes (string->utf8 source))
@@ -46,6 +52,26 @@
 
 (def org-event-tape-test
   (test-suite "Org native event boundary"
+    (test-case "direct consumer equals independent list encoding for real and adversarial sources"
+      (let (sources
+            (append
+             (map (lambda (path) (call-with-input-file path read-all-as-string))
+                  '("tests/fixtures/org-elements/representative.org"
+                    "tests/fixtures/org-contract/customer-contracts.org"
+                    "tests/fixtures/org-directory/documents/main.org"))
+             (list "" "* α\r\nx^{β} x^2\n"
+                   "#+begin_src text\n* not a headline\n:PROPERTIES:\n#+end_src\n"
+                   (string-join (make-list 1024 "- α [fn:ref]\n") ""))))
+        (for-each
+         (lambda (config)
+           (for-each
+            (lambda (source)
+              (check (org-request->tape (request source (car config) (cdr config)))
+                     => (org-events->tape
+                         (parse-org-native-events-with-parameters
+                          source (car config) (cdr config)))))
+            sources))
+         '((1 . 0) (15 . 1) (15 . 2)))))
     (test-case "bounded batch retains ordered individual grammar tapes"
       (let* ((inputs '("" "* α\r\nx^{β}\n" "* duplicate\n" "* duplicate\n"))
              (tape (org-request->tape (batch-request inputs)))

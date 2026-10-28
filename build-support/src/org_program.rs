@@ -59,7 +59,7 @@ pub fn write_org_program() {
         .map(PathBuf::from)
         .unwrap_or_else(|| root.join("target/gerbil-parser/program.json"));
     let manifest = manifest.canonicalize().expect(
-        "Org::parse requires the canonical Gerbil AOT program: use just scheme-parser-build-isolated then scheme-aligned-program-stage-receipt; no generated-Rust fallback",
+        "Org::parse requires the canonical Gerbil AOT program: run gerbil build; no generated-Rust fallback",
     );
     println!("cargo:rerun-if-changed={}", manifest.display());
     let gsc = discover_gambit_gsc_from_env()
@@ -99,8 +99,10 @@ pub fn write_org_program() {
             required_modules: &[
                 "gerbil-scheme-rust/scheme/runtime",
                 "orgize/bindings/c/orgize-parser",
-                "orgize/fold/parse-org-compiled-events",
-                "orgize/fold/parse-org-compiled-inline-events",
+                "orgize/bindings/c/orgize-scheme-runtime",
+                "orgize/bindings/c/event-tape",
+                "orgize-fold/parse-org-compiled-inline-events",
+                "orgize-fold/parse-org-compiled-tape",
             ],
             forbidden_modules: &[
                 "gerbil-parser/src/compiler/event-fold-runtime",

@@ -2,7 +2,9 @@
 ;;; One native actor owns all Scheme ABI calls and GC root transfers. The
 ;;; blocking idle wait is intentional for this single-worker comparative lane;
 ;;; it is NOT a general green-thread I/O scheduler or an SMP implementation.
-(import (only-in "../../languages/org/event-tape.ss" org-request->tape))
+(import (only-in :orgize/bindings/c/event-tape org-request->tape)
+        (only-in :orgize/languages/org/modules/org-parser/clock
+                 native-monotonic-ns native-thread-cpu-ns))
 (export orgize-scheme-runtime-link-anchor)
 (extern namespace: orgize/bindings/c/orgize-scheme-runtime
   take-job job-kind job-length copy-job publish-job process-contract-job
@@ -16,7 +18,7 @@
        (let (bytes (make-u8vector (job-length job)))
          (unless (= (copy-job job bytes) 1)
            (error "invalid native request storage"))
-         (publish-job job (org-request->tape bytes)))
+         (publish-job job (org-request->tape bytes native-monotonic-ns native-thread-cpu-ns)))
        (process-contract-job job)))))
 
 (def (run-scheme-runtime)

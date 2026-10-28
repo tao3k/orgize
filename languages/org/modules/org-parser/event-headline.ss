@@ -8,14 +8,14 @@
                  key-line-node key-line-prefix key-line-keys key-line-separator
                  key-line-key-token key-line-value-token key-line-trivia-token
                  heading-line-marker heading-line-separator)
-        (only-in "../../parser.ss" org-line-structure)
+        (only-in "parser.ss" org-line-structure)
         (only-in "event-paragraph.ss"
                  paragraph-close-form paragraph-line-form)
         (only-in "event-source-header.ss" event-source-header-forms)
         (only-in "event-babel-call.ss" event-babel-call-forms)
         (only-in "event-table-formula.ss" table-formula-marker)
         (only-in "event-headline-tags.ss" event-headline-title-forms)
-        (only-in "objects.ss" make-org-event-helper))
+        (only-in "values.ss" make-org-event-helper))
 (export headline-form headline-line-forms planning-start-condition
         heading-marker heading-separator
         keyword-value-event-helper)

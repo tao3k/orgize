@@ -48,7 +48,7 @@ of the old downstream mechanism and executable admission.
 
 ** E01 / P0: LineStructure to native Scheme event programs
 
-Evidence: [[file:../../../languages/org/parser.ss][parser.ss]] declares POO rules,
+Evidence: [[file:../../../languages/org/modules/org-parser/parser.ss][parser.ss]] declares POO rules,
 but [[file:../../../languages/org/modules/org-parser/event-strategy.ss][event-strategy.ss]]
 still generates block/header/container recognition and event control flow.
 

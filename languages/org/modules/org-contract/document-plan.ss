@@ -1,8 +1,8 @@
 ;;; -*- Gerbil -*-
 ;;; Pure, document-local Contract facts over parser-owned field projections.
-(import (only-in "../org-parser/contract-reference-funs.ss"
+(import (only-in :orgize/languages/org/modules/org-parser/contract-reference-funs
                  org-contract-policy org-contract-aliases org-severity org-contract-block-plans)
-        (only-in "../org-parser/property-token-funs.ss" org-ascii-lower))
+        (only-in :orgize/languages/org/modules/org-parser/property-token-funs org-ascii-lower))
 (export org-contract-document-plan)
 (defstruct contract-source-input (sections blocks))
 

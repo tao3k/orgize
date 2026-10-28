@@ -1,0 +1,490 @@
+#+title: 10.10 Literate Programming and AI Agent First Boundaries
+#+date: 2026-10-28
+
+* Status and research question
+
+Research against Orgize =e3cf4acc9f5e355dba94b4017167885e47ae50c9= on
+=codex/org-object-aot-completion=, with pre-existing local edits retained.
+This document distinguishes paper evidence, inspected implementation, and
+proposed experiments. It does not introduce a DSL or claim a qualified
+Catala integration, legal formalization, or natural-language compiler.
+
+Question: what should Orgize provide for AI Agents and humans working
+across independently organized code, comments, documents, SysML v2 models,
+and engineering evidence?
+
+Working position, revised after the user discussion on 2026-10-28:
+Orgize is the Org document participant in that workflow. Code retains its
+native module/file/symbol organization; documents retain their explanatory
+organization. References connect them. Existing Deterministic Engineering,
+SysML v2, GQL, OrgContract, and ASCENT mechanisms should be composed at
+their owning boundaries rather than reproduced as an Org-only system.
+
+The earlier recommendation to prioritize Org-to-Catala compilation and
+place rule implementations and relationship declarations in Org is
+withdrawn as the general direction. Embedded code and tangling remain
+available for cases that choose them; they are not prerequisites for
+Agent use or the architectural center of this research. The paper and
+Catala remain comparison evidence, not a mandate to adopt their source
+layout or default logic.
+
+* Source acquisition and identity
+
+** Lawsky paper
+
+- Sarah B. Lawsky, /A Logic for Statutes/, Florida Tax Review 21(1),
+  2017, printed pp. 60-80.
+- [[https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3088206][User-supplied SSRN record]],
+  DOI [[https://doi.org/10.2139/ssrn.3088206][10.2139/ssrn.3088206]].
+- [[https://journals.upress.ufl.edu/ftr/article/view/507][Publisher record]],
+  DOI [[https://doi.org/10.5744/ftr.2017.0002][10.5744/ftr.2017.0002]].
+- [[https://scholarship.law.ufl.edu/ftr/vol21/iss1/2/][University repository record]].
+- Downloaded [[https://gwern.net/doc/law/2017-lawsky.pdf][mirror PDF]] on 2026-10-28 after
+  direct SSRN and university PDF retrieval returned access restrictions.
+- Local [[file:../../.cache/research/lawsky-2017/a-logic-for-statutes.pdf][PDF]],
+  [[file:../../.cache/research/lawsky-2017/a-logic-for-statutes.txt][searchable layout text]], and
+  [[file:../../.cache/research/lawsky-2017/source.json][acquisition receipt]]. These live in the ignored cache;
+  fresh checkouts need to retrieve the source again.
+- PDF SHA-256:
+  =f9352d0566c36112dbef45ec230419f0492d60cd41f369fddeb64ce94db953c0=.
+- The file has 22 PDF pages: printed pp. 60-80 and a reproduction notice.
+  Printed page = PDF page + 59 (one-based, for the article pages).
+
+Read the complete extracted article and visually checked printed pp. 65
+and 76 for priority notation and the formula discussed below. Extraction
+uses =pdftotext -layout=; the PDF remains authoritative for typography.
+The mirror is a copy of the 2017 publication. Its identity with SSRN's
+record marked revised in 2026 has not been established. Keep the complete
+article in the local cache rather than adding third-party full text to
+the repository. The tracked research is an original analysis with citations.
+
+* Paper reading: claims and limits
+
+The following is a compact reading guide, not an implementation spec.
+
+| Printed pages | Reading result |
+|---------------+----------------|
+| 61-63 | The question starts after terms have been interpreted; formalization does not solve linguistic ambiguity. |
+| 64-66 | Prioritized defaults separate facts/strict consequences W, defeasible rules D, and priority <. New information can defeat previous conclusions. |
+| 66-72 | A historical interest-deduction example layers a general rule, an exception, and an exception to that exception. |
+| 72-76 | Rule precedence and the scope of definitions require attention to document structure and external metarules. |
+| 76-77 | Ordinary logic can encode the example; default logic is preferred for the author's representational purpose, not logically necessary. |
+| 77-79 | Priority depends partly on the question being answered; formalization also exposes definition-boundary choices. |
+| 80 | The conclusion is a modeling argument, not empirical compiler validation. |
+
+** Details that need explicit treatment before implementation
+
+In the author's notation a lower rule under =<= dominates a higher one
+(p. 65). An implementation must document its direction; a numeric
+priority field with unspecified ordering is insufficient. The paper's
+worked procedure accepts consistent rule implications in priority order,
+not merely a sequence of tests whose antecedents are currently true
+(pp. 65-66 and 71-72). These are different candidate semantics.
+
+The p. 76 displayed equivalence contains =not Deductible= where the
+preceding sentence says the interest is not personal. This is visible in
+the downloaded PDF, not just extracted text. Treat it as an apparent
+formula/prose inconsistency in this copy. Do not silently correct the
+quotation or use it as an executable specification. A separate model
+derived from that sentence would use =not Personal= and must be labeled
+our reconstruction, with its assumptions and truth table.
+
+Our finite Boolean diagnostic fixes =Interest=true=. The printed form
+then has no solution when =QRI=false=, and the sole solution
+=Deductible=true= when =QRI=true=. The reconstructed prose formula has
+one solution for each supplied pair of =Personal= and =QRI=:
+
+| Personal | QRI | Reconstructed Deductible | Strict QRI implies Personal |
+|----------+-----+--------------------------+-----------------------------|
+| false | false | true | consistent |
+| false | true | true | inconsistent input |
+| true | false | false | consistent |
+| true | true | true | consistent |
+
+The [[file:../../.cache/research/lawsky-2017/formula-diagnostic.json][local diagnostic receipt]] records this check. This is a four-row
+closed Boolean exercise, not a proof about incomplete facts, tax law,
+the entire paper, or Catala. Unknown is not a value in this calculation.
+No author erratum was located or assumed.
+
+Another semantic hazard is material implication versus a forward rule.
+With a strict fact =not B= and an accepted implication =A implies B=,
+classical closure can derive =not A=. A forward matcher whose only action
+is firing on =A= would not derive that result. This original minimal
+example motivates checking semantics before replacing the paper's
+consistency procedure with an exception matcher.
+
+** Our assessment
+
+The paper is useful as a source of modeling questions. It does not
+establish that arbitrary rules admit a unique preferred result, that
+sorting by specificity always determines priority, or that legal prose
+can be translated automatically without interpretive decisions. A
+prototype must choose semantics for incomplete facts, incomparable
+exceptions, cycles, conflicting strict premises, and changes of source.
+
+For this research, the useful hypothesis is that independently owned
+sources can remain inspectable through accurate references and reusable
+constraints. No conclusion here requires moving code, implementation
+comments, or system-model relationships into Org. Correct output on one
+closed set of facts does not establish faithful representation of the
+source, or explain what changes when an exception is added.
+
+* Orgize source inspection
+
+These observations describe source interfaces at the recorded checkout;
+they are not fresh runtime qualification results.
+
+| Existing seam | Observed behavior | Research boundary |
+|---------------+-------------------+-------------------|
+| [[file:../../src/semantic_ast/source_block_model.rs][SourceBlockRecord / SourceBlockSource]] | Named blocks, language, headers, references, and source ranges are projected. | A span needs an exact document revision before it can identify the same declaration across edits. |
+| [[file:../../src/semantic_ast/tangle.rs][source_tangle_plan]] and [[file:../../src/semantic_ast/tangle_model.rs][plan records]] | Groups selected blocks by target and records skipped blocks without writing or executing them. | This is planning, not a complete noweb expansion, source-map, or reproducible build guarantee. |
+| [[file:../../src/semantic_ast/babel_eval.rs][babel_eval_plan]] | Resolves one named block and rejects absent or ambiguous names; result patches use host-supplied output. | A result patch alone does not attest the input, compiler, environment, or execution. |
+| [[file:../../tests/fixtures/org-contract/customer-contracts.org][Consumer contract fixture]] | Explicit Scheme blocks declare assertions with a contract ID and scope. | Structural assertions are not a defeasible rule evaluator. |
+| [[file:../../tests/fixtures/org-elements/customer-queries.org][Consumer query fixture]] | Explicit query blocks select elements through admitted properties and relations. | Selection does not confer rule priority or create a conclusion. |
+
+Orgize's maintained ownership direction is Scheme-owned Org semantics
+with Rust consuming source-backed projections. Some higher-level Rust
+interfaces still exist during the cutover. Their presence is not a reason
+to add a second Rust semantic interpreter for this experiment.
+
+* Catala source study
+
+** Checkout and evidence boundary
+
+The requested repository was fully cloned, without a shallow-history option,
+into [[file:../../.cache/catala/README.md][.cache/catala]]. Origin is
+=https://github.com/CatalaLang/catala.git=; branch =master= was clean at
+=70f514e129f61b3d12e7a8e59a179a1db05dac3a=, commit date 2026-10-26,
+when inspected on 2026-10-28. The checkout remains an ignored research
+reference, not a submodule, dependency pin, or vendored implementation.
+The local [[file:../../.cache/research/lawsky-2017/catala-source.json][source inspection receipt]] binds the commit and hashes of
+the 19 inspected reference files.
+
+The [[https://github.com/CatalaLang/catala/blob/70f514e129f61b3d12e7a8e59a179a1db05dac3a/README.md][README at the inspected commit]] explicitly connects Catala's
+conditional definitions to Lawsky's paper. The source inspection below
+is more specific evidence than its general assurance language. No Catala,
+Clerk, or Dune executable was found on the current shell PATH. Compiler
+builds, embedded tests, generated-code equivalence, and F* proof replay
+were not run. Embedded expected output is upstream fixture evidence,
+not a new local pass.
+
+** Document representation and weaving
+
+[[file:../../.cache/catala/compiler/surface/ast.mli][compiler/surface/ast.mli]] defines separate =LawText=, =LawHeading=,
+=CodeBlock=, and =LawInclude= forms. Code blocks retain both parsed items
+and a source representation with positions. Includes distinguish PDF,
+Catala, and legislative text. =program_source_files= is explicit.
+This is a document-aware language frontend, not just a Markdown-to-code
+text filter.
+
+[[file:../../.cache/catala/compiler/literate/html.ml][compiler/literate/html.ml]] walks that structure to render law text,
+headings, and code. Code rendering uses original filename and starting
+line. [[file:../../.cache/catala/compiler/literate/literate_common.ml][literate_common.ml]] merges adjacent law-text nodes and owns external
+rendering-tool calls. [[file:../../.cache/catala/compiler/literate/latex.ml][latex.ml]] provides the LaTeX weaving path.
+The presence of readable rendering is not an attestation that prose and
+code have equivalent meanings.
+
+For Orgize, the useful comparison is preservation of document structure
+and source positions for references and diagnostics. Catala's choice to
+interleave legislative prose and code serves its particular domain. It
+is not evidence that general engineering code should move into Org.
+A document can reference an independently maintained Catala program just
+as it references other code or models; an embedded-code bridge is an
+optional specialization, not the next required Orgize feature.
+
+** Exception graph, default evaluation, and conflict policy
+
+| Inspected source at the recorded commit | Observed mechanism |
+|-----------------------------------------+--------------------|
+| [[file:../../.cache/catala/compiler/desugared/dependency.ml][desugared/dependency.ml]] | Groups labeled and implicit definitions, builds exception edges between groups, and rejects inconsistent edges/self-exceptions. |
+| [[file:../../.cache/catala/compiler/scopelang/from_desugared.ml][scopelang/from_desugared.ml]] | Builds the exception graph, checks cycles, and constructs rule trees with exception children and base rules. |
+| [[file:../../.cache/catala/compiler/dcalc/from_scopelang.ml][dcalc/from_scopelang.ml]] | Lowers definitions and includes a restricted collapse of syntactically identical outcomes. |
+| [[file:../../.cache/catala/compiler/shared_ast/interpreter.ml][shared_ast/interpreter.ml]], =EDefault= case | Evaluates exceptions: zero nonempty results falls back to justification/consequence; one returns that result; multiple raise conflict with source positions. |
+| [[file:../../.cache/catala/runtimes/ocaml/catala_runtime.ml][runtimes/ocaml/catala_runtime.ml]], =handle_exceptions= | Keeps absence distinct from a present value and reports multiple present exceptions as conflict. |
+
+The outcome-collapse detail matters: in =collapse_similar_outcomes=,
+exceptions with syntactically equal consequences and no nested exceptions
+can be arranged so their overlap does not raise the usual conflict.
+The comment explicitly says the trace's selected exception is arbitrary
+but deterministic. This is not arbitrary mathematical equality of two
+programs, and it does not prove all source justifications are present in
+the resulting trace.
+
+The following fixtures are a compact reading corpus. We read source and
+expected output, without replaying the tests:
+
+| Fixture under the cloned repository | What to inspect |
+|-------------------------------------+-----------------|
+| [[file:../../.cache/catala/tests/exception/good/unsorted_unlabeled_exceptions.catala_en][unsorted_unlabeled_exceptions]] | Exception definitions can precede their base definitions in the file. |
+| [[file:../../.cache/catala/tests/exception/good/two_exceptions_same_outcome.catala_en][two_exceptions_same_outcome]] | Two active same-outcome exceptions yield the expected single value. |
+| [[file:../../.cache/catala/tests/exception/bad/one_ambiguous_exception.catala_en][one_ambiguous_exception]] | An unlabeled exception with multiple possible targets requests explicit labels and cites candidate definitions. |
+| [[file:../../.cache/catala/tests/exception/bad/exceptions_cycle.catala_en][exceptions_cycle]] | A cycle diagnostic cites all three participating declarations. |
+| [[file:../../.cache/catala/tests/default/bad/conflict.catala_en][default conflict]] | Conflicting consequences have a static warning and an evaluation error in the embedded output. |
+| [[file:../../.cache/catala/tests/default/bad/empty.catala_en][default empty]] | Missing applicable definitions produce an error, rather than a Boolean false. |
+
+Catala supplies comparison evidence for explicit language semantics and
+source-localized diagnostics, not a drop-in implementation of arbitrary
+prioritized default theories. Its
+exception graph, typed definitions, empty-value behavior, and lowering
+need to be studied on their own terms. An Org heading's nesting depth
+is not an equivalent representation of that exception graph.
+
+** Assurance and testing boundaries
+
+[[file:../../.cache/catala/tests/README.md][tests/README.md]] describes inline command/output tests driven by
+=clerk test=, including good and bad programs. This is useful for making
+examples and negative diagnostics reviewable in the same source. A
+future Org experiment could retain expected and actual evidence in
+separate records and compare them through an explicit test runner.
+Never refresh expected output merely to obtain a green comparison.
+
+[[file:../../.cache/catala/doc/formalization/README.md][doc/formalization/README.md]] scopes the F* work to translation from
+default calculus to target lambda calculus. It documents an admitted
+substitution lemma; the inspected
+[[file:../../.cache/catala/doc/formalization/Catala.Translation.Helpers.fst][Catala.Translation.Helpers.fst]] contains =admit()= in
+=well_typed_terms_invariant_by_subst=. We did not replay these proofs.
+Neither the proof directory nor a successful replay would, by itself,
+certify natural-language interpretation, the complete current frontend,
+all backends, external dependencies, or an Org-to-Catala bridge.
+
+** What to borrow, and what to qualify first
+
+Borrow accurate source positions, multiple-source diagnostics, and the
+practice of making language-specific conflict behavior testable. Catala's
+explicit exception graph belongs to Catala; it should not become a
+universal relationship schema in Org. Its adjacent executable examples
+are one useful authoring choice, not a rule for where our tests must live.
+
+Keep the compiler's actual conflict policy visible, including same-outcome
+collapse. Do not assume optimized execution traces expose all supporting
+reasons. An Org-to-Catala experiment remains possible if a concrete user
+needs it, but is removed from the first-priority work below. This research
+makes no runtime integration change.
+
+* AI Agent first: independent organization, connected access
+
+This section records the user's architectural direction and our revised
+research proposal. It is not a claim of completed integration.
+
+Traditional literate programming can make one document the shared reading
+and implementation surface. In an AI Agent plus human workflow, that
+physical concentration is unnecessary: an Agent can retrieve code, local
+comments, models, tests, and design discussions from their native places.
+The human can retain a coherent explanatory document without inheriting
+the compiler's module ordering or carrying a duplicate copy of the code.
+
+The relevant improvement is greater effective bandwidth across sources,
+not unlimited context or automatic correctness. An Agent needs precise
+navigation, bounded retrieval, and checkable updates. Orgize should
+support those operations on Org documents and compose with the tools that
+already serve other sources.
+
+A reference is a sufficient connection when the target and its existing
+context answer the question. Do not require an additional Org relationship
+annotation for every link. Implementation intent and local invariants can
+already live in code comments; system relationships can already live in
+SysML v2. Repeating them in Org creates another authority to maintain.
+Where a workflow needs explicit ownership facts or constraints, reuse
+OrgContract and ASCENT composition instead of inventing a general Org
+ontology. Documentation may associate tests and results without embedding
+their implementation or replacing the test runner.
+
+* Responsibility boundaries
+
+The division below follows this discussion. It does not re-audit the
+external projects or prescribe their internal APIs.
+
+| Surface or component | Responsibility in this direction | Orgize boundary |
+|----------------------+----------------------------------+-----------------|
+| Code and native code tools | Modules, symbols, implementation, and local explanatory comments. | Preserve references; delegate symbol resolution and code meaning. Do not copy code or comments into Org as a requirement. |
+| Tests and execution owners | Test implementations, commands, actual outcomes, and result artifacts. | Allow documents to reference these artifacts; a link or displayed result is not execution. |
+| SysML v2 and its tooling | System model elements and relationships already owned by that model. | Reference model elements and consume owner-supplied projections; do not recreate the model as Org headings/properties. |
+| Deterministic Engineering | Existing engineering method and ownership/evidence conventions. | Reuse those conventions; this note does not establish another engineering methodology. |
+| Org documents | Research, explanation, discussion, decisions, and references suited to document form. | Parse, locate, query, and support source-preserving document edits. No mandatory universal metadata schema. |
+| GQL and existing graph infrastructure | Queries over information provided by participating source owners. | Supply Org facts through an adapter; do not add another cross-source graph/query engine to Orgize. |
+| OrgContract | Express and check admitted document-side contracts using existing capabilities. | Reuse contract IDs, scope, queries, and diagnostics; qualify any needed extension explicitly. |
+| ASCENT | Rule evaluation over supplied facts for the composed workflow. | Supply facts/results through the owning integration; do not turn the Org parser into an inference engine. |
+| AI Agent and workflow host | Read sources, establish candidate ownership information, invoke checks, coordinate edits, and present results. | Model interaction, approvals, persistence, and publication remain with the workflow owner. |
+
+The existing [[file:10.06_org_sdd_substrate.org][10.06 SDD projection]] describes an Org-specific document
+surface. It is not a requirement to migrate an existing SysML model,
+all engineering requirements, or implementation details into that surface.
+The [[file:../../languages/org/modules/README.org][module capability map]] remains the source-capability boundary:
+Scheme owns Org interpretation; Rust consumes admitted projections.
+This note changes research priorities without adding a compatibility
+layer or a second semantic implementation.
+
+* OrgContract plus ASCENT: establish ownership and check constraints
+
+Use the combination the user identified to let the model establish the
+needed ownership information and constraints. That information may be
+read from code comments, model elements, engineering conventions, tests,
+or documents. Establishing a usable projection does not require moving
+its authoritative source or hand-authoring every relationship in Org.
+
+A proposed workflow, assembled from existing responsibilities:
+
+1. Retrieve the relevant Org fragments and the independently owned code,
+   comments, SysML elements, tests, and engineering conventions. Preserve
+   the source identity supplied by each owner.
+2. The Agent establishes candidate ownership assignments and associations
+   from that material, reusing existing declarations first. Keep a source
+   reference for an extracted fact; distinguish a model suggestion from
+   an explicit owner declaration. Ask for review only where the workflow
+   requires a decision that existing sources do not settle.
+3. Check document-local shape and requirements with OrgContract. Supply
+   admitted facts from the participating owners to the ASCENT integration
+   for the rule checks and derived ownership information it defines.
+   GQL can retrieve or present the connected information using its existing
+   infrastructure. None of these steps requires all facts to be Org nodes.
+4. Return conflicts, omissions, and candidate changes with references to
+   the responsible sources. A rule's diagnostic is a checked consequence
+   of its supplied facts and rules, not a certification that model-extracted
+   facts accurately describe an implementation.
+5. Apply an authorized correction where the content belongs: code/comment,
+   SysML model, test, engineering record, or Org prose. Refresh projections
+   and rerun affected checks. The host owns storage and publication;
+   ASCENT owns rule/logic evaluation, not the Agent interaction loop.
+
+Example constraints to investigate in that composition, only where the
+existing project policy requires them:
+
+- An ownership assignment resolves to an existing target in the relevant
+  source revision and allowed scope.
+- Mutually exclusive ownership assignments cannot both be accepted for
+  the same object under the selected policy. Do not assume every object
+  must have exactly one owner; shared ownership may be explicitly valid.
+- A document cannot silently override a source owner's declaration or a
+  SysML relationship through an inferred association.
+- A verification claim references the appropriate test/result and source
+  revision; a linked test definition alone does not mean it ran or passed.
+- A changed or missing source prevents an old derived assignment from
+  being presented as a freshly checked current result.
+
+These are proposed constraint cases, not new built-in contract forms or
+ASCENT predicates. Prefer existing policy and fact vocabulary; this note
+intentionally introduces neither an Org relationship taxonomy nor a
+second universal schema. Rule results can make inconsistencies visible;
+passing constraints does not prove arbitrary prose/code equivalence.
+
+** Current implementation evidence and gaps
+
+The inspected [[file:../../languages/org/modules/org-contract/funs.ss][OrgContract evaluator]] selects elements from an admitted
+graph view, evaluates bindings, and checks =at-least=, =exactly=, and
+=at-most= counts. The [[file:../../tests/fixtures/org-contract/customer-contracts.org][customer contract fixture]] provides source-level
+examples. That evidence establishes a reusable document-side mechanism,
+not an implemented cross-repository ownership resolver or a qualified
+SysML/GQL/ASCENT connection.
+
+The workflow above still needs a consumer-owned agreement about fact
+admission, source revisions, rule inputs/results, and model suggestions.
+Audit the existing integration before deciding that any API is missing.
+Do not extend OrgContract merely to duplicate constraints that ASCENT or
+an existing source owner already evaluates. The paper's nonmonotonic
+prioritized defaults must not be attributed to ASCENT without a separate
+semantics and implementation check. This study has not performed it.
+
+* What Orgize actually needs to do
+
+The following is a prioritized research backlog. Existing capabilities
+are inputs; the list is not a declaration that each capability is absent.
+
+| Priority | Orgize contribution | Qualification needed |
+|----------+---------------------+----------------------|
+| P0 | Accurate, non-mutating Org parsing and source-backed Element projection. | Preserve text, hierarchy, IDs, links, properties, and ranges; keep source identity and graph-local identity distinct. |
+| P0 | Useful fragment retrieval for Agents through existing Element queries. | Return a fragment with its relevant outline context and source location; do not require the whole file or mandatory annotations on every paragraph. |
+| P0 | Reference projection that external resolvers can consume. | Retain the original target and location; delegate code symbols and SysML targets to their native tools; distinguish target resolution from semantic validation. |
+| P0 | Reuse the existing OrgContract surface and expose source-localized results to consumers. | Test accepted/rejected document cases; do not claim cross-source ownership checking from document-local assertions. |
+| P1 | Source-preserving edit and patch support suited to Agent workflows. | Detect an incompatible source revision and protect unrelated edits; mutations and writes follow the host's existing controls. |
+| P1 | Compose Org facts with existing GQL and OrgContract/ASCENT integrations. | Identify the actual consumer seam, reuse owner-provided facts, and qualify a small complete workflow before proposing an extension. |
+
+Code language services, comment analysis, SysML semantics, cross-source
+storage/query infrastructure, default-logic evaluation, test execution,
+and Agent scheduling do not become Orgize responsibilities through this
+backlog. Tangling, embedded code, and Babel remain optional capabilities;
+they do not determine where a project's implementation must live.
+
+* Revised falsifiable experiments
+
+These are proposed experiments, not completed acceptance results. They
+replace the earlier primary Org-to-Catala compilation and embedded-rule
+experiments. No new framework or runtime integration is implemented here.
+
+** E1: navigation across independently organized sources
+
+Use an ordinary Org research/design note referencing a code function, its
+existing comment, a SysML element, and a test/result artifact in their
+native locations. Let the Agent retrieve the relevant material through
+existing resolvers and GQL composition. Do not move code or duplicate the
+model to construct the fixture.
+
+Accept if each reference reaches the intended target and version, Org
+fragments retain their outline context, and broken/ambiguous references
+are visible. Reorder headings, rename a code symbol, and change a target
+revision. The checks must not silently redirect an old reference to a
+same-named object. Resolver behavior belongs to the respective owner;
+Orgize is assessed on faithful Org projection and source localization.
+
+** E2: model-established ownership with OrgContract and ASCENT
+
+Use a small real consumer workflow and its existing ownership conventions.
+Have the Agent establish candidate assignments from code comments, model
+facts, and document references. Apply document-side contracts and the
+ASCENT rules selected by the consumer. Keep originals in their own files.
+
+Exercise an accepted assignment, a missing target, an unsupported model
+suggestion, a policy-forbidden conflict, and an explicitly allowed shared
+assignment. Distinguish failures of document shape, source resolution,
+fact admission, and rule evaluation. Check which stage detects each case;
+model confidence is not a passing contract result. Report unavailable
+adapters as gaps instead of substituting fabricated input facts and
+calling the workflow integrated.
+
+** E3: change handling and correction at the actual owner
+
+Change code or a SysML model while leaving Org prose untouched. Identify
+which references, derived ownership information, and verification claims
+need rechecking. Correct the owning source where necessary, regenerate
+its projection, and rerun affected contracts/rules. Separately update
+only explanatory prose and check which downstream work is actually needed.
+
+Accept if the workflow preserves unrelated changes, distinguishes old
+results from current checks, and produces reviewable source-specific
+edits. A stale relationship warning does not prove the explanatory prose
+is wrong; an Agent assessment of prose is separate from mechanical
+reference and constraint checks.
+
+* Recommendation and remaining work
+
+Prioritize source-backed Org access and the existing OrgContract plus
+ASCENT/GQL composition for an AI Agent and human workflow. Let code,
+comments, models, tests, and documents keep their natural organization.
+Use references where sufficient and existing rule/contract mechanisms
+where ownership information or constraints need to be established.
+
+Next, inspect the actual consumer integration and select one small
+cross-source task for E1-E3. Determine the missing Org-side capability
+from that experiment before adding APIs. The research does not authorize
+a code migration, an Org-only relationship system, a replacement SysML
+model, or a new default-logic runtime. Catala remains a useful reference
+for source-aware diagnostics and explicit language semantics.
+
+* Verification record
+
+- Revised on 2026-10-28 following the user's boundary corrections: removed
+  Org-centric code/relationship consolidation as the general direction;
+  replaced the primary compilation experiments with independent-source
+  navigation and OrgContract/ASCENT composition experiments. These remain
+  proposed; no cross-source runtime qualification is claimed.
+- Read the full cached article, including its conclusion and reproduction
+  notice; visually inspected the two formula/notation pages identified above.
+- Recomputed the downloaded PDF SHA-256 and checked local file links and
+  coordinate uniqueness. The finite formula diagnostic passed its stated
+  assertions; its scope is only the Boolean calculation above.
+- =git diff --check= passed for the documentation edits.
+- Required command =direnv exec . cargo run --quiet -- lint docs development.org=
+  was attempted. Sandbox access initially blocked the Nix daemon. The
+  retried project environment reached Cargo but the Orgize build script
+  rejected the absent qualified FFI bundle/explicit producer manifest.
+  Therefore the native documentation lint is not reported as passed.
+  No artifact-admission rule was bypassed to build the documentation CLI.

@@ -4,8 +4,8 @@
 (import (only-in :gerbil-parser/src/declarations
                  source-ascii-ci-pattern-at? source-pattern-end
                  make-source-named-boundary line-structure-heading)
-        (only-in "../../parser.ss" org-line-structure)
-        (only-in "objects.ss"
+        (only-in "parser.ss" org-line-structure)
+        (only-in "values.ss"
                  make-org-named-block org-named-block-opening
                  org-named-block-closing org-named-block-node
                  org-named-block-name-token))

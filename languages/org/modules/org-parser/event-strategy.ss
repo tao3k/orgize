@@ -13,7 +13,7 @@
                  block-line-body-token block-line-end-token block-line-header
                  block-line-indent
                  block-header-argument-token block-header-trivia-token)
-        (only-in "../../parser.ss" org-line-structure)
+        (only-in "parser.ss" org-line-structure)
         (only-in "event-paragraph.ss"
                  paragraph-event-initial paragraph-close-form paragraph-finish-form
                  paragraph-line-form paragraph-event-helpers
@@ -46,7 +46,7 @@
         (only-in "event-latex-environment.ss"
                  latex-environment-initial latex-boundary-query
                  latex-open-form latex-body-form)
-        (only-in "objects.ss"
+        (only-in "values.ss"
                  make-org-event-block make-org-event-helper
                  org-event-block-id org-event-block-rule))
 (export org-event-initial org-event-line-forms org-event-finish-forms

@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Scheme-owned Babel CALL target span, shared across keyword contexts.
 
-(import (only-in "objects.ss" make-org-event-helper))
+(import (only-in "values.ss" make-org-event-helper))
 (export event-babel-call-helper event-babel-call-forms)
 
 (def babel-paren-end '(line-scan-nonspace-until start "("))

@@ -1,12 +1,15 @@
 ;;; -*- Gerbil -*-
 ;;; Closed private value admission. Scheme executes the existing pure owners.
-(import "../org-elements/headline-properties.ss"
-        "../org-elements/link-properties.ss"
-        "../org-elements/logbook-properties.ss"
-        "../org-elements/table-properties.ss"
-        "../org-elements/affiliated-properties.ss")
+(import :orgize/languages/org/modules/org-elements/headline-properties
+        :orgize/languages/org/modules/org-elements/link-properties
+        :orgize/languages/org/modules/org-elements/logbook-properties
+        :orgize/languages/org/modules/org-elements/table-properties
+        :orgize/languages/org/modules/org-elements/affiliated-properties)
 (import (only-in "text-funs.ss" org-physical-lines org-trim)
-        (only-in "keyword-funs.ss" org-keyword-facts))
+        (only-in "keyword-funs.ss" org-keyword-facts)
+        (only-in :std/string/misc string-trim)
+        (only-in :gerbil-parser/src/compiler/rust-pure-aot
+                 string-first-word string-rest-after-first-word))
 (export org-family-call org-document-batch org-link-batch org-affiliation-batch org-logbook-batch org-table-batch)
 
 (def (take-fields count fields)
@@ -166,9 +169,13 @@
                                (member (caddr rest) '("true" "false")))
                     (error "invalid native headline fields"))
                   (let* ((title (car rest)) (body (cadr rest))
-                         (state (todo-state-from-directives title directives configured-open configured-done))
-                         (keyword (if (string=? state "") "" (todo-keyword-from-directives title directives configured-open configured-done)))
-                         (after (headline-content-after-todo title directives configured-open configured-done))
+                         ;; The document's admitted keyword sets are already
+                         ;; resolved above. Reuse that value and this one state
+                         ;; result, not repeated directive/title normalization.
+                         (state (todo-state-from-directives title '() open done))
+                         (keyword (if (string=? state "") "" (string-first-word title)))
+                         (after (if (string=? keyword "") (string-trim title)
+                                  (string-rest-after-first-word title)))
                          (display (headline-display-title after (string=? (caddr rest) "true"))))
                     (loop (cdddr rest)
                           (cons (list state keyword after (headline-priority-cookie after) display

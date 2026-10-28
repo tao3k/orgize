@@ -6,13 +6,13 @@
         (only-in :gerbil-parser/graph-query-support
                  make-graph-query-context
                  graph-query-map graph-query-lineage? graph-query-select)
-        (only-in "types.ss"
+        (only-in "value-types.ss"
                  +org-element-schema+ +org-element-context-kind+
                  OrgElementRow OrgElementId OrgElementKind
                  OrgElementQueryContext org-element-query?
                  org-element-query-clause? org-element-predicate?
                  org-element-graph-view? org-element-query-context?)
-        (only-in "objects.ss"
+        (only-in "values.ss"
                  make-org-element-query-groups org-element-clause-kind
                  make-org-element-predicate
                  org-element-clause-name org-element-clause-value

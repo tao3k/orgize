@@ -10,9 +10,9 @@
                  +org-affiliated-keywords+ +org-object-restrictions+
                  +org-secondary-values+ org-object-allowed?
                  org-secondary-value?)
-        (only-in "../languages/org/modules/org-elements/funs.ss" org-element-select org-element-property)
+        (only-in "../languages/org/modules/org-elements/query.ss" org-element-select org-element-property)
         (only-in "../languages/org/modules/org-elements/aot.ss" org-element-query-rust-source)
-        (only-in "../languages/org/modules/org-elements/objects.ss"
+        (only-in "../languages/org/modules/org-elements/values.ss"
                  org-named-element-query-id org-named-element-query-query))
 (export check-org-element-catalog check-org-element-selection
         check-org-named-query-selection

@@ -5,11 +5,11 @@
 (import (only-in :clan/poo/object .o .ref .slot?)
         (only-in :std/list/list filter every find)
         (only-in :std/misc/ports read-all-as-string)
-        (only-in "../org-elements/runtime-interface.ss" org-element-graph-records)
-        (only-in "../org-elements/source-graph.ss"
+        (only-in :orgize/languages/org/modules/org-elements/runtime-interface org-element-graph-records)
+        (only-in :orgize/languages/org/modules/org-elements/source-graph
                  org-source-element-graph org-source-element-field)
-        (only-in "types.ss" org-directory-profile?)
-        (only-in "objects.ss" org-contract-definition-id org-contract-definition-scope)
+        (only-in "value-types.ss" org-directory-profile?)
+        (only-in "values.ss" org-contract-definition-id org-contract-definition-scope)
         (only-in "source.ss" org-source-contract-definitions)
         (only-in "directory.ss" org-directory-contracts
                  org-directory-evaluate))

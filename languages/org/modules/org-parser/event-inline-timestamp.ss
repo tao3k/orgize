@@ -5,7 +5,7 @@
                  source-pattern-end source-pattern-at?)
         (only-in "event-inline-primitives.ss"
                  link-index inline-next)
-        (only-in "objects.ss" make-org-event-helper))
+        (only-in "values.ss" make-org-event-helper))
 (export timestamp-event-initial timestamp-open-forms timestamp-scan-forms
         timestamp-candidate-helper timestamp-date-at?)
 

@@ -100,7 +100,8 @@ jobs:
         run: bash tools/ci/install-gerbil-release.sh
       - name: Prepare pinned native Scheme program
         run: just ci-prepare
-      - name: Verify native Scheme owners
+      - name: Verify native Scheme owners through gerbil test
+        if: matrix.runtime == 'runtime-rust'
         run: just ci-scheme-test
 
       - name: Select producer FFI bundle output
@@ -198,8 +199,6 @@ jobs:
         run: cargo fetch --locked
       - name: Prepare pinned native Scheme program
         run: just ci-prepare
-      - name: Verify native Scheme owners
-        run: just ci-scheme-test
       - name: Verify Python SDK through maturin
         run: just python-test
       - name: Build and repair maturin wheel

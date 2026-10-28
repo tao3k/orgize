@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Org TAGS vocabulary is source-backed Scheme event syntax, not a Rust lexer.
 
-(import (only-in "objects.ss" make-org-event-helper))
+(import (only-in "values.ss" make-org-event-helper))
 (export tag-vocabulary-event-helper)
 
 (def tag-index '(line-index tag-byte-index))

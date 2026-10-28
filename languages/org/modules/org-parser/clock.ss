@@ -1,8 +1,8 @@
 ;;; Private diagnostic clock; no Gambit runtime changes or wall-clock timings.
-(extern namespace: orgize/bindings/c/clock native-monotonic-ns native-thread-cpu-ns)
+(extern namespace: orgize/languages/org/modules/org-parser/clock native-monotonic-ns native-thread-cpu-ns)
 (export native-monotonic-ns native-thread-cpu-ns)
 (begin-foreign
-  (namespace ("orgize/bindings/c/clock#" native-monotonic-ns native-thread-cpu-ns))
+  (namespace ("orgize/languages/org/modules/org-parser/clock#" native-monotonic-ns native-thread-cpu-ns))
   (c-declare #<<END-C
 #include <stdint.h>
 #if defined(_WIN32)

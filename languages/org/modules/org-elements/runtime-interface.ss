@@ -1,8 +1,8 @@
 ;;; -*- Gerbil -*-
 ;;; Parser-independent Org Element POO query runtime.
 
-(import "types.ss" "objects.ss" "funs.ss" "syntax.ss")
-(export (import: "types.ss")
-        (import: "objects.ss")
-        (import: "funs.ss")
+(import "value-types.ss" "values.ss" "query.ss" "syntax.ss")
+(export (import: "value-types.ss")
+        (import: "values.ss")
+        (import: "query.ss")
         (import: "syntax.ss"))

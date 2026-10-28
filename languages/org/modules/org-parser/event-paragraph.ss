@@ -6,7 +6,7 @@
                  source-paragraph-close-form source-paragraph-line-form
                  source-paragraph-open-condition source-paragraph-span-forms
                  source-paragraph-blank-forms)
-        (only-in "../../parser.ss" org-line-structure)
+        (only-in "parser.ss" org-line-structure)
         (only-in "event-inline.ss"
                  event-inline-initial nested-description-event-initial
                  citation-affix-event-initial
@@ -14,7 +14,7 @@
         (only-in "event-inline-citation-reference.ss"
                  citation-reference-helper)
         (only-in "event-inline-timestamp.ss" timestamp-candidate-helper)
-        (only-in "objects.ss" make-org-event-helper))
+        (only-in "values.ss" make-org-event-helper))
 (export paragraph-event-initial paragraph-close-form paragraph-finish-form
         paragraph-line-form
         paragraph-event-helpers paragraph-open-condition

@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; Pure macro expansion; syntax and escaped arguments remain Scheme-owned.
-(import (only-in "../../event-runtime.ss" parse-org-inline-events))
+(import (only-in :orgize-fold/parse-org-compiled-inline-events parse-org-compiled-inline-events))
 (export expand-org-macro-template expand-org-property-macros)
 
 (def (string-concatenate chunks) (string-join chunks ""))
@@ -57,7 +57,7 @@
     ;; Source order gives later definitions the same explicit override priority.
     (for-each (lambda (definition) (hash-put! templates (car definition) (cdr definition)))
               definitions)
-    (let loop ((events (parse-org-inline-events source)) (cursor 0) (chunks '()))
+    (let loop ((events (parse-org-compiled-inline-events source)) (cursor 0) (chunks '()))
       (if (null? events)
         (string-concatenate
          (reverse (cons (source-text bytes cursor (u8vector-length bytes)) chunks)))

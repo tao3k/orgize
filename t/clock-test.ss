@@ -1,5 +1,5 @@
 (import (only-in :std/test check test-case test-suite)
-        (only-in :orgize/bindings/c/clock native-monotonic-ns native-thread-cpu-ns)
+        (only-in :orgize/languages/org/modules/org-parser/clock native-monotonic-ns native-thread-cpu-ns)
         (only-in :orgize/t/clock/reference reference-thread-cpu-ns reference-process-cpu-ns reference-spin reference-spin-snapshot))
 (export clock-test)
 

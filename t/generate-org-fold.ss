@@ -3,10 +3,10 @@
 (import (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-parser/src/compiler/event-fold-scheme-modules event-fold-scheme-module-sources)
         (only-in :gerbil-parser/src/compiler/event-fold-runtime run-event-fold)
-        (only-in :orgize/languages/org/grammar org-mode-language-grammar)
+        (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
         (only-in :orgize/languages/org/modules/org-parser/event-strategy
                  org-event-initial org-event-line-forms org-event-finish-forms org-event-helpers)
-        (only-in :orgize/languages/org/modules/org-parser/objects org-event-helper-descriptor))
+        (only-in :orgize/languages/org/modules/org-parser/values org-event-helper-descriptor))
 (export main)
 
 (def (main output controls)

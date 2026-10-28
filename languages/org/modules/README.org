@@ -19,6 +19,34 @@ source facts ([[https://github.com/alphapapa/org-super-agenda][upstream package]
 "Org notes" here means the broader capture, refile, ID/link, attachment,
 annotation, archive, and review ecosystem, not one package or a new Org type.
 
+* Native selection and build ownership
+
+[[file:../../../../init.ss][Orgize init]] selects these three capabilities and the independent C binding
+owner through =yuanxu! :load-modules=. Each =interface.ss= is a Module declaration;
+=func.ss= owns its public functions and imports its narrow implementation units.
+Yuanxu derives the source closure from the admitted standard roles. There is no
+=library-roots= inventory, alternate loader, or repeated module catalog. Build
+roots remain only for actual foreign leaves and compiler options.
+
+=types.ss= and =objects.ss= are Yuanxu authoring roles. Business data Types
+live in =value-types.ss= and constructors in =values.ss=, using native POO
+=define-type=/=Record=, =validate= and Yuanxu object-family accessors.
+Maintained profiles belong to =config.ss=. Parser's generic graph-query
+contracts and graph objects are reused directly.
+
+Grammar, event/runtime generation and its package emitter belong to
+=org-parser/=. Graph shape and projection generation belong to =org-elements/=.
+Contract syntax and evaluation belong to =org-contract/=. The integration tape
+consumer belongs to =bindings/c/event-tape.ss= because it composes all three;
+base Parser does not depend on Contract. Cross-module imports use admitted
+owner identities. Generated fold products form a separate =orgize-fold= package
+using the standard Yuanxu build adapter and Parser emitter's unit catalog.
+
+The event-list runtime imports only the document fold. Macro expansion
+imports the inline fold directly; the wire consumer imports the tape fold
+and the inline helpers it actually uses. Parameter admission is shared in
+=org-parser/runtime-parameters.ss=.
+
 * Ownership by source capability
 
 | Source capability | Scheme owner and evidence | Consumer composition |

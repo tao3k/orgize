@@ -6,10 +6,10 @@
                  rust-string rust-identifier rust-render)
         (only-in :gerbil-parser/graph-projection-support
                  graph-projection-digest)
-        (only-in "../../grammar.ss" org-mode-language-grammar)
-        (only-in "../../graph.ss" org-graph-projection)
-        (only-in "types.ss" org-named-element-query?)
-        (only-in "objects.ss"
+        (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
+        (only-in "graph.ss" org-graph-projection)
+        (only-in "value-types.ss" org-named-element-query?)
+        (only-in "values.ss"
                  org-named-element-query-id org-named-element-query-query
                  org-element-query-node-kind org-element-query-groups
                  org-element-clause-name org-element-clause-value

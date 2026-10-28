@@ -1,12 +1,6 @@
-;;; -*- Gerbil -*-
-;;; Public POO/functional interface for the Org Elements feature.
-
-(import "types.ss" "objects.ss" "funs.ss" "config.ss" "syntax.ss"
-        "headline-properties.ss" "radio-match.ss")
-(export (import: "types.ss")
-        (import: "objects.ss")
-        (import: "funs.ss")
-        (import: "config.ss")
-        (import: "syntax.ss")
-        (import: "headline-properties.ss")
-        (import: "radio-match.ss"))
+;;; Source selection and admission are owned by Yuanxu.
+(.def OrgElements
+  identity: 'org-elements
+  core: (.o requires: (.o) scope-contract: OrgElementsScopeContract
+            exports: OrgElementsProfile.)
+  features: (.o))

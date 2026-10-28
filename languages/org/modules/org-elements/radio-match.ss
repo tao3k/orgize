@@ -4,8 +4,8 @@
 
 (import (only-in :clan/poo/object .ref)
         (only-in :gerbil-parser/src/compiler/rust-pure-aot string-prefix?)
-        (only-in "types.ss" org-source-match-strategy?)
-        (only-in "objects.ss" make-org-source-match-strategy))
+        (only-in "value-types.ss" org-source-match-strategy?)
+        (only-in "values.ss" make-org-source-match-strategy))
 (export org-radio-match-strategy org-next-radio-match org-radio-matches)
 
 (def org-radio-match-strategy (make-org-source-match-strategy "_-"))

@@ -20,7 +20,7 @@
                  inline-link-node inline-link-target-token
                  key-value-line-marker key-value-line-node
                  key-value-line-key-token key-value-line-value-token)
-        (only-in "../languages/org/parser.ss" org-line-structure))
+        (only-in "../languages/org/modules/org-parser/parser.ss" org-line-structure))
 (export org-parser-test)
 
 (def org-parser-test

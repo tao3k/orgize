@@ -14,15 +14,13 @@ The public `Org::parse` facade and `parse_org_aot` execute the Org-owned Scheme
 event strategy through the statically linked Gerbil AOT/FFI program, then build
 the source-backed syntax index and Element graph. There is no Rust parser fallback.
 Source builds currently require a prepared native program manifest and the
-Gerbil toolchain; see the Justfile's `scheme-parser-build`,
-`scheme-parser-stage` and `test` entries. Packaging and
-release performance qualification are still pending.
+Gerbil toolchain; `gerbil build --optimized` produces the native program.
+Packaging and release performance qualification are still pending.
 
-For Scheme package consumers, `build.ss` owns the Org declaration bootstrap,
-generated parser modules and runtime interfaces. It compiles dynamic loading
-products through `std/make`; the existing native producer lane retains its
-static fold profile. Consumers import `languages/org/event-runtime` and the
-Org Element source interfaces without running Orgize's generator themselves.
+For Scheme package consumers, `gerbil build --optimized` runs the existing Org
+fold producer and Yuanxu's native build projection. `init.ss` selects the Parser,
+Element, Contract and C Modules through `yuanxu! :load-modules`. Their `func.ss`
+roles own public functions; callers can also import narrow source interfaces.
 
 Choose exactly one execution-owner feature. `runtime-rust` (default) owns
 the request queue and thread-affine Gerbil handle in Rust. `runtime-scheme`
@@ -278,36 +276,25 @@ maps, release evidence, and architecture records live under `docs/`.
 
 ### Package build action ownership
 
-`languages/org/generate-fold.ss` validates the profile/action before dispatch.
-Its dynamic `clean` path discovers only the declared document/inline generated
-unit families and delegates artifact removal to Core; it does not import the
-grammar or compiler. `fold-generator.ss` owns generation and compilation with
-the complete unit catalog and runtime-product check. Generated source and
-neighboring products survive cleanup.
+`init.ss` selects Org Parser, Element, Contract and native C Modules through
+`yuanxu! :load-modules`. Yuanxu admits their standard roles and derives the
+source closure. Business functions belong to `func.ss`; configuration belongs
+to `config.ss`. There is no `library-roots` inventory or additional loader.
+Only actual foreign leaves declare Build roots and platform compiler options.
 
-The package entry retains a 180-second deadline. Phase records identify actual
-compiler-policy, syntax, fold and runtime transitions; they are not heartbeats
-or qualification receipts. `t/package-build-test.ss` checks metadata isolation,
-cleanup ownership and invalid actions. A passing cleanup test does not establish
-full-package cold-build performance.
+`gerbil build --optimized` invokes the existing Parser-backed fold generator,
+compiles its separate `orgize-fold` package through the standard build adapter,
+and stages the native program. Generated source units retain the Parser
+emitter's exact catalog. Native dependency installation is `gerbil deps
+--install`; compilation and cleanup remain Gerbil/Yuanxu responsibilities.
 
-The Just package entrance fixes `GERBIL_BUILD_CORES=2`. Production and optional
-development dependency installation append the existing 2GiB maximum to the
-selected SDK options. Focused test launchers retain their 1GiB fence. This
-resource alignment does not establish cold-build latency or repair a prior
-Core/Parser dependency timeout.
+`gerbil test -v 5 orgize-test.ss` discovers the exported standard Suites. The
+entrypoint supplies only fixture setup/cleanup and the Suite roster. CI uses
+this same command with its existing resource, timeout and output-progress
+gates, and checks a deliberately failing native Suite's exit status.
 
-Dependency installation calls the SDK's public `pkg-install` and shared build
-context in `build-dependencies.ss`, as Agentic's existing native entry does. The
-SDK retains revision/tag selection, transitive resolution and native builds.
-Automatic editor TAGS generation is separated into `just package-tags`: the
-previous CI completed dependency compilation and then exhausted its 2GiB heap
-in `gxtags`. No compiler target or source/currentness check is removed. Empty,
-malformed and incompatible-revision controls verify readiness/refusal and
-unchanged checkout/tag state; actual package installation is a separate gate.
-
-For the frozen Core0353d86 / Parser36f62d9 cohort, actual SDK installation
-completes in58.92s with all three package children exporting2 workers and no
-editor-index process or survivors. This is ordinary installation, not a repair
-of a previous cold timeout. Native/Cargo/fuzz Parser source projections and the
-existing source-alignment gate agree on the same immutable revision.
+Business data uses native POO `define-type`/`Record` contracts, `validate`, and
+Yuanxu object-family accessors. Org graph declarations construct Parser's
+native graph objects directly. Org-specific semantic constraints remain in
+Orgize. See [the current audit](docs/20_parser/20.10_native_cli_and_mop_reuse_audit.org)
+for validation results and unresolved SDK/CI gates.

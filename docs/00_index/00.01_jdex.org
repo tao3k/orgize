@@ -27,7 +27,10 @@ It follows a path-first contract:
 | `10.06` | `docs/10_architecture/10.06_org_sdd_substrate.org` | Org-native SDD node, parent-edge, requirement, and status projection boundary. |
 | `10.08` | `docs/10_architecture/10.08_temporal_revisit_projection.org` | Source-grounded temporal revisit projection and Scheme ownership. |
 | `10.09` | `docs/10_architecture/10.09_org_ecosystem_research.org` | Org ecosystem behavior, current module seams, and falsifiable review experiments. |
+| `10.10` | `docs/10_architecture/10.10_literate_programming_default_logic_research.org` | Lawsky and Catala research; AI Agent first boundaries, independent source ownership, and OrgContract/ASCENT composition. |
 | `20.03` | `docs/20_parser/20.03_property_schema_registry_contract.org` | Host-loaded `PROPERTY_SCHEMA` registry contract, loader semantics, and fixtures. |
+| `20.09` | `docs/20_parser/20.09_yuanxu_module_build_ownership.org` | Parser revision alignment, Yuanxu-owned module closure, generated package cleanup and bounded local qualification. |
+| `20.10` | `docs/20_parser/20.10_native_cli_and_mop_reuse_audit.org` | Native func roles, MOP reuse, CLI convergence and unresolved qualification gates. |
 | `90.01` | `docs/90_operations/90.01_implementation_status.org` | Implementation status, backlog, and validation notes. |
 | `90.02` | `docs/90_operations/90.02_verification_report_consumption.org` | Git-locked verification report consumption and optimization backlog. |
 

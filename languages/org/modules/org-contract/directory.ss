@@ -5,14 +5,14 @@
 
 (import (only-in :clan/poo/object .o .ref .slot?)
         (only-in :std/list/list every)
-        (only-in "types.ss" org-contract-definition? org-directory-profile?)
-        (only-in "objects.ss" make-org-contract-definition
+        (only-in "value-types.ss" org-contract-definition? org-directory-profile?)
+        (only-in "values.ss" make-org-contract-definition
                  make-org-contract-expectation make-org-contract-assertion
                  org-contract-definition-id
                  org-contract-definition-assertions org-contract-assertion-id
                  org-contract-result-passed?)
-        (only-in "funs.ss" org-contract-evaluate-definition)
-        (only-in "../org-elements/runtime-interface.ss" make-org-element-query))
+        (only-in "evaluation.ss" org-contract-evaluate-definition)
+        (only-in :orgize/languages/org/modules/org-elements/runtime-interface make-org-element-query))
 (export org-directory-contracts org-directory-evaluate)
 
 (def mandatory-document-contract

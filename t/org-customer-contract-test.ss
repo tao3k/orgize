@@ -5,7 +5,7 @@
         (only-in :std/misc/ports read-all-as-string)
         (only-in "../languages/org/modules/org-contract/aot.ss"
                  org-contract-rust-source)
-        (only-in "../languages/org/modules/org-contract/interface.ss"
+        (only-in "../languages/org/modules/org-contract/func.ss"
                  org-contract-definition-id)
         (only-in "../tests/fixtures/org-contract/generated/customer-contract-source.ss"
                  org-contract-definitions))

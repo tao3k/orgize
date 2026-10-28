@@ -1,23 +1,23 @@
 ;;; -*- Gerbil -*-
 ;;; Private native boundary projection; parsing remains the POO strategy's job.
-(import (only-in "event-runtime.ss" parse-org-native-events-with-parameters)
+(import (only-in :orgize-fold/parse-org-compiled-tape parse-org-compiled-tape)
+        (only-in :orgize/languages/org/modules/org-parser/runtime-parameters native-parameter-overrides)
         (only-in :std/vector/u8vector little u8vector-uint-ref u8vector-uint-set!)
-        (only-in "modules/org-parser/macro-funs.ss"
+        (only-in :orgize/languages/org/modules/org-parser/macro-funs
                  expand-org-macro-template expand-org-property-macros)
-        (only-in "modules/org-parser/block-line-funs.ss" org-block-line-facts org-block-document-plan org-dynamic-content-facts)
-        (only-in "modules/org-parser/keyword-funs.ss" org-keyword-facts)
-        (only-in "modules/org-parser/dir-path-funs.ss" org-dir-command-plan org-dir-environment-plan)
-        (only-in "modules/org-parser/text-funs.ss" org-trim)
-        (only-in "modules/org-parser/family-funs.ss" org-family-call org-document-batch org-link-batch org-affiliation-batch org-logbook-batch org-table-batch)
-        (only-in "modules/org-elements/radio-match.ss" org-radio-matches)
-        (only-in "modules/org-parser/value-funs.ss" org-value-plan)
-        (only-in :orgize/bindings/c/clock native-monotonic-ns native-thread-cpu-ns)
-        (only-in :orgize/bindings/c/runtime-statistics
+        (only-in :orgize/languages/org/modules/org-parser/block-line-funs org-block-line-facts org-block-document-plan org-dynamic-content-facts)
+        (only-in :orgize/languages/org/modules/org-parser/keyword-funs org-keyword-facts)
+        (only-in :orgize/languages/org/modules/org-parser/dir-path-funs org-dir-command-plan org-dir-environment-plan)
+        (only-in :orgize/languages/org/modules/org-parser/text-funs org-trim)
+        (only-in :orgize/languages/org/modules/org-parser/family-funs org-family-call org-document-batch org-link-batch org-affiliation-batch org-logbook-batch org-table-batch)
+        (only-in :orgize/languages/org/modules/org-elements/radio-match org-radio-matches)
+        (only-in :orgize/languages/org/modules/org-parser/value-funs org-value-plan)
+        (only-in :orgize/languages/org/modules/org-parser/runtime-statistics
                  runtime-statistics-snapshot runtime-statistics-delta)
-        (only-in "modules/org-contract/parser.ss" parse-org-contract-expression)
-        (only-in "modules/org-contract/contract-normalize.ss" contract-events->rows)
-        (only-in "modules/org-contract/document-plan.ss" org-contract-document-plan)
-        (only-in "modules/org-contract/expectation-parser.ss" parse-org-expectation)
+        (only-in :orgize/languages/org/modules/org-contract/parser parse-org-contract-expression)
+        (only-in :orgize/languages/org/modules/org-contract/contract-normalize contract-events->rows)
+        (only-in :orgize/languages/org/modules/org-contract/document-plan org-contract-document-plan)
+        (only-in :orgize/languages/org/modules/org-contract/expectation-parser parse-org-expectation)
         (only-in :gerbil-parser/src/runtime/artifact
                  parse-artifact-success? parse-artifact-events
                  event-kind event-start event-end token-event-token-kind token-event-lexeme)
@@ -25,11 +25,14 @@
          (only-in :gerbil-parser/src/language/descriptor
                  language-grammar-ir language-grammar-machine)
         (only-in :gerbil-parser/src/runtime/machine parser-machine-grammar-digest)
-        (only-in "grammar.ss" org-mode-language-grammar)
-        (only-in "modules/org-contract/grammar.ss" org-contract-language-grammar)
-        (only-in "modules/org-contract/expectation-grammar.ss" org-expectation-language-grammar)))
+        (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
+        (only-in :orgize/languages/org/modules/org-contract/grammar org-contract-language-grammar)
+        (only-in :orgize/languages/org/modules/org-contract/expectation-grammar org-expectation-language-grammar)))
 (export org-events->tape org-request->tape org-event-tape-header
         expression-value-rows expectation-value-rows contract-value-rows)
+
+(def (parse-org-native-tape-with-parameters source level policy)
+  (parse-org-compiled-tape source (native-parameter-overrides level policy)))
 
 ;; Bounded compile-time projection of the existing grammar, never a second
 ;; catalog. LR construction and Rust IR generation stay outside native runtime.
@@ -111,16 +114,18 @@
     bytes))
 
 ;; Versioned call-scoped request: ONR1, operation, u64 level, u8 policy, UTF-8.
-;; Operation 5: OPR1 + fold/tape wall ns + owner-thread CPU ns + unchanged OEV1.
+;; Operation 5: OPR1 + fused Fold/emission wall ns + zero separate encode span
+;; + owner-thread CPU ns + unchanged OEV1. Encoding work is in the first span.
 ;; Its clock calls and envelope never execute for ordinary requests.
-(def (profile-org-tape source level policy)
-  (let* ((begin (native-monotonic-ns))
-         (cpu-begin (native-thread-cpu-ns))
-         (events (parse-org-native-events-with-parameters source level policy))
-         (fold-end (native-monotonic-ns))
-         (tape (org-events->tape events))
-         (tape-end (native-monotonic-ns))
-         (cpu-end (native-thread-cpu-ns)))
+(def (profile-org-tape source level policy monotonic-ns thread-cpu-ns)
+  (let* ((begin (monotonic-ns))
+         (cpu-begin (thread-cpu-ns))
+         (tape (parse-org-native-tape-with-parameters source level policy))
+         (fold-end (monotonic-ns))
+         ;; Direct emission is fused with Fold execution. OPR1's first span
+         ;; owns both; there is no independently timed list-encoding pass.
+         (tape-end fold-end)
+         (cpu-end (thread-cpu-ns)))
     (unless (and (> begin 0) (<= begin fold-end tape-end)
                  (> cpu-begin 0) (<= cpu-begin cpu-end))
       (error "native diagnostic monotonic clock failed"))
@@ -138,7 +143,8 @@
 ;; One admitted owner request, at most 64 documents / 64KiB source. The
 ;; lifecycle feature still chooses the owner; this pure loop adds no scheduler.
 ;; Each row retains its own OEV1/OPR1 identity, result and source-relative offsets.
-(def (org-batch-request->tape request level policy profile?)
+(def (org-batch-request->tape request level policy profile?
+                                  (monotonic-ns #f) (thread-cpu-ns #f))
   (let (end (u8vector-length request))
     (unless (and (>= end 16) (> level 0) (memv policy '(0 1 2)))
       (error "invalid native Org batch header"))
@@ -170,9 +176,8 @@
                 (lambda ()
                   (let (source (utf8->string request (car range) (cdr range)))
                     (cons 0 (if profile?
-                              (profile-org-tape source level policy)
-                              (org-events->tape
-                               (parse-org-native-events-with-parameters source level policy))))))))
+                              (profile-org-tape source level policy monotonic-ns thread-cpu-ns)
+                              (parse-org-native-tape-with-parameters source level policy)))))))
              rows))
            (size (foldl (lambda (row total) (+ total 5 (u8vector-length (cdr row))))
                         6 outcomes))
@@ -194,13 +199,13 @@
 ;; Process CPU/VM GC snapshots bracket a slightly wider interval and allocate.
 ;; They include other process/VM work; overlapping intervals are not additive
 ;; exclusive costs. No collection is forced here.
-(def (profile-org-batch request level policy)
+(def (profile-org-batch request level policy monotonic-ns thread-cpu-ns)
   (let* ((stats-begin (runtime-statistics-snapshot))
-         (begin (native-monotonic-ns))
-         (cpu-begin (native-thread-cpu-ns))
-         (tape (org-batch-request->tape request level policy #t))
-         (cpu-end (native-thread-cpu-ns))
-         (end (native-monotonic-ns))
+         (begin (monotonic-ns))
+         (cpu-begin (thread-cpu-ns))
+         (tape (org-batch-request->tape request level policy #t monotonic-ns thread-cpu-ns))
+         (cpu-end (thread-cpu-ns))
+         (end (monotonic-ns))
          (stats-end (runtime-statistics-snapshot))
          (stats (runtime-statistics-delta stats-begin stats-end)))
     (unless (and (> begin 0) (<= begin end)
@@ -217,7 +222,7 @@
       (u8vector-copy! bytes 52 tape)
       bytes)))
 
-(def (org-request->tape request)
+(def (org-request->tape request (monotonic-ns #f) (thread-cpu-ns #f))
   (unless (and (u8vector? request) (>= (u8vector-length request) 14)
                (equal? (subu8vector request 0 4) (u8vector 79 78 82 49)))
     (error "truncated Org native request"))
@@ -233,12 +238,12 @@
         (macro-request->tape request) (semantic-request->tape request)))
      ((memv (u8vector-ref request 4) '(6 7))
       (if (= (u8vector-ref request 4) 7)
-        (profile-org-batch request level policy)
+        (profile-org-batch request level policy monotonic-ns thread-cpu-ns)
         (org-batch-request->tape request level policy #f)))
      (else (let (source (utf8->string request 14 (u8vector-length request)))
     (case (u8vector-ref request 4)
-      ((0) (org-events->tape (parse-org-native-events-with-parameters source level policy)))
-      ((5) (profile-org-tape source level policy))
+      ((0) (parse-org-native-tape-with-parameters source level policy))
+      ((5) (profile-org-tape source level policy monotonic-ns thread-cpu-ns))
       ((1 2 3 4)
        (unless (and (= level 0) (= policy 0))
          (error "invalid expression request options"))

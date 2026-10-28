@@ -4,12 +4,12 @@
 ;;; Read inert authoring data into the existing POO constructors. Never eval.
 (import (only-in :clan/poo/object .o .ref)
         (only-in :std/list/list find)
-        (only-in "../org-elements/runtime-interface.ss"
+        (only-in :orgize/languages/org/modules/org-elements/runtime-interface
                  org-element-graph-records make-org-element-property-clause
                  make-org-element-relation-clause org-element-query-compose
                  org-element-predicate-all org-element-predicate-any)
-        (only-in "../org-elements/source-graph.ss" org-source-element-field)
-        (only-in "objects.ss" make-org-contract-definition
+        (only-in :orgize/languages/org/modules/org-elements/source-graph org-source-element-field)
+        (only-in "values.ss" make-org-contract-definition
                  make-org-contract-assertion make-org-contract-binding
                  make-org-contract-expectation))
 (export org-source-contract-definitions)

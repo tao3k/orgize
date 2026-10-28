@@ -3,7 +3,7 @@
                  line-structure-text text-line-inline-link inline-link-opening
                  make-source-event-scope source-inline-link-initial
                  source-inline-link-scan-forms source-inline-link-open-condition)
-        (only-in "../../parser.ss" org-line-structure))
+        (only-in "parser.ss" org-line-structure))
 (export link-open link-scan-forms inline-link-event-initial link-open-condition)
 (def text-rule (line-structure-text org-line-structure))
 (def link-open (inline-link-opening (text-line-inline-link text-rule)))

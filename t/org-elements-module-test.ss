@@ -1,10 +1,11 @@
 ;;; -*- Gerbil -*-
 ;;; Org Elements is a POO feature independently of Org Contract.
 
-(import (only-in :std/test check check-exception test-case test-suite)
+(import (only-in "../languages/org/modules/org-elements/config.ss" org-elements-default-profile)
+        (only-in :std/test check check-exception test-case test-suite)
         (only-in :clan/poo/object .o .ref .slot?)
         (only-in :gerbil-parser/graph-query-support graph-query-context?)
-        (only-in "../languages/org/modules/org-elements/types.ss"
+        (only-in "../languages/org/modules/org-elements/value-types.ss"
                  +org-element-schema+ +org-element-context-kind+
                  org-element-query-context?)
         (only-in "org-elements-test-support.ss"
@@ -36,7 +37,7 @@
                  headline-priority-cookie
                  todo-keyword-matches?
                  memory-headline-state )
-        (only-in "../languages/org/modules/org-elements/objects.ss"
+        (only-in "../languages/org/modules/org-elements/values.ss"
                  make-org-headline-properties org-headline-property-field)
         (only-in "../languages/org/modules/org-elements/link-properties.ss"
                  org-image-link?
@@ -68,8 +69,8 @@
                  org-affiliated-keyword? )
         (only-in "../languages/org/modules/org-elements/catalog.ss" +org-affiliated-keywords+)
         (only-in "../languages/org/modules/org-elements/generated/query-source.ss" org-element-queries)
-        (only-in "../languages/org/modules/org-elements/interface.ss"
-                 +org-element-kinds+ org-elements-default-profile
+        (only-in "../languages/org/modules/org-elements/func.ss"
+                 +org-element-kinds+
                  make-org-element-graph-view make-org-element-query
                  make-org-element-query-context org-element-query?
                  org-element-map org-element-property

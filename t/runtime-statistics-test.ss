@@ -1,5 +1,5 @@
 (import (only-in :std/test check check-exception test-case test-suite)
-        (only-in :orgize/bindings/c/runtime-statistics
+        (only-in :orgize/languages/org/modules/org-parser/runtime-statistics
                  runtime-statistics-snapshot runtime-statistics-delta)
         (only-in :orgize/t/clock/reference reference-process-cpu-ns reference-spin))
 (export runtime-statistics-test)

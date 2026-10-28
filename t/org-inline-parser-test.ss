@@ -7,13 +7,13 @@
         (only-in :clan/poo/object .o .cc)
         (only-in :gerbil-parser/src/declarations
                  line-structure-blocks)
-        (only-in "../languages/org/parser.ss" org-line-structure)
-        (only-in "../languages/org/modules/org-parser/types.ss"
+        (only-in "../languages/org/modules/org-parser/parser.ss" org-line-structure)
+        (only-in "../languages/org/modules/org-parser/value-types.ss"
                  org-event-block? org-named-block?
                  org-inline-markup? org-inline-script?
                  org-event-helper?
                  org-event-strategy?)
-        (only-in "../languages/org/modules/org-parser/objects.ss"
+        (only-in "../languages/org/modules/org-parser/values.ss"
                  make-org-event-block org-event-block-id
                  make-org-named-block
                  make-org-inline-markup org-inline-markup-node
@@ -21,7 +21,7 @@
                  make-org-event-helper org-event-helper-descriptor
                  make-org-event-strategy org-event-strategy-root org-event-strategy-helper-descriptors org-event-strategy-program)
         (only-in "org-parser-test-support.ss" check-org-ast-with org-events-cover-source?)
-        (only-in "../languages/org/event-runtime.ss"
+        (only-in "../languages/org/modules/org-parser/event-runtime.ss"
                  parse-org-native-events
                  parse-org-native-events-with-inlinetask-level
                  parse-org-native-events-with-inline-script-policy))

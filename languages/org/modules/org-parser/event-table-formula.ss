@@ -12,8 +12,8 @@
         (only-in :gerbil-parser/src/declarations
                  line-structure-key-lines key-line-node
                  key-line-prefix key-line-separator)
-        (only-in "../../parser.ss" org-line-structure)
-        (only-in "objects.ss" make-org-event-helper)
+        (only-in "parser.ss" org-line-structure)
+        (only-in "values.ss" make-org-event-helper)
         (only-in "event-source-content.ss" source-content-initial source-content-forms))
 (export table-formula-marker table-formula-event-helpers)
 

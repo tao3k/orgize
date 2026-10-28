@@ -1,12 +1,12 @@
 ;;; -*- Gerbil -*-
-;;; This test deliberately imports neither gerbil-parser nor generator modules.
+;;; Runtime graph declarations use Parser's native family; generators stay out.
 
 (import (only-in :std/test check test-case test-suite)
         (only-in :clan/poo/object .o .ref)
-        (only-in "../languages/org/graph-shape.ss"
-                 org-graph-shape org-graph-node-label
-                 org-graph-node-rust org-graph-node-fields
-                 org-graph-field-label org-graph-field-mode)
+        (only-in "../languages/org/modules/org-elements/graph-shape.ss" org-graph-shape)
+        (only-in :gerbil-parser/src/graph/graph-projection-objects graph-node-label
+                 graph-node-syntax-kind graph-node-fields
+                 graph-field-name graph-field-mode)
         (only-in "../languages/org/modules/org-elements/runtime-interface.ss"
                  make-org-element-graph-view make-org-element-query
                  org-element-query?)
@@ -22,17 +22,17 @@
     (test-case "graph manifest exposes source-owned fields"
       (let (keyword
             (car (filter (lambda (node)
-                           (equal? (org-graph-node-label node) "keyword"))
+                           (equal? (graph-node-label node) "keyword"))
                          org-graph-shape)))
-        (check (org-graph-node-rust (car org-graph-shape)) => 'OrgFile)
-        (check (org-graph-node-label (cadr org-graph-shape))
+        (check (graph-node-syntax-kind (car org-graph-shape)) => 'OrgFile)
+        (check (graph-node-label (cadr org-graph-shape))
                => "headline")
-        (check (map org-graph-node-label
+        (check (map graph-node-label
                     (filter (lambda (node)
-                              (equal? (org-graph-node-rust node) 'OrgInlinetask))
+                              (equal? (graph-node-syntax-kind node) 'OrgInlinetask))
                             org-graph-shape))
                => '("inlinetask"))
-        (check (map org-graph-field-label (org-graph-node-fields keyword))
+        (check (map graph-field-name (graph-node-fields keyword))
                => '("key" "optional" "value" "value" "value"
                     "value" "value" "include-raw-path" "include-path"
                     "include-unclosed-path" "include-argument"
@@ -40,7 +40,7 @@
                     "rich-value" "attribute-key" "attribute-value"
                     "header" "header" "header" "header-key"
                     "header-value" "raw-value"))
-        (check (map org-graph-field-mode (org-graph-node-fields keyword))
+        (check (map graph-field-mode (graph-node-fields keyword))
                => '(one one one node-text node-text node-text node-text
                        node-text one one each each each node-text each each
                        one one one each each node-text))))
