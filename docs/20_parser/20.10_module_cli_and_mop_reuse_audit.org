@@ -336,3 +336,26 @@ heap. The released native tagging/CLI issues, complete conformance, current
 remote application CI and unchanged Plan Ledger performance gate remain open.
 No SDK archive, heap/deadline, Case roster, negative control or performance
 threshold is changed to close those failures.
+
+* Shared fixture follow-up and exact pin alignment (2026-10-29)
+
+Parser =56c1a98a89703225a9f8c49ac83e8da9a5e8374f= moves the structured
+lexical declaration out of its Suite into one actual fixture. Both tests and
+the Rust generator import that owner directly; the Suite no longer re-exports
+the declaration. All native and Cargo/fuzz pins advance together. This cut
+changes no production Parser source, golden output or case corpus relative
+to =dbe19eb=; the 230-Case/454-module receipt above remains that earlier
+cohort's receipt, not a newly rebuilt final-cohort acceptance.
+
+The original two lexical Cases pass locally. The actual generator still
+fails its unchanged five-second idle gate before its generated receipt.
+Yuanxu =3527b556= additionally supplies stable installed macOS library search
+paths for the existing native executable test; its runtime source and the
+transitive =c015940= dependency pin remain unchanged.
+
+Remote Orgize =784a96ec= passes macOS native staging after the umbrella removal,
+but Linux native preparation still overflows its existing heap and the macOS
+Rust lane fails the unchanged native test deadline. Parser =dbe19eb= passes
+Linux cold preparation, corpus, FFI and Rust lanes, but generation and capture
+prefix preloading still fail; macOS preparation refuses empty dependency TAGS.
+These remain failures and are not waived by the focused local results.
