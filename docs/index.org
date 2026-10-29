@@ -24,7 +24,7 @@ declared category and an unused `AC.ID` coordinate before adding a file.
 - [[file:20_parser/20.05_parser_surface_map.org][20.05 Parser Surface Map]]
 - [[file:20_parser/20.06_scheme_grammar_rowan_cutover.org][20.06 Scheme Grammar to Rowan Cutover]]
 - [[file:20_parser/20.09_yuanxu_module_build_ownership.org][20.09 Yuanxu Module Build Ownership]]
-- [[file:20_parser/20.10_native_cli_and_mop_reuse_audit.org][20.10 Native CLI and MOP Reuse Audit]]
+- [[file:20_parser/20.10_module_cli_and_mop_reuse_audit.org][20.10 Native CLI and MOP Reuse Audit]]
 [[file:20_parser/20.05_parser_surface_map.org][20.05 Parser Surface Map]]
 - [[file:90_operations/90.01_implementation_status.org][90.01 Implementation Status]]
 - [[file:90_operations/90.02_verification_report_consumption.org][90.02 Verification Report Consumption]]

@@ -298,5 +298,5 @@ gates, and checks a deliberately failing native Suite's exit status.
 Business data uses native POO `define-type`/`Record` contracts, `validate`, and
 Yuanxu object-family accessors. Org graph declarations construct Parser's
 native graph objects directly. Org-specific semantic constraints remain in
-Orgize. See [the current audit](docs/20_parser/20.10_native_cli_and_mop_reuse_audit.org)
+Orgize. See [the current audit](docs/20_parser/20.10_module_cli_and_mop_reuse_audit.org)
 for validation results and unresolved SDK/CI gates.

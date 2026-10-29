@@ -233,3 +233,48 @@ historical SDK, cold-build, performance or remote CI limitations. The initial
 source-bound build exit without an installed product prelude was rejected;
 actual native closure/publication and independent consumers now provide the
 qualification. Validation logs remain local under =target/yuanxu-migration/=.
+
+* Exact-head CI failures and bounded repair (2026-10-29)
+
+The first published product-prelude cohort does not pass remote CI:
+
+| Owner | Head | Run | Observed failure |
+|-------+------+-----+------------------|
+| Yuanxu | =83517bf= | =40738424161= | macOS source-build child deadline 124; Linux 10K declaration heap overflow |
+| Parser | =8e9f83c= | =40738830265= | Linux three strict macro-hygiene errors; macOS empty dependency TAGS |
+| Orgize | =3533abb5= | =40740413405= | macOS task-layout refusal; Linux dependency gxtags heap overflow |
+
+Yuanxu proofs =40738423768= succeed. Linux runtime, scenarios, modules,
+contracts, bootstrap and objects groups succeed; scale fails. Parser's
+Rust contracts, lints and AOT performance jobs succeed. Skipped downstream
+Scheme and Orgize performance gates are not passes.
+
+The audit filename contained =native=, which the existing task-layout rule
+prohibits. Rename this document and all maintained references; preserve the
+rule and task-dependency assertions. The complete layout check now passes.
+Parser's prelude wrappers now pass syntax identifiers to their existing
+shared lowering helper. Pinned ASP reports 614 findings and zero errors;
+all three public-interface Cases pass under the original 1 GiB/120 seconds.
+No policy exception or grammar reimplementation is introduced.
+
+The fixed macOS SDK's standalone =gxtags= skips even an independent
+=(export answer) (def answer 42)= source and produces zero bytes; invoking
+=gerbil tags= in that same SDK emits its tag and a 106-byte index. The SDK's
+package manager still starts the standalone tool. A newer official SDK with
+the native multicall symlink was downloaded and checksum-verified, but its
+local startup diagnostics expired. Its native index subsequently generated
+106 bytes under the existing 2 GiB/180-second tag-task bound; the unchanged
+failed-Suite control still failed the five-second genuine-output deadline
+under 1 GiB/120 seconds. It is not an admitted test SDK. Neither a local SDK
+rewrite nor an unqualified SDK upgrade is included. The nonempty-index check remains.
+
+The 10K declaration failure reaches 2,000 completed declarations with
+1,816,932,496 live bytes before heap overflow. The macOS bootstrap child
+returns 124 under its existing 60-second bound. These remain separate
+capacity/performance failures. No smaller manifest, forced collection,
+worker split, heap/deadline increase or relaxed assertion is used. Local
+focused repairs do not qualify the full queue, the released SDK or the
+unchanged Plan Ledger performance gate.
+
+The Parser hygiene repair is published at =42c3f4ce27495dcc3d518ff10b8ef6a1ccd347c7=.
+Orgize native and Cargo declarations advance together to that exact source.

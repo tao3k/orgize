@@ -4,7 +4,7 @@
 * Superseded ownership guidance
 
 The API/root inventories and test executable described below are superseded by
-[[file:20.10_native_cli_and_mop_reuse_audit.org][20.10 Native CLI and MOP Reuse Audit]]. This record retains earlier evidence.
+[[file:20.10_module_cli_and_mop_reuse_audit.org][20.10 Native CLI and MOP Reuse Audit]]. This record retains earlier evidence.
 
 * Candidate and dependency identity
 
