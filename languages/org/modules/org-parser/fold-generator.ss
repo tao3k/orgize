@@ -3,7 +3,7 @@
 (import (only-in :gerbil-parser/language-build-support
                  event-fold-scheme-module-sources)
         (only-in :gerbil-parser/language-build-support run-build-tool)
-        (only-in "fold-package.ss" write-fold-package)
+        (only-in "fold-package.ss" write-fold-package fold-package-source-directory)
         (only-in :gerbil-parser/language-build-support
                  compile-event-fold-scheme-units)
         (only-in "grammar.ss" org-mode-language-grammar)
@@ -33,11 +33,13 @@
           (event-fold-scheme-module-sources
            'parse-org-compiled-inline-events org-mode-language-grammar 'OrgFile '()
            '((call-source-helper inline-span start end ((uint 2)))) '() helpers))
-         (units (append document inline tape)))
-    (write-fold-package output units)
+         (units (append document inline tape))
+         (source-directory (if (equal? profile "dynamic")
+                             (fold-package-source-directory output) output)))
+    (write-fold-package source-directory units)
     (if (equal? profile "dynamic")
       (run-build-tool (list "env" (string-append "GERBIL_PATH=" output)
-                         "gxi" (path-expand "build.ss" output) "compile" "--optimized"))
+                         "gxi" (path-expand "build.ss" source-directory) "compile" "--optimized"))
       (compile-event-fold-scheme-units output (map car units)))
     (displayln "GENERATION-OK native-org-document-and-inline")
     (force-output)))

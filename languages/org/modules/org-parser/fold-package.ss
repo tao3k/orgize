@@ -1,7 +1,11 @@
 ;;; Emit a native Yuanxu package for the Parser-produced compilation units.
 ;;; This file owns text emission only; selection, products and cleanup are Core's.
 (import (only-in :std/misc/ports read-all-as-string))
-(export write-fold-package)
+(export write-fold-package fold-package-source-directory)
+
+;; Generated sources are a native source package, never the installation prefix.
+(def (fold-package-source-directory prefix)
+  (path-expand "src/orgize-fold" prefix))
 (def (write-source path text)
   (create-directory* (path-directory path))
   (unless (and (file-exists? path)
@@ -13,9 +17,9 @@
     (lambda (unit)
       (write-source (path-expand (string-append (car unit) ".ss") output) (cdr unit))) units)
   ;; Compilation units are native build roots, not an invented business Module.
-  (write-source (path-expand "gerbil.pkg" output) "(package: orgize-fold prelude: :tao3k/parser/prelude)\n")
+  (write-source (path-expand "gerbil.pkg" output) "(package: orgize-fold)\n")
   (write-source (path-expand "init.ss" output)
-    "(yuanxu! :load-modules \".\" mode: explicit rename: Generated)\n")
+    "(import (only-in :yuanxu/module-system/selection/init-syntax yuanxu!))\n(yuanxu! :load-modules \".\" mode: explicit rename: Generated)\n")
   (write-source (path-expand "build.ss" output)
     (call-with-output-string
       (lambda (port)

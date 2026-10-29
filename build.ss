@@ -12,6 +12,8 @@
         (only-in :yuanxu/module-system/building/script defbuild-script)
         (only-in :gerbil-parser/language-build-support
                  initialize-compiler-build! run-build-tool)
+        (only-in "./languages/org/modules/org-parser/fold-package.ss"
+                 fold-package-source-directory)
         (only-in "./init.ss" orgize.init.exports))
 (export main)
 (register-module-build-source! (path-directory (this-source-file)) 'orgize)
@@ -31,8 +33,9 @@
     (run-build-tool
       (list "gxi" (path-expand "languages/org/modules/org-parser/fold-generator.ss"
                                (path-directory (this-source-file))) output "dynamic")))
-  (when (file-exists? (path-expand "gerbil.pkg" output))
-    (register-module-build-source! output 'orgize-fold))
+  (let (source-directory (fold-package-source-directory output))
+    (when (file-exists? (path-expand "gerbil.pkg" source-directory))
+      (register-module-build-source! source-directory 'orgize-fold)))
   (begin0 (apply build-native arguments)
     ;; The bridge compiler owns the program closure and manifest. CI and Cargo
     ;; consume this package product; they do not rebuild a second static subset.
