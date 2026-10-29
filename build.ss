@@ -18,8 +18,7 @@
 
 (def (build-native . arguments)
   (def modules-spec (.get orgize.init.exports std-make-spec))
-  (defbuild-script (modules-spec '())
-    parallelize: (min 2 (string->number (getenv "GERBIL_BUILD_CORES" "0"))))
+  (defbuild-script (modules-spec '()))
   (apply main arguments))
 
 (def (main . arguments)
