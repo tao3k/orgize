@@ -10,7 +10,7 @@
         (only-in :clan/poo/object .get)
         (only-in :yuanxu/module-system/building/source-package register-module-build-source!)
         (only-in :yuanxu/module-system/building/script defbuild-script)
-        (only-in :gerbil-parser/language-build-support
+        (only-in :gerbil-parser/compiler-build-support
                  initialize-compiler-build! run-build-tool)
         (only-in "./languages/org/modules/org-parser/fold-package.ss"
                  fold-package-source-directory)

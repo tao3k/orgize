@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Thin consumer: the shared engine owns admission and native code generation.
 (import (only-in :std/misc/ports read-all-as-string)
-        (only-in :gerbil-parser/language-build-support event-fold-scheme-module-sources)
+        (only-in :gerbil-parser/event-fold-build-support event-fold-scheme-module-sources)
         (only-in :gerbil-parser/rust-runtime-event-support run-event-fold)
         (only-in :orgize/languages/org/modules/org-parser/grammar org-mode-language-grammar)
         (only-in :orgize/languages/org/modules/org-parser/event-strategy
@@ -35,7 +35,7 @@
       (lambda (port) (write '(package: orgize-fold) port) (newline port)))
     (call-with-output-file (path-expand "build-fold.ss" (path-directory output))
       (lambda (port)
-        (write '(import (only-in :gerbil-parser/language-build-support
+        (write '(import (only-in :gerbil-parser/event-fold-build-support
                                 compile-event-fold-scheme-units)) port) (newline port)
         (write '(export main) port) (newline port)
         (write `(def (main) (compile-event-fold-scheme-units
