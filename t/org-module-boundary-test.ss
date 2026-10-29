@@ -16,9 +16,23 @@
           `(begin
              (import ,(path-expand "../languages/org/modules/org-parser/values.ss"
                         (path-directory (this-source-file)))
-                     ,(path-expand "../languages/org/modules/org-elements/runtime-interface.ss"
+                     ,(path-expand "../languages/org/modules/org-elements/value-types.ss"
                         (path-directory (this-source-file)))
-                     ,(path-expand "../languages/org/modules/org-contract/runtime-interface.ss"
+                     ,(path-expand "../languages/org/modules/org-elements/values.ss"
+                        (path-directory (this-source-file)))
+                     ,(path-expand "../languages/org/modules/org-elements/query.ss"
+                        (path-directory (this-source-file)))
+                     ,(path-expand "../languages/org/modules/org-elements/syntax.ss"
+                        (path-directory (this-source-file)))
+                     ,(path-expand "../languages/org/modules/org-contract/value-types.ss"
+                        (path-directory (this-source-file)))
+                     ,(path-expand "../languages/org/modules/org-contract/values.ss"
+                        (path-directory (this-source-file)))
+                     ,(path-expand "../languages/org/modules/org-contract/evaluation.ss"
+                        (path-directory (this-source-file)))
+                     ,(path-expand "../languages/org/modules/org-contract/config.ss"
+                        (path-directory (this-source-file)))
+                     ,(path-expand "../languages/org/modules/org-contract/syntax.ss"
                         (path-directory (this-source-file))))
              (when (ormap
                      (lambda (owner)
@@ -28,6 +42,13 @@
                                   (list-modules))))
                      '("org-parser" "org-elements" "org-contract"))
                (error "business values activated Module authoring roles"))
+             (when (ormap
+                     (lambda (owner)
+                       (assoc (string-append "orgize/languages/org/modules/"
+                                             owner "/runtime-interface~0")
+                              (list-modules)))
+                     '("org-elements" "org-contract"))
+               (error "business values loaded a retired runtime umbrella"))
              (displayln "BUSINESS-VALUES-ISOLATED-OK"))))
       (check-equal? (and (string-contains output "BUSINESS-VALUES-ISOLATED-OK") #t) #t))
     (test-case "native consumers load only their required generated programs"

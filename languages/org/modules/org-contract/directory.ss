@@ -12,7 +12,8 @@
                  org-contract-definition-assertions org-contract-assertion-id
                  org-contract-result-passed?)
         (only-in "evaluation.ss" org-contract-evaluate-definition)
-        (only-in :orgize/languages/org/modules/org-elements/runtime-interface make-org-element-query))
+        (only-in :orgize/languages/org/modules/org-elements/values
+                 make-org-element-query))
 (export org-directory-contracts org-directory-evaluate)
 
 (def mandatory-document-contract

@@ -278,3 +278,61 @@ unchanged Plan Ledger performance gate.
 
 The Parser hygiene repair is published at =42c3f4ce27495dcc3d518ff10b8ef6a1ccd347c7=.
 Orgize native and Cargo declarations advance together to that exact source.
+
+* Remove the redundant Parser API aggregate (2026-10-29)
+
+The inherited Parser prelude and domain Module interfaces are the public
+ownership boundary. =src/api.ss= was an unused full import/re-export umbrella,
+retained only by Language's Build. Remove the file and that root, with no
+replacement aggregate or compatibility alias. Runtime's existing artifact
+and source-line entries are published directly by Runtime. The independent
+complete catalog comparison additionally refuses a retired =src/api= target.
+
+Native cleanup uses the installed old package's own =gerbil pkg clean= before
+the current source rebuild, so stale installed API products cannot establish
+acceptance. The public-interface Suite additionally exercises actual native
+byte-span traversal and malformed artifact rejection through the retained
+Runtime interfaces, and rejects loading the retired umbrella as a side effect.
+
+The next Orgize cold run =40801871446= exposes the same redundant-export
+pattern in the application: C ABI staging cannot find the unprojected
+=org-contract/runtime-interface=, although the real values and evaluation
+owners were compiled. Remove both Element/Contract runtime-interface
+import/re-export wrappers and migrate internal consumers to the existing
+value-types, values, query, syntax and evaluation owners. Standard Module
+=func.ss= composition remains. No business =library-roots= inventory returns.
+The original business-value isolation Case retains all prior runtime leaves
+and additionally rejects either retired umbrella; its Case count is unchanged.
+The program source gate also rejects the retired wrappers and Parser API.
+
+* Final no-umbrella cohort and qualification (2026-10-29)
+
+Parser =dbe19ebe3eded3e2f809afd38cc7b4fee6ab8899= selects Yuanxu
+=c0159403051713eccd1a5204989e465f1ac3be7d=. Native, primary Cargo and fuzz
+pins agree. Yuanxu's existing source gateway derives its owned prelude from
+native package/header metadata; the optional independent identity constraint
+and strict source-origin equality remain. The private identity query moved
+to its actual package owner without a forwarding export.
+
+- Yuanxu native build and 13 Cases/5 Suites pass under the existing bounds.
+- Parser native build and 23 Cases/4 Suites pass; complete independent catalog
+  and strict ASP policy pass with 614 findings and zero errors. The retired API
+  target is explicitly refused. Conformance spec passes its former prelude
+  source-origin failure; full local compilation later fails at Darwin =_Exit=
+  linking on the installed older SDK and is not counted as a pass.
+- Orgize native build and =ORG-PARSER-STAGE OK= pass under 2 GiB/600 seconds.
+  The real program contains 454 modules, all from admitted source prefixes;
+  retired API/runtime umbrellas and the earlier forbidden executors are absent.
+- Standard functional tests pass all 230 Cases/18 Suites under 1 GiB/120
+  seconds, including the stronger original business-value isolation Case.
+  The exact =ci-scheme-test= entry separately fails its unchanged five-second
+  genuine-output deadline. Functional success does not admit that CLI gate.
+- Existing layout, public Parser interface and exact pin checks pass. Original
+  independent staged work, including =manifest.ss=, is preserved.
+
+Current-head Yuanxu proofs and both platform build/bootstrap jobs succeed at
+=c015940=. Its original Linux 10K declaration worker still overflows its 2 GiB
+heap. The released native tagging/CLI issues, complete conformance, current
+remote application CI and unchanged Plan Ledger performance gate remain open.
+No SDK archive, heap/deadline, Case roster, negative control or performance
+threshold is changed to close those failures.

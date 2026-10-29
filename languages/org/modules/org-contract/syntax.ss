@@ -1,7 +1,8 @@
 ;;; -*- Gerbil -*-
 ;;; Hygienic, bounded declarations inside Scheme :org-contract blocks.
 
-(import (only-in :orgize/languages/org/modules/org-elements/runtime-interface org-elements)
+(import (only-in :orgize/languages/org/modules/org-elements/syntax
+                 org-elements)
         (only-in "values.ss"
                  make-org-contract-expectation
                  make-org-contract-binding make-org-contract-assertion))

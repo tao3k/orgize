@@ -3,13 +3,12 @@
 
 (import (only-in :std/ffi C-declare C-ffi-macrology def-C-lambda def-C-type)
         (only-in :clan/poo/object .o .ref)
-        (only-in :orgize/languages/org/modules/org-elements/runtime-interface
+        (only-in :orgize/languages/org/modules/org-elements/values
                  make-org-element-graph-view make-org-element-query)
-        (only-in :orgize/languages/org/modules/org-contract/runtime-interface
-                 make-org-contract-assertion make-org-contract-expectation
-                 org-contract-evaluate-assertion
-                 org-contract-result-matched-count
-                 org-contract-result-passed?))
+        (only-in :orgize/languages/org/modules/org-contract/values
+                 make-org-contract-assertion make-org-contract-expectation org-contract-result-matched-count org-contract-result-passed?)
+        (only-in :orgize/languages/org/modules/org-contract/evaluation
+                 org-contract-evaluate-assertion))
 (export orgize-c-round-trip)
 
 (C-ffi-macrology)

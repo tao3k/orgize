@@ -2,11 +2,12 @@
 ;;; Pure Org contract query and assertion algorithms over a typed graph view.
 
 (import (only-in "value-types.ss" org-contract-definition?)
-        (only-in :orgize/languages/org/modules/org-elements/runtime-interface
-                 org-element-graph-view? make-org-element-query-context
-                 org-element-select org-element-query-target
-                 org-element-graph-records org-element-graph-id-of
-                 org-element-graph-parent-of org-element-graph-kind-of)
+        (only-in :orgize/languages/org/modules/org-elements/value-types
+                 org-element-graph-view?)
+        (only-in :orgize/languages/org/modules/org-elements/query
+                 make-org-element-query-context org-element-select)
+        (only-in :orgize/languages/org/modules/org-elements/values
+                 org-element-query-target org-element-graph-records org-element-graph-id-of org-element-graph-parent-of org-element-graph-kind-of)
         (only-in "values.ss"
                  make-org-contract-result
                  org-contract-expectation-operator org-contract-expectation-count

@@ -7,14 +7,14 @@
         (only-in :gerbil-parser/graph-projection-support graph-node-label
                  graph-node-syntax-kind graph-node-fields
                  graph-field-name graph-field-mode)
-        (only-in "../languages/org/modules/org-elements/runtime-interface.ss"
-                 make-org-element-graph-view make-org-element-query
+        (only-in "../languages/org/modules/org-elements/values.ss"
+                 make-org-element-graph-view make-org-element-query)
+        (only-in "../languages/org/modules/org-elements/value-types.ss"
                  org-element-query?)
-        (only-in "../languages/org/modules/org-contract/runtime-interface.ss"
-                 make-org-contract-assertion make-org-contract-expectation
-                 org-contract-evaluate-assertion
-                 org-contract-result-matched-count
-                 org-contract-result-passed?))
+        (only-in "../languages/org/modules/org-contract/values.ss"
+                 make-org-contract-assertion make-org-contract-expectation org-contract-result-matched-count org-contract-result-passed?)
+        (only-in "../languages/org/modules/org-contract/evaluation.ss"
+                 org-contract-evaluate-assertion))
 (export org-runtime-boundary-test)
 
 (def org-runtime-boundary-test

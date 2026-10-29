@@ -25,8 +25,10 @@ The separate, dirty Parser development checkout was not modified.
 
 [[file:../../init.ss][Root init]] selects the Org Parser, Element and Contract Modules and the
 independent native C capability using =yuanxu!=. Each =interface.ss= is a
-Module declaration. Existing Scheme APIs are explicit =api.ss= entries;
-old =interface.ss= API forwarding shims are not installed.
+Module declaration. The Parser prelude supplies the language/declaration entry;
+runtime operations remain in their owning Module capability interfaces.
+The redundant Parser =src/api.ss= umbrella and old =interface.ss= API
+forwarding shims are not installed.
 
 [[file:../../build.ss][Package build]] delegates the library projection to Yuanxu's
 =std-make-spec= and =building/script= adapter. Module Build contributions name

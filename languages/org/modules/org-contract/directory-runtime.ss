@@ -5,7 +5,8 @@
 (import (only-in :clan/poo/object .o .ref .slot?)
         (only-in :std/list/list filter every find)
         (only-in :std/misc/ports read-all-as-string)
-        (only-in :orgize/languages/org/modules/org-elements/runtime-interface org-element-graph-records)
+        (only-in :orgize/languages/org/modules/org-elements/values
+                 org-element-graph-records)
         (only-in :orgize/languages/org/modules/org-elements/source-graph
                  org-source-element-graph org-source-element-field)
         (only-in "value-types.ss" org-directory-profile?)
