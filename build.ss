@@ -46,6 +46,7 @@
               (path-expand "target/gerbil-parser" (path-directory (this-source-file))))))
     ;; The generated package's native catalog cleans its own exact targets.
     ;; No grammar, import dispatcher, artifact scanner or timestamp policy here.
-    (when (and (equal? operation "clean")
-               (file-exists? (path-expand "build.ss" output)))
-      (run-build-tool (list "gxi" (path-expand "build.ss" output) "clean")))))
+    (let (source-directory (fold-package-source-directory output))
+      (when (and (equal? operation "clean")
+                 (file-exists? (path-expand "build.ss" source-directory)))
+        (run-build-tool (list "gxi" (path-expand "build.ss" source-directory) "clean"))))))
