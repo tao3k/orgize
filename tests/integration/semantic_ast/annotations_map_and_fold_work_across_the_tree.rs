@@ -1,6 +1,5 @@
 use orgize::{Org, ast::AstRef};
 
-#[test]
 fn annotations_map_and_fold_work_across_the_tree() {
     let doc = Org::parse("* DONE A\nBody with /italic/ text.").document();
 
@@ -23,3 +22,8 @@ fn annotations_map_and_fold_work_across_the_tree() {
         .unwrap();
     assert_eq!(bare, doc.to_bare());
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::annotations_map_and_fold_work_across_the_tree::annotations_map_and_fold_work_across_the_tree",
+    annotations_map_and_fold_work_across_the_tree,
+)];

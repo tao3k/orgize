@@ -2,9 +2,8 @@
 
 use std::collections::HashSet;
 
-use super::{
-    AstMut, Document, ExportProjectionOptions, LinkAbbreviation, LinkTarget, ObjectData, Section,
-};
+use super::settings::expand_link_abbreviation;
+use super::{AstMut, Document, ExportProjectionOptions, LinkTarget, ObjectData, Section};
 
 impl<A: Clone> Document<A> {
     /// Returns an exporter-oriented semantic projection without mutating the parsed AST.
@@ -171,46 +170,12 @@ fn expand_link_abbreviations<A>(document: &mut Document<A>) {
         let LinkTarget::Uri { protocol, path } = &link.target else {
             return;
         };
-        let Some(expanded) = expand_abbreviated_target(protocol, path, &abbreviations) else {
+        let Some(expanded) = expand_link_abbreviation(protocol, path, &abbreviations) else {
             return;
         };
-        if let Some((protocol, path)) = expanded.split_once(':') {
-            link.target = LinkTarget::Uri {
-                protocol: protocol.to_string(),
-                path: path.to_string(),
-            };
+        if let Some(row) = super::org_values::optional("uri-split", &expanded) {
+            let [protocol, path]: [String; 2] = row.try_into().expect("native URI arity");
+            link.target = LinkTarget::Uri { protocol, path };
         }
     });
-}
-
-fn expand_abbreviated_target(
-    protocol: &str,
-    path: &str,
-    abbreviations: &[LinkAbbreviation],
-) -> Option<String> {
-    let replacement = abbreviations
-        .iter()
-        .find(|abbreviation| abbreviation.name.eq_ignore_ascii_case(protocol))
-        .map(|abbreviation| abbreviation.replacement.as_str())?;
-    if replacement.contains("%s") || replacement.contains("%h") {
-        Some(
-            replacement
-                .replace("%s", path)
-                .replace("%h", &percent_encode(path)),
-        )
-    } else {
-        Some(format!("{replacement}{path}"))
-    }
-}
-
-fn percent_encode(value: &str) -> String {
-    let mut encoded = String::new();
-    for byte in value.bytes() {
-        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
-            encoded.push(byte as char);
-        } else {
-            encoded.push_str(&format!("%{byte:02X}"));
-        }
-    }
-    encoded
 }

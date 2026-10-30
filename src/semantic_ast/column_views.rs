@@ -104,70 +104,27 @@ fn push_section_column_property(
 }
 
 fn column_view_columns(value: &str) -> Vec<ColumnViewColumn> {
-    value
-        .split_whitespace()
-        .filter_map(column_view_column)
+    super::org_values::rows("column-values", &[value])
+        .into_iter()
+        .map(|row| {
+            let [property, title, title_present, width, operator, format, raw]: [String; 7] =
+                row.try_into().expect("native column arity");
+            let title = match title_present.as_str() {
+                "true" => Some(title),
+                "false" => {
+                    assert!(title.is_empty());
+                    None
+                }
+                _ => unreachable!("native column title presence"),
+            };
+            ColumnViewColumn {
+                property,
+                title,
+                width: (!width.is_empty()).then(|| width.parse().expect("native column width")),
+                summary_operator: (!operator.is_empty()).then_some(operator),
+                summary_format: (!format.is_empty()).then_some(format),
+                raw,
+            }
+        })
         .collect()
-}
-
-fn column_view_column(raw: &str) -> Option<ColumnViewColumn> {
-    let raw = raw.trim();
-    let rest = raw.strip_prefix('%')?;
-    let (width, rest) = column_view_width(rest);
-    let property_end = rest
-        .char_indices()
-        .find(|(_, ch)| !is_column_property_char(*ch))
-        .map(|(index, _)| index)
-        .unwrap_or(rest.len());
-    let property = rest[..property_end].trim();
-    if property.is_empty() {
-        return None;
-    }
-
-    let mut title = None;
-    let mut summary_operator = None;
-    let mut summary_format = None;
-    let mut tail = &rest[property_end..];
-
-    if let Some(after_open) = tail.strip_prefix('(')
-        && let Some(close) = after_open.find(')')
-    {
-        title = Some(after_open[..close].to_string());
-        tail = &after_open[close + 1..];
-    }
-
-    if let Some(after_open) = tail.strip_prefix('{')
-        && let Some(close) = after_open.rfind('}')
-    {
-        let summary = &after_open[..close];
-        let (operator, format) = summary.split_once(';').unwrap_or((summary, ""));
-        summary_operator = (!operator.trim().is_empty()).then(|| operator.trim().to_string());
-        summary_format = (!format.trim().is_empty()).then(|| format.trim().to_string());
-    }
-
-    Some(ColumnViewColumn {
-        property: property.to_ascii_uppercase(),
-        title,
-        width,
-        summary_operator,
-        summary_format,
-        raw: raw.to_string(),
-    })
-}
-
-fn column_view_width(value: &str) -> (Option<usize>, &str) {
-    let width_end = value
-        .char_indices()
-        .find(|(_, ch)| !ch.is_ascii_digit())
-        .map(|(index, _)| index)
-        .unwrap_or(value.len());
-    if width_end == 0 {
-        (None, value)
-    } else {
-        (value[..width_end].parse().ok(), &value[width_end..])
-    }
-}
-
-fn is_column_property_char(ch: char) -> bool {
-    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-')
 }

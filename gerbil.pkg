@@ -1,5 +1,6 @@
 (package:
  orgize
+ prelude: :tao3k/parser/prelude
 depend:
- ("github.com/tao3k/gerbil-poo@099b381588360a8a49fd772f666a1a00351366f5"
-  "github.com/tao3k/gerbil-parser@2adf0e33f177ce01c8c91bd50bdca101cdd5669d"))
+ ("github.com/tao3k/gerbil-parser@e2ef6a33730b177589567e38517e42e4789474f3"
+ "github.com/tao3k/gerbil-scheme-rust@cfbc10c47ddc41f6670bd78e46e1e9d856cbb870"))

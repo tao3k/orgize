@@ -277,13 +277,7 @@ Document {
                             Object {
                                 ann: (),
                                 data: Plain(
-                                    ".\n",
-                                ),
-                            },
-                            Object {
-                                ann: (),
-                                data: Plain(
-                                    "\n",
+                                    ".\n\n",
                                 ),
                             },
                         ],
@@ -343,7 +337,7 @@ Document {
                                                     Object {
                                                         ann: (),
                                                         data: Plain(
-                                                            " item two\n",
+                                                            "item two\n",
                                                         ),
                                                     },
                                                 ],
@@ -361,9 +355,7 @@ Document {
                     data: Block(
                         Block {
                             kind: Source,
-                            name: Some(
-                                "src",
-                            ),
+                            name: None,
                             language: Some(
                                 "rust",
                             ),

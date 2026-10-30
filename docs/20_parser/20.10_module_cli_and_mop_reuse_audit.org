@@ -1,0 +1,361 @@
+#+title: 20.10 Native CLI and MOP Reuse Audit
+#+date: 2026-10-28
+
+* Correction to 20.09
+
+This record supersedes 20.09's API/build/test ownership recommendations.
+The previous =funs.ss= public entry was not Yuanxu's native =func.ss= role.
+Compensating with business =library-roots= inventories repeated dependency
+ownership already provided by =yuanxu! :load-modules=.
+
+[[file:../../init.ss][Root init]] selects the three Org Modules and native C Module. Their
+=func.ss= roles import ordinary implementation units; =config.ss= owns
+profiles; =interface.ss= declares the Module. Yuanxu admits roles and derives
+the native source closure. OrgContract is fully selected through these roles.
+No business =library-roots=, compatibility API, source scanner, or alternate
+loader remains. Explicit Build roots are retained only for foreign compiler
+leaves and their actual platform options.
+
+The dependency direction is Parser, then Element, then Contract, then native
+integration. The tape consumer composes these capabilities and therefore lives
+in =bindings/c/event-tape.ss=. It does not belong to the base Parser Module.
+Cross-module sources use admitted owner identities. Foreign clock definitions
+are compiled as native leaves; profiling accepts clock procedures so the
+functional role remains interpretable. C entrypoints and profiling fixtures
+supply the same native monotonic/thread CPU clocks.
+
+* Reuse rather than another object system
+
+Contract, Element and Parser business data use POO =define-type= and =Record=
+with native union, list, enum, optional-field and scalar contracts.
+Constructors call native =validate=. Yuanxu's =defpoo-object-family= generates
+accessors, as it does in Parser. Handwritten structural validators and repeated
+accessor definitions have been removed.
+
+Org graph declarations construct Parser's existing graph node/field objects.
+The duplicate Org graph Types, constructors and conversion pass are removed.
+Native Parser graph-query contracts remain shared dependencies. Orgize retains
+Org-specific catalog membership, query bounds, source semantics and grammar
+constraints. Lazy strategy programs are not forced merely to test membership.
+Generic/MOP reuse follows the owning protocol; introducing a new dispatch
+framework would repeat the same mistake.
+
+* Native command ownership
+
+- =gerbil deps --install= owns package installation and transitive dependencies.
+- =gerbil build --optimized= runs the Parser-backed fold producer, the standard
+  generated-package build adapter, native Module build and program staging.
+- =gerbil test -v 5 orgize-test.ss= owns discovery and execution of exported
+  standard Suites. Orgize supplies only the roster and fixture lifecycle.
+
+The generated fold package retains the Parser emitter's exact unit catalog.
+An empty explicit Module selection is sufficient for those compiler-owned
+roots; artificial Module role files are unnecessary. The duplicate Org
+bootstrap, dependency installer, closure runner, executable test projection
+and Core lifecycle tests have been removed.
+
+CI runs the Scheme lane once per OS, uses the native commands above and checks
+an intentional failing Suite's exit status. The generic output observer is
+retained solely to preserve the existing five-second idle-output requirement.
+It does not discover, select or execute Suites. The source build now uses 2 GiB/600 seconds, as authorized after the local
+qualification below. Tests retain the 1 GiB/120-second fence.
+
+* Evidence and open gates
+
+Parser is aligned at =811e18e4b72a2cc049755fa39567a6a6bc671f4c= across native,
+Cargo and fuzz consumers. This is an uncommitted local candidate, not a remote
+CI or release receipt.
+
+Before the final native-role correction, the installed SDK completed a 2 GiB
+native build including program staging and passed 230 cases in 18 Suites.
+Those results do not qualify the final role/ownership edits. Final candidate
+results are recorded below after running those commands.
+
+Existing negative evidence is retained: the earlier 1 GiB build exhausted its
+heap, and the CI five-second output gate expired during local SDK startup.
+The installed older SDK reports failed test output with exit zero, which the
+new negative control correctly rejects. The repository's pinned release SDK
+passed archive SHA verification and top-level help, but its build help and
+failure-control command produced no output before a separate ten-second smoke
+deadline on this host. This does not establish identical behavior on hosted CI.
+No custom test runner, weakened timeout or replacement SDK pin is used to
+conceal these failures. Cold full-build and remote CI acceptance remain open.
+
+The native-role candidate completed =gerbil build --optimized= with exit zero
+under the installed SDK's 2 GiB diagnostic configuration, including
+=ORG-PARSER-STAGE OK=. Its staged program contains 443 modules; the existing
+exact source-origin gate passed against the local Org/Parser and bridge roots.
+The subsequent unchanged 1 GiB fence refused the generated package with
+=stale module scope generation= (exit 70). This is distinct from the earlier
+heap overflow and does not establish CI acceptance. A final diagnostic rebuild
+also covers both native C execution owners' clock callback wiring.
+
+=git diff --check=, =just --dump=, =cargo fmt --all -- --check= and the Parser
+revision-alignment gate passed. The documented =cargo run -- lint docs
+development.org= command stopped in the native build prerequisite because no
+qualified =ORGIZE_FFI_BUNDLE= or explicit producer manifest was selected; this
+was not a completed documentation-lint pass.
+
+Final candidate: =native-cli-build-module-roles-final.log= records exit zero
+and =ORG-PARSER-STAGE OK= under the 2 GiB diagnostic configuration. Native
+=gerbil test -v 5 orgize-test.ss= then passed all 230 cases / 18 Suites and
+exited zero under the unchanged 1 GiB/120-second fence. The exact source-origin
+gate passed again after the final rebuild. Logs are local artifacts under
+=target/yuanxu-migration/=; these are warm local results, not cold or remote CI
+qualification. The repository manifest was restored to its pre-build contents.
+
+* CI build heap update
+
+Following the explicit request to use 2 GiB in CI, =ci-prepare= now applies one
+=ci_build_gambopt= setting to native dependency installation, bridge build and
+Orgize build. It preserves the selected SDK paths from =scheme_gambopt=.
+Runtime tests still use the 1 GiB setting. The 600-second build deadline,
+120-second test deadline, output observer and negative controls are unchanged.
+The earlier 1 GiB refusal remains historical evidence; increasing the heap does
+not prove that the stale-scope refusal or released-SDK startup issue is fixed.
+Remote CI with this configuration has not yet been run.
+
+* Producer contract alignment during submission
+
+The commit hook rejected the staged C program because Rust's required-module
+contract still named the old event-list consumer. The C request ABI uses the
+direct tape consumer; event-list parsing remains an independent Scheme API,
+qualified by the native Suites. The producer contract now requires the native
+wire consumer and Scheme runtime entry alongside the C parser entry, tape and
+inline folds, each exactly once. This matches the actual compiler-owned closure
+without forcing unused event-list code into the C program. Forbidden compiler
+modules, native headers, source fingerprints and bundle checks remain enforced.
+
+* Shared public prelude (2026-10-29)
+
+Yuanxu's unique =:tao3k/yuanxu/prelude= now supplies the public =yuanxu!=
+declaration. It introduces the existing native selection macro only on use,
+preserving the caller's lexical context and source location. Ordinary prelude
+imports load neither the Module System nor user Modules, and execute no build.
+There is no second parser, module loader, declaration grammar or product prelude.
+
+Yuanxu, Parser, Orgize and the generated fold package select that same language
+through native =gerbil.pkg= metadata. Maintained init entries invoke =yuanxu!=
+directly instead of importing =module-system/selection/init-syntax=. Runtime
+functions keep their ordinary module identities; the prelude does not export
+all Parser or Org operations or confer source-admission authority.
+
+Upstream Yuanxu =a720fd6b746ba056c3aa6f2b8b5c344938198e52= completed its native
+source build under 2 GiB/300 seconds. The prelude, module-init-import and
+package-identity Suites passed nine cases under 1 GiB/120 seconds using the
+installed macOS ARM64 SDK. These results are local qualification, not a release
+or remote CI receipt. Parser and Orgize qualification is recorded separately.
+
+Parser =7bb566d51bee2c222bfe467cae4ff74dcd9daa2c= now pins that Yuanxu revision.
+Orgize's native dependency, Cargo and fuzz locks select the same Parser commit;
+the maintained pin-alignment gate passed. Native dependency installation then
+built and registered this cohort in the SDK. The installed older SDK's tagged
+=gerbil pkg update= completed checkout but rejected its subsequent dependency
+step; the ordinary =gerbil deps --install= completed after the update. An
+initial dependency-build attempt omitted the repository's macOS compiler
+settings and failed on Nix SDK headers; the rerun used the existing platform
+settings and passed. No uninstall, source alias or alternate loader was used.
+
+| Local gate | Result | Existing fence |
+|------------+--------+----------------|
+| Yuanxu source build | Exit 0 | 2 GiB / 300 seconds |
+| Yuanxu prelude, init import, package identity | 9 cases / 4 Suites, OK | 1 GiB / 120 seconds |
+| Parser native build | Exit 0 | 2 GiB / 600 seconds |
+| Parser runtime, graph query, source grammar | 19 cases / 3 Suites, OK | 1 GiB / 120 seconds |
+| Orgize build and native staging | Exit 0, STAGE OK | 2 GiB / 600 seconds |
+| Orgize standard tests | 230 cases / 18 Suites, OK | 1 GiB / 120 seconds |
+| Native program source origins | Passed, 443 modules | Existing exact-root checks |
+
+The separate Parser language-source-contract attempt was blocked by its ASP
+development-only benchmark dependency and is not a passing Suite. These are
+local warm qualification results on the installed SDK. The historical released
+SDK startup, output-progress and failed-Suite exit observations are retained;
+remote CI and cold-build acceptance are not inferred from these results.
+
+* Product prelude identity and downstream imports (2026-10-29 correction)
+
+The shared-base recommendation above conflated infrastructure and product
+language identities. Parser owns =:tao3k/parser/prelude=, based on
+=:tao3k/yuanxu/prelude=. Parser, Orgize and generated fold packages now select
+the Parser entry. It supplies deferred =deflanguage=, =defgrammar-syntax= and
+=deftext-profile= alongside the inherited common language. Importing it alone
+does not initialize the Module System or Parser engines.
+
+Yuanxu now registers a package's verified root prelude context through its
+existing source-registration API. The declared package language, actual source
+identity and confined root path must agree. Native closure traversal and Module
+library projection include that owned prelude even when its native namespace
+is different from the ordinary library prefix. No Parser-specific loader,
+namespace alias or source catalog is used. Independent consumer tests require
+the installed prelude artifact; a source-only build exit is insufficient.
+
+The downstream import audit migrated 52 Scheme/Just files from implementation
+paths to reviewed Parser interfaces. =only-in= continues to select names.
+
+| Capability | Public interface |
+|------------+------------------|
+| Product language and common Module declarations | =:tao3k/parser/prelude= |
+| Grammar objects, contextual declarations, identity | =language-support/grammar= |
+| ParseArtifact and events | =artifact-support= |
+| Graph constructors and accessors | =graph-projection-support= / =graph-query-support= |
+| Pure text operations | =text-support= |
+| Native line traversal | =source-line-support= |
+| Immutable Fold program admission | =event-fold-program-support= |
+| Generator and compiler services | =language-build-support= |
+| Immutable Rust syntax values | =rust-syntax-support= |
+| Test assertions | =language-test-support= |
+
+Pure text definitions were moved out of =src/compiler/rust-pure-aot.ss= into
+=text-support.ss=; Rust lowering reuses the same definitions. Public text imports
+are tested to load no compiler modules. Build, test and foreign scanner services
+retain separate entrypoints. Existing public roots discover their dependencies
+through the native closure; no new =library-roots= inventory was added.
+
+CI's =public-parser-interface-check= rejects new downstream
+=:gerbil-parser/src/= references in maintained Scheme/Just sources. Private
+module identities retained in producer admission/origin assertions still refer
+to the actual implementation owners; those are not downstream import APIs.
+
+Final published cohort: Yuanxu =83517bfe1a34eb80a4281f740c94305ee4b0b21f= and
+Parser =8e9f83cbe452ea2af0d44ae9dd0fd8c3975858c7=. Native dependencies, primary
+Cargo and fuzz locks agree; the pin gate and native dependency installation
+completed. Final Orgize build/staging passed within 2 GiB/600 seconds and its
+standard test command passed 230 cases / 18 Suites within 1 GiB/120 seconds.
+The existing exact source-origin gate passed for all 461 native modules; no
+forbidden event-fold executor or legacy compiler text module entered the
+request program. Core source build plus 13 cases / 5 Suites, and Parser source
+build plus 22 cases / 4 Suites passed their existing local gates. The product
+prelude has real installed compiler and macro artifacts. The original local
+manifest and unrelated staged changes were retained.
+
+These warm local results supersede the shared-base recommendation, not the
+historical SDK, cold-build, performance or remote CI limitations. The initial
+source-bound build exit without an installed product prelude was rejected;
+actual native closure/publication and independent consumers now provide the
+qualification. Validation logs remain local under =target/yuanxu-migration/=.
+
+* Exact-head CI failures and bounded repair (2026-10-29)
+
+The first published product-prelude cohort does not pass remote CI:
+
+| Owner | Head | Run | Observed failure |
+|-------+------+-----+------------------|
+| Yuanxu | =83517bf= | =40738424161= | macOS source-build child deadline 124; Linux 10K declaration heap overflow |
+| Parser | =8e9f83c= | =40738830265= | Linux three strict macro-hygiene errors; macOS empty dependency TAGS |
+| Orgize | =3533abb5= | =40740413405= | macOS task-layout refusal; Linux dependency gxtags heap overflow |
+
+Yuanxu proofs =40738423768= succeed. Linux runtime, scenarios, modules,
+contracts, bootstrap and objects groups succeed; scale fails. Parser's
+Rust contracts, lints and AOT performance jobs succeed. Skipped downstream
+Scheme and Orgize performance gates are not passes.
+
+The audit filename contained =native=, which the existing task-layout rule
+prohibits. Rename this document and all maintained references; preserve the
+rule and task-dependency assertions. The complete layout check now passes.
+Parser's prelude wrappers now pass syntax identifiers to their existing
+shared lowering helper. Pinned ASP reports 614 findings and zero errors;
+all three public-interface Cases pass under the original 1 GiB/120 seconds.
+No policy exception or grammar reimplementation is introduced.
+
+The fixed macOS SDK's standalone =gxtags= skips even an independent
+=(export answer) (def answer 42)= source and produces zero bytes; invoking
+=gerbil tags= in that same SDK emits its tag and a 106-byte index. The SDK's
+package manager still starts the standalone tool. A newer official SDK with
+the native multicall symlink was downloaded and checksum-verified, but its
+local startup diagnostics expired. Its native index subsequently generated
+106 bytes under the existing 2 GiB/180-second tag-task bound; the unchanged
+failed-Suite control still failed the five-second genuine-output deadline
+under 1 GiB/120 seconds. It is not an admitted test SDK. Neither a local SDK
+rewrite nor an unqualified SDK upgrade is included. The nonempty-index check remains.
+
+The 10K declaration failure reaches 2,000 completed declarations with
+1,816,932,496 live bytes before heap overflow. The macOS bootstrap child
+returns 124 under its existing 60-second bound. These remain separate
+capacity/performance failures. No smaller manifest, forced collection,
+worker split, heap/deadline increase or relaxed assertion is used. Local
+focused repairs do not qualify the full queue, the released SDK or the
+unchanged Plan Ledger performance gate.
+
+The Parser hygiene repair is published at =42c3f4ce27495dcc3d518ff10b8ef6a1ccd347c7=.
+Orgize native and Cargo declarations advance together to that exact source.
+
+* Remove the redundant Parser API aggregate (2026-10-29)
+
+The inherited Parser prelude and domain Module interfaces are the public
+ownership boundary. =src/api.ss= was an unused full import/re-export umbrella,
+retained only by Language's Build. Remove the file and that root, with no
+replacement aggregate or compatibility alias. Runtime's existing artifact
+and source-line entries are published directly by Runtime. The independent
+complete catalog comparison additionally refuses a retired =src/api= target.
+
+Native cleanup uses the installed old package's own =gerbil pkg clean= before
+the current source rebuild, so stale installed API products cannot establish
+acceptance. The public-interface Suite additionally exercises actual native
+byte-span traversal and malformed artifact rejection through the retained
+Runtime interfaces, and rejects loading the retired umbrella as a side effect.
+
+The next Orgize cold run =40801871446= exposes the same redundant-export
+pattern in the application: C ABI staging cannot find the unprojected
+=org-contract/runtime-interface=, although the real values and evaluation
+owners were compiled. Remove both Element/Contract runtime-interface
+import/re-export wrappers and migrate internal consumers to the existing
+value-types, values, query, syntax and evaluation owners. Standard Module
+=func.ss= composition remains. No business =library-roots= inventory returns.
+The original business-value isolation Case retains all prior runtime leaves
+and additionally rejects either retired umbrella; its Case count is unchanged.
+The program source gate also rejects the retired wrappers and Parser API.
+
+* Final no-umbrella cohort and qualification (2026-10-29)
+
+Parser =dbe19ebe3eded3e2f809afd38cc7b4fee6ab8899= selects Yuanxu
+=c0159403051713eccd1a5204989e465f1ac3be7d=. Native, primary Cargo and fuzz
+pins agree. Yuanxu's existing source gateway derives its owned prelude from
+native package/header metadata; the optional independent identity constraint
+and strict source-origin equality remain. The private identity query moved
+to its actual package owner without a forwarding export.
+
+- Yuanxu native build and 13 Cases/5 Suites pass under the existing bounds.
+- Parser native build and 23 Cases/4 Suites pass; complete independent catalog
+  and strict ASP policy pass with 614 findings and zero errors. The retired API
+  target is explicitly refused. Conformance spec passes its former prelude
+  source-origin failure; full local compilation later fails at Darwin =_Exit=
+  linking on the installed older SDK and is not counted as a pass.
+- Orgize native build and =ORG-PARSER-STAGE OK= pass under 2 GiB/600 seconds.
+  The real program contains 454 modules, all from admitted source prefixes;
+  retired API/runtime umbrellas and the earlier forbidden executors are absent.
+- Standard functional tests pass all 230 Cases/18 Suites under 1 GiB/120
+  seconds, including the stronger original business-value isolation Case.
+  The exact =ci-scheme-test= entry separately fails its unchanged five-second
+  genuine-output deadline. Functional success does not admit that CLI gate.
+- Existing layout, public Parser interface and exact pin checks pass. Original
+  independent staged work, including =manifest.ss=, is preserved.
+
+Current-head Yuanxu proofs and both platform build/bootstrap jobs succeed at
+=c015940=. Its original Linux 10K declaration worker still overflows its 2 GiB
+heap. The released native tagging/CLI issues, complete conformance, current
+remote application CI and unchanged Plan Ledger performance gate remain open.
+No SDK archive, heap/deadline, Case roster, negative control or performance
+threshold is changed to close those failures.
+
+* Shared fixture follow-up and exact pin alignment (2026-10-29)
+
+Parser =56c1a98a89703225a9f8c49ac83e8da9a5e8374f= moves the structured
+lexical declaration out of its Suite into one actual fixture. Both tests and
+the Rust generator import that owner directly; the Suite no longer re-exports
+the declaration. All native and Cargo/fuzz pins advance together. This cut
+changes no production Parser source, golden output or case corpus relative
+to =dbe19eb=; the 230-Case/454-module receipt above remains that earlier
+cohort's receipt, not a newly rebuilt final-cohort acceptance.
+
+The original two lexical Cases pass locally. The actual generator still
+fails its unchanged five-second idle gate before its generated receipt.
+Yuanxu =3527b556= additionally supplies stable installed macOS library search
+paths for the existing native executable test; its runtime source and the
+transitive =c015940= dependency pin remain unchanged.
+
+Remote Orgize =784a96ec= passes macOS native staging after the umbrella removal,
+but Linux native preparation still overflows its existing heap and the macOS
+Rust lane fails the unchanged native test deadline. Parser =dbe19eb= passes
+Linux cold preparation, corpus, FFI and Rust lanes, but generation and capture
+prefix preloading still fail; macOS preparation refuses empty dependency TAGS.
+These remain failures and are not waived by the focused local results.

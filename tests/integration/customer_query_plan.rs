@@ -1,4 +1,4 @@
-//! A consumer-authored `scheme :org-elements` pack, generated before Cargo use.
+//! A consumer-authored `scheme :org-elements-query` pack, generated before Cargo use.
 
 use orgize::org_element_query::{
     OrgElementFieldMatch, OrgElementPropertyRule, OrgElementQueryPack, OrgElementQueryRule,

@@ -1,4 +1,4 @@
-//! Scheme-owned inline source blocks and Babel calls in the Rowan Element graph.
+//! Scheme-owned inline source blocks and Babel calls in the native navigation Element graph.
 
 macro_rules! check_org_inline_code {
     ($record:expr, $source:expr, $kind:expr, $literal:expr, {$($name:literal => $value:expr),+ $(,)?}) => {{
@@ -13,7 +13,6 @@ macro_rules! check_org_inline_code {
     }};
 }
 
-#[test]
 fn scheme_inline_code_projects_balanced_fields_and_exact_source() {
     let source = "src_rust[:exports code]{a{b}c} call_task[x](a(b))[z]\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("Scheme inline code parses");
@@ -40,7 +39,6 @@ fn scheme_inline_code_projects_balanced_fields_and_exact_source() {
     });
 }
 
-#[test]
 fn scheme_inline_code_preserves_empty_body_and_recovers_incomplete_forms() {
     let source = "src_go{} call_run()\nsrc_rust{unfinished\ncall_bad[x](unfinished\n";
     let document = orgize::org_aot::parse_org_aot(source).expect("incomplete inline code parses");
@@ -80,3 +78,14 @@ fn scheme_inline_code_preserves_empty_body_and_recovers_incomplete_forms() {
         "end-header" => None
     });
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_inline_code_aot::scheme_inline_code_projects_balanced_fields_and_exact_source",
+        scheme_inline_code_projects_balanced_fields_and_exact_source,
+    ),
+    (
+        "org_inline_code_aot::scheme_inline_code_preserves_empty_body_and_recovers_incomplete_forms",
+        scheme_inline_code_preserves_empty_body_and_recovers_incomplete_forms,
+    ),
+];

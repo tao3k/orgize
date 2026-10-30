@@ -17,6 +17,8 @@ use crate::ast::{
     OrgContractDocumentPredicate, OrgContractRelativeScope, OrgElementsIndexSummaryValue,
 };
 
+/// Project the Scheme-admitted canonical ABI: one assertion, optionally
+/// preceded by one flattened binding form. No source composition policy.
 pub(super) fn compile_contract_sequence(
     expressions: &[QueryExpr],
 ) -> Option<(
@@ -24,55 +26,18 @@ pub(super) fn compile_contract_sequence(
     OrgContractQuery,
     OrgContractExpectation,
 )> {
-    let mut bindings = Vec::new();
-    for expression in expressions {
-        match expression {
-            QueryExpr::List(items) if list_head(items) == Some("let") => {
-                bindings.extend(compile_let_bindings(items)?);
-            }
-            QueryExpr::List(items) if list_head(items) == Some("assert") => {
-                let (mut assertion_bindings, query, expectation) = compile_assertion(items)?;
-                bindings.append(&mut assertion_bindings);
-                return Some((bindings, query, expectation));
-            }
-            _ => {}
+    match expressions {
+        [QueryExpr::List(assertion)] => compile_assertion(assertion),
+        [QueryExpr::List(bindings), QueryExpr::List(assertion)]
+            if list_head(bindings) == Some("let") =>
+        {
+            let mut bindings = compile_let_bindings(bindings)?;
+            let (nested, query, expectation) = compile_assertion(assertion)?;
+            bindings.extend(nested);
+            Some((bindings, query, expectation))
         }
-    }
-    None
-}
-
-pub(super) fn compile_contract_expression(
-    expression: &QueryExpr,
-) -> Option<(
-    Vec<OrgContractBinding>,
-    OrgContractQuery,
-    OrgContractExpectation,
-)> {
-    let QueryExpr::List(items) = expression else {
-        return None;
-    };
-    match list_head(items)? {
-        "let" => compile_let_contract(items),
-        "assert" => compile_assertion(items),
         _ => None,
     }
-}
-
-fn compile_let_contract(
-    items: &[QueryExpr],
-) -> Option<(
-    Vec<OrgContractBinding>,
-    OrgContractQuery,
-    OrgContractExpectation,
-)> {
-    let mut bindings = compile_let_bindings(items)?;
-    for body in &items[2..] {
-        if let Some((mut body_bindings, query, expectation)) = compile_contract_expression(body) {
-            bindings.append(&mut body_bindings);
-            return Some((bindings, query, expectation));
-        }
-    }
-    None
 }
 
 fn compile_let_bindings(items: &[QueryExpr]) -> Option<Vec<OrgContractBinding>> {
@@ -87,10 +52,7 @@ fn compile_let_bindings(items: &[QueryExpr]) -> Option<Vec<OrgContractBinding>> 
         let [name, query] = binding_items.as_slice() else {
             return None;
         };
-        let name = name.as_atom()?.trim_start_matches('$');
-        if name.is_empty() {
-            return None;
-        }
+        let name = name.as_atom()?;
         parsed.push(OrgContractBinding {
             name: name.to_string(),
             query: compile_query_expression(query)?,
@@ -182,13 +144,16 @@ pub(super) fn compile_pair_node_equality(
     let QueryExpr::List(items) = expression else {
         return None;
     };
-    if list_head(items)? != "assert" || items.get(1)?.as_atom()? != "pair-node-properties-equal" {
+    if items.len() != 4
+        || list_head(items)? != "assert"
+        || items.get(1)?.as_atom()? != "pair-node-properties-equal"
+    {
         return None;
     }
     let QueryExpr::List(identity) = items.get(2)? else {
         return None;
     };
-    if list_head(identity)? != "identity" {
+    if identity.len() != 2 || list_head(identity)? != "identity" {
         return None;
     }
     let identity_property = identity.get(1)?.as_text()?;
@@ -217,7 +182,9 @@ pub(super) fn compile_pair_document_equality(
     let QueryExpr::List(items) = expression else {
         return None;
     };
-    if list_head(items)? != "assert" || items.get(1)?.as_atom()? != "pair-document-properties-equal"
+    if items.len() != 3
+        || list_head(items)? != "assert"
+        || items.get(1)?.as_atom()? != "pair-document-properties-equal"
     {
         return None;
     }
@@ -379,6 +346,9 @@ pub(super) fn compile_query_expression(expression: &QueryExpr) -> Option<OrgCont
         return None;
     };
     let head = list_head(items)?;
+    if !super::core_types::query_form_arity_is_valid(head, items.len()) {
+        return None;
+    }
     match head {
         "and" => compile_and_query(&items[1..]),
         "or" => Some(OrgContractQuery {
@@ -400,7 +370,9 @@ pub(super) fn compile_query_expression(expression: &QueryExpr) -> Option<OrgCont
             Some(query)
         }
         "category" => Some(OrgContractQuery {
-            category: OrgElementsIndexCategory::from_label(&items.get(1)?.as_text()?),
+            category: Some(OrgElementsIndexCategory::from_label(
+                &items.get(1)?.as_text()?,
+            )?),
             ..Default::default()
         }),
         "summary" => compile_field_shorthand_query(items, FieldKind::Summary, false),

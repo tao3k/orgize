@@ -1,7 +1,5 @@
 //! Org-owned interactive choice projection.
 
-use std::collections::HashSet;
-
 use super::{
     Document, OrgInteractiveCategory, OrgInteractiveChoice, OrgInteractiveChoiceEntry,
     OrgInteractiveParseError, ParsedAnnotation, SourceBlockRecord,
@@ -31,162 +29,70 @@ impl Document<ParsedAnnotation> {
 fn parse_choice(
     record: &SourceBlockRecord,
 ) -> Result<OrgInteractiveChoice, OrgInteractiveParseError> {
-    let mut id = None;
-    let mut method = None;
-    let mut stage = None;
-    let mut group = None;
-    let mut target = None;
-    let mut create = None;
-    let mut info = None;
-    let mut categories = None;
-    let mut in_details = false;
+    let rows = super::org_values::rows("interactive-choice", &[&record.value]);
+    let first = rows
+        .first()
+        .expect("native interactive response must not be empty");
+    if first.first().map(String::as_str) == Some("error") {
+        assert_eq!(rows.len(), 1, "native interactive error must be exclusive");
+        let [_, message] = first.as_slice() else {
+            panic!("invalid native interactive error arity");
+        };
+        return Err(OrgInteractiveParseError::new(message.clone()));
+    }
+    let [tag, id, method, stage, group, target, create, info] = first.as_slice() else {
+        panic!("invalid native interactive choice arity");
+    };
+    assert_eq!(tag, "choice", "invalid native interactive choice tag");
+    let optional = |value: &String| (!value.is_empty()).then(|| value.clone());
+    let mut categories = Vec::new();
     let mut entries = Vec::new();
-
-    for line in record.value.lines() {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
-        if in_details && line.starts_with('|') {
-            if let Some(entry) = parse_table_row(line)? {
-                entries.push(entry);
+    for row in &rows[1..] {
+        match row.first().map(String::as_str) {
+            Some("category") => {
+                assert!(entries.is_empty(), "native categories must precede entries");
+                let [_, key, value, detail] = row.as_slice() else {
+                    panic!("invalid native interactive category arity");
+                };
+                categories.push(OrgInteractiveCategory {
+                    key: key.clone(),
+                    value: value.clone(),
+                    detail: match detail.as_str() {
+                        "true" => true,
+                        "false" => false,
+                        _ => panic!("invalid native interactive detail flag"),
+                    },
+                });
             }
-            continue;
-        }
-        if line == "details:" {
-            in_details = true;
-            continue;
-        }
-        if let Some((key, value)) = line.split_once(':') {
-            let value = value.trim().to_string();
-            match key.trim() {
-                "id" => id = Some(value),
-                "method" => method = Some(value),
-                "stage" => stage = Some(value),
-                "group" => group = optional(value),
-                "target" => target = optional(value),
-                "create" => create = optional(value),
-                "info" => info = Some(value),
-                "categories" => categories = Some(value),
-                _ => {}
+            Some("entry") => {
+                let [_, number, id, contract, full, use_if] = row.as_slice() else {
+                    panic!("invalid native interactive entry arity");
+                };
+                entries.push(OrgInteractiveChoiceEntry {
+                    number: number.clone(),
+                    id: id.clone(),
+                    contract: optional(contract),
+                    full: full.clone(),
+                    use_if: use_if.clone(),
+                });
             }
+            _ => panic!("invalid native interactive row tag"),
         }
     }
-
-    let id = required(id, "id")?;
-    let method = required(method, "method")?;
-    if method != "choice" {
-        return Err(error(format!(
-            "agent-interactive `{id}` must use `method: choice`, got `{method}`"
-        )));
-    }
-    let stage = required(stage, "stage")?;
-    let info = required(info, "info")?;
-    if entries.is_empty() {
-        return Err(error(format!(
-            "agent-interactive `{id}` details table must contain at least one row"
-        )));
-    }
-    let categories = parse_categories(&id, &required(categories, "categories")?, &entries)?;
-
+    assert!(
+        !categories.is_empty() && !entries.is_empty(),
+        "native interactive choice requires rows"
+    );
     Ok(OrgInteractiveChoice {
         source: record.source.clone(),
-        id,
-        method,
-        stage,
-        group,
-        target,
-        create,
-        info,
+        id: id.clone(),
+        method: method.clone(),
+        stage: stage.clone(),
+        group: optional(group),
+        target: optional(target),
+        create: optional(create),
+        info: info.clone(),
         categories,
         entries,
     })
-}
-
-fn parse_categories(
-    id: &str,
-    value: &str,
-    entries: &[OrgInteractiveChoiceEntry],
-) -> Result<Vec<OrgInteractiveCategory>, OrgInteractiveParseError> {
-    let mut categories = Vec::new();
-    let mut keys = HashSet::new();
-    let mut has_detail = false;
-    for part in value.split(',') {
-        let (key, value) = part.split_once('=').ok_or_else(|| {
-            error(format!(
-                "agent-interactive `{id}` category `{part}` must use key=value"
-            ))
-        })?;
-        let key = key.trim();
-        let value = value.trim();
-        if key.is_empty() || value.is_empty() || !keys.insert(key.to_string()) {
-            return Err(error(format!(
-                "agent-interactive `{id}` category keys and values must be non-empty and unique"
-            )));
-        }
-        let detail = key == "?" && value == "detail";
-        has_detail |= detail;
-        if !detail
-            && !entries
-                .iter()
-                .any(|entry| entry.number == key && entry.id == value)
-        {
-            return Err(error(format!(
-                "agent-interactive `{id}` category `{key}={value}` must match a detail row"
-            )));
-        }
-        categories.push(OrgInteractiveCategory {
-            key: key.to_string(),
-            value: value.to_string(),
-            detail,
-        });
-    }
-    if !has_detail {
-        return Err(error(format!(
-            "agent-interactive `{id}` categories must include `?=detail`"
-        )));
-    }
-    Ok(categories)
-}
-
-fn parse_table_row(
-    line: &str,
-) -> Result<Option<OrgInteractiveChoiceEntry>, OrgInteractiveParseError> {
-    let cells: Vec<&str> = line.trim_matches('|').split('|').map(str::trim).collect();
-    if cells == ["n", "id", "contract", "full", "use-if"] {
-        return Ok(None);
-    }
-    if cells.len() != 5 {
-        return Err(error(format!(
-            "agent-interactive detail row must use `n|id|contract|full|use-if`: {line}"
-        )));
-    }
-    Ok(Some(OrgInteractiveChoiceEntry {
-        number: required_cell(cells[0], "n")?,
-        id: required_cell(cells[1], "id")?,
-        contract: optional(cells[2].to_string()),
-        full: required_cell(cells[3], "full")?,
-        use_if: required_cell(cells[4], "use-if")?,
-    }))
-}
-
-fn required(value: Option<String>, field: &str) -> Result<String, OrgInteractiveParseError> {
-    value
-        .filter(|value| !value.trim().is_empty())
-        .ok_or_else(|| error(format!("agent-interactive choice requires `{field}`")))
-}
-
-fn required_cell(value: &str, field: &str) -> Result<String, OrgInteractiveParseError> {
-    (!value.is_empty())
-        .then(|| value.to_string())
-        .ok_or_else(|| error(format!("agent-interactive detail row requires `{field}`")))
-}
-
-fn optional(value: String) -> Option<String> {
-    let value = value.trim();
-    (!value.is_empty() && value != "-").then(|| value.to_string())
-}
-
-fn error(message: impl Into<String>) -> OrgInteractiveParseError {
-    OrgInteractiveParseError::new(message)
 }

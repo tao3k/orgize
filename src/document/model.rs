@@ -75,12 +75,20 @@ pub(super) fn document_structural_selector(
     path: &Path,
     parts: &[String],
 ) -> String {
+    format!(
+        "{}{}",
+        document_selector_prefix(language, path),
+        parts.join("/")
+    )
+}
+
+pub(super) fn document_selector_prefix(language: &str, path: &Path) -> String {
     let path = path
         .components()
         .map(|component| selector_component(&component.as_os_str().to_string_lossy()))
         .collect::<Vec<_>>()
         .join("/");
-    format!("{language}://{path}#{}", parts.join("/"))
+    format!("{language}://{path}#")
 }
 
 pub(super) fn selector_component(input: &str) -> String {

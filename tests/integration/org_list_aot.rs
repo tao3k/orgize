@@ -2,7 +2,6 @@
 
 use orgize::org_aot::parse_org_aot;
 
-#[test]
 fn scheme_aot_list_checkbox_is_a_graph_field_not_paragraph_text() {
     macro_rules! check_checkbox {
         ($source:expr => $expected:expr) => {{
@@ -22,7 +21,6 @@ fn scheme_aot_list_checkbox_is_a_graph_field_not_paragraph_text() {
     check_checkbox!("- [x] ordinary\n" => None);
 }
 
-#[test]
 fn scheme_aot_list_counter_and_checkbox_share_one_item() {
     let source = "- [@2] [X] done\n";
     let document = parse_org_aot(source).expect("Scheme AOT list metadata");
@@ -36,7 +34,6 @@ fn scheme_aot_list_counter_and_checkbox_share_one_item() {
     assert_eq!(document.syntax().to_string(), source);
 }
 
-#[test]
 fn scheme_aot_list_counter_rejects_invalid_metadata() {
     macro_rules! check_counter {
         ($source:expr => $expected:expr) => {{
@@ -56,7 +53,6 @@ fn scheme_aot_list_counter_rejects_invalid_metadata() {
     check_counter!("- [@] ordinary\n" => None);
 }
 
-#[test]
 fn scheme_aot_descriptive_tag_is_not_an_ordered_item_tag() {
     macro_rules! check_tag {
         ($source:expr => $expected:expr) => {{
@@ -75,3 +71,22 @@ fn scheme_aot_descriptive_tag_is_not_an_ordered_item_tag() {
     check_tag!("1. term :: body\n" => None);
     check_tag!("- term: body\n" => None);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_list_aot::scheme_aot_list_checkbox_is_a_graph_field_not_paragraph_text",
+        scheme_aot_list_checkbox_is_a_graph_field_not_paragraph_text,
+    ),
+    (
+        "org_list_aot::scheme_aot_list_counter_and_checkbox_share_one_item",
+        scheme_aot_list_counter_and_checkbox_share_one_item,
+    ),
+    (
+        "org_list_aot::scheme_aot_list_counter_rejects_invalid_metadata",
+        scheme_aot_list_counter_rejects_invalid_metadata,
+    ),
+    (
+        "org_list_aot::scheme_aot_descriptive_tag_is_not_an_ordered_item_tag",
+        scheme_aot_descriptive_tag_is_not_an_ordered_item_tag,
+    ),
+];

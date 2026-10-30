@@ -1,0 +1,83 @@
+#+title: Dependency source policy and obsolete wrapper audit
+
+* Semantic boundary
+
+Audit date: 2026-10-06. Public Org parsing stays native Gerbil AOT/FFI.
+The public parse/config paths call native event transport first; Rust
+=parse_generated_events= then admits/builds the Rowan graph from those
+events. It is not a second raw-source recognizer. A stale public comment
+describing a Scheme-generated algorithm is corrected to native AOT/FFI.
+The export dependency graph no longer implements outer quote recognition
+in Rust. Both existing call sites reuse the Scheme =source-unquote= scalar
+owner: Unicode trimming, one matching pair of single/double quotes, empty
+values, unmatched quotes and preserved interior whitespace. Inert input
+remains data. No new opcode, parser, evaluator or native program is added.
+
+Path joining, normalization, filesystem existence and graph construction
+remain explicit host responsibilities. Their retention is not a raw Org
+parser fallback. Existing double-call behavior is retained; replacing a
+local operation with FFI is not presented as a performance improvement.
+
+Image classification now receives the intact path instead of a Rust
+=file:= prefix rewrite; the existing Scheme suffix predicate owns that
+decision. Twelve unused outer link/LOGBOOK/table-cookie wrappers are removed
+after call-site inspection. Inner native ABI functions and test entrances
+are retained. Production library warnings decrease from 42 to 30; strict
+lint closure is not claimed and warnings are not suppressed.
+
+* Fresh consumer qualification
+
+Receipt root: =target/native-dependency-owner-20261006=.
+Both features use maintained Justfile Release build/test owners and frozen
+=dependency-*= binaries, not the preceding citation binaries.
+The existing 317-module program remains
+=sha256:bcd28ab5541bf22b1d68f336af4a8283acc6d6f3c272e0a266c27ed48b6d6c54=.
+The Scheme sources are unchanged; their preceding 173-case / 12-suite
+receipt is not represented as a newly executed test in this owner.
+
+The native value case adds matching/unmatched/empty/nested quote, Unicode
+space and inert-form controls. The existing public m25 dependency graph
+case adds SETUPFILE and BIBLIOGRAPHY quote/path controls. The 457-case
+catalog and snapshots are unchanged; no failed snapshot is regenerated.
+
+Rust Runtime Release library/consumer/benchmark builds pass. All 84 native
+and 24 ordinary unit cases pass (two ordinary scenarios remain ignored);
+all 457 consumers pass at 12 callers in 17.07 seconds. The original
+45ms Query control passes at p95/max 16.219750ms. The original 25ms Contract
+control passes at 5.179125ms. These are local semantic/budget receipts,
+not stable speedup evidence or a root cause for the historical 286ms tail.
+
+Scheme Runtime Release library/consumer/benchmark builds also pass.
+All 84 native / 24 ordinary unit cases and all 457 consumers pass at
+12 callers in 16.50 seconds. The same public dependency controls pass.
+Query p95/max is 44.802791ms, just below the unchanged 45ms limit;
+Contract is 3.546166ms below 25ms. Query ran alongside the fresh unit and
+consumer tests, so this near-limit sample is not a stable performance
+comparison. No selected rerun replaces it.
+
+Python and full 1,000/10,000-document matrix receipts from record 19 belong
+to that earlier Rust consumer snapshot. They are not copied into this one.
+Release optimization 3/ThinLTO/codegen-units 4 and workspace dev optimization
+2/debug assertions/overflow checks are preserved. No kernel patch is made.
+
+* Live dependency audit and remaining gates
+
+Live GitHub inspection found PR 13 open at
+=e7139c35af91e02f6c50d30d937282fcb8fda92c=, updated
+=2026-10-06T11:04:46Z=. The commit is fetched and compared with current pin
+=619bf1905b9dfc9a4541d30e1daffe9190587254=. Thirteen paths change;
+the new shared Rust Word/Binding profile implementation is not a Scheme
+execution optimization. Current Org source has no use of the new
+=PreparedPartProfile= APIs. The native manifest does not contain the
+changed =rust-scanner= compiler module.
+
+The dependency pin is not changed or called latest-qualified by this
+receipt. Aligning it requires preserving the seven local parser AOT
+overlays, rebuilding/admitting the source closure and rerunning both
+runtime consumers. Do not route Org source recognition through the new
+Rust profile APIs merely because the upstream offers them.
+
+Published bridge 8bb8103b still lacks locally required build APIs; clean
+dependency CI, Python CI bootstrap, strict lint and historical performance
+tail analysis remain open. No commit, push or new PR is part of this audit.
+The existing consolidation target remains PR 18.

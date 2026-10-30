@@ -1,0 +1,8 @@
+#+TITLE: Automatic Applicability
+* Family
+:PROPERTIES:
+:ID: automatic-family
+:ARTIFACT_KIND: proof-family
+:END:
+** Evidence
+[[file:receipt.org][explicit role, no per-document loader]]

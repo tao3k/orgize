@@ -1,6 +1,6 @@
 ---
 source: tests/integration/semantic_ast/semantic_ast_projects_fixed_width_lines.rs
-assertion_line: 33
+assertion_line: 32
 expression: fixed_width
 ---
 SemanticFixedWidth {
@@ -8,7 +8,14 @@ SemanticFixedWidth {
     lines: [
         BlockLine {
             ann: ParsedAnnotation {
-                range: 0..7,
+                range: TextRange {
+                    start: TextSize(
+                        0,
+                    ),
+                    end: TextSize(
+                        7,
+                    ),
+                },
                 start: SourcePosition {
                     line: 1,
                     column: 1,
@@ -33,7 +40,14 @@ SemanticFixedWidth {
         },
         BlockLine {
             ann: ParsedAnnotation {
-                range: 8..15,
+                range: TextRange {
+                    start: TextSize(
+                        8,
+                    ),
+                    end: TextSize(
+                        15,
+                    ),
+                },
                 start: SourcePosition {
                     line: 2,
                     column: 1,

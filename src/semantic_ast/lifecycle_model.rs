@@ -14,12 +14,10 @@ pub struct ArchiveLocation<A = ()> {
 impl<A> ArchiveLocation<A> {
     pub(crate) fn from_value(ann: A, value: impl Into<String>) -> Self {
         let value = value.into();
-        let trimmed = value.trim().to_string();
-        let (file, heading) = trimmed
-            .as_str()
-            .split_once("::")
-            .map(|(file, heading)| (text_or_none(file), text_or_none(heading)))
-            .unwrap_or((text_or_none(trimmed.as_str()), None));
+        let row = super::org_values::optional("archive", &value).expect("native archive row");
+        let [trimmed, file, heading]: [String; 3] = row.try_into().expect("native archive arity");
+        let file = (!file.is_empty()).then_some(file);
+        let heading = (!heading.is_empty()).then_some(heading);
         Self {
             ann,
             value: trimmed,
@@ -30,7 +28,7 @@ impl<A> ArchiveLocation<A> {
 
     /// Returns true when the archive destination has no usable target text.
     pub fn is_empty(&self) -> bool {
-        self.value.trim().is_empty()
+        super::org_values::scalar("trim-empty", &[&self.value]) == "true"
     }
 
     pub(crate) fn map_ann_with<B, F>(&self, f: &mut F) -> ArchiveLocation<B>
@@ -183,9 +181,4 @@ impl LifecycleRecordKind {
             Self::MalformedLogbook { .. } => "malformed logbook",
         }
     }
-}
-
-fn text_or_none(value: &str) -> Option<String> {
-    let value = value.trim();
-    (!value.is_empty()).then(|| value.to_string())
 }

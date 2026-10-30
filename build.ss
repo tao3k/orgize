@@ -1,31 +1,52 @@
 #!/usr/bin/env gxi
-;;; -*- Gerbil -*-
-;;; Compile the parser-independent Scheme runtime. Generator tooling remains
-;;; in languages/org/v1 and is checked by the separate parser/AOT lane.
 
-(import (only-in :std/build-script defbuild-script))
+;;; Org generation precedes the one Yuanxu-owned native library projection.
+(import (for-syntax
+          (only-in :std/source this-source-file)
+          (only-in :yuanxu/module-system/building/source-package register-module-build-source!)))
+(begin-syntax
+  (register-module-build-source! (path-directory (this-source-file)) 'orgize))
+(import (only-in :std/source this-source-file)
+        (only-in :clan/poo/object .get)
+        (only-in :yuanxu/module-system/building/source-package register-module-build-source!)
+        (only-in :yuanxu/module-system/building/script defbuild-script)
+        (only-in :gerbil-parser/compiler-build-support
+                 initialize-compiler-build! run-build-tool)
+        (only-in "./languages/org/modules/org-parser/fold-package.ss"
+                 fold-package-source-directory)
+        (only-in "./init.ss" orgize.init.exports))
+(export main)
+(register-module-build-source! (path-directory (this-source-file)) 'orgize)
 
-;; Gambit compiles generated C in GERBIL_PATH, not beside the source header.
-;; The include search path is scoped to this build process and retains an
-;; existing caller path (for example one supplied by Nix).
-(let ((header-root (path-expand "bindings/c" (current-directory)))
-      (previous (getenv "C_INCLUDE_PATH" #f)))
-  (setenv "C_INCLUDE_PATH"
-          (if (and previous (not (equal? previous "")))
-            (string-append header-root ":" previous)
-            header-root)))
+(def (build-native . arguments)
+  (def modules-spec (.get orgize.init.exports std-make-spec))
+  (defbuild-script (modules-spec '()))
+  (apply main arguments))
 
-(defbuild-script
- '((gxc: "languages/org/v1/graph-shape.ss")
-   (gxc: "languages/org/v1/modules/org-elements/types.ss")
-   (gxc: "languages/org/v1/modules/org-elements/objects.ss")
-   (gxc: "languages/org/v1/modules/org-elements/funs.ss")
-   (gxc: "languages/org/v1/modules/org-elements/syntax.ss")
-   (gxc: "languages/org/v1/modules/org-elements/runtime-interface.ss")
-   (gxc: "languages/org/v1/modules/org-contract/types.ss")
-   (gxc: "languages/org/v1/modules/org-contract/objects.ss")
-   (gxc: "languages/org/v1/modules/org-contract/funs.ss")
-   (gxc: "languages/org/v1/modules/org-contract/config.ss")
-   (gxc: "languages/org/v1/modules/org-contract/syntax.ss")
-   (gxc: "languages/org/v1/modules/org-contract/runtime-interface.ss")
-   (gxc: "bindings/c/orgize-native.ss")))
+(def (main . arguments)
+  (def operation (if (null? arguments) "compile" (car arguments)))
+  (def output (gerbil-path))
+  (initialize-compiler-build!)
+  (when (equal? operation "compile")
+    ;; The native producer process owns grammar expansion and emission. Keep
+    ;; that compiler heap out of the subsequent Yuanxu library projection.
+    (run-build-tool
+      (list "gxi" (path-expand "languages/org/modules/org-parser/fold-generator.ss"
+                               (path-directory (this-source-file))) output "dynamic")))
+  (let (source-directory (fold-package-source-directory output))
+    (when (file-exists? (path-expand "gerbil.pkg" source-directory))
+      (register-module-build-source! source-directory 'orgize-fold)))
+  (begin0 (apply build-native arguments)
+    ;; The bridge compiler owns the program closure and manifest. CI and Cargo
+    ;; consume this package product; they do not rebuild a second static subset.
+    (when (equal? operation "compile")
+      (create-directory* (path-expand "target/gerbil-parser" (path-directory (this-source-file))))
+      (run-build-tool
+        (list "gxi" (path-expand "bindings/c/stage-parser.ss" (path-directory (this-source-file)))
+              (path-expand "target/gerbil-parser" (path-directory (this-source-file))))))
+    ;; The generated package's native catalog cleans its own exact targets.
+    ;; No grammar, import dispatcher, artifact scanner or timestamp policy here.
+    (let (source-directory (fold-package-source-directory output))
+      (when (and (equal? operation "clean")
+                 (file-exists? (path-expand "build.ss" source-directory)))
+        (run-build-tool (list "gxi" (path-expand "build.ss" source-directory) "clean"))))))

@@ -1,0 +1,842 @@
+[
+  {
+    "active_scope": "overlapping supervisor IPC requests to independent native domains; not sampled CPU utilization",
+    "adapter": "23ca0cbb05270ec466134a927fbb70e4e097118654d509aaa43f7b028cfdf7af",
+    "architecture": "aarch64",
+    "artifact": null,
+    "backend": "runtime-scheme",
+    "benchmark": "06221f09987a99b6005daa29827bdbc5be6a7a9dd1e831dedc63e73a2f79f45a",
+    "bytes": 551950,
+    "callers": 64,
+    "completed": 1000,
+    "corpus": "1da3acea686352875ff8044071f3f07f55467aa928c1fdf6dcf680bffebf2fd8",
+    "distinct_documents": 1000,
+    "documents": 1000,
+    "documents_per_second": 859.6422975789666,
+    "domains": 8,
+    "driver": "tokio-process-domains",
+    "elapsed_ns": 1163274542,
+    "end_to_end_latency_ns": {
+      "max": 160610166,
+      "p50": 62600000,
+      "p95": 122612334,
+      "p99": 145159875
+    },
+    "end_to_end_scope": "Tokio submission through bounded queue, IPC, native parse/projection, drop and response; excludes full semantic validation/checksum and startup/warmup",
+    "max_active_worker_requests": 8,
+    "max_in_flight": 64,
+    "mode": "performance",
+    "native_queue_capacity_per_domain": 64,
+    "native_stage_scope": "transport includes native owner admission, Scheme parse, event tape serialization and result transfer; not isolated Scheme CPU time",
+    "parse_latency_ns": {
+      "max": 91720709,
+      "p50": 6941208,
+      "p95": 20300958,
+      "p99": 43510458
+    },
+    "profile_enabled": true,
+    "program": "sha256:fa74d75cb4972545983a07615b14a918447957b970c810edf0089344c2177fa2",
+    "queue_capacity_per_domain": 8,
+    "repetition": 1,
+    "schema": "orgize.runtime-parallel.v2",
+    "stage_timings_ns": {
+      "document_drop": {
+        "max": 205459,
+        "mean": 6626.926,
+        "p50": 5958,
+        "p95": 11208,
+        "p99": 13166,
+        "total": 6626926
+      },
+      "graph.ancestors": {
+        "max": 11000,
+        "mean": 835.492,
+        "p50": 666,
+        "p95": 1458,
+        "p99": 6417,
+        "total": 835492
+      },
+      "graph.index": {
+        "max": 24541,
+        "mean": 1074.196,
+        "p50": 709,
+        "p95": 1791,
+        "p99": 7917,
+        "total": 1074196
+      },
+      "graph.project": {
+        "max": 932917,
+        "mean": 24619.326,
+        "p50": 21208,
+        "p95": 44416,
+        "p99": 76458,
+        "total": 24619326
+      },
+      "native.completion_handoff": {
+        "max": 4845000,
+        "mean": 49372.0,
+        "p50": 10000,
+        "p95": 134000,
+        "p99": 1099000,
+        "total": 49372000
+      },
+      "native.event_decode": {
+        "max": 161333,
+        "mean": 6563.553,
+        "p50": 6000,
+        "p95": 10792,
+        "p99": 24459,
+        "total": 6563553
+      },
+      "native.owner_admission": {
+        "max": 40157000,
+        "mean": 1294801.0,
+        "p50": 125000,
+        "p95": 6372000,
+        "p99": 15050000,
+        "total": 1294801000
+      },
+      "native.owner_service_inclusive": {
+        "max": 91545000,
+        "mean": 7381033.0,
+        "p50": 5960000,
+        "p95": 16319000,
+        "p99": 38245000,
+        "total": 7381033000
+      },
+      "native.request_encode": {
+        "max": 9833,
+        "mean": 535.596,
+        "p50": 458,
+        "p95": 792,
+        "p99": 5500,
+        "total": 535596
+      },
+      "native.result_copy": {
+        "max": 10000,
+        "mean": 1141.0,
+        "p50": 1000,
+        "p95": 2000,
+        "p99": 5000,
+        "total": 1141000
+      },
+      "native.scheme_fold": {
+        "max": 90529291,
+        "mean": 7231141.465,
+        "p50": 5835084,
+        "p95": 15524917,
+        "p99": 37028834,
+        "total": 7231141465
+      },
+      "native.scheme_thread_cpu": {
+        "max": 15112000,
+        "mean": 5209162.0,
+        "p50": 4726000,
+        "p95": 9486000,
+        "p99": 12266000,
+        "total": 5209162000
+      },
+      "native.tape_encode": {
+        "max": 9660250,
+        "mean": 50035.204,
+        "p50": 25709,
+        "p95": 75708,
+        "p99": 122667,
+        "total": 50035204
+      },
+      "native.transport_inclusive": {
+        "max": 91657250,
+        "mean": 8727729.456,
+        "p50": 6892000,
+        "p95": 20202584,
+        "p99": 43445791,
+        "total": 8727729456
+      },
+      "rowan.build": {
+        "max": 190791,
+        "mean": 17097.544,
+        "p50": 14750,
+        "p95": 29333,
+        "p99": 47875,
+        "total": 17097544
+      },
+      "supervisor.ipc_service_inclusive": {
+        "max": 91818709,
+        "mean": 8911451.026,
+        "p50": 7055542,
+        "p95": 20443083,
+        "p99": 43636208,
+        "total": 8911451026
+      },
+      "supervisor.queue": {
+        "max": 148815125,
+        "mean": 60839071.375,
+        "p50": 54615500,
+        "p95": 112646792,
+        "p99": 133109375,
+        "total": 60839071375
+      },
+      "validation_checksum": {
+        "max": 303333,
+        "mean": 1639.327,
+        "p50": 1209,
+        "p95": 2375,
+        "p99": 3000,
+        "total": 1639327
+      }
+    },
+    "tokio_workers": 4,
+    "worker_completed": [
+      119,
+      125,
+      123,
+      115,
+      114,
+      131,
+      132,
+      141
+    ],
+    "worker_exit_success": true,
+    "worker_pids": [
+      15858,
+      15859,
+      15860,
+      15861,
+      15862,
+      15863,
+      15864,
+      15865
+    ],
+    "workload": "closed-loop bounded concurrent admissions; not an open-loop arrival-rate test"
+  },
+  {
+    "active_scope": "overlapping supervisor IPC requests to independent native domains; not sampled CPU utilization",
+    "adapter": "23ca0cbb05270ec466134a927fbb70e4e097118654d509aaa43f7b028cfdf7af",
+    "architecture": "aarch64",
+    "artifact": null,
+    "backend": "runtime-scheme",
+    "benchmark": "06221f09987a99b6005daa29827bdbc5be6a7a9dd1e831dedc63e73a2f79f45a",
+    "bytes": 551950,
+    "callers": 64,
+    "completed": 1000,
+    "corpus": "1da3acea686352875ff8044071f3f07f55467aa928c1fdf6dcf680bffebf2fd8",
+    "distinct_documents": 1000,
+    "documents": 1000,
+    "documents_per_second": 717.7989767630592,
+    "domains": 8,
+    "driver": "tokio-process-domains",
+    "elapsed_ns": 1393147709,
+    "end_to_end_latency_ns": {
+      "max": 266421875,
+      "p50": 67554666,
+      "p95": 194792916,
+      "p99": 216349000
+    },
+    "end_to_end_scope": "Tokio submission through bounded queue, IPC, native parse/projection, drop and response; excludes full semantic validation/checksum and startup/warmup",
+    "max_active_worker_requests": 8,
+    "max_in_flight": 64,
+    "mode": "performance",
+    "native_queue_capacity_per_domain": 64,
+    "native_stage_scope": "transport includes native owner admission, Scheme parse, event tape serialization and result transfer; not isolated Scheme CPU time",
+    "parse_latency_ns": {
+      "max": 153804166,
+      "p50": 6911541,
+      "p95": 34925250,
+      "p99": 74178708
+    },
+    "profile_enabled": true,
+    "program": "sha256:fa74d75cb4972545983a07615b14a918447957b970c810edf0089344c2177fa2",
+    "queue_capacity_per_domain": 8,
+    "repetition": 2,
+    "schema": "orgize.runtime-parallel.v2",
+    "stage_timings_ns": {
+      "document_drop": {
+        "max": 319875,
+        "mean": 6335.998,
+        "p50": 5750,
+        "p95": 11333,
+        "p99": 12958,
+        "total": 6335998
+      },
+      "graph.ancestors": {
+        "max": 15666,
+        "mean": 904.831,
+        "p50": 625,
+        "p95": 1959,
+        "p99": 5250,
+        "total": 904831
+      },
+      "graph.index": {
+        "max": 29083,
+        "mean": 1201.83,
+        "p50": 750,
+        "p95": 2583,
+        "p99": 8167,
+        "total": 1201830
+      },
+      "graph.project": {
+        "max": 573667,
+        "mean": 23224.381,
+        "p50": 20375,
+        "p95": 46417,
+        "p99": 80833,
+        "total": 23224381
+      },
+      "native.completion_handoff": {
+        "max": 5898000,
+        "mean": 94847.0,
+        "p50": 11000,
+        "p95": 329000,
+        "p99": 2084000,
+        "total": 94847000
+      },
+      "native.event_decode": {
+        "max": 249208,
+        "mean": 6971.298,
+        "p50": 5083,
+        "p95": 12000,
+        "p99": 25958,
+        "total": 6971298
+      },
+      "native.owner_admission": {
+        "max": 60372000,
+        "mean": 1629358.0,
+        "p50": 47000,
+        "p95": 8076000,
+        "p99": 20272000,
+        "total": 1629358000
+      },
+      "native.owner_service_inclusive": {
+        "max": 151996000,
+        "mean": 9000871.0,
+        "p50": 5723000,
+        "p95": 26473000,
+        "p99": 69363000,
+        "total": 9000871000
+      },
+      "native.request_encode": {
+        "max": 23250,
+        "mean": 554.715,
+        "p50": 292,
+        "p95": 834,
+        "p99": 6000,
+        "total": 554715
+      },
+      "native.result_copy": {
+        "max": 29000,
+        "mean": 1246.0,
+        "p50": 1000,
+        "p95": 2000,
+        "p99": 5000,
+        "total": 1246000
+      },
+      "native.scheme_fold": {
+        "max": 151948583,
+        "mean": 8896496.625,
+        "p50": 5647042,
+        "p95": 26282875,
+        "p99": 69271917,
+        "total": 8896496625
+      },
+      "native.scheme_thread_cpu": {
+        "max": 12951000,
+        "mean": 4892420.0,
+        "p50": 4268000,
+        "p95": 8916000,
+        "p99": 10435000,
+        "total": 4892420000
+      },
+      "native.tape_encode": {
+        "max": 11608125,
+        "mean": 55064.848,
+        "p50": 26417,
+        "p95": 60750,
+        "p99": 173750,
+        "total": 55064848
+      },
+      "native.transport_inclusive": {
+        "max": 153770250,
+        "mean": 10727828.167,
+        "p50": 6845291,
+        "p95": 34848750,
+        "p99": 74061958,
+        "total": 10727828167
+      },
+      "rowan.build": {
+        "max": 252417,
+        "mean": 16610.17,
+        "p50": 12167,
+        "p95": 30250,
+        "p99": 46792,
+        "total": 16610170
+      },
+      "supervisor.ipc_service_inclusive": {
+        "max": 154181666,
+        "mean": 10962692.048,
+        "p50": 7047875,
+        "p95": 35018583,
+        "p99": 74280125,
+        "total": 10962692048
+      },
+      "supervisor.queue": {
+        "max": 243664417,
+        "mean": 73915598.7,
+        "p50": 58175583,
+        "p95": 181693041,
+        "p99": 206543334,
+        "total": 73915598700
+      },
+      "validation_checksum": {
+        "max": 4959,
+        "mean": 1461.693,
+        "p50": 1292,
+        "p95": 2750,
+        "p99": 3459,
+        "total": 1461693
+      }
+    },
+    "tokio_workers": 4,
+    "worker_completed": [
+      130,
+      125,
+      122,
+      129,
+      117,
+      121,
+      137,
+      119
+    ],
+    "worker_exit_success": true,
+    "worker_pids": [
+      15977,
+      15978,
+      15979,
+      15980,
+      15981,
+      15982,
+      15983,
+      15984
+    ],
+    "workload": "closed-loop bounded concurrent admissions; not an open-loop arrival-rate test"
+  },
+  {
+    "active_scope": "overlapping supervisor IPC requests to independent native domains; not sampled CPU utilization",
+    "adapter": "23ca0cbb05270ec466134a927fbb70e4e097118654d509aaa43f7b028cfdf7af",
+    "architecture": "aarch64",
+    "artifact": null,
+    "backend": "runtime-scheme",
+    "benchmark": "06221f09987a99b6005daa29827bdbc5be6a7a9dd1e831dedc63e73a2f79f45a",
+    "bytes": 5519950,
+    "callers": 64,
+    "completed": 10000,
+    "corpus": "fafe669d528df7e5ced7a94eb4b7734ec69b495aea78d98a20c64690cad2181a",
+    "distinct_documents": 10000,
+    "documents": 10000,
+    "documents_per_second": 690.0752854884586,
+    "domains": 8,
+    "driver": "tokio-process-domains",
+    "elapsed_ns": 14491172500,
+    "end_to_end_latency_ns": {
+      "max": 447047542,
+      "p50": 75076916,
+      "p95": 188644250,
+      "p99": 375733083
+    },
+    "end_to_end_scope": "Tokio submission through bounded queue, IPC, native parse/projection, drop and response; excludes full semantic validation/checksum and startup/warmup",
+    "max_active_worker_requests": 8,
+    "max_in_flight": 64,
+    "mode": "performance",
+    "native_queue_capacity_per_domain": 64,
+    "native_stage_scope": "transport includes native owner admission, Scheme parse, event tape serialization and result transfer; not isolated Scheme CPU time",
+    "parse_latency_ns": {
+      "max": 377008791,
+      "p50": 7028375,
+      "p95": 37700917,
+      "p99": 86271584
+    },
+    "profile_enabled": true,
+    "program": "sha256:fa74d75cb4972545983a07615b14a918447957b970c810edf0089344c2177fa2",
+    "queue_capacity_per_domain": 8,
+    "repetition": 1,
+    "schema": "orgize.runtime-parallel.v2",
+    "stage_timings_ns": {
+      "document_drop": {
+        "max": 1537209,
+        "mean": 6799.506,
+        "p50": 5917,
+        "p95": 11458,
+        "p99": 17375,
+        "total": 67995060
+      },
+      "graph.ancestors": {
+        "max": 30958,
+        "mean": 724.234,
+        "p50": 583,
+        "p95": 1333,
+        "p99": 1667,
+        "total": 7242340
+      },
+      "graph.index": {
+        "max": 829333,
+        "mean": 1058.7847,
+        "p50": 750,
+        "p95": 1542,
+        "p99": 2083,
+        "total": 10587847
+      },
+      "graph.project": {
+        "max": 10557958,
+        "mean": 26787.6805,
+        "p50": 21333,
+        "p95": 46083,
+        "p99": 71250,
+        "total": 267876805
+      },
+      "native.completion_handoff": {
+        "max": 13746000,
+        "mean": 62494.3,
+        "p50": 10000,
+        "p95": 100000,
+        "p99": 1387000,
+        "total": 624943000
+      },
+      "native.event_decode": {
+        "max": 9664958,
+        "mean": 7843.7583,
+        "p50": 5625,
+        "p95": 11000,
+        "p99": 19500,
+        "total": 78437583
+      },
+      "native.owner_admission": {
+        "max": 124892000,
+        "mean": 1568845.8,
+        "p50": 19000,
+        "p95": 8185000,
+        "p99": 29518000,
+        "total": 15688458000
+      },
+      "native.owner_service_inclusive": {
+        "max": 376906000,
+        "mean": 9699167.7,
+        "p50": 6264000,
+        "p95": 27126000,
+        "p99": 79529000,
+        "total": 96991677000
+      },
+      "native.request_encode": {
+        "max": 148666,
+        "mean": 530.8323,
+        "p50": 500,
+        "p95": 875,
+        "p99": 1084,
+        "total": 5308323
+      },
+      "native.result_copy": {
+        "max": 21535000,
+        "mean": 3567.5,
+        "p50": 1000,
+        "p95": 2000,
+        "p99": 3000,
+        "total": 35675000
+      },
+      "native.scheme_fold": {
+        "max": 376862791,
+        "mean": 9560968.7806,
+        "p50": 6156083,
+        "p95": 26593167,
+        "p99": 78005500,
+        "total": 95609687806
+      },
+      "native.scheme_thread_cpu": {
+        "max": 15452000,
+        "mean": 5288127.3,
+        "p50": 4781000,
+        "p95": 9638000,
+        "p99": 11546000,
+        "total": 52881273000
+      },
+      "native.tape_encode": {
+        "max": 40682084,
+        "mean": 61193.2592,
+        "p50": 27333,
+        "p95": 84000,
+        "p99": 247333,
+        "total": 611932592
+      },
+      "native.transport_inclusive": {
+        "max": 376928292,
+        "mean": 11333481.1381,
+        "p50": 6974042,
+        "p95": 37624208,
+        "p99": 86202417,
+        "total": 113334811381
+      },
+      "rowan.build": {
+        "max": 2136625,
+        "mean": 18717.6787,
+        "p50": 13500,
+        "p95": 30709,
+        "p99": 60250,
+        "total": 187176787
+      },
+      "supervisor.ipc_service_inclusive": {
+        "max": 377120167,
+        "mean": 11568767.715,
+        "p50": 7153916,
+        "p95": 38196292,
+        "p99": 86639959,
+        "total": 115687677150
+      },
+      "supervisor.queue": {
+        "max": 443921958,
+        "mean": 80852988.7238,
+        "p50": 63043458,
+        "p95": 171866209,
+        "p99": 355763250,
+        "total": 808529887238
+      },
+      "validation_checksum": {
+        "max": 205167,
+        "mean": 1559.5897,
+        "p50": 1334,
+        "p95": 2708,
+        "p99": 3416,
+        "total": 15595897
+      }
+    },
+    "tokio_workers": 4,
+    "worker_completed": [
+      1238,
+      1268,
+      1232,
+      1245,
+      1245,
+      1271,
+      1268,
+      1233
+    ],
+    "worker_exit_success": true,
+    "worker_pids": [
+      16010,
+      16011,
+      16012,
+      16013,
+      16014,
+      16015,
+      16016,
+      16017
+    ],
+    "workload": "closed-loop bounded concurrent admissions; not an open-loop arrival-rate test"
+  },
+  {
+    "active_scope": "overlapping supervisor IPC requests to independent native domains; not sampled CPU utilization",
+    "adapter": "23ca0cbb05270ec466134a927fbb70e4e097118654d509aaa43f7b028cfdf7af",
+    "architecture": "aarch64",
+    "artifact": null,
+    "backend": "runtime-scheme",
+    "benchmark": "06221f09987a99b6005daa29827bdbc5be6a7a9dd1e831dedc63e73a2f79f45a",
+    "bytes": 5519950,
+    "callers": 64,
+    "completed": 10000,
+    "corpus": "fafe669d528df7e5ced7a94eb4b7734ec69b495aea78d98a20c64690cad2181a",
+    "distinct_documents": 10000,
+    "documents": 10000,
+    "documents_per_second": 861.3319450081855,
+    "domains": 8,
+    "driver": "tokio-process-domains",
+    "elapsed_ns": 11609925834,
+    "end_to_end_latency_ns": {
+      "max": 384827916,
+      "p50": 60537208,
+      "p95": 174922833,
+      "p99": 233127583
+    },
+    "end_to_end_scope": "Tokio submission through bounded queue, IPC, native parse/projection, drop and response; excludes full semantic validation/checksum and startup/warmup",
+    "max_active_worker_requests": 8,
+    "max_in_flight": 64,
+    "mode": "performance",
+    "native_queue_capacity_per_domain": 64,
+    "native_stage_scope": "transport includes native owner admission, Scheme parse, event tape serialization and result transfer; not isolated Scheme CPU time",
+    "parse_latency_ns": {
+      "max": 176114208,
+      "p50": 6640917,
+      "p95": 21559333,
+      "p99": 64382250
+    },
+    "profile_enabled": true,
+    "program": "sha256:fa74d75cb4972545983a07615b14a918447957b970c810edf0089344c2177fa2",
+    "queue_capacity_per_domain": 8,
+    "repetition": 2,
+    "schema": "orgize.runtime-parallel.v2",
+    "stage_timings_ns": {
+      "document_drop": {
+        "max": 849500,
+        "mean": 6312.0745,
+        "p50": 5708,
+        "p95": 11167,
+        "p99": 14458,
+        "total": 63120745
+      },
+      "graph.ancestors": {
+        "max": 30083,
+        "mean": 673.6624,
+        "p50": 500,
+        "p95": 1250,
+        "p99": 1583,
+        "total": 6736624
+      },
+      "graph.index": {
+        "max": 129083,
+        "mean": 896.0271,
+        "p50": 708,
+        "p95": 1584,
+        "p99": 1958,
+        "total": 8960271
+      },
+      "graph.project": {
+        "max": 1696625,
+        "mean": 22998.3705,
+        "p50": 20208,
+        "p95": 45042,
+        "p99": 80000,
+        "total": 229983705
+      },
+      "native.completion_handoff": {
+        "max": 21478000,
+        "mean": 44459.3,
+        "p50": 9000,
+        "p95": 69000,
+        "p99": 1014000,
+        "total": 444593000
+      },
+      "native.event_decode": {
+        "max": 453458,
+        "mean": 6052.0915,
+        "p50": 4833,
+        "p95": 10209,
+        "p99": 16750,
+        "total": 60520915
+      },
+      "native.owner_admission": {
+        "max": 70609000,
+        "mean": 895076.2,
+        "p50": 17000,
+        "p95": 4491000,
+        "p99": 16182000,
+        "total": 8950762000
+      },
+      "native.owner_service_inclusive": {
+        "max": 176070000,
+        "mean": 8128271.9,
+        "p50": 6018000,
+        "p95": 17432000,
+        "p99": 54800000,
+        "total": 81282719000
+      },
+      "native.request_encode": {
+        "max": 112209,
+        "mean": 509.3888,
+        "p50": 500,
+        "p95": 833,
+        "p99": 1000,
+        "total": 5093888
+      },
+      "native.result_copy": {
+        "max": 652000,
+        "mean": 1196.2,
+        "p50": 1000,
+        "p95": 2000,
+        "p99": 3000,
+        "total": 11962000
+      },
+      "native.scheme_fold": {
+        "max": 176034000,
+        "mean": 8015864.656,
+        "p50": 5927792,
+        "p95": 17204708,
+        "p99": 53441625,
+        "total": 80158646560
+      },
+      "native.scheme_thread_cpu": {
+        "max": 15527000,
+        "mean": 5154534.1,
+        "p50": 4677000,
+        "p95": 9395000,
+        "p99": 11367000,
+        "total": 51545341000
+      },
+      "native.tape_encode": {
+        "max": 34832291,
+        "mean": 53397.468,
+        "p50": 25875,
+        "p95": 84708,
+        "p99": 218333,
+        "total": 533974680
+      },
+      "native.transport_inclusive": {
+        "max": 176084583,
+        "mean": 9070420.1498,
+        "p50": 6582792,
+        "p95": 21483708,
+        "p99": 64323958,
+        "total": 90704201498
+      },
+      "rowan.build": {
+        "max": 1148750,
+        "mean": 16718.0982,
+        "p50": 12042,
+        "p95": 29291,
+        "p99": 54750,
+        "total": 167180982
+      },
+      "supervisor.ipc_service_inclusive": {
+        "max": 176199083,
+        "mean": 9265647.5752,
+        "p50": 6760583,
+        "p95": 21746292,
+        "p99": 64896709,
+        "total": 92656475752
+      },
+      "supervisor.queue": {
+        "max": 376621250,
+        "mean": 64768464.1149,
+        "p50": 52332750,
+        "p95": 155763125,
+        "p99": 220721958,
+        "total": 647684641149
+      },
+      "validation_checksum": {
+        "max": 161666,
+        "mean": 1387.8103,
+        "p50": 1167,
+        "p95": 2458,
+        "p99": 3000,
+        "total": 13878103
+      }
+    },
+    "tokio_workers": 4,
+    "worker_completed": [
+      1237,
+      1235,
+      1253,
+      1254,
+      1286,
+      1262,
+      1255,
+      1218
+    ],
+    "worker_exit_success": true,
+    "worker_pids": [
+      16436,
+      16437,
+      16438,
+      16439,
+      16440,
+      16441,
+      16442,
+      16443
+    ],
+    "workload": "closed-loop bounded concurrent admissions; not an open-loop arrival-rate test"
+  }
+]

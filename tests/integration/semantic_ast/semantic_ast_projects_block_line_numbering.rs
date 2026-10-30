@@ -4,7 +4,6 @@ use orgize::{
     ast::{BlockKind, BlockLineNumberMode, ElementData},
 };
 
-#[test]
 fn semantic_ast_projects_source_and_example_block_line_numbering() {
     let doc = Org::parse(
         r#"#+begin_src rust -n 20 -r :exports code
@@ -63,3 +62,8 @@ println!("continued");
     assert_eq!(example_numbering.mode, BlockLineNumberMode::New);
     assert_eq!(example_numbering.start, Some(3));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_block_line_numbering::semantic_ast_projects_source_and_example_block_line_numbering",
+    semantic_ast_projects_source_and_example_block_line_numbering,
+)];

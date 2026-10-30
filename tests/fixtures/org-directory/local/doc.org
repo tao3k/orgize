@@ -1,0 +1,14 @@
+#+TITLE: Local Contract Missing Evidence
+* Family
+:PROPERTIES:
+:ID: local-family
+:CONTRACT_ID: local.evidence.v1
+:CONTRACT_SCOPE: subtree
+:END:
+#+begin_src scheme :org-contract
+(assert-org-element "local.evidence" error
+  (bindings)
+  (org-elements headline (property title "Evidence") (child-of scope))
+  (expect exactly 1))
+#+end_src
+** Other section

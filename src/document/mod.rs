@@ -11,6 +11,7 @@ mod model;
 #[path = "org_elements_aot.rs"]
 mod org_elements;
 mod packets;
+mod query_match;
 mod source_selection;
 
 pub use command::{
@@ -28,16 +29,19 @@ pub(crate) use command_query::compact_query_content;
 
 #[cfg(test)]
 #[path = "../../tests/unit/document_block_body.rs"]
-mod block_body_tests;
+pub(crate) mod block_body_tests;
 #[cfg(test)]
 #[path = "../../tests/unit/document_line_index.rs"]
 mod line_index_tests;
 #[cfg(test)]
 #[path = "../../tests/unit/document_org_elements_aot.rs"]
-mod org_elements_aot_tests;
+pub(crate) mod org_elements_aot_tests;
 #[cfg(test)]
 #[path = "../../tests/unit/document_org_elements_query_project.rs"]
 mod org_elements_query_project_tests;
 #[cfg(test)]
 #[path = "../../tests/unit/document_packets.rs"]
 mod packets_tests;
+#[cfg(all(test, feature = "runtime-profile"))]
+#[path = "../../tests/unit/document_query_scale.rs"]
+mod query_scale_tests;

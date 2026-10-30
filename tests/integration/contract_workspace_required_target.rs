@@ -2,7 +2,6 @@ use std::fs;
 
 use super::{WorkspaceFixture, receipt};
 
-#[test]
 fn workspace_contract_requires_trace_target_to_be_maintained() {
     let fixture = WorkspaceFixture::new();
     let admitted = fixture.run_requiring(&fixture.root.join("cn/docs/doc.org"));
@@ -34,3 +33,8 @@ fn workspace_contract_requires_trace_target_to_be_maintained() {
         receipt(&rejected)
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "contract_workspace::required_target::workspace_contract_requires_trace_target_to_be_maintained",
+    workspace_contract_requires_trace_target_to_be_maintained,
+)];

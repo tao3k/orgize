@@ -105,5 +105,5 @@ expression: "serde_json::to_string_pretty(&serde_json::json!({\n    \"source\": 
     "table-cell",
     "underline"
   ],
-  "source": "languages/org/v1/modules/org-elements/catalog.ss"
+  "source": "languages/org/modules/org-elements/catalog.ss"
 }

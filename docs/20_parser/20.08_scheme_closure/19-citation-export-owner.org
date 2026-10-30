@@ -1,0 +1,118 @@
+#+title: Citation export native semantic ownership
+
+* Cohesive owner migration
+
+Audit date: 2026-10-06. Public Org parsing remains the native Gerbil
+AOT/FFI path. This owner moves BIBLIOGRAPHY, CITE_EXPORT,
+PRINT_BIBLIOGRAPHY and nocite classification out of Rust.
+
+=citation-export-value-funs.ss= is a pure native Scheme module. It owns
+ASCII keyword classification, Unicode whitespace tokenization, double-quote
+edge stripping, processor/style presence and plist option recognition.
+The former whitespace-first behavior is preserved: quoted spaces are not
+silently promoted to a new quoted-path grammar. Empty quote-only tokens
+disappear; duplicate options, repeated leading colons, empty option keys,
+optional values and order retain their previous semantics. Values stay inert.
+
+Rust traverses the existing metadata/element/section/object graph in the same
+order, preserving annotations, raw fields and occurrence multiplicity.
+Keyword references are admitted in one native batch; citation styles in a
+second batch only when citations exist. There is no per-keyword FFI crossing,
+raw Rust token parser, new ABI opcode, evaluator or JSON semantic transport.
+=citation_export_owner.rs= admits bounded indexes, nondecreasing row order,
+closed tags, exact optional arities, option ownership and boolean values.
+Derived graph-presence warnings and host effects remain Rust responsibilities.
+
+* Verification scope
+
+Fresh root: =target/native-citation-closure-20261006=.
+The existing parser 619bf19 compiled dependency closure is reused; the Org
+SDK and canonical linked program are rebuilt after adding the owner.
+All tests/builds use maintained Justfile recipes and original runtime features.
+Dev optimization 2, Release optimization 3/ThinLTO/codegen-units 4 and
+overflow checks remain unchanged. No Gambit kernel patch is made.
+
+Six native Scheme cases extend the complete entry to 173 cases / 12 suites.
+The existing m25 consumer receives additional public-parse assertions for
+Unicode whitespace, quote-only tokens, style presence, repeated options,
+empty keys, missing values and nocite. Existing snapshot expectations and
+the 457-case consumer catalog are retained, not regenerated.
+
+The complete native executable passes all 173 cases / 12 suites, final OK
+and exit zero with cleared Gerbil load-path variables. The failed-assertion
+control produces final FAILED and exit 42 under the unchanged five-second
+real-output observer. The rebuilt program contains 317 modules.
+Both runtime build owners compute the same native identity:
+=sha256:bcd28ab5541bf22b1d68f336af4a8283acc6d6f3c272e0a266c27ed48b6d6c54=.
+
+The Rust runtime Release library/consumer/benchmark build passes. Its 84
+native and 24 ordinary unit cases pass; all 457 consumers pass at 12 callers
+in 21.24 seconds, including the expanded public citation export case and
+unchanged m25 snapshot. These are semantic receipts, not performance gains.
+
+The Scheme runtime Release library/consumer/benchmark build also passes.
+Its 84 native / 24 ordinary units and all 457 consumers pass at 12 callers
+in 16.96 seconds, including the same expanded citation case and snapshots.
+Both original 45ms Query controls pass: Rust p95/max 34.777208ms, Scheme
+23.458625ms. Both original 25ms Contract controls pass: Rust 5.9445ms,
+Scheme 5.505584ms. Neither receipt establishes a stable speedup or repairs
+the historical 286ms tail. Darwin/Linux command-shape admission passes;
+Linux execution is not claimed.
+
+Both existing maturin/PyO3 native builds pass with workspace dev optimization
+2/debug assertions and the same native program. Both 25-case Python suites
+pass with exact expected backend/program checks: Rust 1.98 seconds, Scheme
+2.45 seconds. Both separate Rowan fixture executables pass all 23 concurrent
+cases under the unchanged real-output observer. No standalone C Contract
+library or new Python binding framework is involved.
+
+Both full matrices pass: 1,000/10,000 distinct documents, 64 callers,
+1/4/8 native process domains, one repetition. Each feature completes 33,000
+admissions, 66,000 total. Real completed counts, peak concurrency/domain
+geometry, worker exits, exact program/corpus and cross-runtime semantic
+artifacts match. Both also retain the preceding ac93fdc9 semantic artifacts
+under the cross-program semantic control, not a performance comparison.
+
+Observed 10,000-document end-to-end results:
+
+| Native domains | Rust docs/s | Scheme docs/s | Rust p95 ms | Scheme p95 ms |
+|----------------+-------------+---------------+-------------+---------------|
+| 1              | 88.175      | 85.237        | 983.664     | 1034.193      |
+| 4              | 216.991     | 249.038       | 670.995     | 611.914       |
+| 8              | 344.183     | 332.770       | 481.134     | 441.517       |
+
+The matrices run sequentially after this owner's compilation completes.
+Separate gerbil-bazel compilation activity was observed on the host during
+setup. This is not an exclusive-host, order-balanced or repeated performance
+experiment. Queue/IPC/native parse/projection/validation/drop/response are
+included; startup/warmup is excluded. Request overlap is not sampled CPU
+utilization; the closed-loop workload is not open-loop arrival-rate admission.
+No stable winner, speedup or historical tail repair is inferred.
+
+=just native-parser-alignment-admission-check= passes for revision 619bf19 and
+program bcd28ab5; the full receipt is =integrated-admission.log= in the fresh
+root. The local default manifest now selects this program through the
+maintained selector, which also checks byte equality. The preceding ac93fdc9
+manifest is preserved as
+=target/native-program-history/alignment-619-ac93-before-citation-20261006.json=.
+This closes local whole-program admission for this owner, not published
+dependency or remote CI qualification.
+
+* Remaining gates
+
+This owner is not global semantic or performance closure. Dependency-path
+outer quote policy remains in =export_dependency_graph.rs=. Existing
+post-migration dead-wrapper warnings require call-site and test ownership
+cleanup, not blanket warning suppression.
+
+Published bridge 8bb8103b lacks the locally used native staging/build APIs;
+the parser checkout also retains seven unpublished AOT overlay paths.
+Clean dependency/CI closure remains separate from local patched qualification.
+The Python CI bootstrap still needs alignment to the existing maturin/PyO3
+shared native owner; no additional Python framework is justified.
+
+The earlier 286ms Rust Query failure has no established root cause.
+Healthy later controls must not erase that negative result.
+The preceding program's benchmark and Python receipts were not copied into
+this changed program's admission. No commit, push or new PR is part of this
+owner slice; the existing consolidation target remains PR 18.

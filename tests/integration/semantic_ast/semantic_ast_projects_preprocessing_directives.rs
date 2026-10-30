@@ -4,7 +4,6 @@ use orgize::{
     ast::{AstRef, ElementData, MacroExpansionStatus, ObjectData},
 };
 
-#[test]
 fn semantic_ast_collects_preprocessing_directives_without_expansion() {
     let doc = Org::parse(
         r#"#+INCLUDE: "./chapter one.org" src org :lines "1-20" :minlevel 2 :only-contents
@@ -67,7 +66,6 @@ fn semantic_ast_collects_preprocessing_directives_without_expansion() {
     assert_eq!(bare.macro_definitions[0].ann, ());
 }
 
-#[test]
 fn semantic_ast_expands_macros_as_an_opt_in_side_table() {
     let doc = Org::parse(
         r#"#+MACRO: issue [[https://tracker.example/$1][$2]]
@@ -107,7 +105,6 @@ fn semantic_ast_expands_macros_as_an_opt_in_side_table() {
     );
 }
 
-#[test]
 fn semantic_ast_reuses_all_macro_arguments_in_repeated_placeholders() {
     let doc = Org::parse(
         r#"#+MACRO: repeat $0 :: $1 :: $0
@@ -126,7 +123,6 @@ fn semantic_ast_reuses_all_macro_arguments_in_repeated_placeholders() {
     );
 }
 
-#[test]
 fn semantic_ast_diagnoses_invalid_preprocessing_directives() {
     let doc = Org::parse(
         r#"#+INCLUDE:
@@ -149,3 +145,22 @@ fn semantic_ast_diagnoses_invalid_preprocessing_directives() {
             .any(|diagnostic| diagnostic.message.contains("MACRO keyword"))
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_preprocessing_directives::semantic_ast_collects_preprocessing_directives_without_expansion",
+        semantic_ast_collects_preprocessing_directives_without_expansion,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_preprocessing_directives::semantic_ast_expands_macros_as_an_opt_in_side_table",
+        semantic_ast_expands_macros_as_an_opt_in_side_table,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_preprocessing_directives::semantic_ast_reuses_all_macro_arguments_in_repeated_placeholders",
+        semantic_ast_reuses_all_macro_arguments_in_repeated_placeholders,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_preprocessing_directives::semantic_ast_diagnoses_invalid_preprocessing_directives",
+        semantic_ast_diagnoses_invalid_preprocessing_directives,
+    ),
+];

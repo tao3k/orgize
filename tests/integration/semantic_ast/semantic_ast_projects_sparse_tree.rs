@@ -22,7 +22,6 @@ This retired memory should remain searchable evidence, but not active authority.
 SCHEDULED: <2026-05-15 Fri>
 "#;
 
-#[test]
 fn semantic_ast_projects_sparse_tree_cards_from_org_match_and_text() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -97,7 +96,6 @@ fn semantic_ast_projects_sparse_tree_cards_from_org_match_and_text() {
     );
 }
 
-#[test]
 fn semantic_ast_sparse_tree_preserves_archive_evidence_but_can_filter_it() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -132,7 +130,6 @@ fn semantic_ast_sparse_tree_preserves_archive_evidence_but_can_filter_it() {
     }));
 }
 
-#[test]
 fn semantic_ast_sparse_tree_renders_compact_agent_snapshot() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -151,3 +148,18 @@ fn semantic_ast_sparse_tree_renders_compact_agent_snapshot() {
         "contract: Derived from official Org sparse-tree/search constructs; no custom source syntax is required."
     ));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_sparse_tree::semantic_ast_projects_sparse_tree_cards_from_org_match_and_text",
+        semantic_ast_projects_sparse_tree_cards_from_org_match_and_text,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_sparse_tree::semantic_ast_sparse_tree_preserves_archive_evidence_but_can_filter_it",
+        semantic_ast_sparse_tree_preserves_archive_evidence_but_can_filter_it,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_sparse_tree::semantic_ast_sparse_tree_renders_compact_agent_snapshot",
+        semantic_ast_sparse_tree_renders_compact_agent_snapshot,
+    ),
+];

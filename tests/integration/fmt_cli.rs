@@ -1,6 +1,5 @@
 use std::{fs, io::Write, path::PathBuf, process::Stdio};
 
-#[test]
 fn fmt_cli_check_output_is_snapshotted() {
     let dir = test_dir("fmt-check");
     fs::create_dir_all(&dir).unwrap();
@@ -18,7 +17,6 @@ fn fmt_cli_check_output_is_snapshotted() {
     );
 }
 
-#[test]
 fn fmt_cli_check_stdin_output_is_snapshotted() {
     let mut child = crate::library_cli::orgize_cli_command()
         .args(["fmt", "--check"])
@@ -42,7 +40,6 @@ fn fmt_cli_check_stdin_output_is_snapshotted() {
     );
 }
 
-#[test]
 fn fmt_cli_stdin_aligns_tables_with_snapshot() {
     let mut child = crate::library_cli::orgize_cli_command()
         .args(["fmt"])
@@ -66,7 +63,6 @@ fn fmt_cli_stdin_aligns_tables_with_snapshot() {
     );
 }
 
-#[test]
 fn fmt_cli_check_directory_output_is_snapshotted() {
     let dir = test_dir("fmt-check-dir");
     fs::create_dir_all(dir.join("notes/nested")).unwrap();
@@ -86,7 +82,6 @@ fn fmt_cli_check_directory_output_is_snapshotted() {
     );
 }
 
-#[test]
 fn fmt_cli_default_writes_file_with_snapshot() {
     let dir = test_dir("fmt-default-write");
     fs::create_dir_all(&dir).unwrap();
@@ -108,7 +103,6 @@ fn fmt_cli_default_writes_file_with_snapshot() {
     );
 }
 
-#[test]
 fn fmt_cli_multiple_files_write_with_snapshot() {
     let dir = test_dir("fmt-multiple-files");
     fs::create_dir_all(&dir).unwrap();
@@ -132,7 +126,6 @@ fn fmt_cli_multiple_files_write_with_snapshot() {
     );
 }
 
-#[test]
 fn fmt_cli_directory_path_writes_org_files_with_snapshot() {
     let dir = test_dir("fmt-dir-write");
     fs::create_dir_all(dir.join("notes/nested")).unwrap();
@@ -211,3 +204,34 @@ fn test_dir(name: &str) -> PathBuf {
     }
     path
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "fmt_cli::fmt_cli_check_output_is_snapshotted",
+        fmt_cli_check_output_is_snapshotted,
+    ),
+    (
+        "fmt_cli::fmt_cli_check_stdin_output_is_snapshotted",
+        fmt_cli_check_stdin_output_is_snapshotted,
+    ),
+    (
+        "fmt_cli::fmt_cli_stdin_aligns_tables_with_snapshot",
+        fmt_cli_stdin_aligns_tables_with_snapshot,
+    ),
+    (
+        "fmt_cli::fmt_cli_check_directory_output_is_snapshotted",
+        fmt_cli_check_directory_output_is_snapshotted,
+    ),
+    (
+        "fmt_cli::fmt_cli_default_writes_file_with_snapshot",
+        fmt_cli_default_writes_file_with_snapshot,
+    ),
+    (
+        "fmt_cli::fmt_cli_multiple_files_write_with_snapshot",
+        fmt_cli_multiple_files_write_with_snapshot,
+    ),
+    (
+        "fmt_cli::fmt_cli_directory_path_writes_org_files_with_snapshot",
+        fmt_cli_directory_path_writes_org_files_with_snapshot,
+    ),
+];

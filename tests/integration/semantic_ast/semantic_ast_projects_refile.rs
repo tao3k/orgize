@@ -7,7 +7,6 @@ use orgize::{
     },
 };
 
-#[test]
 fn semantic_ast_projects_refile_target_index_and_plan() {
     let doc = Org::parse(
         r#"#+TITLE: Work Notes
@@ -84,7 +83,6 @@ fn semantic_ast_projects_refile_target_index_and_plan() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_refile_plans_single_missing_parent_node_creation() {
     let doc = Org::parse(
         r#"* Inbox
@@ -144,3 +142,14 @@ fn semantic_ast_projects_refile_plans_single_missing_parent_node_creation() {
             .any(|warning| warning.kind == RefileWarningKind::TargetInsideSource)
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_refile::semantic_ast_projects_refile_target_index_and_plan",
+        semantic_ast_projects_refile_target_index_and_plan,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_refile::semantic_ast_projects_refile_plans_single_missing_parent_node_creation",
+        semantic_ast_projects_refile_plans_single_missing_parent_node_creation,
+    ),
+];
