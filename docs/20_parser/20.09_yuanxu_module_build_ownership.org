@@ -252,3 +252,14 @@ native link step at 1 GiB (=directory-role-isolation-build.log=). Neither
 limit was increased, and no native-program publication or execution pass
 is claimed. The business/authoring separation is verified behavior, not
 evidence that it solved either heap failure.
+
+* Published compiler tool repair
+Run41572901384 passes manifest/lock/source alignment and reaches native dependency
+compilation, then the original Linux gxtags exceeds its unchanged2GiB envelope.
+The published2591dcd Linux maintenance capability repairs tag-context lifetime;
+Darwin's official tool-entry capability repairs the empty-TAGS executable.
+Both retain the same compiler/VM source cohort. The distribution activate file
+and public gambuild-C dump own C compiler selection. Ambient library search paths
+and forced C compiler substitution are removed; pkg-config and the distribution
+retain link ownership. No dependency revision, heap, deadline or source closure
+is changed. Complete CI, including native failure controls, remains required.
