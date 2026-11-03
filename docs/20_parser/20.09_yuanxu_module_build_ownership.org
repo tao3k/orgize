@@ -271,7 +271,7 @@ is changed. Complete CI, including native failure controls, remains required.
 
 The runtime, system ABI and program-archive builder now inherit the same Cargo
 workspace declarations at gerbil-scheme-rust PR18 revision
-=838af1ab4e6c0c8177fed176efba448c694012b5=. The Parser and ASP revisions remain
+=a4af77fc35ed485360d6fc9de49bbe971000ff65=. The Parser and ASP revisions remain
 unchanged. Both Cargo lockfiles carry that same Bridge cohort. Gerbil package
 metadata does not acquire a Rust dependency.
 
@@ -339,3 +339,54 @@ receipt separately from the post-regeneration execution result.
 This product correction is independent of the remaining CLI import/loading
 watchdog failure. Neither the focused Rust regression nor successful package
 preparation establishes a pass for the complete Scheme CLI suite.
+
+* Observable Scheme CLI work and natural cleanup
+
+The original =ci-scheme-test= entry retains all 230 cases, 18 suites, the
+120-second wall deadline, one-GiB runtime heap and five-second real-output idle
+limit. The negative fixture must still return 42, emit its failure marker, and
+omit the success marker. An =OK= line alone never admits the process.
+
+The entry now calls the Bridge's existing Scheme build module and the same
+=package-test= implementation used by its C ABI. Official GxTest owns discovery,
+execution and the result. The Bridge's module-work observer scopes the existing
+resolver with unwind-safe restoration; it reports actual work rather than timer
+heartbeats. Boundary-test subprocesses use that observer on stderr, preserving
+their captured business stdout and original expressions. Successful execution
+returns naturally. A failing CLI forwards the GxTest status only after scoped
+cleanup; the C ABI returns that status to its caller.
+
+A Darwin sample taken after the real final =OK= found dynamic-module cleanup in
+=dlclose= and dyld unload notification, rather than an established VM deadlock.
+The Darwin entry enables the system loader's =DYLD_PRINT_APIS= diagnostics so
+actual loading and unloading remain observable under the unchanged idle limit.
+It neither skips unloading nor fabricates progress. Linux retains the same
+Bridge resolver events without this Darwin-specific diagnostic setting.
+
+The package's existing compile action also admits the installed compiled tape
+interface before publishing its manifest. It loads the actual =.ssi= under the
+same module-work observer, requires natural process completion, and remains
+inside the existing 600-second build deadline. This establishes loadability in
+addition to source identity; it does not establish a parser throughput gain.
+Cold-prefix and already-loaded-prefix results must be recorded separately.
+
+* Reuse and remaining CI obligations
+
+Serial CI steps share the existing =ORGIZE_GERBIL_NATIVE_OUTPUT= directory.
+The archive owner still validates its source and compiler fingerprints. Each
+job has its own checkout and output directory; concurrent archive writers into
+that directory are not admitted. This uses the existing producer rather than
+introducing a downstream compiler or cache owner.
+
+The fixed Linux Gerbil release references =GLIBC_2.42= symbols, while auditwheel
+6.8.2's policy stops at 2.41. The approved exception selects only auditwheel's
+official 2.42 policy commit; every other unrelated dependency remains locked.
+See [[https://github.com/pypa/auditwheel/pull/741][the upstream manylinux policy change]]. Wheel inspection and repair both remain
+mandatory; changing a policy source is not evidence that the repaired wheel
+passes an independent import.
+
+Local complete CLI evidence and upstream bridge C ABI lifecycle checks do not
+replace exact-head remote CI. The earlier plan-ledger 100ms gate failures also
+remain failures until the original workload passes; neither worker count nor
+performance threshold is changed. Failed transcripts and the post-success
+cleanup sample stay in ignored local evidence, not in tracked documentation.

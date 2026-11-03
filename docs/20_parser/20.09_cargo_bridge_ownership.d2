@@ -26,3 +26,14 @@ bundle -> consumer: "relocate and verify"
 
 scheme -> products: "existing generators"
 products -> consumer.admission: "protocol identity"
+
+cli: "Scheme test entry" {
+  direction: down
+  owner: "Bridge package test\nOfficial GxTest"
+  work: "Scoped module observation\nReal loader activity"
+  cleanup: "Natural cleanup\nSuccess or failure status"
+  owner -> work
+  work -> cleanup
+}
+producer.compiler -> cli.owner: "compiled interface"
+cargo -> cli.owner: "same Bridge source"

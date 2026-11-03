@@ -11,6 +11,8 @@ on:
 env:
   CARGO_INCREMENTAL: 0
   CARGO_TERM_COLOR: always
+  # Steps in one job are serial; the existing owner revalidates source/toolchain fingerprints.
+  ORGIZE_GERBIL_NATIVE_OUTPUT: ${{ github.workspace }}/target/program-objects
 
 jobs:
   test:

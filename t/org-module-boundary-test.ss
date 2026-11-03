@@ -6,7 +6,12 @@
 (export org-module-boundary-test)
 (def init-path (path-expand "../init.ss" (path-directory (this-source-file))))
 (def (run-expression code)
-  (run-process (list "gxi" "-:max-heap=1G,debug=q" "-e" (object->string code))
+  (run-process (list "gxi" "-:max-heap=1G,debug=q" "-e" (object->string
+      `(begin
+         (import (only-in :gerbil-scheme-rust/scheme/runtime gerbil-rs-observe-module-work))
+         (gerbil-rs-observe-module-work
+           (lambda () (eval ',code))
+           (current-error-port)))))
     stdout-redirection: #t coprocess: read-all-as-string))
 (def org-module-boundary-test
   (test-suite "Org native dependency boundaries"
