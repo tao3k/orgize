@@ -1,6 +1,19 @@
 #+title: 20.09 Yuanxu Module Build Ownership
 #+date: 2026-10-28
 
+* CI dependency coherence
+
+The native package, Cargo dependencies and both Cargo lockfiles must name the
+same declared Parser revision. Updating a dependency declaration without the
+fuzz lock cannot pass preparation; the revision check remains required.
+Orgize directly imports the bridge program producer and rooted-bytevector
+runtime in its C binding. Its native dependency check therefore requires the
+exact declared bridge revision rather than forbidding that actual dependency.
+This does not require a redundant direct bridge edge in Agentic AI Lab.
+Default package compilation uses Just's executing-host CPU count; explicit
+paired benchmark controls retain their own declared parameters. Dependency
+alignment is a preparation check, not runtime or performance acceptance.
+
 * Superseded ownership guidance
 
 The API/root inventories and test executable described below are superseded by

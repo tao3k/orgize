@@ -4,7 +4,7 @@
 # removal of the event-to-navigation-index materialization path.
 [private]
 dependency-check:
-    ! rg --fixed-strings --quiet 'gerbil-scheme-rust' gerbil.pkg
+    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-scheme-rust@{{ bridge_revision }}' gerbil.pkg
     test ! -d languages/org/v1
     ! rg --quiet 'languages/org/v1|org-v1-' src languages t tests bindings build.ss build-support benches examples --glob '!*.snap'
     ! rg --quiet 'gerbil-parser-rowan|^rowan\s*=|name = "rowan"' Cargo.toml Cargo.lock fuzz/Cargo.lock

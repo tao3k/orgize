@@ -33,7 +33,7 @@ scheme-clock-test output:
 [private]
 scheme-aligned-parser-build source output load_path:
     mkdir -p "{{ output }}"
-    cd "{{ source }}" && {{ scheme_env }} GERBIL_BUILD_CORES=12 GERBIL_BUILD_VERBOSE=1 GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil build --optimized
+    cd "{{ source }}" && {{ scheme_env }} GERBIL_BUILD_VERBOSE=1 GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil build --optimized
 
 [private]
 scheme-fold-generate output load_path:
