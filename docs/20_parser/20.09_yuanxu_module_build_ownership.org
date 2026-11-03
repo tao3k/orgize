@@ -6,10 +6,13 @@
 The native package, Cargo dependencies and both Cargo lockfiles must name the
 same declared Parser revision. Updating a dependency declaration without the
 fuzz lock cannot pass preparation; the revision check remains required.
-Orgize directly imports the bridge program producer and rooted-bytevector
-runtime in its C binding. Its native dependency check therefore requires the
-exact declared bridge revision rather than forbidding that actual dependency.
-This does not require a redundant direct bridge edge in Agentic AI Lab.
+Cargo exclusively owns gerbil-scheme-rust and its immutable source revision.
+Scheme imports of its program producer and rooted-bytevector runtime do not
+create a Gerbil package dependency. The existing ci-prepare entry checks the
+Cargo-selected checkout and builds its Scheme modules into the shared output
+before building Orgize. The dependency gate rejects a bridge edge in gerbil.pkg;
+Cargo declarations and lockfiles retain their existing exact-revision checks.
+Agentic AI Lab, Parser and Orgize do not repeat this Cargo dependency in Gerbil.
 Default package compilation uses Just's executing-host CPU count; explicit
 paired benchmark controls retain their own declared parameters. Dependency
 alignment is a preparation check, not runtime or performance acceptance.

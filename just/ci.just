@@ -2,8 +2,9 @@
 ci_build_gambopt := replace(scheme_gambopt, "max-heap=1G", "max-heap=2G")
 
 # CI prepares the same compiler-owned program used by Rust and maturin.
-# Package installation owns transitive POO/core dependencies; the parser SDK
-# is installed once by the native package manager at the aligned immutable pin.
+# Package installation owns Parser and inherited POO/Core dependencies.
+# Cargo exclusively selects the bridge source; compile that exact checkout into
+# the existing Gerbil output before compiling the Orgize program.
 [group('checks')]
 ci-prepare:
     command -v gerbil
