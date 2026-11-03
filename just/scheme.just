@@ -64,7 +64,7 @@ scheme-fold-qualify output load_path:
 scheme-aligned-parser-build-receipt source output load_path:
     mkdir -p "{{ output }}"
     just scheme-aligned-parser-build "{{ source }}" "{{ output }}" "{{ load_path }}" 2>&1 | tee "{{ output }}/parser-build.log"
-    just scheme-aligned-parser-sdk-check "{{ output }}" "{{ load_path }}" 2>&1 | tee "{{ output }}/sdk-load.log"
+    just scheme-aligned-parser-module-check "{{ output }}" "{{ load_path }}" 2>&1 | tee "{{ output }}/module-load.log"
 
 # Source-owned controls for the aligned engine's result/stack reductions.
 [private]
@@ -76,9 +76,9 @@ scheme-parser-projection-test source output load_path:
     ! rg --quiet 'ERROR|FAILED|FAILURE' "{{ output }}/projection-test.log"
 
 # Import phase code and the public runtime surface; a cached build exit alone
-# cannot admit an SDK interrupted before its loadable objects were produced.
+# cannot admit a Gerbil installation interrupted before its loadable objects were produced.
 [private]
-scheme-aligned-parser-sdk-check output load_path:
+scheme-aligned-parser-module-check output load_path:
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive -e '(import :gerbil-parser/language-support/grammar :gerbil-parser/graph-query-support :gerbil-parser/rust-runtime-event-support)'
 
 [group('scheme')]
@@ -130,15 +130,15 @@ scheme-event-test parser_lib poo_flow_lib:
 scheme-runtime-owner-build output load_path:
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil compile -V -O -cc-options '-I{{ justfile_directory() }}/bindings/c/include' -ld-options '{{ clock_linker }}' bindings/c/orgize-scheme-runtime.ss 2>&1 | tee "{{ output }}/runtime-owner-build.log" | rg '^compile |^invoke |^\*\*\* ERROR|^--- Syntax Error|^\.\.\. (form|detail):'
 
-# Compiler outputs belong to the selected executable, never dependency SDKs.
+# Compiler outputs belong to the selected executable, never dependency installations.
 [private]
 scheme-executable-link source output load_path binary cc_options="":
-    mkdir -p "{{ output }}/sdk/lib/static"
+    mkdir -p "{{ output }}/dependency-sources/lib/static"
     # Separate compilation writes beside static inputs. Copy in reverse load
-    # order so the first dependency root wins, while external SDKs stay read-only.
-    IFS=: read -r -a libs <<< "{{ load_path }}"; for ((i=${#libs[@]}-1; i>=0; i--)); do if test -d "${libs[i]}/static"; then cp -p "${libs[i]}"/static/*.scm "{{ output }}/sdk/lib/static/"; fi; done
+    # order so the first dependency root wins, while external Gerbil installations stay read-only.
+    IFS=: read -r -a libs <<< "{{ load_path }}"; for ((i=${#libs[@]}-1; i>=0; i--)); do if test -d "${libs[i]}/static"; then cp -p "${libs[i]}"/static/*.scm "{{ output }}/dependency-sources/lib/static/"; fi; done
 
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ output }}/sdk/lib:{{ load_path }}" gxi t/build-executable.ss "{{ source }}" "{{ output }}/{{ binary }}" "{{ cc_options }}" 2>&1 | tee "{{ output }}/native-link.log" | rg '^compile |^invoke |^\.\.\. (compile|execute|generate parser artifact)|^\*\*\* ERROR|^--- Syntax Error|^\.\.\. (form|detail):'
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ output }}/dependency-sources/lib:{{ load_path }}" gxi t/build-executable.ss "{{ source }}" "{{ output }}/{{ binary }}" "{{ cc_options }}" 2>&1 | tee "{{ output }}/native-link.log" | rg '^compile |^invoke |^\.\.\. (compile|execute|generate parser artifact)|^\*\*\* ERROR|^--- Syntax Error|^\.\.\. (form|detail):'
 
 [private]
 scheme-document-value-build output load_path:

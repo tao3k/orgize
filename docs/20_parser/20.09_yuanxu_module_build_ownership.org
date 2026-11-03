@@ -140,18 +140,18 @@ including explicit =main "spec"= diagnostics after successful build-entry
 import, both before and after preparing the Cargo-selected bridge runtime. Splitting producer processes did not establish a passing full 1 GiB
 projection. Logs remain under =target/yuanxu-org/=; generated-unit success
 must not be promoted into complete library success. After the successful
-SDK build below, the resumed full source entrance still failed at 1 GiB
+Gerbil installation build below, the resumed full source entrance still failed at 1 GiB
 with =__eval-import -- Heap overflow= (exit 70), recorded in
 =target/yuanxu-migration/source-build-resumed-1g.log=. The original source
 build resource gate remains unresolved; its limit was not increased.
 
-The first SDK package check used a build-only output lacking gxpkg dependency
+The first Gerbil installation package check used a build-only output lacking gxpkg dependency
 manifests and refused before compilation. Retrying in the installed package
 environment progressed to a missing =gerbil-scheme-rust/scheme/runtime= input.
 The existing bridge build recipe prepared Cargo revision =cfbc10c47ddc41f6670bd78e46e1e9d856cbb870=
 in =target/yuanxu-bridge= under 1 GiB. These setup failures are not library passes.
 
-A separate check through the SDK package-build entrance with the bridge
+A separate check through the Gerbil installation package-build entrance with the bridge
 passed (exit 0) in its existing 2 GiB/600-second envelope, using the repository's
 macOS =env -u SDKROOT CC=/usr/bin/cc GERBIL_GCC=/usr/bin/cc= environment.
 Receipt: =target/yuanxu-migration/sdk-package-native-env.log=. This was a
@@ -162,11 +162,11 @@ That check first exposed a missing =orgize.h= include path on the native
 option alongside =orgize-scheme-runtime=. An intermediate diagnostic retry
 omitted the repository's SDKROOT removal and failed in system headers; that
 environment failure remains in =sdk-package-with-headers.log= and is not
-counted as an implementation pass. SDK-generated changes to the pre-existing
+counted as an implementation pass. Gerbil installation-generated changes to the pre-existing
 =manifest.ss= were saved under the target evidence directory and the original
 manifest was restored.
 
-The passing SDK result is separate from the failed 1 GiB source-build gate.
+The passing Gerbil installation result is separate from the failed 1 GiB source-build gate.
 Full FFI staging, Rust runtime integration, downstream consumers, cold
 performance and exact-head remote CI remain separate gates.
 
@@ -229,7 +229,7 @@ or a passing build.
 
 ** Continued qualification
 
-- Final SDK package build passed at its existing 2 GiB/600-second boundary:
+- Final Gerbil installation package build passed at its existing 2 GiB/600-second boundary:
   =target/yuanxu-migration/sdk-package-role-isolation.log=, exit 0. This is
   resumed local package compilation, not cold-build or remote CI acceptance.
 - Package ownership tests passed 5 cases at 1 GiB/120 seconds, including
@@ -247,7 +247,7 @@ or a passing build.
   =target/yuanxu-migration/directory-unpublished-program-control.log=.
 
 The 1 GiB resource failures remain open. Parser's own official =build.ss spec=
-passed under the same SDK and 1 GiB limit
+passed under the same Gerbil installation and 1 GiB limit
 (=parser-spec-comparison-1g.log=). Orgize's final =build.ss spec= still failed
 with heap overflow (=source-spec-role-isolation-fixed-1g.log=). Directory's
 standard executable projection compiled its support but failed in Gambit's
@@ -266,3 +266,55 @@ and public gambuild-C dump own C compiler selection. Ambient library search path
 and forced C compiler substitution are removed; pkg-config and the distribution
 retain link ownership. No dependency revision, heap, deadline or source closure
 is changed. Complete CI, including native failure controls, remains required.
+
+* Cargo-owned Bridge cohort and bundle admission
+
+The runtime, system ABI and program-archive builder now inherit the same Cargo
+workspace declarations at gerbil-scheme-rust PR18 revision
+=838af1ab4e6c0c8177fed176efba448c694012b5=. The Parser and ASP revisions remain
+unchanged. Both Cargo lockfiles carry that same Bridge cohort. Gerbil package
+metadata does not acquire a Rust dependency.
+
+The existing Rust build adapter already delegates native compilation and
+archive construction to =build_program_archive_with_contract=. The existing
+transport initializes =LinkedGerbilProgram= through the upstream affine VM
+owner. Orgize retains its Scheme declarations, required-module/header contract,
+source revision and relocatable bundle checks; it does not duplicate the Bridge
+compiler, VM lifecycle or runtime implementation.
+
+The prior bundle implementation compared producer and consumer with an unrelated
+hardcoded runtime revision. Agreement on that literal did not prove agreement
+with the Cargo dependency. Bundle publication and admission now derive the
+expected revision from typed workspace bindings and the manifest compiled into
+the build adapter. The active workspace must retain that compiled cohort.
+Runtime, system ABI and archive builder must all name the same immutable source.
+A late consistent rewrite of both the active manifest and bundle cannot relabel
+the already compiled runtime. Original source/target/archive/header checks remain.
+
+The existing resolved-dependency gate checks Cargo metadata for all three Bridge
+packages and both lockfiles. Unit counterexamples cover the stale literal, a
+split cohort, and a consistent late relabel. No Scheme build/test timeout or
+executing-host CPU budget is enlarged or reduced.
+
+[[file:20.09_cargo_bridge_ownership.svg]]
+
+* Gerbil installation and package indexing
+
+Gerbil is the Scheme implementation and toolchain. Cargo manages Rust crates;
+=gerbil-scheme-rust= supplies Rust bindings, the VM owner and program-archive
+construction. These are distinct owners, not an additional downstream SDK.
+Historical receipt filenames are preserved as evidence identifiers. =SDKROOT=
+remains the Apple platform environment variable, unrelated to this terminology.
+
+The complete =gerbil deps --install= entrance includes dependency compilation
+and automatic =gxtags= indexing in one inherited process environment. Its former
+2 GiB cap caused the complete index to fail after dependency compilation. Per
+the revised resource requirement, package installation and explicit retagging
+now omit a maximum-heap setting. This also removes that inherited cap from
+compilation performed inside dependency installation; the separate explicit
+program builds retain 2 GiB/600 seconds and tests retain 1 GiB/120 seconds with
+the five-second real-output watchdog. Explicit retagging retains 180 seconds.
+No index inputs are omitted. Success still requires natural completion without
+heap overflow or operating-system OOM; removing the cap is not itself a pass.
+The previous 2 GiB failure remains in ignored local evidence. No Gerbil
+installation revision change is needed for this resource-policy correction.

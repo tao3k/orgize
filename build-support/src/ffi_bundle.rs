@@ -11,7 +11,6 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-const RUNTIME_REVISION: &str = "b34d15c6a2f6c68ee5ce3a64975570f684e90bc2";
 const HEADERS: &[&str] = &["orgize.h", "orgize_runtime.h"];
 static NEXT_COPY: AtomicU64 = AtomicU64::new(0);
 
@@ -25,6 +24,54 @@ struct Bundle {
     parser_digest: String,
     files: BTreeMap<String, String>,
     libraries: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct WorkspaceManifest {
+    workspace: Workspace,
+}
+#[derive(Deserialize)]
+struct Workspace {
+    dependencies: BridgeDependencies,
+}
+#[derive(Deserialize)]
+struct BridgeDependencies {
+    #[serde(rename = "gerbil-scheme")]
+    runtime: GitSource,
+    #[serde(rename = "gerbil-scheme-sys")]
+    system: GitSource,
+    #[serde(rename = "gerbil-scheme-aot-build")]
+    builder: GitSource,
+}
+#[derive(Deserialize)]
+struct GitSource {
+    git: String,
+    rev: String,
+}
+
+fn runtime_revision(root: &Path) -> Result<String, String> {
+    let manifest =
+        fs::read_to_string(root.join("Cargo.toml")).map_err(|error| error.to_string())?;
+    let manifest: WorkspaceManifest =
+        toml::from_str(&manifest).map_err(|error| error.to_string())?;
+    let bindings = manifest.workspace.dependencies;
+    // Bind admission to the manifest that compiled this Cargo adapter. A later
+    // caller-side edit cannot relabel an already compiled bridge or bundle.
+    let compiled: WorkspaceManifest =
+        toml::from_str(include_str!("../../Cargo.toml")).map_err(|error| error.to_string())?;
+    let runtime = &compiled.workspace.dependencies.runtime;
+    let valid = [&bindings.runtime, &bindings.system, &bindings.builder]
+        .into_iter()
+        .all(|source| {
+            source.git == "https://github.com/tao3k/gerbil-scheme-rust"
+                && source.rev == runtime.rev
+                && source.rev.len() == 40
+                && source.rev.bytes().all(|byte| byte.is_ascii_hexdigit())
+        });
+    if !valid {
+        return Err("FFI runtime requires one immutable Cargo workspace bridge cohort".into());
+    }
+    Ok(bindings.runtime.rev)
 }
 
 fn digest(path: &Path) -> Result<String, String> {
@@ -74,7 +121,7 @@ fn copy_file(
     name: &str,
     files: &mut BTreeMap<String, String>,
 ) -> Result<(), String> {
-    // SDK archives may be read-only. Do not propagate their permissions into
+    // Gerbil installation archives may be read-only. Do not propagate their permissions into
     // the export, or overwrite a previous export in place. Publish each file
     // by rename so repeated Cargo profiles can replace it without chmod.
     let bytes = fs::read(source).map_err(|error| format!("read {}: {error}", source.display()))?;
@@ -161,7 +208,7 @@ pub(crate) fn publish(
         schema: "orgize.ffi-bundle.v1".into(),
         source_revision: revision(root)?,
         target: env::var("TARGET").map_err(|error| error.to_string())?,
-        runtime_revision: RUNTIME_REVISION.into(),
+        runtime_revision: runtime_revision(root)?,
         parser_digest: parser_digest.into(),
         files,
         libraries,
@@ -186,7 +233,7 @@ fn validate(
     if bundle.schema != "orgize.ffi-bundle.v1"
         || bundle.source_revision != expected_revision
         || bundle.target != target
-        || bundle.runtime_revision != RUNTIME_REVISION
+        || bundle.runtime_revision != runtime_revision(root)?
     {
         return Err("foreign FFI schema, source revision, target or runtime".into());
     }

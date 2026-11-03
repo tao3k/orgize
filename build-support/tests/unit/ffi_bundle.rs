@@ -16,6 +16,7 @@ fn fixture() -> (Fixture, PathBuf, Bundle) {
     ));
     let directory = root.join("bundle");
     fs::create_dir_all(&directory).unwrap();
+    fs::write(root.join("Cargo.toml"), include_str!("../../../Cargo.toml")).unwrap();
     fs::create_dir_all(root.join("bindings/c/include")).unwrap();
     let mut files = BTreeMap::new();
     for name in [
@@ -38,7 +39,7 @@ fn fixture() -> (Fixture, PathBuf, Bundle) {
         schema: "orgize.ffi-bundle.v1".into(),
         source_revision: "a".repeat(40),
         target: "aarch64-apple-darwin".into(),
-        runtime_revision: RUNTIME_REVISION.into(),
+        runtime_revision: runtime_revision(&root).unwrap(),
         parser_digest: format!("sha256:{}", "b".repeat(64)),
         files,
         libraries: vec![
@@ -73,7 +74,7 @@ fn foreign_identity_and_changed_inputs_are_rejected() {
     bundle.runtime_revision = "foreign".into();
     save(&directory, &bundle);
     assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
-    bundle.runtime_revision = RUNTIME_REVISION.into();
+    bundle.runtime_revision = runtime_revision(&root.0).unwrap();
     save(&directory, &bundle);
     fs::write(directory.join("libgambit.a"), "changed").unwrap();
     assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
@@ -124,9 +125,9 @@ fn producer_carries_non_platform_dependencies() {
 }
 
 #[test]
-fn repeated_export_replaces_read_only_sdk_archives() {
+fn repeated_export_replaces_read_only_installation_archives() {
     let (root, directory, _) = fixture();
-    let source = root.0.join("sdk.a");
+    let source = root.0.join("installation.a");
     fs::write(&source, "first archive").unwrap();
     let mut permissions = fs::metadata(&source).unwrap().permissions();
     permissions.set_readonly(true);
@@ -164,8 +165,42 @@ fn producer_search_paths_are_authoritative_and_missing_archives_fail_closed() {
     fs::create_dir(&path).unwrap();
     fs::write(path.join("libcrypto.a"), "target crypto").unwrap();
     assert_eq!(
-        receipt_dependency("libcrypto.a", &[path.clone()]).unwrap(),
+        receipt_dependency("libcrypto.a", std::slice::from_ref(&path)).unwrap(),
         path.join("libcrypto.a")
     );
     assert!(receipt_dependency("libforeign.a", &[path]).is_err());
+}
+
+#[test]
+fn stale_literal_and_split_workspace_cannot_admit_a_bundle() {
+    let (root, directory, mut bundle) = fixture();
+    let current = bundle.runtime_revision.clone();
+    bundle.runtime_revision = "b34d15c6a2f6c68ee5ce3a64975570f684e90bc2".into();
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+    bundle.runtime_revision = current.clone();
+    save(&directory, &bundle);
+    let manifest = fs::read_to_string(root.0.join("Cargo.toml")).unwrap();
+    fs::write(
+        root.0.join("Cargo.toml"),
+        manifest.replacen(&current, &"c".repeat(40), 1),
+    )
+    .unwrap();
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
+}
+
+#[test]
+fn later_consistent_relabel_cannot_replace_the_compiled_runtime() {
+    let (root, directory, mut bundle) = fixture();
+    let original = bundle.runtime_revision.clone();
+    let replacement = "d".repeat(40);
+    let manifest = fs::read_to_string(root.0.join("Cargo.toml")).unwrap();
+    fs::write(
+        root.0.join("Cargo.toml"),
+        manifest.replace(&original, &replacement),
+    )
+    .unwrap();
+    bundle.runtime_revision = replacement;
+    save(&directory, &bundle);
+    assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
 }

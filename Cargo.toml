@@ -29,8 +29,8 @@ syntax-org-fc = []
 md = ["dep:comrak"]
 
 [dependencies]
-gerbil-scheme = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "cfbc10c47ddc41f6670bd78e46e1e9d856cbb870", version = "0.1.0", features = ["external-program"] }
-gerbil-scheme-sys = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "cfbc10c47ddc41f6670bd78e46e1e9d856cbb870", version = "0.1.0", features = ["external-program"] }
+gerbil-scheme = { workspace = true, features = ["external-program"] }
+gerbil-scheme-sys = { workspace = true, features = ["external-program"] }
 gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", rev = "27b31d2b110363e341b351c0f10d00baec760879", version = "0.1.0" }
 gerbil-parser-artifact = { git = "https://github.com/tao3k/gerbil-parser", rev = "27b31d2b110363e341b351c0f10d00baec760879", version = "0.1.0" }
 blake3 = "1"
@@ -131,3 +131,9 @@ lto = "thin"
 codegen-units = 4
 strip = "symbols"
 panic = "abort"
+
+[workspace.dependencies]
+gerbil-scheme = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "838af1ab4e6c0c8177fed176efba448c694012b5", version = "0.1.0" }
+gerbil-scheme-sys = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "838af1ab4e6c0c8177fed176efba448c694012b5", version = "0.1.0" }
+gerbil-scheme-aot-build = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "838af1ab4e6c0c8177fed176efba448c694012b5" }
+toml = "0.9.12"

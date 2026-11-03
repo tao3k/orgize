@@ -71,7 +71,8 @@ alignment-dependency-check parser_source bridge_source:
     git -C "{{ bridge_source }}" diff --check
     git -C "{{ bridge_source }}" diff --quiet
     git -C "{{ bridge_source }}" diff --cached --quiet
-    rg --fixed-strings --quiet 'rev = "{{ bridge_revision }}"' Cargo.toml build-support/Cargo.toml
+    rg --fixed-strings --quiet 'gerbil-scheme-aot-build.workspace = true' build-support/Cargo.toml
+    cargo metadata --locked --format-version 1 | jq --exit-status --arg source 'git+https://github.com/tao3k/gerbil-scheme-rust?rev={{ bridge_revision }}#{{ bridge_revision }}' '[.packages[] | select(.name == "gerbil-scheme" or .name == "gerbil-scheme-sys" or .name == "gerbil-scheme-aot-build")] | length == 3 and all(.[]; .source == $source)'
     rg --fixed-strings --quiet 'git+https://github.com/tao3k/gerbil-scheme-rust?rev={{ bridge_revision }}#{{ bridge_revision }}' Cargo.lock fuzz/Cargo.lock
     ! rg --quiet 'source = "git\+https://github.com/tao3k/gerbil-scheme-rust\?rev=(?!{{ bridge_revision }})' Cargo.lock fuzz/Cargo.lock --pcre2
     ! rg --quiet -- "--config ['\"]patch[.]" Justfile just

@@ -33,9 +33,9 @@ wasm-clean:
 # Test/build policy tools have their own manifest; production remains Parser-only.
 [group('checks')]
 prepare-dev:
-    cd dev && {{ scheme_env }} GERBIL_PATH="{{ env_var('GERBIL_PATH') }}" GAMBOPT="${GAMBOPT:+${GAMBOPT},}max-heap=2G,debug=q" gerbil deps --install
+    cd dev && {{ scheme_env }} GERBIL_PATH="{{ env_var('GERBIL_PATH') }}" GAMBOPT="{{ package_gambopt }}" gerbil deps --install
 
-# Editor indexes are optional and keep their own existing resource boundary.
+# Editor indexes retain the 180-second deadline without an artificial heap cap.
 [group('development')]
 package-tags:
-    {{ scheme_env }} GAMBOPT="${GAMBOPT:+${GAMBOPT},}max-heap=2G,debug=q" {{ timeout_command }} --signal=TERM --kill-after=5s 180s gxpkg retag
+    {{ scheme_env }} GAMBOPT="{{ package_gambopt }}" {{ timeout_command }} --signal=TERM --kill-after=5s 180s gxpkg retag
