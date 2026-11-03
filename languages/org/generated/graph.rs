@@ -2,8 +2,8 @@
 use gerbil_parser_runtime::{GraphFieldMode, GraphFieldRule, GraphNodeRule, GraphProjectionSpec};
 
 pub static GRAPH: GraphProjectionSpec = GraphProjectionSpec {
-    grammar_digest: "sha256:27f0c8657e5be00535df7a2c791233e269f64658b1649434bdb08367ffac44b8",
-    projection_digest: "sha256:7ffeb480fe93899df5525fcc5f33287714707ca7584dff4a174aa26bca78d58d",
+    grammar_digest: "sha256:e5d3f80e8c49c86e0f6965f3ac2527565db5033a332b535a03fd088a4cf7db33",
+    projection_digest: "sha256:8ed31100586f6a6e57c4406ae458217f073a4a7e437045d45b1dbc285f95ddf8",
     rules: &[
         GraphNodeRule { syntax_kind: 0, category: "document", kind: "org-data", fields: &[GraphFieldRule { token_kind: 0, name: "source-text", mode: GraphFieldMode::NodeText }, ] },
         GraphNodeRule { syntax_kind: 84, category: "section", kind: "headline", fields: &[GraphFieldRule { token_kind: 86, name: "markers", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 87, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 87, name: "title-body", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 2, name: "title-body", mode: GraphFieldMode::NodeText }, GraphFieldRule { token_kind: 88, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 89, name: "title", mode: GraphFieldMode::Append }, GraphFieldRule { token_kind: 88, name: "tag", mode: GraphFieldMode::Each }, ] },

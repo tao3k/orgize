@@ -318,3 +318,24 @@ No index inputs are omitted. Success still requires natural completion without
 heap overflow or operating-system OOM; removing the cap is not itself a pass.
 The previous 2 GiB failure remains in ignored local evidence. No Gerbil
 installation revision change is needed for this resource-policy correction.
+
+* Native grammar and generated consumer identity
+
+The real concurrent runtime-startup regression exposed a separate stale-product
+failure after the Bridge cohort update: VM initialization succeeded, while the
+native Org tape and checked-in Rust language table disagreed on grammar identity.
+The Contract and expectation tables had the same class of mismatch. The native
+guards correctly refused these combinations; a successful archive build alone
+did not establish protocol agreement.
+
+The existing =scheme-timestamp-graph-generate= entrance regenerates the language
+and graph views, dependent Contract plans and customer query/Contract fixtures
+from the currently pinned Scheme sources. Its complete run retained the 1 GiB
+generator profile and changed identity fields only; parser tables, graph rules
+and dependency pins remain unchanged. The generated language identities now
+match the compiler-owned native tape headers. Keep the original failing runtime
+receipt separately from the post-regeneration execution result.
+
+This product correction is independent of the remaining CLI import/loading
+watchdog failure. Neither the focused Rust regression nor successful package
+preparation establishes a pass for the complete Scheme CLI suite.

@@ -217,7 +217,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org-contract",
     version: "v1",
     contract: "org-contract-expression.v1",
-    grammar_digest: "sha256:39bc164c13ddc388af1b6268d3c66bf3535c767e4064f046fdb4f0c899da46af",
+    grammar_digest: "sha256:f61908067852f4c14d9c96c1758afce1d967249c258fe66d75e91d495761537b",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

@@ -470,7 +470,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org-mode",
     version: "v1",
     contract: "org-elements.v1",
-    grammar_digest: "sha256:27f0c8657e5be00535df7a2c791233e269f64658b1649434bdb08367ffac44b8",
+    grammar_digest: "sha256:e5d3f80e8c49c86e0f6965f3ac2527565db5033a332b535a03fd088a4cf7db33",
     case_insensitive: true,
     root_kind: 0,
     kinds: KINDS,

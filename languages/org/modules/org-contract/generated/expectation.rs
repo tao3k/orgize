@@ -143,7 +143,7 @@ pub static LANGUAGE: LanguageSpec = LanguageSpec {
     language: "org-expectation",
     version: "v1",
     contract: "org-expectation.v1",
-    grammar_digest: "sha256:713a9b1b2a6da6e1c9ee7c4b8bf22bf7a5c5947094e8d64ce613da322abd4604",
+    grammar_digest: "sha256:4528421b26b2e6a7d741834b657a11e424ac1162474e146a7788ef7ed02902cb",
     case_insensitive: false,
     root_kind: 0,
     kinds: KINDS,

@@ -9,6 +9,7 @@ producer: "Existing producer" {
   archive: "Rust bridge crate\nProgram archive builder"
   compiler -> archive: "compiler-owned graph"
 }
+products: "Generated Rust views\nGrammar and graph identity" {shape: page}
 bundle: "Bound FFI bundle" {shape: cylinder}
 consumer: "Existing consumer" {
   direction: right
@@ -22,3 +23,6 @@ cargo -> producer: "one Bridge cohort"
 producer -> bundle
 cargo -> bundle: "compiled identity"
 bundle -> consumer: "relocate and verify"
+
+scheme -> products: "existing generators"
+products -> consumer.admission: "protocol identity"
