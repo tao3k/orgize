@@ -1,6 +1,5 @@
 use std::{fs, path::PathBuf};
 
-#[test]
 fn lint_fix_formats_org_files_before_linting() {
     let dir = test_dir("lint-fix-format");
     let path = dir.join("notes.org");
@@ -27,7 +26,6 @@ fn lint_fix_formats_org_files_before_linting() {
     assert!(fixed.contains("| long | c  |"), "{fixed}");
 }
 
-#[test]
 fn lint_fix_rejects_stdin() {
     let output = crate::library_cli::orgize_cli_command()
         .args(["lint", "--fix"])
@@ -48,3 +46,14 @@ fn test_dir(name: &str) -> PathBuf {
     fs::create_dir_all(&dir).unwrap();
     dir
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "lint_fix_cli::lint_fix_formats_org_files_before_linting",
+        lint_fix_formats_org_files_before_linting,
+    ),
+    (
+        "lint_fix_cli::lint_fix_rejects_stdin",
+        lint_fix_rejects_stdin,
+    ),
+];

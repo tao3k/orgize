@@ -1,0 +1,39 @@
+direction: down
+vars: {d2-config: {theme-id: 200; pad: 32}}
+
+cargo: "Cargo workspace\nRust dependency identity" {shape: page}
+scheme: "Scheme package declarations" {shape: page}
+producer: "Existing producer" {
+  direction: right
+  compiler: "Yuanxu and Gerbil\nModule build and program manifest"
+  archive: "Rust bridge crate\nProgram archive builder"
+  compiler -> archive: "compiler-owned graph"
+}
+products: "Generated Rust views\nGrammar and graph identity" {shape: page}
+bundle: "Bound FFI bundle" {shape: cylinder}
+consumer: "Existing consumer" {
+  direction: right
+  admission: "Source, cohort, target\nArchive and header binding"
+  runtime: "Rust linked program\nBridge-owned VM lifecycle"
+  admission -> runtime: "admitted archive"
+}
+
+scheme -> producer: "declared package build"
+cargo -> producer: "one Bridge cohort"
+producer -> bundle
+cargo -> bundle: "compiled identity"
+bundle -> consumer: "relocate and verify"
+
+scheme -> products: "existing generators"
+products -> consumer.admission: "protocol identity"
+
+cli: "Scheme test entry" {
+  direction: down
+  owner: "Bridge package test\nOfficial GxTest"
+  work: "Scoped module observation\nReal loader activity"
+  cleanup: "Natural cleanup\nSuccess or failure status"
+  owner -> work
+  work -> cleanup
+}
+producer.compiler -> cli.owner: "compiled interface"
+cargo -> cli.owner: "same Bridge source"

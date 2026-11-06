@@ -13,7 +13,6 @@ Refs [[file:notes.org::*Target]] [[attachment:diagram.png]] [[id:abc::*Heading]]
 Custom [[man:printf][manual]] and mail [[mailto:dev@example.com]].
 "#;
 
-#[test]
 fn semantic_ast_projects_link_protocol_registry() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -59,3 +58,8 @@ fn semantic_ast_projects_link_protocol_registry() {
 
     insta::assert_debug_snapshot!("semantic_ast__semantic_link_protocol_records", records);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_link_protocols::semantic_ast_projects_link_protocol_registry",
+    semantic_ast_projects_link_protocol_registry,
+)];

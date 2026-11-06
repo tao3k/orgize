@@ -21,7 +21,6 @@ This body has not been encrypted yet.
 :END:
 "#;
 
-#[test]
 fn semantic_ast_projects_org_crypt_states() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -86,3 +85,8 @@ fn render_crypt_states(doc: &ParsedAst) -> String {
     }
     output
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_crypt::semantic_ast_projects_org_crypt_states",
+    semantic_ast_projects_org_crypt_states,
+)];

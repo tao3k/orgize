@@ -19,7 +19,6 @@ SCHEDULED: <2026-05-15 Fri>
 SCHEDULED: <2026-05-15 Fri>
 "#;
 
-#[test]
 fn semantic_ast_projects_task_blockers_follow_local_ordered_siblings() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -51,7 +50,6 @@ fn semantic_ast_projects_task_blockers_follow_local_ordered_siblings() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_agenda_view_embeds_ordered_sibling_blockers() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -77,7 +75,6 @@ fn semantic_ast_projects_agenda_view_embeds_ordered_sibling_blockers() {
     assert!(rendered.contains("blocked-by: orderedPreviousSibling First @ 5:1"));
 }
 
-#[test]
 fn semantic_ast_projects_agent_planning_embeds_ordered_sibling_blockers() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -98,3 +95,18 @@ fn semantic_ast_projects_agent_planning_embeds_ordered_sibling_blockers() {
             .contains("blocked-by: orderedPreviousSibling First @ 5:1")
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_task_blockers::semantic_ast_projects_task_blockers_follow_local_ordered_siblings",
+        semantic_ast_projects_task_blockers_follow_local_ordered_siblings,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_task_blockers::semantic_ast_projects_agenda_view_embeds_ordered_sibling_blockers",
+        semantic_ast_projects_agenda_view_embeds_ordered_sibling_blockers,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_task_blockers::semantic_ast_projects_agent_planning_embeds_ordered_sibling_blockers",
+        semantic_ast_projects_agent_planning_embeds_ordered_sibling_blockers,
+    ),
+];

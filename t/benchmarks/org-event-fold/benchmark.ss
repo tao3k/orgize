@@ -1,0 +1,16 @@
+;; Native ASP scenario fixture. No external sampler or statistics engine.
+;; The ASP diagnostic envelope is not an optimization claim or production SLO.
+((benchmarkKind . scenario-e2e)
+ (rule . org-event-fold)
+ (feature . native-scheme-parser)
+ (optimizationFocus . "Scheme fold traversal")
+ (inputShape . "One complete Org fixture")
+ (expectedOutcome . "Lossless event tape equal to untimed admission")
+ (measurementPhases . (parse-source assert-event-semantics assert-time-gate))
+ (tags . (orgize scheme fold))
+ (sampleCount . 20)
+ (target_total . 25ms)
+ (regression_budget . 75ms)
+ (max_total . 100ms)
+ (expected_over_input_budget . 15ms)
+ (targetRationale . "ASP diagnostic envelope; matched receipts determine improvement"))

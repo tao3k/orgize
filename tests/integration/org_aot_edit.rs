@@ -22,7 +22,6 @@ fn edit<'a>(
     }
 }
 
-#[test]
 fn source_owned_edit_preserves_unrelated_org_bytes() {
     let candidate = apply_org_source_edits(
         SOURCE,
@@ -34,7 +33,6 @@ fn source_owned_edit_preserves_unrelated_org_bytes() {
     assert!(candidate.contains(":ID: notes-1\n:END:\nKeep me\n"));
 }
 
-#[test]
 fn rejects_stale_wrong_node_and_changed_span() {
     let correct = edit(SOURCE, "design-1", "Old guarantee", "New guarantee");
     assert!(matches!(
@@ -63,7 +61,6 @@ fn rejects_stale_wrong_node_and_changed_span() {
     ));
 }
 
-#[test]
 fn rejects_overlaps_duplicate_identity_and_non_utf8_boundary() {
     let first = edit(SOURCE, "design-1", "Old guarantee", "New guarantee");
     let overlap = OrgSourceEdit {
@@ -101,7 +98,6 @@ fn rejects_overlaps_duplicate_identity_and_non_utf8_boundary() {
     ));
 }
 
-#[test]
 fn rejects_missing_ambiguous_and_removed_node_identity() {
     assert!(matches!(
         apply_org_source_edits(SOURCE, &org_source_digest(SOURCE), &[]),
@@ -138,3 +134,22 @@ fn rejects_missing_ambiguous_and_removed_node_identity() {
         Err(OrgSourceEditError::MissingNodeId)
     ));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "org_aot_edit::source_owned_edit_preserves_unrelated_org_bytes",
+        source_owned_edit_preserves_unrelated_org_bytes,
+    ),
+    (
+        "org_aot_edit::rejects_stale_wrong_node_and_changed_span",
+        rejects_stale_wrong_node_and_changed_span,
+    ),
+    (
+        "org_aot_edit::rejects_overlaps_duplicate_identity_and_non_utf8_boundary",
+        rejects_overlaps_duplicate_identity_and_non_utf8_boundary,
+    ),
+    (
+        "org_aot_edit::rejects_missing_ambiguous_and_removed_node_identity",
+        rejects_missing_ambiguous_and_removed_node_identity,
+    ),
+];

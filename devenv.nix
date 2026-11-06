@@ -159,7 +159,15 @@ in
     clippy.enable = true;
     clippy.packageOverrides.cargo = config.languages.rust.toolchain.cargo;
     clippy.packageOverrides.clippy = config.languages.rust.toolchainPackage;
-    clippy.settings.allFeatures = true;
+    # Runtime owners are exclusive. Keep every other feature covered in both
+    # lanes instead of weakening runtime_backend's compile-time admission.
+    clippy.entry = lib.mkForce "${pkgs.writeShellScript "orgize-clippy-runtimes" ''
+      set -euo pipefail
+      features="$(${config.languages.rust.toolchain.cargo}/bin/cargo metadata --locked --no-deps --format-version 1 | ${pkgs.jq}/bin/jq -r '.packages[] | select(.name == "orgize") | .features | keys | map(select(. != "default" and . != "runtime-rust" and . != "runtime-scheme")) | join(",")')"
+      for runtime in runtime-rust runtime-scheme; do
+        ${config.git-hooks.hooks.clippy.package}/bin/cargo-clippy clippy --locked --no-default-features --features "$runtime,$features" --
+      done
+    ''}";
   };
   # See full reference at https://devenv.sh/reference/options/
 }

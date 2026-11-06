@@ -1,0 +1,78 @@
+#+title: Parser e1252ed alignment and compiled source-root admission
+
+* Scope and preserved ownership
+
+Audit date: 2026-10-06. Live parser PR 13 reports
+=e1252ed102a1d67f5d2d1fb3ab359f6b7f97aed6= at the audit snapshot.
+The isolated parser checkout selects that commit without resetting its seven
+local AOT overlay paths. None overlaps the upstream delta from 619bf190.
+Cargo.toml, Cargo.lock and gerbil.pkg select the same revision; the maintained
+dependency update resolves zero additional packages.
+
+Upstream adds shared Word/Binding profile and ordered-result catalog Rust
+APIs. Orgize does not adopt them as a source-parser fallback. Public
+=Org::parse= remains native Scheme AOT/FFI, with both explicit runtime
+features and unchanged optimization, concurrency and resource policy.
+
+* Admission repair
+
+Matching dependency pins alone did not prove that a compiled Scheme program
+came from that candidate: a caller could supply an older valid manifest.
+The maintained Justfile now checks every parser and Org module against its
+explicit candidate build root. The three existing staging owners (native
+clock, native runtime statistics and event tape) must come from the explicit
+program root. Both parser and Org module groups must be present.
+
+This checks compiler-owned manifest paths, not a new manifest schema,
+parser, evaluator or security attestation. Native program input content
+identity remains owned by the shared archive observer. Existing manifests
+are not rewritten or relabeled.
+
+The historical citation program passes with its own actual roots and fails
+when admitted against the new candidate roots. The newly staged 317-module
+program passes against the freshly built parser/Org/staging roots.
+The new parser receipt retains raw compiler output and propagates failure.
+Initial ambient-load-path bootstrap failure is not a semantic failure;
+the real project ASP/core/bridge load paths are explicit in the passing build.
+
+* Qualification boundary
+
+Fresh receipts use =target/native-alignment-e1252ed-20261006=.
+Parser 159-target normal compilation and the complete Org SDK build pass.
+Fresh native executable qualification passes all 173 cases / 12 suites,
+final OK and exit zero with load-path environment removed. Failed standard
+assertion propagates final FAILED and exit 42. Both runtime Release
+library/consumer/benchmark builds pass with zero production-library warnings.
+Both execute 84 native units, 24 ordinary units and all 457 consumers at
+12 callers. Existing ignored scenarios remain explicitly separate.
+
+The new compiler-input identity is
+=sha256:017d3ae557e38b5abac18361b900b61aacddf4da3837acdeca3071d58f415e64=.
+Rust Contract is 5.289916ms and Scheme Contract 6.49575ms, both under 25ms.
+Scheme Query passes at 28.68775ms under the unchanged 45ms limit.
+Initial Rust Query fails at 46.298583ms, while native compilation is active.
+That failure is retained in =rust-query/query-scenario.log=.
+
+After all owned compilation/catalog tasks finish, the maintained diagnostic
+runs five predetermined alternating old/new Rust Query pairs. Every pair
+is retained: reference maxima are 20.262042, 29.031708, 15.485125,
+15.4615 and 14.711667ms; candidate maxima are 17.290625, 36.279375,
+17.089, 16.004625 and 15.153166ms. All pass 45ms. This supports an inference
+that host contention may contribute; it neither isolates a root cause nor
+repairs/replaces the initial failed admission or proves a speedup.
+
+Darwin/Linux command-shape checks pass; Linux execution is not qualified.
+Standalone Rowan, Python and full 1,000/10,000-document concurrent matrices
+have not been freshly executed for this program. Earlier 4446730d/bcd28ab5
+receipts are historical and are not copied here.
+
+The previously qualified default manifest is retained until this candidate
+completes admission. No remote push, PR update or cross-repository commit
+is performed. Clean published bootstrap still requires the parser AOT
+overlays and shared bridge staging/build implementations to be integrated
+upstream. Bridge 8bb8103b already exports the Rust archive APIs; the actual
+gap is its two-argument staging function without the used =c-headers:=
+keyword, absent static runtime staging module, and the locally migrated
+Scheme-owned native compilation executor. API-name absence is not the cause.
+Whole-workspace strict lint, platform CI, standalone C distribution and
+the historical Query tail remain independently open.

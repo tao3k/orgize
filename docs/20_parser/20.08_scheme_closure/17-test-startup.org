@@ -1,0 +1,126 @@
+#+title: Native test startup and executable build boundary
+
+[[file:../20.08_scheme_closure_ledger.org][Native Scheme closure index]]
+
+* Scope and identity
+
+This is a test/build-owner change on the dirty PR 18 candidate, not a parser
+algorithm optimization. Parser pins remain =a99b3646= and the production
+316-module program remains
+=sha256:97d4712da7beeb5c6bc2970dd1f58b2224a5c9244524e0b556331d759e47c840=.
+The bridge overlay gains an unpublished build-only static staging operation.
+No new PR, commit or push is part of this local qualification.
+
+* Findings and repair
+
+Native gxtest prepares all module imports before emitting =HARNESS=. Its source
+entry recursively expands relative imports; even a compiled suite interface
+still imports compiler phase interfaces. Import tracing observed 1,553 import
+boundaries, an approximately 2.787-second top-level import, and fresh grammar
+artifact generation. A fresh untraced directory passes the owner suite; the
+previous five-second silent-startup failures remain negative evidence. This
+does not establish one stable timing cause for every historical startup failure.
+
+=t/org-closure.ss= statically imports the existing standard Gerbil test
+suite values. It constructs =TestHarness=/=TestModule= and uses =test-run!=;
+there is no replacement assertion framework, runtime source expansion or
+semantic JSON transport added. The =--failure-control= mode deliberately fails
+one standard assertion and must return 42, not an apparent successful harness.
+The control confirms the standard framework can print =HARNESS-OK= after a
+failed check: exit status, final =FAILED=/=OK= and failure markers are therefore
+mandatory. No library/kernel patch or altered assertion semantics hides this.
+The ordinary entry accepts no filters and executes the whole selected catalog.
+
+Executable linking exposed missing explicit test roots: the graph/catalog and
+Query build interfaces, parser/Elements test helpers, and fixture owner. These
+are built before linking. Generator coverage is retained; typed Rust query
+projection is not a second raw Org parser.
+
+Gerbil emits C beside user static SCM when linking executables. Writing next to
+shared dependency checkouts was rejected by the sandbox. The bridge's existing
+compiler-graph adapter now stages the exact user runtime dependency artifacts
+into the chosen build directory. It accepts a compiled =.ssi= root, copies SCM
+opaquely, does not evaluate generated SCM, and never replaces a compiled owner.
+Orgize passes an explicit bridge checkout to this owner and invokes only the
+unified =gerbil compile= command. New SDK/source identities require a fresh
+qualification output directory; a cached output is not fresh-source evidence.
+
+Darwin also exposed a native linker setup gap: =CC= alone does not select the
+Gerbil executable linker. =GERBIL_GCC=/usr/bin/cc= is now scoped to Darwin along
+with =SDKROOT= removal. Normal native executable linking is used; forcing a
+fully static system link fails with missing =crt0.o= on Darwin. This is not a
+runtime compatibility fallback or a Gambit kernel change.
+
+* Admission
+
+The maintained entry is =just scheme-closure-receipt OUTPUT LOAD_PATH BRIDGE=.
+The output must be fresh for a changed SDK. Its executable runs with both
+=GERBIL_PATH= and =GERBIL_LOADPATH= removed, under the unchanged five-second
+real-output observer. Require exact case count, =HARNESS-OK=, final =OK=, exit 0,
+and absence of failure markers. The deliberate failure control must exit 42.
+
+Current receipts are under
+=target/publishing-native-closure-20261006/aligned-a99b3646/native-closure/=.
+The native executable passes exactly 167 cases with final =OK= and exit 0;
+the failure control passes admission with a failed assertion, final =FAILED=
+and exit 42. Both run without the two Gerbil load-path environment variables.
+Platform command checks pass for Darwin/Linux expansion; Linux execution is
+not claimed. Native linking succeeds after isolated staging and Darwin linker
+selection. The earlier =crt0.o= linker failure transcript is retained.
+The executable is native arm64 Mach-O. Its linked user modules do not require
+runtime Scheme search paths; Darwin system/crypto/database libraries remain
+ordinary native library dependencies, not a source interpreter fallback.
+
+This test entry does not repair or qualify the original Rust Query tail
+(286.836958ms > 45ms). Current Python requalification, clean published
+bridge/parser dependency closure, and exact-candidate CI remain separate gates.
+A separate unchanged Rust executable control passes at 22.406541ms, with the
+same 316-module identity and original 45ms threshold. No parser algorithm was
+changed, so this passing sample is not a repair or explanation of the 286ms tail.
+
+* Complete current concurrent admission
+
+Both immutable =a99b3646= runtime benchmark executables complete all six batches:
+1,000/10,000 distinct documents, 64 Tokio callers, and 1/4/8 native process
+domains. Each feature admits 33,000 documents, 66,000 total, with successful
+worker exits and the required real maximum in-flight/domain counts. Matrix,
+same-program semantic artifact and matched-identity comparator gates all pass.
+These are unprofiled qualification runs, not a new parser optimization.
+
+The 10,000-document observations are:
+
+| Domains | Rust docs/s | Scheme docs/s | Rust end-to-end p95 ms | Scheme end-to-end p95 ms |
+|---------+-------------+---------------+-----------------------+-------------------------|
+|       1 |       84.54 |         53.80 |               1039.70 |                 3542.74 |
+|       4 |      232.58 |        218.97 |                543.54 |                  523.72 |
+|       8 |      217.79 |        338.22 |                574.89 |                  412.26 |
+
+End-to-end includes queue/IPC/native parse/projection/validation/drop/response;
+it is neither isolated Scheme CPU nor one parse call's latency. One repetition
+per geometry, execution order and observed variability do not admit a stable
+runtime winner or performance improvement. In particular, Rust's 8-domain
+throughput is lower than its 4-domain observation. Do not present scaling as
+monotonic or conflate concurrent semantic admission with the original Query gate.
+Receipts: =rust-current-matrix.json= and =scheme-current-matrix.json= beside the
+native executable receipt directory. They qualify =a99b3646=, not =60101b7f=.
+
+* Newly observed upstream and remaining audit gates
+
+Live GitHub readback finds parser PR 13 at
+=60101b7fceaf7906e121ffbb701a162027b613f4=, ahead of this qualified =a99b3646=
+snapshot by six commits/44 paths. The fetched diff does not overlap the seven
+local parser overlay paths, but changes loader admission and result projection
+APIs. No checkout merge or package pin update is admitted by the old receipts;
+alignment must include fresh SDK/program, both runtime catalogs, Python and the
+complete concurrent matrix. The seven overlay paths are preserved.
+
+PR 18 remains OPEN at =cbe3750c19973251eb80b3e7bab93413d2476fe7=, distinct
+from the dirty local tree and the bridge staging overlay. Clean CI still needs
+published reproducible native dependencies and native bootstrap. This local
+test executable is not a clean-package or remote exact-candidate CI receipt.
+
+The role audit also finds a historical JSON event fixture consumed only by
+Scheme/Rust parity tests. It is not production Org syntax transport, but this
+turn does not remove or qualify its migration. Do not claim all legacy test
+fixtures disappeared. Native ABI helper warnings also need owner-by-owner
+test scoping; functions that merely admit native values are not Rust grammars.

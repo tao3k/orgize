@@ -1,12 +1,12 @@
 //! Core facade for Org elements query expression parsing and compilation.
 
 use super::core_contract::{
-    apply_relative_scope, compile_contract_sequence, compile_pair_document_equality,
-    compile_pair_node_equality, compile_query_expression, compile_workspace_reference,
+    compile_contract_sequence, compile_pair_document_equality, compile_pair_node_equality,
+    compile_query_expression, compile_workspace_reference,
 };
-use super::core_parser::{lower_root, parse_query_expression_syntax, unquote_query_string};
+use super::core_parser::parse_query_expression_values;
 pub use super::core_types::OrgElementsQueryExpressionError;
-pub(super) use super::core_types::{FieldKind, QueryExpr, RelativeKind, list_head};
+pub(super) use super::core_types::{FieldKind, QueryExpr, list_head};
 use crate::ast::{
     OrgContractBinding, OrgContractExpectation, OrgContractPairDocumentEquality,
     OrgContractPairNodeEquality, OrgContractQuery, OrgContractWorkspaceReference,
@@ -25,11 +25,50 @@ pub fn org_elements_index_query_from_expr_str(
     })
 }
 
-/// Parses one expression block as a query-only Org elements IR.
-pub(in crate::ast) fn parse_org_elements_query_expression_block(
+pub(in crate::ast) fn selector_plist_properties(
     value: &str,
-) -> Option<OrgContractQuery> {
-    let parsed = parse_expressions(value).and_then(|expressions| match expressions.as_slice() {
+) -> Result<Vec<(String, String)>, crate::ast::OrgElementSelectorParseError> {
+    use crate::ast::OrgElementSelectorParseError::InvalidShape;
+    let expressions = parse_expressions(value).ok_or(InvalidShape)?;
+    selector_properties_from_values(&expressions)
+}
+
+pub(in crate::ast) fn selector_properties_from_values(
+    expressions: &[QueryExpr],
+) -> Result<Vec<(String, String)>, crate::ast::OrgElementSelectorParseError> {
+    use crate::ast::OrgElementSelectorParseError::{InvalidShape, OddPropertyList};
+    let [QueryExpr::List(items)] = expressions else {
+        return Err(InvalidShape);
+    };
+    let [QueryExpr::Atom(head), QueryExpr::List(properties)] = items.as_slice() else {
+        return Err(InvalidShape);
+    };
+    if head != ":org-element" {
+        return Err(InvalidShape);
+    }
+    if properties.len() % 2 != 0 {
+        return Err(OddPropertyList);
+    }
+    properties
+        .chunks(2)
+        .map(|pair| {
+            let key = pair[0].as_atom().ok_or(InvalidShape)?.to_string();
+            let value = pair[1].as_text().ok_or(InvalidShape)?;
+            Ok((key, value))
+        })
+        .collect()
+}
+
+pub(in crate::ast) fn query_values_are_admitted(expressions: &[QueryExpr]) -> bool {
+    super::index::compile_index_query_expressions(expressions).is_some()
+        || (!expressions.is_empty()
+            && expressions
+                .iter()
+                .all(|expression| compile_query_expression(expression).is_some()))
+}
+
+pub(in crate::ast) fn compile_query_values(expressions: &[QueryExpr]) -> Option<OrgContractQuery> {
+    match expressions {
         [expression] => compile_query_expression(expression),
         [] => None,
         expressions => {
@@ -39,23 +78,34 @@ pub(in crate::ast) fn parse_org_elements_query_expression_block(
             }
             Some(query)
         }
-    });
-    parsed.or_else(|| parse_legacy_org_elements_query_block(value))
+    }
 }
 
-/// Parses one expression block as a contract assertion.
-pub(in crate::ast) fn parse_org_contract_expression_block(
-    value: &str,
+pub(in crate::ast) fn contract_values_are_admitted(
+    normalized: Option<&[QueryExpr]>,
+    raw: Option<&[QueryExpr]>,
+) -> bool {
+    if normalized.and_then(compile_contract_sequence).is_some() {
+        return true;
+    }
+    match raw {
+        Some([expression]) => {
+            compile_pair_node_equality(expression).is_some()
+                || compile_pair_document_equality(expression).is_some()
+                || compile_workspace_reference(expression).is_some()
+        }
+        _ => false,
+    }
+}
+
+pub(in crate::ast) fn compile_contract_values(
+    expressions: &[QueryExpr],
 ) -> Option<(
     Vec<OrgContractBinding>,
     OrgContractQuery,
     OrgContractExpectation,
 )> {
-    let expressions = parse_expressions(value)?;
-    match expressions.as_slice() {
-        [expression] => compile_contract_expression(expression),
-        _ => compile_contract_sequence(&expressions),
-    }
+    compile_contract_sequence(expressions)
 }
 
 pub(crate) fn parse_org_contract_pair_node_equality_block(
@@ -135,100 +185,7 @@ pub(in crate::ast) fn org_elements_query_summary_value(
     }
 }
 
-fn parse_legacy_org_elements_query_block(value: &str) -> Option<OrgContractQuery> {
-    let mut query = OrgContractQuery::default();
-    let mut parsed = false;
-    for line in value.lines().map(strip_legacy_query_comment) {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
-        let (key, value) = line.split_once('=')?;
-        let key = key.trim();
-        let value = unquote_legacy_query_value(value.trim())?;
-        apply_legacy_query_assignment(&mut query, key, &value)?;
-        parsed = true;
-    }
-    parsed.then_some(query)
-}
-
-fn apply_legacy_query_assignment(
-    query: &mut OrgContractQuery,
-    key: &str,
-    value: &str,
-) -> Option<()> {
-    match key {
-        "category" => {
-            query.category = Some(OrgElementsIndexCategory::from_label(value)?);
-        }
-        "kind" => {
-            apply_org_elements_query_kind(value, query);
-        }
-        "within" | "descendant_of" | "descendant-of" => {
-            apply_relative_scope(query, RelativeKind::Descendant, value);
-        }
-        "child_of" | "child-of" => {
-            apply_relative_scope(query, RelativeKind::Child, value);
-        }
-        "at" => {
-            apply_relative_scope(query, RelativeKind::At, value);
-        }
-        "name" | "affiliated_name" | "affiliated-name" => {
-            query.affiliated_name = Some(value.to_string());
-        }
-        "context" => {
-            query.context = Some(value.to_string());
-        }
-        "limit" => {
-            query.limit = Some(value.parse::<usize>().ok()?);
-        }
-        _ => {
-            if let Some(field) = key.strip_prefix("summary.") {
-                query
-                    .summary_equals
-                    .push((field.to_string(), value.to_string()));
-            } else if let Some(field) = key
-                .strip_prefix("summary_contains.")
-                .or_else(|| key.strip_prefix("summary-contains."))
-            {
-                query
-                    .summary_contains
-                    .push((field.to_string(), value.to_string()));
-            } else if let Some(field) = key.strip_prefix("property.") {
-                query
-                    .property_equals
-                    .push((field.to_string(), value.to_string()));
-            } else {
-                let field = key
-                    .strip_prefix("property_contains.")
-                    .or_else(|| key.strip_prefix("property-contains."))?;
-                query
-                    .property_contains
-                    .push((field.to_string(), value.to_string()));
-            }
-        }
-    }
-    Some(())
-}
-
-fn strip_legacy_query_comment(line: &str) -> &str {
-    let trimmed = line.trim();
-    if trimmed.starts_with('#') {
-        return "";
-    }
-    line.split_once(" #").map_or(line, |(before, _)| before)
-}
-
-fn unquote_legacy_query_value(value: &str) -> Option<String> {
-    let value = value.trim();
-    if value.starts_with('"') {
-        return unquote_query_string(value);
-    }
-    Some(value.to_string())
-}
-
 fn parse_expressions(value: &str) -> Option<Vec<QueryExpr>> {
-    let syntax = parse_query_expression_syntax(value)?;
-    lower_root(&syntax)
+    parse_query_expression_values(value)
 }
-use super::core_contract::{compile_contract_expression, merge_query};
+use super::core_contract::merge_query;

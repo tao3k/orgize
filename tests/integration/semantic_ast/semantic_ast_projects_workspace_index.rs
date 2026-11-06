@@ -7,12 +7,22 @@ use orgize::{
 const WORKSPACE_A: &str = include_str!("../../fixtures/semantic_ast/workspace-index-a.org");
 const WORKSPACE_B: &str = include_str!("../../fixtures/semantic_ast/workspace-index-b.org");
 
-#[test]
 fn semantic_ast_projects_workspace_index_from_document_local_records() {
     let doc_a = Org::parse(WORKSPACE_A).document();
     let doc_b = Org::parse(WORKSPACE_B).document();
     assert_clean_projection(&doc_a);
     assert_clean_projection(&doc_b);
+    assert!(doc_a.source_block_records().iter().any(|block| {
+        block.name.as_deref() == Some("alpha-block") && block.source.start.line == 10
+    }));
+    assert!(
+        doc_a.section_index_records()[0]
+            .body
+            .iter()
+            .any(
+                |slice| slice.text.starts_with("#+begin_src rust") && slice.source.start.line == 10
+            )
+    );
 
     let mut builder = WorkspaceIndexBuilder::new();
     builder
@@ -78,7 +88,6 @@ fn semantic_ast_projects_workspace_index_from_document_local_records() {
     insta::assert_debug_snapshot!("semantic_ast__semantic_workspace_index", index);
 }
 
-#[test]
 fn semantic_ast_builds_single_document_workspace_index() {
     let doc = Org::parse(WORKSPACE_A).document();
     assert_clean_projection(&doc);
@@ -87,3 +96,14 @@ fn semantic_ast_builds_single_document_workspace_index() {
     assert_eq!(index.documents.len(), 1);
     assert!(index.links.iter().any(|link| link.path == "id:missing-id"));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_workspace_index::semantic_ast_projects_workspace_index_from_document_local_records",
+        semantic_ast_projects_workspace_index_from_document_local_records,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_workspace_index::semantic_ast_builds_single_document_workspace_index",
+        semantic_ast_builds_single_document_workspace_index,
+    ),
+];

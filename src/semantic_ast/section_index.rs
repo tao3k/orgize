@@ -142,7 +142,7 @@ fn section_index_record(
     }
 }
 
-fn objects_text(objects: &[Object<ParsedAnnotation>]) -> String {
+pub(super) fn objects_text(objects: &[Object<ParsedAnnotation>]) -> String {
     objects.iter().map(object_text).collect::<Vec<_>>().join("")
 }
 

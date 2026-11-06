@@ -2,6 +2,7 @@
 **/*.rs.bk
 /.devenv
 /.gerbil/
+/.gerbil-native/
 
 .vscode
 .gdb_history
@@ -12,3 +13,6 @@ perf.data*
 .cache/
 .data/
 .bin/
+
+# Parser publication lock is adjacent to the installed native prefix.
+/.gerbil-native.publication.lock

@@ -91,7 +91,7 @@
       "semantic-fact-ontology.v1.schema.json",
       "semantic-dependency-topology.v1.schema.json",
       "semantic-structural-index.v1.schema.json",
-      "semantic-native-syntax-fact-index.v1.schema.json",
+      "semantic-syntax-fact-index.v1.schema.json",
       "semantic-graph.v1.schema.json",
       "semantic-type-surface.v1.schema.json",
       "semantic-handle.v1.schema.json",

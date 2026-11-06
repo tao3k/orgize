@@ -1,0 +1,5 @@
+#+TITLE: Unknown Contract
+* Family
+:PROPERTIES:
+:CONTRACT_REF: absent.contract
+:END:

@@ -1,6 +1,5 @@
 use orgize::fmt::{FormatOptions, format_org};
 
-#[test]
 fn fmt_preserves_file_and_attachment_links_with_snapshot() {
     insta::assert_snapshot!(format_snapshot(file_and_attachment_links_fmt_fixture()));
 }
@@ -20,3 +19,8 @@ fn format_snapshot(source: &str) -> String {
         formatted.output
     )
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "fmt_links::fmt_preserves_file_and_attachment_links_with_snapshot",
+    fmt_preserves_file_and_attachment_links_with_snapshot,
+)];

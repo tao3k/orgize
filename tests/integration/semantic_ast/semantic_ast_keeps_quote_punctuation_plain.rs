@@ -4,7 +4,6 @@ use orgize::{
     ast::{ElementData, MarkupKind, ObjectData},
 };
 
-#[test]
 fn semantic_ast_keeps_quote_punctuation_plain() {
     let doc = Org::parse(
         r#"He said "plain text" and "*bold*" while '/italic/' stays text-adjacent.
@@ -50,3 +49,8 @@ fn semantic_ast_keeps_quote_punctuation_plain() {
             .any(|object| matches!(object.data, ObjectData::Link(_)))
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_keeps_quote_punctuation_plain::semantic_ast_keeps_quote_punctuation_plain",
+    semantic_ast_keeps_quote_punctuation_plain,
+)];

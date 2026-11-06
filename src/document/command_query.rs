@@ -336,7 +336,7 @@ fn compact_query_content_line(line: &str) -> String {
 }
 
 fn starts_preserved_content_block(line: &str) -> bool {
-    is_markdown_fence(line) || is_org_preserved_block_start(line)
+    is_markdown_fence(line)
 }
 
 fn forces_compacted_content_boundary(line: &str) -> bool {
@@ -344,7 +344,7 @@ fn forces_compacted_content_boundary(line: &str) -> bool {
 }
 
 fn ends_preserved_content_block(line: &str) -> bool {
-    is_markdown_fence(line) || is_org_preserved_block_end(line)
+    is_markdown_fence(line)
 }
 
 fn is_markdown_fence(line: &str) -> bool {
@@ -360,16 +360,6 @@ fn is_markdown_thematic_break(line: &str) -> bool {
         return false;
     };
     matches!(marker, '-' | '_' | '*') && chars.all(|character| character == marker)
-}
-
-fn is_org_preserved_block_start(line: &str) -> bool {
-    let line = line.to_ascii_lowercase();
-    line.starts_with("#+begin_src") || line.starts_with("#+begin_example")
-}
-
-fn is_org_preserved_block_end(line: &str) -> bool {
-    let line = line.to_ascii_lowercase();
-    line.starts_with("#+end_src") || line.starts_with("#+end_example")
 }
 
 fn projected_content_facts(facts: &[DocumentElement]) -> Vec<DocumentElement> {

@@ -1,11 +1,11 @@
-//! Scheme POO declaration -> gerbil-parser AOT table -> contextual Rowan CST.
+//! Scheme POO declaration -> gerbil-parser AOT table -> contextual native navigation index.
 
-use gerbil_parser_rowan::SyntaxNode;
+use gerbil_parser_runtime::SyntaxNode;
 
 fn parse(source: &str) -> SyntaxNode {
     let parsed = orgize::org_aot::parse_org_aot(source)
         .unwrap_or_else(|error| panic!("Org event AOT rejected source: {error:?}"));
-    assert_eq!(parsed.receipt().language, "org");
+    assert_eq!(parsed.receipt().language, "org-mode");
     assert_eq!(
         parsed.receipt().grammar_digest,
         orgize::org_aot::org_language_spec().grammar_digest
@@ -21,26 +21,72 @@ fn name(node: &SyntaxNode) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name
 }
 
-fn token_name(token: &gerbil_parser_rowan::SyntaxToken) -> &'static str {
+fn token_name(token: &gerbil_parser_runtime::SyntaxToken) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(token.kind().0)].name
 }
 
-macro_rules! check_org_aot_element {
-    ($source:expr, $kind:expr, $field:expr => $value:expr) => {{
-        let document = orgize::org_aot::parse_org_aot($source)
-            .expect("Scheme-owned Org Element parser accepts the source");
-        let elements: Vec<_> = document
+fn scheme_declared_macro_objects_project_into_native_index_and_graph() {
+    check_org_aot_element!("{{{issue(42)}}}\n", "macro", "name" => "issue");
+    let document =
+        orgize::org_aot::parse_org_aot("{{{issue(42)}}}\n").expect("Scheme-owned Org macro object");
+    let macro_record = document
+        .records()
+        .iter()
+        .find(|record| record.kind == "macro")
+        .expect("macro graph record");
+    assert_eq!(macro_record.field("arguments"), Some("42"));
+    assert_eq!(document.syntax().to_string(), "{{{issue(42)}}}\n");
+    let malformed = orgize::org_aot::parse_org_aot("{{{9bad}}} {{{broken\n")
+        .expect("invalid macros are lossless text");
+    assert!(
+        !malformed
             .records()
             .iter()
-            .filter(|record| record.kind == $kind)
-            .collect();
-        assert_eq!(elements.len(), 1);
-        assert_eq!(elements[0].field($field), Some($value));
-        assert_eq!(document.syntax().to_string(), $source);
-    }};
+            .any(|record| record.kind == "macro")
+    );
+    assert_eq!(malformed.syntax().to_string(), "{{{9bad}}} {{{broken\n");
 }
 
-#[test]
+fn scheme_declared_entities_require_catalog_names_and_preserve_postfix() {
+    check_org_aot_element!("\\alpha{}\n", "entity", "name" => "alpha");
+    let document =
+        orgize::org_aot::parse_org_aot("\\alpha{} \\_   \n").expect("Scheme-owned Org entities");
+    let entities: Vec<_> = document
+        .records()
+        .iter()
+        .filter(|record| record.kind == "entity")
+        .collect();
+    assert_eq!(entities.len(), 2);
+    assert_eq!(entities[0].field("post"), Some("{}"));
+    assert_eq!(entities[1].field("name"), Some("_"));
+    assert_eq!(entities[1].field("post"), Some("   "));
+    assert_eq!(document.syntax().to_string(), "\\alpha{} \\_   \n");
+    let unknown = orgize::org_aot::parse_org_aot("\\unknown \\centaur\n")
+        .expect("unknown entity names are text");
+    assert!(
+        !unknown
+            .records()
+            .iter()
+            .any(|record| record.kind == "entity")
+    );
+    let adjacent = orgize::org_aot::parse_org_aot("\\alpha\\beta [[https://example.org]]\n")
+        .expect("entity boundaries keep the next Object visible");
+    assert_eq!(
+        adjacent
+            .records()
+            .iter()
+            .filter(|record| record.kind == "entity")
+            .count(),
+        2
+    );
+    assert!(
+        adjacent
+            .records()
+            .iter()
+            .any(|record| record.kind == "link")
+    );
+}
+
 fn scheme_declared_babel_call_is_not_a_generic_keyword() {
     let source = "#+CALL: build(input=42)\n";
     check_org_aot_element!(source, "babel-call", "value" => "build(input=42)");
@@ -53,8 +99,7 @@ fn scheme_declared_babel_call_is_not_a_generic_keyword() {
     );
 }
 
-#[test]
-fn scheme_emphasis_objects_project_into_rowan_and_element_graph() {
+fn scheme_emphasis_objects_project_into_native_index_and_element_graph() {
     let source = "*bold* /italic/ _under_ +strike+\n";
     let document = orgize::org_aot::parse_org_aot(source)
         .expect("Scheme-owned emphasis Objects parse through the event AOT");
@@ -73,9 +118,21 @@ fn scheme_emphasis_objects_project_into_rowan_and_element_graph() {
         assert_eq!(records[0].field("value"), Some(value), "{kind}");
     }
     assert_eq!(document.syntax().to_string(), source);
+    check_org_aot_element!("a *bo\nld* z\n", "bold", "value" => "bo\nld");
+    let repeated = "~code~ =verbatim=\n~code~ =verbatim=\n";
+    let repeated_document =
+        orgize::org_aot::parse_org_aot(repeated).expect("inline objects span physical lines");
+    assert_eq!(
+        repeated_document
+            .records()
+            .iter()
+            .filter(|record| record.kind == "code" || record.kind == "verbatim")
+            .count(),
+        4
+    );
+    assert_eq!(repeated_document.syntax().to_string(), repeated);
 }
 
-#[test]
 fn headings_form_nested_sections_and_closed_blocks_remain_lossless() {
     let source = "é\r\n* Parent\n#+BEGIN_SRC rust\ncode\n#+END_SRC\n** Child\nbody\r* Sibling\n";
     let root = parse(source);
@@ -103,7 +160,6 @@ fn headings_form_nested_sections_and_closed_blocks_remain_lossless() {
     );
 }
 
-#[test]
 fn scheme_declared_paragraphs_preserve_line_breaks_and_link_ancestry() {
     let source = "* Task\r\nalpha\r\nbeta\n\n[[https://example.test][inside]]\n";
     let root = parse(source);
@@ -130,7 +186,6 @@ fn scheme_declared_paragraphs_preserve_line_breaks_and_link_ancestry() {
     );
 }
 
-#[test]
 fn scheme_declared_table_builds_rows_and_cells_without_paragraph_claims() {
     let source = "* Data\n| Name | Value |\n|------+-------|\n| é\\|x | 42 |\nAfter\n";
     let root = parse(source);
@@ -169,7 +224,6 @@ fn scheme_declared_table_builds_rows_and_cells_without_paragraph_claims() {
     );
 }
 
-#[test]
 fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend() {
     let source = "* Blocks\n#+begin_quote\nquoted\n#+end_quote\n#+begin_example\nliteral\n#+end_example\n#+begin_verse\nverse\n#+end_verse\n#+begin_center\ncentered\n#+end_center\n#+begin_comment\nhidden\n#+end_comment\n#+begin_export html\n<b>raw</b>\n#+end_export\nAfter\n";
     let root = parse(source);
@@ -221,7 +275,6 @@ fn scheme_declared_greater_blocks_keep_distinct_element_kinds_and_export_backend
     );
 }
 
-#[test]
 fn unmatched_greater_block_does_not_swallow_following_headline() {
     let source = "* First\n#+begin_quote\nunclosed\n** Next\nvisible\n";
     let root = parse(source);
@@ -240,7 +293,6 @@ fn unmatched_greater_block_does_not_swallow_following_headline() {
     );
 }
 
-#[test]
 fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
     let source = "* Task\n#+begin_quote\n[[id:inside]]\n| a | b |\n#+begin_example\n[[id:literal]]\n#+end_example\n#+end_quote\n#+begin_verse\n[[id:verse]]\n#+end_verse\n#+begin_center\n[[id:center]]\n#+end_center\n";
     let root = parse(source);
@@ -270,7 +322,7 @@ fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
             .count(),
         1
     );
-    let records = gerbil_parser_rowan::project_syntax_graph(
+    let records = gerbil_parser_runtime::project_syntax_graph(
         orgize::org_aot::org_language_spec(),
         orgize::org_aot::org_graph_spec(),
         &root,
@@ -296,7 +348,6 @@ fn recursive_greater_blocks_project_inner_elements_but_literal_blocks_do_not() {
     );
 }
 
-#[test]
 fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
     let source = "* Open\r\n#+begin_src rust\r\n** source text\r\n";
     let root = parse(source);
@@ -321,7 +372,6 @@ fn unclosed_source_block_recovers_as_text_before_the_next_headline() {
     );
 }
 
-#[test]
 fn closed_source_block_masks_heading_looking_body_lines() {
     let source = "* One\n#+begin_src rust\n** Next\n#+end_src\n";
     let root = parse(source);
@@ -340,7 +390,6 @@ fn closed_source_block_masks_heading_looking_body_lines() {
     );
 }
 
-#[test]
 fn many_sibling_sections_keep_exact_source_order() {
     let source = "* item\n".repeat(10_000);
     let root = parse(&source);
@@ -348,7 +397,6 @@ fn many_sibling_sections_keep_exact_source_order() {
     assert_eq!(root.children().count(), 10_000);
 }
 
-#[test]
 fn git_tracked_org_document_is_lossless_at_the_current_structural_boundary() {
     let source = include_str!("../fixtures/org-elements/representative.org");
     let root = parse(source);
@@ -367,7 +415,6 @@ fn git_tracked_org_document_is_lossless_at_the_current_structural_boundary() {
     );
 }
 
-#[test]
 fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     let source = include_str!("../fixtures/org-elements/representative.org");
     let root = parse(source);
@@ -384,17 +431,17 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     for item in &items {
         let bullet = item
             .children_with_tokens()
-            .filter_map(rowan::NodeOrToken::into_token)
+            .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
             .find(|token| token_name(token) == "ListBullet")
             .expect("every admitted item has a typed bullet");
-        assert_eq!(bullet.text(), "-");
+        assert_eq!(bullet.text(), "- ");
         let range = item.text_range();
         assert_eq!(
             &source[usize::from(range.start())..usize::from(range.end())],
             item.to_string()
         );
     }
-    let records = gerbil_parser_rowan::project_syntax_graph(
+    let records = gerbil_parser_runtime::project_syntax_graph(
         orgize::org_aot::org_language_spec(),
         orgize::org_aot::org_graph_spec(),
         &root,
@@ -412,11 +459,10 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     assert!(
         children
             .iter()
-            .all(|item| item.field("bullet") == Some("-"))
+            .all(|item| item.field("bullet") == Some("- "))
     );
 }
 
-#[test]
 fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
     let source = "#+TITLE: α fixture\n* Task\nSCHEDULED: <2026-09-24 Thu> DEADLINE: <2026-09-25 Fri>\nBody\nSCHEDULED: ordinary prose\n#+begin_src text\nliteral\n#+end_src\n";
     let root = parse(source);
@@ -429,7 +475,7 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
     assert_eq!(name(&planning[0].parent().unwrap()), "OrgSection");
     let keys: Vec<_> = planning[0]
         .children_with_tokens()
-        .filter_map(rowan::NodeOrToken::into_token)
+        .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
         .filter(|token| token_name(token) == "PlanningKey")
         .map(|token| token.text().to_string())
         .collect();
@@ -455,6 +501,7 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
         .expect("one keyword");
     assert_eq!(keyword.field("key"), Some("TITLE"));
     assert_eq!(keyword.field("value"), Some("α fixture"));
+    assert_eq!(keyword.field("raw-value"), Some(" α fixture"));
     let planning = records
         .iter()
         .find(|record| record.kind == "planning")
@@ -469,7 +516,6 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
     );
 }
 
-#[test]
 fn clock_is_a_source_backed_element_between_paragraphs() {
     let source = "* Task\nBefore\nCLOCK: [2026-09-24 Thu 10:00]--[2026-09-24 Thu 11:00] => 1:00\nAfter\n#+begin_example\nCLOCK: literal\n#+end_example\n";
     let document = orgize::org_aot::parse_org_aot(source)
@@ -516,7 +562,6 @@ fn clock_is_a_source_backed_element_between_paragraphs() {
     );
 }
 
-#[test]
 fn tracked_fixture_has_scheme_owned_keywords_and_planning() {
     let source = include_str!("../fixtures/org-elements/representative.org");
     let root = parse(source);
@@ -535,7 +580,6 @@ fn tracked_fixture_has_scheme_owned_keywords_and_planning() {
     );
 }
 
-#[test]
 fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
     let fixtures = [
         (
@@ -568,17 +612,27 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             .collect();
         assert_eq!(headlines.len(), 8);
         for headline in &headlines {
-            let title = headline
+            let (range, title) = headline
                 .children_with_tokens()
-                .filter_map(rowan::NodeOrToken::into_token)
-                .find(|token| token_name(token) == "HeadlineTitle")
-                .expect("fixture headline has a typed title");
-            let range = title.text_range();
+                .find_map(|child| match child {
+                    gerbil_parser_artifact::syntax::SyntaxElement::Node(node)
+                        if name(&node) == "OrgHeadlineTitle" =>
+                    {
+                        Some((node.text_range(), node.text().to_string()))
+                    }
+                    gerbil_parser_artifact::syntax::SyntaxElement::Token(token)
+                        if token_name(&token) == "HeadlineTitle" =>
+                    {
+                        Some((token.text_range(), token.text().to_string()))
+                    }
+                    _ => None,
+                })
+                .expect("fixture headline has a source-backed title");
             assert_eq!(
                 &source[usize::from(range.start())..usize::from(range.end())],
-                title.text()
+                title
             );
-            assert!(!title.text().is_empty());
+            assert!(!title.is_empty());
         }
         assert_eq!(
             root.descendants()
@@ -598,7 +652,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             .map(|block| {
                 let token = block
                     .children_with_tokens()
-                    .filter_map(rowan::NodeOrToken::into_token)
+                    .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
                     .find(|token| token_name(token) == "SourceLanguage")
                     .expect("every fixture source block declares its language");
                 let range = token.text_range();
@@ -623,7 +677,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             );
             let tokens: Vec<_> = link
                 .children_with_tokens()
-                .filter_map(rowan::NodeOrToken::into_token)
+                .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
                 .collect();
             assert_eq!(
                 tokens
@@ -634,9 +688,8 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
                 "https://example.test"
             );
             assert!(
-                tokens
-                    .iter()
-                    .any(|token| token_name(token) == "LinkDescription")
+                link.children()
+                    .any(|node| name(&node) == "OrgLinkDescription")
             );
         }
         let property_nodes: Vec<_> = root
@@ -652,7 +705,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             assert!(original.trim_start().starts_with(':'));
             let tokens: Vec<_> = node
                 .children_with_tokens()
-                .filter_map(rowan::NodeOrToken::into_token)
+                .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
                 .collect();
             let key = tokens
                 .iter()
@@ -675,7 +728,6 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
     }
 }
 
-#[test]
 fn invalid_property_drawer_recovers_without_claiming_node_properties() {
     let source = "* Task\n:PROPERTIES:\nnot a property\n:END:\n** Next\n";
     let root = parse(source);
@@ -694,7 +746,6 @@ fn invalid_property_drawer_recovers_without_claiming_node_properties() {
     );
 }
 
-#[test]
 fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
     let fixtures = [
         (
@@ -719,7 +770,7 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
     for (source, expected_records, expected_blocks, expected_links, expected_paragraphs) in fixtures
     {
         let root = parse(source);
-        let records = gerbil_parser_rowan::project_syntax_graph(
+        let records = gerbil_parser_runtime::project_syntax_graph(
             orgize::org_aot::org_language_spec(),
             orgize::org_aot::org_graph_spec(),
             &root,
@@ -766,7 +817,7 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
                 &source[usize::from(range.start())..usize::from(range.end())],
                 root.descendants()
                     .find(|node| node.text_range() == range)
-                    .expect("graph range belongs to a Rowan node")
+                    .expect("graph range belongs to a native navigation node")
                     .to_string()
             );
         }
@@ -789,7 +840,6 @@ fn contract_scope_graph_projection_uses_only_scheme_owned_cst_rules() {
     }
 }
 
-#[test]
 fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
     let source = include_str!(
         "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/notes.org"
@@ -802,7 +852,7 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
         orgize::org_aot::org_language_spec().grammar_digest
     );
     let records = document.records();
-    assert_eq!(orgize::org_aot::org_contract_pack().rules.len(), 4);
+    assert_eq!(orgize::org_aot::org_contract_pack().rules.len(), 5);
     let evidence = records
         .iter()
         .find(|record| record.kind == "headline" && record.field("title") == Some("Evidence"))
@@ -892,7 +942,6 @@ fn scheme_aot_contract_evaluates_generated_org_element_ancestry() {
     );
 }
 
-#[test]
 fn incomplete_link_remains_lossless_text() {
     let source = "* One\nparagraph [[unfinished\n** Next\n";
     let root = parse(source);
@@ -910,3 +959,7 @@ fn incomplete_link_remains_lossless_text() {
         2
     );
 }
+
+#[path = "org_parser_aot_cases.rs"]
+mod cases;
+pub(super) use cases::NATIVE_CASES;

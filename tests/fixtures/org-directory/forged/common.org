@@ -1,0 +1,9 @@
+#+TITLE: Executable input is not a declaration
+* Forged
+:PROPERTIES:
+:CONTRACT_ID: forged
+:CONTRACT_SCOPE: document
+:END:
+#+begin_src scheme :org-contract
+(error "must never execute")
+#+end_src

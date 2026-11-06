@@ -1,0 +1,211 @@
+{
+  "schema": "orgize.runtime-cold-receipt.v1",
+  "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+  "profile": "release",
+  "final_linker": "Apple ld_classic diagnostic",
+  "measurement": "first native initialization plus first public Org::parse, excludes process launch",
+  "rust": [
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 37127750,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 36306542,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 36191958,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 38190459,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 36802834,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 44114292,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 34492000,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 33618250,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 36652500,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-rust",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 38446958,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    }
+  ],
+  "scheme": [
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 61060708,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 39179083,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 69152916,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 40637500,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 37463333,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 34019666,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 33811625,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 36984542,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 32822750,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    },
+    {
+      "backend": "runtime-scheme",
+      "bytes": 394,
+      "consumers": 1,
+      "elapsed_ns": 32285125,
+      "fixture": "doc.org",
+      "program": "sha256:81e321d98d0f7c567871bbf92c5c00dda96c82040ef32e695ae0feaf41bc35af",
+      "queue_capacity": 64,
+      "schema": "orgize.runtime-cold.v1"
+    }
+  ]
+}

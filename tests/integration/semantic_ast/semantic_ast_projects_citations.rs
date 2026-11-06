@@ -4,7 +4,6 @@ use orgize::{
     ast::{ElementData, MarkupKind, ObjectData},
 };
 
-#[test]
 fn semantic_ast_projects_citations() {
     let doc = Org::parse(
         "See [cite/text:global *prefix* ; see /also/ @doe2020 p. *42*; cf. @roe2021; global suffix] and [cite/noauthor/bare:@smith].",
@@ -81,3 +80,8 @@ fn semantic_ast_projects_citations() {
     assert_eq!(citations[1].variant, "bare");
     assert_eq!(citations[1].references[0].id, "smith");
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_citations::semantic_ast_projects_citations",
+    semantic_ast_projects_citations,
+)];

@@ -6,7 +6,6 @@ use orgize::{
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/habit-records.org");
 
-#[test]
 fn semantic_ast_projects_habit_metadata_for_agenda_consumers() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -45,3 +44,8 @@ fn semantic_ast_projects_habit_metadata_for_agenda_consumers() {
 
     insta::assert_debug_snapshot!("semantic_ast__semantic_habit_records", habits);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_habits::semantic_ast_projects_habit_metadata_for_agenda_consumers",
+    semantic_ast_projects_habit_metadata_for_agenda_consumers,
+)];

@@ -1,0 +1,422 @@
+#+title: Implementation status - agent-memory-and-clocktable
+
+[[file:../90.01_implementation_status.org][Implementation status index]]
+
+*** M22 Org-Native Agent Substrate
+
+- [X] Move internal governance docs from Markdown to Org so parser status,
+      release-readiness, and performance closeout records use the syntax that
+      orgize itself owns.
+- [X] Keep `README.md` and `wasm/README.md` as ecosystem compatibility shells
+      for Cargo, rustdoc, npm, and GitHub rendering.
+- [X] Add an Org-native agent substrate direction record for planning, memory,
+      and compact agent-facing projections.
+- [X] Move durable docs into a path-first Johnny.Decimal Org topology with
+      `docs/topology.toml`, `docs/index.org`, and
+      `docs/00_index/00.01_jdex.org`.
+- [X] Add an agent planning snapshot projection over agenda rows and source
+      metadata.
+- [X] Expose the agent planning snapshot in the wasm demo without adding
+      non-Org source syntax.
+- [X] Add a memory-oriented projection over standard Org properties, drawers,
+      timestamps, and lifecycle states without defining new parser syntax.
+
+*** M23 Agent Memory Projection API
+
+- [X] Record the formal agent-facing memory projection design in
+      `docs/10_architecture/10.02_agent_memory_projection.org`.
+- [X] Add raw memory record structs over headings, properties, timestamps,
+      drawers, LOGBOOK-like content, links, and source spans.
+- [X] Add `MemoryQuery` with conservative official-Org-first defaults that keep
+      closed and archived evidence visible unless callers filter it out.
+- [X] Add `AgentMemorySnapshot` compact cards that distinguish current, closed,
+      archived, and background facts.
+- [X] Add fixtures proving closed and archived facts stay visible as history
+      without being promoted as current.
+- [X] Expose the compact agent memory snapshot in the wasm demo without adding
+      non-Org source syntax.
+
+*** M24.5 Official Org Memory And Wendao Search Support Audit
+
+- [X] Record the focused official Org source audit in
+      `docs/10_architecture/10.03_agent_search_memory_org_mode_audit.org`.
+- [X] Add source-grounded section/index support records for Wendao Search
+      ingestion, preserving sparse-tree-like context and source ranges.
+- [X] Extend special property projection and match evaluation with official
+      special properties and timestamp-aware operands.
+- [X] Preserve parsed `LinkSearch` suffixes as typed metadata and
+      document-local resolution hints.
+- [X] Document the Wendao adapter contract for consuming Orgize projections in
+      search indexes.
+- [X] Feed richer archive, lifecycle, attachment, and habit authority into
+      `AgentMemorySnapshot`.
+
+*** M24.6 Wendao Adapter And Agent Evidence Hardening
+
+- [X] Project ordinary `file:` links as typed metadata alongside attachment
+      links, including path kind and parsed search suffix hints.
+- [X] Add optional real-file lint for ordinary `file:` links while keeping
+      parser projection filesystem-independent by default.
+- [X] Add stale and superseded candidate authority hints to agent memory cards
+      without adding non-Org source syntax.
+- [X] Add source-block side-table records for language, `#+NAME`, header args,
+      `:tangle`, and following `#+RESULTS:` evidence.
+- [X] Add optional real-file lint for archive/refile destinations against local
+      files and headings.
+
+*** M24.7 Agent DTO And Babel/Table Projection Closure
+
+- [X] Add wasm DTO/worker projections for `sourceBlocks` and `columnViews` and
+      include them in `snapshotJson` as stable agent-facing fields.
+- [X] Add wasm DTO/worker projections for include expansion plans and datetree
+      rows, and include both in `snapshotJson` for frontend consumers.
+- [X] Move the browser/npm package into the standalone `tao3k/orgize-wasm`
+      submodule while keeping the local `wasm/` path stable for demos and
+      release scripts.
+- [X] Project block and inline source records with normalized Babel header args,
+      Org Babel defaults, tangle metadata, coderefs, and result evidence.
+- [X] Add Babel lint for duplicate source names, missing noweb/CALL/inline-call
+      targets, eval-sensitive headers, and empty tangle targets.
+- [X] Project `#+TBLFM:` assignments, flags, and references without evaluating
+      formulas.
+- [X] Project document and section `COLUMNS` declarations using the official
+      Column View `%PROPERTY(TITLE){OPERATOR;FORMAT}` shape.
+
+*** M24.8 Agent Owner-Boundary Hardening
+
+- [X] Move lint implementation files under the `lint` owner module while
+      preserving the public `orgize::lint` API surface and compact agent-facing
+      repair renderer.
+- [X] Break the semantic AST `model`/`link_model` dependency cycle by keeping
+      recursive `Link<A>` object payloads in `model` and keeping link target,
+      search, path, media, and file metadata in `link_model`.
+- [X] Restore the repository cargo-test harness gate after the S14 projection
+      work so owner dependencies stay acyclic for future agent edits.
+
+*** M24.9 Table Formula Lint Closure
+
+- [X] Add table formula lint for malformed `#+TBLFM:` assignments, duplicate
+      formula targets within one active TBLFM line, and absolute row/column
+      references outside the current table shape.
+- [X] Keep `remote(...)` references parser-only and do not resolve cross-table
+      or cross-document targets in orgize core.
+- [X] Add compact agent-facing repair contracts for table formula findings.
+
+*** M24.10 Sparse Tree Projection And Agent Consumption API
+
+- [X] Add `SparseTreeQuery`, `SparseTreeProjection`, sparse-tree cards, and
+      source-grounded match reasons over existing section index records.
+- [X] Support document-local text predicates and official agenda-style match
+      expressions without adding non-Org source syntax.
+- [X] Render sparse-tree cards as compact agent-facing text for search and
+      memory consumers.
+- [X] Expose `sparseTreeJson` in the wasm/browser DTO layer and worker
+      projection routing for downstream consumers.
+- [X] Add integration and wasm DTO tests for sparse-tree cards, archive
+      filtering, link evidence, priority matches, and compact rendering.
+
+*** M24.11 Memory Authority Enrichment
+
+- [X] Promote `ID` and `CUSTOM_ID` properties into identity authority for
+      agent memory cards.
+- [X] Promote `ARCHIVE_*` properties into archive-context evidence without
+      adding new Org syntax.
+- [X] Add temporal authority for ordinary active/inactive timestamps,
+      `SCHEDULED`, and `DEADLINE` evidence.
+- [X] Add repeat authority for habit repeaters and `LAST_REPEAT` so recurring
+      memory is treated as cadence instead of a timeless preference.
+- [X] Extend agent memory tests and compact output checks for identity,
+      temporal, archive-context, and repeat reasons.
+
+*** M24.12 Progress, Effort, And Dependency Rollups
+
+- [X] Add `ProgressStatsRecord` as a source-grounded semantic projection for
+      heading progress, descendant TODO totals, subtree checkbox totals,
+      statistics cookies, local Effort, subtree Effort seconds, and dependency
+      signals.
+- [X] Keep the projection non-mutating: it reads native Org statistics cookies,
+      checkboxes, TODO state, Effort properties, and local `ORDERED` properties
+      without updating source text or enforcing TODO transitions.
+- [X] Align `ORDERED` evidence with Org mode's local-property dependency model
+      instead of treating inherited effective properties as local blockers.
+- [X] Expose `progressStatsJson` in the wasm DTO layer and include
+      `progressStats` in `snapshotJson` for downstream browser and worker
+      consumers.
+- [X] Add root semantic integration coverage and wasm DTO contract coverage for
+      progress, effort, and dependency rollups.
+
+*** M24.13 Progress Cookie Lint
+
+- [X] Add `ORG027` for ambiguous heading statistics cookies when a section has
+      both TODO descendants and checkbox evidence without a `COOKIE_DATA`
+      property choosing `todo` or `checkbox`.
+- [X] Add `ORG028` for stale heading statistics cookies when the parsed TODO or
+      checkbox progress no longer matches the cookie text.
+- [X] Support `COOKIE_DATA: todo recursive` for recursive TODO statistics and
+      `COOKIE_DATA: checkbox recursive` for checkbox progress checks without
+      mutating source.
+- [X] Add compact agent-facing repair hints and contracts for progress cookie
+      findings.
+- [X] Add integration coverage for stale fraction cookies, stale percent
+      cookies, ambiguous mixed TODO/checkbox evidence, and checkbox progress
+      cookies.
+
+*** M24.14 Agenda View Plan Receipts
+
+- [X] Add `AgendaViewQuery` and `AgendaViewPlan` over the existing
+      `AgendaQuery`/`AgendaEntry` substrate so planning consumers can see
+      candidate counts, accepted cards, skipped rows, and the active limit.
+- [X] Preserve the current agenda row semantics and default sort order while
+      emitting source-grounded sort keys for `displayDate`, `time`, `kind`,
+      `level`, `title`, and `targetDate`.
+- [X] Emit query-matched, sorted, accepted, and skipped-limit receipts so an
+      agent can explain why a row entered or missed a compact view.
+- [X] Expose wasm `agendaViewJson` with a date range and optional limit for
+      browser and worker consumers.
+- [X] Add semantic integration and wasm DTO contract coverage for sort and
+      limit receipts.
+
+*** M24.15 Ordered Sibling Blocker Evidence
+
+- [X] Add `TaskBlockerRecord` as a source-grounded semantic projection for
+      local `ORDERED` parent entries and direct open TODO siblings.
+- [X] Preserve Org's local-property dependency model: inherited effective
+      `ORDERED` values do not create blocker edges on nested descendants.
+- [X] Attach blocker records to `AgendaViewPlan` cards and the compact
+      `AgentPlanningSnapshot` output so planning agents can distinguish visible
+      agenda rows from ready-to-work rows.
+- [X] Expose wasm `taskBlockersJson` and nested agenda-view blockers for
+      browser and worker consumers.
+- [X] Add semantic integration and wasm DTO contract coverage for exact blocked
+      task, blocker task, parent entry, and `ORDERED` property source evidence.
+
+*** M24.16 Blocked State Lint Advice
+
+- [X] Add `ORG029` as compact blocked-state lint advice over
+      `TaskBlockerRecord` instead of re-implementing sibling scans in lint.
+- [X] Report the blocked task headline as the source span and include the
+      previous open sibling and local `ORDERED` parent in the message.
+- [X] Keep the rule non-mutating and non-enforcing: it tells agents to finish,
+      reorder, or explicitly defer the blocked task rather than changing TODO
+      state.
+- [X] Add integration coverage for direct ordered siblings and prove nested
+      descendants are not reported from inherited `ORDERED` evidence.
+
+*** M24.17 Sparse Tree Query Receipts
+
+- [X] Add `SparseTreeReceipt` and stable receipt kinds for candidate,
+      visibility-filter, match-expression, text, default-all, accepted, and
+      skipped sparse-tree decisions.
+- [X] Add `total_candidates` and opt-in skipped row receipts to
+      `SparseTreeProjection`, keeping skipped rows empty by default to avoid
+      noisy agent contexts.
+- [X] Expose accepted card receipts through `sparseTreeJson` and expose skipped
+      row audit receipts through wasm `sparseTreeExplainJson`.
+- [X] Extend semantic and wasm DTO tests for accepted match-expression/text
+      receipts and archived skip receipts.
+
+*** M24.18 Clocktable And Effort Rollup Plans
+
+- [X] Add `ClockRollupRecord` with local/subtree `CLOCK` entry counts,
+      parsed duration totals, running/unparsed counters, and Effort delta
+      status.
+- [X] Add non-mutating `ClockTablePlan` projection for `#+BEGIN: clocktable`
+      dynamic blocks, including native parameters, scope, maxlevel rows,
+      preserved tstart/tend/block/step warnings, and subtree/file/tree scope
+      resolution inside one parsed document.
+- [X] Expose wasm `clockRollupsJson`, `clockTablePlansJson`, and snapshot DTO
+      fields for browser/worker consumers.
+- [X] Split the wasm clock DTO mapper and clock DTO tests into focused files
+      after harness feedback flagged the old aggregate files as too broad.
+- [X] Add semantic and wasm coverage for Effort-vs-clock deltas, LOGBOOK
+      CLOCK entries, maxlevel row filtering, subtree scope, and preserved
+      time-range parameters.
+
+*** M24.19 List Item Checkbox Statistics Cookie Lint
+
+- [X] Extend progress lint to Org-native plain-list item statistics cookies
+      in the item first line.
+- [X] Compare list-item cookies against direct child checkbox states by
+      default, matching `org-checkbox-hierarchical-statistics`.
+- [X] Preserve containing-heading `COOKIE_DATA: recursive` for recursive
+      list-item checkbox counts.
+- [X] Skip list-item checkbox lint when the containing heading has
+      `COOKIE_DATA` containing `todo`, matching Org's checkbox updater.
+- [X] Reuse compact `ORG028` stale-cookie advice instead of introducing a
+      custom syntax or separate source mutation path.
+
+*** M24.20 Clocktable Absolute Time Windows
+
+- [X] Add `ClockTablePlan.time_window` for applied absolute clocktable bounds,
+      preserving source parameters while giving Agents a compact structured
+      window.
+- [X] Resolve absolute `:block` forms `YYYY`, `YYYY-QN`, `YYYY-MM`,
+      `YYYY-WNN`, and `YYYY-MM-DD` into stable start/end-exclusive windows.
+- [X] Apply absolute Org timestamp or `YYYY-MM-DD` `:tstart`/`:tend` bounds to
+      clocktable row totals, clipping partial CLOCK intervals at the window
+      edges.
+- [X] Keep relative or unparsed time ranges non-mutating and warning-backed
+      instead of inventing runtime date semantics inside orgize.
+- [X] Split clocktable time-window parsing and clipping into
+      `src/semantic_ast/clock_table_time.rs` after the build harness caught the
+      oversized `clock_rollup.rs` responsibility boundary.
+- [X] Expose the applied time window through wasm `clockTablePlansJson` and
+      add semantic/wasm coverage for clipping, block expansion, and fallback
+      warnings.
+
+*** M24.21 Clocktable Match Filters
+
+- [X] Add `ClockTablePlan.match_filter` for applied native `:match`
+      tags/property expressions.
+- [X] Reuse the existing Agenda-style match parser/evaluator instead of
+      inventing a clocktable-only syntax.
+- [X] Apply match filters to local CLOCK and Effort contribution while keeping
+      ancestor rows available as aggregate containers when descendants match.
+- [X] Preserve unparsed `:match` values as `matchPreserved` warnings instead
+      of silently dropping or approximating them.
+- [X] Expose `matchFilter` through wasm `clockTablePlansJson` and cover
+      inherited tag inclusion plus negative tag exclusion in semantic and wasm
+      tests.
+
+*** M24.22 Clocktable Property Columns
+
+- [X] Add `ClockTablePlan.property_columns` for native `:properties` property
+      column names plus `:inherit-props` truthiness.
+- [X] Project row-level `property_values` for each requested property, using
+      local property drawers first and inherited effective properties only when
+      `:inherit-props` is non-nil.
+- [X] Preserve malformed `:properties` values as `propertiesPreserved`
+      warnings instead of accepting ad-hoc non-list syntax.
+- [X] Expose `propertyColumns` and row `propertyValues` through wasm
+      `clockTablePlansJson`.
+- [X] Split clocktable property parsing into `clock_table_properties.rs` and
+      clock DTO structs into `dto_clock_model.rs` after the harness flagged
+      oversized owner modules.
+
+*** M24.23 Dynamic Block Registry
+
+- [X] Add `DynamicBlockRecord` as a non-executing registry for native
+      `#+BEGIN: name ... #+END:` dynamic blocks.
+- [X] Classify supported writers as `clocktable` and `columnview`, while
+      preserving custom or unknown writers as `unknown` instead of executing
+      `org-dblock-write:*`.
+- [X] Project dynamic-block parameters with the shared plist-like block header
+      argument parser.
+- [X] Record existing-output state and content line count so agents can
+      distinguish empty blocks from possibly stale generated output.
+- [X] Expose `dynamicBlocksJson` and snapshot `dynamicBlocks` through wasm.
+
+*** M24.24 Agent-Friendly WASM Agenda Request
+
+- [X] Replace the broad positional `agendaViewJson` date-range surface with a
+      named JSON request carrying `start`, `end`, and optional `limit`.
+- [X] Preserve the same `AgendaViewPlan` output while making the input contract
+      safer for Window/Agent callers that should not memorize seven ordered
+      arguments.
+- [X] Update `wasm/dto.d.ts` for dynamic blocks, agenda named requests,
+      task-blocker evidence, and clocktable filter/property fields so
+      downstream TypeScript consumers see the same contract as the JSON output.
+- [X] Verify the WASM crate harness reports no owner-cycle, large-test-leaf, or
+      broad-positional findings after the DTO split and request-shape change.
+
+*** M24.25 Property Profile And Allowed Values
+
+- [X] Add `PropertyProfile` as a caller-visible projection of the current
+      document property inheritance model, inherited property keys, and native
+      `PROPERTY_ALL` allowed-value descriptors.
+- [X] Seed the profile with Org's fixed global allowed-value descriptors for
+      `VISIBILITY_ALL` and `CLOCK_MODELINE_TOTAL_ALL`.
+- [X] Parse document-level `#+PROPERTY: NAME_ALL ...` descriptors and
+      section-local property drawer `:NAME_ALL:` descriptors, including quoted
+      multi-word values and explicit empty values.
+- [X] Add profile-aware property lint advice (`ORG030`) when a local property
+      value is outside the inherited/effective allowed-value descriptor.
+- [X] Expose `propertyProfileJson` and snapshot `propertyProfile` through wasm,
+      with matching TypeScript DTO definitions for downstream Window/Agent
+      consumers.
+- [X] Add host-loaded `PROPERTY_SCHEMA` contract validation without changing
+      Org property drawer syntax. Schema references may be loaded contract ids,
+      direct file references/Org file links, or macro-shaped references; orgize
+      matches them against the caller supplied registry and emits read-only
+      schema applications plus `ORG040` advice. Snapshot fixtures now cover the
+      core schema application projection, lint advice text, focused wasm DTO
+      shape, full `snapshotWithSchemasJson` handoff, and CLI registry-file
+      loading with a durable fixture plus the `20.03` registry contract,
+      machine-readable JSON Schema sidecar, invalid-registry CLI diagnostic
+      snapshot, and dedicated `lint_property_schema` test owner.
+
+*** M24.26 Refile Target Index And Non-Executing Plan
+
+- [X] Add `RefileTargetQuery` and `RefileTargetIndex` over existing
+      source-grounded section index records.
+- [X] Preserve Org's default current-buffer behavior: top-level headlines are
+      refile targets when callers provide no explicit target spec.
+- [X] Support native target specs for all headlines, local tag, TODO keyword,
+      exact level, and max level. Preserve regexp target specs as warnings
+      instead of approximating Emacs regexp semantics.
+- [X] Add outline display modes for heading-only, outline path, file basename,
+      full file path, buffer-name style, and document title style targets.
+- [X] Add `RefilePlanRequest` and `RefilePlan` so agents can resolve a source
+      outline, target outline, action, insertion intent, and safety warnings
+      without moving or rewriting Org source.
+- [X] Warn when the target is the source, inside the source subtree, missing,
+      ambiguous, or when copy plans may duplicate local `ID`/`CUSTOM_ID`
+      values.
+- [X] Expose `refileTargetsJson`, `refilePlanJson`, snapshot `refileTargets`,
+      and TypeScript DTO/request shapes through wasm.
+
+*** M24.27 Agenda Sort Strategy And Block Agenda Plans
+
+- [X] Extend `AgendaViewQuery` with an Org agenda-style sort strategy subset:
+      time, timestamp/target date, scheduled date, deadline date, priority,
+      category, TODO state, kind, level, and title.
+- [X] Preserve stable incoming agenda order when no explicit sort strategy is
+      configured; configurable sorting is applied only after the existing
+      `AgendaQuery` has produced document-local candidate rows.
+- [X] Record the configured strategy and expanded sort-key values in
+      `AgendaViewPlan` receipts so agents can explain why a card was accepted
+      or skipped after limiting.
+- [X] Add `AgendaBlockViewQuery` and `AgendaBlockViewPlan` for named
+      multi-section block agenda projections without executing custom agenda
+      commands or mutating Org source.
+- [X] Expose request DTO support through wasm `agendaViewJson` `sortStrategy`
+      and new `agendaBlockJson`, with TypeScript and worker projection support.
+- [X] Split wasm agenda DTO and tests into focused owner modules after the
+      harness flagged oversized `dto_document.rs` and `dto_contract.rs`.
+
+*** M24.28 Clock Issue Diagnostics
+
+- [X] Add `ClockIssueProfile` with defaults aligned to
+      `org-agenda-clock-consistency-checks`: max duration 10:00, min duration
+      0, max gap 0:05, and `gap-ok-around` 4:00.
+- [X] Add `Document::clock_issue_findings()` and
+      `Document::clock_issue_findings_with_profile()` over parsed CLOCK
+      intervals.
+- [X] Report source-grounded invalid clock, invalid duration, invalid range,
+      no-end-time, long-duration, short-duration, overlap, and gap findings.
+- [X] Preserve previous-clock evidence for overlap and gap diagnostics so
+      agents can explain the local timeline without re-reading the whole file.
+- [X] Keep the projection non-mutating: no agenda overlays, no clock stopping,
+      no LOGBOOK rewrite, and no generated clocktable refresh.
+- [X] Expose `clockIssuesJson`, snapshot `clockIssues`, TypeScript DTO
+      request/response shapes, and worker `clockIssues` projection support
+      through wasm.
+
+*** M24.29 Refile Create-Parent Plan
+
+- [X] Add `RefileParentCreationMode` to `RefilePlanRequest`, with `never`,
+      `plan`, and `confirm` modes matching Org's
+      `org-refile-allow-creating-parent-nodes` policy surface.
+- [X] Keep creation non-mutating: `RefileCreateParentPlan` records the
+      existing parent target, final target outline path, missing node title,
+      level, display path, and confirmation requirement without inserting text.
+- [X] Align with Org's single `/new node name` behavior: only the final missing
+      heading can be planned, and its parent must already exist.
+- [X] Report `parentNotFound` or `ambiguousParent` warnings instead of
+      inventing multi-level auto-creation when an intermediate parent is
+      missing.
+- [X] Preserve existing safety warnings for same-subtree moves and copied
+      local `ID`/`CUSTOM_ID` values when the planned parent sits inside the
+      source subtree.
+- [X] Expose the same contract through wasm `refilePlanJson`, TypeScript DTO
+      shapes, and focused DTO tests.

@@ -10,7 +10,6 @@ use orgize::{
     },
 };
 
-#[test]
 fn semantic_ast_projects_priority_effort_and_effective_properties() {
     let doc = Org::parse(
         r#"#+PROPERTY: Effort 2h
@@ -92,7 +91,6 @@ SCHEDULED: <2026-05-15 Fri>
     });
 }
 
-#[test]
 fn semantic_ast_projects_clock_duration_metadata() {
     let doc = Org::parse("* Work\nCLOCK: [2003-09-16 Tue 09:39] =>  1:02\n").document();
     assert_clean_projection(&doc);
@@ -110,7 +108,6 @@ fn semantic_ast_projects_clock_duration_metadata() {
     assert_eq!(clock.parsed_duration.as_ref().unwrap().total_seconds, 3_720);
 }
 
-#[test]
 fn semantic_ast_projects_two_digit_numeric_priority() {
     let doc = Org::parse("* TODO [#64] Numeric high\n").document();
     assert_clean_projection(&doc);
@@ -125,7 +122,6 @@ fn semantic_ast_projects_two_digit_numeric_priority() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_letter_priority_outside_default_profile() {
     let doc = Org::parse("* TODO [#D] Outside default profile\n").document();
     assert_clean_projection(&doc);
@@ -140,7 +136,6 @@ fn semantic_ast_projects_letter_priority_outside_default_profile() {
     );
 }
 
-#[test]
 fn semantic_ast_ignores_invalid_priority_cookie_shapes() {
     for invalid_cookie in ["[#a]", "[#xx]", "[#65]"] {
         let input = format!("* TODO {invalid_cookie} Not a priority\n");
@@ -159,7 +154,6 @@ fn semantic_ast_ignores_invalid_priority_cookie_shapes() {
     }
 }
 
-#[test]
 fn semantic_ast_projects_property_profile_allowed_values() {
     let doc = Org::parse(
         r#"#+PROPERTY: Effort_ALL 0 0:30 "1 hour"
@@ -225,7 +219,6 @@ fn semantic_ast_projects_property_profile_allowed_values() {
     assert_eq!(owner.values, ["Sarah Connor", "Jim", ""]);
 }
 
-#[test]
 fn semantic_ast_projects_property_schema_registry_validates_loaded_contracts() {
     let doc = Org::parse(
         r#"* File-backed capture
@@ -437,3 +430,34 @@ fn capture_schema_contract() -> PropertySchemaContract {
             ),
         ))
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_priority_properties::semantic_ast_projects_priority_effort_and_effective_properties",
+        semantic_ast_projects_priority_effort_and_effective_properties,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_priority_properties::semantic_ast_projects_clock_duration_metadata",
+        semantic_ast_projects_clock_duration_metadata,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_priority_properties::semantic_ast_projects_two_digit_numeric_priority",
+        semantic_ast_projects_two_digit_numeric_priority,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_priority_properties::semantic_ast_projects_letter_priority_outside_default_profile",
+        semantic_ast_projects_letter_priority_outside_default_profile,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_priority_properties::semantic_ast_ignores_invalid_priority_cookie_shapes",
+        semantic_ast_ignores_invalid_priority_cookie_shapes,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_priority_properties::semantic_ast_projects_property_profile_allowed_values",
+        semantic_ast_projects_property_profile_allowed_values,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_priority_properties::semantic_ast_projects_property_schema_registry_validates_loaded_contracts",
+        semantic_ast_projects_property_schema_registry_validates_loaded_contracts,
+    ),
+];

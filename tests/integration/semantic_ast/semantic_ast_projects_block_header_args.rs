@@ -4,7 +4,6 @@ use orgize::{
     ast::{BlockKind, BlockLineNumberMode, ElementData},
 };
 
-#[test]
 fn semantic_ast_projects_source_block_header_args_and_indentation_switch() {
     let doc = Org::parse(
         r#"#+begin_src emacs-lisp -i -n 5 :exports both :results output drawer :var x=1 :tangle "docs/demo.org" :noweb-ref setup
@@ -81,3 +80,8 @@ echo ok
     assert_eq!(blocks[1].header_args[1].key, "eval");
     assert_eq!(blocks[1].header_args[1].value.as_deref(), Some("no-export"));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_block_header_args::semantic_ast_projects_source_block_header_args_and_indentation_switch",
+    semantic_ast_projects_source_block_header_args_and_indentation_switch,
+)];

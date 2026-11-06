@@ -4,7 +4,6 @@ use orgize::{
     ast::{BlockKind, ElementData},
 };
 
-#[test]
 fn semantic_ast_projects_source_and_example_block_code_refs() {
     let doc = Org::parse(
         r#"#+begin_src rust -l "// ref:%s" -r
@@ -63,3 +62,37 @@ example line (ref:sample)
     );
     assert!(blocks[1].value.contains("(ref:sample)"));
 }
+
+fn semantic_ast_code_ref_projection_removes_only_first_valid_label() {
+    let doc = Org::parse(
+        "#+begin_src text -l \"// ref:%s\"\n  café // ref:first // ref:second\n#+end_src\n",
+    )
+    .document();
+    assert_clean_projection(&doc);
+
+    let ElementData::Block(block) = &doc.children[0].data else {
+        panic!("expected source block");
+    };
+    assert_eq!(block.code_refs.len(), 1);
+    assert_eq!(block.code_refs[0].name, "first");
+    assert_eq!(block.code_refs[0].column, 8);
+    assert_eq!(
+        block.lines[0].value_without_code_ref,
+        "  café // ref:second"
+    );
+    assert_eq!(
+        block.lines[0].normalized_value_without_code_ref,
+        "café // ref:second"
+    );
+}
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_block_code_refs::semantic_ast_projects_source_and_example_block_code_refs",
+        semantic_ast_projects_source_and_example_block_code_refs,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_block_code_refs::semantic_ast_code_ref_projection_removes_only_first_valid_label",
+        semantic_ast_code_ref_projection_removes_only_first_valid_label,
+    ),
+];

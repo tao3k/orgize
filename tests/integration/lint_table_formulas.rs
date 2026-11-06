@@ -1,6 +1,5 @@
 use orgize::lint::lint_org;
 
-#[test]
 fn lint_reports_table_formula_issues_with_snapshot() {
     let source = table_formula_issues_lint_fixture();
     let report = lint_org(source);
@@ -15,3 +14,8 @@ fn lint_reports_table_formula_issues_with_snapshot() {
 fn table_formula_issues_lint_fixture() -> &'static str {
     include_str!("../fixtures/lint/table-formula-issues.org")
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "lint_table_formulas::lint_reports_table_formula_issues_with_snapshot",
+    lint_reports_table_formula_issues_with_snapshot,
+)];

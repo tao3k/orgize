@@ -1,5 +1,7 @@
 //! Conservative Org source formatter.
 
+use crate::org_aot::parse_org_aot;
+
 /// Formatter options for [`format_org`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FormatOptions {
@@ -51,7 +53,7 @@ pub fn format_org(source: &str, options: &FormatOptions) -> FormatResult {
     }
 
     if options.align_tables {
-        lines = align_table_runs(&lines);
+        align_tables(&mut lines);
     }
 
     while lines.last().is_some_and(|line| line.is_empty()) {
@@ -69,128 +71,81 @@ pub fn format_org(source: &str, options: &FormatOptions) -> FormatResult {
     }
 }
 
-fn align_table_runs(lines: &[String]) -> Vec<String> {
-    let mut output = Vec::with_capacity(lines.len());
-    let mut index = 0;
-    let mut in_block = false;
-
-    while index < lines.len() {
-        let line = &lines[index];
-        if is_block_begin(line) {
-            in_block = true;
-            output.push(line.clone());
-            index += 1;
-            continue;
-        }
-        if in_block {
-            if is_block_end(line) {
-                in_block = false;
-            }
-            output.push(line.clone());
-            index += 1;
-            continue;
-        }
-        if !is_table_line(line) {
-            output.push(line.clone());
-            index += 1;
-            continue;
-        }
-
-        let start = index;
-        while index < lines.len() && is_table_line(&lines[index]) {
-            index += 1;
-        }
-        output.extend(format_table_run(&lines[start..index]));
-    }
-
-    output
-}
-
-fn is_block_begin(line: &str) -> bool {
-    line.trim_start()
-        .get(..8)
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("#+begin_"))
-}
-
-fn is_block_end(line: &str) -> bool {
-    line.trim_start()
-        .get(..6)
-        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("#+end_"))
-}
-
-fn is_table_line(line: &str) -> bool {
-    line.trim_start().starts_with('|')
-}
-
 #[derive(Debug)]
 struct TableRow {
-    indent: String,
+    line_index: usize,
     cells: Vec<String>,
     is_rule: bool,
 }
 
-fn format_table_run(lines: &[String]) -> Vec<String> {
-    let rows = lines
-        .iter()
-        .map(|line| parse_table_row(line))
-        .collect::<Vec<_>>();
-    let column_count = rows.iter().map(|row| row.cells.len()).max().unwrap_or(0);
-    if column_count == 0 {
-        return lines.to_vec();
+fn align_tables(lines: &mut [String]) {
+    // This is only a cheap candidate check; the AOT graph decides which lines
+    // are actually Org table rows, including inside blocks and table formulas.
+    if !lines.iter().any(|line| line.trim_start().starts_with('|')) {
+        return;
     }
+    let source = lines.join("\n");
+    let Ok(document) = parse_org_aot(&source) else {
+        return;
+    };
+    let line_starts = std::iter::once(0)
+        .chain(source.match_indices('\n').map(|(offset, _)| offset + 1))
+        .collect::<Vec<_>>();
+    let records = document.records();
 
-    let mut widths = vec![1usize; column_count];
-    for row in &rows {
-        if row.is_rule {
+    for table in records.iter().filter(|record| record.kind == "table") {
+        let rows = table
+            .child_ids
+            .iter()
+            .filter_map(|&id| {
+                let record = &records[id];
+                if !matches!(record.kind, "table-row" | "table-rule-row") {
+                    return None;
+                }
+                let start = usize::from(record.range.start());
+                let line_index = line_starts.partition_point(|&offset| offset <= start) - 1;
+                let line = lines.get(line_index)?;
+                let end = usize::from(record.range.end());
+                if end > line_starts[line_index] + line.len() + 1 {
+                    return None;
+                }
+                let cells = record
+                    .child_ids
+                    .iter()
+                    .filter_map(|&cell_id| {
+                        let cell = &records[cell_id];
+                        (cell.kind == "table-cell")
+                            .then(|| cell.field("text").unwrap_or_default().trim().to_owned())
+                    })
+                    .collect();
+                Some(TableRow {
+                    line_index,
+                    cells,
+                    is_rule: record.kind == "table-rule-row",
+                })
+            })
+            .collect::<Vec<_>>();
+        let column_count = rows.iter().map(|row| row.cells.len()).max().unwrap_or(0);
+        if column_count == 0 {
             continue;
         }
-        for (index, cell) in row.cells.iter().enumerate() {
-            widths[index] = widths[index].max(cell.chars().count());
+        let mut widths = vec![1usize; column_count];
+        for row in rows.iter().filter(|row| !row.is_rule) {
+            for (index, cell) in row.cells.iter().enumerate() {
+                widths[index] = widths[index].max(cell.chars().count());
+            }
+        }
+        for row in &rows {
+            let line = &lines[row.line_index];
+            let indent = line.split_once('|').map_or("", |(prefix, _)| prefix);
+            lines[row.line_index] = render_table_row(row, indent, &widths);
         }
     }
-
-    rows.iter()
-        .map(|row| render_table_row(row, &widths))
-        .collect()
 }
 
-fn parse_table_row(line: &str) -> TableRow {
-    let bar = line.find('|').unwrap_or_default();
-    let indent = line[..bar].to_string();
-    let body = &line[bar..];
-    let inner = body.trim_matches('|').trim();
-    let is_rule = !inner.is_empty()
-        && inner
-            .chars()
-            .all(|ch| matches!(ch, '-' | '+' | '|') || ch.is_whitespace());
-    let cells = if is_rule {
-        inner
-            .split(['+', '|'])
-            .map(|cell| cell.trim().to_string())
-            .collect()
-    } else {
-        let parts = body.split('|').collect::<Vec<_>>();
-        let end = if body.ends_with('|') {
-            parts.len().saturating_sub(1)
-        } else {
-            parts.len()
-        };
-        parts[1..end]
-            .iter()
-            .map(|cell| cell.trim().to_string())
-            .collect()
-    };
-
-    TableRow {
-        indent,
-        cells,
-        is_rule,
-    }
-}
-
-fn render_table_row(row: &TableRow, widths: &[usize]) -> String {
+fn render_table_row(row: &TableRow, indent: &str, widths: &[usize]) -> String {
     let mut output = String::new();
-    output.push_str(&row.indent);
+    output.push_str(indent);
     output.push('|');
 
     if row.is_rule {

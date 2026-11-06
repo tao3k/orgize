@@ -27,7 +27,7 @@ int32_t orgize_runtime_init(void) {
   setup_params.debug_settings = ___DEBUG_SETTINGS_INITIAL;
   status = ___setup(&setup_params);
   if (status != ___FIX(___NO_ERR)) {
-    (void)fprintf(stderr, "[orgize-native] setup-error=%ld\n",
+    (void)fprintf(stderr, "[orgize] setup-error=%ld\n",
                   (long)___INT(status));
     return -1;
   }

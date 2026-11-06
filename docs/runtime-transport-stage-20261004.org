@@ -1,0 +1,135 @@
+#+TITLE: Native owner admission and result-transfer qualification
+
+* Implementation and measurement boundaries
+
+Both lifecycle choices now return four private request-local diagnostic stages:
+native.owner_admission, native.owner_service_inclusive, native.result_copy,
+and native.completion_handoff. No Scheme value/root crosses a caller boundary.
+Rust transports only durations and its copied bytes; Scheme returns native
+malloc storage and four timing words through a synchronous private C entry.
+The public orgize.h ABI and ordinary parsing operation remain unchanged.
+
+Admission includes bounded queue admission, queue waiting and its small native
+bookkeeping, not just time inside a queue. Service is inclusive: input copying,
+UTF-8 decoding, fold, tape serialization and output copying. Rust service also
+includes releasing the output root on the owner. The result-copy span includes
+allocation and byte copying but excludes that root release. Scheme's completion
+timestamp is taken under its completion mutex before signaling; Rust's is taken
+before sending its response. Handoff therefore includes signaling, wakeup and
+return bookkeeping, with these explicitly different boundary details.
+
+These stages overlap the existing transport/fold/tape stages. Do not sum them
+as disjoint components or subtract percentiles to infer unmeasured costs.
+Execution-thread CPU does not count helper-thread CPU; wall/thread-CPU
+divergence alone is not proof of OS starvation, idle waiting or a GC cause.
+
+The Rust probe starts only in an active caller measurement. The native owner
+receives that probe explicitly, rather than consulting its inactive TLS.
+It sends back timings, recorded only on the receiving request. Normal builds
+compile out the clocks and timing fields. Scheme's ordinary entry passes no
+profile storage and performs no new clock calls; its private profiled entry
+rejects failed/nonmonotonic clocks instead of using a fallback.
+
+The shared native header changed, so prior binaries and prior native-program
+identities do not qualify this implementation. Both variants are rebuilt with
+the same declared-header fingerprint and Rust toolchain. The benchmark adapter
+identity also includes the new runtime_profile/transport.rs owner.
+
+* Verification
+
+Both release variants built against program
+sha256:75cff7b526dbf1ec05ff92bf70deafce272e34341302593a429c9809c96f313f.
+Both passed all 54 native unit cases. Rust passed 26 auxiliary/policy cases,
+Scheme 25, each retaining one existing ignored scenario. Both complete
+consumer runs passed 454/454 cases with 12 callers (15.80 s and 14.65 s),
+retaining the three existing ignored entries and unchanged strict query gate.
+
+Each runtime completed two performance repetitions and one full semantic
+qualification repetition at 1,000/10,000 distinct documents per batch,
+64 callers and eight independent native execution domains: 66,000 completed
+parses across the main matrix. Scale checks require every new stage to have
+positive totals, not just an existing label. Strict same-program runtime
+comparison and prior-program semantic-hash equality both passed.
+
+The preserved corpus executables have adapter
+a9357665494e7cafc1546b94c885378bd4f271cd74a7d8fddda994405a6ad563
+and benchmark 06221f09987a99b6005daa29827bdbc5be6a7a9dd1e831dedc63e73a2f79f45a.
+A subsequent collector documentation-only correction changes the textual
+source fingerprint, not their measured behavior. No functional transport
+edit followed preservation of these binaries.
+
+| 10,000 documents, performance | Rust r1 | Rust r2 | Scheme r1 | Scheme r2 |
+|------------------------------+---------+---------+-----------+-----------|
+| documents/s                  | 1055.78 | 1049.34 | 1347.06 | 1405.08 |
+| end-to-end p95, ms            | 103.294 | 103.170 | 66.328 | 59.086 |
+| mean fold wall, ms           | 5.916 | 5.957 | 5.518 | 5.378 |
+| mean owner admission, ms     | 0.651 | 0.718 | 0.084 | 0.046 |
+| mean owner service, ms       | 5.984 | 6.028 | 5.570 | 5.429 |
+| mean result copying, ms      | 0.00186 | 0.00188 | 0.00111 | 0.00135 |
+| mean completion handoff, ms  | 0.342 | 0.306 | 0.062 | 0.033 |
+
+The native fold input remains byte-identical to the prior input
+(d84d7dbd049e693f59c5ee8e5587583a3d003a19d1dc6e19ec18aa1a9de67668).
+Result copying is not the primary hot spot in this measured workload. These
+are sequential repeated samples, not a universal Scheme runtime victory or
+an algorithmic optimization claim.
+
+* Immutable-executable timing control
+
+The prior Rust executable, SHA-256
+e6240aa9679527895d841db6737fb9b1283fc46d6a3cd73ed64a4ed0eb6ab4f8,
+was retested unchanged on the same 10,000-document/64-caller/8-domain workload.
+Its own program, adapter, benchmark, corpus and mode identities all matched
+the prior receipt. Throughput changed from 247.30 to 1297.53 documents/s;
+mean fold wall changed from 24.124 to 5.713 ms, with mean thread CPU 5.302 ms.
+This falsifies crediting that large improvement to this turn's code.
+
+An immediately following new Rust control run achieved 1263.57 documents/s,
+with admission/handoff means 0.132/0.094 ms rather than the main matrix's
+0.65--0.72/0.31--0.34 ms. The native scheduler's observed delay is variable;
+neither its precise OS cause nor an intrinsic fixed channel penalty is proven.
+Each immutable control passed its own same-identity gate. The old/new
+controls intentionally have different programs/adapters and are NOT admitted
+by the strict paired-runtime comparator. These add 20,000 counted performance
+completions, separate from the 66,000 main-matrix completions.
+
+* Preserved binary SHA-256
+
+| binary under target/runtime-receipt-binaries | SHA-256 |
+|---------------------------------------------+---------|
+| transport-rust-unit-20261004 | ccfb963172ada8bc897fad0df8b3626c70370dc357981ccf4a503e1a2af01c06 |
+| transport-rust-consumer-20261004 | fee8bc5f056315b6e1e3de8c0338ff52d4e7e782ec60687bf4b0bab2e52abae8 |
+| transport-rust-corpus-20261004 | c90f186fbb29d5239b1a4eec80d75874aabfbab1ea4ec188afdfc92f107c6cb4 |
+| transport-scheme-unit-20261004 | 3e139b6bf0dcd8306fa5b04b5ea62248a7e38e1192d189ac1e95d6de98f69f3b |
+| transport-scheme-consumer-20261004 | 06f78f1af7d167ff3244232aa25bc8189d8a301f6990a0dc4ea0b57a679a7e7b |
+| transport-scheme-corpus-20261004 | 820a37d4abf69a3a45849c1cc7a46c8587dad5d8721810a1cdbb149858d6f9e7 |
+
+* Remaining qualification
+
+Normal profiling-disabled build checks passed both runtime choices, covering
+tests, benches and examples (Rust 13.43 s, Scheme 6.82 s). These are compile
+checks, not additional cfg-off Rust execution receipts.
+
+The installed Python SDK was rebuilt with maturin 1.15.0 from the offline
+cache, then qualified on CPython 3.13.11 for both runtime choices: 16/16 tests
+passed each (Rust 1.26 s and 1.47 s on restored default; Scheme 1.46 s).
+The new private identity getter reads only static backend/program metadata;
+it does not initialize Gerbil or widen the public Python API. The maintained
+python-test-installed gate checks the expected runtime and exact
+native program digest, catching stale/wrong-feature extension admission.
+GIL progress, mixed C/Python calls, pre-startup rejection and host-child
+checks remain intact. The current development environment is restored to
+default runtime-rust, with both extensions preserved separately:
+
+| extension under target/runtime-receipt-binaries | SHA-256 |
+|------------------------------------------------+---------|
+| transport-python-rust-20261004.so | f7908c3cb7607cf952e46fc250558066aee91e024ed40f8e6159bc8c2ddac73c |
+| transport-python-scheme-20261004.so | b656889b5efc2630c96b5ef8645f6b06b229adc6b7a53158fbf37de8df0d8ef2 |
+
+These are local editable-installed SDK and ABI checks, not repaired standalone
+wheel-distribution, cross-platform or remote-CI receipts. Compact-unwind and
+deprecated classic-linker warnings remain; they were not suppressed by changing
+Gambit. Specializing admitted Scheme fold rules to reduce IR interpretation,
+allocation/GC attribution and an open-loop latency SLO remain separate work.
+The original strict query threshold, concurrency and workspace optimization
+profiles remain unchanged. No Gambit kernel or dependency runtime is patched.

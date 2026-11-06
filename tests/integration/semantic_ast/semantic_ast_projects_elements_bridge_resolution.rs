@@ -8,7 +8,6 @@ use orgize::{
 };
 use serde_json::Value;
 
-#[test]
 fn semantic_ast_projects_git_scoped_document_org_elements_regression_has_snapshot() {
     let doc = Org::parse(include_str!(
         "../../fixtures/org-elements/representative.org"
@@ -17,6 +16,22 @@ fn semantic_ast_projects_git_scoped_document_org_elements_regression_has_snapsho
 
     assert_clean_projection(&doc);
     let records = doc.org_elements_index();
+    let paragraphs = records
+        .iter()
+        .filter(|record| record.kind.as_str() == "paragraph")
+        .map(|record| record.ann.raw.trim())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        paragraphs,
+        [
+            "This document exercises a [[https://orgmode.org][link]], *bold* text, and a\ntimestamp <2026-09-23 Wed>.",
+            "first item",
+            "second item with /emphasis/",
+            "Recorded context for the planning item.",
+            "The final paragraph has a footnote reference[fn:note].",
+            "The fixture is owned by this repository.",
+        ]
+    );
     let selected_kind_counts = selected_kind_counts(
         &records,
         &[
@@ -58,7 +73,6 @@ fn semantic_ast_projects_git_scoped_document_org_elements_regression_has_snapsho
     );
 }
 
-#[test]
 fn semantic_ast_projects_org_element_selector_uses_affiliated_name() {
     let doc = Org::parse(
         r#"#+name: plan_contract_graph
@@ -121,7 +135,6 @@ flowchart LR
     }));
 }
 
-#[test]
 fn semantic_ast_projects_org_element_selector_rejects_invalid_plists() {
     assert_eq!(
         OrgElementSelector::parse_plist(
@@ -141,3 +154,18 @@ fn semantic_ast_projects_org_element_selector_rejects_invalid_plists() {
     );
 }
 use super::semantic_ast_projects_elements_bridge_fixtures::selected_kind_counts;
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_resolution::semantic_ast_projects_git_scoped_document_org_elements_regression_has_snapshot",
+        semantic_ast_projects_git_scoped_document_org_elements_regression_has_snapshot,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_resolution::semantic_ast_projects_org_element_selector_uses_affiliated_name",
+        semantic_ast_projects_org_element_selector_uses_affiliated_name,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_resolution::semantic_ast_projects_org_element_selector_rejects_invalid_plists",
+        semantic_ast_projects_org_element_selector_rejects_invalid_plists,
+    ),
+];

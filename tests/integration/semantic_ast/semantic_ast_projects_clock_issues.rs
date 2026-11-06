@@ -4,7 +4,6 @@ use orgize::{
     ast::{ClockIssueFindingKind, ClockIssueProfile},
 };
 
-#[test]
 fn semantic_ast_projects_clock_issue_findings_match_org_agenda_order() {
     let doc = Org::parse(
         r#"* TODO Work
@@ -63,7 +62,6 @@ CLOCK: [2026-05-16 Sat 01:00]--[2026-05-16 Sat 01:01] =>  0:01
     assert!(compact.contains("contract: Derived from official Org CLOCK"));
 }
 
-#[test]
 fn semantic_ast_projects_clock_issue_gap_ok_around_suppresses_default_night_gap() {
     let doc = Org::parse(
         r#"* TODO Work
@@ -81,3 +79,14 @@ CLOCK: [2026-05-16 Sat 09:00]--[2026-05-16 Sat 09:30] =>  0:30
     assert_eq!(findings[0].kind, ClockIssueFindingKind::Gap);
     assert_eq!(findings[0].duration_seconds, Some(15 * 60 * 60 + 30 * 60));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_clock_issues::semantic_ast_projects_clock_issue_findings_match_org_agenda_order",
+        semantic_ast_projects_clock_issue_findings_match_org_agenda_order,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_issues::semantic_ast_projects_clock_issue_gap_ok_around_suppresses_default_night_gap",
+        semantic_ast_projects_clock_issue_gap_ok_around_suppresses_default_night_gap,
+    ),
+];

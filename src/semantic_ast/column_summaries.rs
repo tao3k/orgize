@@ -273,24 +273,25 @@ fn is_special_summary_property(property: &str) -> bool {
 }
 
 fn column_summary_operator_kind(operator: &str) -> ColumnSummaryOperatorKind {
-    match operator {
-        "+" => ColumnSummaryOperatorKind::NumericSum,
-        "$" => ColumnSummaryOperatorKind::Currency,
-        "min" => ColumnSummaryOperatorKind::NumericMin,
-        "max" => ColumnSummaryOperatorKind::NumericMax,
-        "mean" => ColumnSummaryOperatorKind::NumericMean,
-        "X" => ColumnSummaryOperatorKind::CheckboxState,
-        "X/" => ColumnSummaryOperatorKind::CheckboxCount,
-        "X%" => ColumnSummaryOperatorKind::CheckboxPercent,
-        ":" => ColumnSummaryOperatorKind::DurationSum,
-        ":min" => ColumnSummaryOperatorKind::DurationMin,
-        ":max" => ColumnSummaryOperatorKind::DurationMax,
-        ":mean" => ColumnSummaryOperatorKind::DurationMean,
-        "@min" => ColumnSummaryOperatorKind::AgeMin,
-        "@max" => ColumnSummaryOperatorKind::AgeMax,
-        "@mean" => ColumnSummaryOperatorKind::AgeMean,
-        "est+" => ColumnSummaryOperatorKind::Estimate,
-        _ => ColumnSummaryOperatorKind::Custom,
+    match super::org_values::scalar("column-summary-kind", &[operator]).as_str() {
+        "numeric-sum" => ColumnSummaryOperatorKind::NumericSum,
+        "currency" => ColumnSummaryOperatorKind::Currency,
+        "numeric-min" => ColumnSummaryOperatorKind::NumericMin,
+        "numeric-max" => ColumnSummaryOperatorKind::NumericMax,
+        "numeric-mean" => ColumnSummaryOperatorKind::NumericMean,
+        "checkbox-state" => ColumnSummaryOperatorKind::CheckboxState,
+        "checkbox-count" => ColumnSummaryOperatorKind::CheckboxCount,
+        "checkbox-percent" => ColumnSummaryOperatorKind::CheckboxPercent,
+        "duration-sum" => ColumnSummaryOperatorKind::DurationSum,
+        "duration-min" => ColumnSummaryOperatorKind::DurationMin,
+        "duration-max" => ColumnSummaryOperatorKind::DurationMax,
+        "duration-mean" => ColumnSummaryOperatorKind::DurationMean,
+        "age-min" => ColumnSummaryOperatorKind::AgeMin,
+        "age-max" => ColumnSummaryOperatorKind::AgeMax,
+        "age-mean" => ColumnSummaryOperatorKind::AgeMean,
+        "estimate" => ColumnSummaryOperatorKind::Estimate,
+        "custom" => ColumnSummaryOperatorKind::Custom,
+        _ => panic!("invalid native column summary kind"),
     }
 }
 
@@ -375,10 +376,9 @@ fn format_number(value: f64, format: Option<&str>) -> String {
 }
 
 fn decimal_precision(format: &str) -> Option<usize> {
-    let format = format.trim();
-    let after_dot = format.strip_prefix("%.")?;
-    let digits = after_dot.strip_suffix('f')?;
-    digits.parse().ok()
+    let row = super::org_values::optional("column-precision", format)?;
+    let [precision]: [String; 1] = row.try_into().expect("native column precision arity");
+    Some(precision.parse().expect("native column precision"))
 }
 
 fn compute_checkbox(
@@ -401,25 +401,11 @@ fn compute_checkbox(
 }
 
 fn checkbox_done(value: &str) -> bool {
-    let value = value.trim();
-    value == "[X]" || value == "[100%]" || checkbox_count_done(value)
-}
-
-fn checkbox_count_done(value: &str) -> bool {
-    let Some(inner) = value
-        .strip_prefix('[')
-        .and_then(|value| value.strip_suffix(']'))
-    else {
-        return false;
-    };
-    let Some((done, total)) = inner.split_once('/') else {
-        return false;
-    };
-    done.trim()
-        .parse::<usize>()
-        .ok()
-        .zip(total.trim().parse::<usize>().ok())
-        .is_some_and(|(done, total)| total > 0 && done == total)
+    match super::org_values::scalar("checkbox-done", &[value]).as_str() {
+        "true" => true,
+        "false" => false,
+        _ => unreachable!("native checkbox boolean"),
+    }
 }
 
 fn checkbox_state(done: usize, total: usize) -> String {

@@ -3,7 +3,6 @@ use orgize::{
     ast::{AstMut, AstRef, ElementData},
 };
 
-#[test]
 fn traversal_visits_annotation_bearing_metadata_nodes() {
     let mut doc = Org::parse(
         r#"#+TITLE: Demo
@@ -69,3 +68,8 @@ fn traversal_visits_annotation_bearing_metadata_nodes() {
         Some(" Changed")
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::traversal_visits_annotation_bearing_metadata_nodes::traversal_visits_annotation_bearing_metadata_nodes",
+    traversal_visits_annotation_bearing_metadata_nodes,
+)];

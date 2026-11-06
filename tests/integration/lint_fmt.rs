@@ -5,7 +5,6 @@ use orgize::{
     lint::{LintOptions, lint_org, lint_org_with_options},
 };
 
-#[test]
 fn cli_rejects_invalid_path_arguments_with_snapshot() {
     let dir = test_dir("invalid-paths");
     fs::create_dir_all(&dir).unwrap();
@@ -41,7 +40,6 @@ fn cli_rejects_invalid_path_arguments_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_reports_semantic_and_uniqueness_findings_as_compact_snapshot() {
     let source = semantic_and_uniqueness_lint_fixture();
     let report = lint_org(source);
@@ -53,7 +51,6 @@ fn lint_reports_semantic_and_uniqueness_findings_as_compact_snapshot() {
     ));
 }
 
-#[test]
 fn lint_reports_semantic_and_uniqueness_findings_as_text_snapshot() {
     let report = lint_org(semantic_and_uniqueness_lint_fixture());
 
@@ -64,7 +61,6 @@ fn lint_reports_semantic_and_uniqueness_findings_as_text_snapshot() {
     ));
 }
 
-#[test]
 fn lint_reports_semantic_and_uniqueness_findings_as_json_snapshot() {
     let report = lint_org(semantic_and_uniqueness_lint_fixture());
 
@@ -75,7 +71,6 @@ fn lint_reports_semantic_and_uniqueness_findings_as_json_snapshot() {
     ));
 }
 
-#[test]
 fn lint_allows_repeatable_contract_org_properties() {
     let report = lint_org(
         r#"* ASP Org
@@ -90,7 +85,6 @@ fn lint_allows_repeatable_contract_org_properties() {
     assert!(!rendered.contains("ORG012"), "{rendered}");
 }
 
-#[test]
 fn lint_checks_include_paths_with_snapshot() {
     let dir = test_dir("lint-include-paths");
     fs::create_dir_all(dir.join("folder")).unwrap();
@@ -111,7 +105,6 @@ fn lint_checks_include_paths_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_reports_missing_macro_definitions_with_snapshot() {
     let report = lint_org(missing_macro_definitions_lint_fixture());
 
@@ -122,7 +115,6 @@ fn lint_reports_missing_macro_definitions_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_reports_duplicate_macro_definitions_with_snapshot() {
     let report = lint_org(duplicate_macro_definitions_lint_fixture());
 
@@ -133,7 +125,6 @@ fn lint_reports_duplicate_macro_definitions_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_reports_link_abbreviation_definition_issues_with_snapshot() {
     let report = lint_org(link_abbreviation_definition_issues_lint_fixture());
 
@@ -144,7 +135,6 @@ fn lint_reports_link_abbreviation_definition_issues_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_reports_supported_options_keyword_issues_with_snapshot() {
     let report = lint_org(supported_options_keyword_issues_lint_fixture());
 
@@ -155,7 +145,6 @@ fn lint_reports_supported_options_keyword_issues_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_reports_todo_declaration_issues_with_snapshot() {
     let report = lint_org(todo_declaration_issues_lint_fixture());
 
@@ -166,7 +155,35 @@ fn lint_reports_todo_declaration_issues_with_snapshot() {
     ));
 }
 
-#[test]
+fn lint_todo_declarations_follow_aot_block_context() {
+    let source = "#+TODO: NEXT | DONE\n#+begin_src text\n#+TODO: NEXT | DONE\n#+end_src\n#+seq_todo: NEXT | DONE\n";
+    let report = lint_org(source);
+    let duplicates = report
+        .findings
+        .iter()
+        .filter(|finding| finding.code == "ORG009")
+        .collect::<Vec<_>>();
+    assert_eq!(duplicates.len(), 2);
+    assert!(
+        duplicates
+            .iter()
+            .all(|finding| finding.location.start.line == 5)
+    );
+}
+
+fn lint_priority_cookies_follow_aot_headline_context() {
+    let source =
+        "#+begin_src text\n* TODO [#bad] inside source\n#+end_src\n* TODO [#] real headline\n";
+    let report = lint_org(source);
+    let malformed = report
+        .findings
+        .iter()
+        .filter(|finding| finding.code == "ORG010")
+        .collect::<Vec<_>>();
+    assert_eq!(malformed.len(), 1);
+    assert_eq!(malformed[0].location.start.line, 4);
+}
+
 fn lint_reports_priority_property_issues_with_snapshot() {
     let report = lint_org(priority_property_issues_lint_fixture());
 
@@ -177,7 +194,6 @@ fn lint_reports_priority_property_issues_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_reports_priority_profile_issues_with_snapshot() {
     let default_report = lint_org(priority_profile_issues_lint_fixture());
     let numeric_profile = PriorityProfile::new(
@@ -203,7 +219,6 @@ fn lint_reports_priority_profile_issues_with_snapshot() {
     ));
 }
 
-#[test]
 fn lint_cli_accepts_priority_profile_flags_with_snapshot() {
     let mut child = crate::library_cli::orgize_cli_command()
         .args([
@@ -234,7 +249,6 @@ fn lint_cli_accepts_priority_profile_flags_with_snapshot() {
     insta::assert_snapshot!(command_snapshot(output));
 }
 
-#[test]
 fn lint_cli_compact_stdin_output_is_snapshotted() {
     let mut child = crate::library_cli::orgize_cli_command()
         .args(["lint"])
@@ -255,7 +269,6 @@ fn lint_cli_compact_stdin_output_is_snapshotted() {
     insta::assert_snapshot!(command_snapshot(output));
 }
 
-#[test]
 fn lint_cli_text_stdin_output_is_snapshotted() {
     let mut child = crate::library_cli::orgize_cli_command()
         .args(["lint", "--format", "text"])
@@ -276,7 +289,6 @@ fn lint_cli_text_stdin_output_is_snapshotted() {
     insta::assert_snapshot!(command_snapshot(output));
 }
 
-#[test]
 fn lint_cli_json_stdin_output_is_snapshotted() {
     let mut child = crate::library_cli::orgize_cli_command()
         .args(["lint", "--json"])
@@ -297,7 +309,6 @@ fn lint_cli_json_stdin_output_is_snapshotted() {
     insta::assert_snapshot!(command_snapshot(output));
 }
 
-#[test]
 fn lint_cli_checks_include_paths_relative_to_file_with_snapshot() {
     let dir = test_dir("lint-cli-include-paths");
     fs::create_dir_all(dir.join("notes/folder")).unwrap();
@@ -313,7 +324,6 @@ fn lint_cli_checks_include_paths_relative_to_file_with_snapshot() {
     insta::assert_snapshot!(command_snapshot(output));
 }
 
-#[test]
 fn lint_cli_directory_path_output_is_snapshotted() {
     let dir = test_dir("lint-dir");
     fs::create_dir_all(dir.join("notes/nested")).unwrap();
@@ -393,3 +403,90 @@ fn test_dir(name: &str) -> PathBuf {
     }
     path
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "lint_fmt::cli_rejects_invalid_path_arguments_with_snapshot",
+        cli_rejects_invalid_path_arguments_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_reports_semantic_and_uniqueness_findings_as_compact_snapshot",
+        lint_reports_semantic_and_uniqueness_findings_as_compact_snapshot,
+    ),
+    (
+        "lint_fmt::lint_reports_semantic_and_uniqueness_findings_as_text_snapshot",
+        lint_reports_semantic_and_uniqueness_findings_as_text_snapshot,
+    ),
+    (
+        "lint_fmt::lint_reports_semantic_and_uniqueness_findings_as_json_snapshot",
+        lint_reports_semantic_and_uniqueness_findings_as_json_snapshot,
+    ),
+    (
+        "lint_fmt::lint_allows_repeatable_contract_org_properties",
+        lint_allows_repeatable_contract_org_properties,
+    ),
+    (
+        "lint_fmt::lint_checks_include_paths_with_snapshot",
+        lint_checks_include_paths_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_reports_missing_macro_definitions_with_snapshot",
+        lint_reports_missing_macro_definitions_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_reports_duplicate_macro_definitions_with_snapshot",
+        lint_reports_duplicate_macro_definitions_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_reports_link_abbreviation_definition_issues_with_snapshot",
+        lint_reports_link_abbreviation_definition_issues_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_reports_supported_options_keyword_issues_with_snapshot",
+        lint_reports_supported_options_keyword_issues_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_reports_todo_declaration_issues_with_snapshot",
+        lint_reports_todo_declaration_issues_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_todo_declarations_follow_aot_block_context",
+        lint_todo_declarations_follow_aot_block_context,
+    ),
+    (
+        "lint_fmt::lint_priority_cookies_follow_aot_headline_context",
+        lint_priority_cookies_follow_aot_headline_context,
+    ),
+    (
+        "lint_fmt::lint_reports_priority_property_issues_with_snapshot",
+        lint_reports_priority_property_issues_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_reports_priority_profile_issues_with_snapshot",
+        lint_reports_priority_profile_issues_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_cli_accepts_priority_profile_flags_with_snapshot",
+        lint_cli_accepts_priority_profile_flags_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_cli_compact_stdin_output_is_snapshotted",
+        lint_cli_compact_stdin_output_is_snapshotted,
+    ),
+    (
+        "lint_fmt::lint_cli_text_stdin_output_is_snapshotted",
+        lint_cli_text_stdin_output_is_snapshotted,
+    ),
+    (
+        "lint_fmt::lint_cli_json_stdin_output_is_snapshotted",
+        lint_cli_json_stdin_output_is_snapshotted,
+    ),
+    (
+        "lint_fmt::lint_cli_checks_include_paths_relative_to_file_with_snapshot",
+        lint_cli_checks_include_paths_relative_to_file_with_snapshot,
+    ),
+    (
+        "lint_fmt::lint_cli_directory_path_output_is_snapshotted",
+        lint_cli_directory_path_output_is_snapshotted,
+    ),
+];

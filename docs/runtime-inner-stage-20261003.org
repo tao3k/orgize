@@ -1,0 +1,110 @@
+#+TITLE: Native Scheme inner-stage diagnostic qualification
+
+* Scope
+
+Private ONR1 operation 5 uses the same Org-owned parser and tape projection as
+ordinary operation 0. Its OPR1 envelope contains fold wall time, tape wall time
+and the execution thread's combined fold/tape CPU time, followed by the exact
+ordinary OEV1 tape. Rust validates the envelope and then applies the existing
+grammar-bound event decoder. There is no parser or clock fallback.
+
+CPU is execution-thread CPU, not total process CPU, allocation or GC attribution.
+Fold includes any GC and scheduling delays occurring inside that call. Neither
+fold wall nor thread CPU measures native queue waiting. Transport still includes
+request copying/decoding, owner waiting, output rooting/copying, and envelope
+construction. These sub-costs remain to be separated; percentile subtraction
+must not be used to manufacture them.
+
+Only an active runtime-profile measurement requests operation 5. Ordinary
+builds compile out Rust timing collection; ordinary operation 0 invokes no new
+clock. Native program identity changes because the private clock module and
+projector changed. Old program archives/receipts do not qualify the new binary.
+
+* Verification
+
+The initial foreign clock compilation required macOS loadable-module symbol
+resolution against the existing host. This is a diagnostic module link option,
+not a kernel patch; native program linking remains strict under its build owner.
+The tape suite had missing dependency load paths, an interpreted foreign-module
+import and an omitted CPU export namespace. They were repaired directly.
+
+The existing Gerbil test runner can return zero despite module/case errors.
+The maintained tape recipe now requires MODULE-OK, HARNESS-OK, final OK and
+absence of ERROR/FAILED/FAILURE. Those markers passed on the corrected source.
+Diagnostic/ordinary payload equality covers empty input, multibyte/CRLF and a
+source block, with invalid options still rejected. Rust wire tests exercise
+truncation, foreign envelope/payload identity and exact timing projection.
+
+Fresh native staging admitted 273 modules. Both preserved corpus binaries report
+program sha256:210de3438f483a6358242dfdff13cef2d73ea0bc32be1415ab7067894526a225.
+Other Cargo OUT_DIR identities are not evidence of the preserved binaries.
+Both runtime variants passed 54 native cases, 24 policy/profile cases (one
+existing ignored case), and all 454 consumer cases (three existing ignored
+cases). Consumer elapsed times were 23.10 s (Rust) and 19.94 s (Scheme), with
+12 test callers. The unchanged strict 25 ms query gate passed in these runs.
+Earlier failures remain historical evidence of instability: these passes do not
+prove a stable tail-latency SLO or an algorithmic improvement.
+
+The normal cfg-off build check also passed for runtime-rust (3 m 43 s) and
+runtime-scheme (25.73 s), covering tests, benches and examples without the
+runtime-profile feature. These are compilation checks, not cfg-off execution
+receipts. Workspace dev opt-level 2/debug/assertions/overflow and release
+opt-level 3 remain unchanged. Both source checkouts passed git diff --check.
+
+Each runtime completed performance and full semantic qualification at both
+1,000 and 10,000 distinct documents, 64 Tokio callers and eight independent
+native domains: 44,000 completions across the four receipt files. Inner-stage
+scale checks and the strict matched-runtime comparators passed. Qualification
+hashes equal the prior corresponding semantic receipts despite the explicit
+native diagnostic program change.
+
+| 10,000 documents, performance mode | Rust | Scheme |
+|-----------------------------------+------+--------|
+| documents/s                       | 247.30 | 262.51 |
+| end-to-end p95, ms                 | 515.80 | 607.74 |
+| mean Scheme fold wall, ms          | 24.124 | 22.941 |
+| mean fold/tape thread CPU, ms      | 5.634 | 5.572 |
+| mean tape serialization wall, ms   | 0.196 | 0.174 |
+| mean supervisor queue, ms          | 226.082 | 212.115 |
+
+These are sequential single repetitions, not a runtime winner determination.
+Qualification mode also validates and hashes full semantics, so its throughput
+must not be substituted for performance mode. Wall/CPU divergence demonstrates
+non-CPU time inside the fold call, but does not identify its OS/runtime cause.
+Queue waiting is directly measured, not inferred by percentile subtraction.
+
+The fold-runtime static Scheme input is byte-identical to the previous staged
+fold runtime (sha256:d84d7dbd049e693f59c5ee8e5587583a3d003a19d1dc6e19ec18aa1a9de67668).
+The new diagnostic throughput therefore cannot be credited to a fold algorithm
+change. A state-update algorithm candidate is compiled separately under
+target/fold-state-candidate-20261004 and is not in these native binaries.
+It was rejected after two reversed-order rounds of 20 samples per fixture:
+small documents and links improved, but quote-heavy first-round median changed
+from 5.101 ms to 5.917 ms (about 16% worse), with highly variable tails and no
+allocation reduction. The second baseline quote-heavy round was noisy
+(12.761 ms), so it cannot rescue the candidate as a uniform improvement.
+All 240 samples preserved exact events/input identities. Full candidate
+event-fold and Org event suites passed the strict log gates. Only this turn's
+candidate wrapper was removed; prior byte-cache and persistent-sharing changes
+remain untouched. Four new persistent/duplicate-state cases also passed on
+the preserved baseline. See scheme-state-scan-samples-20261004.json and
+scheme-state-scan-raw-20261004.json for all 240 measured samples.
+
+* Preserved binary SHA-256
+
+| binary under target/runtime-receipt-binaries | SHA-256 |
+|---------------------------------------------+---------|
+| inner-rust-unit-20261003 | acda65a6099da0383718f3729a9bb5f022540efce6c81d21a4d20f23fdd82aee |
+| inner-rust-consumer-20261003 | 271081c5e30cd787f11b3e0cffaa98ec38333e0551f4b3df1f80aebbf922e83c |
+| inner-rust-corpus-20261003 | e6240aa9679527895d841db6737fb9b1283fc46d6a3cd73ed64a4ed0eb6ab4f8 |
+| inner-scheme-unit-20261003 | 80e1c59a5e7a417a060c4e6fc5be4817a95baa862482456c74d4aa9adf71648a |
+| inner-scheme-consumer-20261003 | 15fc6a9601e32ff4cafdc1c48c3fcd1f87b098e0e8ce03c864900bb2117e7036 |
+| inner-scheme-corpus-20261003 | 0d5d1335b5ab791103a4f8a8d28109084e88227f4c506251feac508d3d42caed |
+
+* Remaining boundaries
+
+No Gambit kernel modification, optimization-profile relaxation or legacy
+fallback was used. Native owner admission, request/result copying and rooting
+still need separate measurements. Repeated interleaved native samples,
+open-loop arrival-rate tests, installed Python wheel qualification and remote
+CI remain separate gates; the local receipts do not close them.

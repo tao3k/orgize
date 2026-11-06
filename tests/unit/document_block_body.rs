@@ -1,6 +1,10 @@
 use std::path::Path;
 
-#[test]
+pub(crate) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "source_block_body_is_parser_owned_and_excludes_org_delimiters",
+    source_block_body_is_parser_owned_and_excludes_org_delimiters,
+)];
+
 fn source_block_body_is_parser_owned_and_excludes_org_delimiters() {
     let source = "\
 #+begin_src typst

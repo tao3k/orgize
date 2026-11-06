@@ -1,0 +1,781 @@
+#+TITLE: Bounded native owner handoff experiment (2026-10-04)
+
+* Implementation boundary
+
+Checkout: Orgize =codex/native-org-recovery=, HEAD
+=479b2763fa1924385a2df824d029e9ba35341bcd=, existing dirty migration preserved.
+
+The new private ONR1 operations 6/7 carry 1..64 length-delimited UTF-8
+documents, with an aggregate 64KiB source limit. Operation 7 requests the
+existing per-document OPR1 diagnostic. The native projector admits the
+complete input framing before parsing. OBT1 returns exactly one indexed
+success/error row per source; success rows retain their OEV1 grammar identity
+and source-relative offsets. Malformed output framing or successful tapes
+reject the transport envelope. Document failure rows retain their index and
+do not prevent later documents from parsing.
+
+The Scheme POO event parser remains the only parser. The batch projector
+contains a pure bounded loop, not a new scheduler or parser. Rust still owns
+its request queue under =runtime-rust=; the existing native Scheme actor still
+owns the lifecycle and calls under =runtime-scheme=. No nested actors, foreign
+thread attachment, VM SMP, or Gambit kernel patch were introduced.
+
+Small Org indexing calls the batch entry once and projects each document with
+the same Rust Rowan/Element projector used by single-document indexing.
+Document path/order, duplicate source entries and configuration remain
+per-document. Empty indexing performs no native work. Oversized sources
+use the existing native single-document entry; they do not enter a legacy
+parser. Large-project indexing keeps its original outer concurrency and
+partitions each worker's inputs into the same bounded native packets.
+
+* Evidence owners
+
+- =scheme-parser-batch-stage-isolated=: compile the new private projector and
+  stage the existing compiler-owned program in a separate output directory.
+- =scheme-event-tape-test=: native Scheme framing, ordered individual tape
+  parity, profiler parity, count/byte bounds and bad-document isolation.
+- =native-runtime-batch-format=: focused Rust formatting.
+- =runtime-library-test-run=: 57 native cases (54 existing, 3 batch)
+  plus the separate pure wire/ordinary tests.
+- =native-runtime-query-batch-run= and
+  =native-runtime-query-individual-control-run=: independent ASP test legs
+  on the same linked program, original 48-document fixture, zero warmups,
+  three measured iterations and unchanged 45ms max gate.
+
+The individual control uses the normal native single-document API, with the
+same walking, reads, parser, projection and no-hit filter. It is a test-only
+control, not a compatibility mode or alternate production parser. Each leg
+prints the linked program identity and ASP-owned p50/p95/max; no independent
+sampler or percentile calculation exists.
+
+* Candidate identity
+
+Compiler-owned manifest:
+=target/batch-handoff-candidate-20261004/program.json=, 275 modules.
+It references the new rowan-event-tape SCM under that directory and the
+preceding helper-state fold SCM under
+=target/helper-state-sharing-candidate-20261004/lib/static/=.
+The default manifest has not been promoted.
+
+* Current evidence
+
+Native Scheme tape suite passed with explicit MODULE-OK, HARNESS-OK and final
+OK markers and no ERROR/FAILED/FAILURE. Its log is
+=target/batch-tape-test-20261004.log=. The isolated stage passed with
+=ORG-PARSER-STAGE OK=; =target/batch-stage-20261004.log=.
+The first complete Rust Release build passed in 7m59s; its 56-case native
+aggregate and all 454 consumers / 12 callers passed. The pure/source lane
+failed ASP owner-organization rules R011/R010. A first owner-directory move
+then failed R001 because mod.rs must contain only the interface.
+
+The final owner is now interface-only =src/org_events/mod.rs=,
+implementation =transport.rs= and bounded wire projection =batch.rs=.
+Explicit test imports replaced the globs. Adapter identity includes all
+three files. The source gate passed after these repairs, using the prior
+binary's live source-admission test. That is source evidence, not a final
+recompiled-runtime qualification.
+
+The intermediate Rust rebuild was deliberately stopped with exit 143 after
+these organization repairs were required; no other task was stopped.
+Its log is retained as =rust-build-r3.log=. The final rebuild is
+=rust-build-r4.log=. Original failed builds and source-gate logs are retained.
+
+The compiler-bound Scheme program is
+=sha256:8d40b2f97b1158f432be4e0e6e57e2209a841b823126b450bd3c95ff459e8506=.
+The final Rust-only partition/organization edits do not change that program;
+they do change the adapter source identity and therefore require fresh
+receipt binaries.
+
+Large-worker partitioning adds a third native case: 130 ordered inputs,
+multiple packets and one oversized source must match the normal native
+single-document projection.
+
+The final Rust build passed in 6m37s (=rust-build-r4.log=). Frozen binaries:
+=target/runtime-receipt-binaries/batch-handoff-final-rust-{unit,consumer,corpus}-20261004=.
+All 57 native cases passed, followed by 26 pure/ordinary/source cases
+(two focused performance tests remain ignored). The 454-case public consumer
+catalog passed with 12 callers, zero failures, in 20.43s; three independently
+ignored tests remain ignored. Logs: =rust-final-unit.log= and
+=rust-final-consumer.log= under the candidate directory.
+
+The final Scheme boundary suite also passed after changing the unknown-opcode
+case from newly supported opcode 6 to truly unsupported opcode 255;
+=scheme-tape-final.log= retains explicit native harness completion markers.
+The final Scheme Release build passed in 7m03s (=scheme-build.log=).
+Frozen binaries use the matching =batch-handoff-final-scheme-= labels.
+All 57 native and 26 pure/ordinary/source cases passed; two performance
+tests remain ignored in the ordinary lane. All 454 public consumer cases /
+12 callers passed in 25.91s, with three independently ignored tests.
+Logs: =scheme-unit.log= and =scheme-consumer.log=.
+
+* Same-program ASP A/B: performance gate remains open
+
+Both features link program 8d40 above. These are unprofiled Release binaries,
+with the same 48-document fixture, zero warmups, three measured iterations,
+5ms target and 45ms maximum. Each leg ran in a fresh process, serially after
+both builds and consumer suites. Results are ASP-owned milliseconds:
+
+| Owner          | Mode       | Round |       p50 |   p95/max | Gate |
+|----------------+------------+-------+-----------+-----------+------|
+| runtime-rust   | batch      |     1 | 10.323250 | 20.831625 | pass |
+| runtime-rust   | individual |     1 | 31.117708 | 340.241542 | fail |
+| runtime-scheme | batch      |     1 | 66.483459 | 116.703875 | fail |
+| runtime-scheme | individual |     1 | 17.918542 | 23.061416 | pass |
+| runtime-scheme | individual |     2 | 130.134125 | 284.757333 | fail |
+| runtime-scheme | batch      |     2 | 26.803917 | 58.169333 | fail |
+| runtime-rust   | individual |     2 | 22.317833 | 32.524000 | pass |
+| runtime-rust   | batch      |     2 | 54.221375 | 132.414334 | fail |
+
+Logs: =query-{rust,scheme}-{batch,individual-control}-r{1,2}.log=.
+Failed legs exited 101; thresholds and warmup settings were not relaxed.
+These observations do not establish a stable batch speedup or a runtime
+ranking. No CPU evidence was collected to attribute the variability to host
+contention. The 45ms maximum and 5ms target remain unclosed.
+
+* High-concurrency parser qualification
+
+Each feature completed both 1,000 and 10,000 documents with four Tokio
+supervisors, 64 callers and eight independent native process domains.
+Each receipt reached 64 in-flight calls, eight active worker requests and
+eight unique worker PIDs; all workers completed successfully. This is
+multi-process native VM qualification, not native VM SMP.
+
+The maintained cross-feature identity/admission comparator passed. Each
+feature's semantic artifact also matches its preceding helper-state candidate.
+Logs and receipts: ={rust,scheme}-qualification.{log,json}=.
+
+| Owner          | Documents | Completed | Documents/s | E2E p95 ms |
+|----------------+-----------+-----------+-------------+------------|
+| runtime-rust   |      1000 |      1000 |     296.572 |    438.729 |
+| runtime-scheme |      1000 |      1000 |     372.555 |    343.257 |
+| runtime-rust   |     10000 |     10000 |     284.387 |    476.479 |
+| runtime-scheme |     10000 |     10000 |     225.711 |    628.653 |
+
+These qualification-mode measurements include lossless/checksum admission.
+The corpus benchmark calls the normal single-document native API; it does
+not measure the new large-project Query batching path. One repetition per
+size is not a stable throughput comparison, and p95 is per-document
+end-to-end latency, not the batch completion time.
+
+* Integration boundary and remaining gates
+
+The default =target/gerbil-parser/program.json= still equals the previous
+prefix-probe program
+=sha256:a8fa5deb44c22a1dedb65b76ebac50cafd9b71115d3ddda5638672f0aaccbe4f=.
+It does not implement ONR1 operations 6/7. The edited batch indexing path is
+therefore qualified only against the explicitly selected isolated 8d40
+candidate, not the unchanged default build. Default-manifest integration is
+pending; source implementation must not be reported as default-path closure.
+
+Remaining gates: reproducible Query A/B and stage attribution on this exact
+program, actual 1,000/10,000-document project Query batch measurements,
+the full 1/4/8-domain matrix, candidate-specific Python/maturin qualification,
+and default manifest integration. No remote CI, push, merge or release was
+performed. No Cargo optimization profile, Gambit kernel or bridge lifecycle
+implementation was modified in this slice.
+
+* Follow-up: exact-program stage attribution
+
+The maintained =runtime-library-build-owner= rebuilt the same 8d40
+program with =runtime-rust,runtime-profile= in Release (4m38s).
+The frozen binary is =batch-profile-rust-unit-20261004=.
+All 57 native cases and 30 ordinary/diagnostic cases passed; three focused
+performance cases remain ignored. Panic-isolation tests intentionally catch
+injected panics and still pass. Log: =rust-batch-profile-unit.log=.
+
+Two fresh-process runs of =runtime-query-profile-run= retain the
+existing 48-document ASP scenario and strict gate:
+
+| Round | p50 ms | Max ms | Gate |
+|-------+--------+--------+------|
+|     1 | 19.284 | 19.718 | pass |
+|     2 | 30.662 | 72.100 | fail |
+
+Across these six samples, Scheme thread CPU (fold plus tape encoding) is
+6.785..8.567ms. Rowan build is 0.115..0.627ms and graph projection is
+0.243..0.709ms. In the failing sample, Scheme fold wall time is 59.835ms
+while Scheme thread CPU is 8.084ms; owner service inclusive is 62.914ms.
+This does not identify the cause of off-CPU time, nor prove GC or host
+contention. It does show that treating all fold wall time as algorithm CPU
+or treating Rust projection as the principal cost would be unsupported.
+
+Logs: =rust-batch-query-profile-r{1,2}.log=. Raw stage values are nanoseconds;
+inclusive stages overlap and must not be summed. These instrumented builds
+are diagnostic evidence, not replacements for the unprofiled A/B gate.
+
+The collector is request-local and thread-local. The existing 48-document
+scenario uses the sequential small-project path. Large-project workers do
+not currently inherit/merge that collector. Large-project attribution must
+first collect explicit worker-local receipts and merge them on the caller,
+without changing native scheduler ownership or serializing worker execution.
+The parser-corpus scale receipts above do not close that missing Query gate.
+
+The matching =runtime-scheme,runtime-profile= Release library build passed
+in 6m18s (=scheme-batch-profile-build.log=), frozen as
+=batch-profile-scheme-unit-20261004=. All 57 native cases and 29 ordinary/
+diagnostic cases passed, with three performance cases ignored
+(=scheme-batch-profile-unit.log=). The Rust-only owner-reply diagnostic is
+not compiled for this feature; the difference in ordinary counts is expected.
+
+Two fresh-process Scheme diagnostic runs, after that build and unit suite:
+
+| Round |  p50 ms |  Max ms | Gate |
+|-------+---------+---------+------|
+|     1 | 105.956 | 291.300 | fail |
+|     2 |  90.733 | 118.159 | fail |
+
+Both logs print the same 8d40 compiler program identity and all required
+stage keys: =scheme-batch-query-profile-r{1,2}.log=.
+Scheme thread CPU spans 7.743..14.282ms across these six samples.
+In round 1 sample 0, fold wall time is 232.532ms while thread CPU (fold plus
+encoding) is 13.762ms; owner service inclusive is 257.319ms. In round 2
+sample 1, tape encoding wall time is 68.864ms with total thread CPU
+14.282ms. Rowan build remains 0.124..0.290ms; graph projection is
+0.247..1.732ms. Owner admission reaches 40.440ms in another sample.
+
+The large wall/CPU gaps are therefore observed under both runtime owners,
+not only the Rust queue. They do not establish that the two paths have the
+same cause, or that either runtime is faster. Native service, admission,
+encoding and decoding wall times are variable; off-CPU cause and
+process-wide CPU/GC attribution remain unmeasured. No source algorithm,
+queue policy, kernel, default manifest or performance gate was changed on
+the strength of these diagnostic samples.
+
+The next implementation slice is explicit worker-local Query observations
+with caller-side aggregation, followed by actual 1,000/10,000-document Query
+qualification under the unchanged parallel indexing policy. Instrumentation
+must remain opt-in, preserve per-worker source/result parity, and keep sums
+of worker durations distinct from caller wall time. Reproducible unprofiled
+same-program A/B remains required before default batch promotion.
+
+* Worker-local Query observation and real-project qualification
+
+=src/runtime_profile/worker.rs= now transfers an explicit owned observation
+with each worker result. The caller captures only the enablement bit; each
+worker starts its own panic-safe collector and returns its map after completion.
+The caller merges maps only after joining, preserving chunk/result order.
+No shared mutable collector, new executor, VM or queue was introduced.
+With =runtime-profile= disabled, the wrapper contains only the result value;
+no observation map, TLS access, clock or trace implementation is compiled.
+
+=query.total_inclusive= is caller wall time. =query.worker_wall_sum= and the
+native/Rowan/graph stages are accumulated worker durations; they may exceed
+caller time and must not be interpreted as end-to-end latency.
+=query.workers_completed= and =query.documents_completed= are counts, not
+nanoseconds (even though the qualification log's map label is =stages_ns=).
+
+Two pure tests check explicit post-join merge, disabled observations,
+concurrent request isolation, error-result transport and panic cleanup.
+The final Rust Release build passed in 5m04s. Its 57 native cases and 32
+ordinary/diagnostic cases passed; four focused cases remain ignored.
+Frozen binary: =query-worker-rust-unit-20261004=.
+Logs: =rust-query-worker-build.log=, =rust-query-worker-unit.log=.
+The live-source admission gate also passed separately. A preliminary wrong
+filter ran zero tests; it is not evidence. The exact gate log is
+=query-worker-source-gate-exact.log=.
+
+=runtime-query-scale-run= checks the test inventory and requires an
+explicit 1,000 or 10,000 document count. It creates real TAGS/UTF-8/ID Org
+files, calls the existing production project Query entry with its unchanged
+worker policy, and compares all projected fields/order with observation
+disabled. It checks exact distinct path/heading/document counts, actual chunk
+worker count, required stage presence, no-hit filtering and collector cleanup.
+Its explicit trace reports only completed bounded packets, never synthetic
+timer heartbeats. =native-runtime-query-worker-format= owns formatting.
+
+The observed project indexing stages include directory walking, source reads,
+native parser calls and projection. The final no-hit filter and full parity
+comparison execute outside that timed scope. These are diagnostic semantic
+qualifications, not full Query endpoint timing or a new ASP performance gate.
+No arbitrary large-project latency threshold has been added.
+
+Rust qualification results (one observed pass per size, no speedup claim):
+
+| Documents | Workers | Caller wall s | Worker wall sum s | Owner wait sum s | Scheme thread CPU sum s |
+|-----------+---------+---------------+-------------------+------------------+-------------------------|
+|      1000 |       4 |         2.373 |             8.797 |            6.425 |                   0.182 |
+|     10000 |       4 |        13.722 |            49.290 |           36.416 |                   1.671 |
+
+Both completed every document with full projection parity. Logs:
+=rust-query-scale-{1000,10000}.log=. The 10,000-document entire libtest case
+took 38.60s including fixture/control/parity/cleanup; that is not the observed
+project indexing time.
+
+The matching Scheme Release build passed in 4m03s; all 57 native and 31
+ordinary/diagnostic cases passed, with four focused cases ignored.
+Frozen binary: =query-worker-scheme-unit-20261004=.
+Logs: =scheme-query-worker-{build,unit}.log=.
+
+Scheme qualification also completed both sizes with four actual workers,
+exact document/path/heading counts and full projection parity:
+
+| Documents | Workers | Caller wall s | Worker wall sum s | Owner wait sum s | Scheme thread CPU sum s |
+|-----------+---------+---------------+-------------------+------------------+-------------------------|
+|      1000 |       4 |         2.020 |             7.501 |            5.530 |                   0.168 |
+|     10000 |       4 |        25.309 |            93.830 |           69.580 |                   1.824 |
+
+Logs: =scheme-query-scale-{1000,10000}.log=. The whole 10,000-document
+libtest case took 51.92s; the observed project indexing time is 25.309s.
+These one-pass, traced, instrumented observations are not controlled A/B
+throughput evidence. The fixtures use the same content schema but distinct
+temporary project paths. The 4-worker production Query path is distinct from
+the earlier 64-caller / 8-native-process-domain parser corpus benchmark.
+
+Both features retain compiler program 8d40. The original small-project ASP
+diagnostic gate was smoke-tested unchanged: Rust max 388.843ms failed with
+exit 101; Scheme max 29.349ms passed. Logs:
+={rust,scheme}-query-worker-strict.log=. These smoke legs are not a controlled
+cross-feature timing comparison, and do not supersede the earlier failures.
+The 45ms stability and 5ms target gates remain open.
+
+This slice does not requalify the 454-case consumer catalog or Python bindings
+after the worker wrapper edit. Fresh unprofiled runtime qualification,
+consumer/Python closure, full endpoint filtering/timing, reproducible native
+service off-CPU attribution, controlled A/B and default manifest selection
+remain distinct pending gates.
+
+The unprofiled Rust =dev= compilation check passed in 3m58s for tests,
+benches and examples (=rust-query-worker-unprofiled-check.log=).
+The maintained check recipe now accepts an explicit profile, defaulting to
+the unchanged =dev= profile; no Cargo optimization setting was changed.
+The unprofiled Scheme =release= check hit its 300s bound during compilation
+of =gerbil-scheme-rust-project-harness=, exit 124 / recipe signal 15.
+No Rust source diagnostic was emitted, but the check is incomplete, not
+passing (=scheme-query-worker-unprofiled-release-check.log=).
+The independently bounded Scheme =dev= check passed for tests, benches and
+examples in 3m23s (=scheme-query-worker-unprofiled-dev-check.log=).
+It establishes unprofiled development compilation, not Release compilation
+or unprofiled runtime qualification; the Release build-budget failure remains.
+
+* Native clock cross-check and non-parser stall reproduction
+
+=scheme-clock-test= compiles the unchanged production clock and a
+test-only POSIX reference module in an isolated directory, then runs three
+native Gerbil test cases. It requires MODULE-OK, HARNESS-OK and final OK,
+and rejects ERROR/FAILED/FAILURE. The reference module is not a parser
+program dependency and is not validated on Windows.
+
+The reference uses CLOCK_THREAD_CPUTIME_ID and CLOCK_PROCESS_CPUTIME_ID;
+the production Apple clock uses Mach thread user/system time. CPU intervals
+are nested and checked monotonically; two microseconds of quantization are
+allowed because Mach exposes separate microsecond user and system counters.
+That precision allowance is not a changed performance SLO.
+
+The native C workload is a volatile fixed-width arithmetic loop with checked
+sum identity, no allocations and no Scheme/parser calls within its measured
+loop window. Test-only thread-local storage transfers the completed C sample
+on the same OS thread. The final version puts process/thread CPU reads
+outside the loop wall interval, excluding those CPU API calls from that
+wall interval. The reference also checks native Scheme sleep and empty calls.
+
+The first run failed because a relative import attempted to interpret the C
+declarations. The repaired import loads the compiled qualified module.
+All subsequent native suites passed; initial failure and intermediate
+calibration logs are retained. Final log:
+=target/clock-calibration-r5-20261004/clock-test.log=.
+The final suite checks 1M, 4M and ten independent 16M-step loops, plus sleep
+and empty-call controls. No percentiles or performance pass gates are derived
+from these calibration samples.
+
+One final 16M-step native-only window observed 142.065ms wall,
+11.109ms thread CPU and 11.110ms whole-process CPU. Other identical windows
+were near 4.9ms wall/CPU; all fixed-loop results matched. This demonstrates
+non-CPU stalls under the current execution environment without executing
+Scheme fold or GC within that loop. It does not identify OS scheduling,
+quota, suspension or another system mechanism as the cause; it also does
+not prove that every production Query stall has the same cause.
+
+Production OPR1 measures a thread CPU interval enclosing each document's fold
+and tape encoding, not exclusive parser instruction time. Other work on that
+OS thread can be included. Batch framing/copies outside those intervals,
+process-wide work and GC attribution remain unmeasured in the production
+wire. The calibration process CPU counter must not be presented as a new
+production Query measurement.
+
+Calibration source SHA256:
+- reference.ss: =2d7e24f5ebaf03ac9e6e56ce7b4cf307ed985b52c09f19928d1bd58b51679c16=
+- clock-test.ss: =4a1766ec391e9dd4e04b16afb5906e627c6004c650843f8670f09f12de90c1fe=
+
+* Serial same-program unprofiled A/B after clock validation
+
+The maintained ASP Query owners ran eight fresh processes sequentially,
+without our own compilation/test overlap. Original 48-document fixture,
+zero warmups, three iterations, 5ms target and 45ms maximum remain unchanged.
+Balanced order: Rust batch/control; Scheme control/batch; Scheme batch/control;
+Rust control/batch. External machine contention was not controlled.
+
+These are the earlier frozen =batch-handoff-final-{rust,scheme}-unit-20261004=
+unprofiled Release binaries, both linking 8d40. They are not fresh
+qualification of the latest worker wrapper source; the 48-document scenario
+uses the small sequential indexing route. Their executable SHA256 values:
+- Rust: =0453dba1a42300429b15b474b12ff9740092a6a7af9da2b8fa78fd90970aeda5=
+- Scheme: =fd0f86d0716dacab1f21da3e9f3253c198779362399c9b7c752665bc5af9e404=
+
+| Owner          | Mode       | Round |  p50 ms | p95/max ms | Gate |
+|----------------+------------+-------+---------+------------+------|
+| runtime-rust   | batch      |     1 |  18.124 |     28.513 | pass |
+| runtime-rust   | individual |     1 | 387.111 |    413.436 | fail |
+| runtime-scheme | individual |     1 | 243.261 |    313.698 | fail |
+| runtime-scheme | batch      |     1 |  52.044 |    223.531 | fail |
+| runtime-scheme | batch      |     2 |  26.400 |    220.356 | fail |
+| runtime-scheme | individual |     2 | 175.341 |    218.291 | fail |
+| runtime-rust   | individual |     2 | 156.937 |    393.887 | fail |
+| runtime-rust   | batch      |     2 |  85.660 |    108.071 | fail |
+
+Failed legs exit 101. Logs: =target/clock-validated-query-ab-20261004/=.
+ASP owns the statistics. Stable improvement, runtime ranking and the wall
+gate remain unproven. The source-admission gate passed separately using the
+worker-aware frozen Rust binary; =source-gate.log= is source evidence only.
+
+No production clock, parser algorithm, scheduler, Gambit kernel, Cargo profile,
+default manifest or public ABI was changed by this calibration slice.
+Next gate: whole-call CPU/GC attribution on the actual embedded native service,
+then a controlled endpoint-scale A/B with semantic parity and an execution
+environment that permits reproducible wall-time evidence.
+
+* Native CPU/GC statistics foundation, not production service attribution
+
+Added private =bindings/c/runtime-statistics.ss= and the maintained
+=just scheme-runtime-statistics-test output= owner. The helper calls
+the existing =##process-statistics= primitive, not raw C VM fields. Read-only
+reference inspection of Gambit's =lib/_kernel.scm= and =lib/_repl.scm=
+(=##exec-stats=) establishes the field semantics; =lib/os_time.c= establishes
+the process CPU microsecond-counter precision on the qualification platform.
+No source under Gambit was modified.
+
+The internal delta contains, in order: whole-process CPU ns, VM GC CPU ns,
+VM GC wall ns, VM collection count. Durations subtract seconds first and
+then floor to exact integer nanoseconds. Shape, invalid/non-finite counters,
+non-integral collection counts, counter regressions and u64 duration overflow
+are rejected. The 20-field shape check cannot prove semantic identity after
+an owner upgrade: the private primitive remains owner-version-dependent and
+requires requalification on upgrade.
+
+The first native run failed across an explicit test-only GC because field 7
+regressed. That field is not admitted as a cumulative allocation counter.
+It was removed from this projection, not clamped to zero or repaired inside
+the runtime. Failure evidence remains at
+=target/runtime-statistics-r1-20261004/runtime-statistics-test.log=.
+This observation does not establish the cause of the field's behavior.
+
+The second run passed. The expanded final suite passed all five cases with
+=MODULE-OK=, =HARNESS-OK=, final =OK= and no ERROR/FAILED/FAILURE:
+=target/runtime-statistics-r3-20261004/runtime-statistics-test.log=.
+Cases cover typed units, exclusion of the allocation field, malformed layout/
+counter/overflow admission, independent POSIX process CPU cross-check, and
+an explicit test-only GC that advances the count and both GC clocks.
+
+Final calibration observations, not performance gates:
+- Fixed C CPU work: process CPU 6.676999ms, enclosed independent OS process
+  CPU 6.667ms. The 2us admission allowance reflects counter precision, not
+  relaxation of the existing Query wall gate.
+- Forced GC test: process CPU 24.505999ms, GC CPU 24.486999ms, GC wall
+  100.274085ms and collection count 1. This is not a production Query sample.
+
+Snapshots themselves allocate; an ending snapshot may trigger a collection
+and include its cost. GC counters are VM-wide, process CPU covers all OS
+threads, and overlapping observed intervals must not be summed as exclusive
+costs. No production helper forces a collection or changes scheduling.
+
+This module is not yet imported by the production parser program. Rust/
+Scheme feature binaries, OPR1/OBT1, the default manifest, public ABI, Cargo
+profiles and performance thresholds were unchanged. The next gate remains
+integration into the opt-in whole-batch native service envelope, strict Rust
+wire admission and fresh runtime-rust/runtime-scheme qualification at 1000
+and 10000 documents. Full consumers and Python qualification also remain open.
+
+Source SHA256 (the final helper comment clarification is non-executable):
+- runtime-statistics.ss:
+  =fe47773467da5e2a6e7dc5188281de36b87508bbc9198973278c25f84d093b28=
+- runtime-statistics-test.ss:
+  =ffd5003faee2d06726051410804714ed2ad20f59eb3b132444f38c9e1c94539b=
+
+* Whole-batch diagnostic integration
+
+Operation 7 now emits =OBP1=, six little-endian u64 fields, and the unchanged
+=OBT1= payload with OPR1 document rows. Operation 6 and ordinary scalar
+parsing do not sample these counters. The fields are:
+
+| Offset | Field | Unit | Scope |
+|--------+-------+------+-------|
+| 4 | batch_body_wall_sum | ns | Batch framing, parsing, OBT1 assembly |
+| 12 | batch_owner_thread_cpu_sum | ns | Same owner OS thread |
+| 20 | batch_process_cpu_interval_sum | ns | All OS threads of this process |
+| 28 | batch_vm_gc_cpu_interval_sum | ns | VM-wide GC CPU interval |
+| 36 | batch_vm_gc_wall_interval_sum | ns | VM-wide GC wall interval |
+| 44 | batch_vm_gc_count_interval_sum | count | VM-wide collection interval |
+| 52 | OBT1 payload | bytes | Existing ordered document records |
+
+Rust collector names use the =native.= prefix. VM/process interval sums must
+not be interpreted as exclusive costs if intervals overlap. Process CPU and
+GC snapshots enclose a slightly wider interval than wall/thread clocks;
+snapshot allocation can trigger a collection. Initial ONR1 header admission,
+the outer OBP1 copy, FFI entry/return, owner scheduling and Rust projection
+are outside the batch body wall interval. This is not an entire Query timer.
+
+Rust rejects wrong OBP1/OBT1 identities, truncation, wrong counts, trailing
+bytes and ordinary/diagnostic mode mismatches without compatibility fallback.
+Whole-batch counters are committed only after complete batch wire admission.
+The existing per-document diagnostic stages retain their own behavior.
+Without =runtime-profile=, requesting diagnostic batch decode is rejected.
+The parallel scale log label is now =observations= rather than =stages_ns=,
+because that map includes both durations and counts. The older 48-document
+diagnostic scenario still has a =stages_ns= label; any count fields in that
+map must not be interpreted as nanoseconds. Its label cleanup remains pending.
+
+The compiler-owned candidate is isolated at
+=target/batch-cpu-gc-candidate-20261004/program.json=, 276 modules including
+the newly compiled native statistics owner and rowan-event-tape owner. No
+default-manifest promotion or native kernel/bridge/profile change occurred.
+
+Native Scheme framing/parity suites passed both the initial and expanded
+bad-UTF8 isolation checks, with final =OK= and no failure markers. Final log:
+=target/batch-cpu-gc-candidate-20261004/scheme-event-final-test.log=.
+Expanded bad-document checks exercise both operations 6 and 7, preserving
+the following document after an indexed failure.
+
+Runtime feature build/functional/scale qualification receipts follow below
+only after the fresh binaries finish. Concurrent unrelated compiler activity
+was observed on the host; these runs are not controlled performance rankings.
+
+Fresh =runtime-rust,runtime-profile= Release build passed in 10m09s. Its
+frozen binary is =target/runtime-receipt-binaries/batch-cpu-gc-rust-unit-20261004=.
+The maintained library test owner passed all 57 native cases (including
+active-diagnostic batch parity under all three parser configurations) and
+33 ordinary cases, with four intentionally ignored scenarios. The new strict
+OBP1 wire test passed. Logs: =rust-build.log= and =rust-functional.log= under
+the isolated candidate directory. No older binary evidence is used for these
+new diagnostic assertions.
+
+Fresh =runtime-scheme,runtime-profile= Release build passed in 9m13s.
+Its frozen binary is
+=target/runtime-receipt-binaries/batch-cpu-gc-scheme-unit-20261004=.
+The same maintained library owner passed 57 native and 32 ordinary cases,
+with four intentionally ignored scenarios. Logs: =scheme-build.log= and
+=scheme-functional.log=. Frozen executable SHA256 values:
+- Rust: =b381904c15235ed79b3f5741d7bb05838d72b8c8ab49456d671622986144051a=
+- Scheme: =5ae1904afa6331b8c35f27f21cc38c1dfa54aeab41c6944e7cad58ee13822305=
+
+Both feature binaries report the same new native program identity:
+=sha256:8373244f72e71d5b9ce40804d0d37867753290db7da214eb9d1a3368840f6991=.
+It supersedes 8d40 only for this explicitly selected diagnostic candidate;
+the default manifest was verified unchanged against the prefix candidate.
+
+** Actual embedded project-query scale qualification
+
+All four fresh-process runs passed full per-fact projection/order parity,
+unique paths and headings, document counts, all six new diagnostic keys and
+collector reset. Each ran the production four-worker indexing policy, first
+with diagnostics disabled, then with diagnostics enabled. Our own compilation
+had ended before the four runs and the runs were sequential. Unrelated host
+load remained uncontrolled. Logs are
+={rust,scheme}-query-scale-{1000,10000}.log= in the candidate directory.
+
+Observed diagnostic-pass intervals below are seconds, except GC count:
+
+| Owner | Docs | Query caller wall | Batch body wall sum | Owner thread CPU sum | Process CPU interval sum | VM GC CPU interval sum | VM GC wall interval sum | GC count interval sum |
+|-------+------+-------------------+---------------------+----------------------+--------------------------+------------------------+-------------------------+-----------------------|
+| Rust | 1000 | 1.480451 | 1.351187 | 0.164757 | 0.200696 | 0.050197 | 0.291841 | 25 |
+| Rust | 10000 | 19.413296 | 16.661336 | 1.766306 | 2.142325 | 0.523247 | 3.447549 | 242 |
+| Scheme | 1000 | 0.885362 | 0.816804 | 0.146848 | 0.182227 | 0.049726 | 0.148970 | 25 |
+| Scheme | 10000 | 18.997144 | 17.144825 | 1.671237 | 2.059528 | 0.510217 | 3.823571 | 242 |
+
+These are single diagnostic observations, not speedup evidence or a runtime
+ranking. GC CPU is not an additional disjoint cost to add to owner/process
+CPU. GC wall includes non-CPU stalls during collection; it is not exclusive
+collector instruction time. The profiler's own allocations can contribute.
+The batch wall and GC snapshot windows also differ slightly as described above.
+The measured Query caller region covers discovery/load/index/projection;
+final no-hit filtering and parity assertions are outside the timed region.
+This is not a complete endpoint latency benchmark or a new large-project SLO.
+
+GC is visibly nonzero in these embedded samples. The batch wall/CPU gap is
+much larger than either measured CPU or GC wall, so attributing the entire
+gap to fold computation or GC is unsupported. Native owner admission sums
+at 10000 documents were 50.034392s (Rust) and 51.046471s (Scheme), across
+overlapping caller waits; they are not an additional 50s of caller latency.
+Next research must keep fold allocation/GC cost, owner waiting, and host
+non-CPU stalls separate, rather than changing the runtime concurrency policy.
+
+** Existing strict gate remains red
+
+Both frozen binaries reran the ordinary (diagnostics inactive) maintained
+48-document ASP scenario, zero warmups and three measured iterations. The
+5ms target and 45ms maximum were unchanged:
+
+| Owner | p50 ms | p95/max ms | Result |
+|-------+--------+------------+--------|
+| Rust | 27.906083 | 198.307125 | fail, exit 101 |
+| Scheme | 92.844834 | 119.462958 | fail, exit 101 |
+
+Logs: =rust-query-strict-gate.log= and =scheme-query-strict-gate.log=.
+No stable endpoint performance improvement or overall parser migration
+closure is claimed. This slice adds and qualifies opt-in batch-body CPU/GC
+diagnostics; it does not optimize the parser algorithm or scheduling.
+Unprofiled-feature compile checks, full consumers, Python/wheel qualification,
+default-manifest integration, the old 48-document diagnostic log label cleanup,
+and a controlled performance A/B remain separate open gates.
+
+* Full-span helper sharing experiment: rejected and withdrawn
+
+The parser checkout remains detached at
+=e7c6761dc79202abe50931bd78ee3f0930d61f8f=; existing dirty migration
+changes are preserved. This slice adds a private =fold-source-span-line=
+projection: an admitted request for exactly the current source span reuses
+its immutable string; partial spans retain the existing UTF-8 decoder.
+The two helper/bounds callers use that projection. This avoids the full-span
+slice/decode allocation and preserves the identity-keyed line-byte cache,
+but does not establish a measured allocation-byte or speedup claim.
+
+Before this slice, fold source SHA256 was
+=8f80a4a6373b393f75517645fae178f448187d00fe313a4f89c6ff3897d403d2=.
+Candidate fold source SHA256 is
+=7f33b66f0a2836f10184295d7009862a0dd31ae991030c64ecfa030c69ffb715=.
+Compiled baseline and candidate overlays are isolated in
+=target/full-span-helper-baseline-20261004/lib= and
+=target/full-span-helper-candidate-20261004/lib=.
+The candidate scanner differs from the baseline scanner only in its generated
+timestamp. No default program manifest, native FFI program, feature binary,
+runtime concurrency policy, compiler profile, or Gambit kernel was changed
+by this experiment.
+
+** Native functional receipts
+
+Maintained Just recipes compiled the candidate and passed four source-span
+cases (UTF-8/CRLF, partial and malformed-byte spans, nested helper/bounds
+parity, and successive-source/bounds isolation), 19 state-sharing cases,
+38 fold cases, and the aggregate Org event/parser harness. Each test recipe
+requires MODULE-OK, HARNESS-OK, final OK, and no failure markers.
+Candidate logs include =source-span-test.log=, =state-test.log=,
+=event-fold-test.log=, and =org-event-test-run.log=.
+Static module generation passed in =static-build.log=; this is not a new
+embedded AOT/FFI integration qualification.
+
+** CPU/GC scopes and receipt admission
+
+The existing ASP native API still owns its 20 samples, p50/p95, and unchanged
+100ms p95 maximum. Each callback still performs ten folds of 64 UTF-8 lines,
+with 128 nested helper calls per fold. The new =asp.v2= diagnostic receipt
+observes both the whole ASP run and each of its existing callbacks using
+the private native runtime-statistics API. A separate pure Scheme projection
+sums four nonnegative exact integer counters; two native projection tests
+passed through =just scheme-helper-runtime-counters-test=.
+
+Counter units are process CPU ns, VM GC CPU ns, VM GC wall ns, and GC count.
+The whole-run scope includes ASP's GC preconditions outside callback timing;
+the callback scope excludes those preconditions but includes automatic GC
+and snapshot overhead. All v2 runs below observed two collections inclusive
+and one within callbacks. These are neither allocation-byte counters nor
+exclusive helper CPU attribution. Callback snapshots add diagnostic overhead,
+so v1 and v2 timing values must not be treated as identical scenarios.
+No new percentile sampler or forced GC policy was added.
+
+The first baseline launch could not import the static-only statistics
+artifact under gxi (exit 70, no receipt). The loadable
+=target/runtime-statistics-r3-20261004/lib= overlay corrected that
+loading boundary. =baseline-r1.log= preserves the failure; it is not a
+parser semantic failure.
+
+** A/B results and rejection of a speedup claim
+
+All values below are ASP p50/p95 in milliseconds. Fresh processes use the
+same source, forms, helpers, independent event admission, and contract.
+The native comparator checks these identities and both counter shapes;
+comparator success is not a benchmark-gate pass.
+
+| Receipt pair | Order | Baseline p50/p95 | Candidate p50/p95 | Gate |
+|--------------+-------+------------------+-------------------+------|
+| v1 r1 | B then C | 0.901 / 14.503 | 0.921 / 33.889 | both pass |
+| v1 r2 | C then B | 0.880 / 14.381 | 1.967 / 16.156 | both pass |
+| v2 r1 | B then C | 6.549 / 104.016 | 0.932 / 55.175 | baseline fails |
+| v2 r2 | C then B | 1.556 / 58.635 | 1.919 / 51.284 | both pass |
+| v2 r3 | C then B | 1.934 / 71.859 | 1.562 / 44.008 | both pass |
+
+The v2 r2 candidate leg may overlap the preceding round's comparator;
+exclude that pair from controlled-performance conclusions. The v2 r3
+candidate and baseline ran sequentially, with no own build/test/comparator
+overlap, then the comparator ran. Unrelated host load remains uncontrolled.
+The failed v2 r1 baseline retained its receipt and original threshold;
+it was not converted into a pass.
+
+For the clean reverse-order v2 r3 callback scope (20 callbacks), baseline
+counters were =#(41888992 15195000 120724916 1)=; candidate counters were
+=#(37440990 14947000 103584051 1)=. Inclusive counters were respectively
+=#(55468999 28291000 187898874 2)= and
+=#(55607000 32623000 261463165 2)=. GC wall and CPU are not disjoint costs
+to add together, nor a complete explanation of wall-time variation.
+All receipts and comparator logs remain in the isolated candidate directory.
+
+Results were inconsistent across diagnostic rounds. The next slice below
+rejects and withdraws the source candidate using separate unprobed timing.
+This synthetic helper
+kernel does not qualify the 1000/10000-document embedded Query workload,
+either runtime feature, Python/wheel consumers, or the still-red strict
+Query gate. Next admission requires reproducible A/B evidence and then a
+separately built native program plus both real concurrent scale workloads;
+the previously qualified batch diagnostic binaries do not contain this
+new fold source.
+
+* Unprobed timing admission and candidate withdrawal
+
+The maintained =scheme-helper-state-benchmark= now defaults to =timing=;
+an explicit =diagnostic= argument enables CPU/GC observation. Both modes
+use the same named ten-fold workload, fixture, semantic admission, 20 ASP
+samples, and unchanged 100ms p95 maximum. Timing selects its callback before
+the ASP run and makes no calls to the extra runtime-statistics snapshot API,
+either around the run or inside callbacks. ASP retains its own timing,
+memory observations and GC policy. This does not mean a completely
+uninstrumented engine or endpoint.
+
+Receipts now use =orgize.scheme-helper-state.asp.v3=. Timing marks both
+extra scopes disabled and both extra counter vectors =#f=, not fabricated
+zero vectors. =workloadCallbacks= counts observed callbacks (zero in timing),
+not the number ASP executes (still 20). A pure mode/counter admission
+function rejects missing diagnostic observations, fabricated timing counters,
+wrong counts/scopes, and unknown modes. Three native test cases passed via
+=just scheme-helper-runtime-counters-test=.
+
+Three fresh-process timing pairs ran sequentially, with no own build, test
+or comparator overlap during either leg. Comparison ran after both legs
+in each pair. Unrelated host load is still uncontrolled.
+
+| v3 timing pair | Order | Baseline p50/p95 ms | Candidate p50/p95 ms | Gate |
+|----------------+-------+---------------------+----------------------+------|
+| r1 | B then C | 0.902 / 88.733 | 0.948 / 144.962 | candidate fails |
+| r2 | C then B | 1.220 / 69.997 | 1.536 / 96.600 | both pass |
+| r3 | B then C | 0.976 / 37.458 | 6.400 / 92.074 | both pass |
+
+All three native comparisons matched semantics and contract. Candidate
+r1 failed the original ASP gate (exit 70); its receipt is retained.
+Comparison exit zero means matched receipts, not a performance pass.
+These observations do not prove a hardware-controlled regression or its
+cause, but provide no admission basis for promoting this optimization.
+
+An explicit diagnostic-mode pair also passed schema/counter admission,
+and comparing a timing receipt with a diagnostic receipt correctly failed
+on =mode= (exit 70). Its metrics are diagnostic verification only and do
+not override the timing rejection. Logs and receipts are
+={baseline,candidate}-timing-v3-r{1,2,3}.{ss,log}=,
+=compare-timing-v3-r{1,2,3}.log=,
+={baseline,candidate}-diagnostic-v3.{ss,log}=,
+=compare-diagnostic-v3.log= and =compare-mixed-v3.log= in the isolated
+full-span candidate directory.
+
+Only this experiment's private sharing function and its two call-site
+changes were withdrawn from the parser source. The restored fold SHA256 is
+exactly the pre-experiment
+=8f80a4a6373b393f75517645fae178f448187d00fe313a4f89c6ff3897d403d2=;
+all earlier migration and optimization edits remain intact.
+The four candidate-only tests moved out of the ordinary parser test tree
+to the isolated candidate's =source-span-experiment-test.ss=.
+=scheme-event-fold-source-span-experiment-test= replays that file against
+an explicitly selected candidate overlay, never the restored parser source.
+Generated candidate modules and prior receipts remain recoverable there.
+The relocated four-case suite replay passed MODULE-OK, HARNESS-OK and final
+OK against the explicit candidate overlay; log =replay-v3/source-span-test.log=.
+
+No default manifest, FFI binary, runtime feature, profile, kernel, or remote
+PR changed. The new mode separation and strict receipt admission are retained.
+The rejected experiment will not consume dual-runtime/native-scale rebuilds;
+both actual concurrent 1000/10000-document workloads and the red Query gate
+remain required for a future admitted parser optimization.

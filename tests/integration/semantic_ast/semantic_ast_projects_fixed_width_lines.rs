@@ -3,7 +3,6 @@ use orgize::{Org, ast::ElementData};
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/fixed-width-lines.org");
 
-#[test]
 fn semantic_ast_projects_fixed_width_lines() {
     let doc = Org::parse(SOURCE).document();
 
@@ -33,3 +32,8 @@ fn semantic_ast_projects_fixed_width_lines() {
         insta::assert_debug_snapshot!("semantic_ast__semantic_fixed_width_lines", fixed_width);
     });
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_fixed_width_lines::semantic_ast_projects_fixed_width_lines",
+    semantic_ast_projects_fixed_width_lines,
+)];

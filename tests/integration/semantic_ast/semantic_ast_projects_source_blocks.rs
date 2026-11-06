@@ -9,9 +9,9 @@ use orgize::{
         SourceBlockResultValueType, SourceBlockTangleCommentsMode, SourceBlockTangleMode,
         SourceBlockTangleNowebMode,
     },
+    org_aot::parse_org_aot,
 };
 
-#[test]
 fn semantic_ast_projects_source_block_records_with_results_and_tangle() {
     let doc = Org::parse(
         r#"#+NAME: demo-block
@@ -85,7 +85,6 @@ echo hi
     assert!(records[1].result.is_none());
 }
 
-#[test]
 fn semantic_ast_projects_source_block_result_options() {
     let doc = Org::parse(
         r#"#+PROPERTY: header-args :results file html replace :file "default.html"
@@ -127,7 +126,6 @@ echo hidden
     assert_eq!(hidden.unknown, ["unknown-mode"]);
 }
 
-#[test]
 fn semantic_ast_projects_source_block_execution_plan() {
     let doc = Org::parse(
         r#"#+PROPERTY: header-args :eval query :cache yes :session shared :dir ./workspace :noweb no-export
@@ -207,7 +205,6 @@ Inline src_sh[:exports none :eval no :noweb eval]{echo hi}
     );
 }
 
-#[test]
 fn semantic_ast_projects_source_block_records_affiliated_header_args() {
     let doc = Org::parse(
         r#"#+HEADER: :var data=dataset :results output
@@ -257,7 +254,72 @@ print(data)
     );
 }
 
-#[test]
+fn semantic_ast_header_args_are_classified_in_the_scheme_graph() {
+    let org = Org::parse(
+        "#+HEADER: :var x=1 :results output\n\
+         * H\n\
+         :PROPERTIES:\n\
+         :header-args: :cache yes :results drawer\n\
+         :END:\n\
+         src_sh[:exports both :var x=1]{echo hi}\n",
+    );
+    for (kind, expected_keys) in [
+        ("keyword", vec!["var", "results"]),
+        ("node-property", vec!["cache", "results"]),
+        ("inline-src-block", vec!["exports", "var"]),
+    ] {
+        let record = org
+            .records()
+            .iter()
+            .find(|record| record.kind == kind)
+            .expect("Scheme graph record for header source");
+        assert_eq!(
+            record.values("header-key").collect::<Vec<_>>(),
+            expected_keys,
+            "{kind} header keys must come from Scheme tokens"
+        );
+    }
+}
+
+fn semantic_ast_scheme_header_keys_respect_quoted_and_escaped_values() {
+    let org = Org::parse(
+        "#+HEADER: :var 'x :inner y' :results output\n\
+         #+HEADER: :var a\\ :inner :exports both\n\
+         #+begin_src sh\n\
+         echo hi\n\
+         #+end_src\n",
+    );
+    let keywords = org
+        .records()
+        .iter()
+        .filter(|record| record.kind == "keyword")
+        .collect::<Vec<_>>();
+    assert_eq!(keywords.len(), 2);
+    assert_eq!(
+        keywords[0].values("header-key").collect::<Vec<_>>(),
+        ["var", "results"]
+    );
+    assert_eq!(
+        keywords[1].values("header-key").collect::<Vec<_>>(),
+        ["var", "exports"]
+    );
+    let records = org.document().source_block_records();
+    assert_eq!(records.len(), 1);
+    assert_eq!(
+        records[0]
+            .header_args
+            .iter()
+            .map(|arg| arg.raw.as_str())
+            .collect::<Vec<_>>(),
+        [
+            ":var 'x :inner y'",
+            ":results output",
+            ":var a\\ :inner",
+            ":exports both",
+        ]
+    );
+}
+
 fn semantic_ast_projects_source_block_records_property_header_args() {
     let doc = Org::parse(
         r#"#+PROPERTY: header-args :results output :exports results :var dataset=data_block
@@ -376,7 +438,6 @@ print("local")
     }));
 }
 
-#[test]
 fn semantic_ast_projects_inline_source_records_with_defaults_and_results_macro() {
     let doc = Org::parse(
         r#"Value src_sh[:exports both :var x=1]{echo $x}{{{results(=1=)}}}
@@ -431,7 +492,6 @@ fn semantic_ast_projects_inline_source_records_with_defaults_and_results_macro()
     );
 }
 
-#[test]
 fn semantic_ast_projects_literate_source_block_references() {
     let doc = Org::parse(
         r#"#+NAME: load_data
@@ -490,7 +550,40 @@ Inline call_load_data() and call_missing_inline().
     );
 }
 
-#[test]
+fn babel_call_references_consume_only_the_aot_value() {
+    let source = "#+CALL: target()\n#+CALL: #+call:literal()\n#+CALL: configured[head](x=1)\n#+CALL: target(x=1)[head]\n#+CALL: ()\n";
+    let graph = parse_org_aot(source).expect("Scheme AOT classifies Babel calls");
+    let values = graph
+        .records()
+        .iter()
+        .filter(|record| record.kind == "babel-call")
+        .map(|record| (record.field("name"), record.field("value")))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        values,
+        [
+            (Some("target"), Some("target()")),
+            (Some("#+call:literal"), Some("#+call:literal()")),
+            (Some("configured"), Some("configured[head](x=1)")),
+            (Some("target"), Some("target(x=1)[head]")),
+            (None, Some("()")),
+        ]
+    );
+
+    let doc = Org::parse(source).document();
+    assert_clean_projection(&doc);
+    let targets = doc
+        .source_block_references()
+        .into_iter()
+        .filter(|reference| reference.kind == SourceBlockReferenceKind::BabelCall)
+        .map(|reference| reference.target)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        targets,
+        ["target", "#+call:literal", "configured", "target"]
+    );
+}
+
 fn semantic_ast_projects_lowercase_babel_keywords_and_native_headers() {
     let doc = Org::parse(
         r#"#+name: prep
@@ -586,3 +679,50 @@ echo "$topic"
     assert_eq!(references[0].target, "prep");
     assert!(references[0].resolved);
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_records_with_results_and_tangle",
+        semantic_ast_projects_source_block_records_with_results_and_tangle,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_result_options",
+        semantic_ast_projects_source_block_result_options,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_execution_plan",
+        semantic_ast_projects_source_block_execution_plan,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_records_affiliated_header_args",
+        semantic_ast_projects_source_block_records_affiliated_header_args,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_header_args_are_classified_in_the_scheme_graph",
+        semantic_ast_header_args_are_classified_in_the_scheme_graph,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_scheme_header_keys_respect_quoted_and_escaped_values",
+        semantic_ast_scheme_header_keys_respect_quoted_and_escaped_values,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_source_block_records_property_header_args",
+        semantic_ast_projects_source_block_records_property_header_args,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_inline_source_records_with_defaults_and_results_macro",
+        semantic_ast_projects_inline_source_records_with_defaults_and_results_macro,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_literate_source_block_references",
+        semantic_ast_projects_literate_source_block_references,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::babel_call_references_consume_only_the_aot_value",
+        babel_call_references_consume_only_the_aot_value,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_source_blocks::semantic_ast_projects_lowercase_babel_keywords_and_native_headers",
+        semantic_ast_projects_lowercase_babel_keywords_and_native_headers,
+    ),
+];

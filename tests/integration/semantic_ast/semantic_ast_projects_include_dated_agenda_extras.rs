@@ -9,7 +9,6 @@ use orgize::{
 
 const SOURCE: &str = include_str!("../../fixtures/semantic_ast/include-datetree-agenda-extras.org");
 
-#[test]
 fn semantic_ast_projects_include_dated_and_agenda_extras() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -105,3 +104,8 @@ fn include_plan_without_annotations(
             .collect(),
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_include_dated_agenda_extras::semantic_ast_projects_include_dated_and_agenda_extras",
+    semantic_ast_projects_include_dated_and_agenda_extras,
+)];

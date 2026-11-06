@@ -1,0 +1,188 @@
+#+title: Implementation status - vocabulary-babel-and-attachments
+
+[[file:../90.01_implementation_status.org][Implementation status index]]
+
+*** M26 Org Vocabulary And Host Binding Refinement
+
+- [X] Preserve official =#+TAGS:= group structure in the semantic tag
+      vocabulary: unlabelled ={ ... }= mutually exclusive sets, labelled
+      =[ group : members ]= hierarchies, and labelled ={ group : members }=
+      mutually exclusive child sets.
+- [X] Extend =TagDefinition=, wasm metadata DTOs, and =org_elements_json()=
+      with =is_group= and =group= metadata while keeping existing
+      =name=/=shortcut=/=raw= fields stable for older consumers.
+- [X] Add an original Rust snapshot over tag vocabulary groups without copying
+      Org-mode tests or introducing runtime Emacs dependencies.
+
+*** M27 Org Group Tag Match Expansion
+
+- [X] Expand document-level =#+TAGS:= group vocabulary in agenda match
+      evaluation, including transitive groups such as =[ GTD : Control ]=
+      followed by =[ Control : Context Task ]=.
+- [X] Apply the same group-tag matcher to agenda entries, sparse-tree
+      projections, workspace match commands, and clocktable =:match= filters
+      without changing headline tags or parser output.
+- [X] Add an original Rust snapshot proving =+GTD= and =+Control= behavior
+      across agenda, sparse-tree, workspace, and clocktable projections.
+
+*** M28 Group Tags In Special-Property Matches
+
+- [X] Reuse the same document-level tag vocabulary matcher for =TAGS= and
+      =ALLTAGS= special-property agenda match expressions, so
+      =ALLTAGS={GTD}= and =TAGS={Control}= follow group expansion.
+- [X] Preserve existing string/substring behavior for literal colon-delimited
+      tag property values while adding group-aware fallback matching.
+- [X] Extend the original tag vocabulary snapshot to cover agenda and
+      sparse-tree special-property matches plus negative =ALLTAGS<>{...}=
+      behavior.
+
+*** M29 Org Elements Index Selector Refinement
+
+- [X] Resolve the PR review thread around =#+TAGS:= group delimiters by
+      keeping ={=, =}=, =[=, =]=, and =:= out of exported tag definitions and
+      adding an explicit regression assertion over the semantic vocabulary.
+- [X] Extend =OrgElementsIndexQuery= with summary-field selectors:
+      =summary_eq= for exact compact values and =summary_contains= for text or
+      string-list fields.
+- [X] Expose the same selectors through wasm =orgElementsIndexQueryJson= as
+      =summaryEquals= and =summaryContains= so TypeScript/Python hosts can ask
+      for link paths, section titles, and source-block languages without
+      materializing the full Org elements tree.
+
+*** M29.1 Literate Source Reference Projection
+
+- [X] Add =SourceBlockReference= and =SourceBlockReferenceKind= to the semantic
+      AST API so host tools can consume non-executing Babel edges separately
+      from source-block definitions.
+- [X] Resolve =#+CALL: name(...)= targets after trimming Org's ordinary keyword
+      spacing, covering a long-standing lint blind spot where =#+CALL: foo()=
+      did not produce a missing-target warning.
+- [X] Treat native Babel keyword entry points case-insensitively so lowercase
+      =#+name=, =#+call=, and =#+results[...]= feed the same semantic source
+      block name, call-reference, and result-evidence projections.
+- [X] Expose source-block references through wasm =sourceBlocksJson= with
+      =kind=, =target=, =resolved=, and source range fields.
+- [X] Split wasm source-block DTO tests into a dedicated owner so the harness
+      large-test-leaf policy stays enabled.
+
+*** M29.2 Babel Header Variable Dependency Projection
+
+- [X] Extend =SourceBlockReferenceKind= with =HeaderVar= so
+      =:var data=name= and =:var data=name(args)= source-block dependencies
+      enter the same non-executing literate graph as noweb and Babel calls.
+- [X] Keep =:var= literal assignments such as numbers, quoted strings, lists,
+      and ambiguous bare non-source names out of missing-source diagnostics, so
+      named tables and ordinary literal values are not misreported as broken
+      source blocks.
+- [X] Resolve Babel calls and header variables only against local =#+NAME=
+      source blocks, while noweb references continue to accept both =#+NAME=
+      source blocks and explicit =:noweb-ref= declarations.
+- [X] Expose header-variable reference edges through wasm =sourceBlocksJson=
+      with optional =variable= metadata.
+
+*** M29.3 Babel Affiliated Header Argument Projection
+
+- [X] Merge native =#+HEADER:= affiliated keywords into source-block semantic
+      header arguments before the =#+BEGIN_SRC= line arguments, matching Org's
+      code-block-specific header argument precedence without executing Babel.
+- [X] Accept the retired plural =#+HEADERS:= spelling as an affiliated header
+      source because Org-mode still accepts it for backward compatibility.
+- [X] Reuse the existing structured header-arg parser so =:var=, =:results=,
+      =:tangle=, =:noweb-ref=, and other header arguments have the same
+      normalized shape whether they appear on =#+HEADER:= or =#+BEGIN_SRC=.
+
+*** M29.4 Babel Property Header Argument Projection
+
+- [X] Project native =#+PROPERTY: header-args= file-level defaults into source
+      and inline-source block records without executing Babel.
+- [X] Project language-specific =#+PROPERTY: header-args:LANG= defaults after
+      common property defaults and before =#+HEADER:= / =#+BEGIN_SRC= args.
+- [X] Apply subtree property drawer =:header-args:= and
+      =:header-args:LANG:= inheritance through =Section.effective_properties=,
+      preserving inner subtree override semantics.
+- [X] Fix =:tangle= precedence so the most specific header argument wins across
+      property, affiliated keyword, and block-line layers.
+
+*** M29.5 Babel Tangle Planning Metadata
+
+- [X] Extend =SourceBlockTangle= with non-executing =:mkdirp=,
+      =:comments=, =:shebang=, and =:noweb= tangle-context metadata.
+- [X] Carry the structured tangle metadata into =SourceTangleBlock= so
+      =source_tangle_plan= consumers can preview file creation, comments,
+      shebang, and noweb behavior without executing Babel.
+- [X] Expose the same tangle metadata through wasm =sourceBlocksJson= for
+      browser and downstream TypeScript consumers.
+
+*** M29.6 Babel Result Planning Metadata
+
+- [X] Extend =SourceBlockRecord= with non-executing =:results= planning
+      metadata for collection, format, insertion handling, and value/output
+      type.
+- [X] Preserve partial override semantics across defaults, =#+PROPERTY:=
+      header args, =#+HEADER:=, and block-line args by classifying result
+      tokens by Org Babel value group.
+- [X] Carry =:file=, =:file-desc=, =:file-ext=, =:file-mode=, and
+      =:output-dir= hints into result planning without writing files.
+- [X] Expose the same result planning metadata through wasm =sourceBlocksJson=
+      and TypeScript DTO declarations.
+
+*** M29.7 Babel Execution And Export Planning Metadata
+
+- [X] Extend =SourceBlockRecord= with a non-executing execution/export plan
+      for =:eval=, =:exports=, =:cache=, =:session=, =:dir=, and =:hlines=.
+- [X] Split source-block header normalization into a dedicated semantic module
+      so source-block record collection stays small enough for the harness
+      large-module policy.
+- [X] Model =:noweb= by context so eval, export, and tangle consumers can see
+      expand/strip/disabled decisions without executing Babel.
+- [X] Expose the same execution/export planning metadata through wasm
+      =sourceBlocksJson= and TypeScript DTO declarations.
+
+*** M29.8 Babel Execution Risk Lint Receipts
+
+- [X] Route Babel lint through the structured execution plan instead of only
+      scanning raw header arguments.
+- [X] Add agent-facing warnings for explicit stateful =:session= blocks whose
+      =:eval= policy can execute.
+- [X] Add agent-facing warnings for explicit =:cache yes= blocks whose =:eval=
+      policy can execute, while keeping inert =:eval never= blocks quiet.
+
+*** M29.9 Babel Result File Lint Receipts
+
+- [X] Route Babel lint through =SourceBlockResultOptions= for file-result
+      readiness checks.
+- [X] Add an agent-facing warning for =:results file= blocks that do not
+      declare an explicit =:file= target.
+- [X] Keep the check non-executing and metadata-only; orgize does not infer
+      generated file paths from source code output.
+
+*** M29.10 Attachment Inventory VCS Closure
+
+- [X] Resolve =attachment:= links through the section's current or inherited
+      attachment directory when building filesystem-aware inventory entries.
+- [X] Add opt-in git-annex availability evidence alongside existing git status
+      checks, while keeping parse output and default inventory calls
+      filesystem-independent.
+- [X] Add an original temp-git snapshot covering clean, untracked, missing, and
+      no-directory attachment receipts without copying upstream Org tests.
+
+*** M29.11 Attachment Archive Delete Advice
+
+- [X] Add caller-supplied =org-attach-archive-delete= policy metadata to
+      =AttachmentInventoryOptions=.
+- [X] Project archived sections with attachment directories into non-mutating
+      archive-delete advice for =query= and =always= policies.
+- [X] Keep orgize read-only: the advice records possible deletion impact but
+      never deletes attachment files or modifies archived subtrees.
+
+*** M29.12 Attachment Display And Sync Plan
+
+- [X] Add configurable =org-attach-id-dir= support to filesystem-aware
+      attachment inventory, preserving the default =data/= layout while allowing
+      local =.attach/= trees.
+- [X] Project attachment links into display records with section context,
+      effective tags, ID, media kind, existence, and resolved absolute path.
+- [X] Add non-mutating sync-plan advice for missing directories, missing linked
+      files, orphan files, empty directories, and stale =:ATTACH:= tags.
+- [X] Expose =attachmentInventoryJson= through wasm/worker DTOs without growing
+      the root DTO surface past the harness line budget.
