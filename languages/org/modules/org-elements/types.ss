@@ -1,9 +1,6 @@
 ;;; Yuanxu Module Scope contract; business values have no authoring dependency.
-(import (only-in "value-types.ss" OrgElementsProfile))
-;; Yuanxu retains the existing profile's value contract.
-(import (only-in :clan/poo/object .cc)
-        (only-in :yuanxu/object-types/contracts YuanxuContract.))
+(import (only-in "value-types.ss" OrgElementsProfile)
+        (only-in :clan/poo/object .cc))
 (export OrgElementsScopeContract)
 (def OrgElementsScopeContract
-  (.cc YuanxuContract. identity: 'org-elements/scope
-       value-contract: OrgElementsProfile))
+  (.cc OrgElementsProfile identity: 'org-elements/scope))

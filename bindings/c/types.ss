@@ -1,10 +1,8 @@
-(import (only-in :clan/poo/object .cc .get)
+(import (only-in :clan/poo/object .cc)
         (only-in :clan/poo/mop define-type)
-        (only-in :clan/poo/type Record)
-        (only-in :yuanxu/object-types/contracts YuanxuContract.))
+        (only-in :clan/poo/type Record))
 (export OrgNativeScope OrgNativeScopeContract)
 ;; Build-only capability: the native leaves have their own C ABI.
 (define-type OrgNativeScope (Record))
 (def OrgNativeScopeContract
-  (.cc YuanxuContract. identity: 'org-native/scope
-       value-contract: OrgNativeScope proto: (.get OrgNativeScope proto)))
+  (.cc OrgNativeScope identity: 'org-native/scope))
