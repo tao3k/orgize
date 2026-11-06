@@ -31,8 +31,8 @@ md = ["dep:comrak"]
 [dependencies]
 gerbil-scheme = { workspace = true, features = ["external-program"] }
 gerbil-scheme-sys = { workspace = true, features = ["external-program"] }
-gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", rev = "f97d9fee608a69f2172d56f4f4d0bbae33c69808", version = "0.1.0" }
-gerbil-parser-artifact = { git = "https://github.com/tao3k/gerbil-parser", rev = "f97d9fee608a69f2172d56f4f4d0bbae33c69808", version = "0.1.0" }
+gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", rev = "21fdb58642b135c48ad0006aab40e58e99e58c24", version = "0.1.0" }
+gerbil-parser-artifact = { git = "https://github.com/tao3k/gerbil-parser", rev = "21fdb58642b135c48ad0006aab40e58e99e58c24", version = "0.1.0" }
 blake3 = "1"
 chrono = { version = "0.4", optional = true }
 comrak = { version = "0.52", default-features = false, optional = true }
