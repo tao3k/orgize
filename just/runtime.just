@@ -77,7 +77,7 @@ runtime-library-test-receipt binary output ordinary_passed ignored:
     "{{ binary }}" --list > "{{ output }}/library-catalog.log"
     test "$(rg -c ': test$' '{{ output }}/library-catalog.log')" -eq "$(({{ ordinary_passed }} + {{ ignored }} + 1))"
     just runtime-library-test-run "{{ binary }}" 2>&1 | tee "{{ output }}/library-test.log"
-    rg --quiet '^startup-native unit-cases=85 complete OK$' "{{ output }}/library-test.log"
+    rg --quiet '^startup-native unit-cases=86 complete OK$' "{{ output }}/library-test.log"
     rg --quiet '^test result: ok\. {{ ordinary_passed }} passed; 0 failed; {{ ignored }} ignored;' "{{ output }}/library-test.log"
     ! rg --quiet '^test .* \.\.\. FAILED$|^test result: FAILED|^failures:$' "{{ output }}/library-test.log"
     rg --quiet '^native-unit case=query_pushdown_preserves_complete_native_projection OK$' "{{ output }}/library-test.log"
