@@ -13,7 +13,42 @@ pub(crate) const NATIVE_CASES: &[(&str, fn())] = &[
         "native_batch_multiple_packets_and_oversized_source_match_single_projection",
         multiple_packets_and_oversized_source_match_single_projection,
     ),
+    (
+        "ledger_headline_projection_matches_full_document_metadata",
+        ledger_headline_projection_matches_full_document_metadata,
+    ),
 ];
+
+fn ledger_headline_projection_matches_full_document_metadata() {
+    let sources = [
+        "* FINISHED [#A] λ :tag:\r\n:PROPERTIES:\r\n:ID: α\r\n:END:\r\n** Child\r\n#+TODO: WAIT | FINISHED\r\n",
+        "* TODO Parent\n** DONE Child\n:PROPERTIES:\n:ID: child\n:END:\n* Second\n",
+        "* \n** Child\n",
+        "** Child\n",
+        "Prose\n* Not a leading headline\n",
+    ];
+    let config = ParseConfig::default();
+    let scoped = super::parse_plan_ledger_batch(&sources, &config).unwrap();
+    assert_eq!(scoped.len(), sources.len());
+    for (source, document) in sources.into_iter().zip(scoped) {
+        let document = document.unwrap();
+        let full = parse_org_aot_with_config(source, &config).unwrap();
+        match (document.headline(), super::plan_ledger_headline(&full)) {
+            (Some(actual), Some(expected)) => {
+                assert_eq!(actual.headline.id, expected.headline.id);
+                assert_eq!(actual.todo, expected.todo);
+                assert_eq!(actual.title, expected.title);
+                assert_eq!(actual.closed, expected.closed);
+                assert_eq!(
+                    format!("{:?}", actual.records),
+                    format!("{:?}", expected.records)
+                );
+            }
+            (None, None) => {}
+            _ => panic!("scoped metadata changed the leading headline: {source:?}"),
+        }
+    }
+}
 
 fn preserves_order_utf8_and_configuration() {
     let packet = super::native_semantic_rows(

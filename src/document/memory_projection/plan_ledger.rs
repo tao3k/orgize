@@ -4,7 +4,9 @@ use super::records::{
 };
 use super::{OrgMemorySearchOptions, OrgMemorySearchRecord};
 use crate::document::elements::{bounded_org_batch_len, load_sources};
-use crate::org_aot::{OrgAotDocument, parse_org_aot};
+use crate::org_aot::{
+    PlanLedgerHeadline, parse_org_aot, parse_plan_ledger_batch, plan_ledger_headline,
+};
 use crate::{
     ast::MemoryRecordState,
     document::{
@@ -220,7 +222,7 @@ fn collect_plan_ledger_files(
                 if let Some(record) = plan_ledger_record_from_document(
                     &source.path,
                     &source.source,
-                    &document,
+                    || plan_ledger_headline(&document),
                     options,
                 )? {
                     records.push(record);
@@ -235,7 +237,7 @@ fn collect_plan_ledger_files(
                 .map(|source| source.source.as_str())
                 .collect::<Vec<_>>();
             let phase_started = Instant::now();
-            let documents = crate::org_aot::parse_org_aot_batch(&inputs, &config)
+            let documents = parse_plan_ledger_batch(&inputs, &config)
                 .map_err(|error| format!("Org AOT plan ledger batch: {error:?}"))?;
             parse_elapsed += phase_started.elapsed();
             let phase_started = Instant::now();
@@ -246,7 +248,7 @@ fn collect_plan_ledger_files(
                 if let Some(record) = plan_ledger_record_from_document(
                     &source.path,
                     &source.source,
-                    &document,
+                    || document.headline(),
                     options,
                 )? {
                     records.push(record);
@@ -280,38 +282,36 @@ fn should_skip_plan_ledger_directory(name: &str, walk_config: &DocumentWalkConfi
         || (name.starts_with('.') && !name.starts_with(".org"))
 }
 
-fn plan_ledger_record_from_document(
+fn plan_ledger_record_from_document<'a>(
     path: &Path,
     source: &str,
-    document: &OrgAotDocument,
+    headline: impl FnOnce() -> Option<PlanLedgerHeadline<'a>>,
     options: &OrgMemorySearchOptions,
 ) -> Result<Option<OrgMemorySearchRecord>, String> {
     crate::runtime_profile::stage("plan_ledger.record_projection", || {
-        project_plan_ledger_record(path, source, document, options)
+        project_plan_ledger_record(path, source, headline(), options)
     })
 }
 
 fn project_plan_ledger_record(
     path: &Path,
     source: &str,
-    document: &OrgAotDocument,
+    headline: Option<PlanLedgerHeadline<'_>>,
     options: &OrgMemorySearchOptions,
 ) -> Result<Option<OrgMemorySearchRecord>, String> {
-    let records = document.records();
-    let Some(headline) = records.iter().find(|record| {
-        record.kind == "headline"
-            && record.parent_id == Some(0)
-            && record.field("markers") == Some("*")
-            && usize::from(record.range.start()) == 0
-    }) else {
+    let Some(PlanLedgerHeadline {
+        records,
+        headline,
+        todo,
+        title,
+        closed,
+    }) = headline
+    else {
         return Ok(None);
     };
-    let todo = document.headline_todo_keyword(headline.id);
-    let title = document
-        .headline_display_title(headline.id)
-        .ok_or_else(|| format!("{}: headline lacks an AOT title", path.display()))?;
+    let title = title.ok_or_else(|| format!("{}: headline lacks an AOT title", path.display()))?;
     let tags = headline.values("tag").map(str::to_owned).collect();
-    let state = if document.headline_todo_type(headline.id) == Some("done") {
+    let state = if closed {
         MemoryRecordState::Closed
     } else {
         MemoryRecordState::Current

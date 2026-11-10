@@ -185,6 +185,69 @@ pub(crate) fn parse_org_aot_batch(
     sources: &[&str],
     config: &ParseConfig,
 ) -> Result<Vec<Result<OrgAotDocument, OrgAotError>>, OrgAotError> {
+    parse_batch_with_titles(sources, config, TitleScope::All)
+}
+
+#[derive(Clone, Copy)]
+enum TitleScope {
+    All,
+    LeadingLedgerHeadline,
+}
+
+pub(crate) struct PlanLedgerDocument(OrgAotDocument);
+
+pub(crate) struct PlanLedgerHeadline<'a> {
+    pub(crate) records: &'a [GraphRecord],
+    pub(crate) headline: &'a GraphRecord,
+    pub(crate) todo: Option<String>,
+    pub(crate) title: Option<String>,
+    pub(crate) closed: bool,
+}
+
+fn leading_ledger_headline(records: &[GraphRecord]) -> Option<&GraphRecord> {
+    records.iter().find(|record| {
+        record.kind == "headline"
+            && record.parent_id == Some(0)
+            && record.field("markers") == Some("*")
+            && usize::from(record.range.start()) == 0
+    })
+}
+
+pub(crate) fn plan_ledger_headline(document: &OrgAotDocument) -> Option<PlanLedgerHeadline<'_>> {
+    let records = document.records();
+    let headline = leading_ledger_headline(records)?;
+    Some(PlanLedgerHeadline {
+        records,
+        headline,
+        todo: document.headline_todo_keyword(headline.id),
+        title: document.headline_display_title(headline.id),
+        closed: document.headline_todo_type(headline.id) == Some("done"),
+    })
+}
+
+impl PlanLedgerDocument {
+    pub(crate) fn headline(&self) -> Option<PlanLedgerHeadline<'_>> {
+        plan_ledger_headline(&self.0)
+    }
+}
+
+pub(crate) fn parse_plan_ledger_batch(
+    sources: &[&str],
+    config: &ParseConfig,
+) -> Result<Vec<Result<PlanLedgerDocument, OrgAotError>>, OrgAotError> {
+    parse_batch_with_titles(sources, config, TitleScope::LeadingLedgerHeadline).map(|documents| {
+        documents
+            .into_iter()
+            .map(|doc| doc.map(PlanLedgerDocument))
+            .collect()
+    })
+}
+
+fn parse_batch_with_titles(
+    sources: &[&str],
+    config: &ParseConfig,
+    title_scope: TitleScope,
+) -> Result<Vec<Result<OrgAotDocument, OrgAotError>>, OrgAotError> {
     let outcomes = event_io::parse_events_batch(
         sources,
         config.effective_inlinetask_min_level(),
@@ -199,7 +262,7 @@ pub(crate) fn parse_org_aot_batch(
             events
                 .map_err(OrgAotError::Native)
                 .and_then(|events| parse_event_artifact(source, events))
-                .and_then(|parse| prepare_document(parse, config))
+                .and_then(|parse| prepare_document(parse, config, title_scope))
         })
         .collect::<Vec<_>>();
     metadata_batch::finish(prepared, config)
@@ -266,7 +329,11 @@ struct PreparedDocument {
     fields: Vec<String>,
 }
 
-fn prepare_document(parse: Parse, config: &ParseConfig) -> Result<PreparedDocument, OrgAotError> {
+fn prepare_document(
+    parse: Parse,
+    config: &ParseConfig,
+    title_scope: TitleScope,
+) -> Result<PreparedDocument, OrgAotError> {
     let records = crate::runtime_profile::stage("graph.project", || {
         project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
     })
@@ -299,10 +366,16 @@ fn prepare_document(parse: Parse, config: &ParseConfig) -> Result<PreparedDocume
             ]
         })
         .collect::<Vec<_>>();
-    let titles = records
-        .iter()
-        .filter(|r| matches!(r.kind, "headline" | "inlinetask") && r.field("title").is_some())
-        .collect::<Vec<_>>();
+    let titles: Vec<_> = match title_scope {
+        TitleScope::All => records
+            .iter()
+            .filter(|r| matches!(r.kind, "headline" | "inlinetask") && r.field("title").is_some())
+            .collect(),
+        TitleScope::LeadingLedgerHeadline => leading_ledger_headline(&records)
+            .filter(|r| r.field("title").is_some())
+            .into_iter()
+            .collect(),
+    };
     let mut fields = Vec::<String>::new();
     for list in [&config.todo_keywords.0, &config.todo_keywords.1] {
         fields.push(list.len().to_string());
@@ -334,7 +407,7 @@ fn prepare_document(parse: Parse, config: &ParseConfig) -> Result<PreparedDocume
 }
 
 fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
-    let prepared = prepare_document(parse, config)?;
+    let prepared = prepare_document(parse, config, TitleScope::All)?;
     let refs = prepared
         .fields
         .iter()
