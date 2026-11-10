@@ -8,6 +8,7 @@ fn worker_observations_merge_only_after_join() {
                 scope.spawn(move || {
                     super::worker(true, || {
                         super::collector::record("worker.test", value);
+                        super::collector::record_owner(1, 0);
                         value
                     })
                 })
@@ -20,6 +21,9 @@ fn worker_observations_merge_only_after_join() {
     assert_eq!(stages["worker.test"], 18);
     assert_eq!(stages["query.workers_completed"], 2);
     assert!(stages.contains_key("query.worker_wall_sum"));
+    assert!(stages.contains_key("query.before_owner_window"));
+    assert!(stages["query.owner_window"] >= 1);
+    assert!(stages.contains_key("query.after_owner_window"));
     assert!(measure(|| ()).1.is_empty());
     let (_, stages) = measure(|| {
         std::thread::spawn(|| {

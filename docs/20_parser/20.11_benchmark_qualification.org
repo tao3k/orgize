@@ -625,6 +625,32 @@ overlapping work and leave those serial intervals unattributed.
 The effect package also passed the original Scheme entry with 237 cases
 in 19 suites. The deliberate failure control returned 42.
 
+** Query wall intervals
+
+The runtime profile reconstructs each owner service interval from the
+reply's service and handoff durations and the receiving thread's
+monotonic clock. Worker results transfer their earliest start and latest
+completion back to the requesting thread. The query then reports the
+wall intervals before, within and after the owner window. The estimates
+include the short delay between reply receipt and the host clock read.
+
+Ten queries per runtime used the effect program and 64 owner requests
+each. A local functional build was active while these queries ran.
+
+| Wall interval median (ms) | Rust | Scheme |
+|---------------------------+------+--------|
+| Before first owner service | 19.855 | 22.324 |
+| First start to last completion | 116.257 | 122.316 |
+| After last owner completion | 4.419 | 4.234 |
+| Within window outside summed service | 0.262 | 0.221 |
+
+The median before-owner interval is larger than the interval after the
+last reply. The owner spends most of its window in service. A separate
+candidate moves the existing short batch to the front of the traversal.
+That allows its worker to deliver an initial batch while workers read
+the full batches. It retains source order, the batch limit and the worker
+count. The original unprofiled scenario will determine its wall impact.
+
 * Promotion
 
 The Ubuntu relocation run for =3358e3a5= passed the Scheme runtime's
