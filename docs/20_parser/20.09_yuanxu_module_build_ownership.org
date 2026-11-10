@@ -4,10 +4,11 @@
 * Squashed Parser promotion and preparation ownership
 
 Orgize promotes Parser main =3c58e6ec1114a65848deda7d9878549591420658= after
-[[https://github.com/tao3k/gerbil-parser/actions/runs/42754005775][the complete Parser acceptance run]]. Its source tree is identical to the
-accepted PR head, although the squash commit has a different identity. Both
-Cargo lockfiles, the Cargo declarations and =gerbil.pkg= select the squash
-commit. The existing bridge and Yuanxu selections remain unchanged.
+[[https://github.com/tao3k/gerbil-parser/actions/runs/42754005775][the complete Parser PR acceptance run]]. The squash tree matches the accepted
+PR head. Both Cargo lockfiles and package declarations select the squash.
+Bridge and Yuanxu selections remain unchanged. The [[https://github.com/tao3k/gerbil-parser/actions/runs/42758058862][separate main-branch run]]
+cannot resolve the historical source-form audit baseline after the squash.
+That failure remains open; source-tree equality does not establish main CI.
 
 Preparation has one producer per operating system. The original =ci-prepare=
 still installs declared packages and calls their standard build owners. It

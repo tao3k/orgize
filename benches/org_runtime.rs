@@ -85,10 +85,12 @@ impl Drop for Callers {
 }
 
 fn benchmark(c: &mut Criterion) {
-    assert!(
-        !cfg!(feature = "runtime-profile"),
-        "Criterion production measurements must be unprofiled"
-    );
+    const {
+        assert!(
+            !cfg!(feature = "runtime-profile"),
+            "Criterion production measurements must be unprofiled"
+        );
+    }
     // SAFETY: explicit benchmark startup precedes all caller/runtime workers.
     unsafe { orgize::initialize_native_runtime() }.expect("native benchmark startup");
     eprintln!(

@@ -10,7 +10,6 @@ use pyo3::prelude::*;
 /// Owned Python input goes directly to the shared Rust/Scheme owner, not C ABI.
 #[pyfunction]
 fn _evaluate_contract(
-    py: Python<'_>,
     rows: Vec<(i64, i64, String, String, String)>,
     scope_id: i64,
     kind: String,
@@ -26,6 +25,7 @@ fn _evaluate_contract(
         "at_most" => 2,
         _ => return Err(PyValueError::new_err("invalid Contract expectation")),
     };
+    let py = expected_count.py();
     let expected_count = expected_count
         .extract::<u32>()
         .map_err(|_| PyValueError::new_err("invalid Contract expectation"))?;

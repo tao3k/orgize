@@ -426,10 +426,10 @@ fn transport_parse(bytes: Vec<u8>) -> Result<Vec<u8>, String> {
             response,
         })
         .map_err(|_| "Gerbil owner terminated")?;
-    Ok(result
+    result
         .recv()
         .map_err(|_| "Gerbil call terminated")?
-        .receive()?)
+        .receive()
 }
 
 #[cfg(not(feature = "runtime-scheme"))]
