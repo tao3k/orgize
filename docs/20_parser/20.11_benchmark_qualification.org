@@ -115,10 +115,11 @@ invocations, the original committed-source control failed all eight of its
 invocations. The compact-input candidate passed three of four invocations;
 the remaining Rust invocation missed the unchanged 100 ms gate at
 100.049750 ms. This is evidence of possible improvement, not stable
-qualification. The candidate remains unpublished. The same comparison's
-candidate request payload shrank from 268,548 to 183,658 bytes (31.6%);
-its response payload stayed at 163,290 bytes. Payload reduction alone does
-not establish a latency improvement.
+qualification. The candidate remains unpublished. Separate paired Scheme
+phase runs compare compact-response and compact-input adapters: request
+payload shrank from 268,548 to 183,658 bytes (31.6%), while response payload
+stayed at 163,290 bytes. Payload reduction alone does not establish a
+latency improvement.
 
 Exact-head Darwin Rust CI for =682fca8b= passed its ordinary tests but failed
 the unchanged release ledger gate at 173.359833 ms, best of five. Both wheel
