@@ -45,8 +45,33 @@ jobs:
         run: bash tools/ci/install-gerbil-release.sh
       - name: Fetch locked Cargo sources
         run: cargo fetch --locked
-      - name: Prepare pinned Scheme program once
-        run: just ci-prepare
+      - name: Identify dependency compiler and libraries
+        id: dependency-toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          fingerprint=$({
+            "$GERBIL_GCC" --version
+            pkg-config --modversion openssl sqlite3 zlib
+            if [[ "$RUNNER_OS" == macOS ]]; then xcrun --show-sdk-build-version; else ldd --version; fi
+          } | shasum -a 256 | cut -d' ' -f1)
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Restore declared dependency products
+        id: dependency-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: .gerbil-native
+          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', 'tools/ci/install-gerbil-release.sh') }}
+      - name: Prepare and verify declared dependencies
+        run: just ci-dependencies
+      - name: Save declared dependency products
+        if: steps.dependency-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: .gerbil-native
+          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', 'tools/ci/install-gerbil-release.sh') }}
+      - name: Build pinned Scheme program once
+        run: just ci-build-program
       - name: Package compiler-owned program
         run: tar -czf "$RUNNER_TEMP/orgize-program.tar.gz" .gerbil-native target/gerbil-parser
       - name: Publish exact-head program

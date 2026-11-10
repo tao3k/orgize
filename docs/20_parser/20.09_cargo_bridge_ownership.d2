@@ -3,7 +3,7 @@ vars: {d2-config: {theme-id: 200; pad: 32}}
 
 cargo: "Cargo workspace\nRust dependency identity" {shape: page}
 scheme: "Scheme package declarations" {shape: page}
-parser: "Parser capability interfaces\nGrammar and graph protocols" {shape: page}
+parser: "Parser interfaces\nGrammar, graph and byte Fold" {shape: page}
 producer: "Build" {
   label.near: top-left
   direction: right
@@ -17,7 +17,7 @@ consumer: "Consume" {
   label.near: top-left
   direction: right
   admission: "Source, cohort, target\nArchive and header binding"
-  runtime: "Rust linked program\nBridge-owned VM lifecycle"
+  runtime: "Rust linked program\nBridge VM and strict codec"
   admission -> runtime: "admitted archive"
 }
 

@@ -15,9 +15,12 @@ publishes the Gerbil prefix and compiler-owned program manifest together.
 The two runtime consumers and the wheel consumer restore only the artifact
 for their platform and this run's exact source revision. They fetch their
 locked Cargo sources and call =ci-verify-prepared= before using that program.
-This delegates to the existing cohort and source-input checks; archive presence
-alone grants no admission. Compiler paths must resolve under the same workspace
-and release layout. Missing, changed or incompatible inputs fail admission.
+This delegates to the existing revision and manifest-origin checks; archive
+presence alone is insufficient. These checks do not prove source-to-object
+equivalence. The immutable same-run artifact is a trusted compiler publication,
+and the upstream archive owner still validates its content and compiler
+fingerprints during each consumer build. Compiler paths must resolve under the
+same workspace and release layout; incompatible inputs must be rejected there.
 
 Each consumer retains a private output directory and the upstream archive
 owner revalidates its own inputs. The artifact contains no alternate compiler,
@@ -33,6 +36,36 @@ identifiers from quoted file references; malformed library tokens are rejected.
 The wheel declaration fixes the separator before its existing environment
 marker without changing the selected auditwheel commit. The original 100 ms
 plan-ledger gate remains a separate obligation from these structural fixes.
+
+* One fold compiler and checked codec
+
+The dynamic fold generator publishes source units and their native package
+declarations. The root Module graph owns their compilation. Its former nested
+build compiled the same units twice; a cold check after official =gerbil clean=
+reduced an observed tape unit from two compilations to one, while the complete
+interface and manifest checks passed. Standalone static controls retain their
+existing compilation entry. The original 600-second build budget is unchanged.
+
+Dependency products are cached before compiling Orgize or the bridge. The key
+binds the package declaration, released compiler configuration, C compiler,
+system library versions and platform toolchain. The standard =gerbil deps
+--install= still runs on a hit. =ci-prepare= composes the same dependency and
+program phases; consumers do not acquire a second build implementation.
+
+Raw byte handoff alone was rejected: extended UTF-8 controls admitted a bad
+document as a successful row. A discarded decoder result is not a validation
+witness. The request decoder's text now flows through the existing bridge's
+strict scalar encoder before Parser's byte Fold consumes private storage.
+Single and batch controls cover invalid leaders, overlong encodings, surrogate
+code points, out-of-range scalars and truncation, including later-document
+recovery. Ordered tape equivalence and the complete 230 Cases / 18 Suites passed
+with the original negative exit 42, runtime heap and output deadlines.
+
+The prior plan-ledger workload still failed at 114.952 ms on the updated Parser.
+Its diagnostic run is not a replacement acceptance run. The existing gate now
+prints all five durations after measurement, retaining the same two thousand
+files, workers and minimum-of-five 100 ms criterion. Owner CPU, GC and overlapping
+worker intervals remain distinct; summing wait intervals is not exclusive CPU.
 
 * CI dependency coherence
 

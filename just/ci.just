@@ -6,10 +6,16 @@ ci_build_gambopt := replace(scheme_gambopt, "max-heap=1G", "max-heap=2G")
 # Cargo exclusively selects the bridge source; compile that exact checkout into
 # the existing Gerbil output before compiling the Orgize program.
 [group('checks')]
-ci-prepare:
+ci-prepare: ci-dependencies ci-build-program
+
+[group('checks')]
+ci-dependencies:
     command -v gerbil
     just public-parser-interface-check
     {{ scheme_env }} GAMBOPT="{{ package_gambopt }}" gerbil deps --install
+
+[group('checks')]
+ci-build-program:
     just alignment-dependency-check "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')"
     cd "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')" && {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" {{ timeout_command }} --signal=TERM --kill-after=5s 600s gerbil build --optimized
     {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" {{ timeout_command }} --signal=TERM --kill-after=5s 600s gerbil build --optimized

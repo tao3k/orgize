@@ -11,6 +11,10 @@
 (def (org-request->tape request)
   (pure-request->tape request native-monotonic-ns native-thread-cpu-ns))
 
+(def invalid-utf8-inputs
+  (list #u8(255) #u8(192 128) #u8(224 128 128) #u8(237 160 128)
+        #u8(244 144 128 128) #u8(240 144)))
+
 (def (request source level policy (operation 0))
   (let* ((source-bytes (string->utf8 source))
          (bytes (make-u8vector (+ 14 (u8vector-length source-bytes)) 0)))
@@ -106,19 +110,24 @@
     (test-case "bad document is isolated and following source still parses"
       (for-each
        (lambda (operation)
-         (let (input (batch-request '("valid\n" "x" "* after\n") operation))
-           ;; Mutate exactly the one-byte second payload, not its framing.
-           (u8vector-set! input 30 255)
-           (let* ((result (org-request->tape input))
-                  (rows (batch-rows
-                         (if (= operation 7)
-                           (subu8vector result 52 (u8vector-length result))
-                           result))))
-             (check (map car rows) => '(0 1 0))
-             (let (payload (cdr (caddr rows)))
-               (check (if (= operation 7)
-                        (subu8vector payload 28 (u8vector-length payload)) payload)
-                      => (org-request->tape (request "* after\n" 15 2)))))))
+         (for-each
+          (lambda (invalid)
+            (let (input (batch-request
+                         (list "valid\n" (make-string (u8vector-length invalid) #\x)
+                               "* after\n") operation))
+              ;; Mutate only the second payload, preserving its admitted framing.
+              (u8vector-copy! input 30 invalid)
+              (let* ((result (org-request->tape input))
+                     (rows (batch-rows
+                            (if (= operation 7)
+                              (subu8vector result 52 (u8vector-length result))
+                              result))))
+                (check (map car rows) => '(0 1 0))
+                (let (payload (cdr (caddr rows)))
+                  (check (if (= operation 7)
+                           (subu8vector payload 28 (u8vector-length payload)) payload)
+                         => (org-request->tape (request "* after\n" 15 2)))))))
+          invalid-utf8-inputs))
        '(6 7)))
     (test-case "empty document retains root and grammar identity"
       (let* ((header-size (u8vector-length org-event-tape-header))
@@ -157,7 +166,17 @@
       (check (with-catch (lambda (exception) 'rejected)
                         (lambda () (org-request->tape (request "x" 0 2)))) => 'rejected)
       (check (with-catch (lambda (exception) 'rejected)
-                        (lambda () (org-request->tape (request "x" 15 3)))) => 'rejected))
+                        (lambda () (org-request->tape (request "x" 15 3)))) => 'rejected)
+      (for-each
+       (lambda (operation)
+         (for-each
+          (lambda (invalid)
+            (let (input (request (make-string (u8vector-length invalid) #\x) 15 2 operation))
+              (u8vector-copy! input 14 invalid)
+              (check (with-catch (lambda (exception) 'rejected)
+                                (lambda () (org-request->tape input))) => 'rejected)))
+          invalid-utf8-inputs))
+       '(0 5)))
     (test-case "diagnostic envelope preserves exact ordinary tape"
       (for-each
        (lambda (source)

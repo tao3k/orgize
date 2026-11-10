@@ -304,6 +304,7 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
         .expect("write plan");
     }
 
+    let mut sample_times = Vec::with_capacity(5);
     let (elapsed, records) = (0..5)
         .map(|_| {
             let started_at = Instant::now();
@@ -327,10 +328,13 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
             #[cfg(not(feature = "runtime-profile"))]
             let records = query();
             let records = records.expect("query plan ledgers");
-            (started_at.elapsed(), records)
+            let elapsed = started_at.elapsed();
+            sample_times.push(elapsed);
+            (elapsed, records)
         })
         .min_by_key(|(elapsed, _)| *elapsed)
         .expect("plan ledger projection benchmark sample");
+    eprintln!("plan ledger projection samples: {sample_times:?}");
 
     assert_eq!(records.len(), 2_000);
     let hot_path = records

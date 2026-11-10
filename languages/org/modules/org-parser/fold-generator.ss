@@ -2,7 +2,6 @@
 ;;; Org owns strategy declarations and generated text; Gerbil owns products.
 (import (only-in :gerbil-parser/event-fold-build-support
                  event-fold-scheme-module-sources)
-        (only-in :gerbil-parser/compiler-build-support run-build-tool)
         (only-in "fold-package.ss" write-fold-package fold-package-source-directory)
         (only-in :gerbil-parser/event-fold-build-support
                  compile-event-fold-scheme-units)
@@ -37,9 +36,10 @@
          (source-directory (if (equal? profile "dynamic")
                              (fold-package-source-directory output) output)))
     (write-fold-package source-directory units)
-    (if (equal? profile "dynamic")
-      (run-build-tool (list "env" (string-append "GERBIL_PATH=" output)
-                         "gxi" (path-expand "build.ss" source-directory) "compile" "--optimized"))
+    ;; The dynamic package is a registered source dependency of the root
+    ;; Module graph. Only that graph compiles it; standalone static controls
+    ;; retain their existing native compilation entry.
+    (when (equal? profile "static")
       (compile-event-fold-scheme-units output (map car units)))
     (displayln "GENERATION-OK native-org-document-and-inline")
     (force-output)))

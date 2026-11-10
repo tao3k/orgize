@@ -46,6 +46,7 @@
   (when (equal? operation "compile")
     ;; The native producer process owns grammar expansion and emission. Keep
     ;; that compiler heap out of the subsequent Yuanxu library projection.
+    ;; It emits sources only; this root graph owns their compilation.
     (run-build-tool
       (list "gxi" (path-expand "languages/org/modules/org-parser/fold-generator.ss"
                                (path-directory (this-source-file))) output "dynamic")))
