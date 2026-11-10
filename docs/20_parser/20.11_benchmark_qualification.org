@@ -645,11 +645,33 @@ each. A local functional build was active while these queries ran.
 | Within window outside summed service | 0.262 | 0.221 |
 
 The median before-owner interval is larger than the interval after the
-last reply. The owner spends most of its window in service. A separate
-candidate moves the existing short batch to the front of the traversal.
-That allows its worker to deliver an initial batch while workers read
-the full batches. It retains source order, the batch limit and the worker
-count. The original unprofiled scenario will determine its wall impact.
+last reply. The owner spends most of its window in service.
+
+** Short first batch experiment
+
+The experimental Rust scheduler moves the existing short batch to the
+front of the traversal. Its worker can deliver a batch while other
+workers read their full batches. Source order, wire limits and the
+worker count stay fixed. Both arms use the same effect program manifest
+and differ by one Rust source file.
+
+After local builds finished, the original release scenario ran twice
+as an A/A control, followed by control, candidate, candidate, control
+for each runtime. Every invocation passed its best-of-five gate.
+Invocation medians for the four paired arms are below.
+
+| Runtime | Control (ms) | Candidate (ms) | Candidate (ms) | Control (ms) |
+|---------+--------------+----------------+----------------+--------------|
+| Rust    |       84.175 |         87.055 |        105.240 |       88.487 |
+| Scheme  |       99.399 |         96.385 |         85.462 |       90.563 |
+
+Rust's second candidate invocation reached 216.969 ms. The Scheme
+medians varied across both arms. Retain all 60 samples. Keep the existing
+batch order because the candidate did not produce a consistent gain.
+
+The Fold effect program passed both complete Rust functional suites,
+including the original benchmark smoke checks, and the separate
+Scheme package test entry.
 
 * Promotion
 
