@@ -4,7 +4,6 @@
         (only-in :std/misc/process run-process)
         (only-in :std/misc/ports read-all-as-string))
 (export org-module-boundary-test)
-(def init-path (path-expand "../init.ss" (path-directory (this-source-file))))
 (def (run-expression code)
   (run-process (list "gxi" "-:max-heap=1G,debug=q" "-e" (object->string
       `(begin
@@ -56,32 +55,30 @@
                (error "business values loaded a retired runtime umbrella"))
              (displayln "BUSINESS-VALUES-ISOLATED-OK"))))
       (check-equal? (and (string-contains output "BUSINESS-VALUES-ISOLATED-OK") #t) #t))
-    (test-case "native consumers load only their required generated programs"
+    (test-case "installed consumers load only their required Fold modules"
       (for-each
         (lambda (consumer)
-          (def source
-            (path-expand (car consumer)
-              (path-directory init-path)))
+          (def module (car consumer))
           (def expected (cadr consumer))
           (def forbidden (caddr consumer))
           (def output
             (run-expression
               `(begin
-                 (import ,source)
+                 (import ,module)
                  (def loaded (map car (list-modules)))
                  (unless (member ,expected loaded)
-                   (error "consumer did not load its native program" ,source loaded))
+                   (error "consumer did not load its Fold module" ',module loaded))
                  (when (ormap (lambda (name) (member name loaded)) ',forbidden)
-                   (error "consumer loaded another native program" ,source loaded))
+                   (error "consumer loaded another Fold module" ',module loaded))
                  (displayln "CONSUMER-ISOLATED-OK"))))
           (check-equal? (and (string-contains output "CONSUMER-ISOLATED-OK") #t) #t))
-        '(("languages/org/modules/org-parser/macro-funs.ss"
+        '((:orgize/languages/org/modules/org-parser/macro-funs
            "orgize-fold/parse-org-compiled-inline-events~0"
            ("orgize-fold/parse-org-compiled-events~0" "orgize-fold/parse-org-compiled-tape~0"))
-          ("languages/org/modules/org-parser/event-runtime.ss"
+          (:orgize/languages/org/modules/org-parser/event-runtime
            "orgize-fold/parse-org-compiled-events~0"
            ("orgize-fold/parse-org-compiled-inline-events~0" "orgize-fold/parse-org-compiled-tape~0"))
-          ("bindings/c/event-tape.ss"
+          (:orgize/bindings/c/event-tape
            "orgize-fold/parse-org-compiled-tape~0"
            ("orgize-fold/parse-org-compiled-events~0")))))
 ))
