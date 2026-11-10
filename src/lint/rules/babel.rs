@@ -230,6 +230,7 @@ fn runtime_lint_finding(
                     std::time::Duration::ZERO,
                     crate::lint::RuntimeValidationTerminationOutcome::IoFailed,
                     None,
+                    None,
                     false,
                     crate::lint::RuntimeValidationStatus::Rejected,
                     Some(crate::lint::RuntimeValidationDiagnosticCode::Org045),
@@ -270,6 +271,7 @@ fn runtime_lint_finding(
             observation.elapsed,
             termination_outcome(observation.termination_outcome),
             observation.output.exit_code,
+            observation.child_id,
             observation.child_reaped,
             if accepted {
                 crate::lint::RuntimeValidationStatus::Accepted
@@ -328,6 +330,7 @@ fn runtime_receipt(
     elapsed: std::time::Duration,
     termination_outcome: crate::lint::RuntimeValidationTerminationOutcome,
     exit_code: Option<i32>,
+    child_id: Option<std::num::NonZeroU32>,
     child_reaped: bool,
     status: crate::lint::RuntimeValidationStatus,
     diagnostic_code: Option<crate::lint::RuntimeValidationDiagnosticCode>,
@@ -353,6 +356,7 @@ fn runtime_receipt(
             elapsed: crate::lint::RuntimeValidationElapsed::from_duration(elapsed),
             termination_outcome,
             exit_status: crate::lint::RuntimeValidationExitStatus::from_exit_code(exit_code),
+            child_id,
             child_lifecycle: crate::lint::RuntimeValidationChildLifecycle::from_runtime(
                 termination_outcome,
                 child_reaped,

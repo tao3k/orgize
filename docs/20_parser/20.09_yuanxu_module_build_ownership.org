@@ -486,3 +486,13 @@ and suppresses qualified bundle publication. Once the program is admitted,
 independent Rust tests and lint checks still run to expose correctness failures.
 Failed transcripts and the post-success
 cleanup sample stay in ignored local evidence, not in tracked documentation.
+
+Timeout cleanup evidence binds the PID captured by Rust from its spawned child
+handle. The test checks the OS reports that PID absent, even if the deadline
+expires before the child can write a file. The one-second deadline, process
+group control, and v1 receipt serialization remain unchanged.
+
+The pinned public Fold emitter selects a full event list or full tape. A
+field-selecting consumer must preserve the canonical parser's boundaries and
+be qualified against it. See [[file:20.08_scheme_closure/39-fold-requalification.org][the engine projection gap]];
+the ledger query does not introduce a second scanner.

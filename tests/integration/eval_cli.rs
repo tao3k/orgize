@@ -674,7 +674,6 @@ fn runtime_validation_evidence_records_timeout_and_reaping() {
     fs::write(
         &typst,
         r#"#!/bin/sh
-printf '%s\n' "$$" > .typst-child.pid
 cat >/dev/null
 exec tail -f /dev/null
 "#,
@@ -714,14 +713,13 @@ exec tail -f /dev/null
         orgize::lint::RuntimeValidationStatus::Rejected
     );
     assert!(receipt.observation.child_lifecycle.child_reaped());
-    let pid = fs::read_to_string(docs.join(".typst-child.pid")).unwrap();
-    let alive = Command::new("kill")
-        .args(["-0", pid.trim()])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .unwrap();
-    assert!(!alive.success(), "timed-out child {pid} is still alive");
+    let pid = receipt.observation.child_id.expect("host observed spawn");
+    let pid = i32::try_from(pid.get()).unwrap();
+    // SAFETY: this positive PID came from Child::id; signal zero sends nothing.
+    let probe = unsafe { libc::kill(pid, 0) };
+    let error = std::io::Error::last_os_error();
+    assert_eq!(probe, -1, "timed-out child {pid} is still alive");
+    assert_eq!(error.raw_os_error(), Some(libc::ESRCH));
 }
 
 fn eval_cli_run_rejects_non_shell_blocks() {

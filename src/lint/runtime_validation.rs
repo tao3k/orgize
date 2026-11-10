@@ -137,6 +137,8 @@ pub struct RuntimeValidationObservation {
     pub elapsed: RuntimeValidationElapsed,
     pub termination_outcome: RuntimeValidationTerminationOutcome,
     pub exit_status: RuntimeValidationExitStatus,
+    /// Host-observed process identity for cleanup diagnostics, not a v1 wire field.
+    pub child_id: Option<std::num::NonZeroU32>,
     pub child_lifecycle: RuntimeValidationChildLifecycle,
 }
 
