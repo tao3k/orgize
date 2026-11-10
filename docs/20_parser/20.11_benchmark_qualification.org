@@ -47,12 +47,17 @@ GERBIL_PATH="$orgize_development" \
   GERBIL_LOADPATH="$orgize_production/lib:$orgize_development/lib" \
   gerbil test -v 3 test-benchmarks.ss
 GERBIL_PATH="$orgize_development" \
-  GERBIL_LOADPATH="$orgize_development/lib:$orgize_production/lib" \
-  just scheme-benchmarks-build
-GERBIL_PATH="$orgize_production" \
-  GERBIL_LOADPATH="$PWD/target/scheme-benchmarks/lib:$orgize_production/lib:$orgize_development/lib" \
-  gxi :orgize/t/benchmarks/org-prefix-probe local \
+  GERBIL_LOADPATH="$orgize_production/lib:$orgize_development/lib" \
+  gxi t/benchmarks/org-prefix-probe.ss local \
   t/benchmarks/org-prefix-probe/benchmark.ss /tmp/orgize-prefix-local.receipt
+#+end_src
+
+Optional module compilation uses the same separate development prefix:
+
+#+begin_src sh
+GERBIL_PATH="$orgize_development" \
+  GERBIL_LOADPATH="$orgize_production/lib:$orgize_development/lib" \
+  just scheme-benchmarks-build
 #+end_src
 
 Use a fresh receipt path for each execution. The fixture controls the sample
