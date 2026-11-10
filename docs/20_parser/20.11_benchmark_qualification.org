@@ -58,6 +58,17 @@ run. Keep these samples as failure evidence and qualify changes in paired
 runs. Standard cleanup removed the benchmark interfaces and left the
 production program manifest byte-identical.
 
+The two Org Contract grammar modules import the Parser loader from
+=gerbil-parser/language-support/entry=. At Parser revision =3c58e6e=, the
+standard optimized program build produced 433 linked modules, compared
+with 454 through the umbrella import. The manifest removed 21 modules
+and added none. The removed closure includes grammar-source loaders,
+fixtures and contextual compiler modules. The compiled-interface probe
+and all 237 Scheme cases in 19 suites passed through the standard entry.
+An earlier build reached the unchanged 600-second deadline after Fold
+generation. The manifest comparison establishes the dependency reduction.
+It leaves cold build latency and the ledger budget as separate gates.
+
 * Measurement matrix
 
 | Boundary | Existing workload | Evidence |

@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Native reference parser for the same Org contract AOT grammar.
 
-(import (only-in :gerbil-parser/language-support deflanguage-parser-loader)
+(import (only-in :gerbil-parser/language-support/entry deflanguage-parser-loader)
         (only-in "grammar.ss" org-contract-language-grammar))
 (export org-contract-language parse-org-contract-expression)
 
