@@ -35,7 +35,10 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config ripgrep jq
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev libzstd-dev pkg-config ripgrep jq
+          if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
+            sudo apt-get install -y libjitterentropy3-dev
+          fi
       - name: System libraries
         if: runner.os == 'macOS'
         env:
@@ -169,7 +172,10 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config ripgrep jq
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev libzstd-dev pkg-config ripgrep jq
+          if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
+            sudo apt-get install -y libjitterentropy3-dev
+          fi
       - name: Native system libraries
         if: runner.os == 'macOS'
         env:
@@ -283,7 +289,10 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config patchelf ripgrep jq
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev libzstd-dev pkg-config patchelf ripgrep jq
+          if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
+            sudo apt-get install -y libjitterentropy3-dev
+          fi
       - name: System libraries
         if: runner.os == 'macOS'
         env:

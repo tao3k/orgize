@@ -104,7 +104,7 @@ fn unbound_libraries_headers_and_paths_are_rejected() {
 
 #[test]
 fn producer_carries_non_platform_dependencies() {
-    for library in ["crypto", "ssl", "z", "sqlite3"] {
+    for library in ["crypto", "ssl", "z", "sqlite3", "zstd", "jitterentropy"] {
         assert_eq!(bundle_library(library), format!("static={library}"));
     }
     for library in ["m", "dl", "static=gambit"] {

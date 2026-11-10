@@ -110,7 +110,9 @@ fn bundle_library(library: &str) -> String {
     // These are Gambit dependencies, not platform-provided C libraries.
     // Carry them with the producer artifact instead of retaining host paths.
     match library {
-        "crypto" | "ssl" | "z" | "sqlite3" => format!("static={library}"),
+        "crypto" | "ssl" | "z" | "sqlite3" | "zstd" | "jitterentropy" => {
+            format!("static={library}")
+        }
         _ => library.to_owned(),
     }
 }

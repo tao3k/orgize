@@ -380,6 +380,13 @@ owner. Orgize retains its Scheme declarations, required-module/header contract,
 source revision and relocatable bundle checks; it does not duplicate the Bridge
 compiler, VM lifecycle or runtime implementation.
 
+The package staging hook passes the OpenSSL provider's private static links
+from Gerbil =:std/make= through =gerbil-rs-stage-program=. The bridge records
+their order and search paths in the program manifest. The bundle publisher
+copies and hashes the declared non-platform archives. On Ubuntu 26.04, the
+OpenSSL metadata names Zstd and the jitterentropy archive. A relocated
+consumer uses the producer manifest and archives with Cargo.
+
 The prior bundle implementation compared producer and consumer with an unrelated
 hardcoded runtime revision. Agreement on that literal did not prove agreement
 with the Cargo dependency. Bundle publication and admission now derive the
