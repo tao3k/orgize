@@ -89,13 +89,13 @@ impl<T> OwnerReply<T> {
 #[cfg(feature = "runtime-profile")]
 pub(crate) fn record_transport(timings: [u64; 4], handoff: u64) {
     // Count, not a duration: includes every physical native parse/value reply.
-    super::collector::record("native.requests_completed", 1);
+    super::collector::record("ffi.requests_completed", 1);
     for (name, value) in [
-        ("native.owner_admission", timings[0]),
-        ("native.owner_service_inclusive", timings[1]),
-        ("native.result_copy", timings[2]),
-        ("native.owner_thread_cpu_inclusive", timings[3]),
-        ("native.completion_handoff", handoff),
+        ("owner.admission", timings[0]),
+        ("owner.service_inclusive", timings[1]),
+        ("ffi.result_copy", timings[2]),
+        ("owner.thread_cpu_inclusive", timings[3]),
+        ("ffi.completion_handoff", handoff),
     ] {
         super::collector::record(name, value);
     }

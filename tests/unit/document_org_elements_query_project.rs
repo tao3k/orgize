@@ -166,13 +166,13 @@ fn run_document_query_org_elements_scenario(profile: bool, batched: bool) {
         for (sample, stages) in stage_samples.iter().enumerate() {
             for required in [
                 "query.total_inclusive",
-                "native.owner_admission",
-                "native.owner_service_inclusive",
-                "native.result_copy",
-                "native.completion_handoff",
-                "native.scheme_fold",
-                "native.tape_encode",
-                "native.scheme_thread_cpu",
+                "owner.admission",
+                "owner.service_inclusive",
+                "ffi.result_copy",
+                "ffi.completion_handoff",
+                "fold.service",
+                "event_tape.encode",
+                "fold.thread_cpu",
                 "artifact.syntax_index",
                 "graph.project",
             ] {

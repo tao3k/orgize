@@ -138,7 +138,7 @@ scheme-executable-link source output load_path binary cc_options="":
     # order so the first dependency root wins, while external Gerbil installations stay read-only.
     IFS=: read -r -a libs <<< "{{ load_path }}"; for ((i=${#libs[@]}-1; i>=0; i--)); do if test -d "${libs[i]}/static"; then cp -p "${libs[i]}"/static/*.scm "{{ output }}/dependency-sources/lib/static/"; fi; done
 
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ output }}/dependency-sources/lib:{{ load_path }}" gxi t/build-executable.ss "{{ source }}" "{{ output }}/{{ binary }}" "{{ cc_options }}" 2>&1 | tee "{{ output }}/native-link.log" | rg '^compile |^invoke |^\.\.\. (compile|execute|generate parser artifact)|^\*\*\* ERROR|^--- Syntax Error|^\.\.\. (form|detail):'
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ output }}/dependency-sources/lib:{{ load_path }}" gxi t/build-executable.ss "{{ source }}" "{{ output }}/{{ binary }}" "{{ cc_options }}" 2>&1 | tee "{{ output }}/ffi-link.log" | rg '^compile |^invoke |^\.\.\. (compile|execute|generate parser artifact)|^\*\*\* ERROR|^--- Syntax Error|^\.\.\. (form|detail):'
 
 [private]
 scheme-document-value-build output load_path:

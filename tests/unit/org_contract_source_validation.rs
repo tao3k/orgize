@@ -71,7 +71,7 @@ fn accepts_a_contract_with_a_valid_selector_assertion() {
     let result = run();
     #[cfg(feature = "runtime-profile")]
     assert_eq!(
-        stages.get("native.requests_completed"),
+        stages.get("ffi.requests_completed"),
         Some(&1),
         "Contract registry and diagnostics must share one Scheme plan: {stages:?}"
     );

@@ -38,35 +38,35 @@ mod keyword_view;
 #[path = "org_aot_metadata_batch.rs"]
 mod metadata_batch;
 #[path = "org_semantic_functions.rs"]
-mod native_functions;
+mod semantic_functions;
 
 #[path = "org_events/mod.rs"]
-mod native_events;
+mod event_io;
 #[path = "org_expression.rs"]
-mod native_expression;
-pub(crate) use native_expression::NativeExpressionValue;
+mod expression_tape;
+pub(crate) use expression_tape::NativeExpressionValue;
 
 pub(crate) fn parse_native_expression_values(
     source: &str,
     grammar: &LanguageSpec,
 ) -> Result<Vec<NativeExpressionValue>, String> {
-    native_events::parse_expression_values(source, grammar)
+    event_io::parse_expression_values(source, grammar)
 }
 
 pub(crate) fn initialize_native_owner() -> Result<(), String> {
-    native_events::initialize_owner()
+    event_io::initialize_owner()
 }
 
 pub(crate) fn expand_native_macro_fields(operation: u8, fields: &[&str]) -> Result<String, String> {
-    native_events::expand_macro_fields(operation, fields)
+    event_io::expand_macro_fields(operation, fields)
 }
 
 pub(crate) fn native_semantic_rows(
     operation: u8,
     fields: &[&str],
 ) -> Result<Vec<Vec<String>>, String> {
-    use self::native_expression::NativeExpressionValue;
-    native_events::semantic_fields(operation, fields)?
+    use self::expression_tape::NativeExpressionValue;
+    event_io::semantic_fields(operation, fields)?
         .into_iter()
         .map(|value| {
             let NativeExpressionValue::List(row) = value else {
@@ -87,8 +87,7 @@ pub(crate) fn parse_native_expression(
     source: &str,
     grammar: &'static LanguageSpec,
 ) -> Result<Parse, OrgAotError> {
-    let events =
-        native_events::parse_expression_events(source, grammar).map_err(OrgAotError::Native)?;
+    let events = event_io::parse_expression_events(source, grammar).map_err(OrgAotError::Native)?;
     parse_generated_events(
         grammar,
         event_identity::NATIVE_PARSER_DIGEST,
@@ -101,7 +100,7 @@ pub(crate) fn parse_native_expression(
 pub(crate) fn evaluate_native_contract(
     input: crate::c_ffi::ContractInput,
 ) -> Result<crate::c_ffi::ContractOutput, String> {
-    native_events::evaluate_contract(input)
+    event_io::evaluate_contract(input)
 }
 
 /// A source-backed navigation index and its Scheme-declared Element graph.
@@ -168,7 +167,7 @@ pub fn parse_org_aot_with_config(
     source: &str,
     config: &ParseConfig,
 ) -> Result<OrgAotDocument, OrgAotError> {
-    let events = native_events::parse_events(
+    let events = event_io::parse_events(
         source,
         config.effective_inlinetask_min_level(),
         config.inline_script_policy(),
@@ -178,15 +177,15 @@ pub fn parse_org_aot_with_config(
     parse_org_aot_events(source, events, config)
 }
 
-pub(crate) const BATCH_MAX_DOCUMENTS: usize = native_events::BATCH_MAX_DOCUMENTS;
-pub(crate) const BATCH_MAX_SOURCE_BYTES: usize = native_events::BATCH_MAX_SOURCE_BYTES;
+pub(crate) const BATCH_MAX_DOCUMENTS: usize = event_io::BATCH_MAX_DOCUMENTS;
+pub(crate) const BATCH_MAX_SOURCE_BYTES: usize = event_io::BATCH_MAX_SOURCE_BYTES;
 
 /// Private bounded handoff; every document keeps its own receipt and offsets.
 pub(crate) fn parse_org_aot_batch(
     sources: &[&str],
     config: &ParseConfig,
 ) -> Result<Vec<Result<OrgAotDocument, OrgAotError>>, OrgAotError> {
-    let outcomes = native_events::parse_events_batch(
+    let outcomes = event_io::parse_events_batch(
         sources,
         config.effective_inlinetask_min_level(),
         config.inline_script_policy(),
@@ -234,19 +233,19 @@ fn parse_event_artifact(
 }
 
 pub(crate) fn org_image_link(target: &str) -> bool {
-    native_functions::org_image_link_p(target)
+    semantic_functions::org_image_link_p(target)
 }
 
 pub(crate) fn org_link_kind(path: &str) -> &'static str {
-    native_functions::org_link_kind(path)
+    semantic_functions::org_link_kind(path)
 }
 
 pub(crate) fn org_link_protocol(path: &str) -> String {
-    native_functions::org_link_protocol(path)
+    semantic_functions::org_link_protocol(path)
 }
 
 pub(crate) fn org_link_protocol_path(path: &str) -> String {
-    native_functions::org_link_protocol_path(path)
+    semantic_functions::org_link_protocol_path(path)
 }
 
 pub(crate) fn org_expand_link_abbreviation(
@@ -254,7 +253,7 @@ pub(crate) fn org_expand_link_abbreviation(
     path: &str,
     encoded_path: &str,
 ) -> String {
-    native_functions::org_expand_link_abbreviation(replacement, path, encoded_path)
+    semantic_functions::org_expand_link_abbreviation(replacement, path, encoded_path)
 }
 
 struct PreparedDocument {
@@ -606,7 +605,7 @@ impl OrgAotDocument {
         planned: bool,
         archived: bool,
     ) -> &'static str {
-        native_functions::memory_headline_state(
+        semantic_functions::memory_headline_state(
             self.headline_todo_type(record_id).unwrap_or(""),
             closed,
             planned,
@@ -644,7 +643,7 @@ impl OrgAotDocument {
     }
 
     pub(crate) fn planning_key_kind(key: &str) -> &'static str {
-        native_functions::planning_key_kind(key)
+        semantic_functions::planning_key_kind(key)
     }
 
     /// Return a priority cookie admitted by the Scheme-AOT headline algorithm.

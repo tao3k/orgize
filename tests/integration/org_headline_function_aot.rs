@@ -1,8 +1,8 @@
 //! The Scheme-authored Org TODO functions must execute natively through the same owned C FFI handoff.
 
 #[path = "support/semantic_values.rs"]
-mod native_functions;
-use native_functions::{
+mod semantic_functions;
+use semantic_functions::{
     headline_comment_p, headline_content_after_todo, headline_display_title, headline_source_title,
     memory_headline_state, org_image_link_p, org_link_file_path, org_link_file_path_kind,
     org_link_kind, org_link_protocol, org_link_protocol_path, org_link_search,

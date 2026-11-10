@@ -76,7 +76,7 @@ fn with_native_requests<T>(expected: Option<u64>, message: &str, action: impl Fn
     #[cfg(feature = "runtime-profile")]
     {
         let (result, stages) = crate::runtime_profile::measure(action);
-        let requests = stages.get("native.requests_completed").copied();
+        let requests = stages.get("ffi.requests_completed").copied();
         match expected {
             Some(count) => assert_eq!(requests.unwrap_or(0), count, "{message}: {stages:?}"),
             None => assert_eq!(requests, None, "{message}: {stages:?}"),

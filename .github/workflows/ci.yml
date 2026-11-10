@@ -11,7 +11,7 @@ on:
 env:
   CARGO_INCREMENTAL: 0
   CARGO_TERM_COLOR: always
-  GERBIL_PATH: ${{ github.workspace }}/.gerbil-native
+  GERBIL_PATH: ${{ github.workspace }}/.gerbil-ci
   # Steps in one job are serial; the existing owner revalidates source/toolchain fingerprints.
   ORGIZE_GERBIL_NATIVE_OUTPUT: ${{ github.workspace }}/target/program-objects
 
@@ -66,7 +66,7 @@ jobs:
         id: dependency-cache
         uses: actions/cache/restore@v5
         with:
-          path: .gerbil-native
+          path: .gerbil-ci
           key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', '.github/workflows/ci.yml') }}
       - name: Prepare and verify declared dependencies
         run: just ci-dependencies
@@ -74,12 +74,12 @@ jobs:
         if: steps.dependency-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
-          path: .gerbil-native
+          path: .gerbil-ci
           key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', '.github/workflows/ci.yml') }}
       - name: Build pinned Scheme program once
         run: just ci-build-program
       - name: Package compiler-owned program
-        run: tar -czf "$RUNNER_TEMP/orgize-program.tar.gz" .gerbil-native target/gerbil-parser
+        run: tar -czf "$RUNNER_TEMP/orgize-program.tar.gz" .gerbil-ci target/gerbil-parser
       - name: Publish exact-head program
         uses: actions/upload-artifact@v4
         with:
@@ -93,7 +93,7 @@ jobs:
           name: preparation-failure-${{ github.event.pull_request.head.sha || github.sha }}-${{ matrix.os }}
           path: |
             target/gerbil-parser/
-            .gerbil-native/**/*.log
+            .gerbil-ci/**/*.log
           include-hidden-files: true
           if-no-files-found: ignore
 

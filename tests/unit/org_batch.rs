@@ -66,13 +66,13 @@ fn preserves_order_utf8_and_configuration() {
                 );
             }
             assert_eq!(observed.len(), results.len());
-            assert!(observations["native.batch_body_wall_sum"] > 0);
+            assert!(observations["fold.batch_body_wall_sum"] > 0);
             for name in [
-                "native.batch_owner_thread_cpu_sum",
-                "native.batch_process_cpu_interval_sum",
-                "native.batch_vm_gc_cpu_interval_sum",
-                "native.batch_vm_gc_wall_interval_sum",
-                "native.batch_vm_gc_count_interval_sum",
+                "fold.batch_owner_thread_cpu_sum",
+                "fold.batch_process_cpu_interval_sum",
+                "fold.batch_vm_gc_cpu_interval_sum",
+                "fold.batch_vm_gc_wall_interval_sum",
+                "fold.batch_vm_gc_count_interval_sum",
             ] {
                 assert!(observations.contains_key(name));
             }

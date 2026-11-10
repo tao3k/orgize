@@ -25,7 +25,7 @@ python-build-tool version="1.15.0" offline="true":
 
 [private]
 python-develop-owner manifest gsc maturin="maturin" runtime="runtime-rust" verbosity="-vv":
-    cd bindings/python && {{ platform_env }} VIRTUAL_ENV="$PWD/.venv" XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" "{{ maturin }}" develop {{ verbosity }} --offline --uv --no-default-features --features "{{ runtime }}" -- {{ platform_link_args }}
+    cd bindings/python && {{ platform_env }} VIRTUAL_ENV="$PWD/.venv" XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" "{{ maturin }}" develop {{ verbosity }} --offline --uv --no-default-features --features "{{ runtime }}" -- {{ platform_link_args }}
 
 # Preserve the standard maturin build transcript for the same native program.
 [group('python')]

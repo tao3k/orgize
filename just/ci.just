@@ -34,17 +34,17 @@ ci-verify-prepared:
 ci-scheme-test:
     #!/usr/bin/env bash
     set -euo pipefail
-    mkdir -p target/native-ci
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py {{ if host_os == "macos" { "env DYLD_PRINT_APIS=1" } else { "env" } }} gxi :gerbil-scheme-rust/scheme/build test "{{ justfile_directory() }}" orgize-test.ss 2>&1 | tee target/native-ci/scheme-test.log
-    test "$(rg -c '^CASE-OK ' target/native-ci/scheme-test.log)" -eq 230
-    test "$(rg -c '^SUITE-OK ' target/native-ci/scheme-test.log)" -eq 18
-    rg --quiet '^OK$' target/native-ci/scheme-test.log
-    ! rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' target/native-ci/scheme-test.log
+    mkdir -p target/scheme-test
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py {{ if host_os == "macos" { "env DYLD_PRINT_APIS=1" } else { "env" } }} gxi :gerbil-scheme-rust/scheme/build test "{{ justfile_directory() }}" orgize-test.ss 2>&1 | tee target/scheme-test/scheme-test.log
+    test "$(rg -c '^CASE-OK ' target/scheme-test/scheme-test.log)" -eq 230
+    test "$(rg -c '^SUITE-OK ' target/scheme-test/scheme-test.log)" -eq 18
+    rg --quiet '^OK$' target/scheme-test/scheme-test.log
+    ! rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' target/scheme-test/scheme-test.log
     status=0
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py {{ if host_os == "macos" { "env DYLD_PRINT_APIS=1" } else { "env" } }} gxi :gerbil-scheme-rust/scheme/build test "{{ justfile_directory() }}" t/fixtures/cli-failure.ss > target/native-ci/failure-control.log 2>&1 || status=$?
+    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py {{ if host_os == "macos" { "env DYLD_PRINT_APIS=1" } else { "env" } }} gxi :gerbil-scheme-rust/scheme/build test "{{ justfile_directory() }}" t/fixtures/cli-failure.ss > target/scheme-test/failure-control.log 2>&1 || status=$?
     test "$status" -eq 42
-    rg --quiet '^ERROR CHECK ' target/native-ci/failure-control.log
-    ! rg --quiet '^OK$' target/native-ci/failure-control.log
+    rg --quiet '^ERROR CHECK ' target/scheme-test/failure-control.log
+    ! rg --quiet '^OK$' target/scheme-test/failure-control.log
 
 # Reuse the same Darwin/native linker policy as local qualification.
 [group('checks')]

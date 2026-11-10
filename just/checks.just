@@ -93,7 +93,7 @@ owner-lifecycle-check source gsc:
 
 [private]
 runtime-inner-stage-scale-check receipt: (runtime-profile-scale-check receipt)
-    jq --exit-status 'all(.[]; .stage_timings_ns | has("native.scheme_fold") and has("native.tape_encode") and has("native.scheme_thread_cpu"))' "{{ receipt }}"
+    jq --exit-status 'all(.[]; .stage_timings_ns | has("fold.service") and has("event_tape.encode") and has("fold.thread_cpu"))' "{{ receipt }}"
 
 # Reject the audited production-library warning group, not dependency/linker warnings.
 [private]
@@ -106,7 +106,7 @@ semantic-wrapper-warning-check output:
 [private]
 build-support-test output:
     mkdir -p "{{ output }}"
-    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo test --offline --locked --release -p orgize-build-support --lib -- --nocapture 2>&1 | tee "{{ output }}/build-support-test.log"
+    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" cargo test --offline --locked --release -p orgize-build-support --lib -- --nocapture 2>&1 | tee "{{ output }}/build-support-test.log"
     rg --quiet '^test result: ok\. 8 passed; 0 failed;' "{{ output }}/build-support-test.log"
     ! rg --quiet 'FAILED|panicked at' "{{ output }}/build-support-test.log"
 

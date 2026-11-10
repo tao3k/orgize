@@ -1,7 +1,7 @@
 //! Private transport for the existing POO event strategy; never a Rust parser.
 use super::batch;
 use crate::c_ffi::{ContractInput, ContractOutput};
-use crate::org_aot::{NativeExpressionValue, native_expression};
+use crate::org_aot::{NativeExpressionValue, expression_tape};
 use gerbil_parser_runtime::{KindCategory, LanguageSpec, TreeEvent};
 // Native ingress references this crate's C ABI without calling it from Rust.
 // Retain its Rust ABI wrappers and native lifecycle archive in both lanes.
@@ -278,12 +278,12 @@ pub(crate) fn parse_events_batch(
     }
     crate::startup::require_initialized()?;
     let profile = crate::runtime_profile::is_active();
-    let request = crate::runtime_profile::stage("native.request_encode", || {
+    let request = crate::runtime_profile::stage("ffi.request_encode", || {
         batch::encode(sources, level, policy, profile)
     })?;
     let tape =
-        crate::runtime_profile::stage("native.transport_inclusive", || transport_parse(request))?;
-    crate::runtime_profile::stage("native.event_decode", || {
+        crate::runtime_profile::stage("ffi.transport_inclusive", || transport_parse(request))?;
+    crate::runtime_profile::stage("event_tape.decode", || {
         batch::decode_batch(tape.as_ref(), sources.len(), grammar, profile)
     })
 }
@@ -312,7 +312,7 @@ fn parse_request(
     };
     #[cfg(not(feature = "runtime-profile"))]
     let bytes = tape.as_ref();
-    crate::runtime_profile::stage("native.event_decode", || decode(bytes, grammar))
+    crate::runtime_profile::stage("event_tape.decode", || decode(bytes, grammar))
 }
 
 pub(crate) fn parse_expression_values(
@@ -328,7 +328,7 @@ fn parse_values(
     grammar: &LanguageSpec,
 ) -> Result<Vec<NativeExpressionValue>, String> {
     let tape = request_tape(source, operation, 0, 0)?;
-    native_expression::decode(tape.as_ref(), grammar.grammar_digest)
+    expression_tape::decode(tape.as_ref(), grammar.grammar_digest)
 }
 
 fn request_tape(
@@ -348,7 +348,7 @@ fn request_bytes(
 ) -> Result<NativeTape, String> {
     crate::startup::require_initialized()?;
     let bytes =
-        crate::runtime_profile::stage("native.request_encode", || -> Result<Vec<u8>, String> {
+        crate::runtime_profile::stage("ffi.request_encode", || -> Result<Vec<u8>, String> {
             let mut bytes =
                 Vec::with_capacity(source.len().checked_add(14).ok_or("Org input too large")?);
             bytes.extend_from_slice(b"ONR1");
@@ -366,7 +366,7 @@ fn request_bytes(
             bytes.extend_from_slice(source);
             Ok(bytes)
         })?;
-    crate::runtime_profile::stage("native.transport_inclusive", || {
+    crate::runtime_profile::stage("ffi.transport_inclusive", || {
         crate::runtime_profile::operation(bytes[4], || transport_parse(bytes))
     })
 }
@@ -409,7 +409,7 @@ pub(crate) fn semantic_fields(
         bytes.extend_from_slice(field.as_bytes());
     }
     let tape = request_bytes(&bytes, operation, 0, 0)?;
-    native_expression::decode(
+    expression_tape::decode(
         tape.as_ref(),
         crate::org_aot::org_language_spec().grammar_digest,
     )

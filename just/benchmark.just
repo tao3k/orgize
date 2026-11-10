@@ -11,7 +11,7 @@ scheme-benchmarks-clean:
 # Measure the existing public-entry Criterion scenarios, not a new harness.
 [private]
 parser-bench-owner manifest gsc profile="release" filter='Org::parse/(doc|plain-links|quote-heavy)\.org':
-    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo bench --offline --locked --profile "{{ profile }}" --bench parse -- "{{ filter }}"
+    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo bench --offline --locked --profile "{{ profile }}" --bench parse -- "{{ filter }}"
 
 # Reuse Criterion's committed input files and ASP's Scheme timing/memory owner.
 # Matched execution-owner lanes; no parser/backend substitution.
@@ -83,21 +83,21 @@ runtime-owner-stage-report receipt:
 
 [private]
 runtime-transport-stage-scale-check receipt: (runtime-inner-stage-scale-check receipt)
-    jq --exit-status 'all(.[]; .stage_timings_ns | has("native.owner_admission") and has("native.owner_service_inclusive") and has("native.result_copy") and has("native.completion_handoff"))' "{{ receipt }}"
+    jq --exit-status 'all(.[]; .stage_timings_ns | has("owner.admission") and has("owner.service_inclusive") and has("ffi.result_copy") and has("ffi.completion_handoff"))' "{{ receipt }}"
     just runtime-transport-timing-check "{{ receipt }}"
 
 [private]
 runtime-transport-timing-check receipt:
-    jq --exit-status 'length > 0 and all(.[]; .stage_timings_ns as $stages | all(["native.owner_admission","native.owner_service_inclusive","native.result_copy","native.completion_handoff"][]; $stages[.].total > 0 and $stages[.].mean > 0))' "{{ receipt }}"
+    jq --exit-status 'length > 0 and all(.[]; .stage_timings_ns as $stages | all(["owner.admission","owner.service_inclusive","ffi.result_copy","ffi.completion_handoff"][]; $stages[.].total > 0 and $stages[.].mean > 0))' "{{ receipt }}"
 
 [private]
 runtime-transport-repeat-scale-check receipt: (runtime-profile-receipt-check receipt)
-    jq --exit-status 'length == 4 and (map([.documents,.callers,.domains,.repetition]) | sort) == [[1000,64,8,1],[1000,64,8,2],[10000,64,8,1],[10000,64,8,2]] and (map(.completed) | add) == 22000 and all(.[]; .stage_timings_ns | has("native.scheme_fold") and has("native.tape_encode") and has("native.scheme_thread_cpu") and has("native.owner_admission") and has("native.owner_service_inclusive") and has("native.result_copy") and has("native.completion_handoff"))' "{{ receipt }}"
+    jq --exit-status 'length == 4 and (map([.documents,.callers,.domains,.repetition]) | sort) == [[1000,64,8,1],[1000,64,8,2],[10000,64,8,1],[10000,64,8,2]] and (map(.completed) | add) == 22000 and all(.[]; .stage_timings_ns | has("fold.service") and has("event_tape.encode") and has("fold.thread_cpu") and has("owner.admission") and has("owner.service_inclusive") and has("ffi.result_copy") and has("ffi.completion_handoff"))' "{{ receipt }}"
     just runtime-transport-timing-check "{{ receipt }}"
 
 [private]
 runtime-profile-receipt-check receipt:
-    jq --exit-status 'length > 0 and all(.[]; .schema == "orgize.runtime-parallel.v2" and .profile_enabled and .completed == .documents and .distinct_documents == .documents and .max_in_flight == .callers and .max_active_worker_requests == .domains and .worker_exit_success and (.worker_pids | unique | length) == .domains and (.worker_completed | add) == .completed and (.mode == "performance" and .artifact == null or .mode == "qualification" and (.artifact | type) == "string") and (.stage_timings_ns | has("native.transport_inclusive") and has("artifact.syntax_index") and has("graph.project") and has("supervisor.queue")))' "{{ receipt }}"
+    jq --exit-status 'length > 0 and all(.[]; .schema == "orgize.runtime-parallel.v2" and .profile_enabled and .completed == .documents and .distinct_documents == .documents and .max_in_flight == .callers and .max_active_worker_requests == .domains and .worker_exit_success and (.worker_pids | unique | length) == .domains and (.worker_completed | add) == .completed and (.mode == "performance" and .artifact == null or .mode == "qualification" and (.artifact | type) == "string") and (.stage_timings_ns | has("ffi.transport_inclusive") and has("artifact.syntax_index") and has("graph.project") and has("supervisor.queue")))' "{{ receipt }}"
 
 [private]
 runtime-profile-scale-check receipt: (runtime-profile-receipt-check receipt)
@@ -126,8 +126,8 @@ runtime-query-profile-run binary:
 
 [private]
 scheme-event-benchmark parser_lib poo_flow_lib label="current" fixture="doc.org" output="":
-    just scheme-executable-link t/benchmarks/org-event-fold.ss "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label } else { output + ".native" } }}" "{{ parser_lib }}:{{ poo_flow_lib }}" org-event-fold
-    just scheme-event-benchmark-run "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label } else { output + ".native" } }}/org-event-fold" "{{ label }}" "{{ fixture }}" "{{ output }}"
+    just scheme-executable-link t/benchmarks/org-event-fold.ss "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label } else { output + ".scheme-build" } }}" "{{ parser_lib }}:{{ poo_flow_lib }}" org-event-fold
+    just scheme-event-benchmark-run "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label } else { output + ".scheme-build" } }}/org-event-fold" "{{ label }}" "{{ fixture }}" "{{ output }}"
 
 [private]
 scheme-event-benchmark-run binary label fixture output:

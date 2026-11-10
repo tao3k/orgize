@@ -87,31 +87,31 @@ fn owner_reply_records_only_on_the_receiving_request() {
         .unwrap();
         assert_eq!(reply.receive(), 7);
     });
-    assert_eq!(timings["native.owner_admission"], 11);
-    assert_eq!(timings["native.owner_service_inclusive"], 13);
-    assert_eq!(timings["native.result_copy"], 17);
-    assert_eq!(timings["native.owner_thread_cpu_inclusive"], 23);
-    assert!(timings.contains_key("native.completion_handoff"));
+    assert_eq!(timings["owner.admission"], 11);
+    assert_eq!(timings["owner.service_inclusive"], 13);
+    assert_eq!(timings["ffi.result_copy"], 17);
+    assert_eq!(timings["owner.thread_cpu_inclusive"], 23);
+    assert!(timings.contains_key("ffi.completion_handoff"));
     assert!(measure(|| ()).1.is_empty());
 }
 
 #[test]
 fn transport_projection_retains_exact_request_local_values() {
     let (_, timings) = measure(|| super::record_transport([11, 13, 17, 23], 19));
-    assert_eq!(timings["native.owner_admission"], 11);
-    assert_eq!(timings["native.owner_service_inclusive"], 13);
-    assert_eq!(timings["native.result_copy"], 17);
-    assert_eq!(timings["native.completion_handoff"], 19);
-    assert_eq!(timings["native.owner_thread_cpu_inclusive"], 23);
+    assert_eq!(timings["owner.admission"], 11);
+    assert_eq!(timings["owner.service_inclusive"], 13);
+    assert_eq!(timings["ffi.result_copy"], 17);
+    assert_eq!(timings["ffi.completion_handoff"], 19);
+    assert_eq!(timings["owner.thread_cpu_inclusive"], 23);
     super::record_transport([1, 2, 3, 5], 4);
     assert!(measure(|| ()).1.is_empty());
     let (value, timings) = measure(|| super::operation(23, || 7));
     assert_eq!(value, 7);
-    assert!(timings.contains_key("native.operation.23"));
+    assert!(timings.contains_key("ffi.operation.23"));
     assert!(
         measure(|| super::operation(23, || 7))
             .1
-            .contains_key("native.operation.23")
+            .contains_key("ffi.operation.23")
     );
 }
 
@@ -130,9 +130,9 @@ fn native_envelope_rejects_truncation_and_foreign_identity() {
         (7, 11, 13, &bytes[28..])
     );
     let (_, timings) = measure(|| super::native_tape(&bytes).unwrap());
-    assert_eq!(timings["native.scheme_fold"], 7);
-    assert_eq!(timings["native.tape_encode"], 11);
-    assert_eq!(timings["native.scheme_thread_cpu"], 13);
+    assert_eq!(timings["fold.service"], 7);
+    assert_eq!(timings["event_tape.encode"], 11);
+    assert_eq!(timings["fold.thread_cpu"], 13);
     bytes[0] = b'X';
     assert!(super::wire::decode(&bytes).is_err());
     bytes[0] = b'O';

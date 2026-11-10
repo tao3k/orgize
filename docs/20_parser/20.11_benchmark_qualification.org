@@ -21,13 +21,22 @@ the native startup fixture its own exclusive process. The benchmark command
 runs the explicit Criterion targets without starting a second parallel
 copy of the library test suite.
 
-With the development prefix active and the production library on
-=GERBIL_LOADPATH=, run one compiled benchmark per process. For example:
+Prepare the development prefix separately. Run each compiled benchmark in
+its own process with the production library before the development library.
+Both dependency trees contain POO modules, so this order keeps the production
+Parser and POO artifacts together while resolving the benchmark API from
+the development prefix.
 
 #+begin_src sh
-just prepare-dev
-just scheme-benchmarks-build
-GERBIL_LOADPATH="$PWD/target/scheme-benchmarks/lib:$GERBIL_LOADPATH" \
+orgize_production="$PWD/.gerbil-ci"
+orgize_development="$PWD/target/scheme-benchmark-dev"
+GERBIL_PATH="$orgize_development" GERBIL_LOADPATH="$orgize_production/lib" \
+  just prepare-dev
+GERBIL_PATH="$orgize_development" \
+  GERBIL_LOADPATH="$orgize_development/lib:$orgize_production/lib" \
+  just scheme-benchmarks-build
+GERBIL_PATH="$orgize_production" \
+  GERBIL_LOADPATH="$PWD/target/scheme-benchmarks/lib:$orgize_production/lib:$orgize_development/lib" \
   gxi :orgize/t/benchmarks/org-prefix-probe local \
   t/benchmarks/org-prefix-probe/benchmark.ss /tmp/orgize-prefix-local.receipt
 #+end_src
@@ -71,6 +80,10 @@ unprofiled public workload with exact event and result checks. The fixed VM
 owner retains Scheme values; moving Rust projection onto that owner changes
 the contention model and requires independent evidence.
 
+Profiling receipts use =fold= for Scheme traversal, =event_tape= for the
+wire representation, =owner= for queue admission and owner service, and
+=ffi= for calls and copies across the language boundary.
+
 * First Fold candidate
 
 In the prior property-scan diagnostic, two 2,000-file samples recorded 145.5
@@ -86,10 +99,39 @@ the same Fold helper. Compare complete events on the retained property corpus
 before timing the candidate. Keep the compiled candidate and all measurements
 separate from the PR until the result supports promotion.
 
+The candidate and baseline passed the existing Scheme structural and tape
+suites and matched complete tape digests for twelve sources. Loader traces
+confirmed each process used its intended generated Fold. A separate byte-input
+candidate failed the existing malformed UTF-8 control and remains excluded.
+
 The unprofiled Rust-owner ledger at =4a2ac65c= returned 304.283, 206.512,
 199.579, 226.096 and 200.282 ms in execution order. It failed the 100 ms
 gate. Development compilation overlapped this run, so retain it as a gate
 failure and compare the candidate in a serial run of both prepared binaries.
+
+An initial ABBA comparison isolated the ledger headline metadata candidate.
+The baseline and candidate ran the unchanged 2,000-file query with ten
+samples per artifact. The candidate's P50 was 171.635 ms against 201.562 ms,
+and its fastest sample was 114.134 ms. Every run failed the 100 ms gate.
+The host load was 47 to 48 while the other owner binary was being built.
+Retain this diagnostic alongside the later two-owner and phase comparisons.
+
+The serial two-owner ABBA comparison kept the same query, fixture, and
+toolchain. Each row reports ten unprofiled query samples. With ten samples,
+nearest-rank P95 and P99 both select the maximum. Peak RSS is the maximum
+across the two processes for each artifact.
+
+| Owner | Artifact | Best (ms) | P50 (ms) | P95 / P99 (ms) | Documents/s | Peak RSS (MiB) |
+|-------+----------+-----------+----------+----------------+-------------+----------------|
+| Rust | Baseline | 113.039 | 121.865 | 147.616 | 16,198.8 | 102.53 |
+| Rust | Metadata candidate | 112.091 | 115.496 | 122.188 | 17,212.5 | 102.50 |
+| Scheme | Baseline | 118.874 | 126.165 | 201.852 | 13,527.6 | 102.42 |
+| Scheme | Metadata candidate | 107.970 | 117.561 | 167.090 | 16,007.7 | 102.75 |
+
+The metadata candidate passed the native unit suite in both owners, including
+its full-document metadata comparison. Both owners still failed the 100 ms
+gate. Host load ranged from 35.71 to 44.31. The phase comparison and the
+combined candidate are separate experiments.
 
 * Promotion
 

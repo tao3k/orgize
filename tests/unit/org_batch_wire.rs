@@ -88,16 +88,16 @@ fn batch_diagnostics_are_strict_opt_in_and_preserve_ordered_payloads() {
     assert_eq!(rows[1].as_ref().unwrap_err(), "failed");
     assert!(rows[2].as_ref().unwrap().is_empty());
     for (name, expected) in [
-        ("native.batch_body_wall_sum", 17),
-        ("native.batch_owner_thread_cpu_sum", 19),
-        ("native.batch_process_cpu_interval_sum", 23),
-        ("native.batch_vm_gc_cpu_interval_sum", 29),
-        ("native.batch_vm_gc_wall_interval_sum", 31),
-        ("native.batch_vm_gc_count_interval_sum", 37),
+        ("fold.batch_body_wall_sum", 17),
+        ("fold.batch_owner_thread_cpu_sum", 19),
+        ("fold.batch_process_cpu_interval_sum", 23),
+        ("fold.batch_vm_gc_cpu_interval_sum", 29),
+        ("fold.batch_vm_gc_wall_interval_sum", 31),
+        ("fold.batch_vm_gc_count_interval_sum", 37),
     ] {
         assert_eq!(observations[name], expected);
     }
-    assert_eq!(observations["native.scheme_thread_cpu"], 26);
+    assert_eq!(observations["fold.thread_cpu"], 26);
     assert!(decode_batch(&ordinary, 3, org_language_spec(), true).is_err());
     assert!(decode_batch(&bytes, 3, org_language_spec(), false).is_err());
     for end in 0..bytes.len() {
@@ -108,7 +108,7 @@ fn batch_diagnostics_are_strict_opt_in_and_preserve_ordered_payloads() {
     let (_, observations) = crate::runtime_profile::measure(|| {
         assert!(decode_batch(&invalid, 3, org_language_spec(), true).is_err());
     });
-    assert!(!observations.contains_key("native.batch_body_wall_sum"));
+    assert!(!observations.contains_key("fold.batch_body_wall_sum"));
     for offset in [0, 52] {
         let mut invalid = bytes.clone();
         invalid[offset] = b'X';

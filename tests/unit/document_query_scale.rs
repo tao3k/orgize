@@ -102,24 +102,24 @@ fn document_query_native_parallel_scale_qualification() {
     // metadata-plan request, not a second request for every document.
     let expected_requests = (2 * parser_packets) as u64;
     assert_eq!(
-        stages["native.requests_completed"], expected_requests,
+        stages["ffi.requests_completed"], expected_requests,
         "one event packet plus one metadata packet; no per-document or keyword re-entry"
     );
     for name in [
         "query.total_inclusive",
         "query.worker_wall_sum",
-        "native.owner_admission",
-        "native.owner_service_inclusive",
-        "native.scheme_fold",
-        "native.scheme_thread_cpu",
-        "native.batch_body_wall_sum",
-        "native.batch_owner_thread_cpu_sum",
-        "native.batch_process_cpu_interval_sum",
-        "native.batch_vm_gc_cpu_interval_sum",
-        "native.batch_vm_gc_wall_interval_sum",
-        "native.batch_vm_gc_count_interval_sum",
-        "native.tape_encode",
-        "native.event_decode",
+        "owner.admission",
+        "owner.service_inclusive",
+        "fold.service",
+        "fold.thread_cpu",
+        "fold.batch_body_wall_sum",
+        "fold.batch_owner_thread_cpu_sum",
+        "fold.batch_process_cpu_interval_sum",
+        "fold.batch_vm_gc_cpu_interval_sum",
+        "fold.batch_vm_gc_wall_interval_sum",
+        "fold.batch_vm_gc_count_interval_sum",
+        "event_tape.encode",
+        "event_tape.decode",
         "artifact.syntax_index",
         "graph.project",
     ] {
@@ -167,7 +167,7 @@ fn document_query_native_parallel_scale_qualification() {
             expected_workers as u64
         );
         assert_eq!(
-            filtered_stages["native.requests_completed"], expected_requests,
+            filtered_stages["ffi.requests_completed"], expected_requests,
             "filtered queries retain the same bounded native handoff"
         );
         assert!(filtered_stages.contains_key("query.fact_projection"));

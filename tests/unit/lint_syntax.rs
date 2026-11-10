@@ -51,7 +51,7 @@ fn syntax_checks_unregistered_blocks() {
         });
         assert_eq!(errors, 1, "malformed forms must not poison adjacent blocks");
         assert_eq!(
-            stages.get("native.requests_completed"),
+            stages.get("ffi.requests_completed"),
             Some(&1),
             "syntax admission must share one native plan: {stages:?}"
         );

@@ -14,7 +14,7 @@ test runtime="runtime-rust" profile="dev":
 # Both tanglers are independent host executables with one startup owner each.
 [private]
 runtime-example-build manifest gsc runtime:
-    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --locked --no-default-features --features "{{ runtime }}" --profile release --no-run --example org_contract_tangle --example org_elements_tangle -vv
+    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --locked --no-default-features --features "{{ runtime }}" --profile release --no-run --example org_contract_tangle --example org_elements_tangle -vv
 
 [group('runtime')]
 runtime-example-build-receipt manifest gsc runtime output:
@@ -87,34 +87,34 @@ runtime-library-test-receipt binary output ordinary_passed ignored:
 [group('runtime')]
 index-test-receipt binary output:
     mkdir -p "{{ output }}"
-    python3 tools/ci/watch-real-output.py "{{ binary }}" explicit_startup_precedes_parallel_org_index_handoff_cases --exact --nocapture 2>&1 | tee "{{ output }}/native-index-test.log"
-    rg --quiet '^startup-native suite=org_index_handoff concurrent-cases=23 complete OK$' "{{ output }}/native-index-test.log"
-    rg --quiet '^test result: ok\. 1 passed; 0 failed;' "{{ output }}/native-index-test.log"
-    ! rg --quiet '^FAIL:|^error:|panicked at|^test result: FAILED' "{{ output }}/native-index-test.log"
+    python3 tools/ci/watch-real-output.py "{{ binary }}" explicit_startup_precedes_parallel_org_index_handoff_cases --exact --nocapture 2>&1 | tee "{{ output }}/org-index-handoff.log"
+    rg --quiet '^startup-native suite=org_index_handoff concurrent-cases=23 complete OK$' "{{ output }}/org-index-handoff.log"
+    rg --quiet '^test result: ok\. 1 passed; 0 failed;' "{{ output }}/org-index-handoff.log"
+    ! rg --quiet '^FAIL:|^error:|panicked at|^test result: FAILED' "{{ output }}/org-index-handoff.log"
 
 # Select a qualified compiler-owned closure without rewriting its module paths.
 # Keep the previous default manifest recoverable; its old modules are untouched.
 [private]
 parser-program-select manifest previous_label:
     jq --exit-status '.schema == "gerbil-scheme-rust.aot-program.v1" and (.modules | length > 0) and (.stub | type == "string")' "{{ manifest }}"
-    mkdir -p target/native-program-history target/gerbil-parser
-    if test -f target/gerbil-parser/program.json; then cp -n target/gerbil-parser/program.json "target/native-program-history/{{ previous_label }}.json"; fi
+    mkdir -p target/program-history target/gerbil-parser
+    if test -f target/gerbil-parser/program.json; then cp -n target/gerbil-parser/program.json "target/program-history/{{ previous_label }}.json"; fi
     cp "{{ manifest }}" target/gerbil-parser/program.json
     cmp "{{ manifest }}" target/gerbil-parser/program.json
 
 [private]
 build-test bridge_source filter="native_command":
-    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo test --offline --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-aot-build --lib "{{ filter }}" -- --nocapture
+    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" cargo test --offline --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-aot-build --lib "{{ filter }}" -- --nocapture
 
 # Include public build/observation contracts, not only private library tests.
 [private]
 build-contract-test bridge_source:
-    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo test --offline --locked --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-aot-build --test unit_test -- --nocapture
+    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" cargo test --offline --locked --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-aot-build --test unit_test -- --nocapture
 
 # Qualify the upstream owner under the same Darwin SDK boundary as its tests.
 [private]
 build-clippy bridge_source:
-    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" cargo clippy --offline --locked --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-aot-build --all-targets -- -D warnings
+    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" cargo clippy --offline --locked --manifest-path "{{ bridge_source }}/Cargo.toml" -p gerbil-scheme-aot-build --all-targets -- -D warnings
 
 [private]
 owner-program-build source:
@@ -123,12 +123,12 @@ owner-program-build source:
 
 [private]
 runtime-cold-owner manifest gsc runtime="runtime-rust" profile="release" samples="10":
-    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo run --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --example runtime_cold -- "{{ samples }}"
+    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo run --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --example runtime_cold -- "{{ samples }}"
 
 # Build the explicit-startup integration suites; execution remains separately bounded.
 [private]
 runtime-integration-build-owner manifest gsc runtime="runtime-rust" profile="release":
-    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --no-run --test gerbil_cutover --test host_children --test org_cutover_parity --test org_index_handoff --test org_aot_owned_projection
+    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --no-run --test gerbil_cutover --test host_children --test org_cutover_parity --test org_index_handoff --test org_aot_owned_projection
 
 # Preserve an already-qualified executable before Cargo replaces its artifact.
 [private]
@@ -142,7 +142,7 @@ query-algorithm-runtime-comparison-receipt output:
 
 [private]
 runtime-parallel-build-owner manifest gsc runtime="runtime-rust" profile="release":
-    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo build --offline --locked --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --example runtime_qualification
+    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo build --offline --locked --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --example runtime_qualification
 
 
 [private]
@@ -152,12 +152,12 @@ runtime-consumer-test-run binary case="":
 # Compile the libFuzzer-native startup hook; execution is a separate gate.
 [group('runtime')]
 runtime-fuzz-check manifest gsc:
-    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo check --offline --locked --manifest-path fuzz/Cargo.toml
+    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo check --offline --locked --manifest-path fuzz/Cargo.toml
 
 # Optional-feature admission uses the same host startup and linker policy.
 [private]
 runtime-consumer-feature-build-owner manifest gsc runtime features profile="release":
-    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --locked --profile "{{ profile }}" --no-default-features --features "{{ runtime }},{{ features }}" --no-run --test integration_test -vv
+    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --locked --profile "{{ profile }}" --no-default-features --features "{{ runtime }},{{ features }}" --no-run --test integration_test -vv
 
 [group('runtime')]
 runtime-consumer-feature-build-receipt manifest gsc native_output output runtime features profile="release":
@@ -297,7 +297,7 @@ bridge-lock-update:
 # Normal pinned upstream dependencies, without local bridge overrides.
 [group('runtime')]
 runtime-check-owner manifest gsc runtime="runtime-rust" profile="dev" verbosity="":
-    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo check {{ verbosity }} --offline --locked --profile "{{ profile }}" --no-default-features --features "{{ runtime }}" --tests --benches --examples
+    {{ platform_env }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo check {{ verbosity }} --offline --locked --profile "{{ profile }}" --no-default-features --features "{{ runtime }}" --tests --benches --examples
 
 # Source-only admission; this does not replace linked runtime receipts.
 [private]
@@ -308,11 +308,11 @@ runtime-source-check-receipt manifest gsc native_output output runtime:
 
 [private]
 runtime-consumer-build-owner manifest gsc runtime="runtime-rust" profile="release":
-    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --no-run --lib --tests
+    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --no-run --lib --tests
 
 [private]
 runtime-library-build-owner manifest gsc runtime="runtime-rust" profile="release":
-    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --no-run --lib -vv
+    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --no-default-features --features "{{ runtime }}" --profile "{{ profile }}" --no-run --lib -vv
 
 [private]
 runtime-library-build-receipt manifest gsc output runtime="runtime-rust" profile="release":
@@ -327,7 +327,7 @@ runtime-library-build-receipt manifest gsc output runtime="runtime-rust" profile
 # Qualification enables stage observations; performance builds stay separate.
 [private]
 runtime-closure-build-owner manifest gsc runtime="runtime-rust" profile="release" include_bench="true":
-    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/native-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --locked --no-default-features --features "{{ runtime }},runtime-profile" --profile "{{ profile }}" --no-run --lib --test integration_test --test gerbil_cutover --test org_index_handoff {{ if include_bench == "true" { "--bench org_runtime" } else { "" } }} -vv
+    {{ platform_env }} {{ platform_rust_flags }} XDG_CACHE_HOME="{{ justfile_directory() }}/target/ffi-cache" ORGIZE_GERBIL_PROGRAM_MANIFEST="{{ manifest }}" GERBIL_GSC="{{ gsc }}" cargo test --offline --locked --no-default-features --features "{{ runtime }},runtime-profile" --profile "{{ profile }}" --no-run --lib --test integration_test --test gerbil_cutover --test org_index_handoff {{ if include_bench == "true" { "--bench org_runtime" } else { "" } }} -vv
 
 # Retain the exact Cargo build transcript; pipefail preserves the owner failure.
 [group('runtime')]

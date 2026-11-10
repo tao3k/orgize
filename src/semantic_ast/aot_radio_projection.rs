@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[path = "org_radio.rs"]
-mod native_radio;
+mod radio_match;
 
 #[derive(Clone, Copy)]
 struct ObjectSpan {
@@ -57,7 +57,7 @@ impl GraphProjector<'_> {
     ) {
         let mut cursor = 0;
         let base = usize::from(ann.range.start());
-        for (start, end, index) in native_radio::matches(&value, &self.radio_targets) {
+        for (start, end, index) in radio_match::matches(&value, &self.radio_targets) {
             if start < cursor {
                 continue;
             }
@@ -121,7 +121,7 @@ impl GraphProjector<'_> {
         let mut emitted_until = 0;
         let mut search_cursor = 0;
 
-        for (start, end, index) in native_radio::matches(&raw, &self.radio_targets) {
+        for (start, end, index) in radio_match::matches(&raw, &self.radio_targets) {
             if start < search_cursor {
                 continue;
             }
