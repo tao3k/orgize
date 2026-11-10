@@ -122,7 +122,8 @@ stayed at 163,290 bytes. Payload reduction alone does not establish a
 latency improvement.
 
 Exact-head Darwin Rust CI for =682fca8b= passed its ordinary tests but failed
-the unchanged release ledger gate at 173.359833 ms, best of five. Both wheel
+the unchanged release ledger gate at 138.477041 ms, best of five, with profiling
+disabled. Its separate profiled diagnostic was 173.359833 ms. Both wheel
 jobs and both platform preparation jobs passed. Other runtime conclusions
 were still pending at this observation. Focused Scheme success and a single
 passing local latency sample cannot substitute for those full CI gates.
