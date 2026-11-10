@@ -41,13 +41,15 @@ plan-ledger gate remains a separate obligation from these structural fixes.
 * One fold compiler and bounded property scanning
 
 The dynamic Fold generator publishes source units and their package declarations.
-The root build invokes that package's Yuanxu =std-make-spec= once, then consumes
-the installed interfaces through Gerbil. Registering the generated source
+The root build delegates once to =gerbil build= in the generated package,
+whose =defbuild-script= consumes its Yuanxu =std-make-spec=. The root then
+consumes the installed interfaces through Gerbil. Registering the generated source
 directory alone did not schedule its build targets: a fresh external
 =GERBIL_PATH= reproduced a missing =:orgize-fold/parse-org-compiled-tape=
 interface after successful source generation. The compiled-interface check
 retains that distinction. The root does not re-register the installed package
-as source, and cleanup delegates to the same package build. Standalone static
+as source, and delegates cleanup to =gerbil clean= in the same package. No
+extra compiler, artifact inventory or cache is introduced. Standalone static
 controls retain their existing entry. The 600-second build budget is unchanged.
 
 Dependency products are cached before compiling Orgize or the bridge. The key

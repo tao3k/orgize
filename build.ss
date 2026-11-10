@@ -7,6 +7,7 @@
 (begin-syntax
   (register-module-build-source! (path-directory (this-source-file)) 'orgize))
 (import (only-in :std/source this-source-file)
+        (only-in :std/misc/process run-process)
         (only-in :clan/poo/object .get)
         (only-in :yuanxu/module-system/building/source-package register-module-build-source!)
         (only-in :yuanxu/module-system/building/script defbuild-script)
@@ -51,9 +52,10 @@
     (run-build-tool
       (list "gxi" (path-expand "languages/org/modules/org-parser/fold-generator.ss"
                                (path-directory (this-source-file))) output "dynamic"))
-    (run-build-tool
-      (append (list "gxi" fold-build "compile")
-              (if (member "--optimized" arguments) '("--optimized") '()))))
+    (run-process (cons* "gerbil" "build"
+                        (filter (lambda (arg) (member arg '("--optimized" "--release" "--debug")))
+                                arguments))
+                 directory: fold-source stdout-redirection: #f))
   (begin0 (apply build-native arguments)
     ;; The bridge compiler owns the program closure and manifest. CI and Cargo
     ;; consume this package product; they do not rebuild a second static subset.
@@ -66,4 +68,4 @@
     ;; The generated package's native catalog cleans its own exact targets.
     ;; No grammar, import dispatcher, artifact scanner or timestamp policy here.
     (when (and (equal? operation "clean") (file-exists? fold-build))
-      (run-build-tool (list "gxi" fold-build "clean")))))
+      (run-process '("gerbil" "clean") directory: fold-source stdout-redirection: #f))))
