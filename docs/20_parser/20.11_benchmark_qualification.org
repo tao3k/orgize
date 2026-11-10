@@ -8,17 +8,13 @@ Git checkouts may contain benchmark source files; package installation does
 not compile or install benchmark modules, tooling dependencies or receipts.
 An empty downstream directory loaded the installed Org Fold and parsed a
 document using the production prefix. Both benchmark imports failed module
-resolution in that process. The same directory resolved both procedures
-after explicitly adding the benchmark output and development prefixes.
+resolution in that process. Benchmark scenarios run from the development
+checkout with explicit development dependencies.
 
 Development prepares the existing =dev/gerbil.pkg= in a separate
 =GERBIL_PATH=, with the prepared production library on =GERBIL_LOADPATH=.
-=just scheme-benchmarks-build= delegates to
-[[file:../../build-benchmarks.ss][the opt-in defbuild-script]].
-The standard Gerbil Make adapter compiles its declared modules into
-=target/scheme-benchmarks/lib=. =just scheme-benchmarks-clean= cleans those
-targets through the same specification. No production recipe invokes either
-entry. Rust continues to use Cargo's existing Criterion targets.
+Scheme benchmarks have no separate build script, compiled output prefix or
+cleanup recipe. Rust continues to use Cargo's existing Criterion targets.
 The Orgize library disables Cargo's implicit library benchmark harness.
 The standard unit-test invocation still runs the library tests and gives
 the native startup fixture its own exclusive process. The benchmark command
@@ -52,32 +48,23 @@ GERBIL_PATH="$orgize_development" \
   t/benchmarks/org-prefix-probe/benchmark.ss /tmp/orgize-prefix-local.receipt
 #+end_src
 
-Optional module compilation uses the same separate development prefix:
-
-#+begin_src sh
-GERBIL_PATH="$orgize_development" \
-  GERBIL_LOADPATH="$orgize_production/lib:$orgize_development/lib" \
-  just scheme-benchmarks-build
-#+end_src
-
 Use a fresh receipt path for each execution. The fixture controls the sample
 count and the workload. The output records the admission decision and the
 raw samples.
 
 The event Fold measurement recipe also loads its Scheme module directly.
 It does not link a standalone executable or rebuild the dependency closure.
-The source test entry, optional module compilation and measured scenario
-runs are separate operations. The existing five-second output watchdog and
+The source test entry and measured scenario runs are separate operations.
+The existing five-second output watchdog and
 ASP fixture budgets still apply to measured runs.
 
-The isolated native build produced all four benchmark modules. Prefix,
-helper-state and Fold passed their fixture budgets. The name-set diagnostic
+Earlier isolated measurements found that prefix, helper-state and Fold
+passed their fixture budgets. The name-set diagnostic
 recorded 20 samples with a 299.949 ms P50 and a 619.486 ms P95 against its
 100 ms limit. It calls the public =run-event-fold= entry for each fold, so
 its measurements include program preparation. Compilation overlapped the
 run. Keep these samples as failure evidence and qualify changes in paired
-runs. Standard cleanup removed the benchmark interfaces and left the
-production program manifest byte-identical.
+runs. These historical samples do not qualify the current source-run path.
 
 The two Org Contract grammar modules import the Parser loader from
 =gerbil-parser/language-support/entry=. At Parser revision =3c58e6e=, the
@@ -92,10 +79,9 @@ It leaves cold build latency and the ledger budget as separate gates.
 
 The downstream replay used the production manifest from =3358e3a5=.
 Its empty working directory loaded the installed Org Fold and rejected
-both benchmark imports. The standard opt-in recipe then compiled the
-benchmarks with the separate development prefix. Both explicit imports
-resolved from that output and the development prefix. Standard cleanup
-left the production manifest's SHA-256 unchanged.
+both benchmark imports. This verifies production package isolation;
+development source execution is checked separately through
+=test-benchmarks.ss= and the measured scenario modules.
 
 * Measurement matrix
 
