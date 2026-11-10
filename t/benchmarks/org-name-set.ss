@@ -4,18 +4,22 @@
         (only-in :gerbil-parser/rust-runtime-event-support run-event-fold)
         (only-in :orgize/languages/org/modules/org-parser/entity-names
                  org-entity-names))
-(export main)
+(export main name-set-fold)
+
+(def source
+  (string-append "AA\nAlpha\nbeta\nzeta\nzz\nα\nalphaX\nalpha\nA\n\n"
+                 "AA\nAlpha\nbeta\nzeta\nzz\nα\nalphaX\nalpha\nA\n\n"))
+(def forms
+  `((if (line-bytes-in-set? start (line-content-end) ,org-entity-names)
+        ((start-node Heading) (token Line start end) (finish-node))
+        ((start-node Text) (token Line start end) (finish-node)))))
+(def (name-set-fold)
+  (run-event-fold source 'Document '() forms '()))
 
 (def (main label contract output)
   (when (file-exists? output) (error "refuse to overwrite benchmark receipt" output))
   (let* ((fixture (call-with-input-file contract read))
-         (source (string-append "AA\nAlpha\nbeta\nzeta\nzz\nα\nalphaX\nalpha\nA\n\n"
-                                "AA\nAlpha\nbeta\nzeta\nzz\nα\nalphaX\nalpha\nA\n\n"))
-         (forms `((if (line-bytes-in-set? start (line-content-end) ,org-entity-names)
-                      ((start-node Heading) (token Line start end) (finish-node))
-                      ((start-node Text) (token Line start end) (finish-node)))))
-         (operation (lambda () (run-event-fold source 'Document '() forms '())))
-         (expected (operation)))
+         (expected (name-set-fold)))
     (displayln "ORG-NAME-SET-BENCHMARK-BEGIN " label)
     (force-output)
     (unless (= (cdr (assq 'batchOperations fixture)) 100)
@@ -25,7 +29,7 @@
                     (lambda ()
                       (let loop ((remaining 100) (last #f))
                         (if (= remaining 0) last
-                          (loop (- remaining 1) (operation))))))))
+                          (loop (- remaining 1) (name-set-fold))))))))
       (unless (equal? result expected)
         (error "name-set benchmark event semantics changed" label))
       (let (receipt `((schema . orgize.scheme-name-set.asp.v1)

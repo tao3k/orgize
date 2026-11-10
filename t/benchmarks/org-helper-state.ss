@@ -5,44 +5,47 @@
         (only-in :orgize/languages/org/modules/org-parser/runtime-statistics
                  runtime-statistics-snapshot runtime-statistics-delta)
         (only-in "org-helper-state/runtime-counters.ss" sum-runtime-counters))
-(export main)
+(export main helper-workload)
 
 (def (run-helper-batch operation)
   (let loop ((remaining 10) (last #f))
     (if (= remaining 0) last
       (loop (- remaining 1) (operation)))))
 
-(def (main label contract output mode)
-  (unless (member mode '("timing" "diagnostic"))
-    (error "unsupported helper benchmark mode" mode))
-  (when (file-exists? output) (error "refuse to overwrite benchmark receipt" output))
-  (let* ((fixture (call-with-input-file contract read))
-         (source (apply string-append (make-list 64 "helper α\n")))
-         (defaults
-          (let loop ((n 0) (entries '((value 0) (done #f) (frames (uint-stack)))))
-            (if (= n 32) entries
-              (loop (+ n 1)
-                    (cons (list (string->symbol (string-append "kept-" (number->string n))) n)
-                          entries)))))
-         (forms '((call-source-helper outer start end ((uint 7)))))
-         (helpers
-          `((outer ,defaults
-                   ((call-source-helper inner start end ((state value))))
-                   (value))
-            (inner ,defaults
-                   ((if (uint-equal? (state value) (uint 7))
-                        ((token Line start end)) ((start-node WrongArgument)))
-                    (if (state done) ((start-node LeakedDefault)) ())
-                    (set-bool done (bool #t))
-                    (push-frame frames (uint 7)))
-                   (value))))
-         (operation (lambda () (run-event-fold source 'Document '() forms '() helpers)))
-         (expected
+(def source (apply string-append (make-list 64 "helper α\n")))
+(def defaults
+  (let loop ((n 0) (entries '((value 0) (done #f) (frames (uint-stack)))))
+    (if (= n 32) entries
+      (loop (+ n 1)
+            (cons (list (string->symbol (string-append "kept-" (number->string n))) n)
+                  entries)))))
+(def forms '((call-source-helper outer start end ((uint 7)))))
+(def helpers
+  `((outer ,defaults
+           ((call-source-helper inner start end ((state value))))
+           (value))
+    (inner ,defaults
+           ((if (uint-equal? (state value) (uint 7))
+                ((token Line start end)) ((start-node WrongArgument)))
+            (if (state done) ((start-node LeakedDefault)) ())
+            (set-bool done (bool #t))
+            (push-frame frames (uint 7)))
+           (value))))
+
+(def (helper-workload)
+  (values (lambda () (run-event-fold source 'Document '() forms '() helpers))
           (cons '(start Document)
                 (let loop ((n 0))
                   (if (= n 64) '((finish))
                     (cons (list 'token 'Line (* n 10) (* (+ n 1) 10))
                           (loop (+ n 1))))))))
+
+(def (main label contract output mode)
+  (unless (member mode '("timing" "diagnostic"))
+    (error "unsupported helper benchmark mode" mode))
+  (when (file-exists? output) (error "refuse to overwrite benchmark receipt" output))
+  (let-values (((operation expected) (helper-workload)))
+    (def fixture (call-with-input-file contract read))
     (unless (equal? (operation) expected)
       (error "helper scenario admission differs from independent byte tape"))
     (unless (and (= (cdr (assq 'batchOperations fixture)) 10)

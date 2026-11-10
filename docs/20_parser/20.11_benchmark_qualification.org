@@ -25,6 +25,13 @@ the native startup fixture its own exclusive process. The benchmark command
 runs the explicit Criterion targets without starting a second parallel
 copy of the library test suite.
 
+[[file:../../test-benchmarks.ss][The benchmark test entry]] discovers the
+scenario suites with =std/test=. It checks source semantics and the helper
+counter contract. Run it from the checkout with the production dependencies
+and ASP development prefix available. Gerbil loads the scenario source
+directly. Measured runs still use the scenario fixtures and their original
+ASP admission gates.
+
 Prepare the development prefix separately. Run each compiled benchmark in
 its own process with the production library before the development library.
 Both dependency trees contain POO modules, so this order keeps the production
@@ -36,6 +43,9 @@ orgize_production="$PWD/.gerbil-ci"
 orgize_development="$PWD/target/scheme-benchmark-dev"
 GERBIL_PATH="$orgize_development" GERBIL_LOADPATH="$orgize_production/lib" \
   just prepare-dev
+GERBIL_PATH="$orgize_development" \
+  GERBIL_LOADPATH="$orgize_production/lib:$orgize_development/lib" \
+  gerbil test -v 3 test-benchmarks.ss
 GERBIL_PATH="$orgize_development" \
   GERBIL_LOADPATH="$orgize_development/lib:$orgize_production/lib" \
   just scheme-benchmarks-build
@@ -68,6 +78,13 @@ and all 237 Scheme cases in 19 suites passed through the standard entry.
 An earlier build reached the unchanged 600-second deadline after Fold
 generation. The manifest comparison establishes the dependency reduction.
 It leaves cold build latency and the ledger budget as separate gates.
+
+The downstream replay used the production manifest from =3358e3a5=.
+Its empty working directory loaded the installed Org Fold and rejected
+both benchmark imports. The standard opt-in recipe then compiled the
+benchmarks with the separate development prefix. Both explicit imports
+resolved from that output and the development prefix. Standard cleanup
+left the production manifest's SHA-256 unchanged.
 
 * Measurement matrix
 
@@ -247,6 +264,34 @@ Both candidate tail samples were below their paired baseline, but the
 candidate median changed direction and the first baseline pair diverged
 from both A/A controls. The isolated change stays out of the PR pending
 reproducible benefit.
+
+* Semantic tape writer experiment
+
+The candidate writes semantic response rows to the standard Gerbil memory
+writer. It avoids materializing a second list of tagged rows. The optimized
+program build and the existing Scheme gate passed all 237 cases and the
+deliberate failure control. Loader traces identify the baseline and candidate
+tape modules. All 32 request and 32 full response digests match across the
+two traced preflights and six independent measured processes.
+
+Each sample processes 2,000 titles in 32 operation-24 requests. This
+measurement includes Scheme metadata and serialization. It excludes the
+Rust graph and transport paths. With twenty samples, the nearest-rank P99
+is the maximum. RSS is the peak of each process.
+
+| Run | P50 ms | P95 ms | P99 ms | Titles/s at P50 | RSS MiB |
+|-----+--------+--------+--------+-----------------+---------|
+| A/A first baseline | 10.850 | 48.691 | 50.583 | 184332 | 625.67 |
+| A/A second baseline | 11.412 | 48.545 | 50.160 | 175254 | 626.00 |
+| Pair first baseline | 11.047 | 49.851 | 52.070 | 181045 | 625.44 |
+| Pair first writer | 11.048 | 55.077 | 84.298 | 181028 | 624.64 |
+| Pair second writer | 10.739 | 46.597 | 48.301 | 186237 | 623.62 |
+| Pair last baseline | 11.668 | 54.032 | 59.182 | 171409 | 625.44 |
+
+The first writer process increased P95 and P99. The second decreased both
+relative to the last baseline. Peak RSS changed by less than two MiB.
+Keep the writer candidate in the isolated experiment and retain the existing
+serialization path in the PR.
 
 * Scheme actor execution
 
