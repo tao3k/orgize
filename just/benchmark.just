@@ -126,15 +126,10 @@ runtime-query-profile-run binary:
 
 [private]
 scheme-event-benchmark parser_lib poo_flow_lib label="current" fixture="doc.org" output="":
-    just scheme-executable-link t/benchmarks/org-event-fold.ss "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label } else { output + ".scheme-build" } }}" "{{ parser_lib }}:{{ poo_flow_lib }}" org-event-fold
-    just scheme-event-benchmark-run "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label } else { output + ".scheme-build" } }}/org-event-fold" "{{ label }}" "{{ fixture }}" "{{ output }}"
-
-[private]
-scheme-event-benchmark-run binary label fixture output:
     test -f "{{ justfile_directory() }}/benches/fixtures/{{ fixture }}"
     mkdir -p "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label } else { parent_directory(output) } }}"
     test ! -e "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label + "/run.log" } else { output + ".run.log" } }}"
-    env -u GERBIL_PATH -u GERBIL_LOADPATH GAMBOPT=max-heap=1G,debug=q python3 tools/ci/watch-real-output.py "{{ binary }}" "{{ label }}" "{{ justfile_directory() }}/benches/fixtures/{{ fixture }}" "{{ justfile_directory() }}/t/benchmarks/org-event-fold/benchmark.ss" "{{ output }}" 2>&1 | tee "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label + "/run.log" } else { output + ".run.log" } }}"
+    GERBIL_LOADPATH="{{ parser_lib }}:{{ poo_flow_lib }}" GAMBOPT="{{ scheme_gambopt }}" python3 tools/ci/watch-real-output.py gxi t/benchmarks/org-event-fold.ss "{{ label }}" "{{ justfile_directory() }}/benches/fixtures/{{ fixture }}" "{{ justfile_directory() }}/t/benchmarks/org-event-fold/benchmark.ss" "{{ output }}" 2>&1 | tee "{{ if output == "" { justfile_directory() + "/target/scheme-benchmark-receipts/" + label + "/run.log" } else { output + ".run.log" } }}"
 
 [private]
 scheme-name-set-benchmark parser_lib poo_flow_lib label output:

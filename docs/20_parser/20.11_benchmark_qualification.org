@@ -32,7 +32,7 @@ and ASP development prefix available. Gerbil loads the scenario source
 directly. Measured runs still use the scenario fixtures and their original
 ASP admission gates.
 
-Prepare the development prefix separately. Run each compiled benchmark in
+Prepare the development prefix separately. Run each source benchmark in
 its own process with the production library before the development library.
 Both dependency trees contain POO modules, so this order keeps the production
 Parser and POO artifacts together while resolving the benchmark API from
@@ -58,6 +58,12 @@ GERBIL_PATH="$orgize_production" \
 Use a fresh receipt path for each execution. The fixture controls the sample
 count and the workload. The output records the admission decision and the
 raw samples.
+
+The event Fold measurement recipe also loads its Scheme module directly.
+It does not link a standalone executable or rebuild the dependency closure.
+The source test entry, optional module compilation and measured scenario
+runs are separate operations. The existing five-second output watchdog and
+ASP fixture budgets still apply to measured runs.
 
 The isolated native build produced all four benchmark modules. Prefix,
 helper-state and Fold passed their fixture budgets. The name-set diagnostic
