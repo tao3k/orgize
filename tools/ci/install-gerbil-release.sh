@@ -32,4 +32,10 @@ echo "$GERBIL_PREFIX/bin" >> "${GITHUB_PATH:?}"
   echo "GERBIL_GCC=$C_COMPILER"
   echo "GAMBOPT=$GAMBOPT"
   echo "GERBIL_PATH=${GITHUB_WORKSPACE:?}/.gerbil-native"
+  if [[ "$(uname -s)" == Darwin ]]; then
+    # The packaged Gerbil was linked against OpenSSL 3. Select the matching
+    # package metadata even when Homebrew exposes OpenSSL 4 by default.
+    openssl_pc="$(brew --prefix openssl@3)/lib/pkgconfig"
+    echo "PKG_CONFIG_PATH=$openssl_pc${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+  fi
 } >> "${GITHUB_ENV:?}"
