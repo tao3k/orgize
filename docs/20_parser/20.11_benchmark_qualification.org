@@ -600,6 +600,31 @@ Both effect invocations passed under the Rust runtime. The Scheme effect
 invocations straddled the gate. The Scheme A/A medians varied by 25.011 ms.
 Retain all 60 samples and keep the gate open for both CI platforms.
 
+Separate profiled executables run in ABBA order for each runtime. Each
+cell below is the median of ten complete 2,000-file queries. Every query
+completes 64 owner requests.
+
+| Stage (ms) | Rust control | Rust effect | Scheme control | Scheme effect |
+|------------+--------------+-------------+----------------+---------------|
+| Owner CPU  |       91.257 |      72.530 |         89.141 |        73.422 |
+| Fold CPU   |       81.021 |      62.275 |         79.884 |        63.019 |
+| Metadata CPU |     10.858 |      10.446 |          9.323 |         9.867 |
+| Fold VM GC CPU intervals | 46.216 | 12.931 |    36.985 |         9.707 |
+| Request encoding |  0.128 |       0.120 |          0.122 |         0.121 |
+| Result copy |        0.120 |       0.131 |          0.112 |         0.095 |
+| Graph projection worker sum | 8.550 | 8.695 |      7.373 |         7.200 |
+
+Fold CPU decreases by 18.746 ms on Rust and 16.865 ms on Scheme. GC
+intervals overlap the Fold measure. Graph projection and aggregate
+worker waits overlap across workers. The candidate's owner service wall
+median is 76.988 ms on Rust and 76.232 ms on Scheme. The remaining wall
+budget includes filesystem traversal, delivery of the first batch and
+projection after the last owner reply. The stage counters capture sums of
+overlapping work and leave those serial intervals unattributed.
+
+The effect package also passed the original Scheme entry with 237 cases
+in 19 suites. The deliberate failure control returned 42.
+
 * Promotion
 
 The Ubuntu relocation run for =3358e3a5= passed the Scheme runtime's
