@@ -79,15 +79,17 @@ impl<T> OwnerReply<T> {
         }
     }
 
-    pub(crate) fn receive(self) -> T {
+    pub(crate) fn receive(self, operation: u8) -> T {
         #[cfg(feature = "runtime-profile")]
-        record_transport(self.timings, self.completed.elapsed());
+        record_transport(operation, self.timings, self.completed.elapsed());
+        #[cfg(not(feature = "runtime-profile"))]
+        let _ = operation;
         self.value
     }
 }
 
 #[cfg(feature = "runtime-profile")]
-pub(crate) fn record_transport(timings: [u64; 4], handoff: u64) {
+pub(crate) fn record_transport(operation: u8, timings: [u64; 4], handoff: u64) {
     // Count, not a duration: includes every physical native parse/value reply.
     super::collector::record("ffi.requests_completed", 1);
     for (name, value) in [
@@ -97,6 +99,23 @@ pub(crate) fn record_transport(timings: [u64; 4], handoff: u64) {
         ("owner.thread_cpu_inclusive", timings[3]),
         ("ffi.completion_handoff", handoff),
     ] {
+        super::collector::record(name, value);
+    }
+    // The event tape protocol uses 6/7 for Fold batches and 17/24 for metadata.
+    let group = match operation {
+        6 | 7 => [
+            "fold.batch.requests",
+            "fold.batch.owner_service",
+            "fold.batch.owner_cpu",
+        ],
+        17 | 24 => [
+            "owner.metadata.requests",
+            "owner.metadata.service",
+            "owner.metadata.cpu",
+        ],
+        _ => return,
+    };
+    for (name, value) in group.into_iter().zip([1, timings[1], timings[3]]) {
         super::collector::record(name, value);
     }
 }

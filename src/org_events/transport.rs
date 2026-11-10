@@ -419,6 +419,11 @@ pub(crate) fn semantic_fields(
 fn transport_parse(bytes: Vec<u8>) -> Result<Vec<u8>, String> {
     let (response, result) = mpsc::sync_channel(1);
     let submitted = crate::runtime_profile::Stamp::start();
+    let operation = if cfg!(feature = "runtime-profile") {
+        bytes.get(4).copied().unwrap_or_default()
+    } else {
+        0
+    };
     owner()?
         .send(Request::Parse {
             bytes,
@@ -429,7 +434,7 @@ fn transport_parse(bytes: Vec<u8>) -> Result<Vec<u8>, String> {
     result
         .recv()
         .map_err(|_| "Gerbil call terminated")?
-        .receive()
+        .receive(operation)
 }
 
 #[cfg(not(feature = "runtime-scheme"))]
@@ -536,6 +541,7 @@ fn transport_parse(bytes: Vec<u8>) -> Result<NativeTape, String> {
     #[cfg(feature = "runtime-profile")]
     if crate::runtime_profile::is_active() {
         crate::runtime_profile::record_transport(
+            bytes.get(4).copied().unwrap_or_default(),
             [timings[0], timings[1], timings[2], timings[4]],
             timings[3],
         );

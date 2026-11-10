@@ -88,6 +88,14 @@ Profiling receipts use =fold= for Scheme traversal, =event_tape= for the
 wire representation, =owner= for queue admission and owner service, and
 =ffi= for calls and copies across the language boundary.
 
+For the ledger query, enable =runtime-profile= and set
+=ORGIZE_PROFILE_PLAN_LEDGER= and =ORGIZE_PROFILE_PLAN_LEDGER_STAGES= to 1.
+Run the same prepared release target under each owner. The
+=fold.batch.requests= and =owner.metadata.requests= counters distinguish
+the two physical request families. Their owner CPU fields measure work on
+the owner thread. The overall =ffi.requests_completed= counter also
+includes other operations.
+
 * First Fold candidate
 
 In the prior property-scan diagnostic, two 2,000-file samples recorded 145.5
