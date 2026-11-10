@@ -1,5 +1,13 @@
 # benchmark: native architecture task owner.
 
+[group('benchmark')]
+scheme-benchmarks-build:
+    {{ scheme_env }} GAMBOPT="{{ ci_build_gambopt }}" {{ timeout_command }} --signal=TERM --kill-after=5s 600s gxi build-benchmarks.ss compile --optimized
+
+[group('benchmark')]
+scheme-benchmarks-clean:
+    {{ scheme_env }} gxi build-benchmarks.ss clean
+
 # Measure the existing public-entry Criterion scenarios, not a new harness.
 [private]
 parser-bench-owner manifest gsc profile="release" filter='Org::parse/(doc|plain-links|quote-heavy)\.org':

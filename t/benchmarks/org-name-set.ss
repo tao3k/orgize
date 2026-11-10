@@ -2,7 +2,7 @@
 (import (only-in :asp-gerbil-scheme/benchmark-api
                  benchmark-run/result benchmark-receipt-pass?)
         (only-in :gerbil-parser/rust-runtime-event-support run-event-fold)
-        (only-in "../../languages/org/modules/org-parser/entity-names.ss"
+        (only-in :orgize/languages/org/modules/org-parser/entity-names
                  org-entity-names))
 (export main)
 

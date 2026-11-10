@@ -134,6 +134,9 @@ The separate, dirty Parser development checkout was not modified.
 
 * Ownership and entrypoints
 
+[[file:20.11_benchmark_qualification.org][Benchmark qualification]] owns the
+opt-in development entry, measurement matrix and performance promotion rules.
+
 [[file:../../init.ss][Root init]] selects the Org Parser, Element and Contract Modules and the
 independent native C capability using =yuanxu!=. Each =interface.ss= is a
 Module declaration. The Parser prelude supplies the language/declaration entry;
