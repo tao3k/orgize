@@ -101,14 +101,14 @@ pub(crate) fn record_transport(operation: u8, timings: [u64; 4], handoff: u64) {
     ] {
         super::collector::record(name, value);
     }
-    // The event tape protocol uses 6/7 for Fold batches and 17/24 for metadata.
+    // The event tape protocol uses 6/7 for Fold batches and 17/24–26 for metadata.
     let group = match operation {
         6 | 7 => [
             "fold.batch.requests",
             "fold.batch.owner_service",
             "fold.batch.owner_cpu",
         ],
-        17 | 24 => [
+        17 | 24..=26 => [
             "owner.metadata.requests",
             "owner.metadata.service",
             "owner.metadata.cpu",

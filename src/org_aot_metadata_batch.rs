@@ -1,20 +1,19 @@
 //! Bounded metadata transport; Scheme retains each document's semantic owner.
-use super::{
-    OrgAotDocument, OrgAotError, ParseConfig, PreparedDocument, finish_document,
-    native_semantic_rows,
-};
+use super::{OrgAotError, PreparedDocument, native_semantic_rows};
 
-pub(super) fn finish(
+pub(super) fn finish<T>(
     prepared: Vec<Result<PreparedDocument, OrgAotError>>,
-    config: &ParseConfig,
-) -> Result<Vec<Result<OrgAotDocument, OrgAotError>>, OrgAotError> {
+    single_operation: u8,
+    batch_operation: u8,
+    admit: impl Fn(PreparedDocument, Vec<Vec<String>>) -> Result<T, OrgAotError>,
+) -> Result<Vec<Result<T, OrgAotError>>, OrgAotError> {
     let mut output = Vec::with_capacity(prepared.len());
     let mut pending = Vec::new();
     let mut bytes = 0;
     for document in prepared {
         match document {
             Err(error) => {
-                flush(&mut pending, &mut output, config)?;
+                flush(&mut pending, &mut output, batch_operation, &admit)?;
                 bytes = 0;
                 output.push(Err(error));
             }
@@ -26,7 +25,7 @@ pub(super) fn finish(
                     .sum::<usize>()
                     + 16;
                 if bytes + size > super::BATCH_MAX_SOURCE_BYTES {
-                    flush(&mut pending, &mut output, config)?;
+                    flush(&mut pending, &mut output, batch_operation, &admit)?;
                     bytes = 0;
                 }
                 if size > super::BATCH_MAX_SOURCE_BYTES {
@@ -37,9 +36,9 @@ pub(super) fn finish(
                         .map(String::as_str)
                         .collect::<Vec<_>>();
                     output.push(
-                        native_semantic_rows(17, &refs)
+                        native_semantic_rows(single_operation, &refs)
                             .map_err(OrgAotError::Native)
-                            .and_then(|rows| finish_document(document, rows, config)),
+                            .and_then(|rows| admit(document, rows)),
                     );
                 } else {
                     bytes += size;
@@ -48,14 +47,15 @@ pub(super) fn finish(
             }
         }
     }
-    flush(&mut pending, &mut output, config)?;
+    flush(&mut pending, &mut output, batch_operation, &admit)?;
     Ok(output)
 }
 
-fn flush(
+fn flush<T>(
     pending: &mut Vec<PreparedDocument>,
-    output: &mut Vec<Result<OrgAotDocument, OrgAotError>>,
-    config: &ParseConfig,
+    output: &mut Vec<Result<T, OrgAotError>>,
+    operation: u8,
+    admit: &impl Fn(PreparedDocument, Vec<Vec<String>>) -> Result<T, OrgAotError>,
 ) -> Result<(), OrgAotError> {
     if pending.is_empty() {
         return Ok(());
@@ -76,7 +76,7 @@ fn flush(
             refs.push(size.as_str());
             refs.extend(document.fields.iter().map(String::as_str));
         }
-        native_semantic_rows(24, &refs)
+        native_semantic_rows(operation, &refs)
             .map_err(OrgAotError::Native)?
             .into_iter()
     };
@@ -93,7 +93,7 @@ fn flush(
                 if body.len() != count {
                     return Err(OrgAotError::Native("truncated metadata frame".into()));
                 }
-                output.push(finish_document(document, body, config));
+                output.push(admit(document, body));
             }
             [status, error] if status == "error" => {
                 output.push(Err(OrgAotError::Native(error.clone())))

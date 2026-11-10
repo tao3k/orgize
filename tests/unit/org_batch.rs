@@ -20,14 +20,19 @@ pub(crate) const NATIVE_CASES: &[(&str, fn())] = &[
 ];
 
 fn ledger_headline_projection_matches_full_document_metadata() {
+    // The title fits the Fold batch budget. Together with the large profile
+    // it forces the single-document compact metadata operation.
+    let oversized_metadata = format!("* TODO {} :tag:\n", "α".repeat(17_000));
     let sources = [
         "* FINISHED [#A] λ :tag:\r\n:PROPERTIES:\r\n:ID: α\r\n:END:\r\n** Child\r\n#+TODO: WAIT | FINISHED\r\n",
         "* TODO Parent\n** DONE Child\n:PROPERTIES:\n:ID: child\n:END:\n* Second\n",
         "* \n** Child\n",
         "** Child\n",
         "Prose\n* Not a leading headline\n",
+        oversized_metadata.as_str(),
     ];
-    let config = ParseConfig::default();
+    let mut config = ParseConfig::default();
+    config.todo_keywords.0.push("Z".repeat(34_000));
     let scoped = super::parse_plan_ledger_batch(&sources, &config).unwrap();
     assert_eq!(scoped.len(), sources.len());
     for (source, document) in sources.into_iter().zip(scoped) {
@@ -63,12 +68,23 @@ fn preserves_order_utf8_and_configuration() {
     assert_eq!(packet[2][0], "error");
     assert_eq!(packet[3], ["ok", "1"]);
     assert_eq!(packet[4], ["0", "0"]);
+    let compact = super::native_semantic_rows(
+        26,
+        &[
+            "3", "4", "0", "0", "0", "0", "1", "invalid", "4", "0", "0", "0", "0",
+        ],
+    )
+    .unwrap();
+    assert_eq!(compact[0], ["ok", "0"]);
+    assert_eq!(compact[1][0], "error");
+    assert_eq!(compact[2], ["ok", "0"]);
     for fields in [
         &["65"][..],
         &["1", "5", "0"][..],
         &["1", "4", "0", "0", "0", "0", "trailing"][..],
     ] {
         assert!(super::native_semantic_rows(24, fields).is_err());
+        assert!(super::native_semantic_rows(26, fields).is_err());
     }
     let inputs = [
         "",

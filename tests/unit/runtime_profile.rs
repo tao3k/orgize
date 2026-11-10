@@ -98,21 +98,29 @@ fn owner_reply_records_only_on_the_receiving_request() {
 
 #[test]
 fn transport_projection_retains_exact_request_local_values() {
-    let (_, timings) = measure(|| super::record_transport(24, [11, 13, 17, 23], 19));
-    assert_eq!(timings["owner.admission"], 11);
-    assert_eq!(timings["owner.service_inclusive"], 13);
-    assert_eq!(timings["ffi.result_copy"], 17);
-    assert_eq!(timings["ffi.completion_handoff"], 19);
-    assert_eq!(timings["owner.thread_cpu_inclusive"], 23);
-    assert_eq!(timings["owner.metadata.requests"], 1);
-    assert_eq!(timings["owner.metadata.service"], 13);
-    assert_eq!(timings["owner.metadata.cpu"], 23);
-    assert!(!timings.contains_key("fold.batch.owner_cpu"));
+    for operation in [17, 24, 25, 26] {
+        let (_, timings) = measure(|| super::record_transport(operation, [11, 13, 17, 23], 19));
+        assert_eq!(timings["owner.admission"], 11);
+        assert_eq!(timings["owner.service_inclusive"], 13);
+        assert_eq!(timings["ffi.result_copy"], 17);
+        assert_eq!(timings["ffi.completion_handoff"], 19);
+        assert_eq!(timings["owner.thread_cpu_inclusive"], 23);
+        assert_eq!(timings["owner.metadata.requests"], 1);
+        assert_eq!(timings["owner.metadata.service"], 13);
+        assert_eq!(timings["owner.metadata.cpu"], 23);
+        assert!(!timings.contains_key("fold.batch.owner_cpu"));
+    }
     super::record_transport(7, [1, 2, 3, 5], 4);
     assert!(measure(|| ()).1.is_empty());
-    let (value, timings) = measure(|| super::operation(23, || 7));
-    assert_eq!(value, 7);
-    assert!(timings.contains_key("ffi.operation.23"));
+    for (operation, name) in [
+        (23, "ffi.operation.23"),
+        (25, "ffi.operation.25"),
+        (26, "ffi.operation.26"),
+    ] {
+        let (value, timings) = measure(|| super::operation(operation, || 7));
+        assert_eq!(value, 7);
+        assert!(timings.contains_key(name));
+    }
     assert!(
         measure(|| super::operation(23, || 7))
             .1

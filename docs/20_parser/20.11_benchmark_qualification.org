@@ -102,6 +102,58 @@ ledger latency or replace exact-head CI.
 
 * Earlier evidence
 
+** Compact ledger metadata candidate
+
+The private ledger projection now has its own typed result, retaining the
+validated graph records and only the leading headline's title, TODO keyword
+and closed state. Full document parsing retains its existing metadata shape.
+Both projections share source parsing, event admission, graph projection and
+graph-index validation. Scheme still owns directive resolution and headline
+semantics; Rust admits the returned row count, width and state before exposing
+the scoped result. The private request omits the source title body that this
+projection never reads. Packet limits and oversized-document fallback remain
+on the existing bounded transport.
+
+The frozen candidate passed the existing complete Scheme gate, both runtime
+functional suites and both all-target Clippy gates. The Scheme gate retains
+237 cases, 19 suites and its intentional failure control. Native checks retain
+the startup fixture and the complete consumer suite. Differential controls
+compare the leading headline and complete graph records with full-document
+projection across configuration, Unicode, missing/child headlines and the
+oversized metadata fallback. These establish functional correspondence; the
+paired endpoint failures below still prevent performance qualification.
+
+** Checked byte-input reuse experiment
+
+The existing source-input diagnostic now completes its untimed admission
+checks against the corrected, locally rebuilt Parser owner. Independent
+fresh compiler outputs reproduce malformed-input acceptance in the original
+owner and rejection in the fixed owner. This excludes retained higher-numbered
+Gambit object versions from that comparison. No consumer dependency pin or
+production adapter changes in this experiment.
+
+Each measured invocation runs 2,000 independent folds of the committed Org
+fixture, with 20 samples. Preparation and canonical tape/rejection comparisons
+precede timing. All arms retain the same source digest and canonical tape
+digest. The full A/A and A/B/B/A sequence is retained:
+
+| Arm | Input | P50 ms | P95 ms | 100 ms diagnostic gate |
+|-----+-------+--------+--------+-----------------------|
+| A/A first | Text | 216.429 | 239.968 | Fail |
+| A/A second | Text | 213.765 | 236.117 | Fail |
+| A/B/B/A first | Text | 213.216 | 240.615 | Fail |
+| A/B/B/A second | Bytes | 219.254 | 232.458 | Fail |
+| A/B/B/A third | Bytes | 212.245 | 231.787 | Fail |
+| A/B/B/A last | Text | 214.850 | 233.783 | Fail |
+
+All 120 raw samples remain in ignored local evidence. The experiment overlapped
+the complete Parser test entry on the same host; it is not an isolated-host
+latency qualification. P50 does not show a stable improvement. Both arms still
+perform strict decoding and obtain owned byte storage: the byte adapter copies
+the request slice, while the text adapter re-encodes decoded text. These data do
+not justify changing the production path or its dependency pin. The 100 ms
+diagnostic failure also does not redefine the separate release ledger gate.
+
 The authorized bridge update has a separate upstream CI follow-up for
 concurrent test-directory identity. Timestamp-only names collided on Darwin;
 an atomic process-local suffix removed the reproduced collision across

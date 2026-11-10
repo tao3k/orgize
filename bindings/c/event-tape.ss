@@ -237,7 +237,7 @@
                    (loop (- index 1) (+ (* value 256) (u8vector-ref request (+ 5 index)))))))
         (policy (u8vector-ref request 13)))
     (cond
-     ((memv (u8vector-ref request 4) '(8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24))
+     ((<= 8 (u8vector-ref request 4) 26)
       (unless (and (= level 0) (= policy 0))
         (error "invalid macro request options"))
       (if (memv (u8vector-ref request 4) '(8 9 15))
@@ -297,14 +297,14 @@
 ;; Counted fields share the existing identity-bound value tape, never JSON.
 ;; Semantic owners emit private string rows; the adapter only frames them.
 (def (semantic-request->tape request)
-  (when (and (= (u8vector-ref request 4) 24)
+  (when (and (memv (u8vector-ref request 4) '(24 26))
              (> (u8vector-length request) (+ 65536 14)))
     (error "document metadata packet exceeds native byte budget"))
   (let* ((fields (macro-request-fields request))
          (operation (u8vector-ref request 4))
          (expected (case operation ((10) 5) (else 1))))
     (unless (cond ((= operation 12) (even? (length fields)))
-                  ((<= 16 operation 24) #t)
+                  ((<= 16 operation 26) #t)
                   (else (= (length fields) expected)))
       (error "invalid native semantic field count"))
     (let (rows
@@ -328,6 +328,8 @@
             ((16) (org-family-call fields))
             ((17) (org-document-batch fields))
             ((24) (document-metadata-packets fields))
+            ((25) (org-document-batch fields #t))
+            ((26) (document-metadata-packets fields #t))
             ((18) (org-link-batch fields))
             ((19) (org-affiliation-batch fields))
             ((20) (org-logbook-batch fields))
@@ -461,7 +463,7 @@
     (contract-events->rows (parse-artifact-events artifact) expression-string-value)))
 
 ;; Bounded framing only: each packet calls the existing document semantic owner.
-(def (document-metadata-packets fields)
+(def (document-metadata-packets fields (ledger? #f))
   (let (count (and (pair? fields) (string->number (car fields))))
     (unless (and (exact-integer? count) (<= 1 count 64))
       (error "invalid document metadata packet count"))
@@ -480,7 +482,7 @@
                  (rows (with-catch
                         (lambda (exception) (list (list "error" "native document metadata failed")))
                         (lambda ()
-                          (let (rows (org-document-batch packet))
+                          (let (rows (org-document-batch packet ledger?))
                             (cons (list "ok" (number->string (length rows))) rows))))))
             (loop (- remaining 1) (drop (cdr rest) size)
                   (- available size 1) (cons rows out))))))))

@@ -143,7 +143,7 @@
 
 ;; One native request owns headline values and keyword facts together. Facts
 ;; retain input order; the host binds that order to its source-backed records.
-(def (org-document-batch fields)
+(def (org-document-batch fields (ledger? #f))
   (let-values (((args rest) (read-args '("list" "list" "list" "list") fields)))
     (unless (null? rest) (error "trailing headline fields"))
     (let* ((configured-open (car args)) (configured-done (cadr args))
@@ -160,35 +160,38 @@
            (done (if (null? directives) configured-done
                    (filter (lambda (word) (not (string=? word "")))
                            (foldr (lambda (directive out) (append (todo-done-words directive) out)) '() directives)))))
-      (append
-       (cons (append (list (number->string (length open)) (number->string (length done))) open done)
-            (let loop ((rest titles) (out '()))
-              (if (null? rest) (reverse out)
-                (begin
-                  (unless (and (pair? (cdr rest)) (pair? (cddr rest))
-                               (member (caddr rest) '("true" "false")))
-                    (error "invalid native headline fields"))
-                  (let* ((title (car rest)) (body (cadr rest))
-                         ;; The document's admitted keyword sets are already
-                         ;; resolved above. Reuse that value and this one state
-                         ;; result, not repeated directive/title normalization.
-                         (state (todo-state-from-directives title '() open done))
-                         (keyword (if (string=? state "") "" (string-first-word title)))
-                         (after (if (string=? keyword "") (string-trim title)
-                                  (string-rest-after-first-word title)))
-                         (display (headline-display-title after (string=? (caddr rest) "true"))))
-                    (loop (cdddr rest)
-                          (cons (list state keyword after (headline-priority-cookie after) display
-                                      (headline-source-title body keyword)
-                                      (if (headline-comment? display) "true" "false")) out)))))))
-       (let loop ((rest keywords) (index 0) (out '()))
-         (if (null? rest) (reverse out)
-           (let (facts (org-keyword-facts (car rest) (cadr rest)))
-             (loop (cddr rest) (+ index 1)
-                   (foldl cons
-                          (cons (list "keyword" (number->string index)
-                                      (number->string (length facts))) out)
-                          facts)))))))))
+      (def headline-rows
+        (let loop ((rest titles) (out '()))
+          (if (null? rest) (reverse out)
+            (let (tag-field (if ledger? (cdr rest)
+                              (if (pair? (cdr rest)) (cddr rest) '())))
+              (unless (and (pair? tag-field)
+                           (member (car tag-field) '("true" "false")))
+                (error "invalid native headline fields"))
+              (let* ((title (car rest))
+                     (state (todo-state-from-directives title '() open done))
+                     (keyword (if (string=? state "") "" (string-first-word title)))
+                     (after (if (string=? keyword "") (string-trim title)
+                              (string-rest-after-first-word title)))
+                     (display (headline-display-title after (string=? (car tag-field) "true")))
+                     (row (if ledger?
+                            (list state keyword display)
+                            (list state keyword after (headline-priority-cookie after) display
+                                  (headline-source-title (cadr rest) keyword)
+                                  (if (headline-comment? display) "true" "false")))))
+                (loop (cdr tag-field) (cons row out)))))))
+      (if ledger?
+        headline-rows
+        (cons (append (list (number->string (length open)) (number->string (length done))) open done)
+              (append headline-rows
+                      (let loop ((rest keywords) (index 0) (out '()))
+                        (if (null? rest) (reverse out)
+                          (let (facts (org-keyword-facts (car rest) (cadr rest)))
+                            (loop (cddr rest) (+ index 1)
+                                  (foldl cons
+                                         (cons (list "keyword" (number->string index)
+                                                     (number->string (length facts))) out)
+                                         facts)))))))))))
 
 (def (org-link-batch fields)
   (map (lambda (path)
