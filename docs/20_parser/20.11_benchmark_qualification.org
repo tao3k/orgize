@@ -102,6 +102,38 @@ ledger latency or replace exact-head CI.
 
 * Earlier evidence
 
+The authorized bridge update has a separate upstream CI follow-up for
+concurrent test-directory identity. Timestamp-only names collided on Darwin;
+an atomic process-local suffix removed the reproduced collision across
+49,152 requests from 12 workers. The complete 20-case Rust unit target passed.
+That follow-up changes test support only and does not require another
+consumer pin update.
+
+Recent original-versus-candidate endpoint pairs retain the complete frozen
+2,000-file workload and all five observations per invocation. Across twelve
+invocations, the original committed-source control failed all eight of its
+invocations. The compact-input candidate passed three of four invocations;
+the remaining Rust invocation missed the unchanged 100 ms gate at
+100.049750 ms. This is evidence of possible improvement, not stable
+qualification. The candidate remains unpublished. The same comparison's
+candidate request payload shrank from 268,548 to 183,658 bytes (31.6%);
+its response payload stayed at 163,290 bytes. Payload reduction alone does
+not establish a latency improvement.
+
+Exact-head Darwin Rust CI for =682fca8b= passed its ordinary tests but failed
+the unchanged release ledger gate at 173.359833 ms, best of five. Both wheel
+jobs and both platform preparation jobs passed. Other runtime conclusions
+were still pending at this observation. Focused Scheme success and a single
+passing local latency sample cannot substitute for those full CI gates.
+
+The attempted reuse of Parser's byte-input API stopped at untimed malformed
+UTF-8 checks before collecting samples. A separate Parser fix makes official
+decoder admission observable in compiled products and repairs a permissive
+exception assertion that could report false success. Orgize still uses its
+strict text-decoding path and retains the existing Parser pin. Verify that
+upstream fix through its complete entrypoints before qualifying a byte-input
+adapter; do not bypass admission to obtain a benchmark result.
+
 Earlier isolated measurements found that prefix, helper-state and Fold
 passed their fixture budgets. The name-set diagnostic
 recorded 20 samples with a 299.949 ms P50 and a 619.486 ms P95 against its
