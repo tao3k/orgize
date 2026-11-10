@@ -1,6 +1,6 @@
 #!/usr/bin/env gxi
 
-;;; Org generation precedes the one Yuanxu-owned native library projection.
+;;; Build the generated package before projecting Orgize's own libraries.
 (import (for-syntax
           (only-in :std/source this-source-file)
           (only-in :yuanxu/module-system/building/source-package register-module-build-source!)))
@@ -42,17 +42,18 @@
 (def (main . arguments)
   (def operation (if (null? arguments) "compile" (car arguments)))
   (def output (gerbil-path))
+  (def fold-source (fold-package-source-directory output))
+  (def fold-build (path-expand "build.ss" fold-source))
   (initialize-compiler-build!)
   (when (equal? operation "compile")
-    ;; The native producer process owns grammar expansion and emission. Keep
-    ;; that compiler heap out of the subsequent Yuanxu library projection.
-    ;; It emits sources only; this root graph owns their compilation.
+    ;; Source generation and the package's native build are separate. A
+    ;; registered source directory is not an installed dependency.
     (run-build-tool
       (list "gxi" (path-expand "languages/org/modules/org-parser/fold-generator.ss"
-                               (path-directory (this-source-file))) output "dynamic")))
-  (let (source-directory (fold-package-source-directory output))
-    (when (file-exists? (path-expand "gerbil.pkg" source-directory))
-      (register-module-build-source! source-directory 'orgize-fold)))
+                               (path-directory (this-source-file))) output "dynamic"))
+    (run-build-tool
+      (append (list "gxi" fold-build "compile")
+              (if (member "--optimized" arguments) '("--optimized") '()))))
   (begin0 (apply build-native arguments)
     ;; The bridge compiler owns the program closure and manifest. CI and Cargo
     ;; consume this package product; they do not rebuild a second static subset.
@@ -64,7 +65,5 @@
               (path-expand "target/gerbil-parser" (path-directory (this-source-file))))))
     ;; The generated package's native catalog cleans its own exact targets.
     ;; No grammar, import dispatcher, artifact scanner or timestamp policy here.
-    (let (source-directory (fold-package-source-directory output))
-      (when (and (equal? operation "clean")
-                 (file-exists? (path-expand "build.ss" source-directory)))
-        (run-build-tool (list "gxi" (path-expand "build.ss" source-directory) "clean"))))))
+    (when (and (equal? operation "clean") (file-exists? fold-build))
+      (run-build-tool (list "gxi" fold-build "clean")))))
