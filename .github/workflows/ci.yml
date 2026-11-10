@@ -11,6 +11,7 @@ on:
 env:
   CARGO_INCREMENTAL: 0
   CARGO_TERM_COLOR: always
+  GERBIL_PATH: ${{ github.workspace }}/.gerbil-native
   # Steps in one job are serial; the existing owner revalidates source/toolchain fingerprints.
   ORGIZE_GERBIL_NATIVE_OUTPUT: ${{ github.workspace }}/target/program-objects
 
@@ -31,21 +32,21 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: just
-      - name: System libraries
+      - uses: tao3k/gerbil-scheme-rust/.github/actions/setup-gerbil@bfe803f597a15a3654b70a64c3a039980c31da8a
+        with:
+          release-root: ${{ runner.temp }}/orgize-gerbil-release
+      - name: Install Orgize system dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev libzstd-dev pkg-config ripgrep jq
+          sudo apt-get install -y libzstd-dev ripgrep
           if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
             sudo apt-get install -y libjitterentropy3-dev
           fi
-      - name: System libraries
+      - name: Install Orgize system dependencies
         if: runner.os == 'macOS'
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
-        run: brew install gcc openssl@3 pkg-config sqlite zlib ripgrep jq coreutils
-      - name: Install released Gerbil
-        run: bash tools/ci/install-gerbil-release.sh
+        run: brew install ripgrep coreutils
       - name: Fetch locked Cargo sources
         run: cargo fetch --locked
       - name: Identify dependency compiler and libraries
@@ -54,7 +55,9 @@ jobs:
         run: |
           set -euo pipefail
           fingerprint=$({
-            "$GERBIL_GCC" --version
+            eval "$("$GERBIL_HOME/bin/gambuild-C")"
+            "$C_COMPILER" --version
+            gerbil --version
             pkg-config --modversion openssl sqlite3 zlib
             if [[ "$RUNNER_OS" == macOS ]]; then xcrun --show-sdk-build-version; else ldd --version; fi
           } | shasum -a 256 | cut -d' ' -f1)
@@ -64,7 +67,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: .gerbil-native
-          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', 'tools/ci/install-gerbil-release.sh') }}
+          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', '.github/workflows/ci.yml') }}
       - name: Prepare and verify declared dependencies
         run: just ci-dependencies
       - name: Save declared dependency products
@@ -72,7 +75,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: .gerbil-native
-          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', 'tools/ci/install-gerbil-release.sh') }}
+          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', '.github/workflows/ci.yml') }}
       - name: Build pinned Scheme program once
         run: just ci-build-program
       - name: Package compiler-owned program
@@ -168,21 +171,21 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: just
-      - name: Native system libraries
+      - uses: tao3k/gerbil-scheme-rust/.github/actions/setup-gerbil@bfe803f597a15a3654b70a64c3a039980c31da8a
+        with:
+          release-root: ${{ runner.temp }}/orgize-gerbil-release
+      - name: Install Orgize system dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev libzstd-dev pkg-config ripgrep jq
+          sudo apt-get install -y libzstd-dev ripgrep
           if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
             sudo apt-get install -y libjitterentropy3-dev
           fi
-      - name: Native system libraries
+      - name: Install Orgize system dependencies
         if: runner.os == 'macOS'
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
-        run: brew install gcc openssl@3 pkg-config sqlite zlib ripgrep jq coreutils
-      - name: Install released Gerbil
-        run: bash tools/ci/install-gerbil-release.sh
+        run: brew install ripgrep coreutils
       - name: Restore compiler-owned program
         uses: actions/download-artifact@v4
         with:
@@ -285,21 +288,21 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: just
-      - name: System libraries
+      - uses: tao3k/gerbil-scheme-rust/.github/actions/setup-gerbil@bfe803f597a15a3654b70a64c3a039980c31da8a
+        with:
+          release-root: ${{ runner.temp }}/orgize-gerbil-release
+      - name: Install Orgize system dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev libzstd-dev pkg-config patchelf ripgrep jq
+          sudo apt-get install -y libzstd-dev ripgrep patchelf
           if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
             sudo apt-get install -y libjitterentropy3-dev
           fi
-      - name: System libraries
+      - name: Install Orgize system dependencies
         if: runner.os == 'macOS'
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
-        run: brew install gcc openssl@3 pkg-config sqlite zlib ripgrep jq coreutils
-      - name: Install released Gerbil
-        run: bash tools/ci/install-gerbil-release.sh
+        run: brew install ripgrep coreutils
       - name: Fetch pinned native dependencies
         run: cargo fetch --locked
       - name: Restore compiler-owned program

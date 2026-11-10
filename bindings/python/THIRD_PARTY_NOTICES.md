@@ -8,7 +8,7 @@ visible under `orgizepy/.dylibs/` or the equivalent repaired-wheel directory.
 
 | Component | How it enters the wheel | Upstream terms and source |
 | --- | --- | --- |
-| Gambit Scheme and Gerbil | Runtime and compiled Scheme modules in `liborgize` | Gerbil on Gambit is offered under LGPL-2.1-or-later and Apache-2.0; see [Gerbil](https://github.com/mighty-gerbils/gerbil) and [Gambit](https://github.com/gambit/gambit). The CI toolchain is pinned in `tools/ci/install-gerbil-release.sh`. |
+| Gambit Scheme and Gerbil | Runtime and compiled Scheme modules in `liborgize` | Gerbil on Gambit is offered under LGPL-2.1-or-later and Apache-2.0; see [Gerbil](https://github.com/mighty-gerbils/gerbil) and [Gambit](https://github.com/gambit/gambit). The CI workflow pins the [upstream Gerbil setup action](https://github.com/tao3k/gerbil-scheme-rust/tree/bfe803f597a15a3654b70a64c3a039980c31da8a/.github/actions/setup-gerbil). |
 | gerbil-poo | Compiled Scheme dependency in `liborgize` | Apache-2.0; [source at `099b381588360a8a49fd772f666a1a00351366f5`](https://github.com/tao3k/gerbil-poo/tree/099b381588360a8a49fd772f666a1a00351366f5). |
 | gerbil-parser runtime and artifact | Rust admission and navigation projections in `_orgize`, with Scheme parser modules in the native program | Apache-2.0 AND LGPL-2.1-or-later; [source at `d066e1a4`](https://github.com/tao3k/gerbil-parser/tree/d066e1a472359b9e3fcced67326b15bb5cf0cd4f). |
 | gerbil-scheme and gerbil-scheme-sys | Rust/C native runtime lifecycle and FFI in `_orgize` | Apache-2.0 OR LGPL-2.1-or-later; [source at `1e4f1f65`](https://github.com/tao3k/gerbil-scheme-rust/tree/1e4f1f65c7ff8e95fe764f2e8549fa9d92275db4). |

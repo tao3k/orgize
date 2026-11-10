@@ -387,11 +387,12 @@ copies and hashes the declared non-platform archives. On Ubuntu 26.04, the
 OpenSSL metadata names Zstd and the jitterentropy archive. A relocated
 consumer uses the producer manifest and archives with Cargo.
 
-On Darwin the released Gerbil and the Homebrew provider selected for the
-build must use the same OpenSSL major version. The release installer makes
-the OpenSSL 3 package metadata visible first for the pinned Gerbil release.
-Scheme still resolves the private static libraries through =pkg-config= and
-the bridge still records the link options in the program manifest.
+CI uses the =gerbil-scheme-rust= setup action at the same revision as the
+workspace bridge. The action owns release selection, compiler setup, and
+Homebrew package discovery. Scheme resolves the private static libraries
+through =pkg-config= and the bridge records them in the program manifest.
+The Gerbil =pkg-config-libs= helper covers ordinary links. Static exports
+also require =--static= so package metadata includes private dependencies.
 
 The prior bundle implementation compared producer and consumer with an unrelated
 hardcoded runtime revision. Agreement on that literal did not prove agreement
