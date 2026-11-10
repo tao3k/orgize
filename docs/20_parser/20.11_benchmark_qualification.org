@@ -15,6 +15,11 @@ The standard Gerbil Make adapter compiles its declared modules into
 =target/scheme-benchmarks/lib=. =just scheme-benchmarks-clean= cleans those
 targets through the same specification. No production recipe invokes either
 entry. Rust continues to use Cargo's existing Criterion targets.
+The Orgize library disables Cargo's implicit library benchmark harness.
+The standard unit-test invocation still runs the library tests and gives
+the native startup fixture its own exclusive process. The benchmark command
+runs the explicit Criterion targets without starting a second parallel
+copy of the library test suite.
 
 With the development prefix active and the production library on
 =GERBIL_LOADPATH=, run one compiled benchmark per process. For example:

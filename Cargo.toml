@@ -16,6 +16,11 @@ keywords = ["orgmode", "org-mode", "emacs", "parser"]
 [package.metadata.docs.rs]
 features = ["runtime-rust"]
 
+[lib]
+# The native startup unit case has its own exclusive test invocation.
+# Cargo benches exercise the explicit Criterion targets below.
+bench = false
+
 [features]
 default = ["runtime-rust"]
 runtime-rust = []
