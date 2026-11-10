@@ -18,7 +18,11 @@ consumer: "Consume" {
   direction: right
   admission: "Source, cohort, target\nArchive and header binding"
   runtime: "Rust linked program\nBridge-owned VM lifecycle"
+  requests: "Typed requests\nBounded document batches"
+  replies: "Owned results\nNo Scheme roots cross the boundary"
   admission -> runtime: "admitted archive"
+  requests -> runtime: "submit"
+  runtime -> replies: "complete"
 }
 
 scheme -> parser: "declared dependency"

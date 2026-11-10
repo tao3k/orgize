@@ -574,3 +574,7 @@ fn shell_binding(program: &str, eval_arg: &str) -> EvalCommandBinding {
 fn is_shell_language(language: &str) -> bool {
     matches!(language, "bash" | "sh" | "shell" | "shell-script")
 }
+
+#[cfg(all(test, unix))]
+#[path = "../tests/unit/runtime_process_group.rs"]
+mod process_group_tests;

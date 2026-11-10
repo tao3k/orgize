@@ -1,9 +1,6 @@
 use std::{env, fs, path::PathBuf, process::Output};
 
 #[cfg(unix)]
-use std::process::Command;
-
-#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
 // Silent negative fixtures must finish below the outer five-second output
@@ -354,10 +351,7 @@ if [ "$1" != "compile" ] || [ "$2" != "--format" ] || [ "$3" != "svg" ] || [ "$4
   printf 'unexpected typst invocation\n' >&2
   exit 64
 fi
-printf '%s\n' "$$" > .typst-child.pid
-tail -f /dev/null &
-printf '%s\n' "$!" > .typst-descendant.pid
-wait
+exec tail -f /dev/null
 "#,
     )
     .unwrap();
@@ -365,7 +359,7 @@ wait
     permissions.set_mode(0o755);
     fs::set_permissions(&typst, permissions).unwrap();
     let options = orgize::lint::LintOptions {
-        source_path: Some(source_path),
+        source_path: Some(source_path.clone()),
         ..orgize::lint::LintOptions::default()
     };
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
@@ -373,34 +367,25 @@ wait
         1_048_576,
     )
     .unwrap()
-    .with_program_binding(orgize::lint::RuntimeLintProgramBinding::Exact(
-        typst.clone(),
-    ));
-
-    let report = orgize::lint::lint_org_with_options_and_runtime_policy(source, &options, &policy);
-
-    let rendered = report.to_compact_text("docs/notes.org", source);
+    .with_program_binding(orgize::lint::RuntimeLintProgramBinding::Exact(typst));
+    let context =
+        orgize::lint::RuntimeValidationSourceContext::new(source_path, docs, dir.clone()).unwrap();
+    let evidence = orgize::lint::lint_org_with_runtime_validation_evidence(
+        source,
+        &options,
+        Some(&context),
+        &policy,
+    )
+    .unwrap();
+    let rendered = evidence
+        .lint_report
+        .to_compact_text("docs/notes.org", source);
     assert!(rendered.contains("ORG045"), "report: {rendered}");
     assert!(rendered.contains("timed out"), "report: {rendered}");
-    let pid = fs::read_to_string(docs.join(".typst-child.pid")).unwrap();
-    let alive = Command::new("kill")
-        .args(["-0", pid.trim()])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .unwrap();
-    assert!(!alive.success(), "timed-out child {pid} is still alive");
-    let descendant_pid = fs::read_to_string(docs.join(".typst-descendant.pid")).unwrap();
-    let descendant_alive = Command::new("kill")
-        .args(["-0", descendant_pid.trim()])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .unwrap();
-    assert!(
-        !descendant_alive.success(),
-        "timed-out descendant {descendant_pid} is still alive"
-    );
+    let observation = evidence.receipts[0].observation;
+    assert!(observation.child_lifecycle.child_reaped());
+    let pid = observation.child_id.expect("host observed spawn");
+    assert_process_absent(-i32::try_from(pid.get()).unwrap());
     assert_no_typst_artifact(&dir);
 }
 
@@ -714,11 +699,16 @@ exec tail -f /dev/null
     );
     assert!(receipt.observation.child_lifecycle.child_reaped());
     let pid = receipt.observation.child_id.expect("host observed spawn");
-    let pid = i32::try_from(pid.get()).unwrap();
-    // SAFETY: this positive PID came from Child::id; signal zero sends nothing.
-    let probe = unsafe { libc::kill(pid, 0) };
+    assert_process_absent(i32::try_from(pid.get()).unwrap());
+}
+
+#[cfg(unix)]
+fn assert_process_absent(id: i32) {
+    // SAFETY: the ID identifies a fixture child or its group; signal zero
+    // only probes existence.
+    let probe = unsafe { libc::kill(id, 0) };
     let error = std::io::Error::last_os_error();
-    assert_eq!(probe, -1, "timed-out child {pid} is still alive");
+    assert_eq!(probe, -1, "timed-out process or group {id} remains");
     assert_eq!(error.raw_os_error(), Some(libc::ESRCH));
 }
 

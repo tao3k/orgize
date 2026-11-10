@@ -1,10 +1,13 @@
 //! High-concurrency qualification, not a production parser/process fallback.
 //! Tokio admissions -> bounded worker queues -> independent exec'd AOT domains.
 use super::runtime_corpus::{self, Sample};
+#[path = "child_cleanup.rs"]
+mod child_cleanup;
+use child_cleanup::Children;
 use orgize::{org_aot::org_event_parser_digest, runtime_backend};
 use std::{
     io::{BufRead, BufReader, Write},
-    process::{Child, Command, Stdio},
+    process::{Command, Stdio},
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -53,20 +56,6 @@ pub(super) fn worker(performance: bool) {
         )
         .unwrap();
         output.flush().unwrap();
-    }
-}
-
-// Parent owns child handles, independent of potentially blocked pipe threads.
-// Panic/watchdog failure kills and reaps exact children before unwinding.
-struct Children(Vec<Child>);
-impl Drop for Children {
-    fn drop(&mut self) {
-        for child in &mut self.0 {
-            let _ = child.kill();
-        }
-        for child in &mut self.0 {
-            let _ = child.wait();
-        }
     }
 }
 

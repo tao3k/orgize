@@ -393,7 +393,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=a4af77fc35ed485360d6fc9de49bbe971000ff65#a4af77fc35ed485360d6fc9de49bbe971000ff65"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=bfe803f597a15a3654b70a64c3a039980c31da8a#bfe803f597a15a3654b70a64c3a039980c31da8a"
 dependencies = [
  "gerbil-scheme-rust-project-harness-policy",
  "gerbil-scheme-sys",
@@ -403,11 +403,12 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-aot-build"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=a4af77fc35ed485360d6fc9de49bbe971000ff65#a4af77fc35ed485360d6fc9de49bbe971000ff65"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=bfe803f597a15a3654b70a64c3a039980c31da8a#bfe803f597a15a3654b70a64c3a039980c31da8a"
 dependencies = [
  "cbindgen",
  "cc",
  "gerbil-scheme-rust-project-harness-policy",
+ "object",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -417,7 +418,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-rust-project-harness"
 version = "0.1.2"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=a4af77fc35ed485360d6fc9de49bbe971000ff65#a4af77fc35ed485360d6fc9de49bbe971000ff65"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=bfe803f597a15a3654b70a64c3a039980c31da8a#bfe803f597a15a3654b70a64c3a039980c31da8a"
 dependencies = [
  "cargo-lock",
  "cargo_toml",
@@ -435,7 +436,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-rust-project-harness-policy"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=a4af77fc35ed485360d6fc9de49bbe971000ff65#a4af77fc35ed485360d6fc9de49bbe971000ff65"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=bfe803f597a15a3654b70a64c3a039980c31da8a#bfe803f597a15a3654b70a64c3a039980c31da8a"
 dependencies = [
  "gerbil-scheme-rust-project-harness",
 ]
@@ -443,7 +444,7 @@ dependencies = [
 [[package]]
 name = "gerbil-scheme-sys"
 version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=a4af77fc35ed485360d6fc9de49bbe971000ff65#a4af77fc35ed485360d6fc9de49bbe971000ff65"
+source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=bfe803f597a15a3654b70a64c3a039980c31da8a#bfe803f597a15a3654b70a64c3a039980c31da8a"
 dependencies = [
  "gerbil-scheme-aot-build",
  "gerbil-scheme-rust-project-harness-policy",
@@ -710,6 +711,15 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys",
+]
+
+[[package]]
+name = "object"
+version = "0.39.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e5a6c098c7a3b6547378093f5cc30bc54fd361ce711e05293a5cc589562739b"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

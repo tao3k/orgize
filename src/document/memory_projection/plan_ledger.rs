@@ -143,11 +143,20 @@ fn plan_ledger_records_from_paths(
     // machine-wide cap, and keep each worker's chunk large enough to amortize
     // thread startup.
     let worker_count = plan_ledger_worker_count(paths.len());
-    let chunk_size = paths.len().div_ceil(worker_count);
+    // Distribute whole wire-sized groups. Splitting by file count can force
+    // each worker to send an extra partial batch to the same VM owner.
+    let batch_width = crate::org_aot::BATCH_MAX_DOCUMENTS;
+    let batch_count = paths.len().div_ceil(batch_width);
     let profiled = crate::runtime_profile::is_active();
     thread::scope(|scope| {
-        let mut handles = Vec::new();
-        for chunk in paths.chunks(chunk_size) {
+        let mut handles = Vec::with_capacity(worker_count);
+        let mut start = 0;
+        for worker in 0..worker_count {
+            let batches =
+                batch_count / worker_count + usize::from(worker < batch_count % worker_count);
+            let end = start + (paths.len() - start).min(batches.saturating_mul(batch_width));
+            let chunk = &paths[start..end];
+            start = end;
             handles.push(scope.spawn(move || {
                 crate::runtime_profile::worker(profiled, || {
                     observe_plan_ledger_files(chunk, options)

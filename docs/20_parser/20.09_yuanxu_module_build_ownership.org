@@ -361,7 +361,7 @@ is changed. Complete CI, including native failure controls, remains required.
 
 The runtime, system ABI and program-archive builder now inherit the same Cargo
 workspace declarations at gerbil-scheme-rust PR18 revision
-=a4af77fc35ed485360d6fc9de49bbe971000ff65=. The Parser and ASP revisions remain
+=bfe803f597a15a3654b70a64c3a039980c31da8a=. The Parser and ASP revisions remain
 unchanged. Both Cargo lockfiles carry that same Bridge cohort. Gerbil package
 metadata does not acquire a Rust dependency.
 
@@ -387,6 +387,26 @@ split cohort, and a consistent late relabel. No Scheme build/test timeout or
 executing-host CPU budget is enlarged or reduced.
 
 [[file:20.09_cargo_bridge_ownership.svg]]
+
+* Bounded handoff to the linked program
+
+The Bridge's single-VM Mailbox work demonstrates typed request construction,
+direct completion and immediate refill. Its private order workload completed
+one million operations at 995,241 operations per second, with a 10.083 ms
+P99 and 11,110 due but unconsumed operations at peak. These measurements do
+not predict the cost of parsing Org, copying event tapes or projecting metadata.
+The private qualification operation has no public linked-program entry point.
+
+Orgize uses the same handoff principles at its existing typed request boundary.
+Rust submits an owned frame to the fixed linked-program owner. Scheme values
+stay on that owner; only the copied result crosses back. Plan-ledger workers
+distribute whole document-count groups across the same number of workers.
+This avoids fragmenting groups at worker boundaries before the existing
+byte-budget check. With 2,000 documents and 24 workers, the count bound alone
+now needs 32 parse submissions instead of 48. Larger documents still split
+at the byte bound or take the existing single-document path. Result order,
+per-document errors, and admission bounds remain unchanged. The full ledger
+gate still includes filesystem reads, parsing, projection and result assembly.
 
 * Gerbil installation and package indexing
 
@@ -488,10 +508,10 @@ independent Rust tests and lint checks still run to expose correctness failures.
 Failed transcripts and the post-success
 cleanup sample stay in ignored local evidence, not in tracked documentation.
 
-Timeout cleanup evidence binds the PID captured by Rust from its spawned child
-handle. The test checks the OS reports that PID absent, even if the deadline
-expires before the child can write a file. The one-second deadline, process
-group control, and v1 receipt serialization remain unchanged.
+Timeout checks use the host's child handle to verify process and group absence.
+An independent OS test owns two live group members and checks group cleanup.
+The one-second deadline and v1 receipt are unchanged. Completed Scheme path
+checks flush immediately, under the same five-second genuine-output deadline.
 
 The pinned public Fold emitter selects a full event list or full tape. A
 field-selecting consumer must preserve the canonical parser's boundaries and
