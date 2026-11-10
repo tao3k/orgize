@@ -6,6 +6,10 @@
 from =t/benchmarks=, and the production =gerbil.pkg= does not declare ASP.
 Git checkouts may contain benchmark source files; package installation does
 not compile or install benchmark modules, tooling dependencies or receipts.
+An empty downstream directory loaded the installed Org Fold and parsed a
+document using the production prefix. Both benchmark imports failed module
+resolution in that process. The same directory resolved both procedures
+after explicitly adding the benchmark output and development prefixes.
 
 Development prepares the existing =dev/gerbil.pkg= in a separate
 =GERBIL_PATH=, with the prepared production library on =GERBIL_LOADPATH=.
@@ -104,6 +108,14 @@ suites and matched complete tape digests for twelve sources. Loader traces
 confirmed each process used its intended generated Fold. A separate byte-input
 candidate failed the existing malformed UTF-8 control and remains excluded.
 
+Serial A/A and ABBA runs used twenty samples per process on the same
+256-ledger document. All six event-list receipts passed and matched the
+complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
+candidate P50 was 6.818 and 6.879 ms. The direct-tape runs also matched
+complete tape digests. Both candidate runs passed, and two baseline runs
+exceeded the fixture's diagnostic P95 budget. Preserve the baseline
+failures and qualify the combined candidate on the unchanged full query.
+
 The unprofiled Rust-owner ledger at =4a2ac65c= returned 304.283, 206.512,
 199.579, 226.096 and 200.282 ms in execution order. It failed the 100 ms
 gate. Development compilation overlapped this run, so retain it as a gate
@@ -133,6 +145,29 @@ its full-document metadata comparison. Both owners still failed the 100 ms
 gate. Host load ranged from 35.71 to 44.31. The phase comparison and the
 combined candidate are separate experiments.
 
+A profiling preflight observed 32 Fold requests and 32 document metadata
+requests in each sample on both owners. Those counts reconcile with every
+physical owner reply. The Fold and metadata owner CPU medians were 105.478
+and 39.745 ms in the Rust owner, and 130.063 and 36.053 ms in the Scheme
+owner. Compilation overlapped this preflight, so the timings remain
+diagnostic and separate from the paired qualification.
+
+In a Rust-owner diagnostic pair, both artifacts issued 32 Fold and 32
+metadata requests per sample. The metadata candidate reduced median metadata
+owner CPU from 35.798 to 24.921 ms. Median Fold owner CPU was 127.686 ms on
+the baseline and 127.459 ms on the candidate. Host load was 99.65 and
+105.36, respectively. Use these counters to locate the changed work and
+retain the unprofiled comparison as the performance gate.
+
+The profiled ABBA comparison preserved 32 Fold and 32 metadata requests
+per sample and collected ten samples per artifact on each owner. Median
+metadata owner CPU fell from 27.564 to 20.830 ms in the Rust owner and from
+29.343 to 18.429 ms in the Scheme owner. Median Fold service was 90.556 and
+91.408 ms in the Rust owner and 92.686 and 91.236 ms in the Scheme owner.
+Rust's largest profiled wall sample rose from 178.056 to 264.114 ms.
+Scheme's fell from 216.948 to 177.114 ms. These profiled samples locate the
+saved CPU work. The separate unprofiled gate remains at 100 ms.
+
 * Promotion
 
 Confirm the upstream Parser commit, its public module contracts and its CI
@@ -141,6 +176,11 @@ before changing the consumer pin. The current candidate retains Parser
 The Linux and Darwin Scheme semantics jobs failed when the historical
 migration fixture was absent from the squash history.
 [[https://github.com/tao3k/gerbil-parser/actions/runs/42758058862][Parser main CI]]
+The focused Scheme test also failed in an isolated checkout of the squash
+commit. Fetching the reviewed PR history made the original fixture available.
+The same test then passed with the same checkout and installed Parser code.
 Neither a fast lexical probe nor an upstream Mailbox throughput result
 qualifies Orgize's end-to-end performance. Keep the full Scheme, both Rust
 runtimes, relocated FFI, wheel and performance checks in the existing PR.
+CI prepares and tests each platform in its own workflow call. Each runtime
+and wheel job waits for the artifact from its own platform.
