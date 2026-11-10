@@ -116,6 +116,35 @@ complete tape digests. Both candidate runs passed, and two baseline runs
 exceeded the fixture's diagnostic P95 budget. Preserve the baseline
 failures and qualify the combined candidate on the unchanged full query.
 
+The property fixture can be reproduced with the same Gerbil executable used
+for the benchmark. Save its output outside the package prefix. The expected
+SHA-256 digest is
+=7651acef64202f5c7ec11876a1ae43c0371f3708668ab7c9fd37cb6f43ef492b=.
+
+#+begin_src scheme
+(let loop ((index 0))
+  (when (< index 256)
+    (displayln "* TODO Plan " index " [1/8] [12%] :agent:plan:")
+    (newline)
+    (displayln ":PROPERTIES:")
+    (displayln ":CONTRACT_ORG: agent.plan.v1")
+    (displayln ":ID: plan-" index)
+    (displayln ":PLAN_ID: plan-" index)
+    (displayln ":SESSION_ID: session-a")
+    (displayln ":OBJECTIVE: Stabilize memory engine recall flow " index)
+    (displayln ":NEXT_ACTION: continue checkpoint " index)
+    (displayln ":END:")
+    (displayln "** Evidence")
+    (displayln "- receipt " index)
+    (loop (+ index 1))))
+#+end_src
+
+Run =:orgize/t/benchmarks/org-event-fold= with that file and the committed
+=t/benchmarks/org-event-fold/benchmark.ss= contract. Use a distinct receipt
+for each process. Run the baseline twice, then use baseline, candidate,
+candidate, baseline order. Compare the receipts using
+=:orgize/t/benchmarks/org-event-fold/compare= and retain the raw timings.
+
 The unprofiled Rust-owner ledger at =4a2ac65c= returned 304.283, 206.512,
 199.579, 226.096 and 200.282 ms in execution order. It failed the 100 ms
 gate. Development compilation overlapped this run, so retain it as a gate
