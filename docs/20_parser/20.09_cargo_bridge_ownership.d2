@@ -17,7 +17,7 @@ consumer: "Consume" {
   label.near: top-left
   direction: right
   admission: "Source, cohort, target\nArchive and header binding"
-  runtime: "Rust linked program\nBridge VM and strict codec"
+  runtime: "Rust linked program\nBridge-owned VM lifecycle"
   admission -> runtime: "admitted archive"
 }
 

@@ -42,13 +42,15 @@
         (for-each
           (lambda (reference)
             (directory-test-write document (string-append original "\n" reference "\n"))
-            (check (.ref (org-directory-validate p) 'passed?) => #t))
+            (check (.ref (org-directory-validate p) 'passed?) => #t)
+            (displayln "PORTABLE-PATH-CHECKED accepted " reference))
           '("[[file:proof/result.org][result]]" "../proof/result.org"
             "https://example.org/proof/run" "Quint / Lean" "docs/model.qnt"))
         (for-each
           (lambda (reference)
             (directory-test-write document (string-append original "\n" reference "\n"))
-            (check (.ref (org-directory-validate p) 'passed?) => #f))
+            (check (.ref (org-directory-validate p) 'passed?) => #f)
+            (displayln "PORTABLE-PATH-CHECKED rejected " reference))
           '("=/opt/build/run.log=" "[[file:/work/run.log][result]]"
             "C:\\work\\run.log" "D:/build/run.log" "\\\\host\\share\\run.log"
             "~/cache/run.log" "#+PROPERTY: RESULT /work/run.log"

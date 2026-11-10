@@ -1,7 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; Private native boundary projection; parsing remains the POO strategy's job.
 (import (only-in :orgize-fold/parse-org-compiled-tape parse-org-compiled-tape)
-        (only-in :gerbil-scheme-rust/scheme/utf8 gerbil-rs-encode-utf8)
         (only-in :orgize/languages/org/modules/org-parser/runtime-parameters native-parameter-overrides)
         (only-in :std/vector/u8vector little u8vector-uint-ref u8vector-uint-set!)
         (only-in :orgize/languages/org/modules/org-parser/macro-funs
@@ -33,10 +32,7 @@
         expression-value-rows expectation-value-rows contract-value-rows)
 
 (def (parse-org-native-tape-with-parameters source level policy)
-  ;; Consume the decoded text through the existing strict bridge encoder.
-  ;; A discarded decoder call in a byte-only path is not admission evidence.
-  (parse-org-compiled-tape (gerbil-rs-encode-utf8 source)
-                          (native-parameter-overrides level policy)))
+  (parse-org-compiled-tape source (native-parameter-overrides level policy)))
 
 ;; Bounded compile-time projection of the existing grammar, never a second
 ;; catalog. LR construction and Rust IR generation stay outside native runtime.

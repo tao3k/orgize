@@ -59,6 +59,6 @@ python-test-receipt runtime program output:
 [group('python')]
 python-wheel-repair: python-wheel
     uv sync --directory bindings/python --locked --group wheel-repair
-    {{ if host_os == "linux" { "uv run --directory bindings/python --no-sync auditwheel show bindings/python/dist/orgizepy-*.whl" } else { "true" } }}
+    {{ if host_os == "linux" { "uv run --directory bindings/python --no-sync auditwheel show" } else { "true" } }} "{{ justfile_directory() }}/bindings/python/dist/"orgizepy-*.whl
     mkdir -p bindings/python/dist/repaired
     {{ platform_env }} uv run --directory bindings/python --no-sync {{ repair_command }} "{{ justfile_directory() }}/bindings/python/dist/repaired" "{{ justfile_directory() }}/bindings/python/dist/"orgizepy-*.whl

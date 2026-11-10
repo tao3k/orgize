@@ -135,18 +135,25 @@
   `(line-skip-horizontal (line-step ,property-key-end)))
 (def property-value-end `(line-trim-end-from ,property-value-start))
 
+(def (property-key-scan-form from until)
+  `(for-line-bytes property-byte-index ,from ,until
+     ((if (and (uint-equal? (state property-key-end) (uint 0))
+               (line-byte-equal? ,property-byte-index 58)
+               (or (line-bytes-all-in? ,property-byte-next
+                                      (line-content-end) ())
+                   (line-bytes-any-in? ,property-byte-next
+                                      (line-step ,property-byte-next) (9 32))))
+          ((set-uint property-key-end (offset ,property-byte-index))) ()))))
+
 (def (property-line-forms)
   `((if (line-byte-equal? ,property-indent 58)
-        ((for-line-bytes property-byte-index ,property-key-start
-                         (line-content-end)
-           ((if (and (uint-equal? (state property-key-end) (uint 0))
-                     (line-byte-equal? ,property-byte-index 58)
-                     (or (line-bytes-all-in? ,property-byte-next
-                                              (line-content-end) ())
-                         (line-bytes-any-in? ,property-byte-next
-                                             (line-step ,property-byte-next)
-                                             (9 32))))
-                ((set-uint property-key-end (offset ,property-byte-index))) ()))))
+        (,(property-key-scan-form
+           property-key-start `(line-scan-word ,property-key-start))
+         ;; Preserve the original permissive scan for keys containing whitespace.
+         ;; Once a delimiter is found, scanning the value has no effects.
+         (if (uint-equal? (state property-key-end) (uint 0))
+             (,(property-key-scan-form
+                `(line-scan-word ,property-key-start) '(line-content-end))) ()))
         ())
     (if (and (uint-positive? (state property-key-end))
              (offset-less? ,property-key-start ,property-key-end))
