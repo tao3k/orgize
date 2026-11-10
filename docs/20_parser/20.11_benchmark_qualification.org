@@ -58,6 +58,50 @@ The source test entry and measured scenario runs are separate operations.
 The existing five-second output watchdog and
 ASP fixture budgets still apply to measured runs.
 
+The source entry was revalidated through =gerbil test -v 5
+test-benchmarks.ss=: five suites and seven cases completed naturally within
+the existing 120-second limit, with no error markers. Verbosity five exposes
+the case and suite markers; the documented verbosity-three invocation is
+terser. The production and development prefixes remained separate.
+Direct source measurements of the prefix and event Fold scenarios also
+passed their existing ASP budgets. The Fold receipt retains all 20 samples,
+the source and event digests, and an observed P95 of 159 microseconds. This
+qualifies source execution for that fixture, not a speedup or the separate
+2,000-document ledger gate. Build activity overlapped these diagnostic runs.
+
+The new source name-set run retained 20 samples with P50 116.764 ms and
+P95 150.203 ms, exceeding its unchanged 100 ms diagnostic limit. It still
+includes preparation through =run-event-fold= for each of the 100 folds.
+The failed receipt is retained; this is not a matched improvement over
+the historical run or a reason to move preparation outside that workload.
+
+* Test failure ownership
+
+The locked bridge coordinator let its aggregate failure escape a spawned
+thread. Catching the join failure in the calling test did not prevent a
+delayed orphan exception report during process shutdown. The authorized
+bridge update to =0d92f7b= makes the coordinator return a tagged outcome
+and raises failures on its caller after the join. The upstream source
+regression fails against the original implementation and passes against
+the correction, including through the official package-test entry.
+
+The full Scheme gate now rejects error markers with an explicit conditional
+exit. A middle-of-script =! rg= was exempt from Bash's =errexit= behavior
+and could allow a later successful command to hide the failure. Retained
+negative and positive log controls verify rejection and acceptance without
+changing the existing suite counts, timeouts or failure fixture.
+
+The Cargo and fuzz lockfile changes are confined to the same five bridge
+packages' Git source identities. Other dependency selections are unchanged.
+The updated bridge passed the unchanged full package build and strengthened
+Scheme gate locally: 237 cases in 19 suites, natural successful exit without
+an error marker, followed by the intentional failure fixture's status 42.
+The 600-second build, 120-second test and five-second output deadlines remain
+unchanged. This correctness result does not qualify either Rust runtime's
+ledger latency or replace exact-head CI.
+
+* Earlier evidence
+
 Earlier isolated measurements found that prefix, helper-state and Fold
 passed their fixture budgets. The name-set diagnostic
 recorded 20 samples with a 299.949 ms P50 and a 619.486 ms P95 against its

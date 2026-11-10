@@ -39,7 +39,10 @@ ci-scheme-test:
     test "$(rg -c '^CASE-OK ' target/scheme-test/scheme-test.log)" -eq 237
     test "$(rg -c '^SUITE-OK ' target/scheme-test/scheme-test.log)" -eq 19
     rg --quiet '^OK$' target/scheme-test/scheme-test.log
-    ! rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' target/scheme-test/scheme-test.log
+    if rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' target/scheme-test/scheme-test.log; then
+        echo 'FAIL: Scheme test output contains an error marker' >&2
+        exit 1
+    fi
     status=0
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py {{ if host_os == "macos" { "env DYLD_PRINT_APIS=1" } else { "env" } }} gxi :gerbil-scheme-rust/scheme/build test "{{ justfile_directory() }}" t/fixtures/cli-failure.ss > target/scheme-test/failure-control.log 2>&1 || status=$?
     test "$status" -eq 42

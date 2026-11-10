@@ -138,7 +138,7 @@ strip = "symbols"
 panic = "abort"
 
 [workspace.dependencies]
-gerbil-scheme = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "bfe803f597a15a3654b70a64c3a039980c31da8a", version = "0.1.0" }
-gerbil-scheme-sys = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "bfe803f597a15a3654b70a64c3a039980c31da8a", version = "0.1.0" }
-gerbil-scheme-aot-build = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "bfe803f597a15a3654b70a64c3a039980c31da8a" }
+gerbil-scheme = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "0d92f7bee8c23b373ccd116be6f17701c4c4aac6", version = "0.1.0" }
+gerbil-scheme-sys = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "0d92f7bee8c23b373ccd116be6f17701c4c4aac6", version = "0.1.0" }
+gerbil-scheme-aot-build = { git = "https://github.com/tao3k/gerbil-scheme-rust", rev = "0d92f7bee8c23b373ccd116be6f17701c4c4aac6" }
 toml = "0.9.12"
