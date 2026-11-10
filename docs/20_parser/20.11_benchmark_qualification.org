@@ -104,6 +104,44 @@ ledger latency or replace exact-head CI.
 
 ** Compact ledger metadata candidate
 
+At published revision =5bbefa94=, Ubuntu Rust's unchanged unprofiled release
+gate failed at 131.020652 ms, best of five. The separate profiled diagnostic
+failed at 140.967450 ms. In its final individual invocation, 2,000 files used
+32 workers and 64 owner requests: 32 Fold batches and 32 metadata requests.
+The counters are request-local, not a sum of the five invocations.
+
+| Final profiled invocation | Observed ms | Scope |
+|--------------------------+-------------+-------|
+| Owner thread CPU | 140.517 | Both operation families |
+| Owner service wall | 140.604 | Both operation families |
+| Fold batch owner CPU | 111.448 | Included in owner CPU |
+| Metadata owner CPU | 29.068 | Included in owner CPU |
+| Fold VM GC CPU intervals | 26.163 | Overlap Fold work |
+| Result copy | 0.225 | Owner-side result copying |
+| Request encoding | 0.097 | Caller-side encoding |
+| Graph projection | 15.062 | Worker sum, overlaps owner work |
+
+The Darwin Scheme job at the same revision recorded 125.119 ms unprofiled
+and 191.563 ms profiled, each the best of five. Its final profiled query
+used 24 workers and 64 owner requests. Owner CPU was 187.934 ms, including
+157.641 ms for Fold and 30.293 ms for metadata. VM GC intervals overlapped
+33.106 ms of Fold CPU. Result copy and request encoding took 0.156 and
+0.146 ms. These measurements describe one host and runtime configuration.
+
+The Darwin Rust job recorded 184.049 ms unprofiled and 140.559 ms profiled.
+Its final profiled query used 24 workers and 64 owner requests. Owner CPU
+was 137.745 ms, including 115.091 ms for Fold and 22.654 ms for metadata.
+VM GC intervals overlapped 28.080 ms of Fold CPU. Result copy and request
+encoding took 0.202 and 0.072 ms. The separate diagnostic executions were
+scheduled independently of the release gate.
+
+The owner is predominantly executing in this observation; wire copying is
+not the dominant cost. The compact candidate can reduce metadata work, but
+the retained Fold CPU alone exceeds the release budget in this profiled
+sample. Profile generated Fold steps and allocation/GC before changing its
+algorithm. Do not add overlapping intervals or use diagnostic timings as
+production-gate observations.
+
 The private ledger projection now has its own typed result, retaining the
 validated graph records and only the leading headline's title, TODO keyword
 and closed state. Full document parsing retains its existing metadata shape.
@@ -492,6 +530,75 @@ testing this separate algorithm change. The bridge's
 completed 999,944.88 typed messages per second in one arm and exceeded its
 backlog limit. It provides a concrete service shape to test with the Org
 workload and retains its failed acceptance result.
+
+* Tape transition lowering
+
+Parser's Fold compiler can share tape statements for their effect on the
+request-owned writer. This removes accumulator reassignment across those
+calls. The list consumer still needs its returned accumulator. The two
+generated packages differ only in tape units and their build roots;
+ordinary-run, branch and diagnostic options match. The installed products
+are distinct, both pass the 14 tape cases, and the measured source and tape
+digests agree.
+
+The isolated text-to-tape diagnostic runs 2,000 documents per sample,
+20 samples per arm. It does not measure the complete ledger endpoint.
+The samples below include the A/A control's host variation.
+
+| Arm | Variant | Wall P50 (ms) | Wall P95 (ms) |
+|-----+---------+---------------+---------------|
+|   1 | Control |       198.223 |       220.110 |
+|   2 | Control |       414.083 |       481.440 |
+|   3 | Control |       191.268 |       245.884 |
+|   4 | Effect  |       108.096 |       141.582 |
+|   5 | Effect  |       105.667 |       140.198 |
+|   6 | Control |       194.057 |       218.046 |
+
+The effect arms report 188,768,704 allocated bytes each, down from
+401,697,648 and 467,097,968 in the adjacent controls. All six arms miss
+the 100 ms diagnostic bound. This isolates a Fold improvement without
+qualifying an Orgize release or changing its Parser pin.
+
+The endpoint comparison holds the Orgize metadata adapter, bridge,
+toolchain and Parser runtime source fixed. Build two programs from the
+same Parser base, with the tape lowering as the only compiler change.
+Use the existing package and program staging entries to bind each
+generated Fold and static closure to its own source roots. Run the
+unchanged release ledger test in both runtime modes, with the same
+workload and worker policy. Retain all raw samples and both program
+identities. An isolated program comparison does not promote a dependency.
+
+Both release programs use Orgize =ebea8875= and Parser =bb85a5e=. The effect
+program adds the compiler patch from =38ba284=. Its linked roster contains
+432 modules. The control contains 433. The only removed module is
+=parse-org-compiled-tape-part-20=. Both linked rosters exclude benchmark
+and test modules. The source exports share the same Cargo resolution.
+Their CLI revision metadata comes from the enclosing workspace. The
+ledger scenario does not read it. The experiment records the source,
+manifest and executable digests directly.
+
+The original 2,000-file scenario runs twice as an A/A control, then in
+control, effect, effect, control order per runtime. Each invocation records
+five wall samples and applies the existing gate to their minimum.
+
+| Runtime | Order | Variant | Best (ms) | P50 (ms) | Gate |
+|---------+-------+---------+-----------+----------+------|
+| Rust    |     1 | Control |   101.092 |  110.832 | Fail |
+| Rust    |     2 | Control |   104.636 |  111.511 | Fail |
+| Rust    |     3 | Control |    96.941 |  107.028 | Pass |
+| Rust    |     4 | Effect  |    82.511 |   86.660 | Pass |
+| Rust    |     5 | Effect  |    86.770 |   94.129 | Pass |
+| Rust    |     6 | Control |    95.785 |  106.358 | Pass |
+| Scheme  |     1 | Control |    99.745 |  104.513 | Pass |
+| Scheme  |     2 | Control |   102.652 |  129.524 | Fail |
+| Scheme  |     3 | Control |   105.575 |  137.147 | Fail |
+| Scheme  |     4 | Effect  |   104.849 |  128.278 | Fail |
+| Scheme  |     5 | Effect  |    94.397 |  103.472 | Pass |
+| Scheme  |     6 | Control |   115.534 |  118.930 | Fail |
+
+Both effect invocations passed under the Rust runtime. The Scheme effect
+invocations straddled the gate. The Scheme A/A medians varied by 25.011 ms.
+Retain all 60 samples and keep the gate open for both CI platforms.
 
 * Promotion
 
