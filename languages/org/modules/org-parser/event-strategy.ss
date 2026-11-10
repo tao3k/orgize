@@ -130,9 +130,8 @@
 (def property-key-start `(line-step ,property-indent))
 (def property-byte-index '(line-index property-byte-index))
 (def property-key-end '(state-offset property-key-end))
-(def property-value-start
-  `(line-skip-horizontal (line-step ,property-key-end)))
-(def property-value-end `(line-trim-end-from ,property-value-start))
+(def property-value-start '(state-offset property-value-start))
+(def property-value-end '(state-offset property-value-end))
 
 (def (property-delimiter? index)
   (let (next `(line-step ,index))
@@ -158,7 +157,10 @@
         ,(property-key-forms) ())
     (if (and (uint-positive? (state property-key-end))
              (offset-less? ,property-key-start ,property-key-end))
-        ((start-node OrgNodeProperty)
+        ((set-uint property-value-start
+                   (offset (line-skip-horizontal (line-step ,property-key-end))))
+         (set-uint property-value-end (offset (line-trim-end-from ,property-value-start)))
+         (start-node OrgNodeProperty)
          (token PropertyTrivia start ,property-key-start)
          (token PropertyKey ,property-key-start ,property-key-end)
          (token PropertyTrivia ,property-key-end ,property-value-start)
@@ -573,7 +575,8 @@
   (append
    '((inline-script-policy 2)
     (open-levels (uint-stack)) (active-opaque-block 0)
-    (property-drawer-open #f) (property-key-end 0) (after-heading #f)
+    (property-drawer-open #f) (property-key-end 0)
+    (property-value-start 0) (property-value-end 0) (after-heading #f)
     (comment-open #f)
     (fixed-width-open #f))
    table-event-initial
