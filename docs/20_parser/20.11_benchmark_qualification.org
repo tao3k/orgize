@@ -205,6 +205,111 @@ Rust's largest profiled wall sample rose from 178.056 to 264.114 ms.
 Scheme's fell from 216.948 to 177.114 ms. These profiled samples locate the
 saved CPU work. The separate unprofiled gate remains at 100 ms.
 
+The combined property and ledger metadata candidate matched all twelve
+complete tape digests using the optimized package build. Both runtime
+owners passed the explicit startup test with 86 cases. The unprofiled
+2,000-file A/B/B/A run kept ten samples per arm and owner. The Rust-owner
+median was 153.361 ms for the baseline and 131.335 ms for the candidate.
+The Scheme-owner median was 141.376 ms for the baseline and 123.670 ms for
+the candidate. The candidate's fastest samples were 113.392 ms and
+113.218 ms respectively. Every process exceeded the unchanged gate.
+
+* Headline bounds experiment
+
+A separate Fold candidate shares headline marker and title bounds on each
+line. The optimized package probe matched eleven complete tape digests,
+including Unicode, links, tags and inline task boundaries. The paired
+direct-tape experiment used the same 256-document ledger fixture and the
+existing ASP contract. Each fresh process recorded twenty samples and the
+same full tape digest.
+
+| Arm | P50 ms | P95 ms |
+|-----+--------+--------|
+| A/A first A | 8.309 | 9.263 |
+| A/A second A | 8.251 | 13.061 |
+| A/B/B/A first A | 8.362 | 73.104 |
+| A/B/B/A first B | 7.618 | 12.091 |
+| A/B/B/A second B | 15.679 | 29.040 |
+| A/B/B/A last A | 10.965 | 32.658 |
+
+Both candidate tail samples were below their paired baseline, but the
+candidate median changed direction and the first baseline pair diverged
+from both A/A controls. The isolated change stays out of the PR pending
+reproducible benefit.
+
+* Scheme actor execution
+
+Gerbil Parser supplies the parser primitives and the Fold machinery. Orgize
+Scheme owns Org grammar, event production, document metadata, Contract
+evaluation and the scheduling of actors inside each VM. Rust owns caller
+admission, file I/O, capacity and lifecycle across VM owners, and delivery of
+owned results. A Scheme value stays with its VM owner.
+
+The [[file:../../bindings/c/orgize-actor.ss][existing Scheme batch]] creates
+green-thread workers with private mailboxes, joins them and returns results in
+input order. The standard suite covers order, parser configuration, failure
+containment and caller mailbox isolation. This functional batch returns event
+lists. The public tape path uses a separate bounded loop and emits tapes
+directly. The Scheme runtime lane has a serving green thread, but its idle
+C wait blocks the owner thread. The Rust runtime lane hands the batch to a
+fixed owner through a Rust channel. Neither tape path uses the Scheme actor
+batch to schedule individual documents.
+
+The focused package test completed all six actor cases with the existing
+output watchdog. The first full invocation hit the five-second output
+watchdog during module evaluation. A serial replay of =just ci-scheme-test=
+on the same prepared prefix passed 236 cases in 19 suites, including the
+actor cases, and the existing intentional failure returned 42. Keep the
+initial timeout as evidence of startup variability.
+
+The direct-tape witness uses the bridge's =make-gerbil-rs-actor-batch=
+with four persistent workers inside one VM. It compares the full ordered
+tapes with direct calls, including repeated documents, Unicode, CRLF and a
+repository fixture. A failed turn drains, a subsequent turn returns the
+same tapes, the caller keeps its own mailbox message, and a closed batch
+rejects another turn. The focused witness passed through the package test
+entry point. The next full run reached 162 cases and ten suites before the
+unchanged 120-second deadline. It had yet to reach the tape suite.
+The maintained tape suite initially hit the five-second output watchdog
+while evaluating its relative source imports. Using the installed module
+identities for the tape and event-list owners let all fourteen focused cases
+pass through the same entry and watchdog. The following full run completed
+237 cases in 19 suites and the intentional failure control in 65.69 seconds.
+The witness exercises Scheme execution and retirement inside one VM. Host
+admission and Rust result delivery remain separate obligations.
+
+The first transport experiment should run the existing direct-tape operation
+as a handler of the bridge's =make-gerbil-rs-service-endpoint=, with
+=SchemeServiceRequest= carrying owned input into fixed-owner Rust admission.
+The current bridge pin provides those interfaces. Its Rust instance module
+is Darwin-only and loads a separate VM image. Start the one-VM comparison
+there with the same bounded input and byte-identical results. Linux and
+the existing statically linked deployment need independent loader and
+lifecycle evidence before replacing the shipping owner paths.
+Keep Org source, intermediate event state and metadata inside the Scheme
+turn. Move only owned request and result data across the host boundary.
+Keep stateful operations bound to their owner and compare independent
+documents in the same input order. A cancelled queued job is removable.
+For claimed work, the owner retains capacity and roots until retirement.
+Verify both paths with a full mailbox, an invalid document, cancellation
+before and after claim, and close while work is outstanding.
+
+Measure handler CPU, allocation and GC separately from admission, mailbox
+wait and result delivery. Pair the current owner loop against the bridge
+service using the same direct-tape handler, fixtures and concurrency. Then
+test whether producing the ledger's metadata in that same Scheme turn
+removes the second owner request. Today Rust creates the metadata packet
+from validated graph records. A fused result must obtain keyword and title
+fields from the same Fold traversal and bind each result to its
+source-relative span and source identity. Rust can then join those fields
+to the validated graph records without depending on a second set of
+node IDs. Preserve the full graph and document metadata checks while
+testing this separate algorithm change. The bridge's
+[[https://github.com/tao3k/gerbil-scheme-rust/blob/9aa4de6adc1f566f78586b046ba9452c1e996d7b/docs/10-19-design/10.50-mailbox-frozen-control-4513.org][single-VM mailbox observation]]
+completed 999,944.88 typed messages per second in one arm and exceeded its
+backlog limit. It provides a concrete service shape to test with the Org
+workload and retains its failed acceptance result.
+
 * Promotion
 
 Confirm the upstream Parser commit, its public module contracts and its CI

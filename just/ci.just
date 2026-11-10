@@ -36,8 +36,8 @@ ci-scheme-test:
     set -euo pipefail
     mkdir -p target/scheme-test
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" {{ timeout_command }} --foreground --signal=TERM --kill-after=3s 120s python3 tools/ci/watch-real-output.py {{ if host_os == "macos" { "env DYLD_PRINT_APIS=1" } else { "env" } }} gxi :gerbil-scheme-rust/scheme/build test "{{ justfile_directory() }}" orgize-test.ss 2>&1 | tee target/scheme-test/scheme-test.log
-    test "$(rg -c '^CASE-OK ' target/scheme-test/scheme-test.log)" -eq 230
-    test "$(rg -c '^SUITE-OK ' target/scheme-test/scheme-test.log)" -eq 18
+    test "$(rg -c '^CASE-OK ' target/scheme-test/scheme-test.log)" -eq 237
+    test "$(rg -c '^SUITE-OK ' target/scheme-test/scheme-test.log)" -eq 19
     rg --quiet '^OK$' target/scheme-test/scheme-test.log
     ! rg --quiet 'ERROR|FAILED|FAILURE|FAIL:' target/scheme-test/scheme-test.log
     status=0

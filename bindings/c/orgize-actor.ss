@@ -1,5 +1,5 @@
 ;;; -*- Gerbil -*-
-;;; Private native task boundary. The POO parser remains the semantic owner.
+;;; Scheme batch workers. The POO parser remains the semantic owner.
 (import (only-in :orgize/languages/org/modules/org-parser/event-runtime
                  parse-org-native-events-with-parameters))
 (export org-parse-batch)
@@ -33,7 +33,7 @@
                       inlinetask-level: (level 15) script-policy: (policy 2))
   (unless (and (list? requests) (exact-integer? workers) (<= 1 workers 64)
                (exact-integer? level) (> level 0) (memv policy '(0 1 2)))
-    (error "invalid Org native batch" workers))
+    (error "invalid Org actor batch" workers))
   (let* ((inputs (list->vector requests))
          (count (vector-length inputs))
          (width (min workers count))
@@ -45,7 +45,7 @@
      (lambda ()
        (let start ((index 0))
          (when (< index width)
-           (let (actor (spawn/name 'org-native-parser parse-partition))
+           (let (actor (spawn/name 'org-parser-worker parse-partition))
              (set! actors (cons actor actors))
              (thread-send actor (vector inputs index width level policy)))
            (start (+ index 1))))

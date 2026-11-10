@@ -1,6 +1,6 @@
 (import (only-in :std/test check test-case test-suite)
-        (only-in "../bindings/c/orgize-actor.ss" org-parse-batch)
-        (only-in "../languages/org/modules/org-parser/event-runtime.ss"
+        (only-in :orgize/bindings/c/orgize-actor org-parse-batch)
+        (only-in :orgize/languages/org/modules/org-parser/event-runtime
                  parse-org-native-events-with-parameters))
 (export org-actor-test)
 
@@ -8,10 +8,10 @@
   (parse-org-native-events-with-parameters source 15 2))
 
 (def org-actor-test
-  (test-suite "Org native actor ownership"
+  (test-suite "Org actor ownership"
     (test-case "empty batch has no actors or results"
       (check (org-parse-batch '() workers: 4) => '()))
-    (test-case "native actors preserve indexed parser results"
+    (test-case "actors preserve indexed parser results"
       (let* ((inputs '("" "* α\n" "x^{β}\n" "| a | b |\n"
                       "#+begin_src scheme\n(+ 1 2)\n#+end_src\n"))
              (expected (map parse inputs)))
@@ -26,11 +26,11 @@
       (let (input "* recovered\n")
         (check (org-parse-batch (list input) workers: 4)
                => (list (parse input)))))
-    (test-case "native partitions do not consume the caller mailbox"
+    (test-case "parser workers do not consume the caller mailbox"
       (thread-send (current-thread) 'host-owned-message)
       (org-parse-batch (list "* isolated\n") workers: 2)
       (check (thread-receive 1 'missing) => 'host-owned-message))
-    (test-case "native tasks preserve caller parser configuration"
+    (test-case "workers preserve caller parser configuration"
       (let (input "* α\nx^{β} x^2\n")
         (for-each
          (lambda (config)

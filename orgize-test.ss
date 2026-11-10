@@ -7,6 +7,7 @@
         (only-in "t/org-lifecycle-value-test.ss" org-lifecycle-value-test)
         (only-in "t/org-semantic-owner-test.ss" org-semantic-owner-test)
         (only-in "t/org-event-tape-test.ss" org-event-tape-test)
+        (only-in "t/org-actor-test.ss" org-actor-test)
         (only-in "t/org-elements-module-test.ss" org-elements-module-test)
         (only-in "t/org-radio-match-test.ss" org-radio-match-test)
         (only-in "t/org-inline-parser-test.ss" org-inline-parser-test)
@@ -27,6 +28,7 @@
         org-lifecycle-value-test
         org-semantic-owner-test
         org-event-tape-test
+        org-actor-test
         org-elements-module-test
         org-radio-match-test
         org-inline-parser-test

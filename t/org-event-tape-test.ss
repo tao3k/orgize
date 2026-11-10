@@ -2,10 +2,13 @@
                  native-monotonic-ns native-thread-cpu-ns)
         (only-in :std/test check test-case test-suite)
         (only-in :std/misc/ports read-all-as-string)
-        (rename-in (only-in "../bindings/c/event-tape.ss"
+        (only-in :gerbil-scheme-rust/scheme/actor-batch
+                 make-gerbil-rs-actor-batch gerbil-rs-actor-batch!
+                 gerbil-rs-actor-batch-close!)
+        (rename-in (only-in :orgize/bindings/c/event-tape
                  org-events->tape org-request->tape org-event-tape-header)
                    (org-request->tape pure-request->tape))
-        (only-in "../languages/org/modules/org-parser/event-runtime.ss"
+        (only-in :orgize/languages/org/modules/org-parser/event-runtime
                  parse-org-native-events-with-parameters))
 (export org-event-tape-test)
 (def (org-request->tape request)
@@ -56,6 +59,33 @@
 
 (def org-event-tape-test
   (test-suite "Org native event boundary"
+    (test-case "persistent bridge actors preserve ordered tapes across a failed turn"
+      (let* ((requests
+              (map (lambda (source) (request source 15 2))
+                   (list "* Duplicate\n" "* α\r\nx^{β}\n"
+                         (call-with-input-file
+                          "tests/fixtures/org-elements/representative.org"
+                          read-all-as-string)
+                         "* Duplicate\n" "")))
+             (expected (list->vector (map org-request->tape requests)))
+             (turn (vector (s64vector 1) (list->vector requests)))
+             (service (make-gerbil-rs-actor-batch
+                       (lambda (_ bytes) (org-request->tape bytes)) 4)))
+        (dynamic-wind
+          void
+          (lambda ()
+            (thread-send (current-thread) 'caller-message)
+            (check (gerbil-rs-actor-batch! service turn) => expected)
+            (check (thread-receive 1 'missing) => 'caller-message)
+            (check (with-catch (lambda (_) 'rejected)
+                     (lambda ()
+                       (gerbil-rs-actor-batch!
+                        service (vector (s64vector 1) (vector (car requests) #f)))))
+                   => 'rejected)
+            (check (gerbil-rs-actor-batch! service turn) => expected))
+          (lambda () (gerbil-rs-actor-batch-close! service)))
+        (check (with-catch (lambda (_) 'closed)
+                 (lambda () (gerbil-rs-actor-batch! service turn))) => 'closed)))
     (test-case "direct consumer equals independent list encoding for real and adversarial sources"
       (let (sources
             (append
