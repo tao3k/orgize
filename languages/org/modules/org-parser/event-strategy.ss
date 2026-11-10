@@ -575,8 +575,7 @@
   (append
    '((inline-script-policy 2)
     (open-levels (uint-stack)) (active-opaque-block 0)
-    (property-drawer-open #f) (property-key-end 0)
-    (property-value-start 0) (property-value-end 0) (after-heading #f)
+    (property-drawer-open #f) (property-key-end 0) (after-heading #f)
     (comment-open #f)
     (fixed-width-open #f))
    table-event-initial
@@ -591,7 +590,8 @@
    latex-environment-initial
    paragraph-event-initial
    event-headline-tags-initial
-   inlinetask-event-initial))
+   inlinetask-event-initial
+   '((property-value-start 0) (property-value-end 0))))
 
 (def org-event-helpers
   (append paragraph-event-helpers table-formula-event-helpers macro-event-helpers
