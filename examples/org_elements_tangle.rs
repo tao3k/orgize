@@ -5,19 +5,17 @@ use std::{collections::HashSet, env, fmt::Write as _, fs, path::Path};
 #[path = "support/org_feature_source.rs"]
 mod org_feature_source;
 
-use org_feature_source::{feature_block, owning_headline, property, records};
+use org_feature_source::{feature_block, module_reference, owning_headline, property, records};
 
 fn tangle(source: &str, interface_module: &str) -> Result<String, String> {
-    if interface_module.is_empty() {
-        return Err("Org Elements interface module cannot be empty".into());
-    }
+    let interface_module = module_reference(interface_module)?;
     let records = records(source)?;
     let mut output = String::from(
         ";;; -*- Gerbil -*-\n;;; @generated from :org-elements-query blocks; do not edit.\n",
     );
     writeln!(
         output,
-        "(import (only-in {interface_module:?} org-element-query org-elements"
+        "(import (only-in {interface_module} org-element-query org-elements"
     )
     .unwrap();
     output.push_str(

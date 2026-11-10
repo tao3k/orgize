@@ -24,7 +24,20 @@ expression: document.records()
                 504,
             ),
         },
-        fields: [],
+        fields: [
+            GraphFieldValue {
+                name: "source-text",
+                value: ":PROPERTIES:\n:CONTRACT_ORG: document.scope.v1\n:CONTRACT_ORG: document.contract-binding.v1\n:CONTRACT_ORG: section.scope.v1\n:END:\n* Task A\n** Evidence\n[[https://example.test][inside]]\n** Task A Child\n:PROPERTIES:\n:CONTRACT_ORG: section.scope.v1\n:END:\n*** Evidence\n[[https://example.test][child]]\n* Task B\n** Evidence\n[[https://example.test][task-b]]\n* Override Parent\n:PROPERTIES:\n:CONTRACT_ORG: section.override-title.v1\n:END:\n** Override Child\n:PROPERTIES:\n:CONTRACT_ORG: section.override-title.v1\n:END:\n",
+                range: TextRange {
+                    start: TextSize(
+                        0,
+                    ),
+                    end: TextSize(
+                        504,
+                    ),
+                },
+            },
+        ],
     },
     GraphRecord {
         id: 1,

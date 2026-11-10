@@ -18,7 +18,7 @@ test = ["pytest>=8.0"]
 [dependency-groups]
 wheel-repair = [
     "delocate==0.13.0; sys_platform == 'darwin'",
-    "auditwheel @ git+https://github.com/pypa/auditwheel@b9a93b046492f986f7355bc23672359657e5e769; sys_platform == 'linux'",
+    "auditwheel @ git+https://github.com/pypa/auditwheel@b9a93b046492f986f7355bc23672359657e5e769 ; sys_platform == 'linux'",
 ]
 
 [tool.maturin]

@@ -15,8 +15,60 @@ env:
   ORGIZE_GERBIL_NATIVE_OUTPUT: ${{ github.workspace }}/target/program-objects
 
 jobs:
+  prepare:
+    name: prepare / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-26]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - name: System libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev libsqlite3-dev zlib1g-dev pkg-config ripgrep jq
+      - name: System libraries
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: brew install gcc openssl@3 pkg-config sqlite zlib ripgrep jq coreutils
+      - name: Install released Gerbil
+        run: bash tools/ci/install-gerbil-release.sh
+      - name: Fetch locked Cargo sources
+        run: cargo fetch --locked
+      - name: Prepare pinned Scheme program once
+        run: just ci-prepare
+      - name: Package compiler-owned program
+        run: tar -czf "$RUNNER_TEMP/orgize-program.tar.gz" .gerbil-native target/gerbil-parser
+      - name: Publish exact-head program
+        uses: actions/upload-artifact@v4
+        with:
+          name: orgize-program-${{ github.event.pull_request.head.sha || github.sha }}-${{ matrix.os }}
+          path: ${{ runner.temp }}/orgize-program.tar.gz
+          if-no-files-found: error
+      - name: Preserve preparation evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preparation-failure-${{ github.event.pull_request.head.sha || github.sha }}-${{ matrix.os }}
+          path: |
+            target/gerbil-parser/
+            .gerbil-native/**/*.log
+          include-hidden-files: true
+          if-no-files-found: ignore
+
   test:
     name: test / ${{ matrix.os }} / ${{ matrix.runtime }}
+    needs: prepare
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -79,7 +131,7 @@ jobs:
           cache-on-failure: true
 
       - name: Fetch cargo dependencies
-        run: cargo fetch
+        run: cargo fetch --locked
 
       - name: Check formatting
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -100,8 +152,15 @@ jobs:
         run: brew install gcc openssl@3 pkg-config sqlite zlib ripgrep jq coreutils
       - name: Install released Gerbil
         run: bash tools/ci/install-gerbil-release.sh
-      - name: Prepare pinned native Scheme program
-        run: just ci-prepare
+      - name: Restore compiler-owned program
+        uses: actions/download-artifact@v4
+        with:
+          name: orgize-program-${{ github.event.pull_request.head.sha || github.sha }}-${{ matrix.os }}
+          path: ${{ runner.temp }}/orgize-program
+      - name: Admit restored program against current sources
+        run: |
+          tar -xzf "$RUNNER_TEMP/orgize-program/orgize-program.tar.gz"
+          just ci-verify-prepared
       - name: Verify native Scheme owners through gerbil test
         if: matrix.runtime == 'runtime-rust'
         run: just ci-scheme-test
@@ -170,6 +229,7 @@ jobs:
 
   python-sdk:
     name: orgizepy / ${{ matrix.os }}
+    needs: prepare
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -177,6 +237,9 @@ jobs:
         os: [ubuntu-latest, macos-26]
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v7
@@ -199,8 +262,15 @@ jobs:
         run: bash tools/ci/install-gerbil-release.sh
       - name: Fetch pinned native dependencies
         run: cargo fetch --locked
-      - name: Prepare pinned native Scheme program
-        run: just ci-prepare
+      - name: Restore compiler-owned program
+        uses: actions/download-artifact@v4
+        with:
+          name: orgize-program-${{ github.event.pull_request.head.sha || github.sha }}-${{ matrix.os }}
+          path: ${{ runner.temp }}/orgize-program
+      - name: Admit restored program against current sources
+        run: |
+          tar -xzf "$RUNNER_TEMP/orgize-program/orgize-program.tar.gz"
+          just ci-verify-prepared
       - name: Verify Python SDK through maturin
         run: just python-test
       - name: Build and repair maturin wheel

@@ -21,7 +21,20 @@ expression: records
                 32,
             ),
         },
-        fields: [],
+        fields: [
+            GraphFieldValue {
+                name: "source-text",
+                value: "#+tags: [ GTD : Control ] pc(p)\n",
+                range: TextRange {
+                    start: TextSize(
+                        0,
+                    ),
+                    end: TextSize(
+                        32,
+                    ),
+                },
+            },
+        ],
     },
     GraphRecord {
         id: 1,

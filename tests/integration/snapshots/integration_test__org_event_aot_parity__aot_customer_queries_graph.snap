@@ -28,7 +28,20 @@ expression: document.records()
                 1505,
             ),
         },
-        fields: [],
+        fields: [
+            GraphFieldValue {
+                name: "source-text",
+                value: "#+title: Consumer-owned Org Element queries\n\n* Active reviews\n:PROPERTIES:\n:QUERY_ID: customer.active-review\n:END:\n\n#+begin_src scheme :org-elements-query\n(org-elements headline\n              (all-of (property todo-type \"todo\")\n                      (property-contains source-title \"Review\"))\n              (descendant-of scope))\n#+end_src\n\n* Cited evidence\n:PROPERTIES:\n:QUERY_ID: customer.cited-evidence\n:END:\n\n#+begin_src scheme :org-elements-query\n(org-elements citation-reference (property key \"doe2020\"))\n#+end_src\n\n* Normalized review title\n:PROPERTIES:\n:QUERY_ID: customer.normalized-title\n:END:\n\n#+begin_src scheme :org-elements-query\n(org-elements headline (property title \"Review patch\"))\n#+end_src\n\n* Priority reviews\n:PROPERTIES:\n:QUERY_ID: customer.priority\n:END:\n\n#+begin_src scheme :org-elements-query\n(org-elements headline (property priority \"A\"))\n#+end_src\n\n* Tagged reviews\n:PROPERTIES:\n:QUERY_ID: customer.tagged\n:END:\n\n#+begin_src scheme :org-elements-query\n(org-elements headline (property tags \"work\"))\n#+end_src\n\n* Raw headline value\n:PROPERTIES:\n:QUERY_ID: customer.raw-value\n:END:\n\n#+begin_src scheme :org-elements-query\n(org-elements headline (property raw-value \"WAIT [#A] Review patch :work:\"))\n#+end_src\n\n* Partial TODO keyword\n:PROPERTIES:\n:QUERY_ID: customer.todo-contains\n:END:\n\n#+begin_src scheme :org-elements-query\n(org-elements headline\n              (all-of (property-contains todo-keyword \"WAI\")\n                      (property-contains title \"Review\")))\n#+end_src\n",
+                range: TextRange {
+                    start: TextSize(
+                        0,
+                    ),
+                    end: TextSize(
+                        1505,
+                    ),
+                },
+            },
+        ],
     },
     GraphRecord {
         id: 1,

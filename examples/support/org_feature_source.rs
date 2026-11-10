@@ -2,6 +2,25 @@
 
 use gerbil_parser_runtime::GraphRecord;
 
+/// Preserve quoted file imports and admit canonical Gerbil library identifiers.
+pub fn module_reference(value: &str) -> Result<String, String> {
+    match value.strip_prefix(':') {
+        Some(name)
+            if name.split('/').all(|segment| {
+                !segment.is_empty()
+                    && segment
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+            }) =>
+        {
+            Ok(value.to_owned())
+        }
+        Some(_) => Err("invalid canonical Gerbil module identifier".into()),
+        None if value.is_empty() => Err("Scheme interface module cannot be empty".into()),
+        None => Ok(format!("{value:?}")),
+    }
+}
+
 pub fn records(source: &str) -> Result<Vec<GraphRecord>, String> {
     orgize::org_aot::parse_org_aot(source)
         .map(|document| document.records().to_vec())

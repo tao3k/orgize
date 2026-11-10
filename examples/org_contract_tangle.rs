@@ -5,16 +5,15 @@ use std::{collections::HashSet, env, fmt::Write as _, fs, path::Path};
 #[path = "support/org_feature_source.rs"]
 mod org_feature_source;
 
-use org_feature_source::{feature_block, property, records};
+use org_feature_source::{feature_block, module_reference, property, records};
 
 fn tangle(
     source: &str,
     contract_interface: &str,
     elements_interface: &str,
 ) -> Result<String, String> {
-    if contract_interface.is_empty() || elements_interface.is_empty() {
-        return Err("Org contract interface modules cannot be empty".into());
-    }
+    let contract_interface = module_reference(contract_interface)?;
+    let elements_interface = module_reference(elements_interface)?;
     let records = records(source)?;
     let mut output = String::new();
     writeln!(output, ";;; -*- Gerbil -*-").unwrap();
@@ -23,14 +22,14 @@ fn tangle(
         ";;; @generated from the Org Element CST; do not edit."
     )
     .unwrap();
-    writeln!(output, "(import (only-in {contract_interface:?}").unwrap();
+    writeln!(output, "(import (only-in {contract_interface}").unwrap();
     writeln!(
         output,
         "                 org-contract-block assert-org-element"
     )
     .unwrap();
     writeln!(output, "                 make-org-contract-definition)").unwrap();
-    writeln!(output, "        (only-in {elements_interface:?}").unwrap();
+    writeln!(output, "        (only-in {elements_interface}").unwrap();
     writeln!(
         output,
         "                 org-elements property property-contains all-of any-of at child-of descendant-of))"
@@ -75,7 +74,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     unsafe { orgize::initialize_native_runtime() }?;
     let args: Vec<_> = env::args_os().collect();
     let (input, output, contract_interface, elements_interface) = match args.as_slice() {
-        [_, input, output] => (input, output, "../func.ss", "../../org-elements/func.ss"),
+        [_, input, output] => (
+            input,
+            output,
+            "../func.ss",
+            ":orgize/languages/org/modules/org-elements/func",
+        ),
         [_, input, output, contract, elements] => (
             input,
             output,
@@ -105,7 +109,7 @@ mod tests {
     use super::tangle;
 
     const CONTRACT_INTERFACE: &str = "../func.ss";
-    const ELEMENTS_INTERFACE: &str = "../../org-elements/func.ss";
+    const ELEMENTS_INTERFACE: &str = ":orgize/languages/org/modules/org-elements/func";
 
     fn default_tangle(source: &str) -> Result<String, String> {
         tangle(source, CONTRACT_INTERFACE, ELEMENTS_INTERFACE)
@@ -180,6 +184,17 @@ mod tests {
         );
         super::fixture::assert_rejected(tangle(source, "", ELEMENTS_INTERFACE));
         super::fixture::assert_rejected(tangle(source, CONTRACT_INTERFACE, ""));
+        let library = tangle(source, CONTRACT_INTERFACE, ELEMENTS_INTERFACE)
+            .expect("canonical Gerbil library import");
+        assert!(library.contains("(only-in :orgize/languages/org/modules/org-elements/func"));
+        for invalid in [
+            ":",
+            ":orgize//func",
+            ":orgize/../func",
+            ":orgize/func) (exit 0)",
+        ] {
+            super::fixture::assert_rejected(tangle(source, CONTRACT_INTERFACE, invalid));
+        }
     }
 
     fn consumer_contract_source_artifact_stays_in_sync() {

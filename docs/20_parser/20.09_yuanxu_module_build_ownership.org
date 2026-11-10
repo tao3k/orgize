@@ -1,6 +1,39 @@
 #+title: 20.09 Yuanxu Module Build Ownership
 #+date: 2026-10-28
 
+* Squashed Parser promotion and preparation ownership
+
+Orgize promotes Parser main =3c58e6ec1114a65848deda7d9878549591420658= after
+[[https://github.com/tao3k/gerbil-parser/actions/runs/42754005775][the complete Parser acceptance run]]. Its source tree is identical to the
+accepted PR head, although the squash commit has a different identity. Both
+Cargo lockfiles, the Cargo declarations and =gerbil.pkg= select the squash
+commit. The existing bridge and Yuanxu selections remain unchanged.
+
+Preparation has one producer per operating system. The original =ci-prepare=
+still installs declared packages and calls their standard build owners. It
+publishes the Gerbil prefix and compiler-owned program manifest together.
+The two runtime consumers and the wheel consumer restore only the artifact
+for their platform and this run's exact source revision. They fetch their
+locked Cargo sources and call =ci-verify-prepared= before using that program.
+This delegates to the existing cohort and source-input checks; archive presence
+alone grants no admission. Compiler paths must resolve under the same workspace
+and release layout. Missing, changed or incompatible inputs fail admission.
+
+Each consumer retains a private output directory and the upstream archive
+owner revalidates its own inputs. The artifact contains no alternate compiler,
+runtime selector or downstream build cache. The original Scheme cases, failure
+control, runtime checks, relocation tests, performance gates and installed-wheel
+checks remain required. Preparation evidence stays in ignored local caches or
+CI failure artifacts, rather than committed logs.
+
+The existing Scheme graph declaration retains root =source-text=. The graph
+integrity assertion checks the complete value and byte range before snapshots
+are compared. Generated interface imports distinguish canonical Gerbil library
+identifiers from quoted file references; malformed library tokens are rejected.
+The wheel declaration fixes the separator before its existing environment
+marker without changing the selected auditwheel commit. The original 100 ms
+plan-ledger gate remains a separate obligation from these structural fixes.
+
 * CI dependency coherence
 
 The native package, Cargo dependencies and both Cargo lockfiles must name the

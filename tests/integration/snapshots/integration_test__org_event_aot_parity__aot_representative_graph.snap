@@ -24,7 +24,20 @@ expression: document.records()
                 701,
             ),
         },
-        fields: [],
+        fields: [
+            GraphFieldValue {
+                name: "source-text",
+                value: "#+TITLE: Git-scoped Org element regression\n#+OPTIONS: toc:nil\n\n* Introduction\n\nThis document exercises a [[https://orgmode.org][link]], *bold* text, and a\ntimestamp <2026-09-23 Wed>.\n\n** Source blocks\n\n#+NAME: example-code\n#+CAPTION: A source block in the regression document\n#+begin_src text\nthis line is block content\n#+end_src\n\n** Lists and tables\n\n- first item\n- second item with /emphasis/\n\n| Name | Value |\n|------+-------|\n| one  |     1 |\n\n* Planning\nSCHEDULED: <2026-09-24 Thu>\n:PROPERTIES:\n:ID:       git-scoped-fixture\n:END:\n\n:LOGBOOK:\nRecorded context for the planning item.\n:END:\n\nThe final paragraph has a footnote reference[fn:note].\n\n[fn:note] The fixture is owned by this repository.\n",
+                range: TextRange {
+                    start: TextSize(
+                        0,
+                    ),
+                    end: TextSize(
+                        701,
+                    ),
+                },
+            },
+        ],
     },
     GraphRecord {
         id: 1,

@@ -21,7 +21,20 @@ expression: document.records()
                 130,
             ),
         },
-        fields: [],
+        fields: [
+            GraphFieldValue {
+                name: "source-text",
+                value: "* Dynamic overview\n#+BEGIN: clocktable :scope file\nNested paragraph with [[https://example.test][link]].\n#+END:\n\nAfter the block.\n",
+                range: TextRange {
+                    start: TextSize(
+                        0,
+                    ),
+                    end: TextSize(
+                        130,
+                    ),
+                },
+            },
+        ],
     },
     GraphRecord {
         id: 1,
