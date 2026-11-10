@@ -74,7 +74,13 @@
   expectation-event-tape-header expectation-event-kind-indices expectation-event-terminals)
 
 (def (put-unsigned! bytes offset width value)
-  (unless (and (exact-integer? value) (<= 0 value) (< value (expt 256 width)))
+  (def limit
+    (case width
+      ((2) #x10000)
+      ((4) #x100000000)
+      ((8) #x10000000000000000)
+      (else (error "invalid Org tape integer width" width))))
+  (unless (and (exact-integer? value) (<= 0 value) (< value limit))
     (error "Org tape integer out of range" value width))
   ;; Generic official byte access supports unaligned wire fields. Keep the
   ;; value admission above: the standard writer itself truncates large values.
@@ -459,13 +465,16 @@
   (let (count (and (pair? fields) (string->number (car fields))))
     (unless (and (exact-integer? count) (<= 1 count 64))
       (error "invalid document metadata packet count"))
-    (let loop ((remaining count) (rest (cdr fields)) (out '()))
+    ;; Track the unread field count instead of traversing the entire suffix
+    ;; again for every packet. Each packet keeps its original framing check.
+    (let loop ((remaining count) (rest (cdr fields))
+               (available (length (cdr fields))) (out '()))
       (if (= remaining 0)
         (begin
           (unless (null? rest) (error "trailing document metadata packets"))
           (append-map identity (reverse out)))
         (let (size (and (pair? rest) (string->number (car rest))))
-          (unless (and (exact-integer? size) (> size 0) (<= size (length (cdr rest))))
+          (unless (and (exact-integer? size) (> size 0) (< size available))
             (error "truncated document metadata packet"))
           (let* ((packet (take (cdr rest) size))
                  (rows (with-catch
@@ -473,4 +482,5 @@
                         (lambda ()
                           (let (rows (org-document-batch packet))
                             (cons (list "ok" (number->string (length rows))) rows))))))
-            (loop (- remaining 1) (drop (cdr rest) size) (cons rows out))))))))
+            (loop (- remaining 1) (drop (cdr rest) size)
+                  (- available size 1) (cons rows out))))))))

@@ -60,15 +60,26 @@ fn flush(
     if pending.is_empty() {
         return Ok(());
     }
-    let mut fields = vec![pending.len().to_string()];
-    for document in pending.iter() {
-        fields.push(document.fields.len().to_string());
-        fields.extend(document.fields.iter().cloned());
-    }
-    let refs = fields.iter().map(String::as_str).collect::<Vec<_>>();
-    let mut rows = native_semantic_rows(24, &refs)
-        .map_err(OrgAotError::Native)?
-        .into_iter();
+    let mut rows = {
+        let count = pending.len().to_string();
+        let sizes: Vec<_> = pending
+            .iter()
+            .map(|doc| doc.fields.len().to_string())
+            .collect();
+        let field_count = 1 + pending
+            .iter()
+            .map(|doc| 1 + doc.fields.len())
+            .sum::<usize>();
+        let mut refs = Vec::with_capacity(field_count);
+        refs.push(count.as_str());
+        for (document, size) in pending.iter().zip(&sizes) {
+            refs.push(size.as_str());
+            refs.extend(document.fields.iter().map(String::as_str));
+        }
+        native_semantic_rows(24, &refs)
+            .map_err(OrgAotError::Native)?
+            .into_iter()
+    };
     for document in pending.drain(..) {
         let frame = rows
             .next()

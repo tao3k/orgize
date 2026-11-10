@@ -72,14 +72,23 @@ No file preparation moves outside the timed query and no accepted documents
 are cached between iterations.
 
 The property strategy previously traversed the entire value after accepting its
-key delimiter. Its existing Fold forms now scan the first word, then scan the
-remaining range only when no delimiter was accepted. These ranges partition the
-original traversal; the skipped suffix had no effects after the first match.
-Whitespace-containing keys retain the original fallback. Unicode, internal
+key delimiter. Its existing Fold forms now find the first colon and apply the
+same delimiter predicate at that offset. An accepted first colon cannot have an
+earlier matching delimiter, and the skipped suffix had no effects after the
+first match. Other inputs retain the original search. Unicode, internal
 colons, empty values, missing delimiters and CRLF remain boundary obligations.
 The before/after event tapes match for the ten-input diagnostic corpus; the
 standard structural case also covers whitespace keys. Complete Scheme and
 native performance checks remain required.
+
+Metadata packet admission counts the unread fields once and decrements that
+count as each packet is consumed. The former suffix-length scan repeated work
+for every packet. The Rust batch producer borrows each document's fields until
+the synchronous request is encoded, rather than cloning the whole packet.
+Packet order, bounds, per-document failure isolation and malformed framing
+checks are unchanged. The existing batch parity controls exercise this path.
+The tape writer uses the fixed bounds of its admitted two-, four- and eight-byte
+fields, avoiding per-field exponentiation while retaining the same range checks.
 
 * CI dependency coherence
 
@@ -472,5 +481,8 @@ path is a failed inspection, not a missing compiler product.
 Local complete CLI evidence and upstream bridge C ABI lifecycle checks do not
 replace exact-head remote CI. The earlier plan-ledger 100ms gate failures also
 remain failures until the original workload passes; neither worker count nor
-performance threshold is changed. Failed transcripts and the post-success
+performance threshold is changed. A failed performance check keeps the job red
+and suppresses qualified bundle publication. Once the program is admitted,
+independent Rust tests and lint checks still run to expose correctness failures.
+Failed transcripts and the post-success
 cleanup sample stay in ignored local evidence, not in tracked documentation.

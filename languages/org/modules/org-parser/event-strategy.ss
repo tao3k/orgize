@@ -129,32 +129,33 @@
 (def property-indent '(line-skip-horizontal start))
 (def property-key-start `(line-step ,property-indent))
 (def property-byte-index '(line-index property-byte-index))
-(def property-byte-next `(line-step ,property-byte-index))
 (def property-key-end '(state-offset property-key-end))
 (def property-value-start
   `(line-skip-horizontal (line-step ,property-key-end)))
 (def property-value-end `(line-trim-end-from ,property-value-start))
 
-(def (property-key-scan-form from until)
-  `(for-line-bytes property-byte-index ,from ,until
+(def (property-delimiter? index)
+  (let (next `(line-step ,index))
+    `(and (line-byte-equal? ,index 58)
+          (or (line-bytes-all-in? ,next (line-content-end) ())
+              (line-bytes-any-in? ,next (line-step ,next) (9 32))))))
+
+(def (property-key-scan-form)
+  `(for-line-bytes property-byte-index ,property-key-start (line-content-end)
      ((if (and (uint-equal? (state property-key-end) (uint 0))
-               (line-byte-equal? ,property-byte-index 58)
-               (or (line-bytes-all-in? ,property-byte-next
-                                      (line-content-end) ())
-                   (line-bytes-any-in? ,property-byte-next
-                                      (line-step ,property-byte-next) (9 32))))
+               ,(property-delimiter? property-byte-index))
           ((set-uint property-key-end (offset ,property-byte-index))) ()))))
+
+(def (property-key-forms)
+  `((set-uint property-key-end (offset (line-scan-until ,property-key-start ":")))
+    ;; The first colon is usually the delimiter. Internal colons and other
+    ;; unusual input retain the complete delimiter search.
+    (if (not ,(property-delimiter? property-key-end))
+        ((set-uint property-key-end (uint 0)) ,(property-key-scan-form)) ())))
 
 (def (property-line-forms)
   `((if (line-byte-equal? ,property-indent 58)
-        (,(property-key-scan-form
-           property-key-start `(line-scan-word ,property-key-start))
-         ;; Preserve the original permissive scan for keys containing whitespace.
-         ;; Once a delimiter is found, scanning the value has no effects.
-         (if (uint-equal? (state property-key-end) (uint 0))
-             (,(property-key-scan-form
-                `(line-scan-word ,property-key-start) '(line-content-end))) ()))
-        ())
+        ,(property-key-forms) ())
     (if (and (uint-positive? (state property-key-end))
              (offset-less? ,property-key-start ,property-key-end))
         ((start-node OrgNodeProperty)
