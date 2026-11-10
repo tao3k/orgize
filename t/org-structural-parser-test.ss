@@ -597,10 +597,8 @@
             (PropertyTrivia 27 28))
            (DrawerEndLine 28 36))))))
     (test-case "property keys scan source bytes until the declared colon"
-      (for-each
-       (lambda (source)
-        (check-org-ast-with parse-org-native-events
-        source
+      (check-org-ast-with parse-org-native-events
+        "* H\n:PROPERTIES:\n:A+B: yes\n:END:\n"
         (OrgFile
          (OrgSection
           (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
@@ -611,9 +609,14 @@
             (PropertyTrivia 17 18) (PropertyKey 18 21)
             (PropertyTrivia 21 23) (PropertyValue 23 26)
             (PropertyTrivia 26 27))
-           (DrawerEndLine 27 33))))))
-       '("* H\n:PROPERTIES:\n:A+B: yes\n:END:\n"
-         "* H\n:PROPERTIES:\n:A B: yes\n:END:\n")))
+           (DrawerEndLine 27 33)))))
+      (check-org-ast-with parse-org-native-events
+        "* H\n:PROPERTIES:\n:A B: yes\n:END:\n"
+        (OrgFile
+         (OrgSection
+          (OrgHeadline (HeadlineLine 0 1) (HeadlineTrivia 1 2)
+                       (HeadlineTitle 2 3) (HeadlineTrivia 3 4))
+          (OrgParagraph (OrgTextLine (TextLine 4 33)))))))
     (test-case "property keys retain internal colons before their final delimiter"
       (check-org-ast-with parse-org-native-events
         "* H\n:PROPERTIES:\n:header-args:python: :session local\n:END:\n"

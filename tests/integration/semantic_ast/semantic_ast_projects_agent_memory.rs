@@ -304,6 +304,7 @@ fn plan_ledger_memory_projection_stays_in_millisecond_budget() {
         .expect("write plan");
     }
 
+    eprintln!("plan ledger query samples start: files=2000");
     let mut sample_times = Vec::with_capacity(5);
     let (elapsed, records) = (0..5)
         .map(|_| {
