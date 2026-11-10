@@ -368,6 +368,16 @@ workload and retains its failed acceptance result.
 
 * Promotion
 
+The Ubuntu relocation run for =3358e3a5= passed the Scheme runtime's
+ledger gate and ordinary tests. Bundle admission then rejected the
+compiler-owned archive because its Gambit link name differed from the
+Darwin name. The pinned bridge publishes =gerbil_scheme_rust_gambit=
+when it scopes Linux signal handlers. Both publication and relocated
+admission use Cargo's target OS to require the corresponding archive.
+The archive order and content digests still bind the original link
+receipt. Verify the change through the existing relocated consumption
+step on the current commit.
+
 Confirm the upstream Parser commit, its public module contracts and its CI
 before changing the consumer pin. The current candidate retains Parser
 =3c58e6ec=. The post-squash run passed Rust Contracts and AOT performance.

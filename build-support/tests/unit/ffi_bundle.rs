@@ -57,6 +57,16 @@ fn save(directory: &Path, bundle: &Bundle) {
     )
     .unwrap();
 }
+
+fn validate(
+    root: &Path,
+    directory: &Path,
+    expected_revision: &str,
+    target: &str,
+) -> Result<Bundle, String> {
+    super::validate(root, directory, expected_revision, target, "macos")
+}
+
 #[test]
 fn relocation_preserves_admission_without_compiler_inputs() {
     let (root, directory, bundle) = fixture();
@@ -64,6 +74,35 @@ fn relocation_preserves_admission_without_compiler_inputs() {
     let moved = root.0.join("relocated");
     fs::rename(directory, &moved).unwrap();
     assert!(validate(&root.0, &moved, &bundle.source_revision, &bundle.target).is_ok());
+}
+
+#[test]
+fn linux_bundle_requires_the_bridge_scoped_gambit_archive() {
+    let (root, directory, mut bundle) = fixture();
+    bundle.target = "x86_64-unknown-linux-gnu".into();
+    let admit = |path: &Path, bundle: &Bundle| {
+        super::validate(
+            &root.0,
+            path,
+            &bundle.source_revision,
+            &bundle.target,
+            "linux",
+        )
+    };
+    save(&directory, &bundle);
+    assert!(admit(&directory, &bundle).is_err());
+
+    let scoped = "libgerbil_scheme_rust_gambit.a";
+    fs::rename(directory.join("libgambit.a"), directory.join(scoped)).unwrap();
+    let hash = bundle.files.remove("libgambit.a").unwrap();
+    bundle.files.insert(scoped.into(), hash);
+    bundle.libraries[1] = "static=gerbil_scheme_rust_gambit".into();
+    save(&directory, &bundle);
+    let moved = root.0.join("relocated");
+    fs::rename(directory, &moved).unwrap();
+    assert!(admit(&moved, &bundle).is_ok());
+    fs::write(moved.join(scoped), "changed scoped archive").unwrap();
+    assert!(admit(&moved, &bundle).is_err());
 }
 #[test]
 fn foreign_identity_and_changed_inputs_are_rejected() {

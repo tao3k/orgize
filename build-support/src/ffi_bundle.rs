@@ -117,6 +117,24 @@ fn bundle_library(library: &str) -> String {
     }
 }
 
+fn validate_link_owners(target_os: &str, libraries: &[String]) -> Result<(), String> {
+    // The pinned bridge scopes Gambit's signal handlers on Linux and emits
+    // the resulting archive as the runtime owner in its Cargo receipt.
+    let gambit = if target_os == "linux" {
+        "static=gerbil_scheme_rust_gambit"
+    } else {
+        "static=gambit"
+    };
+    if libraries.first().map(String::as_str) != Some("static=orgize_gerbil_program")
+        || !libraries.iter().any(|library| library == gambit)
+    {
+        return Err(format!(
+            "missing program or target Gambit link owner {gambit}"
+        ));
+    }
+    Ok(())
+}
+
 fn copy_file(
     source: &Path,
     bundle: &Path,
@@ -190,6 +208,9 @@ pub(crate) fn publish(
         .filter(|directive| directive.kind == CargoDirectiveKind::RustcLinkLib)
         .map(|directive| bundle_library(&directive.value))
         .collect();
+    let target = env::var("TARGET").map_err(|error| error.to_string())?;
+    let target_os = env::var("CARGO_CFG_TARGET_OS").map_err(|error| error.to_string())?;
+    validate_link_owners(&target_os, &libraries)?;
     let mut files = BTreeMap::new();
     for library in &libraries {
         let name = library_file(library)?;
@@ -209,7 +230,7 @@ pub(crate) fn publish(
     let bundle = Bundle {
         schema: "orgize.ffi-bundle.v1".into(),
         source_revision: revision(root)?,
-        target: env::var("TARGET").map_err(|error| error.to_string())?,
+        target,
         runtime_revision: runtime_revision(root)?,
         parser_digest: parser_digest.into(),
         files,
@@ -227,6 +248,7 @@ fn validate(
     directory: &Path,
     expected_revision: &str,
     target: &str,
+    target_os: &str,
 ) -> Result<Bundle, String> {
     let bundle: Bundle = serde_json::from_slice(
         &fs::read(directory.join("bundle.json")).map_err(|error| error.to_string())?,
@@ -246,14 +268,7 @@ fn validate(
     if hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
         return Err("invalid parser digest".into());
     }
-    if bundle.libraries.first().map(String::as_str) != Some("static=orgize_gerbil_program")
-        || !bundle
-            .libraries
-            .iter()
-            .any(|library| library == "static=gambit")
-    {
-        return Err("missing program or Gambit link owner".into());
-    }
+    validate_link_owners(target_os, &bundle.libraries)?;
     for (name, expected) in &bundle.files {
         if Path::new(name).file_name().and_then(|name| name.to_str()) != Some(name.as_str())
             || name.contains(['/', '\\'])
@@ -289,6 +304,7 @@ pub(crate) fn consume(root: &Path, directory: &Path) -> Result<(), String> {
         &directory,
         &revision(root)?,
         &env::var("TARGET").map_err(|error| error.to_string())?,
+        &env::var("CARGO_CFG_TARGET_OS").map_err(|error| error.to_string())?,
     )?;
     println!(
         "cargo:rerun-if-changed={}",
