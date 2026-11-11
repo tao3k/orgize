@@ -600,6 +600,35 @@ Both effect invocations passed under the Rust runtime. The Scheme effect
 invocations straddled the gate. The Scheme A/A medians varied by 25.011 ms.
 Retain all 60 samples and keep the gate open for both CI platforms.
 
+A second complete A/A and ABBA sequence reused the same four executable
+digests on the same 12-core machine. It used the original receipt recipe,
+2,000 files, five observations per invocation, runtime worker policy and
+watchdog. No local compilation was launched during this sequence. Host
+contention was not controlled. All sixty samples remain in ignored evidence
+under =fold-endpoint-repeat-20261111=, including the failed control.
+
+| Runtime | Order | Variant | Best (ms) | P50 (ms) | Gate |
+|---------+-------+---------+-----------+----------+------|
+| Rust    |     1 | Control |    97.950 |  101.970 | Pass |
+| Rust    |     2 | Control |    90.027 |  112.357 | Pass |
+| Rust    |     3 | Control |    97.569 |   99.349 | Pass |
+| Rust    |     4 | Effect  |    77.600 |   87.537 | Pass |
+| Rust    |     5 | Effect  |    80.345 |   94.522 | Pass |
+| Rust    |     6 | Control |    97.085 |  105.819 | Pass |
+| Scheme  |     1 | Control |    92.010 |  113.891 | Pass |
+| Scheme  |     2 | Control |   100.468 |  100.653 | Fail |
+| Scheme  |     3 | Control |    99.766 |  107.235 | Pass |
+| Scheme  |     4 | Effect  |    90.946 |  109.152 | Pass |
+| Scheme  |     5 | Effect  |    78.560 |   87.441 | Pass |
+| Scheme  |     6 | Control |    95.743 |  105.934 | Pass |
+
+All four effect invocations passed this sequence. Seven of eight controls
+also passed; passing the minimum-of-five gate alone does not attribute the
+gain. Rust effect medians were below both adjacent controls, while Scheme
+effect medians straddled them. Retain the first sequence's Scheme effect
+failure and qualify the consumer's exact source and pin through CI before
+calling the optimization accepted.
+
 Separate profiled executables run in ABBA order for each runtime. Each
 cell below is the median of ten complete 2,000-file queries. Every query
 completes 64 owner requests.
@@ -687,8 +716,11 @@ step on the current commit.
 
 Confirm the upstream Parser commit, its public module contracts and its CI
 before changing the consumer pin. The current candidate retains Parser
-=3c58e6ec=. The post-squash run passed Rust Contracts and AOT performance.
-The Linux and Darwin Scheme semantics jobs failed when the historical
+=3c58e6ec=. At Parser =e5fdd53= all Rust and Linux gates passed, including
+the original twenty-sample Grammar P95 of 71.187538 ms against 100 ms.
+Darwin preparation remains in progress; full cross-platform acceptance is
+not established. The earlier post-squash run passed Rust Contracts and AOT
+performance, but its Linux and Darwin semantics jobs failed when the historical
 migration fixture was absent from the squash history.
 [[https://github.com/tao3k/gerbil-parser/actions/runs/42758058862][Parser main CI]]
 The focused Scheme test also failed in an isolated checkout of the squash
