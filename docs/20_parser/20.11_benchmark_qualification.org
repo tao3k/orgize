@@ -205,7 +205,8 @@ invocations, the original committed-source control failed all eight of its
 invocations. The compact-input candidate passed three of four invocations;
 the remaining Rust invocation missed the unchanged 100 ms gate at
 100.049750 ms. This is evidence of possible improvement, not stable
-qualification. The candidate remains unpublished. Separate paired Scheme
+qualification. These local comparisons preceded publication and do not
+establish exact-head CI acceptance. Separate paired Scheme
 phase runs compare compact-response and compact-input adapters: request
 payload shrank from 268,548 to 183,658 bytes (31.6%), while response payload
 stayed at 163,290 bytes. Payload reduction alone does not establish a
@@ -714,12 +715,22 @@ The archive order and content digests still bind the original link
 receipt. Verify the change through the existing relocated consumption
 step on the current commit.
 
-Confirm the upstream Parser commit, its public module contracts and its CI
-before changing the consumer pin. The current candidate retains Parser
-=3c58e6ec=. At Parser =e5fdd53= all Rust and Linux gates passed, including
-the original twenty-sample Grammar P95 of 71.187538 ms against 100 ms.
-Darwin preparation remains in progress; full cross-platform acceptance is
-not established. The earlier post-squash run passed Rust Contracts and AOT
+The consumer selects Parser =e5fdd53b33c376dabb927f79b047e4d5cae9f7ac=
+only after its complete [[https://github.com/tao3k/gerbil-parser/actions/runs/42939773100][cross-platform workflow]] finished successfully.
+All twelve applicable jobs passed; the five existing conditional jobs were
+skipped by their original workflow predicates. The original twenty-sample
+Grammar P95 was 71.187538 ms on Ubuntu and 98.682 ms on Darwin against
+100 ms. Both successful receipts and all earlier failures remain retained.
+This qualifies the upstream revision; it does not establish Orgize's ledger
+budget or a stable causal improvement in Grammar construction.
+
+Scheme and both Cargo lockfiles bind the same Parser commit. Cargo updated
+only the two Parser package source identities. Orgize's original dependency,
+program, Scheme, both Rust runtime and wheel entries must still qualify
+the resulting consumer. The bridge remains at the separately authorized
+=0d92f7b= revision.
+
+The earlier post-squash run passed Rust Contracts and AOT
 performance, but its Linux and Darwin semantics jobs failed when the historical
 migration fixture was absent from the squash history.
 [[https://github.com/tao3k/gerbil-parser/actions/runs/42758058862][Parser main CI]]
