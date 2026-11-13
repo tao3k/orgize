@@ -8,7 +8,7 @@
                  string-after string-first-word
                  string-trim-start
                  string-rest-after-first-word string-last-word
-                 string-before-last-word string-prefix? string-suffix?
+                 string-prefix? string-suffix?
                  string-words string-single-ascii-uppercase?
                  string-unsigned-at-most? string-lowercase)
         (only-in "value-types.ss" org-element-graph-view?)
@@ -37,8 +37,8 @@
         memory-headline-state
         todo-directive?)
 
-(def (split-first value)
-  (let* ((text (string-trim value)) (size (string-length text)))
+(def (split-first text)
+  (let (size (string-length text))
     (let loop ((index 0))
       (cond
        ((= index size) (cons text ""))
@@ -106,11 +106,12 @@
   (todo-word-state (string-first-word title) directives configured-todo configured-done))
 
 (def (headline-todo-fields title open done)
-  (let* ((parts (split-first title))
+  (let* ((title (string-trim title))
+         (parts (split-first title))
          (word (car parts))
          (state (todo-word-state word '() open done)))
     (if (string=? state "")
-        (values state "" (string-trim title))
+        (values state "" title)
         (values state word (cdr parts)))))
 
 ;; The keyword value is a source-owned string, not a Rust re-parse of title.
@@ -162,14 +163,15 @@
 
 (def (headline-display-title content has-tags)
   (let* ((trimmed (string-trim content))
-           (first (string-first-word trimmed))
-           (without-priority
-            (if (priority-token? first)
-              (string-rest-after-first-word trimmed)
+         (without-priority
+          (if (string-prefix? trimmed "[#")
+              (let (parts (split-first trimmed))
+                (if (priority-token? (car parts)) (cdr parts) trimmed))
               trimmed)))
-      (if has-tags
-        (string-before-last-word without-priority)
-        (string-trim without-priority))))
+    (if has-tags
+        (let (parts (split-last without-priority))
+          (if parts (car parts) ""))
+        without-priority)))
 
 (def (headline-anchor-slug title)
   (let* ((lower (string-lowercase title)))
@@ -240,7 +242,7 @@
          (todo (and state (not (equal? todo-value "")) todo-value))
          (after-todo (headline-content-after-todo
                       title directives configured-todo configured-done))
-         (next (split-first after-todo))
+         (next (split-first (string-trim after-todo)))
          (priority-value (headline-priority-cookie after-todo))
          (priority (and (not (equal? priority-value "")) priority-value))
          (after-priority (if priority (cdr next) after-todo))

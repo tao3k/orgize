@@ -186,7 +186,7 @@ pub(crate) fn parse_org_aot_batch(
     config: &ParseConfig,
 ) -> Result<Vec<Result<OrgAotDocument, OrgAotError>>, OrgAotError> {
     let prepared = prepare_batch(sources, config, TitleScope::All)?;
-    metadata_batch::finish(prepared, 17, 24, |document, rows| {
+    metadata_batch::finish(prepared, 17, 24, &[], |document, rows| {
         finish_document(document, rows, config)
     })
 }
@@ -250,7 +250,13 @@ pub(crate) fn parse_plan_ledger_batch(
     config: &ParseConfig,
 ) -> Result<Vec<Result<PlanLedgerDocument, OrgAotError>>, OrgAotError> {
     let prepared = prepare_batch(sources, config, TitleScope::LeadingLedgerHeadline)?;
-    metadata_batch::finish(prepared, 25, 26, finish_plan_ledger_document)
+    metadata_batch::finish(
+        prepared,
+        25,
+        26,
+        &todo_profile_fields(config),
+        finish_plan_ledger_document,
+    )
 }
 
 fn finish_plan_ledger_document(
@@ -367,6 +373,15 @@ struct PreparedDocument {
     fields: Vec<String>,
 }
 
+fn todo_profile_fields(config: &ParseConfig) -> Vec<String> {
+    let mut fields = Vec::new();
+    for words in [&config.todo_keywords.0, &config.todo_keywords.1] {
+        fields.push(words.len().to_string());
+        fields.extend_from_slice(words);
+    }
+    fields
+}
+
 fn prepare_document(
     parse: Parse,
     config: &ParseConfig,
@@ -399,11 +414,10 @@ fn prepare_document(
             .into_iter()
             .collect(),
     };
-    let mut fields = Vec::<String>::new();
-    for list in [&config.todo_keywords.0, &config.todo_keywords.1] {
-        fields.push(list.len().to_string());
-        fields.extend_from_slice(list);
-    }
+    let mut fields = match title_scope {
+        TitleScope::All => todo_profile_fields(config),
+        TitleScope::LeadingLedgerHeadline => Vec::new(),
+    };
     fields.push(keyword_fields.len().to_string());
     fields.extend(keyword_fields.into_iter().map(str::to_owned));
     let include_source_title = matches!(title_scope, TitleScope::All);

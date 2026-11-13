@@ -9,7 +9,7 @@
         (only-in :orgize/languages/org/modules/org-parser/keyword-funs org-keyword-facts)
         (only-in :orgize/languages/org/modules/org-parser/dir-path-funs org-dir-command-plan org-dir-environment-plan)
         (only-in :orgize/languages/org/modules/org-parser/text-funs org-trim)
-        (only-in :orgize/languages/org/modules/org-parser/family-funs org-family-call org-document-batch org-link-batch org-affiliation-batch org-logbook-batch org-table-batch)
+        (only-in :orgize/languages/org/modules/org-parser/family-funs org-family-call org-document-batch org-document-todo-profile org-link-batch org-affiliation-batch org-logbook-batch org-table-batch)
         (only-in :orgize/languages/org/modules/org-elements/radio-match org-radio-matches)
         (only-in :orgize/languages/org/modules/org-parser/value-funs org-value-plan)
         (only-in :orgize/languages/org/modules/org-parser/runtime-statistics
@@ -472,25 +472,27 @@
 
 ;; Bounded framing only: each packet calls the existing document semantic owner.
 (def (document-metadata-packets fields (ledger? #f))
-  (let (count (and (pair? fields) (string->number (car fields))))
-    (unless (and (exact-integer? count) (<= 1 count 64))
-      (error "invalid document metadata packet count"))
-    ;; Track the unread field count instead of traversing the entire suffix
-    ;; again for every packet. Each packet keeps its original framing check.
-    (let loop ((remaining count) (rest (cdr fields))
-               (available (length (cdr fields))) (out '()))
-      (if (= remaining 0)
-        (begin
-          (unless (null? rest) (error "trailing document metadata packets"))
-          (append-map identity (reverse out)))
-        (let (size (and (pair? rest) (string->number (car rest))))
-          (unless (and (exact-integer? size) (> size 0) (< size available))
-            (error "truncated document metadata packet"))
-          (let* ((packet (take (cdr rest) size))
-                 (rows (with-catch
-                        (lambda (exception) (list (list "error" "native document metadata failed")))
-                        (lambda ()
-                          (let (rows (org-document-batch packet ledger?))
-                            (cons (list "ok" (number->string (length rows))) rows))))))
-            (loop (- remaining 1) (drop (cdr rest) size)
-                  (- available size 1) (cons rows out))))))))
+  (let-values (((profile fields)
+                (if ledger? (org-document-todo-profile fields) (values #f fields))))
+    (let (count (and (pair? fields) (string->number (car fields))))
+      (unless (and (exact-integer? count) (<= 1 count 64))
+        (error "invalid document metadata packet count"))
+      ;; Track the unread field count instead of traversing the entire suffix
+      ;; again for every packet. Each packet keeps its original framing check.
+      (let loop ((remaining count) (rest (cdr fields))
+                 (available (length (cdr fields))) (out '()))
+        (if (= remaining 0)
+          (begin
+            (unless (null? rest) (error "trailing document metadata packets"))
+            (append-map identity (reverse out)))
+          (let (size (and (pair? rest) (string->number (car rest))))
+            (unless (and (exact-integer? size) (> size 0) (< size available))
+              (error "truncated document metadata packet"))
+            (let* ((packet (take (cdr rest) size))
+                   (rows (with-catch
+                          (lambda (exception) (list (list "error" "native document metadata failed")))
+                          (lambda ()
+                            (let (rows (org-document-batch packet ledger? profile))
+                              (cons (list "ok" (number->string (length rows))) rows))))))
+              (loop (- remaining 1) (drop (cdr rest) size)
+                    (- available size 1) (cons rows out)))))))))
