@@ -615,7 +615,10 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             let (range, title) = headline
                 .children_with_tokens()
                 .find_map(|child| {
-                    let kind = orgize::org_aot::org_language_spec().kind_name(child.kind())?;
+                    let kind = orgize::org_aot::org_language_spec()
+                        .kinds
+                        .get(usize::from(child.kind().0))?
+                        .name;
                     let range = child.text_range();
                     let title = match kind {
                         "OrgHeadlineTitle" => child.into_node()?.text().to_string(),
