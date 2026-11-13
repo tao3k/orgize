@@ -140,10 +140,9 @@ fn plan_ledger_records_from_paths(
         return observe_plan_ledger_files(paths, options);
     }
 
-    // Reading independent files can overlap while the Scheme-AOT graph for
-    // each file is built. Bound workers by the work available, not a fixed
-    // machine-wide cap, and keep each worker's chunk large enough to amortize
-    // thread startup.
+    // Overlap file reads and graph projection across a few host workers.
+    // The Scheme owner processes batches serially, so additional callers
+    // primarily increase contention and queue depth.
     let worker_count = plan_ledger_worker_count(paths.len());
     // Distribute whole wire-sized groups. Splitting by file count can force
     // each worker to send an extra partial batch to the same VM owner.
@@ -189,7 +188,7 @@ fn plan_ledger_worker_count(path_count: usize) -> usize {
     thread::available_parallelism()
         .map(|count| count.get())
         .unwrap_or(1)
-        .saturating_mul(8)
+        .min(4)
         .min(path_count.div_ceil(64))
 }
 
