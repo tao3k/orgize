@@ -50,10 +50,11 @@
          (set-uint headline-tag-start (offset ,tag-next))) ())))
 
 (def (headline-title-form from until)
-  `(if (line-bytes-any-in? ,from ,until ,inline-trigger-bytes)
+  `(if (and (uint-equal? (state ledger-source-spans) (uint 0))
+            (line-bytes-any-in? ,from ,until ,inline-trigger-bytes))
        ((start-node OrgHeadlineTitle)
         (call-source-helper inline-span ,from ,until
-                            ((state inline-script-policy) (state ledger-source-spans)))
+                            ((state inline-script-policy) (uint 0)))
         (finish-node))
        ((token HeadlineTitle ,from ,until))))
 

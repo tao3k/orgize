@@ -132,6 +132,8 @@
 (def property-key-end '(state-offset property-key-end))
 (def property-value-start '(state-offset property-value-start))
 (def property-value-end '(state-offset property-value-end))
+(def ledger-property-trivia-start '(state-offset ledger-property-trivia-start))
+(def ledger-source-spans? '(uint-positive? (state ledger-source-spans)))
 
 (def (property-delimiter? index)
   (let (next `(line-step ,index))
@@ -160,8 +162,13 @@
         ((set-uint property-value-start
                    (offset (line-skip-horizontal (line-step ,property-key-end))))
          (set-uint property-value-end (offset (line-trim-end-from ,property-value-start)))
-         (start-node OrgNodeProperty)
-         (token PropertyTrivia start ,property-key-start)
+         ;; Ledger attaches the bytes between properties to the drawer so
+         ;; adjacent trivia can be written as one span.
+         (if ,ledger-source-spans?
+             ((token PropertyTrivia ,ledger-property-trivia-start ,property-key-start)
+              (start-node OrgNodeProperty))
+             ((start-node OrgNodeProperty)
+              (token PropertyTrivia start ,property-key-start)))
          (token PropertyKey ,property-key-start ,property-key-end)
          (token PropertyTrivia ,property-key-end ,property-value-start)
          (if ,(source-ascii-ci-pattern-at? property-key-start "header-args")
@@ -171,14 +178,21 @@
                                            property-value-end)
               (finish-node))
              ((token PropertyValue ,property-value-start ,property-value-end)))
-         (token PropertyTrivia ,property-value-end end)
+         (if ,ledger-source-spans?
+             ((set-uint ledger-property-trivia-start (offset ,property-value-end)))
+             ((token PropertyTrivia ,property-value-end end)))
          (finish-node))
-        ((token TextLine start end)))
+        ((if ,ledger-source-spans?
+             ((token PropertyTrivia ,ledger-property-trivia-start start)
+              (set-uint ledger-property-trivia-start (offset end))) ())
+         (token TextLine start end)))
     (set-uint property-key-end (uint 0))))
 
 (def (property-body-form)
   `(if ,(container-close-condition property-rule)
-       ((token DrawerEndLine start end) (finish-node)
+       ((if ,ledger-source-spans?
+            ((token PropertyTrivia ,ledger-property-trivia-start start)) ())
+        (token DrawerEndLine start end) (finish-node)
         (set-bool property-drawer-open (bool #f)))
        ,(property-line-forms)))
 
@@ -193,6 +207,8 @@
   `(if ,property-open-condition
        (,close-paragraph (start-node OrgPropertyDrawer)
         (token DrawerBeginLine start end)
+        (if ,ledger-source-spans?
+            ((set-uint ledger-property-trivia-start (offset end))) ())
         (set-bool after-heading (bool #f))
         (set-bool property-drawer-open (bool #t)))
        ,otherwise))
@@ -595,7 +611,8 @@
    paragraph-event-initial
    event-headline-tags-initial
    inlinetask-event-initial
-   '((property-value-start 0) (property-value-end 0))))
+   '((property-value-start 0) (property-value-end 0)
+     (ledger-property-trivia-start 0))))
 
 (def org-event-helpers
   (append paragraph-event-helpers table-formula-event-helpers macro-event-helpers
