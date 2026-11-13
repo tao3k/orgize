@@ -383,6 +383,15 @@ wall samples were 197.873 and 154.199 ms in the initial controls,
 in the candidate arms. The lookup removes one index allocation per
 projected record. The paired endpoint samples straddle the 100 ms gate.
 
+The request adapter experiment decoded the admitted UTF-8 range directly
+to text before invoking the released Fold. It matched the original
+response for all 2,000 documents and the rejection row for a malformed
+document followed by a valid document. Two control invocations reached
+the 75-second experiment deadline. The candidate diagnostic reported
+92.522 ms median CPU and completed all twenty samples. Completed control
+medians ranged from 50.958 to 101.411 ms. The experiment leaves the
+release adapter unchanged. Raw output stays under =fold-text-request=.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
