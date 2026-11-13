@@ -1,6 +1,7 @@
 use super::*;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+const SCOPED_ARCHIVE: &str = "libgerbil_scheme_rust_gambit.a";
 static NEXT: AtomicU64 = AtomicU64::new(0);
 struct Fixture(PathBuf);
 impl Drop for Fixture {
@@ -21,7 +22,7 @@ fn fixture() -> (Fixture, PathBuf, Bundle) {
     let mut files = BTreeMap::new();
     for name in [
         "liborgize_gerbil_program.a",
-        "libgambit.a",
+        SCOPED_ARCHIVE,
         "orgize.h",
         "orgize_runtime.h",
     ] {
@@ -44,7 +45,7 @@ fn fixture() -> (Fixture, PathBuf, Bundle) {
         files,
         libraries: vec![
             "static=orgize_gerbil_program".into(),
-            "static=gambit".into(),
+            "static=gerbil_scheme_rust_gambit".into(),
             "m".into(),
         ],
     };
@@ -77,32 +78,48 @@ fn relocation_preserves_admission_without_compiler_inputs() {
 }
 
 #[test]
-fn linux_bundle_requires_the_bridge_scoped_gambit_archive() {
-    let (root, directory, mut bundle) = fixture();
-    bundle.target = "x86_64-unknown-linux-gnu".into();
-    let admit = |path: &Path, bundle: &Bundle| {
-        super::validate(
-            &root.0,
-            path,
-            &bundle.source_revision,
-            &bundle.target,
-            "linux",
+fn supported_platforms_require_the_bridge_scoped_gambit_archive() {
+    for (target_os, target) in [
+        ("linux", "x86_64-unknown-linux-gnu"),
+        ("macos", "aarch64-apple-darwin"),
+    ] {
+        let (root, directory, mut bundle) = fixture();
+        bundle.target = target.into();
+        let admit = |path: &Path, bundle: &Bundle| {
+            super::validate(
+                &root.0,
+                path,
+                &bundle.source_revision,
+                &bundle.target,
+                target_os,
+            )
+        };
+        let hash = bundle.files.remove(SCOPED_ARCHIVE).unwrap();
+        fs::rename(
+            directory.join(SCOPED_ARCHIVE),
+            directory.join("libgambit.a"),
         )
-    };
-    save(&directory, &bundle);
-    assert!(admit(&directory, &bundle).is_err());
+        .unwrap();
+        bundle.files.insert("libgambit.a".into(), hash);
+        bundle.libraries[1] = "static=gambit".into();
+        save(&directory, &bundle);
+        assert!(admit(&directory, &bundle).is_err());
 
-    let scoped = "libgerbil_scheme_rust_gambit.a";
-    fs::rename(directory.join("libgambit.a"), directory.join(scoped)).unwrap();
-    let hash = bundle.files.remove("libgambit.a").unwrap();
-    bundle.files.insert(scoped.into(), hash);
-    bundle.libraries[1] = "static=gerbil_scheme_rust_gambit".into();
-    save(&directory, &bundle);
-    let moved = root.0.join("relocated");
-    fs::rename(directory, &moved).unwrap();
-    assert!(admit(&moved, &bundle).is_ok());
-    fs::write(moved.join(scoped), "changed scoped archive").unwrap();
-    assert!(admit(&moved, &bundle).is_err());
+        let hash = bundle.files.remove("libgambit.a").unwrap();
+        fs::rename(
+            directory.join("libgambit.a"),
+            directory.join(SCOPED_ARCHIVE),
+        )
+        .unwrap();
+        bundle.files.insert(SCOPED_ARCHIVE.into(), hash);
+        bundle.libraries[1] = "static=gerbil_scheme_rust_gambit".into();
+        save(&directory, &bundle);
+        let moved = root.0.join("relocated");
+        fs::rename(directory, &moved).unwrap();
+        assert!(admit(&moved, &bundle).is_ok());
+        fs::write(moved.join(SCOPED_ARCHIVE), "changed scoped archive").unwrap();
+        assert!(admit(&moved, &bundle).is_err());
+    }
 }
 #[test]
 fn foreign_identity_and_changed_inputs_are_rejected() {
@@ -115,26 +132,26 @@ fn foreign_identity_and_changed_inputs_are_rejected() {
     assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
     bundle.runtime_revision = runtime_revision(&root.0).unwrap();
     save(&directory, &bundle);
-    fs::write(directory.join("libgambit.a"), "changed").unwrap();
+    fs::write(directory.join(SCOPED_ARCHIVE), "changed").unwrap();
     assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
 }
 #[test]
 fn unbound_libraries_headers_and_paths_are_rejected() {
     let (root, directory, mut bundle) = fixture();
-    bundle.files.remove("libgambit.a");
+    bundle.files.remove(SCOPED_ARCHIVE);
     save(&directory, &bundle);
     assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
     bundle.files.insert(
-        "libgambit.a".into(),
-        digest(&directory.join("libgambit.a")).unwrap(),
+        SCOPED_ARCHIVE.into(),
+        digest(&directory.join(SCOPED_ARCHIVE)).unwrap(),
     );
     bundle.files.insert("../escape".into(), "sha256:bad".into());
     save(&directory, &bundle);
     assert!(validate(&root.0, &directory, &bundle.source_revision, &bundle.target).is_err());
     bundle.files.remove("../escape");
     bundle.files.insert(
-        "libgambit.a".into(),
-        digest(&directory.join("libgambit.a")).unwrap(),
+        SCOPED_ARCHIVE.into(),
+        digest(&directory.join(SCOPED_ARCHIVE)).unwrap(),
     );
     save(&directory, &bundle);
     fs::write(root.0.join("bindings/c/include/orgize.h"), "changed").unwrap();
@@ -146,7 +163,7 @@ fn producer_carries_non_platform_dependencies() {
     for library in ["crypto", "ssl", "z", "sqlite3", "zstd", "jitterentropy"] {
         assert_eq!(bundle_library(library), format!("static={library}"));
     }
-    for library in ["m", "dl", "static=gambit"] {
+    for library in ["m", "dl", "static=gerbil_scheme_rust_gambit"] {
         assert_eq!(bundle_library(library), library);
     }
     let (root, directory, mut bundle) = fixture();
@@ -172,21 +189,21 @@ fn repeated_export_replaces_read_only_installation_archives() {
     permissions.set_readonly(true);
     fs::set_permissions(&source, permissions.clone()).unwrap();
     let mut files = BTreeMap::new();
-    copy_file(&source, &directory, "libgambit.a", &mut files).unwrap();
-    fs::set_permissions(directory.join("libgambit.a"), permissions).unwrap();
-    copy_file(&source, &directory, "libgambit.a", &mut files).unwrap();
+    copy_file(&source, &directory, SCOPED_ARCHIVE, &mut files).unwrap();
+    fs::set_permissions(directory.join(SCOPED_ARCHIVE), permissions).unwrap();
+    copy_file(&source, &directory, SCOPED_ARCHIVE, &mut files).unwrap();
     let replacement = root.0.join("replacement.a");
     fs::write(&replacement, "second archive").unwrap();
-    copy_file(&replacement, &directory, "libgambit.a", &mut files).unwrap();
+    copy_file(&replacement, &directory, SCOPED_ARCHIVE, &mut files).unwrap();
     assert_eq!(
-        fs::read(directory.join("libgambit.a")).unwrap(),
+        fs::read(directory.join(SCOPED_ARCHIVE)).unwrap(),
         b"second archive"
     );
     assert_eq!(fs::read(&source).unwrap(), b"first archive");
     assert!(fs::metadata(&source).unwrap().permissions().readonly());
     assert_eq!(
-        files["libgambit.a"],
-        digest(&directory.join("libgambit.a")).unwrap()
+        files[SCOPED_ARCHIVE],
+        digest(&directory.join(SCOPED_ARCHIVE)).unwrap()
     );
     assert!(!fs::read_dir(&directory).unwrap().any(|entry| {
         entry

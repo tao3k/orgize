@@ -118,9 +118,9 @@ fn bundle_library(library: &str) -> String {
 }
 
 fn validate_link_owners(target_os: &str, libraries: &[String]) -> Result<(), String> {
-    // The pinned bridge scopes Gambit's signal handlers on Linux and emits
-    // the resulting archive as the runtime owner in its Cargo receipt.
-    let gambit = if target_os == "linux" {
+    // The pinned bridge scopes Gambit's signal handlers on Linux and macOS.
+    // Its Cargo receipt identifies the resulting archive as the runtime owner.
+    let gambit = if matches!(target_os, "linux" | "macos") {
         "static=gerbil_scheme_rust_gambit"
     } else {
         "static=gambit"
