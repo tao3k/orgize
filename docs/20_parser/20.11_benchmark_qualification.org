@@ -431,6 +431,16 @@ unit cases and 463 consumer cases. The relocated bundle passed the same
 published the bundle for that revision. macOS Scheme passed all five
 unprofiled ledger samples, from 81.929 to 91.321 ms.
 
+A local macOS release build of the same runtime sources completed 458
+consumer cases with one failure. The Rust-dispatched Contract query
+control returned its expected diagnostic, then exceeded its separate
+25 ms budget at 145.655 ms. The existing single-case selector, using
+the same binary and fixture, measured 2.365, 124.651, 101.548, 4.167,
+and 34.128 ms in order. The slow samples also occur with the other
+consumer cases absent. This diagnostic is distinct from the 2,000-file
+ledger gate. The full failure and all five samples remain under
+=runtime-rust-5e55a423-local=.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
