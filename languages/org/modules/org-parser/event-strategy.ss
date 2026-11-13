@@ -548,7 +548,8 @@
     (if (not (state footnote-line-handled))
         ,(list-or-element-form table-close-form fixed-width-close close-paragraph
                                comment-line? comment-line-forms
-                               org-table-or-element-form list-opaque-element-forms) ())
+                               org-table-or-element-form list-opaque-element-forms
+                               '(state dispatch-heading-level)) ())
     (set-bool footnote-line-handled (bool #f))))
 
 (def (headline-or-element-form)
@@ -567,7 +568,7 @@
              ,(cons close-paragraph (inlinetask-end-forms))
              ((if (and (not (state inlinetask-open))
                        ,(inlinetask-start-condition level))
-                  ,(cons close-paragraph (inlinetask-open-forms))
+                  ,(cons close-paragraph (inlinetask-open-forms level))
                   ((if (state inlinetask-open)
                        ,(open-headline-forms 'inlinetask-body-levels level)
                        ,(open-headline-forms 'open-levels level)))))))
@@ -576,6 +577,7 @@
 (def org-event-initial
   (append
    '((inline-script-policy 2) (dispatch-heading-level 0)
+    (headline-marker-end 0) (headline-title-start 0) (headline-title-end 0)
     (open-levels (uint-stack)) (active-opaque-block 0)
     (property-drawer-open #f) (property-key-end 0) (after-heading #f)
     (comment-open #f)

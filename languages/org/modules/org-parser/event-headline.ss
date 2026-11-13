@@ -301,31 +301,26 @@
         (,(planning-first-key-chain (keyword-form)))
         (,(keyword-form)))))
 
-(def (headline-line-forms)
-  `((start-node OrgHeadline)
-    (token HeadlineLine start
-           (line-marker-end ,heading-marker ,heading-separator))
-    (token HeadlineTrivia
-           (line-marker-end ,heading-marker ,heading-separator)
-           (line-skip-horizontal
-            (line-marker-end ,heading-marker ,heading-separator)))
-    ,@(event-headline-title-forms
-       `(line-skip-horizontal
-         (line-marker-end ,heading-marker ,heading-separator))
-       `(line-trim-end-from
-         (line-skip-horizontal
-          (line-marker-end ,heading-marker ,heading-separator))))
-    (token HeadlineTrivia
-           (line-trim-end-from
-            (line-skip-horizontal
-             (line-marker-end ,heading-marker ,heading-separator))) end)
-    (finish-node)))
+(def (headline-line-forms level)
+  (let ((marker-end '(state-offset headline-marker-end))
+        (title-start '(state-offset headline-title-start))
+        (title-end '(state-offset headline-title-end)))
+    `((set-uint headline-marker-end
+               (uint-add (offset start) ,level))
+      (set-uint headline-title-start (offset (line-skip-horizontal ,marker-end)))
+      (set-uint headline-title-end (offset (line-trim-end-from ,title-start)))
+      (start-node OrgHeadline)
+      (token HeadlineLine start ,marker-end)
+      (token HeadlineTrivia ,marker-end ,title-start)
+      ,@(event-headline-title-forms title-start title-end)
+      (token HeadlineTrivia ,title-end end)
+      (finish-node))))
 
 (def (open-headline-forms levels level)
   `(,close-paragraph
     (close-through ,levels ,level)
     (open-level ,levels ,level OrgSection)
-    ,@(headline-line-forms)
+    ,@(headline-line-forms level)
     (set-bool after-heading (bool #t))))
 
 (def (headline-form)

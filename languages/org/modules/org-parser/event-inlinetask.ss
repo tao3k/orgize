@@ -36,9 +36,9 @@
   `(if (and (state inlinetask-pending) (not ,keep-condition))
        ((finish-node) (set-bool inlinetask-pending (bool #f))) ()))
 
-(def (inlinetask-open-forms)
+(def (inlinetask-open-forms level)
   `((start-node OrgInlinetask)
-    ,@(headline-line-forms)
+    ,@(headline-line-forms level)
     (if (future-heading-title?
          ,heading-marker ,heading-separator (state inlinetask-min-level) "END")
         ((set-bool inlinetask-open (bool #t)))

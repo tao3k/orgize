@@ -59,8 +59,11 @@
              '(("[[file:./contracts.org#id][Title]]" "contracts.org" "true" "id" "true")))
       (check (org-value-plan '("contract-reference" "{{{contract(id)}}}")) =>
              '(("{{{contract(id)}}}" "" "false" "id" "true")))
-      (check (org-value-plan '("contract-values" "[[file:a.org#x][two words]], {{{contract(y)}}}")) =>
-             '(("[[file:a.org#x][two words]]" "{{{contract(y)}}}")))
+      (check (org-value-plan '("contract-references" "[[file:a.org#x][two words]], {{{contract(y)}}}")) =>
+             '(("[[file:a.org#x][two words]]" "a.org" "true" "x" "true")
+               ("{{{contract(y)}}}" "" "false" "y" "true")))
+      (check (org-value-plan '("contract-references" " ")) =>
+             '(("" "" "false" "" "false")))
       (check (org-value-plan '("severity" " WARN ")) => '(("warning")))
       (check (org-value-plan '("contract-policy" "kind" " org-elements ")) => '(("org-elements")))
       (check (org-value-plan '("contract-policy" "kind" "ORG-ELEMENTS")) => '(("other")))

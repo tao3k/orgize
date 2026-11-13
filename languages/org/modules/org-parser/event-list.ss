@@ -10,8 +10,7 @@
                  source-list-content-offset source-list-item-open-forms
                  source-list-paragraph-span-forms source-list-paragraph-close-form
                  source-list-close-forms source-list-first-blank-forms source-list-reset-blank-form)
-        (only-in "parser.ss" org-line-structure)
-        (only-in "event-headline.ss" heading-marker heading-separator))
+        (only-in "parser.ss" org-line-structure))
 (export list-event-initial list-close-paragraph list-close-all list-finish-forms list-or-element-form)
 
 (def list-rule (line-structure-list org-line-structure))
@@ -99,12 +98,11 @@
 
 (def (list-or-element-form table-close-form fixed-width-close close-paragraph
                            comment-line? comment-line-forms
-                           org-table-or-element-form continuation-element-forms)
+                           org-table-or-element-form continuation-element-forms heading-level)
   `(,(source-list-scan-form list-rule list-scope)
     (join-once ,list-handled
       ((if (and ,(source-list-present-condition list-scope)
-                (uint-equal?
-                 (line-marker-level ,heading-marker ,heading-separator) (uint 0)))
+                (uint-equal? ,heading-level (uint 0)))
            (,@(list-marker-forms table-close-form fixed-width-close close-paragraph)
             (set-bool ,list-handled (bool #t)))
            ((if ,(source-list-active-condition list-scope)

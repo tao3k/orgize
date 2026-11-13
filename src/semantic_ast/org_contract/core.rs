@@ -297,6 +297,10 @@ pub fn parse_contract_reference(value: &str) -> OrgContractReference {
     let row = crate::ast::org_values::rows("contract-reference", &[value])
         .pop()
         .expect("native contract reference");
+    admit_contract_reference(row)
+}
+
+fn admit_contract_reference(row: Vec<String>) -> OrgContractReference {
     let [raw, path, has_path, contract_id, has_id]: [String; 5] =
         row.try_into().expect("native reference arity");
     let present = |flag: &str| match flag {
@@ -312,17 +316,10 @@ pub fn parse_contract_reference(value: &str) -> OrgContractReference {
 }
 /// Native top-level reference grammar; links and macros remain atomic.
 pub fn parse_contract_references(value: &str) -> Vec<OrgContractReference> {
-    let values = crate::ast::org_values::rows("contract-values", &[value])
-        .pop()
-        .expect("native contract values");
-    if values.is_empty() {
-        vec![parse_contract_reference(value)]
-    } else {
-        values
-            .iter()
-            .map(|value| parse_contract_reference(value))
-            .collect()
-    }
+    crate::ast::org_values::rows("contract-references", &[value])
+        .into_iter()
+        .map(admit_contract_reference)
+        .collect()
 }
 
 /// Parses a `CONTRACT_ORG` value and resolves a relative file target from its owning Org file.
