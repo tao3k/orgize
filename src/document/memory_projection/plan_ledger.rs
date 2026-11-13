@@ -334,8 +334,10 @@ fn project_plan_ledger_record(
             }
         }
     }
-    let end_line =
-        LineIndex::new(source).line_for(usize::from(headline.range.end()).saturating_sub(1));
+    let end_line = LineIndex::line_for_single_offset(
+        source,
+        usize::from(headline.range.end()).saturating_sub(1),
+    );
     let record = OrgMemorySearchRecord {
         path: path.to_path_buf(),
         start_line: 1,
