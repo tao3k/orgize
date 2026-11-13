@@ -3,14 +3,14 @@
 ;;; Build the generated package before projecting Orgize's own libraries.
 (import (for-syntax
           (only-in :std/source this-source-file)
-          (only-in :yuanxu/module-system/building/source-package register-module-build-source!)))
+          (only-in :tao3k/yuanxu/module-system/building/source-package register-module-build-source!)))
 (begin-syntax
   (register-module-build-source! (path-directory (this-source-file)) 'orgize))
 (import (only-in :std/source this-source-file)
         (only-in :std/misc/process run-process)
         (only-in :clan/poo/object .get)
-        (only-in :yuanxu/module-system/building/source-package register-module-build-source!)
-        (only-in :yuanxu/module-system/building/script defbuild-script)
+        (only-in :tao3k/yuanxu/module-system/building/source-package register-module-build-source!)
+        (only-in :std/build-script defbuild-script)
         (only-in :gerbil-parser/compiler-build-support
                  initialize-compiler-build! run-build-tool)
         (only-in "./languages/org/modules/org-parser/fold-package.ss"
@@ -20,8 +20,7 @@
 (register-module-build-source! (path-directory (this-source-file)) 'orgize)
 
 (def (build-native . arguments)
-  (def modules-spec (.get orgize.init.exports std-make-spec))
-  (defbuild-script (modules-spec '()))
+  (defbuild-script (.get orgize.init.exports std-make-spec))
   (apply main arguments))
 
 ;; A compiler manifest alone does not admit a loadable dynamic interface.

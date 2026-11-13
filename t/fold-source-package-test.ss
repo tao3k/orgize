@@ -1,5 +1,5 @@
 ;;; SPDX-License-Identifier: Apache-2.0 AND LGPL-2.1-or-later
-;;; Generated compilation units do not own the SDK installation prefix.
+;;; Generated compilation units do not own the Gerbil installation prefix.
 (import (only-in :std/test test-suite test-case check-equal?)
         (only-in :std/io/tempfile call-with-temporary-directory)
         (only-in :std/misc/ports read-all-as-string)
@@ -24,12 +24,9 @@
           (check-equal? (call-with-input-file (path-expand "gerbil.pkg" source) read)
                         '(package: orgize-fold))
           (check-equal? (list-sort string<? (directory-files source))
-                        '("build.ss" "gerbil.pkg" "init.ss" "probe.ss"))
+                        '("build.ss" "gerbil.pkg" "probe.ss"))
           (check-equal? (call-with-input-file (path-expand "probe.ss" source) read-all-as-string)
                         "(export answer) (def answer 42)\n")
-          ;; Only the source-selection entry asks for Yuanxu authoring syntax.
-          ;; Pure emitted imports/definitions use Gerbil's native default prelude.
-          (check-equal? (call-with-input-file (path-expand "init.ss" source) read)
-                        '(import (only-in :yuanxu/module-system/selection/init-syntax yuanxu!)))
+
           (check-equal? (file-exists? (path-expand "pkg" prefix)) #t)
           (check-equal? (file-exists? (path-expand "lib" prefix)) #t))))))

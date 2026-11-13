@@ -5,7 +5,7 @@ export GERBIL_BUILD_CORES := num_cpus()
 host_os := os()
 timeout_command := if host_os == "macos" { "gtimeout" } else { "timeout" }
 bridge_revision := replace_regex(read("Cargo.toml"), '(?s)^.*gerbil-scheme = \{[^\n]*rev = "([0-9a-f]{40})"[^\n]*\}.*$', '$1')
-parser_revision := replace_regex(read("gerbil.pkg"), '(?s)^.*github\.com/tao3k/gerbil-parser@([0-9a-f]{40}).*$', '$1')
+parser_tag := replace_regex(read("gerbil.pkg"), '(?s)^.*github\.com/tao3k/gerbil-parser@(v[0-9]+\.[0-9]+\.[0-9]+).*$', '$1')
 scheme_home := env_var_or_default("GERBIL_HOME", "")
 # Keep the fixed heap envelope while honoring the selected Gerbil installation.
 scheme_gambopt := "max-heap=1G,debug=q" + if scheme_home == "" { "" } else { ",~~bin=" + scheme_home + "/bin,~~lib=" + scheme_home + "/lib,~~include=" + scheme_home + "/include" }

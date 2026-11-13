@@ -12,8 +12,8 @@ dependency-check:
     ! rg --fixed-strings --quiet 'rowan.build' src tests benches just/benchmark.just
     ! rg --quiet 'rowan-event|org-rowan|parse-org-rowan-events|rowan_admission' src languages bindings t tests build.ss
     ! rg --quiet '\b[Rr]owan\b' src languages bindings t tests --glob '!*.snap'
-    rg --fixed-strings --quiet 'rev = "{{ parser_revision }}"' Cargo.toml
-    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ parser_revision }}' gerbil.pkg
+    test "$(rg -c 'git = "https://github.com/tao3k/gerbil-parser", tag = "{{ parser_tag }}"' Cargo.toml)" -eq 2
+    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ parser_tag }}' gerbil.pkg
     @echo 'ROWAN-FREE-DEPENDENCIES-OK: native view cutover is a separate gate'
 
 # Bounded native migration records and implementation owner checklists.
@@ -37,14 +37,11 @@ platform-command-check output:
     rg --fixed-strings --quiet -- '-- -C linker=/usr/bin/cc -C link-arg=-Wl,-ld_classic' "{{ output }}/macos-python.log"
     ! rg --quiet 'SDKROOT|APPLE_DARWIN|/usr/bin/cc|-Wl,' "{{ output }}/linux-scheme.log" "{{ output }}/linux-clock.log" "{{ output }}/linux-service.log" "{{ output }}/linux-queue.log" "{{ output }}/linux-rust.log" "{{ output }}/linux-python.log"
 
-# Development-only: both arguments are compiled Gerbil lib directories.
+# Check the resolved Release source and both Cargo lockfiles.
 [private]
-parser-revision-check source revision:
-    test "$(git -C '{{ source }}' rev-parse HEAD)" = "{{ revision }}"
-    rg --fixed-strings --quiet 'rev = "{{ revision }}"' Cargo.toml
-    rg --fixed-strings --quiet 'git+https://github.com/tao3k/gerbil-parser?rev={{ revision }}#{{ revision }}' Cargo.lock
-    rg --fixed-strings --quiet 'git+https://github.com/tao3k/gerbil-parser?rev={{ revision }}#{{ revision }}' fuzz/Cargo.lock
-    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ revision }}' gerbil.pkg
+parser-release-check source tag:
+    revision=$(git -C '{{ source }}' rev-parse HEAD); for lock in Cargo.lock fuzz/Cargo.lock; do test "$(rg -c --fixed-strings "git+https://github.com/tao3k/gerbil-parser?tag={{ tag }}#$revision" "$lock")" -eq 2; done
+    rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ tag }}' gerbil.pkg
     git -C "{{ source }}" diff --check
     git -C "{{ source }}" diff --quiet
     git -C "{{ source }}" diff --cached --quiet
@@ -67,7 +64,7 @@ parser-program-source-negative-check previous parser_output org_output program_o
 [group('checks')]
 alignment-dependency-check parser_source bridge_source:
     just task-layout-check
-    just parser-revision-check "{{ parser_source }}" "{{ parser_revision }}"
+    just parser-release-check "{{ parser_source }}" "{{ parser_tag }}"
     test "$(git -C '{{ bridge_source }}' rev-parse HEAD)" = "{{ bridge_revision }}"
     git -C "{{ bridge_source }}" diff --check
     git -C "{{ bridge_source }}" diff --quiet
