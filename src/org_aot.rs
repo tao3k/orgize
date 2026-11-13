@@ -361,8 +361,6 @@ pub(crate) fn org_expand_link_abbreviation(
 struct PreparedDocument {
     parse: Parse,
     records: Vec<GraphRecord>,
-    graph_index: GraphIndex,
-    headline_ancestors: Vec<Option<usize>>,
     keyword_ids: Vec<usize>,
     title_ids: Vec<usize>,
     fields: Vec<String>,
@@ -377,21 +375,6 @@ fn prepare_document(
         project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
     })
     .map_err(OrgAotError::Projection)?;
-    let graph_index = crate::runtime_profile::stage("graph.index", || GraphIndex::new(&records))
-        .map_err(|error| {
-            OrgAotError::Projection(Diagnostic {
-                reason_kind: "invalid-graph-index",
-                byte_offset: 0,
-                message: format!("generated Element graph has invalid preorder: {error:?}"),
-            })
-        })?;
-    let headline_ancestors = crate::runtime_profile::stage("graph.ancestors", || {
-        graph_index
-            .nearest_ancestors_matching(&records, |record| {
-                matches!(record.kind, "headline" | "inlinetask")
-            })
-            .expect("validated graph index and records have the same preorder")
-    });
     let keyword_records = records
         .iter()
         .filter(|r| r.kind == "keyword")
@@ -441,8 +424,6 @@ fn prepare_document(
     Ok(PreparedDocument {
         parse,
         records,
-        graph_index,
-        headline_ancestors,
         keyword_ids,
         title_ids,
         fields,
@@ -468,8 +449,6 @@ fn finish_document(
     let PreparedDocument {
         parse,
         records,
-        graph_index,
-        headline_ancestors,
         keyword_ids,
         title_ids,
         fields: _,
@@ -530,6 +509,21 @@ fn finish_document(
             }),
         });
     }
+    let graph_index = crate::runtime_profile::stage("graph.index", || GraphIndex::new(&records))
+        .map_err(|error| {
+            OrgAotError::Projection(Diagnostic {
+                reason_kind: "invalid-graph-index",
+                byte_offset: 0,
+                message: format!("generated Element graph has invalid preorder: {error:?}"),
+            })
+        })?;
+    let headline_ancestors = crate::runtime_profile::stage("graph.ancestors", || {
+        graph_index
+            .nearest_ancestors_matching(&records, |record| {
+                matches!(record.kind, "headline" | "inlinetask")
+            })
+            .expect("validated graph index and records have the same preorder")
+    });
     Ok(OrgAotDocument {
         parse,
         records,
