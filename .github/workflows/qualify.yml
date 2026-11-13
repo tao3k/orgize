@@ -24,24 +24,7 @@ jobs:
           submodules: recursive
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: dtolnay/rust-toolchain@stable
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: just
-      - uses: tao3k/gerbil-scheme-rust/.github/actions/setup-gerbil@0d92f7bee8c23b373ccd116be6f17701c4c4aac6
-        with:
-          release-root: ${{ runner.temp }}/orgize-gerbil-release
-      - name: Install Orgize system dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get install -y libzstd-dev ripgrep
-          if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
-            sudo apt-get install -y libjitterentropy3-dev
-          fi
-      - name: Install Orgize system dependencies
-        if: runner.os == 'macOS'
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-        run: brew install ripgrep coreutils
+      - uses: ./.github/actions/setup-native
       - name: Fetch locked Cargo sources
         run: cargo fetch --locked
       - name: Identify dependency compiler and libraries
@@ -62,7 +45,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: .gerbil-ci
-          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', '.github/workflows/qualify.yml') }}
+          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', '.github/actions/setup-native/action.yml') }}
       - name: Prepare and verify declared dependencies
         run: just ci-dependencies
       - name: Save declared dependency products
@@ -70,7 +53,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: .gerbil-ci
-          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', '.github/workflows/qualify.yml') }}
+          key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', '.github/actions/setup-native/action.yml') }}
       - name: Build pinned Scheme program once
         run: just ci-build-program
       - name: Package compiler-owned program
@@ -92,8 +75,72 @@ jobs:
           include-hidden-files: true
           if-no-files-found: ignore
 
+  scheme:
+    name: Scheme tests / ${{ inputs.runner }}
+    needs: prepare
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fetch --locked
+      - uses: ./.github/actions/setup-native
+      - uses: ./.github/actions/restore-program
+        id: admit_program
+        with:
+          runner: ${{ inputs.runner }}
+      - name: Verify native Scheme owners through gerbil test
+        run: just ci-scheme-test
+
+  performance:
+    name: Performance / ${{ inputs.runner }} / ${{ matrix.runtime }}
+    needs: prepare
+    runs-on: ${{ inputs.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [runtime-rust, runtime-scheme]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: orgize-performance-${{ matrix.runtime }}
+          cache-on-failure: true
+      - run: cargo fetch --locked
+      - uses: ./.github/actions/setup-native
+      - uses: ./.github/actions/restore-program
+        id: admit_program
+        with:
+          runner: ${{ inputs.runner }}
+      - name: Run focused workspace admission performance gate
+        if: ${{ !cancelled() && steps.admit_program.conclusion == 'success' }}
+        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test workspace_contract_scale_scenario_stays_in_budget
+
+      - name: Run focused Org query performance gate
+        if: ${{ !cancelled() && steps.admit_program.conclusion == 'success' }}
+        run: just ci-scenario-test "${{ matrix.runtime }}" lib document_query_org_elements_aot_stays_inside_scenario_gate
+
+      - name: Run plan ledger AOT performance gate
+        id: plan_ledger_aot_gate
+        if: ${{ !cancelled() && steps.admit_program.conclusion == 'success' }}
+        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
+
+      - name: Profile failed plan ledger AOT gate
+        if: ${{ failure() && steps.plan_ledger_aot_gate.conclusion == 'failure' }}
+        continue-on-error: true
+        env:
+          ORGIZE_PROFILE_PLAN_LEDGER: "1"
+          ORGIZE_PROFILE_PLAN_LEDGER_STAGES: "1"
+        run: just ci-scenario-test "${{ matrix.runtime }},runtime-profile" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
+
   test:
-    name: test / ${{ inputs.runner }} / ${{ matrix.runtime }}
+    name: Rust tests / ${{ inputs.runner }} / ${{ matrix.runtime }}
     needs: prepare
     runs-on: ${{ inputs.runner }}
 
@@ -115,7 +162,7 @@ jobs:
       - name: Setup rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy, rustfmt
+          components: clippy
 
       - name: Install sccache
         uses: taiki-e/install-action@v2
@@ -150,72 +197,20 @@ jobs:
         with:
           workspaces: |
             . -> target
-          shared-key: orgize-ci-${{ runner.os }}
+          shared-key: orgize-test-${{ matrix.runtime }}
           cache-on-failure: true
 
       - name: Fetch cargo dependencies
         run: cargo fetch --locked
 
-      - name: Check formatting
-        if: ${{ inputs.runner == 'ubuntu-latest' }}
-        run: cargo fmt --all -- --check
-
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: just
-      - uses: tao3k/gerbil-scheme-rust/.github/actions/setup-gerbil@0d92f7bee8c23b373ccd116be6f17701c4c4aac6
-        with:
-          release-root: ${{ runner.temp }}/orgize-gerbil-release
-      - name: Install Orgize system dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get install -y libzstd-dev ripgrep
-          if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
-            sudo apt-get install -y libjitterentropy3-dev
-          fi
-      - name: Install Orgize system dependencies
-        if: runner.os == 'macOS'
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-        run: brew install ripgrep coreutils
-      - name: Restore compiler-owned program
-        uses: actions/download-artifact@v4
-        with:
-          name: orgize-program-${{ github.event.pull_request.head.sha || github.sha }}-${{ inputs.runner }}
-          path: ${{ runner.temp }}/orgize-program
-      - name: Admit restored program against current sources
+      - uses: ./.github/actions/setup-native
+      - uses: ./.github/actions/restore-program
         id: admit_program
-        run: |
-          tar -xzf "$RUNNER_TEMP/orgize-program/orgize-program.tar.gz"
-          just ci-verify-prepared
-      - name: Verify native Scheme owners through gerbil test
-        if: matrix.runtime == 'runtime-rust'
-        run: just ci-scheme-test
-
+        with:
+          runner: ${{ inputs.runner }}
       - name: Select producer FFI bundle output
         if: matrix.runtime == 'runtime-scheme'
         run: echo "ORGIZE_FFI_EXPORT=$GITHUB_WORKSPACE/target/ffi-bundle" >> "$GITHUB_ENV"
-
-      - name: Run focused workspace admission performance gate
-        if: ${{ !cancelled() && steps.admit_program.conclusion == 'success' }}
-        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test workspace_contract_scale_scenario_stays_in_budget
-
-      - name: Run focused Org query performance gate
-        if: ${{ !cancelled() && steps.admit_program.conclusion == 'success' }}
-        run: just ci-scenario-test "${{ matrix.runtime }}" lib document_query_org_elements_aot_stays_inside_scenario_gate
-
-      - name: Run plan ledger AOT performance gate
-        id: plan_ledger_aot_gate
-        if: ${{ !cancelled() && steps.admit_program.conclusion == 'success' }}
-        run: just ci-scenario-test "${{ matrix.runtime }}" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
-
-      - name: Profile failed plan ledger AOT gate
-        if: ${{ failure() && steps.plan_ledger_aot_gate.conclusion == 'failure' }}
-        continue-on-error: true
-        env:
-          ORGIZE_PROFILE_PLAN_LEDGER: "1"
-          ORGIZE_PROFILE_PLAN_LEDGER_STAGES: "1"
-        run: just ci-scenario-test "${{ matrix.runtime }},runtime-profile" integration_test plan_ledger_memory_projection_stays_in_millisecond_budget
 
       - name: Run tests
         id: rust_tests
@@ -227,6 +222,7 @@ jobs:
         run: just ci-clippy "${{ env.RUNTIME_FEATURES }}"
 
       - name: Qualify relocated FFI consumption
+        id: relocated_ffi
         if: ${{ !cancelled() && matrix.runtime == 'runtime-scheme' && steps.rust_tests.conclusion == 'success' }}
         shell: bash
         run: |
@@ -238,7 +234,7 @@ jobs:
           just ci-rust-test "${{ env.RUNTIME_FEATURES }}"
 
       - name: Publish qualified revision-bound FFI bundle
-        if: matrix.runtime == 'runtime-scheme'
+        if: ${{ !cancelled() && matrix.runtime == 'runtime-scheme' && steps.relocated_ffi.conclusion == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: orgize-ffi-${{ github.event.pull_request.head.sha || github.sha }}-${{ runner.os }}-${{ runner.arch }}
@@ -273,36 +269,16 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: taiki-e/install-action@v2
+      - uses: ./.github/actions/setup-native
         with:
-          tool: just
-      - uses: tao3k/gerbil-scheme-rust/.github/actions/setup-gerbil@0d92f7bee8c23b373ccd116be6f17701c4c4aac6
-        with:
-          release-root: ${{ runner.temp }}/orgize-gerbil-release
-      - name: Install Orgize system dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get install -y libzstd-dev ripgrep patchelf
-          if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
-            sudo apt-get install -y libjitterentropy3-dev
-          fi
-      - name: Install Orgize system dependencies
-        if: runner.os == 'macOS'
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-        run: brew install ripgrep coreutils
+          extra-linux-packages: patchelf
       - name: Fetch pinned native dependencies
         run: cargo fetch --locked
-      - name: Restore compiler-owned program
-        uses: actions/download-artifact@v4
+      - uses: ./.github/actions/restore-program
+        id: admit_program
         with:
-          name: orgize-program-${{ github.event.pull_request.head.sha || github.sha }}-${{ inputs.runner }}
-          path: ${{ runner.temp }}/orgize-program
-      - name: Admit restored program against current sources
-        run: |
-          tar -xzf "$RUNNER_TEMP/orgize-program/orgize-program.tar.gz"
-          just ci-verify-prepared
-      - name: Verify Python SDK through maturin
+          runner: ${{ inputs.runner }}
+      - name: Verify Python bindings through maturin
         run: just python-test
       - name: Build and repair maturin wheel
         run: just python-wheel-repair
