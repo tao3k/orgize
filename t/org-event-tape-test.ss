@@ -95,6 +95,10 @@
                     "tests/fixtures/org-directory/documents/main.org"))
              (list "" "* α\r\nx^{β} x^2\n"
                    "#+begin_src text\n* not a headline\n:PROPERTIES:\n#+end_src\n"
+                   (string-append "* Heading\n*************** Inline task\n"
+                                  "** Nested heading\n*************** END\n"
+                                  "#+begin_quote\n* Quote text\n#+end_quote\n"
+                                  "** Next heading\n")
                    (string-join (make-list 1024 "- α [fn:ref]\n") ""))))
         (for-each
          (lambda (config)

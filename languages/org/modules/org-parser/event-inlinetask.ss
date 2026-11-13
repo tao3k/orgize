@@ -11,17 +11,16 @@
         inlinetask-pending-close-form)
 
 (def inlinetask-min-level 15)
-(def heading-level `(line-marker-level ,heading-marker ,heading-separator))
 (def title-start
   `(line-skip-horizontal
     (line-marker-end ,heading-marker ,heading-separator)))
 
-(def inlinetask-start-condition
-  `(uint-greater? (uint-add ,heading-level (uint 1))
+(def (inlinetask-start-condition level)
+  `(uint-greater? (uint-add ,level (uint 1))
                   (state inlinetask-min-level)))
 
-(def inlinetask-end-condition
-  `(and ,inlinetask-start-condition
+(def (inlinetask-end-condition level)
+  `(and ,(inlinetask-start-condition level)
         (line-byte-equal? ,title-start 69)
         (line-byte-equal? (line-step ,title-start) 78)
         (line-byte-equal? ,(source-offset-after title-start 2) 68)

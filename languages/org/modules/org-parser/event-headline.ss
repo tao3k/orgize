@@ -16,7 +16,7 @@
         (only-in "event-table-formula.ss" table-formula-marker)
         (only-in "event-headline-tags.ss" event-headline-title-forms)
         (only-in "values.ss" make-org-event-helper))
-(export headline-form headline-line-forms planning-start-condition
+(export headline-form open-headline-forms headline-line-forms planning-start-condition
         heading-marker heading-separator
         keyword-value-event-helper)
 
@@ -321,16 +321,17 @@
              (line-marker-end ,heading-marker ,heading-separator))) end)
     (finish-node)))
 
-(def (headline-form (levels 'open-levels))
+(def (open-headline-forms levels level)
+  `(,close-paragraph
+    (close-through ,levels ,level)
+    (open-level ,levels ,level OrgSection)
+    ,@(headline-line-forms)
+    (set-bool after-heading (bool #t))))
+
+(def (headline-form)
+  (def level `(line-marker-level ,heading-marker ,heading-separator))
   `(if (and (uint-equal? (stack-top container-frames) (uint 0))
-            (uint-positive? (line-marker-level ,heading-marker ,heading-separator)))
-       (,close-paragraph
-        (close-through ,levels
-                       (line-marker-level ,heading-marker ,heading-separator))
-        (open-level ,levels
-                    (line-marker-level ,heading-marker ,heading-separator)
-                    OrgSection)
-        ,@(headline-line-forms)
-        (set-bool after-heading (bool #t)))
+            (uint-positive? ,level))
+       ,(open-headline-forms 'open-levels level)
        (,(context-key-form)
         (set-bool after-heading (bool #f)))))

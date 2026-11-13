@@ -21,7 +21,7 @@
         (only-in "event-headline-tags.ss"
                  event-headline-tags-initial)
         (only-in "event-headline.ss"
-                 headline-form planning-start-condition
+                 headline-form open-headline-forms planning-start-condition
                  heading-marker heading-separator
                  keyword-value-event-helper)
         (only-in "event-inlinetask.ss"
@@ -552,28 +552,30 @@
     (set-bool footnote-line-handled (bool #f))))
 
 (def (headline-or-element-form)
-  `(if (and (uint-equal? (stack-top container-frames) (uint 0))
-            (uint-positive? (line-marker-level ,heading-marker
-                                               ,heading-separator)))
-       ((if (state footnote-open)
-            ,(footnote-close-forms)
-            (,@list-close-all
-             ,table-close-form
-             ,fixed-width-close
-             ,close-comment))
-        (if (and (state inlinetask-open) ,inlinetask-end-condition)
-            ,(cons close-paragraph (inlinetask-end-forms))
-            ((if (and (not (state inlinetask-open))
-                      ,inlinetask-start-condition)
-                 ,(cons close-paragraph (inlinetask-open-forms))
-                 ((if (state inlinetask-open)
-                      (,(headline-form 'inlinetask-body-levels))
-                      (,(headline-form))))))))
-       ,(footnote-or-element-forms)))
+  (def level '(state dispatch-heading-level))
+  `((set-uint dispatch-heading-level
+              (line-marker-level ,heading-marker ,heading-separator))
+    (if (and (uint-equal? (stack-top container-frames) (uint 0))
+             (uint-positive? ,level))
+        ((if (state footnote-open)
+             ,(footnote-close-forms)
+             (,@list-close-all
+              ,table-close-form
+              ,fixed-width-close
+              ,close-comment))
+         (if (and (state inlinetask-open) ,(inlinetask-end-condition level))
+             ,(cons close-paragraph (inlinetask-end-forms))
+             ((if (and (not (state inlinetask-open))
+                       ,(inlinetask-start-condition level))
+                  ,(cons close-paragraph (inlinetask-open-forms))
+                  ((if (state inlinetask-open)
+                       ,(open-headline-forms 'inlinetask-body-levels level)
+                       ,(open-headline-forms 'open-levels level)))))))
+        ,(footnote-or-element-forms))))
 
 (def org-event-initial
   (append
-   '((inline-script-policy 2)
+   '((inline-script-policy 2) (dispatch-heading-level 0)
     (open-levels (uint-stack)) (active-opaque-block 0)
     (property-drawer-open #f) (property-key-end 0) (after-heading #f)
     (comment-open #f)
@@ -623,7 +625,7 @@
                    ,@(container-close-chain)
                    (if (state container-closed)
                        ((set-bool container-closed (bool #f)))
-                       (,(headline-or-element-form)))))))))))
+                       ,(headline-or-element-form))))))))))
 
 (def org-event-finish-forms
   `((if (state latex-open) ((finish-node)) ())
