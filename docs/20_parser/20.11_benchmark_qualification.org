@@ -452,6 +452,13 @@ before any timed samples. Both diagnostics remain in the same evidence
 directory. The macOS wheel job for =5e55a423= passed the installed
 wheel smoke test outside the source tree.
 
+The =5e55a423= macOS Rust ledger gate failed at 143.222 ms, best of
+five, against 100 ms. The separate profiled run recorded a 142.33 ms
+median owner window, including 99.27 ms median Fold thread CPU and
+19.99 ms median metadata CPU. Result copying was 0.35 ms median.
+The runner started 24 host workers. The unprofiled and profiled
+samples remain in =orgize-5e55a423-macos-rust-perf.log=.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
