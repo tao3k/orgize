@@ -392,6 +392,16 @@ the 75-second experiment deadline. The candidate diagnostic reported
 medians ranged from 50.958 to 101.411 ms. The experiment leaves the
 release adapter unchanged. Raw output stays under =fold-text-request=.
 
+The ledger retention experiment released indexed syntax after graph
+projection and reused the admitted headline record and owned title
+strings. The native startup fixture passed all 86 cases, including
+ledger metadata parity with full-document projection. The unchanged
+macOS Scheme ledger gate recorded minima of 175.640 and 119.354 ms
+in the initial controls, 103.659 and 77.945 ms in the paired controls,
+and 115.297 and 84.289 ms in the candidate arms. Both candidate minima
+were slower than their adjacent controls. The candidate remains
+isolated with its patch and all samples under =ledger-retention=.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
