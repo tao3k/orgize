@@ -402,6 +402,20 @@ and 115.297 and 84.289 ms in the candidate arms. Both candidate minima
 were slower than their adjacent controls. The candidate remains
 isolated with its patch and all samples under =ledger-retention=.
 
+The opt-in clock experiment removed unconditional worker phase timing
+from ordinary ledger queries. The local macOS Scheme release gate kept
+the same 2,000 files and all five samples per arm. Initial control
+minima were 87.759 and 98.659 ms. Adjacent controls were 93.981 and
+85.974 ms, and the candidate was 94.469 and 107.303 ms. The separate
+opt-in invocation emitted worker and query timing. The candidate
+remains isolated under =ledger-opt-in-clocks=.
+
+Ubuntu =5e55a423= passed the ledger gate with minima of 69.724 ms for
+=runtime-scheme= and 65.219 ms for =runtime-rust=. The Ubuntu prepare
+job missed the exact dependency key restored by =94098915=, installed
+the declared dependencies in about 20 minutes, and saved the same key.
+The cache and performance logs are preserved separately.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
