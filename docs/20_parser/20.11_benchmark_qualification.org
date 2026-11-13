@@ -461,6 +461,32 @@ serialization path in the PR.
 
 * Scheme actor execution
 
+** Deployment and execution boundaries
+
+Build the release grammar and Scheme runtime with AOT for each supported
+target. Measure compilation, linking and packaging separately from VM
+startup and warm requests. Both =runtime-scheme= and =runtime-rust= load
+the AOT Scheme parser. The feature selects the host dispatch path.
+
+Use Scheme actors for work that shares Scheme state, such as parsing and
+document metadata inside a VM. Keep Rust responsible for file I/O, bounded
+admission across VM owners and delivery to host callers. Use the FFI at
+that host boundary, passing owned batches and results. Scheme-only
+consumers call the same Scheme entry directly. A CPU-bound speedup from
+parallel VM owners requires measured throughput, tail latency and memory
+on both targets.
+
+[[https://github.com/tao3k/orgize/actions/runs/43368368998][CI for 6884908]]
+passed AOT preparation on both targets. On Ubuntu, the unprofiled
+2,000-file ledger gate exceeded 100 ms in both modes. The best of five was 113.003 ms
+for =runtime-scheme= and 128.034 ms for =runtime-rust=. In the diagnostic
+reruns, summed Fold service was 89.26–104.61 ms and 103.39–116.09 ms
+respectively. Result copying accounted for 0.23–0.51 ms and 0.77–1.09 ms.
+These are separate runner jobs. The timings identify work within each
+path and do not establish a ranking of the dispatch modes.
+
+** Current execution and experiments
+
 Gerbil Parser supplies the parser primitives and the Fold machinery. Orgize
 Scheme owns Org grammar, event production, document metadata, Contract
 evaluation and the scheduling of actors inside each VM. Rust owns caller
