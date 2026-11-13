@@ -2350,7 +2350,6 @@ dependencies = [
  "comrak",
  "criterion",
  "datafusion",
- "gerbil-parser-artifact",
  "gerbil-parser-runtime",
  "gerbil-scheme",
  "gerbil-scheme-sys",

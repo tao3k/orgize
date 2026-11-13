@@ -739,7 +739,6 @@ name = "orgize"
 version = "0.10.0-alpha.10"
 dependencies = [
  "blake3",
- "gerbil-parser-artifact",
  "gerbil-parser-runtime",
  "gerbil-scheme",
  "gerbil-scheme-sys",

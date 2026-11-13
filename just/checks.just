@@ -12,7 +12,7 @@ dependency-check:
     ! rg --fixed-strings --quiet 'rowan.build' src tests benches just/benchmark.just
     ! rg --quiet 'rowan-event|org-rowan|parse-org-rowan-events|rowan_admission' src languages bindings t tests build.ss
     ! rg --quiet '\b[Rr]owan\b' src languages bindings t tests --glob '!*.snap'
-    test "$(rg -c 'git = "https://github.com/tao3k/gerbil-parser", tag = "{{ parser_tag }}"' Cargo.toml)" -eq 2
+    rg --fixed-strings --quiet 'gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", tag = "{{ parser_tag }}"' Cargo.toml
     rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ parser_tag }}' gerbil.pkg
     @echo 'ROWAN-FREE-DEPENDENCIES-OK: native view cutover is a separate gate'
 

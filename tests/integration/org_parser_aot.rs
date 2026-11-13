@@ -431,7 +431,7 @@ fn git_tracked_list_items_have_scheme_aot_ancestry_and_typed_bullets() {
     for item in &items {
         let bullet = item
             .children_with_tokens()
-            .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
+            .filter_map(|element| element.into_token())
             .find(|token| token_name(token) == "ListBullet")
             .expect("every admitted item has a typed bullet");
         assert_eq!(bullet.text(), "- ");
@@ -475,7 +475,7 @@ fn keyed_lines_obey_heading_context_and_project_keyword_fields() {
     assert_eq!(name(&planning[0].parent().unwrap()), "OrgSection");
     let keys: Vec<_> = planning[0]
         .children_with_tokens()
-        .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
+        .filter_map(|element| element.into_token())
         .filter(|token| token_name(token) == "PlanningKey")
         .map(|token| token.text().to_string())
         .collect();
@@ -614,18 +614,15 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
         for headline in &headlines {
             let (range, title) = headline
                 .children_with_tokens()
-                .find_map(|child| match child {
-                    gerbil_parser_artifact::syntax::SyntaxElement::Node(node)
-                        if name(&node) == "OrgHeadlineTitle" =>
-                    {
-                        Some((node.text_range(), node.text().to_string()))
-                    }
-                    gerbil_parser_artifact::syntax::SyntaxElement::Token(token)
-                        if token_name(&token) == "HeadlineTitle" =>
-                    {
-                        Some((token.text_range(), token.text().to_string()))
-                    }
-                    _ => None,
+                .find_map(|child| {
+                    let kind = orgize::org_aot::org_language_spec().kind_name(child.kind())?;
+                    let range = child.text_range();
+                    let title = match kind {
+                        "OrgHeadlineTitle" => child.into_node()?.text().to_string(),
+                        "HeadlineTitle" => child.into_token()?.text().to_string(),
+                        _ => return None,
+                    };
+                    Some((range, title))
                 })
                 .expect("fixture headline has a source-backed title");
             assert_eq!(
@@ -652,7 +649,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             .map(|block| {
                 let token = block
                     .children_with_tokens()
-                    .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
+                    .filter_map(|element| element.into_token())
                     .find(|token| token_name(token) == "SourceLanguage")
                     .expect("every fixture source block declares its language");
                 let range = token.text_range();
@@ -677,7 +674,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             );
             let tokens: Vec<_> = link
                 .children_with_tokens()
-                .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
+                .filter_map(|element| element.into_token())
                 .collect();
             assert_eq!(
                 tokens
@@ -705,7 +702,7 @@ fn contract_scope_mvp_inputs_expose_drawers_and_node_properties() {
             assert!(original.trim_start().starts_with(':'));
             let tokens: Vec<_> = node
                 .children_with_tokens()
-                .filter_map(gerbil_parser_artifact::syntax::SyntaxElement::into_token)
+                .filter_map(|element| element.into_token())
                 .collect();
             let key = tokens
                 .iter()
