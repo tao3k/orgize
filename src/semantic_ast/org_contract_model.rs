@@ -701,11 +701,7 @@ fn reference_matches_contract(contract: &OrgContract, reference: &OrgContractRef
         }
     }
 
-    if contract.aliases.iter().any(|alias| alias == &reference.raw) {
-        return true;
-    }
-
-    false
+    contract.aliases.iter().any(|alias| alias == &reference.raw)
 }
 
 fn contract_id_matches(contract: &OrgContract, contract_id: &str) -> bool {
