@@ -416,6 +416,15 @@ job missed the exact dependency key restored by =94098915=, installed
 the declared dependencies in about 20 minutes, and saved the same key.
 The cache and performance logs are preserved separately.
 
+Both preparation jobs for =5e55a423= verified the installed release
+revisions and emitted =COMPILED-INTERFACE-ABI-OK= and =ORG-PARSER-STAGE OK=.
+The macOS job also rebuilt and saved its missing Gerbil dependency
+cache. For the preceding =94098915= Ubuntu Scheme job, GitHub recorded
+29 minutes 44 seconds for the Rust tests and a further 10 minutes
+32 seconds for the full relocated-bundle replay. The current job keeps
+the full Rust suite in the first step and exercises the relocated
+bundle through the native startup suite.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
