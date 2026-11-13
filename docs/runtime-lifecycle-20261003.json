@@ -1,0 +1,170 @@
+[
+  {
+    "backend": "runtime-rust",
+    "exit_code": 0,
+    "host_stdio_preserved": true,
+    "metadata": {
+      "host_stdio_preserved": true,
+      "sigterm_handler": "default",
+      "stdin_flags_after": 0,
+      "stdin_flags_before": 0
+    },
+    "passed": true,
+    "phase": "baseline",
+    "program": "sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1",
+    "ready": "READY {\"host_stdio_preserved\":true,\"sigterm_handler\":\"default\",\"stdin_flags_after\":0,\"stdin_flags_before\":0}",
+    "schema": "orgize.runtime-lifecycle.v1",
+    "scope": "native initialized, idle ingress, signal delivered to supervised process; no handler mutation",
+    "signal": null,
+    "termination": "normal",
+    "termination_passed": true,
+    "timed_out": false
+  },
+  {
+    "backend": "runtime-rust",
+    "exit_code": null,
+    "host_stdio_preserved": true,
+    "metadata": {
+      "host_stdio_preserved": true,
+      "sigterm_handler": "default",
+      "stdin_flags_after": 0,
+      "stdin_flags_before": 0
+    },
+    "passed": true,
+    "phase": "baseline",
+    "program": "sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1",
+    "ready": "READY {\"host_stdio_preserved\":true,\"sigterm_handler\":\"default\",\"stdin_flags_after\":0,\"stdin_flags_before\":0}",
+    "schema": "orgize.runtime-lifecycle.v1",
+    "scope": "native initialized, idle ingress, signal delivered to supervised process; no handler mutation",
+    "signal": 15,
+    "termination": "sigterm",
+    "termination_passed": true,
+    "timed_out": false
+  },
+  {
+    "backend": "runtime-rust",
+    "exit_code": 0,
+    "host_stdio_preserved": false,
+    "metadata": {
+      "host_stdio_preserved": false,
+      "sigterm_handler": "installed",
+      "stdin_flags_after": 4,
+      "stdin_flags_before": 0
+    },
+    "passed": false,
+    "phase": "native",
+    "program": "sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1",
+    "ready": "READY {\"host_stdio_preserved\":false,\"sigterm_handler\":\"installed\",\"stdin_flags_after\":4,\"stdin_flags_before\":0}",
+    "schema": "orgize.runtime-lifecycle.v1",
+    "scope": "native initialized, idle ingress, signal delivered to supervised process; no handler mutation",
+    "signal": null,
+    "termination": "normal",
+    "termination_passed": true,
+    "timed_out": false
+  },
+  {
+    "backend": "runtime-rust",
+    "exit_code": null,
+    "host_stdio_preserved": false,
+    "metadata": {
+      "host_stdio_preserved": false,
+      "sigterm_handler": "installed",
+      "stdin_flags_after": 4,
+      "stdin_flags_before": 0
+    },
+    "passed": false,
+    "phase": "native",
+    "program": "sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1",
+    "ready": "READY {\"host_stdio_preserved\":false,\"sigterm_handler\":\"installed\",\"stdin_flags_after\":4,\"stdin_flags_before\":0}",
+    "schema": "orgize.runtime-lifecycle.v1",
+    "scope": "native initialized, idle ingress, signal delivered to supervised process; no handler mutation",
+    "signal": 9,
+    "termination": "sigterm",
+    "termination_passed": false,
+    "timed_out": true
+  },
+  {
+    "backend": "runtime-scheme",
+    "exit_code": 0,
+    "host_stdio_preserved": true,
+    "metadata": {
+      "host_stdio_preserved": true,
+      "sigterm_handler": "default",
+      "stdin_flags_after": 0,
+      "stdin_flags_before": 0
+    },
+    "passed": true,
+    "phase": "baseline",
+    "program": "sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1",
+    "ready": "READY {\"host_stdio_preserved\":true,\"sigterm_handler\":\"default\",\"stdin_flags_after\":0,\"stdin_flags_before\":0}",
+    "schema": "orgize.runtime-lifecycle.v1",
+    "scope": "native initialized, idle ingress, signal delivered to supervised process; no handler mutation",
+    "signal": null,
+    "termination": "normal",
+    "termination_passed": true,
+    "timed_out": false
+  },
+  {
+    "backend": "runtime-scheme",
+    "exit_code": null,
+    "host_stdio_preserved": true,
+    "metadata": {
+      "host_stdio_preserved": true,
+      "sigterm_handler": "default",
+      "stdin_flags_after": 0,
+      "stdin_flags_before": 0
+    },
+    "passed": true,
+    "phase": "baseline",
+    "program": "sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1",
+    "ready": "READY {\"host_stdio_preserved\":true,\"sigterm_handler\":\"default\",\"stdin_flags_after\":0,\"stdin_flags_before\":0}",
+    "schema": "orgize.runtime-lifecycle.v1",
+    "scope": "native initialized, idle ingress, signal delivered to supervised process; no handler mutation",
+    "signal": 15,
+    "termination": "sigterm",
+    "termination_passed": true,
+    "timed_out": false
+  },
+  {
+    "backend": "runtime-scheme",
+    "exit_code": 0,
+    "host_stdio_preserved": false,
+    "metadata": {
+      "host_stdio_preserved": false,
+      "sigterm_handler": "installed",
+      "stdin_flags_after": 4,
+      "stdin_flags_before": 0
+    },
+    "passed": false,
+    "phase": "native",
+    "program": "sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1",
+    "ready": "READY {\"host_stdio_preserved\":false,\"sigterm_handler\":\"installed\",\"stdin_flags_after\":4,\"stdin_flags_before\":0}",
+    "schema": "orgize.runtime-lifecycle.v1",
+    "scope": "native initialized, idle ingress, signal delivered to supervised process; no handler mutation",
+    "signal": null,
+    "termination": "normal",
+    "termination_passed": true,
+    "timed_out": false
+  },
+  {
+    "backend": "runtime-scheme",
+    "exit_code": null,
+    "host_stdio_preserved": false,
+    "metadata": {
+      "host_stdio_preserved": false,
+      "sigterm_handler": "installed",
+      "stdin_flags_after": 4,
+      "stdin_flags_before": 0
+    },
+    "passed": false,
+    "phase": "native",
+    "program": "sha256:ed7540bfd22f3027d7f0e57d2fb6ade0a3851149da242ba69769f8d49985e2d1",
+    "ready": "READY {\"host_stdio_preserved\":false,\"sigterm_handler\":\"installed\",\"stdin_flags_after\":4,\"stdin_flags_before\":0}",
+    "schema": "orgize.runtime-lifecycle.v1",
+    "scope": "native initialized, idle ingress, signal delivered to supervised process; no handler mutation",
+    "signal": 9,
+    "termination": "sigterm",
+    "termination_passed": false,
+    "timed_out": true
+  }
+]

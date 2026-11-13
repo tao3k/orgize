@@ -7,6 +7,8 @@ use std::env::args;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 fn main() {
+    // SAFETY: explicit CLI startup, before application workers or children.
+    unsafe { orgize::initialize_native_runtime() }.expect("native startup");
     let args: Vec<_> = args().collect();
 
     tracing_subscriber::fmt()

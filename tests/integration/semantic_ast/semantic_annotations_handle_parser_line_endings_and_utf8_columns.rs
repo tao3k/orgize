@@ -4,7 +4,6 @@ use orgize::{
     ast::{ElementData, MarkupKind, ObjectData, SourcePosition},
 };
 
-#[test]
 fn semantic_annotations_handle_parser_line_endings_and_utf8_columns() {
     let doc = Org::parse("* A\réé *bold*\n\nPlain *ascii* tail").document();
 
@@ -61,3 +60,8 @@ fn semantic_annotations_handle_parser_line_endings_and_utf8_columns() {
         .expect("ASCII bold object");
     assert_eq!(ascii_bold.ann.start, SourcePosition { line: 4, column: 7 });
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_annotations_handle_parser_line_endings_and_utf8_columns::semantic_annotations_handle_parser_line_endings_and_utf8_columns",
+    semantic_annotations_handle_parser_line_endings_and_utf8_columns,
+)];

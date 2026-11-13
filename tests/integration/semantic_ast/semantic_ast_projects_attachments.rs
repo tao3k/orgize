@@ -58,7 +58,31 @@ See [[attachment:id-wallpaper.jpg]] and [[attachment:missing-id.jpg]].
 :END:
 "#;
 
-#[test]
+fn semantic_ast_projects_case_insensitive_attachment_protocol() {
+    let doc = Org::parse("* Files\n[[ATTACHMENT:UPPER.TXT]]\n").document();
+    assert_clean_projection(&doc);
+    assert_eq!(
+        first_section_link(&doc.sections[0])
+            .attachment
+            .as_ref()
+            .map(|attachment| attachment.path.as_str()),
+        Some("UPPER.TXT")
+    );
+}
+
+fn semantic_ast_projects_short_attachment_id_directory() {
+    let doc = Org::parse("* Files\n:PROPERTIES:\n:ID: x\n:END:\n").document();
+    assert_clean_projection(&doc);
+    assert_eq!(
+        doc.sections[0]
+            .attachment
+            .directory
+            .as_ref()
+            .map(|directory| directory.path.as_str()),
+        Some("data/__/x/x")
+    );
+}
+
 fn semantic_ast_projects_attachment_directories_and_links() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -137,6 +161,13 @@ fn semantic_ast_projects_attachment_directories_and_links() {
             .map(|search| search.kind),
         Some(AttachmentLinkSearchKind::Regexp)
     );
+    assert_eq!(
+        first_section_link(attach_dir)
+            .search
+            .as_ref()
+            .map(|search| search.normalized.as_str()),
+        Some("needle")
+    );
 
     insta::assert_debug_snapshot!(
         "semantic_ast__semantic_attachment_projection",
@@ -144,7 +175,6 @@ fn semantic_ast_projects_attachment_directories_and_links() {
     );
 }
 
-#[test]
 fn semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs() {
     let temp = unique_temp_dir("orgize-attachment-vcs");
     fs::create_dir_all(temp.join("assets")).expect("create attachment directory");
@@ -388,3 +418,22 @@ fn unique_temp_dir(label: &str) -> PathBuf {
 fn path_str(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_attachments::semantic_ast_projects_case_insensitive_attachment_protocol",
+        semantic_ast_projects_case_insensitive_attachment_protocol,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_attachments::semantic_ast_projects_short_attachment_id_directory",
+        semantic_ast_projects_short_attachment_id_directory,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_attachments::semantic_ast_projects_attachment_directories_and_links",
+        semantic_ast_projects_attachment_directories_and_links,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_attachments::semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs",
+        semantic_ast_projects_attachment_inventory_resolves_directory_and_vcs,
+    ),
+];

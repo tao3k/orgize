@@ -1,0 +1,79 @@
+#+TITLE: Parser PR 13 rebase and fold qualification - 2026-10-04
+
+* Exact source and ownership
+The parser checkout now has detached HEAD
+=e7c6761dc79202abe50931bd78ee3f0930d61f8f=, the live fetched head of
+https://github.com/tao3k/gerbil-parser/pull/13 at qualification start.
+The previous =7c153335= base was an ancestor; no local committed history
+needed replay. Tracked and untracked fold work was saved, the checkout rebased,
+and the saved changes restored without conflict. The recovery stash remains
+=812771cdd9898162776bd80fc9ed758676f25056=.
+Orgize Cargo.toml, Cargo.lock and gerbil.pkg now pin the full new revision.
+No push, PR mutation, kernel change, profile change or runtime policy change
+was performed.
+
+=gerbil-parser/src/compiler= is the Scheme engine's grammar/IR/compiler and
+event execution owner, not rustc. Upstream updates cover contextual scanner,
+contextual parser IR, LR construction and recovery. The fold owners themselves
+had no upstream changes between the two heads; retained local optimizations
+still execute under the new generic engine.
+
+* Fresh compilation and semantic receipts
+The maintained Justfile package build generated the full 129-target owner
+graph under =target/parser-pr13-e7c6761-20261004=, using 12 build cores and a
+fresh GERBIL_PATH. Its load path uses the currently compiled ASP building-api
+owner rather than a historical sibling snapshot missing that module.
+
+The first six-module engine test invocation admitted four modules but reported
+two missing test-only imports (lr1-construction and contextual parser-fixture).
+Production package builds intentionally do not compile those fixture modules.
+The new =scheme-parser-engine-fixtures= recipe compiled both under the same
+fresh root. The rerun passed all six engine modules, HARNESS-OK and final OK,
+with no ERROR/FAILED/FAILURE markers. Fold tests (38 cases), private state and
+predicate tests (9 cases), and the Org aggregate Scheme suite also pass.
+The private tests preserve short circuiting, reached-invalid-expression errors,
+arity validation and improper-list rejection.
+
+* Matched fold experiment
+The candidate replaces a per-combination capturing callback with direct pure
+recursive and/or traversal. The existing interpreter and preflight arity/list
+validation remain; this does not add a second evaluator.
+
+Both modes load the freshly rebuilt generic engine. Baseline overlays only the
+previous accepted fold payload; it does not load the old scanner/parser graph.
+Three fixtures, 20 measured parses each, two untimed warmups, GC-fenced allocation
+measurement, and two rounds in reversed mode order give 240 measured parses.
+All input and output event hashes matched in the historical run. Its external
+JSON receipt was removed at the user's request. The historical table below is
+not current ASP qualification evidence; use the native SS fixture/API to rerun.
+
+| Fixture | Baseline allocation bytes | Candidate allocation bytes | Reduction | Median us baseline r1/r2 | Candidate r1/r2 |
+| doc.org | 1347536 | 968656 | 28.12% | 1819.5 / 1791.5 | 1787.5 / 1761.5 |
+| plain-links.org | 1779920 | 1286352 | 27.73% | 2290.5 / 2307.5 | 2245 / 2247.5 |
+| quote-heavy.org | 3736352 | 2616608 | 29.97% | 10015.5 / 4963.5 | 4869.5 / 4849 |
+
+The second round's median improvements are approximately 1.7%, 2.6%, 2.3%.
+First-round quote-heavy baseline latency is materially variable; no 2x throughput
+claim is justified. The deterministic allocation reduction and passing semantic
+checks support retaining this candidate, pending native current-head gates.
+
+* Qualification boundary at the initial rebase checkpoint
+This is current-head source/build/semantic/microbenchmark evidence only.
+It is not a 1000/10000-document concurrent runtime comparison.
+The earlier frozen native fa74 program, 66000 completion receipts and installed
+Python extension have NOT been rebuilt or requalified against this new parser
+head. They remain historical evidence in the earlier optimization document.
+Next gates: restage the full Org grammar/parser bridge on the new engine;
+rebuild native AOT/FFI; run both runtime-rust and runtime-scheme semantic and
+consumer suites; repeat 1000/10000 docs with 64 callers and eight native domains;
+then rebuild and verify both maturin/Python runtime variants.
+Remote CI was queued when the PR head was inspected; local checks do not assert
+current remote CI success or release closure.
+
+* Native follow-up
+The new graph has subsequently passed both native runtime unit/consumer suites,
+66000 concurrent scale completions and both normal Python extension suites.
+The normal compiler-owned manifest now selects the qualified new graph; the
+previous default is retained in native-program-history. Exact program identity,
+receipts, timing limitations and remaining boundaries are recorded in
+[[file:runtime-pr13-qualification-20261004.org][Current PR13 native qualification]].

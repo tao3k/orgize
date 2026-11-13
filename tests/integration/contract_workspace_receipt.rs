@@ -1,6 +1,5 @@
 use std::{fs, process::Command};
 
-#[test]
 fn workspace_contract_json_emits_qualification_receipt() {
     let root =
         std::env::temp_dir().join(format!("orgize-workspace-receipt-{}", std::process::id()));
@@ -117,7 +116,6 @@ fn workspace_receipt(root: &std::path::Path, registry: &std::path::Path) -> serd
     serde_json::from_slice(&output.stdout).unwrap()
 }
 
-#[test]
 fn workspace_digest_binds_registry_resolution_order() {
     let root = std::env::temp_dir().join(format!(
         "orgize-workspace-registry-order-{}",
@@ -154,7 +152,6 @@ fn workspace_digest_binds_registry_resolution_order() {
     fs::remove_dir_all(root).unwrap();
 }
 
-#[test]
 fn workspace_digest_binds_unrouted_org_inventory() {
     let root = std::env::temp_dir().join(format!(
         "orgize-workspace-unrouted-inventory-{}",
@@ -219,3 +216,18 @@ fn workspace_receipt_raw(
         )
     })
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "contract_workspace_receipt::workspace_contract_json_emits_qualification_receipt",
+        workspace_contract_json_emits_qualification_receipt,
+    ),
+    (
+        "contract_workspace_receipt::workspace_digest_binds_registry_resolution_order",
+        workspace_digest_binds_registry_resolution_order,
+    ),
+    (
+        "contract_workspace_receipt::workspace_digest_binds_unrouted_org_inventory",
+        workspace_digest_binds_unrouted_org_inventory,
+    ),
+];

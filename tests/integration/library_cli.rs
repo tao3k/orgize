@@ -31,6 +31,7 @@ impl OrgizeLibraryCliCommand {
         self
     }
 
+    #[cfg(unix)]
     pub(crate) fn env(
         &mut self,
         key: impl Into<OsString>,
@@ -137,6 +138,8 @@ fn orgize_cli_library_subprocess() {
     let Ok(arg_count) = std::env::var(REQUEST_ENV) else {
         return;
     };
+    // SAFETY: this ignored child entrypoint runs alone, before CLI work.
+    unsafe { orgize::initialize_native_runtime() }.expect("native library CLI startup");
     let arg_count = arg_count
         .parse::<usize>()
         .expect("library CLI argument count");

@@ -1,0 +1,29 @@
+name: Set up Orgize native tools
+description: Install Just, the pinned Gerbil toolchain and platform libraries
+inputs:
+  extra-linux-packages:
+    description: Extra Linux packages required by the caller
+    default: ''
+runs:
+  using: composite
+  steps:
+    - uses: taiki-e/install-action@v2
+      with:
+        tool: just
+    - uses: tao3k/gerbil-scheme-rust/.github/actions/setup-gerbil@dfe8b62b5dc64de88f8d70a77059a1741218ef80
+      with:
+        release-root: ${{ runner.temp }}/orgize-gerbil-release
+    - name: Install Orgize system dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get install -y libzstd-dev ripgrep ${{ inputs.extra-linux-packages }}
+        if pkg-config --static --libs libcrypto | grep -Fq -- '-l:libjitterentropy.a'; then
+          sudo apt-get install -y libjitterentropy3-dev
+        fi
+    - name: Install Orgize system dependencies
+      if: runner.os == 'macOS'
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: 1
+      shell: bash
+      run: brew install ripgrep coreutils

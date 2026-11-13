@@ -1,0 +1,17 @@
+;; ASP owns scenario sampling/statistics; one sample is 100 complete folds.
+;; This diagnostic envelope is not the public Query or document-parse SLO.
+((benchmarkKind . scenario-e2e)
+ (rule . org-static-name-set)
+ (feature . native-scheme-parser)
+ (optimizationFocus . "Static name-table admission and membership")
+ (inputShape . "100 independent folds over 20 source lines and the Org entity table")
+ (expectedOutcome . "Same events, names and source across matched receipts")
+ (measurementPhases . (fold-batch assert-event-semantics assert-time-gate))
+ (tags . (orgize scheme fold names))
+ (batchOperations . 100)
+ (sampleCount . 20)
+ (target_total . 25ms)
+ (regression_budget . 75ms)
+ (max_total . 100ms)
+ (expected_over_input_budget . 15ms)
+ (targetRationale . "Matched static-name admission/search probe, not a production performance gate"))

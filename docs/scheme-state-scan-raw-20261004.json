@@ -1,0 +1,1070 @@
+[
+  {
+    "fixture": "doc.org",
+    "kind": "baseline",
+    "round": 1,
+    "samples": [
+      {
+        "elapsed_us": 1885,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1870,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1885,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1838,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1817,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 2816,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 3971,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1882,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1915,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1876,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1867,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1876,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1894,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1851,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1873,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1861,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1870,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 20530,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1879,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1869,
+        "allocated_bytes": 1917936
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"baseline-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+    "complete": true
+  },
+  {
+    "fixture": "doc.org",
+    "kind": "baseline",
+    "round": 2,
+    "samples": [
+      {
+        "elapsed_us": 1876,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 21711,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 7052,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 3220,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1899,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 11110,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 20608,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1885,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 37732,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1867,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1887,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1868,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1909,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1866,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1876,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 34793,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1898,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 4625,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1899,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 7286,
+        "allocated_bytes": 1917936
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"baseline-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+    "complete": true
+  },
+  {
+    "fixture": "doc.org",
+    "kind": "candidate",
+    "round": 1,
+    "samples": [
+      {
+        "elapsed_us": 3057,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1714,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 2535,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 3365,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 3106,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1734,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1751,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1737,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 2875,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1749,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1714,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 133543,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1748,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1734,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 19809,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1745,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1736,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1733,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 22870,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1747,
+        "allocated_bytes": 1917936
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"candidate-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+    "complete": true
+  },
+  {
+    "fixture": "doc.org",
+    "kind": "candidate",
+    "round": 2,
+    "samples": [
+      {
+        "elapsed_us": 1713,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1911,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1741,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1796,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1755,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1717,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 3926,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 3029,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1717,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1737,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1722,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1711,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1839,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1732,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1714,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1704,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 3509,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1740,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1728,
+        "allocated_bytes": 1917936
+      },
+      {
+        "elapsed_us": 1703,
+        "allocated_bytes": 1917936
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"candidate-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/doc.org\" 394 \"sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af\" \"sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b\")",
+    "complete": true
+  },
+  {
+    "fixture": "plain-links.org",
+    "kind": "baseline",
+    "round": 1,
+    "samples": [
+      {
+        "elapsed_us": 2430,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2372,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2375,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 66320,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 39365,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 10607,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2389,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2372,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2368,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 57327,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 5506,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 45184,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2367,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 7338,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2368,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 16122,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2378,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 5057,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 3093,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 3581,
+        "allocated_bytes": 2260128
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"baseline-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+    "complete": true
+  },
+  {
+    "fixture": "plain-links.org",
+    "kind": "baseline",
+    "round": 2,
+    "samples": [
+      {
+        "elapsed_us": 6485,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2361,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 104235,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 4550,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 17071,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2265,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2301,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2356,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2365,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2363,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 13909,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 208094,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2367,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2383,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2375,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2362,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2388,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2368,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 4945,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2380,
+        "allocated_bytes": 2260128
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"baseline-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+    "complete": true
+  },
+  {
+    "fixture": "plain-links.org",
+    "kind": "candidate",
+    "round": 1,
+    "samples": [
+      {
+        "elapsed_us": 35838,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 27267,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 15818,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 5767,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2164,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2174,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 23868,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2161,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 39620,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2162,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2174,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2166,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2172,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2154,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2173,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2161,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2143,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2169,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2177,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2174,
+        "allocated_bytes": 2260128
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"candidate-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+    "complete": true
+  },
+  {
+    "fixture": "plain-links.org",
+    "kind": "candidate",
+    "round": 2,
+    "samples": [
+      {
+        "elapsed_us": 2183,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2172,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2197,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2159,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 40178,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2175,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2158,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2139,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2172,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2075,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2284,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2155,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2164,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2171,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2142,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2154,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2154,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2127,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2139,
+        "allocated_bytes": 2260128
+      },
+      {
+        "elapsed_us": 2157,
+        "allocated_bytes": 2260128
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"candidate-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/plain-links.org\" 299 \"sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80\" \"sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30\")",
+    "complete": true
+  },
+  {
+    "fixture": "quote-heavy.org",
+    "kind": "baseline",
+    "round": 1,
+    "samples": [
+      {
+        "elapsed_us": 20670,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5127,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5018,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5100,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5096,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5338,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5102,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5119,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 13041,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5058,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5130,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5096,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5093,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5111,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5113,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4917,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5056,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4939,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4943,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5138,
+        "allocated_bytes": 4927392
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"baseline-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+    "complete": true
+  },
+  {
+    "fixture": "quote-heavy.org",
+    "kind": "baseline",
+    "round": 2,
+    "samples": [
+      {
+        "elapsed_us": 6394,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 205986,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5124,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5112,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 38346,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5114,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 14065,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 33954,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 11281,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 6740,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 11456,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5118,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 72685,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 15521,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 27265,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 178095,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 49511,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 22613,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5130,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5041,
+        "allocated_bytes": 4927392
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"baseline-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+    "complete": true
+  },
+  {
+    "fixture": "quote-heavy.org",
+    "kind": "candidate",
+    "round": 1,
+    "samples": [
+      {
+        "elapsed_us": 5479,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4673,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 9517,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 8963,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 18630,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 70472,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5664,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 6170,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4689,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 53828,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4681,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 90482,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 74498,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4666,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4661,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4676,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4682,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 20582,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5406,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 19023,
+        "allocated_bytes": 4927392
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"candidate-r1\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+    "complete": true
+  },
+  {
+    "fixture": "quote-heavy.org",
+    "kind": "candidate",
+    "round": 2,
+    "samples": [
+      {
+        "elapsed_us": 4658,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 65950,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4644,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 22128,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 25788,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 8991,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 5044,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 6747,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4670,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4639,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 43396,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 100550,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4648,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 69271,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 73376,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 128969,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4672,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4641,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4652,
+        "allocated_bytes": 4927392
+      },
+      {
+        "elapsed_us": 4654,
+        "allocated_bytes": 4927392
+      }
+    ],
+    "input": "(ORG-EVENT-INPUT \"candidate-r2\" \"/Users/guangtao/ghq/github.com/tao3k/poo-flow/target/native-org-recovery-20261002/orgize/benches/fixtures/quote-heavy.org\" 639 \"sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0\" \"sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f\")",
+    "complete": true
+  }
+]

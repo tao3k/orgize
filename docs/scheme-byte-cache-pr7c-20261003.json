@@ -1,0 +1,560 @@
+{
+  "schema": "orgize.scheme-byte-cache.v1",
+  "parser_base": "7c1533356585154c8b5d340f64ffefb289d18907",
+  "baseline_runtime_sha256": "5c5164a8413fea12f93c31d3f352e6e428431658a78ff3ddc8ebbe1988ab2424",
+  "candidate_runtime_sha256": "2ed54398db7720452a8b6129e33b8164ebb577562b1ab6770c1118eeccd30fac",
+  "method": "20 samples per fixture, gxc optimized in both lanes; GC before and after each sample outside elapsed timing",
+  "limitations": "One local round, uncontrolled machine contention. Quote-heavy baseline overlapped a build: its elapsed timing is excluded, allocation counts retained. Initial interrupted probe excluded.",
+  "qualification": "Scheme execution only; not FFI corpus throughput",
+  "cases": [
+    {
+      "fixture": "doc.org",
+      "baseline": {
+        "samples": [
+          {
+            "elapsed_us": 5805,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2538,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2445,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2602,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2467,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 3082,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2443,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2463,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2487,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2526,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2463,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2443,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2489,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2711,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2460,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2512,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2467,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2469,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2445,
+            "allocated_bytes": 9870592
+          },
+          {
+            "elapsed_us": 2479,
+            "allocated_bytes": 9870592
+          }
+        ],
+        "source": "sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af",
+        "artifact": "sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b",
+        "median_us": 2474,
+        "p95_us": 3082,
+        "allocated_bytes": 9870592
+      },
+      "candidate": {
+        "samples": [
+          {
+            "elapsed_us": 1946,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 3014,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 2404,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1870,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1886,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1894,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 2575,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1975,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1991,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1844,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 4454,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1869,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1848,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 2614,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 2359,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 2096,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1833,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1833,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1842,
+            "allocated_bytes": 8974992
+          },
+          {
+            "elapsed_us": 1854,
+            "allocated_bytes": 8974992
+          }
+        ],
+        "source": "sha256:753bb14001b2871feb75872720c5a89db0e019047e0599c11af2f4fdb2da08af",
+        "artifact": "sha256:a641452ca57ac6a35503714360bcab89febc5fb9192aca8dee6cf752357e4f0b",
+        "median_us": 1920,
+        "p95_us": 3014,
+        "allocated_bytes": 8974992
+      },
+      "wall_timing_usable": true,
+      "allocation_reduction_percent": 9.07341727831522
+    },
+    {
+      "fixture": "plain-links.org",
+      "baseline": {
+        "samples": [
+          {
+            "elapsed_us": 3716,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3617,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 5392,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3703,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3605,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 4968,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3587,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3632,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3587,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3599,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3585,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3953,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 4963,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 4839,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3577,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3951,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 6288,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 4096,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3586,
+            "allocated_bytes": 13925968
+          },
+          {
+            "elapsed_us": 3644,
+            "allocated_bytes": 13925968
+          }
+        ],
+        "source": "sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80",
+        "artifact": "sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30",
+        "median_us": 3673.5,
+        "p95_us": 5392,
+        "allocated_bytes": 13925968
+      },
+      "candidate": {
+        "samples": [
+          {
+            "elapsed_us": 2812,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 5808,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2541,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2285,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2326,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2295,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2291,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2294,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2274,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 5275,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2274,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2303,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2672,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 34783,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2748,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2298,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2330,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2303,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 2306,
+            "allocated_bytes": 12159696
+          },
+          {
+            "elapsed_us": 13730,
+            "allocated_bytes": 12159696
+          }
+        ],
+        "source": "sha256:1813e80a317fbe1ad6ed05e119231685fd902e020e942f1e1563704311a61e80",
+        "artifact": "sha256:7ab805eb29498d73b27bb768dd5b232e9a4b740a35741625852a0887bff91a30",
+        "median_us": 2316,
+        "p95_us": 13730,
+        "allocated_bytes": 12159696
+      },
+      "wall_timing_usable": true,
+      "allocation_reduction_percent": 12.683297850461816
+    },
+    {
+      "fixture": "quote-heavy.org",
+      "baseline": {
+        "samples": [
+          {
+            "elapsed_us": 47205,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 31546,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 13293,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 63847,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 58664,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 14645,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 63076,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 59055,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 99478,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 57934,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 7937,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 7924,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 146058,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 41518,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 42954,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 27688,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 21300,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 8053,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 85796,
+            "allocated_bytes": 30726544
+          },
+          {
+            "elapsed_us": 20951,
+            "allocated_bytes": 30726544
+          }
+        ],
+        "source": "sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0",
+        "artifact": "sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f",
+        "median_us": 42236,
+        "p95_us": 99478,
+        "allocated_bytes": 30726544
+      },
+      "candidate": {
+        "samples": [
+          {
+            "elapsed_us": 13311,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 9419,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 5547,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 14587,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 4995,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 5012,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 5582,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 4989,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 8055,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 5060,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 5062,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 4977,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 7982,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 7980,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 4988,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 4993,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 5695,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 4974,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 6126,
+            "allocated_bytes": 26971776
+          },
+          {
+            "elapsed_us": 5688,
+            "allocated_bytes": 26971776
+          }
+        ],
+        "source": "sha256:2b7f6651114154abe8aef95dc316a4a3f3b4cf89b599d60380871ae53e1d29a0",
+        "artifact": "sha256:afcabe786747dfb6cc9c0bebdaa8cee131c4cee21efbf23940d3dc3fd6b1b39f",
+        "median_us": 5564.5,
+        "p95_us": 13311,
+        "allocated_bytes": 26971776
+      },
+      "wall_timing_usable": false,
+      "allocation_reduction_percent": 12.219948979618401
+    }
+  ]
+}

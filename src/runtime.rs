@@ -1,4 +1,5 @@
 use std::io::{Read, Write};
+use std::num::NonZeroU32;
 use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::sync::{
@@ -59,6 +60,7 @@ pub(crate) struct RuntimeExecutionObservation {
     pub(crate) stderr_bytes: usize,
     pub(crate) elapsed: Duration,
     pub(crate) termination_outcome: RuntimeTerminationOutcome,
+    pub(crate) child_id: Option<NonZeroU32>,
     pub(crate) child_reaped: bool,
     pub(crate) diagnostic: Option<String>,
 }
@@ -131,7 +133,7 @@ pub(crate) fn execute_runtime_observed(
 ) -> RuntimeExecutionObservation {
     let started = Instant::now();
     let command = runtime_command(binding, body, current_dir);
-    let mut child = match spawn_runtime(command, &binding.program) {
+    let child = match spawn_runtime(command, &binding.program) {
         Ok(child) => child,
         Err(error) => {
             return failed_observation(
@@ -142,6 +144,21 @@ pub(crate) fn execute_runtime_observed(
             );
         }
     };
+    let child_id = NonZeroU32::new(child.id());
+    let mut observation =
+        observe_spawned_runtime(child, binding, body, started, timeout, output_byte_budget);
+    observation.child_id = child_id;
+    observation
+}
+
+fn observe_spawned_runtime(
+    mut child: Child,
+    binding: &EvalCommandBinding,
+    body: &str,
+    started: Instant,
+    timeout: Duration,
+    output_byte_budget: usize,
+) -> RuntimeExecutionObservation {
     let stdout = match child.stdout.take() {
         Some(stdout) => stdout,
         None => {
@@ -496,6 +513,7 @@ fn failed_observation(
         stderr_bytes: 0,
         elapsed: started.elapsed(),
         termination_outcome,
+        child_id: None,
         child_reaped,
         diagnostic: Some(diagnostic),
     }
@@ -539,6 +557,7 @@ fn observation_from_streams(
         } else {
             termination_outcome
         },
+        child_id: None,
         child_reaped,
         diagnostic: stream_error.or(diagnostic),
     }
@@ -555,3 +574,7 @@ fn shell_binding(program: &str, eval_arg: &str) -> EvalCommandBinding {
 fn is_shell_language(language: &str) -> bool {
     matches!(language, "bash" | "sh" | "shell" | "shell-script")
 }
+
+#[cfg(all(test, unix))]
+#[path = "../tests/unit/runtime_process_group.rs"]
+mod process_group_tests;

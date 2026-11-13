@@ -1,0 +1,12 @@
+#+TITLE: Changed Evidence Contract
+* Evidence Contract
+:PROPERTIES:
+:CONTRACT_ID: directory.evidence.v1
+:CONTRACT_SCOPE: subtree
+:END:
+#+begin_src scheme :org-contract
+(assert-org-element "family.evidence" error
+  (bindings)
+  (org-elements headline (property title "Evidence") (child-of scope))
+  (expect exactly 2))
+#+end_src

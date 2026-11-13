@@ -1,0 +1,541 @@
+#+title: 20.09 Yuanxu Module Build Ownership
+#+date: 2026-10-28
+
+* Squashed Parser promotion and preparation ownership
+
+Orgize promotes Parser main =3c58e6ec1114a65848deda7d9878549591420658= after
+[[https://github.com/tao3k/gerbil-parser/actions/runs/42754005775][the complete Parser PR acceptance run]]. The squash tree matches the accepted
+PR head. Both Cargo lockfiles and package declarations select the squash.
+Bridge and Yuanxu selections remain unchanged. The [[https://github.com/tao3k/gerbil-parser/actions/runs/42758058862][separate main-branch run]]
+cannot resolve the historical source-form audit baseline after the squash.
+That failure remains open; source-tree equality does not establish main CI.
+
+Preparation has one producer per operating system. The original =ci-prepare=
+still installs declared packages and calls their standard build owners. It
+publishes the Gerbil prefix and compiler-owned program manifest together.
+The two runtime consumers and the wheel consumer restore only the artifact
+for their platform and this run's exact source revision. They fetch their
+locked Cargo sources and call =ci-verify-prepared= before using that program.
+This delegates to the existing revision and manifest-origin checks; archive
+presence alone is insufficient. These checks do not prove source-to-object
+equivalence. The immutable same-run artifact is a trusted compiler publication,
+and the upstream archive owner still validates its content and compiler
+fingerprints during each consumer build. Compiler paths must resolve under the
+same workspace and release layout; incompatible inputs must be rejected there.
+
+Each consumer retains a private output directory and the upstream archive
+owner revalidates its own inputs. The artifact contains no alternate compiler,
+runtime selector or downstream build cache. The original Scheme cases, failure
+control, runtime checks, relocation tests, performance gates and installed-wheel
+checks remain required. Preparation evidence stays in ignored local caches or
+CI failure artifacts, rather than committed logs.
+
+The existing Scheme graph declaration retains root =source-text=. The graph
+integrity assertion checks the complete value and byte range before snapshots
+are compared. Generated interface imports distinguish canonical Gerbil library
+identifiers from quoted file references; malformed library tokens are rejected.
+The wheel declaration fixes the separator before its existing environment
+marker without changing the selected auditwheel commit. The original 100 ms
+plan-ledger gate remains a separate obligation from these structural fixes.
+
+* One fold compiler and bounded property scanning
+
+The dynamic Fold generator publishes source units and their package declarations.
+The root build delegates once to =gerbil build= in the generated package,
+whose =defbuild-script= consumes its Yuanxu =std-make-spec=. The root then
+consumes the installed interfaces through Gerbil. Registering the generated source
+directory alone did not schedule its build targets: a fresh external
+=GERBIL_PATH= reproduced a missing =:orgize-fold/parse-org-compiled-tape=
+interface after successful source generation. The compiled-interface check
+retains that distinction. The root does not re-register the installed package
+as source, and delegates cleanup to =gerbil clean= in the same package. No
+extra compiler, artifact inventory or cache is introduced. Standalone static
+controls retain their existing entry. The 600-second build budget is unchanged.
+
+Dependency products are cached before compiling Orgize or the bridge. The key
+binds the package declaration, released compiler configuration, C compiler,
+system library versions and platform toolchain. The standard =gerbil deps
+--install= still runs on a hit. =ci-prepare= composes the same dependency and
+program phases; consumers do not acquire a second build implementation.
+
+Raw byte handoff alone was rejected: extended UTF-8 controls admitted a bad
+document as a successful row. A discarded decoder result is not a validation
+witness. A bridge-encoder composition passed the expanded correctness controls
+but failed the performance gate; it is not the selected runtime path. The
+existing text admission is retained. Single and batch controls cover invalid
+leaders, overlong encodings, surrogate code points, out-of-range scalars and
+truncation, including later-document recovery. The experimental transcripts
+remain separate from final acceptance; no malformed-input control is removed.
+
+The prior plan-ledger workload still failed at 114.952 ms on the updated Parser.
+Its diagnostic run is not a replacement acceptance run. The existing gate now
+prints all five durations after measurement, retaining the same two thousand
+files, workers and minimum-of-five 100 ms criterion. Owner CPU, GC and overlapping
+worker intervals remain distinct; summing wait intervals is not exclusive CPU.
+A smaller first-read window was also measured but did not establish a pass.
+It is withdrawn; the original worker count and batch bounds remain unchanged.
+No file preparation moves outside the timed query and no accepted documents
+are cached between iterations.
+
+The property strategy previously traversed the entire value after accepting its
+key delimiter. Its existing Fold forms now find the first colon and apply the
+same delimiter predicate at that offset. An accepted first colon cannot have an
+earlier matching delimiter, and the skipped suffix had no effects after the
+first match. Other inputs retain the original search. Unicode, internal
+colons, empty values, missing delimiters and CRLF remain boundary obligations.
+The before/after event tapes match for the ten-input diagnostic corpus; the
+standard structural case also covers whitespace keys. Complete Scheme and
+native performance checks remain required.
+
+Metadata packet admission counts the unread fields once and decrements that
+count as each packet is consumed. The former suffix-length scan repeated work
+for every packet. The Rust batch producer borrows each document's fields until
+the synchronous request is encoded, rather than cloning the whole packet.
+Packet order, bounds, per-document failure isolation and malformed framing
+checks are unchanged. The existing batch parity controls exercise this path.
+The tape writer uses the fixed bounds of its admitted two-, four- and eight-byte
+fields, avoiding per-field exponentiation while retaining the same range checks.
+
+* CI dependency coherence
+
+The native package, Cargo dependencies and both Cargo lockfiles must name the
+same declared Parser revision. Updating a dependency declaration without the
+fuzz lock cannot pass preparation; the revision check remains required.
+Cargo exclusively owns gerbil-scheme-rust and its immutable source revision.
+Scheme imports of its program producer and rooted-bytevector runtime do not
+create a Gerbil package dependency. The existing ci-prepare entry checks the
+Cargo-selected checkout and builds its Scheme modules into the shared output
+before building Orgize. The dependency gate rejects a bridge edge in gerbil.pkg;
+Cargo declarations and lockfiles retain their existing exact-revision checks.
+Agentic AI Lab, Parser and Orgize do not repeat this Cargo dependency in Gerbil.
+Default package compilation uses Just's executing-host CPU count; explicit
+paired benchmark controls retain their own declared parameters. Dependency
+alignment is a preparation check, not runtime or performance acceptance.
+
+* Superseded ownership guidance
+
+The API/root inventories and test executable described below are superseded by
+[[file:20.10_module_cli_and_mop_reuse_audit.org][20.10 Native CLI and MOP Reuse Audit]]. This record retains earlier evidence.
+
+* Candidate and dependency identity
+
+Uncommitted Orgize candidate on =codex/org-object-aot-completion=, based on
+=e3cf4acc9f5e355dba94b4017167885e47ae50c9=. Pre-existing local work, including
+the native tape producer/consumer, is retained. This record is implementation
+and local qualification evidence, not a release or remote CI receipt.
+
+Parser's published development branch was inspected at
+=811e18e4b72a2cc049755fa39567a6a6bc671f4c=. The native =gerbil.pkg= already
+selected that revision; Cargo and fuzz still selected =461fa6f5= and now agree
+with the native owner. Cargo performed both lockfile updates. Parser selects
+Yuanxu =643366eb0162e6ca821f391a32dc268bf89db5d7=, whose POO dependency is
+=c0d47633c2aad7591944f874eaf730ee9c0e451e=. Orgize does not repeat those pins.
+The separate, dirty Parser development checkout was not modified.
+
+* Ownership and entrypoints
+
+[[file:20.11_benchmark_qualification.org][Benchmark qualification]] owns the
+opt-in development entry, measurement matrix and performance promotion rules.
+
+[[file:../../init.ss][Root init]] selects the Org Parser, Element and Contract Modules and the
+independent native C capability using =yuanxu!=. Each =interface.ss= is a
+Module declaration. The Parser prelude supplies the language/declaration entry;
+runtime operations remain in their owning Module capability interfaces.
+The redundant Parser =src/api.ss= umbrella and old =interface.ss= API
+forwarding shims are not installed.
+
+[[file:../../build.ss][Package build]] delegates the library projection to Yuanxu's
+=std-make-spec= and =building/script= adapter. Module Build contributions name
+public roots and actual foreign compiler options. Yuanxu derives their
+native import closure; Gerbil owns compilation and native module loading.
+
+Generation has an actual prerequisite order. [[file:../../languages/org/init.ss][Declaration init]] selects the
+same Org Parser Module alone, and [[file:../../languages/org/build.ss][its native build entry]] derives that
+smaller closure without a separate handwritten module list. The package
+entry then invokes the native producer and consumes the full library
+projection. Each stage uses the existing loader/build APIs, not a second
+registration cache or an interpreted importer.
+
+The [[file:../../languages/org/modules/org-parser/fold-generator.ss][Org fold generator]] owns the language strategy and calls Parser's
+source emitter. [[file:../../languages/org/modules/org-parser/fold-package.ss][The package emitter]] writes native source plus a standard
+Yuanxu init/Build package. Its independent =orgize-fold= identity prevents
+these generated files from masquerading as repository-owned =orgize/=
+sources. Source identity guards and native program requirements use that
+same identity; admission does not accept the retired name as an alias.
+
+Scope publishes existing data/functions. The Parser Scope exposes its
+structural strategy predicate; Element and Contract Scopes reuse their
+maintained profiles and existing value Types. The C and generated-unit
+capabilities are build-only. No Scope owns compiler host initialization,
+request scheduling, runtime startup, or an alternate parser.
+
+* Removed duplication and source ownership
+
+- Removed =build-parser.ss='s manually repeated complete module list and the
+  =ORGIZE_BUILD_SYNTAX_ONLY= mode switch.
+- Removed =generate-fold.ss='s dynamic expander dispatch and =fold-build.ss='s
+  directory/filename product scanner.
+- Removed Org-owned timestamp freshness checks, static-marker repair and
+  versioned runtime-object selection. Yuanxu/Gerbil own those mechanisms.
+- Removed the development-only focused Parser builder that reconstructed its
+  production topology through ASP. Dependency preparation uses the existing
+  native package installer.
+- Removed the unwired persistent-fold-state benchmark launcher: it depended
+  on a retired Parser operation and test module. No current acceptance
+  timeout, count, or performance threshold was relaxed.
+- Moved grammar, event runtime/tape and producer sources into =org-parser/=;
+  moved graph shape and graph producers into =org-elements/=. Consumers use
+  the real owning paths directly. Shared sources cannot depend back on Module
+  implementation; that Yuanxu refusal was preserved rather than bypassed.
+
+* Cleanup boundary
+
+Generated Build contributions declare the exact unit catalog. Core completes
+native cleanup for the selected identities, including numbered generations
+and runtime sections; sources and adjacent/unselected products survive.
+An unlisted file is not declared owned merely because its filename resembles
+a generated shard. The test's older part-77 is explicitly in the emitted
+catalog, while an unselected, valid-looking part-66 is preserved. This replaces
+the former prefix-inferred deletion authority; it does not claim reclamation
+of every file ever emitted by every historical generator version.
+
+A direct Gerbil-only clean was tested and left dynamic object generations.
+That negative result motivated using Yuanxu's existing build adapter for the
+generated package as well. No local scanner was restored to obtain a pass.
+
+* Verification and resource boundaries
+
+Completed local checks at this candidate stage:
+
+- Parser revision alignment across native package, Cargo and fuzz passed.
+- =orgize-build-support= tests passed: 8 tests in 2 suites.
+- Rust formatting, Just parsing and =git diff --check= passed.
+- Source init import/build-accessor discovery stayed inert.
+- Source Element/Contract Scope access retained the maintained profiles.
+- The emitted package cleanup test passed all selected-object removal and
+  source/neighbor preservation assertions, including repeated clean and
+  invalid-operation refusal. These are synthetic package controls, not a
+  complete producer publication result.
+- Existing OrgContract functional tests passed: 7 cases under a focused
+  1 GiB invocation. Source APIs and Scope projection are separate checks.
+- After native dependencies were built, the explicit Elements/tape harness
+  passed 27 cases in 2 Suites under 1 GiB/120 seconds, with Module/Harness
+  success and =ELEMENTS-TAPE-TEST-OK=. Receipt:
+  =target/yuanxu-migration/elements-tape-explicit.log=.
+  An earlier combined run failed on the missing native clock. A subsequent
+  automatic-discovery invocation reported Module/Harness success without
+  running the Suite cases; neither is counted as functional qualification.
+- Declaration-subgraph compilation and standalone generated-unit production
+  passed under 1 GiB with the existing two-worker/600-second boundary.
+
+Dependency preparation used an isolated =target/yuanxu-migration= environment.
+The initial 2 GiB/600-second cold run timed out during Core preparation. A
+subsequent run at the same limits completed Core and Parser installation.
+This is resumed preparation, not evidence of a passing cold build.
+
+The complete 1 GiB library source projection failed with heap overflow,
+including explicit =main "spec"= diagnostics after successful build-entry
+import, both before and after preparing the Cargo-selected bridge runtime. Splitting producer processes did not establish a passing full 1 GiB
+projection. Logs remain under =target/yuanxu-org/=; generated-unit success
+must not be promoted into complete library success. After the successful
+Gerbil installation build below, the resumed full source entrance still failed at 1 GiB
+with =__eval-import -- Heap overflow= (exit 70), recorded in
+=target/yuanxu-migration/source-build-resumed-1g.log=. The original source
+build resource gate remains unresolved; its limit was not increased.
+
+The first Gerbil installation package check used a build-only output lacking gxpkg dependency
+manifests and refused before compilation. Retrying in the installed package
+environment progressed to a missing =gerbil-scheme-rust/scheme/runtime= input.
+The existing bridge build recipe prepared Cargo revision =cfbc10c47ddc41f6670bd78e46e1e9d856cbb870=
+in =target/yuanxu-bridge= under 1 GiB. These setup failures are not library passes.
+
+A separate check through the Gerbil installation package-build entrance with the bridge
+passed (exit 0) in its existing 2 GiB/600-second envelope, using the repository's
+macOS =env -u SDKROOT CC=/usr/bin/cc GERBIL_GCC=/usr/bin/cc= environment.
+Receipt: =target/yuanxu-migration/sdk-package-native-env.log=. This was a
+resumed build against prepared dependencies, not cold-build acceptance.
+
+That check first exposed a missing =orgize.h= include path on the native
+=orgize= root. Its owning C Module Build contribution now declares that
+option alongside =orgize-scheme-runtime=. An intermediate diagnostic retry
+omitted the repository's SDKROOT removal and failed in system headers; that
+environment failure remains in =sdk-package-with-headers.log= and is not
+counted as an implementation pass. Gerbil installation-generated changes to the pre-existing
+=manifest.ss= were saved under the target evidence directory and the original
+manifest was restored.
+
+The passing Gerbil installation result is separate from the failed 1 GiB source-build gate.
+Full FFI staging, Rust runtime integration, downstream consumers, cold
+performance and exact-head remote CI remain separate gates.
+
+* Continued Parser alignment and runtime/authoring separation
+
+The published Parser development head was rechecked and remains
+=811e18e4b72a2cc049755fa39567a6a6bc671f4c=. No additional dependency update
+was required for this continuation.
+
+** Source boundaries
+
+Each Org Module now follows Parser's distinction between its authoring
+roles and its business library. =types.ss= declares the Module Scope
+contract; =objects.ss= declares the Scope prototype where needed. Business
+data Types reside in =value-types.ss= and constructors/accessors in
+=values.ss=. Runtime/API callers import the business files directly.
+Maintained Element/Contract profiles remain in =config.ss= and are reused
+by their Scopes. No forwarding compatibility modules were introduced.
+
+This distinction does not forbid generic Yuanxu value contracts at runtime.
+Parser's graph-query support itself uses =YuanxuContract.= to validate graph
+values. Those contracts remain; runtime consumers are checked for absence
+of Org Module authoring roles, not for absence of all Yuanxu code.
+
+Generated consumer dependencies are also independent. The document event
+runtime imports only the document fold; macro expansion imports the inline
+fold directly. The tape boundary imports its tape fold and the inline
+helpers it actually uses. =runtime-parameters.ss= retains one copy of the
+existing parameter admission. No grammar, event semantics or generator
+consumer was removed to shrink a closure.
+
+Build subprocesses now use Parser's existing =run-build-tool= API, which
+forwards both compiler output streams and preserves failure status. This
+replaces silent =run-process= handoffs without adding an Org progress wrapper.
+A diagnostic split into another native build entrance did not resolve the
+heap failure and was removed rather than retained as another entrypoint.
+
+** Directory test ownership
+
+The remaining ASP-derived Directory closure builder and the second manual
+executable compiler invocation were replaced by one explicit
+=init.tests.for-files= demand and Yuanxu's standard =exe:= projection.
+The existing =t/org-directory-closure.ss= imports the same three Suites;
+there is no second test-module roster in the builder.
+
+=t/directory-closure-source.ss= is the shared declaration; the build consumes
+its =std-make-spec= and execution resolves the original =.program= accessor.
+An unissued or stale native program cannot be selected by discovering an
+old filename. The 39-case count and 120-second execution boundary remain.
+The unused =scheme-contract-deps= recipe, which manually repeated four
+Parser graph-query sources, was removed. Parser's native package build owns
+those products. ASP benchmark APIs were retained: they are measurement
+owners, not redundant module loaders.
+
+Local Directory compilation used the installed Homebrew OpenSSL through
+=PKG_CONFIG_PATH=/opt/homebrew/opt/openssl@3/lib/pkgconfig=. The first attempt
+without that environment failed at =pkg-config= discovery. Compiler/link
+options remain native inputs; that setup failure is not a functional failure
+or a passing build.
+
+** Continued qualification
+
+- Final Gerbil installation package build passed at its existing 2 GiB/600-second boundary:
+  =target/yuanxu-migration/sdk-package-role-isolation.log=, exit 0. This is
+  resumed local package compilation, not cold-build or remote CI acceptance.
+- Package ownership tests passed 5 cases at 1 GiB/120 seconds, including
+  actual loaded-module checks for business/authoring isolation and the
+  document, inline and tape consumers:
+  =target/yuanxu-migration/package-tests-role-isolation-final.log=.
+- Existing Elements/tape Suites passed all 27 cases at 1 GiB/120 seconds:
+  =target/yuanxu-migration/elements-tape-role-isolation.log=.
+- The existing Directory/Contract Harness passed its 39 cases under a
+  1 GiB/120-second Scheme invocation:
+  =target/yuanxu-migration/directory-role-functional.log=. This checks
+  functional behavior; it does not substitute for a linked native executable.
+- After the failed native build, the new executable entrance refused with
+  =build-required: compiled test support has no issuance= (exit 70):
+  =target/yuanxu-migration/directory-unpublished-program-control.log=.
+
+The 1 GiB resource failures remain open. Parser's own official =build.ss spec=
+passed under the same Gerbil installation and 1 GiB limit
+(=parser-spec-comparison-1g.log=). Orgize's final =build.ss spec= still failed
+with heap overflow (=source-spec-role-isolation-fixed-1g.log=). Directory's
+standard executable projection compiled its support but failed in Gambit's
+native link step at 1 GiB (=directory-role-isolation-build.log=). Neither
+limit was increased, and no native-program publication or execution pass
+is claimed. The business/authoring separation is verified behavior, not
+evidence that it solved either heap failure.
+
+* Published compiler tool repair
+Run41572901384 passes manifest/lock/source alignment and reaches native dependency
+compilation, then the original Linux gxtags exceeds its unchanged2GiB envelope.
+The published2591dcd Linux maintenance capability repairs tag-context lifetime;
+Darwin's official tool-entry capability repairs the empty-TAGS executable.
+Both retain the same compiler/VM source cohort. The distribution activate file
+and public gambuild-C dump own C compiler selection. Ambient library search paths
+and forced C compiler substitution are removed; pkg-config and the distribution
+retain link ownership. No dependency revision, heap, deadline or source closure
+is changed. Complete CI, including native failure controls, remains required.
+
+* Cargo-owned Bridge cohort and bundle admission
+
+The runtime, system ABI and program-archive builder now inherit the same Cargo
+workspace declarations at gerbil-scheme-rust PR18 revision
+=bfe803f597a15a3654b70a64c3a039980c31da8a=. The Parser and ASP revisions remain
+unchanged. Both Cargo lockfiles carry that same Bridge cohort. Gerbil package
+metadata does not acquire a Rust dependency.
+
+The existing Rust build adapter already delegates native compilation and
+archive construction to =build_program_archive_with_contract=. The existing
+transport initializes =LinkedGerbilProgram= through the upstream affine VM
+owner. Orgize retains its Scheme declarations, required-module/header contract,
+source revision and relocatable bundle checks; it does not duplicate the Bridge
+compiler, VM lifecycle or runtime implementation.
+
+The package staging hook passes the OpenSSL provider's private static links
+from Gerbil =:std/make= through =gerbil-rs-stage-program=. The bridge records
+their order and search paths in the program manifest. The bundle publisher
+copies and hashes the declared non-platform archives. On Ubuntu 26.04, the
+OpenSSL metadata names Zstd and the jitterentropy archive. A relocated
+consumer uses the producer manifest and archives with Cargo.
+
+CI uses the =gerbil-scheme-rust= setup action at the same revision as the
+workspace bridge. The action owns release selection, compiler setup, and
+Homebrew package discovery. Scheme resolves the private static libraries
+through =pkg-config= and the bridge records them in the program manifest.
+The Gerbil =pkg-config-libs= helper covers ordinary links. Static exports
+also require =--static= so package metadata includes private dependencies.
+
+The prior bundle implementation compared producer and consumer with an unrelated
+hardcoded runtime revision. Agreement on that literal did not prove agreement
+with the Cargo dependency. Bundle publication and admission now derive the
+expected revision from typed workspace bindings and the manifest compiled into
+the build adapter. The active workspace must retain that compiled cohort.
+Runtime, system ABI and archive builder must all name the same immutable source.
+A late consistent rewrite of both the active manifest and bundle cannot relabel
+the already compiled runtime. Original source/target/archive/header checks remain.
+
+The existing resolved-dependency gate checks Cargo metadata for all three Bridge
+packages and both lockfiles. Unit counterexamples cover the stale literal, a
+split cohort, and a consistent late relabel. No Scheme build/test timeout or
+executing-host CPU budget is enlarged or reduced.
+
+[[file:20.09_cargo_bridge_ownership.svg]]
+
+* Bounded handoff to the linked program
+
+The Bridge's single-VM Mailbox work demonstrates typed request construction,
+direct completion and immediate refill. Its private order workload completed
+one million operations at 995,241 operations per second, with a 10.083 ms
+P99 and 11,110 due but unconsumed operations at peak. These measurements do
+not predict the cost of parsing Org, copying event tapes or projecting metadata.
+The private qualification operation has no public linked-program entry point.
+
+Orgize uses the same handoff principles at its existing typed request boundary.
+Rust submits an owned frame to the fixed linked-program owner. Scheme values
+stay on that owner; only the copied result crosses back. Plan-ledger workers
+distribute whole document-count groups across the same number of workers.
+This avoids fragmenting groups at worker boundaries before the existing
+byte-budget check. With 2,000 documents and 24 workers, the count bound alone
+now needs 32 parse submissions instead of 48. Larger documents still split
+at the byte bound or take the existing single-document path. Result order,
+per-document errors, and admission bounds remain unchanged. The full ledger
+gate still includes filesystem reads, parsing, projection and result assembly.
+
+* Gerbil installation and package indexing
+
+Gerbil is the Scheme implementation and toolchain. Cargo manages Rust crates;
+=gerbil-scheme-rust= supplies Rust bindings, the VM owner and program-archive
+construction. These are distinct owners, not an additional downstream SDK.
+Historical receipt filenames are preserved as evidence identifiers. =SDKROOT=
+remains the Apple platform environment variable, unrelated to this terminology.
+
+The complete =gerbil deps --install= entrance includes dependency compilation
+and automatic =gxtags= indexing in one inherited process environment. Its former
+2 GiB cap caused the complete index to fail after dependency compilation. Per
+the revised resource requirement, package installation and explicit retagging
+now omit a maximum-heap setting. This also removes that inherited cap from
+compilation performed inside dependency installation; the separate explicit
+program builds retain 2 GiB/600 seconds and tests retain 1 GiB/120 seconds with
+the five-second real-output watchdog. Explicit retagging retains 180 seconds.
+No index inputs are omitted. Success still requires natural completion without
+heap overflow or operating-system OOM; removing the cap is not itself a pass.
+The previous 2 GiB failure remains in ignored local evidence. No Gerbil
+installation revision change is needed for this resource-policy correction.
+
+* Native grammar and generated consumer identity
+
+The real concurrent runtime-startup regression exposed a separate stale-product
+failure after the Bridge cohort update: VM initialization succeeded, while the
+native Org tape and checked-in Rust language table disagreed on grammar identity.
+The Contract and expectation tables had the same class of mismatch. The native
+guards correctly refused these combinations; a successful archive build alone
+did not establish protocol agreement.
+
+The existing =scheme-timestamp-graph-generate= entrance regenerates the language
+and graph views, dependent Contract plans and customer query/Contract fixtures
+from the currently pinned Scheme sources. Its complete run retained the 1 GiB
+generator profile and changed identity fields only; parser tables, graph rules
+and dependency pins remain unchanged. The generated language identities now
+match the compiler-owned native tape headers. Keep the original failing runtime
+receipt separately from the post-regeneration execution result.
+
+This product correction is independent of the remaining CLI import/loading
+watchdog failure. Neither the focused Rust regression nor successful package
+preparation establishes a pass for the complete Scheme CLI suite.
+
+* Observable Scheme CLI work and natural cleanup
+
+The original =ci-scheme-test= entry retains all 230 cases, 18 suites, the
+120-second wall deadline, one-GiB runtime heap and five-second real-output idle
+limit. The negative fixture must still return 42, emit its failure marker, and
+omit the success marker. An =OK= line alone never admits the process.
+
+The entry now calls the Bridge's existing Scheme build module and the same
+=package-test= implementation used by its C ABI. Official GxTest owns discovery,
+execution and the result. The Bridge's module-work observer scopes the existing
+resolver with unwind-safe restoration; it reports actual work rather than timer
+heartbeats. Boundary-test subprocesses use that observer on stderr, preserving
+their captured business stdout and original expressions. Successful execution
+returns naturally. A failing CLI forwards the GxTest status only after scoped
+cleanup; the C ABI returns that status to its caller.
+
+A Darwin sample taken after the real final =OK= found dynamic-module cleanup in
+=dlclose= and dyld unload notification, rather than an established VM deadlock.
+The Darwin entry enables the system loader's =DYLD_PRINT_APIS= diagnostics so
+actual loading and unloading remain observable under the unchanged idle limit.
+It neither skips unloading nor fabricates progress. Linux retains the same
+Bridge resolver events without this Darwin-specific diagnostic setting.
+
+The package's existing compile action also admits the installed compiled tape
+interface before publishing its manifest. It loads the actual =.ssi= under the
+same module-work observer, requires natural process completion, and remains
+inside the existing 600-second build deadline. This establishes loadability in
+addition to source identity; it does not establish a parser throughput gain.
+Cold-prefix and already-loaded-prefix results must be recorded separately.
+
+* Reuse and remaining CI obligations
+
+Serial CI steps share the existing =ORGIZE_GERBIL_NATIVE_OUTPUT= directory.
+The archive owner still validates its source and compiler fingerprints. Each
+job has its own checkout and output directory; concurrent archive writers into
+that directory are not admitted. This uses the existing producer rather than
+introducing a downstream compiler or cache owner.
+
+The fixed Linux Gerbil release references =GLIBC_2.42= symbols, while auditwheel
+6.8.2's policy stops at 2.41. The approved exception selects only auditwheel's
+official 2.42 policy commit; every other unrelated dependency remains locked.
+See [[https://github.com/pypa/auditwheel/pull/741][the upstream manylinux policy change]]. Wheel inspection and repair both remain
+mandatory; changing a policy source is not evidence that the repaired wheel
+passes an independent import.
+
+Wheel inspection uses the absolute wheel path: =uv --directory= changes the
+tool's working directory. A successful build followed by a missing relative
+path is a failed inspection, not a missing compiler product.
+
+Local complete CLI evidence and upstream bridge C ABI lifecycle checks do not
+replace exact-head remote CI. The earlier plan-ledger 100ms gate failures also
+remain failures until the original workload passes; neither worker count nor
+performance threshold is changed. A failed performance check keeps the job red
+and suppresses qualified bundle publication. Once the program is admitted,
+independent Rust tests and lint checks still run to expose correctness failures.
+Failed transcripts and the post-success
+cleanup sample stay in ignored local evidence, not in tracked documentation.
+
+Timeout checks use the host's child handle to verify process and group absence.
+An independent OS test owns two live group members and checks group cleanup.
+The one-second deadline and v1 receipt are unchanged. Completed Scheme path
+checks flush immediately, under the same five-second genuine-output deadline.
+
+The pinned public Fold emitter selects a full event list or full tape. A
+field-selecting consumer must preserve the canonical parser's boundaries and
+be qualified against it. See [[file:20.08_scheme_closure/39-fold-requalification.org][the engine projection gap]];
+the ledger query does not introduce a second scanner.

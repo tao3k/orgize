@@ -30,7 +30,6 @@ const CONTRACT_ORG_SCOPE_DUPLICATE_NOTES: &str = include_str!(
     "../unit/scenarios/contract_trace/contract_org_property_scope/inputs/duplicate-notes.org"
 );
 
-#[test]
 fn exposes_matched_ids_and_bindings() {
     let registry = contract_registry();
     let contract = registry
@@ -58,7 +57,6 @@ fn exposes_matched_ids_and_bindings() {
     assert!(assertion.message_template.is_some());
 }
 
-#[test]
 fn json_exports_source_backed_trace() {
     let registry = contract_registry();
     let contract = registry
@@ -107,7 +105,6 @@ fn json_exports_source_backed_trace() {
     assert!(json.get("verdict").is_none());
 }
 
-#[test]
 fn plain_text_summary_contains_matches_inline_rendered_text_split_by_subscript() {
     let contract_document = Org::parse(
         r#"
@@ -151,7 +148,6 @@ Use orgize org capture --contract CONTRACT_ID before writing.
     assert_eq!(assertion.actual_count, 1);
 }
 
-#[test]
 fn paragraph_nonempty_distinguishes_prose_from_blank_section_body() {
     let contract_document = Org::parse(
         r#"
@@ -211,7 +207,6 @@ Substantive prose.
     );
 }
 
-#[test]
 fn cli_trace_outputs_contract_evaluation_json_snapshot() {
     let dir = test_dir("contract-trace");
     fs::create_dir_all(&dir).unwrap();
@@ -249,7 +244,6 @@ No link here.
     insta::assert_snapshot!(command_snapshot(output));
 }
 
-#[test]
 fn cli_trace_evaluates_multiple_contract_org_bindings_on_same_scope() {
     let dir = test_dir("contract-trace-multiple-contracts");
     fs::create_dir_all(&dir).unwrap();
@@ -329,7 +323,6 @@ fn cli_trace_evaluates_multiple_contract_org_bindings_on_same_scope() {
     assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
 }
 
-#[test]
 fn cli_trace_distinguishes_document_and_heading_contract_org_property_scope() {
     let dir = test_dir("contract-trace-document-heading-scope");
     fs::create_dir_all(&dir).unwrap();
@@ -390,7 +383,6 @@ fn cli_trace_distinguishes_document_and_heading_contract_org_property_scope() {
     );
 }
 
-#[test]
 fn contract_org_property_scope_fixture_stays_in_millisecond_budget() {
     let scenario_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
@@ -507,7 +499,6 @@ fn contract_org_property_scope_fixture_stays_in_millisecond_budget() {
     assert_eq!(failed_assertions, 0, "{evaluations:?}");
 }
 
-#[test]
 fn cli_trace_rejects_contract_org_metadata_keyword_declarations() {
     let dir = test_dir("contract-trace-rejects-contract-org-keyword");
     fs::create_dir_all(&dir).unwrap();
@@ -538,7 +529,6 @@ fn cli_trace_rejects_contract_org_metadata_keyword_declarations() {
     );
 }
 
-#[test]
 fn cli_trace_rejects_duplicate_contract_org_bindings_on_same_scope() {
     let dir = test_dir("contract-trace-rejects-duplicate-contract-org");
     fs::create_dir_all(&dir).unwrap();
@@ -569,7 +559,6 @@ fn cli_trace_rejects_duplicate_contract_org_bindings_on_same_scope() {
     );
 }
 
-#[test]
 fn cli_trace_resolves_org_link_contract_reference_relative_to_source_file() {
     let dir = test_dir("contract-trace-relative-org-link");
     fs::create_dir_all(dir.join("contracts")).unwrap();
@@ -616,7 +605,6 @@ fn cli_trace_resolves_org_link_contract_reference_relative_to_source_file() {
     assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
 }
 
-#[test]
 fn cli_trace_loads_registry_dependencies_declared_by_contract_source() {
     let dir = test_dir("contract-trace-source-declared-registry-dependencies");
     fs::create_dir_all(dir.join("contracts")).unwrap();
@@ -709,7 +697,6 @@ fn cli_trace_loads_registry_dependencies_declared_by_contract_source() {
     assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
 }
 
-#[test]
 fn cli_query_surface_outputs_agent_facing_json() {
     let output = crate::library_cli::orgize_cli_command()
         .args(["contract", "query-surface", "--json"])
@@ -749,7 +736,6 @@ fn cli_query_surface_outputs_agent_facing_json() {
     );
 }
 
-#[test]
 fn org_link_reference_uses_relative_path_and_display_contract_id() {
     let document = Org::parse(contract_source()).document();
     let registry = parse_contracts_from_document(
@@ -779,7 +765,6 @@ fn org_link_reference_uses_relative_path_and_display_contract_id() {
     );
 }
 
-#[test]
 fn execplan_template_satisfies_language_contract() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let output = crate::library_cli::orgize_cli_command()
@@ -804,7 +789,6 @@ fn execplan_template_satisfies_language_contract() {
     assert!(!stdout.contains(r#""status": "failed""#), "{stdout}");
 }
 
-#[test]
 fn reflection_answer_contract_requires_nonempty_value_cell() {
     let registry = {
         let document = Org::parse(reflection_answer_contract_source()).document();
@@ -857,7 +841,6 @@ fn reflection_answer_contract_requires_nonempty_value_cell() {
     assert_eq!(empty_value.actual_count, 0);
 }
 
-#[test]
 fn org_contract_accepts_elisp_style_query_expression_with_binding() {
     let registry = {
         let document = Org::parse(query_expression_contract_source()).document();
@@ -948,3 +931,7 @@ fn test_dir(name: &str) -> PathBuf {
     }
     path
 }
+
+#[path = "contract_evaluation_cases.rs"]
+mod cases;
+pub(super) use cases::NATIVE_CASES;

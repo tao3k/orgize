@@ -89,6 +89,11 @@ pub(super) fn element_affiliated_properties(
 ) -> OrgElementsAffiliatedProperties {
     OrgElementsAffiliatedProperties {
         name: affiliated_keyword_value(&element.affiliated_keywords, "NAME"),
+        first_keyword_start_line: element
+            .affiliated_keywords
+            .iter()
+            .map(|keyword| keyword.ann.start.line)
+            .min(),
     }
 }
 

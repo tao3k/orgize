@@ -2,7 +2,6 @@ use std::fs;
 
 use super::contract_workspace::WorkspaceFixture;
 
-#[test]
 fn workspace_contract_rejects_missing_or_duplicate_reciprocal_source_identities() {
     let expected = "node property SUPERSEDES with reciprocal constraint requires exactly one nonempty PRINCIPLE_ID source identity";
     for replacement in ["", ":PRINCIPLE_ID: P-002\n:PRINCIPLE_ID: P-003\n"] {
@@ -32,3 +31,8 @@ fn workspace_contract_rejects_missing_or_duplicate_reciprocal_source_identities(
         );
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "contract_workspace_reciprocal::workspace_contract_rejects_missing_or_duplicate_reciprocal_source_identities",
+    workspace_contract_rejects_missing_or_duplicate_reciprocal_source_identities,
+)];

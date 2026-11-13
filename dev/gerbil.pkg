@@ -1,0 +1,2 @@
+(package: orgize-dev
+ depend: ("github.com/tao3k/asp-gerbil-scheme@9ae9bc377cbab4b84de52b512a2c03375a36d6c9"))

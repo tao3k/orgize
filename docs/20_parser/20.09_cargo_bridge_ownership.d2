@@ -1,0 +1,52 @@
+direction: down
+vars: {d2-config: {theme-id: 200; pad: 32}}
+
+cargo: "Cargo workspace\nRust dependency identity" {shape: page}
+scheme: "Scheme package declarations" {shape: page}
+parser: "Parser interfaces\nGrammar, graph and byte Fold" {shape: page}
+producer: "Build" {
+  label.near: top-left
+  direction: right
+  folds: "Generated Fold package\nOwn build and installed interfaces"
+  compiler: "Yuanxu and Gerbil\nModule build and program manifest"
+  archive: "Rust bridge crate\nProgram archive builder"
+  folds -> compiler: "installed dependency"
+  compiler -> archive: "compiler-owned graph"
+}
+products: "Generated Rust views\nGrammar and graph identity" {shape: page}
+bundle: "Bound FFI bundle" {shape: cylinder}
+consumer: "Consume" {
+  label.near: top-left
+  direction: right
+  admission: "Source, cohort, target\nArchive and header binding"
+  runtime: "Rust linked program\nBridge-owned VM lifecycle"
+  requests: "Typed requests\nBounded document batches"
+  replies: "Owned results\nNo Scheme roots cross the boundary"
+  admission -> runtime: "admitted archive"
+  requests -> runtime: "submit"
+  runtime -> replies: "complete"
+}
+
+scheme -> parser: "declared dependency"
+parser -> producer.compiler: "public build capabilities"
+scheme -> producer: "declared package build"
+cargo -> producer: "one Bridge cohort"
+producer -> bundle
+cargo -> bundle: "compiled identity"
+bundle -> consumer: "relocate and verify"
+
+parser -> products: "typed protocol"
+scheme -> products: "existing generators"
+products -> consumer.admission: "protocol identity"
+
+cli: "Test" {
+  label.near: top-left
+  direction: down
+  owner: "Bridge package test\nOfficial GxTest"
+  work: "Scoped module observation\nReal loader activity"
+  cleanup: "Natural cleanup\nSuccess or failure status"
+  owner -> work
+  work -> cleanup
+}
+producer.compiler -> cli.owner: "compiled interface"
+cargo -> cli.owner: "same Bridge source"

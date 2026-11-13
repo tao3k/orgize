@@ -5,7 +5,6 @@ use orgize::{
     config::RadioLinkProjection,
 };
 
-#[test]
 fn semantic_ast_projects_radio_links_from_plain_text() {
     let doc = Org::parse("<<<Radio Target>>> links Radio Target, not Radio Targets.").document();
 
@@ -53,7 +52,6 @@ fn semantic_ast_projects_radio_links_from_plain_text() {
     assert!(plain.contains("Radio Targets"));
 }
 
-#[test]
 fn semantic_ast_projects_opt_in_radio_links_across_parsed_objects() {
     let doc = ParseConfig {
         radio_link_projection: RadioLinkProjection::Semantic,
@@ -101,7 +99,6 @@ fn semantic_ast_projects_opt_in_radio_links_across_parsed_objects() {
     }));
 }
 
-#[test]
 fn semantic_ast_deduplicates_radio_targets_for_projection() {
     let doc = Org::parse("<<<Alpha>>> <<<Alpha>>>\nAlpha Alphabet Alpha").document();
 
@@ -135,7 +132,6 @@ fn semantic_ast_deduplicates_radio_targets_for_projection() {
     )));
 }
 
-#[test]
 fn semantic_ast_prefers_longest_radio_target_at_same_position() {
     let doc = Org::parse("<<<Alpha>>> <<<Alpha Beta>>>\nAlpha Beta Alpha").document();
 
@@ -165,7 +161,6 @@ fn semantic_ast_prefers_longest_radio_target_at_same_position() {
     ));
 }
 
-#[test]
 fn semantic_ast_projects_multiple_radio_links_across_object_run_slices() {
     let doc = ParseConfig {
         radio_link_projection: RadioLinkProjection::Semantic,
@@ -202,3 +197,26 @@ fn semantic_ast_projects_multiple_radio_links_across_object_run_slices() {
         ObjectData::Code(value) if value == "Two"
     ));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_radio_links::semantic_ast_projects_radio_links_from_plain_text",
+        semantic_ast_projects_radio_links_from_plain_text,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_radio_links::semantic_ast_projects_opt_in_radio_links_across_parsed_objects",
+        semantic_ast_projects_opt_in_radio_links_across_parsed_objects,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_radio_links::semantic_ast_deduplicates_radio_targets_for_projection",
+        semantic_ast_deduplicates_radio_targets_for_projection,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_radio_links::semantic_ast_prefers_longest_radio_target_at_same_position",
+        semantic_ast_prefers_longest_radio_target_at_same_position,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_radio_links::semantic_ast_projects_multiple_radio_links_across_object_run_slices",
+        semantic_ast_projects_multiple_radio_links_across_object_run_slices,
+    ),
+];

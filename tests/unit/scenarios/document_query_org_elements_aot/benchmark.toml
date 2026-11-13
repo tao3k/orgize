@@ -11,7 +11,7 @@ observed_total = "1ms"
 regression_budget = "40ms"
 memory_budget_bytes = 8388608
 observed_memory_bytes = 262144
-target_rationale = "Forty-eight Org documents must parse to one parser-owned element projection and answer a no-hit query inside the strict gate."
+target_rationale = "Forty-eight TAGS-aware Org documents must parse to one parser-owned element projection and answer a no-hit query inside the strict gate."
 
 [observed_timings]
 cold = "1ms"

@@ -1,7 +1,7 @@
 //! Owned semantic AST for Org documents.
 //!
-//! The parser still builds the lossless rowan syntax tree. This module is the
-//! semantic, org-element-like layer projected from that syntax tree.
+//! The Scheme-AOT parser builds a lossless native navigation index and Element graph. This
+//! module projects that graph into owned, org-element-like values.
 
 mod agenda;
 mod agenda_filter;
@@ -16,6 +16,16 @@ mod agenda_workspace;
 mod agenda_workspace_model;
 mod agent_planning;
 mod agent_planning_model;
+mod aot_anchor_plan;
+mod aot_attachment_projection;
+mod aot_block_plan;
+mod aot_block_switches;
+mod aot_drawer_projection;
+mod aot_duration_plan;
+mod aot_footnote_resolution;
+mod aot_link_resolution;
+mod aot_projection;
+mod aot_timestamp_projection;
 mod attachment_inventory;
 mod attachment_inventory_model;
 mod attachment_model;
@@ -23,13 +33,12 @@ mod babel_eval;
 mod babel_eval_model;
 mod block_metadata;
 mod block_model;
-mod block_syntax;
 mod capture;
 mod capture_command;
 mod capture_model;
 mod citation_export;
 mod citation_export_model;
-mod citation_metadata;
+mod citation_export_owner;
 mod clock_issue_model;
 mod clock_issues;
 mod clock_rollup;
@@ -40,14 +49,6 @@ mod column_summaries;
 mod column_summary_model;
 mod column_view_model;
 mod column_views;
-mod conversion;
-mod conversion_helpers;
-mod conversion_nodes;
-mod conversion_objects;
-mod conversion_properties;
-mod conversion_radio;
-mod conversion_traversal;
-mod conversion_util;
 mod crypt;
 mod crypt_model;
 mod datetree;
@@ -70,10 +71,8 @@ mod elements_bridge_selector;
 mod elements_bridge_sql;
 mod export_dependency_graph;
 mod export_dependency_graph_model;
-mod footnote_parts;
 mod habit_model;
 mod habits;
-mod headline_metadata;
 mod include_model;
 mod includes;
 mod lifecycle;
@@ -91,15 +90,18 @@ mod org_contract_evaluation;
 mod org_contract_evaluation_json;
 mod org_contract_model;
 mod org_elements_query_expr;
+mod org_values;
+#[cfg(test)]
+pub(crate) use org_elements_query_expr::EXPRESSION_NATIVE_CASES;
 mod org_interactive;
 mod org_interactive_model;
-mod postprocess;
 mod preprocessing;
 mod prescan;
 mod progress;
 mod progress_model;
 mod projection;
 mod property_model;
+mod property_plan;
 mod property_profile;
 mod property_profile_model;
 mod property_schema;
@@ -108,7 +110,6 @@ mod publishing;
 mod publishing_model;
 mod publishing_project;
 mod publishing_project_model;
-mod radio_links;
 mod refile;
 mod refile_model;
 mod runtime_metadata;
@@ -124,20 +125,18 @@ mod source_block_headers;
 mod source_block_model;
 mod source_block_references;
 mod source_blocks;
+pub(crate) use source_blocks::SourceBlockSyntaxRecord;
 mod source_position;
 mod sparse_tree;
 mod sparse_tree_model;
 mod special_properties;
-mod table_metadata;
 mod table_visualization;
 mod table_visualization_model;
 mod tag_vocabulary;
 mod tangle;
 mod tangle_model;
-mod targets;
 mod task_blocker_model;
 mod task_blockers;
-mod timestamp_metadata;
 mod timestamp_model;
 mod traversal_collect;
 mod traversal_cursor;
@@ -290,6 +289,7 @@ pub use model::{
     TargetDefinition, TargetKind, TodoKeyword, TodoState, UnsupportedSyntaxKind,
 };
 pub use named_source_block_template::{NamedSourceBlockTemplate, NamedSourceBlockTemplateError};
+pub(crate) use org_contract::{contract_block_syntax_error, contract_source_blocks};
 pub use org_contract::{
     parse_contract_reference, parse_contract_reference_from_source, parse_contract_references,
     parse_contracts_from_document, validate_contract_source,
@@ -333,7 +333,8 @@ pub use progress_model::{
 pub use property_model::{
     OrgDuration, Priority, PriorityCookie, PriorityProfile, PriorityRangeStatus, PriorityValue,
 };
-pub(crate) use property_profile::{is_allowed_value_descriptor, property_allowed_values};
+pub(crate) use property_plan::PropertyNativePlan;
+pub(crate) use property_profile::property_allowed_values;
 pub use property_profile_model::{
     PropertyAllowedValueRecord, PropertyAllowedValueScope, PropertyInheritancePolicy,
     PropertyProfile,

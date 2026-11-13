@@ -1,0 +1,10 @@
+#+TITLE: Missing Family Evidence
+* Family
+:PROPERTIES:
+:ID: missing-family
+:CONTRACT_REF: directory.evidence.v1
+:END:
+** Other section
+* Neighbor
+** Evidence
+[[file:receipt.org][not this family's evidence]]

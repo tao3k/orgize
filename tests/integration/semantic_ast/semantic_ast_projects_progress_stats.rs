@@ -27,7 +27,6 @@ const SOURCE: &str = r#"* TODO Parent [1/2] [50%]
 :END:
 "#;
 
-#[test]
 fn semantic_ast_projects_progress_stats_for_agent_planning() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -117,3 +116,8 @@ fn semantic_ast_projects_progress_stats_for_agent_planning() {
         900
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_progress_stats::semantic_ast_projects_progress_stats_for_agent_planning",
+    semantic_ast_projects_progress_stats_for_agent_planning,
+)];

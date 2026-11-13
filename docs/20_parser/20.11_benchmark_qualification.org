@@ -1,0 +1,936 @@
+#+title: 20.11 Orgize Benchmark Qualification
+
+* Package boundary
+
+=build.ss= owns the production package. It does not load or build any target
+from =t/benchmarks=, and the production =gerbil.pkg= does not declare ASP.
+Git checkouts may contain benchmark source files; package installation does
+not compile or install benchmark modules, tooling dependencies or receipts.
+An empty downstream directory loaded the installed Org Fold and parsed a
+document using the production prefix. Both benchmark imports failed module
+resolution in that process. Benchmark scenarios run from the development
+checkout with explicit development dependencies.
+
+Development prepares the existing =dev/gerbil.pkg= in a separate
+=GERBIL_PATH=, with the prepared production library on =GERBIL_LOADPATH=.
+Scheme benchmarks have no separate build script, compiled output prefix or
+cleanup recipe. Rust continues to use Cargo's existing Criterion targets.
+The Orgize library disables Cargo's implicit library benchmark harness.
+The standard unit-test invocation still runs the library tests and gives
+the native startup fixture its own exclusive process. The benchmark command
+runs the explicit Criterion targets without starting a second parallel
+copy of the library test suite.
+
+[[file:../../test-benchmarks.ss][The benchmark test entry]] discovers the
+scenario suites with =std/test=. It checks source semantics and the helper
+counter contract. Run it from the checkout with the production dependencies
+and ASP development prefix available. Gerbil loads the scenario source
+directly. Measured runs still use the scenario fixtures and their original
+ASP admission gates.
+
+Prepare the development prefix separately. Run each source benchmark in
+its own process with the production library before the development library.
+Both dependency trees contain POO modules, so this order keeps the production
+Parser and POO artifacts together while resolving the benchmark API from
+the development prefix.
+
+#+begin_src sh
+orgize_production="$PWD/.gerbil-ci"
+orgize_development="$PWD/target/scheme-benchmark-dev"
+GERBIL_PATH="$orgize_development" GERBIL_LOADPATH="$orgize_production/lib" \
+  just prepare-dev
+GERBIL_PATH="$orgize_development" \
+  GERBIL_LOADPATH="$orgize_production/lib:$orgize_development/lib" \
+  gerbil test -v 3 test-benchmarks.ss
+GERBIL_PATH="$orgize_development" \
+  GERBIL_LOADPATH="$orgize_production/lib:$orgize_development/lib" \
+  gxi t/benchmarks/org-prefix-probe.ss local \
+  t/benchmarks/org-prefix-probe/benchmark.ss /tmp/orgize-prefix-local.receipt
+#+end_src
+
+Use a fresh receipt path for each execution. The fixture controls the sample
+count and the workload. The output records the admission decision and the
+raw samples.
+
+The event Fold measurement recipe also loads its Scheme module directly.
+It does not link a standalone executable or rebuild the dependency closure.
+The source test entry and measured scenario runs are separate operations.
+The existing five-second output watchdog and
+ASP fixture budgets still apply to measured runs.
+
+The source entry was revalidated through =gerbil test -v 5
+test-benchmarks.ss=: five suites and seven cases completed naturally within
+the existing 120-second limit, with no error markers. Verbosity five exposes
+the case and suite markers; the documented verbosity-three invocation is
+terser. The production and development prefixes remained separate.
+Direct source measurements of the prefix and event Fold scenarios also
+passed their existing ASP budgets. The Fold receipt retains all 20 samples,
+the source and event digests, and an observed P95 of 159 microseconds. This
+qualifies source execution for that fixture, not a speedup or the separate
+2,000-document ledger gate. Build activity overlapped these diagnostic runs.
+
+The new source name-set run retained 20 samples with P50 116.764 ms and
+P95 150.203 ms, exceeding its unchanged 100 ms diagnostic limit. It still
+includes preparation through =run-event-fold= for each of the 100 folds.
+The failed receipt is retained; this is not a matched improvement over
+the historical run or a reason to move preparation outside that workload.
+
+* Test failure ownership
+
+The locked bridge coordinator let its aggregate failure escape a spawned
+thread. Catching the join failure in the calling test did not prevent a
+delayed orphan exception report during process shutdown. The authorized
+bridge update to =0d92f7b= makes the coordinator return a tagged outcome
+and raises failures on its caller after the join. The upstream source
+regression fails against the original implementation and passes against
+the correction, including through the official package-test entry.
+
+The full Scheme gate now rejects error markers with an explicit conditional
+exit. A middle-of-script =! rg= was exempt from Bash's =errexit= behavior
+and could allow a later successful command to hide the failure. Retained
+negative and positive log controls verify rejection and acceptance without
+changing the existing suite counts, timeouts or failure fixture.
+
+The Cargo and fuzz lockfile changes are confined to the same five bridge
+packages' Git source identities. Other dependency selections are unchanged.
+The updated bridge passed the unchanged full package build and strengthened
+Scheme gate locally: 237 cases in 19 suites, natural successful exit without
+an error marker, followed by the intentional failure fixture's status 42.
+The 600-second build, 120-second test and five-second output deadlines remain
+unchanged. This correctness result does not qualify either Rust runtime's
+ledger latency or replace exact-head CI.
+
+* Earlier evidence
+
+** Compact ledger metadata candidate
+
+At published revision =5bbefa94=, Ubuntu Rust's unchanged unprofiled release
+gate failed at 131.020652 ms, best of five. The separate profiled diagnostic
+failed at 140.967450 ms. In its final individual invocation, 2,000 files used
+32 workers and 64 owner requests: 32 Fold batches and 32 metadata requests.
+The counters are request-local, not a sum of the five invocations.
+
+| Final profiled invocation | Observed ms | Scope |
+|--------------------------+-------------+-------|
+| Owner thread CPU | 140.517 | Both operation families |
+| Owner service wall | 140.604 | Both operation families |
+| Fold batch owner CPU | 111.448 | Included in owner CPU |
+| Metadata owner CPU | 29.068 | Included in owner CPU |
+| Fold VM GC CPU intervals | 26.163 | Overlap Fold work |
+| Result copy | 0.225 | Owner-side result copying |
+| Request encoding | 0.097 | Caller-side encoding |
+| Graph projection | 15.062 | Worker sum, overlaps owner work |
+
+The Darwin Scheme job at the same revision recorded 125.119 ms unprofiled
+and 191.563 ms profiled, each the best of five. Its final profiled query
+used 24 workers and 64 owner requests. Owner CPU was 187.934 ms, including
+157.641 ms for Fold and 30.293 ms for metadata. VM GC intervals overlapped
+33.106 ms of Fold CPU. Result copy and request encoding took 0.156 and
+0.146 ms. These measurements describe one host and runtime configuration.
+
+The Darwin Rust job recorded 184.049 ms unprofiled and 140.559 ms profiled.
+Its final profiled query used 24 workers and 64 owner requests. Owner CPU
+was 137.745 ms, including 115.091 ms for Fold and 22.654 ms for metadata.
+VM GC intervals overlapped 28.080 ms of Fold CPU. Result copy and request
+encoding took 0.202 and 0.072 ms. The separate diagnostic executions were
+scheduled independently of the release gate.
+
+The owner is predominantly executing in this observation; wire copying is
+not the dominant cost. The compact candidate can reduce metadata work, but
+the retained Fold CPU alone exceeds the release budget in this profiled
+sample. Profile generated Fold steps and allocation/GC before changing its
+algorithm. Do not add overlapping intervals or use diagnostic timings as
+production-gate observations.
+
+The private ledger projection now has its own typed result, retaining the
+validated graph records and only the leading headline's title, TODO keyword
+and closed state. Full document parsing retains its existing metadata shape.
+Both projections share source parsing, event admission, graph projection and
+graph-index validation. Scheme still owns directive resolution and headline
+semantics; Rust admits the returned row count, width and state before exposing
+the scoped result. The private request omits the source title body that this
+projection never reads. Packet limits and oversized-document fallback remain
+on the existing bounded transport.
+
+The frozen candidate passed the existing complete Scheme gate, both runtime
+functional suites and both all-target Clippy gates. The Scheme gate retains
+237 cases, 19 suites and its intentional failure control. Native checks retain
+the startup fixture and the complete consumer suite. Differential controls
+compare the leading headline and complete graph records with full-document
+projection across configuration, Unicode, missing/child headlines and the
+oversized metadata fallback. These establish functional correspondence; the
+paired endpoint failures below still prevent performance qualification.
+
+** Checked byte-input reuse experiment
+
+The existing source-input diagnostic now completes its untimed admission
+checks against the corrected, locally rebuilt Parser owner. Independent
+fresh compiler outputs reproduce malformed-input acceptance in the original
+owner and rejection in the fixed owner. This excludes retained higher-numbered
+Gambit object versions from that comparison. No consumer dependency pin or
+production adapter changes in this experiment.
+
+Each measured invocation runs 2,000 independent folds of the committed Org
+fixture, with 20 samples. Preparation and canonical tape/rejection comparisons
+precede timing. All arms retain the same source digest and canonical tape
+digest. The full A/A and A/B/B/A sequence is retained:
+
+| Arm | Input | P50 ms | P95 ms | 100 ms diagnostic gate |
+|-----+-------+--------+--------+-----------------------|
+| A/A first | Text | 216.429 | 239.968 | Fail |
+| A/A second | Text | 213.765 | 236.117 | Fail |
+| A/B/B/A first | Text | 213.216 | 240.615 | Fail |
+| A/B/B/A second | Bytes | 219.254 | 232.458 | Fail |
+| A/B/B/A third | Bytes | 212.245 | 231.787 | Fail |
+| A/B/B/A last | Text | 214.850 | 233.783 | Fail |
+
+All 120 raw samples remain in ignored local evidence. The experiment overlapped
+the complete Parser test entry on the same host; it is not an isolated-host
+latency qualification. P50 does not show a stable improvement. Both arms still
+perform strict decoding and obtain owned byte storage: the byte adapter copies
+the request slice, while the text adapter re-encodes decoded text. These data do
+not justify changing the production path or its dependency pin. The 100 ms
+diagnostic failure also does not redefine the separate release ledger gate.
+
+The authorized bridge update has a separate upstream CI follow-up for
+concurrent test-directory identity. Timestamp-only names collided on Darwin;
+an atomic process-local suffix removed the reproduced collision across
+49,152 requests from 12 workers. The complete 20-case Rust unit target passed.
+That follow-up changes test support only and does not require another
+consumer pin update.
+
+Recent original-versus-candidate endpoint pairs retain the complete frozen
+2,000-file workload and all five observations per invocation. Across twelve
+invocations, the original committed-source control failed all eight of its
+invocations. The compact-input candidate passed three of four invocations;
+the remaining Rust invocation missed the unchanged 100 ms gate at
+100.049750 ms. This is evidence of possible improvement, not stable
+qualification. These local comparisons preceded publication and do not
+establish exact-head CI acceptance. Separate paired Scheme
+phase runs compare compact-response and compact-input adapters: request
+payload shrank from 268,548 to 183,658 bytes (31.6%), while response payload
+stayed at 163,290 bytes. Payload reduction alone does not establish a
+latency improvement.
+
+Exact-head Darwin Rust CI for =682fca8b= passed its ordinary tests but failed
+the unchanged release ledger gate at 138.477041 ms, best of five, with profiling
+disabled. Its separate profiled diagnostic was 173.359833 ms. Both wheel
+jobs and both platform preparation jobs passed. Other runtime conclusions
+were still pending at this observation. Focused Scheme success and a single
+passing local latency sample cannot substitute for those full CI gates.
+
+The attempted reuse of Parser's byte-input API stopped at untimed malformed
+UTF-8 checks before collecting samples. A separate Parser fix makes official
+decoder admission observable in compiled products and repairs a permissive
+exception assertion that could report false success. Orgize still uses its
+strict text-decoding path and retains the existing Parser pin. Verify that
+upstream fix through its complete entrypoints before qualifying a byte-input
+adapter; do not bypass admission to obtain a benchmark result.
+
+Earlier isolated measurements found that prefix, helper-state and Fold
+passed their fixture budgets. The name-set diagnostic
+recorded 20 samples with a 299.949 ms P50 and a 619.486 ms P95 against its
+100 ms limit. It calls the public =run-event-fold= entry for each fold, so
+its measurements include program preparation. Compilation overlapped the
+run. Keep these samples as failure evidence and qualify changes in paired
+runs. These historical samples do not qualify the current source-run path.
+
+The two Org Contract grammar modules import the Parser loader from
+=gerbil-parser/language-support/entry=. At Parser revision =3c58e6e=, the
+standard optimized program build produced 433 linked modules, compared
+with 454 through the umbrella import. The manifest removed 21 modules
+and added none. The removed closure includes grammar-source loaders,
+fixtures and contextual compiler modules. The compiled-interface probe
+and all 237 Scheme cases in 19 suites passed through the standard entry.
+An earlier build reached the unchanged 600-second deadline after Fold
+generation. The manifest comparison establishes the dependency reduction.
+It leaves cold build latency and the ledger budget as separate gates.
+
+The downstream replay used the production manifest from =3358e3a5=.
+Its empty working directory loaded the installed Org Fold and rejected
+both benchmark imports. This verifies production package isolation;
+development source execution is checked separately through
+=test-benchmarks.ss= and the measured scenario modules.
+
+* Measurement matrix
+
+| Boundary | Existing workload | Evidence |
+|----------+-------------------+----------|
+| Lexical prefix | Scheme prefix probe | ASP per-sample latency and exact predicate result |
+| Names and helper state | Scheme name-set and helper batches, measured separately | Matching event values, sample timings, separate runtime-counter diagnostics |
+| Fold | Scheme event Fold on the committed Org corpus | Source identity, full event semantics and phase samples |
+| Rust caller and owner | Criterion =org_runtime=, both runtime features | Completed documents, caller width and throughput; queue and service spans in separate diagnostic runs |
+| Projection | Criterion =org_element_query= and =parse= | Separate projection and parse-plus-projection cases with unchanged inputs |
+| Filesystem through query | Existing 2,000-file ledger gate, both runtimes | All five wall samples, result identity and the existing 100 ms gate |
+
+An experiment names one cost and one candidate. Keep fixture, runtime feature,
+compiler, host parallelism, iteration count and resource budgets matched.
+Start with repeated runs of the same binary to establish variation. Compare
+independent processes in A/B and B/A order and retain every sample, failure
+and binary identity outside version control. Report P50 and P95 where the
+sample count supports them; keep the ledger gate's best-of-five decision
+separate. Do not add overlapping queue, service or GC intervals as though
+they were disjoint costs.
+
+Use diagnostic builds to split source read, request encoding, owner wait,
+Fold and tape emission, Rust decoding and projection. Qualify gains on the
+unprofiled public workload with exact event and result checks. The fixed VM
+owner retains Scheme values; moving Rust projection onto that owner changes
+the contention model and requires independent evidence.
+
+Profiling receipts use =fold= for Scheme traversal, =event_tape= for the
+wire representation, =owner= for queue admission and owner service, and
+=ffi= for calls and copies across the language boundary.
+
+For the ledger query, enable =runtime-profile= and set
+=ORGIZE_PROFILE_PLAN_LEDGER= and =ORGIZE_PROFILE_PLAN_LEDGER_STAGES= to 1.
+Run the same prepared release target under each owner. The
+=fold.batch.requests= and =owner.metadata.requests= counters distinguish
+the two physical request families. Their owner CPU fields measure work on
+the owner thread. The overall =ffi.requests_completed= counter also
+includes other operations.
+
+* First Fold candidate
+
+In the prior property-scan diagnostic, two 2,000-file samples recorded 145.5
+and 165.6 ms of owner thread CPU across 64 completed owner calls. Their
+separately observed event decode spans were 3.1 and 2.8 ms. These are sums
+from the instrumented workload. The owner samples cover both Fold and
+metadata calls, so they cannot identify the marginal cost of a property.
+
+The generated property path expands the value-start and value-end scans at
+several token boundaries. The first candidate shares the offsets only after
+the existing delimiter check and leaves header-argument interpretation with
+the same Fold helper. Compare complete events on the retained property corpus
+before timing the candidate. Keep the compiled candidate and all measurements
+separate from the PR until the result supports promotion.
+
+The candidate and baseline passed the existing Scheme structural and tape
+suites and matched complete tape digests for twelve sources. Loader traces
+confirmed each process used its intended generated Fold. A separate byte-input
+candidate failed the existing malformed UTF-8 control and remains excluded.
+
+Three follow-up experiments used the released Parser v0.1.0. The first
+shared the property key start and resumed the delimiter search after the
+first internal colon. The others enabled the Parser compiler's
+ordinary-byte run lowering and inert-branch pruning independently.
+All matched the twelve complete control tapes and the ordered tapes for
+2,000 ledger sources. Each CPU sample folds the full in-memory input set.
+Each arm runs twenty samples in a fresh process after native compilation.
+
+| Experiment | A/A controls P50 ms | Paired controls P50 ms | Candidates P50 ms | Candidates P95 ms |
+|------------+---------------------+------------------------+-------------------+-------------------|
+| Property key scan | 49.908, 47.760 | 44.408, 44.650 | 47.199, 45.403 | 83.401, 74.017 |
+| Ordinary-byte runs | 46.077, 46.888 | 47.071, 45.591 | 49.620, 46.308 | 83.285, 74.946 |
+| Inert-branch pruning | 56.169, 47.078 | 47.185, 45.712 | 45.076, 45.748 | 72.431, 73.329 |
+
+The property candidate was slower than both adjacent controls. The ordinary
+run candidate's second arm fell between the adjacent controls, and its
+first arm was slower than both. Branch pruning ran near its last control,
+whose P95 was 71.404 ms. These experiments remain outside the release
+build. The ignored receipts under =property-fold-scan=, =fold-ordinary-run=
+and =fold-pruned= retain the raw samples and candidate patches.
+
+An independent three-second macOS stack sample of the 2,000-source Fold
+placed tape reservation, token emission and unsigned-integer admission
+among the frequent leaf frames. An isolated Parser writer candidate adds
+a fixnum fast path for token bounds and retains exact-integer validation
+for the full unsigned 64-bit wire domain. The same twelve complete tapes
+and the aggregate 2,000-document tape digest match. A separate probe
+preserves maximum wire values, backwards spans, overflow rejection and
+publication sealing. The eight existing Parser wire and ownership cases
+passed through =gerbil test= against the isolated writer.
+
+| Writer comparison | A/A controls CPU P50 ms | Paired controls CPU P50 ms | Candidates CPU P50 ms | Candidates CPU P95 ms |
+|-------------------+------------------------+---------------------------+----------------------+----------------------|
+| First run | 65.046, 68.282 | 69.406, 70.120 | 62.724, 53.100 | 104.754, 91.640 |
+| Repeat | 49.097, 53.635 | 48.953, 55.199 | 38.359, 38.164 | 66.524, 67.407 |
+
+The ignored =fold-writer-fast-path= directory retains the candidate patch,
+wire probes and all samples. The local macOS end-to-end replay used the
+existing 2,000-file release gate and two 414-module manifests that differed
+only in the writer input. The following are minima of five wall samples.
+
+| Runtime | A/A controls ms | Paired controls ms | Candidates ms |
+|---------+-----------------+--------------------+---------------|
+| Scheme | 259.029, 138.438 | 103.821, 132.877 | 107.227, 116.486 |
+| Rust | 114.109, 99.237 | 107.217, 126.843 | 156.070, 122.077 |
+
+All four candidate invocations exceeded the 100 ms gate. The isolated
+Fold CPU gain did not reproduce as a consistent endpoint gain. The
+shipping program continues to use the released Parser writer.
+
+For =94098915= the unprofiled 2,000-file gate passed on Ubuntu
+=runtime-rust= at 62.722 ms and macOS =runtime-scheme= at 94.570 ms.
+Ubuntu =runtime-scheme= and macOS =runtime-rust= failed at 124.456 ms
+and 123.052 ms respectively. Ubuntu Scheme's five diagnostic samples
+reported 112.62–114.70 ms of Fold thread CPU and 19.31–21.84 ms of
+metadata CPU. These jobs used the published Parser writer.
+
+An isolated metadata transport comparison replaced the paired =take=
+and =drop= traversals with Gerbil =split-at=. All 120 samples retained
+the response digest and malformed-packet controls. In the 2,048-row
+comparison, CPU medians were 7.177 and 7.232 ms for the candidate and
+6.449 and 8.389 ms for the adjacent controls. The result stays within
+control variation. Raw samples remain under =metadata-packet-split=.
+
+The ledger now uses a single byte-offset lookup for its end line. Its
+line-number parity test covers every offset in empty, Unicode, LF and
+CRLF inputs. The local macOS Scheme release replay retained six
+invocations of the 2,000-file test under =ledger-single-offset=. Best
+wall samples were 197.873 and 154.199 ms in the initial controls,
+98.458 and 108.321 ms in the paired controls, and 92.127 and 111.849 ms
+in the candidate arms. The lookup removes one index allocation per
+projected record. The paired endpoint samples straddle the 100 ms gate.
+
+The request adapter experiment decoded the admitted UTF-8 range directly
+to text before invoking the released Fold. It matched the original
+response for all 2,000 documents and the rejection row for a malformed
+document followed by a valid document. Two control invocations reached
+the 75-second experiment deadline. The candidate diagnostic reported
+92.522 ms median CPU and completed all twenty samples. Completed control
+medians ranged from 50.958 to 101.411 ms. The experiment leaves the
+release adapter unchanged. Raw output stays under =fold-text-request=.
+
+The ledger retention experiment released indexed syntax after graph
+projection and reused the admitted headline record and owned title
+strings. The native startup fixture passed all 86 cases, including
+ledger metadata parity with full-document projection. The unchanged
+macOS Scheme ledger gate recorded minima of 175.640 and 119.354 ms
+in the initial controls, 103.659 and 77.945 ms in the paired controls,
+and 115.297 and 84.289 ms in the candidate arms. Both candidate minima
+were slower than their adjacent controls. The candidate remains
+isolated with its patch and all samples under =ledger-retention=.
+
+The opt-in clock experiment removed unconditional worker phase timing
+from ordinary ledger queries. The local macOS Scheme release gate kept
+the same 2,000 files and all five samples per arm. Initial control
+minima were 87.759 and 98.659 ms. Adjacent controls were 93.981 and
+85.974 ms, and the candidate was 94.469 and 107.303 ms. The separate
+opt-in invocation emitted worker and query timing. The candidate
+remains isolated under =ledger-opt-in-clocks=.
+
+Ubuntu =5e55a423= passed the ledger gate with minima of 69.724 ms for
+=runtime-scheme= and 65.219 ms for =runtime-rust=. The Ubuntu prepare
+job missed the exact dependency key restored by =94098915=, installed
+the declared dependencies in about 20 minutes, and saved the same key.
+The cache and performance logs are preserved separately.
+
+Both preparation jobs for =5e55a423= verified the installed release
+revisions and emitted =COMPILED-INTERFACE-ABI-OK= and =ORG-PARSER-STAGE OK=.
+The macOS job also rebuilt and saved its missing Gerbil dependency
+cache. For the preceding =94098915= Ubuntu Scheme job, GitHub recorded
+29 minutes 44 seconds for the Rust tests and a further 10 minutes
+32 seconds for the full relocated-bundle replay. The current job keeps
+the full Rust suite in the first step and exercises the relocated
+bundle through the native startup suite.
+
+On =5e55a423=, Ubuntu Scheme's complete Rust suite passed 86 native
+unit cases and 463 consumer cases. The relocated bundle passed the same
+86 native unit cases in a separate 1-minute-23-second step, and CI
+published the bundle for that revision. macOS Scheme passed all five
+unprofiled ledger samples, from 81.929 to 91.321 ms.
+
+A local macOS release build of the same runtime sources completed 458
+consumer cases with one failure. The Rust-dispatched Contract query
+control returned its expected diagnostic, then exceeded its separate
+25 ms budget at 145.655 ms. The existing single-case selector, using
+the same binary and fixture, measured 2.365, 124.651, 101.548, 4.167,
+and 34.128 ms in order. The slow samples also occur with the other
+consumer cases absent. This diagnostic is distinct from the 2,000-file
+ledger gate. The full failure and all five samples remain under
+=runtime-rust-5e55a423-local=.
+
+The same program digest was used to compare dispatch owners locally.
+In Scheme, Scheme, Scheme, Rust, Rust, Scheme order, the single-case
+Contract query measured 22.068, 74.874, 10.207, 16.404, 14.051, and
+6.197 ms. The test itself reported one Scheme failure and two Rust
+passes at 25 ms. The timing wrapper could not read =kern.clockrate=,
+so the test output supplies the pass/fail evidence. The separate
+local Rust ledger invocation reached the five-second output watchdog
+before any timed samples. Both diagnostics remain in the same evidence
+directory. The macOS wheel job for =5e55a423= passed the installed
+wheel smoke test outside the source tree.
+
+The =5e55a423= macOS Rust ledger gate failed at 143.222 ms, best of
+five, against 100 ms. The separate profiled run recorded a 142.33 ms
+median owner window, including 99.27 ms median Fold thread CPU and
+19.99 ms median metadata CPU. Result copying was 0.35 ms median.
+The runner started 24 host workers. The unprofiled and profiled
+samples remain in =orgize-5e55a423-macos-rust-perf.log=.
+
+A paired local worker-count experiment reserved one reported host
+CPU for the Scheme owner, with at least two workers for overlap and
+the existing batch size. The first candidate pair reached 87.771
+and 79.065 ms against adjacent controls at 111.422 and 96.371 ms.
+The repeat reached 211.543 and 108.112 ms against 124.661 and
+95.196 ms. Both ledger correctness controls passed. The repeat
+did not confirm a gain. All samples and the patch remain under
+=ledger-host-workers=.
+
+A headline priority experiment checked the token delimiters before
+extracting its value. Thirteen direct probes, including malformed
+cookies and Unicode titles, matched the reference. The metadata
+responses and malformed-packet controls also matched. In the
+2,048-row comparison, candidate CPU medians were 6.857 and 6.742 ms,
+with adjacent controls at 8.196 and 6.537 ms. The candidate remains
+isolated with its patch and samples under =priority-cookie-fast-reject=.
+
+Serial A/A and ABBA runs used twenty samples per process on the same
+256-ledger document. All six event-list receipts passed and matched the
+complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
+candidate P50 was 6.818 and 6.879 ms. The direct-tape runs also matched
+complete tape digests. Both candidate runs passed, and two baseline runs
+exceeded the fixture's diagnostic P95 budget. Preserve the baseline
+failures and qualify the combined candidate on the unchanged full query.
+
+The property fixture can be reproduced with the same Gerbil executable used
+for the benchmark. Save its output outside the package prefix. The expected
+SHA-256 digest is
+=7651acef64202f5c7ec11876a1ae43c0371f3708668ab7c9fd37cb6f43ef492b=.
+
+#+begin_src scheme
+(let loop ((index 0))
+  (when (< index 256)
+    (displayln "* TODO Plan " index " [1/8] [12%] :agent:plan:")
+    (newline)
+    (displayln ":PROPERTIES:")
+    (displayln ":CONTRACT_ORG: agent.plan.v1")
+    (displayln ":ID: plan-" index)
+    (displayln ":PLAN_ID: plan-" index)
+    (displayln ":SESSION_ID: session-a")
+    (displayln ":OBJECTIVE: Stabilize memory engine recall flow " index)
+    (displayln ":NEXT_ACTION: continue checkpoint " index)
+    (displayln ":END:")
+    (displayln "** Evidence")
+    (displayln "- receipt " index)
+    (loop (+ index 1))))
+#+end_src
+
+Run =:orgize/t/benchmarks/org-event-fold= with that file and the committed
+=t/benchmarks/org-event-fold/benchmark.ss= contract. Use a distinct receipt
+for each process. Run the baseline twice, then use baseline, candidate,
+candidate, baseline order. Compare the receipts using
+=:orgize/t/benchmarks/org-event-fold/compare= and retain the raw timings.
+
+The unprofiled Rust-owner ledger at =4a2ac65c= returned 304.283, 206.512,
+199.579, 226.096 and 200.282 ms in execution order. It failed the 100 ms
+gate. Development compilation overlapped this run, so retain it as a gate
+failure and compare the candidate in a serial run of both prepared binaries.
+
+An initial ABBA comparison isolated the ledger headline metadata candidate.
+The baseline and candidate ran the unchanged 2,000-file query with ten
+samples per artifact. The candidate's P50 was 171.635 ms against 201.562 ms,
+and its fastest sample was 114.134 ms. Every run failed the 100 ms gate.
+The host load was 47 to 48 while the other owner binary was being built.
+Retain this diagnostic alongside the later two-owner and phase comparisons.
+
+The serial two-owner ABBA comparison kept the same query, fixture, and
+toolchain. Each row reports ten unprofiled query samples. With ten samples,
+nearest-rank P95 and P99 both select the maximum. Peak RSS is the maximum
+across the two processes for each artifact.
+
+| Owner | Artifact | Best (ms) | P50 (ms) | P95 / P99 (ms) | Documents/s | Peak RSS (MiB) |
+|-------+----------+-----------+----------+----------------+-------------+----------------|
+| Rust | Baseline | 113.039 | 121.865 | 147.616 | 16,198.8 | 102.53 |
+| Rust | Metadata candidate | 112.091 | 115.496 | 122.188 | 17,212.5 | 102.50 |
+| Scheme | Baseline | 118.874 | 126.165 | 201.852 | 13,527.6 | 102.42 |
+| Scheme | Metadata candidate | 107.970 | 117.561 | 167.090 | 16,007.7 | 102.75 |
+
+The metadata candidate passed the native unit suite in both owners, including
+its full-document metadata comparison. Both owners still failed the 100 ms
+gate. Host load ranged from 35.71 to 44.31. The phase comparison and the
+combined candidate are separate experiments.
+
+A profiling preflight observed 32 Fold requests and 32 document metadata
+requests in each sample on both owners. Those counts reconcile with every
+physical owner reply. The Fold and metadata owner CPU medians were 105.478
+and 39.745 ms in the Rust owner, and 130.063 and 36.053 ms in the Scheme
+owner. Compilation overlapped this preflight, so the timings remain
+diagnostic and separate from the paired qualification.
+
+In a Rust-owner diagnostic pair, both artifacts issued 32 Fold and 32
+metadata requests per sample. The metadata candidate reduced median metadata
+owner CPU from 35.798 to 24.921 ms. Median Fold owner CPU was 127.686 ms on
+the baseline and 127.459 ms on the candidate. Host load was 99.65 and
+105.36, respectively. Use these counters to locate the changed work and
+retain the unprofiled comparison as the performance gate.
+
+The profiled ABBA comparison preserved 32 Fold and 32 metadata requests
+per sample and collected ten samples per artifact on each owner. Median
+metadata owner CPU fell from 27.564 to 20.830 ms in the Rust owner and from
+29.343 to 18.429 ms in the Scheme owner. Median Fold service was 90.556 and
+91.408 ms in the Rust owner and 92.686 and 91.236 ms in the Scheme owner.
+Rust's largest profiled wall sample rose from 178.056 to 264.114 ms.
+Scheme's fell from 216.948 to 177.114 ms. These profiled samples locate the
+saved CPU work. The separate unprofiled gate remains at 100 ms.
+
+The combined property and ledger metadata candidate matched all twelve
+complete tape digests using the optimized package build. Both runtime
+owners passed the explicit startup test with 86 cases. The unprofiled
+2,000-file A/B/B/A run kept ten samples per arm and owner. The Rust-owner
+median was 153.361 ms for the baseline and 131.335 ms for the candidate.
+The Scheme-owner median was 141.376 ms for the baseline and 123.670 ms for
+the candidate. The candidate's fastest samples were 113.392 ms and
+113.218 ms respectively. Every process exceeded the unchanged gate.
+
+* Headline bounds experiment
+
+A separate Fold candidate shares headline marker and title bounds on each
+line. The optimized package probe matched eleven complete tape digests,
+including Unicode, links, tags and inline task boundaries. The paired
+direct-tape experiment used the same 256-document ledger fixture and the
+existing ASP contract. Each fresh process recorded twenty samples and the
+same full tape digest.
+
+| Arm | P50 ms | P95 ms |
+|-----+--------+--------|
+| A/A first A | 8.309 | 9.263 |
+| A/A second A | 8.251 | 13.061 |
+| A/B/B/A first A | 8.362 | 73.104 |
+| A/B/B/A first B | 7.618 | 12.091 |
+| A/B/B/A second B | 15.679 | 29.040 |
+| A/B/B/A last A | 10.965 | 32.658 |
+
+Both candidate tail samples were below their paired baseline, but the
+candidate median changed direction and the first baseline pair diverged
+from both A/A controls. The isolated change stays out of the PR pending
+reproducible benefit.
+
+* Semantic tape writer experiment
+
+The candidate writes semantic response rows to the standard Gerbil memory
+writer. It avoids materializing a second list of tagged rows. The optimized
+program build and the existing Scheme gate passed all 237 cases and the
+deliberate failure control. Loader traces identify the baseline and candidate
+tape modules. All 32 request and 32 full response digests match across the
+two traced preflights and six independent measured processes.
+
+Each sample processes 2,000 titles in 32 operation-24 requests. This
+measurement includes Scheme metadata and serialization. It excludes the
+Rust graph and transport paths. With twenty samples, the nearest-rank P99
+is the maximum. RSS is the peak of each process.
+
+| Run | P50 ms | P95 ms | P99 ms | Titles/s at P50 | RSS MiB |
+|-----+--------+--------+--------+-----------------+---------|
+| A/A first baseline | 10.850 | 48.691 | 50.583 | 184332 | 625.67 |
+| A/A second baseline | 11.412 | 48.545 | 50.160 | 175254 | 626.00 |
+| Pair first baseline | 11.047 | 49.851 | 52.070 | 181045 | 625.44 |
+| Pair first writer | 11.048 | 55.077 | 84.298 | 181028 | 624.64 |
+| Pair second writer | 10.739 | 46.597 | 48.301 | 186237 | 623.62 |
+| Pair last baseline | 11.668 | 54.032 | 59.182 | 171409 | 625.44 |
+
+The first writer process increased P95 and P99. The second decreased both
+relative to the last baseline. Peak RSS changed by less than two MiB.
+Keep the writer candidate in the isolated experiment and retain the existing
+serialization path in the PR.
+
+* Scheme actor execution
+
+** Deployment and execution boundaries
+
+Build the release grammar and Scheme runtime with AOT for each supported
+target. Measure compilation, linking and packaging separately from VM
+startup and warm requests. Both =runtime-scheme= and =runtime-rust= load
+the AOT Scheme parser. The feature selects the host dispatch path.
+
+Use Scheme actors for work that shares Scheme state, such as parsing and
+document metadata inside a VM. Keep Rust responsible for file I/O, bounded
+admission across VM owners and delivery to host callers. Use the FFI at
+that host boundary, passing owned batches and results. Scheme-only
+consumers call the same Scheme entry directly. A CPU-bound speedup from
+parallel VM owners requires measured throughput, tail latency and memory
+on both targets.
+
+[[https://github.com/tao3k/orgize/actions/runs/43368368998][CI for 6884908]]
+passed AOT preparation on both targets. On Ubuntu, the unprofiled
+2,000-file ledger gate exceeded 100 ms in both modes. The best of five was 113.003 ms
+for =runtime-scheme= and 128.034 ms for =runtime-rust=. In the diagnostic
+reruns, summed Fold service was 89.26–104.61 ms and 103.39–116.09 ms
+respectively. Result copying accounted for 0.23–0.51 ms and 0.77–1.09 ms.
+These are separate runner jobs. The timings identify work within each
+path and do not establish a ranking of the dispatch modes.
+
+** Current execution and experiments
+
+Gerbil Parser supplies the parser primitives and the Fold machinery. Orgize
+Scheme owns Org grammar, event production, document metadata, Contract
+evaluation and the scheduling of actors inside each VM. Rust owns caller
+admission, file I/O, capacity and lifecycle across VM owners, and delivery of
+owned results. A Scheme value stays with its VM owner.
+
+The [[file:../../bindings/c/orgize-actor.ss][existing Scheme batch]] creates
+green-thread workers with private mailboxes, joins them and returns results in
+input order. The standard suite covers order, parser configuration, failure
+containment and caller mailbox isolation. This functional batch returns event
+lists. The public tape path uses a separate bounded loop and emits tapes
+directly. The Scheme runtime lane has a serving green thread, but its idle
+C wait blocks the owner thread. The Rust runtime lane hands the batch to a
+fixed owner through a Rust channel. Neither tape path uses the Scheme actor
+batch to schedule individual documents.
+
+The focused package test completed all six actor cases with the existing
+output watchdog. The first full invocation hit the five-second output
+watchdog during module evaluation. A serial replay of =just ci-scheme-test=
+on the same prepared prefix passed 236 cases in 19 suites, including the
+actor cases, and the existing intentional failure returned 42. Keep the
+initial timeout as evidence of startup variability.
+
+The direct-tape witness uses the bridge's =make-gerbil-rs-actor-batch=
+with four persistent workers inside one VM. It compares the full ordered
+tapes with direct calls, including repeated documents, Unicode, CRLF and a
+repository fixture. A failed turn drains, a subsequent turn returns the
+same tapes, the caller keeps its own mailbox message, and a closed batch
+rejects another turn. The focused witness passed through the package test
+entry point. The next full run reached 162 cases and ten suites before the
+unchanged 120-second deadline. It had yet to reach the tape suite.
+The maintained tape suite initially hit the five-second output watchdog
+while evaluating its relative source imports. Using the installed module
+identities for the tape and event-list owners let all fourteen focused cases
+pass through the same entry and watchdog. The following full run completed
+237 cases in 19 suites and the intentional failure control in 65.69 seconds.
+The witness exercises Scheme execution and retirement inside one VM. Host
+admission and Rust result delivery remain separate obligations.
+
+The first transport experiment should run the existing direct-tape operation
+as a handler of the bridge's =make-gerbil-rs-service-endpoint=, with
+=SchemeServiceRequest= carrying owned input into fixed-owner Rust admission.
+The current bridge pin provides those interfaces. Its Rust instance module
+is Darwin-only and loads a separate VM image. Start the one-VM comparison
+there with the same bounded input and byte-identical results. Linux and
+the existing statically linked deployment need independent loader and
+lifecycle evidence before replacing the shipping owner paths.
+Keep Org source, intermediate event state and metadata inside the Scheme
+turn. Move only owned request and result data across the host boundary.
+Keep stateful operations bound to their owner and compare independent
+documents in the same input order. A cancelled queued job is removable.
+For claimed work, the owner retains capacity and roots until retirement.
+Verify both paths with a full mailbox, an invalid document, cancellation
+before and after claim, and close while work is outstanding.
+
+Measure handler CPU, allocation and GC separately from admission, mailbox
+wait and result delivery. Pair the current owner loop against the bridge
+service using the same direct-tape handler, fixtures and concurrency. Then
+test whether producing the ledger's metadata in that same Scheme turn
+removes the second owner request. Today Rust creates the metadata packet
+from validated graph records. A fused result must obtain keyword and title
+fields from the same Fold traversal and bind each result to its
+source-relative span and source identity. Rust can then join those fields
+to the validated graph records without depending on a second set of
+node IDs. Preserve the full graph and document metadata checks while
+testing this separate algorithm change. The bridge's
+[[https://github.com/tao3k/gerbil-scheme-rust/blob/9aa4de6adc1f566f78586b046ba9452c1e996d7b/docs/10-19-design/10.50-mailbox-frozen-control-4513.org][single-VM mailbox observation]]
+completed 999,944.88 typed messages per second in one arm and exceeded its
+backlog limit. It provides a concrete service shape to test with the Org
+workload and retains its failed acceptance result.
+
+* Tape transition lowering
+
+Parser's Fold compiler can share tape statements for their effect on the
+request-owned writer. This removes accumulator reassignment across those
+calls. The list consumer still needs its returned accumulator. The two
+generated packages differ only in tape units and their build roots;
+ordinary-run, branch and diagnostic options match. The installed products
+are distinct, both pass the 14 tape cases, and the measured source and tape
+digests agree.
+
+The isolated text-to-tape diagnostic runs 2,000 documents per sample,
+20 samples per arm. It does not measure the complete ledger endpoint.
+The samples below include the A/A control's host variation.
+
+| Arm | Variant | Wall P50 (ms) | Wall P95 (ms) |
+|-----+---------+---------------+---------------|
+|   1 | Control |       198.223 |       220.110 |
+|   2 | Control |       414.083 |       481.440 |
+|   3 | Control |       191.268 |       245.884 |
+|   4 | Effect  |       108.096 |       141.582 |
+|   5 | Effect  |       105.667 |       140.198 |
+|   6 | Control |       194.057 |       218.046 |
+
+The effect arms report 188,768,704 allocated bytes each, down from
+401,697,648 and 467,097,968 in the adjacent controls. All six arms miss
+the 100 ms diagnostic bound. This isolates a Fold improvement without
+qualifying an Orgize release or changing its Parser pin.
+
+The endpoint comparison holds the Orgize metadata adapter, bridge,
+toolchain and Parser runtime source fixed. Build two programs from the
+same Parser base, with the tape lowering as the only compiler change.
+Use the existing package and program staging entries to bind each
+generated Fold and static closure to its own source roots. Run the
+unchanged release ledger test in both runtime modes, with the same
+workload and worker policy. Retain all raw samples and both program
+identities. An isolated program comparison does not promote a dependency.
+
+Both release programs use Orgize =ebea8875= and Parser =bb85a5e=. The effect
+program adds the compiler patch from =38ba284=. Its linked roster contains
+432 modules. The control contains 433. The only removed module is
+=parse-org-compiled-tape-part-20=. Both linked rosters exclude benchmark
+and test modules. The source exports share the same Cargo resolution.
+Their CLI revision metadata comes from the enclosing workspace. The
+ledger scenario does not read it. The experiment records the source,
+manifest and executable digests directly.
+
+The original 2,000-file scenario runs twice as an A/A control, then in
+control, effect, effect, control order per runtime. Each invocation records
+five wall samples and applies the existing gate to their minimum.
+
+| Runtime | Order | Variant | Best (ms) | P50 (ms) | Gate |
+|---------+-------+---------+-----------+----------+------|
+| Rust    |     1 | Control |   101.092 |  110.832 | Fail |
+| Rust    |     2 | Control |   104.636 |  111.511 | Fail |
+| Rust    |     3 | Control |    96.941 |  107.028 | Pass |
+| Rust    |     4 | Effect  |    82.511 |   86.660 | Pass |
+| Rust    |     5 | Effect  |    86.770 |   94.129 | Pass |
+| Rust    |     6 | Control |    95.785 |  106.358 | Pass |
+| Scheme  |     1 | Control |    99.745 |  104.513 | Pass |
+| Scheme  |     2 | Control |   102.652 |  129.524 | Fail |
+| Scheme  |     3 | Control |   105.575 |  137.147 | Fail |
+| Scheme  |     4 | Effect  |   104.849 |  128.278 | Fail |
+| Scheme  |     5 | Effect  |    94.397 |  103.472 | Pass |
+| Scheme  |     6 | Control |   115.534 |  118.930 | Fail |
+
+Both effect invocations passed under the Rust runtime. The Scheme effect
+invocations straddled the gate. The Scheme A/A medians varied by 25.011 ms.
+Retain all 60 samples and keep the gate open for both CI platforms.
+
+A second complete A/A and ABBA sequence reused the same four executable
+digests on the same 12-core machine. It used the original receipt recipe,
+2,000 files, five observations per invocation, runtime worker policy and
+watchdog. No local compilation was launched during this sequence. Host
+contention was not controlled. All sixty samples remain in ignored evidence
+under =fold-endpoint-repeat-20261111=, including the failed control.
+
+| Runtime | Order | Variant | Best (ms) | P50 (ms) | Gate |
+|---------+-------+---------+-----------+----------+------|
+| Rust    |     1 | Control |    97.950 |  101.970 | Pass |
+| Rust    |     2 | Control |    90.027 |  112.357 | Pass |
+| Rust    |     3 | Control |    97.569 |   99.349 | Pass |
+| Rust    |     4 | Effect  |    77.600 |   87.537 | Pass |
+| Rust    |     5 | Effect  |    80.345 |   94.522 | Pass |
+| Rust    |     6 | Control |    97.085 |  105.819 | Pass |
+| Scheme  |     1 | Control |    92.010 |  113.891 | Pass |
+| Scheme  |     2 | Control |   100.468 |  100.653 | Fail |
+| Scheme  |     3 | Control |    99.766 |  107.235 | Pass |
+| Scheme  |     4 | Effect  |    90.946 |  109.152 | Pass |
+| Scheme  |     5 | Effect  |    78.560 |   87.441 | Pass |
+| Scheme  |     6 | Control |    95.743 |  105.934 | Pass |
+
+All four effect invocations passed this sequence. Seven of eight controls
+also passed; passing the minimum-of-five gate alone does not attribute the
+gain. Rust effect medians were below both adjacent controls, while Scheme
+effect medians straddled them. Retain the first sequence's Scheme effect
+failure and qualify the consumer's exact source and pin through CI before
+calling the optimization accepted.
+
+Separate profiled executables run in ABBA order for each runtime. Each
+cell below is the median of ten complete 2,000-file queries. Every query
+completes 64 owner requests.
+
+| Stage (ms) | Rust control | Rust effect | Scheme control | Scheme effect |
+|------------+--------------+-------------+----------------+---------------|
+| Owner CPU  |       91.257 |      72.530 |         89.141 |        73.422 |
+| Fold CPU   |       81.021 |      62.275 |         79.884 |        63.019 |
+| Metadata CPU |     10.858 |      10.446 |          9.323 |         9.867 |
+| Fold VM GC CPU intervals | 46.216 | 12.931 |    36.985 |         9.707 |
+| Request encoding |  0.128 |       0.120 |          0.122 |         0.121 |
+| Result copy |        0.120 |       0.131 |          0.112 |         0.095 |
+| Graph projection worker sum | 8.550 | 8.695 |      7.373 |         7.200 |
+
+Fold CPU decreases by 18.746 ms on Rust and 16.865 ms on Scheme. GC
+intervals overlap the Fold measure. Graph projection and aggregate
+worker waits overlap across workers. The candidate's owner service wall
+median is 76.988 ms on Rust and 76.232 ms on Scheme. The remaining wall
+budget includes filesystem traversal, delivery of the first batch and
+projection after the last owner reply. The stage counters capture sums of
+overlapping work and leave those serial intervals unattributed.
+
+The effect package also passed the original Scheme entry with 237 cases
+in 19 suites. The deliberate failure control returned 42.
+
+** Query wall intervals
+
+The runtime profile reconstructs each owner service interval from the
+reply's service and handoff durations and the receiving thread's
+monotonic clock. Worker results transfer their earliest start and latest
+completion back to the requesting thread. The query then reports the
+wall intervals before, within and after the owner window. The estimates
+include the short delay between reply receipt and the host clock read.
+
+Ten queries per runtime used the effect program and 64 owner requests
+each. A local functional build was active while these queries ran.
+
+| Wall interval median (ms) | Rust | Scheme |
+|---------------------------+------+--------|
+| Before first owner service | 19.855 | 22.324 |
+| First start to last completion | 116.257 | 122.316 |
+| After last owner completion | 4.419 | 4.234 |
+| Within window outside summed service | 0.262 | 0.221 |
+
+The median before-owner interval is larger than the interval after the
+last reply. The owner spends most of its window in service.
+
+** Short first batch experiment
+
+The experimental Rust scheduler moves the existing short batch to the
+front of the traversal. Its worker can deliver a batch while other
+workers read their full batches. Source order, wire limits and the
+worker count stay fixed. Both arms use the same effect program manifest
+and differ by one Rust source file.
+
+After local builds finished, the original release scenario ran twice
+as an A/A control, followed by control, candidate, candidate, control
+for each runtime. Every invocation passed its best-of-five gate.
+Invocation medians for the four paired arms are below.
+
+| Runtime | Control (ms) | Candidate (ms) | Candidate (ms) | Control (ms) |
+|---------+--------------+----------------+----------------+--------------|
+| Rust    |       84.175 |         87.055 |        105.240 |       88.487 |
+| Scheme  |       99.399 |         96.385 |         85.462 |       90.563 |
+
+Rust's second candidate invocation reached 216.969 ms. The Scheme
+medians varied across both arms. Retain all 60 samples. Keep the existing
+batch order because the candidate did not produce a consistent gain.
+
+The Fold effect program passed both complete Rust functional suites,
+including the original benchmark smoke checks, and the separate
+Scheme package test entry.
+
+* Promotion
+
+The Ubuntu relocation run for =3358e3a5= passed the Scheme runtime's
+ledger gate and ordinary tests. Bundle admission then rejected the
+compiler-owned archive because its Gambit link name differed from the
+Darwin name. The pinned bridge publishes =gerbil_scheme_rust_gambit=
+when it scopes Linux signal handlers. Both publication and relocated
+admission use Cargo's target OS to require the corresponding archive.
+The archive order and content digests still bind the original link
+receipt. Verify the change through the existing relocated consumption
+step on the current commit.
+
+The consumer selects Parser =e5fdd53b33c376dabb927f79b047e4d5cae9f7ac=
+only after its complete [[https://github.com/tao3k/gerbil-parser/actions/runs/42939773100][cross-platform workflow]] finished successfully.
+All twelve applicable jobs passed; the five existing conditional jobs were
+skipped by their original workflow predicates. The original twenty-sample
+Grammar P95 was 71.187538 ms on Ubuntu and 98.682 ms on Darwin against
+100 ms. Both successful receipts and all earlier failures remain retained.
+This qualifies the upstream revision; it does not establish Orgize's ledger
+budget or a stable causal improvement in Grammar construction.
+
+Scheme and both Cargo lockfiles bind the same Parser commit. Cargo updated
+only the two Parser package source identities. Orgize's original dependency,
+program, Scheme, both Rust runtime and wheel entries must still qualify
+the resulting consumer. The bridge remains at the separately authorized
+=0d92f7b= revision.
+
+The earlier post-squash run passed Rust Contracts and AOT
+performance, but its Linux and Darwin semantics jobs failed when the historical
+migration fixture was absent from the squash history.
+[[https://github.com/tao3k/gerbil-parser/actions/runs/42758058862][Parser main CI]]
+The focused Scheme test also failed in an isolated checkout of the squash
+commit. Fetching the reviewed PR history made the original fixture available.
+The same test then passed with the same checkout and installed Parser code.
+Neither a fast lexical probe nor an upstream Mailbox throughput result
+qualifies Orgize's end-to-end performance. Keep the full Scheme, both Rust
+runtimes, relocated FFI, wheel and performance checks in the existing PR.
+CI prepares and tests each platform in its own workflow call. Each runtime
+and wheel job waits for the artifact from its own platform.

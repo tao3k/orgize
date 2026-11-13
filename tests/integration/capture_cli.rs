@@ -1,6 +1,5 @@
 use std::{fs, path::PathBuf};
 
-#[test]
 fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
     let dir = test_dir("capture-plan");
     let plan_path = dir.join("PLANS.org");
@@ -68,7 +67,6 @@ fn capture_plan_renders_reviewable_plan_without_writing_org_file() {
     );
 }
 
-#[test]
 fn capture_plan_requires_contract() {
     let dir = test_dir("capture-plan-requires-contract");
     let plan_path = dir.join("PLANS.org");
@@ -102,7 +100,6 @@ fn capture_plan_requires_contract() {
     );
 }
 
-#[test]
 fn capture_plan_rejects_domain_specific_agent_plan_kind() {
     let dir = test_dir("agent-plan-template");
     let plan_path = dir.join("PLANS.org");
@@ -186,3 +183,18 @@ fn test_dir(name: &str) -> PathBuf {
     fs::create_dir_all(&dir).unwrap();
     dir
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "capture_cli::capture_plan_renders_reviewable_plan_without_writing_org_file",
+        capture_plan_renders_reviewable_plan_without_writing_org_file,
+    ),
+    (
+        "capture_cli::capture_plan_requires_contract",
+        capture_plan_requires_contract,
+    ),
+    (
+        "capture_cli::capture_plan_rejects_domain_specific_agent_plan_kind",
+        capture_plan_rejects_domain_specific_agent_plan_kind,
+    ),
+];

@@ -17,7 +17,6 @@ details:
 #+END_SRC
 "#;
 
-#[test]
 fn projects_canonical_org_interactive_choice() {
     let document = Org::parse(INTERACTIVE).document();
     let choices = document.org_interactive_choices().unwrap();
@@ -33,10 +32,20 @@ fn projects_canonical_org_interactive_choice() {
     assert!(choice.categories[2].detail);
 }
 
-#[test]
 fn rejects_categories_that_do_not_resolve_to_details() {
     let source = INTERACTIVE.replace("1=EVIDENCE", "1=UNKNOWN");
     let document = Org::parse(&source).document();
     let error = document.org_interactive_choices().unwrap_err();
     assert!(error.to_string().contains("must match a detail row"));
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_org_interactive::projects_canonical_org_interactive_choice",
+        projects_canonical_org_interactive_choice,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_org_interactive::rejects_categories_that_do_not_resolve_to_details",
+        rejects_categories_that_do_not_resolve_to_details,
+    ),
+];

@@ -1,0 +1,9 @@
+#+TITLE: Duplicate Stable Identity
+* First
+:PROPERTIES:
+:ID: ambiguous
+:END:
+* Second
+:PROPERTIES:
+:ID: ambiguous
+:END:

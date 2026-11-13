@@ -1,0 +1,165 @@
+#+title: Native consumer coverage and persistent Scheme state, 2026-10-03
+
+* Scope and source identity
+Orgize codex/native-org-recovery at base
+479b2763fa1924385a2df824d029e9ba35341bcd plus local changes.
+Parser PR13 base 7c1533356585154c8b5d340f64ffefb289d18907 plus the
+existing request-local byte caches and this persistent-state candidate.
+Runtime/sys remain immutable 8bb8103b820a0c8d02446d6398197079c5275671.
+No Gambit kernel change, Legacy fallback, runtime/sys path override, push,
+release, or remote-CI qualification is part of this receipt.
+
+* Default consumer coverage migration
+The original integration_test executable listed 458 default tests: 454 ordinary
+cases, three already-ignored scenarios, and one Rowan handoff fixture already
+covered by its separate Cargo target. The duplicate mount was removed, not
+the dedicated handoff test. A source catalog binds all 454 ordinary qualified
+names; its SHA256 is
+bc00588f0ccd8cbe115de564dc57fd0dccff87afc9dbf2cce0f52ba0289b2411.
+The fixture requires exact catalog equality and no duplicate names before
+invoking cases. Test bodies, semantic snapshots, limits, and feature conditions
+are unchanged. The three ignored entrypoints retain their original status and
+now initialize explicitly when selected in their own process.
+
+One standard libtest fixture initializes once before creating application
+workers/children, then invokes all cases at available_parallelism (12 callers
+on this host). This is one composite test, NOT 454 independently registered
+libtest tests. Each case retains its panic hook; catch_unwind records failures
+and continues remaining cases, then the fixture fails if any case failed.
+The Justfile case selector requires an exact single match; unknown selections
+cannot silently pass with zero cases. There is no reduced request concurrency,
+per-parse lazy initialization, threshold change, or ignored failing case.
+
+Root Cargo test targets and semantic_ast/mod.rs are thin external module
+mounts. The startup fixture, semantic catalog and three large case catalogs
+have separate file-backed owners with explicit imports. ASP's existing policy
+test reads this final source and passes. Initial thin-target, oversized-file,
+and glob-import failures were repaired; those earlier failures are not green
+qualification.
+
+* Pre-candidate full execution on native program 2743d83b
+The following full runs finished after this task's build jobs, before the
+persistent-state candidate was linked. All 454 START records were matched
+by completion records in each mode, with 453 OK and one FAILED. Both outer
+commands returned 101; no partial pass is called complete closure.
+
+| feature | callers | completed | passed cases | failed cases | wall seconds | unchanged 25ms query observation |
+|---------+---------+-----------+--------------+--------------+--------------+--------------------------------|
+| runtime-rust | 12 | 454 | 453 | 1 | 18.64 | 190.852375ms |
+| runtime-scheme | 12 | 454 | 453 | 1 | 16.35 | 158.024167ms |
+
+The failed case is
+lint_contract::lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget.
+No semantic mismatch was observed among the 453 passing cases. This is not
+proof that every optional-feature, ignored-performance, SDK, or downstream
+consumer gate has passed. An earlier Rust run stopped a worker chunk at the
+first 62.738458ms query failure; its unexecuted suffix is not counted here.
+An earlier Scheme full run lacked Cargo in PATH and is not the retained run.
+
+Preserved executable SHA256:
+- Rust e1ada78df1ddd07b9418b717c7d3a0d8d31270648f7941b05dece754da5c82f1.
+- Scheme f66b0a875d68d2be5c42fbb635f86f6be2a7ed80123b6c8b36d4273fd3516a59.
+Both live under target/runtime-receipt-binaries/*before-state-sharing-20261003.
+The query gate remains red. Host quiescence was not established: uptime at
+17:32:46 Asia/Shanghai showed load 84.21/74.84/66.04. It is not a synchronized
+causal measurement of a particular query, nor permission to alter host jobs.
+
+* Shared functional optimization
+fold-update-state now visits all entries and reuses unchanged entries/suffixes.
+An identity-equal no-op reuses the entire list; changed values rebuild only the
+prefix through the last changed entry. Duplicate names still all update, even
+for direct runtime input; closed IR admission rejects duplicates. State lists
+are not mutated. No global/source cache, alternate parser, Scheme GC handle
+escape, or runtime ownership change is introduced.
+
+Source SHA256:
+7348bb2fd8e13e48ab4a36191d9a1cbc0c13044e209bda8ef691c693f1a93e2b.
+Exact optimized compiled Scheme SHA256:
+- Baseline 3616ad09d2837d6a0998210d5d597e2dc03b43799f2f0ce45e3d40158255a6a4.
+- Candidate d84d7dbd049e693f59c5ee8e5587583a3d003a19d1dc6e19ec18aa1a9de67668.
+For each lane the dynamic ~0.scm and compiler-owned static module have equal
+hashes. The baseline already contains the same bounded line/prefix caches;
+its complete compiled dependency closure was copied before this edit.
+
+* Matched Scheme A/B
+Existing ASP timing/memory helpers are compiled from the isolated 52eb1f0
+source into target/benchmark-support, not from globally installed stale modules.
+The existing org-event-fold adapter is unchanged, SHA256
+4512adbc4bb0dc8c21d07ca58cf2f0dc395524ff53448a216bbb13dc0249772d.
+Justfile owns compilation, closure preservation, benchmark execution and tests.
+An initial probe selected incompatible installed :gerbil/gambit timing metadata
+and exited 70 before samples; it is excluded. A failed focused-test module load
+also predates the corrected explicit parser-first load path and is excluded.
+
+Twelve sequential processes each produced 20 samples and final
+ORG-EVENT-BENCHMARK-OK, with no task-owned build/test intentionally overlapping.
+Round two reverses lane order for each fixture. Every sample compares the whole
+event list; source and full-event digests match across both lanes/rounds for
+each fixture. Allocation snapshots use GC before and after the timed parse;
+neither GC nor loading/warmup is inside the elapsed parse timer. Both lanes use
+the same installed Gerbil/Gambit, optimizer, instrumentation and 1G heap fence.
+
+| fixture | round | baseline median us | candidate median us | baseline p95 us | candidate p95 us | baseline allocated bytes | candidate allocated bytes |
+|---------+-------+--------------------+---------------------+-----------------+------------------+--------------------------+---------------------------|
+| doc.org | 1 | 2003 | 2096.5 | 32323 | 29042 | 8974992 | 1917936 |
+| doc.org | 2 | 1904 | 1904.5 | 33424 | 49976 | 8974992 | 1917936 |
+| plain-links.org | 1 | 2363.5 | 2414.5 | 55047 | 52109 | 12159696 | 2260128 |
+| plain-links.org | 2 | 7323 | 2412.5 | 110180 | 22249 | 12159696 | 2260128 |
+| quote-heavy.org | 1 | 5692.5 | 5181.5 | 71387 | 46702 | 26971776 | 4927392 |
+| quote-heavy.org | 2 | 16321 | 29353 | 64510 | 126698 | 26971776 | 4927392 |
+
+Allocation deltas are constant in all 20 samples in both rounds for each cell:
+approximately 78.6%, 81.4%, and 81.7% less allocation respectively. This is
+Scheme execution allocation on three small 394/299/639-byte inputs, not Rust
+RSS, AOT/FFI allocation instrumentation, or a 10000-document throughput result.
+Timing does NOT establish a general speedup: quote-heavy's second candidate
+round is materially slower, and other cells also have regressions/noisy tails.
+Keep this regression evidence; do not select a runtime winner or declare the
+performance gate closed. Raw samples and identities are retained in
+scheme-state-sharing-samples-20261003.json.
+
+Focused Scheme event-fold (38 declared cases including the new transition case)
+and the existing Org event aggregate both passed with MODULE-OK, HARNESS-OK,
+final OK and zero command status. The new test exercises no-op/changed bool,
+uint and stack state across UTF-8/CRLF lines and separate requests.
+
+* Native candidate qualification
+The candidate was staged successfully through scheme-parser-stage using the
+same native compiler owner. The new closure has 213 modules, versus the
+historical receipt's 214; no native timing comparison across those closures
+is presented as a controlled algorithm A/B. Both release links completed:
+Rust 3m34s, Scheme 3m19s, with opt-level 3 and Thin LTO unchanged.
+The native build observer compiled the optimized fold module and validated
+cached inputs, rather than blindly linking the previous archive.
+
+Both features embed exactly the new native program digest:
+sha256:96679b86e57b9a41097563d9ad6b6d1e99b48cfb59bdefa3f698f7aa73a52a03.
+The manifest points at the candidate fold module with d84d7dbd compiled digest.
+Fresh aggregate executable SHA256:
+- Rust 8c668bee3e8a621338a0a09f90e158a88d7a8e5a84c97446cc26878c577571c5.
+- Scheme ee2db11a63d6266272dc9e4853828ee9b5b7328ade7c872ea8588d0f375ff3bb.
+Both are preserved under target/runtime-receipt-binaries/aggregate-*-state-sharing-20261003.
+
+| feature | callers | completed | passed cases | failed cases | wall seconds | unchanged 25ms query observation |
+|---------+---------+-----------+--------------+--------------+--------------+--------------------------------|
+| runtime-rust | 12 | 454 | 453 | 1 | 17.68 | 42.308375ms |
+| runtime-scheme | 12 | 454 | 453 | 1 | 20.44 | 231.419458ms |
+
+Both commands exited 101 with only the same query-performance case failing.
+All other 453 cases passed; neither aggregate is a green full test result.
+No build job from this task overlapped either retained aggregate execution.
+Sequential exact-case diagnostics then passed in each feature (exit zero,
+one invoked case, original 25ms bound unchanged). The fixture reports the
+available caller capacity of 12 in these selected runs, but only one chunk
+and one actual worker are created for the single case. These focused passes
+do not replace the concurrent full-aggregate failures. The difference in run
+conditions includes caller contention and uncontrolled host activity; it does
+not establish the root cause, excuse the architecture, or rank the runtimes.
+Uptime at 17:52:14 Asia/Shanghai showed load 79.11/76.76/72.02.
+
+Old 2743d83b binaries and their 44000-document Tokio receipts do not qualify
+this new candidate. No installed Python wheel has been rebuilt for this
+change. The full-scale candidate matrix (1000/10000 documents with 1/8 Tokio
+callers in both features), lifecycle/SDK reruns, optional features, original
+ignored performance scenarios, strict aggregate latency and remote CI remain
+open. No universal speedup, stable tail improvement or full closure is claimed.

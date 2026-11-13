@@ -13,7 +13,6 @@ use datafusion::arrow::array::{Int64Array, StringArray};
 
 use super::semantic_ast_projects_elements_bridge_fixtures::graph_query_snapshot_records;
 
-#[test]
 fn semantic_ast_projects_org_elements_query_packet_has_snapshot() {
     let doc = Org::parse(
         r#"#+NAME: task_runner
@@ -82,7 +81,6 @@ echo run
     );
 }
 
-#[test]
 fn semantic_ast_projects_org_elements_graph_properties_have_snapshot() {
     let doc = Org::parse(
         r#"* TODO Task A :work:
@@ -160,7 +158,6 @@ See [[https://example.test][example]].
     insta::assert_snapshot!(serde_json::to_string_pretty(&payload).unwrap());
 }
 
-#[test]
 fn semantic_ast_projects_org_elements_graph_relation_queries_have_snapshot() {
     let doc = Org::parse(
         r#"* Task
@@ -232,8 +229,16 @@ fn semantic_ast_projects_org_elements_graph_relation_queries_have_snapshot() {
 }
 
 #[cfg(feature = "datafusion-sql")]
-#[tokio::test]
-async fn semantic_ast_projects_org_elements_sql_query_uses_datafusion() {
+fn semantic_ast_projects_org_elements_sql_query_uses_datafusion() {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("DataFusion consumer runtime")
+        .block_on(org_elements_sql_query_uses_datafusion());
+}
+
+#[cfg(feature = "datafusion-sql")]
+async fn org_elements_sql_query_uses_datafusion() {
     let doc = Org::parse(
         r#"#+name: plan_contract_graph
 #+begin_src mermaid
@@ -290,3 +295,23 @@ ORDER BY ordinal
     assert_eq!(source_start_line.value(0), 1);
 }
 use super::semantic_ast_projects_elements_bridge_fixtures::snapshot_summary_value;
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    #[cfg(feature = "datafusion-sql")]
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_query_cases::semantic_ast_projects_org_elements_sql_query_uses_datafusion",
+        semantic_ast_projects_org_elements_sql_query_uses_datafusion,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_query_cases::semantic_ast_projects_org_elements_query_packet_has_snapshot",
+        semantic_ast_projects_org_elements_query_packet_has_snapshot,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_query_cases::semantic_ast_projects_org_elements_graph_properties_have_snapshot",
+        semantic_ast_projects_org_elements_graph_properties_have_snapshot,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_elements_bridge::semantic_ast_projects_elements_bridge_query_cases::semantic_ast_projects_org_elements_graph_relation_queries_have_snapshot",
+        semantic_ast_projects_org_elements_graph_relation_queries_have_snapshot,
+    ),
+];

@@ -32,7 +32,6 @@ CLOCK: [2026-05-15 Fri 11:00]--[2026-05-15 Fri 11:15] =>  0:15
 :END:
 "#;
 
-#[test]
 fn semantic_ast_projects_clock_rollups_for_effort_comparison() {
     let doc = Org::parse(SOURCE).document();
     assert_clean_projection(&doc);
@@ -68,7 +67,6 @@ fn semantic_ast_projects_clock_rollups_for_effort_comparison() {
     assert_eq!(unclocked.effort.subtree_total_seconds, 1_800);
 }
 
-#[test]
 fn semantic_ast_projects_clocktable_plans_from_dynamic_blocks() {
     let doc = Org::parse(SOURCE).document();
     let plans = doc.clock_table_plans();
@@ -95,7 +93,6 @@ fn semantic_ast_projects_clocktable_plans_from_dynamic_blocks() {
     assert!(compact.contains("contract: Derived from official Org CLOCK"));
 }
 
-#[test]
 fn semantic_ast_projects_clocktable_subtree_scope_and_absolute_time_params() {
     let doc = Org::parse(
         r#"* TODO Project
@@ -140,7 +137,6 @@ CLOCK: [2026-05-15 Fri 10:00]--[2026-05-15 Fri 11:00] =>  1:00
     );
 }
 
-#[test]
 fn semantic_ast_projects_clocktable_clips_absolute_tstart_tend() {
     let doc = Org::parse(
         r#"#+BEGIN: clocktable :scope file :maxlevel 2 :tstart "<2026-05-15 Fri 10:00>" :tend "<2026-05-15 Fri 11:00>"
@@ -187,7 +183,6 @@ CLOCK: [2026-05-15 Fri 11:00]--[2026-05-15 Fri 11:15] =>  0:15
     assert_eq!(plan.rows[2].clock.total_seconds, 0);
 }
 
-#[test]
 fn semantic_ast_projects_clocktable_expands_absolute_block_month() {
     let doc = Org::parse(
         r#"#+BEGIN: clocktable :scope file :maxlevel 1 :block 2026-05
@@ -218,7 +213,6 @@ CLOCK: [2026-06-01 Mon 09:00]--[2026-06-01 Mon 11:00] =>  2:00
     );
 }
 
-#[test]
 fn semantic_ast_projects_clocktable_preserves_relative_time_params() {
     let doc = Org::parse(
         r#"#+BEGIN: clocktable :scope file :maxlevel 1 :tstart "<-1w>" :tend "<now>"
@@ -241,7 +235,6 @@ CLOCK: [2026-05-15 Fri 09:00]--[2026-05-15 Fri 10:00] =>  1:00
     );
 }
 
-#[test]
 fn semantic_ast_projects_clocktable_applies_match_filter_to_contributions() {
     let doc = Org::parse(
         r#"#+BEGIN: clocktable :scope file :maxlevel 2 :match "+client-internal"
@@ -284,7 +277,6 @@ CLOCK: [2026-05-15 Fri 11:00]--[2026-05-15 Fri 11:30] =>  0:30
     );
 }
 
-#[test]
 fn semantic_ast_projects_clocktable_preserves_unparsed_match_filter() {
     let doc = Org::parse(
         r#"#+BEGIN: clocktable :scope file :maxlevel 1 :match ""
@@ -307,7 +299,6 @@ CLOCK: [2026-05-15 Fri 09:00]--[2026-05-15 Fri 10:00] =>  1:00
     );
 }
 
-#[test]
 fn semantic_ast_projects_clocktable_projects_property_columns() {
     let doc = Org::parse(
         r#"#+BEGIN: clocktable :scope file :maxlevel 2 :properties ("Owner" "Phase") :inherit-props t
@@ -357,7 +348,6 @@ CLOCK: [2026-05-15 Fri 10:00]--[2026-05-15 Fri 11:00] =>  1:00
     assert!(compact.contains("properties: Owner, Phase inherit=true"));
 }
 
-#[test]
 fn semantic_ast_projects_clocktable_preserves_unparsed_property_columns() {
     let doc = Org::parse(
         r#"#+BEGIN: clocktable :scope file :maxlevel 1 :properties Owner
@@ -379,3 +369,46 @@ CLOCK: [2026-05-15 Fri 09:00]--[2026-05-15 Fri 10:00] =>  1:00
             .any(|warning| warning.kind == ClockTableWarningKind::PropertiesPreserved)
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clock_rollups_for_effort_comparison",
+        semantic_ast_projects_clock_rollups_for_effort_comparison,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clocktable_plans_from_dynamic_blocks",
+        semantic_ast_projects_clocktable_plans_from_dynamic_blocks,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clocktable_subtree_scope_and_absolute_time_params",
+        semantic_ast_projects_clocktable_subtree_scope_and_absolute_time_params,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clocktable_clips_absolute_tstart_tend",
+        semantic_ast_projects_clocktable_clips_absolute_tstart_tend,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clocktable_expands_absolute_block_month",
+        semantic_ast_projects_clocktable_expands_absolute_block_month,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clocktable_preserves_relative_time_params",
+        semantic_ast_projects_clocktable_preserves_relative_time_params,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clocktable_applies_match_filter_to_contributions",
+        semantic_ast_projects_clocktable_applies_match_filter_to_contributions,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clocktable_preserves_unparsed_match_filter",
+        semantic_ast_projects_clocktable_preserves_unparsed_match_filter,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clocktable_projects_property_columns",
+        semantic_ast_projects_clocktable_projects_property_columns,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_clock_rollups::semantic_ast_projects_clocktable_preserves_unparsed_property_columns",
+        semantic_ast_projects_clocktable_preserves_unparsed_property_columns,
+    ),
+];

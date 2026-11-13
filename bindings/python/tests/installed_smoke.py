@@ -7,8 +7,10 @@ from orgizepy.contract import ContractRow, evaluate_contract
 from orgizepy.edits import SourceEdit, apply_source_edits, source_digest
 from orgizepy.functions import headline_functions
 from orgizepy.parser import parse_org
+from orgizepy import initialize_native_runtime
 
 
+initialize_native_runtime()
 document = parse_org("* Evidence\n")
 headline = next(element for element in document.elements if element.kind == "headline")
 assert headline_functions(document, headline.id).content_after_todo == "Evidence"

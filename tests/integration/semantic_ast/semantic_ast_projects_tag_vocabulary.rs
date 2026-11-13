@@ -9,7 +9,32 @@ use orgize::{
 };
 use serde_json::Value;
 
-#[test]
+fn semantic_ast_tag_vocabulary_graph_is_scheme_structured() {
+    let org = Org::parse("#+tags: [ GTD : Control ] pc(p)\n");
+    let records = org.records();
+    assert!(records.iter().any(|record| record.kind == "tag-vocabulary"));
+    assert!(records.iter().any(|record| {
+        record.kind == "tag-inclusive-group"
+            && record.values("name").collect::<Vec<_>>() == ["GTD", "Control"]
+            && record.field("separator") == Some(":")
+    }));
+    insta::assert_debug_snapshot!("scheme_tag_vocabulary_graph", records);
+
+    let definitions = org.document().tag_definitions;
+    assert_eq!(definitions.len(), 3);
+    assert_eq!(definitions[0].name, "GTD");
+    assert!(definitions[0].is_group);
+    assert_eq!(
+        definitions[1]
+            .group
+            .as_ref()
+            .and_then(|group| group.name.as_deref()),
+        Some("GTD")
+    );
+    assert_eq!(definitions[2].raw, "pc(p)");
+    assert_eq!(definitions[2].shortcut.as_deref(), Some("p"));
+}
+
 fn semantic_ast_projects_tag_vocabulary_groups_and_exclusive_sets() {
     let doc = Org::parse(
         r#"#+TAGS: { @work(w) @home(h) @tennisclub(t) } laptop(l) pc(p)
@@ -84,7 +109,6 @@ fn semantic_ast_projects_tag_vocabulary_groups_and_exclusive_sets() {
     );
 }
 
-#[test]
 fn semantic_ast_expands_tag_groups_for_agenda_sparse_workspace_and_clocktable_match() {
     let doc = Org::parse(
         r#"#+TAGS: [ GTD : Control Persp ]
@@ -236,3 +260,18 @@ CLOCK: [2026-05-20 Wed 12:00]--[2026-05-20 Wed 12:30] =>  0:30
         )
     );
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "semantic_ast::semantic_ast_projects_tag_vocabulary::semantic_ast_tag_vocabulary_graph_is_scheme_structured",
+        semantic_ast_tag_vocabulary_graph_is_scheme_structured,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_tag_vocabulary::semantic_ast_projects_tag_vocabulary_groups_and_exclusive_sets",
+        semantic_ast_projects_tag_vocabulary_groups_and_exclusive_sets,
+    ),
+    (
+        "semantic_ast::semantic_ast_projects_tag_vocabulary::semantic_ast_expands_tag_groups_for_agenda_sparse_workspace_and_clocktable_match",
+        semantic_ast_expands_tag_groups_for_agenda_sparse_workspace_and_clocktable_match,
+    ),
+];

@@ -1,7 +1,6 @@
 use crate::semantic_ast::support::assert_clean_projection;
 use orgize::{Org, ast::ElementData};
 
-#[test]
 fn semantic_ast_projects_table_el() {
     let doc = Org::parse("  +---+\n  | a |\n  +---+\n").document();
 
@@ -14,3 +13,8 @@ fn semantic_ast_projects_table_el() {
         other => panic!("expected table.el element, got {other:#?}"),
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_ast_projects_table_el::semantic_ast_projects_table_el",
+    semantic_ast_projects_table_el,
+)];

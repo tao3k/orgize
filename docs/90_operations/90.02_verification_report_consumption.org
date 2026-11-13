@@ -60,9 +60,9 @@ called optimized.
 
 2. Promote dense parser paths into explicit performance evidence.
 
-   The parser-v2 closeout already names dense Criterion surfaces in
-   `20.02_parser_v2_performance_closeout.org`. The report consumer contract now
-   says what each latency-sensitive report must carry before it is actionable:
+   The Scheme-AOT cutover audit names the parser surfaces still requiring
+   performance evidence. The report consumer contract says what each
+   latency-sensitive report must carry before it is actionable:
    benchmark command, baseline, and regression threshold. The next useful
    improvement is to map dense parser surfaces to those evidence keys instead of
    leaving benchmark results only as prose.
@@ -78,8 +78,8 @@ called optimized.
 
    A pending `performance_index_json` record means "run or attach the benchmark
    evidence", not "the harness failed". For Orgize this translates into a
-   backlog item: persist dense-path benchmark receipts with baseline and
-   threshold metadata whenever parser-v2 hot paths change.
+   backlog item: persist Scheme-AOT parser benchmark receipts with baseline and
+   threshold metadata whenever hot paths change.
 
 5. Keep evidence-producing tests below harness structure gates.
 
@@ -101,27 +101,6 @@ called optimized.
    into `tests/integration/lint_property_schema.rs`. This keeps the new
    Agent-facing contract evidence durable without regressing the structural
    test ownership gate.
-
-** Dense Parser Evidence Backlog
-
-This standard Org table maps the parser-v2 dense surfaces to the three evidence
-keys the harness report requires: `benchmark_command`, `baseline`, and
-`regression_threshold`. Existing local numbers are baseline evidence only; every
-row still needs a calibrated threshold receipt before it can graduate from
-backlog to enforced performance gate.
-
-| Surface | Benchmark command | Baseline evidence | Regression threshold | Next action |
-|---------+-------------------+-------------------+----------------------+-------------|
-| `Org::macro_expansions/dense-macro-expansions.org` | `direnv exec . cargo bench --bench parse macro_expansions/dense -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `439.19 us` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
-| `Org::document/dense-target-projection/many-targets-and-radio-links.org` | `direnv exec . cargo bench --bench parse dense-target-projection -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `6.6523 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
-| `Org::document/dense-annotation-projection/many-annotated-ascii-objects.org` | `direnv exec . cargo bench --bench parse dense-annotation-projection -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `3.4855 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
-| `Org::document/dense-semantic-radio-projection/many-parsed-object-radio-links.org` | `direnv exec . cargo bench --bench parse dense-semantic-radio-projection -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `19.396 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
-| `Org::document/dense-m15-side-tables/many-m15-settings-links-footnotes.org` | `direnv exec . cargo bench --bench parse dense-m15-side-tables -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `10.109 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
-| `Document::project_for_export/dense-m15/many-m15-settings-links-footnotes.org` | `direnv exec . cargo bench --bench parse project_for_export/dense-m15 -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `3.9719 ms` from `20.02` | pending | Calibrate from repeated clean runs and persist threshold receipt. |
-| `Document::agenda_entries/dense-agenda/many-agenda-planning-timestamps.org` | `direnv exec . cargo bench --bench parse dense-agenda -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `1.5405 ms` from 2026-05-15 local run | pending | Calibrate from repeated clean runs and persist threshold receipt. |
-| `Document::include-datetree-agenda-extras/dense/include-expansion-plan.org` | `direnv exec . cargo bench --bench parse include-datetree -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `97.327 us` from 2026-05-15 local run | pending | Calibrate include expansion planning threshold and persist receipt. |
-| `Document::include-datetree-agenda-extras/dense/datetree-entries.org` | `direnv exec . cargo bench --bench parse include-datetree -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `82.463 us` from 2026-05-15 local run | pending | Calibrate datetree recognition threshold and persist receipt. |
-| `Document::include-datetree-agenda-extras/dense/agenda-inactive-diary.org` | `direnv exec . cargo bench --bench parse include-datetree -- --sample-size 10 --warm-up-time 1 --measurement-time 2` | `161.02 us` from 2026-05-15 local run | pending | Calibrate inactive/diary agenda projection threshold and persist receipt. |
 
 ** Validation
 

@@ -1,0 +1,113 @@
+#+title: Prefix staging consumer qualification and codec candidate
+
+* Frozen source boundary
+
+This local qualification fixes gerbil-parser at
+=aff9375e0784a02df8913377e9f0ced952313bb8= and gerbil-scheme-rust at
+=2b154e616a131518936da89d3f176c63d3ce6ed0=. The parser PR subsequently
+advanced to =f3dff0456ab86e714790d9ae11fb9a7ef258b7c0=; those new LR semantic
+preparation changes are not part of these executable receipts.
+
+The 10,000-document rich-prefix mechanism result (20.302/8.929ms CPU median)
+is not complete Org admission. The ledger corpus exercises headings,
+property drawers and lists, rather than the rich-keyword family.
+
+Fresh Org production products and the 401-module program manifest pass source
+ownership admission. The manifest contains neither generic EventFold runtime
+nor the prefix-family compiler. Rust and Scheme features use the same program.
+
+* Local semantic receipts
+
+| Qualification                         | Rust owner | Scheme owner |
+|---------------------------------------+------------+--------------|
+| Native unit cases                     |         85 |           85 |
+| Ordinary library tests                |         35 |           34 |
+| Explicitly ignored library scenarios  |          4 |            4 |
+| Consumer cases, 12 concurrent callers  |        458 |          458 |
+| Public concurrent native cutover cases |         11 |           11 |
+| Native index handoff cases             |         23 |           23 |
+
+The separate native Scheme caller passes 178 cases in 12 suites, final =OK=
+and exit 0. Its deliberate assertion failure exits 42, never successful =OK=.
+Library receipt counts are now explicit required inputs: stale defaults
+26/2 and the Rust-only profile case cannot admit a Scheme feature catalog.
+The original mismatched-count attempts are not successful qualifications.
+
+Receipts reside under =target/acceptance/{rust,scheme}-aff9375=,
+=org-native-aff9375=, =program-aff9375= and =closure-aff9375=.
+The native baseline logs are preserved separately as
+=native-test-baseline.log= and =failure-control-baseline.log=.
+
+* Profiled complete-request diagnostic failures
+
+Both profiled 2,000-file diagnostic runs fail: Rust best-of-five 644.213ms and Scheme
+655.201ms, against the unchanged 100ms assertion. All 2,000 records and the
+selected record's semantic metadata passed before the timing assertion.
+Host load was 104.06/99.67/74.11, with concurrent builds; these wall results
+cannot establish a revision regression or rank the two lifecycle owners.
+
+Across five samples, diagnostic =native.scheme_thread_cpu= ranges are
+160.170-198.075ms (Rust) and 179.138-202.384ms (Scheme). Fold wall sums range
+302.508-679.889ms / 348.001-469.136ms; tape encoding wall sums range
+108.819-156.606ms / 103.010-151.166ms. These are request-stage observations,
+not additive latency budgets: owner, CPU, GC and worker sums overlap.
+No timeout, heap, profile or performance threshold is relaxed.
+These executables enable =runtime-profile= and both ledger diagnostic flags.
+Their timed workload includes stage collection, diagnostic envelopes/copies
+and output. They are neither uninstrumented production admission nor codec A/B.
+The impact of instrumentation has not been isolated; host load alone does not
+explain away the failure or establish its architectural root cause.
+
+* Official byte codec candidate
+
+The native tape's handwritten quotient/modulo writer and multiply/add reader
+are replaced by Gerbil's checked =u8vector-uint-set!= and =u8vector-uint-ref=
+with explicit little endianness and width. Generic byte access supports the
+wire format's unaligned fields; no host-native aligned integer cast is used.
+The original exact, nonnegative, width-bounded value check remains because
+the official generic writer alone truncates over-width values.
+
+The existing semantic suite adds an independent arithmetic byte oracle for
+both token u64 fields, including zero, byte boundaries, 32-bit boundaries,
+the high u64 bit and maximum u64. Negative, fractional and overflowing values
+must still fail. The candidate has a separate =program-official-codec= stage;
+baseline Rust/Scheme executables above remain unchanged. This is not yet a
+measured whole-parser performance gain or complete 100ms admission.
+The candidate passes all 178 native cases, 12 suites and exit-42 control,
+including the new arithmetic-oracle assertions. The executable's copied
+static tape source matches =program-official-codec= byte for byte.
+
+* Remaining gates
+
+Link and qualify both codec consumer features, then measure matched production
+executables under bounded host contention. Align the newer engine revision
+separately. Repeat the existing 1,000/10,000-document concurrent runtime
+matrix for both lifecycle features; retain complete event/artifact equality.
+Frozen-head parser CI passed Rust AOT; Scheme jobs were cancelled when the
+upstream PR advanced, not successful. Consumer CI and architectural closure
+are distinct from the local semantic results above.
+
+* Latest alignment and corrected measurement boundary
+
+The parser PR now resolves to =b1b13e00b3bde9ffa6e2815fb7bda90c76834945=.
+Three commits after the frozen head prepare LR executors, inline ranked
+candidate loops and share prepared contextual region/guard matchers.
+Both Cargo declarations, =gerbil.pkg= and both normally resolved lockfiles
+are aligned. The existing dependency/layout checks pass; no latest-head
+Scheme product or linked consumer performance receipt is claimed.
+
+Production ledger admission now clears both diagnostic flags and requires
+the executable's explicit =runtime-profile=false diagnostics=false= marker.
+The separate diagnostic recipe retains the profiled failure behavior.
+The test no longer activates its outer collector solely because the feature
+was compiled; explicit stage diagnostics select it. The 100ms assertion,
+five samples, complete 2,000 records and selected metadata remain unchanged.
+Recipe dry runs and source diff checks pass; executable qualification is pending.
+
+The historical complete 2,000-file Windows best-of-five result is 81.4664ms,
+with earlier 83.8839ms and 81.9714ms receipts. The 644/655ms diagnostic figures
+are approximately eight times that history, not a qualified codec regression.
+A valid codec A/B must freeze this newer engine, complete production outputs,
+runtime feature, build settings, corpus and host conditions before alternating
+the old and new codec executables. Engine REV effects require a separate
+same-codec comparison; neither comparison has completed.

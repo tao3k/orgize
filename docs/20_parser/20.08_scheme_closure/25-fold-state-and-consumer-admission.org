@@ -1,0 +1,147 @@
+#+title: Native Fold state sharing candidate and consumer admission
+
+* Exact owner and selection boundary
+
+Date: 2026-10-06. This work remains in the isolated Orgize checkout,
+local base =4446730d=, with parser base =e1252ed1=. Existing parser/bridge
+overlays and preceding Query edits are preserved. No runtime kernel,
+Rust parsing algorithm, ABI header, optimization profile, native queue
+capacity, worker count or scenario budget is changed.
+
+The new compiler-owned program contains 318 modules, including the
+parser's private =src/compiler/event-fold-state.ss=. Its compiler-input
+identity is
+=sha256:6751dea7bf2867fa30b70201eb6b98336ab494154d9148c3a3983d8a17791b6c=.
+All parser/Org/staging module paths pass the existing source-root admission
+against the new compiled roots. The generic state test module is not in
+the production program dependency closure.
+
+This is a local candidate, not a promoted performance fix. The previously
+selected default manifest is unchanged. No commit, push, remote PR update
+or dependency revision publication is performed.
+
+* Native state operation
+
+State lookup, typed lookup and update move from the large Fold runtime into
+a private pure module. Runtime reexports preserve existing consumers.
+The update traverses immutable state without mutating entries or tails:
+
+- If every matched value is identical, return the original state spine.
+- Otherwise copy the prefix through the last changed entry and share the
+  unchanged suffix and entries.
+- Update every matching name, including repeated names; retain missing-name
+  update behavior and typed lookup errors.
+
+Traversal and lookup remain O(S). This is not an indexed-state implementation,
+and sharing state nodes is not a measurement of total process allocation,
+peak heap or transient call-frame allocation.
+
+Generic conformance tests belong to the parser's
+=t/event-fold-state-test.ss=. Orgize's =t/fold-state.ss= only supplies
+the native standard harness, the existing diagnostic clock and a test-only
+reference implementation import. No production fallback or new test runner
+is introduced.
+
+The final native control passes five generic cases plus one measurement
+case, with 20 fixed reference/candidate samples: 64 states and 10,000
+updates, no-change/front/middle/tail cases, five repetitions each.
+State parity and original-state immutability are asserted. Deterministic
+identity checks prove whole-spine reuse and shared suffixes. Wall time and
+thread CPU are reported separately, with no timing-based oracle.
+The intentional failed assertion returns final FAILED and exit 42.
+The original unified control and its negative timing samples are retained
+as =control= and frozen =fold-state-control-v1=; final split-owner evidence
+is =control-split=.
+
+* Current native consumer receipts
+
+Evidence root: =target/fold-state-20261006=.
+Final executable labels begin =fold-state-=. No preceding 317-module
+receipt is relabeled as qualification of this program.
+
+The complete parser library build discovers 160 production targets.
+The fresh Org SDK and the 318-module production staging pass.
+Fresh native Org qualification passes 173 cases / 12 suites, final OK,
+exit zero and the existing failed-assertion exit-42 control.
+Both runtime Release library/consumer/benchmark builds pass with zero
+production-library warnings; native/third-party linker warnings remain
+visible and are not suppressed.
+
+| Feature        | Native units | Ordinary units | Consumers, 12 callers | Rowan handoff | Python installed |
+|----------------+--------------+----------------+-----------------------+---------------+------------------|
+| runtime-rust   |           85 |             33 |                   457 |            23 |               25 |
+| runtime-scheme |           85 |             32 |                   457 |            23 |               25 |
+
+Four ignored library diagnostics/scenarios remain independently selected.
+Python uses the existing Rust/PyO3/maturin path. Both editable installations
+assert the exact native program and runtime identity before parsing.
+Their tests include parser/Contract owner sharing from threads, native C
+ABI failure initialization, GIL release, Python child ownership and
+fail-closed inputs. The final local Python test environment contains the
+Scheme-feature candidate; this is not a standalone wheel distribution
+or clean upstream bootstrap qualification.
+
+Both real 1,000/10,000 document Query tests retain four actual host workers,
+bounded native packets and complete source parsing. Full output, hit and
+no-hit queries match complete native projection, including result order,
+selectors, ranges and fields.
+
+Both complete runtime matrices pass 1,000/10,000 documents at 64 callers
+and 1/4/8 independent process domains: 33,000 admissions per feature.
+Every configuration checks complete distinct-document coverage, actual
+worker identities, bounded in-flight calls, all-worker use and clean exits.
+Exact program/source/corpus controls and cross-feature semantic artifacts
+match. Both old/new program semantic artifact comparisons also pass;
+this comparison does not pretend their compiler-input identities are equal.
+
+The maintained =fold-state-admission-check= passes exit zero. It
+combines exact 318-module identity and test-module exclusion, native
+success/failure controls, both runtime catalogs, Rowan/Python, fixed Query
+pairs, large Query parity and full concurrency matrices. It is a local
+semantic/resource admission, not default selection or remote CI evidence.
+
+* Performance: retain the negative conclusion
+
+Five predetermined alternating same-feature Query pairs execute after all
+owned compilation finishes. All original 45ms gates pass, but there is no
+stable end-to-end win:
+
+| Feature | Reference maxima ms | Candidate maxima ms |
+|---------+---------------------+---------------------|
+| Rust | 22.352958, 16.015375, 15.783167, 15.185583, 16.261208 | 39.935667, 15.37675, 16.24225, 17.959666, 16.214167 |
+| Scheme | 19.928584, 14.998958, 14.996666, 14.362125, 41.919208 | 23.597292, 20.269708, 15.306792, 15.102541, 15.595 |
+
+Micro-controls improve several no-change/front updates but retain
+tail-update regressions. They are not promoted to a whole-parser speedup.
+The Rust candidate's three 48-document Fold observations are
+11.58, 9.01 and 8.82ms versus fresh reference 11.45, 11.04 and 8.79ms.
+Scheme candidate Fold observations are 10.41, 11.05 and 8.44ms versus
+reference 11.81, 9.37 and 9.49ms. Inclusive Fold/GC intervals overlap
+and cannot be summed as independent costs.
+
+Single 10,000-document full-output Query observations are 2524.92ms
+(Rust) and 2649.52ms (Scheme), with Fold 1949.04/1931.32ms and GC wall
+intervals 770.10/761.07ms. Earlier 317-module observations are not matched
+repeated large-project controls; the apparent GC difference does not
+establish a causal allocation or throughput gain.
+
+The single matrix repetition retains a Rust 10,000-document / one-domain
+P95 of 2495.60ms versus Scheme 742.99ms; at eight domains these observations
+are 190.88/119.76ms. Qualification includes lossless projection/checksums.
+Features were run sequentially, not as repeated alternating performance
+pairs. These receipts preserve the tail problem and cannot establish a
+stable runtime winner or a causal improvement from state sharing.
+
+* Remaining architectural and publication gates
+
+The candidate does not remove linear named-state/helper lookup or
+runtime dispatch over statement/predicate IR. Production host workers
+still share one native owner per process. Native state layout / compiled
+Fold accessors and plan specialization require separate exact semantic
+and controlled performance evidence; no new mutable public DSL,
+stale global cache, compatibility parser or runtime-kernel patch is justified.
+
+Clean parser and bridge publication, platform CI, standalone C/wheel
+distribution, historical latency tails and whole-parser grammar closure
+remain independent. Source sharing is not a reason to declare them closed
+or switch the default native program.

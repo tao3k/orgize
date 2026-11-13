@@ -33,35 +33,22 @@ impl OrgElementSelector {
     }
 
     pub fn parse_plist(input: &str) -> Result<Self, OrgElementSelectorParseError> {
-        let tokens = tokenize_selector_plist(input)?;
-        if tokens.len() < 6
-            || tokens.first().map(String::as_str) != Some("(")
-            || tokens.get(1).map(String::as_str) != Some(":org-element")
-            || tokens.get(2).map(String::as_str) != Some("(")
-            || tokens
-                .get(tokens.len().saturating_sub(2))
-                .map(String::as_str)
-                != Some(")")
-            || tokens.last().map(String::as_str) != Some(")")
-        {
-            return Err(OrgElementSelectorParseError::InvalidShape);
-        }
-        let properties = &tokens[3..tokens.len().saturating_sub(2)];
-        if properties.len() % 2 != 0 {
-            return Err(OrgElementSelectorParseError::OddPropertyList);
-        }
+        let properties = super::org_elements_query_expr::selector_plist_properties(input)?;
+        Self::from_native_properties(properties)
+    }
 
+    pub(crate) fn from_native_properties(
+        properties: Vec<(String, String)>,
+    ) -> Result<Self, OrgElementSelectorParseError> {
         let mut element_type = None;
         let mut name = None;
         let mut language = None;
-        for pair in properties.chunks(2) {
-            let key = pair[0].as_str();
-            let value = pair[1].clone();
-            match key {
+        for (key, value) in properties {
+            match key.as_str() {
                 ":type" => element_type = Some(OrgElementsIndexKind::new(value)),
                 ":name" => name = Some(value),
                 ":language" => language = Some(value),
-                _ => return Err(OrgElementSelectorParseError::UnknownKey(pair[0].clone())),
+                _ => return Err(OrgElementSelectorParseError::UnknownKey(key)),
             }
         }
 
@@ -114,43 +101,3 @@ impl fmt::Display for OrgElementSelectorParseError {
 }
 
 impl std::error::Error for OrgElementSelectorParseError {}
-
-fn tokenize_selector_plist(input: &str) -> Result<Vec<String>, OrgElementSelectorParseError> {
-    let mut tokens = Vec::new();
-    let mut chars = input.chars().peekable();
-    while let Some(ch) = chars.next() {
-        match ch {
-            '(' | ')' => tokens.push(ch.to_string()),
-            '"' => {
-                let mut value = String::new();
-                loop {
-                    match chars.next() {
-                        Some('"') => break,
-                        Some('\\') => {
-                            let Some(escaped) = chars.next() else {
-                                return Err(OrgElementSelectorParseError::UnterminatedString);
-                            };
-                            value.push(escaped);
-                        }
-                        Some(next) => value.push(next),
-                        None => return Err(OrgElementSelectorParseError::UnterminatedString),
-                    }
-                }
-                tokens.push(value);
-            }
-            ch if ch.is_whitespace() => {}
-            _ => {
-                let mut value = String::from(ch);
-                while let Some(next) = chars.peek().copied() {
-                    if next.is_whitespace() || matches!(next, '(' | ')') {
-                        break;
-                    }
-                    value.push(next);
-                    chars.next();
-                }
-                tokens.push(value);
-            }
-        }
-    }
-    Ok(tokens)
-}

@@ -39,7 +39,6 @@ const REGISTRY: &str = r#"* document-contract
 
 static NEXT_FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
 
-#[test]
 fn parser_preserves_reference_order_and_nested_link_whitespace() {
     let references = parse_contract_references(
         "philosophy.document.v1, philosophy.charter.en.v1 [[file:contracts/shared.org][Shared contract]]",
@@ -61,7 +60,6 @@ fn parser_preserves_reference_order_and_nested_link_whitespace() {
     );
 }
 
-#[test]
 fn trace_and_lint_execute_inline_contracts_in_declared_order() {
     let dir = fixture_dir();
     fs::write(dir.join("charter.org"), complete_charter()).unwrap();
@@ -87,7 +85,6 @@ fn trace_and_lint_execute_inline_contracts_in_declared_order() {
     assert!(lint.status.success(), "{}", receipt(&lint));
 }
 
-#[test]
 fn a_failed_contract_does_not_short_circuit_later_contracts() {
     let dir = fixture_dir();
     fs::write(
@@ -104,7 +101,6 @@ fn a_failed_contract_does_not_short_circuit_later_contracts() {
     assert_eq!(evaluations[1]["assertions"][0]["status"], "passed");
 }
 
-#[test]
 fn duplicate_contracts_on_one_scope_are_rejected() {
     let dir = fixture_dir();
     fs::write(
@@ -163,3 +159,22 @@ fn receipt(output: &std::process::Output) -> String {
         String::from_utf8_lossy(&output.stderr)
     )
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "contract_composition::parser_preserves_reference_order_and_nested_link_whitespace",
+        parser_preserves_reference_order_and_nested_link_whitespace,
+    ),
+    (
+        "contract_composition::trace_and_lint_execute_inline_contracts_in_declared_order",
+        trace_and_lint_execute_inline_contracts_in_declared_order,
+    ),
+    (
+        "contract_composition::a_failed_contract_does_not_short_circuit_later_contracts",
+        a_failed_contract_does_not_short_circuit_later_contracts,
+    ),
+    (
+        "contract_composition::duplicate_contracts_on_one_scope_are_rejected",
+        duplicate_contracts_on_one_scope_are_rejected,
+    ),
+];

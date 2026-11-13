@@ -1,13 +1,13 @@
-use std::{
-    env, fs,
-    path::PathBuf,
-    process::{Command, Output},
-};
+use std::{env, fs, path::PathBuf, process::Output};
 
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-#[test]
+// Silent negative fixtures must finish below the outer five-second output
+// watchdog. Production runtime defaults are not changed.
+#[cfg(unix)]
+const SILENT_RUNTIME_FIXTURE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(1);
+
 fn eval_cli_renders_named_block_plan_without_running_code() {
     let dir = test_dir("eval-plan");
     fs::create_dir_all(&dir).unwrap();
@@ -30,7 +30,6 @@ fn eval_cli_renders_named_block_plan_without_running_code() {
     );
 }
 
-#[test]
 fn eval_cli_plan_projects_builtin_typst_runtime_without_header_args() {
     let dir = test_dir("eval-plan-typst-runtime");
     fs::create_dir_all(&dir).unwrap();
@@ -63,7 +62,6 @@ fn eval_cli_plan_projects_builtin_typst_runtime_without_header_args() {
     );
 }
 
-#[test]
 fn eval_cli_patch_writes_results_without_executing_code() {
     let dir = test_dir("eval-patch-write");
     fs::create_dir_all(&dir).unwrap();
@@ -103,7 +101,6 @@ echo should-not-run
     );
 }
 
-#[test]
 fn eval_cli_run_executes_shell_block_and_writes_results() {
     let dir = test_dir("eval-run-write");
     fs::create_dir_all(&dir).unwrap();
@@ -143,7 +140,6 @@ printf real-eval
 }
 
 #[cfg(unix)]
-#[test]
 fn eval_cli_run_executes_typst_with_compile_stdin() {
     let dir = test_dir("eval-run-typst");
     let bin = dir.join("bin");
@@ -194,7 +190,6 @@ printf '"ok"\n'
 }
 
 #[cfg(unix)]
-#[test]
 fn lint_cli_rejects_invalid_typst_from_builtin_compile_stdin() {
     let dir = test_dir("lint-typst-invalid-runtime");
     let bin = dir.join("bin");
@@ -247,7 +242,6 @@ exit 0
 }
 
 #[cfg(unix)]
-#[test]
 fn lint_cli_accepts_valid_typst_from_builtin_compile_stdin() {
     let dir = test_dir("lint-typst-valid-runtime");
     let bin = dir.join("bin");
@@ -291,7 +285,6 @@ exit 0
 }
 
 #[cfg(unix)]
-#[test]
 fn runtime_lint_resolves_relative_include_from_org_source_parent() {
     let dir = test_dir("lint-typst-relative-include");
     let docs = dir.join("docs");
@@ -343,7 +336,6 @@ exit 0
 }
 
 #[cfg(unix)]
-#[test]
 fn runtime_lint_timeout_kills_and_reaps_process_group_with_org045() {
     let dir = test_dir("lint-typst-timeout-reap");
     let docs = dir.join("docs");
@@ -359,10 +351,7 @@ if [ "$1" != "compile" ] || [ "$2" != "--format" ] || [ "$3" != "svg" ] || [ "$4
   printf 'unexpected typst invocation\n' >&2
   exit 64
 fi
-printf '%s\n' "$$" > .typst-child.pid
-tail -f /dev/null &
-printf '%s\n' "$!" > .typst-descendant.pid
-wait
+exec tail -f /dev/null
 "#,
     )
     .unwrap();
@@ -370,47 +359,37 @@ wait
     permissions.set_mode(0o755);
     fs::set_permissions(&typst, permissions).unwrap();
     let options = orgize::lint::LintOptions {
-        source_path: Some(source_path),
+        source_path: Some(source_path.clone()),
         ..orgize::lint::LintOptions::default()
     };
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_secs(5),
+        SILENT_RUNTIME_FIXTURE_TIMEOUT,
         1_048_576,
     )
     .unwrap()
-    .with_program_binding(orgize::lint::RuntimeLintProgramBinding::Exact(
-        typst.clone(),
-    ));
-
-    let report = orgize::lint::lint_org_with_options_and_runtime_policy(source, &options, &policy);
-
-    let rendered = report.to_compact_text("docs/notes.org", source);
+    .with_program_binding(orgize::lint::RuntimeLintProgramBinding::Exact(typst));
+    let context =
+        orgize::lint::RuntimeValidationSourceContext::new(source_path, docs, dir.clone()).unwrap();
+    let evidence = orgize::lint::lint_org_with_runtime_validation_evidence(
+        source,
+        &options,
+        Some(&context),
+        &policy,
+    )
+    .unwrap();
+    let rendered = evidence
+        .lint_report
+        .to_compact_text("docs/notes.org", source);
     assert!(rendered.contains("ORG045"), "report: {rendered}");
     assert!(rendered.contains("timed out"), "report: {rendered}");
-    let pid = fs::read_to_string(docs.join(".typst-child.pid")).unwrap();
-    let alive = Command::new("kill")
-        .args(["-0", pid.trim()])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .unwrap();
-    assert!(!alive.success(), "timed-out child {pid} is still alive");
-    let descendant_pid = fs::read_to_string(docs.join(".typst-descendant.pid")).unwrap();
-    let descendant_alive = Command::new("kill")
-        .args(["-0", descendant_pid.trim()])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .unwrap();
-    assert!(
-        !descendant_alive.success(),
-        "timed-out descendant {descendant_pid} is still alive"
-    );
+    let observation = evidence.receipts[0].observation;
+    assert!(observation.child_lifecycle.child_reaped());
+    let pid = observation.child_id.expect("host observed spawn");
+    assert_process_absent(-i32::try_from(pid.get()).unwrap());
     assert_no_typst_artifact(&dir);
 }
 
 #[cfg(unix)]
-#[test]
 fn lint_cli_rejects_combined_typst_output_over_shared_budget() {
     let dir = test_dir("lint-typst-combined-output-budget");
     let bin = dir.join("bin");
@@ -461,7 +440,6 @@ exit 0
 }
 
 #[cfg(unix)]
-#[test]
 fn runtime_validation_evidence_emits_complete_schema_v1_body_free_receipt() {
     let dir = test_dir("runtime-validation-evidence-complete");
     let docs = dir.join("docs");
@@ -560,7 +538,6 @@ exit 0
 }
 
 #[cfg(unix)]
-#[test]
 fn runtime_validation_evidence_rejects_missing_or_mismatched_context() {
     let dir = test_dir("runtime-validation-evidence-context");
     let docs = dir.join("docs");
@@ -611,7 +588,6 @@ fn runtime_validation_evidence_rejects_missing_or_mismatched_context() {
 }
 
 #[cfg(unix)]
-#[test]
 fn runtime_validation_evidence_records_combined_budget_rejection() {
     let dir = test_dir("runtime-validation-evidence-budget");
     let docs = dir.join("docs");
@@ -672,7 +648,6 @@ exit 0
 }
 
 #[cfg(unix)]
-#[test]
 fn runtime_validation_evidence_records_timeout_and_reaping() {
     let dir = test_dir("runtime-validation-evidence-timeout");
     let docs = dir.join("docs");
@@ -684,7 +659,6 @@ fn runtime_validation_evidence_records_timeout_and_reaping() {
     fs::write(
         &typst,
         r#"#!/bin/sh
-printf '%s\n' "$$" > .typst-child.pid
 cat >/dev/null
 exec tail -f /dev/null
 "#,
@@ -700,7 +674,7 @@ exec tail -f /dev/null
     let context =
         orgize::lint::RuntimeValidationSourceContext::new(source_path, docs.clone(), dir).unwrap();
     let policy = orgize::lint::RuntimeLintExecutionPolicy::bounded(
-        std::time::Duration::from_secs(5),
+        SILENT_RUNTIME_FIXTURE_TIMEOUT,
         1_048_576,
     )
     .unwrap()
@@ -724,17 +698,20 @@ exec tail -f /dev/null
         orgize::lint::RuntimeValidationStatus::Rejected
     );
     assert!(receipt.observation.child_lifecycle.child_reaped());
-    let pid = fs::read_to_string(docs.join(".typst-child.pid")).unwrap();
-    let alive = Command::new("kill")
-        .args(["-0", pid.trim()])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .unwrap();
-    assert!(!alive.success(), "timed-out child {pid} is still alive");
+    let pid = receipt.observation.child_id.expect("host observed spawn");
+    assert_process_absent(i32::try_from(pid.get()).unwrap());
 }
 
-#[test]
+#[cfg(unix)]
+fn assert_process_absent(id: i32) {
+    // SAFETY: the ID identifies a fixture child or its group; signal zero
+    // only probes existence.
+    let probe = unsafe { libc::kill(id, 0) };
+    let error = std::io::Error::last_os_error();
+    assert_eq!(probe, -1, "timed-out process or group {id} remains");
+    assert_eq!(error.raw_os_error(), Some(libc::ESRCH));
+}
+
 fn eval_cli_run_rejects_non_shell_blocks() {
     let dir = test_dir("eval-run-non-shell");
     fs::create_dir_all(&dir).unwrap();
@@ -762,7 +739,6 @@ print("no")
     );
 }
 
-#[test]
 fn eval_cli_run_rejects_unregistered_runtime_override() {
     let dir = test_dir("eval-run-unregistered-runtime");
     fs::create_dir_all(&dir).unwrap();
@@ -812,6 +788,7 @@ fn stdout(output: &Output) -> String {
     String::from_utf8(output.stdout.clone()).unwrap()
 }
 
+#[cfg(unix)]
 fn source_path_to_json(path: &std::path::Path) -> serde_json::Value {
     serde_json::Value::String(path.to_string_lossy().into_owned())
 }
@@ -845,3 +822,80 @@ fn test_dir(name: &str) -> PathBuf {
     fs::create_dir_all(&path).unwrap();
     fs::canonicalize(path).unwrap()
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[
+    (
+        "eval_cli::eval_cli_renders_named_block_plan_without_running_code",
+        eval_cli_renders_named_block_plan_without_running_code,
+    ),
+    (
+        "eval_cli::eval_cli_plan_projects_builtin_typst_runtime_without_header_args",
+        eval_cli_plan_projects_builtin_typst_runtime_without_header_args,
+    ),
+    (
+        "eval_cli::eval_cli_patch_writes_results_without_executing_code",
+        eval_cli_patch_writes_results_without_executing_code,
+    ),
+    (
+        "eval_cli::eval_cli_run_executes_shell_block_and_writes_results",
+        eval_cli_run_executes_shell_block_and_writes_results,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::eval_cli_run_executes_typst_with_compile_stdin",
+        eval_cli_run_executes_typst_with_compile_stdin,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::lint_cli_rejects_invalid_typst_from_builtin_compile_stdin",
+        lint_cli_rejects_invalid_typst_from_builtin_compile_stdin,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::lint_cli_accepts_valid_typst_from_builtin_compile_stdin",
+        lint_cli_accepts_valid_typst_from_builtin_compile_stdin,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::runtime_lint_resolves_relative_include_from_org_source_parent",
+        runtime_lint_resolves_relative_include_from_org_source_parent,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::runtime_lint_timeout_kills_and_reaps_process_group_with_org045",
+        runtime_lint_timeout_kills_and_reaps_process_group_with_org045,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::lint_cli_rejects_combined_typst_output_over_shared_budget",
+        lint_cli_rejects_combined_typst_output_over_shared_budget,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::runtime_validation_evidence_emits_complete_schema_v1_body_free_receipt",
+        runtime_validation_evidence_emits_complete_schema_v1_body_free_receipt,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::runtime_validation_evidence_rejects_missing_or_mismatched_context",
+        runtime_validation_evidence_rejects_missing_or_mismatched_context,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::runtime_validation_evidence_records_combined_budget_rejection",
+        runtime_validation_evidence_records_combined_budget_rejection,
+    ),
+    #[cfg(unix)]
+    (
+        "eval_cli::runtime_validation_evidence_records_timeout_and_reaping",
+        runtime_validation_evidence_records_timeout_and_reaping,
+    ),
+    (
+        "eval_cli::eval_cli_run_rejects_non_shell_blocks",
+        eval_cli_run_rejects_non_shell_blocks,
+    ),
+    (
+        "eval_cli::eval_cli_run_rejects_unregistered_runtime_override",
+        eval_cli_run_rejects_unregistered_runtime_override,
+    ),
+];

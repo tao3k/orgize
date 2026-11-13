@@ -6,7 +6,6 @@ use orgize::{
     ast::{AstMut, AstRef},
 };
 
-#[test]
 fn semantic_traversal_covers_parser_v2_surface() {
     let mut doc = Org::parse(
         r#"#+TITLE: Traversal
@@ -133,3 +132,8 @@ fn ast_mut_name(node: AstMut<'_, orgize::ast::ParsedAnnotation>) -> &'static str
         AstMut::Object(_) => "Object",
     }
 }
+
+pub(super) const NATIVE_CASES: &[(&str, fn())] = &[(
+    "semantic_ast::semantic_traversal_covers_parser_v2_surface::semantic_traversal_covers_parser_v2_surface",
+    semantic_traversal_covers_parser_v2_surface,
+)];

@@ -1,0 +1,90 @@
+#+TITLE: Scheme Contract composition and current-candidate closure gates
+
+* Authority
+
+The private =contract-normalize.ss= compiler projects canonical Scheme parser
+events into positional traversal state, admits composition, and emits normalized
+native ABI values. It is not a public raw-list authoring DSL or a second parser.
+Binding names, cross-nesting uniqueness, required final assertion and assertion
+arity are Scheme-owned. Let bodies must close with an assertion; trailing forms
+and empty binding names fail closed. Local hash state is confined to one call.
+
+Operation 4 on the existing =ONR1= native transport requests that admission.
+Both runtime features share the same program, grammar and =OXV1= value decoder.
+Rust projects a canonical optional binding form plus one assertion. Its old
+recursive let composition, source binding-name normalization and duplicate-name
+policy have been removed. It still owns typed query/predicate lowering and
+pair/workspace semantics; these remain explicit migration gaps.
+
+* Executable scope
+
+Scheme boundary suite: MODULE-OK, HARNESS-OK, final OK, exit 0.
+The native unit fixture now has 54 concurrent cases, retaining all previous 53.
+Native program closure: 272 modules.
+
+=just runtime-closure-build-owner= builds matching release units,
+=integration_test= (the unchanged 454-case default catalog), its CLI dependency,
+and =org_runtime= benchmark. Feature receipts must be run before the next
+feature replaces Cargo's CLI artifact.
+
+The old one-domain Tokio corpus comparison (1 and 8 callers) is only an
+admission/queue baseline, not evidence of multicore native parsing. Document
+count alone is not concurrency. The new qualification uses 1,000 and 10,000
+distinct documents with 64 simultaneous caller tasks and 1, 4 and 8 independent
+exec'd native domains, in each feature. One domain remains a queue baseline;
+4/8 domains run separate native runtimes. This is a benchmark execution layout,
+not a new production parser fallback or a completed process-pool product API.
+It measures public parse/projection, not an isolated Contract-normalization
+speedup. Corpus and output checksums must match across domains and features.
+The existing strict consumer performance gate is retained even when it fails.
+No ignored test, original gate, queue size, concurrency or workspace profile
+is weakened to make closure appear green.
+
+* Current candidate receipts
+
+Build, consumer and corpus receipts are filled only after current-candidate
+execution. Older expression-value candidate receipts do not qualify this slice.
+
+Both features' tests/benches/examples checks passed. Native program identity:
+=sha256:9554824bff01b10b2159ba7e413221a73a6cd712d5df140f3d2d98743f225740=.
+Both release features: 54 concurrent native cases passed; 22 pure/policy tests passed,
+one original scenario remained ignored. Full default consumer catalog:
+454/454 completed in each feature, zero failures, 12 callers; three original
+ignored cases retained. These runs include the unchanged strict query-performance
+gate. Rust full-catalog wall time: 27.65 s; Scheme: 22.76 s. Those aggregate
+times are test receipts, not a matched throughput superiority claim.
+
+An initial Tokio corpus invocation was explicitly stopped, exit 130, because
+its 300-second total fence was insufficient for the full matrix. It generated
+no completed receipt and is not qualified. A second old-layout run was also
+explicitly stopped (exit 130) after user review of its concurrency boundary.
+Neither partial run supports a runtime ranking. The high-concurrency matrix
+retains the five-second no-completion watchdog and original semantic gates.
+
+The new supervisor never initializes Gerbil or forks an initialized runtime.
+Each worker starts through exec, performs explicit native startup and warmup,
+then handles independent per-document IPC requests. Tokio callers await bounded
+queues/oneshot responses; pipe I/O stays on worker threads. Worker identities,
+unique PIDs, exit statuses, completion counts, actual in-flight peak and
+overlapping worker-request peak are recorded. Overlapping IPC requests are not
+claimed as sampled CPU utilization. End-to-end latency includes queueing,
+transport, parse/projection, lossless validation, checksum and response.
+This is a closed-loop bounded concurrency test, not an open-loop load test.
+Startup/warmup stay outside its timer. Only a complete matrix publishes a JSON
+receipt, protected against overwrite; partial runs are never green artifacts.
+
+Both current-candidate high-concurrency matrices completed and passed their
+six-batch gates: 33,000 completions per feature, 64 observed in-flight requests,
+configured 1/4/8 observed independent worker requests, successful exits, and
+matched program/adapter/benchmark/corpus/output identities. Execution and
+throughput/latency boundaries are in
+[[file:runtime-parallel-20261003.org][the high-concurrency receipt]].
+This closes that local benchmark lane, not semantic migration, native actor
+parallelism within one domain or a production process-pool interface.
+
+* Remaining gates
+
+Query/predicate semantic lowering, pair/workspace rules and other metadata
+interpretation still require Scheme ownership migration. Exact fault spans,
+recovery conformance, lifecycle/SDK and installed Python wheel qualification
+remain separate from native unit, consumer and scale receipts.
