@@ -1,5 +1,4 @@
-(import (only-in :tao3k/yuanxu/module-system/declaration .def)
-        "./types.ss" "./objects.ss" "./config.ss" "./build.ss")
+(import (only-in :tao3k/yuanxu/module-system/source/declaration .def))
 
 (.def OrgNative
   identity: 'c

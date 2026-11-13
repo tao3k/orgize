@@ -1,6 +1,5 @@
 ;;; Source selection and admission are owned by Yuanxu.
-(import (only-in :tao3k/yuanxu/module-system/declaration .def)
-        "./types.ss" "./objects.ss" "./config.ss")
+(import (only-in :tao3k/yuanxu/module-system/source/declaration .def))
 
 (.def OrgElements
   identity: 'org-elements
