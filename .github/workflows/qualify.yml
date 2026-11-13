@@ -236,7 +236,7 @@ jobs:
           unset ORGIZE_FFI_EXPORT
           export ORGIZE_FFI_BUNDLE="$GITHUB_WORKSPACE/target/ffi-consumer"
           export ORGIZE_GERBIL_PROGRAM_MANIFEST="$GITHUB_WORKSPACE/target/absent-program.json"
-          just ci-rust-test "${{ env.RUNTIME_FEATURES }}"
+          just ci-rust-native-startup "${{ env.RUNTIME_FEATURES }}"
 
       - name: Publish qualified revision-bound FFI bundle
         if: ${{ !cancelled() && matrix.runtime == 'runtime-scheme' && steps.relocated_ffi.conclusion == 'success' }}

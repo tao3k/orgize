@@ -68,10 +68,13 @@ ci-scheme-test:
     rg --quiet '^ERROR CHECK ' target/scheme-test/failure-control.log
     ! rg --quiet '^OK$' target/scheme-test/failure-control.log
 
+[group('checks')]
+ci-rust-native-startup features:
+    {{ platform_env }} {{ platform_rust_flags }} cargo test --locked --workspace --no-default-features --features "{{ features }}" --lib tests::explicit_startup_precedes_parallel_native_unit_cases -- --exact --nocapture
+
 # Reuse the same Darwin/native linker policy as local qualification.
 [group('checks')]
-ci-rust-test features:
-    {{ platform_env }} {{ platform_rust_flags }} cargo test --locked --workspace --no-default-features --features "{{ features }}" --lib tests::explicit_startup_precedes_parallel_native_unit_cases -- --exact --nocapture
+ci-rust-test features: (ci-rust-native-startup features)
     {{ platform_env }} {{ platform_rust_flags }} cargo test --locked --workspace --tests --examples --no-default-features --features "{{ features }}" -- --skip tests::explicit_startup_precedes_parallel_native_unit_cases --nocapture
     {{ platform_env }} {{ platform_rust_flags }} cargo bench --locked --workspace --no-default-features --features "{{ features }}" -- --test
 
