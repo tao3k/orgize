@@ -1,0 +1,66 @@
+name: Browser demo Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: orgize-browser-demo
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # The browser demo has its own compatibility baseline. Current Orgize
+      # links a native Scheme AOT program and cannot target wasm32.
+      - uses: actions/checkout@v6
+        with:
+          ref: 771e92be3985271cc3d0c84fd2a8b8dab220b578
+          submodules: recursive
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/configure-pages@v6
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - name: Build browser demo
+        run: wasm-pack build -t web -d ./dist --out-name orgize ./wasm/
+      - name: Stage browser assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir site
+          cp wasm/{index.html,dto.js,worker.js,worker-sync.js} site/
+          cp -R wasm/dist site/
+          python3 - <<'PY'
+          from pathlib import Path
+
+          page = Path("site/index.html")
+          source = page.read_text(encoding="utf-8")
+          body = "<body>"
+          assert source.count(body) == 1
+          notice = (
+              '<p>Browser demo from Orgize revision '
+              '<a href="https://github.com/tao3k/orgize/tree/771e92be3985271cc3d0c84fd2a8b8dab220b578">'
+              '771e92be</a>.</p>'
+          )
+          page.write_text(source.replace(body, body + "\n    " + notice), encoding="utf-8")
+          PY
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - uses: actions/deploy-pages@v5
+        id: deployment

@@ -187,7 +187,8 @@ groups and file-local TODO semantics rather than defining a second matcher.
 This AOT path does not make host-loaded legacy contract
 registries or CLI trace/capture use the generated pack yet.
 
-Live demo: <https://tao3k.github.io/orgize/>
+[Browser demo](https://tao3k.github.io/orgize/) built from the last
+[WebAssembly-compatible snapshot](https://github.com/tao3k/orgize/tree/771e92be3985271cc3d0c84fd2a8b8dab220b578).
 
 ## Parse
 
