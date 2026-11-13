@@ -441,6 +441,17 @@ consumer cases absent. This diagnostic is distinct from the 2,000-file
 ledger gate. The full failure and all five samples remain under
 =runtime-rust-5e55a423-local=.
 
+The same program digest was used to compare dispatch owners locally.
+In Scheme, Scheme, Scheme, Rust, Rust, Scheme order, the single-case
+Contract query measured 22.068, 74.874, 10.207, 16.404, 14.051, and
+6.197 ms. The test itself reported one Scheme failure and two Rust
+passes at 25 ms. The timing wrapper could not read =kern.clockrate=,
+so the test output supplies the pass/fail evidence. The separate
+local Rust ledger invocation reached the five-second output watchdog
+before any timed samples. Both diagnostics remain in the same evidence
+directory. The macOS wheel job for =5e55a423= passed the installed
+wheel smoke test outside the source tree.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
