@@ -48,8 +48,11 @@ jobs:
         with:
           path: .gerbil-ci
           key: orgize-scheme-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency-toolchain.outputs.fingerprint }}-${{ hashFiles('gerbil.pkg', '.github/actions/setup-native/action.yml') }}
-      - name: Prepare and verify declared dependencies
+      - name: Install declared dependencies
+        if: steps.dependency-cache.outputs.cache-hit != 'true'
         run: just ci-dependencies
+      - name: Verify installed dependency revisions
+        run: just ci-verify-dependencies
       - name: Save declared dependency products
         if: steps.dependency-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5

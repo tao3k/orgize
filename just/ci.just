@@ -6,13 +6,32 @@ ci_build_gambopt := replace(scheme_gambopt, "max-heap=1G", "max-heap=2G")
 # Cargo exclusively selects the bridge source; compile that exact checkout into
 # the existing Gerbil output before compiling the Orgize program.
 [group('checks')]
-ci-prepare: ci-dependencies ci-build-program
+ci-prepare: ci-dependencies ci-verify-dependencies ci-build-program
 
 [group('checks')]
 ci-dependencies:
     command -v gerbil
     just public-parser-interface-check
     {{ scheme_env }} GAMBOPT="{{ package_gambopt }}" gerbil deps --install
+
+[group('checks')]
+ci-verify-dependencies:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just public-parser-interface-check
+    package_root="{{ env_var('GERBIL_PATH') }}/pkg/github.com/tao3k"
+    for package in gerbil-parser gebril-yuanxu; do
+        dependency=$(rg -o "github\.com/tao3k/$package@v[0-9]+\.[0-9]+\.[0-9]+" gerbil.pkg)
+        checkout="$package_root/$package"
+        tag="${dependency##*@}"
+        actual=$(git -C "$checkout" rev-parse HEAD)
+        expected=$(git -C "$checkout" rev-parse --verify "refs/tags/$tag^{commit}")
+        if [[ "$actual" != "$expected" ]]; then
+            printf '%s resolves to %s, expected %s\n' "$dependency" "$actual" "$expected" >&2
+            exit 1
+        fi
+        git -C "$checkout" diff --quiet HEAD --
+    done
 
 [group('checks')]
 ci-build-program:
@@ -24,7 +43,7 @@ ci-build-program:
 # Restored products are admitted by the existing source and cohort owners.
 [group('checks')]
 ci-verify-prepared:
-    just public-parser-interface-check
+    just ci-verify-dependencies
     just alignment-dependency-check "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-parser-runtime") | .manifest_path | sub("/rust/gerbil-parser-runtime/Cargo.toml$"; "")')" "$(cargo metadata --locked --format-version 1 | jq -r '.packages[] | select(.name == "gerbil-scheme") | .manifest_path | sub("/crates/gerbil-scheme/Cargo.toml$"; "")')"
     just parser-program-source-check "{{ justfile_directory() }}/target/gerbil-parser/program.json" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}" "{{ env_var('GERBIL_PATH') }}"
 
