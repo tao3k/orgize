@@ -360,6 +360,29 @@ All four candidate invocations exceeded the 100 ms gate. The isolated
 Fold CPU gain did not reproduce as a consistent endpoint gain. The
 shipping program continues to use the released Parser writer.
 
+For =94098915= the unprofiled 2,000-file gate passed on Ubuntu
+=runtime-rust= at 62.722 ms and macOS =runtime-scheme= at 94.570 ms.
+Ubuntu =runtime-scheme= and macOS =runtime-rust= failed at 124.456 ms
+and 123.052 ms respectively. Ubuntu Scheme's five diagnostic samples
+reported 112.62–114.70 ms of Fold thread CPU and 19.31–21.84 ms of
+metadata CPU. These jobs used the published Parser writer.
+
+An isolated metadata transport comparison replaced the paired =take=
+and =drop= traversals with Gerbil =split-at=. All 120 samples retained
+the response digest and malformed-packet controls. In the 2,048-row
+comparison, CPU medians were 7.177 and 7.232 ms for the candidate and
+6.449 and 8.389 ms for the adjacent controls. The result stays within
+control variation. Raw samples remain under =metadata-packet-split=.
+
+The ledger now uses a single byte-offset lookup for its end line. Its
+line-number parity test covers every offset in empty, Unicode, LF and
+CRLF inputs. The local macOS Scheme release replay retained six
+invocations of the 2,000-file test under =ledger-single-offset=. Best
+wall samples were 197.873 and 154.199 ms in the initial controls,
+98.458 and 108.321 ms in the paired controls, and 92.127 and 111.849 ms
+in the candidate arms. The lookup removes one index allocation per
+projected record. The paired endpoint samples straddle the 100 ms gate.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
