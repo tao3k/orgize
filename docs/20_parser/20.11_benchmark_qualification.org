@@ -468,6 +468,14 @@ The repeat reached 211.543 and 108.112 ms against 124.661 and
 did not confirm a gain. All samples and the patch remain under
 =ledger-host-workers=.
 
+A headline priority experiment checked the token delimiters before
+extracting its value. Thirteen direct probes, including malformed
+cookies and Unicode titles, matched the reference. The metadata
+responses and malformed-packet controls also matched. In the
+2,048-row comparison, candidate CPU medians were 6.857 and 6.742 ms,
+with adjacent controls at 8.196 and 6.537 ms. The candidate remains
+isolated with its patch and samples under =priority-cookie-fast-reject=.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
