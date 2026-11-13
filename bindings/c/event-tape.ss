@@ -147,7 +147,7 @@
 ;; lifecycle feature still chooses the owner; this pure loop adds no scheduler.
 ;; Each row retains its own OEV1/OPR1 identity, result and source-relative offsets.
 (def (org-batch-request->tape request level policy profile?
-                                  (monotonic-ns #f) (thread-cpu-ns #f))
+                                  ledger? (monotonic-ns #f) (thread-cpu-ns #f))
   (let (end (u8vector-length request))
     (unless (and (>= end 16) (> level 0) (memv policy '(0 1 2)))
       (error "invalid native Org batch header"))
@@ -169,7 +169,9 @@
                       (unless (and (<= next end) (<= size 65536))
                         (error "invalid native Org batch source size"))
                       (admit (+ index 1) next size (cons (cons start next) ranges))))))))
-           (overrides (native-parameter-overrides level policy))
+           (overrides
+            (let (options (native-parameter-overrides level policy))
+              (if ledger? (cons '(ledger-source-spans . 1) options) options)))
            (outcomes
             (map
              (lambda (range)
@@ -203,11 +205,11 @@
 ;; Process CPU/VM GC snapshots bracket a slightly wider interval and allocate.
 ;; They include other process/VM work; overlapping intervals are not additive
 ;; exclusive costs. No collection is forced here.
-(def (profile-org-batch request level policy monotonic-ns thread-cpu-ns)
+(def (profile-org-batch request level policy ledger? monotonic-ns thread-cpu-ns)
   (let* ((stats-begin (runtime-statistics-snapshot))
          (begin (monotonic-ns))
          (cpu-begin (thread-cpu-ns))
-         (tape (org-batch-request->tape request level policy #t monotonic-ns thread-cpu-ns))
+         (tape (org-batch-request->tape request level policy #t ledger? monotonic-ns thread-cpu-ns))
          (cpu-end (thread-cpu-ns))
          (end (monotonic-ns))
          (stats-end (runtime-statistics-snapshot))
@@ -240,10 +242,13 @@
         (error "invalid macro request options"))
       (if (memv (u8vector-ref request 4) '(8 9 15))
         (macro-request->tape request) (semantic-request->tape request)))
-     ((memv (u8vector-ref request 4) '(6 7))
-      (if (= (u8vector-ref request 4) 7)
-        (profile-org-batch request level policy monotonic-ns thread-cpu-ns)
-        (org-batch-request->tape request level policy #f)))
+     ((memv (u8vector-ref request 4) '(6 7 27 28))
+      ;; 27/28 project Ledger source spans through the same batch contract.
+      (let* ((operation (u8vector-ref request 4))
+             (ledger? (memv operation '(27 28))))
+        (if (memv operation '(7 28))
+          (profile-org-batch request level policy ledger? monotonic-ns thread-cpu-ns)
+          (org-batch-request->tape request level policy #f ledger?))))
      (else
       (case (u8vector-ref request 4)
         ((0 5)

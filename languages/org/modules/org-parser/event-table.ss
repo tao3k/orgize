@@ -36,13 +36,13 @@
 
 (def table-content-helper
   (make-org-event-helper
-   'table-cell-content (append source-content-initial '((inline-script-policy 2)))
+   'table-cell-content (append source-content-initial '((inline-script-policy 2) (ledger-source-spans 0)))
    (source-content-forms
     'TableCellContent 'TableTrivia
     (lambda (from until)
       `((call-source-helper inline-span ,from ,until
-                             ((state inline-script-policy))))))
-   '(inline-script-policy)))
+                             ((state inline-script-policy) (state ledger-source-spans))))))
+   '(inline-script-policy ledger-source-spans)))
 
 (def (table-or-element-form close-paragraph fixed-width-close otherwise)
   `(if (or ,table-el-border?
@@ -61,7 +61,7 @@
                  ((start-node ,(table-line-table-node table-rule))
                   (set-bool table-open (bool #t))) ())
              ,@(source-table-row-forms table-rule table-scope 'table-cell-content
-                                       '(inline-script-policy)
+                                       '(inline-script-policy ledger-source-spans)
                                        rule-bytes: '(43 45 58 9 32)
                                        rule-marker: 45 escape-byte: 92)
              (set-bool after-heading (bool #f)))

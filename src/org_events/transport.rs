@@ -272,6 +272,7 @@ pub(crate) fn parse_events_batch(
     level: usize,
     policy: usize,
     grammar: &LanguageSpec,
+    ledger: bool,
 ) -> Result<Vec<Result<Vec<TreeEvent>, String>>, String> {
     if sources.is_empty() {
         return Ok(Vec::new());
@@ -279,7 +280,7 @@ pub(crate) fn parse_events_batch(
     crate::startup::require_initialized()?;
     let profile = crate::runtime_profile::is_active();
     let request = crate::runtime_profile::stage("ffi.request_encode", || {
-        batch::encode(sources, level, policy, profile)
+        batch::encode(sources, level, policy, profile, ledger)
     })?;
     let tape =
         crate::runtime_profile::stage("ffi.transport_inclusive", || transport_parse(request))?;

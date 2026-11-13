@@ -576,7 +576,7 @@
 
 (def org-event-initial
   (append
-   '((inline-script-policy 2) (dispatch-heading-level 0)
+   '((inline-script-policy 2) (ledger-source-spans 0) (dispatch-heading-level 0)
     (headline-marker-end 0) (headline-title-start 0) (headline-title-end 0)
     (open-levels (uint-stack)) (active-opaque-block 0)
     (property-drawer-open #f) (property-key-end 0) (after-heading #f)

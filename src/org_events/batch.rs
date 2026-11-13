@@ -10,6 +10,7 @@ pub(super) fn encode(
     level: usize,
     policy: usize,
     profile: bool,
+    ledger: bool,
 ) -> Result<Vec<u8>, String> {
     if sources.is_empty() || sources.len() > MAX_DOCUMENTS {
         return Err("native Org batch requires 1..=64 documents".into());
@@ -24,7 +25,12 @@ pub(super) fn encode(
     }
     let mut bytes = Vec::with_capacity(16 + 4 * sources.len() + size);
     bytes.extend_from_slice(b"ONR1");
-    bytes.push(if profile { 7 } else { 6 });
+    bytes.push(match (ledger, profile) {
+        (false, false) => 6,
+        (false, true) => 7,
+        (true, false) => 27,
+        (true, true) => 28,
+    });
     bytes.extend_from_slice(
         &u64::try_from(level)
             .map_err(|_| "Org level overflow")?

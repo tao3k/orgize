@@ -29,16 +29,21 @@
 (def (paragraph-blank-forms until)
   (source-paragraph-blank-forms paragraph-scope until))
 (def paragraph-close-form
-  (source-paragraph-close-form paragraph-rule paragraph-scope 'inline-span '(inline-script-policy)))
+  (source-paragraph-close-form paragraph-rule paragraph-scope 'inline-span '(inline-script-policy ledger-source-spans)))
 (def paragraph-finish-form
-  (source-paragraph-close-form paragraph-rule paragraph-scope 'inline-span '(inline-script-policy) #f))
+  (source-paragraph-close-form paragraph-rule paragraph-scope 'inline-span '(inline-script-policy ledger-source-spans) #f))
 (def (paragraph-line-form)
-  (source-paragraph-line-form paragraph-rule paragraph-scope 'inline-span '(inline-script-policy)))
+  (source-paragraph-line-form paragraph-rule paragraph-scope 'inline-span '(inline-script-policy ledger-source-spans)))
 
 (def paragraph-event-helpers
   (list (make-org-event-helper
-         'inline-span event-inline-initial (event-text-line-forms 'start)
-         '(inline-script-policy))
+         'inline-span (cons '(ledger-source-spans 0) event-inline-initial)
+         ;; Ledger projects structural ownership and original source spans.
+         ;; Inline children never affect line dispatch or these fields.
+         `((if (uint-positive? (state ledger-source-spans))
+               ((start-node OrgTextLine) (token TextLine start end) (finish-node))
+               ,(event-text-line-forms 'start)))
+         '(inline-script-policy ledger-source-spans))
         (make-org-event-helper
          'link-description-span nested-description-event-initial
          (event-text-line-forms 'start #t)

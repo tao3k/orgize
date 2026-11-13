@@ -25,7 +25,10 @@ fn ledger_headline_projection_matches_full_document_metadata() {
     let oversized_metadata = format!("* TODO {} :tag:\n", "α".repeat(17_000));
     let sources = [
         "* FINISHED [#A] λ :tag:\r\n:PROPERTIES:\r\n:ID: α\r\n:END:\r\n** Child\r\n#+TODO: WAIT | FINISHED\r\n",
-        "* TODO Parent\n** DONE Child\n:PROPERTIES:\n:ID: child\n:END:\n* Second\n",
+        "* TODO *Parent* [1/8] [12%] :α:tag:\n:PROPERTIES:\n:ID: parent\n:header-args: :results silent\n:END:\n** DONE Child\n:PROPERTIES:\n:ID: child\n:END:\n* Second\n",
+        "* TODO [[id:link][Title]] :tag:\n#+begin_example\n#+TODO: WAIT | TODO\n:PROPERTIES:\n:ID: fake\n:END:\n#+end_example\n",
+        "* TODO Paragraph\nBody *bold* and [cite:@note].\n\n- [[id:note]]\n\n#+TITLE: *Rich*\n#+TODO: TODO | DONE\n",
+        "* DONE Drawer\n:PROPERTIES:\n:ID: malformed\nordinary line\n:END:\n:PROPERTIES:\n:ID: direct\n:END:\n",
         "* \n** Child\n",
         "** Child\n",
         "Prose\n* Not a leading headline\n",
@@ -40,14 +43,33 @@ fn ledger_headline_projection_matches_full_document_metadata() {
         let full = parse_org_aot_with_config(source, &config).unwrap();
         match (document.headline(), super::plan_ledger_headline(&full)) {
             (Some(actual), Some(expected)) => {
-                assert_eq!(actual.headline.id, expected.headline.id);
+                assert_eq!(actual.headline.range, expected.headline.range);
+                assert_eq!(actual.headline.fields, expected.headline.fields);
                 assert_eq!(actual.todo, expected.todo);
                 assert_eq!(actual.title, expected.title);
                 assert_eq!(actual.closed, expected.closed);
-                assert_eq!(
-                    format!("{:?}", actual.records),
-                    format!("{:?}", expected.records)
-                );
+                fn drawers<'a>(
+                    headline: &super::PlanLedgerHeadline<'a>,
+                ) -> Vec<Vec<(&'a str, &'a str)>> {
+                    headline
+                        .headline
+                        .child_ids
+                        .iter()
+                        .map(|&id| &headline.records[id])
+                        .filter(|record| record.kind == "property-drawer")
+                        .map(|drawer| {
+                            drawer
+                                .child_ids
+                                .iter()
+                                .map(|&id| &headline.records[id])
+                                .filter_map(|property| {
+                                    Some((property.field("key")?, property.field("value")?))
+                                })
+                                .collect()
+                        })
+                        .collect()
+                }
+                assert_eq!(drawers(&actual), drawers(&expected));
             }
             (None, None) => {}
             _ => panic!("scoped metadata changed the leading headline: {source:?}"),

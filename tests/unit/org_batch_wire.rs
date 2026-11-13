@@ -14,7 +14,7 @@ fn envelope(rows: &[(u8, &[u8])]) -> Vec<u8> {
 
 #[test]
 fn bounded_encoder_preserves_utf8_lengths_order_and_config() {
-    let bytes = encode(&["α", "", "β"], 258, 2, false).unwrap();
+    let bytes = encode(&["α", "", "β"], 258, 2, false, false).unwrap();
     assert_eq!(&bytes[..5], b"ONR1\x06");
     assert_eq!(&bytes[5..13], &258_u64.to_le_bytes());
     assert_eq!(&bytes[13..16], &[2, 3, 0]);
@@ -22,18 +22,20 @@ fn bounded_encoder_preserves_utf8_lengths_order_and_config() {
         &bytes[16..],
         &[2, 0, 0, 0, 0xce, 0xb1, 0, 0, 0, 0, 2, 0, 0, 0, 0xce, 0xb2]
     );
-    assert_eq!(encode(&[""], 15, 2, true).unwrap()[4], 7);
+    assert_eq!(encode(&[""], 15, 2, true, false).unwrap()[4], 7);
+    assert_eq!(encode(&[""], 15, 2, false, true).unwrap()[4], 27);
+    assert_eq!(encode(&[""], 15, 2, true, true).unwrap()[4], 28);
 }
 
 #[test]
 fn encoder_enforces_count_and_aggregate_byte_boundaries() {
-    assert!(encode(&[], 15, 2, false).is_err());
-    assert!(encode(&[""; 64], 15, 2, false).is_ok());
-    assert!(encode(&[""; 65], 15, 2, false).is_err());
+    assert!(encode(&[], 15, 2, false, false).is_err());
+    assert!(encode(&[""; 64], 15, 2, false, false).is_ok());
+    assert!(encode(&[""; 65], 15, 2, false, false).is_err());
     let limit = "x".repeat(MAX_SOURCE_BYTES);
-    assert!(encode(&[&limit], 15, 2, false).is_ok());
-    assert!(encode(&[&limit, "x"], 15, 2, false).is_err());
-    assert!(encode(&[""], 15, 256, false).is_err());
+    assert!(encode(&[&limit], 15, 2, false, false).is_ok());
+    assert!(encode(&[&limit, "x"], 15, 2, false, false).is_err());
+    assert!(encode(&[""], 15, 256, false, false).is_err());
 }
 
 #[test]

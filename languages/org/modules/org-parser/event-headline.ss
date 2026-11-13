@@ -63,7 +63,7 @@
         ((if ,rich-keyword-condition
              ((start-node OrgKeywordValue)
               (call-source-helper inline-span ,value-start ,value-end
-                                  ((state inline-script-policy)))
+                                  ((state inline-script-policy) (state ledger-source-spans)))
               (finish-node))
              ((if (line-starts-with-ascii-ci "#+TAGS:")
                   ((call-source-helper tag-vocabulary ,value-start ,value-end))
@@ -88,13 +88,13 @@
   (make-org-event-helper
    'keyword-value-span
    '((keyword-value-start 0)
-     (inline-script-policy 2) (keyword-table-open 0))
+     (inline-script-policy 2) (ledger-source-spans 0) (keyword-table-open 0))
    `((if (offset-less? start end)
          ,(keyword-value-forms '(state-offset keyword-value-start)
                                '(line-trim-end-from
                                  (state-offset keyword-value-start)))
          ()))
-   '(keyword-value-start inline-script-policy
+   '(keyword-value-start inline-script-policy ledger-source-spans
      keyword-table-open)))
 
 (def (keyword-node-forms key-end value-prefix-end optional-start optional-end)
@@ -115,10 +115,10 @@
       (if (state table-open)
           ((call-source-helper keyword-value-span start end
                                ((offset ,value-start)
-                                (state inline-script-policy) (uint 1))))
+                                (state inline-script-policy) (state ledger-source-spans) (uint 1))))
           ((call-source-helper keyword-value-span start end
                                ((offset ,value-start)
-                                (state inline-script-policy) (uint 0)))))
+                                (state inline-script-policy) (state ledger-source-spans) (uint 0)))))
       (finish-node)
       (token KeywordTrivia ,value-end end)
       (finish-node))))

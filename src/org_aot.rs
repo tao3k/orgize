@@ -293,6 +293,7 @@ fn prepare_batch(
         config.effective_inlinetask_min_level(),
         config.inline_script_policy(),
         &grammar::LANGUAGE,
+        matches!(title_scope, TitleScope::LeadingLedgerHeadline),
     )
     .map_err(OrgAotError::Native)?;
     Ok(sources

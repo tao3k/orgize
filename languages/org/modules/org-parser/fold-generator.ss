@@ -31,7 +31,7 @@
          (inline
           (event-fold-scheme-module-sources
            'parse-org-compiled-inline-events org-mode-language-grammar 'OrgFile '()
-           '((call-source-helper inline-span start end ((uint 2)))) '() helpers))
+           '((call-source-helper inline-span start end ((uint 2) (uint 0)))) '() helpers))
          (units (append document inline tape))
          (source-directory (if (equal? profile "dynamic")
                              (fold-package-source-directory output) output)))

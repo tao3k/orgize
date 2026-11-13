@@ -19,11 +19,11 @@
 (def list-handled (source-event-name list-scope 'line-handled))
 (def list-event-initial (source-list-initial list-rule list-scope list-text-rule))
 (def list-close-paragraph
-  (source-list-paragraph-close-form list-text-rule list-scope 'inline-span '(inline-script-policy)))
+  (source-list-paragraph-close-form list-text-rule list-scope 'inline-span '(inline-script-policy ledger-source-spans)))
 (def list-close-all
-  (source-list-close-forms list-text-rule list-scope 'inline-span '(inline-script-policy)))
+  (source-list-close-forms list-text-rule list-scope 'inline-span '(inline-script-policy ledger-source-spans)))
 (def list-finish-forms
-  (source-list-close-forms list-text-rule list-scope 'inline-span '(inline-script-policy) #f))
+  (source-list-close-forms list-text-rule list-scope 'inline-span '(inline-script-policy ledger-source-spans) #f))
 (def (list-text-line from)
   (source-list-paragraph-span-forms list-text-rule list-scope from 'end))
 
@@ -109,7 +109,7 @@
                 ((if (line-blank?)
                      ((if ,(source-list-first-blank-condition list-scope)
                           (,@(source-list-first-blank-forms list-rule list-text-rule list-scope
-                                                       'inline-span '(inline-script-policy))
+                                                       'inline-span '(inline-script-policy ledger-source-spans))
                            (set-bool ,list-handled (bool #t)))
                           (,@list-close-all)))
                      ((if ,(source-list-continuation-condition list-rule list-scope)

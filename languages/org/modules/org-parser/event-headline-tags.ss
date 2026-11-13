@@ -53,7 +53,7 @@
   `(if (line-bytes-any-in? ,from ,until ,inline-trigger-bytes)
        ((start-node OrgHeadlineTitle)
         (call-source-helper inline-span ,from ,until
-                            ((state inline-script-policy)))
+                            ((state inline-script-policy) (state ledger-source-spans)))
         (finish-node))
        ((token HeadlineTitle ,from ,until))))
 
