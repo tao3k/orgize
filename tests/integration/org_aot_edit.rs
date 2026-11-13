@@ -31,6 +31,26 @@ fn source_owned_edit_preserves_unrelated_org_bytes() {
     .expect("valid owner-bound edit");
     assert_eq!(candidate, SOURCE.replace("Old guarantee", "New guarantee"));
     assert!(candidate.contains(":ID: notes-1\n:END:\nKeep me\n"));
+
+    let with_task = SOURCE.replace(
+        "Old guarantee\n",
+        "*************** TODO Inline task\nOld guarantee\n*************** END\n",
+    );
+    let candidate = apply_org_source_edits(
+        &with_task,
+        &org_source_digest(&with_task),
+        &[edit(
+            &with_task,
+            "design-1",
+            "Old guarantee",
+            "New guarantee",
+        )],
+    )
+    .expect("an inline task edit retains its enclosing headline owner");
+    assert_eq!(
+        candidate,
+        with_task.replace("Old guarantee", "New guarantee")
+    );
 }
 
 fn rejects_stale_wrong_node_and_changed_span() {

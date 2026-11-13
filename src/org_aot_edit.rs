@@ -107,7 +107,7 @@ fn validate_node_anchor(
             start <= edit.start_byte && edit.end_byte <= end
         })
         .min_by_key(|record| usize::from(record.range.end()) - usize::from(record.range.start()))
-        .and_then(|record| nearest_headline(records, record.id));
+        .and_then(|record| enclosing_edit_headline(document, record.id));
     if span_owner != Some(owner) {
         return Err(OrgSourceEditError::WrongNode);
     }
@@ -125,7 +125,7 @@ fn owner_for_id(document: &OrgAotDocument, node_id: &str) -> Result<usize, OrgSo
                     .is_some_and(|key| key.eq_ignore_ascii_case("ID"))
                 && property.field("value") == Some(node_id)
         })
-        .filter_map(|property| nearest_headline(records, property.id))
+        .filter_map(|property| enclosing_edit_headline(document, property.id))
         .collect::<Vec<_>>();
     match owners.as_slice() {
         [] => Err(OrgSourceEditError::MissingNodeId),
@@ -134,14 +134,11 @@ fn owner_for_id(document: &OrgAotDocument, node_id: &str) -> Result<usize, OrgSo
     }
 }
 
-fn nearest_headline(records: &[gerbil_parser_runtime::GraphRecord], id: usize) -> Option<usize> {
-    let mut cursor = Some(id);
-    while let Some(current) = cursor {
-        let record = records.get(current)?;
-        if record.kind == "headline" {
-            return Some(current);
-        }
-        cursor = record.parent_id;
+fn enclosing_edit_headline(document: &OrgAotDocument, mut id: usize) -> Option<usize> {
+    while document.records().get(id)?.kind != "headline" {
+        // The shared index includes inlinetasks. Edit anchors belong to
+        // ordinary headlines, so advance past any inlinetask ancestors.
+        id = document.nearest_headline_ancestor(id)?;
     }
-    None
+    Some(id)
 }
