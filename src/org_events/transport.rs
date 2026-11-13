@@ -351,21 +351,28 @@ fn request_bytes(
         crate::runtime_profile::stage("ffi.request_encode", || -> Result<Vec<u8>, String> {
             let mut bytes =
                 Vec::with_capacity(source.len().checked_add(14).ok_or("Org input too large")?);
-            bytes.extend_from_slice(b"ONR1");
-            bytes.push(if operation == 0 && crate::runtime_profile::is_active() {
+            let operation = if operation == 0 && crate::runtime_profile::is_active() {
                 5
             } else {
                 operation
-            });
-            bytes.extend_from_slice(
-                &u64::try_from(level)
-                    .map_err(|_| "Org level overflow")?
-                    .to_le_bytes(),
-            );
-            bytes.push(u8::try_from(policy).map_err(|_| "Org policy overflow")?);
+            };
+            let level = u64::try_from(level).map_err(|_| "Org level overflow")?;
+            let policy = u8::try_from(policy).map_err(|_| "Org policy overflow")?;
+            encode_request_header(&mut bytes, operation, level, policy);
             bytes.extend_from_slice(source);
             Ok(bytes)
         })?;
+    transport_request(bytes)
+}
+
+fn encode_request_header(bytes: &mut Vec<u8>, operation: u8, level: u64, policy: u8) {
+    bytes.extend_from_slice(b"ONR1");
+    bytes.push(operation);
+    bytes.extend_from_slice(&level.to_le_bytes());
+    bytes.push(policy);
+}
+
+fn transport_request(bytes: Vec<u8>) -> Result<NativeTape, String> {
     crate::runtime_profile::stage("ffi.transport_inclusive", || {
         crate::runtime_profile::operation(bytes[4], || transport_parse(bytes))
     })
@@ -394,25 +401,33 @@ pub(crate) fn semantic_fields(
     if !(8..=26).contains(&operation) || fields.is_empty() {
         return Err("invalid native semantic operation".into());
     }
-    let mut bytes = Vec::new();
-    bytes.extend_from_slice(
-        &u32::try_from(fields.len())
-            .map_err(|_| "too many macro fields")?
-            .to_le_bytes(),
-    );
-    for field in fields {
-        bytes.extend_from_slice(
-            &u32::try_from(field.len())
-                .map_err(|_| "macro field too large")?
-                .to_le_bytes(),
-        );
-        bytes.extend_from_slice(field.as_bytes());
-    }
-    let tape = request_bytes(&bytes, operation, 0, 0)?;
+    crate::startup::require_initialized()?;
+    let bytes =
+        crate::runtime_profile::stage("ffi.request_encode", || encode_semantic(operation, fields))?;
+    let tape = transport_request(bytes)?;
     expression_tape::decode(
         tape.as_ref(),
         crate::org_aot::org_language_spec().grammar_digest,
     )
+}
+
+fn encode_semantic(operation: u8, fields: &[&str]) -> Result<Vec<u8>, String> {
+    let count = u32::try_from(fields.len()).map_err(|_| "too many macro fields")?;
+    let size = fields
+        .iter()
+        .try_fold(18_usize, |size, field| {
+            size.checked_add(4)?.checked_add(field.len())
+        })
+        .ok_or("Org input too large")?;
+    let mut bytes = Vec::with_capacity(size);
+    encode_request_header(&mut bytes, operation, 0, 0);
+    bytes.extend_from_slice(&count.to_le_bytes());
+    for field in fields {
+        let length = u32::try_from(field.len()).map_err(|_| "macro field too large")?;
+        bytes.extend_from_slice(&length.to_le_bytes());
+        bytes.extend_from_slice(field.as_bytes());
+    }
+    Ok(bytes)
 }
 
 #[cfg(not(feature = "runtime-scheme"))]

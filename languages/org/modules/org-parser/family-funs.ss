@@ -6,10 +6,7 @@
         :orgize/languages/org/modules/org-elements/table-properties
         :orgize/languages/org/modules/org-elements/affiliated-properties)
 (import (only-in "text-funs.ss" org-physical-lines org-trim)
-        (only-in "keyword-funs.ss" org-keyword-facts)
-        (only-in :std/string/misc string-trim)
-        (only-in :gerbil-parser/text-support
-                 string-first-word string-rest-after-first-word))
+        (only-in "keyword-funs.ss" org-keyword-facts))
 (export org-family-call org-document-batch org-link-batch org-affiliation-batch org-logbook-batch org-table-batch)
 
 (def (take-fields count fields)
@@ -168,18 +165,14 @@
               (unless (and (pair? tag-field)
                            (member (car tag-field) '("true" "false")))
                 (error "invalid native headline fields"))
-              (let* ((title (car rest))
-                     (state (todo-state-from-directives title '() open done))
-                     (keyword (if (string=? state "") "" (string-first-word title)))
-                     (after (if (string=? keyword "") (string-trim title)
-                              (string-rest-after-first-word title)))
-                     (display (headline-display-title after (string=? (car tag-field) "true")))
-                     (row (if ledger?
-                            (list state keyword display)
-                            (list state keyword after (headline-priority-cookie after) display
-                                  (headline-source-title (cadr rest) keyword)
-                                  (if (headline-comment? display) "true" "false")))))
-                (loop (cdr tag-field) (cons row out)))))))
+              (let-values (((state keyword after) (headline-todo-fields (car rest) open done)))
+                (let* ((display (headline-display-title after (string=? (car tag-field) "true")))
+                       (row (if ledger?
+                              (list state keyword display)
+                              (list state keyword after (headline-priority-cookie after) display
+                                    (headline-source-title (cadr rest) keyword)
+                                    (if (headline-comment? display) "true" "false")))))
+                  (loop (cdr tag-field) (cons row out))))))))
       (if ledger?
         headline-rows
         (cons (append (list (number->string (length open)) (number->string (length done))) open done)

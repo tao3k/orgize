@@ -23,6 +23,7 @@
         todo-open-words
         todo-done-words
         todo-state-from-directives
+        headline-todo-fields
         todo-keyword-from-directives
         headline-content-after-todo
         headline-source-title
@@ -74,34 +75,43 @@
   (map todo-word-name
          (string-words (string-after directive "|"))))
 
-;; File-local keyword Elements override the caller's configured TODO profile.
-;; The same executable Scheme function is lowered to Rust.
-(def (todo-state-from-directives title directives configured-todo configured-done)
-  (let* ((candidate (string-first-word title)))
-    (if (equal? candidate "") ""
-      (if (null? directives)
-        (if (ormap (lambda (word) (equal? candidate word)) configured-todo)
-          "todo"
-          (if (ormap (lambda (word) (equal? candidate word)) configured-done)
-            "done" ""))
+(def (todo-word-state candidate directives configured-todo configured-done)
+  (if (equal? candidate "") ""
+    (if (null? directives)
+      (if (ormap (lambda (word) (equal? candidate word)) configured-todo)
+        "todo"
+        (if (ormap (lambda (word) (equal? candidate word)) configured-done)
+          "done" ""))
+      (if (ormap
+           (lambda (directive)
+             (let* ((open-side (string-before directive "|")))
+               (ormap
+                (lambda (word)
+                  (equal? candidate (string-before word "(")))
+                (string-words open-side))))
+           directives)
+        "todo"
         (if (ormap
              (lambda (directive)
-               (let* ((open-side (string-before directive "|")))
+               (let* ((done-side (string-after directive "|")))
                  (ormap
                   (lambda (word)
                     (equal? candidate (string-before word "(")))
-                  (string-words open-side))))
+                  (string-words done-side))))
              directives)
-          "todo"
-          (if (ormap
-               (lambda (directive)
-                 (let* ((done-side (string-after directive "|")))
-                   (ormap
-                    (lambda (word)
-                      (equal? candidate (string-before word "(")))
-                    (string-words done-side))))
-               directives)
-            "done" ""))))))
+          "done" "")))))
+
+;; File-local keyword Elements override the caller's configured TODO profile.
+(def (todo-state-from-directives title directives configured-todo configured-done)
+  (todo-word-state (string-first-word title) directives configured-todo configured-done))
+
+(def (headline-todo-fields title open done)
+  (let* ((parts (split-first title))
+         (word (car parts))
+         (state (todo-word-state word '() open done)))
+    (if (string=? state "")
+        (values state "" (string-trim title))
+        (values state word (cdr parts)))))
 
 ;; The keyword value is a source-owned string, not a Rust re-parse of title.
 (def (todo-keyword-from-directives title directives configured-todo configured-done)
@@ -133,13 +143,13 @@
       (if (ascii-ci=? key "CLOSED") "closed" ""))))
 
 (def (priority-token? word)
-  (let* ((after-prefix (string-after word "[#"))
-         (inner (string-before after-prefix "]")))
-    (and (string-prefix? word "[#")
-         (string-suffix? word "]")
-         (equal? (string-after after-prefix "]") "")
-         (or (string-single-ascii-uppercase? inner)
-             (string-unsigned-at-most? inner 64)))))
+  (and (string-prefix? word "[#")
+       (string-suffix? word "]")
+       (let* ((after-prefix (string-after word "[#"))
+              (inner (string-before after-prefix "]")))
+         (and (equal? (string-after after-prefix "]") "")
+              (or (string-single-ascii-uppercase? inner)
+                  (string-unsigned-at-most? inner 64))))))
 
 ;; Return only an admitted cookie's value.  The empty string means that the
 ;; headline has no priority; the Rust projection never scans title syntax.

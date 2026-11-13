@@ -1,6 +1,17 @@
-use super::decode;
+use super::{decode, encode_semantic};
 use crate::org_aot::org_language_spec;
 use gerbil_parser_runtime::{KindCategory, TreeEvent};
+
+#[test]
+fn semantic_request_counts_utf8_bytes_and_empty_fields() {
+    let expected = [
+        b"ONR1\x1a\0\0\0\0\0\0\0\0\0\x02\0\0\0\x02\0\0\0".as_slice(),
+        "λ".as_bytes(),
+        &[0; 4],
+    ]
+    .concat();
+    assert_eq!(encode_semantic(26, &["λ", ""]).unwrap(), expected);
+}
 
 fn header() -> Vec<u8> {
     format!("OEV1{}", org_language_spec().grammar_digest).into_bytes()
