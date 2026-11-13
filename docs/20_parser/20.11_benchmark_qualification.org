@@ -310,6 +310,56 @@ suites and matched complete tape digests for twelve sources. Loader traces
 confirmed each process used its intended generated Fold. A separate byte-input
 candidate failed the existing malformed UTF-8 control and remains excluded.
 
+Three follow-up experiments used the released Parser v0.1.0. The first
+shared the property key start and resumed the delimiter search after the
+first internal colon. The others enabled the Parser compiler's
+ordinary-byte run lowering and inert-branch pruning independently.
+All matched the twelve complete control tapes and the ordered tapes for
+2,000 ledger sources. Each CPU sample folds the full in-memory input set.
+Each arm runs twenty samples in a fresh process after native compilation.
+
+| Experiment | A/A controls P50 ms | Paired controls P50 ms | Candidates P50 ms | Candidates P95 ms |
+|------------+---------------------+------------------------+-------------------+-------------------|
+| Property key scan | 49.908, 47.760 | 44.408, 44.650 | 47.199, 45.403 | 83.401, 74.017 |
+| Ordinary-byte runs | 46.077, 46.888 | 47.071, 45.591 | 49.620, 46.308 | 83.285, 74.946 |
+| Inert-branch pruning | 56.169, 47.078 | 47.185, 45.712 | 45.076, 45.748 | 72.431, 73.329 |
+
+The property candidate was slower than both adjacent controls. The ordinary
+run candidate's second arm fell between the adjacent controls, and its
+first arm was slower than both. Branch pruning ran near its last control,
+whose P95 was 71.404 ms. These experiments remain outside the release
+build. The ignored receipts under =property-fold-scan=, =fold-ordinary-run=
+and =fold-pruned= retain the raw samples and candidate patches.
+
+An independent three-second macOS stack sample of the 2,000-source Fold
+placed tape reservation, token emission and unsigned-integer admission
+among the frequent leaf frames. An isolated Parser writer candidate adds
+a fixnum fast path for token bounds and retains exact-integer validation
+for the full unsigned 64-bit wire domain. The same twelve complete tapes
+and the aggregate 2,000-document tape digest match. A separate probe
+preserves maximum wire values, backwards spans, overflow rejection and
+publication sealing. The eight existing Parser wire and ownership cases
+passed through =gerbil test= against the isolated writer.
+
+| Writer comparison | A/A controls CPU P50 ms | Paired controls CPU P50 ms | Candidates CPU P50 ms | Candidates CPU P95 ms |
+|-------------------+------------------------+---------------------------+----------------------+----------------------|
+| First run | 65.046, 68.282 | 69.406, 70.120 | 62.724, 53.100 | 104.754, 91.640 |
+| Repeat | 49.097, 53.635 | 48.953, 55.199 | 38.359, 38.164 | 66.524, 67.407 |
+
+The ignored =fold-writer-fast-path= directory retains the candidate patch,
+wire probes and all samples. The local macOS end-to-end replay used the
+existing 2,000-file release gate and two 414-module manifests that differed
+only in the writer input. The following are minima of five wall samples.
+
+| Runtime | A/A controls ms | Paired controls ms | Candidates ms |
+|---------+-----------------+--------------------+---------------|
+| Scheme | 259.029, 138.438 | 103.821, 132.877 | 107.227, 116.486 |
+| Rust | 114.109, 99.237 | 107.217, 126.843 | 156.070, 122.077 |
+
+All four candidate invocations exceeded the 100 ms gate. The isolated
+Fold CPU gain did not reproduce as a consistent endpoint gain. The
+shipping program continues to use the released Parser writer.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
