@@ -9,6 +9,10 @@ ci_build_gambopt := replace(scheme_gambopt, "max-heap=1G", "max-heap=2G")
 ci-prepare: ci-dependencies ci-verify-dependencies ci-build-program
 
 [group('checks')]
+ci-build-provider:
+    {{ platform_env }} {{ platform_rust_flags }} cargo build --locked --release --bin orgize
+
+[group('checks')]
 ci-dependencies:
     command -v gerbil
     just public-parser-interface-check

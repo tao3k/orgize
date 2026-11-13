@@ -1,9 +1,6 @@
 name: Release provider binary
 
 on:
-  push:
-    tags:
-      - "v*"
   release:
     types:
       - published
@@ -26,51 +23,29 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            exe: ""
-          - os: macos-14
+          - os: macos-26
             target: aarch64-apple-darwin
-            exe: ""
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            exe: ".exe"
     env:
       BINARY: orgize
-      EXE: ${{ matrix.exe }}
       GH_TOKEN: ${{ github.token }}
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
       TARGET: ${{ matrix.target }}
+      GERBIL_PATH: ${{ github.workspace }}/.gerbil-ci
+      ORGIZE_GERBIL_NATIVE_OUTPUT: ${{ github.workspace }}/target/program-objects
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          submodules: recursive
 
-      - name: Ensure release tag
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: |
-          set -euo pipefail
-          case "$RELEASE_TAG" in
-            v*) ;;
-            *) echo "release tag must start with v: $RELEASE_TAG" >&2; exit 2 ;;
-          esac
-          git fetch --tags --force
-          if ! git rev-parse -q --verify "refs/tags/${RELEASE_TAG}" >/dev/null; then
-            git tag "$RELEASE_TAG" "$GITHUB_SHA"
-            git push origin "refs/tags/${RELEASE_TAG}"
-          fi
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Enable Windows long paths
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          git config --global core.longpaths true
-          echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: ./.github/actions/setup-native
+      - run: cargo fetch --locked
+      - run: just ci-prepare
 
       - name: Build release binary
-        shell: bash
-        run: cargo build --release --bin "$BINARY"
+        run: just ci-build-provider
 
       - name: Package provider binary
         shell: bash
@@ -78,9 +53,9 @@ jobs:
           set -euo pipefail
           rm -rf package
           mkdir -p package
-          cp "target/release/${BINARY}${EXE}" "package/${BINARY}${EXE}"
+          cp "target/release/${BINARY}" "package/${BINARY}"
           asset="${BINARY}-${TARGET}.tar.gz"
-          tar -czf "$asset" -C package "${BINARY}${EXE}"
+          tar -czf "$asset" -C package "${BINARY}"
           python - "$asset" <<'PY'
           import hashlib
           import pathlib
@@ -95,7 +70,4 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
-            || gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --notes "Provider binary release $RELEASE_TAG" \
-            || gh release view "$RELEASE_TAG" >/dev/null
           gh release upload "$RELEASE_TAG" "${BINARY}-${TARGET}.tar.gz" "${BINARY}-${TARGET}.tar.gz.sha256" --clobber
