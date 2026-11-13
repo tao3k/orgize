@@ -31,9 +31,6 @@
 (export org-events->tape org-request->tape org-event-tape-header
         expression-value-rows expectation-value-rows contract-value-rows)
 
-(def (parse-org-native-tape-with-parameters source level policy)
-  (parse-org-compiled-tape source (native-parameter-overrides level policy)))
-
 ;; Bounded compile-time projection of the existing grammar, never a second
 ;; catalog. LR construction and Rust IR generation stay outside native runtime.
 (defsyntax (define-org-tape-catalog stx)
@@ -123,10 +120,10 @@
 ;; Operation 5: OPR1 + fused Fold/emission wall ns + zero separate encode span
 ;; + owner-thread CPU ns + unchanged OEV1. Encoding work is in the first span.
 ;; Its clock calls and envelope never execute for ordinary requests.
-(def (profile-org-tape source level policy monotonic-ns thread-cpu-ns)
+(def (profile-org-tape source overrides monotonic-ns thread-cpu-ns)
   (let* ((begin (monotonic-ns))
          (cpu-begin (thread-cpu-ns))
-         (tape (parse-org-native-tape-with-parameters source level policy))
+         (tape (parse-org-compiled-tape source overrides))
          (fold-end (monotonic-ns))
          ;; Direct emission is fused with Fold execution. OPR1's first span
          ;; owns both; there is no independently timed list-encoding pass.
@@ -172,6 +169,7 @@
                       (unless (and (<= next end) (<= size 65536))
                         (error "invalid native Org batch source size"))
                       (admit (+ index 1) next size (cons (cons start next) ranges))))))))
+           (overrides (native-parameter-overrides level policy))
            (outcomes
             (map
              (lambda (range)
@@ -180,10 +178,10 @@
                 (lambda (exception)
                   (cons 1 (string->utf8 "native Org batch document parse failed")))
                 (lambda ()
-                  (let (source (utf8->string request (car range) (cdr range)))
+                  (let (source (subu8vector request (car range) (cdr range)))
                     (cons 0 (if profile?
-                              (profile-org-tape source level policy monotonic-ns thread-cpu-ns)
-                              (parse-org-native-tape-with-parameters source level policy)))))))
+                              (profile-org-tape source overrides monotonic-ns thread-cpu-ns)
+                              (parse-org-compiled-tape source overrides)))))))
              rows))
            (size (foldl (lambda (row total) (+ total 5 (u8vector-length (cdr row))))
                         6 outcomes))
@@ -246,19 +244,24 @@
       (if (= (u8vector-ref request 4) 7)
         (profile-org-batch request level policy monotonic-ns thread-cpu-ns)
         (org-batch-request->tape request level policy #f)))
-     (else (let (source (utf8->string request 14 (u8vector-length request)))
-    (case (u8vector-ref request 4)
-      ((0) (parse-org-native-tape-with-parameters source level policy))
-      ((5) (profile-org-tape source level policy monotonic-ns thread-cpu-ns))
-      ((1 2 3 4)
-       (unless (and (= level 0) (= policy 0))
-         (error "invalid expression request options"))
-       (case (u8vector-ref request 4)
-         ((1) (expression->tape source))
-         ((2) (expression-values->tape source))
-         ((3) (expectation-values->tape source))
-         ((4) (contract-values->tape source))))
-      (else (error "unknown native parser operation"))))))))
+     (else
+      (case (u8vector-ref request 4)
+        ((0 5)
+         (let ((source (subu8vector request 14 (u8vector-length request)))
+               (overrides (native-parameter-overrides level policy)))
+           (if (= (u8vector-ref request 4) 5)
+             (profile-org-tape source overrides monotonic-ns thread-cpu-ns)
+             (parse-org-compiled-tape source overrides))))
+        ((1 2 3 4)
+         (unless (and (= level 0) (= policy 0))
+           (error "invalid expression request options"))
+         (let (source (utf8->string request 14 (u8vector-length request)))
+           (case (u8vector-ref request 4)
+             ((1) (expression->tape source))
+             ((2) (expression-values->tape source))
+             ((3) (expectation-values->tape source))
+             ((4) (contract-values->tape source)))))
+        (else (error "unknown native parser operation")))))))
 
 ;; Operations 8/9 carry counted UTF-8 fields, not JSON or source expressions.
 ;; Admit every length and trailing byte before invoking semantic operations.
