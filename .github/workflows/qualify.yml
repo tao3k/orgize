@@ -187,7 +187,10 @@ jobs:
           runner: ${{ inputs.runner }}
       - name: Select producer FFI bundle output
         if: matrix.runtime == 'runtime-scheme'
-        run: echo "ORGIZE_FFI_EXPORT=$GITHUB_WORKSPACE/target/ffi-bundle" >> "$GITHUB_ENV"
+        shell: bash
+        run: |
+          bundle_root=$(mktemp -d "$RUNNER_TEMP/orgize-ffi.XXXXXXXX")
+          echo "ORGIZE_FFI_EXPORT=$bundle_root/producer" >> "$GITHUB_ENV"
 
       - name: Run tests
         id: rust_tests
@@ -204,18 +207,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mv target/ffi-bundle target/ffi-consumer
+          bundle_root=$(dirname "$ORGIZE_FFI_EXPORT")
+          consumer="$bundle_root/consumer"
+          mv "$ORGIZE_FFI_EXPORT" "$consumer"
           unset ORGIZE_FFI_EXPORT
-          export ORGIZE_FFI_BUNDLE="$GITHUB_WORKSPACE/target/ffi-consumer"
-          export ORGIZE_GERBIL_PROGRAM_MANIFEST="$GITHUB_WORKSPACE/target/absent-program.json"
+          export ORGIZE_FFI_BUNDLE="$consumer"
+          export ORGIZE_GERBIL_PROGRAM_MANIFEST="$bundle_root/absent-program.json"
           just ci-rust-native-startup "${{ env.RUNTIME_FEATURES }}"
+          echo "bundle=$consumer" >> "$GITHUB_OUTPUT"
 
       - name: Publish qualified revision-bound FFI bundle
         if: ${{ !cancelled() && matrix.runtime == 'runtime-scheme' && steps.relocated_ffi.conclusion == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: orgize-ffi-${{ github.event.pull_request.head.sha || github.sha }}-${{ runner.os }}-${{ runner.arch }}
-          path: target/ffi-consumer/
+          path: ${{ steps.relocated_ffi.outputs.bundle }}
           if-no-files-found: error
           retention-days: 30
 
