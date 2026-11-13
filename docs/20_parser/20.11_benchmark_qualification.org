@@ -425,6 +425,12 @@ cache. For the preceding =94098915= Ubuntu Scheme job, GitHub recorded
 the full Rust suite in the first step and exercises the relocated
 bundle through the native startup suite.
 
+On =5e55a423=, Ubuntu Scheme's complete Rust suite passed 86 native
+unit cases and 463 consumer cases. The relocated bundle passed the same
+86 native unit cases in a separate 1-minute-23-second step, and CI
+published the bundle for that revision. macOS Scheme passed all five
+unprofiled ledger samples, from 81.929 to 91.321 ms.
+
 Serial A/A and ABBA runs used twenty samples per process on the same
 256-ledger document. All six event-list receipts passed and matched the
 complete event digest. Paired baseline P50 was 9.600 and 9.459 ms, and
