@@ -3,7 +3,7 @@
 
 (import (only-in :clan/poo/object .o .ref)
         (only-in :clan/poo/mop validate)
-        (only-in :tao3k/yuanxu/object-family/interface defpoo-object-family)
+        (only-in :tao3k/yuanxu/object/interface defpoo-object-family)
         (only-in :gerbil-parser/event-fold-program-support prepare-event-fold-program)
         (only-in "value-types.ss"
                  +org-event-block-kind+ +org-named-block-kind+

@@ -8,9 +8,11 @@
   (register-module-build-source! (path-directory (this-source-file)) 'orgize))
 (import (only-in :std/source this-source-file)
         (only-in :std/misc/process run-process)
-        (only-in :clan/poo/object .get)
+        (only-in :clan/poo/object .get .call)
         (only-in :tao3k/yuanxu/module-system/building/source-package register-module-build-source!)
-        (only-in :std/build-script defbuild-script)
+        (only-in :std/make make make-clean)
+        (only-in :tao3k/yuanxu/module-system/building/products
+                 build-output-directory current-build-source-directory)
         (only-in :gerbil-parser/compiler-build-support
                  initialize-compiler-build! run-build-tool)
         (only-in "./languages/org/modules/org-parser/fold-package.ss"
@@ -19,9 +21,32 @@
 (export main)
 (register-module-build-source! (path-directory (this-source-file)) 'orgize)
 
-(def (build-native . arguments)
-  (defbuild-script (.get orgize.init.exports std-make-spec))
-  (apply main arguments))
+(def (build-native operation arguments)
+  (def projection (.call orgize.init.exports .project-build))
+  (def spec (.get projection spec))
+  (def root (path-directory (this-source-file)))
+  (def output (build-output-directory))
+  (case (string->symbol operation)
+    ((meta) (write '("spec" "compile" "clean")) (newline))
+    ((spec) (.call projection .admit-spec spec) (write spec) (newline))
+    ((compile)
+     (let (options
+           (apply append
+             (map (lambda (option)
+                    (cond ((equal? option "--optimized") (list build-optimized: #t))
+                          ((equal? option "--release") (list build-release: #t))
+                          ((equal? option "--debug") (list debug: #t))
+                          (else (error "unknown build option" option))))
+                  arguments)))
+       (.call projection .with-compiler-inputs
+         (lambda ()
+           (apply make spec srcdir: (or (current-build-source-directory) root)
+                  libdir: output options)))))
+    ((clean)
+     (.call projection .with-clean-outputs
+       (lambda ()
+         (make-clean spec srcdir: (or (current-build-source-directory) root) libdir: output))))
+    (else (error "unknown build operation" operation))))
 
 ;; A compiler manifest alone does not admit a loadable dynamic interface.
 ;; Exercise the installed interface, not a source fallback, before publication.
@@ -55,7 +80,7 @@
                         (filter (lambda (arg) (member arg '("--optimized" "--release" "--debug")))
                                 arguments))
                  directory: fold-source stdout-redirection: #f))
-  (begin0 (apply build-native arguments)
+  (begin0 (build-native operation (if (null? arguments) '() (cdr arguments)))
     ;; The bridge compiler owns the program closure and manifest. CI and Cargo
     ;; consume this package product; they do not rebuild a second static subset.
     (when (equal? operation "compile")

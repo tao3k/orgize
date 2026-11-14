@@ -25,11 +25,11 @@ ci-verify-dependencies:
     just public-parser-interface-check
     package_root="{{ env_var('GERBIL_PATH') }}/pkg/github.com/tao3k"
     for package in gerbil-parser gebril-yuanxu; do
-        dependency=$(rg -o "github\.com/tao3k/$package@v[0-9]+\.[0-9]+\.[0-9]+" gerbil.pkg)
+        dependency=$(rg -o "github\.com/tao3k/$package@[0-9a-f]{40}" gerbil.pkg)
         checkout="$package_root/$package"
-        tag="${dependency##*@}"
+        revision="${dependency##*@}"
         actual=$(git -C "$checkout" rev-parse HEAD)
-        expected=$(git -C "$checkout" rev-parse --verify "refs/tags/$tag^{commit}")
+        expected=$(git -C "$checkout" rev-parse --verify "$revision^{commit}")
         if [[ "$actual" != "$expected" ]]; then
             printf '%s resolves to %s, expected %s\n' "$dependency" "$actual" "$expected" >&2
             exit 1

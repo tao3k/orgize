@@ -2,6 +2,6 @@
 
 (.def OrgNative
   identity: 'c
-  core: (.o requires: (.o) scope-contract: OrgNativeScopeContract
-            exports: OrgNative. projections: (list Build))
+  core: (.o scope-contract: OrgNativeScopeContract
+            exports: OrgNative.)
   features: (.o))

@@ -3,6 +3,6 @@
 
 (.def OrgElements
   identity: 'org-elements
-  core: (.o requires: (.o) scope-contract: OrgElementsScopeContract
+  core: (.o scope-contract: OrgElementsScopeContract
             exports: OrgElementsProfile.)
   features: (.o))

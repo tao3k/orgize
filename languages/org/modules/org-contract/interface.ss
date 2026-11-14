@@ -3,6 +3,6 @@
 
 (.def OrgContract
   identity: 'org-contract
-  core: (.o requires: (.o) scope-contract: OrgContractScopeContract
+  core: (.o scope-contract: OrgContractScopeContract
             exports: OrgContractProfile.)
   features: (.o))
