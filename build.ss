@@ -30,18 +30,18 @@
     ((meta) (write '("spec" "compile" "clean")) (newline))
     ((spec) (.call projection .admit-spec spec) (write spec) (newline))
     ((compile)
-     (def options
-       (apply append
-         (map (lambda (option)
-                (cond ((equal? option "--optimized") (list build-optimized: #t))
-                      ((equal? option "--release") (list build-release: #t))
-                      ((equal? option "--debug") (list debug: #t))
-                      (else (error "unknown build option" option))))
-              arguments)))
-     (.call projection .with-compiler-inputs
-       (lambda ()
-         (apply make spec srcdir: (or (current-build-source-directory) root)
-                libdir: output options))))
+     (let (options
+           (apply append
+             (map (lambda (option)
+                    (cond ((equal? option "--optimized") (list build-optimized: #t))
+                          ((equal? option "--release") (list build-release: #t))
+                          ((equal? option "--debug") (list debug: #t))
+                          (else (error "unknown build option" option))))
+                  arguments)))
+       (.call projection .with-compiler-inputs
+         (lambda ()
+           (apply make spec srcdir: (or (current-build-source-directory) root)
+                  libdir: output options)))))
     ((clean)
      (.call projection .with-clean-outputs
        (lambda ()
