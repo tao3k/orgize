@@ -3,7 +3,7 @@
 
 (import (only-in :clan/poo/object .o .ref)
         (only-in :clan/poo/mop validate)
-        (only-in :tao3k/yuanxu/object-family/interface defpoo-object-family)
+        (only-in :tao3k/yuanxu/object/interface defpoo-object-family)
         (only-in "value-types.ss"
                  +org-element-schema+ +org-element-query-kind+
                  +org-element-clause-kind+ +org-element-graph-kind+
