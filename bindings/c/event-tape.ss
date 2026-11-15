@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 ;;; Private native boundary projection; parsing remains the POO strategy's job.
-(import (only-in :orgize-fold/parse-org-compiled-tape parse-org-compiled-tape)
+(import (only-in :orgize-fold/parse-org-compiled-product parse-org-compiled-product)
         (only-in :orgize/languages/org/modules/org-elements/fold-product org-fold-product)
         (only-in :orgize/languages/org/modules/org-parser/runtime-parameters native-parameter-overrides)
         (only-in :std/vector/u8vector little u8vector-uint-ref u8vector-uint-set!)
@@ -10,7 +10,7 @@
         (only-in :orgize/languages/org/modules/org-parser/keyword-funs org-keyword-facts)
         (only-in :orgize/languages/org/modules/org-parser/dir-path-funs org-dir-command-plan org-dir-environment-plan)
         (only-in :orgize/languages/org/modules/org-parser/text-funs org-trim)
-        (only-in :orgize/languages/org/modules/org-parser/family-funs org-family-call org-document-batch org-document-todo-profile org-link-batch org-affiliation-batch org-logbook-batch org-table-batch)
+        (only-in :orgize/languages/org/modules/org-parser/family-funs org-family-call org-document-batch org-link-batch org-affiliation-batch org-logbook-batch org-table-batch)
         (only-in :orgize/languages/org/modules/org-elements/radio-match org-radio-matches)
         (only-in :orgize/languages/org/modules/org-parser/value-funs org-value-plan)
         (only-in :orgize/languages/org/modules/org-parser/runtime-statistics
@@ -121,15 +121,15 @@
 ;; Operation 5: OPR1 + Fold wall ns + document product wall ns
 ;; + owner-thread CPU ns + ODV1.
 ;; Its clock calls and envelope never execute for ordinary requests.
-(def (document-product source overrides ledger?)
-  (org-fold-product (u8vector-length source) (parse-org-compiled-tape source overrides) ledger?))
+(def (document-product source overrides (todo-profile #f))
+  (org-fold-product (parse-org-compiled-product source overrides) source todo-profile))
 
-(def (profile-org-tape source overrides ledger? monotonic-ns thread-cpu-ns)
+(def (profile-org-tape source overrides monotonic-ns thread-cpu-ns (todo-profile #f))
   (let* ((begin (monotonic-ns))
          (cpu-begin (thread-cpu-ns))
-         (events (parse-org-compiled-tape source overrides))
+         (product (parse-org-compiled-product source overrides))
          (fold-end (monotonic-ns))
-         (tape (org-fold-product (u8vector-length source) events ledger?))
+         (tape (org-fold-product product source todo-profile))
          (tape-end (monotonic-ns))
          (cpu-end (thread-cpu-ns)))
     (unless (and (> begin 0) (<= begin fold-end tape-end)
@@ -146,20 +146,37 @@
 (def (read-unsigned bytes offset width)
   (u8vector-uint-ref bytes offset little width))
 
+;; Ledger shares one TODO configuration across all document frames.
+(def (read-ledger-profile request)
+  (let (limit (u8vector-length request))
+    (def (words offset)
+      (unless (<= (+ offset 4) limit) (error "truncated Ledger TODO profile"))
+      (let (count (read-unsigned request offset 4))
+        (let loop ((left count) (offset (+ offset 4)) (words '()))
+          (if (= left 0) (values (reverse! words) offset)
+            (begin
+              (unless (<= (+ offset 4) limit) (error "truncated Ledger TODO word"))
+              (let* ((from (+ offset 4)) (until (+ from (read-unsigned request offset 4))))
+                (unless (<= until limit) (error "invalid Ledger TODO word length"))
+                (loop (- left 1) until (cons (utf8->string request from until) words))))))))
+    (let*-values (((open offset) (words 16)) ((done offset) (words offset)))
+      (values (list open done) offset))))
+
 ;; One admitted owner request, at most 64 documents / 64KiB source. The
 ;; lifecycle feature still chooses the owner; this pure loop adds no scheduler.
 ;; Each row retains its own ODV1/OPR1 identity, result and source-relative offsets.
 (def (org-batch-request->tape request level policy profile?
                                   ledger? (monotonic-ns #f) (thread-cpu-ns #f))
-  (let (end (u8vector-length request))
-    (unless (and (>= end 16) (> level 0) (memv policy '(0 1 2)))
-      (error "invalid native Org batch header"))
+  (def end (u8vector-length request))
+  (unless (and (>= end 16) (> level 0) (memv policy '(0 1 2)))
+    (error "invalid native Org batch header"))
+  (let-values (((todo-profile first) (if ledger? (read-ledger-profile request) (values #f 16))))
     (let* ((count (read-unsigned request 14 2))
            (rows
             (begin
               (unless (<= 1 count 64) (error "invalid native Org batch count"))
               ;; Admit the entire framing before invoking any parser.
-              (let admit ((index 0) (offset 16) (total 0) (ranges '()))
+              (let admit ((index 0) (offset first) (total 0) (ranges '()))
                 (if (= index count)
                   (begin
                     (unless (= offset end) (error "trailing native Org batch bytes"))
@@ -185,8 +202,8 @@
                 (lambda ()
                   (let (source (subu8vector request (car range) (cdr range)))
                     (cons 0 (if profile?
-                              (profile-org-tape source overrides ledger? monotonic-ns thread-cpu-ns)
-                              (document-product source overrides ledger?)))))))
+                              (profile-org-tape source overrides monotonic-ns thread-cpu-ns todo-profile)
+                              (document-product source overrides todo-profile)))))))
              rows))
            (size (foldl (lambda (row total) (+ total 5 (u8vector-length (cdr row))))
                         6 outcomes))
@@ -240,7 +257,7 @@
                    (loop (- index 1) (+ (* value 256) (u8vector-ref request (+ 5 index)))))))
         (policy (u8vector-ref request 13)))
     (cond
-     ((<= 8 (u8vector-ref request 4) 26)
+     ((<= 8 (u8vector-ref request 4) 24)
       (unless (and (= level 0) (= policy 0))
         (error "invalid macro request options"))
       (if (memv (u8vector-ref request 4) '(8 9 15))
@@ -258,8 +275,8 @@
          (let ((source (subu8vector request 14 (u8vector-length request)))
                (overrides (native-parameter-overrides level policy)))
            (if (= (u8vector-ref request 4) 5)
-             (profile-org-tape source overrides #f monotonic-ns thread-cpu-ns)
-             (document-product source overrides #f))))
+             (profile-org-tape source overrides monotonic-ns thread-cpu-ns)
+             (document-product source overrides))))
         ((1 2 3 4)
          (unless (and (= level 0) (= policy 0))
            (error "invalid expression request options"))
@@ -308,14 +325,14 @@
 ;; Counted fields share the existing identity-bound value tape, never JSON.
 ;; Semantic owners emit private string rows; the adapter only frames them.
 (def (semantic-request->tape request)
-  (when (and (memv (u8vector-ref request 4) '(24 26))
+  (when (and (= (u8vector-ref request 4) 24)
              (> (u8vector-length request) (+ 65536 14)))
     (error "document metadata packet exceeds native byte budget"))
   (let* ((fields (macro-request-fields request))
          (operation (u8vector-ref request 4))
          (expected (case operation ((10) 5) (else 1))))
     (unless (cond ((= operation 12) (even? (length fields)))
-                  ((<= 16 operation 26) #t)
+                  ((<= 16 operation 24) #t)
                   (else (= (length fields) expected)))
       (error "invalid native semantic field count"))
     (let (rows
@@ -339,8 +356,6 @@
             ((16) (org-family-call fields))
             ((17) (org-document-batch fields))
             ((24) (document-metadata-packets fields))
-            ((25) (org-document-batch fields #t))
-            ((26) (document-metadata-packets fields #t))
             ((18) (org-link-batch fields))
             ((19) (org-affiliation-batch fields))
             ((20) (org-logbook-batch fields))
@@ -474,28 +489,26 @@
     (contract-events->rows (parse-artifact-events artifact) expression-string-value)))
 
 ;; Bounded framing only: each packet calls the existing document semantic owner.
-(def (document-metadata-packets fields (ledger? #f))
-  (let-values (((profile fields)
-                (if ledger? (org-document-todo-profile fields) (values #f fields))))
-    (let (count (and (pair? fields) (string->number (car fields))))
-      (unless (and (exact-integer? count) (<= 1 count 64))
-        (error "invalid document metadata packet count"))
-      ;; Track the unread field count instead of traversing the entire suffix
-      ;; again for every packet. Each packet keeps its original framing check.
-      (let loop ((remaining count) (rest (cdr fields))
-                 (available (length (cdr fields))) (out '()))
-        (if (= remaining 0)
-          (begin
-            (unless (null? rest) (error "trailing document metadata packets"))
-            (append-map identity (reverse out)))
-          (let (size (and (pair? rest) (string->number (car rest))))
-            (unless (and (exact-integer? size) (> size 0) (< size available))
-              (error "truncated document metadata packet"))
-            (let* ((packet (take (cdr rest) size))
-                   (rows (with-catch
-                          (lambda (exception) (list (list "error" "native document metadata failed")))
-                          (lambda ()
-                            (let (rows (org-document-batch packet ledger? profile))
-                              (cons (list "ok" (number->string (length rows))) rows))))))
-              (loop (- remaining 1) (drop (cdr rest) size)
-                    (- available size 1) (cons rows out)))))))))
+(def (document-metadata-packets fields)
+  (let (count (and (pair? fields) (string->number (car fields))))
+    (unless (and (exact-integer? count) (<= 1 count 64))
+      (error "invalid document metadata packet count"))
+    ;; Track the unread field count instead of traversing the entire suffix
+    ;; again for every packet. Each packet keeps its original framing check.
+    (let loop ((remaining count) (rest (cdr fields))
+               (available (length (cdr fields))) (out '()))
+      (if (= remaining 0)
+        (begin
+          (unless (null? rest) (error "trailing document metadata packets"))
+          (append-map identity (reverse out)))
+        (let (size (and (pair? rest) (string->number (car rest))))
+          (unless (and (exact-integer? size) (> size 0) (< size available))
+            (error "truncated document metadata packet"))
+          (let* ((packet (take (cdr rest) size))
+                 (rows (with-catch
+                        (lambda (exception) (list (list "error" "native document metadata failed")))
+                        (lambda ()
+                          (let (rows (org-document-batch packet))
+                            (cons (list "ok" (number->string (length rows))) rows))))))
+            (loop (- remaining 1) (drop (cdr rest) size)
+                  (- available size 1) (cons rows out))))))))

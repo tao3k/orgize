@@ -5,27 +5,16 @@ pub(super) fn finish<T>(
     prepared: Vec<Result<PreparedDocument, OrgAotError>>,
     single_operation: u8,
     batch_operation: u8,
-    shared_fields: &[String],
     admit: impl Fn(PreparedDocument, Vec<Vec<String>>) -> Result<T, OrgAotError>,
 ) -> Result<Vec<Result<T, OrgAotError>>, OrgAotError> {
     let mut output = Vec::with_capacity(prepared.len());
     let mut pending = Vec::new();
-    let shared_bytes = shared_fields
-        .iter()
-        .map(|field| field.len() + 4)
-        .sum::<usize>();
-    let mut bytes = shared_bytes;
+    let mut bytes = 0;
     for document in prepared {
         match document {
             Err(error) => {
-                flush(
-                    &mut pending,
-                    &mut output,
-                    batch_operation,
-                    shared_fields,
-                    &admit,
-                )?;
-                bytes = shared_bytes;
+                flush(&mut pending, &mut output, batch_operation, &admit)?;
+                bytes = 0;
                 output.push(Err(error));
             }
             Ok(document) => {
@@ -36,20 +25,14 @@ pub(super) fn finish<T>(
                     .sum::<usize>()
                     + 16;
                 if bytes + size > super::BATCH_MAX_SOURCE_BYTES {
-                    flush(
-                        &mut pending,
-                        &mut output,
-                        batch_operation,
-                        shared_fields,
-                        &admit,
-                    )?;
-                    bytes = shared_bytes;
+                    flush(&mut pending, &mut output, batch_operation, &admit)?;
+                    bytes = 0;
                 }
-                if shared_bytes + size > super::BATCH_MAX_SOURCE_BYTES {
+                if size > super::BATCH_MAX_SOURCE_BYTES {
                     // Preserve the existing single-document configuration surface.
-                    let refs = shared_fields
+                    let refs = document
+                        .fields
                         .iter()
-                        .chain(&document.fields)
                         .map(String::as_str)
                         .collect::<Vec<_>>();
                     output.push(
@@ -64,13 +47,7 @@ pub(super) fn finish<T>(
             }
         }
     }
-    flush(
-        &mut pending,
-        &mut output,
-        batch_operation,
-        shared_fields,
-        &admit,
-    )?;
+    flush(&mut pending, &mut output, batch_operation, &admit)?;
     Ok(output)
 }
 
@@ -78,7 +55,6 @@ fn flush<T>(
     pending: &mut Vec<PreparedDocument>,
     output: &mut Vec<Result<T, OrgAotError>>,
     operation: u8,
-    shared_fields: &[String],
     admit: &impl Fn(PreparedDocument, Vec<Vec<String>>) -> Result<T, OrgAotError>,
 ) -> Result<(), OrgAotError> {
     if pending.is_empty() {
@@ -90,14 +66,11 @@ fn flush<T>(
             .iter()
             .map(|doc| doc.fields.len().to_string())
             .collect();
-        let field_count = 1
-            + shared_fields.len()
-            + pending
-                .iter()
-                .map(|doc| 1 + doc.fields.len())
-                .sum::<usize>();
+        let field_count = 1 + pending
+            .iter()
+            .map(|doc| 1 + doc.fields.len())
+            .sum::<usize>();
         let mut refs = Vec::with_capacity(field_count);
-        refs.extend(shared_fields.iter().map(String::as_str));
         refs.push(count.as_str());
         for (document, size) in pending.iter().zip(&sizes) {
             refs.push(size.as_str());

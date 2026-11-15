@@ -285,7 +285,7 @@ pub(crate) fn parse_documents(
     policy: usize,
     grammar: &LanguageSpec,
     graph: &GraphProjectionSpec,
-    ledger: bool,
+    todo_profile: Option<(&[String], &[String])>,
 ) -> Result<Vec<Result<DocumentProduct, String>>, String> {
     if sources.is_empty() {
         return Ok(Vec::new());
@@ -293,12 +293,19 @@ pub(crate) fn parse_documents(
     crate::startup::require_initialized()?;
     let profile = crate::runtime_profile::is_active();
     let request = crate::runtime_profile::stage("ffi.request_encode", || {
-        batch::encode(sources, level, policy, profile, ledger)
+        batch::encode(sources, level, policy, profile, todo_profile)
     })?;
     let tape =
         crate::runtime_profile::stage("ffi.transport_inclusive", || transport_parse(request))?;
     crate::runtime_profile::stage("product.decode", || {
-        batch::decode_batch(tape.as_ref(), sources, grammar, graph, ledger, profile)
+        batch::decode_batch(
+            tape.as_ref(),
+            sources,
+            grammar,
+            graph,
+            todo_profile.is_some(),
+            profile,
+        )
     })
 }
 
@@ -377,7 +384,7 @@ pub(crate) fn semantic_fields(
     operation: u8,
     fields: &[&str],
 ) -> Result<Vec<NativeExpressionValue>, String> {
-    if !(8..=26).contains(&operation) || fields.is_empty() {
+    if !(8..=24).contains(&operation) || fields.is_empty() {
         return Err("invalid native semantic operation".into());
     }
     crate::startup::require_initialized()?;

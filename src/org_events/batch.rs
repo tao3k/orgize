@@ -9,7 +9,7 @@ pub(super) fn encode(
     level: usize,
     policy: usize,
     profile: bool,
-    ledger: bool,
+    todo_profile: Option<(&[String], &[String])>,
 ) -> Result<Vec<u8>, String> {
     if sources.is_empty() || sources.len() > MAX_DOCUMENTS {
         return Err("native Org batch requires 1..=64 documents".into());
@@ -24,7 +24,7 @@ pub(super) fn encode(
     }
     let mut bytes = Vec::with_capacity(16 + 4 * sources.len() + size);
     bytes.extend_from_slice(b"ONR1");
-    bytes.push(match (ledger, profile) {
+    bytes.push(match (todo_profile.is_some(), profile) {
         (false, false) => 6,
         (false, true) => 7,
         (true, false) => 27,
@@ -37,6 +37,23 @@ pub(super) fn encode(
     );
     bytes.push(u8::try_from(policy).map_err(|_| "Org policy overflow")?);
     bytes.extend_from_slice(&(sources.len() as u16).to_le_bytes());
+    if let Some((open, done)) = todo_profile {
+        for words in [open, done] {
+            bytes.extend_from_slice(
+                &u32::try_from(words.len())
+                    .map_err(|_| "Ledger TODO profile overflow")?
+                    .to_le_bytes(),
+            );
+            for word in words {
+                bytes.extend_from_slice(
+                    &u32::try_from(word.len())
+                        .map_err(|_| "Ledger TODO word overflow")?
+                        .to_le_bytes(),
+                );
+                bytes.extend_from_slice(word.as_bytes());
+            }
+        }
+    }
     for source in sources {
         bytes.extend_from_slice(&(source.len() as u32).to_le_bytes());
         bytes.extend_from_slice(source.as_bytes());

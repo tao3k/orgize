@@ -11,6 +11,7 @@ pub(crate) struct DocumentProduct {
     pub syntax: Option<SyntaxNode>,
     pub records: Vec<GraphRecord>,
     pub subtree_ends: Vec<usize>,
+    pub ledger_title: Option<[String; 3]>,
 }
 
 struct Reader<'a> {
@@ -26,6 +27,18 @@ impl Reader<'_> {
             .ok_or("truncated Org document column")?;
         self.bytes = rest;
         Ok(u32::from_le_bytes(word.try_into().unwrap()))
+    }
+
+    fn text(&mut self) -> Result<String, String> {
+        let size = self.word()? as usize;
+        let (text, rest) = self
+            .bytes
+            .split_at_checked(size)
+            .ok_or("truncated Ledger text")?;
+        self.bytes = rest;
+        Ok(std::str::from_utf8(text)
+            .map_err(|_| "invalid Ledger UTF-8")?
+            .to_owned())
     }
 
     fn count(&mut self, row_width: usize) -> Result<usize, String> {
@@ -209,6 +222,15 @@ impl DocumentProduct {
             subtree_ends.push(subtree_end);
             active = Some(id);
         }
+        let ledger_title = if ledger {
+            match reader.word()? {
+                0 => None,
+                3 => Some([reader.text()?, reader.text()?, reader.text()?]),
+                _ => return Err("invalid Ledger headline row".into()),
+            }
+        } else {
+            None
+        };
         if !reader.bytes.is_empty() {
             return Err("trailing Org document columns".into());
         }
@@ -216,6 +238,7 @@ impl DocumentProduct {
             syntax,
             records,
             subtree_ends,
+            ledger_title,
         })
     }
 }

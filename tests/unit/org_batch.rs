@@ -20,8 +20,8 @@ pub(crate) const NATIVE_CASES: &[(&str, fn())] = &[
 ];
 
 fn ledger_headline_projection_matches_full_document_metadata() {
-    // The source fits the Fold batch budget. Its title plus the shared
-    // profile exceed the metadata budget and use the single-document operation.
+    // The shared TODO profile and titles can exceed the source-byte limit.
+    // The source batch is still admissible and every title keeps its semantics.
     let oversized_metadata = format!("* TODO {} :tag:\n", "α".repeat(17_000));
     let sources = [
         "* FINISHED [#A] λ :tag:\r\n:PROPERTIES:\r\n:ID: α\r\n:END:\r\n** Child\r\n#+TODO: WAIT | FINISHED\r\n",
@@ -91,21 +91,12 @@ fn preserves_order_utf8_and_configuration() {
     assert_eq!(packet[2][0], "error");
     assert_eq!(packet[3], ["ok", "1"]);
     assert_eq!(packet[4], ["0", "0"]);
-    let compact = super::native_semantic_rows(
-        26,
-        &["0", "0", "3", "2", "0", "0", "1", "invalid", "2", "0", "0"],
-    )
-    .unwrap();
-    assert_eq!(compact[0], ["ok", "0"]);
-    assert_eq!(compact[1][0], "error");
-    assert_eq!(compact[2], ["ok", "0"]);
     for fields in [
         &["65"][..],
         &["1", "5", "0"][..],
         &["1", "4", "0", "0", "0", "0", "trailing"][..],
     ] {
         assert!(super::native_semantic_rows(24, fields).is_err());
-        assert!(super::native_semantic_rows(26, fields).is_err());
     }
     let inputs = [
         "",

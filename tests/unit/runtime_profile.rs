@@ -102,7 +102,7 @@ fn owner_reply_records_only_on_the_receiving_request() {
 
 #[test]
 fn transport_projection_retains_exact_request_local_values() {
-    for operation in [17, 24, 25, 26] {
+    for operation in [17, 24] {
         let (_, timings) = measure(|| super::record_transport(operation, [11, 13, 17, 23], 19));
         assert_eq!(timings["owner.admission"], 11);
         assert_eq!(timings["owner.service_inclusive"], 13);
@@ -116,11 +116,7 @@ fn transport_projection_retains_exact_request_local_values() {
     }
     super::record_transport(7, [1, 2, 3, 5], 4);
     assert!(measure(|| ()).1.is_empty());
-    for (operation, name) in [
-        (23, "ffi.operation.23"),
-        (25, "ffi.operation.25"),
-        (26, "ffi.operation.26"),
-    ] {
+    for (operation, name) in [(23, "ffi.operation.23"), (24, "ffi.operation.24")] {
         let (value, timings) = measure(|| super::operation(operation, || 7));
         assert_eq!(value, 7);
         assert!(timings.contains_key(name));

@@ -109,7 +109,7 @@ pub(crate) fn record_transport(operation: u8, timings: [u64; 4], handoff: u64) {
             "fold.batch.owner_service",
             "fold.batch.owner_cpu",
         ],
-        17 | 24..=26 => [
+        17 | 24 => [
             "owner.metadata.requests",
             "owner.metadata.service",
             "owner.metadata.cpu",

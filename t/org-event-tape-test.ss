@@ -1,7 +1,10 @@
 (import (only-in :orgize/languages/org/modules/org-parser/clock
                  native-monotonic-ns native-thread-cpu-ns)
-        (only-in :std/vector/u8vector little u8vector-uint-ref)
+        (only-in :std/vector/u8vector little u8vector-uint-ref u8vector-u16-ref u8vector-u64-ref)
         (only-in :orgize/languages/org/modules/org-elements/fold-product org-fold-product)
+        (only-in :orgize-fold/graph-configuration
+                 make-org-fold-graph fold-graph-start! fold-graph-token!
+                 fold-graph-finish! fold-graph-publish!)
         (only-in :std/test check test-case test-suite)
         (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-scheme-rust/scheme/actor-batch
@@ -32,12 +35,14 @@
 
 (def (batch-request inputs (operation 6))
   (let* ((payloads (map string->utf8 inputs))
-         (bytes (make-u8vector (+ 16 (foldl (lambda (payload total)
+         (first (if (memv operation '(27 28)) 24 16))
+         (bytes (make-u8vector (+ first (foldl (lambda (payload total)
                                              (+ total 4 (u8vector-length payload)))
                                            0 payloads)) 0)))
     (u8vector-copy! bytes 0 (request "" 15 2 operation))
     (u8vector-set! bytes 14 (length inputs))
-    (let write ((rest payloads) (offset 16))
+    ;; An empty configured TODO profile contains two zero word counts.
+    (let write ((rest payloads) (offset first))
       (unless (null? rest)
         (let* ((payload (car rest)) (size (u8vector-length payload)))
           (for-each (lambda (index)
@@ -60,11 +65,23 @@
               (cons (cons (u8vector-ref bytes offset) (subu8vector bytes start end)) rows))))))
 
 (def (event-list-product source config)
-  (org-fold-product
-   (u8vector-length (string->utf8 source))
-   (org-events->tape
-    (parse-org-native-events-with-parameters source (car config) (cdr config)))
-   #f))
+  (let* ((tape (org-events->tape
+                 (parse-org-native-events-with-parameters source (car config) (cdr config))))
+         (header-size (u8vector-length org-event-tape-header))
+         (sink (make-org-fold-graph
+                (string->utf8 source) (utf8->string tape 4 header-size) '())))
+    (let replay ((offset header-size))
+      (if (= offset (u8vector-length tape))
+        (org-fold-product (fold-graph-publish! sink))
+        (case (u8vector-ref tape offset)
+          ((0) (fold-graph-finish! sink) (replay (+ offset 1)))
+          ((1) (fold-graph-start! sink (u8vector-u16-ref tape (+ offset 1) little))
+               (replay (+ offset 3)))
+          ((2) (fold-graph-token! sink (u8vector-u16-ref tape (+ offset 1) little)
+                                  (u8vector-u64-ref tape (+ offset 3) little)
+                                  (u8vector-u64-ref tape (+ offset 11) little))
+               (replay (+ offset 19)))
+          (else (error "invalid expected Org Fold tape")))))))
 
 (def syntax-count-offset (+ (u8vector-length org-event-tape-header) 71))
 (def (product-column bytes offset)
@@ -139,6 +156,10 @@
                => (map cdr rows))))
     (test-case "batch framing admits exact bounds and rejects truncation or overflow"
       (check (length (batch-rows (org-request->tape (batch-request (make-list 64 ""))))) => 64)
+      (let (invalid (batch-request '("valid") 27))
+        (u8vector-set! invalid 16 255)
+        (check (with-catch (lambda (_) 'rejected)
+                           (lambda () (org-request->tape invalid))) => 'rejected))
       (let (valid (batch-request '("α" "")))
         (for-each
          (lambda (end)
@@ -164,7 +185,7 @@
                          (list "valid\n" (make-string (u8vector-length invalid) #\x)
                                "* after\n") operation))
               ;; Mutate only the second payload, preserving its admitted framing.
-              (u8vector-copy! input 30 invalid)
+              (u8vector-copy! input (if (memv operation '(27 28)) 38 30) invalid)
               (let* ((result (org-request->tape input))
                      (rows (batch-rows
                             (if (memv operation '(7 28))
@@ -176,9 +197,12 @@
                                   (subu8vector wire 28 (u8vector-length wire)) wire))
                        (whole (org-request->tape (request "* after\n" 15 2))))
                   (if (memv operation '(27 28))
-                    (begin
+                    (let* ((expected (product-elements whole))
+                           (elements (product-elements payload))
+                           (end (u8vector-length expected)))
                       (check (product-column payload syntax-count-offset) => 0)
-                      (check (product-elements payload) => (product-elements whole)))
+                      (check (subu8vector elements 0 end) => expected)
+                      (check (product-column elements end) => 3))
                     (check payload => whole))))))
           invalid-utf8-inputs))
        '(6 7 27 28)))

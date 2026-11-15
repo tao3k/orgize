@@ -156,7 +156,7 @@ pub fn parse_org_aot_with_config(
         &graph::GRAPH,
     )
     .map_err(OrgAotError::Native)?;
-    let prepared = prepare_document(source, product, config, TitleScope::All);
+    let prepared = prepare_document(source, product, config);
     let refs = prepared
         .fields
         .iter()
@@ -174,16 +174,10 @@ pub(crate) fn parse_org_aot_batch(
     sources: &[&str],
     config: &ParseConfig,
 ) -> Result<Vec<Result<OrgAotDocument, OrgAotError>>, OrgAotError> {
-    let prepared = prepare_batch(sources, config, TitleScope::All)?;
-    metadata_batch::finish(prepared, 17, 24, &[], |document, rows| {
+    let prepared = prepare_batch(sources, config)?;
+    metadata_batch::finish(prepared, 17, 24, |document, rows| {
         finish_document(document, rows, config)
     })
-}
-
-#[derive(Clone, Copy)]
-enum TitleScope {
-    All,
-    LeadingLedgerHeadline,
 }
 
 pub(crate) struct PlanLedgerDocument {
@@ -238,35 +232,35 @@ pub(crate) fn parse_plan_ledger_batch(
     sources: &[&str],
     config: &ParseConfig,
 ) -> Result<Vec<Result<PlanLedgerDocument, OrgAotError>>, OrgAotError> {
-    let prepared = prepare_batch(sources, config, TitleScope::LeadingLedgerHeadline)?;
-    metadata_batch::finish(
-        prepared,
-        25,
-        26,
-        &todo_profile_fields(config),
-        finish_plan_ledger_document,
+    let outcomes = event_io::parse_documents(
+        sources,
+        config.effective_inlinetask_min_level(),
+        config.inline_script_policy(),
+        &grammar::LANGUAGE,
+        &graph::GRAPH,
+        Some((&config.todo_keywords.0, &config.todo_keywords.1)),
     )
+    .map_err(OrgAotError::Native)?;
+    Ok(outcomes
+        .into_iter()
+        .map(|outcome| {
+            outcome
+                .map_err(OrgAotError::Native)
+                .and_then(finish_plan_ledger_document)
+        })
+        .collect())
 }
 
 fn finish_plan_ledger_document(
-    prepared: PreparedDocument,
-    mut rows: Vec<Vec<String>>,
+    product: DocumentProduct,
 ) -> Result<PlanLedgerDocument, OrgAotError> {
-    if rows.len() != prepared.title_ids.len() || rows.len() > 1 {
-        return Err(OrgAotError::Native(
-            "invalid ledger headline row count".into(),
-        ));
-    }
     let mut document = PlanLedgerDocument {
-        records: prepared.records,
+        records: product.records,
         title: None,
         todo: None,
         closed: false,
     };
-    if let Some(row) = rows.pop() {
-        let [state, keyword, title]: [String; 3] = row
-            .try_into()
-            .map_err(|_| OrgAotError::Native("invalid ledger headline row".into()))?;
+    if let Some([state, keyword, title]) = product.ledger_title {
         document.closed = match state.as_str() {
             "done" => true,
             "" | "todo" => false,
@@ -281,7 +275,6 @@ fn finish_plan_ledger_document(
 fn prepare_batch(
     sources: &[&str],
     config: &ParseConfig,
-    title_scope: TitleScope,
 ) -> Result<Vec<Result<PreparedDocument, OrgAotError>>, OrgAotError> {
     let outcomes = event_io::parse_documents(
         sources,
@@ -289,7 +282,7 @@ fn prepare_batch(
         config.inline_script_policy(),
         &grammar::LANGUAGE,
         &graph::GRAPH,
-        matches!(title_scope, TitleScope::LeadingLedgerHeadline),
+        None,
     )
     .map_err(OrgAotError::Native)?;
     Ok(sources
@@ -298,7 +291,7 @@ fn prepare_batch(
         .map(|(source, product)| {
             product
                 .map_err(OrgAotError::Native)
-                .map(|product| prepare_document(source, product, config, title_scope))
+                .map(|product| prepare_document(source, product, config))
         })
         .collect())
 }
@@ -353,7 +346,6 @@ fn prepare_document(
     source: &str,
     product: DocumentProduct,
     config: &ParseConfig,
-    title_scope: TitleScope,
 ) -> PreparedDocument {
     let records = product.records;
     let syntax = product.syntax.map(|syntax| {
@@ -380,34 +372,21 @@ fn prepare_document(
             ]
         })
         .collect::<Vec<_>>();
-    let titles: Vec<_> = match title_scope {
-        TitleScope::All => records
-            .iter()
-            .filter(|r| matches!(r.kind, "headline" | "inlinetask") && r.field("title").is_some())
-            .collect(),
-        TitleScope::LeadingLedgerHeadline => leading_ledger_headline(&records)
-            .filter(|r| r.field("title").is_some())
-            .into_iter()
-            .collect(),
-    };
-    let mut fields = match title_scope {
-        TitleScope::All => todo_profile_fields(config),
-        TitleScope::LeadingLedgerHeadline => Vec::new(),
-    };
+    let titles: Vec<_> = records
+        .iter()
+        .filter(|r| matches!(r.kind, "headline" | "inlinetask") && r.field("title").is_some())
+        .collect();
+    let mut fields = todo_profile_fields(config);
     fields.push(keyword_fields.len().to_string());
     fields.extend(keyword_fields.into_iter().map(str::to_owned));
-    let include_source_title = matches!(title_scope, TitleScope::All);
-    let title_width = if include_source_title { 3 } else { 2 };
-    fields.push((titles.len() * title_width).to_string());
+    fields.push((titles.len() * 3).to_string());
     for r in &titles {
         fields.push(r.field("title").unwrap().to_owned());
-        if include_source_title {
-            fields.push(
-                r.field("title-body")
-                    .expect("source headline title")
-                    .to_owned(),
-            );
-        }
+        fields.push(
+            r.field("title-body")
+                .expect("source headline title")
+                .to_owned(),
+        );
         fields.push(r.field("tag").is_some().to_string());
     }
     let keyword_ids = keyword_records.iter().map(|record| record.id).collect();
