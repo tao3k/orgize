@@ -171,7 +171,11 @@
               (token PropertyTrivia start ,property-key-start)))
          (token PropertyKey ,property-key-start ,property-key-end)
          (token PropertyTrivia ,property-key-end ,property-value-start)
-         (if ,(source-ascii-ci-pattern-at? property-key-start "header-args")
+         ;; Ledger reads nonempty properties as raw values. The empty
+         ;; header node preserves an explicitly empty value.
+         (if (and (or (not ,ledger-source-spans?)
+                      (not (offset-less? ,property-value-start ,property-value-end)))
+                  ,(source-ascii-ci-pattern-at? property-key-start "header-args"))
              ((start-node OrgSourceHeaderArgs)
               ,@(event-source-header-forms property-value-start
                                            property-value-end

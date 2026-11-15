@@ -26,6 +26,7 @@ fn ledger_headline_projection_matches_full_document_metadata() {
     let sources = [
         "* FINISHED [#A] λ :tag:\r\n:PROPERTIES:\r\n:ID: α\r\n:END:\r\n** Child\r\n#+TODO: WAIT | FINISHED\r\n",
         "* TODO *Parent* [1/8] [12%] :α:tag:\n:PROPERTIES:\n:ID: parent\n:header-args: :results silent\n:END:\n** DONE Child\n:PROPERTIES:\n:ID: child\n:END:\n* Second\n",
+        "* TODO Empty header\n:PROPERTIES:\n:header-args:\n:END:\n",
         "* TODO [[id:link][Title]] :tag:\n#+begin_example\n#+TODO: WAIT | TODO\n:PROPERTIES:\n:ID: fake\n:END:\n#+end_example\n",
         "* TODO Paragraph\nBody *bold* and [cite:@note].\n\n- [[id:note]]\n\n#+TITLE: *Rich*\n#+TODO: TODO | DONE\n",
         "* DONE Drawer\n:PROPERTIES:\n:ID: malformed\nordinary line\n:END:\n:PROPERTIES:\n:ID: direct\n:END:\n",
