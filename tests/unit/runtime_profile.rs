@@ -130,26 +130,31 @@ fn transport_projection_retains_exact_request_local_values() {
 
 #[test]
 fn native_envelope_rejects_truncation_and_foreign_identity() {
-    let mut bytes = b"OPR1".to_vec();
+    let mut bytes = b"OPR2".to_vec();
     bytes.extend_from_slice(&7_u64.to_le_bytes());
     bytes.extend_from_slice(&11_u64.to_le_bytes());
     bytes.extend_from_slice(&13_u64.to_le_bytes());
+    bytes.extend_from_slice(&17_u64.to_le_bytes());
     bytes.extend_from_slice(b"ODV1payload");
-    for length in 0..32 {
+    for length in 0..40 {
         assert!(super::wire::decode(&bytes[..length]).is_err());
     }
     assert_eq!(
         super::wire::decode(&bytes).unwrap(),
-        (7, 11, 13, &bytes[28..])
+        ([7, 11, 13, 17], &bytes[36..])
     );
     let (_, timings) = measure(|| super::native_tape(&bytes).unwrap());
     assert_eq!(timings["fold.service"], 7);
     assert_eq!(timings["product.encode"], 11);
     assert_eq!(timings["fold.thread_cpu"], 13);
+    assert_eq!(timings["product.encode_thread_cpu"], 17);
+    bytes[3] = b'1';
+    assert!(super::wire::decode(&bytes).is_err());
+    bytes[3] = b'2';
     bytes[0] = b'X';
     assert!(super::wire::decode(&bytes).is_err());
     bytes[0] = b'O';
-    bytes[28] = b'X';
+    bytes[36] = b'X';
     assert!(super::wire::decode(&bytes).is_err());
 }
 

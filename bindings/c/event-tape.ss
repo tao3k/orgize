@@ -118,8 +118,8 @@
     bytes))
 
 ;; Versioned call-scoped request: ONR1, operation, u64 level, u8 policy, UTF-8.
-;; Operation 5: OPR1 + Fold wall ns + document product wall ns
-;; + owner-thread CPU ns + ODV1.
+;; Operation 5: OPR2 + Fold wall ns + document product wall ns
+;; + Fold thread CPU ns + product thread CPU ns + ODV1.
 ;; Its clock calls and envelope never execute for ordinary requests.
 (def (document-product source overrides (todo-profile #f))
   (org-fold-product (parse-org-compiled-product source overrides) source todo-profile))
@@ -129,18 +129,20 @@
          (cpu-begin (thread-cpu-ns))
          (product (parse-org-compiled-product source overrides))
          (fold-end (monotonic-ns))
+         (fold-cpu-end (thread-cpu-ns))
          (tape (org-fold-product product source todo-profile))
          (tape-end (monotonic-ns))
          (cpu-end (thread-cpu-ns)))
     (unless (and (> begin 0) (<= begin fold-end tape-end)
-                 (> cpu-begin 0) (<= cpu-begin cpu-end))
+                 (> cpu-begin 0) (<= cpu-begin fold-cpu-end cpu-end))
       (error "native diagnostic monotonic clock failed"))
-    (let (bytes (make-u8vector (+ 28 (u8vector-length tape)) 0))
-      (u8vector-copy! bytes 0 (u8vector 79 80 82 49))
+    (let (bytes (make-u8vector (+ 36 (u8vector-length tape)) 0))
+      (u8vector-copy! bytes 0 (u8vector 79 80 82 50))
       (put-unsigned! bytes 4 8 (- fold-end begin))
       (put-unsigned! bytes 12 8 (- tape-end fold-end))
-      (put-unsigned! bytes 20 8 (- cpu-end cpu-begin))
-      (u8vector-copy! bytes 28 tape)
+      (put-unsigned! bytes 20 8 (- fold-cpu-end cpu-begin))
+      (put-unsigned! bytes 28 8 (- cpu-end fold-cpu-end))
+      (u8vector-copy! bytes 36 tape)
       bytes)))
 
 (def (read-unsigned bytes offset width)
@@ -164,7 +166,7 @@
 
 ;; One admitted owner request, at most 64 documents / 64KiB source. The
 ;; lifecycle feature still chooses the owner; this pure loop adds no scheduler.
-;; Each row retains its own ODV1/OPR1 identity, result and source-relative offsets.
+;; Each row retains its own ODV1/OPR2 identity, result and source-relative offsets.
 (def (org-batch-request->tape request level policy profile?
                                   ledger? (monotonic-ns #f) (thread-cpu-ns #f))
   (def end (u8vector-length request))

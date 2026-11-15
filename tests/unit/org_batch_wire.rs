@@ -154,8 +154,8 @@ fn decoder_rejects_invalid_navigation_and_element_columns() {
 #[test]
 fn batch_diagnostics_are_strict_opt_in_and_preserve_ordered_payloads() {
     let tape = empty_document_product();
-    let mut row = b"OPR1".to_vec();
-    for value in [7_u64, 11, 13] {
+    let mut row = b"OPR2".to_vec();
+    for value in [7_u64, 11, 13, 17] {
         row.extend_from_slice(&value.to_le_bytes());
     }
     row.extend_from_slice(&tape);
@@ -191,6 +191,7 @@ fn batch_diagnostics_are_strict_opt_in_and_preserve_ordered_payloads() {
         assert_eq!(observations[name], expected);
     }
     assert_eq!(observations["fold.thread_cpu"], 26);
+    assert_eq!(observations["product.encode_thread_cpu"], 34);
     assert!(decode_batch(&ordinary, 3, true).is_err());
     assert!(decode_batch(&bytes, 3, false).is_err());
     for end in 0..bytes.len() {

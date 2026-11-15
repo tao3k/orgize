@@ -13,10 +13,11 @@ pub(crate) fn is_active() -> bool {
 
 #[cfg(feature = "runtime-profile")]
 pub(crate) fn native_tape(bytes: &[u8]) -> Result<&[u8], String> {
-    let (fold, tape, cpu, payload) = super::wire::decode(bytes)?;
+    let ([fold, tape, cpu, encode_cpu], payload) = super::wire::decode(bytes)?;
     super::collector::record("fold.service", fold);
     super::collector::record("product.encode", tape);
     super::collector::record("fold.thread_cpu", cpu);
+    super::collector::record("product.encode_thread_cpu", encode_cpu);
     Ok(payload)
 }
 
