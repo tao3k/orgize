@@ -1,6 +1,6 @@
 //! Source position lookup for semantic AST annotations.
 
-use gerbil_parser_runtime::TextSize;
+use crate::TextSize;
 
 use super::SourcePosition;
 

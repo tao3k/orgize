@@ -138,7 +138,7 @@ fn native_envelope_rejects_truncation_and_foreign_identity() {
     bytes.extend_from_slice(&7_u64.to_le_bytes());
     bytes.extend_from_slice(&11_u64.to_le_bytes());
     bytes.extend_from_slice(&13_u64.to_le_bytes());
-    bytes.extend_from_slice(b"OEV1payload");
+    bytes.extend_from_slice(b"ODV1payload");
     for length in 0..32 {
         assert!(super::wire::decode(&bytes[..length]).is_err());
     }
@@ -148,7 +148,7 @@ fn native_envelope_rejects_truncation_and_foreign_identity() {
     );
     let (_, timings) = measure(|| super::native_tape(&bytes).unwrap());
     assert_eq!(timings["fold.service"], 7);
-    assert_eq!(timings["event_tape.encode"], 11);
+    assert_eq!(timings["product.encode"], 11);
     assert_eq!(timings["fold.thread_cpu"], 13);
     bytes[0] = b'X';
     assert!(super::wire::decode(&bytes).is_err());

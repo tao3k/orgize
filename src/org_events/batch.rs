@@ -1,6 +1,5 @@
 //! Bounded native wire projection; document semantics remain Scheme-owned.
-use super::transport::decode;
-use gerbil_parser_runtime::{LanguageSpec, TreeEvent};
+use crate::org_product::{DocumentProduct, GraphProjectionSpec, LanguageSpec};
 
 pub(crate) const MAX_DOCUMENTS: usize = 64;
 pub(crate) const MAX_SOURCE_BYTES: usize = 64 * 1024;
@@ -47,10 +46,13 @@ pub(super) fn encode(
 
 pub(super) fn decode_batch(
     mut bytes: &[u8],
-    count: usize,
+    sources: &[&str],
     grammar: &LanguageSpec,
+    graph: &GraphProjectionSpec,
+    ledger: bool,
     profile: bool,
-) -> Result<Vec<Result<Vec<TreeEvent>, String>>, String> {
+) -> Result<Vec<Result<DocumentProduct, String>>, String> {
+    let count = sources.len();
     #[cfg(feature = "runtime-profile")]
     let batch_fields = if profile {
         let (fields, payload) = crate::runtime_profile::decode_native_batch(bytes)?;
@@ -73,7 +75,7 @@ pub(super) fn decode_batch(
     }
     bytes = &bytes[6..];
     let mut results = Vec::with_capacity(count);
-    for _ in 0..count {
+    for source in sources {
         if bytes.len() < 5 {
             return Err("truncated native Org batch record".into());
         }
@@ -96,7 +98,9 @@ pub(super) fn decode_batch(
                 #[cfg(not(feature = "runtime-profile"))]
                 let _ = profile;
                 // A corrupt successful tape rejects the envelope, not just a document.
-                Ok(decode(payload, grammar)?)
+                Ok(DocumentProduct::decode(
+                    payload, source, grammar, graph, ledger,
+                )?)
             }
             1 => Err(std::str::from_utf8(payload)
                 .map_err(|_| "invalid native Org batch error UTF-8")?

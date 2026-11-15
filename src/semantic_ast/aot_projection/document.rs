@@ -5,8 +5,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use gerbil_parser_runtime::GraphRecord;
-use gerbil_parser_runtime::TextRange;
+use crate::GraphRecord;
+use crate::TextRange;
 
 use crate::org_aot::{OrgAotDocument, org_image_link};
 

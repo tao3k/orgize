@@ -12,7 +12,7 @@ dependency-check:
     ! rg --fixed-strings --quiet 'rowan.build' src tests benches just/benchmark.just
     ! rg --quiet 'rowan-event|org-rowan|parse-org-rowan-events|rowan_admission' src languages bindings t tests build.ss
     ! rg --quiet '\b[Rr]owan\b' src languages bindings t tests --glob '!*.snap'
-    rg --fixed-strings --quiet 'gerbil-parser-runtime = { git = "https://github.com/tao3k/gerbil-parser", rev = "{{ parser_revision }}"' Cargo.toml
+    ! rg --quiet 'gerbil-parser-(runtime|artifact)|git\+https://github.com/tao3k/gerbil-parser' Cargo.toml Cargo.lock fuzz/Cargo.lock
     rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ parser_revision }}' gerbil.pkg
     @echo 'ROWAN-FREE-DEPENDENCIES-OK: native view cutover is a separate gate'
 
@@ -37,11 +37,10 @@ platform-command-check output:
     rg --fixed-strings --quiet -- '-- -C linker=/usr/bin/cc -C link-arg=-Wl,-ld_classic' "{{ output }}/macos-python.log"
     ! rg --quiet 'SDKROOT|APPLE_DARWIN|/usr/bin/cc|-Wl,' "{{ output }}/linux-scheme.log" "{{ output }}/linux-clock.log" "{{ output }}/linux-service.log" "{{ output }}/linux-queue.log" "{{ output }}/linux-rust.log" "{{ output }}/linux-python.log"
 
-# Check the resolved Parser source and both Cargo lockfiles.
+# Check the Scheme package manager’s resolved Parser source.
 [private]
 parser-revision-check source revision:
     test "$(git -C '{{ source }}' rev-parse HEAD)" = "{{ revision }}"
-    for lock in Cargo.lock fuzz/Cargo.lock; do test "$(rg -c --fixed-strings "git+https://github.com/tao3k/gerbil-parser?rev={{ revision }}#{{ revision }}" "$lock")" -eq 2; done
     rg --fixed-strings --quiet 'github.com/tao3k/gerbil-parser@{{ revision }}' gerbil.pkg
     git -C "{{ source }}" diff --check
     git -C "{{ source }}" diff --quiet
@@ -91,7 +90,7 @@ owner-lifecycle-check source gsc:
 
 [private]
 runtime-inner-stage-scale-check receipt: (runtime-profile-scale-check receipt)
-    jq --exit-status 'all(.[]; .stage_timings_ns | has("fold.service") and has("event_tape.encode") and has("fold.thread_cpu"))' "{{ receipt }}"
+    jq --exit-status 'all(.[]; .stage_timings_ns | has("fold.service") and has("product.encode") and has("fold.thread_cpu"))' "{{ receipt }}"
 
 # Reject the audited production-library warning group, not dependency/linker warnings.
 [private]

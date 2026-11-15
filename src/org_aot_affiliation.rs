@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use gerbil_parser_runtime::GraphRecord;
+use crate::GraphRecord;
 
 pub(super) fn project(records: &[GraphRecord], source: &str) -> HashMap<usize, Vec<usize>> {
     let keywords = records

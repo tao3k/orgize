@@ -280,13 +280,7 @@ runtime-query-scale-receipt binary documents output:
 
 [group('runtime')]
 parser-dependency-update:
-    cargo fetch
-
-# Resolve the declared immutable revision through the normal dependency graph.
-[private]
-parser-lock-update:
-    cargo update -p gerbil-parser-runtime -p gerbil-parser-artifact
-    cargo update --manifest-path fuzz/Cargo.toml -p gerbil-parser-runtime -p gerbil-parser-artifact
+    {{ scheme_env }} GAMBOPT="{{ package_gambopt }}" gerbil deps --install
 
 # The bridge owns SDK discovery and complete native link receipts.
 [group('runtime')]

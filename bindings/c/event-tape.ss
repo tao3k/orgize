@@ -1,6 +1,7 @@
 ;;; -*- Gerbil -*-
 ;;; Private native boundary projection; parsing remains the POO strategy's job.
 (import (only-in :orgize-fold/parse-org-compiled-tape parse-org-compiled-tape)
+        (only-in :orgize/languages/org/modules/org-elements/fold-product org-fold-product)
         (only-in :orgize/languages/org/modules/org-parser/runtime-parameters native-parameter-overrides)
         (only-in :std/vector/u8vector little u8vector-uint-ref u8vector-uint-set!)
         (only-in :orgize/languages/org/modules/org-parser/macro-funs
@@ -117,17 +118,19 @@
     bytes))
 
 ;; Versioned call-scoped request: ONR1, operation, u64 level, u8 policy, UTF-8.
-;; Operation 5: OPR1 + fused Fold/emission wall ns + zero separate encode span
-;; + owner-thread CPU ns + unchanged OEV1. Encoding work is in the first span.
+;; Operation 5: OPR1 + Fold wall ns + document product wall ns
+;; + owner-thread CPU ns + ODV1.
 ;; Its clock calls and envelope never execute for ordinary requests.
-(def (profile-org-tape source overrides monotonic-ns thread-cpu-ns)
+(def (document-product source overrides ledger?)
+  (org-fold-product (u8vector-length source) (parse-org-compiled-tape source overrides) ledger?))
+
+(def (profile-org-tape source overrides ledger? monotonic-ns thread-cpu-ns)
   (let* ((begin (monotonic-ns))
          (cpu-begin (thread-cpu-ns))
-         (tape (parse-org-compiled-tape source overrides))
+         (events (parse-org-compiled-tape source overrides))
          (fold-end (monotonic-ns))
-         ;; Direct emission is fused with Fold execution. OPR1's first span
-         ;; owns both; there is no independently timed list-encoding pass.
-         (tape-end fold-end)
+         (tape (org-fold-product (u8vector-length source) events ledger?))
+         (tape-end (monotonic-ns))
          (cpu-end (thread-cpu-ns)))
     (unless (and (> begin 0) (<= begin fold-end tape-end)
                  (> cpu-begin 0) (<= cpu-begin cpu-end))
@@ -145,7 +148,7 @@
 
 ;; One admitted owner request, at most 64 documents / 64KiB source. The
 ;; lifecycle feature still chooses the owner; this pure loop adds no scheduler.
-;; Each row retains its own OEV1/OPR1 identity, result and source-relative offsets.
+;; Each row retains its own ODV1/OPR1 identity, result and source-relative offsets.
 (def (org-batch-request->tape request level policy profile?
                                   ledger? (monotonic-ns #f) (thread-cpu-ns #f))
   (let (end (u8vector-length request))
@@ -182,8 +185,8 @@
                 (lambda ()
                   (let (source (subu8vector request (car range) (cdr range)))
                     (cons 0 (if profile?
-                              (profile-org-tape source overrides monotonic-ns thread-cpu-ns)
-                              (parse-org-compiled-tape source overrides)))))))
+                              (profile-org-tape source overrides ledger? monotonic-ns thread-cpu-ns)
+                              (document-product source overrides ledger?)))))))
              rows))
            (size (foldl (lambda (row total) (+ total 5 (u8vector-length (cdr row))))
                         6 outcomes))
@@ -255,8 +258,8 @@
          (let ((source (subu8vector request 14 (u8vector-length request)))
                (overrides (native-parameter-overrides level policy)))
            (if (= (u8vector-ref request 4) 5)
-             (profile-org-tape source overrides monotonic-ns thread-cpu-ns)
-             (parse-org-compiled-tape source overrides))))
+             (profile-org-tape source overrides #f monotonic-ns thread-cpu-ns)
+             (document-product source overrides #f))))
         ((1 2 3 4)
          (unless (and (= level 0) (= policy 0))
            (error "invalid expression request options"))

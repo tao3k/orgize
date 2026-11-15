@@ -1,6 +1,9 @@
 //! Execute a typed Scheme-AOT query pack against a parsed Org Element graph.
 
-use gerbil_parser_runtime::{GraphIndexError, GraphRecord, GraphRelation};
+use crate::org_product::{
+    GraphRecord,
+    query::{GraphIndexError, GraphRelation},
+};
 
 use crate::org_aot::{OrgAotDocument, org_graph_spec};
 
@@ -137,8 +140,8 @@ impl OrgAotDocument {
                 },
             )
             .map_err(|error| match error {
-                GraphIndexError::InvalidScope => OrgElementQueryError::InvalidScope,
-                GraphIndexError::InvalidRecord | GraphIndexError::InvalidTarget => {
+                GraphIndexError::ScopeMissing => OrgElementQueryError::InvalidScope,
+                GraphIndexError::RecordCount | GraphIndexError::TargetMissing => {
                     OrgElementQueryError::InvalidRule
                 }
             })

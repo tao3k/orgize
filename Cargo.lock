@@ -1669,24 +1669,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gerbil-parser-artifact"
-version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-parser?rev=b695328e347441790edb4ac806e159eef76e91f1#b695328e347441790edb4ac806e159eef76e91f1"
-dependencies = [
- "serde_json",
- "sha2 0.10.9",
-]
-
-[[package]]
-name = "gerbil-parser-runtime"
-version = "0.1.0"
-source = "git+https://github.com/tao3k/gerbil-parser?rev=b695328e347441790edb4ac806e159eef76e91f1#b695328e347441790edb4ac806e159eef76e91f1"
-dependencies = [
- "gerbil-parser-artifact",
- "sha2 0.10.9",
-]
-
-[[package]]
 name = "gerbil-scheme"
 version = "0.1.0"
 source = "git+https://github.com/tao3k/gerbil-scheme-rust?rev=dfe8b62b5dc64de88f8d70a77059a1741218ef80#dfe8b62b5dc64de88f8d70a77059a1741218ef80"
@@ -2350,7 +2332,6 @@ dependencies = [
  "comrak",
  "criterion",
  "datafusion",
- "gerbil-parser-runtime",
  "gerbil-scheme",
  "gerbil-scheme-sys",
  "ignore",

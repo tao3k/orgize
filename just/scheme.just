@@ -175,7 +175,6 @@ scheme-timestamp-graph-generate output load_path:
 scheme-parser-dependent-plans-generate output load_path:
     mkdir -p "{{ output }}"
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive languages/org/modules/org-contract/generate-parser.ss languages/org/modules/org-contract/generated/parser.rs
-    {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive languages/org/modules/org-contract/generate-expectation-parser.ss languages/org/modules/org-contract/generated/expectation.rs
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive languages/org/modules/org-elements/generate-queries.ss languages/org/modules/org-elements/generated/query-pack.rs
     {{ scheme_env }} GAMBOPT="{{ scheme_gambopt }}" GERBIL_PATH="{{ output }}" GERBIL_LOADPATH="{{ output }}/lib:{{ load_path }}" gerbil interactive languages/org/modules/org-contract/generate-plan.ss languages/org/modules/org-contract/generated/contract-plan.rs
     just scheme-consumer-packs-regenerate "{{ output }}" "{{ load_path }}"

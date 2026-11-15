@@ -15,7 +15,7 @@ pub(crate) fn is_active() -> bool {
 pub(crate) fn native_tape(bytes: &[u8]) -> Result<&[u8], String> {
     let (fold, tape, cpu, payload) = super::wire::decode(bytes)?;
     super::collector::record("fold.service", fold);
-    super::collector::record("event_tape.encode", tape);
+    super::collector::record("product.encode", tape);
     super::collector::record("fold.thread_cpu", cpu);
     Ok(payload)
 }

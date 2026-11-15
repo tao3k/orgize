@@ -1,6 +1,6 @@
 //! Project source-backed inline fragments through the same Scheme-AOT parser.
 
-use gerbil_parser_runtime::TextRange;
+use crate::TextRange;
 
 use crate::org_aot::parse_org_aot_with_config;
 

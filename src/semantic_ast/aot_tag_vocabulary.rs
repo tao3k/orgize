@@ -1,7 +1,7 @@
 //! Materialize Scheme-AOT TAGS syntax from graph fields; no source lexer here.
 
-use gerbil_parser_runtime::{GraphFieldValue, GraphRecord};
-use gerbil_parser_runtime::{TextRange, TextSize};
+use crate::{GraphFieldValue, GraphRecord};
+use crate::{TextRange, TextSize};
 
 use super::GraphProjector;
 use crate::ast::{TagDefinition, TagDefinitionGroup};

@@ -1,7 +1,7 @@
 //! Source-backed drawer body bounds projected from Scheme graph fields.
 
-use gerbil_parser_runtime::GraphRecord;
-use gerbil_parser_runtime::TextRange;
+use crate::GraphRecord;
+use crate::TextRange;
 
 use super::ParsedAnnotation;
 

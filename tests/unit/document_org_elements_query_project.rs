@@ -171,10 +171,9 @@ fn run_document_query_org_elements_scenario(profile: bool, batched: bool) {
                 "ffi.result_copy",
                 "ffi.completion_handoff",
                 "fold.service",
-                "event_tape.encode",
+                "product.encode",
                 "fold.thread_cpu",
-                "artifact.syntax_index",
-                "graph.project",
+                "product.decode",
             ] {
                 assert!(stages.contains_key(required), "missing stage {required}");
             }

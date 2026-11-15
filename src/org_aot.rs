@@ -6,11 +6,12 @@
 
 use std::{collections::HashMap, sync::OnceLock};
 
-use gerbil_parser_runtime::TextRange;
-use gerbil_parser_runtime::{
-    Diagnostic, GraphIndex, GraphProjectionSpec, GraphRecord, LanguageSpec, Parse, ParseError,
-    ParseReceipt, SyntaxNode, parse_generated_events, project_syntax_graph,
+use crate::org_product::{DocumentProduct, query::GraphIndex};
+pub use crate::org_product::{
+    GraphFieldMode, GraphFieldRule, GraphNodeRule, GraphProjectionSpec, GraphRecord, KindCategory,
+    KindSpec, LanguageSpec, ParseReceipt,
 };
+use crate::{SyntaxNode, TextRange};
 
 use crate::config::ParseConfig;
 use crate::contract_feature::{
@@ -82,21 +83,6 @@ pub(crate) fn native_semantic_rows(
         .collect()
 }
 
-#[cfg(test)]
-pub(crate) fn parse_native_expression(
-    source: &str,
-    grammar: &'static LanguageSpec,
-) -> Result<Parse, OrgAotError> {
-    let events = event_io::parse_expression_events(source, grammar).map_err(OrgAotError::Native)?;
-    parse_generated_events(
-        grammar,
-        event_identity::NATIVE_PARSER_DIGEST,
-        source,
-        &events,
-    )
-    .map_err(OrgAotError::Parse)
-}
-
 pub(crate) fn evaluate_native_contract(
     input: crate::c_ffi::ContractInput,
 ) -> Result<crate::c_ffi::ContractOutput, String> {
@@ -108,7 +94,8 @@ pub(crate) fn evaluate_native_contract(
 /// exclusive host startup; parse calls never initialize the runtime implicitly.
 #[derive(Debug)]
 pub struct OrgAotDocument {
-    parse: Parse,
+    syntax: SyntaxNode,
+    receipt: ParseReceipt,
     records: Vec<GraphRecord>,
     base_config: ParseConfig,
     config: ParseConfig,
@@ -135,23 +122,18 @@ struct HeadlineDetails {
     is_comment: bool,
 }
 
-/// An error from the parser or the generated Element projection contract.
+/// An error from the linked Scheme parser or its document product.
 #[derive(Debug)]
 pub enum OrgAotError {
-    /// The linked Gerbil program could not initialize, call, or project events.
+    /// The linked Gerbil program could not produce a valid document.
     Native(String),
-    /// The generated parser rejected the source.
-    Parse(ParseError),
-    /// The generated Element projection did not match the parser artifact.
-    Projection(Diagnostic),
 }
 
 /// Parse Org source through the statically linked Gerbil event strategy and Element projection.
 ///
 /// # Errors
 ///
-/// Returns the parser receipt on parse failure, or a projection diagnostic if
-/// the generated graph table is stale or invalid.
+/// Returns an error if the linked program fails or supplies an invalid product.
 pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
     static DEFAULT_CONFIG: OnceLock<ParseConfig> = OnceLock::new();
     parse_org_aot_with_config(source, DEFAULT_CONFIG.get_or_init(ParseConfig::default))
@@ -161,20 +143,27 @@ pub fn parse_org_aot(source: &str) -> Result<OrgAotDocument, OrgAotError> {
 ///
 /// # Errors
 ///
-/// Returns the parser receipt on parse failure, or a projection diagnostic if
-/// the generated graph table is stale or invalid.
+/// Returns an error if the linked program fails or supplies an invalid product.
 pub fn parse_org_aot_with_config(
     source: &str,
     config: &ParseConfig,
 ) -> Result<OrgAotDocument, OrgAotError> {
-    let events = event_io::parse_events(
+    let product = event_io::parse_document(
         source,
         config.effective_inlinetask_min_level(),
         config.inline_script_policy(),
         &grammar::LANGUAGE,
+        &graph::GRAPH,
     )
     .map_err(OrgAotError::Native)?;
-    parse_org_aot_events(source, events, config)
+    let prepared = prepare_document(source, product, config, TitleScope::All);
+    let refs = prepared
+        .fields
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+    let rows = native_semantic_rows(17, &refs).map_err(OrgAotError::Native)?;
+    finish_document(prepared, rows, config)
 }
 
 pub(crate) const BATCH_MAX_DOCUMENTS: usize = event_io::BATCH_MAX_DOCUMENTS;
@@ -294,22 +283,22 @@ fn prepare_batch(
     config: &ParseConfig,
     title_scope: TitleScope,
 ) -> Result<Vec<Result<PreparedDocument, OrgAotError>>, OrgAotError> {
-    let outcomes = event_io::parse_events_batch(
+    let outcomes = event_io::parse_documents(
         sources,
         config.effective_inlinetask_min_level(),
         config.inline_script_policy(),
         &grammar::LANGUAGE,
+        &graph::GRAPH,
         matches!(title_scope, TitleScope::LeadingLedgerHeadline),
     )
     .map_err(OrgAotError::Native)?;
     Ok(sources
         .iter()
         .zip(outcomes)
-        .map(|(source, events)| {
-            events
+        .map(|(source, product)| {
+            product
                 .map_err(OrgAotError::Native)
-                .and_then(|events| parse_event_artifact(source, events))
-                .and_then(|parse| prepare_document(parse, config, title_scope))
+                .map(|product| prepare_document(source, product, config, title_scope))
         })
         .collect())
 }
@@ -317,29 +306,6 @@ fn prepare_batch(
 #[cfg(test)]
 #[path = "../tests/unit/org_batch.rs"]
 pub(crate) mod batch_tests;
-
-fn parse_org_aot_events(
-    source: &str,
-    events: Vec<gerbil_parser_runtime::TreeEvent>,
-    config: &ParseConfig,
-) -> Result<OrgAotDocument, OrgAotError> {
-    document_from_parse(parse_event_artifact(source, events)?, config)
-}
-
-fn parse_event_artifact(
-    source: &str,
-    events: Vec<gerbil_parser_runtime::TreeEvent>,
-) -> Result<Parse, OrgAotError> {
-    crate::runtime_profile::stage("artifact.syntax_index", || {
-        parse_generated_events(
-            &grammar::LANGUAGE,
-            event_identity::NATIVE_PARSER_DIGEST,
-            source,
-            &events,
-        )
-    })
-    .map_err(OrgAotError::Parse)
-}
 
 pub(crate) fn org_image_link(target: &str) -> bool {
     semantic_functions::org_image_link_p(target)
@@ -366,7 +332,8 @@ pub(crate) fn org_expand_link_abbreviation(
 }
 
 struct PreparedDocument {
-    parse: Parse,
+    syntax: Option<(SyntaxNode, ParseReceipt)>,
+    graph_index: GraphIndex,
     records: Vec<GraphRecord>,
     keyword_ids: Vec<usize>,
     title_ids: Vec<usize>,
@@ -383,14 +350,23 @@ fn todo_profile_fields(config: &ParseConfig) -> Vec<String> {
 }
 
 fn prepare_document(
-    parse: Parse,
+    source: &str,
+    product: DocumentProduct,
     config: &ParseConfig,
     title_scope: TitleScope,
-) -> Result<PreparedDocument, OrgAotError> {
-    let records = crate::runtime_profile::stage("graph.project", || {
-        project_syntax_graph(&grammar::LANGUAGE, &graph::GRAPH, &parse.syntax())
-    })
-    .map_err(OrgAotError::Projection)?;
+) -> PreparedDocument {
+    let records = product.records;
+    let syntax = product.syntax.map(|syntax| {
+        (
+            syntax,
+            ParseReceipt::new(
+                source,
+                &grammar::LANGUAGE,
+                event_identity::NATIVE_PARSER_DIGEST,
+            ),
+        )
+    });
+    let graph_index = GraphIndex(product.subtree_ends);
     let keyword_records = records
         .iter()
         .filter(|r| r.kind == "keyword")
@@ -436,24 +412,14 @@ fn prepare_document(
     }
     let keyword_ids = keyword_records.iter().map(|record| record.id).collect();
     let title_ids = titles.iter().map(|record| record.id).collect();
-    Ok(PreparedDocument {
-        parse,
+    PreparedDocument {
+        syntax,
+        graph_index,
         records,
         keyword_ids,
         title_ids,
         fields,
-    })
-}
-
-fn document_from_parse(parse: Parse, config: &ParseConfig) -> Result<OrgAotDocument, OrgAotError> {
-    let prepared = prepare_document(parse, config, TitleScope::All)?;
-    let refs = prepared
-        .fields
-        .iter()
-        .map(String::as_str)
-        .collect::<Vec<_>>();
-    let rows = native_semantic_rows(17, &refs).map_err(OrgAotError::Native)?;
-    finish_document(prepared, rows, config)
+    }
 }
 
 fn finish_document(
@@ -462,7 +428,8 @@ fn finish_document(
     config: &ParseConfig,
 ) -> Result<OrgAotDocument, OrgAotError> {
     let PreparedDocument {
-        parse,
+        syntax,
+        graph_index,
         records,
         keyword_ids,
         title_ids,
@@ -524,23 +491,24 @@ fn finish_document(
             }),
         });
     }
-    let graph_index = crate::runtime_profile::stage("graph.index", || GraphIndex::new(&records))
-        .map_err(|error| {
-            OrgAotError::Projection(Diagnostic {
-                reason_kind: "invalid-graph-index",
-                byte_offset: 0,
-                message: format!("generated Element graph has invalid preorder: {error:?}"),
-            })
-        })?;
     let headline_ancestors = crate::runtime_profile::stage("graph.ancestors", || {
-        graph_index
-            .nearest_ancestors_matching(&records, |record| {
-                matches!(record.kind, "headline" | "inlinetask")
-            })
-            .expect("validated graph index and records have the same preorder")
+        let mut ancestors = Vec::<Option<usize>>::with_capacity(records.len());
+        for record in &records {
+            ancestors.push(record.parent_id.and_then(|parent| {
+                if matches!(records[parent].kind, "headline" | "inlinetask") {
+                    Some(parent)
+                } else {
+                    ancestors[parent]
+                }
+            }));
+        }
+        ancestors
     });
+    let (syntax, receipt) =
+        syntax.ok_or_else(|| OrgAotError::Native("missing navigation".into()))?;
     Ok(OrgAotDocument {
-        parse,
+        syntax,
+        receipt,
         records,
         base_config: config.clone(),
         config: effective_config,
@@ -586,7 +554,7 @@ impl OrgAotDocument {
     /// Parse Org with structured AOT diagnostics.
     ///
     /// # Errors
-    /// Returns a native-runtime, parser, or graph-projection error.
+    /// Returns an error from the linked Scheme program or its document product.
     pub fn try_parse(source: impl AsRef<str>) -> Result<Self, OrgAotError> {
         parse_org_aot(source.as_ref())
     }
@@ -677,13 +645,13 @@ impl OrgAotDocument {
     /// Return the source-backed navigation root; no token text is duplicated.
     #[must_use]
     pub fn syntax(&self) -> SyntaxNode {
-        self.parse.syntax()
+        self.syntax.clone()
     }
 
     /// Return the parser-owned identity receipt for this source.
     #[must_use]
     pub fn receipt(&self) -> &ParseReceipt {
-        self.parse.receipt()
+        &self.receipt
     }
 
     /// Return the ordered, parent-linked Org Element records.

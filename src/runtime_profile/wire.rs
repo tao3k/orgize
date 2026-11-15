@@ -11,7 +11,7 @@ pub(crate) fn decode_batch(bytes: &[u8]) -> Result<([u64; 6], &[u8]), String> {
 }
 
 pub(super) fn decode(bytes: &[u8]) -> Result<(u64, u64, u64, &[u8]), String> {
-    if bytes.len() < 32 || &bytes[..4] != b"OPR1" || &bytes[28..32] != b"OEV1" {
+    if bytes.len() < 32 || &bytes[..4] != b"OPR1" || &bytes[28..32] != b"ODV1" {
         return Err("invalid native diagnostic envelope".into());
     }
     let fold = u64::from_le_bytes(bytes[4..12].try_into().unwrap());

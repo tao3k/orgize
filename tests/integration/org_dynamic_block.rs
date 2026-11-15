@@ -1,6 +1,6 @@
 //! Org-owned dynamic block declarations through the generic native navigation executor.
 
-use gerbil_parser_runtime::{SyntaxNode, SyntaxToken};
+use orgize::{SyntaxNode, SyntaxToken};
 
 fn node_name(node: &SyntaxNode) -> &'static str {
     orgize::org_aot::org_language_spec().kinds[usize::from(node.kind().0)].name

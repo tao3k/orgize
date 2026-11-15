@@ -2,7 +2,7 @@
 
 use std::fmt::Write as _;
 
-use gerbil_parser_runtime::GraphRecord;
+use crate::GraphRecord;
 
 use crate::entities::ENTITIES;
 use crate::export::{

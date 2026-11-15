@@ -86,15 +86,12 @@ fn lint_kind_metadata(
 }
 
 trait SddRange {
-    fn source_range(&self) -> gerbil_parser_runtime::TextRange;
+    fn source_range(&self) -> crate::TextRange;
 }
 
 impl SddRange for crate::ast::SddNodeRecord {
-    fn source_range(&self) -> gerbil_parser_runtime::TextRange {
-        gerbil_parser_runtime::TextRange::new(
-            self.source.range_start.into(),
-            self.source.range_end.into(),
-        )
+    fn source_range(&self) -> crate::TextRange {
+        crate::TextRange::new(self.source.range_start.into(), self.source.range_end.into())
     }
 }
 

@@ -1,5 +1,7 @@
 (import (only-in :orgize/languages/org/modules/org-parser/clock
                  native-monotonic-ns native-thread-cpu-ns)
+        (only-in :std/vector/u8vector little u8vector-uint-ref)
+        (only-in :orgize/languages/org/modules/org-elements/fold-product org-fold-product)
         (only-in :std/test check test-case test-suite)
         (only-in :std/misc/ports read-all-as-string)
         (only-in :gerbil-scheme-rust/scheme/actor-batch
@@ -57,6 +59,20 @@
         (loop (+ index 1) end
               (cons (cons (u8vector-ref bytes offset) (subu8vector bytes start end)) rows))))))
 
+(def (event-list-product source config)
+  (org-fold-product
+   (u8vector-length (string->utf8 source))
+   (org-events->tape
+    (parse-org-native-events-with-parameters source (car config) (cdr config)))
+   #f))
+
+(def syntax-count-offset (+ (u8vector-length org-event-tape-header) 71))
+(def (product-column bytes offset)
+  (u8vector-uint-ref bytes offset little 4))
+(def (product-elements bytes)
+  (let (start (+ syntax-count-offset 8 (* 20 (product-column bytes syntax-count-offset))))
+    (subu8vector bytes start (u8vector-length bytes))))
+
 (def org-event-tape-test
   (test-suite "Org native event boundary"
     (test-case "persistent bridge actors preserve ordered tapes across a failed turn"
@@ -105,9 +121,7 @@
            (for-each
             (lambda (source)
               (check (org-request->tape (request source (car config) (cdr config)))
-                     => (org-events->tape
-                         (parse-org-native-events-with-parameters
-                          source (car config) (cdr config)))))
+                     => (event-list-product source config)))
             sources))
          '((1 . 0) (15 . 1) (15 . 2)))))
     (test-case "bounded batch retains ordered individual grammar tapes"
@@ -157,26 +171,30 @@
                               (subu8vector result 52 (u8vector-length result))
                               result))))
                 (check (map car rows) => '(0 1 0))
-                (let (payload (cdr (caddr rows)))
-                  (check (if (memv operation '(7 28))
-                           (subu8vector payload 28 (u8vector-length payload)) payload)
-                         => (org-request->tape (request "* after\n" 15 2)))))))
+                (let* ((wire (cdr (caddr rows)))
+                       (payload (if (memv operation '(7 28))
+                                  (subu8vector wire 28 (u8vector-length wire)) wire))
+                       (whole (org-request->tape (request "* after\n" 15 2))))
+                  (if (memv operation '(27 28))
+                    (begin
+                      (check (product-column payload syntax-count-offset) => 0)
+                      (check (product-elements payload) => (product-elements whole)))
+                    (check payload => whole))))))
           invalid-utf8-inputs))
        '(6 7 27 28)))
     (test-case "empty document retains root and grammar identity"
       (let* ((header-size (u8vector-length org-event-tape-header))
              (tape (org-request->tape (request "" 15 2))))
-        (check (subu8vector tape 0 header-size) => org-event-tape-header)
-        (check (subu8vector tape header-size (u8vector-length tape))
-               => (u8vector 1 0 0 0))))
+        (check (subu8vector tape 0 4) => (u8vector 79 68 86 49))
+        (check (subu8vector tape 4 header-size) => (subu8vector org-event-tape-header 4 header-size))
+        (check (product-column tape syntax-count-offset) => 1)
+        (check (product-column tape (+ syntax-count-offset 4)) => 1)))
     (test-case "combined configuration and multibyte input keep Scheme events"
       (for-each
        (lambda (config)
          (let ((source "* α\r\nx^{β} x^2\n"))
            (check (org-request->tape (request source (car config) (cdr config)))
-                  => (org-events->tape
-                      (parse-org-native-events-with-parameters
-                       source (car config) (cdr config))))))
+                  => (event-list-product source config))))
        '((1 . 0) (15 . 1) (15 . 2))))
     (test-case "native expression requests carry their own grammar identity"
       (let ((tape (org-request->tape (request "(query π \"one\"\"two\") ; note\n" 0 0 1))))

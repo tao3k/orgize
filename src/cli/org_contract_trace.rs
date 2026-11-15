@@ -8,7 +8,7 @@ use std::{
     process::ExitCode,
 };
 
-use gerbil_parser_runtime::TextRange;
+use crate::TextRange;
 use serde_json::json;
 
 use crate::{
