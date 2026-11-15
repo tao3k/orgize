@@ -79,7 +79,20 @@ ci-rust-native-startup features:
 # Reuse the same Darwin/native linker policy as local qualification.
 [group('checks')]
 ci-rust-test features: (ci-rust-native-startup features)
-    {{ platform_env }} {{ platform_rust_flags }} cargo test --locked --workspace --tests --examples --no-default-features --features "{{ features }}" -- --skip tests::explicit_startup_precedes_parallel_native_unit_cases --nocapture
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p target/contract-control
+    contract_test_status=0
+    {{ platform_env }} {{ platform_rust_flags }} cargo test --locked --workspace --tests --examples --no-default-features --features "{{ features }}" -- --skip tests::explicit_startup_precedes_parallel_native_unit_cases --nocapture 2>&1 | tee target/contract-control/tests.log || contract_test_status=$?
+    if (( contract_test_status != 0 )); then
+        if rg --quiet 'org query assertion fixture exceeded' target/contract-control/tests.log; then
+            # Same debug configuration and case; diagnostic output cannot admit a failed gate.
+            contract_diagnostic_status=0
+            {{ platform_env }} {{ platform_rust_flags }} ORGIZE_NATIVE_CONSUMER_CASE=lint_contract::lint_contract_org_query_assertion_fixture_stays_in_millisecond_budget cargo test --locked --workspace --no-default-features --features "{{ features }},orgize/runtime-profile" --test integration_test consumer_fixture::explicit_startup_precedes_parallel_consumer_cases -- --exact --nocapture 2>&1 | tee target/contract-control/diagnostic.log || contract_diagnostic_status=$?
+            printf 'CONTRACT-DIAGNOSTIC original_exit=%s diagnostic_exit=%s (diagnostic only)\n' "$contract_test_status" "$contract_diagnostic_status"
+        fi
+        exit "$contract_test_status"
+    fi
     {{ platform_env }} {{ platform_rust_flags }} cargo bench --locked --workspace --no-default-features --features "{{ features }}" -- --test
 
 [private]
